@@ -57,19 +57,22 @@ class OWMHTTPClient(object):
         else:
             try:
                 if self._identity and self._identity.token:
-                    bearer_token_header = "Bearer %s:%s" % (self._identity.device_id, self._identity.token)
+                    bearer_token_header = "Bearer %s:%s" % (
+                        self._identity.device_id, self._identity.token)
                 else:
                     bearer_token_header = None
                 try:
                     from urllib.request import urlopen, build_opener
                     opener = build_opener()
                     if bearer_token_header:
-                        opener.addheaders = [('Authorization', bearer_token_header)]
+                        opener.addheaders = [
+                            ('Authorization', bearer_token_header)]
                 except ImportError:
                     from urllib2 import urlopen, build_opener
                     opener = build_opener()
                     if bearer_token_header:
-                        opener.addheaders = [('Authorization', bearer_token_header)]
+                        opener.addheaders = [
+                            ('Authorization', bearer_token_header)]
                 response = opener.open(url, None, timeout)
             except HTTPError as e:
                 raise api_call_error.APICallError(str(e.reason), e)

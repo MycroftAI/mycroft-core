@@ -12,7 +12,8 @@ class ESpeak(TTS):
         super(ESpeak, self).__init__(lang, voice)
 
     def execute(self, sentence):
-        subprocess.call(['espeak', '-v', self.lang + '+' + self.voice, sentence])
+        subprocess.call(
+            ['espeak', '-v', self.lang + '+' + self.voice, sentence])
 
 
 class ESpeakValidator(TTSValidator):
@@ -27,7 +28,9 @@ class ESpeakValidator(TTSValidator):
         try:
             subprocess.call(['espeak', '--version'])
         except:
-            raise Exception('ESpeak is not installed. Run on terminal: sudo apt-get install espeak')
+            raise Exception(
+                'ESpeak is not installed. Run on terminal: sudo apt-get '
+                'install espeak')
 
     def get_instance(self):
         return ESpeak

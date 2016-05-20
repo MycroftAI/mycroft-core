@@ -23,7 +23,8 @@ class AlarmSkill(ScheduledCRUDSkill):
 
     def initialize(self):
         super(AlarmSkill, self).initialize()
-        intent = IntentBuilder('AlarmSkillStopIntent').require('AlarmSkillStopVerb') \
+        intent = IntentBuilder(
+            'AlarmSkillStopIntent').require('AlarmSkillStopVerb') \
             .require('AlarmSkillKeyword').build()
         self.register_intent(intent, self.__handle_stop)
 

@@ -6,7 +6,8 @@ import argparse
 __author__ = 'seanfitz'
 """
 Audio Test
-A tool for recording X seconds of audio, and then playing them back. Useful for testing hardware, and ensures
+A tool for recording X seconds of audio, and then playing them back. Useful
+for testing hardware, and ensures
 compatibility with mycroft recognizer loop code.
 """
 
@@ -22,8 +23,12 @@ def record(filename, duration):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-f', '--filename', dest='filename', default="/tmp/test.wav", help="Filename for saved audio (Default: /tmp/test.wav)")
-    parser.add_argument('-d', '--duration', dest='duration', type=int, default=10, help="Duration of recording in seconds (Default: 10)")
+    parser.add_argument(
+        '-f', '--filename', dest='filename', default="/tmp/test.wav",
+        help="Filename for saved audio (Default: /tmp/test.wav)")
+    parser.add_argument(
+        '-d', '--duration', dest='duration', type=int, default=10,
+        help="Duration of recording in seconds (Default: 10)")
     args = parser.parse_args()
 
     record(args.filename, args.duration)

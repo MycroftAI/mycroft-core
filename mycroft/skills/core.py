@@ -31,15 +31,20 @@ def load_vocab_from_file(path, vocab_type, emitter):
             parts = line.strip().split("|")
             entity = parts[0]
 
-            emitter.emit(Message("register_vocab", metadata={'start': entity, 'end': vocab_type}))
+            emitter.emit(
+                Message("register_vocab",
+                        metadata={'start': entity, 'end': vocab_type}))
             for alias in parts[1:]:
                 emitter.emit(
-                        Message("register_vocab", metadata={'start': alias, 'end': vocab_type, 'alias_of': entity}))
+                    Message("register_vocab",
+                            metadata={'start': alias, 'end': vocab_type,
+                                      'alias_of': entity}))
 
 
 def load_vocabulary(basedir, emitter):
     for vocab_type in os.listdir(basedir):
-        load_vocab_from_file(join(basedir, vocab_type), splitext(vocab_type)[0], emitter)
+        load_vocab_from_file(
+            join(basedir, vocab_type), splitext(vocab_type)[0], emitter)
 
 
 def create_intent_envelope(intent):
@@ -56,16 +61,22 @@ def open_intent_envelope(message):
 
 def load_skill(skill_descriptor, emitter):
     try:
-        skill_module = imp.load_module(skill_descriptor["name"] + MainModule, *skill_descriptor["info"])
-        if hasattr(skill_module, 'create_skill') and callable(skill_module.create_skill):  # v2 skills framework
+        skill_module = imp.load_module(
+            skill_descriptor["name"] + MainModule, *skill_descriptor["info"])
+        if (hasattr(skill_module, 'create_skill') and
+                callable(skill_module.create_skill)):
+            # v2 skills framework
             skill = skill_module.create_skill()
             skill.bind(emitter)
             skill.initialize()
             return skill
         else:
-            logger.warn("Module %s does not appear to be skill" % (skill_descriptor["name"]))
+            logger.warn(
+                "Module %s does not appear to be skill" % (
+                    skill_descriptor["name"]))
     except:
-        logger.error("Failed to load skill: " + skill_descriptor["name"], exc_info=True)
+        logger.error(
+            "Failed to load skill: " + skill_descriptor["name"], exc_info=True)
     return None
 
 
@@ -74,7 +85,8 @@ def get_skills(skills_folder):
     possible_skills = os.listdir(skills_folder)
     for i in possible_skills:
         location = join(skills_folder, i)
-        if not isdir(location) or not MainModule + ".py" in os.listdir(location):
+        if (not isdir(location) or
+                not MainModule + ".py" in os.listdir(location)):
             continue
 
         skills.append(create_skill_descriptor(location))
@@ -94,13 +106,15 @@ def load_skills(emitter, skills_root=SKILLS_BASEDIR):
             load_skill(skill, emitter)
 
     for skill in skills:
-        if skill['name'] not in PRIMARY_SKILLS and skill['name'] not in BLACKLISTED_SKILLS:
+        if (skill['name'] not in PRIMARY_SKILLS and
+                skill['name'] not in BLACKLISTED_SKILLS):
             load_skill(skill, emitter)
 
 
 class MycroftSkill(object):
     """
-    Abstract base class which provides common behaviour and parameters to all Skills implementation.
+    Abstract base class which provides common behaviour and parameters to all
+    Skills implementation.
     """
 
     def __init__(self, name, emitter=None):
@@ -134,7 +148,8 @@ class MycroftSkill(object):
 
     def detach(self):
         for name in self.registered_intents:
-            self.emitter.emit(Message("detach_intent", metadata={"intent_name": name}))
+            self.emitter.emit(
+                Message("detach_intent", metadata={"intent_name": name}))
 
     def initialize(self):
         """
@@ -155,17 +170,24 @@ class MycroftSkill(object):
                 handler(message)
             except:
                 # TODO: Localize
-                self.speak("An error occurred while processing a request in " + self.name)
-                logger.error("An error occurred while processing a request in " + self.name, exc_info=True)
+                self.speak(
+                    "An error occurred while processing a request in " +
+                    self.name)
+                logger.error(
+                    "An error occurred while processing a request in " +
+                    self.name, exc_info=True)
 
         self.emitter.on(intent_parser.name, receive_handler)
 
     def register_vocabulary(self, entity, entity_type):
-        self.emitter.emit(Message('register_vocab', metadata={'start': entity, 'end': entity_type}))
+        self.emitter.emit(
+            Message('register_vocab',
+                    metadata={'start': entity, 'end': entity_type}))
 
     def register_regex(self, regex_str):
         re.compile(regex_str)  # validate regex
-        self.emitter.emit(Message('register_vocab', metadata={'regex': regex_str}))
+        self.emitter.emit(
+            Message('register_vocab', metadata={'regex': regex_str}))
 
     def speak(self, utterance):
         self.emitter.emit(Message("speak", metadata={'utterance': utterance}))
@@ -174,7 +196,8 @@ class MycroftSkill(object):
         self.speak(self.dialog_renderer.render(key, data))
 
     def init_dialog(self, root_directory):
-        self.dialog_renderer = DialogLoader().load(join(root_directory, 'dialog', self.lang))
+        self.dialog_renderer = DialogLoader().load(
+            join(root_directory, 'dialog', self.lang))
 
     def load_data_files(self, root_directory):
         self.init_dialog(root_directory)

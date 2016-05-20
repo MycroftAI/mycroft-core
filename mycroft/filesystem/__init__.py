@@ -6,7 +6,8 @@ __author__ = 'jdorleans'
 
 class FileSystemAccess(object):
     """
-    A class for providing access to the mycroft FS sandbox. Intended to be attached to skills
+    A class for providing access to the mycroft FS sandbox. Intended to be
+    attached to skills
     at initialization time to provide a skill-specific namespace.
     """
     def __init__(self, path):
@@ -24,9 +25,11 @@ class FileSystemAccess(object):
 
     def open(self, filename, mode):
         """
-        Get a handle to a file (with the provided mode) within the skill-specific namespace.
+        Get a handle to a file (with the provided mode) within the
+        skill-specific namespace.
 
-        :param filename: a str representing a path relative to the namespace. subdirs not currently supported.
+        :param filename: a str representing a path relative to the namespace.
+            subdirs not currently supported.
 
         :param mode: a file handle mode
 

@@ -16,7 +16,8 @@ class RemoteTTS(TTS):
     """
     Abstract class for a Remote TTS engine implementation.
 
-    It provides a common logic to perform multiple requests by splitting the whole sentence into small ones.
+    It provides a common logic to perform multiple requests by splitting the
+    whole sentence into small ones.
     """
 
     def __init__(self, lang, voice, url, api_path):
@@ -49,7 +50,9 @@ class RemoteTTS(TTS):
         return reqs
 
     def __request(self, p):
-        return self.session.get(self.url + self.api_path, params=self.build_request_params(p), timeout=10, verify=False)
+        return self.session.get(
+            self.url + self.api_path, params=self.build_request_params(p),
+            timeout=10, verify=False)
 
     @abc.abstractmethod
     def build_request_params(self, sentence):
@@ -61,7 +64,9 @@ class RemoteTTS(TTS):
             self.__save(resp.content)
             play_wav(self.filename)
         else:
-            LOGGER.error('%s Http Error: %s for url: %s' % (resp.status_code, resp.reason, resp.url))
+            LOGGER.error(
+                '%s Http Error: %s for url: %s' %
+                (resp.status_code, resp.reason, resp.url))
 
     def __save(self, data):
         with open(self.filename, 'wb') as f:

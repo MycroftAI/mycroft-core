@@ -50,7 +50,9 @@ class DynamicEnergytest(unittest.TestCase):
         recognizer = Recognizer()
         recognizer.listen(source)
         higher_base_energy = audioop.rms(higher_base, 2)
-        # after recalibration (because of max audio length) new threshold should be >= 1.5 * higher_base_energy
-        delta_below_threshold =  recognizer.energy_threshold - higher_base_energy
+        # after recalibration (because of max audio length) new threshold
+        # should be >= 1.5 * higher_base_energy
+        delta_below_threshold = (
+            recognizer.energy_threshold - higher_base_energy)
         min_delta = higher_base_energy * .5
         assert abs(delta_below_threshold - min_delta) < 1

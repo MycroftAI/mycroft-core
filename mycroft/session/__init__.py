@@ -53,10 +53,14 @@ class SessionManager(object):
         :return: An active session
         """
         with SessionManager.__lock:
-            if not SessionManager.__current_session or SessionManager.__current_session.expired():
-                SessionManager.__current_session = Session(str(uuid4()),
-                                                           expiration_seconds=config.get('session_ttl_seconds', 180))
-                logger.info("New Session Start: " + SessionManager.__current_session.session_id)
+            if (not SessionManager.__current_session or
+                    SessionManager.__current_session.expired()):
+                SessionManager.__current_session = Session(
+                    str(uuid4()),
+                    expiration_seconds=config.get('session_ttl_seconds', 180))
+                logger.info(
+                    "New Session Start: " +
+                    SessionManager.__current_session.session_id)
             return SessionManager.__current_session
 
     @staticmethod
@@ -67,5 +71,3 @@ class SessionManager(object):
         :return: None
         """
         SessionManager.get().touch()
-
-

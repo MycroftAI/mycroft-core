@@ -23,7 +23,8 @@ class TimeSkill(MycroftSkill):
         self.register_regex("in (?P<Location>.*)")
         self.register_regex("at (?P<Location>.*)")
 
-        intent = IntentBuilder("TimeIntent").require("TimeKeyword").optionally("Location").build()
+        intent = IntentBuilder("TimeIntent").require(
+            "TimeKeyword").optionally("Location").build()
 
         self.register_intent(intent, self.handle_intent)
 
@@ -43,7 +44,8 @@ class TimeSkill(MycroftSkill):
         except:
             return None
 
-    # This method only handles localtime, for other timezones the task falls to Wolfram.
+    # This method only handles localtime, for other timezones the task falls
+    # to Wolfram.
     def handle_intent(self, message):
         location = message.metadata.get("Location", None)
 

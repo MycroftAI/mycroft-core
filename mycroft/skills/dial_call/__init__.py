@@ -12,12 +12,18 @@ LOGGER = getLogger(__name__)
 
 
 class DialCallSkill(MycroftSkill):
-    DBUS_CMD = ["dbus-send", "--print-reply", "--dest=com.canonical.TelephonyServiceHandler",
-                "/com/canonical/TelephonyServiceHandler", "com.canonical.TelephonyServiceHandler.StartCall"]
+    DBUS_CMD = [
+        "dbus-send", "--print-reply",
+        "--dest=com.canonical.TelephonyServiceHandler",
+        "/com/canonical/TelephonyServiceHandler",
+        "com.canonical.TelephonyServiceHandler.StartCall"
+    ]
 
     def __init__(self):
         super(DialCallSkill, self).__init__(name="DialCallSkill")
-        self.contacts = {'jonathan': '12345678', 'ryan': '23456789', 'sean': '34567890'}  # TODO - Use API
+        self.contacts = {
+            'jonathan': '12345678', 'ryan': '23456789',
+            'sean': '34567890'}  # TODO - Use API
 
     def initialize(self):
         self.load_vocab_files(join(dirname(__file__), 'vocab', 'en-us'))
@@ -25,7 +31,8 @@ class DialCallSkill(MycroftSkill):
         prefixes = ['call', 'phone']  # TODO - i10n
         self.__register_prefixed_regex(prefixes, "(?P<Contact>.*)")
 
-        intent = IntentBuilder("DialCallIntent").require("DialCallKeyword").require("Contact").build()
+        intent = IntentBuilder("DialCallIntent").require(
+            "DialCallKeyword").require("Contact").build()
         self.register_intent(intent, self.handle_intent)
 
     def __register_prefixed_regex(self, prefixes, suffix_regex):
@@ -51,7 +58,9 @@ class DialCallSkill(MycroftSkill):
         subprocess.call(cmd)
 
     def __notify(self, contact, number):
-        self.emitter.emit(Message("dial_call", metadata={'contact': contact, 'number': number}))
+        self.emitter.emit(
+            Message("dial_call",
+                    metadata={'contact': contact, 'number': number}))
 
     def stop(self):
         pass

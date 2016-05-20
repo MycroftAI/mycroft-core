@@ -12,7 +12,11 @@ class RegistrationOnlyEmitter(object):
         self.emitter = EventEmitter()
 
     def on(self, event, f):
-        if event in ['register_intent', 'register_vocab', 'recognizer_loop:utterance']:
+        if event in [
+                'register_intent',
+                'register_vocab',
+                'recognizer_loop:utterance'
+        ]:
             self.emitter.on(event, f)
 
     def emit(self, event, *args, **kwargs):
@@ -27,7 +31,7 @@ class MockSkillsLoader(object):
 
     def load_skills(self):
         load_skills(self.emitter, self.skills_root)
-        return self.emitter.emitter # kick out the underlying emitter
+        return self.emitter.emitter  # kick out the underlying emitter
 
 
 class SkillTest(object):
@@ -40,7 +44,9 @@ class SkillTest(object):
     def compare_intents(self, expected, actual):
         for key in expected.keys():
             if actual.get(key, "").lower() != expected.get(key, "").lower():
-                print "Expected %s: %s, Actual: %s" % (key, expected.get(key), actual.get(key))
+                print(
+                    "Expected %s: %s, Actual: %s" % (key, expected.get(key),
+                                                     actual.get(key)))
                 assert False
 
     def run(self):
@@ -51,8 +57,9 @@ class SkillTest(object):
             self.compare_intents(example_json.get('intent'), intent.metadata)
             self.returned_intent = True
         self.emitter.once(example_json.get('intent_type'), compare)
-        self.emitter.emit('recognizer_loop:utterance', Message('recognizer_loop:utterance', event))
+        self.emitter.emit(
+            'recognizer_loop:utterance',
+            Message('recognizer_loop:utterance', event))
         if not self.returned_intent:
             print("No intent handled")
             assert False
-

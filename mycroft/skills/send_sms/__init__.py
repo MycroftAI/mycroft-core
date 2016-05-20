@@ -12,20 +12,25 @@ LOGGER = getLogger(__name__)
 
 
 class SendSMSSkill(MycroftSkill):
-    DBUS_CMD = ["dbus-send", "--print-reply", "--dest=com.canonical.TelephonyServiceHandler",
-                "/com/canonical/TelephonyServiceHandler", "com.canonical.TelephonyServiceHandler.SendMessage"]
+    DBUS_CMD = ["dbus-send", "--print-reply",
+                "--dest=com.canonical.TelephonyServiceHandler",
+                "/com/canonical/TelephonyServiceHandler",
+                "com.canonical.TelephonyServiceHandler.SendMessage"]
 
     def __init__(self):
         super(SendSMSSkill, self).__init__(name="SendSMSSkill")
-        self.contacts = {'jonathan': '12345678', 'ryan': '23456789', 'sean': '34567890'}  # TODO - Use API
+        self.contacts = {'jonathan': '12345678', 'ryan': '23456789',
+                         'sean': '34567890'}  # TODO - Use API
 
     def initialize(self):
         self.load_vocab_files(join(dirname(__file__), 'vocab', 'en-us'))
 
         prefixes = ['tell', 'text', 'message']  # TODO - i10n
-        self.__register_prefixed_regex(prefixes, "(?P<Contact>\w*) (?P<Message>.*)")
+        self.__register_prefixed_regex(
+            prefixes, "(?P<Contact>\w*) (?P<Message>.*)")
 
-        intent = IntentBuilder("SendSMSIntent").require("SendSMSKeyword").require("Contact").require("Message").build()
+        intent = IntentBuilder("SendSMSIntent").require(
+            "SendSMSKeyword").require("Contact").require("Message").build()
         self.register_intent(intent, self.handle_intent)
 
     def __register_prefixed_regex(self, prefixes, suffix_regex):
@@ -53,7 +58,11 @@ class SendSMSSkill(MycroftSkill):
         subprocess.call(cmd)
 
     def __notify(self, contact, number, msg):
-        self.emitter.emit(Message("send_sms", metadata={'contact': contact, 'number': number, 'message': msg}))
+        self.emitter.emit(
+            Message(
+                "send_sms",
+                metadata={'contact': contact, 'number': number,
+                          'message': msg}))
 
     def stop(self):
         pass

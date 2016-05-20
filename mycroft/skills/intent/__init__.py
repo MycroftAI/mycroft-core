@@ -22,18 +22,25 @@ class IntentSkill(MycroftSkill):
         best_intent = None
         for utterance in utterances:
             try:
-                best_intent = next(self.engine.determine_intent(utterance, num_results=100))
-                best_intent['utterance'] = utterance  # TODO - Should Adapt handle this?
+                best_intent = next(self.engine.determine_intent(
+                    utterance, num_results=100))
+                # TODO - Should Adapt handle this?
+                best_intent['utterance'] = utterance
             except StopIteration, e:
                 continue
 
         if best_intent and best_intent.get('confidence', 0.0) > 0.0:
-            reply = message.reply(best_intent.get('intent_type'), metadata=best_intent)
+            reply = message.reply(
+                best_intent.get('intent_type'), metadata=best_intent)
             self.emitter.emit(reply)
         elif len(utterances) == 1:
-            self.emitter.emit(Message("intent_failure", metadata={"utterance": utterances[0]}))
+            self.emitter.emit(
+                Message("intent_failure",
+                        metadata={"utterance": utterances[0]}))
         else:
-            self.emitter.emit(Message("multi_utterance_intent_failure", metadata={"utterances": utterances}))
+            self.emitter.emit(
+                Message("multi_utterance_intent_failure",
+                        metadata={"utterances": utterances}))
 
     def handle_register_vocab(self, message):
         start_concept = message.metadata.get('start')
@@ -43,7 +50,8 @@ class IntentSkill(MycroftSkill):
         if regex_str:
             self.engine.register_regex_entity(regex_str)
         else:
-            self.engine.register_entity(start_concept, end_concept, alias_of=alias_of)
+            self.engine.register_entity(
+                start_concept, end_concept, alias_of=alias_of)
 
     def handle_register_intent(self, message):
         intent = open_intent_envelope(message)
@@ -51,7 +59,8 @@ class IntentSkill(MycroftSkill):
 
     def handle_detach_intent(self, message):
         intent_name = message.metadata.get('intent_name')
-        new_parsers = [p for p in self.engine.intent_parsers if p.name != intent_name]
+        new_parsers = [
+            p for p in self.engine.intent_parsers if p.name != intent_name]
         self.engine.intent_parsers = new_parsers
 
     def stop(self):

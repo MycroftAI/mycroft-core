@@ -12,6 +12,7 @@ from mycroft.util.setup_base import get_version
 config = ConfigurationManager.get_config().get('metrics_client')
 metrics_log = getLogger("METRICS")
 
+
 class Stopwatch(object):
     def __init__(self):
         self.timestamp = None
@@ -77,9 +78,11 @@ class MetricsAggregator(object):
             'attributes': self._attributes
         }
         self.clear()
-        count = len(payload['counters']) + len(payload['timers']) + len(payload['levels'])
+        count = (len(payload['counters']) + len(payload['timers']) +
+                 len(payload['levels']))
         if count > 0:
             metrics_log.debug(json.dumps(payload))
+
             def publish():
                 publisher.publish(payload)
             threading.Thread(target=publish).start()
@@ -97,4 +100,7 @@ class MetricsPublisher(object):
             session_id = SessionManager.get().session_id
             events['session_id'] = session_id
         if self.enabled:
-            requests.post(self.url, headers={'Content-Type': 'application/json'}, data=json.dumps(events), verify=False)
+            requests.post(
+                self.url,
+                headers={'Content-Type': 'application/json'},
+                data=json.dumps(events), verify=False)

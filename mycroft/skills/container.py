@@ -17,11 +17,16 @@ class SkillContainer(object):
     def __init__(self, args):
         parser = argparse.ArgumentParser()
         parser.add_argument("--dependency-dir", default="./lib")
-        parser.add_argument("--messagebus-host", default=messagebus_config.get("host"))
-        parser.add_argument("--messagebus-port", type=int, default=messagebus_config.get("port"))
+        parser.add_argument(
+            "--messagebus-host", default=messagebus_config.get("host"))
+        parser.add_argument(
+            "--messagebus-port", type=int,
+            default=messagebus_config.get("port"))
         parser.add_argument("--use-ssl", action='store_true', default=False)
-        parser.add_argument("--enable-intent-skill", action='store_true', default=False)
-        parser.add_argument("skill_directory", default=os.path.dirname(__file__))
+        parser.add_argument(
+            "--enable-intent-skill", action='store_true', default=False)
+        parser.add_argument(
+            "skill_directory", default=os.path.dirname(__file__))
 
         parsed_args = parser.parse_args(args)
         if os.path.exists(parsed_args.dependency_dir):

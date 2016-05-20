@@ -18,7 +18,8 @@ client_connections = []
 
 class WebsocketEventHandler(tornado.websocket.WebSocketHandler):
     def __init__(self, application, request, **kwargs):
-        tornado.websocket.WebSocketHandler.__init__(self, application, request, **kwargs)
+        tornado.websocket.WebSocketHandler.__init__(
+            self, application, request, **kwargs)
         self.emitter = EventBusEmitter
 
     def on(self, event_name, handler):
@@ -32,7 +33,8 @@ class WebsocketEventHandler(tornado.websocket.WebSocketHandler):
             return
 
         try:
-            self.emitter.emit(deserialized_message.message_type, deserialized_message)
+            self.emitter.emit(
+                deserialized_message.message_type, deserialized_message)
         except Exception, e:
             traceback.print_exc(file=sys.stdout)
             pass
@@ -48,7 +50,8 @@ class WebsocketEventHandler(tornado.websocket.WebSocketHandler):
         client_connections.remove(self)
 
     def emit(self, channel_message):
-        if hasattr(channel_message, 'serialize') and callable(getattr(channel_message, 'serialize')):
+        if (hasattr(channel_message, 'serialize') and
+                callable(getattr(channel_message, 'serialize'))):
             self.write_message(channel_message.serialize())
         else:
             self.write_message(json.dumps(channel_message))

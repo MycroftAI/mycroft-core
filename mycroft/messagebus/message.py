@@ -1,5 +1,6 @@
-__author__ = 'seanfitz'
 import json
+
+__author__ = 'seanfitz'
 
 
 class Message(object):

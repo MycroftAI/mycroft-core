@@ -12,7 +12,8 @@ class TTS(object):
     """
     TTS abstract class to be implemented by all TTS engines.
 
-    It aggregates the minimum required parameters and exposes ``execute(sentence)`` function.
+    It aggregates the minimum required parameters and exposes
+    ``execute(sentence)`` function.
     """
 
     def __init__(self, lang, voice, filename='/tmp/tts.wav'):
@@ -30,7 +31,8 @@ class TTSValidator(object):
     """
     TTS Validator abstract class to be implemented by all TTS engines.
 
-    It exposes and implements ``validate(tts)`` function as a template to validate the TTS engines.
+    It exposes and implements ``validate(tts)`` function as a template to
+    validate the TTS engines.
     """
 
     def __init__(self):
@@ -45,16 +47,19 @@ class TTSValidator(object):
     def __validate_instance(self, tts):
         instance = self.get_instance()
         if not isinstance(tts, instance):
-            raise AttributeError('tts must be instance of ' + instance.__name__)
+            raise AttributeError(
+                'tts must be instance of ' + instance.__name__)
         LOGGER.debug('TTS: ' + str(instance))
 
     def __validate_filename(self, filename):
         if not (filename and filename.endswith('.wav')):
-            raise AttributeError('filename: ' + filename + ' must be a .wav file!')
+            raise AttributeError(
+                'filename: ' + filename + ' must be a .wav file!')
         dir_path = dirname(filename)
 
         if not (exists(dir_path) and isdir(dir_path)):
-            raise AttributeError('filename: ' + filename + ' is not a valid file path!')
+            raise AttributeError(
+                'filename: ' + filename + ' is not a valid file path!')
         LOGGER.debug('Filename: ' + filename)
 
     @abc.abstractmethod

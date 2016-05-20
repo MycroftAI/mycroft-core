@@ -57,14 +57,18 @@ class DesktopLauncherSkill(MycroftSkill):
         self.register_regex("for (?P<SearchTerms>.*) on")
         self.register_regex("(?P<SearchTerms>.*) on")
 
-        launch_intent = IntentBuilder("LaunchDesktopApplication").require("LaunchKeyword").require(
+        launch_intent = IntentBuilder(
+            "LaunchDesktopApplication").require("LaunchKeyword").require(
                 "Application").build()
         self.register_intent(launch_intent, self.handle_launch_desktop_app)
 
-        launch_website_intent = IntentBuilder("LaunchWebsiteIntent").require("LaunchKeyword").require("Website").build()
+        launch_website_intent = IntentBuilder(
+            "LaunchWebsiteIntent").require("LaunchKeyword").require(
+                "Website").build()
         self.register_intent(launch_website_intent, self.handle_launch_website)
 
-        search_website = IntentBuilder("SearchWebsiteIntent").require("SearchKeyword").require("Website").require(
+        search_website = IntentBuilder("SearchWebsiteIntent").require(
+            "SearchKeyword").require("Website").require(
                 "SearchTerms").build()
         self.register_intent(search_website, self.handle_search_website)
 

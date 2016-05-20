@@ -19,7 +19,8 @@ class WeatherSkill(MycroftSkill):
 
     @property
     def owm(self):
-        return OWM(API_key=self.config.get('api_key', ''), identity=IdentityManager().get())
+        return OWM(API_key=self.config.get('api_key', ''),
+                   identity=IdentityManager().get())
 
     def initialize(self):
         self.load_data_files(dirname(__file__))
@@ -30,16 +31,19 @@ class WeatherSkill(MycroftSkill):
         self.__build_next_day_intent()
 
     def __build_current_intent(self):
-        intent = IntentBuilder("CurrentWeatherIntent").require("WeatherKeyword").optionally("Location").build()
+        intent = IntentBuilder("CurrentWeatherIntent").require(
+            "WeatherKeyword").optionally("Location").build()
         self.register_intent(intent, self.handle_current_intent)
 
     def __build_next_hour_intent(self):
-        intent = IntentBuilder("NextHoursWeatherIntent").require("WeatherKeyword").optionally("Location") \
+        intent = IntentBuilder("NextHoursWeatherIntent").require(
+            "WeatherKeyword").optionally("Location") \
             .require("NextHours").build()
         self.register_intent(intent, self.handle_next_hour_intent)
 
     def __build_next_day_intent(self):
-        intent = IntentBuilder("NextDayWeatherIntent").require("WeatherKeyword").optionally("Location") \
+        intent = IntentBuilder("NextDayWeatherIntent").require(
+            "WeatherKeyword").optionally("Location") \
             .require("NextDay").build()
         self.register_intent(intent, self.handle_next_day_intent)
 
@@ -66,7 +70,8 @@ class WeatherSkill(MycroftSkill):
     def handle_next_hour_intent(self, message):
         try:
             location = message.metadata.get("Location", self.location)
-            weather = self.owm.three_hours_forecast(location).get_forecast().get_weathers()[0]
+            weather = self.owm.three_hours_forecast(
+                location).get_forecast().get_weathers()[0]
             data = self.__build_data_condition(location, weather)
             self.speak_dialog('hour.weather', data)
         except APICallError as e:
@@ -77,15 +82,19 @@ class WeatherSkill(MycroftSkill):
     def handle_next_day_intent(self, message):
         try:
             location = message.metadata.get("Location", self.location)
-            weather = self.owm.daily_forecast(location).get_forecast().get_weathers()[1]
-            data = self.__build_data_condition(location, weather, 'day', 'min', 'max')
+            weather = self.owm.daily_forecast(
+                location).get_forecast().get_weathers()[1]
+            data = self.__build_data_condition(
+                location, weather, 'day', 'min', 'max')
             self.speak_dialog('tomorrow.weather', data)
         except APICallError as e:
             self.__api_error(e)
         except Exception as e:
             LOGGER.error("Error: {0}".format(e))
 
-    def __build_data_condition(self, location, weather, temp='temp', temp_min='temp_min', temp_max='temp_max'):
+    def __build_data_condition(
+            self, location, weather, temp='temp', temp_min='temp_min',
+            temp_max='temp_max'):
         data = {
             'location': location,
             'scale': self.temperature,

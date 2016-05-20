@@ -20,16 +20,22 @@ class WikipediaSkill(MycroftSkill):
         self.max_results = int(self.config['max_results'])
         self.max_phrases = int(self.config['max_phrases'])
         self.question = 'Would you like to know more about '  # TODO - i10n
-        self.feedback_prefix = read_stripped_lines(join(dirname(__file__), 'dialog', self.lang, 'FeedbackPrefix.dialog'))
-        self.feedback_search = read_stripped_lines(join(dirname(__file__), 'dialog', self.lang, 'FeedbackSearch.dialog'))
+        self.feedback_prefix = read_stripped_lines(
+            join(dirname(__file__), 'dialog', self.lang,
+                 'FeedbackPrefix.dialog'))
+        self.feedback_search = read_stripped_lines(
+            join(dirname(__file__), 'dialog', self.lang,
+                 'FeedbackSearch.dialog'))
 
     def initialize(self):
         self.load_vocab_files(join(dirname(__file__), 'vocab', 'en-us'))
 
-        prefixes = ['wiki', 'wikipedia', 'tell me about', 'tell us about', 'who is', 'who was']  # TODO - i10n
+        prefixes = ['wiki', 'wikipedia', 'tell me about', 'tell us about',
+                    'who is', 'who was']  # TODO - i10n
         self.__register_prefixed_regex(prefixes, "(?P<ArticleTitle>.*)")
 
-        intent = IntentBuilder("WikipediaIntent").require("WikipediaKeyword").require("ArticleTitle").build()
+        intent = IntentBuilder("WikipediaIntent").require(
+            "WikipediaKeyword").require("ArticleTitle").build()
         self.register_intent(intent, self.handle_intent)
 
     def __register_prefixed_regex(self, prefixes, suffix_regex):
@@ -41,7 +47,9 @@ class WikipediaSkill(MycroftSkill):
             title = message.metadata.get("ArticleTitle")
             self.__feedback_search(title)
             results = wiki.search(title, self.max_results)
-            summary = re.sub(r'\([^)]*\)|/[^/]*/', '', wiki.summary(results[0], self.max_phrases))
+            summary = re.sub(
+                r'\([^)]*\)|/[^/]*/', '',
+                wiki.summary(results[0], self.max_phrases))
             self.speak(summary)
 
         except wiki.exceptions.DisambiguationError as e:
@@ -55,7 +63,8 @@ class WikipediaSkill(MycroftSkill):
     def __feedback_search(self, title):
         prefix = self.feedback_prefix[randrange(len(self.feedback_prefix))]
         feedback = self.feedback_search[randrange(len(self.feedback_search))]
-        sentence = feedback.replace('<prefix>', prefix).replace('<title>', title)
+        sentence = feedback.replace('<prefix>', prefix).replace(
+            '<title>', title)
         self.speak(sentence)
 
     def __ask_more_about(self, opts):

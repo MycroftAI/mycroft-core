@@ -26,7 +26,8 @@ class IdentityManager(object):
 
     def initialize(self):
         if self.filesystem.exists('identity.json'):
-            self.identity = DeviceIdentity.load(self.filesystem.open('identity.json', 'r'))
+            self.identity = DeviceIdentity.load(self.filesystem.open(
+                'identity.json', 'r'))
         else:
             identity = DeviceIdentity(device_id=str(uuid4()))
             self.update(identity)
