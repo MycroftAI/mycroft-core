@@ -64,7 +64,7 @@ class CerberusWolframAlphaClient(object):
         if response.status_code == 401:
             raise CerberusAccessDenied()
 
-        return wolframalpha.Result(StringIO(response.text))
+        return wolframalpha.Result(StringIO(response.content))
 
 
 class WolframAlphaSkill(MycroftSkill):
