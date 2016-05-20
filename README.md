@@ -24,9 +24,28 @@ Pair Mycroft instance with Cerberus Account Management Service: https://cerberus
 ## Cerberus Device and Account Manager
 Mycroft AI, Inc. - the company behind Mycroft maintains the Cerberus device and account management system. Developers can sign up at https://cerberus.mycroft.ai
 
-Once signed up you can pair a device and use our API keys for services, such as the STT (Speech-to-Text) API. It also uses allows you to use our API keys for weather, Wolfram-Alpha, and various other skills.
+By default the Mycroft software is configured to use Cerberus, upon any request such as "Hey Mycroft, what is the weather?", you will be informed that you need to pair and Mycroft will speak a 6-digit code, which you enter into the pairing page on the [Cerberus site](https://cerberus.mycroft.ai).
 
-If you do not wish to use our service, you may insert your own API keys into the configuration file.
+Once signed and a device is paired, the unit will use our API keys for services, such as the STT (Speech-to-Text) API. It also uses allows you to use our API keys for weather, Wolfram-Alpha, and various other skills.
+
+
+## Using Mycroft without Cerberus.
+If you do not wish to use our service, you may insert your own API keys into the configuration files listed below in <b>configuraion</b>.
+
+The place to insert the API key looks like the following:
+
+`[WeatherSkill]
+api_key = ""`
+
+Put the relevant key in between the quotes and Mycroft Core should begin to use the key immediately.
+
+### API Key services
+
+- [STT API, Google STT](http://www.chromium.org/developers/how-tos/api-keys)
+- [Weather Skill API, OpenWeatherMap](http://openweathermap.org/api)
+- [Wolfram-Alpha Skill](http://products.wolframalpha.com/api/)
+
+These are the keys currently in use in Mycroft Core.
 
 ## Configuration
 Mycroft configuration consists of 3 possible config files.
