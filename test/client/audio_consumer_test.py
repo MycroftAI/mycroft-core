@@ -1,6 +1,7 @@
-from Queue import Queue
-from os.path import dirname, join
 import unittest
+from Queue import Queue
+
+from os.path import dirname, join
 from speech_recognition import WavFile, AudioData
 from mycroft.client.speech.listener import (
     WakewordExtractor,
@@ -30,6 +31,7 @@ class AudioConsumerTest(unittest.TestCase):
     """
     AudioConsumerTest
     """
+
     def setUp(self):
         self.loop = RecognizerLoop()
         self.queue = Queue()
@@ -40,11 +42,9 @@ class AudioConsumerTest(unittest.TestCase):
             self.queue,
             self.loop,
             self.loop.wakeup_recognizer,
-            self.loop.ww_recognizer,
+            self.loop.mycroft_recognizer,
             RemoteRecognizerWrapperFactory.wrap_recognizer(
-                self.recognizer, 'google'),
-            self.loop.wakeup_prefixes,
-            self.loop.wakeup_words)
+                self.recognizer, 'google'))
 
     def __create_sample_from_test_file(self, sample_name):
         root_dir = dirname(dirname(dirname(__file__)))
@@ -79,7 +79,7 @@ class AudioConsumerTest(unittest.TestCase):
             monitor['pos_end'] = message.get('pos_end')
 
         self.loop.once('recognizer_loop:wakeword', wakeword_callback)
-        self.consumer.try_consume_audio()
+        self.consumer.read_audio()
 
         pos_begin = monitor.get('pos_begin')
         self.assertIsNotNone(pos_begin)
@@ -105,7 +105,7 @@ class AudioConsumerTest(unittest.TestCase):
             monitor['utterances'] = message.get('utterances')
 
         self.loop.once('recognizer_loop:utterance', callback)
-        self.consumer.try_consume_audio()
+        self.consumer.read_audio()
         utterances = monitor.get('utterances')
         self.assertIsNotNone(utterances)
         self.assertTrue(len(utterances) == 1)
@@ -121,7 +121,7 @@ class AudioConsumerTest(unittest.TestCase):
             monitor['utterances'] = message.get('utterances')
 
         self.loop.once('recognizer_loop:utterance', callback)
-        self.consumer.try_consume_audio()
+        self.consumer.read_audio()
         utterances = monitor.get('utterances')
         self.assertIsNotNone(utterances)
         self.assertTrue(len(utterances) == 2)
@@ -140,7 +140,7 @@ class AudioConsumerTest(unittest.TestCase):
             monitor['utterances'] = message.get('utterances')
 
         self.loop.once('recognizer_loop:wakeword', wakeword_callback)
-        self.consumer.try_consume_audio()
+        self.consumer.read_audio()
 
         self.assertIsNotNone(monitor.get('wakeword'))
 
@@ -148,7 +148,7 @@ class AudioConsumerTest(unittest.TestCase):
         self.recognizer.set_transcriptions(
             ["what's the weather next week", ""])
         self.loop.once('recognizer_loop:utterance', utterance_callback)
-        self.consumer.try_consume_audio()
+        self.consumer.read_audio()
 
         utterances = monitor.get('utterances')
         self.assertIsNotNone(utterances)
@@ -165,7 +165,7 @@ class AudioConsumerTest(unittest.TestCase):
             monitor['wakeword'] = message.get('utterance')
 
         self.loop.once('recognizer_loop:wakeword', wakeword_callback)
-        self.consumer.try_consume_audio()
+        self.consumer.read_audio()
 
         self.assertIsNone(monitor.get('wakeword'))
         self.assertTrue(self.loop.state.sleeping)
