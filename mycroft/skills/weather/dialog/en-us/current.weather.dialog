@@ -1,0 +1,3 @@
+It's currently {{condition}} and {{temp_current}} degrees {{scale}} in {{location}}. Today's forecast is for a high of {{temp_max}} and a low of {{temp_min}}.
+Right now, it's {{condition}} and {{temp_current}} degrees, for a high of {{temp_max}} and a low of {{temp_min}} in {{location}}.
+With a high of {{temp_max}} and a low of {{temp_min}}, {{location}} has {{condition}} and is currently {{temp_current}} degrees.

@@ -1,0 +1,7 @@
+{
+  "utterance": "record audio for 10 minutes",
+  "intent_type": "AudioRecordSkillIntent",
+  "intent": {
+    "AudioRecordSkillKeyword": "record"
+  }
+}

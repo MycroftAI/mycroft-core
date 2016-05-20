@@ -1,0 +1,9 @@
+{
+  "utterance": "search for kittens on youtube",
+  "intent_type": "SearchWebsiteIntent",
+  "intent": {
+    "SearchKeyword": "search",
+    "Website": "youtube",
+    "SearchTerms": "for kittens"
+  }
+}

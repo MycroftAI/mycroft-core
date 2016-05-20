@@ -1,0 +1,8 @@
+{
+  "utterance": "end record",
+  "intent_type": "AudioRecordSkillStopIntent",
+  "intent": {
+    "AudioRecordSkillStopVerb": "end",
+    "AudioRecordSkillKeyword": "record"
+  }
+}

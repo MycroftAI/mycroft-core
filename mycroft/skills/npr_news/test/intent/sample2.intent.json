@@ -1,0 +1,7 @@
+{
+  "utterance": "play the news",
+  "intent_type": "NPRNewsIntent",
+  "intent": {
+    "NPRNewsKeyword": "news"
+  }
+}

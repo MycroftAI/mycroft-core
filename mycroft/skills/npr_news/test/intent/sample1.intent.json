@@ -1,0 +1,7 @@
+{
+  "utterance": "what's the news",
+  "intent_type": "NPRNewsIntent",
+  "intent": {
+    "NPRNewsKeyword": "news"
+  }
+}

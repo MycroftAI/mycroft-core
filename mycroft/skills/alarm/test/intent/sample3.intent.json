@@ -1,0 +1,7 @@
+{
+  "utterance": "set a timer for tomorrow evening",
+  "intent_type": "AlarmSkillCreateIntent",
+  "intent": {
+    "AlarmSkillCreateVerb": "timer"
+  }
+}

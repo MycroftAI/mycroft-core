@@ -1,0 +1,7 @@
+{
+  "utterance": "alarm on july 4th 2016 at 3pm",
+  "intent_type": "AlarmSkillCreateIntent",
+  "intent": {
+    "AlarmSkillCreateVerb": "alarm"
+  }
+}

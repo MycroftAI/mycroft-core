@@ -1,0 +1,7 @@
+{
+  "utterance": "reset volume",
+  "intent_type": "ResetVolumeIntent",
+  "intent": {
+    "ResetVolumeKeyword": "reset volume"
+  }
+}

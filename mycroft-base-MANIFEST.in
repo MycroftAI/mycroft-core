@@ -1,0 +1,6 @@
+recursive-include mycroft/client/speech/model *
+include requirements.txt
+include mycroft/configuration/defaults/*.ini
+recursive-include mycroft/skills/*/dialog *
+recursive-include mycroft/skills/*/vocab *
+include mycroft/skills/alarm/alarm.wav

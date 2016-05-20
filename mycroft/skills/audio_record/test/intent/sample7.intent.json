@@ -1,0 +1,8 @@
+{
+  "utterance": "play record",
+  "intent_type": "AudioRecordSkillPlayIntent",
+  "intent": {
+    "AudioRecordSkillPlayVerb": "play",
+    "AudioRecordSkillKeyword": "record"
+  }
+}

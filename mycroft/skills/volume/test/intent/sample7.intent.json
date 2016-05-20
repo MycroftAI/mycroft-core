@@ -1,0 +1,8 @@
+{
+  "utterance": "set volume to quiet",
+  "intent_type": "SetVolumeIntent",
+  "intent": {
+    "VolumeKeyword": "volume",
+    "VolumeAmount": "quiet"
+  }
+}

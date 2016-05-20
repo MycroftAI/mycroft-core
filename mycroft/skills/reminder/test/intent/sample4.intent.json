@@ -1,0 +1,7 @@
+{
+  "utterance": "notify me next friday to have dinner with my family",
+  "intent_type": "ReminderSkillCreateIntent",
+  "intent": {
+    "ReminderSkillCreateVerb": "notify me"
+  }
+}

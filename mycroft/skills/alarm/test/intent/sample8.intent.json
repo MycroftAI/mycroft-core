@@ -1,0 +1,9 @@
+{
+  "utterance": "erase the next alarm",
+  "intent_type": "AlarmSkillDeleteIntent",
+  "intent": {
+    "AlarmSkillDeleteVerb": "erase",
+    "AlarmSkillAmount": "the next",
+    "AlarmSkillKeyword": "alarm"
+  }
+}
