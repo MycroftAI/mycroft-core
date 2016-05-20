@@ -1,0 +1,14 @@
+.idea
+*.pyc
+*.swp
+*~
+mimic
+pocketsphinx-python
+*.egg-info/
+build
+dist
+tornado.web
+tornado.ioloop
+mycroft/__version__.py
+MANIFEST.in
+setup.py
