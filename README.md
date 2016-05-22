@@ -76,3 +76,4 @@ workon mycroft
 - run `./start.sh service`
 - run `./start.sh skills`
 - run `./start.sh voice`
+
