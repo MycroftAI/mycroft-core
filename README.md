@@ -19,8 +19,7 @@ Pair Mycroft instance with Cerberus Account Management Service: https://cerberus
   - `mpg123`
   - `espeak`
 
-- In addition, if you are running Ubuntu 16.04 or another O/S
-- Install:
+- In addition, if you are running Ubuntu 16.04 or another O/S, install:
   - `libffi-dev`
   - `libssl-dev` 
 
