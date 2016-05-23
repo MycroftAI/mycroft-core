@@ -33,4 +33,5 @@ psutil==4.1.0
 pep8==1.7.0
 mopidy==2.0.0
 mopidy-spotify==3.0.0
+mopidy-local-sqlite==1.0.0
 --extra-index-url=http://pypi.mycroft.team
