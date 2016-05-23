@@ -62,13 +62,13 @@ class OWMHTTPClient(object):
                 else:
                     bearer_token_header = None
                 try:
-                    from urllib.request import urlopen, build_opener
+                    from urllib.request import build_opener
                     opener = build_opener()
                     if bearer_token_header:
                         opener.addheaders = [
                             ('Authorization', bearer_token_header)]
                 except ImportError:
-                    from urllib2 import urlopen, build_opener
+                    from urllib2 import build_opener
                     opener = build_opener()
                     if bearer_token_header:
                         opener.addheaders = [
