@@ -12,6 +12,7 @@ The PyOWM init file
 
 from pyowm import constants
 
+
 def OWM(API_key=None, version=constants.LATEST_OWM_API_VERSION,
         config_module=None, language=None, identity=None):
     """
