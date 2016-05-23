@@ -9,6 +9,7 @@ sudo apt-get install -y \
     virtualenvwrapper \
     libtool \
     libffi-dev \
+    libssl-dev \
     autoconf \
     bison \
     swig \
