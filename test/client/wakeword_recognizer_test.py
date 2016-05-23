@@ -3,11 +3,13 @@ import os
 
 from mycroft.client.speech import wakeword_recognizer
 
-
-__author__ = 'seanfitz'
 import unittest
 
-DATA_DIR=os.path.join(os.path.abspath(os.path.dirname(__file__)), "data")
+
+__author__ = 'seanfitz'
+
+DATA_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "data")
+
 
 class WakewordRecognizerTest(unittest.TestCase):
     def setUp(self):

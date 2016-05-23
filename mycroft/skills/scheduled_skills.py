@@ -14,9 +14,11 @@ __author__ = 'jdorleans'
 
 class ScheduledSkill(MycroftSkill):
     """
-    Abstract class which provides a repeatable notification behaviour at a specified time.
+    Abstract class which provides a repeatable notification behaviour at a
+    specified time.
 
-    Skills implementation inherits this class when it needs to schedule a task or a notification.
+    Skills implementation inherits this class when it needs to schedule a task
+    or a notification.
     """
 
     DELTA_TIME = int((datetime.now() - datetime.utcnow()).total_seconds())
@@ -53,7 +55,8 @@ class ScheduledSkill(MycroftSkill):
         return mktime(self.calendar.parse(sentence)[0]) - self.DELTA_TIME
 
     def get_formatted_time(self, timestamp):
-        return datetime.fromtimestamp(timestamp).strftime(self.config_core.get('time.format'))
+        return datetime.fromtimestamp(timestamp).strftime(
+            self.config_core.get('time.format'))
 
     @abc.abstractmethod
     def get_times(self):
@@ -66,11 +69,14 @@ class ScheduledSkill(MycroftSkill):
 
 class ScheduledCRUDSkill(ScheduledSkill):
     """
-    Abstract CRUD class which provides a repeatable notification behaviour at a specified time.
+    Abstract CRUD class which provides a repeatable notification behaviour at
+    a specified time.
 
-    It registers CRUD intents and exposes its functions to manipulate a provided ``data``
+    It registers CRUD intents and exposes its functions to manipulate a
+    provided ``data``
 
-    Skills implementation inherits this class when it needs to schedule a task or a notification with a provided data
+    Skills implementation inherits this class when it needs to schedule a task
+    or a notification with a provided data
     that can be manipulated by CRUD commands.
 
     E.g. CRUD operations for a Reminder Skill
@@ -96,9 +102,12 @@ class ScheduledCRUDSkill(ScheduledSkill):
         self.load_repeat_data()
         self.load_data_files(self.basedir)
         self.register_regex("(?P<" + self.name + "Amount>\d+)")
-        self.register_intent(self.build_intent_create().build(), self.handle_create)
-        self.register_intent(self.build_intent_list().build(), self.handle_list)
-        self.register_intent(self.build_intent_delete().build(), self.handle_delete)
+        self.register_intent(
+            self.build_intent_create().build(), self.handle_create)
+        self.register_intent(
+            self.build_intent_list().build(), self.handle_list)
+        self.register_intent(
+            self.build_intent_delete().build(), self.handle_delete)
         self.schedule()
 
     @abc.abstractmethod
@@ -110,14 +119,17 @@ class ScheduledCRUDSkill(ScheduledSkill):
         pass
 
     def build_intent_create(self):
-        return IntentBuilder(self.name + 'CreateIntent').require(self.name + 'CreateVerb')
+        return IntentBuilder(
+            self.name + 'CreateIntent').require(self.name + 'CreateVerb')
 
     def build_intent_list(self):
-        return IntentBuilder(self.name + 'ListIntent').require(self.name + 'ListVerb') \
+        return IntentBuilder(
+            self.name + 'ListIntent').require(self.name + 'ListVerb') \
             .optionally(self.name + 'Amount').require(self.name + 'Keyword')
 
     def build_intent_delete(self):
-        return IntentBuilder(self.name + 'DeleteIntent').require(self.name + 'DeleteVerb') \
+        return IntentBuilder(
+            self.name + 'DeleteIntent').require(self.name + 'DeleteVerb') \
             .optionally(self.name + 'Amount').require(self.name + 'Keyword')
 
     def get_times(self):
@@ -136,7 +148,8 @@ class ScheduledCRUDSkill(ScheduledSkill):
             self.speak_dialog('schedule.datetime.error')
 
     def feedback_create(self, utc_time):
-        self.speak_dialog('schedule.create', data=self.build_feedback_payload(utc_time))
+        self.speak_dialog(
+            'schedule.create', data=self.build_feedback_payload(utc_time))
 
     def add_sync(self, utc_time, message):
         with self.LOCK:
@@ -193,7 +206,8 @@ class ScheduledCRUDSkill(ScheduledSkill):
             self.speak_dialog('schedule.list.empty')
 
     def feedback_list(self, utc_time):
-        self.speak_dialog('schedule.list', data=self.build_feedback_payload(utc_time))
+        self.speak_dialog(
+            'schedule.list', data=self.build_feedback_payload(utc_time))
 
     def build_feedback_payload(self, utc_time):
         timestamp = self.convert_local(float(utc_time))
@@ -222,7 +236,8 @@ class ScheduledCRUDSkill(ScheduledSkill):
         if amount > 1:
             self.speak_dialog('schedule.delete.many', data={'amount': amount})
         else:
-            self.speak_dialog('schedule.delete.single', data={'amount': amount})
+            self.speak_dialog(
+                'schedule.delete.single', data={'amount': amount})
 
     # TODO - Localization
     def get_amount(self, message, default=None):

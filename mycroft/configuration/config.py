@@ -10,9 +10,11 @@ from mycroft.util.log import getLogger
 __author__ = 'seanfitz'
 
 logger = getLogger(__name__)
-DEFAULTS_FILE = os.path.join(os.path.dirname(__file__), 'defaults', 'defaults.ini')
+DEFAULTS_FILE = os.path.join(
+    os.path.dirname(__file__), 'defaults', 'defaults.ini')
 ETC_CONFIG_FILE = '/etc/mycroft/mycroft.ini'
-USER_CONFIG_FILE = os.path.join(os.path.expanduser('~'), '.mycroft/mycroft.ini')
+USER_CONFIG_FILE = os.path.join(
+    os.path.expanduser('~'), '.mycroft/mycroft.ini')
 DEFAULT_LOCATIONS = [DEFAULTS_FILE, ETC_CONFIG_FILE, USER_CONFIG_FILE]
 
 
@@ -35,7 +37,8 @@ class ConfigurationLoader(object):
 
     def load(self):
         """
-        Loads configuration files from disk, in the locations defined by DEFAULT_LOCATIONS
+        Loads configuration files from disk, in the locations defined by
+        DEFAULT_LOCATIONS
         """
         config = {}
         for config_file in self.config_locations:
@@ -45,10 +48,12 @@ class ConfigurationLoader(object):
                     cobj = ConfigObj(config_file)
                     config = ConfigurationLoader._overwrite_merge(config, cobj)
                 except Exception, e:
-                    logger.error("Error loading config file [%s]" % config_file)
+                    logger.error(
+                        "Error loading config file [%s]" % config_file)
                     logger.error(repr(e))
             else:
-                logger.debug("Could not find config file at [%s]" % config_file)
+                logger.debug(
+                    "Could not find config file at [%s]" % config_file)
         return config
 
 
@@ -70,23 +75,32 @@ class RemoteConfiguration(object):
     def update(self):
         config = self.config_manager.get_config()
         remote_config_url = config.get("remote_configuration").get("url")
-        enabled = str2bool(config.get("remote_configuration").get("enabled", "False"))
+        enabled = str2bool(
+            config.get("remote_configuration").get("enabled", "False"))
         if enabled and self.identity.token:
-            auth_header = "Bearer %s:%s" % (self.identity.device_id, self.identity.token)
+            auth_header = "Bearer %s:%s" % (
+                self.identity.device_id, self.identity.token)
             try:
-                response = requests.get(remote_config_url, headers={"Authorization": auth_header})
+                response = requests.get(
+                    remote_config_url, headers={"Authorization": auth_header})
                 user = response.json()
                 for attribute in user["attributes"]:
                     attribute_name = attribute.get("attribute_name")
-                    core_config_name = self.remote_config_mapping.get(attribute_name)
+                    core_config_name = self.remote_config_mapping.get(
+                        attribute_name)
                     if core_config_name:
-                        config["core"][core_config_name] = str(attribute.get("attribute_value"))
-                        logger.info("Accepting remote configuration: core[%s] == %s" % (core_config_name, attribute["attribute_value"]))
+                        config["core"][core_config_name] = str(
+                            attribute.get("attribute_value"))
+                        logger.info(
+                            "Accepting remote configuration: core[%s] == %s" %
+                            (core_config_name, attribute["attribute_value"]))
             except Exception as e:
-                logger.error("Failed to fetch remote configuration: %s" % repr(e))
+                logger.error(
+                    "Failed to fetch remote configuration: %s" % repr(e))
 
         else:
-            logger.debug("Device not paired, cannot retrieve remote configuration.")
+            logger.debug(
+                "Device not paired, cannot retrieve remote configuration.")
 
 
 class ConfigurationManager(object):
@@ -101,7 +115,8 @@ class ConfigurationManager(object):
         Load default config files as well as any additionally specified files.
         Now also loads configuration from Cerberus (if device is paired)
 
-        :param config_files: An array of config file paths in addition to DEFAULT_LOCATIONS
+        :param config_files: An array of config file paths in addition to
+        DEFAULT_LOCATIONS
 
         :return: None
         """

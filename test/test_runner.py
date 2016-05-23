@@ -1,11 +1,13 @@
 from mycroft.configuration.config import ConfigurationManager
 
-__author__ = 'seanfitz'
 import unittest
 
 from xmlrunner import XMLTestRunner
 import os
 import sys
+
+
+__author__ = 'seanfitz'
 
 
 TEST_DIR = os.path.dirname(os.path.realpath(__file__))

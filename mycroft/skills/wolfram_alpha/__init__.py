@@ -18,14 +18,19 @@ logger = getLogger(__name__)
 
 class EnglishQuestionParser(object):
     """
-    Poor-man's english question parser. Not even close to conclusive, but appears to construct some decent w|a queries
-    and responses.
+    Poor-man's english question parser. Not even close to conclusive, but
+    appears to construct some decent w|a queries and responses.
     """
 
     def __init__(self):
         self.regexes = [
-            re.compile(".*(?P<QuestionWord>who|what|when|where|why|which) (?P<Query1>.*) (?P<QuestionVerb>is|are|was|were) (?P<Query2>.*)"),
-            re.compile(".*(?P<QuestionWord>who|what|when|where|why|which) (?P<QuestionVerb>\w+) (?P<Query>.*)")
+            re.compile(
+                ".*(?P<QuestionWord>who|what|when|where|why|which) "
+                "(?P<Query1>.*) (?P<QuestionVerb>is|are|was|were) "
+                "(?P<Query2>.*)"),
+            re.compile(
+                ".*(?P<QuestionWord>who|what|when|where|why|which) "
+                "(?P<QuestionVerb>\w+) (?P<Query>.*)")
         ]
 
     def _normalize(self, groupdict):
@@ -35,7 +40,8 @@ class EnglishQuestionParser(object):
             return {
                 'QuestionWord': groupdict.get('QuestionWord'),
                 'QuestionVerb': groupdict.get('QuestionVerb'),
-                'Query': ' '.join([groupdict.get('Query1'), groupdict.get('Query2')])
+                'Query': ' '.join([groupdict.get('Query1'), groupdict.get(
+                    'Query2')])
             }
 
     def parse(self, utterance):
@@ -85,7 +91,8 @@ class WolframAlphaSkill(MycroftSkill):
         self.emitter.on('intent_failure', self.handle_fallback)
 
     def handle_fallback(self, message):
-        logger.debug("Could not determine intent, falling back to WolframAlpha Skill!")
+        logger.debug(
+            "Could not determine intent, falling back to WolframAlpha Skill!")
         utterance = message.metadata.get('utterance')
         parsed_question = self.question_parser.parse(utterance)
 
@@ -96,7 +103,9 @@ class WolframAlphaSkill(MycroftSkill):
             self.speak("I am searching for " + utterance)
         query = utterance
         if parsed_question:
-            query = "%s %s %s" % (parsed_question.get('QuestionWord'), parsed_question.get('QuestionVerb'), parsed_question.get('Query'))
+            query = "%s %s %s" % (parsed_question.get('QuestionWord'),
+                                  parsed_question.get('QuestionVerb'),
+                                  parsed_question.get('Query'))
 
         try:
             res = self.client.query(query)
@@ -115,7 +124,8 @@ class WolframAlphaSkill(MycroftSkill):
                 result = self.__find_value(res.pods, 'Value')
 
                 if not result:
-                    result = self.__find_value(res.pods, 'DecimalApproximation')
+                    result = self.__find_value(
+                        res.pods, 'DecimalApproximation')
                     result = result[:5]
             except:
                 pass
@@ -125,7 +135,8 @@ class WolframAlphaSkill(MycroftSkill):
             verb = "is"
             structured_syntax_regex = re.compile(".*(\||\[|\\\\|\]).*")
             if parsed_question:
-                if not input_interpretation or structured_syntax_regex.match(input_interpretation):
+                if not input_interpretation or structured_syntax_regex.match(
+                        input_interpretation):
                     input_interpretation = parsed_question.get('Query')
                 verb = parsed_question.get('QuestionVerb')
 

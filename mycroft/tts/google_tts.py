@@ -30,7 +30,9 @@ class GoogleTTSValidator(TTSValidator):
         try:
             gTTS(text='Hi').save(tts.filename)
         except:
-            raise Exception('GoogleTTS server could not be verified. Please check your internet connection.')
+            raise Exception(
+                'GoogleTTS server could not be verified. Please check your '
+                'internet connection.')
 
     def get_instance(self):
         return GoogleTTS

@@ -13,10 +13,12 @@ __author__ = 'jdorleans'
 
 # TODO - Localization, Sandbox
 class ReminderSkill(ScheduledCRUDSkill):
-    PRONOUNS = {'i': 'you', 'me': 'you', 'my': 'your', 'myself': 'yourself', 'am': 'are', "'m": "are", "i'm": "you're"}
+    PRONOUNS = {'i': 'you', 'me': 'you', 'my': 'your', 'myself': 'yourself',
+                'am': 'are', "'m": "are", "i'm": "you're"}
 
     def __init__(self):
-        super(ReminderSkill, self).__init__("ReminderSkill", None, dirname(__file__))
+        super(ReminderSkill, self).__init__(
+            "ReminderSkill", None, dirname(__file__))
         self.reminder_on = False
         self.max_delay = int(self.config.get('max_delay'))
         self.repeat_time = int(self.config.get('repeat_time'))
@@ -24,7 +26,8 @@ class ReminderSkill(ScheduledCRUDSkill):
 
     def initialize(self):
         super(ReminderSkill, self).initialize()
-        intent = IntentBuilder('ReminderSkillStopIntent').require('ReminderSkillStopVerb') \
+        intent = IntentBuilder(
+            'ReminderSkillStopIntent').require('ReminderSkillStopVerb') \
             .require('ReminderSkillKeyword').build()
         self.register_intent(intent, self.__handle_stop)
 
@@ -57,7 +60,9 @@ class ReminderSkill(ScheduledCRUDSkill):
                 delay = self.__calculate_delay(self.max_delay)
 
                 while self.reminder_on and datetime.now() < delay:
-                    self.speak_dialog('reminder.notify', data=self.build_feedback_payload(timestamp))
+                    self.speak_dialog(
+                        'reminder.notify',
+                        data=self.build_feedback_payload(timestamp))
                     time.sleep(1)
                     self.speak_dialog('reminder.stop')
                     time.sleep(self.repeat_time)
@@ -78,7 +83,8 @@ class ReminderSkill(ScheduledCRUDSkill):
 
     def add(self, date, message):
         utterance = message.metadata.get('utterance').lower()
-        utterance = utterance.replace(message.metadata.get('ReminderSkillCreateVerb'), '')
+        utterance = utterance.replace(
+            message.metadata.get('ReminderSkillCreateVerb'), '')
         utterance = self.__fix_pronouns(utterance)
         self.repeat_data[date] = self.time_rules.get_week_days(utterance)
         self.data[date] = self.__remove_time(utterance).strip()

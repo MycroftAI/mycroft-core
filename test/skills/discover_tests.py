@@ -10,10 +10,17 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
 def discover_tests():
     tests = {}
-    skills = [skill for skill in glob.glob(os.path.join(PROJECT_ROOT, 'mycroft/skills/*')) if os.path.isdir(skill)]
+    skills = [
+        skill for skill
+        in glob.glob(os.path.join(PROJECT_ROOT, 'mycroft/skills/*'))
+        if os.path.isdir(skill)
+    ]
 
     for skill in skills:
-        test_intent_files = [f for f in glob.glob(os.path.join(skill, 'test/intent/*.intent.json'))]
+        test_intent_files = [
+            f for f
+            in glob.glob(os.path.join(skill, 'test/intent/*.intent.json'))
+        ]
         if len(test_intent_files) > 0:
             tests[skill] = test_intent_files
 
@@ -31,21 +38,20 @@ class IntentTestSequenceMeta(type):
         for skill in tests.keys():
             skill_name = os.path.basename(skill)
             for example in tests[skill]:
-                example_name = os.path.basename(os.path.splitext(os.path.splitext(example)[0])[0])
-                test_name = "test_IntentValidation[%s:%s]" % (skill_name, example_name)
+                example_name = os.path.basename(
+                    os.path.splitext(os.path.splitext(example)[0])[0])
+                test_name = "test_IntentValidation[%s:%s]" % (skill_name,
+                                                              example_name)
                 d[test_name] = gen_test(skill, example)
         return type.__new__(mcs, name, bases, d)
 
 
 class IntentTestSequence(unittest.TestCase):
     __metaclass__ = IntentTestSequenceMeta
-    
+
     def setUp(self):
-        self.emitter = MockSkillsLoader(os.path.join(PROJECT_ROOT, 'mycroft', 'skills')).load_skills()
+        self.emitter = MockSkillsLoader(
+            os.path.join(PROJECT_ROOT, 'mycroft', 'skills')).load_skills()
 
 if __name__ == '__main__':
     unittest.main()
-
-
-
-

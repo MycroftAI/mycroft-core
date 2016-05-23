@@ -15,7 +15,8 @@ def create():
     """
     Factory method to create a TTS engine based on configuration.
 
-    The configuration file ``defaults.ini`` contains a ``tts`` section with the name of a TTS module to be read by this method.
+    The configuration file ``defaults.ini`` contains a ``tts`` section with
+    the name of a TTS module to be read by this method.
 
     [tts]
 

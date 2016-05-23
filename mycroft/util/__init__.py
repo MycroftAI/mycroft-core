@@ -21,9 +21,12 @@ def play_mp3(file_path):
 
 def record(file_path, duration, rate, channels):
     if duration > 0:
-        return subprocess.Popen(["arecord", "-r", str(rate), "-c", str(channels), "-d", str(duration), file_path])
+        return subprocess.Popen(
+            ["arecord", "-r", str(rate), "-c", str(channels), "-d",
+             str(duration), file_path])
     else:
-        return subprocess.Popen(["arecord", "-r", str(rate), "-c", str(channels), file_path])
+        return subprocess.Popen(
+            ["arecord", "-r", str(rate), "-c", str(channels), file_path])
 
 
 def remove_last_slash(url):
@@ -65,6 +68,7 @@ def kill(names):
                     break
             except:
                 pass
+
 
 class CerberusAccessDenied(Exception):
     pass

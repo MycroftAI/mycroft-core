@@ -38,22 +38,25 @@ class MustacheDialogRenderer(object):
 
     def render(self, template_name, context={}, index=None):
         """
-        Given a template name, pick a template and render it with the provided context.
+        Given a template name, pick a template and render it with the provided
+        context.
 
         :param template_name: the name of a template group.
 
         :param context: dictionary representing values to be rendered
 
-        :param index: optional, the specific index in the collection of templates
+        :param index: optional, the specific index in the collection of
+            templates
 
-        :raises NotImplementedError: if no template can be found identified by template_name
+        :raises NotImplementedError: if no template can be found identified by
+            template_name
 
         :return:
         """
         if template_name not in self.templates:
             raise NotImplementedError("Template not found: %s" % template_name)
         template_functions = self.templates.get(template_name)
-        if index == None:
+        if index is None:
             index = random.randrange(len(template_functions))
         else:
             index %= len(template_functions)
@@ -79,10 +82,11 @@ class DialogLoader(object):
             logger.warn("No dialog found: " + dialog_dir)
             return self.__renderer
 
-        for f in sorted(filter(lambda x: os.path.isfile(os.path.join(dialog_dir, x)), os.listdir(dialog_dir))):
+        for f in sorted(
+                filter(lambda x: os.path.isfile(
+                    os.path.join(dialog_dir, x)), os.listdir(dialog_dir))):
             dialog_entry_name = os.path.splitext(f)[0]
-            self.__renderer.load_template_file(dialog_entry_name, os.path.join(dialog_dir, f))
+            self.__renderer.load_template_file(
+                dialog_entry_name, os.path.join(dialog_dir, f))
 
         return self.__renderer
-
-

@@ -10,7 +10,8 @@ __author__ = 'jdorleans'
 config = ConfigurationManager.get_config().get("tts", {})
 
 NAME = 'mimic'
-BIN = config.get("mimic.path", join(MYCROFT_ROOT_PATH, 'mimic', 'bin', 'mimic'))
+BIN = config.get(
+    "mimic.path", join(MYCROFT_ROOT_PATH, 'mimic', 'bin', 'mimic'))
 
 
 class Mimic(TTS):
@@ -32,7 +33,9 @@ class MimicValidator(TTSValidator):
         try:
             subprocess.call([BIN, '--version'])
         except:
-            raise Exception('Mimic is not installed. Make sure install-mimic.sh ran properly.')
+            raise Exception(
+                'Mimic is not installed. Make sure install-mimic.sh ran '
+                'properly.')
 
     def get_instance(self):
         return Mimic

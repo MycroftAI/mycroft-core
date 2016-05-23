@@ -21,9 +21,14 @@ class IPSkill(MycroftSkill):
     def handle_intent(self, message):
         self.speak("Here are my available I.P. addresses.")
         for ifaceName in interfaces():
-            addresses = [i['addr'] for i in ifaddresses(ifaceName).setdefault(AF_INET, [{'addr': 'No IP addr'}])]
+            addresses = [
+                i['addr'] for i in
+                ifaddresses(ifaceName).setdefault(
+                    AF_INET, [{'addr': 'No IP addr'}])]
             if ifaceName != "lo":
-                self.speak('%s: %s' % ("interface: " + ifaceName + ", I.P. Address ", ', '.join(addresses)))
+                self.speak('%s: %s' % (
+                    "interface: " + ifaceName +
+                    ", I.P. Address ", ', '.join(addresses)))
         self.speak("Those are all my I.P. addresses.")
 
     def stop(self):

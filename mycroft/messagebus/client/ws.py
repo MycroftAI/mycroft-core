@@ -32,11 +32,12 @@ class WebsocketClient(object):
         self.pool = ThreadPool(10)
 
     def _create_new_connection(self):
-        return WebSocketApp(self.scheme + "://" + self.host + ":" + str(self.port) + self.path,
-                                   on_open=self.on_open,
-                                   on_close=self.on_close,
-                                   on_error=self.on_error,
-                                   on_message=self.on_message)
+        return WebSocketApp(
+            self.scheme + "://" + self.host + ":" + str(self.port) + self.path,
+            on_open=self.on_open,
+            on_close=self.on_close,
+            on_error=self.on_error,
+            on_message=self.on_message)
 
     def on_open(self, ws):
         logger.info("Connected")
@@ -52,7 +53,8 @@ class WebsocketClient(object):
         except Exception, e:
             logger.error(repr(e))
         sleep_time = self.exp_backoff_counter
-        logger.warn("Disconnecting on error, reconnecting in %d seconds." % sleep_time)
+        logger.warn(
+            "Disconnecting on error, reconnecting in %d seconds." % sleep_time)
         self.exp_backoff_counter = min(self.exp_backoff_counter * 2, 60)
         time.sleep(sleep_time)
         self.client = self._create_new_connection()
@@ -61,10 +63,12 @@ class WebsocketClient(object):
     def on_message(self, ws, message):
         self.emitter.emit('message', message)
         parsed_message = Message.deserialize(message)
-        self.pool.apply_async(self.emitter.emit, (parsed_message.message_type, parsed_message))
+        self.pool.apply_async(
+            self.emitter.emit, (parsed_message.message_type, parsed_message))
 
     def emit(self, message):
-        if not self.client or not self.client.sock or not self.client.sock.connected:
+        if (not self.client or not self.client.sock or
+                not self.client.sock.connected):
             return
         if hasattr(message, 'serialize'):
             self.client.send(message.serialize())
@@ -86,6 +90,7 @@ class WebsocketClient(object):
 
 def echo():
     client = WebsocketClient()
+
     def echo(message):
         logger.info(message)
 

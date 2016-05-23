@@ -62,8 +62,7 @@ weather_code_registry = weathercoderegistry.WeatherCodeRegistry({
     "rain": [{
         "start": 500,
         "end": 531
-    },
-    {
+    }, {
         "start": 300,
         "end": 321
     }],
@@ -94,24 +93,21 @@ weather_code_registry = weathercoderegistry.WeatherCodeRegistry({
     "tornado": [{
         "start": 781,
         "end": 781
-    },
-    {
+    }, {
         "start": 900,
         "end": 900
     }],
     "storm": [{
         "start": 901,
         "end": 901
-    },
-    {
+    }, {
         "start": 960,
         "end": 961
     }],
     "hurricane": [{
         "start": 902,
         "end": 902
-    },
-    {
+    }, {
         "start": 962,
         "end": 962
     }]

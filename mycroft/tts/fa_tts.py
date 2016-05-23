@@ -46,7 +46,9 @@ class FATTSValidator(TTSValidator):
             if content['product'].find('FA-TTS') < 0:
                 raise Exception('Invalid FA-TTS server.')
         except:
-            raise Exception('FA-TTS server could not be verified. Check your connection to the server: ' + tts.url)
+            raise Exception(
+                'FA-TTS server could not be verified. Check your connection '
+                'to the server: ' + tts.url)
 
     def get_instance(self):
         return FATTS

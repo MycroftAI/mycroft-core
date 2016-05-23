@@ -31,7 +31,7 @@ def connect():
 def main():
     global client
     client = WebsocketClient()
-    if not '--quiet' in sys.argv:
+    if '--quiet' not in sys.argv:
         client.on('speak', handle_speak)
     event_thread = Thread(target=connect)
     event_thread.setDaemon(True)
@@ -40,7 +40,9 @@ def main():
         while True:
             print("Input:")
             line = sys.stdin.readline()
-            client.emit(Message("recognizer_loop:utterance", metadata={'utterances': [line.strip()]}))
+            client.emit(
+                Message("recognizer_loop:utterance",
+                        metadata={'utterances': [line.strip()]}))
     except KeyboardInterrupt, e:
         event_thread.exit()
         sys.exit()

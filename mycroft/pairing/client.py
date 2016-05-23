@@ -26,10 +26,12 @@ class DevicePairingClient(object):
                                          ssl=str2bool(config.get("ssl")))
         self.identity_manager = IdentityManager()
         self.identity = self.identity_manager.identity
-        self.pairing_code = pairing_code if pairing_code else generate_pairing_code()
+        self.pairing_code = (
+            pairing_code if pairing_code else generate_pairing_code())
 
     def on_registration(self, message):
-        # TODO: actually accept the configuration message and store it in identity
+        # TODO: actually accept the configuration message and store it in
+        # identity
         identity = self.identity_manager.get()
         register_payload = message.metadata
         if register_payload.get("device_id") == identity.device_id:
@@ -55,7 +57,6 @@ class DevicePairingClient(object):
         self.ws_client.on('open', self.send_device_info)
         self.ws_client.on('error', self.print_error)
         self.ws_client.run_forever()
-
 
 
 def main():

@@ -12,7 +12,8 @@ LOGGER = getLogger(__name__)
 
 
 class VolumeSkill(MycroftSkill):
-    VOLUMES = {0: 0, 1: 15, 2: 25, 3: 35, 4: 45, 5: 55, 6: 65, 7: 70, 8: 80, 9: 90, 10: 95, 11: 100}
+    VOLUMES = {0: 0, 1: 15, 2: 25, 3: 35, 4: 45, 5: 55, 6: 65, 7: 70, 8: 80,
+               9: 90, 10: 95, 11: 100}
 
     def __init__(self):
         super(VolumeSkill, self).__init__(name="VolumeSkill")
@@ -24,19 +25,24 @@ class VolumeSkill(MycroftSkill):
         self.__build_set_volume()
 
     def __build_set_volume(self):
-        intent = IntentBuilder("SetVolumeIntent").require("VolumeKeyword").require("VolumeAmount").build()
+        intent = IntentBuilder("SetVolumeIntent").require(
+            "VolumeKeyword").require("VolumeAmount").build()
         self.register_intent(intent, self.handle_set_volume)
 
-        intent = IntentBuilder("IncreaseVolumeIntent").require("IncreaseVolumeKeyword").build()
+        intent = IntentBuilder("IncreaseVolumeIntent").require(
+            "IncreaseVolumeKeyword").build()
         self.register_intent(intent, self.handle_increase_volume)
 
-        intent = IntentBuilder("DecreaseVolumeIntent").require("DecreaseVolumeKeyword").build()
+        intent = IntentBuilder("DecreaseVolumeIntent").require(
+            "DecreaseVolumeKeyword").build()
         self.register_intent(intent, self.handle_decrease_volume)
 
-        intent = IntentBuilder("MuteVolumeIntent").require("MuteVolumeKeyword").build()
+        intent = IntentBuilder("MuteVolumeIntent").require(
+            "MuteVolumeKeyword").build()
         self.register_intent(intent, self.handle_mute_volume)
 
-        intent = IntentBuilder("ResetVolumeIntent").require("ResetVolumeKeyword").build()
+        intent = IntentBuilder("ResetVolumeIntent").require(
+            "ResetVolumeKeyword").build()
         self.register_intent(intent, self.handle_reset_volume)
 
     def handle_set_volume(self, message):
@@ -60,7 +66,9 @@ class VolumeSkill(MycroftSkill):
 
     def handle_reset_volume(self, message):
         Mixer().setvolume(self.default_volume)
-        self.speak_dialog('reset.volume', data={'volume': self.get_volume_code(self.default_volume)})
+        self.speak_dialog(
+            'reset.volume',
+            data={'volume': self.get_volume_code(self.default_volume)})
 
     def __update_volume(self, level=0):
         mixer = Mixer()

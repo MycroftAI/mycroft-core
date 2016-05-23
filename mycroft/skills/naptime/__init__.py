@@ -13,7 +13,8 @@ class NapTimeSkill(MycroftSkill):
         super(NapTimeSkill, self).__init__(name="NapTimeSkill")
 
     def initialize(self):
-        intent_parser = IntentBuilder("NapTimeIntent").require("SleepCommand").build()
+        intent_parser = IntentBuilder("NapTimeIntent").require(
+            "SleepCommand").build()
         self.register_intent(intent_parser, self.handle_intent)
         self.load_vocab_files(join(dirname(__file__), 'vocab', 'en-us'))
 

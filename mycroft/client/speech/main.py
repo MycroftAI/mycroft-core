@@ -16,6 +16,7 @@ loop = None
 
 config = ConfigurationManager.get_config()
 
+
 def handle_listening():
     logger.info("Listening...")
     client.emit(Message('recognizer_loop:listening'))
@@ -79,7 +80,9 @@ def main():
     loop.on('recognizer_loop:utterance', handle_utterance)
     loop.on('speak', handle_speak)
     client.on('speak', handle_speak)
-    client.on('multi_utterance_intent_failure', handle_multi_utterance_intent_failure)
+    client.on(
+        'multi_utterance_intent_failure',
+        handle_multi_utterance_intent_failure)
     client.on('recognizer_loop:sleep', handle_sleep)
     client.on('recognizer_loop:wake_up', handle_wake_up)
     event_thread = Thread(target=connect)

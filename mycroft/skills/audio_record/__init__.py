@@ -31,19 +31,24 @@ class AudioRecordSkill(ScheduledSkill):
     def initialize(self):
         self.load_data_files(dirname(__file__))
 
-        intent = IntentBuilder("AudioRecordSkillIntent").require("AudioRecordSkillKeyword").build()
+        intent = IntentBuilder("AudioRecordSkillIntent").require(
+            "AudioRecordSkillKeyword").build()
         self.register_intent(intent, self.handle_record)
 
-        intent = IntentBuilder('AudioRecordSkillStopIntent').require('AudioRecordSkillStopVerb') \
+        intent = IntentBuilder('AudioRecordSkillStopIntent').require(
+            'AudioRecordSkillStopVerb') \
             .require('AudioRecordSkillKeyword').build()
         self.register_intent(intent, self.handle_stop)
 
-        intent = IntentBuilder('AudioRecordSkillPlayIntent').require('AudioRecordSkillPlayVerb') \
+        intent = IntentBuilder('AudioRecordSkillPlayIntent').require(
+            'AudioRecordSkillPlayVerb') \
             .require('AudioRecordSkillKeyword').build()
         self.register_intent(intent, self.handle_play)
 
-        intent = IntentBuilder('AudioRecordSkillStopPlayIntent').require('AudioRecordSkillStopVerb') \
-            .require('AudioRecordSkillPlayVerb').require('AudioRecordSkillKeyword').build()
+        intent = IntentBuilder('AudioRecordSkillStopPlayIntent').require(
+            'AudioRecordSkillStopVerb') \
+            .require('AudioRecordSkillPlayVerb').require(
+                'AudioRecordSkillKeyword').build()
         self.register_intent(intent, self.handle_stop_play)
 
     def handle_record(self, message):
@@ -55,7 +60,8 @@ class AudioRecordSkill(ScheduledSkill):
             self.notify_time = now
             self.feedback_start()
             time.sleep(3)
-            self.record_process = record(self.file_path, self.duration, self.rate, self.channels)
+            self.record_process = record(
+                self.file_path, self.duration, self.rate, self.channels)
             self.schedule()
         else:
             self.speak_dialog("audio.record.disk.full")
@@ -76,7 +82,8 @@ class AudioRecordSkill(ScheduledSkill):
 
     def feedback_start(self):
         if self.duration > 0:
-            self.speak_dialog('audio.record.start.duration', {'duration': self.duration})
+            self.speak_dialog(
+                'audio.record.start.duration', {'duration': self.duration})
         else:
             self.speak_dialog('audio.record.start')
 

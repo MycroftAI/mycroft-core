@@ -11,8 +11,6 @@ settings = {
 }
 
 
-
-
 def main():
     import tornado.options
     tornado.options.parse_command_line()

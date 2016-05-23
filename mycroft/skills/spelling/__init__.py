@@ -14,10 +14,12 @@ class SpellingSkill(MycroftSkill):
     def initialize(self):
         self.load_vocab_files(join(dirname(__file__), 'vocab', 'en-us'))
 
-        prefixes = ['spell', 'spell the word', 'spelling of', 'spelling of the word']
+        prefixes = [
+            'spell', 'spell the word', 'spelling of', 'spelling of the word']
         self.__register_prefixed_regex(prefixes, "(?P<Word>\w+)")
 
-        intent = IntentBuilder("SpellingIntent").require("SpellingKeyword").require("Word").build()
+        intent = IntentBuilder("SpellingIntent").require(
+            "SpellingKeyword").require("Word").build()
         self.register_intent(intent, self.handle_intent)
 
     def __register_prefixed_regex(self, prefixes, suffix_regex):

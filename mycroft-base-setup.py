@@ -1,6 +1,11 @@
 from setuptools import setup
 
-from mycroft.util.setup_base import find_all_packages, required, get_version, place_manifest
+from mycroft.util.setup_base import (
+    find_all_packages,
+    required,
+    get_version,
+    place_manifest
+)
 
 __author__ = 'seanfitz'
 

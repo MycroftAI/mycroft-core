@@ -21,7 +21,8 @@ class EnclosureReader(Thread):
     """
     Reads data from Serial port.
 
-    Listens to all commands sent by Arduino that must be be performed on Mycroft Core.
+    Listens to all commands sent by Arduino that must be be performed on
+    Mycroft Core.
 
     E.g. Mycroft Stop Feature
         #. Arduino sends a Stop command after a button press on a Mycroft unit
@@ -62,7 +63,8 @@ class EnclosureReader(Thread):
 class EnclosureWriter(Thread):
     """
     Writes data to Serial port.
-        #. Enqueues all commands received from Mycroft enclosures implementation
+        #. Enqueues all commands received from Mycroft enclosures
+           implementation
         #. Process them on the received order by writing on the Serial port
 
     E.g. Displaying a text on Mycroft's Mouth
@@ -109,7 +111,8 @@ class Enclosure:
 
     E.g. ``EnclosureEyes``, ``EnclosureMouth`` and ``EnclosureArduino``
 
-    It also listens to the basis events in order to perform those core actions on the unit.
+    It also listens to the basis events in order to perform those core actions
+    on the unit.
 
     E.g. Start and Stop talk animation
     """
@@ -130,10 +133,14 @@ class Enclosure:
             self.port = self.config.get("port")
             self.rate = int(self.config.get("rate"))
             self.timeout = int(self.config.get("timeout"))
-            self.serial = serial.serial_for_url(url=self.port, baudrate=self.rate, timeout=self.timeout)
-            LOGGER.info("Connected to: " + self.port + " rate: " + str(self.rate) + " timeout: " + str(self.timeout))
+            self.serial = serial.serial_for_url(
+                url=self.port, baudrate=self.rate, timeout=self.timeout)
+            LOGGER.info(
+                "Connected to: " + self.port + " rate: " + str(self.rate) +
+                " timeout: " + str(self.timeout))
         except:
-            LOGGER.error("It is not possible to connect to serial port: " + self.port)
+            LOGGER.error(
+                "It is not possible to connect to serial port: " + self.port)
             raise
 
     def __init_events(self):

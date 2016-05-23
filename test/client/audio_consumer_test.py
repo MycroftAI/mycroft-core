@@ -2,8 +2,15 @@ from Queue import Queue
 from os.path import dirname, join
 import unittest
 from speech_recognition import WavFile, AudioData
-from mycroft.client.speech.listener import WakewordExtractor, AudioConsumer, RecognizerLoop
-from mycroft.client.speech.recognizer_wrapper import RemoteRecognizerWrapperFactory
+from mycroft.client.speech.listener import (
+    WakewordExtractor,
+    AudioConsumer,
+    RecognizerLoop
+)
+from mycroft.client.speech.recognizer_wrapper import (
+    RemoteRecognizerWrapperFactory
+)
+
 
 __author__ = 'seanfitz'
 
@@ -34,27 +41,38 @@ class AudioConsumerTest(unittest.TestCase):
             self.loop,
             self.loop.wakeup_recognizer,
             self.loop.ww_recognizer,
-            RemoteRecognizerWrapperFactory.wrap_recognizer(self.recognizer, 'google'),
+            RemoteRecognizerWrapperFactory.wrap_recognizer(
+                self.recognizer, 'google'),
             self.loop.wakeup_prefixes,
             self.loop.wakeup_words)
 
     def __create_sample_from_test_file(self, sample_name):
         root_dir = dirname(dirname(dirname(__file__)))
-        filename = join(root_dir, 'test', 'client', 'data', sample_name + '.wav')
+        filename = join(
+            root_dir, 'test', 'client', 'data', sample_name + '.wav')
         wavfile = WavFile(filename)
         with wavfile as source:
-            return AudioData(source.stream.read(), wavfile.SAMPLE_RATE, wavfile.SAMPLE_WIDTH)
+            return AudioData(
+                source.stream.read(), wavfile.SAMPLE_RATE,
+                wavfile.SAMPLE_WIDTH)
 
     def test_audio_pos_front_back(self):
         audio = self.__create_sample_from_test_file('mycroft_in_utterance')
         self.queue.put(audio)
-        TRUE_POS_BEGIN = 69857 + int(WakewordExtractor.TRIM_SECONDS * audio.sample_rate * audio.sample_width)
-        TRUE_POS_END = 89138 - int(WakewordExtractor.TRIM_SECONDS * audio.sample_rate * audio.sample_width)
+        TRUE_POS_BEGIN = 69857 + int(
+            WakewordExtractor.TRIM_SECONDS * audio.sample_rate *
+            audio.sample_width)
+        TRUE_POS_END = 89138 - int(
+            WakewordExtractor.TRIM_SECONDS * audio.sample_rate *
+            audio.sample_width)
 
-        TOLERANCE_RANGE_FRAMES = WakewordExtractor.MAX_ERROR_SECONDS * audio.sample_rate * audio.sample_width
+        TOLERANCE_RANGE_FRAMES = (
+            WakewordExtractor.MAX_ERROR_SECONDS * audio.sample_rate *
+            audio.sample_width)
 
         monitor = {}
-        self.recognizer.set_transcriptions(["what's the weather next week", ""])
+        self.recognizer.set_transcriptions(
+            ["what's the weather next week", ""])
 
         def wakeword_callback(message):
             monitor['pos_begin'] = message.get('pos_begin')
@@ -66,17 +84,22 @@ class AudioConsumerTest(unittest.TestCase):
         pos_begin = monitor.get('pos_begin')
         self.assertIsNotNone(pos_begin)
         diff = abs(pos_begin - TRUE_POS_BEGIN)
-        self.assertTrue(diff <= TOLERANCE_RANGE_FRAMES, str(diff) + " is not less than " + str(TOLERANCE_RANGE_FRAMES))
+        self.assertTrue(
+            diff <= TOLERANCE_RANGE_FRAMES,
+            str(diff) + " is not less than " + str(TOLERANCE_RANGE_FRAMES))
 
         pos_end = monitor.get('pos_end')
         self.assertIsNotNone(pos_end)
         diff = abs(pos_end - TRUE_POS_END)
-        self.assertTrue(diff <= TOLERANCE_RANGE_FRAMES, str(diff) + " is not less than " + str(TOLERANCE_RANGE_FRAMES))
+        self.assertTrue(
+            diff <= TOLERANCE_RANGE_FRAMES,
+            str(diff) + " is not less than " + str(TOLERANCE_RANGE_FRAMES))
 
     def test_wakeword_in_beginning(self):
         self.queue.put(self.__create_sample_from_test_file('mycroft'))
         monitor = {}
-        self.recognizer.set_transcriptions(["what's the weather next week", ""])
+        self.recognizer.set_transcriptions([
+            "what's the weather next week", ""])
 
         def callback(message):
             monitor['utterances'] = message.get('utterances')
@@ -91,7 +114,8 @@ class AudioConsumerTest(unittest.TestCase):
     def test_wakeword_in_phrase(self):
         self.queue.put(self.__create_sample_from_test_file('mycroft'))
         monitor = {}
-        self.recognizer.set_transcriptions(["he can do other stuff too", "what's the weather in cincinnati"])
+        self.recognizer.set_transcriptions([
+            "he can do other stuff too", "what's the weather in cincinnati"])
 
         def callback(message):
             monitor['utterances'] = message.get('utterances')
@@ -107,7 +131,7 @@ class AudioConsumerTest(unittest.TestCase):
     def test_call_and_response(self):
         self.queue.put(self.__create_sample_from_test_file('mycroft'))
         monitor = {}
-        self.recognizer.set_transcriptions(["mycroft",""])
+        self.recognizer.set_transcriptions(["mycroft", ""])
 
         def wakeword_callback(message):
             monitor['wakeword'] = message.get('utterance')
@@ -121,7 +145,8 @@ class AudioConsumerTest(unittest.TestCase):
         self.assertIsNotNone(monitor.get('wakeword'))
 
         self.queue.put(self.__create_sample_from_test_file('mycroft'))
-        self.recognizer.set_transcriptions(["what's the weather next week", ""])
+        self.recognizer.set_transcriptions(
+            ["what's the weather next week", ""])
         self.loop.once('recognizer_loop:utterance', utterance_callback)
         self.consumer.try_consume_audio()
 

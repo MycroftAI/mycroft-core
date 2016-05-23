@@ -12,4 +12,6 @@ install:
  - pip install -r requirements.txt
  - pip install -r test-requirements.txt
 # command to run tests
-script: "PYTHONPATH=. python test/test_runner.py --fail-on-error"
+script:
+ - pep8 mycroft test
+ - "PYTHONPATH=. python test/test_runner.py --fail-on-error"

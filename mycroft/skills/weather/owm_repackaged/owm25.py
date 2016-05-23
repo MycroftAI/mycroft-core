@@ -32,8 +32,9 @@ class OWM25(owm.OWM):
     :param cache: a concrete implementation of class *OWMCache* serving as the
         cache provider (defaults to a *NullCache* instance)
     :type cache: an *OWMCache* concrete instance
-    :param language: the language in which you want text results to be returned.
-          It's a two-characters string, eg: "en", "ru", "it". Defaults to: "en"
+    :param language: the language in which you want text results to be
+        returned. It's a two-characters string, eg: "en", "ru", "it". Defaults
+        to: "en"
     :type language: str
     :returns: an *OWM25* instance
 
@@ -44,14 +45,16 @@ class OWM25(owm.OWM):
         if API_key is not None:
             OWM25._assert_is_string("API_key", API_key)
         self._API_key = API_key
-        self._httpclient = owmhttpclient.OWMHTTPClient(API_key, cache, identity)
+        self._httpclient = owmhttpclient.OWMHTTPClient(
+            API_key, cache, identity)
         self._language = language
 
     @staticmethod
     def _assert_is_string(name, value):
         try:
             # Python 2.x
-            assert isinstance(value, basestring), "'%s' must be a str" % (name,)
+            assert(isinstance(value, basestring),
+                   "'%s' must be a str" % (name,))
         except NameError:
             # Python 3.x
             assert isinstance(value, str), "'%s' must be a str" % (name,)
@@ -114,8 +117,8 @@ class OWM25(owm.OWM):
 
     def city_id_registry(self):
         """
-        Gives the *CityIDRegistry* singleton instance that can be used to lookup
-        for city IDs.
+        Gives the *CityIDRegistry* singleton instance that can be used to
+        lookup for city IDs.
 
         :returns: a *CityIDRegistry* instance
         """
@@ -149,8 +152,9 @@ class OWM25(owm.OWM):
             reached
         """
         OWM25._assert_is_string("name", name)
-        json_data = self._httpclient.call_API(OBSERVATION_URL,
-                                          {'q': name,'lang': self._language})
+        json_data = self._httpclient.call_API(
+            OBSERVATION_URL,
+            {'q': name, 'lang': self._language})
         return self._parsers['observation'].parse_JSON(json_data)
 
     def weather_at_coords(self, lat, lon):
@@ -240,8 +244,8 @@ class OWM25(owm.OWM):
 
     def weather_at_station(self, station_id):
         """
-        Queries the OWM web API for the weather currently observed by a specific
-        meteostation (eg: 29584)
+        Queries the OWM web API for the weather currently observed by a
+        specific meteostation (eg: 29584)
 
         :param station_id: the meteostation ID
         :type station_id: int
@@ -272,8 +276,8 @@ class OWM25(owm.OWM):
         :param lon_top_left: longitude for top-left of bounding box
             must be between -180.0 and 180.0
         :type lon_top_left: int/float
-        :param lat_bottom_right: latitude for bottom-right of bounding box, must
-            be between -90.0 and 90.0
+        :param lat_bottom_right: latitude for bottom-right of bounding box,
+            must be between -90.0 and 90.0
         :type lat_bottom_right: int/float
         :param lon_bottom_right: longitude for bottom-right of bounding box,
             must be between -180.0 and 180.0
@@ -291,34 +295,34 @@ class OWM25(owm.OWM):
             negative values are provided for limit
         """
         assert type(lat_top_left) in (float, int), \
-                "'lat_top_left' must be a float"
+            "'lat_top_left' must be a float"
         assert type(lon_top_left) in (float, int), \
-                "'lon_top_left' must be a float"
+            "'lon_top_left' must be a float"
         assert type(lat_bottom_right) in (float, int), \
-                "'lat_bottom_right' must be a float"
+            "'lat_bottom_right' must be a float"
         assert type(lon_bottom_right) in (float, int), \
-                "'lon_bottom_right' must be a float"
+            "'lon_bottom_right' must be a float"
         assert type(cluster) is bool, "'cluster' must be a bool"
         assert type(limit) in (int, type(None)), \
-                "'limit' must be an int or None"
+            "'limit' must be an int or None"
         if lat_top_left < -90.0 or lat_top_left > 90.0:
             raise ValueError("'lat_top_left' value must be between -90 and 90")
         if lon_top_left < -180.0 or lon_top_left > 180.0:
-            raise ValueError("'lon_top_left' value must be between -180 and" \
-                             +" 180")
+            raise ValueError("'lon_top_left' value must be between -180 and" +
+                             " 180")
         if lat_bottom_right < -90.0 or lat_bottom_right > 90.0:
-            raise ValueError("'lat_bottom_right' value must be between -90" \
-                             +" and 90")
+            raise ValueError("'lat_bottom_right' value must be between -90" +
+                             " and 90")
         if lon_bottom_right < -180.0 or lon_bottom_right > 180.0:
-            raise ValueError("'lon_bottom_right' value must be between -180 "\
-                             +"and 180")
+            raise ValueError("'lon_bottom_right' value must be between -180 " +
+                             "and 180")
         if limit is not None and limit < 1:
             raise ValueError("'limit' must be None or greater than zero")
         params = {'bbox': ','.join([str(lon_top_left),
                                     str(lat_top_left),
                                     str(lon_bottom_right),
                                     str(lat_bottom_right)]),
-                  'cluster': 'yes' if cluster else 'no',}
+                  'cluster': 'yes' if cluster else 'no', }
         if limit is not None:
             params['cnt'] = limit
 
@@ -376,8 +380,9 @@ class OWM25(owm.OWM):
             reached
         """
         OWM25._assert_is_string("name", name)
-        json_data = self._httpclient.call_API(THREE_HOURS_FORECAST_URL,
-                                          {'q': name, 'lang': self._language})
+        json_data = self._httpclient.call_API(
+            THREE_HOURS_FORECAST_URL,
+            {'q': name, 'lang': self._language})
         forecast = self._parsers['forecast'].parse_JSON(json_data)
         if forecast is not None:
             forecast.set_interval("3h")
@@ -487,7 +492,8 @@ class OWM25(owm.OWM):
     def daily_forecast_at_coords(self, lat, lon, limit=None):
         """
         Queries the OWM web API for daily weather forecast for the specified
-        geographic coordinate (eg: latitude: 51.5073509, longitude: -0.1277583).
+        geographic coordinate (eg: latitude: 51.5073509,
+        longitude: -0.1277583).
         A *Forecaster* object is returned, containing a *Forecast* instance
         covering a global streak of fourteen days by default: this instance
         encapsulates *Weather* objects, with a time interval of one day one
@@ -567,7 +573,6 @@ class OWM25(owm.OWM):
         else:
             return None
 
-
     def weather_history_at_place(self, name, start=None, end=None):
         """
         Queries the OWM web API for weather history for the specified location
@@ -602,16 +607,16 @@ class OWM25(owm.OWM):
             unix_start = timeformatutils.to_UNIXtime(start)
             unix_end = timeformatutils.to_UNIXtime(end)
             if unix_start >= unix_end:
-                raise ValueError("Error: the start time boundary must " \
+                raise ValueError("Error: the start time boundary must "
                                  "precede the end time!")
             current_time = time()
             if unix_start > current_time:
-                raise ValueError("Error: the start time boundary must " \
+                raise ValueError("Error: the start time boundary must "
                                  "precede the current time!")
             params['start'] = str(unix_start)
             params['end'] = str(unix_end)
         else:
-            raise ValueError("Error: one of the time boundaries is None, " \
+            raise ValueError("Error: one of the time boundaries is None, "
                              "while the other is not!")
         json_data = self._httpclient.call_API(CITY_WEATHER_HISTORY_URL,
                                               params)
@@ -653,16 +658,16 @@ class OWM25(owm.OWM):
             unix_start = timeformatutils.to_UNIXtime(start)
             unix_end = timeformatutils.to_UNIXtime(end)
             if unix_start >= unix_end:
-                raise ValueError("Error: the start time boundary must " \
+                raise ValueError("Error: the start time boundary must "
                                  "precede the end time!")
             current_time = time()
             if unix_start > current_time:
-                raise ValueError("Error: the start time boundary must " \
+                raise ValueError("Error: the start time boundary must "
                                  "precede the current time!")
             params['start'] = str(unix_start)
             params['end'] = str(unix_end)
         else:
-            raise ValueError("Error: one of the time boundaries is None, " \
+            raise ValueError("Error: one of the time boundaries is None, "
                              "while the other is not!")
         json_data = self._httpclient.call_API(CITY_WEATHER_HISTORY_URL,
                                               params)
@@ -824,8 +829,9 @@ class OWM25(owm.OWM):
 
     def __repr__(self):
         return "<%s.%s - API key=%s, OWM web API version=%s, " \
-               "PyOWM version=%s, language=%s>" % (__name__,
-                                      self.__class__.__name__,
-                                      self._API_key, self.get_API_version(),
-                                      self.get_version(),
-                                      self._language)
+               "PyOWM version=%s, language=%s>" % (
+                   __name__,
+                   self.__class__.__name__,
+                   self._API_key, self.get_API_version(),
+                   self.get_version(),
+                   self._language)

@@ -43,7 +43,9 @@ class MaryTTSValidator(TTSValidator):
             if resp.content.find('Mary TTS server') < 0:
                 raise Exception('Invalid MaryTTS server.')
         except:
-            raise Exception('MaryTTS server could not be verified. Check your connection to the server: ' + tts.url)
+            raise Exception(
+                'MaryTTS server could not be verified. Check your connection '
+                'to the server: ' + tts.url)
 
     def get_instance(self):
         return MaryTTS

@@ -10,7 +10,8 @@ class EnclosureAPI:
     """
     This API is intended to be used to control Mycroft hardware capabilities.
 
-    It exposes all possible enclosure commands to be performed by a Mycroft unit.
+    It exposes all possible enclosure commands to be performed by a Mycroft
+    unit.
     """
 
     def __init__(self, client):
@@ -23,7 +24,8 @@ class EnclosureAPI:
         self.client.emit(Message("enclosure.system.unmute"))
 
     def system_blink(self, times):
-        self.client.emit(Message("enclosure.system.blink", metadata={'times': times}))
+        self.client.emit(
+            Message("enclosure.system.blink", metadata={'times': times}))
 
     def eyes_on(self):
         self.client.emit(Message("enclosure.eyes.on"))
@@ -32,19 +34,23 @@ class EnclosureAPI:
         self.client.emit(Message("enclosure.eyes.off"))
 
     def eyes_blink(self, side):
-        self.client.emit(Message("enclosure.eyes.blink", metadata={'side': side}))
+        self.client.emit(
+            Message("enclosure.eyes.blink", metadata={'side': side}))
 
     def eyes_narrow(self):
         self.client.emit(Message("enclosure.eyes.narrow"))
 
     def eyes_look(self, side):
-        self.client.emit(Message("enclosure.eyes.look", metadata={'side': side}))
+        self.client.emit(
+            Message("enclosure.eyes.look", metadata={'side': side}))
 
     def eyes_color(self, r=255, g=255, b=255):
-        self.client.emit(Message("enclosure.eyes.color", metadata={'r': r, 'g': g, 'b': b}))
+        self.client.emit(
+            Message("enclosure.eyes.color", metadata={'r': r, 'g': g, 'b': b}))
 
     def eyes_brightness(self, level=30):
-        self.client.emit(Message("enclosure.eyes.level", metadata={'level': level}))
+        self.client.emit(
+            Message("enclosure.eyes.level", metadata={'level': level}))
 
     def mouth_reset(self):
         self.client.emit(Message("enclosure.mouth.reset"))
@@ -62,4 +68,5 @@ class EnclosureAPI:
         self.client.emit(Message("enclosure.mouth.smile"))
 
     def mouth_text(self, text=""):
-        self.client.emit(Message("enclosure.mouth.text", metadata={'text': text}))
+        self.client.emit(
+            Message("enclosure.mouth.text", metadata={'text': text}))
