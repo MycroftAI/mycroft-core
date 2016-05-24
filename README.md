@@ -6,23 +6,7 @@ Full docs at: https://docs.mycroft.ai
 Pair Mycroft instance with Cerberus Account Management Service: https://cerberus.mycroft.ai
 
 # Getting Started in Ubuntu - Development Environment
-- Install ` virtualenv` >= 13.1.2 and `virtualenvwrapper` (Restart session)
-- Install the following native packages
-  - `libtool`
-  - `autoconf`
-  - `bison`
-  - `swig`
-  - `libglib2.0-dev`
-  - `portaudio19-dev`
-  - `python-dev`
-  - `curl`
-  - `mpg123`
-  - `espeak`
-
-- In addition, if you are running Ubuntu 16.04 or another O/S, install:
-  - `libffi-dev`
-  - `libssl-dev` 
-
+- run `build_host_setup.sh` (installs debian packages with apt-get, please read it) 
 - run `dev_setup.sh` (feel free to read it, as well)
 - Restart session (reboot computer, or logging out and back in might work).
 
@@ -66,18 +50,33 @@ Mycroft configuration consists of 3 possible config files.
 
 When the configuration loader starts, it looks in those locations in that order, and loads ALL configuration. Keys that exist in multiple config files will be overridden by the last file to contain that config value. This results in a minimal amount of config being written for a specific device/user, without modifying the distribution files.
 
-## Starting the Virtualenv
-To ensure that you are in the Mycroft virtualenv before trying to start the services, as everything is installed there, Run:
+# Running Mycroft
+## With `start.sh`
+Mycroft provides `start.sh` to run a large number of common tasks. This script uses the virtualenv created by `dev_setup.sh`. The usage statement lists all run targets, but to run a Mycroft stack out of a git checkout, the following processes should be started:
+
+- run `./start.sh service`
+- run `./start.sh skills`
+- run `./start.sh voice`
+
+*Note: The above scripts are blocking, so each will need to be run in a separate terminal session.*
+
+## Without `start.sh`
+
+Activate your virtualenv.
+
+With virtualenv-wrapper:
 ```
 workon mycroft
 ```
 
-### Running the initial stack
+Without virtualenv-wrapper:
+```
+source ~/.virtualenvs/mycroft/bin/activate
+```
+
+
 - run `PYTHONPATH=. python client/speech/main.py` # the main speech detection loop, which prints events to stdout and broadcasts them to a message bus
 - run `PYTHONPATH=. python client/messagebus/service/main.py` # the main message bus, implemented via web sockets
 - run `PYTHONPATH=. python client/skills/main.py` # main skills executable, loads all skills under skills dir
 
-### Running stack via the script
-- run `./start.sh service`
-- run `./start.sh skills`
-- run `./start.sh voice`
+*Note: The above scripts are blocking, so each will need to be run in a separate terminal session. Each terminal session will require that the virtualenv be activated. There are very few reasons to use this method.*
