@@ -22,11 +22,11 @@ from Queue import Queue
 
 import pyee
 import speech_recognition as sr
-from speech_recognition import AudioData
 
 from mycroft.client.speech.local_recognizer import LocalRecognizer
 from mycroft.client.speech.mic import MutableMicrophone, Recognizer
 from mycroft.client.speech.recognizer_wrapper import RemoteRecognizerWrapperFactory
+from mycroft.client.speech.word_extractor import WordExtractor
 from mycroft.configuration.config import ConfigurationManager
 from mycroft.messagebus.message import Message
 from mycroft.metrics import MetricsAggregator, Stopwatch
@@ -70,92 +70,6 @@ class AudioProducer(threading.Thread):
                     # The internet was not helpful.
                     # http://stackoverflow.com/questions/10733903/pyaudio-input-overflowed
                     self.emitter.emit("recognizer_loop:ioerror", ex)
-
-
-class WakewordExtractor:
-    MAX_ERROR_SECONDS = 0.02
-    TRIM_SECONDS = 0.1
-    PUSH_BACK_SECONDS = 0.2  # The seconds the safe end position is pushed back to ensure pocketsphinx is consistent
-    SILENCE_SECONDS = 0.2  # The seconds of silence padded where the wakeword was removed
-
-    def __init__(self, audio_data, recognizer, metrics):
-        self.audio_data = audio_data
-        self.recognizer = recognizer
-        self.silence_data = self.__generate_silence(self.SILENCE_SECONDS, self.audio_data.sample_rate,
-                                                    self.audio_data.sample_width)
-        self.wav_data = self.audio_data.get_wav_data()
-        self.AUDIO_SIZE = float(len(self.wav_data))
-        self.range = self.Range(0, self.AUDIO_SIZE / 2)
-        self.metrics = metrics
-
-    class Range:
-        def __init__(self, begin, end):
-            self.begin = begin
-            self.end = end
-
-        def get_marker(self, get_begin):
-            if get_begin:
-                return self.begin
-            else:
-                return self.end
-
-        def add_to_marker(self, add_begin, value):
-            if add_begin:
-                self.begin += value
-            else:
-                self.end += value
-
-        def narrow(self, value):
-            self.begin += value
-            self.end -= value
-
-    @staticmethod
-    def __found_in_segment(name, byte_data, recognizer, metrics):
-
-        hypothesis = recognizer.transcribe(byte_data, metrics=metrics)
-        if hypothesis and name in hypothesis.hypstr.lower():
-            return True
-        else:
-            return False
-
-    def audio_pos(self, raw_pos):
-        return int(self.audio_data.sample_width * round(float(raw_pos) / self.audio_data.sample_width))
-
-    def get_audio_segment(self, begin, end):
-        return self.wav_data[self.audio_pos(begin): self.audio_pos(end)]
-
-    def __calculate_marker(self, use_begin, sign_if_found, range, delta):
-        while 2 * delta >= self.MAX_ERROR_SECONDS * self.audio_data.sample_rate * self.audio_data.sample_width:
-            byte_data = self.get_audio_segment(range.begin, range.end)
-            found = self.__found_in_segment("mycroft", byte_data, self.recognizer, self.metrics)
-            sign = sign_if_found if found else -sign_if_found
-            range.add_to_marker(use_begin, delta * sign)
-            delta /= 2
-        return range.get_marker(use_begin)
-
-    def calculate_range(self):
-        delta = self.AUDIO_SIZE / 4
-        self.range.end = self.__calculate_marker(False, -1, self.Range(0, self.AUDIO_SIZE / 2), delta)
-
-        # Ensures the end position is well past the wakeword part of the audio
-        pos_end_safe = min(self.AUDIO_SIZE,
-                           self.range.end + self.PUSH_BACK_SECONDS * self.audio_data.sample_rate * self.audio_data.sample_width)
-        delta = pos_end_safe / 4
-        begin = pos_end_safe / 2
-        self.range.begin = self.__calculate_marker(True, 1, self.Range(begin, pos_end_safe), delta)
-        self.range.narrow(self.TRIM_SECONDS * self.audio_data.sample_rate * self.audio_data.sample_width)
-
-    @staticmethod
-    def __generate_silence(seconds, sample_rate, sample_width):
-        return '\0' * int(seconds * sample_rate * sample_width)
-
-    def get_audio_data_before(self):
-        byte_data = self.get_audio_segment(0, self.range.begin) + self.silence_data
-        return AudioData(byte_data, self.audio_data.sample_rate, self.audio_data.sample_width)
-
-    def get_audio_data_after(self):
-        byte_data = self.silence_data + self.get_audio_segment(self.range.end, self.AUDIO_SIZE)
-        return AudioData(byte_data, self.audio_data.sample_rate, self.audio_data.sample_width)
 
 
 class AudioConsumer(threading.Thread):
@@ -202,21 +116,17 @@ class AudioConsumer(threading.Thread):
         self.metrics.flush()
 
     def wake_up(self, audio):
-        hyp = self.wakeup_recognizer.transcribe(audio.get_wav_data(), metrics=self.metrics)
-        if hyp:
-            sentence = hyp.hypstr.lower()
-            logger.debug("sleeping recognition: " + sentence)
-
-            if "wake up" in sentence:
-                SessionManager.touch()
-                self.state.sleeping = False
-                self.__speak("I'm awake.")  # TODO: Localization
-                self.metrics.increment("mycroft.wakeup")
+        if self.wakeup_recognizer.is_recognized(audio.frame_data, self.metrics):
+            SessionManager.touch()
+            self.state.sleeping = False
+            self.__speak("I'm awake.")  # TODO: Localization
+            self.metrics.increment("mycroft.wakeup")
 
     def wake_word(self, audio, timer):
-        hyp = self.mycroft_recognizer.transcribe(audio.get_wav_data(), metrics=self.metrics)
-        if hyp and "mycroft" in hyp.hypstr.lower():
-            extractor = WakewordExtractor(audio, self.mycroft_recognizer, self.metrics)
+        hyp = self.mycroft_recognizer.transcribe(audio.frame_data, self.metrics)
+
+        if self.mycroft_recognizer.contains(hyp):
+            extractor = WordExtractor(audio, self.mycroft_recognizer, self.metrics)
             timer.lap()
             extractor.calculate_range()
             self.metrics.timer("mycroft.recognizer.extractor.time_s", timer.lap())
@@ -229,8 +139,8 @@ class AudioConsumer(threading.Thread):
             payload = {
                 'utterance': hyp.hypstr,
                 'session': SessionManager.get().session_id,
-                'pos_begin': int(extractor.range.begin),
-                'pos_end': int(extractor.range.end)
+                'pos_begin': extractor.begin,
+                'pos_end': extractor.end
             }
             self.emitter.emit("recognizer_loop:wakeword", payload)
 
