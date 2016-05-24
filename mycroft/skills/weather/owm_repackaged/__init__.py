@@ -11,7 +11,6 @@ The PyOWM init file
 """
 
 from pyowm import constants
-from pyowm.utils import timeutils  # Convenience import
 
 
 def OWM(API_key=None, version=constants.LATEST_OWM_API_VERSION,
