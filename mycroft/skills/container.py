@@ -31,8 +31,10 @@ class SkillContainer(object):
         parsed_args = parser.parse_args(args)
         if os.path.exists(parsed_args.dependency_dir):
             sys.path.append(parsed_args.dependency_dir)
+        sys.path.append(parsed_args.skill_directory)
 
         self.skill_directory = parsed_args.skill_directory
+
         self.enable_intent_skill = parsed_args.enable_intent_skill
 
         self.client = WebsocketClient(host=parsed_args.messagebus_host,
@@ -44,7 +46,6 @@ class SkillContainer(object):
             intent_skill = create_intent_skill()
             intent_skill.bind(self.client)
             intent_skill.initialize()
-        sys.path.append(self.skill_directory)
         skill_descriptor = create_skill_descriptor(self.skill_directory)
         load_skill(skill_descriptor, self.client)
 
