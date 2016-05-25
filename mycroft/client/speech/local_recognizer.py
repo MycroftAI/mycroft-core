@@ -17,8 +17,10 @@ class LocalRecognizer(object):
 
     def configure(self):
         config = Decoder.default_config()
-        config.set_string('-hmm', os.path.join(BASEDIR, 'model', self.lang, 'hmm'))
-        config.set_string('-dict', os.path.join(BASEDIR, 'model', self.lang, 'mycroft-en-us.dict'))
+        config.set_string('-hmm', os.path.join(BASEDIR, 'model', self.lang,
+                                               'hmm'))
+        config.set_string('-dict', os.path.join(BASEDIR, 'model', self.lang,
+                                                'mycroft-en-us.dict'))
         config.set_string('-keyphrase', self.key_phrase)
         config.set_float('-kws_threshold', float('1e-45'))
         config.set_float('-samprate', self.sample_rate)

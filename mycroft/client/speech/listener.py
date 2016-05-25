@@ -44,8 +44,8 @@ speech_config = ConfigurationManager.get_config().get('speech_client')
 class AudioProducer(threading.Thread):
     """
     AudioProducer
-    given a mic and a recognizer implementation, continuously listens to the mic for
-    potential speech chunks and pushes them onto the queue.
+    given a mic and a recognizer implementation, continuously listens to the
+    mic for potential speech chunks and pushes them onto the queue.
     """
 
     def __init__(self, state, queue, mic, recognizer, emitter):
@@ -66,8 +66,9 @@ class AudioProducer(threading.Thread):
                     audio = self.recognizer.listen(source)
                     self.queue.put(audio)
                 except IOError, ex:
-                    # NOTE: Audio stack on raspi is slightly different, throws IOError every other listen,
-                    # almost like it can't handle buffering audio between listen loops.
+                    # NOTE: Audio stack on raspi is slightly different, throws
+                    # IOError every other listen, almost like it can't handle
+                    # buffering audio between listen loops.
                     # The internet was not helpful.
                     # http://stackoverflow.com/questions/10733903/pyaudio-input-overflowed
                     self.emitter.emit("recognizer_loop:ioerror", ex)
@@ -79,7 +80,8 @@ class AudioConsumer(threading.Thread):
     Consumes AudioData chunks off the queue
     """
 
-    MIN_AUDIO_SIZE = 1.0  # In seconds, the minimum audio size to be sent to remote STT
+    # In seconds, the minimum audio size to be sent to remote STT
+    MIN_AUDIO_SIZE = 1.0
 
     def __init__(self, state, queue, emitter, wakeup_recognizer,
                  mycroft_recognizer, remote_recognizer):
@@ -171,33 +173,37 @@ class AudioConsumer(threading.Thread):
 
     def __speak(self, utterance):
         """
-        Speak commands should be asynchronous to avoid filling up the portaudio buffer.
+        Speak commands should be asynchronous to avoid filling up the portaudio
+        buffer.
         :param utterance:
         :return:
         """
 
         def target():
-            self.emitter.emit("speak",
-                              Message("speak", metadata={'utterance': utterance,
-                                                         'session': SessionManager.get().session_id}))
+            payload = {
+                'utterance': utterance,
+                'session': SessionManager.get().session_id
+            }
+            self.emitter.emit("speak", Message("speak", metadata=payload))
 
         threading.Thread(target=target).start()
 
     def _create_remote_stt_runnable(self, audio, utterances):
         def runnable():
             try:
-                text = self.remote_recognizer.transcribe(audio,
-                                                         metrics=self.metrics).lower()
+                text = self.remote_recognizer.transcribe(
+                        audio, metrics=self.metrics).lower()
             except sr.UnknownValueError:
                 pass
             except sr.RequestError as e:
                 logger.error(
-                        "Could not request results from Speech Recognition service; {0}".format(
-                                e))
+                        "Could not request results from Speech Recognition "
+                        "service; {0}".format(e))
             except CerberusAccessDenied as e:
                 logger.error("AccessDenied from Cerberus proxy.")
                 self.__speak(
-                        "Your device is not registered yet. To start pairing, login at cerberus.mycroft.ai")
+                        "Your device is not registered yet. To start pairing, "
+                        "login at cerberus.mycroft.ai")
                 utterances.append("pair my device")
             else:
                 logger.debug("STT: " + text)
@@ -247,10 +253,12 @@ class RecognizerLoop(pyee.EventEmitter):
         pyee.EventEmitter.__init__(self)
         self.microphone = MutableMicrophone(sample_rate=sample_rate,
                                             device_index=device_index)
-        self.microphone.CHANNELS = channels  # FIXME - channels are not been used
+
+        # FIXME - channels are not been used
+        self.microphone.CHANNELS = channels
         self.mycroft_recognizer = LocalRecognizer(sample_rate, lang)
-        self.wakeup_recognizer = LocalRecognizer(sample_rate, lang,
-                                                 "wake up")  # TODO - localization
+        # TODO - localization
+        self.wakeup_recognizer = LocalRecognizer(sample_rate, lang, "wake up")
         self.remote_recognizer = Recognizer()
         self.state = RecognizerLoopState()
 
