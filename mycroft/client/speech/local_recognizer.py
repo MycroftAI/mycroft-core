@@ -26,17 +26,17 @@ class LocalRecognizer(object):
         config.set_string('-logfn', '/dev/null')
         self.decoder = Decoder(config)
 
-    def transcribe(self, wav_data, metrics=None):
+    def transcribe(self, byte_data, metrics=None):
         start = time.time()
         self.decoder.start_utt()
-        self.decoder.process_raw(wav_data, False, False)
+        self.decoder.process_raw(byte_data, False, False)
         self.decoder.end_utt()
         if metrics:
             metrics.timer("mycroft.stt.local.time_s", time.time() - start)
         return self.decoder.hyp()
 
-    def is_recognized(self, wav_data, metrics):
-        hyp = self.transcribe(wav_data, metrics)
+    def is_recognized(self, byte_data, metrics):
+        hyp = self.transcribe(byte_data, metrics)
         return hyp and self.key_phrase in hyp.hypstr.lower()
 
     def contains(self, hypothesis):

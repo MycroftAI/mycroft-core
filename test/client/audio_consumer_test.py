@@ -17,10 +17,10 @@ class MockRecognizer(object):
         self.transcriptions = []
 
     def recognize_google(self, audio, key=None, language=None, show_all=False):
-        return self.tanscriptions.pop(0)
+        return self.transcriptions.pop(0)
 
     def set_transcriptions(self, transcriptions):
-        self.tanscriptions = transcriptions
+        self.transcriptions = transcriptions
 
 
 class AudioConsumerTest(unittest.TestCase):
@@ -118,7 +118,8 @@ class AudioConsumerTest(unittest.TestCase):
         self.assertEquals("what's the weather in cincinnati", utterances[1])
 
     def test_call_and_response(self):
-        self.queue.put(self.__create_sample_from_test_file('mycroft'))
+        audio = self.__create_sample_from_test_file('mycroft')
+        self.queue.put(audio)
         monitor = {}
         self.recognizer.set_transcriptions(["mycroft", ""])
 
@@ -133,7 +134,7 @@ class AudioConsumerTest(unittest.TestCase):
 
         self.assertIsNotNone(monitor.get('wakeword'))
 
-        self.queue.put(self.__create_sample_from_test_file('mycroft'))
+        self.queue.put(audio)
         self.recognizer.set_transcriptions(
                 ["what's the weather next week", ""])
         self.loop.once('recognizer_loop:utterance', utterance_callback)
