@@ -52,12 +52,20 @@ class AudioConsumerTest(unittest.TestCase):
                     source.stream.read(), wavfile.SAMPLE_RATE,
                     wavfile.SAMPLE_WIDTH)
 
-    def test_audio_pos_front_back(self):
+    def test_word_extraction(self):
+        """
+        This is intended to test the extraction of the word: ``mycroft``.
+        The values for ``ideal_begin`` and ``ideal_end`` were found using an
+        audio tool like Audacity and they represent a sample value position of
+        the audio. ``tolerance`` is an acceptable margin error for the distance
+        between the ideal and actual values found by the ``WordExtractor``
+        """
+
         audio = self.__create_sample_from_test_file('weather_mycroft')
         self.queue.put(audio)
         tolerance = 4000
-        begin = 70000
-        end = 92000
+        ideal_begin = 70000
+        ideal_end = 92000
 
         monitor = {}
         self.recognizer.set_transcriptions(["what's the weather next week"])
@@ -69,16 +77,16 @@ class AudioConsumerTest(unittest.TestCase):
         self.loop.once('recognizer_loop:wakeword', wakeword_callback)
         self.consumer.read_audio()
 
-        pos_begin = monitor.get('pos_begin')
-        self.assertIsNotNone(pos_begin)
-        diff = abs(pos_begin - begin)
+        actual_begin = monitor.get('pos_begin')
+        self.assertIsNotNone(actual_begin)
+        diff = abs(actual_begin - ideal_begin)
         self.assertTrue(
                 diff <= tolerance,
                 str(diff) + " is not less than " + str(tolerance))
 
-        pos_end = monitor.get('pos_end')
-        self.assertIsNotNone(pos_end)
-        diff = abs(pos_end - end)
+        actual_end = monitor.get('pos_end')
+        self.assertIsNotNone(actual_end)
+        diff = abs(actual_end - ideal_end)
         self.assertTrue(
                 diff <= tolerance,
                 str(diff) + " is not less than " + str(tolerance))

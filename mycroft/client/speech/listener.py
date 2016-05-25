@@ -113,15 +113,15 @@ class AudioConsumer(threading.Thread):
         timer.start()
 
         if self.state.sleeping:
-            self.wake_up(audio)
+            self.process_wake_up(audio)
         elif self.state.skip_wakeword:
-            self.skip_wake_word(audio)
+            self.process_skip_wake_word(audio)
         else:
-            self.wake_word(audio, timer)
+            self.process_wake_word(audio, timer)
 
         self.metrics.flush()
 
-    def wake_up(self, audio):
+    def process_wake_up(self, audio):
         if self.wakeup_recognizer.is_recognized(audio.frame_data,
                                                 self.metrics):
             SessionManager.touch()
@@ -129,7 +129,7 @@ class AudioConsumer(threading.Thread):
             self.__speak("I'm awake.")  # TODO: Localization
             self.metrics.increment("mycroft.wakeup")
 
-    def wake_word(self, audio, timer):
+    def process_wake_word(self, audio, timer):
         hyp = self.mycroft_recognizer.transcribe(audio.frame_data,
                                                  self.metrics)
 
@@ -163,7 +163,7 @@ class AudioConsumer(threading.Thread):
                 self.state.skip_wakeword = True
                 self.metrics.increment("mycroft.wakeword")
 
-    def skip_wake_word(self, audio):
+    def process_skip_wake_word(self, audio):
         SessionManager.touch()
         try:
             self.transcribe([audio])
