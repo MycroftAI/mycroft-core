@@ -25,7 +25,7 @@ class LocalRecognizerTest(unittest.TestCase):
             assert "mycroft" in hyp.hypstr.lower()
 
     def testRecognitionInLongerUtterance(self):
-        source = WavFile(os.path.join(DATA_DIR, "mycroft_in_utterance.wav"))
+        source = WavFile(os.path.join(DATA_DIR, "weather_mycroft.wav"))
         with source as audio:
             hyp = self.recognizer.transcribe(audio.stream.read())
             assert "mycroft" in hyp.hypstr.lower()
