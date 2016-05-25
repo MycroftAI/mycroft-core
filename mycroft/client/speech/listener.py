@@ -25,7 +25,8 @@ import speech_recognition as sr
 
 from mycroft.client.speech.local_recognizer import LocalRecognizer
 from mycroft.client.speech.mic import MutableMicrophone, Recognizer
-from mycroft.client.speech.recognizer_wrapper import RemoteRecognizerWrapperFactory
+from mycroft.client.speech.recognizer_wrapper import \
+    RemoteRecognizerWrapperFactory
 from mycroft.client.speech.word_extractor import WordExtractor
 from mycroft.configuration.config import ConfigurationManager
 from mycroft.messagebus.message import Message
@@ -80,7 +81,8 @@ class AudioConsumer(threading.Thread):
 
     MIN_AUDIO_SIZE = 1.0  # In seconds, the minimum audio size to be sent to remote STT
 
-    def __init__(self, state, queue, emitter, wakeup_recognizer, mycroft_recognizer, remote_recognizer):
+    def __init__(self, state, queue, emitter, wakeup_recognizer,
+                 mycroft_recognizer, remote_recognizer):
         threading.Thread.__init__(self)
         self.daemon = True
         self.queue = queue
@@ -97,12 +99,14 @@ class AudioConsumer(threading.Thread):
 
     @staticmethod
     def _audio_length(audio):
-        return float(len(audio.frame_data)) / (audio.sample_rate * audio.sample_width)
+        return float(len(audio.frame_data)) / (
+            audio.sample_rate * audio.sample_width)
 
     def read_audio(self):
         timer = Stopwatch()
         audio = self.queue.get()
-        self.metrics.timer("mycroft.recognizer.audio.length_s", self._audio_length(audio))
+        self.metrics.timer("mycroft.recognizer.audio.length_s",
+                           self._audio_length(audio))
         self.queue.task_done()
         timer.start()
 
@@ -126,14 +130,18 @@ class AudioConsumer(threading.Thread):
         hyp = self.mycroft_recognizer.transcribe(audio.frame_data, self.metrics)
 
         if self.mycroft_recognizer.contains(hyp):
-            extractor = WordExtractor(audio, self.mycroft_recognizer, self.metrics)
+            extractor = WordExtractor(audio, self.mycroft_recognizer,
+                                      self.metrics)
             timer.lap()
             extractor.calculate_range()
-            self.metrics.timer("mycroft.recognizer.extractor.time_s", timer.lap())
+            self.metrics.timer("mycroft.recognizer.extractor.time_s",
+                               timer.lap())
             audio_before = extractor.get_audio_data_before()
-            self.metrics.timer("mycroft.recognizer.audio_extracted.length_s", self._audio_length(audio_before))
+            self.metrics.timer("mycroft.recognizer.audio_extracted.length_s",
+                               self._audio_length(audio_before))
             audio_after = extractor.get_audio_data_after()
-            self.metrics.timer("mycroft.recognizer.audio_extracted.length_s", self._audio_length(audio_after))
+            self.metrics.timer("mycroft.recognizer.audio_extracted.length_s",
+                               self._audio_length(audio_after))
 
             SessionManager.touch()
             payload = {
@@ -169,22 +177,27 @@ class AudioConsumer(threading.Thread):
         """
 
         def target():
-            self.emitter.emit("speak", Message("speak", metadata={'utterance': utterance,
-                                                                  'session': SessionManager.get().session_id}))
+            self.emitter.emit("speak",
+                              Message("speak", metadata={'utterance': utterance,
+                                                         'session': SessionManager.get().session_id}))
 
         threading.Thread(target=target).start()
 
     def _create_remote_stt_runnable(self, audio, utterances):
         def runnable():
             try:
-                text = self.remote_recognizer.transcribe(audio, metrics=self.metrics).lower()
+                text = self.remote_recognizer.transcribe(audio,
+                                                         metrics=self.metrics).lower()
             except sr.UnknownValueError:
                 pass
             except sr.RequestError as e:
-                logger.error("Could not request results from Speech Recognition service; {0}".format(e))
+                logger.error(
+                        "Could not request results from Speech Recognition service; {0}".format(
+                                e))
             except CerberusAccessDenied as e:
                 logger.error("AccessDenied from Cerberus proxy.")
-                self.__speak("Your device is not registered yet. To start pairing, login at cerberus.mycroft.ai")
+                self.__speak(
+                        "Your device is not registered yet. To start pairing, login at cerberus.mycroft.ai")
                 utterances.append("pair my device")
             else:
                 logger.debug("STT: " + text)
@@ -232,10 +245,12 @@ class RecognizerLoop(pyee.EventEmitter):
                  device_index=None,
                  lang=core_config.get('lang')):
         pyee.EventEmitter.__init__(self)
-        self.microphone = MutableMicrophone(sample_rate=sample_rate, device_index=device_index)
+        self.microphone = MutableMicrophone(sample_rate=sample_rate,
+                                            device_index=device_index)
         self.microphone.CHANNELS = channels  # FIXME - channels are not been used
         self.mycroft_recognizer = LocalRecognizer(sample_rate, lang)
-        self.wakeup_recognizer = LocalRecognizer(sample_rate, lang, "wake up")  # TODO - localization
+        self.wakeup_recognizer = LocalRecognizer(sample_rate, lang,
+                                                 "wake up")  # TODO - localization
         self.remote_recognizer = Recognizer()
         self.state = RecognizerLoopState()
 
@@ -252,7 +267,8 @@ class RecognizerLoop(pyee.EventEmitter):
                       self,
                       self.wakeup_recognizer,
                       self.mycroft_recognizer,
-                      RemoteRecognizerWrapperFactory.wrap_recognizer(self.remote_recognizer)).start()
+                      RemoteRecognizerWrapperFactory.wrap_recognizer(
+                              self.remote_recognizer)).start()
 
     def stop(self):
         self.state.running = False

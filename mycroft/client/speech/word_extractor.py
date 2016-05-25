@@ -15,7 +15,9 @@ class WordExtractor:
         self.begin = 0
         self.end = self.audio_size
         self.precision = int(self.audio_size * self.PRECISION_RATE)
-        self.silence_data = self.create_silence(self.SILENCE_SECS, self.audio.sample_rate, self.audio.sample_width)
+        self.silence_data = self.create_silence(self.SILENCE_SECS,
+                                                self.audio.sample_rate,
+                                                self.audio.sample_width)
         self.metrics = metrics
 
     def __add(self, is_begin, value):
@@ -46,8 +48,11 @@ class WordExtractor:
 
     def get_audio_data_before(self):
         byte_data = self.audio.frame_data[0:self.begin] + self.silence_data
-        return AudioData(byte_data, self.audio.sample_rate, self.audio.sample_width)
+        return AudioData(byte_data, self.audio.sample_rate,
+                         self.audio.sample_width)
 
     def get_audio_data_after(self):
-        byte_data = self.silence_data + self.audio.frame_data[self.end:self.audio_size]
-        return AudioData(byte_data, self.audio.sample_rate, self.audio.sample_width)
+        byte_data = self.silence_data + self.audio.frame_data[
+                                        self.end:self.audio_size]
+        return AudioData(byte_data, self.audio.sample_rate,
+                         self.audio.sample_width)
