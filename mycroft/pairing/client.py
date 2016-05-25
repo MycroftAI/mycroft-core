@@ -1,8 +1,4 @@
-import json
-
 import shortuuid
-import sys
-
 from mycroft.configuration.config import ConfigurationManager
 from mycroft.identity import IdentityManager
 from mycroft.messagebus.client.ws import WebsocketClient
