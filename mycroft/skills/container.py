@@ -44,6 +44,7 @@ class SkillContainer(object):
             intent_skill = create_intent_skill()
             intent_skill.bind(self.client)
             intent_skill.initialize()
+        sys.path.append(self.skill_directory)
         skill_descriptor = create_skill_descriptor(self.skill_directory)
         load_skill(skill_descriptor, self.client)
 
