@@ -13,7 +13,7 @@ __author__ = 'seanfitz'
 
 
 class MockRecognizer(object):
-    def __init__(self, transcription=None):
+    def __init__(self):
         self.transcriptions = []
 
     def recognize_google(self, audio, key=None, language=None, show_all=False):
@@ -53,15 +53,14 @@ class AudioConsumerTest(unittest.TestCase):
                     wavfile.SAMPLE_WIDTH)
 
     def test_audio_pos_front_back(self):
-        audio = self.__create_sample_from_test_file('mycroft_in_utterance')
+        audio = self.__create_sample_from_test_file('weather_mycroft')
         self.queue.put(audio)
         tolerance = 4000
         begin = 70000
         end = 92000
 
         monitor = {}
-        self.recognizer.set_transcriptions(
-                ["what's the weather next week", ""])
+        self.recognizer.set_transcriptions(["what's the weather next week"])
 
         def wakeword_callback(message):
             monitor['pos_begin'] = message.get('pos_begin')
@@ -85,77 +84,53 @@ class AudioConsumerTest(unittest.TestCase):
                 str(diff) + " is not less than " + str(tolerance))
 
     def test_wakeword_in_beginning(self):
-        self.queue.put(self.__create_sample_from_test_file('mycroft'))
+        self.queue.put(self.__create_sample_from_test_file('weather_mycroft'))
+        self.recognizer.set_transcriptions(["what's the weather next week"])
         monitor = {}
-        self.recognizer.set_transcriptions([
-            "what's the weather next week", ""])
 
         def callback(message):
             monitor['utterances'] = message.get('utterances')
 
         self.loop.once('recognizer_loop:utterance', callback)
         self.consumer.read_audio()
+
         utterances = monitor.get('utterances')
         self.assertIsNotNone(utterances)
         self.assertTrue(len(utterances) == 1)
         self.assertEquals("what's the weather next week", utterances[0])
 
-    def test_wakeword_in_phrase(self):
+    def test_wakeword(self):
         self.queue.put(self.__create_sample_from_test_file('mycroft'))
+        self.recognizer.set_transcriptions(["silence"])
         monitor = {}
-        self.recognizer.set_transcriptions([
-            "he can do other stuff too", "what's the weather in cincinnati"])
 
         def callback(message):
             monitor['utterances'] = message.get('utterances')
 
         self.loop.once('recognizer_loop:utterance', callback)
         self.consumer.read_audio()
-        utterances = monitor.get('utterances')
-        self.assertIsNotNone(utterances)
-        self.assertTrue(len(utterances) == 2)
-        self.assertEquals("he can do other stuff too", utterances[0])
-        self.assertEquals("what's the weather in cincinnati", utterances[1])
-
-    def test_call_and_response(self):
-        audio = self.__create_sample_from_test_file('mycroft')
-        self.queue.put(audio)
-        monitor = {}
-        self.recognizer.set_transcriptions(["mycroft", ""])
-
-        def wakeword_callback(message):
-            monitor['wakeword'] = message.get('utterance')
-
-        def utterance_callback(message):
-            monitor['utterances'] = message.get('utterances')
-
-        self.loop.once('recognizer_loop:wakeword', wakeword_callback)
-        self.consumer.read_audio()
-
-        self.assertIsNotNone(monitor.get('wakeword'))
-
-        self.queue.put(audio)
-        self.recognizer.set_transcriptions(
-                ["what's the weather next week", ""])
-        self.loop.once('recognizer_loop:utterance', utterance_callback)
-        self.consumer.read_audio()
 
         utterances = monitor.get('utterances')
         self.assertIsNotNone(utterances)
         self.assertTrue(len(utterances) == 1)
-        self.assertEquals("what's the weather next week", utterances[0])
+        self.assertEquals("silence", utterances[0])
 
     def test_ignore_wakeword_when_sleeping(self):
         self.queue.put(self.__create_sample_from_test_file('mycroft'))
+        self.recognizer.set_transcriptions(["not detected"])
         self.loop.sleep()
         monitor = {}
-        self.recognizer.set_transcriptions(["", ""])
 
         def wakeword_callback(message):
             monitor['wakeword'] = message.get('utterance')
 
         self.loop.once('recognizer_loop:wakeword', wakeword_callback)
         self.consumer.read_audio()
-
         self.assertIsNone(monitor.get('wakeword'))
         self.assertTrue(self.loop.state.sleeping)
+
+    def test_wakeup(self):
+        self.queue.put(self.__create_sample_from_test_file('mycroft_wakeup'))
+        self.loop.sleep()
+        self.consumer.read_audio()
+        self.assertFalse(self.loop.state.sleeping)
