@@ -1,0 +1,24 @@
+#!/bin/bash
+chown -R mycroft:mycroft /opt/mycroft
+function initialize_service() {
+  local NAME=$1
+  chmod a+x /etc/init.d/${NAME}
+  update-rc.d ${NAME} defaults
+  touch /var/log/${NAME}.log
+  chown %%INSTALL_USER%% /var/log/${NAME}.log
+}
+
+function start_service() {
+  local NAME=$1
+  invoke-rc.d ${NAME} start
+}
+
+initialize_service "mycroft-messagebus"
+initialize_service "mycroft-skills"
+initialize_service "mycroft-speech-client"
+#initialize_service "mycroft-enclosure-client"
+
+start_service "mycroft-messagebus"
+start_service "mycroft-skills"
+start_service "mycroft-speech-client"
+#start_service "mycroft-enclosure-client"
