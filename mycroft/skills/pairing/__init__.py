@@ -20,6 +20,7 @@ from threading import Thread
 from adapt.intent import IntentBuilder
 from os.path import dirname
 
+from mycroft.messagebus.message import Message
 from mycroft.pairing.client import DevicePairingClient
 from mycroft.skills.core import MycroftSkill
 
@@ -37,22 +38,29 @@ class PairingSkill(MycroftSkill):
 
     def handle_pairing_request(self, message):
         if not self.client:
+            self.__emit_paired(False)
             self.client = DevicePairingClient()
             Thread(target=self.client.run).start()
-            self.emitter.on("recognizer_loop:audio_output_end",
-                            self.display_pairing_code)
+            self.emitter.on("recognizer_loop:audio_output_start",
+                            self.__display_pairing_code)
         self.speak_dialog(
                 "pairing.instructions",
                 data={"pairing_code": ', ,'.join(self.client.pairing_code)})
 
-    def display_pairing_code(self, event=None):
-        self.enclosure.mouth_text(
-                "Pairing code is: " + self.client.pairing_code)
-
+    def __display_pairing_code(self, event=None):
         if self.client.paired:
+            self.enclosure.mouth_talk()
             self.client = None
-            self.emitter.remove("recognizer_loop:audio_output_end",
-                                self.display_pairing_code)
+            self.__emit_paired(True)
+            self.emitter.remove("recognizer_loop:audio_output_start",
+                                self.__display_pairing_code)
+        else:
+            self.enclosure.mouth_text(
+                    "Pairing code: " + self.client.pairing_code)
+
+    def __emit_paired(self, paired):
+        msg = Message('mycroft.paired', metadata={'paired': paired})
+        self.emitter.emit(msg)
 
     def stop(self):
         pass
