@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
-import threading
+from threading import Thread
 
 from adapt.intent import IntentBuilder
 from os.path import dirname
@@ -27,6 +27,7 @@ from mycroft.skills.core import MycroftSkill
 class PairingSkill(MycroftSkill):
     def __init__(self):
         super(PairingSkill, self).__init__(name="PairingSkill")
+        self.client = None
 
     def initialize(self):
         intent = IntentBuilder("PairingIntent").require(
@@ -35,13 +36,23 @@ class PairingSkill(MycroftSkill):
         self.register_intent(intent, handler=self.handle_pairing_request)
 
     def handle_pairing_request(self, message):
-        pairing_client = DevicePairingClient()
-        pairing_code = pairing_client.pairing_code
-        threading.Thread(target=pairing_client.run).start()
+        if not self.client:
+            self.client = DevicePairingClient()
+            Thread(target=self.client.run).start()
+            self.emitter.on("recognizer_loop:audio_output_end",
+                            self.display_pairing_code)
         self.speak_dialog(
                 "pairing.instructions",
-                data={"pairing_code": ', ,'.join(pairing_code)})
-        self.enclosure.mouth_text("Pairing code is: " + pairing_code)
+                data={"pairing_code": ', ,'.join(self.client.pairing_code)})
+
+    def display_pairing_code(self, event=None):
+        self.enclosure.mouth_text(
+                "Pairing code is: " + self.client.pairing_code)
+
+        if self.client.paired:
+            self.client = None
+            self.emitter.remove("recognizer_loop:audio_output_end",
+                                self.display_pairing_code)
 
     def stop(self):
         pass
