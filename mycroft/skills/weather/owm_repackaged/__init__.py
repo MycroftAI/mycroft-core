@@ -15,18 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
-
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-"""
-The PyOWM init file
-
-**Author**: Claudio Sparpaglione, @csparpa <csparpa@gmail.com>
-
-**Platform**: platform independent
-
-"""
+#
+# The PyOWM init file
+#
+# **Author**: Claudio Sparpaglione, @csparpa <csparpa@gmail.com>
+#
+# **Platform**: platform independent
+#
+#
 
 from pyowm import constants
 
