@@ -29,6 +29,7 @@ class PairingSkill(MycroftSkill):
     def __init__(self):
         super(PairingSkill, self).__init__(name="PairingSkill")
         self.client = None
+        self.displaying = False
 
     def initialize(self):
         intent = IntentBuilder("PairingIntent").require(
@@ -54,7 +55,8 @@ class PairingSkill(MycroftSkill):
             self.__emit_paired(True)
             self.emitter.remove("recognizer_loop:audio_output_start",
                                 self.__display_pairing_code)
-        else:
+        elif not self.displaying:
+            self.displaying = True
             self.enclosure.mouth_text(
                     "Pairing code: " + self.client.pairing_code)
 
