@@ -31,8 +31,10 @@ class SkillContainer(object):
         parsed_args = parser.parse_args(args)
         if os.path.exists(parsed_args.dependency_dir):
             sys.path.append(parsed_args.dependency_dir)
+        sys.path.append(parsed_args.skill_directory)
 
         self.skill_directory = parsed_args.skill_directory
+
         self.enable_intent_skill = parsed_args.enable_intent_skill
 
         self.client = WebsocketClient(host=parsed_args.messagebus_host,
