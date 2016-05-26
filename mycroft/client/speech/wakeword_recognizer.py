@@ -19,9 +19,7 @@
 from mycroft.metrics import Stopwatch
 
 import os
-import sys
-
-from pocketsphinx import *
+from pocketsphinx import Decoder
 
 from cmath import exp, pi
 

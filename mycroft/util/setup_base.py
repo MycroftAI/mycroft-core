@@ -20,11 +20,13 @@ import os
 import subprocess
 from setuptools import find_packages
 import shutil
+from mycroft.util.log import getLogger
 
 
 __author__ = 'seanfitz'
 
 BASEDIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+logger = getLogger(__name__)
 
 
 def place_manifest(manifest_file):
@@ -36,12 +38,14 @@ def get_version():
     try:
         import mycroft.__version__
         version = mycroft.__version__.version
-    except Exception, e:
+    except Exception as e:
+        logger.exception(e)
         try:
             version = "dev-" + subprocess.check_output(
                 ["git", "rev-parse", "--short", "HEAD"]).strip()
         except subprocess.CalledProcessError, e2:
             version = "development"
+            logger.exception(e2)
 
     return version
 

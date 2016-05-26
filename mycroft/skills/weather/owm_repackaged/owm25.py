@@ -71,8 +71,8 @@ class OWM25(owm.OWM):
     def _assert_is_string(name, value):
         try:
             # Python 2.x
-            assert(isinstance(value, basestring),
-                   "'%s' must be a str" % (name,))
+            assert isinstance(value, basestring), \
+                ("'%s' must be a str" % (name,))
         except NameError:
             # Python 3.x
             assert isinstance(value, str), "'%s' must be a str" % (name,)

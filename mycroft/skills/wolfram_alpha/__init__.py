@@ -131,6 +131,7 @@ class WolframAlphaSkill(MycroftSkill):
             self.speak_dialog('not.paired')
             return
         except Exception as e:
+            logger.exception(e)
             self.speak("Sorry, I don't understand your request.")
             return
 
