@@ -39,6 +39,7 @@ class PairingSkill(MycroftSkill):
 
     def handle_pairing_request(self, message):
         if not self.client:
+            self.displaying = False
             self.__emit_paired(False)
             self.client = DevicePairingClient()
             Thread(target=self.client.run).start()
