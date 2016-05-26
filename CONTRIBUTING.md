@@ -22,7 +22,7 @@ The following guidelines for contribution should be followed if you want to subm
   5. Make use of the `.editorconfig`-file if provided with the repository.
   6. Make commits of logical units and describe them properly. Use your issue identifier at the very begin of each commit. For instance:
 `git commit -m "Issues-123 - Fixing 'A' sound on Spelling Skill"`
-  7. Check for unnecessary whitespace with `git diff --check` before committing and make sure you format code and organize your imports.
+  7. Before committing, format your code following the PEP8 rules and organize your imports removing unused libs.
   8. Once you have committed everything and are done with your branch, you have to rebase your code with master. Do the following steps:
       1. Make sure you do not have any changes left on your branch
       2. Checkout on master branch and make sure it is up-to-date
