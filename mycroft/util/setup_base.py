@@ -39,12 +39,12 @@ def get_version():
         import mycroft.__version__
         version = mycroft.__version__.version
     except Exception as e:
-        logger.exception(e)
         try:
             version = "dev-" + subprocess.check_output(
                 ["git", "rev-parse", "--short", "HEAD"]).strip()
         except subprocess.CalledProcessError, e2:
             version = "development"
+            logger.debug(e)
             logger.exception(e2)
 
     return version
