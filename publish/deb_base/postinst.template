@@ -1,5 +1,5 @@
 #!/bin/bash
-chown -R mycroft:mycroft /opt/mycroft
+#chown -R mycroft:mycroft /usr/lib/mycroft
 function initialize_service() {
   local NAME=$1
   chmod a+x /etc/init.d/${NAME}
