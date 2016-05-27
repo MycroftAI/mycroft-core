@@ -83,7 +83,7 @@ replace ${CONTROL_FILE} "%%PACKAGE%%" "mycroft-standalone"
 replace ${CONTROL_FILE} "%%VERSION%%" "${VERSION}"
 replace ${CONTROL_FILE} "%%ARCHITECTURE%%" "${ARCH}"
 replace ${CONTROL_FILE} "%%DESCRIPTION%%" "mycroft-standalone"
-replace ${CONTROL_FILE} "%%PRE_DEPENDS%%" "portaudio19-dev, libglib2.0-0, flac, espeak, mpg123"
+replace ${CONTROL_FILE} "%%PRE_DEPENDS%%" "portaudio19-dev, libglib2.0-0, flac, espeak, mpg123, mimic"
 echo "Creating debian preinst file"
 PREINST_FILE=${DEB_DIR}/DEBIAN/preinst
 cp ${TOP}/publish/deb_base/preinst.template ${PREINST_FILE}
@@ -131,10 +131,10 @@ mkdir -p ${DEB_DIR}/opt/mycroft
 cp -rf ${TOP}/build/${ARTIFACT_BASE}/* ${DEB_DIR}/opt/mycroft
 
 # install mimic
-${TOP}/install-mimic.sh
-MIMIC_INSTALL_DIR="${DEB_DIR}/opt/mycroft/bin"
-mkdir -p ${MIMIC_INSTALL_DIR}
-cp -rf ${TOP}/build/mimic/bin/mimic ${MIMIC_INSTALL_DIR}
+#${TOP}/install-mimic.sh
+#MIMIC_INSTALL_DIR="${DEB_DIR}/opt/mycroft/bin"
+#mkdir -p ${MIMIC_INSTALL_DIR}
+#cp -rf ${TOP}/build/mimic/bin/mimic ${MIMIC_INSTALL_DIR}
 
 mkdir -p ${DEB_DIR}/etc/mycroft
 # write installed config file
@@ -160,7 +160,7 @@ dpkg-deb --build ${DEB_BASE}
 mv *.deb ${TOP}/dist
 
 
-cd ${TOP}/dist
-_run s3cmd -c ${HOME}/.s3cfg.mycroft-artifact-writer sync --acl-public . s3://bootstrap.mycroft.ai/artifacts/${ARCH}/${VERSION}/
-echo ${VERSION} > ${TOP}/dist/latest
-_run s3cmd -c ${HOME}/.s3cfg.mycroft-artifact-writer put --acl-public ${TOP}/dist/latest s3://bootstrap.mycroft.ai/artifacts/${ARCH}/latest
+#cd ${TOP}/dist
+#_run s3cmd -c ${HOME}/.s3cfg.mycroft-artifact-writer sync --acl-public . s3://bootstrap.mycroft.ai/artifacts/${ARCH}/${VERSION}/
+#echo ${VERSION} > ${TOP}/dist/latest
+#_run s3cmd -c ${HOME}/.s3cfg.mycroft-artifact-writer put --acl-public ${TOP}/dist/latest s3://bootstrap.mycroft.ai/artifacts/${ARCH}/latest
