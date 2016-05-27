@@ -15,9 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
-
-import tornado.ioloop
-import tornado.web
+import tornado.ioloop as ioloop
+import tornado.web as web
 
 from mycroft.messagebus.service.ws import WebsocketEventHandler
 from mycroft.configuration.config import ConfigurationManager
@@ -40,11 +39,11 @@ def main():
         (service_config.get('route'), WebsocketEventHandler)
     ]
 
-    application = tornado.web.Application(routes, **settings)
+    application = web.Application(routes, **settings)
 
     application.listen(service_config.get("port"), service_config.get("host"))
-    ioloop = tornado.ioloop.IOLoop.instance()
-    ioloop.start()
+    loop = ioloop.IOLoop.instance()
+    loop.start()
 
 
 if __name__ == "__main__":

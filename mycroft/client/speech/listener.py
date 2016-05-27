@@ -302,5 +302,6 @@ class RecognizerLoop(pyee.EventEmitter):
         while self.state.running:
             try:
                 time.sleep(1)
-            except KeyboardInterrupt:
+            except KeyboardInterrupt as e:
+                logger.error(e)
                 self.stop()
