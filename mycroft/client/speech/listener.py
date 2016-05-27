@@ -174,21 +174,11 @@ class AudioConsumer(threading.Thread):
         self.state.skip_wakeword = False
 
     def __speak(self, utterance):
-        """
-        Speak commands should be asynchronous to avoid filling up the portaudio
-        buffer.
-        :param utterance:
-        :return:
-        """
-
-        def target():
-            payload = {
-                'utterance': utterance,
-                'session': SessionManager.get().session_id
-            }
-            self.emitter.emit("speak", Message("speak", metadata=payload))
-
-        threading.Thread(target=target).start()
+        payload = {
+            'utterance': utterance,
+            'session': SessionManager.get().session_id
+        }
+        self.emitter.emit("speak", Message("speak", metadata=payload))
 
     def _create_remote_stt_runnable(self, audio, utterances):
         def runnable():
