@@ -19,8 +19,11 @@
 from adapt.engine import IntentDeterminationEngine
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import open_intent_envelope, MycroftSkill
+from mycroft.util.log import getLogger
 
 __author__ = 'seanfitz'
+
+logger = getLogger(__name__)
 
 
 class IntentSkill(MycroftSkill):
@@ -45,6 +48,7 @@ class IntentSkill(MycroftSkill):
                 # TODO - Should Adapt handle this?
                 best_intent['utterance'] = utterance
             except StopIteration, e:
+                logger.exception(e)
                 continue
 
         if best_intent and best_intent.get('confidence', 0.0) > 0.0:

@@ -1,5 +1,4 @@
 import json
-import unittest
 from pyee import EventEmitter
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import load_skills

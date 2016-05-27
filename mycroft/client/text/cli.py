@@ -62,6 +62,7 @@ def main():
                 Message("recognizer_loop:utterance",
                         metadata={'utterances': [line.strip()]}))
     except KeyboardInterrupt, e:
+        logger.exception(e)
         event_thread.exit()
         sys.exit()
 
