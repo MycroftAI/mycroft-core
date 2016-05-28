@@ -19,6 +19,7 @@
 import unittest
 from Queue import Queue
 
+import speech_recognition
 from os.path import dirname, join
 from speech_recognition import WavFile, AudioData
 
@@ -35,7 +36,10 @@ class MockRecognizer(object):
         self.transcriptions = []
 
     def recognize_google(self, audio, key=None, language=None, show_all=False):
-        return self.transcriptions.pop(0)
+        if len(self.transcriptions) > 0:
+            return self.transcriptions.pop(0)
+        else:
+            raise speech_recognition.UnknownValueError()
 
     def set_transcriptions(self, transcriptions):
         self.transcriptions = transcriptions
