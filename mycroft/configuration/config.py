@@ -33,7 +33,11 @@ DEFAULTS_FILE = os.path.join(
 ETC_CONFIG_FILE = '/etc/mycroft/mycroft.ini'
 USER_CONFIG_FILE = os.path.join(
     os.path.expanduser('~'), '.mycroft/mycroft.ini')
-DEFAULT_LOCATIONS = [DEFAULTS_FILE, ETC_CONFIG_FILE, USER_CONFIG_FILE]
+
+DEFAULT_LOCATIONS = [DEFAULTS_FILE]
+SYSTEM_LOCATIONS = [ETC_CONFIG_FILE]
+USER_LOCATIONS = [USER_CONFIG_FILE]
+CONFIG_LOCATIONS = DEFAULT_LOCATIONS + SYSTEM_LOCATIONS + USER_LOCATIONS
 
 
 class ConfigurationLoader(object):
@@ -56,7 +60,7 @@ class ConfigurationLoader(object):
     def load(self):
         """
         Loads configuration files from disk, in the locations defined by
-        DEFAULT_LOCATIONS
+        class member config_locations
         """
         config = {}
         for config_file in self.config_locations:
@@ -128,17 +132,20 @@ class ConfigurationManager(object):
     _config = None
 
     @staticmethod
-    def load(*config_files):
+    def load(defaults=CONFIG_LOCATIONS, *config_files):
         """
         Load default config files as well as any additionally specified files.
         Now also loads configuration from Cerberus (if device is paired)
 
+        :param defaults: A list of default files to load, if not included
+                         CONFIG_LOCATIONS will be used.
         :param config_files: An array of config file paths in addition to
-        DEFAULT_LOCATIONS
+                             defaults.
 
         :return: None
         """
-        loader = ConfigurationLoader(DEFAULT_LOCATIONS + list(config_files))
+        loader = ConfigurationLoader(defaults + list(config_files))
+
         ConfigurationManager._config = loader.load()
         RemoteConfiguration().update()
 
