@@ -25,6 +25,10 @@ from mycroft.util.log import getLogger
 from mycroft.configuration.config import ConfigurationManager
 from mycroft.skills.intent import create_skill as create_intent_skill
 
+from mycroft.configuration.config import DEFAULT_LOCATIONS
+from mycroft.configuration.config import SYSTEM_LOCATIONS
+from mycroft.configuration.config import USER_LOCATIONS
+
 __author__ = 'seanfitz'
 
 logger = getLogger("SkillContainer")
@@ -35,6 +39,7 @@ class SkillContainer(object):
     def __init__(self, args):
         parser = argparse.ArgumentParser()
         parser.add_argument("--dependency-dir", default="./lib")
+        parser.add_argument("--default-config", default="./config/mycroft.ini")
         parser.add_argument(
             "--messagebus-host", default=messagebus_config.get("host"))
         parser.add_argument(
@@ -47,6 +52,11 @@ class SkillContainer(object):
             "skill_directory", default=os.path.dirname(__file__))
 
         parsed_args = parser.parse_args(args)
+        if os.path.exists(parsed_args.default_config):
+            configs = DEFAULT_LOCATIONS + [parsed_args.default_config] \
+                + SYSTEM_LOCATIONS + USER_LOCATIONS
+            ConfigurationManager.load(configs)
+
         if os.path.exists(parsed_args.dependency_dir):
             sys.path.append(parsed_args.dependency_dir)
         sys.path.append(parsed_args.skill_directory)
