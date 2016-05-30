@@ -31,6 +31,8 @@ LOGGER = getLogger(__name__)
 class NestSkill(MycroftSkill):
     def __init__(self):
         super(NestSkill, self).__init__(name="NestSkill")
+        self.nest_user = self.config.get('nest_user')
+        self.nest_password = self.config.get('nest_password')
 
     def initialize(self):
         self.load_data_files(dirname(__file__))
@@ -43,14 +45,14 @@ class NestSkill(MycroftSkill):
     
     def handle_too_cold_intent(self, message):
         try:
-            subprocess.call("nest --user 'username' --password 'password' temp 75", shell=True)
+            subprocess.call("nest --user '" + self.nest_user + "' --password '" + self.nest_password + "' temp 75", shell=True)
             self.speak_dialog('too.cold')
         except Exception as e:
             LOGGER.error("Error: {0}".format(e))
 
     def handle_too_hot_intent(self, message):
         try:
-            subprocess.call("nest --user 'username' --password 'password' temp 68", shell=True)
+            subprocess.call("nest --user '" + self.nest_user + "' --password '" + self.nest_password + "' temp 68", shell=True)
             self.speak_dialog('too.hot')
         except Exception as e:
             LOGGER.error("Error: {0}".format(e))
