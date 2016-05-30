@@ -35,33 +35,25 @@ class NestSkill(MycroftSkill):
     def initialize(self):
         self.load_data_files(dirname(__file__))
 
-        intent = IntentBuilder("NestIntent").require("NestKeyword").build()
-        self.register_intent(intent, self.handle_too_hot_intent)
+        intent = IntentBuilder("TooColdIntent").require("tooColdKeyword").build()
         self.register_intent(intent, self.handle_too_cold_intent)
-        self.__build_too_cold_intent()
-        self.__build_too_hot_intent()
-            
-    def __build_too_cold_intent(self):
-        intent = IntentBuilder("TooColdIntent").require("TooColdKeyword").build()
-        self.register_intent(intent, self.handle_too_cold_intent)
-    
-    def __build_too_hot_intent(self):
-        intent = IntentBuilder("TooColdIntent").require("TooHotKeyword").build()
+
+        intent = IntentBuilder("TooColdIntent").require("tooHotKeyword").build()
         self.register_intent(intent, self.handle_too_cold_intent)
     
     def handle_too_cold_intent(self, message):
         try:
             subprocess.call("nest --user 'username' --password 'password' temp 75", shell=False)
             self.speak_dialog('too.cold')
-        except: # Exception as e:
+        except Exception as e:
                 LOGGER.error("Error: {0}".format(e))
+
     def handle_too_hot_intent(self, message):
         try:
             subprocess.call("nest --user 'username' --password 'password' temp 68", shell=False)
             self.speak_dialog('too.hot')
-        except: # Exception as e:
+        except Exception as e:
             LOGGER.error("Error: {0}".format(e))
-
 
     def stop(self):
         pass
