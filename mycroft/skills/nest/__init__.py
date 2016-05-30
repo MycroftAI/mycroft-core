@@ -18,7 +18,7 @@
 
 from os.path import dirname
 
-import python-nest
+#import python-nest
 import nest
 import os.system
 import os.spawn*
