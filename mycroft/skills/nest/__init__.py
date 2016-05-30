@@ -18,6 +18,7 @@
 
 from os.path import dirname
 import subprocess
+
 from adapt.intent import IntentBuilder
 from mycroft.skills.core import MycroftSkill
 from mycroft.util.log import getLogger
@@ -42,14 +43,14 @@ class NestSkill(MycroftSkill):
     
     def handle_too_cold_intent(self, message):
         try:
-            subprocess.call("nest --user 'username' --password 'password' temp 75", shell=False)
+            subprocess.call("nest --user 'username' --password 'password' temp 75", shell=True)
             self.speak_dialog('too.cold')
         except Exception as e:
-                LOGGER.error("Error: {0}".format(e))
+            LOGGER.error("Error: {0}".format(e))
 
     def handle_too_hot_intent(self, message):
         try:
-            subprocess.call("nest --user 'username' --password 'password' temp 68", shell=False)
+            subprocess.call("nest --user 'username' --password 'password' temp 68", shell=True)
             self.speak_dialog('too.hot')
         except Exception as e:
             LOGGER.error("Error: {0}".format(e))
