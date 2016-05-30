@@ -31,4 +31,5 @@ netifaces==0.10.4
 pyjokes==0.5.0
 psutil==4.1.0
 pep8==1.7.0
+python-nest==2.9.2
 --extra-index-url=http://pypi.mycroft.team
