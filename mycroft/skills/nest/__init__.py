@@ -17,7 +17,6 @@
 
 
 from os.path import dirname
-import nest
 import subprocess
 from adapt.intent import IntentBuilder
 from mycroft.skills.core import MycroftSkill
@@ -35,11 +34,11 @@ class NestSkill(MycroftSkill):
     def initialize(self):
         self.load_data_files(dirname(__file__))
 
-        intent = IntentBuilder("TooColdIntent").require("tooColdKeyword").build()
-        self.register_intent(intent, self.handle_too_cold_intent)
+        cold_intent = IntentBuilder("TooColdIntent").require("tooColdKeyword").build()
+        self.register_intent(cold_intent, self.handle_too_cold_intent)
 
-        intent = IntentBuilder("TooColdIntent").require("tooHotKeyword").build()
-        self.register_intent(intent, self.handle_too_cold_intent)
+        hot_intent = IntentBuilder("TooHotIntent").require("tooHotKeyword").build()
+        self.register_intent(hot_intent, self.handle_too_hot_intent)
     
     def handle_too_cold_intent(self, message):
         try:
