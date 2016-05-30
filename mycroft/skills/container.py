@@ -55,7 +55,7 @@ class SkillContainer(object):
         if os.path.exists(parsed_args.default_config):
             configs = DEFAULT_LOCATIONS + [parsed_args.default_config] \
                 + SYSTEM_LOCATIONS + USER_LOCATIONS
-            ConfigurationManager.load(configs)
+            ConfigurationManager.load(defaults=configs)
 
         if os.path.exists(parsed_args.dependency_dir):
             sys.path.append(parsed_args.dependency_dir)
