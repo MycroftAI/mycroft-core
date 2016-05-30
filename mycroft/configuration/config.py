@@ -132,7 +132,7 @@ class ConfigurationManager(object):
     _config = None
 
     @staticmethod
-    def load(defaults=CONFIG_LOCATIONS, *config_files):
+    def load(*config_files, **kwargs):
         """
         Load default config files as well as any additionally specified files.
         Now also loads configuration from Cerberus (if device is paired)
@@ -144,6 +144,13 @@ class ConfigurationManager(object):
 
         :return: None
         """
+        if len(kwargs) > 0 and "defaults" not in kwargs:
+            raise TypeError("load() got an unexpected keyword argument '%s'" %
+                (kwargs.keys()[0]))
+
+        kwargs["defaults"] = kwargs.get("defaults", CONFIG_LOCATIONS)
+        defaults = kwargs["defaults"]
+
         loader = ConfigurationLoader(defaults + list(config_files))
 
         ConfigurationManager._config = loader.load()
