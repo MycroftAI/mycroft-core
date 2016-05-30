@@ -17,15 +17,8 @@
 
 
 from os.path import dirname
-
-#import python-nest
 import nest
-import os.system
-import os.spawn*
-import os.popen*
-import popen2.*
-import commands.*
-
+import subprocess
 from adapt.intent import IntentBuilder
 from mycroft.skills.core import MycroftSkill
 from mycroft.util.log import getLogger
@@ -43,7 +36,8 @@ class NestSkill(MycroftSkill):
         self.load_data_files(dirname(__file__))
 
         intent = IntentBuilder("NestIntent").require("NestKeyword").build()
-        self.register_intent(intent, self.handle_intent)
+        self.register_intent(intent, self.handle_too_hot_intent)
+        self.register_intent(intent, self.handle_too_cold_intent)
         self.__build_too_cold_intent()
         self.__build_too_hot_intent()
             
@@ -57,15 +51,15 @@ class NestSkill(MycroftSkill):
     
     def handle_too_cold_intent(self, message):
         try:
-            subprocess.call(["nest --user 'username' --password 'password' temp 75", shell=false])
-            self.speak_dialog('too.cold', data)
-            except Exception as e:
+            subprocess.call("nest --user 'username' --password 'password' temp 75", shell=False)
+            self.speak_dialog('too.cold')
+        except: # Exception as e:
                 LOGGER.error("Error: {0}".format(e))
     def handle_too_hot_intent(self, message):
         try:
-            subprocess.call(["nest --user 'username' --password 'password' temp 68", shell=false])
-            self.speak_dialog('too.hot', data)
-            except Exception as e:
+            subprocess.call("nest --user 'username' --password 'password' temp 68", shell=False)
+            self.speak_dialog('too.hot')
+        except: # Exception as e:
             LOGGER.error("Error: {0}".format(e))
 
 
