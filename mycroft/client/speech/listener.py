@@ -207,6 +207,8 @@ class AudioConsumer(threading.Thread):
                         "Your device is not registered yet. To start pairing, "
                         "login at cerberus.mycroft.ai")
                 utterances.append("pair my device")
+            except Exception as e:
+                logger.error("Unexpected exception: {0}".format(e))
             else:
                 logger.debug("STT: " + text)
                 if text.strip() != '':
