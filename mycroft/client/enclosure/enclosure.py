@@ -153,13 +153,13 @@ class Enclosure:
             self.rate = int(self.config.get("rate"))
             self.timeout = int(self.config.get("timeout"))
             self.serial = serial.serial_for_url(
-                    url=self.port, baudrate=self.rate, timeout=self.timeout)
+                url=self.port, baudrate=self.rate, timeout=self.timeout)
             LOGGER.info(
-                    "Connected to: " + self.port + " rate: " + str(self.rate) +
-                    " timeout: " + str(self.timeout))
+                "Connected to: " + self.port + " rate: " + str(self.rate) +
+                " timeout: " + str(self.timeout))
         except:
             LOGGER.error(
-                    "It is not possible to connect to serial port: " + self.port)
+                "It is not possible to connect to serial port: " + self.port)
             raise
 
     def __register_events(self):
