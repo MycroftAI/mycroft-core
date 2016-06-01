@@ -10,7 +10,7 @@ __author__ = 'crios'
 
 LOGGER = getLogger(__name__)
 
-# Place your Twitter API keys here
+# Place your Twitter API keys here!
 ACCESS_TOKEN = ''
 ACCESS_TOKEN_SECRET = ''
 CONSUMER_KEY = ''
