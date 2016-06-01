@@ -49,7 +49,7 @@ class WikipediaSkill(MycroftSkill):
         self.load_vocab_files(join(dirname(__file__), 'vocab', 'en-us'))
 
         prefixes = ['wiki', 'wikipedia', 'tell me about', 'tell us about',
-                    'who is', 'who was']  # TODO - i10n
+                    'what does wikipedia say about']  # TODO - i10n
         self.__register_prefixed_regex(prefixes, "(?P<ArticleTitle>.*)")
 
         intent = IntentBuilder("WikipediaIntent").require(
