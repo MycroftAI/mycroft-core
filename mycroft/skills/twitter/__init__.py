@@ -10,17 +10,6 @@ __author__ = 'crios'
 
 LOGGER = getLogger(__name__)
 
-# Place your Twitter API keys here:
-#ACCESS_TOKEN = config.get('aToken')
-#ACCESS_TOKEN_SECRET = config.get('aTokenSecret')
-#CONSUMER_KEY = config.get('cKey')
-#CONSUMER_SECRET = config.get('cSecret')
-#print ACCESS_TOKEN
-
-#auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
-#auth.set_access_token(ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
-#api = tweepy.API(auth)
-
 
 class TwitterSkill(MycroftSkill):
     def __init__(self):
@@ -29,13 +18,9 @@ class TwitterSkill(MycroftSkill):
         ACCESS_TOKEN_SECRET = self.config.get('aTokenSecret')
         CONSUMER_KEY = self.config.get('cKey')
         CONSUMER_SECRET = self.config.get('cSecret')
-        print ACCESS_TOKEN
         auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
         auth.set_access_token(ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
         self.api = tweepy.API(auth)
-
-
-
 
     def initialize(self):
         self.load_data_files(dirname(__file__))
@@ -53,7 +38,6 @@ class TwitterSkill(MycroftSkill):
         except Exception as e:
             LOGGER.error("Error: {0}".format(e))
             self.speak_dialog('twitter.fail')
-
     def stop(self):
         pass
 
