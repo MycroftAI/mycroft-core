@@ -13,7 +13,7 @@ LOGGER = getLogger(__name__)
 
 class TwitterSkill(MycroftSkill):
     def __init__(self):
-        super(TwitterSkill,self).__init__(name="TwitterSkill")
+        super(TwitterSkill, self).__init__(name="TwitterSkill")
         ACCESS_TOKEN = self.config.get('aToken')
         ACCESS_TOKEN_SECRET = self.config.get('aTokenSecret')
         CONSUMER_KEY = self.config.get('cKey')
@@ -26,7 +26,9 @@ class TwitterSkill(MycroftSkill):
         self.load_data_files(dirname(__file__))
         self.register_regex("that (?P<PostText>.*)")
         self.register_regex("i am (?P<PostText>.*)")
-        twitter_intent = IntentBuilder("TwitterIntent").require("twitterKeyword").require("PostText").build()
+        twitter_intent = (IntentBuilder("TwitterIntent")
+                          .require("twitterKeyword")
+                          .require("PostText").build())
         self.register_intent(twitter_intent, self.handle_twitter_intent)
 
     def handle_twitter_intent(self, message):
@@ -38,6 +40,7 @@ class TwitterSkill(MycroftSkill):
         except Exception as e:
             LOGGER.error("Error: {0}".format(e))
             self.speak_dialog('twitter.fail')
+
     def stop(self):
         pass
 
