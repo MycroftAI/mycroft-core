@@ -31,7 +31,16 @@ class WelcomeSkill(MycroftSkill):
         super(WelcomeSkill, self).__init__(name="WelcomeSkill")
 
     def initialize(self):
+        self.load_data_files(dirname(__file__))
+        
+        welcome_intent = IntentBuilder("WelcomeIntent").require("WelcomeKeyword").build()
+        self.register_intent(welcome_intent, self.handle_welcome_intent)
 
     def handle_welcome_intent(self):
+        self.speak_dialog('Welcome')
 
     def stop(self):
+        pass
+
+def create_skill():
+    return WelcomeSkill()
