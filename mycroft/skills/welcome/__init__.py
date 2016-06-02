@@ -32,11 +32,11 @@ class WelcomeSkill(MycroftSkill):
 
     def initialize(self):
         self.load_data_files(dirname(__file__))
-        
+
         welcome_intent = IntentBuilder("WelcomeIntent").require("WelcomeKeyword").build()
         self.register_intent(welcome_intent, self.handle_welcome_intent)
 
-    def handle_welcome_intent(self):
+    def handle_welcome_intent(self, message):
         self.speak_dialog('Welcome')
 
     def stop(self):
