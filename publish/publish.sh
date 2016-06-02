@@ -84,7 +84,7 @@ replace ${CONTROL_FILE} "%%PACKAGE%%" "mycroft-core"
 replace ${CONTROL_FILE} "%%VERSION%%" "${VERSION}"
 replace ${CONTROL_FILE} "%%ARCHITECTURE%%" "${ARCH}"
 replace ${CONTROL_FILE} "%%DESCRIPTION%%" "mycroft-core"
-replace ${CONTROL_FILE} "%%PRE_DEPENDS%%" "portaudio19-dev, libglib2.0-0, flac, espeak, mpg123, mimic"
+replace ${CONTROL_FILE} "%%DEPENDS%%" "portaudio19-dev, libglib2.0-0, flac, espeak, mpg123, mimic"
 echo "Creating debian preinst file"
 PREINST_FILE=${DEB_DIR}/DEBIAN/preinst
 cp ${TOP}/publish/deb_base/preinst.template ${PREINST_FILE}
