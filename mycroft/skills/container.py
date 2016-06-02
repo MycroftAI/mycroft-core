@@ -23,11 +23,8 @@ from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.skills.core import create_skill_descriptor, load_skill
 from mycroft.util.log import getLogger
 from mycroft.configuration.config import ConfigurationManager
+from mycroft.configuration.config import ConfigBuilder
 from mycroft.skills.intent import create_skill as create_intent_skill
-
-from mycroft.configuration.config import DEFAULT_LOCATIONS
-from mycroft.configuration.config import SYSTEM_LOCATIONS
-from mycroft.configuration.config import USER_LOCATIONS
 
 __author__ = 'seanfitz'
 
@@ -53,9 +50,10 @@ class SkillContainer(object):
 
         parsed_args = parser.parse_args(args)
         if os.path.exists(parsed_args.default_config):
-            configs = DEFAULT_LOCATIONS + [parsed_args.default_config] \
-                + SYSTEM_LOCATIONS + USER_LOCATIONS
-            ConfigurationManager.load(defaults=configs)
+            configs = ConfigBuilder() \
+                .base() \
+                .with_default(parsed_args.default_config)
+            ConfigurationManager.load(configs)
 
         if os.path.exists(parsed_args.dependency_dir):
             sys.path.append(parsed_args.dependency_dir)
