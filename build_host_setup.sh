@@ -4,6 +4,7 @@ sudo apt-get install -y \
     git \
     python \
     python-dev \
+    python-setuptools \
     python-virtualenv \
     python-gobject-dev \
     virtualenvwrapper \
