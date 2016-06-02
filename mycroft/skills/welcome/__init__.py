@@ -25,6 +25,7 @@ __author__ = 'eward'
 
 LOGGER = getLogger(__name__)
 
+
 class WelcomeSkill(MycroftSkill):
 
     def __init__(self):
@@ -33,7 +34,7 @@ class WelcomeSkill(MycroftSkill):
     def initialize(self):
         self.load_data_files(dirname(__file__))
 
-        welcome_intent = IntentBuilder("WelcomeIntent").require("WelcomeKeyword").build()
+        welcome_intent = IntentBuilder("WelcIntent").require("WelcKey").build()
         self.register_intent(welcome_intent, self.handle_welcome_intent)
 
     def handle_welcome_intent(self, message):
@@ -41,6 +42,7 @@ class WelcomeSkill(MycroftSkill):
 
     def stop(self):
         pass
+
 
 def create_skill():
     return WelcomeSkill()
