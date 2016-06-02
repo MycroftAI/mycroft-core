@@ -58,8 +58,7 @@ class PairingSkill(MycroftSkill):
                                 self.__display_pairing_code)
         elif not self.displaying:
             self.displaying = True
-            self.enclosure.mouth_text(
-                    "Pairing code: " + self.client.pairing_code)
+            self.enclosure.mouth_text(self.client.pairing_code)
 
     def __emit_paired(self, paired):
         msg = Message('mycroft.paired', metadata={'paired': paired})
