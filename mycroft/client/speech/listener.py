@@ -81,7 +81,7 @@ class AudioConsumer(threading.Thread):
     """
 
     # In seconds, the minimum audio size to be sent to remote STT
-    MIN_AUDIO_SIZE = 1.0
+    MIN_AUDIO_SIZE = 0.5
 
     def __init__(self, state, queue, emitter, wakeup_recognizer,
                  mycroft_recognizer, remote_recognizer):
