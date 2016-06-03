@@ -25,7 +25,8 @@ class MathSkill(MycroftSkill):
         self.register_regex('(?P<Value1>\d+)')
         self.register_regex('(?P<Value2>\d+)')
 
-        intent = IntentBuilder("MathIntent").require("Value1").require("MathKeyword").require("Value2").build()
+        intent = IntentBuilder("MathIntent").require(
+            "Value1").require("MathKeyword").require("Value2").build()
         self.register_intent(intent, self.handle_intent)
 
     @staticmethod
@@ -45,9 +46,11 @@ class MathSkill(MycroftSkill):
         operator_func = self.operators[operator_char]
         result = operator_func(first_val, second_val)
 
-        equation_string = self.__to_string(first_val) + ' ' + operator_char + ' ' + self.__to_string(second_val)
+        equation_string = self.__to_string(first_val) + ' ' + operator_char + \
+            ' ' + self.__to_string(second_val)
         answer_string = self.__to_string(result)
-        self.speak_dialog('read.answer', data={'equation':equation_string,'answer':answer_string})
+        self.speak_dialog('read.answer', data={'equation': equation_string,
+                                               'answer': answer_string})
 
     def stop(self):
         pass
