@@ -1,0 +1,9 @@
+{
+  "utterance": "what is 32 divided by 24",
+  "intent_type": "MathIntent",
+  "intent": {
+    "Value1": "32",
+    "MathKeyword": "/",
+    "Value2": "24"
+  }
+}

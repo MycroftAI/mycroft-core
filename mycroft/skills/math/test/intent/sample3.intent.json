@@ -1,0 +1,9 @@
+{
+  "utterance": "what is 15 times 23",
+  "intent_type": "MathIntent",
+  "intent": {
+    "Value1": "15",
+    "MathKeyword": "*",
+    "Value2": "23"
+  }
+}
