@@ -17,14 +17,15 @@
 
 
 import json
-from multiprocessing.pool import ThreadPool
 import time
-from mycroft.configuration.config import ConfigurationManager
-from mycroft.messagebus.message import Message
-import mycroft.util.log
+from multiprocessing.pool import ThreadPool
+
 from pyee import EventEmitter
 from websocket import WebSocketApp
 
+import mycroft.util.log
+from mycroft.configuration.config import ConfigurationManager
+from mycroft.messagebus.message import Message
 from mycroft.util import str2bool
 
 __author__ = 'seanfitz'
@@ -98,6 +99,9 @@ class WebsocketClient(object):
 
     def once(self, event_name, func):
         self.emitter.once(event_name, func)
+
+    def remove(self, event_name, func):
+        self.emitter.remove_listener(event_name, func)
 
     def run_forever(self):
         self.client.run_forever()

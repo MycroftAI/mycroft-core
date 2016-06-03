@@ -190,3 +190,41 @@ class AudioConsumerTest(unittest.TestCase):
         self.assertIsNotNone(utterances)
         self.assertTrue(len(utterances) == 1)
         self.assertEquals("what's the weather next week", utterances[0])
+
+    def test_stop(self):
+        self.queue.put(self.__create_sample_from_test_file('mycroft'))
+        self.consumer.read_audio()
+
+        self.queue.put(self.__create_sample_from_test_file('stop'))
+        self.recognizer.set_transcriptions(["stop"])
+        monitor = {}
+
+        def utterance_callback(message):
+            monitor['utterances'] = message.get('utterances')
+
+        self.loop.once('recognizer_loop:utterance', utterance_callback)
+        self.consumer.read_audio()
+
+        utterances = monitor.get('utterances')
+        self.assertIsNotNone(utterances)
+        self.assertTrue(len(utterances) == 1)
+        self.assertEquals("stop", utterances[0])
+
+    def test_record(self):
+        self.queue.put(self.__create_sample_from_test_file('mycroft'))
+        self.consumer.read_audio()
+
+        self.queue.put(self.__create_sample_from_test_file('record'))
+        self.recognizer.set_transcriptions(["record"])
+        monitor = {}
+
+        def utterance_callback(message):
+            monitor['utterances'] = message.get('utterances')
+
+        self.loop.once('recognizer_loop:utterance', utterance_callback)
+        self.consumer.read_audio()
+
+        utterances = monitor.get('utterances')
+        self.assertIsNotNone(utterances)
+        self.assertTrue(len(utterances) == 1)
+        self.assertEquals("record", utterances[0])
