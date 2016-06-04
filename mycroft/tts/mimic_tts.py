@@ -25,7 +25,7 @@ from mycroft.configuration.config import ConfigurationManager
 
 __author__ = 'jdorleans'
 
-config = ConfigurationManager.get_config().get("tts", {})
+config = ConfigurationManager.get().get("tts", {})
 
 NAME = 'mimic'
 BIN = config.get(

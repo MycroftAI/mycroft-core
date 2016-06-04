@@ -148,7 +148,7 @@ class Enclosure:
 
     def __init_serial(self):
         try:
-            self.config = ConfigurationManager.get_config().get("enclosure")
+            self.config = ConfigurationManager.get().get("enclosure")
             self.port = self.config.get("port")
             self.rate = int(self.config.get("rate"))
             self.timeout = int(self.config.get("timeout"))

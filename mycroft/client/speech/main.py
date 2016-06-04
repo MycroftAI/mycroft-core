@@ -32,7 +32,7 @@ tts = tts_factory.create()
 mutex = Lock()
 loop = None
 
-config = ConfigurationManager.get_config()
+config = ConfigurationManager.get()
 
 
 def handle_listening():

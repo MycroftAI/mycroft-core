@@ -138,7 +138,7 @@ class MycroftSkill(object):
     def __init__(self, name, emitter=None):
         self.name = name
         self.bind(emitter)
-        config = ConfigurationManager.get_config()
+        config = ConfigurationManager.get()
         self.config = config.get(name)
         self.config_core = config.get('core')
         self.dialog_renderer = None

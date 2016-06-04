@@ -33,7 +33,7 @@ from mycroft.configuration.config import ConfigurationManager
 Configuration for the PyOWM library specific to OWM web API version 2.5
 """
 
-config = ConfigurationManager.get_config().get('WeatherSkill')
+config = ConfigurationManager.get().get('WeatherSkill')
 
 if config.get('api_key'):
     ROOT_API_URL = 'http://api.openweathermap.org/data/2.5'

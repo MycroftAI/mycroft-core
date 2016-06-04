@@ -31,7 +31,7 @@ settings = {
 def main():
     import tornado.options
     tornado.options.parse_command_line()
-    config = ConfigurationManager.get_config()
+    config = ConfigurationManager.get()
     service_config = config.get("messagebus_service")
 
     routes = [

@@ -27,7 +27,7 @@ from mycroft.configuration.config import ConfigurationManager
 from mycroft.session import SessionManager
 from mycroft.util.setup_base import get_version
 
-config = ConfigurationManager.get_config().get('metrics_client')
+config = ConfigurationManager.get().get('metrics_client')
 metrics_log = getLogger("METRICS")
 
 

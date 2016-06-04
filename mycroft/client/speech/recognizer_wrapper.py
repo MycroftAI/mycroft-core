@@ -32,7 +32,7 @@ __author__ = 'seanfitz'
 
 log = getLogger("RecognizerWrapper")
 
-config = ConfigurationManager.get_config().get('speech_client')
+config = ConfigurationManager.get().get('speech_client')
 
 
 class GoogleRecognizerWrapper(object):

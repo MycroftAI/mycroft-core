@@ -99,7 +99,7 @@ class RemoteConfiguration(object):
         self.config_manager = ConfigurationManager()
 
     def update(self):
-        config = self.config_manager.get_config()
+        config = self.config_manager.get()
         remote_config_url = config.get("remote_configuration").get("url")
         enabled = str2bool(
             config.get("remote_configuration").get("enabled", "False"))
@@ -138,10 +138,10 @@ class ConfigurationManager(object):
     @staticmethod
     def load(locations):
         ConfigurationManager.__config = ConfigurationLoader.load(
-            ConfigurationManager.get_config(), locations)
+            ConfigurationManager.get(), locations)
 
     @staticmethod
-    def get_config(locations=None):
+    def get(locations=None):
         """
         Get cached configuration.
 

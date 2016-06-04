@@ -37,8 +37,8 @@ from mycroft.util.log import getLogger
 
 logger = getLogger(__name__)
 
-core_config = ConfigurationManager.get_config().get('core')
-speech_config = ConfigurationManager.get_config().get('speech_client')
+core_config = ConfigurationManager.get().get('core')
+speech_config = ConfigurationManager.get().get('speech_client')
 
 
 class AudioProducer(threading.Thread):

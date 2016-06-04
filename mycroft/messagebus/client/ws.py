@@ -32,7 +32,7 @@ __author__ = 'seanfitz'
 
 logger = mycroft.util.log.getLogger(__name__)
 
-config = ConfigurationManager.get_config()
+config = ConfigurationManager.get()
 client_config = config.get("messagebus_client")
 
 

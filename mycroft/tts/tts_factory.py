@@ -42,7 +42,7 @@ def create():
     """
 
     logging.basicConfig()
-    config = ConfigurationManager.get_config().get('tts')
+    config = ConfigurationManager.get().get('tts')
     name = config.get('module')
     lang = config.get(name + '.lang', None)
     voice = config.get(name + '.voice')
