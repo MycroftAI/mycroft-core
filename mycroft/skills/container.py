@@ -16,55 +16,70 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import sys
-import os
 import argparse
+import sys
+
+from os.path import dirname, exists, isdir
+
+from mycroft.configuration.config import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.skills.core import create_skill_descriptor, load_skill
-from mycroft.util.log import getLogger
-from mycroft.configuration.config import ConfigurationManager
 from mycroft.skills.intent import create_skill as create_intent_skill
+from mycroft.util.log import getLogger
 
 __author__ = 'seanfitz'
 
 logger = getLogger("SkillContainer")
-messagebus_config = ConfigurationManager.get_config().get("messagebus_client")
 
 
 class SkillContainer(object):
     def __init__(self, args):
+        params = self.__build_params(args)
+
+        if params.config:
+            ConfigurationManager.load([params.config])
+
+        if exists(params.lib) and isdir(params.lib):
+            sys.path.append(params.lib)
+
+        sys.path.append(params.dir)
+        self.dir = params.dir
+
+        self.enable_intent_skill = params.enable_intent_skill
+
+        self.__init_client(params)
+
+    @staticmethod
+    def __build_params(args):
         parser = argparse.ArgumentParser()
-        parser.add_argument("--dependency-dir", default="./lib")
-        parser.add_argument(
-            "--messagebus-host", default=messagebus_config.get("host"))
-        parser.add_argument(
-            "--messagebus-port", type=int,
-            default=messagebus_config.get("port"))
+        parser.add_argument("--config", default="./mycroft.ini")
+        parser.add_argument("--dir", default=dirname(__file__))
+        parser.add_argument("--lib", default="./lib")
+        parser.add_argument("--host", default=None)
+        parser.add_argument("--port", default=None)
         parser.add_argument("--use-ssl", action='store_true', default=False)
-        parser.add_argument(
-            "--enable-intent-skill", action='store_true', default=False)
-        parser.add_argument(
-            "skill_directory", default=os.path.dirname(__file__))
+        parser.add_argument("--enable-intent-skill", action='store_true',
+                            default=False)
+        return parser.parse_args(args)
 
-        parsed_args = parser.parse_args(args)
-        if os.path.exists(parsed_args.dependency_dir):
-            sys.path.append(parsed_args.dependency_dir)
-        sys.path.append(parsed_args.skill_directory)
+    def __init_client(self, params):
+        config = ConfigurationManager.get_config().get("messagebus_client")
 
-        self.skill_directory = parsed_args.skill_directory
+        if not params.host:
+            params.host = config.get('host')
+        if not params.port:
+            params.port = config.get('port')
 
-        self.enable_intent_skill = parsed_args.enable_intent_skill
-
-        self.client = WebsocketClient(host=parsed_args.messagebus_host,
-                                      port=parsed_args.messagebus_port,
-                                      ssl=parsed_args.use_ssl)
+        self.client = WebsocketClient(host=params.host,
+                                      port=params.port,
+                                      ssl=params.use_ssl)
 
     def try_load_skill(self):
         if self.enable_intent_skill:
             intent_skill = create_intent_skill()
             intent_skill.bind(self.client)
             intent_skill.initialize()
-        skill_descriptor = create_skill_descriptor(self.skill_directory)
+        skill_descriptor = create_skill_descriptor(self.dir)
         load_skill(skill_descriptor, self.client)
 
     def run(self):

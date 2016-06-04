@@ -26,16 +26,16 @@ from mycroft.skills.core import MycroftSkill
 
 class CerberusConfigSkill(MycroftSkill):
     def __init__(self):
-        MycroftSkill.__init__(self, "CerberusConfigSkill")
+        super(CerberusConfigSkill, self).__init__("CerberusConfigSkill")
 
     def initialize(self):
-        intent = IntentBuilder("update_cerberus_config")\
-            .require("UpdateConfigurationPhrase")\
-            .build()
         self.load_data_files(join(dirname(__file__)))
-        self.register_intent(intent, handler=self.handle_update_request)
+        intent = IntentBuilder("UpdateConfigurationIntent") \
+            .require("UpdateConfigurationPhrase") \
+            .build()
+        self.register_intent(intent, self.handle_update_intent)
 
-    def handle_update_request(self, message):
+    def handle_update_intent(self, message):
         identity = IdentityManager().get()
         if not identity.owner:
             self.speak_dialog("not.paired")
@@ -43,6 +43,9 @@ class CerberusConfigSkill(MycroftSkill):
             rc = RemoteConfiguration()
             rc.update()
             self.speak_dialog("config.updated")
+
+    def stop(self):
+        pass
 
 
 def create_skill():

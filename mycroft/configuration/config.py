@@ -16,62 +16,70 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import os
+import collections
+
 import requests
 from configobj import ConfigObj
-import collections
+from os.path import join, dirname, expanduser, exists, isfile
 
 from mycroft.identity import IdentityManager
 from mycroft.util import str2bool
 from mycroft.util.log import getLogger
 
-__author__ = 'seanfitz'
+__author__ = 'seanfitz, jdorleans'
 
 logger = getLogger(__name__)
-DEFAULTS_FILE = os.path.join(
-    os.path.dirname(__file__), 'defaults', 'defaults.ini')
-ETC_CONFIG_FILE = '/etc/mycroft/mycroft.ini'
-USER_CONFIG_FILE = os.path.join(
-    os.path.expanduser('~'), '.mycroft/mycroft.ini')
-DEFAULT_LOCATIONS = [DEFAULTS_FILE, ETC_CONFIG_FILE, USER_CONFIG_FILE]
+
+DEFAULT_CONFIG = join(dirname(__file__), 'mycroft.ini')
+SYSTEM_CONFIG = '/etc/mycroft/mycroft.ini'
+USER_CONFIG = join(expanduser('~'), '.mycroft/mycroft.ini')
 
 
 class ConfigurationLoader(object):
     """
-    A utility for loading mycroft configuration files.
+    A utility for loading Mycroft configuration files.
     """
-    def __init__(self, config_locations):
-        self.config_locations = config_locations
 
     @staticmethod
-    def _overwrite_merge(d, u):
-        for k, v in u.iteritems():
-            if isinstance(v, collections.Mapping):
-                r = ConfigurationLoader._overwrite_merge(d.get(k, {}), v)
-                d[k] = r
-            else:
-                d[k] = u[k]
-        return d
+    def load(config=None, locations=None):
+        """
+        Loads default or specified configuration files
+        """
+        if not config:
+            config = {}
 
-    def load(self):
-        """
-        Loads configuration files from disk, in the locations defined by
-        DEFAULT_LOCATIONS
-        """
-        config = {}
-        for config_file in self.config_locations:
-            if os.path.exists(config_file) and os.path.isfile(config_file):
-                logger.debug("Loading config file [%s]" % config_file)
-                try:
-                    cobj = ConfigObj(config_file)
-                    config = ConfigurationLoader._overwrite_merge(config, cobj)
-                except Exception, e:
-                    logger.error(
-                        "Error loading config file [%s]" % config_file)
-                    logger.error(repr(e))
+        if not locations:
+            locations = [DEFAULT_CONFIG, SYSTEM_CONFIG, USER_CONFIG]
+
+        if isinstance(locations, list):
+            for location in locations:
+                config = ConfigurationLoader.__load(config, location)
+        else:
+            logger.debug("Invalid configurations: %s" % locations)
+
+        return config
+
+    @staticmethod
+    def __load(config, location):
+        if exists(location) and isfile(location):
+            try:
+                cobj = ConfigObj(location)
+                config = ConfigurationLoader.__merge(config, cobj)
+                logger.debug("Configuration '%s' loaded" % location)
+            except Exception, e:
+                logger.error("Error loading configuration '%s'" % location)
+                logger.error(repr(e))
+        else:
+            logger.debug("Configuration '%s' not found" % location)
+        return config
+
+    @staticmethod
+    def __merge(config, cobj):
+        for k, v in cobj.iteritems():
+            if isinstance(v, collections.Mapping):
+                config[k] = ConfigurationLoader.__merge(config.get(k, {}), v)
             else:
-                logger.debug(
-                    "Could not find config file at [%s]" % config_file)
+                config[k] = cobj[k]
         return config
 
 
@@ -125,30 +133,25 @@ class ConfigurationManager(object):
     """
     Static management utility for calling up cached configuration.
     """
-    _config = None
+    __config = None
 
     @staticmethod
-    def load(*config_files):
-        """
-        Load default config files as well as any additionally specified files.
-        Now also loads configuration from Cerberus (if device is paired)
-
-        :param config_files: An array of config file paths in addition to
-        DEFAULT_LOCATIONS
-
-        :return: None
-        """
-        loader = ConfigurationLoader(DEFAULT_LOCATIONS + list(config_files))
-        ConfigurationManager._config = loader.load()
-        RemoteConfiguration().update()
+    def load(locations):
+        ConfigurationManager.__config = ConfigurationLoader.load(
+            ConfigurationManager.get_config(), locations)
 
     @staticmethod
-    def get_config():
+    def get_config(locations=None):
         """
-        Get or create and get statically cached configuration.
+        Get cached configuration.
 
-        :return: A dictionary representing config files.
+        :return: A dictionary representing Mycroft configuration.
         """
-        if not ConfigurationManager._config:
-            ConfigurationManager.load()
-        return ConfigurationManager._config
+        if not ConfigurationManager.__config:
+            ConfigurationManager.__config = ConfigurationLoader.load()
+            RemoteConfiguration().update()
+
+        if locations:
+            ConfigurationManager.load(locations)
+
+        return ConfigurationManager.__config

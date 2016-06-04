@@ -18,8 +18,8 @@
 import tornado.ioloop as ioloop
 import tornado.web as web
 
-from mycroft.messagebus.service.ws import WebsocketEventHandler
 from mycroft.configuration.config import ConfigurationManager
+from mycroft.messagebus.service.ws import WebsocketEventHandler
 
 __author__ = 'seanfitz'
 
@@ -31,7 +31,6 @@ settings = {
 def main():
     import tornado.options
     tornado.options.parse_command_line()
-    ConfigurationManager.load()
     config = ConfigurationManager.get_config()
     service_config = config.get("messagebus_service")
 
