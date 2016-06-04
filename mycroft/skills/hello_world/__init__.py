@@ -28,9 +28,23 @@ __author__ = 'the7erm'
 
 LOGGER = getLogger(__name__)
 
+def and_(strings):
+    """
+    Join a list of strings with , and add 'and' at the end, because grammar
+    matter.
+    """
+    if len(strings) <= 1:
+        return " ".join(strings)
+
+    return "%s and %s" % (", ".join(strings[0:-1]),
+                          strings[-1])
+
+
+
+
 # This skill is based on the welcome skill.
 # The goal of this skill is to give a new developer a basic skill with
-# comments.
+# comments, and show ways of handling input.
 
 class HelloSkill(MycroftSkill):
 
@@ -65,32 +79,43 @@ class HelloSkill(MycroftSkill):
         LOGGER.debug("called handle_hello_intent message.metadata:%s" %
                      message.metadata)
 
-        # At this point most people would this line and call it good
-        # for a hello_world example, but let's have some fun and mix it up.
-        # self.speak_dialog('Hello')
+        # At this point most people would add
+        # `self.speak_dialog('Hello')` and call it good
+        # for a hello_world example, but let's have some
+        # fun and mix it up.
 
+        # List of .dialog files we'll use to say 'hi' back
         dialogs = [
             'Hello', # `hello_world/dialog/<lang>/Hello.dialog`
             'Hi' # `hello_world/dialog/<lang>/Hi.dialog`
         ]
+        # Get a random index
         idx = randint(0, len(dialogs) - 1)
         dialog = dialogs[idx]
-        self.speak_dialog(dialog)
+        self.speak_dialog(dialog) # Say Hi, or Hello.
         LOGGER.debug("Said: '%s'" % dialog)
+
+        how_are_yous = ("how are you doing today",
+                        "how are you doing",
+                        "how are you")
 
         # Here we check what was said by the user, and from there we
         # tell the user what the highest cpu processes are.
-        if message.metadata['utterance'] == "how are you doing today":
+        if message.metadata['utterance'] in how_are_yous:
             self.speak_dialog("Fine") # `hello_world/dialog/<lang>/Fine.dialog`
             self.speak_dialog("WorkingHardOn") # `hello_world/dialog/<lang>
                                                #  /WorkingHardOn.dialog`
 
-            # Get the 4 highest CPU processes.
+            # Get the top 4 processes that are using the most CPU.
             output = check_output("ps -eo pcpu,comm --no-headers|"
                                   "sort -t. -nk1,2 -k4,4 -r |"
                                   "head -n 4 |"
                                   "awk '{print $2}'", shell=True)
-            self.speak(output.replace("\n", ", "))
+            output = output.strip()
+            # Replace all the "\n" with a comma then add the word
+            # 'and' because grammar matters.
+            LOGGER.debug("AND:%s" % and_(output.split("\n")))
+            self.speak(and_(output.split("\n")))
 
     def stop(self):
         pass
