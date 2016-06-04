@@ -78,6 +78,8 @@ class HelloSkill(MycroftSkill):
         self.speak_dialog(dialog)
         LOGGER.debug("Said: '%s'" % dialog)
 
+        # Here we check what was said by the user, and from there we
+        # tell the user what the highest cpu processes are.
         if message.metadata['utterance'] == "how are you doing today":
             self.speak_dialog("Fine") # `hello_world/dialog/<lang>/Fine.dialog`
             self.speak_dialog("WorkingHardOn") # `hello_world/dialog/<lang>
