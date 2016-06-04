@@ -37,7 +37,7 @@ class SkillContainer(object):
         params = self.__build_params(args)
 
         if params.config:
-            ConfigurationManager.load([params.config])
+            ConfigurationManager.load_local([params.config])
 
         if exists(params.lib) and isdir(params.lib):
             sys.path.append(params.lib)

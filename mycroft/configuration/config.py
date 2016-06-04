@@ -88,45 +88,50 @@ class RemoteConfiguration(object):
     map remote configuration properties to
     config in the [core] config section
     """
-    remote_config_mapping = {
+    __remote_keys = {
         "default_location": "location",
         "default_language": "lang",
         "timezone": "timezone"
     }
 
-    def __init__(self, identity=None):
-        self.identity = identity or IdentityManager().get()
-        self.config_manager = ConfigurationManager()
+    @staticmethod
+    def load(config=None):
+        if not config:
+            logger.debug("No remote configuration found")
+            return
 
-    def update(self):
-        config = self.config_manager.get()
-        remote_config_url = config.get("remote_configuration").get("url")
-        enabled = str2bool(
-            config.get("remote_configuration").get("enabled", "False"))
-        if enabled and self.identity.token:
-            auth_header = "Bearer %s:%s" % (
-                self.identity.device_id, self.identity.token)
+        identity = IdentityManager().get()
+        config_remote = config.get("remote_configuration")
+        enabled = str2bool(config_remote.get("enabled", "False"))
+
+        if enabled and identity.token:
+            url = config_remote.get("url")
+            auth_header = "Bearer %s:%s" % (identity.device_id, identity.token)
             try:
-                response = requests.get(
-                    remote_config_url, headers={"Authorization": auth_header})
+                response = requests.get(url,
+                                        headers={"Authorization": auth_header})
                 user = response.json()
-                for attribute in user["attributes"]:
-                    attribute_name = attribute.get("attribute_name")
-                    core_config_name = self.remote_config_mapping.get(
-                        attribute_name)
-                    if core_config_name:
-                        config["core"][core_config_name] = str(
-                            attribute.get("attribute_value"))
-                        logger.info(
-                            "Accepting remote configuration: core[%s] == %s" %
-                            (core_config_name, attribute["attribute_value"]))
+                RemoteConfiguration.__load_attributes(config, user)
             except Exception as e:
                 logger.error(
                     "Failed to fetch remote configuration: %s" % repr(e))
-
         else:
             logger.debug(
                 "Device not paired, cannot retrieve remote configuration.")
+
+    @staticmethod
+    def __load_attributes(config, user):
+        config_core = config["core"]
+
+        for att in user["attributes"]:
+            att_name = att.get("attribute_name")
+            name = RemoteConfiguration.__remote_keys.get(att_name)
+
+            if name:
+                config_core[name] = str(att.get("attribute_value"))
+                logger.info(
+                    "Accepting remote configuration: core[%s] == %s" %
+                    (name, att["attribute_value"]))
 
 
 class ConfigurationManager(object):
@@ -136,9 +141,21 @@ class ConfigurationManager(object):
     __config = None
 
     @staticmethod
-    def load(locations):
+    def load_defaults():
+        ConfigurationManager.__config = ConfigurationLoader.load()
+        RemoteConfiguration.load(ConfigurationManager.__config)
+
+    @staticmethod
+    def load_local(locations=None):
         ConfigurationManager.__config = ConfigurationLoader.load(
             ConfigurationManager.get(), locations)
+
+    @staticmethod
+    def load_remote():
+        if not ConfigurationManager.__config:
+            ConfigurationManager.load_defaults()
+        else:
+            RemoteConfiguration.load(ConfigurationManager.__config)
 
     @staticmethod
     def get(locations=None):
@@ -148,10 +165,9 @@ class ConfigurationManager(object):
         :return: A dictionary representing Mycroft configuration.
         """
         if not ConfigurationManager.__config:
-            ConfigurationManager.__config = ConfigurationLoader.load()
-            RemoteConfiguration().update()
+            ConfigurationManager.load_defaults()
 
         if locations:
-            ConfigurationManager.load(locations)
+            ConfigurationManager.load_local(locations)
 
         return ConfigurationManager.__config

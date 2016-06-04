@@ -19,7 +19,7 @@
 from adapt.intent import IntentBuilder
 from os.path import join, dirname
 
-from mycroft.configuration.config import RemoteConfiguration
+from mycroft.configuration.config import ConfigurationManager
 from mycroft.identity import IdentityManager
 from mycroft.skills.core import MycroftSkill
 
@@ -40,8 +40,7 @@ class CerberusConfigSkill(MycroftSkill):
         if not identity.owner:
             self.speak_dialog("not.paired")
         else:
-            rc = RemoteConfiguration()
-            rc.update()
+            ConfigurationManager.load_remote()
             self.speak_dialog("config.updated")
 
     def stop(self):
