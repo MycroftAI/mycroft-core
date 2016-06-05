@@ -101,7 +101,7 @@ class HelloSkill(MycroftSkill):
         if message.metadata['utterance'] in how_are_yous:
             # `hello_world/dialog/<lang>/Fine.dialog`
             self.speak_dialog("Fine")
-            #`hello_world/dialog/<lang>/WorkingHardOn.dialog`
+            # `hello_world/dialog/<lang>/WorkingHardOn.dialog`
             self.speak_dialog("WorkingHardOn")
 
             # Get the top 4 processes that are using the most CPU.
