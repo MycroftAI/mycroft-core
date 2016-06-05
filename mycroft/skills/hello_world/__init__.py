@@ -28,6 +28,7 @@ __author__ = 'the7erm'
 
 LOGGER = getLogger(__name__)
 
+
 def and_(strings):
     """
     Join a list of strings with , and add 'and' at the end, because grammar
@@ -39,12 +40,10 @@ def and_(strings):
     return "%s and %s" % (", ".join(strings[0:-1]),
                           strings[-1])
 
-
-
-
 # This skill is based on the welcome skill.
 # The goal of this skill is to give a new developer a basic skill with
 # comments, and show ways of handling input.
+
 
 class HelloSkill(MycroftSkill):
 
@@ -54,7 +53,6 @@ class HelloSkill(MycroftSkill):
     def initialize(self):
         # Data file location: `mycroft/skills/hello_world/`
         self.load_data_files(dirname(__file__))
-
 
         # Read this: https://github.com/MycroftAI/adapt#intent-modelling
         hello_intent = IntentBuilder("HelloIntent")
@@ -71,7 +69,6 @@ class HelloSkill(MycroftSkill):
                 .require("HelloKey")\
                 .build()
         """
-
         self.register_intent(hello_intent, self.handle_hello_intent)
 
     def handle_hello_intent(self, message):
@@ -83,16 +80,15 @@ class HelloSkill(MycroftSkill):
         # `self.speak_dialog('Hello')` and call it good
         # for a hello_world example, but let's have some
         # fun and mix it up.
-
         # List of .dialog files we'll use to say 'hi' back
         dialogs = [
-            'Hello', # `hello_world/dialog/<lang>/Hello.dialog`
-            'Hi' # `hello_world/dialog/<lang>/Hi.dialog`
+            'Hello',  # `hello_world/dialog/<lang>/Hello.dialog`
+            'Hi'  # `hello_world/dialog/<lang>/Hi.dialog`
         ]
         # Get a random index
         idx = randint(0, len(dialogs) - 1)
         dialog = dialogs[idx]
-        self.speak_dialog(dialog) # Say Hi, or Hello.
+        self.speak_dialog(dialog)  # Say Hi, or Hello.
         LOGGER.debug("Said: '%s'" % dialog)
 
         how_are_yous = ("how are you doing today",
@@ -102,9 +98,14 @@ class HelloSkill(MycroftSkill):
         # Here we check what was said by the user, and from there we
         # tell the user what the highest cpu processes are.
         if message.metadata['utterance'] in how_are_yous:
-            self.speak_dialog("Fine") # `hello_world/dialog/<lang>/Fine.dialog`
-            self.speak_dialog("WorkingHardOn") # `hello_world/dialog/<lang>
-                                               #  /WorkingHardOn.dialog`
+            self.speak_dialog("Fine")  """
+                                       # `hello_world/dialog/<lang>/
+                                       #     Fine.dialog`
+                                       """
+            self.speak_dialog("WorkingHardOn")  """
+                                                # `hello_world/dialog/<lang>
+                                                #  /WorkingHardOn.dialog`
+                                                """
 
             # Get the top 4 processes that are using the most CPU.
             output = check_output("ps -eo pcpu,comm --no-headers|"
