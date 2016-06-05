@@ -31,7 +31,7 @@ LOGGER = getLogger(__name__)
 def and_(strings):
     """
     Join a list of strings with , and add 'and' at the end, because grammar
-    matter.
+    matters.
     """
     if len(strings) <= 1:
         return " ".join(strings)
