@@ -99,8 +99,11 @@ class HelloSkill(MycroftSkill):
         # Here we check what was said by the user, and from there we
         # tell the user what the highest cpu processes are.
         if message.metadata['utterance'] in how_are_yous:
+            # `hello_world/dialog/<lang>/Fine.dialog`
             self.speak_dialog("Fine")
+            #`hello_world/dialog/<lang>/WorkingHardOn.dialog`
             self.speak_dialog("WorkingHardOn")
+
             # Get the top 4 processes that are using the most CPU.
             output = check_output("ps -eo pcpu,comm --no-headers|"
                                   "sort -t. -nk1,2 -k4,4 -r |"
