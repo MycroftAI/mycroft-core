@@ -80,6 +80,7 @@ class HelloSkill(MycroftSkill):
         # `self.speak_dialog('Hello')` and call it good
         # for a hello_world example, but let's have some
         # fun and mix it up.
+
         # List of .dialog files we'll use to say 'hi' back
         dialogs = [
             'Hello',  # `hello_world/dialog/<lang>/Hello.dialog`
@@ -99,8 +100,8 @@ class HelloSkill(MycroftSkill):
         # tell the user what the highest cpu processes are.
         if message.metadata['utterance'] in how_are_yous:
             self.speak_dialog("Fine")  """
-                                       # `hello_world/dialog/<lang>/
-                                       #     Fine.dialog`
+                                       # `hello_world/dialog/<lang>
+                                       #  /Fine.dialog`
                                        """
             self.speak_dialog("WorkingHardOn")  """
                                                 # `hello_world/dialog/<lang>
