@@ -195,7 +195,7 @@ class AudioConsumer(threading.Thread):
                 logger.error("AccessDenied from Cerberus proxy.")
                 self.__speak(
                         "Your device is not registered yet. To start pairing, "
-                        "login at cerberus.mycroft.ai")
+                        "login at cerberus dot mycroft dot A.I")
                 utterances.append("pair my device")
             except Exception as e:
                 logger.error("Unexpected exception: {0}".format(e))
