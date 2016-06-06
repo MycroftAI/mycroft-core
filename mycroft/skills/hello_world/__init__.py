@@ -96,7 +96,8 @@ class HelloSkill(MycroftSkill):
         # tell the user what the highest cpu processes are.
         # FYI this is not a good way to implement this, it's just here
         # as an example.  I'd like some input on what a better way to do
-        # this is.  The problem is how_are_uses
+        # this is.  The problem is how_are_yous aren't using the designated
+        # en-us/* values.
         if message.metadata['utterance'] in how_are_yous:
             # `hello_world/dialog/<lang>/Fine.dialog`
             self.speak_dialog("Fine")
