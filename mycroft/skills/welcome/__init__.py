@@ -20,8 +20,10 @@ from os.path import dirname
 from adapt.intent import IntentBuilder
 from mycroft.skills.core import MycroftSkill
 from mycroft.util.log import getLogger
+from random import randint
 
 __author__ = 'eward'
+# 2016-06-06 added random responses
 
 LOGGER = getLogger(__name__)
 
@@ -38,7 +40,17 @@ class WelcomeSkill(MycroftSkill):
         self.register_intent(welcome_intent, self.handle_welcome_intent)
 
     def handle_welcome_intent(self, message):
-        self.speak_dialog('Welcome')
+        dialogs = [
+            "AnyTime",
+            "GladToBeOfService",
+            "GladToHelp",
+            "MyPleasure",
+            "NoProblem",
+            "Welcome",
+        ]
+        idx = randint(0, len(dialogs) - 1)
+        dialog = dialogs[idx]
+        self.speak_dialog(dialog)
 
     def stop(self):
         pass
