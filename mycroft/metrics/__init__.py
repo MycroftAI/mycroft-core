@@ -23,7 +23,7 @@ import requests
 
 from mycroft.util import str2bool
 from mycroft.util.log import getLogger
-from mycroft.configuration.config import ConfigurationManager
+from mycroft.configuration import ConfigurationManager
 from mycroft.session import SessionManager
 from mycroft.util.setup_base import get_version
 

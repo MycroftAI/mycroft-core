@@ -27,7 +27,7 @@ from pyowm.webapi25 import stationhistoryparser
 from pyowm.webapi25 import weathercoderegistry
 from pyowm.webapi25 import cityidregistry
 
-from mycroft.configuration.config import ConfigurationManager
+from mycroft.configuration import ConfigurationManager
 
 """
 Configuration for the PyOWM library specific to OWM web API version 2.5

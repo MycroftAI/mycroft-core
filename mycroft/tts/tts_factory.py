@@ -18,7 +18,7 @@
 
 import logging
 
-from mycroft.configuration.config import ConfigurationManager
+from mycroft.configuration import ConfigurationManager
 from mycroft.tts import espeak_tts
 from mycroft.tts import fa_tts
 from mycroft.tts import google_tts

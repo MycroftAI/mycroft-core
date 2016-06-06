@@ -21,7 +21,7 @@ import sys
 
 from os.path import dirname, exists, isdir
 
-from mycroft.configuration.config import ConfigurationManager
+from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.skills.core import create_skill_descriptor, load_skill
 from mycroft.skills.intent import create_skill as create_intent_skill

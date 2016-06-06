@@ -21,7 +21,7 @@ from os.path import join
 
 from mycroft import MYCROFT_ROOT_PATH
 from mycroft.tts import TTS, TTSValidator
-from mycroft.configuration.config import ConfigurationManager
+from mycroft.configuration import ConfigurationManager
 
 __author__ = 'jdorleans'
 

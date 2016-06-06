@@ -24,7 +24,7 @@ from pyee import EventEmitter
 from websocket import WebSocketApp
 
 import mycroft.util.log
-from mycroft.configuration.config import ConfigurationManager
+from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.message import Message
 from mycroft.util import str2bool
 

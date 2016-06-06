@@ -19,7 +19,7 @@
 from adapt.intent import IntentBuilder
 from os.path import join, dirname
 
-from mycroft.configuration.config import ConfigurationManager
+from mycroft.configuration import ConfigurationManager
 from mycroft.identity import IdentityManager
 from mycroft.skills.core import MycroftSkill
 

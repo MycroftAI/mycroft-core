@@ -26,7 +26,7 @@ from adapt.intent import Intent
 from os.path import join, dirname, splitext, isdir
 
 from mycroft.client.enclosure.api import EnclosureAPI
-from mycroft.configuration.config import ConfigurationManager
+from mycroft.configuration import ConfigurationManager
 from mycroft.dialog import DialogLoader
 from mycroft.filesystem import FileSystemAccess
 from mycroft.messagebus.message import Message

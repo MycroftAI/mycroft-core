@@ -20,7 +20,7 @@ import time
 from uuid import uuid4
 from threading import Lock
 from mycroft.util import log
-from mycroft.configuration.config import ConfigurationManager
+from mycroft.configuration import ConfigurationManager
 
 __author__ = 'seanfitz'
 logger = log.getLogger(__name__)

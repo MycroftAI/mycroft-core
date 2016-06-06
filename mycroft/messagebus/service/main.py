@@ -18,7 +18,7 @@
 import tornado.ioloop as ioloop
 import tornado.web as web
 
-from mycroft.configuration.config import ConfigurationManager
+from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.service.ws import WebsocketEventHandler
 
 __author__ = 'seanfitz'
