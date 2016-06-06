@@ -81,16 +81,12 @@ class HelloSkill(MycroftSkill):
         # for a hello_world example, but let's have some
         # fun and mix it up.
 
-        # List of .dialog files we'll use to say 'hi' back
-        dialogs = [
-            'Hello',  # `hello_world/dialog/<lang>/Hello.dialog`
-            'Hi'  # `hello_world/dialog/<lang>/Hi.dialog`
-        ]
-        # Get a random index
-        idx = randint(0, len(dialogs) - 1)
-        dialog = dialogs[idx]
-        self.speak_dialog(dialog)  # Say Hi, or Hello.
-        LOGGER.debug("Said: '%s'" % dialog)
+        # The contents of hello.dialog contains 2 lines.
+        # MustacheDialogRenderer will automatically choose a random one.
+        # In our case Hello dialog has Hi or Hello
+        # https://github.com/MycroftAI/mycroft-core/blob/master/mycroft/dialog/__init__.py
+
+        self.speak_dialog("Hello")  # Say Hi, or Hello.
 
         how_are_yous = ("how are you doing today",
                         "how are you doing",
@@ -98,6 +94,9 @@ class HelloSkill(MycroftSkill):
 
         # Here we check what was said by the user, and from there we
         # tell the user what the highest cpu processes are.
+        # FYI this is not a good way to implement this, it's just here
+        # as an example.  I'd like some input on what a better way to do
+        # this is.  The problem is how_are_uses
         if message.metadata['utterance'] in how_are_yous:
             # `hello_world/dialog/<lang>/Fine.dialog`
             self.speak_dialog("Fine")
