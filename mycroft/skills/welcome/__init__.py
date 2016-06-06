@@ -40,14 +40,7 @@ class WelcomeSkill(MycroftSkill):
         self.register_intent(welcome_intent, self.handle_welcome_intent)
 
     def handle_welcome_intent(self, message):
-        dialogs = [
-            "AnyTime",
-            "GladToBeOfService",
-            "GladToHelp",
-            "MyPleasure",
-            "NoProblem",
-            "Welcome",
-        ]
+        dialogs = self.dialog_renderer.templates.keys()
         idx = randint(0, len(dialogs) - 1)
         dialog = dialogs[idx]
         self.speak_dialog(dialog)
