@@ -20,10 +20,8 @@ from os.path import dirname
 from adapt.intent import IntentBuilder
 from mycroft.skills.core import MycroftSkill
 from mycroft.util.log import getLogger
-from random import randint
 
 __author__ = 'eward'
-# 2016-06-06 added random responses
 
 LOGGER = getLogger(__name__)
 
