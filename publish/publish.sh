@@ -131,12 +131,6 @@ setup_init_script "mycroft-enclosure-client"
 mkdir -p ${DEB_DIR}/${SYSTEM_TARGET}
 cp -rf ${TOP}/build/${ARTIFACT_BASE}/* ${DEB_DIR}/${SYSTEM_TARGET}
 
-# install mimic
-#${TOP}/install-mimic.sh
-#MIMIC_INSTALL_DIR="${DEB_DIR}/opt/mycroft/bin"
-#mkdir -p ${MIMIC_INSTALL_DIR}
-#cp -rf ${TOP}/build/mimic/bin/mimic ${MIMIC_INSTALL_DIR}
-
 mkdir -p ${DEB_DIR}/etc/mycroft
 # write installed config file
 cat > ${DEB_DIR}/etc/mycroft/mycroft.ini << EOM

@@ -16,9 +16,9 @@ function start_service() {
 initialize_service "mycroft-messagebus"
 initialize_service "mycroft-skills"
 initialize_service "mycroft-speech-client"
-#initialize_service "mycroft-enclosure-client"
+initialize_service "mycroft-enclosure-client"
 
 start_service "mycroft-messagebus"
 start_service "mycroft-skills"
 start_service "mycroft-speech-client"
-#start_service "mycroft-enclosure-client"
+start_service "mycroft-enclosure-client"

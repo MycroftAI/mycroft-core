@@ -65,9 +65,5 @@ fi
 cd ${TOP}/pocketsphinx-python
 python setup.py install
 
-#build and install mimic
-#cd ${TOP}
-#${TOP}/install-mimic.sh
-
 # install pygtk for desktop_launcher skill
 ${TOP}/install-pygtk.sh
