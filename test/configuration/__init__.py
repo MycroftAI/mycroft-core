@@ -29,8 +29,7 @@ class AbstractConfigurationTest(unittest.TestCase):
 
 class ConfigurationLoaderTest(AbstractConfigurationTest):
     def test_load(self):
-        config = ConfigurationLoader.load()
-        self.assert_config(config)
+        self.assert_config(ConfigurationLoader.load())
 
     def test_load_and_override_custom(self):
         config = self.create_config('pt-br', 'espeak')
@@ -68,9 +67,13 @@ class ConfigurationLoaderTest(AbstractConfigurationTest):
 
 class ConfigurationManagerTest(AbstractConfigurationTest):
     def test_load_defaults(self):
-        config = ConfigurationManager.load_defaults()
-        self.assert_config(config)
+        self.assert_config(ConfigurationManager.load_defaults())
 
     def test_load_local(self):
-        config = ConfigurationManager.load_local()
-        self.assert_config(config)
+        self.assert_config(ConfigurationManager.load_local())
+
+    def test_load_remote(self):
+        self.assert_config(ConfigurationManager.load_remote())
+
+    def test_get(self):
+        self.assert_config(ConfigurationManager.get())
