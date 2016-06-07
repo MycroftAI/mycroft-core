@@ -1,4 +1,3 @@
-set thermostat {{tempNum}}
-update thermostat {{tempNum}}
-set nest to {{tempNum}}
-update nest to {tempNum}}
+set the thermostat to
+set the nest to
+update the nest to

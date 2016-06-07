@@ -36,20 +36,21 @@ class NestSkill(MycroftSkill):
 
     def initialize(self):
         self.load_data_files(dirname(__file__))
-
-        self.register_regex("to (?P<tempNum>.*)")
-        cold_intent = IntentBuilder("TooColdIntent").require("tooColdKeyword").build()
-        self.register_intent(cold_intent, self.handle_too_cold_intent)
+        self.register_regex("(?P<TempNum>\d+)")
 
         hot_intent = IntentBuilder("TooHotIntent").require("tooHotKeyword").build()
         self.register_intent(hot_intent, self.handle_too_hot_intent)
 
-        temp_intent = IntentBuilder("TempIntent").require("tempKeyword").require("tempNum").build()
-        self.register_intent(temp_intent, self.handle_temp_intent)
-    def handle_too_cold_intent(self, message):
+
+        thermostat_intent = IntentBuilder("TempIntent").require("tempKeyword").require("TempNum").build()
+        self.register_intent(thermostat_intent, self.handle_temp_set_intent)
+
+    def handle_temp_set_intent(self, message):
         try:
-            subprocess.call("nest --user '" + self.nest_user + "' --password '" + self.nest_password + "' temp 75", shell=True)
-            self.speak_dialog('too.cold')
+            temp = message.metadata.get("TempNum", None)
+            LOGGER.debug(temp)
+            subprocess.call("nest --user '" + self.nest_user + "' --password '" + self.nest_password + "' temp " + temp, shell=True)
+            self.speak_dialog('temp.set')
         except Exception as e:
             LOGGER.error("Error: {0}".format(e))
 
@@ -60,15 +61,6 @@ class NestSkill(MycroftSkill):
         except Exception as e:
             LOGGER.error("Error: {0}".format(e))
 
-
-    def handle_temp_intent(self, message):
-        try:
-
-            temp = message.metadata.get("tempNum", message)
-            subprocess.call("nest --user '" + self.nest_user + "' --password '" + self.nest_password + "' temp " + temp , shell=True)
-            self.speak_dialog('temp.set')
-        except Exception as e:
-            LOGGER.error("Error: {0}".format(e))
 
     def stop(self):
         pass
