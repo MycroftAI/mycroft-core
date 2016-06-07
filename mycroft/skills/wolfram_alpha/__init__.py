@@ -87,7 +87,7 @@ class CerberusWolframAlphaClient(object):
         response = requests.get(url, headers=headers)
         if response.status_code == 401:
             raise CerberusAccessDenied()
-
+        logger.debug(response.content)
         return wolframalpha.Result(StringIO(response.content))
 
 
@@ -144,8 +144,14 @@ class WolframAlphaSkill(MycroftSkill):
 
                 if not result:
                     result = self.__find_value(
-                        res.pods, 'DecimalApproximation')
-                    result = result[:5]
+                        res.pods, 'NotableFacts:PeopleData')
+                    if not result:
+                        result = self.__find_value(
+                            res.pods, 'BasicInformation:PeopleData')
+                        if not result:
+                            result = self.__find_value(
+                                res.pods, 'DecimalApproximation')
+                            result = result[:5]
             except:
                 pass
 
