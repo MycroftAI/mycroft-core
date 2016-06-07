@@ -40,21 +40,36 @@ class ConfigurationLoader(object):
     """
 
     @staticmethod
+    def init_config(config=None):
+        if not config:
+            return {}
+        return config
+
+    @staticmethod
+    def init_locations(locations=None):
+        if not locations:
+            return [DEFAULT_CONFIG, SYSTEM_CONFIG, USER_CONFIG]
+        return locations
+
+    @staticmethod
+    def validate_data(config=None, locations=None):
+        if not (isinstance(config, dict) and isinstance(locations, list)):
+            logger.error("Invalid configuration data type.")
+            logger.error("Locations: %s" % locations)
+            logger.error("Configuration: %s" % config)
+            raise TypeError
+
+    @staticmethod
     def load(config=None, locations=None):
         """
         Loads default or specified configuration files
         """
-        if not config:
-            config = {}
+        config = ConfigurationLoader.init_config(config)
+        locations = ConfigurationLoader.init_locations(locations)
+        ConfigurationLoader.validate_data(config, locations)
 
-        if not locations:
-            locations = [DEFAULT_CONFIG, SYSTEM_CONFIG, USER_CONFIG]
-
-        if isinstance(config, dict) and isinstance(locations, list):
-            for location in locations:
-                config = ConfigurationLoader.__load(config, location)
-        else:
-            logger.debug("Invalid configurations: %s" % locations)
+        for location in locations:
+            config = ConfigurationLoader.__load(config, location)
 
         return config
 
@@ -94,13 +109,17 @@ class RemoteConfiguration(object):
     }
 
     @staticmethod
+    def validate_config(config):
+        if not (config and isinstance(config, dict)):
+            logger.error("Invalid configuration: %s" % config)
+            raise TypeError
+
+    @staticmethod
     def load(config=None):
-        if not config or not isinstance(config, dict):
-            logger.debug("No valid remote configuration found")
-            return
+        RemoteConfiguration.validate_config(config)
 
         identity = IdentityManager().get()
-        config_remote = config.get("remote_configuration")
+        config_remote = config.get("remote_configuration", {})
         enabled = str2bool(config_remote.get("enabled", "False"))
 
         if enabled and identity.token:
