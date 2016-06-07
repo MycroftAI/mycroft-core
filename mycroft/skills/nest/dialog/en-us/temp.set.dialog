@@ -1,2 +1,2 @@
-temperature set to {{temperature}}
-temperature updated to {{temperature}}
+temperature set to {{tempNum}}
+temperature updated to {{tempNum}}
