@@ -50,7 +50,7 @@ class ConfigurationLoader(object):
         if not locations:
             locations = [DEFAULT_CONFIG, SYSTEM_CONFIG, USER_CONFIG]
 
-        if isinstance(locations, list):
+        if isinstance(config, dict) and isinstance(locations, list):
             for location in locations:
                 config = ConfigurationLoader.__load(config, location)
         else:
