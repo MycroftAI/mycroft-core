@@ -38,7 +38,7 @@ class WelcomeSkill(MycroftSkill):
         self.register_intent(welcome_intent, self.handle_welcome_intent)
 
     def handle_welcome_intent(self, message):
-        self.speak_dialog('Welcome')
+        self.speak_dialog("Welcome")
 
     def stop(self):
         pass
