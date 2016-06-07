@@ -95,8 +95,8 @@ class RemoteConfiguration(object):
 
     @staticmethod
     def load(config=None):
-        if not config:
-            logger.debug("No remote configuration found")
+        if not config or not isinstance(config, dict):
+            logger.debug("No valid remote configuration found")
             return
 
         identity = IdentityManager().get()
@@ -117,6 +117,7 @@ class RemoteConfiguration(object):
         else:
             logger.debug(
                 "Device not paired, cannot retrieve remote configuration.")
+        return config
 
     @staticmethod
     def __load_attributes(config, user):
@@ -142,19 +143,17 @@ class ConfigurationManager(object):
     @staticmethod
     def load_defaults():
         ConfigurationManager.__config = ConfigurationLoader.load()
-        RemoteConfiguration.load(ConfigurationManager.__config)
+        return RemoteConfiguration.load(ConfigurationManager.__config)
 
     @staticmethod
     def load_local(locations=None):
-        ConfigurationManager.__config = ConfigurationLoader.load(
-            ConfigurationManager.get(), locations)
+        return ConfigurationLoader.load(ConfigurationManager.get(), locations)
 
     @staticmethod
     def load_remote():
         if not ConfigurationManager.__config:
-            ConfigurationManager.load_defaults()
-        else:
-            RemoteConfiguration.load(ConfigurationManager.__config)
+            ConfigurationManager.__config = ConfigurationLoader.load()
+        return RemoteConfiguration.load(ConfigurationManager.__config)
 
     @staticmethod
     def get(locations=None):
