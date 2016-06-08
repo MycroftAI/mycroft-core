@@ -1,8 +1,0 @@
-{
-  "utterance": "launch gedit",
-  "intent_type": "LaunchDesktopApplicationIntent",
-  "intent": {
-    "LaunchKeyword": "launch",
-    "Application": "gedit"
-  }
-}
