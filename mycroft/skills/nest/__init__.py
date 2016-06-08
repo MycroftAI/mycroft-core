@@ -38,10 +38,6 @@ class NestSkill(MycroftSkill):
         self.load_data_files(dirname(__file__))
         self.register_regex("(?P<TempNum>\d+)")
 
-        hot_intent = IntentBuilder("TooHotIntent").require("tooHotKeyword").build()
-        self.register_intent(hot_intent, self.handle_too_hot_intent)
-
-
         thermostat_intent = IntentBuilder("TempIntent").require("tempKeyword").require("TempNum").build()
         self.register_intent(thermostat_intent, self.handle_temp_set_intent)
 
@@ -50,17 +46,9 @@ class NestSkill(MycroftSkill):
             temp = message.metadata.get("TempNum", None)
             LOGGER.debug(temp)
             subprocess.call("nest --user '" + self.nest_user + "' --password '" + self.nest_password + "' temp " + temp, shell=True)
-            self.speak_dialog('temp.set')
+            self.speak_dialog('temp.set' , data={'TempNum': temp})
         except Exception as e:
             LOGGER.error("Error: {0}".format(e))
-
-    def handle_too_hot_intent(self, message):
-        try:
-            subprocess.call("nest --user '" + self.nest_user + "' --password '" + self.nest_password + "' temp 68", shell=True)
-            self.speak_dialog('too.hot')
-        except Exception as e:
-            LOGGER.error("Error: {0}".format(e))
-
 
     def stop(self):
         pass
