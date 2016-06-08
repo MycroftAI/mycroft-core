@@ -1,0 +1,8 @@
+{
+  "utterance": "run firefox",
+  "intent_type": "LaunchDesktopApplicationIntent",
+  "intent": {
+    "LaunchKeyword": "run",
+    "Application": "firefox"
+  }
+}
