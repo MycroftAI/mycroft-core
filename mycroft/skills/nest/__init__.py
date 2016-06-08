@@ -39,7 +39,7 @@ class NestSkill(MycroftSkill):
         self.register_regex("(?P<TempNum>\d+)")
 
         thermostat_intent = IntentBuilder("TempIntent")\
-            .require("tempKeyword").require("TempNum").build()
+            .require("TempKeyword").require("TempNum").build()
         self.register_intent(thermostat_intent, self.handle_temp_set_intent)
 
     def handle_temp_set_intent(self, message):
