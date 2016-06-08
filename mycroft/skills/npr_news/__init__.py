@@ -59,6 +59,7 @@ class NPRNewsSkill(MycroftSkill):
 
     def stop(self):
         if self.process and self.process.poll() is None:
+            self.speak_dialog('npr.news.stop')
             self.process.terminate()
             self.process.wait()
 
