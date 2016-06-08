@@ -1,0 +1,8 @@
+{
+  "utterance": "how do you spell the word intelligence",
+  "intent_type": "SpellingIntent",
+  "intent": {
+    "SpellingKeyword": "spell the word",
+    "Word": "intelligence"
+  }
+}
