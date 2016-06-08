@@ -81,7 +81,7 @@ class AudioConsumer(threading.Thread):
     """
 
     # In seconds, the minimum audio size to be sent to remote STT
-    MIN_AUDIO_SIZE = 1.0
+    MIN_AUDIO_SIZE = 0.5
 
     def __init__(self, state, queue, emitter, wakeup_recognizer,
                  mycroft_recognizer, remote_recognizer):
@@ -195,7 +195,7 @@ class AudioConsumer(threading.Thread):
                 logger.error("AccessDenied from Cerberus proxy.")
                 self.__speak(
                         "Your device is not registered yet. To start pairing, "
-                        "login at cerberus.mycroft.ai")
+                        "login at cerberus dot mycroft dot A.I")
                 utterances.append("pair my device")
             except Exception as e:
                 logger.error("Unexpected exception: {0}".format(e))

@@ -22,6 +22,7 @@ requests-futures==0.9.5
 astral==0.9
 tzlocal==1.2
 parsedatetime==1.5
+pdoc==0.3.2
 pyyaml==3.11
 feedparser==5.2.1
 pyalsaaudio==0.8.2

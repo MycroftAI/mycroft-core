@@ -16,10 +16,11 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import serial
 import sys
 from Queue import Queue
 from threading import Thread
+
+import serial
 
 from mycroft.client.enclosure.arduino import EnclosureArduino
 from mycroft.client.enclosure.eyes import EnclosureEyes
@@ -143,7 +144,7 @@ class Enclosure:
         self.eyes = EnclosureEyes(self.client, self.writer)
         self.mouth = EnclosureMouth(self.client, self.writer)
         self.system = EnclosureArduino(self.client, self.writer)
-        self.__init_events()
+        self.__register_events()
 
     def __init_serial(self):
         try:
@@ -161,11 +162,30 @@ class Enclosure:
                 "It is not possible to connect to serial port: " + self.port)
             raise
 
-    def __init_events(self):
+    def __register_events(self):
+        self.client.on('mycroft.paired', self.__update_events)
+        self.client.on('recognizer_loop:wakeword', self.eyes.blink)
+        self.__register_mouth_events()
+
+    def __register_mouth_events(self):
         self.client.on('recognizer_loop:listening', self.mouth.listen)
         self.client.on('recognizer_loop:audio_output_start', self.mouth.talk)
         self.client.on('recognizer_loop:audio_output_end', self.mouth.reset)
-        self.client.on('recognizer_loop:wakeword', self.eyes.blink)
+
+    def __remove_mouth_events(self):
+        self.client.remove('recognizer_loop:listening', self.mouth.listen)
+        self.client.remove('recognizer_loop:audio_output_start',
+                           self.mouth.talk)
+        self.client.remove('recognizer_loop:audio_output_end',
+                           self.mouth.reset)
+        self.mouth.reset()
+
+    def __update_events(self, event=None):
+        if event and event.metadata:
+            if event.metadata.get('paired', False):
+                self.__register_mouth_events()
+            else:
+                self.__remove_mouth_events()
 
     def run(self):
         try:
