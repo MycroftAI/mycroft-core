@@ -1,0 +1,7 @@
+{
+  "utterance": "time is it",
+  "intent_type": "TimeIntent",
+  "intent": {
+    "TimeKeyword": "time is it"
+  }
+}
