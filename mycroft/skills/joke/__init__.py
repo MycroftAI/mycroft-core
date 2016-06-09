@@ -16,7 +16,7 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from os.path import dirname
+from os.path import dirname, join
 
 import pyjokes
 
@@ -34,7 +34,7 @@ class JokingSkill(MycroftSkill):
         super(JokingSkill, self).__init__(name="JokingSkill")
 
     def initialize(self):
-        self.load_data_files(dirname(__file__))
+        self.load_vocab_files(join(dirname(__file__), 'vocab', self.lang))
 
         intent = IntentBuilder("JokingIntent").require("JokingKeyword").build()
         self.register_intent(intent, self.handle_intent)
