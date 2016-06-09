@@ -9,7 +9,7 @@ from mycroft.configuration import ConfigurationManager
 __author__ = 'seanfitz, jdorleans'
 
 fail_on_error = "--fail-on-error" in sys.argv
-ConfigurationManager.load_local('mycroft.ini')
+ConfigurationManager.load_local(['mycroft.ini'])
 
 tests = unittest.TestLoader().discover(dirname(__file__), "*.py")
 runner = XMLTestRunner("./build/report/tests")

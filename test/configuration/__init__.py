@@ -1,5 +1,7 @@
 import unittest
 
+from os.path import dirname, join
+
 from mycroft.configuration import ConfigurationLoader, ConfigurationManager, \
     DEFAULT_CONFIG, SYSTEM_CONFIG, USER_CONFIG, RemoteConfiguration
 
@@ -7,6 +9,9 @@ __author__ = 'jdorleans'
 
 
 class AbstractConfigurationTest(unittest.TestCase):
+    def setUp(self):
+        self.config_path = join(dirname(__file__), 'mycroft.ini')
+
     @staticmethod
     def create_config(lang='en-us', module='mimic'):
         config = {
@@ -38,7 +43,7 @@ class ConfigurationLoaderTest(AbstractConfigurationTest):
         locations = [DEFAULT_CONFIG, SYSTEM_CONFIG, USER_CONFIG]
         self.assertEquals(ConfigurationLoader.init_locations(), locations)
 
-        locations = ['./mycroft.ini']
+        locations = [self.config_path]
         self.assertEquals(ConfigurationLoader.init_locations(locations),
                           locations)
 
@@ -61,7 +66,7 @@ class ConfigurationLoaderTest(AbstractConfigurationTest):
 
     def test_load_with_override_default(self):
         config = self.create_config()
-        config = ConfigurationLoader.load(config, ['./mycroft.ini'])
+        config = ConfigurationLoader.load(config, [self.config_path])
         self.assert_config(config, 'pt-br', 'espeak')
 
     def test_load_with_extra_custom(self):
@@ -78,7 +83,7 @@ class ConfigurationLoaderTest(AbstractConfigurationTest):
 
     def test_load_with_invalid_locations_type(self):
         self.assertRaises(TypeError, ConfigurationLoader.load,
-                          None, './mycroft.ini')
+                          None, self.config_path)
 
     def test_load_with_invalid_locations_path(self):
         locations = ['./invalid/mycroft.ini', './invalid_mycroft.ini']
@@ -112,7 +117,7 @@ class ConfigurationManagerTest(AbstractConfigurationTest):
 
     def test_load_local_with_locations(self):
         ConfigurationManager.load_defaults()
-        config = ConfigurationManager.load_local(['./mycroft.ini'])
+        config = ConfigurationManager.load_local([self.config_path])
         self.assert_config(config, 'pt-br', 'espeak')
 
     def test_load_remote(self):
@@ -125,5 +130,5 @@ class ConfigurationManagerTest(AbstractConfigurationTest):
 
     def test_load_get_with_locations(self):
         ConfigurationManager.load_defaults()
-        config = ConfigurationManager.get(['./mycroft.ini'])
+        config = ConfigurationManager.get([self.config_path])
         self.assert_config(config, 'pt-br', 'espeak')
