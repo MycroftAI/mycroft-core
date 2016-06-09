@@ -1,0 +1,8 @@
+{
+  "utterance": "set the thermostat to 64",
+  "intent_type": "TempIntent",
+  "intent": {
+    "TempKeyword": "set the thermostat to",
+    "TempNum": "64"
+  }
+}
