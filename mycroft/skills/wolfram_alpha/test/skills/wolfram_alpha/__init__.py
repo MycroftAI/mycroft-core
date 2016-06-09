@@ -1,7 +1,8 @@
 import unittest
 import wolframalpha
+from StringIO import StringIO
 
-from mycroft.skills.wolframalpha import WolframAlphaSkill
+from mycroft.skills.wolfram_alpha import WolframAlphaSkill as WAskill
 
 __author__ = 'eward'
 
@@ -11,7 +12,7 @@ __author__ = 'eward'
 
 
 class WolframAlphaTest(unittest.TestCase):
-    def test_get_results():
+    def test_get_results(self):
         result = "<queryresult>\
         <pod id='NotableFacts:PeopleData'><subpod>\
         <plaintext>Test</plaintext></subpod></pod></queryresult>"
