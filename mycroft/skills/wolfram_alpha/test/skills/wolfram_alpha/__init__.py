@@ -2,7 +2,7 @@ import unittest
 import wolframalpha
 from StringIO import StringIO
 
-from mycroft.skills.wolfram_alpha import WolframAlphaSkill as WAskill
+from mycroft.skills.wolfram_alpha import WolframAlphaSkill
 
 __author__ = 'eward'
 
