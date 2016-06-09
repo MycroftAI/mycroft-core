@@ -1,4 +1,5 @@
 from mycroft.configuration.config import ConfigurationManager
+from mycroft.configuration.config import ConfigBuilder
 
 import unittest
 
@@ -15,7 +16,9 @@ OUTPUT_DIR = os.path.dirname(os.path.dirname(__file__))
 
 loader = unittest.TestLoader()
 fail_on_error = "--fail-on-error" in sys.argv
-ConfigurationManager.load(os.path.join(TEST_DIR, 'config.ini'))
+ConfigurationManager.load(ConfigBuilder()
+                          .base()
+                          .append(os.path.join(TEST_DIR, 'config.ini')))
 tests = loader.discover(TEST_DIR, pattern="*_test*.py")
 runner = XMLTestRunner(output="./build/report/tests")
 result = runner.run(tests)

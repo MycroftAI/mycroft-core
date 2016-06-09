@@ -33,7 +33,6 @@ DEFAULTS_FILE = os.path.join(
 ETC_CONFIG_FILE = '/etc/mycroft/mycroft.ini'
 USER_CONFIG_FILE = os.path.join(
     os.path.expanduser('~'), '.mycroft/mycroft.ini')
-DEFAULT_LOCATIONS = [DEFAULTS_FILE, ETC_CONFIG_FILE, USER_CONFIG_FILE]
 
 
 class ConfigurationLoader(object):
@@ -56,7 +55,7 @@ class ConfigurationLoader(object):
     def load(self):
         """
         Loads configuration files from disk, in the locations defined by
-        DEFAULT_LOCATIONS
+        class member config_locations
         """
         config = {}
         for config_file in self.config_locations:
@@ -128,17 +127,23 @@ class ConfigurationManager(object):
     _config = None
 
     @staticmethod
-    def load(*config_files):
+    def load(configs=None):
         """
         Load default config files as well as any additionally specified files.
         Now also loads configuration from Cerberus (if device is paired)
 
+        :param defaults: A list of default files to load, if not included
+                         CONFIG_LOCATIONS will be used.
         :param config_files: An array of config file paths in addition to
-        DEFAULT_LOCATIONS
+                             defaults.
 
         :return: None
         """
-        loader = ConfigurationLoader(DEFAULT_LOCATIONS + list(config_files))
+        if configs is None:
+            configs = ConfigBuilder().base()
+
+        loader = ConfigurationLoader(configs)
+
         ConfigurationManager._config = loader.load()
         RemoteConfiguration().update()
 
@@ -152,3 +157,75 @@ class ConfigurationManager(object):
         if not ConfigurationManager._config:
             ConfigurationManager.load()
         return ConfigurationManager._config
+
+
+class ConfigBuilder(object):
+    """
+    ConfigBuilder, used to construct list of configuration files.
+    """
+    def __init__(self):
+        """
+            Creates an empty ConfigBuilder object.
+        """
+        self.default = []
+        self.system = []
+        self.user = []
+        self.custom = []
+        self.ptr = self.custom
+
+    def with_default(self, *files):
+        """
+            Add configs to the default config slot.
+        """
+        if len(files) > 0:
+            self.default += list(files)
+        self.ptr = self.default
+        return self
+
+    def with_system(self, *files):
+        """
+            Add configs to the system config slot.
+        """
+        if len(files) > 0:
+            self.system += list(files)
+        self.ptr = self.system
+        return self
+
+    def with_user(self, *files):
+        """
+            Add configs to the user config slot.
+        """
+        if lden(files) > 0:
+            self.system += list(files)
+        self.ptr = self.system
+        return self
+
+    def with_custom(self, *files):
+        """
+            Add configs to the custom config slot.
+        """
+        if len(files) > 0:
+            self.custom += list(files)
+        self.ptr = self.custom
+        return self
+
+    def append(self, *files):
+        """
+            Add config to last used slot. At init this will be the custom
+            slot.
+        """
+        if len(files) > 0:
+            self.ptr += list(files)
+        return self
+
+    def base(self):
+        """
+            Create standard mycroft config list
+        """
+        self.default = [DEFAULTS_FILE]
+        self.system = [ETC_CONFIG_FILE]
+        self.user = [USER_CONFIG_FILE]
+        return self
+
+    def __iter__(self):
+        return iter(self.default + self.system + self.user + self.custom)
