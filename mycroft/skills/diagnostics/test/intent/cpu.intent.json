@@ -1,7 +1,0 @@
-{
-  "utterance": "what is the current cpu percent?",
-  "intent_type": "CpuIntent",
-  "intent": {
-    "CpuKeyword": "what is the current cpu percent"
-  }
-}
