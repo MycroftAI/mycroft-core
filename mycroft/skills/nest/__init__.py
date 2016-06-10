@@ -17,8 +17,7 @@
 
 
 from os.path import dirname
-import subprocess
-
+import nest
 from adapt.intent import IntentBuilder
 from mycroft.skills.core import MycroftSkill
 from mycroft.util.log import getLogger
@@ -36,20 +35,22 @@ class NestSkill(MycroftSkill):
 
     def initialize(self):
         self.load_data_files(dirname(__file__))
-        self.register_regex("(?P<TempNum>\d+)")
+        self.register_regex("(?P<NestTemperature>\d+)")
 
-        thermostat_intent = IntentBuilder("TempIntent")\
-            .require("TempKeyword").require("TempNum").build()
-        self.register_intent(thermostat_intent, self.handle_temp_set_intent)
+        nest_intent = IntentBuilder("NestIntent")\
+            .require("NestKeyword").require("NestTemperature").build()
+        self.register_intent(nest_intent, self.handle_nest_intent)
 
-    def handle_temp_set_intent(self, message):
+    def handle_nest_intent(self, message):
         try:
-            temp = message.metadata.get("TempNum", None)
-            LOGGER.debug(temp)
-            subprocess.call("nest --user '" + self.nest_user +
-                            "' --password '" + self.nest_password +
-                            "' temp " + temp, shell=True)
-            self.speak_dialog('temp.set', data={'TempNum': temp})
+            temperature = message.metadata.get("NestTemperature", None)
+            LOGGER.debug(temperature)
+           # napi = nest.Nest(self.nest_user, self.nest_password)
+            print "ASDFASDFASDF" + temperature
+             #with nest.Nest(self.nest_user, self.nest_password) as napi:
+            #for device in napi.devices:
+            #    device.temperature = temperature
+            self.speak_dialog('nest.set', data={'NestTemperature': temperature})
         except Exception as e:
             LOGGER.error("Error: {0}".format(e))
 

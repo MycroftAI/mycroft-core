@@ -1,8 +1,8 @@
 {
   "utterance": "set the thermostat to 64",
-  "intent_type": "TempIntent",
+  "intent_type": "NestIntent",
   "intent": {
-    "TempKeyword": "set the thermostat to",
-    "TempNum": "64"
+    "NestKeyword": "set the thermostat to",
+    "NestTemperature": "64"
   }
 }

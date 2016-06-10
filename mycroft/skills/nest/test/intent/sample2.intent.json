@@ -1,8 +1,8 @@
 {
   "utterance": "set the nest to 68",
-  "intent_type": "TempIntent",
+  "intent_type": "NestIntent",
   "intent": {
-    "TempKeyword": "set the nest to",
-    "TempNum": "68"
+    "NestKeyword": "set the nest to",
+    "NestTemperature": "68"
   }
 }
