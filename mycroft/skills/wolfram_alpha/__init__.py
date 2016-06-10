@@ -87,8 +87,19 @@ class CerberusWolframAlphaClient(object):
         response = requests.get(url, headers=headers)
         if response.status_code == 401:
             raise CerberusAccessDenied()
-
-        return wolframalpha.Result(StringIO(response.content))
+        #logger.debug(response.content)
+        test = "<queryresult>\
+ <pod title='NotableFacts:PeopleData'\
+     position='200'\
+     error='false'\
+     numsubpods='1'\
+     primary='true'>\
+  <subpod title=''>\
+   <plaintext>4</plaintext>\
+  </subpod>\
+ </pod>\
+</queryresult>"
+        return wolframalpha.Result(StringIO(test))
 
 
 class WolframAlphaSkill(MycroftSkill):
@@ -123,7 +134,7 @@ class WolframAlphaSkill(MycroftSkill):
                         result = self.__find_value(
                             res.pods, 'BasicInformation:PeopleData')
                         if not result:
-                            result = self.__init__find_value(
+                            result = self.__find_value(
                                 res.pods, 'DecimalApproximation')
                             result = result[:5]
                 return result
@@ -179,9 +190,9 @@ class WolframAlphaSkill(MycroftSkill):
             self.speak("Sorry, I don't understand your request.")
 
     @staticmethod
-    def __find_value(pods, pod_id):
+    def __find_value(pods, pod_title):
         for pod in pods:
-            if pod.id == pod_id:
+            if pod.title == pod_title:
                 return pod.text
         return None
 
