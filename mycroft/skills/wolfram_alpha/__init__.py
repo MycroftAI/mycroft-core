@@ -87,7 +87,7 @@ class CerberusWolframAlphaClient(object):
         response = requests.get(url, headers=headers)
         if response.status_code == 401:
             raise CerberusAccessDenied()
-
+        # logger.debug(response.content)
         return wolframalpha.Result(StringIO(response.content))
 
 
@@ -108,6 +108,28 @@ class WolframAlphaSkill(MycroftSkill):
         self.init_dialog(dirname(__file__))
         self.emitter.on('intent_failure', self.handle_fallback)
 
+    def get_result(self, res):
+        result = None
+        try:
+            result = next(res.results).text
+            return result
+        except:
+            try:
+                result = self.__find_value(res.pods, 'Value')
+                if not result:
+                    result = self.__find_value(
+                        res.pods, 'NotableFacts:PeopleData')
+                    if not result:
+                        result = self.__find_value(
+                            res.pods, 'BasicInformation:PeopleData')
+                        if not result:
+                            result = self.__find_value(
+                                res.pods, 'DecimalApproximation')
+                            result = result[:5]
+                return result
+            except:
+                return result
+
     def handle_fallback(self, message):
         logger.debug(
             "Could not determine intent, falling back to WolframAlpha Skill!")
@@ -127,6 +149,7 @@ class WolframAlphaSkill(MycroftSkill):
 
         try:
             res = self.client.query(query)
+            result = self.get_result(res)
         except CerberusAccessDenied as e:
             self.speak_dialog('not.paired')
             return
@@ -134,20 +157,6 @@ class WolframAlphaSkill(MycroftSkill):
             logger.exception(e)
             self.speak("Sorry, I don't understand your request.")
             return
-
-        result = None
-        try:
-            result = next(res.results).text
-        except:
-            try:
-                result = self.__find_value(res.pods, 'Value')
-
-                if not result:
-                    result = self.__find_value(
-                        res.pods, 'DecimalApproximation')
-                    result = result[:5]
-            except:
-                pass
 
         if result:
             input_interpretation = self.__find_value(res.pods, 'Input')
@@ -170,9 +179,9 @@ class WolframAlphaSkill(MycroftSkill):
             self.speak("Sorry, I don't understand your request.")
 
     @staticmethod
-    def __find_value(pods, pod_id):
+    def __find_value(pods, pod_title):
         for pod in pods:
-            if pod.id == pod_id:
+            if pod.title == pod_title:
                 return pod.text
         return None
 
