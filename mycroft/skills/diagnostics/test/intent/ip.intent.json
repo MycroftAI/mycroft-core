@@ -1,7 +1,0 @@
-{
-  "utterance": "What is my ip?",
-  "intent_type": "IpIntent",
-  "intent": {
-    "IpKeyword": "what is my ip"
-  }
-}
