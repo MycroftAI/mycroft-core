@@ -56,7 +56,6 @@ def sizeof_fmt(num, suffix='Bytes'):
 class DiagnosticsSkill(MycroftSkill):
 
     def __init__(self):
-        # super(AlarmSkill, self).__init__("AlarmSkill", None, dirname(__file__))
         super(DiagnosticsSkill, self).__init__(name="DiagnosticsSkill")
         self.public_ip = None
         self.public_ip_expire = 0
