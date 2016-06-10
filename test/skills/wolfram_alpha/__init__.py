@@ -36,7 +36,8 @@ class WolframAlphaTest(unittest.TestCase):
         self.assertEquals(WolframAlphaSkill().get_result(res), "PeopleData")
 
     def test_basic_information_pod(self):
-        result = self.format_result("BasicInformation:PeopleData", "Born in 1997")
+        result = self.format_result("BasicInformation:PeopleData",
+                                    "Born in 1997")
         res = wolframalpha.Result(StringIO(result))
         self.assertEquals(WolframAlphaSkill().get_result(res), "Born in 1997")
 
