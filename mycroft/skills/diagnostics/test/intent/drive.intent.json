@@ -2,6 +2,6 @@
   "utterance": "How's my hard drive space?",
   "intent_type": "DriveIntent",
   "intent": {
-    "DriveSpaceKeyword": "how's my hard drive space?"
+    "DriveSpaceKeyword": "how's my hard drive space"
   }
 }

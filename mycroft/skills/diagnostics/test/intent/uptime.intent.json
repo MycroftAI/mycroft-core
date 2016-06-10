@@ -2,6 +2,6 @@
   "utterance": "what is the uptime?",
   "intent_type": "UptimeIntent",
   "intent": {
-    "UptimeKeyword": "what is the uptime?"
+    "UptimeKeyword": "what is the uptime"
   }
 }
