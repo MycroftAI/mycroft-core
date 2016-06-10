@@ -21,6 +21,7 @@ from Queue import Queue
 from threading import Thread
 
 import serial
+import time
 
 from mycroft.client.enclosure.arduino import EnclosureArduino
 from mycroft.client.enclosure.eyes import EnclosureEyes
@@ -30,7 +31,9 @@ from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util import kill
+from mycroft.util import play_wav
 from mycroft.util.log import getLogger
+from mycroft.util.audio_test import record
 
 __author__ = 'aatchison + jdorleans + iward'
 
@@ -84,6 +87,12 @@ class EnclosureReader(Thread):
         if "volume.down" in data:
             self.client.emit(
                 Message("DecreaseVolumeIntent", metadata={'play_sound': True}))
+
+        if "mic.test" in data:
+            self.client.emit(Message("speak", metadata={'utterance': "Testing microphone recording for five seconds."}))
+            time.sleep(5)
+            record("/tmp/test.wav", 5)
+            play_wav("/tmp/test.wav")
 
     def stop(self):
         self.alive = False
