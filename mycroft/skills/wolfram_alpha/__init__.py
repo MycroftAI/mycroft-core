@@ -88,18 +88,7 @@ class CerberusWolframAlphaClient(object):
         if response.status_code == 401:
             raise CerberusAccessDenied()
         #logger.debug(response.content)
-        test = "<queryresult>\
- <pod title='NotableFacts:PeopleData'\
-     position='200'\
-     error='false'\
-     numsubpods='1'\
-     primary='true'>\
-  <subpod title=''>\
-   <plaintext>4</plaintext>\
-  </subpod>\
- </pod>\
-</queryresult>"
-        return wolframalpha.Result(StringIO(test))
+        return wolframalpha.Result(StringIO(response.content))
 
 
 class WolframAlphaSkill(MycroftSkill):
