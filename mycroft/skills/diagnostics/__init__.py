@@ -77,10 +77,10 @@ class DiagnosticsSkill(MycroftSkill):
         self.register_intent(drive_intent, self.handle_drive_intent)
 
         # There's already an IP skill.
-        ip_intent = IntentBuilder("IpIntent")\
-            .require("IpKeyword")\
-            .build()
-        self.register_intent(ip_intent, self.handle_ip_intent)
+        # ip_intent = IntentBuilder("IpIntent")\
+        #    .require("IpKeyword")\
+        #    .build()
+        # self.register_intent(ip_intent, self.handle_ip_intent)
 
         uptime_intent = IntentBuilder("UptimeIntent")\
             .require("UptimeKeyword")\
