@@ -41,6 +41,10 @@ class WebsocketClient(object):
                  port=client_config.get("port"),
                  path=client_config.get("route"),
                  ssl=str2bool(client_config.get("ssl"))):
+        if not host:
+            # By default open localhost if host is empty, or None
+            host = "127.0.0.1"
+
         self.emitter = EventEmitter()
         self.scheme = "wss" if ssl else "ws"
         self.host = host

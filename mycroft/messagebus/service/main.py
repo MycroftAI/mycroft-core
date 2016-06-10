@@ -39,8 +39,12 @@ def main():
     ]
 
     application = web.Application(routes, **settings)
+    host = service_config.get("host")
+    if not host:
+        # By default listen to localhost if host is empty, or None
+        host = "127.0.0.1"
 
-    application.listen(service_config.get("port"), service_config.get("host"))
+    application.listen(service_config.get("port"), host)
     loop = ioloop.IOLoop.instance()
     loop.start()
 
