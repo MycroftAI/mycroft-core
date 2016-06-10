@@ -38,7 +38,7 @@ class WolframAlphaTest(unittest.TestCase):
 
     def test_basic_information_pod(self):
         res = self.create_result("BasicInformation:PeopleData",
-                                    "Born in 1997") 
+                                 "Born in 1997")
         self.assertEquals(WolframAlphaSkill().get_result(res), "Born in 1997")
 
     def test_decimal_approximation_pod(self):
