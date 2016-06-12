@@ -24,13 +24,12 @@ import pyee
 import speech_recognition as sr
 
 from mycroft.client.speech.local_recognizer import LocalRecognizer
-from mycroft.client.speech.mic import MutableMicrophone, Recognizer
+from mycroft.client.speech.mic import MutableMicrophone, ResponsiveRecognizer
 from mycroft.client.speech.recognizer_wrapper import \
     RemoteRecognizerWrapperFactory
-from mycroft.client.speech.word_extractor import WordExtractor
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.message import Message
-from mycroft.metrics import MetricsAggregator, Stopwatch
+from mycroft.metrics import MetricsAggregator
 from mycroft.session import SessionManager
 from mycroft.util import CerberusAccessDenied
 from mycroft.util.log import getLogger
@@ -62,8 +61,7 @@ class AudioProducer(threading.Thread):
             self.recognizer.adjust_for_ambient_noise(source)
             while self.state.running:
                 try:
-                    self.emitter.emit("recognizer_loop:listening")
-                    audio = self.recognizer.listen(source)
+                    audio = self.recognizer.listen(source, self.emitter)
                     self.queue.put(audio)
                 except IOError, ex:
                     # NOTE: Audio stack on raspi is slightly different, throws
@@ -105,73 +103,28 @@ class AudioConsumer(threading.Thread):
             audio.sample_rate * audio.sample_width)
 
     def read_audio(self):
-        timer = Stopwatch()
-        audio = self.queue.get()
-        self.metrics.timer("mycroft.recognizer.audio.length_s",
-                           self._audio_length(audio))
-        self.queue.task_done()
-        timer.start()
+        audio_data = self.queue.get()
 
         if self.state.sleeping:
-            self.process_wake_up(audio)
-        elif self.state.skip_wakeword:
-            self.process_skip_wake_word(audio)
+            self.try_wake_up(audio_data)
         else:
-            self.process_wake_word(audio, timer)
+            self.process_audio(audio_data)
 
-        self.metrics.flush()
+    def try_wake_up(self, audio_segments):
+        for segment in audio_segments:
+            if self.wakeup_recognizer.is_recognized(segment.frame_data,
+                                                    self.metrics):
+                SessionManager.touch()
+                self.state.sleeping = False
+                self.__speak("I'm awake.")  # TODO: Localization
+                self.metrics.increment("mycroft.wakeup")
 
-    def process_wake_up(self, audio):
-        if self.wakeup_recognizer.is_recognized(audio.frame_data,
-                                                self.metrics):
-            SessionManager.touch()
-            self.state.sleeping = False
-            self.__speak("I'm awake.")  # TODO: Localization
-            self.metrics.increment("mycroft.wakeup")
-
-    def process_wake_word(self, audio, timer):
-        hyp = self.mycroft_recognizer.transcribe(audio.frame_data,
-                                                 self.metrics)
-
-        if self.mycroft_recognizer.contains(hyp):
-            extractor = WordExtractor(audio, self.mycroft_recognizer,
-                                      self.metrics)
-            timer.lap()
-            extractor.calculate_range()
-            self.metrics.timer("mycroft.recognizer.extractor.time_s",
-                               timer.lap())
-            audio_before = extractor.get_audio_data_before()
-            self.metrics.timer("mycroft.recognizer.audio_extracted.length_s",
-                               self._audio_length(audio_before))
-            audio_after = extractor.get_audio_data_after()
-            self.metrics.timer("mycroft.recognizer.audio_extracted.length_s",
-                               self._audio_length(audio_after))
-
-            SessionManager.touch()
-            payload = {
-                'utterance': hyp.hypstr,
-                'session': SessionManager.get().session_id,
-                'pos_begin': extractor.begin,
-                'pos_end': extractor.end
-            }
-            self.emitter.emit("recognizer_loop:wakeword", payload)
-
-            try:
-                self.transcribe([audio_before, audio_after])
-            except sr.UnknownValueError:
-                self.__speak("Go ahead")
-                self.state.skip_wakeword = True
-                self.metrics.increment("mycroft.wakeword")
-
-    def process_skip_wake_word(self, audio):
-        SessionManager.touch()
+    def process_audio(self, audio):
         try:
             self.transcribe([audio])
-        except sr.UnknownValueError:
+        except sr.UnknownValueError:  # TODO: Localization
             logger.warn("Speech Recognition could not understand audio")
             self.__speak("Sorry, I didn't catch that.")
-            self.metrics.increment("mycroft.recognizer.error")
-        self.state.skip_wakeword = False
 
     def __speak(self, utterance):
         payload = {
@@ -184,18 +137,18 @@ class AudioConsumer(threading.Thread):
         def runnable():
             try:
                 text = self.remote_recognizer.transcribe(
-                        audio, metrics=self.metrics).lower()
+                    audio, self.metrics).lower()
             except sr.UnknownValueError:
                 pass
             except sr.RequestError as e:
                 logger.error(
-                        "Could not request results from Speech Recognition "
-                        "service; {0}".format(e))
+                    "Could not request results from Speech Recognition "
+                    "service; {0}".format(e))
             except CerberusAccessDenied as e:
                 logger.error("AccessDenied from Cerberus proxy.")
                 self.__speak(
-                        "Your device is not registered yet. To start pairing, "
-                        "login at cerberus dot mycroft dot A.I")
+                    "Your device is not registered yet. To start pairing, "
+                    "login at cerberus dot mycroft dot A.I")
                 utterances.append("pair my device")
             except Exception as e:
                 logger.error("Unexpected exception: {0}".format(e))
@@ -253,7 +206,7 @@ class RecognizerLoop(pyee.EventEmitter):
         self.mycroft_recognizer = LocalRecognizer(sample_rate, lang)
         # TODO - localization
         self.wakeup_recognizer = LocalRecognizer(sample_rate, lang, "wake up")
-        self.remote_recognizer = Recognizer()
+        self.remote_recognizer = ResponsiveRecognizer(self.mycroft_recognizer)
         self.state = RecognizerLoopState()
 
     def start_async(self):
@@ -270,7 +223,7 @@ class RecognizerLoop(pyee.EventEmitter):
                       self.wakeup_recognizer,
                       self.mycroft_recognizer,
                       RemoteRecognizerWrapperFactory.wrap_recognizer(
-                              self.remote_recognizer)).start()
+                          self.remote_recognizer)).start()
 
     def stop(self):
         self.state.running = False

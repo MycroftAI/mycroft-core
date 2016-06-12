@@ -59,5 +59,5 @@ class LocalRecognizer(object):
         hyp = self.transcribe(byte_data, metrics)
         return hyp and self.key_phrase in hyp.hypstr.lower()
 
-    def contains(self, hypothesis):
+    def found_wake_word(self, hypothesis):
         return hypothesis and self.key_phrase in hypothesis.hypstr.lower()
