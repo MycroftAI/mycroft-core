@@ -17,7 +17,6 @@
 
 
 from os.path import dirname
-from os.path import join
 
 from adapt.intent import IntentBuilder
 from mycroft.messagebus.message import Message
@@ -31,15 +30,14 @@ class NapTimeSkill(MycroftSkill):
         super(NapTimeSkill, self).__init__(name="NapTimeSkill")
 
     def initialize(self):
-        intent_parser = IntentBuilder("NapTimeIntent").require(
+        self.load_data_files(dirname(__file__))
+        naptime_intent = IntentBuilder("NapTimeIntent").require(
             "SleepCommand").build()
-        self.register_intent(intent_parser, self.handle_intent)
-        self.load_vocab_files(join(dirname(__file__), 'vocab', 'en-us'))
+        self.register_intent(naptime_intent, self.handle_intent)
 
-    # TODO - Localization
     def handle_intent(self, message):
         self.emitter.emit(Message('recognizer_loop:sleep'))
-        self.speak("Ok, I'm going to sleep.")
+        self.speak_dialog("sleep")
 
     def stop(self):
         pass
