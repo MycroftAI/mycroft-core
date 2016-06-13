@@ -48,7 +48,7 @@ class NestSkill(MycroftSkill):
             napi = nest.Nest(self.nest_user, self.nest_password)
             print "ASDFASDFASDF" + temperature
             with nest.Nest(self.nest_user, self.nest_password) as napi:
-            for device in napi.devices:
+             for device in napi.devices:
               device.temperature = temperature
             self.speak_dialog('nest.set', data={'NestTemperature': temperature})
         except Exception as e:
