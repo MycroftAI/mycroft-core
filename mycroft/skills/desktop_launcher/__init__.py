@@ -76,7 +76,7 @@ class DesktopLauncherSkill(MycroftSkill):
         self.register_regex("(?P<SearchTerms>.*) on")
 
         launch_intent = IntentBuilder(
-            "LaunchDesktopApplication").require("LaunchKeyword").require(
+            "LaunchDesktopApplicationIntent").require("LaunchKeyword").require(
                 "Application").build()
         self.register_intent(launch_intent, self.handle_launch_desktop_app)
 

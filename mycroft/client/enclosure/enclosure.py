@@ -25,7 +25,7 @@ import serial
 from mycroft.client.enclosure.arduino import EnclosureArduino
 from mycroft.client.enclosure.eyes import EnclosureEyes
 from mycroft.client.enclosure.mouth import EnclosureMouth
-from mycroft.configuration.config import ConfigurationManager
+from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util import kill
@@ -148,7 +148,7 @@ class Enclosure:
 
     def __init_serial(self):
         try:
-            self.config = ConfigurationManager.get_config().get("enclosure")
+            self.config = ConfigurationManager.get().get("enclosure")
             self.port = self.config.get("port")
             self.rate = int(self.config.get("rate"))
             self.timeout = int(self.config.get("timeout"))

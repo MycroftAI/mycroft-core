@@ -1,0 +1,8 @@
+{
+  "utterance": "launch imgur",
+  "intent_type": "LaunchWebsiteIntent",
+  "intent": {
+    "LaunchKeyword": "launch",
+    "Website": "imgur"
+  }
+}

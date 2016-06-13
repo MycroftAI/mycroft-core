@@ -18,13 +18,13 @@
 
 import shortuuid
 
-from mycroft.configuration.config import ConfigurationManager
+from mycroft.configuration import ConfigurationManager
 from mycroft.identity import IdentityManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util import str2bool
 
-_config = ConfigurationManager().get_config().get("pairing_client")
+_config = ConfigurationManager.get().get("pairing_client")
 
 
 def generate_pairing_code():

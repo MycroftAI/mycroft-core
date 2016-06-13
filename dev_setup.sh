@@ -37,8 +37,8 @@ VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${HOME}/.virtualenvs/mycroft"}
 
 # create virtualenv, consistent with virtualenv-wrapper conventions
 if [ ! -d ${VIRTUALENV_ROOT} ]; then
-  mkdir -p $(dirname ${VIRTUALENV_ROOT})
-  virtualenv ${VIRTUALENV_ROOT}
+   mkdir -p $(dirname ${VIRTUALENV_ROOT})
+  virtualenv -p python2.7 ${VIRTUALENV_ROOT}
 fi
 source ${VIRTUALENV_ROOT}/bin/activate
 cd ${TOP}

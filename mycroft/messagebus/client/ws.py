@@ -24,7 +24,7 @@ from pyee import EventEmitter
 from websocket import WebSocketApp
 
 import mycroft.util.log
-from mycroft.configuration.config import ConfigurationManager
+from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.message import Message
 from mycroft.util import str2bool
 
@@ -32,7 +32,7 @@ __author__ = 'seanfitz'
 
 logger = mycroft.util.log.getLogger(__name__)
 
-config = ConfigurationManager.get_config()
+config = ConfigurationManager.get()
 client_config = config.get("messagebus_client")
 
 

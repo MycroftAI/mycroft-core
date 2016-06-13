@@ -20,7 +20,7 @@ import sys
 from threading import Thread, Lock
 
 from mycroft.client.speech.listener import RecognizerLoop
-from mycroft.configuration.config import ConfigurationManager
+from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.tts import tts_factory
@@ -32,7 +32,7 @@ tts = tts_factory.create()
 mutex = Lock()
 loop = None
 
-config = ConfigurationManager.get_config()
+config = ConfigurationManager.get()
 
 
 def handle_listening():

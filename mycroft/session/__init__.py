@@ -20,11 +20,11 @@ import time
 from uuid import uuid4
 from threading import Lock
 from mycroft.util import log
-from mycroft.configuration.config import ConfigurationManager
+from mycroft.configuration import ConfigurationManager
 
 __author__ = 'seanfitz'
 logger = log.getLogger(__name__)
-config = ConfigurationManager.get_config().get('session_management', {})
+config = ConfigurationManager.get().get('session_management', {})
 
 
 class Session(object):

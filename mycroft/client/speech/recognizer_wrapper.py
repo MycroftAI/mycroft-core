@@ -21,7 +21,7 @@ import json
 import requests
 from speech_recognition import UnknownValueError
 
-from mycroft.configuration.config import ConfigurationManager
+from mycroft.configuration import ConfigurationManager
 from mycroft.identity import IdentityManager
 from mycroft.metrics import Stopwatch
 from mycroft.util import CerberusAccessDenied
@@ -32,7 +32,7 @@ __author__ = 'seanfitz'
 
 log = getLogger("RecognizerWrapper")
 
-config = ConfigurationManager.get_config().get('speech_client')
+config = ConfigurationManager.get().get('speech_client')
 
 
 class GoogleRecognizerWrapper(object):

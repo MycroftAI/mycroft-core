@@ -28,7 +28,7 @@ from mycroft.client.speech.mic import MutableMicrophone, Recognizer
 from mycroft.client.speech.recognizer_wrapper import \
     RemoteRecognizerWrapperFactory
 from mycroft.client.speech.word_extractor import WordExtractor
-from mycroft.configuration.config import ConfigurationManager
+from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.message import Message
 from mycroft.metrics import MetricsAggregator, Stopwatch
 from mycroft.session import SessionManager
@@ -37,8 +37,8 @@ from mycroft.util.log import getLogger
 
 logger = getLogger(__name__)
 
-core_config = ConfigurationManager.get_config().get('core')
-speech_config = ConfigurationManager.get_config().get('speech_client')
+core_config = ConfigurationManager.get().get('core')
+speech_config = ConfigurationManager.get().get('speech_client')
 
 
 class AudioProducer(threading.Thread):

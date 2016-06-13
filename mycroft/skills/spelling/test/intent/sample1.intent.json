@@ -1,0 +1,8 @@
+{
+  "utterance": "spell happiness",
+  "intent_type": "SpellingIntent",
+  "intent": {
+    "SpellingKeyword": "spell",
+    "Word": "happiness"
+  }
+}

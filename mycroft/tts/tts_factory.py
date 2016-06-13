@@ -18,7 +18,7 @@
 
 import logging
 
-from mycroft.configuration.config import ConfigurationManager
+from mycroft.configuration import ConfigurationManager
 from mycroft.tts import espeak_tts
 from mycroft.tts import fa_tts
 from mycroft.tts import google_tts
@@ -42,7 +42,7 @@ def create():
     """
 
     logging.basicConfig()
-    config = ConfigurationManager.get_config().get('tts')
+    config = ConfigurationManager.get().get('tts')
     name = config.get('module')
     lang = config.get(name + '.lang', None)
     voice = config.get(name + '.voice')
