@@ -87,7 +87,7 @@ class CerberusWolframAlphaClient(object):
         response = requests.get(url, headers=headers)
         if response.status_code == 401:
             raise CerberusAccessDenied()
-        # logger.debug(response.content)
+        logger.debug(response.content)
         return wolframalpha.Result(StringIO(response.content))
 
 
@@ -179,9 +179,9 @@ class WolframAlphaSkill(MycroftSkill):
             self.speak("Sorry, I don't understand your request.")
 
     @staticmethod
-    def __find_value(pods, pod_title):
+    def __find_value(pods, pod_id):
         for pod in pods:
-            if pod.title == pod_title:
+            if pod.id == pod_id:
                 return pod.text
         return None
 

@@ -15,13 +15,13 @@ logger = getLogger(__name__)
 
 
 class WolframAlphaTest(unittest.TestCase):
-    def format_result(self, pod_title, text):
+    def format_result(self, pod_id, text):
         return "<queryresult>\
-        <pod title='" + pod_title + "'><subpod>\
+        <pod id='" + pod_id + "' title = '" + pod_id + "'><subpod>\
         <plaintext>" + text + "</plaintext></subpod></pod></queryresult>"
 
-    def create_result(self, pod_title, value):
-        result = self.format_result(pod_title, value)
+    def create_result(self, pod_id, value):
+        result = self.format_result(pod_id, value)
         return wolframalpha.Result(StringIO(result))
 
     def test_result_pod(self):
