@@ -12,3 +12,6 @@ tornado.ioloop
 mycroft/__version__.py
 MANIFEST.in
 setup.py
+logs/mycroft-service.log
+logs/mycroft-skills.log
+logs/mycroft-voice.log
