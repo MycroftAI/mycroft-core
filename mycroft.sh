@@ -1,5 +1,6 @@
 #!/bin/sh
 
-screen -mdS mycroft-service ./start.sh service >> mycroft-service.log
-screen -mdS mycroft-skills ./start.sh skills >> mycroft-skills.log
-screen -mdS mycroft-voice ./start.sh voice >> mycroft-voice.log
+mkdir -p logs
+screen -mdS mycroft-service ./start.sh service >> logs/mycroft-service.log
+screen -mdS mycroft-skills ./start.sh skills >> logs/mycroft-skills.log
+screen -mdS mycroft-voice ./start.sh voice >> logs/mycroft-voice.log
