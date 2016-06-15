@@ -59,7 +59,7 @@ class EnclosureReader(Thread):
         self.VolumeSkill = VolumeSkill()
         self.serial = serial
         self.client = client
-        self.VolumeSkill.initialize()
+        #self.VolumeSkill.initialize()
         self.start()
 
     def read(self):
