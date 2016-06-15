@@ -172,7 +172,8 @@ class WolframAlphaSkill(MycroftSkill):
                 verb = ":"
 
             result = self.__process_wolfram_string(result)
-            input_interpretation = self.__process_wolfram_string(input_interpretation)
+            input_interpretation = \
+                self.__process_wolfram_string(input_interpretation)
             response = "%s %s %s" % (input_interpretation, verb, result)
 
             self.speak(response)
@@ -194,10 +195,10 @@ class WolframAlphaSkill(MycroftSkill):
         # Convert | symbols to commas
         text = re.sub(r" \| ", r", ", text)
 
-        #Convert newlines to commas
+        # Convert newlines to commas
         text = re.sub(r"\n", r",. ", text)
 
-        #Convert !s to factorial
+        # Convert !s to factorial
         text = re.sub(r"!", r",factorial", text)
         return text
 
