@@ -56,8 +56,10 @@ class EnclosureReader(Thread):
         super(EnclosureReader, self).__init__(target=self.read)
         self.alive = True
         self.daemon = True
+        self.VolumeSkill = VolumeSkill()
         self.serial = serial
         self.client = client
+        self.VolumeSkill.initialize()
         self.start()
 
     def read(self):
@@ -76,10 +78,10 @@ class EnclosureReader(Thread):
             kill(['mimic'])  # TODO - Refactoring in favor of Mycroft Stop
 
         if "volume.down" in data:
-            VolumeSkill().handle_decrease_volume("")
+            self.VolumeSkill.handle_decrease_volume("")
 
         if "volume.up" in data:
-            VolumeSkill().handle_increase_volume("")
+            self.VolumeSkill.handle_increase_volume("")
 
 
 
