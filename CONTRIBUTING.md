@@ -22,7 +22,7 @@ The following guidelines for contribution should be followed if you want to subm
   5. Make use of the `.editorconfig`-file if provided with the repository.
   6. Make commits of logical units and describe them properly. Use your issue identifier at the very begin of each commit. For instance:
 `git commit -m "Issues-123 - Fixing 'A' sound on Spelling Skill"`
-  7. Before committing, format your code following the PEP8 rules and organize your imports removing unused libs.
+  7. Before committing, format your code following the PEP8 rules and organize your imports removing unused libs. To check whether you are following these rules, install pep8 and run `pep8 mycroft test` while in the `mycroft-core` folder. This will check for formatting issues in the `mycroft` and `test` folders.
   8. Once you have committed everything and are done with your branch, you have to rebase your code with master. Do the following steps:
       1. Make sure you do not have any changes left on your branch
       2. Checkout on master branch and make sure it is up-to-date
@@ -39,10 +39,10 @@ git rebase master
 git push -f
 ```
   9. If possible, create unit tests for your changes
-     * [Unit Tests for most contributions](https://github.com/MycroftAI/mycroft/tree/master/test)
-     * [Intent Tests for new skills](https://github.com/MycroftAI/mycroft/tree/master/mycroft/skills/weather)
+     * [Unit Tests for most contributions](https://github.com/MycroftAI/mycroft-core/tree/master/test)
+     * [Intent Tests for new skills](https://docs.mycroft.ai/development/creating-a-skill#testing-your-skill)
      * We utilize TRAVIS-CI, which will test each pull request. To test locally you can run: `./start.sh unittest`
-  10. Once everything is OK, you can finally create a Pull Request (PR) on Github in order to be reviewed and merged (to provide GH wiki page link)
+  10. Once everything is OK, you can finally [create a Pull Request (PR) on Github](https://help.github.com/articles/using-pull-requests/) in order to be reviewed and merged.
 
 **Note**: Even if you have write access to the master branch, do not work directly on master!
 
