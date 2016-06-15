@@ -56,14 +56,9 @@ class EnclosureReader(Thread):
         super(EnclosureReader, self).__init__(target=self.read)
         self.alive = True
         self.daemon = True
-        self.VolumeSkill = VolumeSkill()
         self.serial = serial
         self.client = client
-        self.VolumeSkill.initialize()
         self.start()
-
-    def initialize(self):
-        self.VolumeSkill.initialize()
 
     def read(self):
         while self.alive:
