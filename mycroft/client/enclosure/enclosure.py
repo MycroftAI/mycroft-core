@@ -30,6 +30,7 @@ from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util import kill
 from mycroft.util.log import getLogger
+from mycroft.skills.volume import VolumeSkill
 
 __author__ = 'aatchison + jdorleans'
 
@@ -73,6 +74,14 @@ class EnclosureReader(Thread):
         if "mycroft.stop" in data:
             self.client.emit(Message("mycroft.stop"))
             kill(['mimic'])  # TODO - Refactoring in favor of Mycroft Stop
+
+        if "volume.down" in data:
+            VolumeSkill().handle_decrease_volume("")
+
+        if "volume.up" in data:
+            VolumeSkill().handle_increase_volume("")
+
+
 
     def stop(self):
         self.alive = False
