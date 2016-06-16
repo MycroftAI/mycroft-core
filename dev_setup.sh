@@ -37,15 +37,15 @@ VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${HOME}/.virtualenvs/mycroft"}
 
 # create virtualenv, consistent with virtualenv-wrapper conventions
 if [ ! -d ${VIRTUALENV_ROOT} ]; then
-  mkdir -p $(dirname ${VIRTUALENV_ROOT})
-  virtualenv ${VIRTUALENV_ROOT}
+   mkdir -p $(dirname ${VIRTUALENV_ROOT})
+  virtualenv -p python2.7 ${VIRTUALENV_ROOT}
 fi
 source ${VIRTUALENV_ROOT}/bin/activate
 cd ${TOP}
 easy_install pip==7.1.2 # force version of pip
 
 # install requirements (except pocketsphinx)
-pip install -r requirements.txt --trusted-host pypi.mycroft.team
+pip install -r requirements.txt 
 
 # clone pocketsphinx-python at HEAD (fix to a constant version later)
 if [ ! -d ${TOP}/pocketsphinx-python ]; then

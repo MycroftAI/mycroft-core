@@ -1,4 +1,5 @@
 from setuptools import setup
+
 from mycroft.util.setup_base import get_version, place_manifest
 
 __author__ = 'seanfitz'
@@ -17,7 +18,6 @@ setup(
     ],
     packages=[
         "mycroft.configuration",
-        "mycroft.configuration.defaults",
         "mycroft.dialog",
         "mycroft.filesystem",
         "mycroft.messagebus",
