@@ -9,9 +9,9 @@ then
 
 else
      mkdir -p logs
-     screen -mdS mycroft-service ./start.sh service >> logs/mycroft-service.log
-     screen -mdS mycroft-skills ./start.sh skills >> logs/mycroft-skills.log
-     screen -mdS mycroft-voice ./start.sh voice >> logs/mycroft-voice.log
+     screen -mdS mycroft-service -c mycroft-service.screen ./start.sh service
+     screen -mdS mycroft-skills -c mycroft-skills.screen ./start.sh skills
+     screen -mdS mycroft-voice -c mycroft-voice.screen ./start.sh voice
      echo "Mycroft Started\nTo stop Mycroft use 'mycroft.sh stop'"
 fi
 
