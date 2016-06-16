@@ -81,8 +81,6 @@ class EnclosureReader(Thread):
         if "volume.up" in data:
             self.client.emit(Message("DecreaseVolumeIntent"))
 
-
-
     def stop(self):
         self.alive = False
         self.join()
