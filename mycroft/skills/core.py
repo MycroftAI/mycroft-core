@@ -37,6 +37,7 @@ __author__ = 'seanfitz'
 PRIMARY_SKILLS = ['intent', 'wake']
 BLACKLISTED_SKILLS = ["send_sms"]
 SKILLS_BASEDIR = dirname(__file__)
+THIRD_PARTY_SKILLS_DIR = "/opt/mycroft/third_party"
 
 MainModule = '__init__'
 
