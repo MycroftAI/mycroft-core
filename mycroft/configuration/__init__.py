@@ -31,7 +31,9 @@ logger = getLogger(__name__)
 
 DEFAULT_CONFIG = join(dirname(__file__), 'mycroft.ini')
 SYSTEM_CONFIG = '/etc/mycroft/mycroft.ini'
-USER_CONFIG = join(expanduser('~'), '.mycroft/mycroft.ini')
+USER_DIR = join(expanduser('~'), '.mycroft')
+USER_CONFIG = join(USER_DIR, 'mycroft.ini')
+USER_THIRD_PARTY_SKILLS_DIR = join(USER_DIR, "third_party_skills")
 
 
 class ConfigurationLoader(object):
