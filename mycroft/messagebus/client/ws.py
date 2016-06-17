@@ -39,7 +39,7 @@ client_config = config.get("messagebus_client")
 class EmptyHostException (Exception):
     def __init__(self):
         Exception.__init__(self, "Empty host in mycroft.ini "
-                                 "[messagebus_service] section")
+                                 "[messagebus_client] section")
 
 
 class WebsocketClient(object):

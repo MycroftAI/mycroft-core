@@ -28,6 +28,12 @@ settings = {
 }
 
 
+class EmptyHostException (Exception):
+    def __init__(self):
+        Exception.__init__(self, "Empty host in mycroft.ini "
+                                 "[messagebus_service] section")
+
+
 def main():
     import tornado.options
     tornado.options.parse_command_line()
@@ -42,7 +48,7 @@ def main():
     host = service_config.get("host")
     if not host:
         # By default listen to localhost if host is empty, or None
-        host = "127.0.0.1"
+        raise EmptyHostException
 
     application.listen(service_config.get("port"), host)
     loop = ioloop.IOLoop.instance()
