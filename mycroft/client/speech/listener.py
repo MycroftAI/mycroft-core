@@ -110,14 +110,13 @@ class AudioConsumer(threading.Thread):
         else:
             self.process_audio(audio_data)
 
-    def try_wake_up(self, audio_segments):
-        for segment in audio_segments:
-            if self.wakeup_recognizer.is_recognized(segment.frame_data,
-                                                    self.metrics):
-                SessionManager.touch()
-                self.state.sleeping = False
-                self.__speak("I'm awake.")  # TODO: Localization
-                self.metrics.increment("mycroft.wakeup")
+    def try_wake_up(self, audio):
+        if self.wakeup_recognizer.is_recognized(audio.frame_data,
+                                                self.metrics):
+            SessionManager.touch()
+            self.state.sleeping = False
+            self.__speak("I'm awake.")  # TODO: Localization
+            self.metrics.increment("mycroft.wakeup")
 
     def process_audio(self, audio):
         try:
