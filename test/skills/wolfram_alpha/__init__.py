@@ -48,3 +48,19 @@ class WolframAlphaTest(unittest.TestCase):
     def test_invalid_pod(self):
         res = self.create_result("InvalidTitle", "Test")
         self.assertEquals(WolframAlphaSkill().get_result(res), None)
+
+    def test_whitespace_process(self):
+        self.assertEquals(WolframAlphaSkill().process_wolfram_string
+                          ("Test     string"), "Test string")
+
+    def test_pipe_process(self):
+        self.assertEquals(WolframAlphaSkill().process_wolfram_string
+                          ("Test | string"), "Test, string")
+
+    def test_newline_process(self):
+        self.assertEquals(WolframAlphaSkill().process_wolfram_string
+                          ("Test\nstring"), "Test, string")
+
+    def test_factorial_process(self):
+        self.assertEquals(WolframAlphaSkill().process_wolfram_string
+                          ("Test!"), "Test,factorial")
