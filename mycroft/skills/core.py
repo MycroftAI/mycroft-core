@@ -37,7 +37,8 @@ __author__ = 'seanfitz'
 PRIMARY_SKILLS = ['intent', 'wake']
 BLACKLISTED_SKILLS = ["send_sms"]
 SKILLS_BASEDIR = dirname(__file__)
-THIRD_PARTY_SKILLS_DIR = realpath(join(SKILLS_BASEDIR, "../third_party_skills"))
+THIRD_PARTY_SKILLS_DIR = realpath(
+    join(SKILLS_BASEDIR, "../third_party_skills"))
 
 MainModule = '__init__'
 
