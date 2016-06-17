@@ -1,0 +1,8 @@
+{
+  "utterance": "what are my roku apps",
+  "intent_type": "RokuAppsIntent",
+  "intent": {
+    "RokuAppKeyword": "apps",
+    "RokuKeyword": "roku"
+  }
+}

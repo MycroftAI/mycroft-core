@@ -1,0 +1,9 @@
+{
+  "utterance": "search for cats on Roku",
+  "intent_type": "RokuSearchIntent",
+  "intent": {
+    "RokuSearchKeyword": "search for",
+    "RokuKeyword": "on roku",
+    "SearchTerms": "cats"
+  }
+}

@@ -48,13 +48,15 @@ class RokuSkill(MycroftSkill):
             .require("RokuLaunchKeyword")\
             .require("Application")\
             .build()
-        self.register_intent(roku_launch_intent, self.handle_roku_launch_intent)
+        self.register_intent(roku_launch_intent,
+                             self.handle_roku_launch_intent)
 
         roku_home_intent = IntentBuilder("RokuHomeIntent")\
             .require("RokuKeyword")\
             .require("RokuHomeKeyword")\
             .build()
-        self.register_intent(roku_home_intent, self.handle_roku_home_intent)
+        self.register_intent(roku_home_intent,
+                             self.handle_roku_home_intent)
 
         roku_search_intent = IntentBuilder("RokuSearchIntent")\
             .require("RokuKeyword")\
@@ -62,19 +64,22 @@ class RokuSkill(MycroftSkill):
             .require("SearchTerms")\
             .optionally("Application")\
             .build()
-        self.register_intent(roku_search_intent, self.handle_roku_search_intent)
+        self.register_intent(roku_search_intent,
+                             self.handle_roku_search_intent)
 
         roku_apps_intent = IntentBuilder("RokuAppsIntent")\
             .require("RokuKeyword")\
             .require("RokuAppKeyword")\
             .build()
-        self.register_intent(roku_apps_intent, self.handle_roku_apps_intent)
+        self.register_intent(roku_apps_intent,
+                             self.handle_roku_apps_intent)
 
         roku_play_intent = IntentBuilder("RokuPlayIntent")\
             .require("RokuKeyword")\
             .require("RokuPlayKeyword")\
             .build()
-        self.register_intent(roku_play_intent, self.handle_roku_play_intent)
+        self.register_intent(roku_play_intent,
+                             self.handle_roku_play_intent)
 
     def register_apps(self):
         if self.roku:
@@ -150,6 +155,7 @@ class RokuSkill(MycroftSkill):
             self.roku.play()
         else:
             self.speak_dialog("no.device")
+
     def stop(self):
         pass
 

@@ -1,0 +1,8 @@
+{
+  "utterance": "go home on roku",
+  "intent_type": "RokuHomeIntent",
+  "intent": {
+    "RokuHomeKeyword": "go home",
+    "RokuKeyword": "on roku"
+  }
+}

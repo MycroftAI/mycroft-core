@@ -1,0 +1,8 @@
+{
+  "utterance": "what channels do i have on roku",
+  "intent_type": "RokuAppsIntent",
+  "intent": {
+    "RokuAppKeyword": "channels",
+    "RokuKeyword": "on roku"
+  }
+}
