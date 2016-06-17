@@ -17,11 +17,15 @@
 
 
 from os.path import dirname, join
+import re
 
 from netifaces import interfaces, ifaddresses, AF_INET
 
 from adapt.intent import IntentBuilder
 from mycroft.skills.core import MycroftSkill
+from mycroft.util.log import getLogger
+
+logger = getLogger(__name__)
 
 __author__ = 'ryanleesipes'
 
@@ -42,8 +46,13 @@ class IPSkill(MycroftSkill):
             addresses = [
                 i['addr'] for i in
                 ifaddresses(ifaceName).setdefault(
-                    AF_INET, [{'addr': 'No IP addr'}])]
-            if ifaceName != "lo":
+                    AF_INET, [{'addr': None}])]
+            if None in addresses:
+                addresses.remove(None)
+            if addresses and ifaceName != "lo":
+                addresses = [re.sub(r"\.", r" dot ", address)
+                             for address in addresses]
+                logger.debug(addresses[0])
                 self.speak('%s: %s' % (
                     "interface: " + ifaceName +
                     ", I.P. Address ", ', '.join(addresses)))
