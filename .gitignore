@@ -12,4 +12,3 @@ tornado.ioloop
 mycroft/__version__.py
 MANIFEST.in
 setup.py
-mycroft/third_party_skills
