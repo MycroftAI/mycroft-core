@@ -1,0 +1,8 @@
+{
+  "utterance": "pause the movie on the roku",
+  "intent_type": "RokuPauseIntent",
+  "intent": {
+    "RokuPauseKeyword": "pause",
+    "RokuKeyword": "on the roku"
+  }
+}
