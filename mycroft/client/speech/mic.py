@@ -138,7 +138,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
     def __init__(self, wake_word_recognizer):
         speech_recognition.Recognizer.__init__(self)
         self.daemon = True
-        self.max_audio_length_sec = 30
 
         self.wake_word_recognizer = wake_word_recognizer
         self.audio = pyaudio.PyAudio()
