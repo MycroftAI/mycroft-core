@@ -40,9 +40,6 @@ class RokuSkill(MycroftSkill):
         self.load_data_files(dirname(__file__))
         self.register_apps()
 
-        # self.register_regex("for (?P<SearchTerms>.*)")
-        # self.register_regex("for (?P<SearchTerms>.*) on")
-
         roku_launch_intent = IntentBuilder("RokuLaunchIntent")\
             .require("RokuKeyword")\
             .require("RokuLaunchKeyword")\
@@ -57,15 +54,6 @@ class RokuSkill(MycroftSkill):
             .build()
         self.register_intent(roku_home_intent,
                              self.handle_roku_home_intent)
-
-        roku_search_intent = IntentBuilder("RokuSearchIntent")\
-            .require("RokuKeyword")\
-            .require("RokuSearchKeyword")\
-            .require("SearchTerms")\
-            .optionally("Application")\
-            .build()
-        self.register_intent(roku_search_intent,
-                             self.handle_roku_search_intent)
 
         roku_apps_intent = IntentBuilder("RokuAppsIntent")\
             .require("RokuKeyword")\
@@ -86,27 +74,6 @@ class RokuSkill(MycroftSkill):
             for app in self.roku.apps:
                 self.register_vocabulary(app.name, "Application")
 
-    def home_search(self, terms):
-        if self.roku:
-            self.roku.home()
-            sleep(3)
-            self.roku.down()
-            self.roku.down()
-            self.roku.down()
-            self.roku.down()
-            self.roku.down()
-            self.roku.select()
-            self.roku.literal(terms)
-            sleep(2)
-            self.roku.right()
-            self.roku.right()
-            self.roku.right()
-            self.roku.right()
-            self.roku.right()
-            self.roku.right()
-            sleep(.5)
-            self.roku.select()
-
     def handle_roku_launch_intent(self, message):
         if self.roku:
             app = message.metadata.get('Application')
@@ -119,25 +86,6 @@ class RokuSkill(MycroftSkill):
         if self.roku:
             self.speak_dialog("home")
             self.roku.home()
-        else:
-            self.speak_dialog("no.device")
-
-    def handle_roku_search_intent(self, message):
-        if self.roku:
-            app = message.metadata.get('Application')
-            terms = message.metadata.get('SearchTerms')
-
-            self.speak_dialog("search.app", {"SearchTerms": terms})
-            if app:
-                if app == 'Netflix':
-                    self.roku[app].launch()
-                    sleep(3)
-                    self.roku.up()
-                    sleep(2)
-                    self.roku.select()
-                    self.roku.literal(terms)
-            else:
-                self.home_search(terms)
         else:
             self.speak_dialog("no.device")
 
