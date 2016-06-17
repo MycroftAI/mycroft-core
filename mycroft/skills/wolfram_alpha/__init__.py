@@ -171,9 +171,9 @@ class WolframAlphaSkill(MycroftSkill):
             if "|" in result:  # Assuming "|" indicates a list of items
                 verb = ":"
 
-            result = self.__process_wolfram_string(result)
+            result = self.process_wolfram_string(result)
             input_interpretation = \
-                self.__process_wolfram_string(input_interpretation)
+                self.process_wolfram_string(input_interpretation)
             response = "%s %s %s" % (input_interpretation, verb, result)
 
             self.speak(response)
@@ -188,7 +188,7 @@ class WolframAlphaSkill(MycroftSkill):
         return None
 
     @staticmethod
-    def __process_wolfram_string(text):
+    def process_wolfram_string(text):
         # Remove extra whitespace
         text = re.sub(r" \s+", r" ", text)
 
@@ -196,7 +196,7 @@ class WolframAlphaSkill(MycroftSkill):
         text = re.sub(r" \| ", r", ", text)
 
         # Convert newlines to commas
-        text = re.sub(r"\n", r",. ", text)
+        text = re.sub(r"\n", r", ", text)
 
         # Convert !s to factorial
         text = re.sub(r"!", r",factorial", text)
