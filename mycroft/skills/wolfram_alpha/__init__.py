@@ -123,9 +123,12 @@ class WolframAlphaSkill(MycroftSkill):
                         result = self.__find_value(
                             res.pods, 'BasicInformation:PeopleData')
                         if not result:
-                            result = self.__find_value(
-                                res.pods, 'DecimalApproximation')
-                            result = result[:5]
+                            result = self.__find_value(res.pods, 'Definition')
+                            if not result:
+                                result = self.__find_value(res.pods, 'DecimalApproximation')
+                                if not result:
+                                    result = self.__find_num(
+                                        res.pods, '200')
                 return result
             except:
                 return result
@@ -183,7 +186,7 @@ class WolframAlphaSkill(MycroftSkill):
     @staticmethod
     def __find_value(pods, pod_id):
         for pod in pods:
-            if pod.id == pod_id:
+            if pod_id in pod.id:
                 return pod.text
         return None
 
@@ -201,6 +204,13 @@ class WolframAlphaSkill(MycroftSkill):
         # Convert !s to factorial
         text = re.sub(r"!", r",factorial", text)
         return text
+
+    @staticmethod
+    def __find_num(pods, pod_num):
+        for pod in pods:
+            if pod.node.attrib['position'] == pod_num:
+                return pod.text
+        return None
 
     def stop(self):
         pass
