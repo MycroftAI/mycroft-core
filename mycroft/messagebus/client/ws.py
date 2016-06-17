@@ -54,10 +54,10 @@ class WebsocketClient(object):
             raise ValueError("Missing or empty route in mycroft.ini "
                              "[messagebus_client] section")
 
-        if ssl is None:
+        if ssl is None or ssl == "":
             ssl = client_config.get("ssl")
             if ssl is None:
-                raise ValueError("Missing ssl in mycroft.ini "
+                raise ValueError("Missing or empty ssl in mycroft.ini "
                                  "[messagebus_client] section")
 
         ssl = str2bool(ssl)
