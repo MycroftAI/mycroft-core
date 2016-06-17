@@ -35,7 +35,7 @@ def load_skills_callback():
     load_skills(client)
     config = ConfigurationManager.get()
     config_core = config.get("core")
-    print "*"*100
+
     try:
         ini_third_party_skills_dir = expanduser(
             config_core.get("third_party_skills_dir"))
@@ -46,7 +46,6 @@ def load_skills_callback():
         load_skills(client, THIRD_PARTY_SKILLS_DIR)
 
     if ini_third_party_skills_dir and exists(ini_third_party_skills_dir):
-        print "*"*100
         load_skills(client, ini_third_party_skills_dir)
 
 
