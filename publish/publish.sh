@@ -48,7 +48,7 @@ virtualenv --always-copy --clear ${MYCROFT_ARTIFACT_DIR}
 virtualenv --always-copy --clear --relocatable ${MYCROFT_ARTIFACT_DIR}
 . ${MYCROFT_ARTIFACT_DIR}/bin/activate
 
-pip install -r ${TOP}/requirements.txt --trusted-host pypi.mycroft.team
+pip install -r ${TOP}/requirements.txt 
 cd ${TOP}/pocketsphinx-python
 python setup.py install
 cd ${TOP}
