@@ -31,8 +31,10 @@ logger = getLogger(__name__)
 class RokuSkill(MycroftSkill):
     def __init__(self):
         super(RokuSkill, self).__init__(name="RokuSkill")
-        self.ip = str(self.config['roku_ip'])
-        self.roku = Roku(self.ip)
+        self.ip = str(self.config['ip'])
+        self.roku = None
+        if self.ip:
+            self.roku = Roku(self.ip)
 
     def initialize(self):
         self.load_data_files(dirname(__file__))
@@ -75,63 +77,79 @@ class RokuSkill(MycroftSkill):
         self.register_intent(roku_play_intent, self.handle_roku_play_intent)
 
     def register_apps(self):
-        for app in self.roku.apps:
-            self.register_vocabulary(app.name, "Application")
+        if self.roku:
+            for app in self.roku.apps:
+                self.register_vocabulary(app.name, "Application")
 
     def home_search(self, terms):
-        self.roku.home()
-        sleep(3)
-        self.roku.down()
-        self.roku.down()
-        self.roku.down()
-        self.roku.down()
-        self.roku.down()
-        self.roku.select()
-        self.roku.literal(terms)
-        sleep(2)
-        self.roku.right()
-        self.roku.right()
-        self.roku.right()
-        self.roku.right()
-        self.roku.right()
-        self.roku.right()
-        sleep(.5)
-        self.roku.select()
+        if self.roku:
+            self.roku.home()
+            sleep(3)
+            self.roku.down()
+            self.roku.down()
+            self.roku.down()
+            self.roku.down()
+            self.roku.down()
+            self.roku.select()
+            self.roku.literal(terms)
+            sleep(2)
+            self.roku.right()
+            self.roku.right()
+            self.roku.right()
+            self.roku.right()
+            self.roku.right()
+            self.roku.right()
+            sleep(.5)
+            self.roku.select()
 
     def handle_roku_launch_intent(self, message):
-        app = message.metadata.get('Application')
-        self.speak_dialog("launch.app", {"Application": app})
-        self.roku[app].launch()
+        if self.roku:
+            app = message.metadata.get('Application')
+            self.speak_dialog("launch.app", {"Application": app})
+            self.roku[app].launch()
+        else:
+            self.speak_dialog("no.device")
 
     def handle_roku_home_intent(self, message):
-        self.speak_dialog("home")
-        self.roku.home()
+        if self.roku:
+            self.speak_dialog("home")
+            self.roku.home()
+        else:
+            self.speak_dialog("no.device")
 
     def handle_roku_search_intent(self, message):
-        app = message.metadata.get('Application')
-        terms = message.metadata.get('SearchTerms')
+        if self.roku:
+            app = message.metadata.get('Application')
+            terms = message.metadata.get('SearchTerms')
 
-        self.speak_dialog("search.app", {"SearchTerms": terms})
-        if app:
-            if app == 'Netflix':
-                self.roku[app].launch()
-                sleep(3)
-                self.roku.up()
-                sleep(2)
-                self.roku.select()
-                self.roku.literal(terms)
+            self.speak_dialog("search.app", {"SearchTerms": terms})
+            if app:
+                if app == 'Netflix':
+                    self.roku[app].launch()
+                    sleep(3)
+                    self.roku.up()
+                    sleep(2)
+                    self.roku.select()
+                    self.roku.literal(terms)
+            else:
+                self.home_search(terms)
         else:
-            self.home_search(terms)
+            self.speak_dialog("no.device")
 
     def handle_roku_apps_intent(self, message):
-        self.speak_dialog("apps")
-        for app in self.roku.apps:
-            self.speak(app.name)
+        if self.roku:
+            self.speak_dialog("apps")
+            for app in self.roku.apps:
+                self.speak(app.name)
+        else:
+            self.speak_dialog("no.device")
 
     def handle_roku_play_intent(self, message):
-        self.speak_dialog("play")
-        self.roku.play()
-
+        if self.roku:
+            self.speak_dialog("play")
+            self.roku.play()
+        else:
+            self.speak_dialog("no.device")
     def stop(self):
         pass
 
