@@ -24,10 +24,10 @@ import psutil
 
 __author__ = 'jdorleans'
 
+TRUE_VALUES = ("yes", "true", "t", "1")
 
 def str2bool(v):
-    return v.lower() in ("yes", "true", "t", "1")
-
+    return v.lower() in TRUE_VALUES
 
 def play_wav(file_path):
     return subprocess.Popen(["aplay", file_path])

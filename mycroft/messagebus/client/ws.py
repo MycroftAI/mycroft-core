@@ -40,7 +40,7 @@ class WebsocketClient(object):
     def __init__(self, host=client_config.get("host"),
                  port=client_config.get("port"),
                  path=client_config.get("route"),
-                 ssl=str2bool(client_config.get("ssl"))):
+                 ssl=None):
 
         if not host:
             raise ValueError("Missing or empty host in mycroft.ini "
@@ -50,13 +50,17 @@ class WebsocketClient(object):
             raise ValueError("Missing or empty port in mycroft.ini "
                              "[messagebus_client] section")
 
-        if ssl is None or ssl == "":
-            raise ValueError("Missing or empty ssl in mycroft.ini "
-                             "[messagebus_client] section")
-
         if not path:
             raise ValueError("Missing or empty route in mycroft.ini "
                              "[messagebus_client] section")
+
+        if ssl is None:
+            ssl = client_config.get("ssl")
+            if ssl is None:
+                raise ValueError("Missing ssl in mycroft.ini "
+                                 "[messagebus_client] section")
+
+        ssl = str2bool(ssl)
 
         self.emitter = EventEmitter()
         self.scheme = "wss" if ssl else "ws"
