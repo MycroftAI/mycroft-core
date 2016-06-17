@@ -35,6 +35,7 @@ USER_DIR = join(expanduser('~'), '.mycroft')
 USER_CONFIG = join(USER_DIR, 'mycroft.ini')
 USER_THIRD_PARTY_SKILLS_DIR = join(USER_DIR, "third_party_skills")
 
+
 class ConfigurationLoader(object):
     """
     A utility for loading Mycroft configuration files.
