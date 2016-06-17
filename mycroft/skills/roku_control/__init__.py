@@ -118,7 +118,6 @@ class RokuSkill(MycroftSkill):
         else:
             self.speak_dialog("no.device")
 
-
     def stop(self):
         pass
 
