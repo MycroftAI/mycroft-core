@@ -17,11 +17,9 @@
 
 
 import json
-from os.path import exists
 
-from mycroft.configuration import USER_THIRD_PARTY_SKILLS_DIR
 from mycroft.messagebus.client.ws import WebsocketClient
-from mycroft.skills.core import load_skills, THIRD_PARTY_SKILLS_DIR
+from mycroft.skills.core import load_skills
 from mycroft.util.log import getLogger
 logger = getLogger("Skills")
 
@@ -33,11 +31,6 @@ client = None
 def load_skills_callback():
     global client
     load_skills(client)
-    if exists(THIRD_PARTY_SKILLS_DIR):
-        load_skills(client, skills_root=THIRD_PARTY_SKILLS_DIR)
-
-    if exists(USER_THIRD_PARTY_SKILLS_DIR):
-        load_skills(client, skills_root=USER_THIRD_PARTY_SKILLS_DIR)
 
 
 def connect():
