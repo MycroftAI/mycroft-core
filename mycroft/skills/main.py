@@ -21,7 +21,7 @@ from os.path import exists
 
 from mycroft.configuration import USER_THIRD_PARTY_SKILLS_DIR
 from mycroft.messagebus.client.ws import WebsocketClient
-from mycroft.skills.core import load_skills,
+from mycroft.skills.core import load_skills, THIRD_PARTY_SKILLS
 from mycroft.util.log import getLogger
 logger = getLogger("Skills")
 
