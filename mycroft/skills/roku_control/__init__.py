@@ -69,6 +69,13 @@ class RokuSkill(MycroftSkill):
         self.register_intent(roku_play_intent,
                              self.handle_roku_play_intent)
 
+        roku_pause_intent = IntentBuilder("RokuPauseIntent")\
+            .require("RokuKeyword")\
+            .require("RokuPauseKeyword")\
+            .build()
+        self.register_intent(roku_pause_intent,
+                             self.handle_roku_pause_intent)
+
     def register_apps(self):
         if self.roku:
             for app in self.roku.apps:
@@ -103,6 +110,14 @@ class RokuSkill(MycroftSkill):
             self.roku.play()
         else:
             self.speak_dialog("no.device")
+
+    def handle_roku_pause_intent(self, message):
+        if self.roku:
+            self.speak_dialog("pause")
+            self.roku.play()
+        else:
+            self.speak_dialog("no.device")
+
 
     def stop(self):
         pass
