@@ -10,7 +10,7 @@ case $1 in
 	"cli") SCRIPT=${TOP}/mycroft/client/text/cli.py ;;
 	"audiotest") SCRIPT=${TOP}/mycroft/util/audio_test.py ;;
 	"collector") SCRIPT=${TOP}/mycroft_data_collection/cli.py ;;
-	"unittest") SCRIPT=${TOP}/test/__init__.py ;;
+	"unittest") SCRIPT=${TOP}/test/test_runner.py ;;
 	"sdkdoc") SCRIPT=${TOP}/doc/generate_sdk_docs.py ;;
         "enclosure") SCRIPT=${TOP}/mycroft/client/enclosure/enclosure.py ;;
         "pairing") SCRIPT=${TOP}/mycroft/pairing/client.py ;;
