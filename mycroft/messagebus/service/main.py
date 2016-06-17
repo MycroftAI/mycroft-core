@@ -47,7 +47,6 @@ def main():
     application = web.Application(routes, **settings)
     host = service_config.get("host")
     if not host:
-        # By default listen to localhost if host is empty, or None
         raise EmptyHostException
 
     application.listen(service_config.get("port"), host)
