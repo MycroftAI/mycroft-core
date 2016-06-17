@@ -36,19 +36,27 @@ config = ConfigurationManager.get()
 client_config = config.get("messagebus_client")
 
 
-class EmptyHostException (Exception):
-    def __init__(self):
-        Exception.__init__(self, "Empty host in mycroft.ini "
-                                 "[messagebus_client] section")
-
-
 class WebsocketClient(object):
     def __init__(self, host=client_config.get("host"),
                  port=client_config.get("port"),
                  path=client_config.get("route"),
                  ssl=str2bool(client_config.get("ssl"))):
+
         if not host:
-            raise EmptyHostException
+            raise ValueError("Missing or empty host in mycroft.ini "
+                             "[messagebus_client] section")
+
+        if not port:
+            raise ValueError("Missing or empty port in mycroft.ini "
+                             "[messagebus_client] section")
+
+        if ssl is None or ssl == "":
+            raise ValueError("Missing or empty ssl in mycroft.ini "
+                             "[messagebus_client] section")
+
+        if not path:
+            raise ValueError("Missing or empty route in mycroft.ini "
+                             "[messagebus_client] section")
 
         self.emitter = EventEmitter()
         self.scheme = "wss" if ssl else "ws"

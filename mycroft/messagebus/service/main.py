@@ -28,28 +28,33 @@ settings = {
 }
 
 
-class EmptyHostException (Exception):
-    def __init__(self):
-        Exception.__init__(self, "Empty host in mycroft.ini "
-                                 "[messagebus_service] section")
-
-
 def main():
     import tornado.options
     tornado.options.parse_command_line()
     config = ConfigurationManager.get()
     service_config = config.get("messagebus_service")
 
+    route = service_config.get('route')
+    if not route:
+        raise ValueError("Missing or empty route in mycroft.ini "
+                         "[messagebus_service] section")
+
     routes = [
-        (service_config.get('route'), WebsocketEventHandler)
+        (route, WebsocketEventHandler)
     ]
 
     application = web.Application(routes, **settings)
     host = service_config.get("host")
     if not host:
-        raise EmptyHostException
+        raise ValueError("Missing or empty host in mycroft.ini "
+                         "[messagebus_service] section")
 
-    application.listen(service_config.get("port"), host)
+    port = service_config.get("port")
+    if not port:
+        raise ValueError("Missing or empty port in mycroft.ini "
+                         "[messagebus_service] section")
+
+    application.listen(port, host)
     loop = ioloop.IOLoop.instance()
     loop.start()
 
