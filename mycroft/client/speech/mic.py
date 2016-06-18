@@ -18,6 +18,7 @@
 
 import collections
 import audioop
+import wave
 from time import sleep
 
 import pyaudio
@@ -183,13 +184,18 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         # Smallest number of loud chunks required to return
         min_loud_chunks = int(self.MIN_LOUD_SEC_PER_PHRASE / sec_per_buffer)
 
+        # Maximum number of chunks to record before timing out
+        max_chunks = int(self.RECORDING_TIMEOUT / sec_per_buffer)
+        num_chunks = 0
+
         # bytearray to store audio in
         byte_data = '\0' * source.SAMPLE_WIDTH
 
         phrase_complete = False
-        while not phrase_complete:
+        while num_chunks < max_chunks and not phrase_complete:
             chunk = self.record_sound_chunk(source)
             byte_data += chunk
+            num_chunks += 1
 
             energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
             is_loud = energy > self.energy_threshold
