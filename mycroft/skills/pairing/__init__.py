@@ -33,7 +33,7 @@ class PairingSkill(MycroftSkill):
 
     def initialize(self):
         intent = IntentBuilder("PairingIntent").require(
-                "DevicePairingPhrase").build()
+            "DevicePairingPhrase").build()
         self.load_data_files(dirname(__file__))
         self.register_intent(intent, handler=self.handle_pairing_request)
 
@@ -46,8 +46,8 @@ class PairingSkill(MycroftSkill):
             self.emitter.on("recognizer_loop:audio_output_start",
                             self.__display_pairing_code)
         self.speak_dialog(
-                "pairing.instructions",
-                data={"pairing_code": ', ,'.join(self.client.pairing_code)})
+            "pairing.instructions",
+            data={"pairing_code": ', ,'.join(self.client.pairing_code)})
 
     def __display_pairing_code(self, event=None):
         if self.client.paired:

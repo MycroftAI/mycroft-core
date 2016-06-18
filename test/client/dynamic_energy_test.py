@@ -1,7 +1,7 @@
 import unittest
 import audioop
 from speech_recognition import AudioSource
-from mycroft.client.speech.mic import Recognizer
+from mycroft.client.speech.mic import ResponsiveRecognizer
 
 __author__ = 'seanfitz'
 
@@ -43,13 +43,24 @@ class DynamicEnergytest(unittest.TestCase):
         higher_base = b"".join(["\x01\x00\x00\x01"] * 100)
 
         source = MockSource()
+
         for i in xrange(100):
             source.stream.inject(low_base)
 
         source.stream.inject(higher_base)
-        recognizer = Recognizer()
-        recognizer.listen(source)
-        higher_base_energy = audioop.rms(higher_base, 2)
+        recognizer = ResponsiveRecognizer(None)
+
+        sec_per_buffer = float(source.CHUNK) / (source.SAMPLE_RATE *
+                                                source.SAMPLE_WIDTH)
+
+        test_seconds = 30.0
+        while test_seconds > 0:
+            test_seconds -= sec_per_buffer
+            data = source.stream.read(source.CHUNK)
+            energy = recognizer.calc_energy(data, source.SAMPLE_WIDTH)
+            recognizer.adjust_threshold(energy, sec_per_buffer)
+
+        higher_base_energy = audioop.rms(higher_base, source.SAMPLE_WIDTH)
         # after recalibration (because of max audio length) new threshold
         # should be >= 1.5 * higher_base_energy
         delta_below_threshold = (

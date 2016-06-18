@@ -35,14 +35,14 @@ loop = None
 config = ConfigurationManager.get()
 
 
-def handle_listening():
-    logger.info("Listening...")
-    client.emit(Message('recognizer_loop:listening'))
+def handle_record_begin():
+    logger.info("Begin Recording...")
+    client.emit(Message('recognizer_loop:record_begin'))
 
 
-def handle_wakeword(event):
-    logger.info("Wakeword Detected: " + event['utterance'])
-    client.emit(Message('recognizer_loop:wakeword', event))
+def handle_record_end():
+    logger.info("End Recording...")
+    client.emit(Message('recognizer_loop:record_end'))
 
 
 def handle_utterance(event):
@@ -93,9 +93,9 @@ def main():
     if device_index:
         device_index = int(device_index)
     loop = RecognizerLoop(device_index=device_index)
-    loop.on('recognizer_loop:listening', handle_listening)
-    loop.on('recognizer_loop:wakeword', handle_wakeword)
     loop.on('recognizer_loop:utterance', handle_utterance)
+    loop.on('recognizer_loop:record_begin', handle_record_begin)
+    loop.on('recognizer_loop:record_end', handle_record_end)
     loop.on('speak', handle_speak)
     client.on('speak', handle_speak)
     client.on(

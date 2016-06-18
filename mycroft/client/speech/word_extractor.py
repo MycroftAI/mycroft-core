@@ -70,7 +70,7 @@ class WordExtractor:
                          self.audio.sample_width)
 
     def get_audio_data_after(self):
-        byte_data = self.silence_data + self.audio.frame_data[
-                                        self.end:self.audio_size]
+        byte_data = self.silence_data + self.audio.frame_data[self.end:
+                                                              self.audio_size]
         return AudioData(byte_data, self.audio.sample_rate,
                          self.audio.sample_width)
