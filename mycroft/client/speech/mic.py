@@ -18,7 +18,6 @@
 
 import collections
 import audioop
-import wave
 from time import sleep
 
 import pyaudio
