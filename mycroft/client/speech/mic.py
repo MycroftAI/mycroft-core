@@ -189,7 +189,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         phrase_complete = False
         while not phrase_complete:
             chunk = self.record_sound_chunk(source)
-            byte_data = byte_data + chunk
+            byte_data += chunk
 
             energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
             is_loud = energy > self.energy_threshold
@@ -234,7 +234,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
             needs_to_grow = len(byte_data) < max_size
             if needs_to_grow:
-                byte_data = byte_data + chunk
+                byte_data += chunk
             else:  # Remove beginning of audio and add new chunk to end
                 byte_data = byte_data[len(chunk):] + chunk
 
