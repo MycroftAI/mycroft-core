@@ -17,6 +17,7 @@
 
 
 import collections
+import math
 import audioop
 from time import sleep
 
@@ -29,7 +30,6 @@ from speech_recognition import (
 )
 import speech_recognition
 from mycroft.util.log import getLogger
-
 logger = getLogger(__name__)
 __author__ = 'seanfitz'
 
@@ -116,172 +116,123 @@ class MutableMicrophone(Microphone):
             self.stream.unmute()
 
 
-class ResponsiveRecognizer(speech_recognition.Recognizer):
-    # The maximum audio in seconds to keep for transcribing a phrase
-    # The wake word must fit in this time
-    SAVED_WW_SEC = 1.0
-
-    # Padding of silence when feeding to pocketsphinx
-    SILENCE_SEC = 0.01
-
-    # The minimum seconds of noise before a
-    # phrase can be considered complete
-    MIN_LOUD_SEC_PER_PHRASE = 0.2
-
-    # The maximum length a phrase can be recorded,
-    # provided there is noise the entire time
-    RECORDING_TIMEOUT = 30.0
-
-    # Time between pocketsphinx checks for the wake word
-    SEC_BETWEEN_WW_CHECKS = 0.2
-
-    def __init__(self, wake_word_recognizer):
+class Recognizer(speech_recognition.Recognizer):
+    def __init__(self):
         speech_recognition.Recognizer.__init__(self)
-        self.daemon = True
+        self.max_audio_length_sec = 30
 
-        self.wake_word_recognizer = wake_word_recognizer
-        self.audio = pyaudio.PyAudio()
-
-    @staticmethod
-    def record_sound_chunk(source):
-        return source.stream.read(source.CHUNK)
-
-    @staticmethod
-    def calc_energy(sound_chunk, sample_width):
-        return audioop.rms(sound_chunk, sample_width)
-
-    def wake_word_in_audio(self, frame_data):
-        hyp = self.wake_word_recognizer.transcribe(frame_data)
-        return self.wake_word_recognizer.found_wake_word(hyp)
-
-    def record_phrase(self, source, sec_per_buffer):
+    def listen(self, source, timeout=None):
         """
-        This attempts to record an entire spoken phrase. Essentially,
-        this waits for a period of silence and then returns the audio
+        Records a single phrase from ``source`` (an ``AudioSource`` instance)
+        into an ``AudioData`` instance, which it returns.
 
-        :rtype: bytearray
-        :param source: AudioSource
-        :param sec_per_buffer: Based on source.SAMPLE_RATE
-        :return: bytearray representing the frame_data of the recorded phrase
+        This is done by waiting until the audio has an energy above
+        ``recognizer_instance.energy_threshold`` (the user has started
+        speaking), and then recording until it encounters
+        ``recognizer_instance.pause_threshold`` seconds of non-speaking or
+        there is no more audio input. The ending silence is not included.
+
+        The ``timeout`` parameter is the maximum number of seconds that it
+        will wait for a phrase to start before giving up and throwing an
+        ``speech_recognition.WaitTimeoutError`` exception. If ``timeout`` is
+        ``None``, it will wait indefinitely.
         """
-        num_loud_chunks = 0
-        noise = 0
+        assert isinstance(source, AudioSource), \
+            "Source must be an audio source"
+        assert self.pause_threshold >= self.non_speaking_duration >= 0
 
-        max_noise = 20
-        min_noise = 0
+        seconds_per_buffer = (source.CHUNK + 0.0) / source.SAMPLE_RATE
+        # number of buffers of non-speaking audio before the phrase is
+        # complete
+        pause_buffer_count = int(
+            math.ceil(self.pause_threshold / seconds_per_buffer))
+        # minimum number of buffers of speaking audio before we consider the
+        # speaking audio a phrase
+        phrase_buffer_count = int(math.ceil(self.phrase_threshold /
+                                            seconds_per_buffer))
+        # maximum number of buffers of non-speaking audio to retain before and
+        # after
+        non_speaking_buffer_count = int(math.ceil(self.non_speaking_duration /
+                                                  seconds_per_buffer))
 
-        def increase_noise(level):
-            if level < max_noise:
-                return level + 2
-            return level
+        # read audio input for phrases until there is a phrase that is long
+        # enough
+        elapsed_time = 0  # number of seconds of audio read
+        while True:
+            frames = collections.deque()
 
-        def decrease_noise(level):
-            if level > min_noise:
-                return level - 1
-            return level
+            # store audio input until the phrase starts
+            while True:
+                elapsed_time += seconds_per_buffer
+                # handle timeout if specified
+                if timeout and elapsed_time > timeout:
+                    raise WaitTimeoutError("listening timed out")
 
-        # Smallest number of loud chunks required to return
-        min_loud_chunks = int(self.MIN_LOUD_SEC_PER_PHRASE / sec_per_buffer)
+                buffer = source.stream.read(source.CHUNK)
+                if len(buffer) == 0:
+                    break  # reached end of the stream
+                frames.append(buffer)
+                # ensure we only keep the needed amount of non-speaking buffers
+                if len(frames) > non_speaking_buffer_count:
+                    frames.popleft()
 
-        # Maximum number of chunks to record before timing out
-        max_chunks = int(self.RECORDING_TIMEOUT / sec_per_buffer)
-        num_chunks = 0
+                # detect whether speaking has started on audio input
+                # energy of the audio signal
+                energy = audioop.rms(buffer, source.SAMPLE_WIDTH)
+                if energy > self.energy_threshold:
+                    break
 
-        # bytearray to store audio in
-        byte_data = '\0' * source.SAMPLE_WIDTH
+                # dynamically adjust the energy threshold using assymmetric
+                # weighted average
+                # do not adjust dynamic energy level for this sample if it is
+                # muted audio (energy == 0)
+                self.adjust_energy_threshold(energy, seconds_per_buffer)
+            # read audio input until the phrase ends
+            pause_count, phrase_count = 0, 0
+            while True:
+                elapsed_time += seconds_per_buffer
 
-        phrase_complete = False
-        while num_chunks < max_chunks and not phrase_complete:
-            chunk = self.record_sound_chunk(source)
-            byte_data += chunk
-            num_chunks += 1
+                buffer = source.stream.read(source.CHUNK)
+                if len(buffer) == 0:
+                    break  # reached end of the stream
+                frames.append(buffer)
+                phrase_count += 1
 
-            energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
-            is_loud = energy > self.energy_threshold
-            if is_loud:
-                noise = increase_noise(noise)
-                num_loud_chunks += 1
-            else:
-                noise = decrease_noise(noise)
-                self.adjust_threshold(energy, sec_per_buffer)
+                # check if speaking has stopped for longer than the pause
+                # threshold on the audio input
+                # energy of the audio signal
+                energy = audioop.rms(buffer, source.SAMPLE_WIDTH)
+                if energy > self.energy_threshold:
+                    pause_count = 0
+                else:
+                    pause_count += 1
+                if pause_count > pause_buffer_count:  # end of the phrase
+                    break
 
-            if noise <= min_noise and num_loud_chunks > min_loud_chunks:
-                phrase_complete = True
+                if (len(frames) * seconds_per_buffer >=
+                        self.max_audio_length_sec):
+                    # if we hit the end of the audio length, readjust
+                    # energy_threshold
+                    for frame in frames:
+                        energy = audioop.rms(frame, source.SAMPLE_WIDTH)
+                        self.adjust_energy_threshold(
+                            energy, seconds_per_buffer)
+                    break
 
-        return byte_data
+            # check how long the detected phrase is, and retry listening if
+            # the phrase is too short
+            phrase_count -= pause_count
+            if phrase_count >= phrase_buffer_count:
+                break  # phrase is long enough, stop listening
 
-    @staticmethod
-    def sec_to_bytes(sec, source):
-        return sec * source.SAMPLE_RATE * source.SAMPLE_WIDTH
+        # obtain frame data
+        for i in range(pause_count - non_speaking_buffer_count):
+            frames.pop()  # remove extra non-speaking frames at the end
+        frame_data = b"".join(list(frames))
 
-    def wait_until_wake_word(self, source, sec_per_buffer):
-        num_silent_bytes = int(self.SILENCE_SEC * source.SAMPLE_RATE *
-                               source.SAMPLE_WIDTH)
+        return AudioData(frame_data, source.SAMPLE_RATE, source.SAMPLE_WIDTH)
 
-        silence = '\0' * num_silent_bytes
-
-        # bytearray to store audio in
-        byte_data = silence
-
-        buffers_per_check = self.SEC_BETWEEN_WW_CHECKS / sec_per_buffer
-        buffers_since_check = 0.0
-
-        # Max bytes for byte_data before audio is removed from the front
-        max_size = self.sec_to_bytes(self.SAVED_WW_SEC, source)
-
-        said_wake_word = False
-        while not said_wake_word:
-            chunk = self.record_sound_chunk(source)
-
-            energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
-            if energy < self.energy_threshold:
-                self.adjust_threshold(energy, sec_per_buffer)
-
-            needs_to_grow = len(byte_data) < max_size
-            if needs_to_grow:
-                byte_data += chunk
-            else:  # Remove beginning of audio and add new chunk to end
-                byte_data = byte_data[len(chunk):] + chunk
-
-            buffers_since_check += 1.0
-            if buffers_since_check < buffers_per_check:
-                buffers_since_check -= buffers_per_check
-                said_wake_word = self.wake_word_in_audio(byte_data + silence)
-
-    @staticmethod
-    def create_audio_data(raw_data, source):
-        """
-        Constructs an AudioData instance with the same parameters
-        as the source and the specified frame_data
-        """
-        return AudioData(raw_data, source.SAMPLE_RATE, source.SAMPLE_WIDTH)
-
-    def listen(self, source, emitter):
-        """
-        Listens for audio that Mycroft should respond to
-
-        :param source: an ``AudioSource`` instance for reading from
-        :param emitter: a pyee EventEmitter for sending when the wakeword
-                        has been found
-        """
-        assert isinstance(source, AudioSource), "Source must be an AudioSource"
-
-        bytes_per_sec = source.SAMPLE_RATE * source.SAMPLE_WIDTH
-        sec_per_buffer = float(source.CHUNK) / bytes_per_sec
-
-        logger.debug("Waiting for wake word...")
-        self.wait_until_wake_word(source, sec_per_buffer)
-
-        logger.debug("Recording...")
-        emitter.emit("recognizer_loop:record_begin")
-        frame_data = self.record_phrase(source, sec_per_buffer)
-        audio_data = self.create_audio_data(frame_data, source)
-        emitter.emit("recognizer_loop:record_end")
-        logger.debug("Thinking...")
-
-        return audio_data
-
-    def adjust_threshold(self, energy, seconds_per_buffer):
+    def adjust_energy_threshold(self, energy, seconds_per_buffer):
         if self.dynamic_energy_threshold and energy > 0:
             # account for different chunk sizes and rates
             damping = (
