@@ -136,7 +136,7 @@ class AudioConsumer(threading.Thread):
         def runnable():
             try:
                 text = self.remote_recognizer.transcribe(
-                    audio, self.metrics).lower()
+                    audio, metrics=self.metrics).lower()
             except sr.UnknownValueError:
                 pass
             except sr.RequestError as e:
