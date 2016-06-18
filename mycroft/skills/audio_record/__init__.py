@@ -139,7 +139,7 @@ class AudioRecordSkill(ScheduledSkill):
     def handle_stop_play(self, message):
         self.speak_dialog('audio.record.stop.play')
         if self.play_process:
-            self.stop(self.play_process)
+            self.stop()
             self.play_process = None
 
     def stop(self):
