@@ -36,30 +36,22 @@ config = ConfigurationManager.get()
 client_config = config.get("messagebus_client")
 
 
+def validate_param(value, name, error_on_none_only=False)
+  if not value:
+    raise ValueError("Missing or empty %s in mycroft.ini [messagebus_client] "
+                     "section", name)
+
+
 class WebsocketClient(object):
     def __init__(self, host=client_config.get("host"),
                  port=client_config.get("port"),
                  path=client_config.get("route"),
-                 ssl=None):
+                 ssl=client_config.get("ssl")):
 
-        if not host:
-            raise ValueError("Missing or empty host in mycroft.ini "
-                             "[messagebus_client] section")
-
-        if not port:
-            raise ValueError("Missing or empty port in mycroft.ini "
-                             "[messagebus_client] section")
-
-        if not path:
-            raise ValueError("Missing or empty route in mycroft.ini "
-                             "[messagebus_client] section")
-
-        if ssl is None or ssl == "":
-            ssl = client_config.get("ssl")
-            if ssl is None:
-                raise ValueError("Missing or empty ssl in mycroft.ini "
-                                 "[messagebus_client] section")
-
+        validate_param(host, "host")
+        validate_param(port, "port")
+        validate_param(path, "route")
+        validate_param(ssl, "ssl")
         ssl = str2bool(ssl)
 
         self.emitter = EventEmitter()
