@@ -75,7 +75,7 @@ Mycroft configuration consists of 3 possible config files.
 When the configuration loader starts, it looks in those locations in that order, and loads ALL configuration. Keys that exist in multiple config files will be overridden by the last file to contain that config value. This results in a minimal amount of config being written for a specific device/user, without modifying the distribution files.
 
 # Running Mycroft Quick Start
-To start the essential tasks run `./mycroft.sh`. Which will start the service, skills and voice in a detched screen and log the output of the screens to the their respective log files (e.g. ./log/mycroft-service.log).
+To start the essential tasks run `./mycroft.sh start`. Which will start the service, skills and voice in a detched screen and log the output of the screens to the their respective log files (e.g. ./log/mycroft-service.log).
 
 To stop Mycroft run `./mycroft.sh stop`. This will quit all of the detached screens.
 
