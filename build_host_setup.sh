@@ -18,6 +18,7 @@ sudo apt-get install -y \
     s3cmd \
     portaudio19-dev \
     mpg123 \
+    screen \
     curl
 
 # upgrade virtualenv to latest from pypi
