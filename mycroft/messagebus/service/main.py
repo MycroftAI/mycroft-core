@@ -28,10 +28,11 @@ settings = {
 }
 
 
-def validate_param(value, name, error_on_none_only=False)
-  if not value:
-    raise ValueError("Missing or empty %s in mycroft.ini [messagebus_service] "
-                     "section", name)
+def validate_param(value, name):
+    if not value:
+        raise ValueError("Missing or empty %s in mycroft.ini "
+                         "[messagebus_service] section", name)
+
 
 def main():
     import tornado.options
