@@ -41,9 +41,7 @@ def main():
     service_config = config.get("messagebus_service")
 
     route = service_config.get('route')
-    if not route:
-        raise ValueError("Missing or empty route in mycroft.ini "
-                         "[messagebus_service] section")
+    validate_param(route, 'route')
 
     routes = [
         (route, WebsocketEventHandler)
