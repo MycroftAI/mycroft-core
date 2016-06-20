@@ -48,8 +48,8 @@ class SpellingSkill(MycroftSkill):
         word = message.metadata.get("Word")
         spelled_word = ', '.join(word).lower()
         self.speak(spelled_word)
-        self.enclosure.mouth_reset()
-        self.enclosure.mouth_text(word)
+        self.emitter.on("recognizer_loop:audio_output_end",
+                            self.enclosure.mouth_text(word))
 
     def stop(self):
         pass
