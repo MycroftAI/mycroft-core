@@ -1,0 +1,2 @@
+deflog on
+logfile logs/mycroft-service.log
