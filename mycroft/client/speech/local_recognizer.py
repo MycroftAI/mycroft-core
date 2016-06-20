@@ -27,7 +27,7 @@ BASEDIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class LocalRecognizer(object):
-    def __init__(self, sample_rate=16000, lang="en-us", key_phrase="mycroft"):
+    def __init__(self, sample_rate=16000, lang="en-us", key_phrase="hey-mycroft"):
         self.lang = lang
         self.key_phrase = key_phrase
         self.sample_rate = sample_rate
@@ -40,7 +40,7 @@ class LocalRecognizer(object):
         config.set_string('-dict', os.path.join(BASEDIR, 'model', self.lang,
                                                 'mycroft-en-us.dict'))
         config.set_string('-keyphrase', self.key_phrase)
-        config.set_float('-kws_threshold', float('1e-45'))
+        config.set_float('-kws_threshold', float('1e-70'))
         config.set_float('-samprate', self.sample_rate)
         config.set_int('-nfft', 2048)
         config.set_string('-logfn', '/dev/null')
