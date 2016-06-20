@@ -30,7 +30,6 @@ from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util import kill
 from mycroft.util.log import getLogger
-from mycroft.skills.volume import VolumeSkill
 
 __author__ = 'aatchison + jdorleans'
 
@@ -171,7 +170,15 @@ class Enclosure:
 
     def __register_events(self):
         self.client.on('mycroft.paired', self.__update_events)
+        self.client.on('enclosure.mouth.listeners', self.__activate_mouth_listeners)
         self.__register_mouth_events()
+
+    def __activate_mouth_listeners(self, event=None):
+        if event and event.metadata:
+            if event.metadata.get('active', True):
+                self.__register_mouth_events()
+            else:
+                self.__remove_mouth_events()
 
     def __register_mouth_events(self):
         self.client.on('recognizer_loop:record_begin', self.mouth.listen)
