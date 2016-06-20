@@ -18,6 +18,8 @@
 
 from os.path import dirname, join
 
+import time
+
 from adapt.intent import IntentBuilder
 from mycroft.skills.core import MycroftSkill
 from mycroft.client.enclosure.enclosure import Enclosure
@@ -48,12 +50,9 @@ class SpellingSkill(MycroftSkill):
     def handle_intent(self, message):
         word = message.metadata.get("Word")
         spelled_word = ', '.join(word).lower()
-        self.emitter.remove("recognizer_loop:audio_output_start", Enclosure().mouth.talk)
-        self.emitter.on("recognizer_loop:audio_output_start",
-                            self.enclosure.mouth_text(word))
         self.speak(spelled_word)
-        self.emitter.on("recognizer_loop:audio_output_start", Enclosure().mouth.talk)
-
+        time.sleep(0.5)
+        self.enclosure.mouth_text(word)
 
     def stop(self):
         pass
