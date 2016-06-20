@@ -35,6 +35,8 @@ class RokuSkill(MycroftSkill):
         self.roku = None
         if self.ip:
             self.roku = Roku(self.ip)
+        else:
+            raise ValueError("There is no Roku device in the configuration files.")
 
     def initialize(self):
         self.load_data_files(dirname(__file__))
@@ -77,46 +79,30 @@ class RokuSkill(MycroftSkill):
                              self.handle_roku_pause_intent)
 
     def register_apps(self):
-        if self.roku:
-            for app in self.roku.apps:
-                self.register_vocabulary(app.name, "Application")
+        for app in self.roku.apps:
+            self.register_vocabulary(app.name, "Application")
 
     def handle_roku_launch_intent(self, message):
-        if self.roku:
-            app = message.metadata.get('Application')
-            self.speak_dialog("launch.app", {"Application": app})
-            self.roku[app].launch()
-        else:
-            self.speak_dialog("no.device")
+        app = message.metadata.get('Application')
+        self.speak_dialog("launch.app", {"application": app})
+        self.roku[app].launch()
 
     def handle_roku_home_intent(self, message):
-        if self.roku:
-            self.speak_dialog("home")
-            self.roku.home()
-        else:
-            self.speak_dialog("no.device")
+        self.speak_dialog("home")
+        self.roku.home()
 
     def handle_roku_apps_intent(self, message):
-        if self.roku:
-            self.speak_dialog("apps")
-            for app in self.roku.apps:
-                self.speak(app.name)
-        else:
-            self.speak_dialog("no.device")
+        self.speak_dialog("apps")
+        for app in self.roku.apps:
+            self.speak(app.name)
 
     def handle_roku_play_intent(self, message):
-        if self.roku:
-            self.speak_dialog("play")
-            self.roku.play()
-        else:
-            self.speak_dialog("no.device")
+        self.speak_dialog("play")
+        self.roku.play()
 
     def handle_roku_pause_intent(self, message):
-        if self.roku:
-            self.speak_dialog("pause")
-            self.roku.play()
-        else:
-            self.speak_dialog("no.device")
+        self.speak_dialog("pause")
+        self.roku.play()
 
     def stop(self):
         pass
