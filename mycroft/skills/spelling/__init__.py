@@ -47,8 +47,9 @@ class SpellingSkill(MycroftSkill):
     def handle_intent(self, message):
         word = message.metadata.get("Word")
         spelled_word = ', '.join(word).lower()
-        self.enclosure.mouth_text(spelled_word)
         self.speak(spelled_word)
+        self.enclosure.mouth_reset()
+        self.enclosure.mouth_text(spelled_word)
 
     def stop(self):
         pass
