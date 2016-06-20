@@ -47,6 +47,9 @@ easy_install pip==7.1.2 # force version of pip
 # install requirements (except pocketsphinx)
 pip install -r requirements.txt 
 
+CORES=$(nproc)
+echo Building with $CORES cores.
+
 # clone pocketsphinx-python at HEAD (fix to a constant version later)
 if [ ! -d ${TOP}/pocketsphinx-python ]; then
   # build sphinxbase and pocketsphinx if we haven't already
@@ -54,11 +57,11 @@ if [ ! -d ${TOP}/pocketsphinx-python ]; then
   cd ${TOP}/pocketsphinx-python/sphinxbase
   ./autogen.sh
   ./configure
-  make
+  make -j$CORES
   cd ${TOP}/pocketsphinx-python/pocketsphinx
   ./autogen.sh
   ./configure
-  make
+  make -j$CORES
 fi
 
 # build and install pocketsphinx python bindings

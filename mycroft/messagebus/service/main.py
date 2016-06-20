@@ -28,19 +28,32 @@ settings = {
 }
 
 
+def validate_param(value, name):
+    if not value:
+        raise ValueError("Missing or empty %s in mycroft.ini "
+                         "[messagebus_service] section", name)
+
+
 def main():
     import tornado.options
     tornado.options.parse_command_line()
     config = ConfigurationManager.get()
     service_config = config.get("messagebus_service")
 
+    route = service_config.get('route')
+    validate_param(route, 'route')
+
     routes = [
-        (service_config.get('route'), WebsocketEventHandler)
+        (route, WebsocketEventHandler)
     ]
 
     application = web.Application(routes, **settings)
+    host = service_config.get("host")
+    port = service_config.get("port")
+    validate_param(host, 'host')
+    validate_param(port, 'port')
 
-    application.listen(service_config.get("port"), service_config.get("host"))
+    application.listen(port, host)
     loop = ioloop.IOLoop.instance()
     loop.start()
 
