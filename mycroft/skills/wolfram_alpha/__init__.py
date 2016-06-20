@@ -115,17 +115,17 @@ class WolframAlphaSkill(MycroftSkill):
             return result
         except:
             try:
-                result = self.__find_value(res.pods, 'Value')
+                result = self.__find_pod_id(res.pods, 'Value')
                 if not result:
-                    result = self.__find_value(
+                    result = self.__find_pod_id(
                         res.pods, 'NotableFacts:PeopleData')
                     if not result:
-                        result = self.__find_value(
+                        result = self.__find_pod_id(
                             res.pods, 'BasicInformation:PeopleData')
                         if not result:
-                            result = self.__find_value(res.pods, 'Definition')
+                            result = self.__find_pod_id(res.pods, 'Definition')
                             if not result:
-                                result = self.__find_value(
+                                result = self.__find_pod_id(
                                     res.pods, 'DecimalApproximation')
                                 if result:
                                     result = result[:5]
@@ -187,7 +187,7 @@ class WolframAlphaSkill(MycroftSkill):
             self.speak("Sorry, I don't understand your request.")
 
     @staticmethod
-    def __find_value(pods, pod_id):
+    def __find_pod_id(pods, pod_id):
         for pod in pods:
             if pod_id in pod.id:
                 return pod.text
