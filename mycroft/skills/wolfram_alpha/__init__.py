@@ -165,7 +165,7 @@ class WolframAlphaSkill(MycroftSkill):
             return
 
         if result:
-            input_interpretation = self.__find_value(res.pods, 'Input')
+            input_interpretation = self.__find_pod_id(res.pods, 'Input')
             verb = "is"
             structured_syntax_regex = re.compile(".*(\||\[|\\\\|\]).*")
             if parsed_question:
