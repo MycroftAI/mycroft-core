@@ -47,23 +47,7 @@ easy_install pip==7.1.2 # force version of pip
 # install requirements (except pocketsphinx)
 pip install -r requirements.txt 
 
-# clone pocketsphinx-python at HEAD (fix to a constant version later)
-if [ ! -d ${TOP}/pocketsphinx-python ]; then
-  # build sphinxbase and pocketsphinx if we haven't already
-  git clone --recursive https://github.com/cmusphinx/pocketsphinx-python
-  cd ${TOP}/pocketsphinx-python/sphinxbase
-  ./autogen.sh
-  ./configure
-  make
-  cd ${TOP}/pocketsphinx-python/pocketsphinx
-  ./autogen.sh
-  ./configure
-  make
-fi
-
-# build and install pocketsphinx python bindings
-cd ${TOP}/pocketsphinx-python
-python setup.py install
+pip install -Iv pocketsphinx==0.1.0
 
 # install pygtk for desktop_launcher skill
 ${TOP}/install-pygtk.sh
