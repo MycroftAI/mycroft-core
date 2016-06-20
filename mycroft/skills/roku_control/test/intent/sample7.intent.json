@@ -3,6 +3,6 @@
   "intent_type": "RokuPauseIntent",
   "intent": {
     "RokuPauseKeyword": "pause",
-    "RokuKeyword": "on the roku"
+    "RokuKeyword": "roku"
   }
 }

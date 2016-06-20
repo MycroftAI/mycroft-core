@@ -3,6 +3,6 @@
   "intent_type": "RokuPlayIntent",
   "intent": {
     "RokuPlayKeyword": "start playing",
-    "RokuKeyword": "on roku"
+    "RokuKeyword": "roku"
   }
 }

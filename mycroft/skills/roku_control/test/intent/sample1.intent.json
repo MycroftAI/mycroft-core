@@ -3,6 +3,6 @@
   "intent_type": "RokuHomeIntent",
   "intent": {
     "RokuHomeKeyword": "go home",
-    "RokuKeyword": "on roku"
+    "RokuKeyword": "roku"
   }
 }
