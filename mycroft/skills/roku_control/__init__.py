@@ -36,7 +36,8 @@ class RokuSkill(MycroftSkill):
         if self.ip:
             self.roku = Roku(self.ip)
         else:
-            raise ValueError("There is no Roku device in the configuration files.")
+            raise ValueError("There is no Roku device\
+             in the configuration files.")
 
     def initialize(self):
         self.load_data_files(dirname(__file__))
