@@ -4,4 +4,4 @@ include mycroft/configuration/*.ini
 recursive-include mycroft/skills/*/dialog *
 recursive-include mycroft/skills/*/vocab *
 include mycroft/skills/alarm/alarm.mp3
-include mycroft/tts/mycroft_voice_4.0.flitevox
+include mycroft_voice_4.0.flitevox
