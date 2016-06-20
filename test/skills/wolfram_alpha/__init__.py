@@ -15,38 +15,51 @@ logger = getLogger(__name__)
 
 
 class WolframAlphaTest(unittest.TestCase):
-    def format_result(self, pod_id, text):
+    def format_result(self, pod_id, text, pod_num):
         return "<queryresult>\
-        <pod id='" + pod_id + "' title = '" + pod_id + "'><subpod>\
+        <pod id='" + pod_id + "' title = '" + pod_id + \
+               "' position='" + pod_num + "'><subpod>\
         <plaintext>" + text + "</plaintext></subpod></pod></queryresult>"
 
-    def create_result(self, pod_id, value):
-        result = self.format_result(pod_id, value)
+    def create_result(self, pod_id, value, pod_num):
+        result = self.format_result(pod_id, value, pod_num)
         return wolframalpha.Result(StringIO(result))
 
     def test_result_pod(self):
-        res = self.create_result("Result", "7")
+        res = self.create_result("Result", "7", '300')
         self.assertEquals(WolframAlphaSkill().get_result(res), "7")
 
     def test_value_pod(self):
-        res = self.create_result("Value", "2^3")
+        res = self.create_result("Value", "2^3", '300')
         self.assertEquals(WolframAlphaSkill().get_result(res), "2^3")
 
     def test_notable_facts_pod(self):
-        res = self.create_result("NotableFacts:PeopleData", "PeopleData")
+        res = self.create_result("NotableFacts:PeopleData",
+                                 "PeopleData", '300')
         self.assertEquals(WolframAlphaSkill().get_result(res), "PeopleData")
 
     def test_basic_information_pod(self):
         res = self.create_result("BasicInformation:PeopleData",
-                                 "Born in 1997")
+                                 "Born in 1997", '300')
         self.assertEquals(WolframAlphaSkill().get_result(res), "Born in 1997")
 
     def test_decimal_approximation_pod(self):
-        res = self.create_result("DecimalApproximation", "5.6666666666")
+        res = self.create_result("DecimalApproximation", "5.6666666666", '300')
         self.assertEquals(WolframAlphaSkill().get_result(res), "5.6666666666")
 
+    def test_definition_pod(self):
+        res = self.create_result("Definition:WordData",
+                                 "a cat is a feline", '300')
+        self.assertEquals(WolframAlphaSkill().get_result(res),
+                          "a cat is a feline")
+
+    def test_numbered_pod(self):
+        res = self.create_result("MathConcept", "tangrams are objects", '200')
+        self.assertEqual(WolframAlphaSkill().get_result(res),
+                         "tangrams are objects")
+
     def test_invalid_pod(self):
-        res = self.create_result("InvalidTitle", "Test")
+        res = self.create_result("InvalidTitle", "Test", '300')
         self.assertEquals(WolframAlphaSkill().get_result(res), None)
 
     def test_whitespace_process(self):

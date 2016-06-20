@@ -125,7 +125,8 @@ class WolframAlphaSkill(MycroftSkill):
                         if not result:
                             result = self.__find_value(res.pods, 'Definition')
                             if not result:
-                                result = self.__find_value(res.pods, 'DecimalApproximation')
+                                result = self.__find_value(
+                                    res.pods, 'DecimalApproximation')
                                 if not result:
                                     result = self.__find_num(
                                         res.pods, '200')
