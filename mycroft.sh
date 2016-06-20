@@ -28,6 +28,8 @@ function stop-mycroft {
   screen -XS mycroft-voice quit
 }
 
+set -e
+
 if [[ -z "$1" || "$1" == "-h" ]]
 then
   usage
