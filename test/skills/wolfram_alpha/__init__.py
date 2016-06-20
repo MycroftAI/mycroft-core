@@ -45,7 +45,7 @@ class WolframAlphaTest(unittest.TestCase):
 
     def test_decimal_approximation_pod(self):
         res = self.create_result("DecimalApproximation", "5.6666666666", '300')
-        self.assertEquals(WolframAlphaSkill().get_result(res), "5.6666666666")
+        self.assertEquals(WolframAlphaSkill().get_result(res), "5.666")
 
     def test_definition_pod(self):
         res = self.create_result("Definition:WordData",
