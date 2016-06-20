@@ -50,24 +50,6 @@ pip install -r requirements.txt
 CORES=$(nproc)
 echo Building with $CORES cores.
 
-# clone pocketsphinx-python at HEAD (fix to a constant version later)
-if [ ! -d ${TOP}/pocketsphinx-python ]; then
-  # build sphinxbase and pocketsphinx if we haven't already
-  git clone --recursive https://github.com/cmusphinx/pocketsphinx-python
-  cd ${TOP}/pocketsphinx-python/sphinxbase
-  ./autogen.sh
-  ./configure
-  make -j$CORES
-  cd ${TOP}/pocketsphinx-python/pocketsphinx
-  ./autogen.sh
-  ./configure
-  make -j$CORES
-fi
-
-# build and install pocketsphinx python bindings
-cd ${TOP}/pocketsphinx-python
-python setup.py install
-
 #build and install mimic
 cd ${TOP}
 ${TOP}/install-mimic.sh
