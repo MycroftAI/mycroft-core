@@ -89,6 +89,6 @@ class EnclosureAPI:
         self.client.emit(
             Message("enclosure.mouth.text", metadata={'text': text}))
 
-    def activate_mouth_listeners(self,active):
-        self.client.emit(
-            Message("enclosure.mouth.listeners", metadata={'active': active}))
+    def activate_mouth_listeners(self, active):
+        msg = Message('enclosure.mouth.listeners', metadata={'active': active})
+        self.client.emit(msg)

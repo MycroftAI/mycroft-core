@@ -170,10 +170,10 @@ class Enclosure:
 
     def __register_events(self):
         self.client.on('mycroft.paired', self.__update_events)
-        self.client.on('enclosure.mouth.listeners', self.__activate_mouth_listeners)
+        self.client.on('enclosure.mouth.listeners', self.__mouth_listeners)
         self.__register_mouth_events()
 
-    def __activate_mouth_listeners(self, event=None):
+    def __mouth_listeners(self, event=None):
         if event and event.metadata:
             if event.metadata.get('active', False):
                 self.__remove_mouth_events()
