@@ -174,22 +174,17 @@ class Enclosure:
         self.__register_mouth_events()
 
     def __mouth_listeners(self, event=None):
-        LOGGER.debug('mouth_listeners')
         if event and event.metadata:
             active = event.metadata['active']
-            LOGGER.debug(active)
             if (active == True):
-                LOGGER.debug('register')
                 self.__register_mouth_events()
-            elif (active == False):
-                LOGGER.debug('remove')
                 self.__remove_mouth_events()
 
     def __register_mouth_events(self):
         self.client.on('recognizer_loop:record_begin', self.mouth.listen)
         self.client.on('recognizer_loop:record_end', self.mouth.reset)
         self.client.on('recognizer_loop:audio_output_start', self.mouth.talk)
-        # self.client.on('recognizer_loop:audio_output_end', self.mouth.reset)
+        self.client.on('recognizer_loop:audio_output_end', self.mouth.reset)
 
     def __remove_mouth_events(self):
         self.client.remove('recognizer_loop:record_begin', self.mouth.listen)
@@ -198,7 +193,6 @@ class Enclosure:
                            self.mouth.talk)
         self.client.remove('recognizer_loop:audio_output_end',
                            self.mouth.reset)
-        LOGGER.debug('mouth events removed')
 
     def __update_events(self, event=None):
         if event and event.metadata:

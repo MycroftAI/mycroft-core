@@ -91,6 +91,4 @@ class EnclosureAPI:
 
     def activate_mouth_listeners(self, active):
         msg = Message('enclosure.mouth.listeners', metadata={'active': active})
-        LOGGER.debug(msg)
-        LOGGER.debug(active)
         self.client.emit(msg)
