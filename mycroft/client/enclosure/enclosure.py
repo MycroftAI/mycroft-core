@@ -176,11 +176,12 @@ class Enclosure:
     def __mouth_listeners(self, event=None):
         LOGGER.debug('mouth_listeners')
         if event and event.metadata:
-            LOGGER.debug(event.metadata)
-            if event.metadata.get('active', True):
+            active = event.metadata.get ('active')
+            LOGGER.debug(active)
+            if (active == True):
                 LOGGER.debug('register')
                 self.__register_mouth_events()
-            elif event.metadata.get('active', False):
+            elif (active == False):
                 LOGGER.debug('remove')
                 self.__remove_mouth_events()
 
