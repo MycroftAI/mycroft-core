@@ -22,7 +22,6 @@ import time
 
 from adapt.intent import IntentBuilder
 from mycroft.skills.core import MycroftSkill
-from mycroft.client.enclosure.enclosure import Enclosure
 
 __author__ = 'seanfitz'
 
@@ -53,6 +52,7 @@ class SpellingSkill(MycroftSkill):
         self.enclosure.activate_mouth_listeners(False)
         self.speak(spelled_word)
         self.enclosure.mouth_text(word)
+        time.sleep(4)
         self.enclosure.activate_mouth_listeners(True)
 
     def stop(self):
