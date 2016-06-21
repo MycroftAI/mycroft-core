@@ -68,7 +68,7 @@ These are the keys currently in use in Mycroft Core.
 
 ## Configuration
 Mycroft configuration consists of 3 possible config files.
-- `defaults.ini`, which lives inside the mycroft codebase/distribution
+- `mycroft-core/mycroft/configuration/mycroft.ini`, which lives inside the mycroft codebase/distribution
 - `/etc/mycroft/mycroft.ini`
 - `$HOME/.mycroft/mycroft.ini`
 
@@ -115,3 +115,9 @@ source ~/.virtualenvs/mycroft/bin/activate
 - run `PYTHONPATH=. python client/skills/main.py` # main skills executable, loads all skills under skills dir
 
 *Note: The above scripts are blocking, so each will need to be run in a separate terminal session. Each terminal session will require that the virtualenv be activated. There are very few reasons to use this method.*
+
+# FAQ/Common Errors
+
+#### When running mycroft, I get the error `mycroft.messagebus.client.ws - ERROR - Exception("Uncaught 'error' event.",)`
+
+This means that you are not running the `./start.sh service` process. In order to fully run Mycroft, you must run `./start.sh service`, `./start.sh skills`, and `./start.sh voice`/`./start.sh cli` all at the same time. This can be done using different terminal windows, or by using the included `./mycroft.sh start`, which runs all three process using `screen`.
