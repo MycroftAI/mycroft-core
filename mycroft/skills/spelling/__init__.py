@@ -30,6 +30,7 @@ __author__ = 'seanfitz'
 class SpellingSkill(MycroftSkill):
     SEC_PER_LETTER = 5.0 / 7.0
     LETTERS_PER_SCREEN = 7.0
+
     def __init__(self):
         super(SpellingSkill, self).__init__(name="SpellingSkill")
 
@@ -47,7 +48,6 @@ class SpellingSkill(MycroftSkill):
     def __register_prefixed_regex(self, prefixes, suffix_regex):
         for prefix in prefixes:
             self.register_regex(prefix + ' ' + suffix_regex)
-
 
     def handle_intent(self, message):
         word = message.metadata.get("Word")

@@ -176,8 +176,9 @@ class Enclosure:
     def __mouth_listeners(self, event=None):
         if event and event.metadata:
             active = event.metadata['active']
-            if (active == True):
+            if active:
                 self.__register_mouth_events()
+            else:
                 self.__remove_mouth_events()
 
     def __register_mouth_events(self):
