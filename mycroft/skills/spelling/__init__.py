@@ -55,6 +55,7 @@ class SpellingSkill(MycroftSkill):
         self.speak(spelled_word)
         time.sleep(6)
         self.enclosure.activate_mouth_listeners(True)
+        self.enclosure.mouth_reset()
 
     def stop(self):
         pass
