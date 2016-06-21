@@ -193,7 +193,7 @@ class Enclosure:
                            self.mouth.talk)
         self.client.remove('recognizer_loop:audio_output_end',
                            self.mouth.reset)
-        self.mouth.reset()
+        self.mouth.think()
 
     def __update_events(self, event=None):
         if event and event.metadata:
