@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 function usage {
   echo
   echo "Quickly start, stop or restart Mycroft's esential services in detached screens"
