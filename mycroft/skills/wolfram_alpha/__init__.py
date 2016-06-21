@@ -142,11 +142,6 @@ class WolframAlphaSkill(MycroftSkill):
         utterance = message.metadata.get('utterance')
         parsed_question = self.question_parser.parse(utterance)
 
-        # biding some time
-        if parsed_question:
-            self.speak("I am searching for " + parsed_question.get('Query'))
-        else:
-            self.speak("I am searching for " + utterance)
         query = utterance
         if parsed_question:
             query = "%s %s %s" % (parsed_question.get('QuestionWord'),
