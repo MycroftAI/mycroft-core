@@ -176,7 +176,7 @@ class Enclosure:
     def __mouth_listeners(self, event=None):
         LOGGER.debug('mouth_listeners')
         if event and event.metadata:
-            active = event.metadata.get ('active')
+            active = event.metadata['active']
             LOGGER.debug(active)
             if (active == True):
                 LOGGER.debug('register')
