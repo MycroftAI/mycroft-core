@@ -68,7 +68,7 @@ These are the keys currently in use in Mycroft Core.
 
 ## Configuration
 Mycroft configuration consists of 3 possible config files.
-- `mycroft-core/mycroft/configuration/mycroft.ini`, which lives inside the mycroft codebase/distribution
+- `mycroft-core/mycroft/configuration/mycroft.ini`
 - `/etc/mycroft/mycroft.ini`
 - `$HOME/.mycroft/mycroft.ini`
 
