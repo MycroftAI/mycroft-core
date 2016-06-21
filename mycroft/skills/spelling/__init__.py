@@ -53,8 +53,8 @@ class SpellingSkill(MycroftSkill):
         self.emitter.on("recognizer_loop:audio_output_start",
                         self.enclosure.mouth_text(word))
         self.speak(spelled_word)
-        time.sleep(6)
-        self.enclosure.activate_mouth_listeners(True)
+        self.emitter.on("recognizer_loop:audio_output_end",
+                        self.enclosure.activate_mouth_listeners(True))
         self.enclosure.mouth_reset()
 
     def stop(self):
