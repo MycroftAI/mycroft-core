@@ -142,11 +142,14 @@ class WolframAlphaSkill(MycroftSkill):
         utterance = message.metadata.get('utterance')
         parsed_question = self.question_parser.parse(utterance)
 
+        # Try to store pieces of utterance (None if not parsed_question)
+        utt_word = parsed_question.get('QuestionWord')
+        utt_verb = parsed_question.get('QuestionVerb')
+        utt_query = parsed_question.get('Query')
+
         query = utterance
         if parsed_question:
-            query = "%s %s %s" % (parsed_question.get('QuestionWord'),
-                                  parsed_question.get('QuestionVerb'),
-                                  parsed_question.get('Query'))
+            query = "%s %s %s" % (utt_word, utt_verb, utt_query)
 
         try:
             res = self.client.query(query)
@@ -156,7 +159,11 @@ class WolframAlphaSkill(MycroftSkill):
             return
         except Exception as e:
             logger.exception(e)
-            self.speak("Sorry, I don't understand your request.")
+            if parsed_question:
+                phrase = "know %s %s %s" % (utt_word, utt_query, utt_verb)
+            else:  # TODO: Localization
+                phrase = "understand the phrase " + utterance
+            self.speak("Sorry, I don't " + phrase)
             return
 
         if result:
