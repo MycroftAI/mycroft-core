@@ -18,14 +18,14 @@
 
 from mycroft.util.log import getLogger
 
-__author__ = 'jdorleans'
+__author__ = 'iward'
 
 LOGGER = getLogger(__name__)
 
 
-class EnclosureMouth:
+class EnclosureWeather:
     """
-    Listens to enclosure commands for Mycroft's Mouth.
+    Listens to enclosure commands to display indicators of the weather.
 
     Performs the associated command on Arduino by writing on the Serial port.
     """
@@ -36,30 +36,12 @@ class EnclosureMouth:
         self.__init_events()
 
     def __init_events(self):
-        self.client.on('enclosure.mouth.reset', self.reset)
-        self.client.on('enclosure.mouth.talk', self.talk)
-        self.client.on('enclosure.mouth.think', self.think)
-        self.client.on('enclosure.mouth.listen', self.listen)
-        self.client.on('enclosure.mouth.smile', self.smile)
-        self.client.on('enclosure.mouth.text', self.text)
+        self.client.on('enclosure.weather.display', self.display)
 
-    def reset(self, event=None):
-        self.writer.write("mouth.reset")
-
-    def talk(self, event=None):
-        self.writer.write("mouth.talk")
-
-    def think(self, event=None):
-        self.writer.write("mouth.think")
-
-    def listen(self, event=None):
-        self.writer.write("mouth.listen")
-
-    def smile(self, event=None):
-        self.writer.write("mouth.smile")
-
-    def text(self, event=None):
-        text = ""
+    def display(self, event=None):
+        img_code, temp = 0, 0
         if event and event.metadata:
-            text = event.metadata.get("text", text)
-        self.writer.write("mouth.text=" + text)
+            img_code = event.metadata.get("img_code", img_code)
+            temp = event.metadata.get("temp", temp)
+        msg = "weather.display=" + str(img_code) + str(temp)
+        self.writer.write(msg)
