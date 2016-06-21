@@ -119,6 +119,12 @@ class AudioConsumer(threading.Thread):
             self.metrics.increment("mycroft.wakeup")
 
     def process_audio(self, audio):
+        SessionManager.touch()
+        payload = {
+            'utterance': self.mycroft_recognizer.key_phrase,
+            'session': SessionManager.get().session_id,
+        }
+        self.emitter.emit("recognizer_loop:wakeword", payload)
         try:
             self.transcribe([audio])
         except sr.UnknownValueError:  # TODO: Localization
