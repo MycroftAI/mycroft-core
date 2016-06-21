@@ -50,8 +50,8 @@ class SpellingSkill(MycroftSkill):
         word = message.metadata.get("Word")
         spelled_word = ', '.join(word).lower()
         self.enclosure.activate_mouth_listeners(False)
-        self.speak(spelled_word)
         self.enclosure.mouth_text(word)
+        self.speak(spelled_word)
         time.sleep(4)
         self.enclosure.activate_mouth_listeners(True)
 
