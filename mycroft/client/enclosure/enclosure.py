@@ -176,12 +176,12 @@ class Enclosure:
     def __mouth_listeners(self, event=None):
         LOGGER.debug('mouth_listeners')
         if event and event.metadata:
-            if event.metadata.get('active', False):
-                LOGGER.debug('remove')
-                self.__remove_mouth_events()
-            else:
+            if event.metadata.get('active', True):
                 LOGGER.debug('register')
                 self.__register_mouth_events()
+            elif event.metadata.get('active', False):
+                LOGGER.debug('remove')
+                self.__remove_mouth_events()
 
     def __register_mouth_events(self):
         self.client.on('recognizer_loop:record_begin', self.mouth.listen)
