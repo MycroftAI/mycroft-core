@@ -28,7 +28,7 @@ function usage {
 
 function verify-start() {
   # check if screen for service was started
-    if ! screen -list | grep -q "$1";
+    if screen -list | grep -q "$1";
     then
       :
     else 
@@ -44,10 +44,13 @@ function verify-start() {
 function start-mycroft {
   mkdir -p $DIR/logs
   screen -mdS mycroft-service -c $DIR/mycroft-service.screen $DIR/start.sh service
+  sleep 1
   verify-start mycroft-service
   screen -mdS mycroft-skills -c $DIR/mycroft-skills.screen $DIR/start.sh skills
+  sleep 1
   verify-start mycroft-skills
   screen -mdS mycroft-voice -c $DIR/mycroft-voice.screen $DIR/start.sh voice
+  sleep 1
   verify-start mycroft-voice
 }
 function stop-mycroft {
