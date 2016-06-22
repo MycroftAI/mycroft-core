@@ -13,6 +13,39 @@ function start_service() {
   invoke-rc.d ${NAME} start
 }
 
+ENCLOSURE_VERSION_FILE="/opt/enclosure/version.txt"
+
+# check for previously installed Arduino enclosure version
+function check_enclosure_version_file() {
+  if [ -f $ENCLOSURE_VERSION_FILE ]; then
+    echo "A previous Enclosure installation is present"
+    ENCLOSURE_VERSION=`cat ${ENCLOSURE_VERSION_FILE}`
+  else
+    echo "Enclosure version file is not present"
+    exit 1
+  fi
+}
+
+function upload_hex() {
+  if curl --output /dev/null --silent --head --fail "${ARTIFACT_HOST}/artifacts/${ARCH}/enclosure/${ENCLOSURE_VERSION}/enclosure-${ARCH}-${ENCLOSURE_VERSION}.tar.gz"; then
+    wget -q --continue "${ARTIFACT_HOST}/artifacts/${ARCH}/enclosure/${ENCLOSURE_VERSION}/enclosure-${ARCH}-${ENCLOSURE_VERSION}.tar.gz"
+    mkdir -p /opt/enclosure
+    tar -xzf enclosure-${ARCH}-${ENCLOSURE_VERSION}.tar.gz -C /opt/enclosure
+    cd /opt/enclosure
+    if [ ! -e /opt/avrdude/bin/avrdude ]; then
+        ./install-avrdude.sh
+    fi
+    ./upload.sh
+  else
+    echo "Enclosure Artifact does not exist"
+  fi
+}
+
+check_enclosure_version_file
+upload_hex
+
+
+
 initialize_service "mycroft-messagebus"
 initialize_service "mycroft-skills"
 initialize_service "mycroft-speech-client"
