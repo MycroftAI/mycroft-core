@@ -1,0 +1,7 @@
+{
+  "utterance": "who made you",
+  "intent_type": "WhoMadeYouIntent",
+  "intent": {
+    "WhoMadeYouKeyWord": "who made you"
+  }
+}
