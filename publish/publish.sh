@@ -151,7 +151,7 @@ if [ ${ARCH} = "armhf" ]; then
 
   # ensures enclosure version
   ENCLOSURE_DIR=${DEB_DIR}/opt
-  #mkdir -p ${ENCLOSURE_DIR}
+  mkdir -p ${ENCLOSURE_DIR}
   cp ${TOP}/mycroft/client/enclosure/version.txt ${ENCLOSURE_DIR}/enclosure-version.txt
 fi
 
