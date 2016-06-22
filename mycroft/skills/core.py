@@ -59,6 +59,7 @@ def load_vocab_from_file(path, vocab_type, emitter):
                             metadata={'start': alias, 'end': vocab_type,
                                       'alias_of': entity}))
 
+
 def load_regex_from_file(path, regex_type, emitter):
     with open(path, 'r') as reg_file:
         for line in reg_file.readlines():
@@ -67,10 +68,12 @@ def load_regex_from_file(path, regex_type, emitter):
                 Message("register_vocab",
                         metadata={'regex': line.strip()}))
 
+
 def load_vocabulary(basedir, emitter):
     for vocab_type in os.listdir(basedir):
         load_vocab_from_file(
             join(basedir, vocab_type), splitext(vocab_type)[0], emitter)
+
 
 def load_regex(basedir, emitter):
     for regex_type in os.listdir(basedir):
