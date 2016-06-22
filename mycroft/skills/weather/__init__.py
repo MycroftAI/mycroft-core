@@ -17,7 +17,7 @@
 
 
 from adapt.intent import IntentBuilder
-from os.path import dirname
+from os.path import dirname, join
 from pyowm.exceptions.api_call_error import APICallError
 
 from mycroft.identity import IdentityManager
@@ -42,8 +42,7 @@ class WeatherSkill(MycroftSkill):
 
     def initialize(self):
         self.load_data_files(dirname(__file__))
-        self.register_regex("at (?P<Location>.*)")
-        self.register_regex("in (?P<Location>.*)")
+        self.load_regex_files(join(dirname(__file__), 'regex', self.lang))
         self.__build_current_intent()
         self.__build_next_hour_intent()
         self.__build_next_day_intent()
