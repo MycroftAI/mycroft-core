@@ -53,10 +53,6 @@ class WikipediaSkill(MycroftSkill):
             "WikipediaKeyword").require("ArticleTitle").build()
         self.register_intent(intent, self.handle_intent)
 
-    def __register_prefixed_regex(self, prefixes, suffix_regex):
-        for prefix in prefixes:
-            self.register_regex(prefix + ' ' + suffix_regex)
-
     def handle_intent(self, message):
         try:
             title = message.metadata.get("ArticleTitle")

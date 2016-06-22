@@ -1,0 +1,1 @@
+(spell the word|spelling of the word|spelling of|spell) (?P<Word>\w+)

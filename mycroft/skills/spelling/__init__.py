@@ -35,19 +35,12 @@ class SpellingSkill(MycroftSkill):
         super(SpellingSkill, self).__init__(name="SpellingSkill")
 
     def initialize(self):
-        self.load_vocab_files(join(dirname(__file__), 'vocab', 'en-us'))
-
-        prefixes = [
-            'spell', 'spell the word', 'spelling of', 'spelling of the word']
-        self.__register_prefixed_regex(prefixes, "(?P<Word>\w+)")
+        self.load_vocab_files(join(dirname(__file__), 'vocab', self.lang))
+        self.load_regex_files(join(dirname(__file__), 'regex', self.lang))
 
         intent = IntentBuilder("SpellingIntent").require(
             "SpellingKeyword").require("Word").build()
         self.register_intent(intent, self.handle_intent)
-
-    def __register_prefixed_regex(self, prefixes, suffix_regex):
-        for prefix in prefixes:
-            self.register_regex(prefix + ' ' + suffix_regex)
 
     def handle_intent(self, message):
         word = message.metadata.get("Word")
