@@ -52,8 +52,9 @@ function start-mycroft {
   screen -mdS mycroft-voice -c $DIR/mycroft-voice.screen $DIR/start.sh voice
   sleep 1
   verify-start mycroft-voice
-  screen -mdS mycroft-cli -c $DIR/mycroft-cli.screen $DIR/start.sh cli
+  screen -mdS mycroft-cli -c $DIR/mycroft-cli.screen $DIR/start.sh cli --quiet
 }
+
 function stop-mycroft {
   screen -XS mycroft-service quit
   screen -XS mycroft-skills quit
