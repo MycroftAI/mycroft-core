@@ -17,6 +17,6 @@ if [[ -f "/etc/init.d/mycroft-messagebus" ]]; then
   stop_service "mycroft-messagebus"
 fi
 
-#if [[ -f "/etc/init.d/mycroft-enclosure-client" ]]; then
-#  stop_service "mycroft-enclosure-client"
-#fi
+if [[ -f "/etc/init.d/mycroft-enclosure-client" ]]; then
+  stop_service "mycroft-enclosure-client"
+fi
