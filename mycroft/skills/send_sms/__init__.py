@@ -47,7 +47,7 @@ class SendSMSSkill(MycroftSkill):
         intent = IntentBuilder("SendSMSIntent").require(
             "SendSMSKeyword").require("Contact").require("Message").build()
         self.register_intent(intent, self.handle_intent)
-        
+
     def handle_intent(self, message):
         try:
             contact = message.metadata.get("Contact").lower()
