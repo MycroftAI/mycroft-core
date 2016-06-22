@@ -79,7 +79,7 @@ mkdir -p ${DEB_DIR}/DEBIAN
 echo "Creating debian control file"
 # setup control file
 CONTROL_FILE=${DEB_DIR}/DEBIAN/control
-cp ${TOP}/publish/deb_base/control.template ${CONTROL_FILE}
+cp ${TOP}/publish-core/deb_base/control.template ${CONTROL_FILE}
 replace ${CONTROL_FILE} "%%PACKAGE%%" "mycroft-core"
 replace ${CONTROL_FILE} "%%VERSION%%" "${VERSION}"
 replace ${CONTROL_FILE} "%%ARCHITECTURE%%" "${ARCH}"
@@ -87,25 +87,25 @@ replace ${CONTROL_FILE} "%%DESCRIPTION%%" "mycroft-core"
 replace ${CONTROL_FILE} "%%DEPENDS%%" "portaudio19-dev, libglib2.0-0, flac, espeak, mpg123, mimic"
 echo "Creating debian preinst file"
 PREINST_FILE=${DEB_DIR}/DEBIAN/preinst
-cp ${TOP}/publish/deb_base/preinst.template ${PREINST_FILE}
+cp ${TOP}/publish-core/deb_base/preinst.template ${PREINST_FILE}
 replace ${PREINST_FILE} "%%INSTALL_USER%%" "mycroft"
 chmod 0755 ${PREINST_FILE}
 
 echo "Creating debian postinst file"
 POSTINST_FILE=${DEB_DIR}/DEBIAN/postinst
-cp ${TOP}/publish/deb_base/postinst.template ${POSTINST_FILE}
+cp ${TOP}/publish-core/deb_base/postinst.template ${POSTINST_FILE}
 replace ${POSTINST_FILE} "%%INSTALL_USER%%" "mycroft"
 chmod 0755 ${POSTINST_FILE}
 
 echo "Creating debian prerm file"
 PRERM_FILE=${DEB_DIR}/DEBIAN/prerm
-cp ${TOP}/publish/deb_base/prerm.template ${PRERM_FILE}
+cp ${TOP}/publish-core/deb_base/prerm.template ${PRERM_FILE}
 #replace ${PRERM_FILE} "%%INSTALL_USER%%" "mycroft"
 chmod 0755 ${PRERM_FILE}
 
 echo "Creating debian postrm file"
 POSTRM_FILE=${DEB_DIR}/DEBIAN/postrm
-cp ${TOP}/publish/deb_base/postrm.template ${POSTRM_FILE}
+cp ${TOP}/publish-core/deb_base/postrm.template ${POSTRM_FILE}
 replace ${POSTRM_FILE} "%%INSTALL_USER%%" "mycroft"
 chmod 0755 ${POSTRM_FILE}
 
@@ -115,7 +115,7 @@ function setup_init_script() {
   echo "Creating init script for ${NAME}"
   INIT_SCRIPT=${DEB_DIR}/etc/init.d/${NAME}
   mkdir -p $(dirname ${INIT_SCRIPT})
-  cp ${TOP}/publish/deb_base/init.template ${INIT_SCRIPT}
+  cp ${TOP}/publish-core/deb_base/init.template ${INIT_SCRIPT}
   replace ${INIT_SCRIPT} "%%NAME%%" "${NAME}"
   replace ${INIT_SCRIPT} "%%DESCRIPTION%%" "${NAME}"
   replace ${INIT_SCRIPT} "%%COMMAND%%" "\/usr\/local\/bin\/${NAME}"
