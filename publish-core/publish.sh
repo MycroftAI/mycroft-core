@@ -100,7 +100,7 @@ chmod 0755 ${POSTINST_FILE}
 echo "Creating debian prerm file"
 PRERM_FILE=${DEB_DIR}/DEBIAN/prerm
 cp ${TOP}/publish-core/deb_base/prerm.template ${PRERM_FILE}
-#replace ${PRERM_FILE} "%%INSTALL_USER%%" "mycroft"
+replace ${PRERM_FILE} "%%INSTALL_USER%%" "mycroft"
 chmod 0755 ${PRERM_FILE}
 
 echo "Creating debian postrm file"

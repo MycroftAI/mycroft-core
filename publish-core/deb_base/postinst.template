@@ -56,8 +56,6 @@ initialize_service "mycroft-messagebus"
 initialize_service "mycroft-skills"
 initialize_service "mycroft-speech-client"
 
-
-
 start_service "mycroft-messagebus"
 start_service "mycroft-skills"
 start_service "mycroft-speech-client"
