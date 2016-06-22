@@ -1,5 +1,7 @@
 #!/bin/bash
-#chown -R mycroft:mycroft /usr/lib/mycroft
+
+ARCH="$(name -m 2>/dev/null || dpkg --print-architecture || uname -m 2>/dev/null || echo "unknown")"
+
 function initialize_service() {
   local NAME=$1
   chmod a+x /etc/init.d/${NAME}
@@ -44,17 +46,23 @@ function upload_hex() {
   fi
 }
 
-check_enclosure_version_file
-upload_hex
-
+if [ ${ARCH} = "armhf" ]; then
+  check_enclosure_version_file
+  upload_hex
+fi
 
 
 initialize_service "mycroft-messagebus"
 initialize_service "mycroft-skills"
 initialize_service "mycroft-speech-client"
-initialize_service "mycroft-enclosure-client"
+
+
 
 start_service "mycroft-messagebus"
 start_service "mycroft-skills"
 start_service "mycroft-speech-client"
-start_service "mycroft-enclosure-client"
+
+if [ ${ARCH} = "armhf" ]; then
+  start_service "mycroft-enclosure-client"
+  initialize_service "mycroft-enclosure-client"
+fi
