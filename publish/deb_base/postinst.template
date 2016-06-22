@@ -13,7 +13,10 @@ function start_service() {
   invoke-rc.d ${NAME} start
 }
 
-ENCLOSURE_VERSION_FILE="/opt/enclosure/version.txt"
+ARTIFACT_HOST="http://bootstrap.mycroft.ai"
+ARCH="$(name -m 2>/dev/null || dpkg --print-architecture || uname -m 2>/dev/null || echo "unknown")"
+ENCLOSURE_VERSION_FILE="/opt/enclosure-version.txt"
+
 
 # check for previously installed Arduino enclosure version
 function check_enclosure_version_file() {
@@ -28,6 +31,7 @@ function check_enclosure_version_file() {
 
 function upload_hex() {
   if curl --output /dev/null --silent --head --fail "${ARTIFACT_HOST}/artifacts/${ARCH}/enclosure/${ENCLOSURE_VERSION}/enclosure-${ARCH}-${ENCLOSURE_VERSION}.tar.gz"; then
+    echo ${VERSION}
     wget -q --continue "${ARTIFACT_HOST}/artifacts/${ARCH}/enclosure/${ENCLOSURE_VERSION}/enclosure-${ARCH}-${ENCLOSURE_VERSION}.tar.gz"
     mkdir -p /opt/enclosure
     tar -xzf enclosure-${ARCH}-${ENCLOSURE_VERSION}.tar.gz -C /opt/enclosure

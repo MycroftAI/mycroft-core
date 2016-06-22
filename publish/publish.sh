@@ -146,9 +146,9 @@ EOM
 
 
 # ensures enclosure version
-ENCLOSURE_DIR=${DEB_DIR}/opt/enclosure
-mkdir -p ${ENCLOSURE_DIR}
-cp ${TOP}/mycroft/client/enclosure/version.txt ${ENCLOSURE_DIR}
+ENCLOSURE_DIR=${DEB_DIR}/opt
+#mkdir -p ${ENCLOSURE_DIR}
+cp ${TOP}/mycroft/client/enclosure/version.txt ${ENCLOSURE_DIR}/enclosure-version.txt
 
 
 cd $(dirname ${DEB_DIR})
