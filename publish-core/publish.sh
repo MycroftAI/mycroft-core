@@ -147,13 +147,12 @@ enabled = True
 
 EOM
 
-if [ ${ARCH} = "armhf" ]; then
-
+#if [ ${ARCH} = "armhf" ]; then
   # ensures enclosure version
-  ENCLOSURE_DIR=${DEB_DIR}/opt
-  mkdir -p ${ENCLOSURE_DIR}
-  cp ${TOP}/mycroft/client/enclosure/version.txt ${ENCLOSURE_DIR}/enclosure-version.txt
-fi
+ENCLOSURE_DIR=${DEB_DIR}/opt
+mkdir -p ${ENCLOSURE_DIR}
+cp ${TOP}/mycroft/client/enclosure/version.txt ${ENCLOSURE_DIR}/enclosure-version.txt
+#fi
 
 cd $(dirname ${DEB_DIR})
 dpkg-deb --build ${DEB_BASE}
