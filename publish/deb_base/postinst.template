@@ -14,7 +14,6 @@ function start_service() {
 }
 
 ARTIFACT_HOST="http://bootstrap.mycroft.ai"
-ARCH="$(name -m 2>/dev/null || dpkg --print-architecture || uname -m 2>/dev/null || echo "unknown")"
 ENCLOSURE_VERSION_FILE="/opt/enclosure-version.txt"
 
 
@@ -30,11 +29,11 @@ function check_enclosure_version_file() {
 }
 
 function upload_hex() {
-  if curl --output /dev/null --silent --head --fail "${ARTIFACT_HOST}/artifacts/${ARCH}/enclosure/${ENCLOSURE_VERSION}/enclosure-${ARCH}-${ENCLOSURE_VERSION}.tar.gz"; then
-    echo ${VERSION}
-    wget -q --continue "${ARTIFACT_HOST}/artifacts/${ARCH}/enclosure/${ENCLOSURE_VERSION}/enclosure-${ARCH}-${ENCLOSURE_VERSION}.tar.gz"
+  if curl --output /dev/null --silent --head --fail "${ARTIFACT_HOST}/artifacts/armhf/enclosure/${ENCLOSURE_VERSION}/enclosure-armhf-${ENCLOSURE_VERSION}.tar.gz"; then
+
+    wget -q --continue "${ARTIFACT_HOST}/artifacts/armhf/enclosure/${ENCLOSURE_VERSION}/enclosure-armhf-${ENCLOSURE_VERSION}.tar.gz"
     mkdir -p /opt/enclosure
-    tar -xzf enclosure-${ARCH}-${ENCLOSURE_VERSION}.tar.gz -C /opt/enclosure
+    tar -xzf enclosure-armhf-${ENCLOSURE_VERSION}.tar.gz -C /opt/enclosure
     cd /opt/enclosure
     if [ ! -e /opt/avrdude/bin/avrdude ]; then
         ./install-avrdude.sh
