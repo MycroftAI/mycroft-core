@@ -28,6 +28,9 @@ __author__ = 'seanfitz'
 
 # TODO - Localization
 class SpellingSkill(MycroftSkill):
+    SEC_PER_LETTER = 5.0 / 7.0
+    LETTERS_PER_SCREEN = 7.0
+
     def __init__(self):
         super(SpellingSkill, self).__init__(name="SpellingSkill")
 
@@ -48,13 +51,14 @@ class SpellingSkill(MycroftSkill):
 
     def handle_intent(self, message):
         word = message.metadata.get("Word")
+        self.emitter.once("recognizer_loop:audio_output_start",
+                          self.enclosure.mouth_text(word))
         spelled_word = ', '.join(word).lower()
         self.enclosure.activate_mouth_listeners(False)
-        self.emitter.on("recognizer_loop:audio_output_start",
-                        self.enclosure.mouth_text(word))
-        self.emitter.on("recognizer_loop:audio_output_end",
-                        self.enclosure.activate_mouth_listeners(True))
         self.speak(spelled_word)
+        time.sleep((self.LETTERS_PER_SCREEN + len(word)) * self.SEC_PER_LETTER)
+        self.enclosure.activate_mouth_listeners(True)
+        self.enclosure.mouth_reset()
 
     def stop(self):
         pass
