@@ -3,7 +3,7 @@
 deluser %%INSTALL_USER%% input
 deluser %%INSTALL_USER%% audio
 deluser %%INSTALL_USER%% dialout
-deluser %%INSTALL_USER%%
+userdel %%INSTALL_USER%%
 
 if [ -e /home/%%INSTALL_USER%% ]; then
     rm -R /home/%%INSTALL_USER%%

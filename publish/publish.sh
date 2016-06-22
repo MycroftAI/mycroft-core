@@ -126,6 +126,7 @@ function setup_init_script() {
 setup_init_script "mycroft-messagebus"
 setup_init_script "mycroft-skills"
 setup_init_script "mycroft-speech-client"
+
 if [ ${ARCH} = "armhf" ]; then
   setup_init_script "mycroft-enclosure-client"
 fi
