@@ -45,6 +45,11 @@ def handle_record_end():
     client.emit(Message('recognizer_loop:record_end'))
 
 
+def handle_wakeword(event):
+    logger.info("Wakeword Detected: " + event['utterance'])
+    client.emit(Message('recognizer_loop:wakeword', event))
+
+
 def handle_utterance(event):
     logger.info("Utterance: " + str(event['utterances']))
     client.emit(Message('recognizer_loop:utterance', event))
@@ -95,6 +100,7 @@ def main():
     loop = RecognizerLoop(device_index=device_index)
     loop.on('recognizer_loop:utterance', handle_utterance)
     loop.on('recognizer_loop:record_begin', handle_record_begin)
+    loop.on('recognizer_loop:wakeword', handle_wakeword)
     loop.on('recognizer_loop:record_end', handle_record_end)
     loop.on('speak', handle_speak)
     client.on('speak', handle_speak)
