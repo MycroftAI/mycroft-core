@@ -12,9 +12,11 @@ function usage {
   echo
   echo "Quickly start, stop or restart Mycroft's esential services in detached screens"
   echo
-  echo "usage: $0 [-h] (start|stop|restart)"
+  echo "usage: $0 [-h] (start [-v|-c]|stop|restart)"
   echo "      -h             this help message"
-  echo "      start          starts mycroft-service, mycroft-skills and mycroft-voice"
+  echo "      start          starts mycroft-service, mycroft-skills, mycroft-voice and mycroft-cli in quiet mode"
+  echo "      start -v       starts mycroft-service, mycroft-skills and mycroft-voice"
+  echo "      start -c       starts mycroft-service, mycroft-skills and mycroft-cli"
   echo "      stop           stops mycroft-service, mycroft-skills and mycroft-voice"
   echo "      restart        restarts mycroft-service, mycroft-skills and mycroft-voice"
   echo
@@ -26,13 +28,11 @@ function usage {
   echo
 }
 
-function verify-start() {
-  # check if screen for service was started
-    if screen -list | grep -q "$1";
+mkdir -p $DIR/logs
+
+function verify-start {
+    if ! screen -list | grep -q "$1";
     then
-      :
-    else 
-  # else echo tail logs/mycroft-service.log
       echo "$1 failed to start. The log is below:"
       echo
       tail $DIR/logs/$1.log
@@ -40,23 +40,40 @@ function verify-start() {
     fi
 }
 
-
 function start-mycroft {
-  mkdir -p $DIR/logs
-  screen -mdS mycroft-service -c $DIR/mycroft-service.screen $DIR/start.sh service
+  screen -mdS mycroft-$1$2 -c $DIR/mycroft-$1.screen $DIR/start.sh $1 $2
   sleep 1
-  verify-start mycroft-service
-  screen -mdS mycroft-skills -c $DIR/mycroft-skills.screen $DIR/start.sh skills
-  sleep 1
-  verify-start mycroft-skills
-  screen -mdS mycroft-voice -c $DIR/mycroft-voice.screen $DIR/start.sh voice
-  sleep 1
-  verify-start mycroft-voice
+  verify-start mycroft-$1$2
+  echo "Mycroft $1$2 started"
 }
+
 function stop-mycroft {
-  screen -XS mycroft-service quit
-  screen -XS mycroft-skills quit
-  screen -XS mycroft-voice quit
+    if screen -list | grep -q "$1";
+    then
+      screen -XS mycroft-$1 quit
+      echo "Mycroft $1 stopped"
+    fi
+}
+
+function restart-mycroft {
+    if screen -list | grep -q "quiet";
+    then
+      $0 stop
+      sleep 1
+      $0 start
+    elif screen -list | grep -q "cli" && ! screen -list | grep -q "quiet";
+    then
+      $0 stop
+      sleep 1
+      $0 start -c
+    elif screen -list | grep -q "voice" && ! screen -list | grep -q "quiet";
+    then
+      $0 stop
+      sleep 1
+      $0 start -v
+    else
+      echo "An error occurred"
+    fi
 }
 
 set -e
@@ -65,22 +82,35 @@ if [[ -z "$1" || "$1" == "-h" ]]
 then
   usage
   exit 1
-elif [ "$1" == "start" ]
+elif [[ "$1" == "start" && -z "$2" ]]
 then
-  start-mycroft
-  echo "Mycroft Started"
+  start-mycroft service
+  start-mycroft skills
+  start-mycroft voice
+  start-mycroft cli --quiet
   exit 0
-elif [ "$1" == "stop" ]
+elif [[ "$1" == "start" && "$2" == "-v" ]]
 then
-  stop-mycroft
-  echo "Mycroft Stopped"
+  start-mycroft service
+  start-mycroft skills
+  start-mycroft voice
   exit 0
-elif [ "$1" == "restart" ]
+elif [[ "$1" == "start" && "$2" == "-c" ]]
 then
-  stop-mycroft
-  echo "Stopping Mycroft"
-  start-mycroft
-  echo "Mycroft restarted"
+  start-mycroft service
+  start-mycroft skills
+  start-mycroft cli
+  exit 0
+elif [[ "$1" == "stop" && -z "$2" ]]
+then
+  stop-mycroft service
+  stop-mycroft skills
+  stop-mycroft voice
+  stop-mycroft cli
+  exit 0
+elif [[ "$1" == "restart" && -z "$2" ]]
+then
+  restart-mycroft
   exit 0
 else
   usage

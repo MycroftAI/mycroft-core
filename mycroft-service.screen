@@ -1,2 +1,3 @@
 deflog on
 logfile logs/mycroft-service.log
+logfile flush 1
