@@ -28,6 +28,7 @@ from mycroft.identity import IdentityManager
 from mycroft.skills.core import MycroftSkill
 from mycroft.util import CerberusAccessDenied
 from mycroft.util.log import getLogger
+from mycroft.messagebus.message import Message
 
 __author__ = 'seanfitz'
 
@@ -156,6 +157,7 @@ class WolframAlphaSkill(MycroftSkill):
         try:
             res = self.client.query(query)
             result = self.get_result(res)
+            others = self.__find_did_you_mean(res)
         except CerberusAccessDenied as e:
             self.speak_dialog('not.paired')
             return
@@ -184,7 +186,11 @@ class WolframAlphaSkill(MycroftSkill):
 
             self.speak(response)
         else:
-            self.speak("Sorry, I don't understand your request.")
+            if others:
+                self.speak("Sorry, I didn't understand " + utterance + ". Searching for " + others[0] + " instead")
+                self.handle_fallback(Message('intent_failure', metadata={'utterance': others[0]}))
+            else:
+                self.speak("Sorry, I don't understand your request.")
 
     @staticmethod
     def __find_pod_id(pods, pod_id):
@@ -192,6 +198,23 @@ class WolframAlphaSkill(MycroftSkill):
             if pod_id in pod.id:
                 return pod.text
         return None
+
+    @staticmethod
+    def __find_num(pods, pod_num):
+        for pod in pods:
+            if pod.node.attrib['position'] == pod_num:
+                return pod.text
+        return None
+
+    @staticmethod
+    def __find_did_you_mean(res):
+        value = []
+        root = res.tree.find('didyoumeans')
+        if root:
+            for result in root:
+                value.append(result.text)
+                logger.debug(result.text)
+        return value
 
     @staticmethod
     def process_wolfram_string(text):
@@ -207,13 +230,6 @@ class WolframAlphaSkill(MycroftSkill):
         # Convert !s to factorial
         text = re.sub(r"!", r",factorial", text)
         return text
-
-    @staticmethod
-    def __find_num(pods, pod_num):
-        for pod in pods:
-            if pod.node.attrib['position'] == pod_num:
-                return pod.text
-        return None
 
     def stop(self):
         pass
