@@ -1,0 +1,12 @@
+#!/bin/bash
+
+deluser %%INSTALL_USER%% input
+deluser %%INSTALL_USER%% audio
+deluser %%INSTALL_USER%% dialout
+userdel %%INSTALL_USER%%
+
+if [ "$1" = purge ]; then
+    if [ -e /home/%%INSTALL_USER%% ]; then
+        rm -R /home/%%INSTALL_USER%%
+    fi
+fi

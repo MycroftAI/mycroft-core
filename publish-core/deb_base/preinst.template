@@ -1,0 +1,34 @@
+#!/bin/bash
+
+function stop_service() {
+  local NAME=$1
+  invoke-rc.d ${NAME} stop
+}
+
+# shutdown existing services
+if [[ -f "/etc/init.d/mycroft-speech-client" ]]; then
+  stop_service "mycroft-speech-client"
+fi
+
+if [[ -f "/etc/init.d/mycroft-skills" ]]; then
+  stop_service "mycroft-skills"
+fi
+
+if [[ -f "/etc/init.d/mycroft-messagebus" ]]; then
+  stop_service "mycroft-messagebus"
+fi
+
+if [[ -f "/etc/init.d/mycroft-enclosure-client" ]]; then
+ /etc/init.d/mycroft-enclosure-client stop
+fi
+
+id -u %%INSTALL_USER%% &>/dev/null || useradd %%INSTALL_USER%%
+
+adduser %%INSTALL_USER%% input
+adduser %%INSTALL_USER%% audio
+adduser %%INSTALL_USER%% dialout
+
+if [ ! -d /home/%%INSTALL_USER%% ]; then
+    mkdir -p /home/%%INSTALL_USER%%
+    chown -R %%INSTALL_USER%%:%%INSTALL_USER%% /home/%%INSTALL_USER%%
+fi
