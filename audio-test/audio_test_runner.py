@@ -2,14 +2,11 @@ import os
 import wave
 from glob import glob
 
-import pyaudio
 import pyee
 from os.path import dirname, join
-from speech_recognition import Microphone, AudioSource
-
-from mycroft.client.speech.listener import AudioConsumer
+from speech_recognition import AudioSource
 from mycroft.client.speech.local_recognizer import LocalRecognizer
-from mycroft.client.speech.mic import MutableStream, ResponsiveRecognizer
+from mycroft.client.speech.mic import ResponsiveRecognizer
 from mycroft.util.log import getLogger
 from mycroft.client.speech.mic import logger as speech_logger
 
@@ -50,11 +47,6 @@ class AudioTester(object):
         self.listener = ResponsiveRecognizer(self.ww_recognizer)
         speech_logger.setLevel(100)  # Disables logging to clean output
 
-    @staticmethod
-    def absolute_path(name):
-        root_dir = dirname(dirname(__file__))
-        return join(root_dir, 'audio-test', 'data', 'query_after', name)
-
     def test_audio(self, file_name):
         source = MockMicrophone(file_name)
         ee = pyee.EventEmitter()
@@ -80,11 +72,19 @@ NORMAL = '\033[0m'
 GREEN = '\033[92m'
 RED = '\033[91m'
 
+
 def bold_str(val):
     return BOLD + str(val) + NORMAL
 
+
+def get_root_dir():
+    return dirname(dirname(__file__))
+
 if __name__ == "__main__":
-    file_names = glob(AudioTester.absolute_path('*.wav'))
+    path = join('audio-test', 'data', 'query_after', '*.wav')
+    root_dir = get_root_dir()
+    full_path = join(root_dir, path)
+    file_names = sorted(glob(full_path))
 
     # Grab audio format info from first file
     ex_file = wave.open(file_names[0], 'rb')
@@ -96,13 +96,11 @@ if __name__ == "__main__":
     for file_name in file_names:
         short_name = os.path.basename(file_name)
         was_found = tester.test_audio(file_name)
-        print(BOLD)
         if was_found:
-            print(GREEN + "Detected " + NORMAL + " - " + short_name)
+            print(bold_str(GREEN + "Detected ") + " - " + short_name)
             num_found += 1
         else:
-            print(RED + "Not found" + NORMAL + " - " + short_name)
-        print(NORMAL)
+            print(bold_str(RED + "Not found") + " - " + short_name)
 
 
     def to_percent(numerator, denominator):
