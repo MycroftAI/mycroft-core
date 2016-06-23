@@ -14,7 +14,7 @@ __author__ = 'wolfgange3311999'
 logger = getLogger('audio_test_runner')
 
 
-class MockStream(object):
+class FileStream(object):
     def __init__(self, file_name):
         self.file = wave.open(file_name, 'rb')
         self.size = self.file.getnframes()
@@ -30,9 +30,9 @@ class MockStream(object):
         self.file.close()
 
 
-class MockMicrophone(AudioSource):
+class FileMockMicrophone(AudioSource):
     def __init__(self, file_name):
-        self.stream = MockStream(file_name)
+        self.stream = FileStream(file_name)
         self.SAMPLE_RATE = self.stream.sample_rate
         self.SAMPLE_WIDTH = self.stream.sample_width
         self.CHUNK = 1024
@@ -48,7 +48,7 @@ class AudioTester(object):
         speech_logger.setLevel(100)  # Disables logging to clean output
 
     def test_audio(self, file_name):
-        source = MockMicrophone(file_name)
+        source = FileMockMicrophone(file_name)
         ee = pyee.EventEmitter()
 
         class SharedData:
@@ -81,32 +81,44 @@ def get_root_dir():
     return dirname(dirname(__file__))
 
 if __name__ == "__main__":
-    path = join('audio-test', 'data', 'query_after', '*.wav')
+    directory = join('audio-accuracy-test', 'data', 'query_after')
+    query = join(directory, '*.wav')
     root_dir = get_root_dir()
-    full_path = join(root_dir, path)
+    full_path = join(root_dir, query)
     file_names = sorted(glob(full_path))
-
-    # Grab audio format info from first file
-    ex_file = wave.open(file_names[0], 'rb')
-    tester = AudioTester(ex_file.getframerate())
 
     num_found = 0
     total = len(file_names)
 
+    if total < 1:
+        print(bold_str(RED+"Error: No wav files found in " + directory))
+        exit(1)
+
+    # Grab audio format info from first file
+    ex_file = wave.open(file_names[0], 'rb')
+
+    print
+    tester = AudioTester(ex_file.getframerate())
+    print
+
     for file_name in file_names:
         short_name = os.path.basename(file_name)
         was_found = tester.test_audio(file_name)
+
         if was_found:
-            print(bold_str(GREEN + "Detected ") + " - " + short_name)
+            result_str = GREEN + "Detected "
             num_found += 1
         else:
-            print(bold_str(RED + "Not found") + " - " + short_name)
+            result_str = RED + "Not found"
+
+        print(bold_str(result_str) + " - " + short_name)
 
 
     def to_percent(numerator, denominator):
         return "{0:.2f}".format((100.0 * numerator) / denominator) + "%"
 
 
+    print
     print("Found " + bold_str(num_found) + " out of " + bold_str(total))
     print(bold_str(to_percent(num_found, total)) + " accuracy.")
     print

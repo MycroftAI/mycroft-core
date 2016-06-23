@@ -11,7 +11,7 @@ case $1 in
 	"audiotest") SCRIPT=${TOP}/mycroft/util/audio_test.py ;;
 	"collector") SCRIPT=${TOP}/mycroft_data_collection/cli.py ;;
 	"unittest") SCRIPT=${TOP}/test/test_runner.py ;;
-	"audiounittest") SCRIPT=${TOP}/audio-test/audio_test_runner.py ;;
+	"audioaccuracytest") SCRIPT=${TOP}/audio-accuracy-test/audio_accuracy_test.py ;;
 	"sdkdoc") SCRIPT=${TOP}/doc/generate_sdk_docs.py ;;
         "enclosure") SCRIPT=${TOP}/mycroft/client/enclosure/enclosure.py ;;
         "pairing") SCRIPT=${TOP}/mycroft/pairing/client.py ;;
