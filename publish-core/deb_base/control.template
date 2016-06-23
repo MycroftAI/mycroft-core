@@ -4,6 +4,6 @@ Section: base
 Priority: optional
 Architecture: %%ARCHITECTURE%%
 Depends: %%DEPENDS%%
-Maintainer: Sean Fitzgerald <sean.fitzgerald@mycroft.ai>
+Maintainer: Arron Atchison <arron.atchison@mycroft.ai>
 Description: %%DESCRIPTION%%
 
