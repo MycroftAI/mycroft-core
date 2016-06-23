@@ -192,7 +192,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         num_chunks = 0
 
         # Will return if exceeded this even if there's not enough loud chunks
-        max_chunks_of_silence = int(self.RECORDING_TIMEOUT_WITH_SILENCE/sec_per_buffer)
+        max_chunks_of_silence = int(self.RECORDING_TIMEOUT_WITH_SILENCE /
+                                    sec_per_buffer)
 
         # bytearray to store audio in
         byte_data = '\0' * source.SAMPLE_WIDTH
