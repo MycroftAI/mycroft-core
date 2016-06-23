@@ -53,7 +53,7 @@ class AudioTester(object):
     @staticmethod
     def absolute_path(name):
         root_dir = dirname(dirname(__file__))
-        return join(root_dir, 'audio-test', 'data', name)
+        return join(root_dir, 'audio-test', 'data', 'query_after', name)
 
     def test_audio(self, file_name):
         source = MockMicrophone(file_name)
