@@ -1,0 +1,7 @@
+{
+  "utterance": "what are you",
+  "intent_type": "WhatAreYouIntent",
+  "intent": {
+    "WhatAreYouKeyword": "what are you"
+  }
+}
