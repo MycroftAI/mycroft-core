@@ -26,8 +26,11 @@ import parsedatetime as pdt
 from adapt.intent import IntentBuilder
 from mycroft.skills import time_rules
 from mycroft.skills.core import MycroftSkill
+from mycroft.util.log import getLogger
 
 __author__ = 'jdorleans'
+
+logger = getLogger(__name__)
 
 
 class ScheduledSkill(MycroftSkill):
@@ -73,7 +76,18 @@ class ScheduledSkill(MycroftSkill):
         return mktime(self.calendar.parse(sentence)[0]) - self.DELTA_TIME
 
     def get_formatted_time(self, timestamp):
-        return datetime.fromtimestamp(timestamp).strftime(
+        date = datetime.fromtimestamp(timestamp)
+        now = datetime.now()
+        if date.date() == now.date():
+            hours, remainder = divmod((date - now).total_seconds(), 3600)
+            minutes, seconds = divmod(remainder, 60)
+            if hours:
+                return "%s hours and %s minutes from now" % \
+                       (int(hours), int(minutes))
+            else:
+                return "%s minutes and %s seconds from now" % \
+                       (int(minutes), int(seconds))
+        return date.strftime(
             self.config_core.get('time.format'))
 
     @abc.abstractmethod
