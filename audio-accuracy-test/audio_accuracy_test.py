@@ -111,7 +111,7 @@ if __name__ == "__main__":
         else:
             result_str = RED + "Not found"
 
-        print(bold_str(result_str) + " - " + short_name)
+        print("Wake word " + bold_str(result_str) + " - " + short_name)
 
 
     def to_percent(numerator, denominator):
