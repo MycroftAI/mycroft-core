@@ -126,11 +126,15 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
     # The minimum seconds of noise before a
     # phrase can be considered complete
-    MIN_LOUD_SEC_PER_PHRASE = 0.2
+    MIN_LOUD_SEC_PER_PHRASE = 0.1
 
     # The maximum length a phrase can be recorded,
     # provided there is noise the entire time
     RECORDING_TIMEOUT = 30.0
+
+    # The maximum time it will continue to record silence
+    # when not enough noise has been detected
+    RECORDING_TIMEOUT_WITH_SILENCE = 3.0
 
     # Time between pocketsphinx checks for the wake word
     SEC_BETWEEN_WW_CHECKS = 0.2
@@ -167,17 +171,17 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         num_loud_chunks = 0
         noise = 0
 
-        max_noise = 20
+        max_noise = 25
         min_noise = 0
 
         def increase_noise(level):
             if level < max_noise:
-                return level + 2
+                return level + 200 * sec_per_buffer
             return level
 
         def decrease_noise(level):
             if level > min_noise:
-                return level - 1
+                return level - 100 * sec_per_buffer
             return level
 
         # Smallest number of loud chunks required to return
@@ -186,6 +190,9 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         # Maximum number of chunks to record before timing out
         max_chunks = int(self.RECORDING_TIMEOUT / sec_per_buffer)
         num_chunks = 0
+
+        # Will return if exceeded this even if there's not enough loud chunks
+        max_chunks_of_silence = int(self.RECORDING_TIMEOUT_WITH_SILENCE/sec_per_buffer)
 
         # bytearray to store audio in
         byte_data = '\0' * source.SAMPLE_WIDTH
@@ -205,7 +212,10 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 noise = decrease_noise(noise)
                 self.adjust_threshold(energy, sec_per_buffer)
 
-            if noise <= min_noise and num_loud_chunks > min_loud_chunks:
+            was_loud_enough = num_loud_chunks > min_loud_chunks
+            quiet_enough = noise <= min_noise
+            recorded_too_much_silence = num_chunks > max_chunks_of_silence
+            if quiet_enough and (was_loud_enough or recorded_too_much_silence):
                 phrase_complete = True
 
         return byte_data
