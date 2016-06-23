@@ -34,15 +34,18 @@ class AbstractConfigurationTest(unittest.TestCase):
 
 
 class ConfigurationLoaderTest(AbstractConfigurationTest):
-    def test_init_config(self):
-        config = {'a': 'b'}
+    def test_init_config_with_defaults(self):
         self.assertEquals(ConfigurationLoader.init_config(), {})
+
+    def test_init_config_with_new_config(self):
+        config = {'a': 'b'}
         self.assertEquals(ConfigurationLoader.init_config(config), config)
 
-    def test_init_locations(self):
+    def test_init_locations_with_defaults(self):
         locations = [DEFAULT_CONFIG, SYSTEM_CONFIG, USER_CONFIG]
         self.assertEquals(ConfigurationLoader.init_locations(), locations)
 
+    def test_init_locations_with_new_location(self):
         locations = [self.config_path]
         self.assertEquals(ConfigurationLoader.init_locations(locations),
                           locations)
@@ -87,7 +90,7 @@ class ConfigurationLoaderTest(AbstractConfigurationTest):
 
     def test_load_with_invalid_locations_path(self):
         locations = ['./invalid/mycroft.ini', './invalid_mycroft.ini']
-        config = ConfigurationLoader.load(None, locations)
+        config = ConfigurationLoader.load(None, locations, False)
         self.assertEquals(config, {})
 
 
