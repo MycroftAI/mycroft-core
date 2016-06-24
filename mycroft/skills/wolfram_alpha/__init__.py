@@ -150,6 +150,10 @@ class WolframAlphaSkill(MycroftSkill):
         query = utterance
         if parsed_question:
             query = "%s %s %s" % (utt_word, utt_verb, utt_query)
+            phrase = "know %s %s %s" % (utt_word, utt_query, utt_verb)
+        else:  # TODO: Localization
+            phrase = "understand the phrase " + utterance
+        response_on_fail = "Sorry, I don't " + phrase
 
         try:
             res = self.client.query(query)
@@ -159,11 +163,7 @@ class WolframAlphaSkill(MycroftSkill):
             return
         except Exception as e:
             logger.exception(e)
-            if parsed_question:
-                phrase = "know %s %s %s" % (utt_word, utt_query, utt_verb)
-            else:  # TODO: Localization
-                phrase = "understand the phrase " + utterance
-            self.speak("Sorry, I don't " + phrase)
+            self.speak(response_on_fail)
             return
 
         if result:
@@ -186,7 +186,7 @@ class WolframAlphaSkill(MycroftSkill):
 
             self.speak(response)
         else:
-            self.speak("Sorry, I don't understand your request.")
+            self.speak(response_on_fail)
 
     @staticmethod
     def __find_pod_id(pods, pod_id):
