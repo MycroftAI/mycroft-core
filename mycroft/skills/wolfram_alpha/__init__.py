@@ -187,8 +187,12 @@ class WolframAlphaSkill(MycroftSkill):
             self.speak(response)
         else:
             if len(others) == 1:
-                self.speak("Sorry, I didn't understand " + utterance + ". Searching for " + others[0] + " instead")
-                self.handle_fallback(Message('intent_failure', metadata={'utterance': others[0]}))
+                self.speak("Sorry, I didn't understand " +
+                           utterance + ". Searching for " +
+                           others[0] + " instead")
+                self.handle_fallback(Message('intent_failure',
+                                             metadata={'utterance':
+                                                       others[0]}))
             else:
                 self.speak("Sorry, I don't understand your request.")
 
