@@ -60,7 +60,7 @@ def load_vocab_from_file(path, vocab_type, emitter):
                                       'alias_of': entity}))
 
 
-def load_regex_from_file(path, regex_type, emitter):
+def load_regex_from_file(path, emitter):
     with open(path, 'r') as reg_file:
         for line in reg_file.readlines():
             re.compile(line.strip())
@@ -78,7 +78,7 @@ def load_vocabulary(basedir, emitter):
 def load_regex(basedir, emitter):
     for regex_type in os.listdir(basedir):
         load_regex_from_file(
-            join(basedir, regex_type), splitext(regex_type)[0], emitter)
+            join(basedir, regex_type), emitter)
 
 
 def create_intent_envelope(intent):
