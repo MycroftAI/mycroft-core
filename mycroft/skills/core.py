@@ -77,8 +77,9 @@ def load_vocabulary(basedir, emitter):
 
 def load_regex(basedir, emitter):
     for regex_type in os.listdir(basedir):
-        load_regex_from_file(
-            join(basedir, regex_type), emitter)
+        if regex_type.endswith(".rx"):
+            load_regex_from_file(
+                join(basedir, regex_type), emitter)
 
 
 def create_intent_envelope(intent):

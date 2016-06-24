@@ -1,4 +1,5 @@
 import unittest
+from re import error
 from os.path import join, dirname
 
 from mycroft.skills.core import load_regex_from_file, load_regex
@@ -10,8 +11,7 @@ logger = getLogger(__name__)
 
 class MockEmitter(object):
     def __init__(self):
-        self.types = []
-        self.results = []
+        self.reset()
 
     def emit(self, message):
         self.types.append(message.message_type)
@@ -30,14 +30,15 @@ class MockEmitter(object):
 
 class MycroftSkillTest(unittest.TestCase):
     emitter = MockEmitter()
+    path = join(dirname(__file__), 'regex_test')
 
-    def check_load_from_file(self, path, emitter, regex_list):
-        load_regex_from_file(path, emitter)
-        self.check_emitter(emitter, regex_list)
+    def check_load_from_file(self, path, regex_list=[]):
+        load_regex_from_file(join(self.path, path), self.emitter)
+        self.check_emitter(self.emitter, regex_list)
 
-    def check_load(self, path, emitter, regex_list):
-        load_regex(path, emitter)
-        self.check_emitter(emitter, regex_list)
+    def check_load(self, path, regex_list=[]):
+        load_regex(path, self.emitter)
+        self.check_emitter(self.emitter, regex_list)
 
     def check_emitter(self, emitter, regex_list):
         for type in emitter.get_types():
@@ -49,51 +50,43 @@ class MycroftSkillTest(unittest.TestCase):
         self.emitter.reset()
 
     def test_load_regex_from_file_single(self):
-        self.check_load_from_file(join(dirname(__file__),
-                                       'regex_test', 'single.rx'),
-                                  self.emitter,
+        self.check_load_from_file('single.rx',
                                   ['(?P<SingleTest>.*)'])
 
     def test_load_regex_from_file_multiple(self):
-        self.check_load_from_file(join(dirname(__file__),
-                                       'regex_test', 'multiple.rx'),
-                                  self.emitter,
+        self.check_load_from_file('multiple.rx',
                                   ['(?P<MultipleTest1>.*)',
                                    '(?P<MultipleTest2>.*)'])
 
     def test_load_regex_from_file_none(self):
-        self.check_load_from_file(join(dirname(__file__),
-                                       'regex_test', 'none.rx'),
-                                  self.emitter,
-                                  [])
+        self.check_load_from_file('none.rx')
 
-    def test_load_regex_from_file_fail(self):
+    def test_load_regex_from_file_invalid(self):
         try:
-            self.check_load_from_file(join(dirname(__file__),
-                                           'regex_test', 'does_not_exist.rx'),
-                                      self.emitter,
-                                      [])
+            self.check_load_from_file(join(dirname(__file__), 'invalid.rx'))
+        except error as e:
+            self.assertEquals(e.__str__(),
+                              'unexpected end of regular expression')
+
+    def test_load_regex_from_file_does_not_exist(self):
+        try:
+            self.check_load_from_file('does_not_exist.rx')
         except IOError as e:
             self.assertEquals(e.strerror, 'No such file or directory')
 
     def test_load_regex_full(self):
-        self.check_load(join(dirname(__file__), 'regex_test'),
-                        self.emitter,
+        self.check_load(self.path,
                         ['(?P<MultipleTest1>.*)',
                          '(?P<MultipleTest2>.*)',
                          '(?P<SingleTest>.*)'])
 
     def test_load_regex_empty(self):
         self.check_load(join(dirname(__file__),
-                             'regex_test_none'),
-                        self.emitter,
-                        [])
+                             'regex_test_none'))
 
     def test_load_regex_fail(self):
         try:
             self.check_load(join(dirname(__file__),
-                                 'regex_test_fail'),
-                            self.emitter,
-                            [])
+                                 'regex_test_fail'))
         except OSError as e:
             self.assertEquals(e.strerror, 'No such file or directory')
