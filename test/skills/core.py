@@ -42,6 +42,8 @@ class MycroftSkillTest(unittest.TestCase):
     def check_emitter(self, emitter, regex_list):
         for type in emitter.get_types():
             self.assertEquals(type, 'register_vocab')
+        if not regex_list:
+            self.assertEquals(emitter.get_results(), regex_list)
         for value in regex_list:
             self.assertTrue(value in emitter.get_results())
         self.emitter.reset()
