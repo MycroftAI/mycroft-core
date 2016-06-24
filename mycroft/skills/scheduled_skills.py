@@ -43,6 +43,9 @@ class ScheduledSkill(MycroftSkill):
     """
 
     DELTA_TIME = int((datetime.now() - datetime.utcnow()).total_seconds())
+    SECONDS_PER_DAY = 86400
+    SECONDS_PER_HOUR = 3600
+    SECONDS_PER_MINUTE = 60
 
     def __init__(self, name, emitter=None):
         super(ScheduledSkill, self).__init__(name, emitter)
@@ -78,9 +81,10 @@ class ScheduledSkill(MycroftSkill):
     def get_formatted_time(self, timestamp):
         date = datetime.fromtimestamp(timestamp)
         now = datetime.now()
-        if date.date() == now.date():
-            hours, remainder = divmod((date - now).total_seconds(), 3600)
-            minutes, seconds = divmod(remainder, 60)
+        diff = (date - now).total_seconds()
+        if diff <= self.SECONDS_PER_DAY:
+            hours, remainder = divmod(diff, self.SECONDS_PER_HOUR)
+            minutes, seconds = divmod(remainder, self.SECONDS_PER_MINUTE)
             if hours:
                 return "%s hours and %s minutes from now" % \
                        (int(hours), int(minutes))
