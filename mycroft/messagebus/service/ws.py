@@ -74,3 +74,6 @@ class WebsocketEventHandler(tornado.websocket.WebSocketHandler):
             self.write_message(channel_message.serialize())
         else:
             self.write_message(json.dumps(channel_message))
+
+    def check_origin(self, origin):
+        return True
