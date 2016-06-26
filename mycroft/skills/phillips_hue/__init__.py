@@ -61,37 +61,38 @@ class PhillipsHueSkill(MycroftSkill):
     def initialize(self):
         self.load_data_files(dirname(__file__))
 
-        turn_off_intent = IntentBuilder("TurnOffIntent"). \
-            require("TurnOffKeyword").build()
+        turn_off_intent = IntentBuilder("TurnOffIntent")\
+            .require("TurnOffKeyword").build()
         self.register_intent(turn_off_intent, self.handle_turn_off_intent)
 
-        turn_on_intent = IntentBuilder("TurnOnIntent"). \
-            require("TurnOnKeyword").build()
-        self.register_intent(turn_on_intent,
-                             self.handle_turn_on_intent)
+        turn_on_intent = IntentBuilder("TurnOnIntent")\
+            .require("TurnOnKeyword").build()
+        self.register_intent(turn_on_intent, self.handle_turn_on_intent)
 
-        activate_scene_intent = IntentBuilder("ActivateSceneIntent"). \
-            require("ActivateSceneKeyword").build()
+        activate_scene_intent = IntentBuilder("ActivateSceneIntent")\
+            .require("ActivateSceneKeyword").build()
         self.register_intent(activate_scene_intent,
                              self.handle_activate_scene_intent)
 
-        decrease_brightness_intent = IntentBuilder("DecreaseBrightnessIntent"). \
-            require("DecreaseBrightnessKeyword").build()
+        decrease_brightness_intent = IntentBuilder("DecreaseBrightnessIntent")\
+            .require("DecreaseBrightnessKeyword").build()
         self.register_intent(decrease_brightness_intent,
                              self.decrease_brightness_intent)
 
-        increase_brightness_intent = IntentBuilder("IncreaseBrightnessIntent"). \
-            require("IncreaseBrightnessKeyword").build()
+        increase_brightness_intent = IntentBuilder("IncreaseBrightnessIntent")\
+            .require("IncreaseBrightnessKeyword").build()
         self.register_intent(increase_brightness_intent,
                              self.increase_brightness_intent)
 
-        decrease_color_temperature_intent = IntentBuilder("DecreaseColorTemperatureIntent"). \
-            require("DecreaseColorTemperatureKeyword").build()
+        decrease_color_temperature_intent =\
+            IntentBuilder("DecreaseColorTemperatureIntent")\
+            .require("DecreaseColorTemperatureKeyword").build()
         self.register_intent(decrease_color_temperature_intent,
                              self.decrease_color_temperature_intent)
 
-        increase_color_temperature_intent = IntentBuilder("IncreaseColorTemperatureIntent"). \
-            require("IncreaseColorTemperatureKeyword").build()
+        increase_color_temperature_intent =\
+            IntentBuilder("IncreaseColorTemperatureIntent")\
+            .require("IncreaseColorTemperatureKeyword").build()
         self.register_intent(increase_color_temperature_intent,
                              self.increase_color_temperature_intent)
 
@@ -137,21 +138,26 @@ class PhillipsHueSkill(MycroftSkill):
             if self.verbose:
                 self.speak_dialog('increase.brightness')
             brightness = self.all_lights.brightness + self.brightness_step
-            self.all_lights.brightness = brightness if brightness < 255 else 254
+            self.all_lights.brightness =\
+                brightness if brightness < 255 else 254
 
     def decrease_color_temperature_intent(self, message):
         if self.connected or self._connect_to_bridge():
             if self.verbose:
                 self.speak_dialog('decrease.color.temperature')
-            color_temperature = self.all_lights.colortemp_k - self.color_temperature_step
-            self.all_lights.colortemp_k = color_temperature if color_temperature > 2000 else 2000
+            color_temperature =\
+                self.all_lights.colortemp_k - self.color_temperature_step
+            self.all_lights.colortemp_k =\
+                color_temperature if color_temperature > 2000 else 2000
 
     def increase_color_temperature_intent(self, message):
         if self.connected or self._connect_to_bridge():
             if self.verbose:
                 self.speak_dialog('increase.color.temperature')
-            color_temperature = self.all_lights.colortemp_k + self.color_temperature_step
-            self.all_lights.colortemp_k = color_temperature if color_temperature < 6500 else 6500
+            color_temperature =\
+                self.all_lights.colortemp_k + self.color_temperature_step
+            self.all_lights.colortemp_k =\
+                color_temperature if color_temperature < 6500 else 6500
 
     def stop(self):
         pass
