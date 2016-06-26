@@ -22,7 +22,7 @@ class PhillipsHueSkill(MycroftSkill):
     def __init__(self):
         super(PhillipsHueSkill, self).__init__(name="PhillipsHueSkill")
         self.brightness_step =\
-            int(self.config.get('brightness_step', 20))  # TODO
+            int(self.config.get('brightness_step', 50))
         self.color_temperature_step =\
             int(self.config.get('color_temperature_step', 1000))  # TODO
         self.verbose = True if self.config.get('verbose') == 'True' else False
@@ -75,6 +75,16 @@ class PhillipsHueSkill(MycroftSkill):
         self.register_intent(activate_scene_intent,
                              self.handle_activate_scene_intent)
 
+        decrease_brightness_intent = IntentBuilder("DecreaseBrightnessIntent"). \
+            require("DecreaseBrightnessKeyword").build()
+        self.register_intent(decrease_brightness_intent,
+                             self.decrease_brightness_intent)
+
+        increase_brightness_intent = IntentBuilder("IncreaseBrightnessIntent"). \
+            require("IncreaseBrightnessKeyword").build()
+        self.register_intent(increase_brightness_intent,
+                             self.increase_brightness_intent)
+
     def handle_turn_off_intent(self, message):
         if self.verbose:
             self.speak_dialog('turn.off')
@@ -104,6 +114,21 @@ class PhillipsHueSkill(MycroftSkill):
                 else:
                     self.speak_dialog('scene.not.found',
                                       {'scene': scene_name})
+
+    def decrease_brightness_intent(self, message):
+        if self.connected or self._connect_to_bridge():
+            if self.verbose:
+                self.speak_dialog('decrease.brightness')
+            brightness = self.all_lights.brightness - self.brightness_step
+            self.all_lights.brightness = brightness if brightness > 0 else 0
+            self.all_lights.brightness -= self.brightness_step
+
+    def increase_brightness_intent(self, message):
+        if self.connected or self._connect_to_bridge():
+            if self.verbose:
+                self.speak_dialog('increase.brightness')
+            brightness = self.all_lights.brightness + self.brightness_step
+            self.all_lights.brightness = brightness if brightness < 255 else 254
 
     def stop(self):
         pass
