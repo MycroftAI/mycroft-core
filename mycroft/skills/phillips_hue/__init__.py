@@ -80,8 +80,15 @@ class PhillipsHueSkill(MycroftSkill):
     def handle_activate_scene_intent(self, message):
         if self.connected or self._connect_to_bridge():
             scene_name = message.metadata['utterance'][len(message.metadata['ActivateSceneKeyword']):].strip()
-            scene_id = self.bridge.get_scene_id_from_name(scene_name, case_sensitive=False)
-            self.bridge.activate_scene(scene_id)
+            if scene_name == '':
+                self.speak_dialog('no.scene.name')
+            else:
+                scene_id = self.bridge.get_scene_id_from_name(scene_name, case_sensitive=False)
+                if scene_id:
+                    self.bridge.activate_scene(scene_id)
+                else:
+                    self.speak_dialog('scene.not.found', {'scene' : scene_name})
+
 
     def stop(self):
         pass
