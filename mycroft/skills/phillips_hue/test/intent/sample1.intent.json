@@ -1,7 +1,7 @@
 {
-  "utterance": "Turn off the lights",
+  "utterance": "turn off the lights",
   "intent_type": "TurnOffIntent",
   "intent": {
-    "TurnOffKeyWord": "Turning off the lights"
+    "TurnOffKeyword": "turn off the lights"
   }
 }

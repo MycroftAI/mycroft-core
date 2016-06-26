@@ -1,0 +1,7 @@
+{
+  "utterance": "turn up the lights",
+  "intent_type": "IncreaseBrightnessIntent",
+  "intent": {
+    "IncreaseBrightnessKeyword": "turn up the lights"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "utterance": "activate scene relax",
+  "intent_type": "ActivateSceneIntent",
+  "intent": {
+    "ActivateSceneKeyword": "activate scene"
+  }
+}

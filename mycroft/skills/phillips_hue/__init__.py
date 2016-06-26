@@ -70,7 +70,7 @@ class PhillipsHueSkill(MycroftSkill):
         self.register_intent(turn_on_intent,
                              self.handle_turn_on_intent)
 
-        activate_scene_intent = IntentBuilder("ActivateScene"). \
+        activate_scene_intent = IntentBuilder("ActivateSceneIntent"). \
             require("ActivateSceneKeyword").build()
         self.register_intent(activate_scene_intent,
                              self.handle_activate_scene_intent)

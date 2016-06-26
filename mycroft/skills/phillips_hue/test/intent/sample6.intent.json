@@ -1,0 +1,7 @@
+{
+  "utterance": "increase the color temperature of my lights",
+  "intent_type": "IncreaseColorTemperatureIntent",
+  "intent": {
+    "IncreaseColorTemperatureKeyword": "increase the color temperature of my lights"
+  }
+}
