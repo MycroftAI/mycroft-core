@@ -20,6 +20,7 @@ class PhillipsHueSkill(MycroftSkill):
 
     def __init__(self):
         super(PhillipsHueSkill, self).__init__(name="PhillipsHueSkill")
+        self.verbose = True if self.config.get('verbose') == 'True' else False
         self.ip = self.config.get('ip')
         if not self.ip:
            self.ip = _discover_bridge()
@@ -70,10 +71,14 @@ class PhillipsHueSkill(MycroftSkill):
                              self.handle_activate_scene_intent)
 
     def handle_turn_off_intent(self, message):
+        if self.verbose:
+            self.speak_dialog('turn.off')
         if self.connected or self._connect_to_bridge():
             self.all_lights.on = False
 
     def handle_turn_on_intent(self, message):
+        if self.verbose:
+            self.speak_dialog('turn.on')
         if self.connected or self._connect_to_bridge():
             self.all_lights.on = True
 
@@ -85,6 +90,8 @@ class PhillipsHueSkill(MycroftSkill):
             else:
                 scene_id = self.bridge.get_scene_id_from_name(scene_name, case_sensitive=False)
                 if scene_id:
+                    if self.verbose:
+                        self.speak_dialog('activate.scene', {'scene' : scene_name})
                     self.bridge.activate_scene(scene_id)
                 else:
                     self.speak_dialog('scene.not.found', {'scene' : scene_name})
