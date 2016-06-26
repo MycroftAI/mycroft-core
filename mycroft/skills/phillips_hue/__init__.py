@@ -20,11 +20,14 @@ class PhillipsHueSkill(MycroftSkill):
 
     def __init__(self):
         super(PhillipsHueSkill, self).__init__(name="PhillipsHueSkill")
+        self.brightness_step = int(self.config.get('brightness_step', 20)) #TODO
+        self.color_temperature_step =\
+            int(self.config.get('color_temperature_step', 1000)) #TODO
         self.verbose = True if self.config.get('verbose') == 'True' else False
         self.ip = self.config.get('ip')
         if not self.ip:
-           self.ip = _discover_bridge()
-        self.bridge = None # Bridge(self.ip)
+            self.ip =_discover_bridge()
+        self.bridge = None
         self.all_lights = None
 
     @property
@@ -84,17 +87,21 @@ class PhillipsHueSkill(MycroftSkill):
 
     def handle_activate_scene_intent(self, message):
         if self.connected or self._connect_to_bridge():
-            scene_name = message.metadata['utterance'][len(message.metadata['ActivateSceneKeyword']):].strip()
+            keyword_len = len(message.metadata['ActivateSceneKeyword'])
+            scene_name = message.metadata['utterance'][keyword_len:].strip()
             if scene_name == '':
                 self.speak_dialog('no.scene.name')
             else:
-                scene_id = self.bridge.get_scene_id_from_name(scene_name, case_sensitive=False)
+                scene_id = self.bridge.get_scene_id_from_name(
+                    scene_name,case_sensitive=False)
                 if scene_id:
                     if self.verbose:
-                        self.speak_dialog('activate.scene', {'scene' : scene_name})
+                        self.speak_dialog('activate.scene',
+                                          {'scene': scene_name})
                     self.bridge.activate_scene(scene_id)
                 else:
-                    self.speak_dialog('scene.not.found', {'scene' : scene_name})
+                    self.speak_dialog('scene.not.found',
+                                      {'scene': scene_name})
 
 
     def stop(self):
@@ -125,9 +132,9 @@ def _discover_bridge():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.sendto(ssdpRequest, (SSDP_ADDR, SSDP_PORT))
     result = sock.recv(4096)
-    lines = result.readline()
+    lines = result.splitlines()
     location_index = None
-    for i in range(lines):
+    for i in range(len(lines)):
         if lines[i].startswith('hue-bridgeid'):
             location_index = i - 2
             break
