@@ -12,21 +12,23 @@ __author__ = 'ChristopherRogers1991'
 
 LOGGER = getLogger(__name__)
 
+
 class DeviceNotFoundException(Exception):
     pass
 
-class PhillipsHueSkill(MycroftSkill):
 
+class PhillipsHueSkill(MycroftSkill):
 
     def __init__(self):
         super(PhillipsHueSkill, self).__init__(name="PhillipsHueSkill")
-        self.brightness_step = int(self.config.get('brightness_step', 20)) #TODO
+        self.brightness_step =\
+            int(self.config.get('brightness_step', 20))  # TODO
         self.color_temperature_step =\
-            int(self.config.get('color_temperature_step', 1000)) #TODO
+            int(self.config.get('color_temperature_step', 1000))  # TODO
         self.verbose = True if self.config.get('verbose') == 'True' else False
         self.ip = self.config.get('ip')
         if not self.ip:
-            self.ip =_discover_bridge()
+            self.ip = _discover_bridge()
         self.bridge = None
         self.all_lights = None
 
@@ -93,7 +95,7 @@ class PhillipsHueSkill(MycroftSkill):
                 self.speak_dialog('no.scene.name')
             else:
                 scene_id = self.bridge.get_scene_id_from_name(
-                    scene_name,case_sensitive=False)
+                    scene_name, case_sensitive=False)
                 if scene_id:
                     if self.verbose:
                         self.speak_dialog('activate.scene',
@@ -102,7 +104,6 @@ class PhillipsHueSkill(MycroftSkill):
                 else:
                     self.speak_dialog('scene.not.found',
                                       {'scene': scene_name})
-
 
     def stop(self):
         pass
