@@ -24,7 +24,7 @@ class PhillipsHueSkill(MycroftSkill):
         self.brightness_step =\
             int(self.config.get('brightness_step', 50))
         self.color_temperature_step =\
-            int(self.config.get('color_temperature_step', 1000))  # TODO
+            int(self.config.get('color_temperature_step', 1000))
         self.verbose = True if self.config.get('verbose') == 'True' else False
         self.ip = self.config.get('ip')
         if not self.ip:
@@ -85,6 +85,16 @@ class PhillipsHueSkill(MycroftSkill):
         self.register_intent(increase_brightness_intent,
                              self.increase_brightness_intent)
 
+        decrease_color_temperature_intent = IntentBuilder("DecreaseColorTemperatureIntent"). \
+            require("DecreaseColorTemperatureKeyword").build()
+        self.register_intent(decrease_color_temperature_intent,
+                             self.decrease_color_temperature_intent)
+
+        increase_color_temperature_intent = IntentBuilder("IncreaseColorTemperatureIntent"). \
+            require("IncreaseColorTemperatureKeyword").build()
+        self.register_intent(increase_color_temperature_intent,
+                             self.increase_color_temperature_intent)
+
     def handle_turn_off_intent(self, message):
         if self.verbose:
             self.speak_dialog('turn.off')
@@ -121,7 +131,6 @@ class PhillipsHueSkill(MycroftSkill):
                 self.speak_dialog('decrease.brightness')
             brightness = self.all_lights.brightness - self.brightness_step
             self.all_lights.brightness = brightness if brightness > 0 else 0
-            self.all_lights.brightness -= self.brightness_step
 
     def increase_brightness_intent(self, message):
         if self.connected or self._connect_to_bridge():
@@ -129,6 +138,20 @@ class PhillipsHueSkill(MycroftSkill):
                 self.speak_dialog('increase.brightness')
             brightness = self.all_lights.brightness + self.brightness_step
             self.all_lights.brightness = brightness if brightness < 255 else 254
+
+    def decrease_color_temperature_intent(self, message):
+        if self.connected or self._connect_to_bridge():
+            if self.verbose:
+                self.speak_dialog('decrease.color.temperature')
+            color_temperature = self.all_lights.colortemp_k - self.color_temperature_step
+            self.all_lights.colortemp_k = color_temperature if color_temperature > 2000 else 2000
+
+    def increase_color_temperature_intent(self, message):
+        if self.connected or self._connect_to_bridge():
+            if self.verbose:
+                self.speak_dialog('increase.color.temperature')
+            color_temperature = self.all_lights.colortemp_k + self.color_temperature_step
+            self.all_lights.colortemp_k = color_temperature if color_temperature < 6500 else 6500
 
     def stop(self):
         pass
