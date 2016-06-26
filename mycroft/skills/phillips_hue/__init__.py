@@ -1,13 +1,11 @@
-from os.path import dirname
-
 from adapt.intent import IntentBuilder
 from mycroft.skills.core import MycroftSkill
 from mycroft.util.log import getLogger
-
-import socket
+from os.path import dirname
 from phue import Bridge
 from phue import Group
 from phue import PhueRegistrationException
+import socket
 import time
 
 __author__ = 'ChristopherRogers1991'
@@ -54,7 +52,6 @@ class PhillipsHueSkill(MycroftSkill):
         self.all_lights = Group(self.bridge, 0)
         return True
 
-
     def initialize(self):
         self.load_data_files(dirname(__file__))
 
@@ -67,6 +64,11 @@ class PhillipsHueSkill(MycroftSkill):
         self.register_intent(turn_on_intent,
                              self.handle_turn_on_intent)
 
+        activate_scene_intent = IntentBuilder("ActivateScene"). \
+            require("ActivateSceneKeyword").build()
+        self.register_intent(activate_scene_intent,
+                             self.handle_activate_scene_intent)
+
     def handle_turn_off_intent(self, message):
         if self.connected or self._connect_to_bridge():
             self.all_lights.on = False
@@ -74,6 +76,12 @@ class PhillipsHueSkill(MycroftSkill):
     def handle_turn_on_intent(self, message):
         if self.connected or self._connect_to_bridge():
             self.all_lights.on = True
+
+    def handle_activate_scene_intent(self, message):
+        if self.connected or self._connect_to_bridge():
+            scene_name = message.metadata['utterance'][len(message.metadata['ActivateSceneKeyword']):].strip()
+            scene_id = self.bridge.get_scene_id_from_name(scene_name, case_sensitive=False)
+            self.bridge.activate_scene(scene_id)
 
     def stop(self):
         pass
