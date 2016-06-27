@@ -116,22 +116,22 @@ class WolframAlphaSkill(MycroftSkill):
             return result
         except:
             try:
-                result = self.find_pod_id(res.pods, 'Value')
+                result = self.__find_pod_id(res.pods, 'Value')
                 if not result:
-                    result = self.find_pod_id(
+                    result = self.__find_pod_id(
                         res.pods, 'NotableFacts:PeopleData')
                     if not result:
-                        result = self.find_pod_id(
+                        result = self.__find_pod_id(
                             res.pods, 'BasicInformation:PeopleData')
                         if not result:
-                            result = self.find_pod_id(res.pods, 'Definition')
+                            result = self.__find_pod_id(res.pods, 'Definition')
                             if not result:
-                                result = self.find_pod_id(
+                                result = self.__find_pod_id(
                                     res.pods, 'DecimalApproximation')
                                 if result:
                                     result = result[:5]
                                 else:
-                                    result = self.find_num(
+                                    result = self.__find_num(
                                         res.pods, '200')
                 return result
             except:
@@ -157,17 +157,17 @@ class WolframAlphaSkill(MycroftSkill):
         try:
             res = self.client.query(query)
             result = self.get_result(res)
-            others = self.find_did_you_mean(res)
+            others = self._find_did_you_mean(res)
         except CerberusAccessDenied as e:
             self.speak_dialog('not.paired')
             return
         except Exception as e:
             logger.exception(e)
-            self.speak("Sorry, I don't understand your request.")
+            self.speak_dialog("not.understood")
             return
 
         if result:
-            input_interpretation = self.find_pod_id(res.pods, 'Input')
+            input_interpretation = self.__find_pod_id(res.pods, 'Input')
             verb = "is"
             structured_syntax_regex = re.compile(".*(\||\[|\\\\|\]).*")
             if parsed_question:
@@ -187,31 +187,31 @@ class WolframAlphaSkill(MycroftSkill):
             self.speak(response)
         else:
             if len(others) == 1:
-                self.speak("Sorry, I didn't understand " +
-                           utterance + ". Searching for " +
-                           others[0] + " instead")
+                self.speak_dialog('search.again',
+                                  data={'utterance': utterance, 'alternative':
+                                        others[0]})
                 self.handle_fallback(Message('intent_failure',
                                              metadata={'utterance':
                                                        others[0]}))
             else:
-                self.speak("Sorry, I don't understand your request.")
+                self.speak_dialog("not.understood")
 
     @staticmethod
-    def find_pod_id(pods, pod_id):
+    def __find_pod_id(pods, pod_id):
         for pod in pods:
             if pod_id in pod.id:
                 return pod.text
         return None
 
     @staticmethod
-    def find_num(pods, pod_num):
+    def __find_num(pods, pod_num):
         for pod in pods:
             if pod.node.attrib['position'] == pod_num:
                 return pod.text
         return None
 
     @staticmethod
-    def find_did_you_mean(res):
+    def _find_did_you_mean(res):
         value = []
         root = res.tree.find('didyoumeans')
         if root:
