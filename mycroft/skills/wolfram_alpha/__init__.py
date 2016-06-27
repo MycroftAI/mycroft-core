@@ -186,7 +186,7 @@ class WolframAlphaSkill(MycroftSkill):
 
             self.speak(response)
         else:
-            if len(others) == 1:
+            if len(others) > 0:
                 self.speak_dialog('search.again',
                                   data={'utterance': utterance, 'alternative':
                                         others[0]})
@@ -214,7 +214,7 @@ class WolframAlphaSkill(MycroftSkill):
     def _find_did_you_mean(res):
         value = []
         root = res.tree.find('didyoumeans')
-        if root:
+        if root is not None:
             for result in root:
                 value.append(result.text)
         return value
