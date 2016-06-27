@@ -32,8 +32,8 @@ class MycroftSkillTest(unittest.TestCase):
     emitter = MockEmitter()
     path = join(dirname(__file__), 'regex_test')
 
-    def check_load_from_file(self, path, regex_list=[]):
-        load_regex_from_file(join(self.path, path), self.emitter)
+    def check_load_from_file(self, filename, regex_list=[]):
+        load_regex_from_file(join(self.path, filename), self.emitter)
         self.check_emitter(self.emitter, regex_list)
 
     def check_load(self, path, regex_list=[]):
@@ -41,8 +41,8 @@ class MycroftSkillTest(unittest.TestCase):
         self.check_emitter(self.emitter, regex_list)
 
     def check_emitter(self, emitter, regex_list):
-        for type in emitter.get_types():
-            self.assertEquals(type, 'register_vocab')
+        for regex_type in emitter.get_types():
+            self.assertEquals(regex_type, 'register_vocab')
         if not regex_list:
             self.assertEquals(emitter.get_results(), regex_list)
         for value in regex_list:
@@ -63,7 +63,7 @@ class MycroftSkillTest(unittest.TestCase):
 
     def test_load_regex_from_file_invalid(self):
         try:
-            self.check_load_from_file(join(dirname(__file__), 'invalid.rx'))
+            self.check_load_from_file('invalid/invalid.rx')
         except error as e:
             self.assertEquals(e.__str__(),
                               'unexpected end of regular expression')
