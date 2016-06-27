@@ -91,10 +91,11 @@ class WolframAlphaTest(unittest.TestCase):
                           ("Test!"), "Test,factorial")
 
     def test_find_did_you_mean_exists(self):
-        res = self.create_did_you_mean(['search for power', 'power'])
-        self.assertEquals(self.skill.find_did_you_mean(res),
-                          ['search for power', 'power'])
+        values = ['search for power', 'power']
+        res = self.create_did_you_mean(values)
+        self.assertEquals(self.skill._find_did_you_mean(res),
+                          values)
 
     def test_find_did_you_mean_none(self):
         res = self.create_did_you_mean([])
-        self.assertEquals(self.skill.find_did_you_mean(res), [])
+        self.assertEquals(self.skill._find_did_you_mean(res), [])
