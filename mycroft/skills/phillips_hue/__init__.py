@@ -70,34 +70,34 @@ class PhillipsHueSkill(MycroftSkill):
 
         turn_on_intent = IntentBuilder("TurnOnIntent")\
             .require("TurnOnKeyword").build()
-        self.register_intent(turn_on_intent, self.handle_turn_on_intent)
+        self.register_intent(turn_on_intent, self.handle_intent)
 
         activate_scene_intent = IntentBuilder("ActivateSceneIntent")\
             .require("ActivateSceneKeyword").build()
         self.register_intent(activate_scene_intent,
-                             self.handle_activate_scene_intent)
+                             self.handle_intent)
 
         decrease_brightness_intent = IntentBuilder("DecreaseBrightnessIntent")\
             .require("DecreaseBrightnessKeyword").build()
         self.register_intent(decrease_brightness_intent,
-                             self.handle_decrease_brightness_intent)
+                             self.handle_intent)
 
         increase_brightness_intent = IntentBuilder("IncreaseBrightnessIntent")\
             .require("IncreaseBrightnessKeyword").build()
         self.register_intent(increase_brightness_intent,
-                             self.handle_increase_brightness_intent)
+                             self.handle_intent)
 
         decrease_color_temperature_intent =\
             IntentBuilder("DecreaseColorTemperatureIntent")\
             .require("DecreaseColorTemperatureKeyword").build()
         self.register_intent(decrease_color_temperature_intent,
-                             self.handle_decrease_color_temperature_intent)
+                             self.handle_intent)
 
         increase_color_temperature_intent =\
             IntentBuilder("IncreaseColorTemperatureIntent")\
             .require("IncreaseColorTemperatureKeyword").build()
         self.register_intent(increase_color_temperature_intent,
-                             self.handle_increase_color_temperature_intent)
+                             self.handle_intent)
 
     def handle_intent(self, message):
         if self.connected or self._connect_to_bridge():
