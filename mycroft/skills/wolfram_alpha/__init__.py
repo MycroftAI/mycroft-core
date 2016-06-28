@@ -28,6 +28,7 @@ from mycroft.identity import IdentityManager
 from mycroft.skills.core import MycroftSkill
 from mycroft.util import CerberusAccessDenied
 from mycroft.util.log import getLogger
+from mycroft.messagebus.message import Message
 
 __author__ = 'seanfitz'
 
@@ -153,17 +154,17 @@ class WolframAlphaSkill(MycroftSkill):
             phrase = "know %s %s %s" % (utt_word, utt_query, utt_verb)
         else:  # TODO: Localization
             phrase = "understand the phrase " + utterance
-        response_on_fail = "Sorry, I don't " + phrase
 
         try:
             res = self.client.query(query)
             result = self.get_result(res)
+            others = self._find_did_you_mean(res)
         except CerberusAccessDenied as e:
             self.speak_dialog('not.paired')
             return
         except Exception as e:
             logger.exception(e)
-            self.speak(response_on_fail)
+            self.speak_dialog("not.understood", data={'phrase': phrase})
             return
 
         if result:
@@ -186,7 +187,15 @@ class WolframAlphaSkill(MycroftSkill):
 
             self.speak(response)
         else:
-            self.speak(response_on_fail)
+            if len(others) > 0:
+                self.speak_dialog('search.again',
+                                  data={'utterance': utterance, 'alternative':
+                                        others[0]})
+                self.handle_fallback(Message('intent_failure',
+                                             metadata={'utterance':
+                                                       others[0]}))
+            else:
+                self.speak_dialog("not.understood", data={'phrase': phrase})
 
     @staticmethod
     def __find_pod_id(pods, pod_id):
@@ -194,6 +203,22 @@ class WolframAlphaSkill(MycroftSkill):
             if pod_id in pod.id:
                 return pod.text
         return None
+
+    @staticmethod
+    def __find_num(pods, pod_num):
+        for pod in pods:
+            if pod.node.attrib['position'] == pod_num:
+                return pod.text
+        return None
+
+    @staticmethod
+    def _find_did_you_mean(res):
+        value = []
+        root = res.tree.find('didyoumeans')
+        if root is not None:
+            for result in root:
+                value.append(result.text)
+        return value
 
     @staticmethod
     def process_wolfram_string(text):
@@ -209,13 +234,6 @@ class WolframAlphaSkill(MycroftSkill):
         # Convert !s to factorial
         text = re.sub(r"!", r",factorial", text)
         return text
-
-    @staticmethod
-    def __find_num(pods, pod_num):
-        for pod in pods:
-            if pod.node.attrib['position'] == pod_num:
-                return pod.text
-        return None
 
     def stop(self):
         pass
