@@ -1,6 +1,6 @@
 import unittest
 from re import error
-from os.path import join, dirname
+from os.path import join, dirname, abspath
 
 from mycroft.skills.core import load_regex_from_file, load_regex
 from mycroft.util.log import getLogger
@@ -30,7 +30,7 @@ class MockEmitter(object):
 
 class MycroftSkillTest(unittest.TestCase):
     emitter = MockEmitter()
-    path = join(dirname(__file__), 'regex_test')
+    path = abspath(join(dirname(__file__), '../regex_test'))
 
     def check_load_from_file(self, filename, regex_list=[]):
         load_regex_from_file(join(self.path, filename), self.emitter)
@@ -50,16 +50,16 @@ class MycroftSkillTest(unittest.TestCase):
         self.emitter.reset()
 
     def test_load_regex_from_file_single(self):
-        self.check_load_from_file('single.rx',
+        self.check_load_from_file('valid/single.rx',
                                   ['(?P<SingleTest>.*)'])
 
     def test_load_regex_from_file_multiple(self):
-        self.check_load_from_file('multiple.rx',
+        self.check_load_from_file('valid/multiple.rx',
                                   ['(?P<MultipleTest1>.*)',
                                    '(?P<MultipleTest2>.*)'])
 
     def test_load_regex_from_file_none(self):
-        self.check_load_from_file('none.rx')
+        self.check_load_from_file('invalid/none.rx')
 
     def test_load_regex_from_file_invalid(self):
         try:
@@ -75,14 +75,14 @@ class MycroftSkillTest(unittest.TestCase):
             self.assertEquals(e.strerror, 'No such file or directory')
 
     def test_load_regex_full(self):
-        self.check_load(self.path,
+        self.check_load(join(self.path, 'valid'),
                         ['(?P<MultipleTest1>.*)',
                          '(?P<MultipleTest2>.*)',
                          '(?P<SingleTest>.*)'])
 
     def test_load_regex_empty(self):
         self.check_load(join(dirname(__file__),
-                             'regex_test_none'))
+                             'wolfram_alpha'))
 
     def test_load_regex_fail(self):
         try:

@@ -61,12 +61,13 @@ def load_vocab_from_file(path, vocab_type, emitter):
 
 
 def load_regex_from_file(path, emitter):
-    with open(path, 'r') as reg_file:
-        for line in reg_file.readlines():
-            re.compile(line.strip())
-            emitter.emit(
-                Message("register_vocab",
-                        metadata={'regex': line.strip()}))
+    if(path.endswith('.rx')):
+        with open(path, 'r') as reg_file:
+            for line in reg_file.readlines():
+                re.compile(line.strip())
+                emitter.emit(
+                    Message("register_vocab",
+                            metadata={'regex': line.strip()}))
 
 
 def load_vocabulary(basedir, emitter):
