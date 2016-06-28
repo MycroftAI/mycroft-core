@@ -17,6 +17,66 @@ class EnglishQuestionParserTest(unittest.TestCase):
             }
         },
         {
+            'utterance': 'what are they',
+            'parsed_question': {
+                'QuestionWord': 'what',
+                'QuestionVerb': 'are',
+                'Query': 'they'
+            }
+        },
+        {
+            'utterance': 'when was this',
+            'parsed_question': {
+                'QuestionWord': 'when',
+                'QuestionVerb': 'was',
+                'Query': 'this'
+            }
+        },
+        {
+            'utterance': 'why were they there',
+            'parsed_question': {
+                'QuestionWord': 'why',
+                'QuestionVerb': 'were',
+                'Query': 'they there'
+            }
+        },
+        {
+            'utterance': 'which is the thing',
+            'parsed_question': {
+                'QuestionWord': 'which',
+                'QuestionVerb': 'is',
+                'Query': 'the thing'
+            }
+        },
+        {
+            'utterance': 'who ate abraham lincoln',
+            'parsed_question': {
+                'QuestionWord': 'who',
+                'QuestionVerb': 'ate',
+                'Query': 'abraham lincoln'
+            }
+        },
+        {
+            'utterance': 'what began life',
+            'parsed_question': {
+                'QuestionWord': 'what',
+                'QuestionVerb': 'began',
+                'Query': 'life'
+            }
+        },
+        {
+            'utterance': 'where sat the person',
+            'parsed_question': {
+                'QuestionWord': 'where',
+                'QuestionVerb': 'sat',
+                'Query': 'the person'
+            }
+        },
+        {
+            'utterance': 'i like stuff',
+            'parsed_question': None
+        },
+        {
             'utterance': 'what\'s a dog',
             'parsed_question': {
                 'QuestionWord': 'what',
