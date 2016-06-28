@@ -138,21 +138,22 @@ class WolframAlphaSkill(MycroftSkill):
                 return result
 
     def handle_fallback(self, message):
+        self.enclosure.mouth_think()
         logger.debug(
             "Could not determine intent, falling back to WolframAlpha Skill!")
         utterance = message.metadata.get('utterance')
         parsed_question = self.question_parser.parse(utterance)
 
-        # biding some time
-        if parsed_question:
-            self.speak("I am searching for " + parsed_question.get('Query'))
-        else:
-            self.speak("I am searching for " + utterance)
         query = utterance
         if parsed_question:
-            query = "%s %s %s" % (parsed_question.get('QuestionWord'),
-                                  parsed_question.get('QuestionVerb'),
-                                  parsed_question.get('Query'))
+            # Try to store pieces of utterance (None if not parsed_question)
+            utt_word = parsed_question.get('QuestionWord')
+            utt_verb = parsed_question.get('QuestionVerb')
+            utt_query = parsed_question.get('Query')
+            query = "%s %s %s" % (utt_word, utt_verb, utt_query)
+            phrase = "know %s %s %s" % (utt_word, utt_query, utt_verb)
+        else:  # TODO: Localization
+            phrase = "understand the phrase " + utterance
 
         try:
             res = self.client.query(query)
@@ -163,7 +164,7 @@ class WolframAlphaSkill(MycroftSkill):
             return
         except Exception as e:
             logger.exception(e)
-            self.speak_dialog("not.understood")
+            self.speak_dialog("not.understood", data={'phrase': phrase})
             return
 
         if result:
@@ -194,7 +195,7 @@ class WolframAlphaSkill(MycroftSkill):
                                              metadata={'utterance':
                                                        others[0]}))
             else:
-                self.speak_dialog("not.understood")
+                self.speak_dialog("not.understood", data={'phrase': phrase})
 
     @staticmethod
     def __find_pod_id(pods, pod_id):
