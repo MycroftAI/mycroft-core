@@ -16,7 +16,7 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import os
+from os.path import dirname, join
 import sys
 import urllib2
 import webbrowser
@@ -48,9 +48,8 @@ class DesktopLauncherSkill(MycroftSkill):
                 logger.error("Could not import gio")
                 return
 
-        vocab_dir = os.path.join(os.path.dirname(__file__), 'vocab', 'en-us')
-
-        self.load_vocab_files(vocab_dir)
+        self.load_vocab_files(join(dirname(__file__), 'vocab', self.lang))
+        self.load_regex_files(join(dirname(__file__), 'regex', self.lang))
         tokenizer = EnglishTokenizer()
 
         for app in gio.app_info_get_all():
@@ -70,10 +69,6 @@ class DesktopLauncherSkill(MycroftSkill):
                     self.appmap[tokenized_name] += entry
                 else:
                     self.appmap[tokenized_name] = entry
-
-        self.register_regex("for (?P<SearchTerms>.*)")
-        self.register_regex("for (?P<SearchTerms>.*) on")
-        self.register_regex("(?P<SearchTerms>.*) on")
 
         launch_intent = IntentBuilder(
             "LaunchDesktopApplicationIntent").require("LaunchKeyword").require(

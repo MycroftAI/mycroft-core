@@ -1,0 +1,1 @@
+(tell|text|message) (?P<Contact>\w*) (?P<Message>.*)
