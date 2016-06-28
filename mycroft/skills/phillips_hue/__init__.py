@@ -22,13 +22,22 @@ class PhillipsHueSkill(MycroftSkill):
 
     def __init__(self):
         super(PhillipsHueSkill, self).__init__(name="PhillipsHueSkill")
-        self.brightness_step =\
-            int(self.config.get('brightness_step', 50))
+        self.brightness_step = self.config.get('brightness_step', '')
+        if self.brightness_step == '':
+            self.brightness_step = 50
+        else:
+            self.brightness_step = int(self.brightness_step)
         self.color_temperature_step =\
-            int(self.config.get('color_temperature_step', 1000))
+            self.config.get('color_temperature_step', '')
+        if self.color_temperature_step == '':
+            self.color_temperature_step = 1000
+        else:
+            self.color_temperature_step = int(self.color_temperature_step)
         self.verbose = True if self.config.get('verbose') == 'True' else False
-        self.username = None
-        self.ip = None
+        self.username = self.config.get('username', '')
+        if self.username == '':
+            self.username = None
+        self.ip = None  # set in _connect_to_bridge
         self.bridge = None
         self.all_lights = None
 
@@ -38,10 +47,10 @@ class PhillipsHueSkill(MycroftSkill):
 
     def _connect_to_bridge(self):
         try:
-            self.ip = self.config.get('ip')
-            if not self.ip:
+            self.ip = self.config.get('ip', '')
+            if self.ip == '':
                 self.ip = _discover_bridge()
-            self.bridge = Bridge(self.ip, self.config.get('username'))
+            self.bridge = Bridge(self.ip, self.username)
             self.username = self.bridge.username
         except DeviceNotFoundException:
             self.speak_dialog('bridge.not.found')
@@ -135,7 +144,7 @@ class PhillipsHueSkill(MycroftSkill):
                 if isinstance(e, PhueRequestTimeout):
                     self.speak_dialog('unable.to.perform.action')
                 elif 'No route to host' in e.args:
-                    if self.config.get('ip'):
+                    if not self.config.get('ip', '') == '':
                         self.speak_dialog('no.route')
                         return
                 else:
@@ -198,7 +207,7 @@ class PhillipsHueSkill(MycroftSkill):
             color_temperature if color_temperature < 6500 else 6500
 
     def handle_connect_lights_intent(self, message):
-        if self.config.get('ip'):
+        if not self.config.get('ip', '') == '':
             self.speak_dialog('ip.in.config')
             return
         if self.verbose:
