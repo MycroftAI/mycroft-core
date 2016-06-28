@@ -27,10 +27,8 @@ class PhillipsHueSkill(MycroftSkill):
         self.color_temperature_step =\
             int(self.config.get('color_temperature_step', 1000))
         self.verbose = True if self.config.get('verbose') == 'True' else False
-        self.username = self.config.get('username')
-        self.ip = self.config.get('ip')
-        if not self.ip:
-            self.ip = _discover_bridge()
+        self.username = None
+        self.ip = None
         self.bridge = None
         self.all_lights = None
 
@@ -40,13 +38,19 @@ class PhillipsHueSkill(MycroftSkill):
 
     def _connect_to_bridge(self):
         try:
-            self.bridge = Bridge(self.ip, self.username)
+            self.ip = self.config.get('ip')
+            if not self.ip:
+                self.ip = _discover_bridge()
+            self.bridge = Bridge(self.ip, self.config.get('username'))
             self.username = self.bridge.username
+        except DeviceNotFoundException:
+            self.speak_dialog('bridge.not.found')
+            return False
         except PhueRegistrationException:
             self.speak_dialog('connect.to.bridge')
             i = 0
             while i < 30:
-                time.sleep(3)
+                time.sleep(1)
                 try:
                     self.bridge = Bridge(self.ip)
                 except PhueRegistrationException:
@@ -54,10 +58,10 @@ class PhillipsHueSkill(MycroftSkill):
                 else:
                     break
             if not self.connected:
-                self.speak_dialog('failed.to.connect')
+                self.speak_dialog('failed.to.register')
                 return False
             else:
-                self.speak_dialog('successfully.connected')
+                self.speak_dialog('successfully.registered')
         self.all_lights = Group(self.bridge, 0)
         return True
 
@@ -99,10 +103,16 @@ class PhillipsHueSkill(MycroftSkill):
         self.register_intent(increase_color_temperature_intent,
                              self.handle_intent)
 
+        connect_lights_intent = \
+            IntentBuilder("ConnectLightsIntent") \
+            .require("ConnectLightsKeyword").build()
+        self.register_intent(connect_lights_intent,
+                             self.handle_intent)
+
     def handle_intent(self, message):
-        if self.connected or self._connect_to_bridge():
+        if message.message_type == 'ConnectLightsIntent'\
+                or self.connected or self._connect_to_bridge():
             try:
-                # TODO intent to reconnect
                 if message.message_type == "TurnOffIntent":
                     self.handle_turn_off_intent(message)
                 elif message.message_type == "TurnOnIntent":
@@ -117,6 +127,8 @@ class PhillipsHueSkill(MycroftSkill):
                     self.handle_decrease_color_temperature_intent(message)
                 elif message.message_type == "IncreaseColorTemperatureIntent":
                     self.handle_increase_color_temperature_intent(message)
+                elif message.message_type == "ConnectLightsIntent":
+                    self.handle_connect_lights_intent(message)
                 else:
                     raise Exception('No matching intent handler')
             except Exception as e:
@@ -185,6 +197,17 @@ class PhillipsHueSkill(MycroftSkill):
         self.all_lights.colortemp_k =\
             color_temperature if color_temperature < 6500 else 6500
 
+    def handle_connect_lights_intent(self, message):
+        if self.config.get('ip'):
+            self.speak_dialog('ip.in.config')
+            return
+        if self.verbose:
+            self.speak_dialog('connecting')
+        if self._connect_to_bridge():
+            self.speak_dialog('successfully.connected')
+        else:
+            self.speak_dialog('failed.to.connect')
+
     def stop(self):
         pass
 
@@ -192,7 +215,12 @@ class PhillipsHueSkill(MycroftSkill):
 def _discover_bridge():
     """
     Naive method to find a phillips hue bridge on
-    the network.
+    the network, via UPNP.
+
+    Raises
+    ------
+    DeviceNotFoundException
+        If the bridge is not found.
 
     Returns
     -------
