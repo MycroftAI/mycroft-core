@@ -147,20 +147,21 @@ def file_frame_rate(file_name):
     return frame_rate
 
 
+def print_ww_found_status(word, short_name):
+    print("Wake word " + bold_str(word) + " - " + short_name)
+
+
 def test_false_negative(directory):
     file_names = get_file_names(directory)
 
     # Grab audio format info from first file
     tester = AudioTester(file_frame_rate(file_names[0]))
 
-    def print_status(word, short_name):
-        print("Wake word " + bold_str(word) + " - " + short_name)
-
     def on_file_finish(short_name, times_found):
         not_found_str = Color.RED + "Not found"
         found_str = Color.GREEN + "Detected "
         status_str = not_found_str if times_found == 0 else found_str
-        print_status(status_str, short_name)
+        print_ww_found_status(status_str, short_name)
 
     num_found = test_audio_files(tester, file_names, on_file_finish)
     total = len(file_names)
@@ -177,14 +178,11 @@ def test_false_positive(directory):
     # Grab audio format info from first file
     tester = AudioTester(file_frame_rate(file_names[0]))
 
-    def print_status(word, short_name):
-        print("Wake word " + bold_str(word) + " - " + short_name)
-
     def on_file_finish(short_name, times_found):
         not_found_str = Color.GREEN + "Not found"
         found_str = Color.RED + "Detected "
         status_str = not_found_str if times_found == 0 else found_str
-        print_status(status_str, short_name)
+        print_ww_found_status(status_str, short_name)
 
     num_found = test_audio_files(tester, file_names, on_file_finish)
     total = len(file_names)
