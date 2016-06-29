@@ -208,9 +208,9 @@ class RecognizerLoop(pyee.EventEmitter):
 
         # FIXME - channels are not been used
         self.microphone.CHANNELS = channels
-        self.mycroft_recognizer = LocalRecognizer(sample_rate, lang)
+        self.mycroft_recognizer = LocalRecognizer("mycroft", "1e-45", sample_rate, lang)
         # TODO - localization
-        self.wakeup_recognizer = LocalRecognizer(sample_rate, lang, "wake up")
+        self.wakeup_recognizer = LocalRecognizer("wake up", "1e-10", sample_rate, lang)
         self.remote_recognizer = ResponsiveRecognizer(self.mycroft_recognizer)
         self.state = RecognizerLoopState()
 
