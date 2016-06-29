@@ -49,10 +49,10 @@ class EnglishQuestionParserTest(unittest.TestCase):
             }
         },
         {
-            'utterance': 'who ate abraham lincoln',
+            'utterance': 'who saw abraham lincoln',
             'parsed_question': {
                 'QuestionWord': 'who',
-                'QuestionVerb': 'ate',
+                'QuestionVerb': 'saw',
                 'Query': 'abraham lincoln'
             }
         },
