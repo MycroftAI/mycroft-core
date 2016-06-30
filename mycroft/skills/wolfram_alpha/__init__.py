@@ -28,6 +28,7 @@ from mycroft.identity import IdentityManager
 from mycroft.skills.core import MycroftSkill
 from mycroft.util import CerberusAccessDenied
 from mycroft.util.log import getLogger
+from mycroft.messagebus.message import Message
 
 __author__ = 'seanfitz'
 
@@ -46,6 +47,9 @@ class EnglishQuestionParser(object):
                 ".*(?P<QuestionWord>who|what|when|where|why|which) "
                 "(?P<Query1>.*) (?P<QuestionVerb>is|are|was|were) "
                 "(?P<Query2>.*)"),
+            re.compile(
+                ".*(?P<QuestionWord>what)(?P<QuestionVerb>\'s|s) "
+                "(?P<Query>.*)"),
             re.compile(
                 ".*(?P<QuestionWord>who|what|when|where|why|which) "
                 "(?P<QuestionVerb>\w+) (?P<Query>.*)")
@@ -137,31 +141,33 @@ class WolframAlphaSkill(MycroftSkill):
                 return result
 
     def handle_fallback(self, message):
+        self.enclosure.mouth_think()
         logger.debug(
             "Could not determine intent, falling back to WolframAlpha Skill!")
         utterance = message.metadata.get('utterance')
         parsed_question = self.question_parser.parse(utterance)
 
-        # biding some time
-        if parsed_question:
-            self.speak("I am searching for " + parsed_question.get('Query'))
-        else:
-            self.speak("I am searching for " + utterance)
         query = utterance
         if parsed_question:
-            query = "%s %s %s" % (parsed_question.get('QuestionWord'),
-                                  parsed_question.get('QuestionVerb'),
-                                  parsed_question.get('Query'))
+            # Try to store pieces of utterance (None if not parsed_question)
+            utt_word = parsed_question.get('QuestionWord')
+            utt_verb = parsed_question.get('QuestionVerb')
+            utt_query = parsed_question.get('Query')
+            query = "%s %s %s" % (utt_word, utt_verb, utt_query)
+            phrase = "know %s %s %s" % (utt_word, utt_query, utt_verb)
+        else:  # TODO: Localization
+            phrase = "understand the phrase " + utterance
 
         try:
             res = self.client.query(query)
             result = self.get_result(res)
+            others = self._find_did_you_mean(res)
         except CerberusAccessDenied as e:
             self.speak_dialog('not.paired')
             return
         except Exception as e:
             logger.exception(e)
-            self.speak("Sorry, I don't understand your request.")
+            self.speak_dialog("not.understood", data={'phrase': phrase})
             return
 
         if result:
@@ -184,7 +190,15 @@ class WolframAlphaSkill(MycroftSkill):
 
             self.speak(response)
         else:
-            self.speak("Sorry, I don't understand your request.")
+            if len(others) > 0:
+                self.speak_dialog('search.again',
+                                  data={'utterance': utterance, 'alternative':
+                                        others[0]})
+                self.handle_fallback(Message('intent_failure',
+                                             metadata={'utterance':
+                                                       others[0]}))
+            else:
+                self.speak_dialog("not.understood", data={'phrase': phrase})
 
     @staticmethod
     def __find_pod_id(pods, pod_id):
@@ -192,6 +206,22 @@ class WolframAlphaSkill(MycroftSkill):
             if pod_id in pod.id:
                 return pod.text
         return None
+
+    @staticmethod
+    def __find_num(pods, pod_num):
+        for pod in pods:
+            if pod.node.attrib['position'] == pod_num:
+                return pod.text
+        return None
+
+    @staticmethod
+    def _find_did_you_mean(res):
+        value = []
+        root = res.tree.find('didyoumeans')
+        if root is not None:
+            for result in root:
+                value.append(result.text)
+        return value
 
     @staticmethod
     def process_wolfram_string(text):
@@ -207,13 +237,6 @@ class WolframAlphaSkill(MycroftSkill):
         # Convert !s to factorial
         text = re.sub(r"!", r",factorial", text)
         return text
-
-    @staticmethod
-    def __find_num(pods, pod_num):
-        for pod in pods:
-            if pod.node.attrib['position'] == pod_num:
-                return pod.text
-        return None
 
     def stop(self):
         pass

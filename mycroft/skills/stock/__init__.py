@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
-from os.path import dirname
+from os.path import dirname, join
 import requests
 import xml.etree.ElementTree as ET
 
@@ -33,9 +33,7 @@ class StockSkill(MycroftSkill):
 
     def initialize(self):
         self.load_data_files(dirname(__file__))
-
-        self.register_regex("price of (?P<Company>.*)")
-        self.register_regex("is (?P<Company>.*) trading at")
+        self.load_regex_files(join(dirname(__file__), 'regex', self.lang))
 
         stock_price_intent = IntentBuilder("StockPriceIntent")\
             .require("StockPriceKeyword")\

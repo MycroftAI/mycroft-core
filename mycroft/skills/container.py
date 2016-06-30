@@ -53,7 +53,7 @@ class SkillContainer(object):
     def __build_params(args):
         parser = argparse.ArgumentParser()
         parser.add_argument("--config", default="./mycroft.ini")
-        parser.add_argument("--dir", default=dirname(__file__))
+        parser.add_argument("dir", nargs='?', default=dirname(__file__))
         parser.add_argument("--lib", default="./lib")
         parser.add_argument("--host", default=None)
         parser.add_argument("--port", default=None)

@@ -60,10 +60,27 @@ def load_vocab_from_file(path, vocab_type, emitter):
                                       'alias_of': entity}))
 
 
+def load_regex_from_file(path, emitter):
+    if(path.endswith('.rx')):
+        with open(path, 'r') as reg_file:
+            for line in reg_file.readlines():
+                re.compile(line.strip())
+                emitter.emit(
+                    Message("register_vocab",
+                            metadata={'regex': line.strip()}))
+
+
 def load_vocabulary(basedir, emitter):
     for vocab_type in os.listdir(basedir):
         load_vocab_from_file(
             join(basedir, vocab_type), splitext(vocab_type)[0], emitter)
+
+
+def load_regex(basedir, emitter):
+    for regex_type in os.listdir(basedir):
+        if regex_type.endswith(".rx"):
+            load_regex_from_file(
+                join(basedir, regex_type), emitter)
 
 
 def create_intent_envelope(intent):
@@ -224,6 +241,9 @@ class MycroftSkill(object):
 
     def load_vocab_files(self, vocab_dir):
         load_vocabulary(vocab_dir, self.emitter)
+
+    def load_regex_files(self, regex_dir):
+        load_regex(regex_dir, self.emitter)
 
     def __handle_stop(self, event):
         self.stop_time = time.time()

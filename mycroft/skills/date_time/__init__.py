@@ -37,9 +37,7 @@ class TimeSkill(MycroftSkill):
 
     def initialize(self):
         self.load_vocab_files(join(dirname(__file__), 'vocab', 'en-us'))
-
-        self.register_regex("in (?P<Location>.*)")
-        self.register_regex("at (?P<Location>.*)")
+        self.load_regex_files(join(dirname(__file__), 'regex', 'en-us'))
 
         intent = IntentBuilder("TimeIntent").require(
             "TimeKeyword").optionally("Location").build()

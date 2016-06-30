@@ -18,7 +18,7 @@
 
 import time
 from alsaaudio import Mixer
-from os.path import dirname
+from os.path import dirname, join
 
 from adapt.intent import IntentBuilder
 from mycroft.skills.core import MycroftSkill
@@ -39,7 +39,7 @@ class VolumeSkill(MycroftSkill):
 
     def initialize(self):
         self.load_data_files(dirname(__file__))
-        self.register_regex("(?P<VolumeAmount>\d+)")
+        self.load_regex_files(join(dirname(__file__), 'regex', self.lang))
         self.__build_set_volume()
 
     def __build_set_volume(self):
