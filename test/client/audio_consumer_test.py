@@ -24,6 +24,7 @@ from os.path import dirname, join
 from speech_recognition import WavFile, AudioData
 
 from mycroft.client.speech.listener import AudioConsumer, RecognizerLoop
+from mycroft.client.speech.local_recognizer import LocalRecognizer
 from mycroft.client.speech.recognizer_wrapper import (
     RemoteRecognizerWrapperFactory
 )
@@ -59,7 +60,7 @@ class AudioConsumerTest(unittest.TestCase):
             self.loop.state,
             self.queue,
             self.loop,
-            self.loop.wakeup_recognizer,
+            LocalRecognizer(self.loop.wakeup_recognizer.key_phrase, "1e-45"),
             self.loop.mycroft_recognizer,
             RemoteRecognizerWrapperFactory.wrap_recognizer(
                 self.recognizer, 'google'))
