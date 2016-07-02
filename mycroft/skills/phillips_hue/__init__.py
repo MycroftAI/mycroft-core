@@ -6,8 +6,8 @@ from phue import Bridge
 from phue import Group
 from phue import PhueRegistrationException
 from phue import PhueRequestTimeout
+from time import sleep
 import socket
-import time
 
 __author__ = 'ChristopherRogers1991'
 
@@ -51,7 +51,7 @@ class PhillipsHueSkill(MycroftSkill):
             self.speak_dialog('connect.to.bridge')
             i = 0
             while i < 30:
-                time.sleep(1)
+                sleep(1)
                 try:
                     self.bridge = Bridge(self.ip)
                 except PhueRegistrationException:
