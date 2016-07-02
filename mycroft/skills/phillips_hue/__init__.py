@@ -30,6 +30,7 @@ class PhillipsHueSkill(MycroftSkill):
         if self.username == '':
             self.username = None
         self.ip = None  # set in _connect_to_bridge
+        self.user_supplied_ip = True
         self.bridge = None
         self.all_lights = None
 
@@ -37,33 +38,46 @@ class PhillipsHueSkill(MycroftSkill):
     def connected(self):
         return self.bridge is not None
 
-    def _connect_to_bridge(self):
+    def _register_with_bridge(self):
+        self.speak_dialog('connect.to.bridge')
+        i = 0
+        while i < 30:
+            sleep(1)
+            try:
+                self.bridge = Bridge(self.ip)
+            except PhueRegistrationException:
+                continue
+            else:
+                break
+        if not self.connected:
+            self.speak_dialog('failed.to.register')
+            return False
+        else:
+            self.speak_dialog('successfully.registered')
+
+    def _connect_to_bridge(self, acknowledge_successful_connection=False):
         try:
-            self.ip = self.config.get('ip', '')
+            self.ip = self.config.get('ip')
             if self.ip == '':
+                self.user_supplied_ip = False
                 self.ip = _discover_bridge()
             self.bridge = Bridge(self.ip, self.username)
-            self.username = self.bridge.username
         except DeviceNotFoundException:
             self.speak_dialog('bridge.not.found')
             return False
         except PhueRegistrationException:
-            self.speak_dialog('connect.to.bridge')
-            i = 0
-            while i < 30:
-                sleep(1)
-                try:
-                    self.bridge = Bridge(self.ip)
-                except PhueRegistrationException:
-                    continue
-                else:
-                    break
-            if not self.connected:
-                self.speak_dialog('failed.to.register')
-                return False
+            self._register_with_bridge()
+        try:
+            self.all_lights = Group(self.bridge, 0)
+            self.username = self.bridge.username
+        except Exception as e:
+            if 'No route to host' in e.args:
+                self.speak_dialog('no.route')
             else:
-                self.speak_dialog('successfully.registered')
-        self.all_lights = Group(self.bridge, 0)
+                self.speak_dialog('failed.to.connect')
+            return False
+        if acknowledge_successful_connection:
+            self.speak_dialog('successfully.connected')
         return True
 
     def initialize(self):
@@ -136,9 +150,13 @@ class PhillipsHueSkill(MycroftSkill):
                 if isinstance(e, PhueRequestTimeout):
                     self.speak_dialog('unable.to.perform.action')
                 elif 'No route to host' in e.args:
-                    if not self.config.get('ip', '') == '':
+                    if self.user_supplied_ip:
                         self.speak_dialog('no.route')
                         return
+                    else:
+                        self.speak_dialog('could.not.communicate')
+                        if self._connect_to_bridge(True):
+                            self.handle_intent(message)
                 else:
                     raise
 
@@ -199,15 +217,12 @@ class PhillipsHueSkill(MycroftSkill):
             color_temperature if color_temperature < 6500 else 6500
 
     def handle_connect_lights_intent(self, message):
-        if not self.config.get('ip', '') == '':
+        if self.user_supplied_ip:
             self.speak_dialog('ip.in.config')
             return
         if self.verbose:
             self.speak_dialog('connecting')
-        if self._connect_to_bridge():
-            self.speak_dialog('successfully.connected')
-        else:
-            self.speak_dialog('failed.to.connect')
+        self._connect_to_bridge(acknowledge_successful_connection=True)
 
     def stop(self):
         pass
