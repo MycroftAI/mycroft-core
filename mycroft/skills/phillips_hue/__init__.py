@@ -22,17 +22,9 @@ class PhillipsHueSkill(MycroftSkill):
 
     def __init__(self):
         super(PhillipsHueSkill, self).__init__(name="PhillipsHueSkill")
-        self.brightness_step = self.config.get('brightness_step', '')
-        if self.brightness_step == '':
-            self.brightness_step = 50
-        else:
-            self.brightness_step = int(self.brightness_step)
+        self.brightness_step = int(self.config.get('brightness_step'))
         self.color_temperature_step =\
-            self.config.get('color_temperature_step', '')
-        if self.color_temperature_step == '':
-            self.color_temperature_step = 1000
-        else:
-            self.color_temperature_step = int(self.color_temperature_step)
+            int(self.config.get('color_temperature_step'))
         self.verbose = True if self.config.get('verbose') == 'True' else False
         self.username = self.config.get('username', '')
         if self.username == '':
