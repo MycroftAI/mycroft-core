@@ -1,0 +1,2 @@
+lights to (?P<Scene>.*)
+(activate|set) (seen|scene) (?P<Scene>.*)

@@ -2,6 +2,7 @@ from adapt.intent import IntentBuilder
 from mycroft.skills.core import MycroftSkill
 from mycroft.util.log import getLogger
 from os.path import dirname
+from os.path import join
 from phue import Bridge
 from phue import Group
 from phue import PhueRegistrationException
@@ -16,6 +17,28 @@ LOGGER = getLogger(__name__)
 
 class DeviceNotFoundException(Exception):
     pass
+
+
+def intent_handler(handler_function):
+    def handler(self, message):
+        if message.message_type == 'ConnectLightsIntent' \
+                or self.connected or self._connect_to_bridge():
+            try:
+                handler_function(self, message)
+            except Exception as e:
+                if isinstance(e, PhueRequestTimeout):
+                    self.speak_dialog('unable.to.perform.action')
+                elif 'No route to host' in e.args:
+                    if self.user_supplied_ip:
+                        self.speak_dialog('no.route')
+                        return
+                    else:
+                        self.speak_dialog('could.not.communicate')
+                        if self._connect_to_bridge(True):
+                            self.handle_intent(message)
+                else:
+                    raise
+    return handler
 
 
 class PhillipsHueSkill(MycroftSkill):
@@ -82,94 +105,66 @@ class PhillipsHueSkill(MycroftSkill):
 
     def initialize(self):
         self.load_data_files(dirname(__file__))
+        self.load_regex_files(join(dirname(__file__), 'regex', self.lang))
 
         turn_off_intent = IntentBuilder("TurnOffIntent")\
             .require("TurnOffKeyword").build()
-        self.register_intent(turn_off_intent, self.handle_intent)
+        self.register_intent(turn_off_intent, self.handle_turn_off_intent)
 
         turn_on_intent = IntentBuilder("TurnOnIntent")\
             .require("TurnOnKeyword").build()
-        self.register_intent(turn_on_intent, self.handle_intent)
+        self.register_intent(turn_on_intent, self.handle_turn_on_intent)
 
         activate_scene_intent = IntentBuilder("ActivateSceneIntent")\
-            .require("ActivateSceneKeyword").build()
+            .require("ActivateSceneKeyword")\
+            .require("Scene").build()
         self.register_intent(activate_scene_intent,
-                             self.handle_intent)
+                             self.handle_activate_scene_intent)
 
         decrease_brightness_intent = IntentBuilder("DecreaseBrightnessIntent")\
             .require("DecreaseBrightnessKeyword").build()
         self.register_intent(decrease_brightness_intent,
-                             self.handle_intent)
+                             self.handle_decrease_brightness_intent)
 
         increase_brightness_intent = IntentBuilder("IncreaseBrightnessIntent")\
-            .require("IncreaseBrightnessKeyword").build()
+            .require("IncreaseKeyword")\
+            .require("LightsKeyword")\
+            .optionally("BrightnessKeyword")\
+            .build()
         self.register_intent(increase_brightness_intent,
-                             self.handle_intent)
+                             self.handle_increase_brightness_intent)
 
         decrease_color_temperature_intent =\
             IntentBuilder("DecreaseColorTemperatureIntent")\
             .require("DecreaseColorTemperatureKeyword").build()
         self.register_intent(decrease_color_temperature_intent,
-                             self.handle_intent)
+                             self.handle_decrease_color_temperature_intent)
 
         increase_color_temperature_intent =\
             IntentBuilder("IncreaseColorTemperatureIntent")\
             .require("IncreaseColorTemperatureKeyword").build()
         self.register_intent(increase_color_temperature_intent,
-                             self.handle_intent)
+                             self.handle_increase_color_temperature_intent)
 
         connect_lights_intent = \
             IntentBuilder("ConnectLightsIntent") \
             .require("ConnectLightsKeyword").build()
         self.register_intent(connect_lights_intent,
-                             self.handle_intent)
+                             self.handle_connect_lights_intent)
 
-    def handle_intent(self, message):
-        if message.message_type == 'ConnectLightsIntent'\
-                or self.connected or self._connect_to_bridge():
-            try:
-                if message.message_type == "TurnOffIntent":
-                    self.handle_turn_off_intent(message)
-                elif message.message_type == "TurnOnIntent":
-                    self.handle_turn_on_intent(message)
-                elif message.message_type == "ActivateSceneIntent":
-                    self.handle_activate_scene_intent(message)
-                elif message.message_type == "DecreaseBrightnessIntent":
-                    self.handle_decrease_brightness_intent(message)
-                elif message.message_type == "IncreaseBrightnessIntent":
-                    self.handle_increase_brightness_intent(message)
-                elif message.message_type == "DecreaseColorTemperatureIntent":
-                    self.handle_decrease_color_temperature_intent(message)
-                elif message.message_type == "IncreaseColorTemperatureIntent":
-                    self.handle_increase_color_temperature_intent(message)
-                elif message.message_type == "ConnectLightsIntent":
-                    self.handle_connect_lights_intent(message)
-                else:
-                    raise Exception('No matching intent handler')
-            except Exception as e:
-                if isinstance(e, PhueRequestTimeout):
-                    self.speak_dialog('unable.to.perform.action')
-                elif 'No route to host' in e.args:
-                    if self.user_supplied_ip:
-                        self.speak_dialog('no.route')
-                        return
-                    else:
-                        self.speak_dialog('could.not.communicate')
-                        if self._connect_to_bridge(True):
-                            self.handle_intent(message)
-                else:
-                    raise
-
+    @intent_handler
     def handle_turn_off_intent(self, message):
         if self.verbose:
             self.speak_dialog('turn.off')
         self.all_lights.on = False
 
+    @intent_handler
     def handle_turn_on_intent(self, message):
         if self.verbose:
             self.speak_dialog('turn.on')
         self.all_lights.on = True
 
+    @intent_handler
     def handle_activate_scene_intent(self, message):
         keyword_len = len(message.metadata['ActivateSceneKeyword'])
         scene_name = message.metadata['utterance'][keyword_len:].strip()
@@ -187,12 +182,14 @@ class PhillipsHueSkill(MycroftSkill):
                 self.speak_dialog('scene.not.found',
                                   {'scene': scene_name})
 
+    @intent_handler
     def handle_decrease_brightness_intent(self, message):
         if self.verbose:
             self.speak_dialog('decrease.brightness')
         brightness = self.all_lights.brightness - self.brightness_step
         self.all_lights.brightness = brightness if brightness > 0 else 0
 
+    @intent_handler
     def handle_increase_brightness_intent(self, message):
         if self.verbose:
             self.speak_dialog('increase.brightness')
@@ -200,6 +197,7 @@ class PhillipsHueSkill(MycroftSkill):
         self.all_lights.brightness =\
             brightness if brightness < 255 else 254
 
+    @intent_handler
     def handle_decrease_color_temperature_intent(self, message):
         if self.verbose:
             self.speak_dialog('decrease.color.temperature')
@@ -208,6 +206,7 @@ class PhillipsHueSkill(MycroftSkill):
         self.all_lights.colortemp_k =\
             color_temperature if color_temperature > 2000 else 2000
 
+    @intent_handler
     def handle_increase_color_temperature_intent(self, message):
         if self.verbose:
             self.speak_dialog('increase.color.temperature')
@@ -216,6 +215,7 @@ class PhillipsHueSkill(MycroftSkill):
         self.all_lights.colortemp_k =\
             color_temperature if color_temperature < 6500 else 6500
 
+    @intent_handler
     def handle_connect_lights_intent(self, message):
         if self.user_supplied_ip:
             self.speak_dialog('ip.in.config')
