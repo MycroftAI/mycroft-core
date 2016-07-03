@@ -24,7 +24,9 @@ def intent_handler(handler_function):
         if message.message_type == 'ConnectLightsIntent' \
                 or self.connected or self._connect_to_bridge():
             try:
-                handler_function(self, message)
+                dialog = handler_function(self, message)
+                if self.verbose:
+                    self.speak_dialog(dialog)
             except Exception as e:
                 if isinstance(e, PhueRequestTimeout):
                     self.speak_dialog('unable.to.perform.action')
@@ -110,62 +112,53 @@ class PhillipsHueSkill(MycroftSkill):
         self.load_data_files(dirname(__file__))
         self.load_regex_files(join(dirname(__file__), 'regex', self.lang))
 
-        turn_off_intent = IntentBuilder("TurnOffIntent")\
-            .require("TurnOffKeyword").build()
-        self.register_intent(turn_off_intent, self.handle_turn_off_intent)
-
-        turn_on_intent = IntentBuilder("TurnOnIntent")\
-            .require("TurnOnKeyword").build()
-        self.register_intent(turn_on_intent, self.handle_turn_on_intent)
+        toggle_intent = IntentBuilder("ToggleIntent") \
+            .one_of("OffKeyword", "OnKeyword")\
+            .require("LightsKeyword")\
+            .build()
+        self.register_intent(toggle_intent, self.handle_toggle_intent)
 
         activate_scene_intent = IntentBuilder("ActivateSceneIntent")\
             .require("ActivateSceneKeyword")\
-            .require("Scene").build()
+            .require("Scene")\
+            .build()
         self.register_intent(activate_scene_intent,
                              self.handle_activate_scene_intent)
 
-        decrease_brightness_intent = IntentBuilder("DecreaseBrightnessIntent")\
-            .require("DecreaseBrightnessKeyword").build()
-        self.register_intent(decrease_brightness_intent,
-                             self.handle_decrease_brightness_intent)
-
-        increase_brightness_intent = IntentBuilder("IncreaseBrightnessIntent")\
-            .require("IncreaseKeyword")\
+        adjust_brightness_intent = IntentBuilder("AdjustBrightnessIntent")\
+            .one_of("IncreaseKeyword", "DecreaseKeyword", "DimKeyword")\
             .require("LightsKeyword")\
             .optionally("BrightnessKeyword")\
             .build()
-        self.register_intent(increase_brightness_intent,
-                             self.handle_increase_brightness_intent)
+        self.register_intent(adjust_brightness_intent,
+                             self.handle_adjust_brightness_intent)
 
-        decrease_color_temperature_intent =\
-            IntentBuilder("DecreaseColorTemperatureIntent")\
-            .require("DecreaseColorTemperatureKeyword").build()
-        self.register_intent(decrease_color_temperature_intent,
-                             self.handle_decrease_color_temperature_intent)
-
-        increase_color_temperature_intent =\
-            IntentBuilder("IncreaseColorTemperatureIntent")\
-            .require("IncreaseColorTemperatureKeyword").build()
-        self.register_intent(increase_color_temperature_intent,
-                             self.handle_increase_color_temperature_intent)
+        adjust_color_temperature_intent =\
+            IntentBuilder("AdjustColorTemperatureIntent")\
+            .one_of("IncreaseKeyword", "DecreaseKeyword")\
+            .require("LightsKeyword")\
+            .require("ColorTemperatureKeyword")\
+            .build()
+        self.register_intent(adjust_color_temperature_intent,
+                             self.handle_adjust_color_temperature_intent)
 
         connect_lights_intent = \
             IntentBuilder("ConnectLightsIntent") \
-            .require("ConnectLightsKeyword").build()
+            .require("ConnectKeyword")\
+            .require("LightsKeyword")\
+            .build()
         self.register_intent(connect_lights_intent,
                              self.handle_connect_lights_intent)
 
     @intent_handler
-    def handle_turn_off_intent(self, message):
-        if self.verbose:
-            self.speak_dialog('turn.off')
-        self.all_lights.on = False
-
-    @intent_handler
-    def handle_turn_on_intent(self, message):
-        if self.verbose:
-            self.speak_dialog('turn.on')
-        self.all_lights.on = True
+    def handle_toggle_intent(self, message):
+        if "OffKeyword" in message.metadata:
+            dialog = 'turn.off'
+            self.all_lights.on = False
+        else:
+            dialog = 'turn.on'
+            self.all_lights.on = True
+        return dialog
 
     @intent_handler
     def handle_activate_scene_intent(self, message):
@@ -186,37 +179,33 @@ class PhillipsHueSkill(MycroftSkill):
                                   {'scene': scene_name})
 
     @intent_handler
-    def handle_decrease_brightness_intent(self, message):
-        if self.verbose:
-            self.speak_dialog('decrease.brightness')
-        brightness = self.all_lights.brightness - self.brightness_step
-        self.all_lights.brightness = brightness if brightness > 0 else 0
+    def handle_adjust_brightness_intent(self, message):
+        if "IncreaseKeyword" in message.metadata:
+            brightness = self.all_lights.brightness + self.brightness_step
+            self.all_lights.brightness = \
+                brightness if brightness < 255 else 254
+            dialog = 'increase.brightness'
+        else:
+            brightness = self.all_lights.brightness - self.brightness_step
+            self.all_lights.brightness = brightness if brightness > 0 else 0
+            dialog = 'decrease.brightness'
+        return dialog
 
     @intent_handler
-    def handle_increase_brightness_intent(self, message):
-        if self.verbose:
-            self.speak_dialog('increase.brightness')
-        brightness = self.all_lights.brightness + self.brightness_step
-        self.all_lights.brightness =\
-            brightness if brightness < 255 else 254
-
-    @intent_handler
-    def handle_decrease_color_temperature_intent(self, message):
-        if self.verbose:
-            self.speak_dialog('decrease.color.temperature')
-        color_temperature =\
-            self.all_lights.colortemp_k - self.color_temperature_step
-        self.all_lights.colortemp_k =\
-            color_temperature if color_temperature > 2000 else 2000
-
-    @intent_handler
-    def handle_increase_color_temperature_intent(self, message):
-        if self.verbose:
-            self.speak_dialog('increase.color.temperature')
-        color_temperature =\
-            self.all_lights.colortemp_k + self.color_temperature_step
-        self.all_lights.colortemp_k =\
-            color_temperature if color_temperature < 6500 else 6500
+    def handle_adjust_color_temperature_intent(self, message):
+        if "IncreaseKeyword" in message.metadata:
+            color_temperature = \
+                self.all_lights.colortemp_k + self.color_temperature_step
+            self.all_lights.colortemp_k = \
+                color_temperature if color_temperature < 6500 else 6500
+            dialog = 'increase.color.temperature'
+        else:
+            color_temperature = \
+                self.all_lights.colortemp_k - self.color_temperature_step
+            self.all_lights.colortemp_k = \
+                color_temperature if color_temperature > 2000 else 2000
+            dialog = 'decrease.color.temperature'
+        return dialog
 
     @intent_handler
     def handle_connect_lights_intent(self, message):
