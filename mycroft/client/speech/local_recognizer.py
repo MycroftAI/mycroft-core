@@ -27,25 +27,25 @@ BASEDIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class LocalRecognizer(object):
-    def __init__(self, sample_rate=16000, lang="en-us",
-                 key_phrase="hey mycroft"):
+    def __init__(self, key_phrase, threshold, sample_rate=16000, lang="en-us"):
         self.lang = lang
         self.key_phrase = key_phrase
         self.sample_rate = sample_rate
-        self.configure()
+        self.threshold = threshold
+        self.decoder = Decoder(self.create_config())
 
-    def configure(self):
+    def create_config(self):
         config = Decoder.default_config()
         config.set_string('-hmm', os.path.join(BASEDIR, 'model', self.lang,
                                                'hmm'))
         config.set_string('-dict', os.path.join(BASEDIR, 'model', self.lang,
                                                 'mycroft-en-us.dict'))
         config.set_string('-keyphrase', self.key_phrase)
-        config.set_float('-kws_threshold', float('1e-90'))
+        config.set_float('-kws_threshold', float(self.threshold))
         config.set_float('-samprate', self.sample_rate)
         config.set_int('-nfft', 2048)
         config.set_string('-logfn', '/dev/null')
-        self.decoder = Decoder(config)
+        return config
 
     def transcribe(self, byte_data, metrics=None):
         start = time.time()
