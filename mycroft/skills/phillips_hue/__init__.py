@@ -53,13 +53,16 @@ class PhillipsHueSkill(MycroftSkill):
         if self.username == '':
             self.username = None
         self.ip = None  # set in _connect_to_bridge
-        self.user_supplied_ip = True
         self.bridge = None
         self.all_lights = None
 
     @property
     def connected(self):
         return self.bridge is not None
+
+    @property
+    def user_supplied_ip(self):
+        return self.config.get('ip') != ''
 
     def _register_with_bridge(self):
         self.speak_dialog('connect.to.bridge')
@@ -80,10 +83,10 @@ class PhillipsHueSkill(MycroftSkill):
 
     def _connect_to_bridge(self, acknowledge_successful_connection=False):
         try:
-            self.ip = self.config.get('ip')
-            if self.ip == '':
-                self.user_supplied_ip = False
+            if not self.user_supplied_ip:
                 self.ip = _discover_bridge()
+            else:
+                self.ip = self.config.get('ip')
             self.bridge = Bridge(self.ip, self.username)
         except DeviceNotFoundException:
             self.speak_dialog('bridge.not.found')
