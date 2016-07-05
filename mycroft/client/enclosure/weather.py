@@ -39,9 +39,8 @@ class EnclosureWeather:
         self.client.on('enclosure.weather.display', self.display)
 
     def display(self, event=None):
-        img_code, temp = 0, 0
         if event and event.metadata:
-            img_code = event.metadata.get("img_code", img_code)
-            temp = event.metadata.get("temp", temp)
-        msg = "weather.display=" + str(img_code) + str(temp)
-        self.writer.write(msg)
+            img_code = event.metadata.get("img_code")
+            temp = event.metadata.get("temp")
+            msg = "weather.display=" + str(img_code) + str(temp)
+            self.writer.write(msg)
