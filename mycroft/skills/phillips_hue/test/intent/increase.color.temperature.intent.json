@@ -1,7 +1,9 @@
 {
   "utterance": "increase the color temperature of my lights",
-  "intent_type": "IncreaseColorTemperatureIntent",
+  "intent_type": "AdjustColorTemperatureIntent",
   "intent": {
-    "IncreaseColorTemperatureKeyword": "increase the color temperature of my lights"
+    "IncreaseKeyword": "increase",
+    "LightsKeyword": "lights",
+    "ColorTemperatureKeyword":"color temperature"
   }
 }

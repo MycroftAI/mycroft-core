@@ -2,7 +2,7 @@
   "utterance": "turn up the lights",
   "intent_type": "IncreaseBrightnessIntent",
   "intent": {
-    "IncreaseKeyword": "turn up",
+    "IncreaseKeyword": "up",
     "LightsKeyword": "lights"
   }
 }
