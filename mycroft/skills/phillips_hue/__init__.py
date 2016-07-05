@@ -25,8 +25,6 @@ def intent_handler(handler_function):
                 or self.connected or self._connect_to_bridge():
             try:
                 dialog = handler_function(self, message)
-                if self.verbose:
-                    self.speak_dialog(dialog)
             except Exception as e:
                 if isinstance(e, PhueRequestTimeout):
                     self.speak_dialog('unable.to.perform.action')
@@ -158,7 +156,8 @@ class PhillipsHueSkill(MycroftSkill):
         else:
             dialog = 'turn.on'
             self.all_lights.on = True
-        return dialog
+        if self.verbose:
+            self.speak_dialog(dialog)
 
     @intent_handler
     def handle_activate_scene_intent(self, message):
@@ -185,7 +184,8 @@ class PhillipsHueSkill(MycroftSkill):
             brightness = self.all_lights.brightness - self.brightness_step
             self.all_lights.brightness = brightness if brightness > 0 else 0
             dialog = 'decrease.brightness'
-        return dialog
+        if self.verbose:
+            self.speak_dialog(dialog)
 
     @intent_handler
     def handle_adjust_color_temperature_intent(self, message):
@@ -201,7 +201,8 @@ class PhillipsHueSkill(MycroftSkill):
             self.all_lights.colortemp_k = \
                 color_temperature if color_temperature > 2000 else 2000
             dialog = 'decrease.color.temperature'
-        return dialog
+        if self.verbose:
+            self.speak_dialog(dialog)
 
     @intent_handler
     def handle_connect_lights_intent(self, message):
