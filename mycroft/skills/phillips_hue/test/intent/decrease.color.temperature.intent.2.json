@@ -1,0 +1,9 @@
+{
+  "utterance": "turn the color temperature of the lights down",
+  "intent_type": "AdjustColorTemperatureIntent",
+  "intent": {
+    "DecreaseKeyword": "down",
+    "ColorTemperatureKeyword": "color temperature",
+    "LightsKeyword":"lights"
+  }
+}
