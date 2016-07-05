@@ -162,21 +162,17 @@ class PhillipsHueSkill(MycroftSkill):
 
     @intent_handler
     def handle_activate_scene_intent(self, message):
-        keyword_len = len(message.metadata['ActivateSceneKeyword'])
-        scene_name = message.metadata['utterance'][keyword_len:].strip()
-        if scene_name == '':
-            self.speak_dialog('no.scene.name')
-        else:
-            scene_id = self.bridge.get_scene_id_from_name(
-                scene_name, case_sensitive=False)
-            if scene_id:
-                if self.verbose:
-                    self.speak_dialog('activate.scene',
-                                      {'scene': scene_name})
-                self.bridge.activate_scene(scene_id)
-            else:
-                self.speak_dialog('scene.not.found',
+        scene_name = message.metadata['Scene']
+        scene_id = self.bridge.get_scene_id_from_name(
+            scene_name, case_sensitive=False)
+        if scene_id:
+            if self.verbose:
+                self.speak_dialog('activate.scene',
                                   {'scene': scene_name})
+            self.bridge.activate_scene(scene_id)
+        else:
+            self.speak_dialog('scene.not.found',
+                              {'scene': scene_name})
 
     @intent_handler
     def handle_adjust_brightness_intent(self, message):
