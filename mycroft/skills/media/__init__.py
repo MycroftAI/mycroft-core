@@ -51,9 +51,6 @@ class MediaSkill(MycroftSkill):
         intent = IntentBuilder('PrevIntent').require('PrevKeyword')
         self.register_intent(intent, self.handle_prev)
 
-        intent = IntentBuilder('StopIntent').require('StopKeyword')
-        self.register_intent(intent, self.handle_stop)
-
         intent = IntentBuilder('PauseIntent').require('PauseKeyword')
         self.register_intent(intent, self.handle_pause)
 
@@ -117,7 +114,7 @@ class MediaSkill(MycroftSkill):
         logger.info('handle_stop not implemented')
 
     def stop(self):
-        logger.debug('No stop method implemented')
+        self.handle_stop(None)
 
     def lower_volume(self, message):
         logger.debug('Lower volume not implemented')
