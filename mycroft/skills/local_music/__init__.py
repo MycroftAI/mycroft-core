@@ -116,8 +116,8 @@ class LocalMusic(MediaSkill):
     def handle_pause(self, message):
         self.mopidy.pause()
 
-    def handle_resume(self, message):
-        self.mopidy.resume()
+    def handle_play(self, message):
+        self.server.resume()
 
     def lower_volume(self, message):
         logger.info('lowering volume')

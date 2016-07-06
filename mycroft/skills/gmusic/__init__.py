@@ -121,7 +121,7 @@ class GMusic(MediaSkill):
     def handle_pause(self, message):
         self.mopidy.pause()
 
-    def handle_resume(self, message):
+    def handle_play(self, message):
         self.mopidy.resume()
 
     def lower_volume(self, message):
