@@ -55,7 +55,7 @@ class MediaSkill(MycroftSkill):
         self.register_intent(intent, self.handle_pause)
 
         intent = IntentBuilder('PlayIntent') \
-                    .one_of('PlayKeyword', 'ResumeKeyword')
+            .one_of('PlayKeyword', 'ResumeKeyword')
         self.register_intent(intent, self.handle_play)
 
         intent = IntentBuilder('CurrentlyPlayingIntent')\
