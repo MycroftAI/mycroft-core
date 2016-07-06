@@ -78,21 +78,22 @@ class MediaSkill(MycroftSkill):
            handle_next() should be implemented by the skill to switch to next
            song/channel/video in queue.
         """
-        logger.info('handle_next not implemented')
+        logger.debug('handle_next not implemented in ' + self.name)
 
     def handle_prev(self, message):
         """
            handle_prev() should be implemented by the skill to switch to
            previous song/channel/video in queue
         """
-        logger.info('handle_prev not implemented')
+        logger.debug('handle_prev not implemented in ' + self.name)
 
     def handle_currently_playing(self, message):
         """
            handle_currently_playing() should be implemented to tell the user
            what is currently playing
         """
-        logger.info('handle_currently_playing not implemented')
+        logger.debug('handle_currently_playing not implemented in ' +
+                     self.name)
 
     def play(self):
         """ Stop currently playing media before starting the new. """
@@ -101,26 +102,26 @@ class MediaSkill(MycroftSkill):
 
     def handle_pause(self, message):
         """ handle_pause() should pause currently playing media """
-        logger.info('handle_pause not implemented')
+        logger.debug('handle_pause not implemented in ' + self.name)
 
     def handle_resume(self, message):
         """ handle_resume() should resume paused media """
-        logger.info('handle_resume not implemented')
+        logger.debug('handle_resume not implemented in ' + self.name)
 
     def handle_stop(self, message):
         """
            handle_stop() should be implemented to stop currently playing media
         """
-        logger.info('handle_stop not implemented')
+        logger.debug('handle_stop not implemented in' + self.name)
 
     def stop(self):
         self.handle_stop(None)
 
     def lower_volume(self, message):
-        logger.debug('Lower volume not implemented')
+        logger.debug('Lower volume not implemented in ' + self.name)
 
     def restore_volume(self, message):
-        logger.debug('Restore volume not implemented')
+        logger.debug('Restore volume not implemented in ' + self.name)
 
     def _set_sink(self, message):
         """ Selects the output device """
