@@ -49,7 +49,7 @@ class Spotify(MediaSkill):
         self.register_regex("(?P<Source>.*)")
         intent = IntentBuilder('PlayFromIntent' + self.name)\
             .require('PlayKeyword')\
-            .optionally('Source')\
+            .require('Source')\
             .require('FromKeyword')\
             .require('NameKeyword')\
             .build()
@@ -106,7 +106,7 @@ class Spotify(MediaSkill):
             if media is not None:
                 self.prepare(media)
                 self.play()
-        else:
+        elif fr is not None:
             name = message.metadata.get('Source') + ' ' + fr + ' ' + skill
             self.tracks = self.get_available(name)
             if self.tracks is not None:

@@ -60,7 +60,6 @@ class GMusic(MediaSkill):
         intent = IntentBuilder('PlayFromIntent' + self.name)\
             .require('PlayKeyword')\
             .require('PlaylistKeyword')\
-            .require('FromKeyword')\
             .require('NameKeyword')\
             .build()
         self.register_intent(intent, self.handle_play_playlist)
