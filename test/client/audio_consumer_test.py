@@ -61,7 +61,7 @@ class AudioConsumerTest(unittest.TestCase):
             self.queue,
             self.loop,
             LocalRecognizer(self.loop.wakeup_recognizer.key_phrase,
-                            self.loop.wakeup_recognizer.phonemes, "1e-15"),
+                            self.loop.wakeup_recognizer.phonemes, "1e-16"),
             self.loop.mycroft_recognizer,
             RemoteRecognizerWrapperFactory.wrap_recognizer(
                 self.recognizer, 'google'))
