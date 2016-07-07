@@ -28,7 +28,7 @@ class MediaSkill(MycroftSkill):
         super(MediaSkill, self).__init__(name)
         self.isPlaying = False
         config = ConfigurationManager.get()
-        self.base_conf = config.get('Media')
+        self.base_conf = config.get('MediaSkill')
 
     def initialize(self):
         logger.info('Initializing MediaSkill commons')
