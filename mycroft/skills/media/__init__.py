@@ -36,7 +36,6 @@ class MediaSkill(MycroftSkill):
                     'vocab', self.lang))
         self.load_vocab_files(join(dirname(__file__), 'vocab', self.lang))
 
-        self.register_vocabulary(self.name, 'NameKeyword')
         self._register_common_intents()
         self._register_event_handlers()
 
