@@ -140,7 +140,7 @@ cat > ${DEB_DIR}/etc/mycroft/mycroft.ini << EOM
 [tts]
 module = "mimic"
 mimic.path = "/usr/local/bin/mimic"
-mimic.voice = "ap"
+mimic.voice = "/usr/local/lib/python2.7/site-packages/Mycroft-${VERSION}-py2.7.egg/mycroft/tts/mycroft_voice_4.0.flitevox"
 
 [metrics_client]
 enabled = True
