@@ -1,2 +1,2 @@
-lights to (?P<Scene>.*)
-(activate|set) (seen|scene) (?P<Scene>.*)
+set (the|my)? lights to (?P<Scene>.*)
+set (the|my)? (?P<Group>.*) to (?P<Scene>.*)

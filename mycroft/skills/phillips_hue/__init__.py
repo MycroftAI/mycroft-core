@@ -128,8 +128,8 @@ class PhillipsHueSkill(MycroftSkill):
         self.register_intent(toggle_intent, self.handle_toggle_intent)
 
         activate_scene_intent = IntentBuilder("ActivateSceneIntent")\
-            .require("ActivateSceneKeyword")\
             .require("Scene")\
+            .optionally("Group")\
             .build()
         self.register_intent(activate_scene_intent,
                              self.handle_activate_scene_intent)
@@ -172,6 +172,21 @@ class PhillipsHueSkill(MycroftSkill):
 
     @intent_handler
     def handle_activate_scene_intent(self, message):
+        group_id = message.metadata.get('Group')
+        if group_id:
+            groups = self.bridge.get_group()
+            group_id = group_id.lower()
+            for key, group in groups.iteritems():
+                if group['name'].lower() == group_id:
+                    group_id = int(key)
+                    break
+            else:
+                self.speak_dialog('could.not.find.group',
+                                  {'name': group_id})
+                return
+        else:
+            group_id = self.default_group.group_id
+
         scene_name = message.metadata['Scene']
         scene_id = self.bridge.get_scene_id_from_name(
             scene_name, case_sensitive=False)
@@ -179,7 +194,7 @@ class PhillipsHueSkill(MycroftSkill):
             if self.verbose:
                 self.speak_dialog('activate.scene',
                                   {'scene': scene_name})
-            self.bridge.activate_scene(scene_id)
+            self.bridge.activate_scene(scene_id, group_id)
         else:
             self.speak_dialog('scene.not.found',
                               {'scene': scene_name})
