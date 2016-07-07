@@ -27,19 +27,27 @@ BASEDIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class LocalRecognizer(object):
-    def __init__(self, key_phrase, threshold, sample_rate=16000, lang="en-us"):
+    def __init__(self, key_phrase, phonemes, threshold, sample_rate=16000,
+                 lang="en-us"):
         self.lang = lang
         self.key_phrase = key_phrase
         self.sample_rate = sample_rate
         self.threshold = threshold
-        self.decoder = Decoder(self.create_config())
+        dict_name = self.create_dict(key_phrase, phonemes)
+        self.decoder = Decoder(self.create_config(dict_name))
 
-    def create_config(self):
+    def create_dict(self, key_phrase, phonemes):
+        folder = os.path.join(BASEDIR, 'model', self.lang)
+        file_name = os.path.join(folder, key_phrase + ".dict")
+        with open(file_name, 'w') as f:
+            f.write(key_phrase + ' ' + phonemes)
+        return file_name
+
+    def create_config(self, dict_name):
         config = Decoder.default_config()
         config.set_string('-hmm', os.path.join(BASEDIR, 'model', self.lang,
                                                'hmm'))
-        config.set_string('-dict', os.path.join(BASEDIR, 'model', self.lang,
-                                                'mycroft-en-us.dict'))
+        config.set_string('-dict', dict_name)
         config.set_string('-keyphrase', self.key_phrase)
         config.set_float('-kws_threshold', float(self.threshold))
         config.set_float('-samprate', self.sample_rate)
