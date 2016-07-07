@@ -8,6 +8,7 @@ from phue import Group
 from phue import PhueRegistrationException
 from phue import PhueRequestTimeout
 from time import sleep
+
 import socket
 
 __author__ = 'ChristopherRogers1991'
@@ -24,7 +25,7 @@ def intent_handler(handler_function):
         if message.message_type == 'ConnectLightsIntent' \
                 or self.connected or self._connect_to_bridge():
             try:
-                dialog = handler_function(self, message)
+                handler_function(self, message)
             except Exception as e:
                 if isinstance(e, PhueRequestTimeout):
                     self.speak_dialog('unable.to.perform.action')
@@ -49,12 +50,12 @@ class PhillipsHueSkill(MycroftSkill):
         self.color_temperature_step =\
             int(self.config.get('color_temperature_step'))
         self.verbose = True if self.config.get('verbose') == 'True' else False
-        self.username = self.config.get('username', '')
+        self.username = self.config.get('username')
         if self.username == '':
             self.username = None
         self.ip = None  # set in _connect_to_bridge
         self.bridge = None
-        self.all_lights = None
+        self.default_group = None
 
     @property
     def connected(self):
@@ -88,23 +89,33 @@ class PhillipsHueSkill(MycroftSkill):
             else:
                 self.ip = self.config.get('ip')
             self.bridge = Bridge(self.ip, self.username)
+            self.username = self.bridge.username
+            if not self.default_group:
+                self._set_default_group(self.config.get('default_group'))
         except DeviceNotFoundException:
             self.speak_dialog('bridge.not.found')
             return False
         except PhueRegistrationException:
             self._register_with_bridge()
-        try:
-            self.all_lights = Group(self.bridge, 0)
-            self.username = self.bridge.username
         except Exception as e:
             if 'No route to host' in e.args:
                 self.speak_dialog('no.route')
             else:
                 self.speak_dialog('failed.to.connect')
             return False
+
         if acknowledge_successful_connection:
             self.speak_dialog('successfully.connected')
+
         return True
+
+    def _set_default_group(self, identifier):
+        try:
+            self.default_group = Group(self.bridge, identifier)
+        except LookupError:
+            self.speak_dialog('could.not.find.group', {'name': identifier})
+            self.speak_dialog('using.group.0')
+        self.default_group = Group(self.bridge, 0)
 
     def initialize(self):
         self.load_data_files(dirname(__file__))
@@ -152,10 +163,10 @@ class PhillipsHueSkill(MycroftSkill):
     def handle_toggle_intent(self, message):
         if "OffKeyword" in message.metadata:
             dialog = 'turn.off'
-            self.all_lights.on = False
+            self.default_group.on = False
         else:
             dialog = 'turn.on'
-            self.all_lights.on = True
+            self.default_group.on = True
         if self.verbose:
             self.speak_dialog(dialog)
 
@@ -176,13 +187,13 @@ class PhillipsHueSkill(MycroftSkill):
     @intent_handler
     def handle_adjust_brightness_intent(self, message):
         if "IncreaseKeyword" in message.metadata:
-            brightness = self.all_lights.brightness + self.brightness_step
-            self.all_lights.brightness = \
+            brightness = self.default_group.brightness + self.brightness_step
+            self.default_group.brightness = \
                 brightness if brightness < 255 else 254
             dialog = 'increase.brightness'
         else:
-            brightness = self.all_lights.brightness - self.brightness_step
-            self.all_lights.brightness = brightness if brightness > 0 else 0
+            brightness = self.default_group.brightness - self.brightness_step
+            self.default_group.brightness = brightness if brightness > 0 else 0
             dialog = 'decrease.brightness'
         if self.verbose:
             self.speak_dialog(dialog)
@@ -191,14 +202,14 @@ class PhillipsHueSkill(MycroftSkill):
     def handle_adjust_color_temperature_intent(self, message):
         if "IncreaseKeyword" in message.metadata:
             color_temperature = \
-                self.all_lights.colortemp_k + self.color_temperature_step
-            self.all_lights.colortemp_k = \
+                self.default_group.colortemp_k + self.color_temperature_step
+            self.default_group.colortemp_k = \
                 color_temperature if color_temperature < 6500 else 6500
             dialog = 'increase.color.temperature'
         else:
             color_temperature = \
-                self.all_lights.colortemp_k - self.color_temperature_step
-            self.all_lights.colortemp_k = \
+                self.default_group.colortemp_k - self.color_temperature_step
+            self.default_group.colortemp_k = \
                 color_temperature if color_temperature > 2000 else 2000
             dialog = 'decrease.color.temperature'
         if self.verbose:
