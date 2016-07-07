@@ -148,13 +148,8 @@ def file_frame_rate(file_name):
     frame_rate = wf.getframerate()
     wf.close()
     return frame_rate
-<<<<<<< 0088a819b42aaa3914130f5180bbdb4fa8a73aaa
 
 
-=======
-
-
->>>>>>> Fixed audio accuracy test for new LocalRecognizer constructor
 def print_ww_found_status(word, short_name):
     print("Wake word " + bold_str(word) + " - " + short_name)
 
