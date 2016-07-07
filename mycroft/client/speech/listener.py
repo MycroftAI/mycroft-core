@@ -40,6 +40,7 @@ core_config = ConfigurationManager.get().get('core')
 speech_config = ConfigurationManager.get().get('speech_client')
 listener_config = ConfigurationManager.get().get('listener')
 
+
 class AudioProducer(threading.Thread):
     """
     AudioProducer

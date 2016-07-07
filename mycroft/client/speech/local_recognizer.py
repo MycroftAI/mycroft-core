@@ -33,6 +33,7 @@ class LocalRecognizer(object):
         self.key_phrase = key_phrase
         self.sample_rate = sample_rate
         self.threshold = threshold
+        self.phonemes = phonemes
         dict_name = self.create_dict(key_phrase, phonemes)
         self.decoder = Decoder(self.create_config(dict_name))
 
