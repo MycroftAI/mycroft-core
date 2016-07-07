@@ -1,8 +1,8 @@
 {
-  "utterance": "activate scene relax",
+  "utterance": "set the kitchen to bright",
   "intent_type": "ActivateSceneIntent",
   "intent": {
-    "ActivateSceneKeyword": "activate scene",
-    "Scene": "relax"
+    "Scene": "bright",
+    "Group": "Kitchen"
   }
 }
