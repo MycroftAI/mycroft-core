@@ -46,19 +46,12 @@ class WikipediaSkill(MycroftSkill):
                  'FeedbackSearch.dialog'))
 
     def initialize(self):
-        self.load_vocab_files(join(dirname(__file__), 'vocab', 'en-us'))
-
-        prefixes = ['wiki', 'wikipedia', 'tell me about', 'tell us about',
-                    'what does wikipedia say about']  # TODO - i10n
-        self.__register_prefixed_regex(prefixes, "(?P<ArticleTitle>.*)")
+        self.load_vocab_files(join(dirname(__file__), 'vocab', self.lang))
+        self.load_regex_files(join(dirname(__file__), 'regex', self.lang))
 
         intent = IntentBuilder("WikipediaIntent").require(
             "WikipediaKeyword").require("ArticleTitle").build()
         self.register_intent(intent, self.handle_intent)
-
-    def __register_prefixed_regex(self, prefixes, suffix_regex):
-        for prefix in prefixes:
-            self.register_regex(prefix + ' ' + suffix_regex)
 
     def handle_intent(self, message):
         try:
