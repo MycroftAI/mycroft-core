@@ -23,7 +23,7 @@ then
     echo -e "\E[1m * Installing cairo...\E[0m"
     # Fetch, build, and install py2cairo.
     (   cd $CACHE
-        curl 'http://cairographics.org/releases/py2cairo-1.10.0.tar.bz2' > "py2cairo.tar.bz2"
+        curl 'https://www.cairographics.org/releases/py2cairo-1.10.0.tar.bz2' > "py2cairo.tar.bz2"
         tar -xvf py2cairo.tar.bz2
         (   cd py2cairo*
             autoreconf -ivf
