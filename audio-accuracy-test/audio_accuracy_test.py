@@ -7,6 +7,8 @@ import pyee
 import time
 from os.path import dirname, join
 from speech_recognition import AudioSource
+
+from mycroft.client.speech.listener import RecognizerLoop
 from mycroft.client.speech.local_recognizer import LocalRecognizer
 from mycroft.client.speech.mic import ResponsiveRecognizer
 from mycroft.util.log import getLogger
@@ -75,7 +77,8 @@ class FileMockMicrophone(AudioSource):
 class AudioTester(object):
     def __init__(self, samp_rate):
         print  # Pad debug messages
-        self.ww_recognizer = LocalRecognizer(samp_rate, 'en-us')
+        self.ww_recognizer = RecognizerLoop.create_mycroft_recognizer(
+            samp_rate, 'en-us')
         self.listener = ResponsiveRecognizer(self.ww_recognizer)
         print
         speech_logger.setLevel(100)  # Disables logging to clean output

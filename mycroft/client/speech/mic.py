@@ -28,8 +28,11 @@ from speech_recognition import (
     AudioData
 )
 import speech_recognition
+
+from mycroft.configuration import ConfigurationManager
 from mycroft.util.log import getLogger
 
+listener_config = ConfigurationManager.get().get('listener')
 logger = getLogger(__name__)
 __author__ = 'seanfitz'
 
@@ -143,6 +146,10 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         speech_recognition.Recognizer.__init__(self)
         self.wake_word_recognizer = wake_word_recognizer
         self.audio = pyaudio.PyAudio()
+        self.threshold_multiplier = float(
+            listener_config.get('threshold_multiplier'))
+        self.dynamic_energy_ratio = float(
+            listener_config.get('dynamic_energy_ratio'))
 
     @staticmethod
     def record_sound_chunk(source):
@@ -203,7 +210,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             num_chunks += 1
 
             energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
-            is_loud = energy > self.energy_threshold
+            test_threshold = self.energy_threshold * self.threshold_multiplier
+            is_loud = energy > test_threshold
             if is_loud:
                 noise = increase_noise(noise)
                 num_loud_chunks += 1
@@ -243,7 +251,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             chunk = self.record_sound_chunk(source)
 
             energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
-            if energy < self.energy_threshold:
+            if energy < self.energy_threshold * self.threshold_multiplier:
                 self.adjust_threshold(energy, sec_per_buffer)
 
             needs_to_grow = len(byte_data) < max_size
