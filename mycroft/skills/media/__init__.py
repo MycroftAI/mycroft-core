@@ -67,7 +67,7 @@ class MediaSkill(MycroftSkill):
            when new media is started and handlers for lowering media volume
            while mycroft is speaking.
         """
-        self.emitter.on('mycroft.media.stop', self.handle_stop)
+        self.emitter.on('mycroft.media.stop', self._media_stop)
         self.emitter.on('recognizer_loop:audio_output_start',
                         self.lower_volume)
         self.emitter.on('recognizer_loop:audio_output_end',
@@ -95,10 +95,14 @@ class MediaSkill(MycroftSkill):
         logger.debug('handle_currently_playing not implemented in ' +
                      self.name)
 
-    def play(self):
-        """ Stop currently playing media before starting the new. """
+    def before_play(self):
+        """
+           Stop currently playing media before starting the new. This method
+           should always be called before the skill starts playback.
+        """
         logger.info('Stopping currently playing media if any')
-        self.emitter.emit(Message('mycroft.media.stop'))
+        self.emitter.emit(Message('mycroft.media.stop',
+                          metadata={'origin': self.name}))
 
     def handle_pause(self, message):
         """ handle_pause() should pause currently playing media """
@@ -106,17 +110,25 @@ class MediaSkill(MycroftSkill):
 
     def handle_play(self, message):
         """ handle_play() generic play handler. Should resume paused media
-            and/or implement generic playback functionality."""
+            and/or implement generic playback functionality.
+
+            The skill creator should make sure to call before_play() here
+            if applicable"""
         logger.debug('handle_play not implemented in ' + self.name)
 
-    def handle_stop(self, message):
-        """
-           handle_stop() should be implemented to stop currently playing media
-        """
-        logger.debug('handle_stop not implemented in ' + self.name)
+    def _media_stop(self, message):
+        """ handler for 'mycroft.media.stop' """
+        origin = message.metadata.get('origin', '')
+        if origin != self.name:
+            self.stop()
 
     def stop(self):
-        self.handle_stop(None)
+        """
+           stop() should be implemented to stop currently playing media. This
+           function will be called by either the general mycroft 'stop'
+           functionallity or internal message bus communication.
+        """
+        logger.debug('Stop not implemented in ' + self.name)
 
     def lower_volume(self, message):
         logger.debug('Lower volume not implemented in ' + self.name)
