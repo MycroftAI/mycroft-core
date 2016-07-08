@@ -42,7 +42,6 @@ class SendSMSSkill(MycroftSkill):
 
     def initialize(self):
         self.load_vocab_files(join(dirname(__file__), 'vocab', self.lang))
-        self.load_regex_files(join(dirname(__file__), 'regex', self.lang))
 
         intent = IntentBuilder("SendSMSIntent").require(
             "SendSMSKeyword").require("Contact").require("Message").build()
