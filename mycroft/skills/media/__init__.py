@@ -136,6 +136,6 @@ class MediaSkill(MycroftSkill):
     def restore_volume(self, message):
         logger.debug('Restore volume not implemented in ' + self.name)
 
-    def _set_sink(self, message):
+    def _set_output_device(self, message):
         """ Selects the output device """
         pass
