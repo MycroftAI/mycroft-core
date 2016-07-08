@@ -35,7 +35,7 @@ from mycroft.util.log import getLogger
 __author__ = 'seanfitz'
 
 PRIMARY_SKILLS = ['intent', 'wake']
-BLACKLISTED_SKILLS = ["send_sms"]
+BLACKLISTED_SKILLS = ["send_sms", "media"]
 SKILLS_BASEDIR = dirname(__file__)
 THIRD_PARTY_SKILLS_DIR = "/opt/mycroft/third_party"
 
