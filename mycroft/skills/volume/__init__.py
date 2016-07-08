@@ -39,7 +39,6 @@ class VolumeSkill(MycroftSkill):
 
     def initialize(self):
         self.load_data_files(dirname(__file__))
-        self.load_regex_files(join(dirname(__file__), 'regex', self.lang))
         self.__build_set_volume()
 
     def __build_set_volume(self):
