@@ -40,7 +40,8 @@ class EnclosureWeather:
 
     def display(self, event=None):
         if event and event.metadata:
-            img_code = event.metadata.get("img_code")
-            temp = event.metadata.get("temp")
-            msg = "weather.display=" + str(img_code) + str(temp)
-            self.writer.write(msg)
+            img_code = event.metadata.get("img_code", None)
+            temp = event.metadata.get("temp", None)
+            if img_code and temp:
+                msg = "weather.display=" + str(img_code) + str(temp)
+                self.writer.write(msg)
