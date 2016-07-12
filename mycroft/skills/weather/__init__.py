@@ -19,6 +19,9 @@
 from adapt.intent import IntentBuilder
 from os.path import dirname, join
 from pyowm.exceptions.api_call_error import APICallError
+from multi_key_dict import multi_key_dict
+
+import time
 
 from mycroft.identity import IdentityManager
 from mycroft.skills.core import MycroftSkill
@@ -34,6 +37,15 @@ class WeatherSkill(MycroftSkill):
     def __init__(self):
         super(WeatherSkill, self).__init__(name="WeatherSkill")
         self.temperature = self.config['temperature']
+        self.CODES = multi_key_dict()
+        self.CODES['01d', '01n'] = 0
+        self.CODES['02d', '02n', '03d', '03n'] = 1
+        self.CODES['04d', '04n'] = 2
+        self.CODES['09d', '09n'] = 3
+        self.CODES['10d', '10n'] = 4
+        self.CODES['11d', '11n'] = 5
+        self.CODES['13d', '13n'] = 6
+        self.CODES['50d', '50n'] = 7
 
     @property
     def owm(self):
@@ -68,11 +80,19 @@ class WeatherSkill(MycroftSkill):
             location = message.metadata.get("Location", self.location)
             weather = self.owm.weather_at_place(location).get_weather()
             data = self.__build_data_condition(location, weather)
+            weather_code = str(weather.get_weather_icon_name())
+            img_code = self.CODES[weather_code]
+            temp = data['temp_current']
+            self.enclosure.activate_mouth_listeners(False)
+            self.enclosure.weather_display(img_code, temp)
             self.speak_dialog('current.weather', data)
             self.__condition_feedback(weather)
+            time.sleep(5)
+            self.enclosure.activate_mouth_listeners(True)
         except APICallError as e:
             self.__api_error(e)
         except Exception as e:
+            LOGGER.debug(e)
             LOGGER.error("Error: {0}".format(e))
 
     # TODO - Mapping from http://openweathermap.org/weather-conditions
@@ -89,7 +109,15 @@ class WeatherSkill(MycroftSkill):
             weather = self.owm.three_hours_forecast(
                 location).get_forecast().get_weathers()[0]
             data = self.__build_data_condition(location, weather)
+            weather_code = str(weather.get_weather_icon_name())
+            img_code = self.CODES[weather_code]
+            temp = data['temp_current']
+            self.enclosure.activate_mouth_listeners(False)
+            self.enclosure.weather_display(img_code, temp)
             self.speak_dialog('hour.weather', data)
+            self.__condition_feedback(weather)
+            time.sleep(5)
+            self.enclosure.activate_mouth_listeners(True)
         except APICallError as e:
             self.__api_error(e)
         except Exception as e:
@@ -102,7 +130,15 @@ class WeatherSkill(MycroftSkill):
                 location).get_forecast().get_weathers()[1]
             data = self.__build_data_condition(
                 location, weather, 'day', 'min', 'max')
+            weather_code = str(weather.get_weather_icon_name())
+            img_code = self.CODES[weather_code]
+            temp = data['temp_current']
+            self.enclosure.activate_mouth_listeners(False)
+            self.enclosure.weather_display(img_code, temp)
             self.speak_dialog('tomorrow.weather', data)
+            self.__condition_feedback(weather)
+            time.sleep(5)
+            self.enclosure.activate_mouth_listeners(True)
         except APICallError as e:
             self.__api_error(e)
         except Exception as e:
