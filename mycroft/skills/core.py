@@ -162,6 +162,7 @@ class MycroftSkill(object):
         self.dialog_renderer = None
         self.file_system = FileSystemAccess(join('skills', name))
         self.registered_intents = []
+        self.extras = {'name': self.name}
 
     @property
     def location(self):
@@ -225,8 +226,11 @@ class MycroftSkill(object):
         self.emitter.emit(
             Message('register_vocab', metadata={'regex': regex_str}))
 
+    def add_extra(key, data):
+        self.extras[key] = data
+
     def speak(self, utterance):
-        self.emitter.emit(Message("speak", metadata={'utterance': utterance}))
+        self.emitter.emit(Message("speak", metadata={'utterance': utterance, 'extras': self.extras}))
 
     def speak_dialog(self, key, data={}):
         self.speak(self.dialog_renderer.render(key, data))
