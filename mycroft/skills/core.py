@@ -45,19 +45,20 @@ logger = getLogger(__name__)
 
 
 def load_vocab_from_file(path, vocab_type, emitter):
-    with open(path, 'r') as voc_file:
-        for line in voc_file.readlines():
-            parts = line.strip().split("|")
-            entity = parts[0]
+    if(path.endswith('.voc')):
+        with open(path, 'r') as voc_file:
+            for line in voc_file.readlines():
+                parts = line.strip().split("|")
+                entity = parts[0]
 
-            emitter.emit(
-                Message("register_vocab",
-                        metadata={'start': entity, 'end': vocab_type}))
-            for alias in parts[1:]:
                 emitter.emit(
                     Message("register_vocab",
-                            metadata={'start': alias, 'end': vocab_type,
-                                      'alias_of': entity}))
+                            metadata={'start': entity, 'end': vocab_type}))
+                for alias in parts[1:]:
+                    emitter.emit(
+                        Message("register_vocab",
+                                metadata={'start': alias, 'end': vocab_type,
+                                          'alias_of': entity}))
 
 
 def load_regex_from_file(path, emitter):
@@ -72,8 +73,9 @@ def load_regex_from_file(path, emitter):
 
 def load_vocabulary(basedir, emitter):
     for vocab_type in os.listdir(basedir):
-        load_vocab_from_file(
-            join(basedir, vocab_type), splitext(vocab_type)[0], emitter)
+        if vocab_type.endswith(".voc"):
+            load_vocab_from_file(
+                join(basedir, vocab_type), splitext(vocab_type)[0], emitter)
 
 
 def load_regex(basedir, emitter):
