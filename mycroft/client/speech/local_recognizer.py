@@ -20,6 +20,7 @@ import time
 
 import os
 from pocketsphinx.pocketsphinx import Decoder
+import tempfile
 
 __author__ = 'seanfitz, jdorleans'
 
@@ -38,7 +39,9 @@ class LocalRecognizer(object):
         self.decoder = Decoder(self.create_config(dict_name))
 
     def create_dict(self, key_phrase, phonemes):
-        folder = os.path.join(BASEDIR, 'model', self.lang)
+        folder = os.path.join(tempfile.gettempdir(), 'mycroft')
+        if not os.path.exists(folder):
+            os.makedirs(folder)
         file_name = os.path.join(folder, key_phrase + ".dict")
         words = key_phrase.split()
         phoneme_groups = phonemes.split('.')
