@@ -25,13 +25,14 @@ import serial
 from mycroft.client.enclosure.arduino import EnclosureArduino
 from mycroft.client.enclosure.eyes import EnclosureEyes
 from mycroft.client.enclosure.mouth import EnclosureMouth
+from mycroft.client.enclosure.weather import EnclosureWeather
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util import kill
 from mycroft.util.log import getLogger
 
-__author__ = 'aatchison + jdorleans'
+__author__ = 'aatchison + jdorleans + iward'
 
 LOGGER = getLogger("EnclosureClient")
 
@@ -70,6 +71,8 @@ class EnclosureReader(Thread):
                 LOGGER.error("Reading error: {0}".format(e))
 
     def process(self, data):
+        self.client.emit(Message(data))
+
         if "mycroft.stop" in data:
             self.client.emit(Message("mycroft.stop"))
             kill(['mimic'])  # TODO - Refactoring in favor of Mycroft Stop
@@ -150,6 +153,7 @@ class Enclosure:
         self.eyes = EnclosureEyes(self.client, self.writer)
         self.mouth = EnclosureMouth(self.client, self.writer)
         self.system = EnclosureArduino(self.client, self.writer)
+        self.weather = EnclosureWeather(self.client, self.writer)
         self.__register_events()
 
     def __init_serial(self):

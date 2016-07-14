@@ -35,7 +35,7 @@ from mycroft.util.log import getLogger
 __author__ = 'seanfitz'
 
 PRIMARY_SKILLS = ['intent', 'wake']
-BLACKLISTED_SKILLS = ["send_sms"]
+BLACKLISTED_SKILLS = ["send_sms", "media"]
 SKILLS_BASEDIR = dirname(__file__)
 THIRD_PARTY_SKILLS_DIR = "/opt/mycroft/third_party"
 
@@ -238,6 +238,9 @@ class MycroftSkill(object):
     def load_data_files(self, root_directory):
         self.init_dialog(root_directory)
         self.load_vocab_files(join(root_directory, 'vocab', self.lang))
+        regex_path = join(root_directory, 'regex', self.lang)
+        if os.path.exists(regex_path):
+            self.load_regex_files(regex_path)
 
     def load_vocab_files(self, vocab_dir):
         load_vocabulary(vocab_dir, self.emitter)
