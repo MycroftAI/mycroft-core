@@ -22,7 +22,6 @@ class MockEmitter(object):
         return self.types
 
     def get_results(self):
-        logger.debug(self.results)
         return self.results
 
     def reset(self):
@@ -135,18 +134,18 @@ class MycroftSkillTest(unittest.TestCase):
 
     def test_load_vocab_full(self):
         self.check_vocab(join(self.vocab_path, 'valid'),
-                              [{'start': 'test', 'end': 'single'},
-                                   {'start': 'water', 'end': 'singlealias'},
-                                   {'start': 'watering', 'end': 'singlealias',
-                                    'alias_of': 'water'},
-                                   {'start': 'animal', 'end': 'multiple'},
-                                   {'start': 'animals', 'end': 'multiple'},
-                                   {'start': 'chair', 'end': 'multiplealias'},
-                                   {'start': 'chairs', 'end': 'multiplealias',
-                                    'alias_of': 'chair'},
-                                   {'start': 'table', 'end': 'multiplealias'},
-                                   {'start': 'tables', 'end': 'multiplealias',
-                                    'alias_of': 'table'}])
+                         [{'start': 'test', 'end': 'single'},
+                         {'start': 'water', 'end': 'singlealias'},
+                         {'start': 'watering', 'end': 'singlealias',
+                          'alias_of': 'water'},
+                         {'start': 'animal', 'end': 'multiple'},
+                         {'start': 'animals', 'end': 'multiple'},
+                         {'start': 'chair', 'end': 'multiplealias'},
+                         {'start': 'chairs', 'end': 'multiplealias',
+                          'alias_of': 'chair'},
+                         {'start': 'table', 'end': 'multiplealias'},
+                         {'start': 'tables', 'end': 'multiplealias',
+                          'alias_of': 'table'}])
 
     def test_load_vocab_empty(self):
         self.check_vocab(join(dirname(__file__), 'wolfram_alpha'))
@@ -157,6 +156,3 @@ class MycroftSkillTest(unittest.TestCase):
                                   'vocab_test_fail'))
         except OSError as e:
             self.assertEquals(e.strerror, 'No such file or directory')
-
-
-
