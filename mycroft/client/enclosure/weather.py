@@ -42,6 +42,6 @@ class EnclosureWeather:
         if event and event.metadata:
             img_code = event.metadata.get("img_code", None)
             temp = event.metadata.get("temp", None)
-            if img_code and temp:
+            if img_code is not None and temp is not None:
                 msg = "weather.display=" + str(img_code) + str(temp)
                 self.writer.write(msg)
