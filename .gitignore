@@ -13,4 +13,3 @@ mycroft/__version__.py
 MANIFEST.in
 setup.py
 logs/*
-mycroft/client/speech/model/*/*.dict
