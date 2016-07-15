@@ -54,7 +54,10 @@ class MycroftSkillTest(unittest.TestCase):
     def check_emitter(self, result_list):
         for message_type in self.emitter.get_types():
             self.assertEquals(message_type, 'register_vocab')
-        self.assertEquals(self.emitter.get_results(), result_list)
+        logger.debug(self.emitter.get_results())
+        logger.debug(result_list)
+        self.assertEquals(sorted(self.emitter.get_results()),
+                          sorted(result_list))
         self.emitter.reset()
 
     def test_load_regex_from_file_single(self):
