@@ -54,8 +54,6 @@ class MycroftSkillTest(unittest.TestCase):
     def check_emitter(self, result_list):
         for message_type in self.emitter.get_types():
             self.assertEquals(message_type, 'register_vocab')
-        logger.debug(self.emitter.get_results())
-        logger.debug(result_list)
         self.assertEquals(sorted(self.emitter.get_results()),
                           sorted(result_list))
         self.emitter.reset()
