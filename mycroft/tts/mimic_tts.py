@@ -22,6 +22,7 @@ from os.path import join
 from mycroft import MYCROFT_ROOT_PATH
 from mycroft.tts import TTS, TTSValidator
 from mycroft.configuration import ConfigurationManager
+from mycroft.messagebus.message import Message
 
 __author__ = 'jdorleans'
 
@@ -36,8 +37,20 @@ class Mimic(TTS):
     def __init__(self, lang, voice):
         super(Mimic, self).__init__(lang, voice)
 
-    def execute(self, sentence):
-        subprocess.call([BIN, '-voice', self.voice, '-t', sentence])
+    def execute(self, sentence, client):
+        process = subprocess.Popen(['stdbuf', '-oL', BIN,
+                                    '-psdur', '-voice', self.voice,
+                                   '-t', sentence], stdout=subprocess.PIPE)
+        while True:
+            output = process.stdout.readline()
+            if output == '' and process.poll() is not None:
+                break
+            if output:
+                phonemes = output.strip().split(' ')
+                phonemes = [(e.split(':')[0], e.split(':')[1])
+                            for e in phonemes]
+                client.emit(Message('mycroft.tts',
+                                    metadata={'phonemes': phonemes}))
 
 
 class MimicValidator(TTSValidator):

@@ -31,7 +31,7 @@ class TTS(object):
     TTS abstract class to be implemented by all TTS engines.
 
     It aggregates the minimum required parameters and exposes
-    ``execute(sentence)`` function.
+    ``execute(sentence, client)`` function.
     """
 
     def __init__(self, lang, voice, filename='/tmp/tts.wav'):
@@ -41,7 +41,7 @@ class TTS(object):
         self.filename = filename
 
     @abc.abstractmethod
-    def execute(self, sentence):
+    def execute(self, sentence, client):
         pass
 
 

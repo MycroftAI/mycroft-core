@@ -36,10 +36,11 @@ def handle_speak(event):
     try:
         utterance = event.metadata.get('utterance')
         logger.info("Speak: " + utterance)
-        tts.execute(utterance)
+        tts.execute(utterance, client)
     finally:
         mutex.release()
         client.emit(Message("recognizer_loop:audio_output_end"))
+        logger.info("Speak complete")
 
 
 def connect():
