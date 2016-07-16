@@ -1,2 +1,0 @@
-set (the|my)? lights to (?P<Scene>.*)
-set (the|my)? (?P<Group>.*) to (?P<Scene>.*)

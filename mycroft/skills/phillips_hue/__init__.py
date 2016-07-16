@@ -24,8 +24,13 @@ def intent_handler(handler_function):
     def handler(self, message):
         if message.message_type == 'ConnectLightsIntent' \
                 or self.connected or self._connect_to_bridge():
+            group = self.default_group
+            if "Group" in message.metadata:
+                name = message.metadata["Group"].lower()
+                group_id = self.groups_to_ids_map[name]
+                group = Group(self.bridge, group_id)
             try:
-                handler_function(self, message)
+                handler_function(self, message, group)
             except Exception as e:
                 if isinstance(e, PhueRequestTimeout):
                     self.speak_dialog('unable.to.perform.action')
@@ -47,7 +52,7 @@ class PhillipsHueSkill(MycroftSkill):
     def __init__(self):
         super(PhillipsHueSkill, self).__init__(name="PhillipsHueSkill")
         self.brightness_step = int(self.config.get('brightness_step'))
-        self.color_temperature_step =\
+        self.color_temperature_step = \
             int(self.config.get('color_temperature_step'))
         self.verbose = True if self.config.get('verbose') == 'True' else False
         self.username = self.config.get('username')
@@ -56,6 +61,8 @@ class PhillipsHueSkill(MycroftSkill):
         self.ip = None  # set in _connect_to_bridge
         self.bridge = None
         self.default_group = None
+        self.groups_to_ids_map = dict()
+        self.scenes_to_ids_map = dict()
 
     @property
     def connected(self):
@@ -82,16 +89,22 @@ class PhillipsHueSkill(MycroftSkill):
         else:
             self.speak_dialog('successfully.registered')
 
+    def _update_bridge_data(self):
+        self.username = self.bridge.username
+        if not self.default_group:
+            self._set_default_group(self.config.get('default_group'))
+        self._register_groups_and_scenes()
+
+    def _attempt_connection(self):
+        if not self.user_supplied_ip:
+            self.ip = _discover_bridge()
+        else:
+            self.ip = self.config.get('ip')
+        self.bridge = Bridge(self.ip, self.username)
+
     def _connect_to_bridge(self, acknowledge_successful_connection=False):
         try:
-            if not self.user_supplied_ip:
-                self.ip = _discover_bridge()
-            else:
-                self.ip = self.config.get('ip')
-            self.bridge = Bridge(self.ip, self.username)
-            self.username = self.bridge.username
-            if not self.default_group:
-                self._set_default_group(self.config.get('default_group'))
+            self._attempt_connection()
         except DeviceNotFoundException:
             self.speak_dialog('bridge.not.found')
             return False
@@ -107,6 +120,8 @@ class PhillipsHueSkill(MycroftSkill):
         if acknowledge_successful_connection:
             self.speak_dialog('successfully.connected')
 
+        self._update_bridge_data()
+
         return True
 
     def _set_default_group(self, identifier):
@@ -117,121 +132,124 @@ class PhillipsHueSkill(MycroftSkill):
             self.speak_dialog('using.group.0')
         self.default_group = Group(self.bridge, 0)
 
+    def _register_groups_and_scenes(self):
+        groups = self.bridge.get_group()
+        for id, group in groups.iteritems():
+            name = group['name'].lower()
+            self.groups_to_ids_map[name] = id
+            self.register_vocabulary(name, "Group")
+
+        scenes = self.bridge.get_scene()
+        for id, scene in scenes.iteritems():
+            name = scene['name'].lower()
+            self.scenes_to_ids_map[name] = id
+            self.register_vocabulary(name, "Scene")
+
     def initialize(self):
         self.load_data_files(dirname(__file__))
-        self.load_regex_files(join(dirname(__file__), 'regex', self.lang))
+
+        try:
+            self._attempt_connection()
+            self._update_bridge_data()
+        except (PhueRegistrationException, DeviceNotFoundException):
+            # Swallow it for now; _connect_to_bridge will deal with it later
+            pass
 
         toggle_intent = IntentBuilder("ToggleIntent") \
-            .one_of("OffKeyword", "OnKeyword")\
-            .require("LightsKeyword")\
+            .one_of("OffKeyword", "OnKeyword") \
+            .one_of("Group", "LightsKeyword") \
             .build()
         self.register_intent(toggle_intent, self.handle_toggle_intent)
 
-        activate_scene_intent = IntentBuilder("ActivateSceneIntent")\
-            .require("Scene")\
-            .optionally("Group")\
+        activate_scene_intent = IntentBuilder("ActivateSceneIntent") \
+            .require("Scene") \
+            .one_of("Group", "LightsKeyword") \
             .build()
         self.register_intent(activate_scene_intent,
                              self.handle_activate_scene_intent)
 
-        adjust_brightness_intent = IntentBuilder("AdjustBrightnessIntent")\
-            .one_of("IncreaseKeyword", "DecreaseKeyword", "DimKeyword")\
-            .require("LightsKeyword")\
-            .optionally("BrightnessKeyword")\
+        adjust_brightness_intent = IntentBuilder("AdjustBrightnessIntent") \
+            .one_of("IncreaseKeyword", "DecreaseKeyword", "DimKeyword") \
+            .one_of("Group", "LightsKeyword") \
+            .optionally("BrightnessKeyword") \
             .build()
         self.register_intent(adjust_brightness_intent,
                              self.handle_adjust_brightness_intent)
 
-        adjust_color_temperature_intent =\
-            IntentBuilder("AdjustColorTemperatureIntent")\
-            .one_of("IncreaseKeyword", "DecreaseKeyword")\
-            .require("LightsKeyword")\
-            .require("ColorTemperatureKeyword")\
+        adjust_color_temperature_intent = \
+            IntentBuilder("AdjustColorTemperatureIntent") \
+            .one_of("IncreaseKeyword", "DecreaseKeyword") \
+            .one_of("Group", "LightsKeyword") \
+            .require("ColorTemperatureKeyword") \
             .build()
         self.register_intent(adjust_color_temperature_intent,
                              self.handle_adjust_color_temperature_intent)
 
         connect_lights_intent = \
             IntentBuilder("ConnectLightsIntent") \
-            .require("ConnectKeyword")\
-            .require("LightsKeyword")\
+            .require("ConnectKeyword") \
+            .one_of("Group", "LightsKeyword") \
             .build()
         self.register_intent(connect_lights_intent,
                              self.handle_connect_lights_intent)
 
     @intent_handler
-    def handle_toggle_intent(self, message):
+    def handle_toggle_intent(self, message, group):
         if "OffKeyword" in message.metadata:
             dialog = 'turn.off'
-            self.default_group.on = False
+            group.on = False
         else:
             dialog = 'turn.on'
-            self.default_group.on = True
+            group.on = True
         if self.verbose:
             self.speak_dialog(dialog)
 
     @intent_handler
-    def handle_activate_scene_intent(self, message):
-        group_id = message.metadata.get('Group')
-        if group_id:
-            groups = self.bridge.get_group()
-            group_id = group_id.lower()
-            for key, group in groups.iteritems():
-                if group['name'].lower() == group_id:
-                    group_id = int(key)
-                    break
-            else:
-                self.speak_dialog('could.not.find.group',
-                                  {'name': group_id})
-                return
-        else:
-            group_id = self.default_group.group_id
-
-        scene_name = message.metadata['Scene']
-        scene_id = self.bridge.get_scene_id_from_name(
-            scene_name, case_sensitive=False)
+    def handle_activate_scene_intent(self, message, group):
+        scene_name = message.metadata['Scene'].lower()
+        scene_id = self.scenes_to_ids_map[scene_name]
         if scene_id:
             if self.verbose:
                 self.speak_dialog('activate.scene',
                                   {'scene': scene_name})
-            self.bridge.activate_scene(scene_id, group_id)
+            self.bridge.activate_scene(scene_id, group.group_id)
         else:
             self.speak_dialog('scene.not.found',
                               {'scene': scene_name})
 
     @intent_handler
-    def handle_adjust_brightness_intent(self, message):
+    def handle_adjust_brightness_intent(self, message, group):
         if "IncreaseKeyword" in message.metadata:
-            brightness = self.default_group.brightness + self.brightness_step
-            self.default_group.brightness = \
+            brightness = group.brightness + self.brightness_step
+            group.brightness = \
                 brightness if brightness < 255 else 254
             dialog = 'increase.brightness'
         else:
-            brightness = self.default_group.brightness - self.brightness_step
-            self.default_group.brightness = brightness if brightness > 0 else 0
+            brightness = group.brightness - self.brightness_step
+            group.brightness = brightness if brightness > 0 else 0
             dialog = 'decrease.brightness'
         if self.verbose:
             self.speak_dialog(dialog)
 
     @intent_handler
-    def handle_adjust_color_temperature_intent(self, message):
+    def handle_adjust_color_temperature_intent(self, message, group):
         if "IncreaseKeyword" in message.metadata:
             color_temperature = \
-                self.default_group.colortemp_k + self.color_temperature_step
-            self.default_group.colortemp_k = \
+                group.colortemp_k + self.color_temperature_step
+            group.colortemp_k = \
                 color_temperature if color_temperature < 6500 else 6500
             dialog = 'increase.color.temperature'
         else:
             color_temperature = \
-                self.default_group.colortemp_k - self.color_temperature_step
-            self.default_group.colortemp_k = \
+                group.colortemp_k - self.color_temperature_step
+            group.colortemp_k = \
                 color_temperature if color_temperature > 2000 else 2000
             dialog = 'decrease.color.temperature'
         if self.verbose:
             self.speak_dialog(dialog)
 
     @intent_handler
-    def handle_connect_lights_intent(self, message):
+    def handle_connect_lights_intent(self, message, group):
         if self.user_supplied_ip:
             self.speak_dialog('ip.in.config')
             return
