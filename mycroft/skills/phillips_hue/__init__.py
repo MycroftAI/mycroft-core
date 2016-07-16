@@ -21,6 +21,19 @@ class DeviceNotFoundException(Exception):
 
 
 def intent_handler(handler_function):
+    """
+    Decorate handler functions with connection and
+    error handling.
+
+    Parameters
+    ----------
+    handler_function : callable
+
+    Returns
+    -------
+    callable
+
+    """
     def handler(self, message):
         if message.message_type == 'ConnectLightsIntent' \
                 or self.connected or self._connect_to_bridge():
@@ -73,6 +86,11 @@ class PhillipsHueSkill(MycroftSkill):
         return self.config.get('ip') != ''
 
     def _register_with_bridge(self):
+        """
+        Helper for connecting to the bridge. If we don't
+        have a valid username for the bridge (ip) we are trying
+        to use, this will cause one to be generated.
+        """
         self.speak_dialog('connect.to.bridge')
         i = 0
         while i < 30:
@@ -90,12 +108,22 @@ class PhillipsHueSkill(MycroftSkill):
             self.speak_dialog('successfully.registered')
 
     def _update_bridge_data(self):
+        """
+        This should be called any time a successful
+        connection is established. It sets some
+        member variables, and ensures that scenes and
+        groups are registered as vocab.
+        """
         self.username = self.bridge.username
         if not self.default_group:
             self._set_default_group(self.config.get('default_group'))
         self._register_groups_and_scenes()
 
     def _attempt_connection(self):
+        """
+        This will attempt to connect to the bridge,
+        but will not handle any errors on it's own.
+        """
         if not self.user_supplied_ip:
             self.ip = _discover_bridge()
         else:
@@ -103,6 +131,22 @@ class PhillipsHueSkill(MycroftSkill):
         self.bridge = Bridge(self.ip, self.username)
 
     def _connect_to_bridge(self, acknowledge_successful_connection=False):
+        """
+        Calls _attempt_connection, handling various exceptions
+        by either alerting the user to issues with the config/setup,
+        or registering the applicaton with the bridge.
+
+        Parameters
+        ----------
+        acknowledge_successful_connection : bool
+            Speak when a successful connection is established.
+
+        Returns
+        -------
+        bool
+            True if a connection is established.
+
+        """
         try:
             self._attempt_connection()
         except DeviceNotFoundException:
@@ -110,7 +154,7 @@ class PhillipsHueSkill(MycroftSkill):
             return False
         except PhueRegistrationException:
             self._register_with_bridge()
-        except Exception as e:
+        except socket.error as e:
             if 'No route to host' in e.args:
                 self.speak_dialog('no.route')
             else:
@@ -125,6 +169,21 @@ class PhillipsHueSkill(MycroftSkill):
         return True
 
     def _set_default_group(self, identifier):
+        """
+        Sets the group to which commands will be applied, when
+        a group is not specified in the command.
+
+        Parameters
+        ----------
+        identifier : str or int
+            The name of the group, or it's integer id
+
+        Notes
+        -----
+        If the group does not exist, 0 (all lights) will be
+        used.
+
+        """
         try:
             self.default_group = Group(self.bridge, identifier)
         except LookupError:
@@ -133,6 +192,10 @@ class PhillipsHueSkill(MycroftSkill):
         self.default_group = Group(self.bridge, 0)
 
     def _register_groups_and_scenes(self):
+        """
+        Register group and scene names as vocab,
+        and update our caches.
+        """
         groups = self.bridge.get_group()
         for id, group in groups.iteritems():
             name = group['name'].lower()
@@ -146,12 +209,18 @@ class PhillipsHueSkill(MycroftSkill):
             self.register_vocabulary(name, "Scene")
 
     def initialize(self):
+        """
+        Attempt to connect to the bridge,
+        and build/register intents.
+        """
         self.load_data_files(dirname(__file__))
 
         try:
             self._attempt_connection()
             self._update_bridge_data()
-        except (PhueRegistrationException, DeviceNotFoundException):
+        except (PhueRegistrationException,
+                DeviceNotFoundException,
+                socket.error):
             # Swallow it for now; _connect_to_bridge will deal with it later
             pass
 
