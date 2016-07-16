@@ -1,8 +1,0 @@
-{
-  "utterance": "set the lights to multi-word scene",
-  "intent_type": "ActivateSceneIntent",
-  "intent": {
-    "ActivateSceneKeyword": "set the lights to",
-    "Scene": "muti-word scene"
-  }
-}

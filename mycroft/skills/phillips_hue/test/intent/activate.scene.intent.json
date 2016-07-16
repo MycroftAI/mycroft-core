@@ -1,8 +1,0 @@
-{
-  "utterance": "set the kitchen to bright",
-  "intent_type": "ActivateSceneIntent",
-  "intent": {
-    "Scene": "bright",
-    "Group": "Kitchen"
-  }
-}
