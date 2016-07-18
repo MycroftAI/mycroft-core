@@ -91,7 +91,6 @@ class CerberusWolframAlphaClient(object):
         response = requests.get(url, headers=headers)
         if response.status_code == 401:
             raise CerberusAccessDenied()
-        logger.debug(response.content)
         return wolframalpha.Result(StringIO(response.content))
 
 
@@ -153,6 +152,9 @@ class WolframAlphaSkill(MycroftSkill):
             utt_word = parsed_question.get('QuestionWord')
             utt_verb = parsed_question.get('QuestionVerb')
             utt_query = parsed_question.get('Query')
+            if utt_verb == "'s":
+                utt_verb = 'is'
+                parsed_question['QuestionVerb'] = 'is'
             query = "%s %s %s" % (utt_word, utt_verb, utt_query)
             phrase = "know %s %s %s" % (utt_word, utt_query, utt_verb)
         else:  # TODO: Localization

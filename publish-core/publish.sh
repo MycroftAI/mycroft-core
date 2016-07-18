@@ -84,7 +84,7 @@ replace ${CONTROL_FILE} "%%PACKAGE%%" "mycroft-core"
 replace ${CONTROL_FILE} "%%VERSION%%" "${VERSION}"
 replace ${CONTROL_FILE} "%%ARCHITECTURE%%" "${ARCH}"
 replace ${CONTROL_FILE} "%%DESCRIPTION%%" "mycroft-core"
-replace ${CONTROL_FILE} "%%DEPENDS%%" "portaudio19-dev, libglib2.0-0, flac, espeak, mpg123, mimic"
+replace ${CONTROL_FILE} "%%DEPENDS%%" "portaudio19-dev, libglib2.0-0, flac, espeak, mpg123, mimic, avrdude"
 echo "Creating debian preinst file"
 PREINST_FILE=${DEB_DIR}/DEBIAN/preinst
 cp ${TOP}/publish-core/deb_base/preinst.template ${PREINST_FILE}
@@ -140,7 +140,7 @@ cat > ${DEB_DIR}/etc/mycroft/mycroft.ini << EOM
 [tts]
 module = "mimic"
 mimic.path = "/usr/local/bin/mimic"
-mimic.voice = "/usr/local/lib/python2.7/site-packages/Mycroft-${VERSION}-py2.7.egg/mycroft/tts/mycroft_voice_4.0.flitevox"
+mimic.voice = "ap"
 
 [metrics_client]
 enabled = True

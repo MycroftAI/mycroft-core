@@ -20,6 +20,7 @@ import time
 
 import os
 from pocketsphinx.pocketsphinx import Decoder
+import tempfile
 
 __author__ = 'seanfitz, jdorleans'
 
@@ -38,11 +39,10 @@ class LocalRecognizer(object):
         self.decoder = Decoder(self.create_config(dict_name))
 
     def create_dict(self, key_phrase, phonemes):
-        folder = os.path.join(BASEDIR, 'model', self.lang)
-        file_name = os.path.join(folder, key_phrase + ".dict")
+        (fd, file_name) = tempfile.mkstemp()
         words = key_phrase.split()
         phoneme_groups = phonemes.split('.')
-        with open(file_name, 'w') as f:
+        with os.fdopen(fd, 'w') as f:
             for word, phoneme in zip(words, phoneme_groups):
                 f.write(word + ' ' + phoneme + '\n')
         return file_name
