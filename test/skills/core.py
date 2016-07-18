@@ -2,7 +2,8 @@ import unittest
 from re import error
 from os.path import join, dirname, abspath
 
-from mycroft.skills.core import load_regex_from_file, load_regex
+from mycroft.skills.core import load_regex_from_file, load_regex, \
+    load_vocab_from_file, load_vocabulary
 from mycroft.util.log import getLogger
 
 __author__ = 'eward'
@@ -15,7 +16,7 @@ class MockEmitter(object):
 
     def emit(self, message):
         self.types.append(message.message_type)
-        self.results.append(message.metadata['regex'])
+        self.results.append(message.metadata)
 
     def get_types(self):
         return self.types
@@ -30,63 +31,129 @@ class MockEmitter(object):
 
 class MycroftSkillTest(unittest.TestCase):
     emitter = MockEmitter()
-    path = abspath(join(dirname(__file__), '../regex_test'))
+    regex_path = abspath(join(dirname(__file__), '../regex_test'))
+    vocab_path = abspath(join(dirname(__file__), '../vocab_test'))
 
-    def check_load_from_file(self, filename, regex_list=[]):
-        load_regex_from_file(join(self.path, filename), self.emitter)
-        self.check_emitter(self.emitter, regex_list)
+    def check_vocab_from_file(self, filename, vocab_type=None, result_list=[]):
+        load_vocab_from_file(join(self.vocab_path, filename), vocab_type,
+                             self.emitter)
+        self.check_emitter(result_list)
 
-    def check_load(self, path, regex_list=[]):
+    def check_regex_from_file(self, filename, result_list=[]):
+        load_regex_from_file(join(self.regex_path, filename), self.emitter)
+        self.check_emitter(result_list)
+
+    def check_vocab(self, path, result_list=[]):
+        load_vocabulary(path, self.emitter)
+        self.check_emitter(result_list)
+
+    def check_regex(self, path, result_list=[]):
         load_regex(path, self.emitter)
-        self.check_emitter(self.emitter, regex_list)
+        self.check_emitter(result_list)
 
-    def check_emitter(self, emitter, regex_list):
-        for regex_type in emitter.get_types():
-            self.assertEquals(regex_type, 'register_vocab')
-        if not regex_list:
-            self.assertEquals(emitter.get_results(), regex_list)
-        for value in regex_list:
-            self.assertTrue(value in emitter.get_results())
+    def check_emitter(self, result_list):
+        for message_type in self.emitter.get_types():
+            self.assertEquals(message_type, 'register_vocab')
+        self.assertEquals(sorted(self.emitter.get_results()),
+                          sorted(result_list))
         self.emitter.reset()
 
     def test_load_regex_from_file_single(self):
-        self.check_load_from_file('valid/single.rx',
-                                  ['(?P<SingleTest>.*)'])
+        self.check_regex_from_file('valid/single.rx',
+                                   [{'regex': '(?P<SingleTest>.*)'}])
 
     def test_load_regex_from_file_multiple(self):
-        self.check_load_from_file('valid/multiple.rx',
-                                  ['(?P<MultipleTest1>.*)',
-                                   '(?P<MultipleTest2>.*)'])
+        self.check_regex_from_file('valid/multiple.rx',
+                                   [{'regex': '(?P<MultipleTest1>.*)'},
+                                    {'regex': '(?P<MultipleTest2>.*)'}])
 
     def test_load_regex_from_file_none(self):
-        self.check_load_from_file('invalid/none.rx')
+        self.check_regex_from_file('invalid/none.rx')
 
     def test_load_regex_from_file_invalid(self):
         try:
-            self.check_load_from_file('invalid/invalid.rx')
+            self.check_regex_from_file('invalid/invalid.rx')
         except error as e:
             self.assertEquals(e.__str__(),
                               'unexpected end of regular expression')
 
     def test_load_regex_from_file_does_not_exist(self):
         try:
-            self.check_load_from_file('does_not_exist.rx')
+            self.check_regex_from_file('does_not_exist.rx')
         except IOError as e:
             self.assertEquals(e.strerror, 'No such file or directory')
 
     def test_load_regex_full(self):
-        self.check_load(join(self.path, 'valid'),
-                        ['(?P<MultipleTest1>.*)',
-                         '(?P<MultipleTest2>.*)',
-                         '(?P<SingleTest>.*)'])
+        self.check_regex(join(self.regex_path, 'valid'),
+                         [{'regex': '(?P<MultipleTest1>.*)'},
+                         {'regex': '(?P<MultipleTest2>.*)'},
+                         {'regex': '(?P<SingleTest>.*)'}])
 
     def test_load_regex_empty(self):
-        self.check_load(join(dirname(__file__),
-                             'wolfram_alpha'))
+        self.check_regex(join(dirname(__file__),
+                              'wolfram_alpha'))
 
     def test_load_regex_fail(self):
         try:
-            self.check_load(join(dirname(__file__),
-                                 'regex_test_fail'))
+            self.check_regex(join(dirname(__file__),
+                                  'regex_test_fail'))
+        except OSError as e:
+            self.assertEquals(e.strerror, 'No such file or directory')
+
+    def test_load_vocab_from_file_single(self):
+        self.check_vocab_from_file('valid/single.voc', 'test_type',
+                                   [{'start': 'test', 'end': 'test_type'}])
+
+    def test_load_vocab_from_file_single_alias(self):
+        self.check_vocab_from_file('valid/singlealias.voc', 'test_type',
+                                   [{'start': 'water', 'end': 'test_type'},
+                                    {'start': 'watering', 'end': 'test_type',
+                                     'alias_of': 'water'}])
+
+    def test_load_vocab_from_file_multiple(self):
+        self.check_vocab_from_file('valid/multiple.voc', 'test_type',
+                                   [{'start': 'animal', 'end': 'test_type'},
+                                    {'start': 'animals', 'end': 'test_type'}])
+
+    def test_load_vocab_from_file_multiple_alias(self):
+        self.check_vocab_from_file('valid/multiplealias.voc', 'test_type',
+                                   [{'start': 'chair', 'end': 'test_type'},
+                                    {'start': 'chairs', 'end': 'test_type',
+                                     'alias_of': 'chair'},
+                                    {'start': 'table', 'end': 'test_type'},
+                                    {'start': 'tables', 'end': 'test_type',
+                                     'alias_of': 'table'}])
+
+    def test_load_vocab_from_file_none(self):
+        self.check_vocab_from_file('none.voc')
+
+    def test_load_vocab_from_file_does_not_exist(self):
+        try:
+            self.check_vocab_from_file('does_not_exist.voc')
+        except IOError as e:
+            self.assertEquals(e.strerror, 'No such file or directory')
+
+    def test_load_vocab_full(self):
+        self.check_vocab(join(self.vocab_path, 'valid'),
+                         [{'start': 'test', 'end': 'single'},
+                         {'start': 'water', 'end': 'singlealias'},
+                         {'start': 'watering', 'end': 'singlealias',
+                          'alias_of': 'water'},
+                         {'start': 'animal', 'end': 'multiple'},
+                         {'start': 'animals', 'end': 'multiple'},
+                         {'start': 'chair', 'end': 'multiplealias'},
+                         {'start': 'chairs', 'end': 'multiplealias',
+                          'alias_of': 'chair'},
+                         {'start': 'table', 'end': 'multiplealias'},
+                         {'start': 'tables', 'end': 'multiplealias',
+                          'alias_of': 'table'}])
+
+    def test_load_vocab_empty(self):
+        self.check_vocab(join(dirname(__file__), 'wolfram_alpha'))
+
+    def test_load_vocab_fail(self):
+        try:
+            self.check_regex(join(dirname(__file__),
+                                  'vocab_test_fail'))
         except OSError as e:
             self.assertEquals(e.strerror, 'No such file or directory')
