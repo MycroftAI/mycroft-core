@@ -1,13 +1,11 @@
 from os.path import join, dirname
 
 from adapt.intent import IntentBuilder
-from mycroft.skills import time_rules
 from mycroft.skills.core import MycroftSkill
 from mycroft.messagebus.message import Message
 from mycroft.configuration import ConfigurationManager
 
 from mycroft.util.log import getLogger
-import mycroft.skills.media.mopidy
 
 logger = getLogger(__name__)
 

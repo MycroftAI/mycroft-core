@@ -17,7 +17,7 @@
 
 
 import json
-from os.path import join, expanduser, exists
+from os.path import expanduser, exists
 
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
