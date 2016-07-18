@@ -1,7 +1,6 @@
 import unittest
 import wolframalpha
 from StringIO import StringIO
-from xml.etree import ElementTree as etree
 
 from mycroft.skills.wolfram_alpha import WolframAlphaSkill
 from mycroft.util.log import getLogger

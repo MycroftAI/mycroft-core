@@ -24,7 +24,6 @@ import pyaudio
 from speech_recognition import (
     Microphone,
     AudioSource,
-    WaitTimeoutError,
     AudioData
 )
 import speech_recognition

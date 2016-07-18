@@ -18,7 +18,7 @@
 
 import time
 from alsaaudio import Mixer
-from os.path import dirname, join
+from os.path import dirname
 
 from adapt.intent import IntentBuilder
 from mycroft.skills.core import MycroftSkill
