@@ -18,10 +18,13 @@
 
 import time
 from alsaaudio import Mixer
-from os.path import dirname
+from os.path import dirname, join
 
 from adapt.intent import IntentBuilder
+
+from mycroft.client.enclosure import enclosure
 from mycroft.skills.core import MycroftSkill
+from mycroft.util import play_wav
 from mycroft.util.log import getLogger
 
 __author__ = 'jdorleans'
@@ -36,6 +39,8 @@ class VolumeSkill(MycroftSkill):
     def __init__(self):
         super(VolumeSkill, self).__init__(name="VolumeSkill")
         self.default_volume = int(self.config.get('default_volume'))
+        self.volume_sound = join(dirname(__file__), "data",
+                                 "Blop-Mark-DiAngelo.wav")
 
     def initialize(self):
         self.load_data_files(dirname(__file__))
@@ -68,13 +73,20 @@ class VolumeSkill(MycroftSkill):
         mixer.setvolume(volume)
         self.speak_dialog('set.volume', data={'volume': code})
 
+    def communicate_volume_change(self, code, message, dialog):
+        play_sound = message.metadata.get('play_sound', False)
+        if play_sound:
+            play_wav(self.volume_sound)
+        else:
+            self.speak_dialog(dialog, data={'volume': code})
+
     def handle_increase_volume(self, message):
         code, volume = self.__update_volume(1)
-        self.speak_dialog('increase.volume', data={'volume': code})
+        self.communicate_volume_change(code, message, 'increase.volume')
 
     def handle_decrease_volume(self, message):
         code, volume = self.__update_volume(-1)
-        self.speak_dialog('decrease.volume', data={'volume': code})
+        self.communicate_volume_change(code, message, 'decrease.volume')
 
     def handle_mute_volume(self, message):
         self.speak_dialog('mute.volume')
