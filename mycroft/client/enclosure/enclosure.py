@@ -78,10 +78,12 @@ class EnclosureReader(Thread):
             kill(['mimic'])  # TODO - Refactoring in favor of Mycroft Stop
 
         if "volume.up" in data:
-            self.client.emit(Message("IncreaseVolumeIntent"))
+            self.client.emit(
+                Message("IncreaseVolumeIntent", metadata={'play_sound': True}))
 
         if "volume.down" in data:
-            self.client.emit(Message("DecreaseVolumeIntent"))
+            self.client.emit(
+                Message("DecreaseVolumeIntent", metadata={'play_sound': True}))
 
     def stop(self):
         self.alive = False
