@@ -72,20 +72,23 @@ class VolumeSkill(MycroftSkill):
         mixer.setvolume(volume)
         self.speak_dialog('set.volume', data={'volume': code})
 
-    def communicate_volume_change(self, code, message, dialog):
+    def communicate_volume_change(self, message, dialog, code, changed):
         play_sound = message.metadata.get('play_sound', False)
         if play_sound:
-            play_wav(self.volume_sound)
+            if changed:
+                play_wav(self.volume_sound)
         else:
+            if not changed:
+                dialog = 'already.max.volume'
             self.speak_dialog(dialog, data={'volume': code})
 
     def handle_increase_volume(self, message):
-        code, volume = self.__update_volume(1)
-        self.communicate_volume_change(code, message, 'increase.volume')
+        self.communicate_volume_change(message, 'increase.volume',
+                                       *self.__update_volume(+1))
 
     def handle_decrease_volume(self, message):
-        code, volume = self.__update_volume(-1)
-        self.communicate_volume_change(code, message, 'decrease.volume')
+        self.communicate_volume_change(message, 'decrease.volume',
+                                       *self.__update_volume(-1))
 
     def handle_mute_volume(self, message):
         self.speak_dialog('mute.volume')
@@ -99,14 +102,20 @@ class VolumeSkill(MycroftSkill):
             data={'volume': self.get_volume_code(self.default_volume)})
 
     def __update_volume(self, level=0):
+        """
+        Tries to change volume level
+        :param level: +1 or -1; the step to change by
+        :return: new code (0..11), whether volume changed
+        """
         mixer = Mixer()
         volume = mixer.getvolume()[0]
-        code = self.get_volume_code(volume) + level
-        code = self.fix_code(code)
-        if code in self.VOLUMES:
-            volume = self.VOLUMES[code]
+        old_code = self.get_volume_code(volume)
+
+        new_code = self.fix_code(old_code + level)
+        if new_code in self.VOLUMES:
+            volume = self.VOLUMES[new_code]
             mixer.setvolume(volume)
-        return code, volume
+        return new_code, new_code != old_code
 
     def get_volume(self, message, default=None):
         amount = message.metadata.get('VolumeAmount', default)
