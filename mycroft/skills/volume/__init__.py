@@ -39,8 +39,7 @@ class VolumeSkill(MycroftSkill):
     def __init__(self):
         super(VolumeSkill, self).__init__(name="VolumeSkill")
         self.default_volume = int(self.config.get('default_volume'))
-        self.volume_sound = join(dirname(__file__), "data",
-                                 "Blop-Mark-DiAngelo.wav")
+        self.volume_sound = join(dirname(__file__), "blop-mark-diangelo.wav")
 
     def initialize(self):
         self.load_data_files(dirname(__file__))
