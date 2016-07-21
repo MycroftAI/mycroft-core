@@ -7,6 +7,7 @@ while [ -h "$SOURCE" ]; do
   [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
 done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+SCRIPTS="$DIR/scripts"
 
 function usage {
   echo
@@ -28,20 +29,20 @@ function usage {
   echo
 }
 
-mkdir -p $DIR/logs
+mkdir -p $SCRIPTS/logs
 
 function verify-start {
     if ! screen -list | grep -q "$1";
     then
       echo "$1 failed to start. The log is below:"
       echo
-      tail $DIR/logs/$1.log
+      tail $SCRIPTS/logs/$1.log
     exit 1
     fi
 }
 
 function start-mycroft {
-  screen -mdS mycroft-$1$2 -c $DIR/mycroft-$1.screen $DIR/start.sh $1 $2
+  screen -mdS mycroft-$1$2 -c $SCRIPTS/mycroft-$1.screen $DIR/start.sh $1 $2
   sleep 1
   verify-start mycroft-$1$2
   echo "Mycroft $1$2 started"
