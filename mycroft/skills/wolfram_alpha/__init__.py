@@ -91,6 +91,7 @@ class CerberusWolframAlphaClient(object):
         response = requests.get(url, headers=headers)
         if response.status_code == 401:
             raise CerberusAccessDenied()
+        # logger.debug(response.content)
         return wolframalpha.Result(StringIO(response.content))
 
 
@@ -193,12 +194,9 @@ class WolframAlphaSkill(MycroftSkill):
             self.speak(response)
         else:
             if len(others) > 0:
-                self.speak_dialog('search.again',
+                self.speak_dialog('others.found',
                                   data={'utterance': utterance, 'alternative':
                                         others[0]})
-                self.handle_fallback(Message('intent_failure',
-                                             metadata={'utterance':
-                                                       others[0]}))
             else:
                 self.speak_dialog("not.understood", data={'phrase': phrase})
 
@@ -238,6 +236,13 @@ class WolframAlphaSkill(MycroftSkill):
 
         # Convert !s to factorial
         text = re.sub(r"!", r",factorial", text)
+
+        list_regex = re.compile("(1,|1\.) (?P<Definition>.*) (2,|2\.) (.*)")
+
+        match = list_regex.match(text)
+        if match:
+            text = match.group('Definition')
+
         return text
 
     def stop(self):
