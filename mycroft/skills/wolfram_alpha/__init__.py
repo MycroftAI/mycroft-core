@@ -17,7 +17,7 @@
 
 
 from StringIO import StringIO
-from os.path import dirname
+from os.path import dirname, join
 
 import re
 import requests
@@ -223,8 +223,7 @@ class WolframAlphaSkill(MycroftSkill):
                 value.append(result.text)
         return value
 
-    @staticmethod
-    def process_wolfram_string(text):
+    def process_wolfram_string(self, text):
         # Remove extra whitespace
         text = re.sub(r" \s+", r" ", text)
 
@@ -237,8 +236,11 @@ class WolframAlphaSkill(MycroftSkill):
         # Convert !s to factorial
         text = re.sub(r"!", r",factorial", text)
 
-        list_regex = re.compile("(1,|1\.) (?P<Definition>.*) (2,|2\.) (.*)")
 
+        with open(join(dirname(__file__), 'regex',
+                       self.lang, 'list.rx'), 'r') as regex:
+            list_regex = re.compile(regex.readline())
+            
         match = list_regex.match(text)
         if match:
             text = match.group('Definition')
