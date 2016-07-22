@@ -236,11 +236,10 @@ class WolframAlphaSkill(MycroftSkill):
         # Convert !s to factorial
         text = re.sub(r"!", r",factorial", text)
 
-
         with open(join(dirname(__file__), 'regex',
                        self.lang, 'list.rx'), 'r') as regex:
             list_regex = re.compile(regex.readline())
-            
+
         match = list_regex.match(text)
         if match:
             text = match.group('Definition')
