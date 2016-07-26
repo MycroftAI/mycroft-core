@@ -90,6 +90,7 @@ def handle_wake_up(event):
 def handle_stop(event):
     kill([config.get('tts').get('module')])
 
+
 def connect():
     client.run_forever()
 
