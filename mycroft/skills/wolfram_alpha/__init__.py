@@ -91,7 +91,6 @@ class CerberusWolframAlphaClient(object):
         response = requests.get(url, headers=headers)
         if response.status_code == 401:
             raise CerberusAccessDenied()
-        # logger.debug(response.content)
         return wolframalpha.Result(StringIO(response.content))
 
 
