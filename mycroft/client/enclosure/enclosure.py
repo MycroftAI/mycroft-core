@@ -18,10 +18,10 @@
 
 import sys
 from Queue import Queue
+from alsaaudio import Mixer
 from threading import Thread
 
 import serial
-import time
 
 from mycroft.client.enclosure.arduino import EnclosureArduino
 from mycroft.client.enclosure.eyes import EnclosureEyes
@@ -88,11 +88,21 @@ class EnclosureReader(Thread):
             self.client.emit(
                 Message("DecreaseVolumeIntent", metadata={'play_sound': True}))
 
+        if "system.test.begin" in data:
+            self.client.emit(Message('recognizer_loop:sleep'))
+
+        if "system.test.end" in data:
+            self.client.emit(Message('recognizer_loop:wake_up'))
+
         if "mic.test" in data:
-            self.client.emit(Message("speak", metadata={'utterance': "Testing microphone recording for five seconds."}))
-            time.sleep(5)
-            record("/tmp/test.wav", 5)
+            mixer = Mixer()
+            prev_vol = mixer.getvolume()[0]
+            mixer.setvolume(35)
+            self.client.emit(Message("speak", metadata={
+                'utterance': "I am testing one two three"}))
+            record("/tmp/test.wav", 3.5)
             play_wav("/tmp/test.wav")
+            mixer.setvolume(prev_vol)
 
     def stop(self):
         self.alive = False
