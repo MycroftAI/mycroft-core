@@ -21,8 +21,6 @@ from alsaaudio import Mixer
 from os.path import dirname, join
 
 from adapt.intent import IntentBuilder
-
-from mycroft.client.enclosure import enclosure
 from mycroft.skills.core import MycroftSkill
 from mycroft.util import play_wav
 from mycroft.util.log import getLogger
@@ -33,12 +31,24 @@ LOGGER = getLogger(__name__)
 
 
 class VolumeSkill(MycroftSkill):
-    VOLUMES = {0: 0, 1: 15, 2: 25, 3: 35, 4: 45, 5: 55, 6: 65, 7: 70, 8: 80,
-               9: 90, 10: 95, 11: 100}
+    """
+    "Level" refers to the custom units from 0 to 11
+    "Volume" refers to the ALSA mixer setting from 0 to 100
+    """
+
+    MIN_LEVEL = 0
+    MAX_LEVEL = 11
+    VOLUME_WORDS = {
+        'loud': 9,
+        'normal': 6,
+        'quiet': 3
+    }
 
     def __init__(self):
         super(VolumeSkill, self).__init__(name="VolumeSkill")
-        self.default_volume = int(self.config.get('default_volume'))
+        self.default_level = int(self.config.get('default_level'))
+        self.min_volume = self.config.get('min_volume')
+        self.max_volume = self.config.get('max_volume')
         self.volume_sound = join(dirname(__file__), "blop-mark-diangelo.wav")
 
     def initialize(self):
@@ -68,9 +78,9 @@ class VolumeSkill(MycroftSkill):
 
     def handle_set_volume(self, message):
         mixer = Mixer()
-        code, volume = self.get_volume(message, mixer.getvolume()[0])
-        mixer.setvolume(volume)
-        self.speak_dialog('set.volume', data={'volume': code})
+        level = self.get_volume_level(message, mixer.getvolume()[0])
+        mixer.setvolume(self.level_to_volume(level))
+        self.speak_dialog('set.volume', data={'volume': level})
 
     def communicate_volume_change(self, message, dialog, code, changed):
         play_sound = message.metadata.get('play_sound', False)
@@ -96,65 +106,68 @@ class VolumeSkill(MycroftSkill):
         Mixer().setvolume(0)
 
     def handle_reset_volume(self, message):
-        Mixer().setvolume(self.default_volume)
-        self.speak_dialog(
-            'reset.volume',
-            data={'volume': self.get_volume_code(self.default_volume)})
+        Mixer().setvolume(self.level_to_volume(self.default_level))
+        self.speak_dialog('reset.volume', data={'volume': self.default_level})
 
-    def __update_volume(self, level=0):
+    def volume_to_level(self, volume):
+        """
+        :param volume: min_volume..max_volume
+        :rtype int
+        """
+        range = self.MAX_LEVEL - self.MIN_LEVEL
+        proportion = float(volume - self.min_volume) / self.max_volume
+        level = int(round(self.MIN_LEVEL + range * proportion))
+        if level > self.MAX_LEVEL:
+            level = self.MAX_LEVEL
+        elif level < self.MIN_LEVEL:
+            level = self.MIN_LEVEL
+        return level
+
+    def level_to_volume(self, level):
+        """
+        :param level: 0..MAX_LEVEL
+        :rtype int
+        """
+        range = self.max_volume - self.min_volume
+        proportion = float(level) / self.MAX_LEVEL
+        volume = int(round(self.min_volume + range * proportion))
+
+        return volume
+
+    @staticmethod
+    def bound_level(level):
+        if level > VolumeSkill.MAX_LEVEL:
+            level = VolumeSkill.MAX_LEVEL
+        elif level < VolumeSkill.MIN_LEVEL:
+            level = VolumeSkill.MIN_LEVEL
+        return level
+
+    def __update_volume(self, change=0):
         """
         Tries to change volume level
-        :param level: +1 or -1; the step to change by
+        :param change: +1 or -1; the step to change by
         :return: new code (0..11), whether volume changed
         """
         mixer = Mixer()
-        volume = mixer.getvolume()[0]
-        old_code = self.get_volume_code(volume)
+        old_level = self.volume_to_level(mixer.getvolume()[0])
+        new_level = self.bound_level(old_level + change)
+        mixer.setvolume(self.level_to_volume(new_level))
+        return new_level, new_level != old_level
 
-        new_code = self.fix_code(old_code + level)
-        if new_code in self.VOLUMES:
-            volume = self.VOLUMES[new_code]
-            mixer.setvolume(volume)
-        return new_code, new_code != old_code
+    def get_volume_level(self, message, default=None):
+        level_str = message.metadata.get('VolumeAmount', default)
+        level = self.default_level
 
-    def get_volume(self, message, default=None):
-        amount = message.metadata.get('VolumeAmount', default)
-        if not amount:
-            return self.default_volume
-
-        if amount in ['loud']:
-            amount = 9
-        elif amount in ['normal']:
-            amount = 6
-        elif amount in ['quiet']:
-            amount = 3
-        elif amount in ['two']:
-            amount = 2
-        elif amount in ['one']:
-            amount = 1
-        elif amount in ['zero']:
-            amount = 0
-        else:
+        try:
+            level = self.VOLUME_WORDS[level_str]
+        except KeyError:
             try:
-                amount = int(amount)
-            except:
-                return self.default_volume
+                level = int(level_str)
+            except ValueError:
+                pass
 
-        amount = self.fix_code(amount)
-        return amount, self.VOLUMES[amount]
-
-    def get_volume_code(self, volume):
-        for k, v in self.VOLUMES.iteritems():
-            if volume <= v:
-                return k
-
-    @staticmethod
-    def fix_code(code):
-        if code > 11:
-            code = 11
-        elif code < 0:
-            code = 0
-        return code
+        level = self.bound_level(level)
+        return level
 
     def stop(self):
         pass
