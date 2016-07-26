@@ -17,6 +17,7 @@
 
 
 import mustache
+import pystache
 import os
 import random
 from mycroft.util import log
@@ -78,7 +79,7 @@ class MustacheDialogRenderer(object):
             index = random.randrange(len(template_functions))
         else:
             index %= len(template_functions)
-        return mustache.render(template_functions[index], context)
+        return pystache.render(template_functions[index], context)
 
 
 class DialogLoader(object):

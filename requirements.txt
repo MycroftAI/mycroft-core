@@ -1,5 +1,5 @@
 shortuuid==0.4.3
-mustache==0.1.4
+pystache==0.5.4
 configobj==5.0.6
 wikipedia==1.4.0
 requests==2.8.1
