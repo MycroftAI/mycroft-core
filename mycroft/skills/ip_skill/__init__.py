@@ -18,6 +18,7 @@
 
 from os.path import dirname, join
 import re
+import time
 
 from netifaces import interfaces, ifaddresses, AF_INET
 
@@ -51,14 +52,15 @@ class IPSkill(MycroftSkill):
             if None in addresses:
                 addresses.remove(None)
             if addresses and ifaceName != "lo":
-                addresses = [re.sub(r"\.", r" dot ", address)
+                updated_addresses = [re.sub(r"\.", r" dot ", address)
                              for address in addresses]
                 logger.debug(addresses[0])
                 for address in addresses:
                     self.enclosure.mouth_text(address)
                 self.speak('%s: %s' % (
                     "interface: " + ifaceName +
-                    ", I.P. Address ", ', '.join(addresses)))
+                    ", I.P. Address ", ', '.join(updated_addresses)))
+		time.sleep(15)
                 self.enclosure.activate_mouth_listeners(True)
         self.speak("Those are all my I.P. addresses.")
 
