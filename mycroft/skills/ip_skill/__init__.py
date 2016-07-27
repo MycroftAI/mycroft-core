@@ -60,7 +60,7 @@ class IPSkill(MycroftSkill):
                     ", I.P. Address ", ', '.join(updated_addresses)))
                 for address in addresses:
                     self.enclosure.mouth_text(address)
-                    time.sleep(10)
+                    time.sleep(15)
                 self.enclosure.activate_mouth_listeners(True)
         self.speak("Those are all my I.P. addresses.")
 
