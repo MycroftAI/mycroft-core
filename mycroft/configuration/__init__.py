@@ -192,3 +192,18 @@ class ConfigurationManager(object):
             ConfigurationManager.load_local(locations)
 
         return ConfigurationManager.__config
+
+    @staticmethod
+    def set(section, key, value):
+        """
+        Set a key in the user preferences
+        """
+        if not ConfigurationManager.__config:
+            ConfigurationManager.load_defaults()
+
+        ConfigurationManager.__config[section][key] = value
+
+        user_config = ConfigObj(USER_CONFIG)
+        user_config.setdefault(section, {})
+        user_config[section][key] = value
+        user_config.write()
