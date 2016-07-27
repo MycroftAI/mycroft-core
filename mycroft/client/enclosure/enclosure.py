@@ -184,11 +184,13 @@ class Enclosure:
         self.__register_events()
 
     def setup(self):
-        if str2bool(self.config.get('must_upload')):
+        must_upload = self.config.get('must_upload')
+        if must_upload is not None and str2bool(must_upload):
             ConfigurationManager.set('enclosure', 'must_upload', False)
             self.upload_hex()
 
-        if str2bool(self.config.get('must_start_test')):
+        must_start_test = self.config.get('must_start_test')
+        if must_start_test is not None and str2bool(must_start_test):
             ConfigurationManager.set('enclosure', 'must_start_test', False)
             time.sleep(0.5)  # Ensure arduino has booted
             self.writer.write("test.begin")
