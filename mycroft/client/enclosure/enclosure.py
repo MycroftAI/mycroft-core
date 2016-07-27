@@ -40,6 +40,7 @@ __author__ = 'aatchison + jdorleans + iward'
 
 LOGGER = getLogger("EnclosureClient")
 
+
 class EnclosureReader(Thread):
     """
     Reads data from Serial port.
@@ -102,6 +103,11 @@ class EnclosureReader(Thread):
                 'utterance': "I am testing one two three"}))
             record("/tmp/test.wav", 3.5)
             play_wav("/tmp/test.wav")
+
+            # Test audio muting on arduino
+            self.client.emit(Message("speak", metadata={
+                'utterance': "LOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOONG"}))
+
             mixer.setvolume(prev_vol)
 
     def stop(self):
