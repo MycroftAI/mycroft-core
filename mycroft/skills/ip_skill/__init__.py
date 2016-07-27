@@ -55,12 +55,12 @@ class IPSkill(MycroftSkill):
                 updated_addresses = [re.sub(r"\.", r" dot ", address)
                              for address in addresses]
                 logger.debug(addresses[0])
-                for address in addresses:
-                    self.enclosure.mouth_text(address)
                 self.speak('%s: %s' % (
                     "interface: " + ifaceName +
                     ", I.P. Address ", ', '.join(updated_addresses)))
-		time.sleep(15)
+                for address in addresses:
+                    self.enclosure.mouth_text(address)
+                    time.sleep(10)
                 self.enclosure.activate_mouth_listeners(True)
         self.speak("Those are all my I.P. addresses.")
 
