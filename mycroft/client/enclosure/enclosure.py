@@ -14,13 +14,15 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
-
+import subprocess
 import sys
 from Queue import Queue
+from alsaaudio import Mixer
 from threading import Thread
 
+import os
 import serial
+import time
 
 from mycroft.client.enclosure.arduino import EnclosureArduino
 from mycroft.client.enclosure.eyes import EnclosureEyes
@@ -29,8 +31,10 @@ from mycroft.client.enclosure.weather import EnclosureWeather
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
-from mycroft.util import kill
+from mycroft.util import kill, str2bool
+from mycroft.util import play_wav
 from mycroft.util.log import getLogger
+from mycroft.util.audio_test import record
 
 __author__ = 'aatchison + jdorleans + iward'
 
@@ -84,6 +88,27 @@ class EnclosureReader(Thread):
         if "volume.down" in data:
             self.client.emit(
                 Message("DecreaseVolumeIntent", metadata={'play_sound': True}))
+
+        if "system.test.begin" in data:
+            self.client.emit(Message('recognizer_loop:sleep'))
+
+        if "system.test.end" in data:
+            self.client.emit(Message('recognizer_loop:wake_up'))
+
+        if "mic.test" in data:
+            mixer = Mixer()
+            prev_vol = mixer.getvolume()[0]
+            mixer.setvolume(35)
+            self.client.emit(Message("speak", metadata={
+                'utterance': "I am testing one two three"}))
+            record("/tmp/test.wav", 3.5)
+            play_wav("/tmp/test.wav")
+
+            # Test audio muting on arduino
+            self.client.emit(Message("speak", metadata={
+                'utterance': "LOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOONG"}))
+
+            mixer.setvolume(prev_vol)
 
     def stop(self):
         self.alive = False
@@ -158,6 +183,25 @@ class Enclosure:
         self.weather = EnclosureWeather(self.client, self.writer)
         self.__register_events()
 
+    def setup(self):
+        if str2bool(self.config.get('must_upload')):
+            ConfigurationManager.set('enclosure', 'must_upload', False)
+            self.upload_hex()
+
+        if str2bool(self.config.get('must_start_test')):
+            ConfigurationManager.set('enclosure', 'must_start_test', False)
+            time.sleep(0.5)  # Ensure arduino has booted
+            self.writer.write("test.begin")
+
+    @staticmethod
+    def upload_hex():
+        old_path = os.getcwd()
+        try:
+            os.chdir('/opt/enclosure/')
+            subprocess.check_call('./upload.sh')
+        finally:
+            os.chdir(old_path)
+
     def __init_serial(self):
         try:
             self.config = ConfigurationManager.get().get("enclosure")
@@ -223,7 +267,11 @@ class Enclosure:
 
 def main():
     try:
-        Enclosure().run()
+        enclosure = Enclosure()
+        enclosure.setup()
+        enclosure.run()
+    except Exception as e:
+        print(e)
     finally:
         sys.exit()
 
