@@ -43,7 +43,7 @@ class IPSkill(MycroftSkill):
 
     def handle_intent(self, message):
         self.speak("Here are my available I.P. addresses.")
-        self.enclosure.activate_mouth_listeners(False);
+        self.enclosure.activate_mouth_listeners(False)
         for ifaceName in interfaces():
             addresses = [
                 i['addr'] for i in
@@ -53,7 +53,7 @@ class IPSkill(MycroftSkill):
                 addresses.remove(None)
             if addresses and ifaceName != "lo":
                 updated_addresses = [re.sub(r"\.", r" dot ", address)
-                             for address in addresses]
+                                     for address in addresses]
                 logger.debug(addresses[0])
                 self.speak('%s: %s' % (
                     "interface: " + ifaceName +
