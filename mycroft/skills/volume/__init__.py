@@ -114,6 +114,7 @@ class VolumeSkill(MycroftSkill):
         new_code = self.fix_code(old_code + level)
         if new_code in self.VOLUMES:
             volume = self.VOLUMES[new_code]
+            self.enclosure.eyes_volume(volume)
             mixer.setvolume(volume)
         return new_code, new_code != old_code
 
