@@ -79,7 +79,6 @@ class EnclosureReader(Thread):
 
         if "mycroft.stop" in data:
             self.client.emit(Message("mycroft.stop"))
-            kill(['mimic'])  # TODO - Refactoring in favor of Mycroft Stop
 
         if "volume.up" in data:
             self.client.emit(
