@@ -1,9 +1,0 @@
-Package: %%PACKAGE%%
-Version: %%VERSION%%
-Section: base
-Priority: optional
-Architecture: %%ARCHITECTURE%%
-Depends: portaudio19-dev, libglib2.0-0, flac, espeak, mpg123, libffi-dev, libssl-dev
-Maintainer: Sean Fitzgerald <sean.fitzgerald@mycroft.ai>
-Description: %%DESCRIPTION%%
-

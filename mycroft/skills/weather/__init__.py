@@ -17,7 +17,7 @@
 
 
 from adapt.intent import IntentBuilder
-from os.path import dirname, join
+from os.path import dirname
 from pyowm.exceptions.api_call_error import APICallError
 from multi_key_dict import multi_key_dict
 
