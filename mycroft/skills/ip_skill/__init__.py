@@ -32,7 +32,7 @@ __author__ = 'ryanleesipes'
 
 
 class IPSkill(MycroftSkill):
-    SEC_PER_LETTER = 5.0 / 7.0
+    SEC_PER_LETTER = 3.0 / 7.0
     LETTERS_PER_SCREEN = 9.0
     def __init__(self):
         super(IPSkill, self).__init__(name="IPSkill")
