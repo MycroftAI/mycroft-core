@@ -34,6 +34,7 @@ __author__ = 'ryanleesipes'
 class IPSkill(MycroftSkill):
     SEC_PER_LETTER = 4.0 / 7.0
     LETTERS_PER_SCREEN = 9.0
+
     def __init__(self):
         super(IPSkill, self).__init__(name="IPSkill")
 
@@ -62,7 +63,8 @@ class IPSkill(MycroftSkill):
                     ", I.P. Address ", ', '.join(updated_addresses)))
                 for address in addresses:
                     self.enclosure.mouth_text(address)
-                    time.sleep((self.LETTERS_PER_SCREEN + len(address)) * self.SEC_PER_LETTER)
+                    time.sleep((self.LETTERS_PER_SCREEN + len(address)) *
+                               self.SEC_PER_LETTER)
         self.enclosure.activate_mouth_listeners(True)
         self.speak("Those are all my I.P. addresses.")
 
