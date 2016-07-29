@@ -20,7 +20,8 @@ sudo apt-get install -y \
     portaudio19-dev \
     mpg123 \
     screen \
-    curl
+    curl \
+    python-pocketsphinx
 
 # upgrade virtualenv to latest from pypi
 sudo pip install --upgrade virtualenv

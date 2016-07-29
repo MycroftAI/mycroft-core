@@ -19,7 +19,7 @@
 import time
 
 import os
-from pocketsphinx.pocketsphinx import Decoder
+from pocketsphinx import Decoder
 import tempfile
 
 __author__ = 'seanfitz, jdorleans'
