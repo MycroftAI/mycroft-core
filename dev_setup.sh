@@ -51,9 +51,9 @@ CORES=$(nproc)
 echo Building with $CORES cores.
 
 #build and install pocketsphinx
-cd ${TOP}
-${TOP}/scripts/install-pocketsphinx.sh -q
-build and install mimic
+#cd ${TOP}
+#${TOP}/scripts/install-pocketsphinx.sh -q
+#build and install mimic
 cd ${TOP}
 ${TOP}/scripts/install-mimic.sh
 
