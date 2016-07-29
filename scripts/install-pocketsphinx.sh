@@ -18,14 +18,16 @@ function install_pocketsphinx {
   if [ ! -d ${TOP}/pocketsphinx-python ]; then
    # build sphinxbase and pocketsphinx if we haven't already
     git clone --recursive https://github.com/cmusphinx/pocketsphinx-python
-    cd ${TOP}/pocketsphinx-python/sphinxbase
+    pushd ./pocketsphinx-python/sphinxbase
     ./autogen.sh
     ./configure
     make -j$CORES
-    cd ${TOP}/pocketsphinx-python/pocketsphinx
+    popd
+    pushd ./pocketsphinx-python/pocketsphinx
     ./autogen.sh
     ./configure
     make -j$CORES
+    popd
   fi
 
   # build and install pocketsphinx python bindings
