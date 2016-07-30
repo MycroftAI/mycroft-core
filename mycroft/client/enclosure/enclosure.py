@@ -195,11 +195,15 @@ class Enclosure:
             self.client.emit(Message("speak", metadata={
                 'utterance': "I will be finished in just a moment."}))
             self.upload_hex()
+            self.client.emit(Message("speak", metadata={
+                'utterance': "Arduino programing complete."}))
 
         must_start_test = self.config.get('must_start_test')
         if must_start_test is not None and str2bool(must_start_test):
             ConfigurationManager.set('enclosure', 'must_start_test', False)
             time.sleep(0.5)  # Ensure arduino has booted
+            self.client.emit(Message("speak", metadata={
+                'utterance': "Begining hardware self test."}))
             self.writer.write("test.begin")
 
     @staticmethod
@@ -210,7 +214,7 @@ class Enclosure:
             subprocess.check_call('./upload.sh')
         finally:
             os.chdir(old_path)
-
+            
     def __init_serial(self):
         try:
             self.config = ConfigurationManager.get().get("enclosure")
