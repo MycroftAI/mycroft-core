@@ -214,7 +214,7 @@ class Enclosure:
             subprocess.check_call('./upload.sh')
         finally:
             os.chdir(old_path)
-            
+
     def __init_serial(self):
         try:
             self.config = ConfigurationManager.get().get("enclosure")
