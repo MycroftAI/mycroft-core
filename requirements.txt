@@ -34,3 +34,4 @@ psutil==4.1.0
 pep8==1.7.0
 multi_key_dict==2.0.3
 pocketsphinx==0.1.0
+-e git+https://github.com/ChristopherRogers1991/phue@33a15734b0190239eb4d6835fff915c8b36b356f#egg=phue

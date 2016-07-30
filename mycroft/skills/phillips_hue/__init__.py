@@ -7,6 +7,8 @@ from phue import Group
 from phue import PhueRegistrationException
 from phue import PhueRequestTimeout
 from time import sleep
+from requests import ConnectionError
+from requests import get
 
 import socket
 
@@ -17,6 +19,13 @@ LOGGER = getLogger(__name__)
 
 class DeviceNotFoundException(Exception):
     pass
+
+
+class UnauthorizedUserException(Exception):
+
+    def __init__(self, username):
+        msg = "User '{0}' is not registered with the bridge"
+        super(UnauthorizedUserException, self).__init__(msg.format(username))
 
 
 def intent_handler(handler_function):
@@ -84,6 +93,10 @@ class PhillipsHueSkill(MycroftSkill):
     def user_supplied_ip(self):
         return self.config.get('ip') != ''
 
+    @property
+    def user_supplied_username(self):
+        return self.config.get('username') != ''
+
     def _register_with_bridge(self):
         """
         Helper for connecting to the bridge. If we don't
@@ -114,26 +127,49 @@ class PhillipsHueSkill(MycroftSkill):
         groups are registered as vocab.
         """
         self.username = self.bridge.username
+
+        with self.file_system.open('username', 'w') as conf_file:
+            conf_file.write(self.username)
+
         if not self.default_group:
             self._set_default_group(self.config.get('default_group'))
+
         self._register_groups_and_scenes()
 
     def _attempt_connection(self):
         """
         This will attempt to connect to the bridge,
         but will not handle any errors on it's own.
+
+        Raises
+        ------
+        UnauthorizedUserException
+            If self.username is not None, and is not registered with the bridge
         """
         if not self.user_supplied_ip:
             self.ip = _discover_bridge()
         else:
             self.ip = self.config.get('ip')
+        if self.username:
+            url = 'http://{ip}/api/{user}'.format(ip=self.ip,
+                                                  user=self.username)
+            data = get(url).json()
+            data = data[0] if isinstance(data, list) else data
+            error = data.get('error')
+            if error:
+                description = error.get('description')
+                if description == "unauthorized user":
+                    raise UnauthorizedUserException(self.username)
+                else:
+                    raise Exception('Unknown Error: {0}'.format(description))
+
         self.bridge = Bridge(self.ip, self.username)
 
     def _connect_to_bridge(self, acknowledge_successful_connection=False):
         """
         Calls _attempt_connection, handling various exceptions
         by either alerting the user to issues with the config/setup,
-        or registering the applicaton with the bridge.
+        or registering the application with the bridge.
 
         Parameters
         ----------
@@ -151,14 +187,25 @@ class PhillipsHueSkill(MycroftSkill):
         except DeviceNotFoundException:
             self.speak_dialog('bridge.not.found')
             return False
-        except PhueRegistrationException:
-            self._register_with_bridge()
+        except ConnectionError:
+            self.speak_dialog('failed.to.connect')
+            if self.user_supplied_ip:
+                self.speak_dialog('ip.in.config')
+            return False
         except socket.error as e:
             if 'No route to host' in e.args:
                 self.speak_dialog('no.route')
             else:
                 self.speak_dialog('failed.to.connect')
             return False
+        except UnauthorizedUserException:
+            if self.user_supplied_username:
+                self.speak_dialog('invalid.user')
+                return False
+            else:
+                self._register_with_bridge()
+        except PhueRegistrationException:
+            self._register_with_bridge()
 
         if acknowledge_successful_connection:
             self.speak_dialog('successfully.connected')
@@ -214,14 +261,20 @@ class PhillipsHueSkill(MycroftSkill):
         """
         self.load_data_files(dirname(__file__))
 
-        try:
-            self._attempt_connection()
-            self._update_bridge_data()
-        except (PhueRegistrationException,
-                DeviceNotFoundException,
-                socket.error):
-            # Swallow it for now; _connect_to_bridge will deal with it later
-            pass
+        if self.file_system.exists('username'):
+            if not self.user_supplied_username:
+                with self.file_system.open('username', 'r') as conf_file:
+                    self.username = conf_file.read().strip(' \n')
+            try:
+                self._attempt_connection()
+                self._update_bridge_data()
+            except (PhueRegistrationException,
+                    DeviceNotFoundException,
+                    UnauthorizedUserException,
+                    ConnectionError,
+                    socket.error):
+                # Swallow it for now; _connect_to_bridge will deal with it
+                pass
 
         toggle_intent = IntentBuilder("ToggleIntent") \
             .one_of("OffKeyword", "OnKeyword") \
