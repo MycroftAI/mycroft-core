@@ -12,7 +12,7 @@ __author__ = 'seanfitz'
 place_manifest('mycroft-base-MANIFEST.in')
 
 setup(
-    name="Mycroft",
+    name="mycroft-core",
     version=get_version(),
     install_requires=required('requirements.txt'),
     packages=find_all_packages("mycroft"),
