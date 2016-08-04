@@ -1,0 +1,69 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-GB">
+<meta http-equiv="refresh" content="content"> 
+<head>
+  <title>Mycroft Device Setup: Connect to WiFi Network</title>
+<!--  <script src="http://code.jquery.com/jquery-2.0.0.js"></script> -->
+  <script src="jquery-2.2.3.min.js"></script>
+</head>
+<body style="width:100%">
+<div style="color:DarkGrey" id = "header">
+  {% block header %}{% end %}
+</div>
+<div id="content">
+  {% block content %}{% end %}
+</div>
+
+<div id="footer">
+  {% block footer %}{% end %}
+</div>
+<script>
+$(document).ready(function () {
+    //change example.com with your IP or your host
+    var ws = new WebSocket("ws://172.24.1.1:8888/ws");
+    ws.onopen = function(evt) {
+      var conn_status = document.getElementById('conn_text');
+      conn_status.innerHTML = "Connection status: Connected!"
+    };
+    ws.onmessage = function(evt) {
+      var newMessage = document.createElement('p');
+      newMessage.textContent = "Server: " + evt.data;
+      document.getElementById('messages_txt').appendChild(newMessage);
+    };
+/*    ws.onclose = function(evt) {
+      alert ("Connection closed");
+      alert ("<td><input type="text" id="input_text"/></td><td><input type="submit" id="button" value="Send"/></td>")
+
+    };
+*/
+    $("#button").click(function(evt) {
+      evt.preventDefault();
+      var message = "{" + "'passphrase':'''" + $("#input_text").val() + "'''}";
+      ws.send(message);
+      var newMessage = document.createElement('p');
+      newMessage.textContent = "Client: " + message;
+      document.getElementById('messages_txt').appendChild(newMessage);
+    });
+    $("#scan-networks").click(function(evt) {
+      var message = "{'wifi':'scan_networks'}"
+      ws.send(message);
+      });
+    $("#ap-on").click(function(evt) {
+      alert("Enabling Station Mode")
+      var message = "{'station_mode':'ap_on'}"
+      ws.send(message);
+      });
+    $("#ap-off").click(function(evt) {
+      alert("Disabling Station Mode")
+      var message = "{'station_mode':'ap_off'}"
+      ws.send(message);
+    });
+    $("input#radio").click(function(evt) {
+      /*alert($("input:radio[name='radio_networks']:checked").val())*/
+      var message = "{" + "'ssid':'''" + $("input:radio[name='radio_networks']:checked").val() + "'''}"
+      ws.send(message);
+    });
+});
+</script>
+<body>
+</html>

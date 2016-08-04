@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block header %}
+  <h1 style="color:black">Mycroft Device Setup</h1>
+  <h2>Connect to Wi-Fi Network</h2>
+<!--  <label id="conn_text"></label><br /> -->
+<!--  <input type="text" id="input_text"/> -->
+<!--  <input type="submit" id="button" value="Send" /> -->
+  <input type="submit" id="scan-networks" value="Scan for Wi-Fi Networks" />
+  <input type="submit" id="ap-on" value="Station Mode: On" />
+  <input type="submit" id="ap-off" value="Station Mode: Off" />
+{% end %}
+
+{% block content %}
+  
+<table border="1">
+  <tr>
+    <th>SSID</th>
+    <th>Mac Address</th>
+    <th>Encrypted</th>
+<!--    <th>Frequency</th> -->
+    <th>Quality</th>
+<!--    <th>Signal</th> -->
+<!--    <th>Channel</th> -->
+<!--    <th>Mode</th> -->
+    <th>Selected</th>
+  </tr>
+  {% for network in ap['network']%}
+  <tr>
+    <td>{{ network['ssid'] }}</td>
+    <td>{{ network['address'] }}</td>
+    <td>{{ network['encrypted'] }}</td>
+<!--    <td>{{ network['frequency'] }}</td> -->
+    <td>{{ network['quality'] }}</td>
+<!--    <td>{{ network['signal'] }}</td>  -->
+<!--    <td>{{ network['channel'] }}</td> -->
+<!--    <td>{{ network['mode'] }}</td> -->
+<!--    <td><textarea name= "message:{{ network['ssid'] }}" rows="1" cols="32"></textarea></td> -->
+<!--    <td><input type="text" id="input_text" name="input:{{ network['ssid'] }}"/></td> -->
+<!--    <td><input type="submit" id="button" name="button:{{ network['ssid'] }}" value="Connect"/></td> -->
+    <td><input id="radio" type="radio" name="radio_networks" value="{{ network['ssid'] }}"/></td>
+  </tr>
+  {% end %}
+</table>
+<div>
+  <input type="text" id="input_text" name="input_text"/>
+  <td><input type="submit" id="button" name="button" value="Connect"/></td>
+<div>
+{% end %}
+
+{% block footer %}
+  <p>2016 <a href="http://mycroft.ai">Mycroft AI, Inc.</a></p>
+  <div style="background:LightGray" id= "debug">
+    <label style="color:DarkBlue" id="conn_text"></label><br />
+    <div style="background:LightGray; color:DarkBlue" id="messages_txt" />
+  </div>
+{% end %}
+
+
