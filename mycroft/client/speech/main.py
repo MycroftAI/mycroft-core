@@ -25,7 +25,7 @@ from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.tts import tts_factory
 from mycroft.util.log import getLogger
-from mycroft.util import kill
+from mycroft.util import kill, connected
 
 logger = getLogger("SpeechClient")
 client = None
@@ -118,6 +118,10 @@ def main():
     event_thread = Thread(target=connect)
     event_thread.setDaemon(True)
     event_thread.start()
+
+    if connected() is False:  # TODO: Localization
+        mute_and_speak("This device is not connected to the Internet")
+
     try:
         loop.run()
     except KeyboardInterrupt, e:

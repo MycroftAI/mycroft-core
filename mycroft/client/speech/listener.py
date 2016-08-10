@@ -31,7 +31,7 @@ from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.message import Message
 from mycroft.metrics import MetricsAggregator
 from mycroft.session import SessionManager
-from mycroft.util import CerberusAccessDenied
+from mycroft.util import CerberusAccessDenied, connected
 from mycroft.util.log import getLogger
 
 logger = getLogger(__name__)
@@ -168,27 +168,30 @@ class AudioConsumer(threading.Thread):
     def transcribe(self, audio_segments):
         utterances = []
         threads = []
-        for audio in audio_segments:
-            if self._audio_length(audio) < self.MIN_AUDIO_SIZE:
-                logger.debug("Audio too short to send to STT")
-                continue
+        if connected():
+            for audio in audio_segments:
+                if self._audio_length(audio) < self.MIN_AUDIO_SIZE:
+                    logger.debug("Audio too short to send to STT")
+                    continue
 
-            target = self._create_remote_stt_runnable(audio, utterances)
-            t = threading.Thread(target=target)
-            t.start()
-            threads.append(t)
+                target = self._create_remote_stt_runnable(audio, utterances)
+                t = threading.Thread(target=target)
+                t.start()
+                threads.append(t)
 
-        for thread in threads:
-            thread.join()
-        if len(utterances) > 0:
-            payload = {
-                'utterances': utterances,
-                'session': SessionManager.get().session_id
-            }
-            self.emitter.emit("recognizer_loop:utterance", payload)
-            self.metrics.attr('utterances', utterances)
-        else:
-            raise sr.UnknownValueError
+            for thread in threads:
+                thread.join()
+            if len(utterances) > 0:
+                payload = {
+                    'utterances': utterances,
+                    'session': SessionManager.get().session_id
+                }
+                self.emitter.emit("recognizer_loop:utterance", payload)
+                self.metrics.attr('utterances', utterances)
+            else:
+                raise sr.UnknownValueError
+        else: # TODO: Localization
+            self.__speak("This device is not connected to the Internet")
 
 
 class RecognizerLoopState(object):
