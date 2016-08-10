@@ -19,6 +19,7 @@
 import os
 import subprocess
 from os.path import dirname
+import socket
 
 import psutil
 
@@ -86,6 +87,23 @@ def kill(names):
                     break
             except:
                 pass
+
+
+def connected(host="8.8.8.8", port=53, timeout=3):
+    """
+    Thanks to 7h3rAm on
+    http://stackoverflow.com/questions/3764291/checking-network-connection
+    Host: 8.8.8.8 (google-public-dns-a.google.com)
+    OpenPort: 53/tcp
+    Service: domain (DNS/TCP)
+    """
+    try:
+        socket.setdefaulttimeout(timeout)
+        socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
+        return True
+    except Exception as ex:
+        print ex.message
+        return False
 
 
 class CerberusAccessDenied(Exception):
