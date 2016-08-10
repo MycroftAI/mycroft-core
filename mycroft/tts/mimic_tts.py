@@ -33,9 +33,50 @@ BIN = config.get(
     "mimic.path", join(MYCROFT_ROOT_PATH, 'mimic', 'bin', 'mimic'))
 
 
+def phonemes_start_stop(phonemes):
+    """ Reduces phonemes to a start speaking and a stop speaking value. """
+    if len(phonemes) > 1:
+        return [('start', phonemes[0][1]), ('stop', phonemes[-1][1])]
+    else:
+        return []
+
+
+def phonemes_speaking(phonemes):
+    """ Reduces phonemes to pauses and speaking intervals """
+    binary = []
+    for e in phonemes:
+        if e[0] != 'pau':
+            new = ('speaking', e[1])
+        else:
+            new = e
+        if len(binary) == 0 or binary[-1][0] != new[0]:
+            binary.append(new)
+        else:
+            binary[-1] = new
+    return binary
+
+
+def phonemes_all(phonemes):
+    """ Keeps all phoneme data """
+    return phonemes
+
+
+def phonemes_none(phonemes):
+    """ Removes all phoneme data """
+    return []
+
+phoneme_set = {'all': phonemes_all,
+               'startstop': phonemes_start_stop,
+               'speaking': phonemes_speaking,
+               'none': phonemes_none
+               }
+
+
 class Mimic(TTS):
     def __init__(self, lang, voice):
         super(Mimic, self).__init__(lang, voice)
+        pf = config.get('mimic.phonemes', 'none')
+        self.representation = phoneme_set.get(pf, phonemes_none)
 
     def execute(self, sentence, client):
         process = subprocess.Popen(['stdbuf', '-oL', BIN,
@@ -49,8 +90,10 @@ class Mimic(TTS):
                 phonemes = output.strip().split(' ')
                 phonemes = [(e.split(':')[0], e.split(':')[1])
                             for e in phonemes]
-                client.emit(Message('mycroft.tts',
-                                    metadata={'phonemes': phonemes}))
+                phonemes = self.representation(phonemes)
+                if len(phonemes) > 0:
+                    client.emit(Message('mycroft.tts',
+                                        metadata={'phonemes': phonemes}))
 
 
 class MimicValidator(TTSValidator):
