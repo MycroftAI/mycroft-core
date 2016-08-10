@@ -12,4 +12,5 @@ tornado.ioloop
 mycroft/__version__.py
 MANIFEST.in
 setup.py
+scripts/logs/*
 logs/*
