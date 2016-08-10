@@ -190,7 +190,7 @@ class AudioConsumer(threading.Thread):
                 self.metrics.attr('utterances', utterances)
             else:
                 raise sr.UnknownValueError
-        else: # TODO: Localization
+        else:  # TODO: Localization
             self.__speak("This device is not connected to the Internet")
 
 
