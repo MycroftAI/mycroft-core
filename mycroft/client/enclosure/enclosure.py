@@ -113,10 +113,10 @@ class EnclosureReader(Thread):
             subprocess.call('speaker-test -P 10 -l 0 -s 1', shell=True)
 
         if "unit.shutdown" in data:
-            subprocess.call('sudo poweroff')
+            subprocess.call('sudo poweroff', shell = True)
 
         if "unit.reboot" in data:
-            subprocess.call('sudo reboot')
+            subprocess.call('sudo reboot', shell = True)
 
     def stop(self):
         self.alive = False
