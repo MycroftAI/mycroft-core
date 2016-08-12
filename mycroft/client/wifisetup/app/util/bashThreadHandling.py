@@ -3,10 +3,9 @@ import subprocess
 import sys
 
 class cmd_thread(threading.Thread):
-    def __init__(self, cmd):#, timeout):
+    def __init__(self, cmd):
         threading.Thread.__init__(self)
         self.cmd = cmd
-        #self.timeout = timeout
         self._return ="No Output"
     def run(self):
         try:
@@ -24,15 +23,10 @@ class cmd_thread(threading.Thread):
             self._return = {'exit':2, 'sys':sys.exc_info()[0]}
 
     def join(self):
-        threading.Thread.join(self) #, timeout=self.timeout)
+        threading.Thread.join(self)
         return self._return
 
 def bash_command(command):
-    proc = cmd_thread(command) #, 10)
-    #proc.setDaemon(True)
-    proc.start()
-    return proc.join()
-
-def bash_command_daemon(command):
     proc = cmd_thread(command)
     proc.start()
+    return proc.join()

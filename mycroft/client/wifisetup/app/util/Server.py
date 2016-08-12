@@ -1,28 +1,18 @@
 import ast
 import datetime
 import logging
-import os
 import re
 import sys
 from subprocess import Popen, PIPE
 
 import tornado.template
-#from hostapdconf import helpers as ha
-#from hostapdconf.parser import HostapdConf
+import tornado.web
+import tornado.websocket
 from shutil import copyfile
 from WiFiTools import ap_link_tools
 from wpaCLITools import wpaClientTools
 
-#from APTools import APConfig
-
 import time
-
-#copyfile('config.templates/hostapd.conf.template', '/etc/hostapd/hostapd.conf')
-#APConf = HostapdConf('/etc/hostapd/hostapd.conf')
-#print APConf['interface']
-#APConf['interface'] = 'wlan1'
-#print APConf['interface']
-#APConf.write()
 
 logging.basicConfig(level=logging.DEBUG, format='(%(threadName)-10s) %(message)s',)
 
@@ -32,7 +22,6 @@ def bash_command(cmd):
     try:
         proc = Popen(cmd, shell=False, stdout=PIPE, stderr=PIPE)
         stdout,stderr = proc.communicate('n\n')
-        #print stderr, proc.returncode
     except:
         print "bash fail"
 
@@ -149,39 +138,3 @@ class WSHandler(tornado.websocket.WebSocketHandler):
                     print "no"
                     x = x - 1
                     time.sleep(1)
-
-            #client_mode_config('wlan0',wifi_connection_settings['ssid'], self.dict2['passphrase'])
-            #connect_to_wifi()
-
-
-root = os.path.join(os.path.dirname(__file__), "srv/templates")
-		
-handlers = [
-    (r"/", MainHandler),
-    (r"/jquery-2.2.3.min.js",JSHandler),
-    (r"/img/(.*)", tornado.web.StaticFileHandler, { 'path': os.path.join(root, 'img/') } ),
-    (r"/bootstrap-3.3.7-dist/css/bootstrap.min.css",BootstrapMinCSSHandler),
-    (r"/bootstrap-3.3.7-dist/js/bootstrap.min.js",BootstrapMinJSHandler),
-    (r"/ws",WSHandler)
-]
-
-settings = dict(
-    template_path=os.path.join(os.path.dirname(__file__), "../srv/templates"),
-)
-
-wifi_connection_settings = {'ssid':'', 'passphrase':''}
-
-
-
-
-def connect_to_wifi():
-
-    try:
-        bash_command(["ip addr flush wlan0"])
-        #bash_command(["service wpa_supplicant stop"])
-        #bash_command(["wpa_supplicant -iwlan0 -Dnl80211 -c /etc/wpa_supplicant/wpa_supplicant.conf"])
-        bash_command(["ifdown","wlan0"])
-        bash_command(['ifconfig', 'wlan0','up'])
-        bash_command(["ifup","wlan0"])
-    except:
-        print "connection failed"

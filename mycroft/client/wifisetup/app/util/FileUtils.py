@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import threading
 from shutil import copyfile
-import os
 
 class CopyFile(threading.Thread):
     def __init__(self, name, source_path, file_source, dest_path, file_dest):

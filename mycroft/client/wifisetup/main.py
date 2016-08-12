@@ -14,50 +14,33 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-import subprocess
-import sys
-from Queue import Queue
-from alsaaudio import Mixer
-from threading import Thread
-
-import os
-import serial
-import time
-
-import threading
-
-from mycroft.client.enclosure.arduino import EnclosureArduino
-from mycroft.client.enclosure.eyes import EnclosureEyes
-from mycroft.client.enclosure.mouth import EnclosureMouth
-from mycroft.client.enclosure.weather import EnclosureWeather
-from mycroft.configuration import ConfigurationManager
-from mycroft.messagebus.client.ws import WebsocketClient
-from mycroft.messagebus.message import Message
-from mycroft.util import kill, str2bool
-from mycroft.util import play_wav
-from mycroft.util.log import getLogger
-from mycroft.util.audio_test import record
 
 __author__ = 'aatchison'
+
+from Queue import Queue
+from threading import Thread
 
 #mycroft stuff
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
-from mycroft.util import kill, str2bool
+from mycroft.util import str2bool
 from mycroft.util.log import getLogger
 
 #wifi setup stuff
-import Queue
-import os
 import sys
+import os
 import threading
-import time
-from operator import itemgetter
+import Queue
+from mycroft.client.wifisetup.app.util.Server import MainHandler, WSHandler, JSHandler, BootstrapMinJSHandler, BootstrapMinCSSHandler
+
+# web server stuff
 import tornado.ioloop
 import tornado.template
 import tornado.web
 import tornado.websocket
+from  mycroft.client.wifisetup.app.util.WiFiTools import ap_link_tools
+
 from app.util.Config import AppConfig
 from app.util.FileUtils import ap_mode_config, write_hostapd_conf, write_network_interfaces, write_dnsmasq
 from app.util.LinkUtils import ScanForAP, link_add_vap
@@ -66,9 +49,6 @@ from app.util.dnsmasqTools import dnsmasqTools
 from app.util.hostAPDTools import hostAPServerTools
 from app.util.Server import MainHandler, JSHandler, BootstrapMinJSHandler, BootstrapMinCSSHandler, WSHandler
 from app.util.wpaCLITools import wpaClientTools
-#
-
-LOGGER = getLogger("WiFiSetupClient")
 
 #config = AppConfig()
 #config.open_file()
@@ -77,6 +57,10 @@ LOGGER = getLogger("WiFiSetupClient")
 dev_link_tools = dev_link_tools()
 linktools = ap_link_tools()
 
+
+LOGGER = getLogger("WiFiSetupClient")
+
+# web vars
 root = os.path.join(os.path.dirname(__file__), "srv/templates")
 
 handlers = [
@@ -91,14 +75,20 @@ settings = dict(
     template_path=os.path.join(os.path.dirname(__file__), "./srv/templates"),
 )
 
-exitFlag = 0
+nameList = ['web','ap', 'dns']
+queueLock = threading.Lock()
+workQueue = Queue.Queue(10)
+threads = []
+threadID = 1
 
 class WiFiSetup:
     def __init__(self):
+        self.__init_wifi_setup()
         self.client = WebsocketClient()
         self.__register_wifi_events()
+
     def setup(self):
-        must_start_ap_mode = True
+        must_start_ap_mode = self.config.get(str2bool('must_start_ap_mode'))
         if must_start_ap_mode is not None and must_start_ap_mode is True:
             LOGGER.info("Initalizing wireless setup mode.")
             self.client.emit(Message("speak", metadata={
@@ -110,7 +100,6 @@ class WiFiSetup:
             LOGGER.error("Client error: {0}".format(e))
             self.stop()
 
-    @staticmethod
     def stop(self):
         LOGGER.info("Shut down wireless setup mode.")
 
@@ -131,7 +120,6 @@ class WiFiSetup:
     def __register_wifi_events(self):
         self.client.on('recognizer_loop:record_begin',self.test_event())
 
-
     def __remove_wifi_events(self):
         self.client.remove('recognizer_loop:record_begin', self.test_event())
 
@@ -142,11 +130,26 @@ class WiFiSetup:
             else:
                 self.__remove_wifi_events()
 
+    def __init_wifi_setup(self):
+        self.config = ConfigurationManager.get().get("WiFiClient")
+
     def test_event(self):
+        ap = ap_link_tools().scan_ap()
+
+        thread = apWorker(threadID, 'ap', workQueue)
+        thread.setDaemon(True)
+        thread.start()
+        threads.append(thread)
+        threadID += 1
+        thread.join()
+
+        thread = tornadoWorker(threadID, 'web', workQueue)
+        thread.setDaemon(True)
+        thread.start()
+        threads.append(thread)
+        # threadID += 1
+        #thread.join()
         print "event triggered"
-
-
-
 
 class tornadoWorker (threading.Thread):
     def __init__(self, threadID, name, q):
@@ -160,7 +163,7 @@ class tornadoWorker (threading.Thread):
         ws_app = tornado.web.Application([(r'/ws', WSHandler), ])
         ws_app.listen('8888')#Port)
         app = tornado.web.Application(handlers, **settings)
-        app.listen('80')
+        app.listen('8080')
         tornado.ioloop.IOLoop.current().start()
         #print "Exiting " + self.name
 
@@ -191,7 +194,7 @@ class apWorker (threading.Thread):
                 lastSSID = n['ssid']
                 # Finally, sort by strength alone
             ap['network'] = sorted(nets_byNameAndStr, key=itemgetter('quality'), reverse=True)
-        # ap = linktools.scan_ap()
+        ap = linktools.scan_ap()
         S = Station()
         try:
             print "station on"
@@ -215,7 +218,6 @@ class dnsmasqWorker (threading.Thread):
             S.dnsmasq_on()
         except:
             exit(0)
-
 class Station():
     def __init__(self):
         self.aptools = hostapd_tools()
@@ -290,12 +292,6 @@ def exit_gracefully(signal, frame):
 
 
 
-nameList = ['web','ap', 'dns']
-queueLock = threading.Lock()
-workQueue = Queue.Queue(10)
-threads = []
-threadID = 1
-
 def main():
     try:
         wifi_setup = WiFiSetup()
@@ -310,98 +306,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-##    signal.signal(signal.SIGINT, exit_gracefully)
-
-
-    # New
-##    WPATools = wpaClientTools()
-##    APTools = hostAPServerTools()
-##    DNSTools = dnsmasqTools()
-
-##    S = Station()
-##    S.station_mode_on()
-
-    # new vars
-
-##    INIT = True
-    #try_connect()
-##    if INIT is True:
-##        ap = ScanForAP("AP SCAN: ", 'uap0')
-
-##        thread = apWorker(threadID, 'ap', workQueue)
-##        thread.setDaemon(True)
-##        thread.start()
-##        threads.append(thread)
-##        threadID += 1
-##        thread.join()
-
-##        thread = tornadoWorker(threadID, 'web', workQueue)
-##        thread.setDaemon(True)
-##        thread.start()
-##        threads.append(thread)
-##        threadID += 1
-        #thread.join()
-
-
-##    while INIT is True:
-##        print "ok"
-##        try:
-##            if WiFi.wpa_cli_status('wlan0')['wpa_state'] == 'COMPLETED':
-##                print "CONNECTED"
-##                INIT = False
-##        except:
-##            print "no"
-##            time.sleep(1)
-
-
-        #or t in threads:
-        #   t.is_alive()
-        #   t.join()
-
-
-    #client_connect_test('wlan0', 'MOTOROLA-F29E5', '2e636e8543dc97ee7299')
-
-    #link_add_vap()
-    #ap = ScanForAP("AP SCAN: ", 'uap0')
-    #ap.start()
-    #print ap.join()
-    #client_connect_test('wlan0', 'MOTOROLA-F29E5', '2e636e8543dc97ee7299')
-    # Create new threads
-    #for tName in threadList:
-    ##thread = tornadoWorker(threadID, 'web', workQueue)
-    ##thread.setDaemon(True)
-    ##thread.start()
-    ##threads.append(thread)
-    ##threadID += 1
-    #thread = apWorker(threadID, 'ap', workQueue)
-    #thread.setDaemon(True)
-    #thread.start()
-    #threads.append(thread)
-    #threadID += 1
-    #thread = dnsmasqWorker(threadID, 'dns', workQueue)
-    #thread.start()
-    #threads.append(thread)
-    #threadID += 1
-    ##print threading.enumerate()
-    # Fill the queue
-    ##queueLock.acquire()
-    #for word in nameList:
-    #    workQueue.put(word)
-    ##queueLock.release()
-
-    # Wait for queue to empty
-    ##while not workQueue.empty():
-
-        #pass
-
-    # Notify threads it's time to exit
-    #exitFlag = 1
-
-    # Wait for all threads to complete
-    #for t in threads:
-    #    t.is_alive()
-    #    t.join()
-    #print "Exiting Main Thread"

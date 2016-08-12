@@ -1,8 +1,4 @@
 import ConfigParser
-import os
-
-
-#Config = ConfigParser.ConfigParser()
 
 class AppConfig(ConfigParser.RawConfigParser):
     app_config = './configuration/default.ini'
@@ -21,7 +17,6 @@ class AppConfig(ConfigParser.RawConfigParser):
             self.Config.write(configfile)
 
     def read_option(self, section, option):
-        #self.open_file()
         return self.Config.get(section, option)
 
     def open_file(self):

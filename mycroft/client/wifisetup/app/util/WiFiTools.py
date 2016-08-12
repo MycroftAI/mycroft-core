@@ -27,7 +27,7 @@ class ap_link_tools():
         pass
     def scan_ap(self):
         print "Availible links:", self.scan_links()
-        interface = config.ConfigSectionMap("wifi-ap")['iface']
+        interface = 'uap0'
         print "Configured link:", interface
         aplist = defaultdict(list)
         for cell in Cell.all(interface):

@@ -34,32 +34,11 @@ class ScanForAP(threading.Thread):
         threading.Thread.join(self)
         return self._return
 
-class JoinAP(threading.Thread):
-    def __init__(self, name, interface, ssid, passphrase):
-        threading.Thread.__init__(self)
-        self.name = name
-        self.interface = interface
-        self.ssid = ssid
-        self.passphrase = passphrase
-    def run(self):
-        #try:
-        #print Cell.all(self.interface)[0]
-        cell = Cell.all(self.interface)[0]
-        scheme = Scheme.for_cell(self.interface, self.ssid, cell, self.passphrase)
-        #scheme.save()
-        self._return = scheme.activate()
-
-    def join(self):
-        threading.Thread.join(self)
-        #return self._return
 
 def bash_command(cmd):
     print cmd
-    #try:
     proc = Popen(cmd, shell=True , stdout=PIPE, stderr=PIPE)
     proc.wait()
-    #stdout,stderr = proc.communicate()
-    #return stderr, proc.returncode
 
 def link_add_vap():
     print bash_command('iw dev wlan0 interface add uap0 type __ap')
@@ -78,5 +57,3 @@ def client_connect_test(iface, ssid, passphrase):
     print bash_command('ifdown wlan0')
     print bash_command('ifconfig wlan0 up')
     connect = JoinAP('Connecting to Network', iface, ssid, passphrase)
-    #connect.start()
-    #connect.join()
