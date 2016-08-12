@@ -1,69 +1,365 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-GB">
-<meta http-equiv="refresh" content="content"> 
+<meta http-equiv="refresh" content="content">
+<meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 <head>
-  <title>Mycroft Device Setup: Connect to WiFi Network</title>
-<!--  <script src="http://code.jquery.com/jquery-2.0.0.js"></script> -->
-  <script src="jquery-2.2.3.min.js"></script>
+    <title>Mycroft Device Setup: Connect to WiFi Network</title>
+    <script src="jquery-2.2.3.min.js"></script>
+
+<style>
+	html, body
+	{
+		background: white;
+		font-family: sans-serif;
+		height: 100%;
+		margin: 0;
+		padding: 0;
+	}
+	/* Essentials */
+	.container { display: table; }
+	.content { display: table-row; height: 100%; }
+	.content-body { display: table-cell; }
+
+	/* Aestetics */
+	.container { width: 100%; height: 100%; }
+	.header, .footer { padding: 10px 20px;}
+	.content-body { padding: 20px; }	
+	
+	header { 
+		display: none;
+	}
+
+	.roundtop {
+		border-top-right-radius: 10px;
+		-moz-border-radius-topright: 10px
+		-webkit-border-top-right-radius: 10px;
+		border-top-left-radius: 10px;
+		-moz-border-radius-topleft: 10px
+		-webkit-border-top-left-radius: 10px;
+	}
+	
+	.page {
+		border-collapse: collapse;
+		width: 100%;
+	}
+	.page td {
+		border: 1px solid #eee;
+	}
+	.page th {
+		font-size: 250%;
+		background: black;
+		color: white;
+		padding: 0.25em;
+	}
+
+	button {
+		border-radius: 15px;
+		background: white;
+		display: inline-block;
+		margin: 0 10px 0 0;
+		font-size: 150%;
+		font-family: "Bitter",sans-serif;
+		line-height: 0.8;
+		appearance: none;
+		box-shadow: none;
+		padding: 0.5em;
+		
+		color: lightblue;
+		border: 2px solid lightblue;
+	}
+	
+	.btnDefault,
+	button:hover {
+		color: #4fabc9;
+		border: 2px solid #4fabc9;
+		background: #ebf6f9;
+	}
+	button:focus {
+		outline: none;
+	}
+	
+	.pairButton {
+		color: #65e765;
+		border: 2px solid #65e765;
+		background: #d3f8d3;
+	}
+	.pairButton:hover {
+		color: white;
+		border: 2px solid #38e038;
+		background: #a7f1a7;
+	}
+	.retryButton {
+		color: #ff9999;
+		border: 2px solid #ff9999;
+		background: white;
+	}
+	.retryButton:hover {
+		color: white;
+		border: 2px solid #ff1a1a;
+		background: #ffcccc;
+	}
+	
+	#page2 img {
+		width: 2em;
+	}
+	
+	#page1,#footer1,
+	#page3, #footer3,
+	#page4, #footer4,
+	#page5, #footer5,
+	#page6, #footer6,
+	#getPass, #noPass,
+	#debug
+	{ display: none; }
+
+	#messages_txt {
+		border: 1px solid #4fabc9;
+		background: #ddd;
+		margin-bottom: 5px;
+		margin-top: 3px;
+	}
+
+	.center {
+		width: 100%;
+		text-align: center;
+	}
+	
+	.right {
+		width: 100%;
+		text-align: right;
+	}
+	
+	.tblSSID td {
+		width: 100%;
+		border-collapse: collapse;
+		border: 0px;
+	}
+	
+	.tblSSID:hover {
+		background: #ddd;
+		border-color: #ddd;
+	}
+	
+	#pwd {
+		font-size: 100%;
+		display: block;
+	}
+	
+	.pageContent {
+		height: 100%; padding: 1em;
+		font-size: 150%;
+	}
+	
+	a {
+		text-decoration: none;
+		color: blue;
+	}
+	a:hover {
+		text-decoration: none;
+		color: blue;
+	}
+	a:visited {
+		text-decoration: none;
+		color: blue;
+	}
+
+</style>
+
 </head>
-<body style="width:100%">
-<div style="color:DarkGrey" id = "header">
-  {% block header %}{% end %}
-</div>
-<div id="content">
-  {% block content %}{% end %}
-</div>
-
-<div id="footer">
-  {% block footer %}{% end %}
-</div>
-<script>
-$(document).ready(function () {
-    //change example.com with your IP or your host
-    var ws = new WebSocket("ws://172.24.1.1:8888/ws");
-    ws.onopen = function(evt) {
-      var conn_status = document.getElementById('conn_text');
-      conn_status.innerHTML = "Connection status: Connected!"
-    };
-    ws.onmessage = function(evt) {
-      var newMessage = document.createElement('p');
-      newMessage.textContent = "Server: " + evt.data;
-      document.getElementById('messages_txt').appendChild(newMessage);
-    };
-/*    ws.onclose = function(evt) {
-      alert ("Connection closed");
-      alert ("<td><input type="text" id="input_text"/></td><td><input type="submit" id="button" value="Send"/></td>")
-
-    };
-*/
-    $("#button").click(function(evt) {
-      evt.preventDefault();
-      var message = "{" + "'passphrase':'''" + $("#input_text").val() + "'''}";
-      ws.send(message);
-      var newMessage = document.createElement('p');
-      newMessage.textContent = "Client: " + message;
-      document.getElementById('messages_txt').appendChild(newMessage);
-    });
-    $("#scan-networks").click(function(evt) {
-      var message = "{'wifi':'scan_networks'}"
-      ws.send(message);
-      });
-    $("#ap-on").click(function(evt) {
-      alert("Enabling Station Mode")
-      var message = "{'station_mode':'ap_on'}"
-      ws.send(message);
-      });
-    $("#ap-off").click(function(evt) {
-      alert("Disabling Station Mode")
-      var message = "{'station_mode':'ap_off'}"
-      ws.send(message);
-    });
-    $("input#radio").click(function(evt) {
-      /*alert($("input:radio[name='radio_networks']:checked").val())*/
-      var message = "{" + "'ssid':'''" + $("input:radio[name='radio_networks']:checked").val() + "'''}"
-      ws.send(message);
-    });
-});
-</script>
 <body>
+<div class="container">
+
+    <header class="header">
+        {% block header %}{% end %}
+    </header>
+
+  <section class="content">
+    <div class="content-body">
+			{% block content %}{% end %}
+		</div>
+  </section>
+
+
+
+
+
+
+
+  
+  <footer class="footer">
+		{% block footer %}{% end %}
+  </footer>
+	
+</div>
+
+<script>
+	var 	ws = null;
+	var 	g_ssid = "";
+	
+	var 	False = false;	// used in passing encrypted setting to SelectSSID()
+	var 	True = true;
+
+	var     timeoutRescan = setTimeout(function() { location.reload(); }, 5000);
+
+	var	URL = location+"";
+	if (URL.indexOf('?debug') != -1)
+	{
+		var debugInfo = document.getElementById('debug');
+		debugInfo.style.display = "block";
+	}
+	
+	function NextPage(iCurPage, iNext)
+	{
+		var iNext = iNext > 0 ? iNext : iCurPage+1;
+		var page = document.getElementById('page'+iCurPage);
+		var pageNext = document.getElementById('page'+iNext);
+
+		var footer = document.getElementById('footer'+iCurPage);
+		var footerNext = document.getElementById('footer'+iNext);
+		
+		page.style.display = "none";
+		pageNext.style.display = "block";
+		
+		footer.style.display = "none";
+		footerNext.style.display = "block";
+	}
+	
+	function getImagePath(strength)
+	{
+		var parts = strength.split('/');
+		if (parts.length > 1)
+			strength = strength[0] / strength[1];	// strength was something like "30/70", convert to decimal
+		else
+			strength = strength/70;					// unspecified strength, assume out of 70 and convert to decimal
+
+		if (strength > 0.70)
+			return "img/wifi_4.png";
+		else if (strength > 0.60)
+			return "img/wifi_3.png";
+		else if (strength > 0.40)
+			return "img/wifi_2.png";
+		else if (strength > 0.20)
+			return "img/wifi_1.png";
+		else 
+			return "img/wifi_0.png";
+	}
+
+	function SelectSSID(ssid, encrypted)
+	{
+		clearTimeout(timeoutRescan);
+		
+		var btnConnect = document.getElementById('btnConnect');
+		var getPass = document.getElementById('getPass');
+		var noPass = document.getElementById('noPass');
+		
+		if (encrypted)
+		{
+			getPass.style.display = 'block';
+			noPass.style.display = 'none';
+			btnConnect.className = '';
+		}
+		else
+		{
+			getPass.style.display = 'none';
+			noPass.style.display = 'block';
+			btnConnect.className = 'btnDefault';
+		}
+		
+		document.getElementById('pwd').value = '';
+		document.getElementById('network').innerHTML = ssid;
+		document.getElementById('networkNoPass').innerHTML = ssid;
+		document.getElementById('networkFailed').innerHTML = ssid;
+		g_ssid = ssid;
+		
+		NextPage(2);
+		document.getElementById('pwd').focus();
+	}
+
+	function SSIDToDevice()
+	{
+		NextPage(3);
+		
+		// TODO: This should be removed once the websocket starts returning results
+		// setTimeout(function() { Redirect() }, 1000);
+
+		// Send selected SSID and password to the device,
+		// which will drop the AP Mode and move to the
+		// given network.
+		//
+		var pwd = document.getElementById('pwd').value;
+		Log('sending SSID: '+g_ssid);
+		Log('sending password: '+pwd);
+		ws.send("{" + "'ssid':'''" + g_ssid + "'''}");
+		ws.send("{" + "'passphrase':'''" + pwd + "'''}");
+	}
+
+	// TODO: This should be removed once the websocket starts returning results,
+	//       instead move the following NextPages() to the result handler.
+/*	function Redirect()
+	{
+		if (document.getElementById('pwd').value == "")
+		{
+			Log('faking success');
+			NextPage(4, 5);     // success!
+		}
+		else
+		{
+			Log('faking failure');
+			NextPage(4, 6);	    // failed :(
+		}
+	} */
+
+	function passKeypress(e)
+	{
+		if (e.keyCode == 13)
+			return SSIDToDevice();
+			
+		var pwd = document.getElementById('pwd');
+		var btnConnect = document.getElementById('btnConnect');
+		if (pwd.value != '')
+			btnConnect.className = 'btnDefault';
+		else
+			btnConnect.className = '';
+	}
+
+	////////////////////////////////////////////////
+
+	function Log(msg)
+	{
+		document.getElementById('messages_txt').innerHTML += msg+'<P>';
+	}
+	
+	$(document).ready(function () {
+		//ws = new WebSocket("ws://172.24.1:8888/ws")
+		ws = new WebSocket("ws://10.42.0.55:8888/ws")
+		ws.onopen = function(evt) {
+			Log("Web socket connected!");
+		};
+		
+		ws.onmessage = function(evt) {
+			Log("Server: " + evt.data);
+			if (evt.data == "success")
+				NextPage(4, 5);     // success!
+			if (evt.data == "unableToConnect")
+				NextPage(4, 6);	    // failed :(
+		};
+		
+		$("#ap-on").click(function(evt) {
+			var message = "{'station_mode':'ap_on'}"
+			Log("Enabling Station Mode")
+			ws.send(message);
+		});
+		$("#ap-off").click(function(evt) {
+			Log("Disabling Station Mode")
+			var message = "{'station_mode':'ap_off'}"
+			ws.send(message);
+		});
+	});
+	
+</script>
+
+
+</body>
 </html>

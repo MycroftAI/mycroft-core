@@ -5,7 +5,7 @@ import os
 #Config = ConfigParser.ConfigParser()
 
 class AppConfig(ConfigParser.RawConfigParser):
-    app_config = 'mycroft/client/wifisetup/configuration/default.ini'
+    app_config = './configuration/default.ini'
     Config = ConfigParser.ConfigParser()
 
     def __init__(self):
