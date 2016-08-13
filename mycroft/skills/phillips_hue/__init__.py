@@ -297,6 +297,14 @@ class PhillipsHueSkill(MycroftSkill):
         self.register_intent(adjust_brightness_intent,
                              self.handle_adjust_brightness_intent)
 
+        set_brightness_intent = IntentBuilder("SetBrightnessIntent") \
+            .require("Value") \
+            .one_of("Group", "LightsKeyword") \
+            .optionally("BrightnessKeyword") \
+            .build()
+        self.register_intent(set_brightness_intent,
+                             self.handle_set_brightness_intent)
+
         adjust_color_temperature_intent = \
             IntentBuilder("AdjustColorTemperatureIntent") \
             .one_of("IncreaseKeyword", "DecreaseKeyword") \
@@ -351,6 +359,13 @@ class PhillipsHueSkill(MycroftSkill):
             dialog = 'decrease.brightness'
         if self.verbose:
             self.speak_dialog(dialog)
+
+    @intent_handler
+    def handle_set_brightness_intent(self, message, group):
+        brightness = int(float(message.metadata['Value']) / 100 * 254)
+        group.brightness = brightness
+        if self.verbose:
+            self.speak_dialog('set.brightness', {'brightness': brightness})
 
     @intent_handler
     def handle_adjust_color_temperature_intent(self, message, group):
