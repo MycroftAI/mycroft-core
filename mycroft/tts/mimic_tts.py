@@ -38,7 +38,7 @@ class Mimic(TTS):
         super(Mimic, self).__init__(lang, voice)
 
     def execute(self, sentence):
-        sentences = re.split(r' *[\.\?!][\'"\)\]]* *', sentence)
+        sentences = re.split(r' *[\[a-z].\?!][\'"\)\]]* *', sentence)
         for sentence in sentences:
                     print sentence
                     subprocess.call([BIN, '-voice', self.voice, '-t', sentence])
