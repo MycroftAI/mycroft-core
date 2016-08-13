@@ -1,20 +1,19 @@
 import ast
-import datetime
-import logging
 import re
 import sys
 from subprocess import Popen, PIPE
 
-import tornado.template
-import tornado.web
 import tornado.websocket
 from shutil import copyfile
 from WiFiTools import ap_link_tools
 from wpaCLITools import wpaClientTools
 
+from mycroft.util.log import getLogger
+
+LOGGER = getLogger("WiFiSetupClient")
+
 import time
 
-logging.basicConfig(level=logging.DEBUG, format='(%(threadName)-10s) %(message)s',)
 
 
 def bash_command(cmd):
@@ -23,7 +22,7 @@ def bash_command(cmd):
         proc = Popen(cmd, shell=False, stdout=PIPE, stderr=PIPE)
         stdout,stderr = proc.communicate('n\n')
     except:
-        print "bash fail"
+        LOGGER.warn( "bash fail")
 
 def Exit_gracefully(signal, frame):
     print "caught SIGINT"
@@ -66,32 +65,32 @@ class MainHandler(tornado.web.RequestHandler):
 		
 class JSHandler(tornado.web.RequestHandler):
     def get(self):
-        print "request for jquery", datetime.datetime.now()
+        LOGGER.info( "request for jquery.min.js")
         self.render("jquery-2.2.3.min.js")
 
 class BootstrapMinJSHandler(tornado.web.RequestHandler):
     def get(self):
-        print "request for jquery", datetime.datetime.now()
+        LOGGER.info("request for bootstrap,min.js")
         self.render("bootstrap-3.3.7-dist/js/bootstrap.min.js")
 
 class BootstrapMinCSSHandler(tornado.web.RequestHandler):
     def get(self):
-        print "request for jquery", datetime.datetime.now()
+        LOGGER.info("request for bootstrap.min.css")
         self.render("bootstrap-3.3.7-dist/css/bootstrap.min.css")
 
 class WSHandler(tornado.websocket.WebSocketHandler):
     def check_origin(self,origin):
         return True
     def open(self):
-        print 'user is connected'
+        LOGGER.info('a user is connected')
 
     def on_message(self, message):
-        print 'received message: %s\n' % message
+        LOGGER.info('received message: %s\n' % message)
         self.write_message(message + ' OK')
         self.message_switch(message)
 
     def on_close(self):
-        print 'connection closed\n'
+        LOGGER.info('connection closed\n')
 
     def is_match(self, regex, text):
         self.pattern = re.compile(regex)
@@ -99,7 +98,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
     def message_switch(self,message):
         self.dict2 = ast.literal_eval(message)
-        print type(self.dict2)
+        LOGGER.info(type(self.dict2))
         if self.is_match("'ap_on'", message) is True:
             station_mode_on()
         elif self.is_match("'ap_off'", message) is True:

@@ -63,17 +63,9 @@ LOGGER = getLogger("WiFiSetupClient")
 # web vars
 root = os.path.join(os.path.dirname(__file__), "srv/templates")
 
-handlers = [
-    (r"/", MainHandler),
-    (r"/jquery-2.2.3.min.js",JSHandler),
-    (r"/img/(.*)", tornado.web.StaticFileHandler, { 'path': os.path.join(root, 'img/') } ),
-    (r"/bootstrap-3.3.7-dist/css/bootstrap.min.css",BootstrapMinCSSHandler),
-    (r"/bootstrap-3.3.7-dist/js/bootstrap.min.js",BootstrapMinJSHandler),
-    (r"/ws",WSHandler)
-]
-settings = dict(
-    template_path=os.path.join(os.path.dirname(__file__), "./srv/templates"),
-)
+
+
+
 
 nameList = ['web','ap', 'dns']
 queueLock = threading.Lock()
@@ -81,8 +73,12 @@ workQueue = Queue.Queue(10)
 threads = []
 threadID = 1
 
-class WiFiSetup:
-    def __init__(self):
+class WiFiSetup(threading.Thread):
+    def __init__(self, threadID, name, q):
+        threading.Thread.__init__(self)
+        self.threadID = threadID
+        self.name = name
+        self.q = q
         self.__init_wifi_setup()
         self.client = WebsocketClient()
         self.__register_wifi_events()
@@ -96,12 +92,14 @@ class WiFiSetup:
     def run(self):
         try:
             self.client.run_forever()
+            #self.__init_tornado()
         except Exception as e:
             LOGGER.error("Client error: {0}".format(e))
             self.stop()
 
     def stop(self):
         LOGGER.info("Shut down wireless setup mode.")
+
 
     def __register_events(self):
         self.client.on('recognizer_loop:record_begin', self.__update_events)
@@ -118,10 +116,10 @@ class WiFiSetup:
 
 
     def __register_wifi_events(self):
-        self.client.on('recognizer_loop:record_begin',self.test_event())
+        self.client.on('recognizer_loop:record_begin',self.__init_tornado())
 
     def __remove_wifi_events(self):
-        self.client.remove('recognizer_loop:record_begin', self.test_event())
+        self.client.remove('recognizer_loop:record_begin', self.__init_tornado())
 
     def __update_events(self, event=None):
         if event and event.metadata:
@@ -133,52 +131,60 @@ class WiFiSetup:
     def __init_wifi_setup(self):
         self.config = ConfigurationManager.get().get("WiFiClient")
 
-    def test_event(self):
-        ap = ap_link_tools().scan_ap()
+    def __init_tornado(self):
+        print "ack"
+        try:
+            TornadoWorker(1, "http+ws", '80', '8888',0 ).start()
+            LOGGER.info("Web Server Initialized")
+        except Exception as e:
+            LOGGER.warn(e)
+        finally:
+            sys.exit()
 
-        thread = apWorker(threadID, 'ap', workQueue)
-        thread.setDaemon(True)
-        thread.start()
-        threads.append(thread)
-        threadID += 1
-        thread.join()
-
-        thread = tornadoWorker(threadID, 'web', workQueue)
-        thread.setDaemon(True)
-        thread.start()
-        threads.append(thread)
-        # threadID += 1
-        #thread.join()
-        print "event triggered"
-
-class tornadoWorker (threading.Thread):
-    def __init__(self, threadID, name, q):
+class TornadoWorker (threading.Thread):
+    """
+        Creates a thread landler and initializes two tornado instances
+    """
+    def __init__(self, threadID, name, http_port, ws_port, q):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
         self.q = q
+        self.handlers = [
+            (r"/", MainHandler),
+            (r"/jquery-2.2.3.min.js",JSHandler),
+            (r"/img/(.*)", tornado.web.StaticFileHandler, { 'path': os.path.join(root, 'img/') } ),
+            (r"/bootstrap-3.3.7-dist/css/bootstrap.min.css",BootstrapMinCSSHandler),
+            (r"/bootstrap-3.3.7-dist/js/bootstrap.min.js",BootstrapMinJSHandler),
+            (r"/ws",WSHandler)]
+        self.settings = dict(template_path=os.path.join(os.path.dirname(__file__), "./srv/templates"),)
+        self.http_port = http_port
+        self.ws_port = ws_port
+        self.ws_app = tornado.web.Application([(r'/ws', WSHandler), ])
+        self.http_app = tornado.web.Application(self.handlers, **self.settings)
+
     def run(self):
-        print "Starting " + self.name + str(self.threadID)
-        #process_data(self.name, self.q)
-        ws_app = tornado.web.Application([(r'/ws', WSHandler), ])
-        ws_app.listen('8888')#Port)
-        app = tornado.web.Application(handlers, **settings)
-        app.listen('8080')
+        LOGGER.info( "Starting Thread " + self.name + " " +str(self.threadID) +
+                     " with: http_port: " + self.http_port +
+                     " ws_port:"+ self.ws_port)
+        self.ws_app.listen(self.ws_port)
+        self.http_app.listen(self.http_port)
         tornado.ioloop.IOLoop.current().start()
-        #print "Exiting " + self.name
+        LOGGER.info( "Exiting " + self.name)
 
-class apWorker (threading.Thread):
+
+class ApWorker(threading.Thread):
     def __init__(self, threadID, name, q):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
         self.q = q
     def run(self):
-        print "Starting " + self.name + str(self.threadID)
-        #apScan = ScanForAP('scan', 'uap0')
-        #apScan.start()
-        #apScan.join()
-        #ap = apScan.join()
+        LOGGER.info( "Starting " + self.name + + " " + str(self.threadID))
+        apScan = ScanForAP('scan', 'wls3p0')
+        apScan.start()
+        apScan.join()
+        ap = apScan.join()
 
         #################################################
         # Clean up the list of networks.
@@ -195,14 +201,46 @@ class apWorker (threading.Thread):
                 # Finally, sort by strength alone
             ap['network'] = sorted(nets_byNameAndStr, key=itemgetter('quality'), reverse=True)
         ap = linktools.scan_ap()
-        S = Station()
         try:
-            print "station on"
-            S.station_mode_on()
+            #self.station_mode_on()
+            LOGGER.info("station on")
         except:
-            exit(0)
-        #process_data(self.name, self.q)
-        #print "Exiting " + self.name
+            self._return = exit(0)
+
+    def station_mode_on(self):
+        LOGGER.info("station mode on")
+        ap_mode_config()
+        print init_stop_services()
+        time.sleep(2)
+        print init_set_interfaces()
+        time.sleep(2)
+        print init_hostap_mode()
+        # self.aptools.hostapd_start()
+        # self.aptools.dnsmasq_start()
+        # aptools.ap_config()
+        # SSP: Temporary change while developing
+        #        AP.copy_config_ap()
+        #        devtools.link_down()
+        #        aptools.ap_up()
+    def station_mode_off(self):
+        LOGGER.info("station mode off")
+        self.aptools.dnsmasq_stop()
+        self.aptools.hostapd_stop()
+    def dnsmasq_on(self):
+        self.aptools.dnsmasq_start()
+    def dnsmasq_off(self):
+        self.aptools.dnsmasq_stop()
+
+    # SSP: Temporary change while developing
+    #        aptools.ap_down()
+    #        aptools.ap_deconfig()
+    #        devtools.link_down()
+    #        devtools.link_up()
+
+
+    def join(self, timeout=None):
+           threading.Thread.join(self, timeout=self.timeout)
+           return self._return()
 
 class dnsmasqWorker (threading.Thread):
     def __init__(self, threadID, name, q):
@@ -211,59 +249,24 @@ class dnsmasqWorker (threading.Thread):
         self.name = name
         self.q = q
     def run(self):
-        print "Starting " + self.name + str(self.threadID)
+        LOGGER.info("Starting " + self.name + str(self.threadID))
 
         try:
-            print "dnsmasq on"
+            LOGGER.info("dnsmasq on")
             S.dnsmasq_on()
         except:
             exit(0)
-class Station():
-    def __init__(self):
-        self.aptools = hostapd_tools()
-    def station_mode_on(self):
-        print "station mode on"
-        ap_mode_config()
-        print init_stop_services()
-        time.sleep(2)
-        print init_set_interfaces()
-        time.sleep(2)
-        print init_hostap_mode()
-        #self.aptools.hostapd_start()
-        #self.aptools.dnsmasq_start()
-
-        #aptools.ap_config()
-# SSP: Temporary change while developing
-#        AP.copy_config_ap()
-#        devtools.link_down()
-#        aptools.ap_up()
-
-    def station_mode_off(self):
-        print "station mode off"
-        self.aptools.dnsmasq_stop()
-        self.aptools.hostapd_stop()
-
-    def dnsmasq_on(self):
-        self.aptools.dnsmasq_start()
-
-    def dnsmasq_off(self):
-        self.aptools.dnsmasq_stop()
-# SSP: Temporary change while developing
-#        aptools.ap_down()
-#        aptools.ap_deconfig()
-#        devtools.link_down()
-#        devtools.link_up()
 
 def init_stop_services():
     WPATools.wpa_cli_flush()
     DNSTools.dnsmasqServiceStop()
     APTools.hostAPDStop()
-    return "STOPPED services"
+    LOGGER.info("STOPPED: services")
 
 def init_set_interfaces():
     write_network_interfaces('wlan0','uap0', '172.24.1.1', 'bc:5f:f4:be:7d:0a')
     link_add_vap()
-    return "SETUP interfaces"
+    LOGGER.info("SETUP: interfaces")
 
 def init_hostap_mode():
     write_hostapd_conf('uap0','nl80211','mycroft',11)
@@ -294,11 +297,13 @@ def exit_gracefully(signal, frame):
 
 def main():
     try:
-        wifi_setup = WiFiSetup()
-        t = threading.Thread(target=wifi_setup.run)
-        t.start()
-        wifi_setup.setup()
-        t.join()
+        wifi_setup = WiFiSetup(1, 'wifi',0)
+        wifi_setup.start()
+        wifi_setup.join()
+        #t = TornadoWorker(1, 'http+ws', '8081', '8888' , 0)
+        #t.start()
+        #t.join()
+
     except Exception as e:
         print (e)
     finally:
