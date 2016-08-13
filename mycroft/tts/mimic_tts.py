@@ -18,6 +18,7 @@
 
 import subprocess
 from os.path import join
+import re
 
 from mycroft import MYCROFT_ROOT_PATH
 from mycroft.tts import TTS, TTSValidator
@@ -37,7 +38,10 @@ class Mimic(TTS):
         super(Mimic, self).__init__(lang, voice)
 
     def execute(self, sentence):
-        subprocess.call([BIN, '-voice', self.voice, '-t', sentence])
+        sentences = re.split(r' *[\.\?!][\'"\)\]]* *', sentence)
+        for sentence in sentences:
+                    print sentence
+                    subprocess.call([BIN, '-voice', self.voice, '-t', sentence])
 
 
 class MimicValidator(TTSValidator):
