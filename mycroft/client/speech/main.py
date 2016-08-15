@@ -18,6 +18,7 @@
 
 import sys
 from threading import Thread, Lock
+import re
 
 from mycroft.client.speech.listener import RecognizerLoop
 from mycroft.configuration import ConfigurationManager
@@ -76,7 +77,10 @@ def handle_multi_utterance_intent_failure(event):
 
 
 def handle_speak(event):
-    mute_and_speak(event.metadata['utterance'])
+    utterance = event.metadata['utterance']
+    chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s', utterance)
+    for chunk in chunks:
+        mute_and_speak(chunk)
 
 
 def handle_sleep(event):
