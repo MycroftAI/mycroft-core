@@ -39,9 +39,8 @@ class Mimic(TTS):
 
     def execute(self, sentence):
         sentences = re.split(r' *[\[a-z].\?!][\'"\)\]]* *', sentence)
-        for sentence in sentences:
-                    print sentence
-                    subprocess.call([BIN, '-voice', self.voice, '-t', sentence])
+        for chunk in sentences:
+            subprocess.call([BIN, '-voice', self.voice, '-t', chunk])
 
 
 class MimicValidator(TTSValidator):
