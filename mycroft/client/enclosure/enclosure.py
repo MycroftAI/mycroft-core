@@ -118,6 +118,9 @@ class EnclosureReader(Thread):
         if "unit.reboot" in data:
             subprocess.call('sudo reboot', shell=True)
 
+        if "unit.setwifi" in data:
+            self.client.emit(Message("wifisetup.start"))
+
     def stop(self):
         self.alive = False
         self.join()
