@@ -17,7 +17,7 @@
 
 
 from StringIO import StringIO
-from os.path import dirname
+from os.path import dirname, join
 
 import re
 import requests
@@ -193,12 +193,9 @@ class WolframAlphaSkill(MycroftSkill):
             self.speak(response)
         else:
             if len(others) > 0:
-                self.speak_dialog('search.again',
+                self.speak_dialog('others.found',
                                   data={'utterance': utterance, 'alternative':
                                         others[0]})
-                self.handle_fallback(Message('intent_failure',
-                                             metadata={'utterance':
-                                                       others[0]}))
             else:
                 self.speak_dialog("not.understood", data={'phrase': phrase})
 
@@ -225,8 +222,7 @@ class WolframAlphaSkill(MycroftSkill):
                 value.append(result.text)
         return value
 
-    @staticmethod
-    def process_wolfram_string(text):
+    def process_wolfram_string(self, text):
         # Remove extra whitespace
         text = re.sub(r" \s+", r" ", text)
 
@@ -238,6 +234,15 @@ class WolframAlphaSkill(MycroftSkill):
 
         # Convert !s to factorial
         text = re.sub(r"!", r",factorial", text)
+
+        with open(join(dirname(__file__), 'regex',
+                       self.lang, 'list.rx'), 'r') as regex:
+            list_regex = re.compile(regex.readline())
+
+        match = list_regex.match(text)
+        if match:
+            text = match.group('Definition')
+
         return text
 
     def stop(self):

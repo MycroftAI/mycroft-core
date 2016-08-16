@@ -43,6 +43,7 @@ class EnclosureEyes:
         self.client.on('enclosure.eyes.look', self.look)
         self.client.on('enclosure.eyes.color', self.color)
         self.client.on('enclosure.eyes.level', self.brightness)
+        self.client.on('enclosure.eyes.volume', self.volume)
 
     def on(self, event=None):
         self.writer.write("eyes.on")
@@ -78,3 +79,9 @@ class EnclosureEyes:
         if event and event.metadata:
             level = event.metadata.get("level", level)
         self.writer.write("eyes.level=" + str(level))
+
+    def volume(self, event=None):
+        volume = 4
+        if event and event.metadata:
+            volume = event.metadata.get("volume", volume)
+        self.writer.write("eyes.volume=" + str(volume))

@@ -20,6 +20,7 @@ sudo apt-get install -y \
     portaudio19-dev \
     mpg123 \
     screen \
+    flac \
     curl
 
 # upgrade virtualenv to latest from pypi

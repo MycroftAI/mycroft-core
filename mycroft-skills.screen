@@ -1,4 +1,0 @@
-deflog on
-logfile logs/mycroft-skills.log
-logfile flush 1
-

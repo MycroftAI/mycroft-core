@@ -18,6 +18,7 @@
 
 from os.path import dirname, join
 import re
+import time
 
 from netifaces import interfaces, ifaddresses, AF_INET
 
@@ -31,6 +32,9 @@ __author__ = 'ryanleesipes'
 
 
 class IPSkill(MycroftSkill):
+    SEC_PER_LETTER = 4.0 / 7.0
+    LETTERS_PER_SCREEN = 9.0
+
     def __init__(self):
         super(IPSkill, self).__init__(name="IPSkill")
 
@@ -42,6 +46,7 @@ class IPSkill(MycroftSkill):
 
     def handle_intent(self, message):
         self.speak("Here are my available I.P. addresses.")
+        self.enclosure.activate_mouth_listeners(False)
         for ifaceName in interfaces():
             addresses = [
                 i['addr'] for i in
@@ -50,12 +55,17 @@ class IPSkill(MycroftSkill):
             if None in addresses:
                 addresses.remove(None)
             if addresses and ifaceName != "lo":
-                addresses = [re.sub(r"\.", r" dot ", address)
-                             for address in addresses]
+                updated_addresses = [re.sub(r"\.", r" dot ", address)
+                                     for address in addresses]
                 logger.debug(addresses[0])
                 self.speak('%s: %s' % (
                     "interface: " + ifaceName +
-                    ", I.P. Address ", ', '.join(addresses)))
+                    ", I.P. Address ", ', '.join(updated_addresses)))
+                for address in addresses:
+                    self.enclosure.mouth_text(address)
+                    time.sleep((self.LETTERS_PER_SCREEN + len(address)) *
+                               self.SEC_PER_LETTER)
+        self.enclosure.activate_mouth_listeners(True)
         self.speak("Those are all my I.P. addresses.")
 
     def stop(self):

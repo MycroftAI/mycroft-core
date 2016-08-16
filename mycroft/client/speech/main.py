@@ -25,6 +25,7 @@ from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.tts import tts_factory
 from mycroft.util.log import getLogger
+from mycroft.util import kill
 
 logger = getLogger("SpeechClient")
 client = None
@@ -86,6 +87,10 @@ def handle_wake_up(event):
     loop.awaken()
 
 
+def handle_stop(event):
+    kill([config.get('tts').get('module')])
+
+
 def connect():
     client.run_forever()
 
@@ -109,6 +114,7 @@ def main():
         handle_multi_utterance_intent_failure)
     client.on('recognizer_loop:sleep', handle_sleep)
     client.on('recognizer_loop:wake_up', handle_wake_up)
+    client.on('mycroft.stop', handle_stop)
     event_thread = Thread(target=connect)
     event_thread.setDaemon(True)
     event_thread.start()

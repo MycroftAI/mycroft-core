@@ -70,6 +70,10 @@ class EnclosureAPI:
         self.client.emit(
             Message("enclosure.eyes.level", metadata={'level': level}))
 
+    def eyes_volume(self, volume):
+        self.client.emit(
+            Message("enclosure.eyes.volume", metadata={'volume': volume}))
+
     def mouth_reset(self):
         self.client.emit(Message("enclosure.mouth.reset"))
 
