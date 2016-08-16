@@ -102,8 +102,8 @@ def connected(host="8.8.8.8", port=53, timeout=3):
         return True
     except IOError:
         try:
-            socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect(("8.8.4.4",
-                                                                        port))
+            socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect(
+                ("8.8.4.4", port))
             return True
         except IOError:
             return False
