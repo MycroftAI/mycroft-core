@@ -92,7 +92,6 @@ def kill(names):
 def connected(host="8.8.8.8", port=53, timeout=3):
     """
     Thanks to 7h3rAm on
-    http://stackoverflow.com/questions/3764291/checking-network-connection
     Host: 8.8.8.8 (google-public-dns-a.google.com)
     OpenPort: 53/tcp
     Service: domain (DNS/TCP)
@@ -102,7 +101,12 @@ def connected(host="8.8.8.8", port=53, timeout=3):
         socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
         return True
     except IOError:
-        return False
+        try:
+            socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect(("8.8.4.4",
+                                                                        port))
+            return True
+        except IOError:
+            return False
 
 
 class CerberusAccessDenied(Exception):
