@@ -115,8 +115,8 @@ class VolumeSkill(MycroftSkill):
         :rtype int
         """
         range = self.MAX_LEVEL - self.MIN_LEVEL
-        proportion = float(int(volume) - int(self.min_volume)) / int(self.max_volume)
-        level = int(round(self.MIN_LEVEL + range * proportion))
+        prop = float(int(volume) - int(self.min_volume)) / int(self.max_volume)
+        level = int(round(self.MIN_LEVEL + range * prop))
         if level > self.MAX_LEVEL:
             level = self.MAX_LEVEL
         elif level < self.MIN_LEVEL:
@@ -129,8 +129,8 @@ class VolumeSkill(MycroftSkill):
         :rtype int
         """
         range = int(self.max_volume) - int(self.min_volume)
-        proportion = float(level) / self.MAX_LEVEL
-        volume = int(round(int(self.min_volume) + int(range) * proportion))
+        prop = float(level) / self.MAX_LEVEL
+        volume = int(round(int(self.min_volume) + int(range) * prop))
 
         return volume
 
