@@ -122,6 +122,7 @@ def main():
     event_thread = Thread(target=connect)
     event_thread.setDaemon(True)
     event_thread.start()
+    client.emit('enclosure.eyes.reset')
 
     if connected() is False:  # TODO: Localization
         mute_and_speak("This device is not connected to the Internet")
