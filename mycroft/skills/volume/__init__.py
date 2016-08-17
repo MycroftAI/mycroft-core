@@ -151,6 +151,7 @@ class VolumeSkill(MycroftSkill):
         mixer = Mixer()
         old_level = self.volume_to_level(mixer.getvolume()[0])
         new_level = self.bound_level(old_level + change)
+        self.enclosure.eyes_volume(new_level)
         mixer.setvolume(self.level_to_volume(new_level))
         return new_level, new_level != old_level
 
