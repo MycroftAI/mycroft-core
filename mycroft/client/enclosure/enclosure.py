@@ -113,9 +113,11 @@ class EnclosureReader(Thread):
             subprocess.call('speaker-test -P 10 -l 0 -s 1', shell=True)
 
         if "unit.shutdown" in data:
+            subprocess.call('PATH=/usr/bin:/bin:/usr/sbin:/sbin', shell=True)
             subprocess.call('sudo poweroff', shell=True)
 
         if "unit.reboot" in data:
+            subprocess.call('PATH=/usr/bin:/bin:/usr/sbin:/sbin', shell=True)
             subprocess.call('sudo reboot', shell=True)
 
         if "unit.setwifi" in data:
