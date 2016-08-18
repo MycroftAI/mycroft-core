@@ -16,6 +16,7 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import subprocess
 import sys
 from threading import Thread, Lock
 import re
@@ -122,10 +123,10 @@ def main():
     event_thread = Thread(target=connect)
     event_thread.setDaemon(True)
     event_thread.start()
-    client.emit('enclosure.eyes.reset')
 
     if connected() is False:  # TODO: Localization
         mute_and_speak("This device is not connected to the Internet")
+    subprocess.call('echo "eyes.reset" >/dev/ttyAMA0', shell=True)
 
     try:
         loop.run()
