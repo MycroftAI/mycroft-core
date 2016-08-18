@@ -126,6 +126,12 @@ class EnclosureReader(Thread):
         if "unit.setwifi" in data:
             self.client.emit(Message("wifisetup.start"))
 
+        if "unit.factory-reset" in data:
+            subprocess.call(
+                'sudo rm /home/pi/.mycroft/identity/identity.json',
+                shell=True)
+            subprocess.call('systemctl reboot -i', shell=True)
+
     def stop(self):
         self.alive = False
         self.join()
