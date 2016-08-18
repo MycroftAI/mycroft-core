@@ -116,13 +116,13 @@ class EnclosureReader(Thread):
             self.client.emit(
                 Message("enclosure.eyes.timedspin",
                         metadata={'length': 12000}))
-            subprocess.call('sudo poweroff', shell=True)
+            subprocess.call('systemctl poweroff -i', shell=True)
 
         if "unit.reboot" in data:
             self.client.emit(
                 Message("enclosure.eyes.timedspin",
                         metadata={'length': 12000}))
-            subprocess.call('sudo reboot', shell=True)
+            subprocess.call('systemctl reboot -i', shell=True)
 
         if "unit.setwifi" in data:
             self.client.emit(Message("wifisetup.start"))
