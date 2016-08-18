@@ -130,6 +130,8 @@ class EnclosureReader(Thread):
             subprocess.call(
                 'sudo rm /home/pi/.mycroft/identity/identity.json',
                 shell=True)
+            self.client.emit(
+                Message("enclosure.eyes.spin"))
             subprocess.call('systemctl reboot -i', shell=True)
 
     def stop(self):
