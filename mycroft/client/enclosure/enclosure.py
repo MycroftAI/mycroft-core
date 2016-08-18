@@ -128,7 +128,7 @@ class EnclosureReader(Thread):
 
         if "unit.factory-reset" in data:
             subprocess.call(
-                'sudo rm /home/mycroft/.mycroft/identity/identity.json',
+                'sudo rm /home/pi/.mycroft/identity/identity.json',
                 shell=True)
             subprocess.call('systemctl reboot -i', shell=True)
 
