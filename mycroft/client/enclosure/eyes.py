@@ -44,6 +44,7 @@ class EnclosureEyes:
         self.client.on('enclosure.eyes.color', self.color)
         self.client.on('enclosure.eyes.level', self.brightness)
         self.client.on('enclosure.eyes.volume', self.volume)
+        self.client.on('enclosure.eyes.timedspin', self.timed_spin)
         self.client.on('enclosure.eyes.reset', self.reset)
 
     def on(self, event=None):
@@ -89,3 +90,9 @@ class EnclosureEyes:
 
     def reset(self, event=None):
         self.writer.write("eyes.reset")
+
+    def timed_spin(self, event=None):
+        length = 5000
+        if event and event.metadata:
+            length = event.metadata.get("length", length)
+        self.writer.write("eyes.spin=" + str(length))
