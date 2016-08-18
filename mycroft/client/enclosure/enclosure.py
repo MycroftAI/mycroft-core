@@ -128,7 +128,7 @@ class EnclosureReader(Thread):
 
         if "unit.factory-reset" in data:
             subprocess.call(
-                'sudo rm /home/pi/.mycroft/identity/identity.json',
+                'rm ~/.mycroft/identity/identity.json',
                 shell=True)
             self.client.emit(
                 Message("enclosure.eyes.spin"))
