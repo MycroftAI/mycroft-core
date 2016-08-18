@@ -124,8 +124,6 @@ def main():
     event_thread.setDaemon(True)
     event_thread.start()
 
-    if connected() is False:  # TODO: Localization
-        mute_and_speak("This device is not connected to the Internet")
     subprocess.call('echo "eyes.reset" >/dev/ttyAMA0', shell=True)
 
     try:
