@@ -70,6 +70,13 @@ class EnclosureAPI:
         self.client.emit(
             Message("enclosure.eyes.level", metadata={'level': level}))
 
+    def eyes_reset(self):
+        self.client.emit(Message("enclosure.eyes.reset"))
+
+    def eyes_timed_spin(self, length):
+        self.client.emit(
+            Message("enclosure.eyes.timedspin", metadata={'length': length}))
+
     def eyes_volume(self, volume):
         self.client.emit(
             Message("enclosure.eyes.volume", metadata={'volume': volume}))

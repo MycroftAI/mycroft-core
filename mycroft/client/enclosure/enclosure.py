@@ -113,9 +113,15 @@ class EnclosureReader(Thread):
             subprocess.call('speaker-test -P 10 -l 0 -s 1', shell=True)
 
         if "unit.shutdown" in data:
+            self.client.emit(
+                Message("enclosure.eyes.timedspin",
+                        metadata={'length': 12000}))
             subprocess.call('systemctl poweroff -i', shell=True)
 
         if "unit.reboot" in data:
+            self.client.emit(
+                Message("enclosure.eyes.timedspin",
+                        metadata={'length': 12000}))
             subprocess.call('systemctl reboot -i', shell=True)
 
         if "unit.setwifi" in data:
