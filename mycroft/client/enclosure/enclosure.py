@@ -120,8 +120,7 @@ class EnclosureReader(Thread):
 
         if "unit.reboot" in data:
             self.client.emit(
-                Message("enclosure.eyes.timedspin",
-                        metadata={'length': 12000}))
+                Message("enclosure.eyes.spin"))
             subprocess.call('systemctl reboot -i', shell=True)
 
         if "unit.setwifi" in data:
