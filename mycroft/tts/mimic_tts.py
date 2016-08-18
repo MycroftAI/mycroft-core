@@ -50,6 +50,10 @@ class Mimic(TTS):
 
     def __init__(self, lang, voice):
         super(Mimic, self).__init__(lang, voice)
+        self.args = ['-voice', self.voice]
+        stretch = config.get('duration_stretch', None)
+        if stretch:
+            self.args += ['--setf', 'duration_stretch=' + stretch]
 
     def PhonemeToViseme(self, pho):
         return {
@@ -118,9 +122,9 @@ class Mimic(TTS):
             enclosure.eyes_blink("b")
 
         # invoke mimic, creating WAV and outputting phoneme:duration pairs
-        outMimic = subprocess.check_output([BIN, '-voice', self.voice, '-t',
-                                            sentence, '-psdur', "-o",
-                                            "/tmp/mimic.wav"])
+        outMimic = subprocess.check_output([BIN] + self.args +
+                                           ["-t", sentence, "-psdur",
+                                            "-o", "/tmp/mimic.wav"])
 
         # split into parts
         lisPairs = outMimic.split(" ")
