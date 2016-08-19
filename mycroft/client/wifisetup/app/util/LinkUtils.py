@@ -5,6 +5,8 @@ from collections import defaultdict
 from wifi import Cell, Scheme
 import time
 
+from operator import itemgetter
+
 class ScanForAP(threading.Thread):
     def __init__(self, name, interface):
         threading.Thread.__init__(self)
@@ -25,8 +27,21 @@ class ScanForAP(threading.Thread):
                     'mode': cell.mode
                 })
 
+            #################################################
+            # Clean up the list of networks.
+            #################################################
+            # First, sort by name and strength
+            nets_byNameAndStr = sorted(ap_scan_results['network'], key=itemgetter('ssid', 'quality'), reverse=True)
+            # now strip out duplicates (e.g. repeaters with the same SSID), keeping the first (strongest)
+            lastSSID = "."
+            for n in nets_byNameAndStr[:]:
+                if (n['ssid'] == lastSSID):
+                    nets_byNameAndStr.remove(n)
+                else:
+                    lastSSID = n['ssid']
+                    # Finally, sort by strength alone
+            ap_scan_results['network'] = sorted(nets_byNameAndStr, key=itemgetter('quality'), reverse=True)
             self._return = ap_scan_results
-            return 0
         except:
             print "ap scan fail"
 
