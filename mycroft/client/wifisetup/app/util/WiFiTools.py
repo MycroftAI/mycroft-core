@@ -3,7 +3,7 @@ from socket import AF_INET
 import httplib
 from pyroute2 import IPRoute
 from wifi import Cell, Scheme
-from Config import AppConfig
+#from Config import AppConfig
 from collections import defaultdict
 #app_config = './configuration/default.ini'
 
@@ -15,7 +15,7 @@ from collections import defaultdict
 #config.set_option('wifi','iface','wlan0')
 #config.set_option('wifi','iface','wlp3s0')
 #config.write_file(app_config)
-config = AppConfig()
+#config = AppConfig()
 ip = IPRoute()
 
 # wifi schem
@@ -98,21 +98,22 @@ class hostapd_tools():
 
 class dev_link_tools():
 #    interface = config.ConfigSectionMap("wifi")['iface']
-    def __init__(self):
+    def __init__(self, iface):
+        self.iface = 'wlan0'
         pass
 
     def link_add(self):
-        interface = config.ConfigSectionMap("wifi-ap")['iface']
+        interface = self.iface #config.ConfigSectionMap("wifi-ap")['iface']
         dev = ip.link_lookup(ifname=link)[0]
 
     def link_up(self, link):
-        interface = config.ConfigSectionMap("wifi-ap")['iface']
+        interface = self.iface # config.ConfigSectionMap("wifi-ap")['iface']
         dev = ip.link_lookup(ifname=link)[0]
         ip.link('set', index=dev,
             state='up')
 
     def link_down(self, link):
-        interface = config.ConfigSectionMap("wifi-ap")['iface']
+        interface = self.iface #config.ConfigSectionMap("wifi-ap")['iface']
         dev = ip.link_lookup(ifname=interface)[0]
         ip.link('set', index=dev,
             state='down')

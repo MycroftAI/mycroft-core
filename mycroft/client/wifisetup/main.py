@@ -41,7 +41,6 @@ import tornado.web
 import tornado.websocket
 from  mycroft.client.wifisetup.app.util.WiFiTools import ap_link_tools
 
-from app.util.Config import AppConfig
 from app.util.FileUtils import ap_mode_config, write_hostapd_conf, write_network_interfaces, write_dnsmasq
 from app.util.LinkUtils import ScanForAP, link_add_vap
 from app.util.WiFiTools import ap_link_tools,dev_link_tools, hostapd_tools
@@ -50,22 +49,24 @@ from app.util.hostAPDTools import hostAPServerTools
 from app.util.Server import MainHandler, JSHandler, BootstrapMinJSHandler, BootstrapMinCSSHandler, WSHandler
 from app.util.wpaCLITools import wpaClientTools
 
-#config = AppConfig()
-#config.open_file()
-#Port = config.ConfigSectionMap("server_port")['port']
-#WSPort = config.ConfigSectionMap("server_port")['ws_port']
-dev_link_tools = dev_link_tools()
+
+# use config file for these
+client_iface = 'wlan0'
+ap_iface = 'uap0'
+ap_iface_ip = '172.24.1.1'
+ap_iface_ip_range_start = '172.24.1.10'
+ap_iface_ip_range_end = '172.24.1.20'
+ap_iface_mac = 'bc:5f:f4:be:7d:0a'
+http_port = '8888'
+ws_port = '80'
+
+dev_link_tools = dev_link_tools('wlan0')
 linktools = ap_link_tools()
 
 
 LOGGER = getLogger("WiFiSetupClient")
 
 # web vars
-root = os.path.join(os.path.dirname(__file__), "srv/templates")
-
-
-
-
 
 nameList = ['web','ap', 'dns']
 queueLock = threading.Lock()
@@ -132,9 +133,8 @@ class WiFiSetup(threading.Thread):
         self.config = ConfigurationManager.get().get("WiFiClient")
 
     def __init_tornado(self):
-        print "ack"
         try:
-            TornadoWorker(1, "http+ws", '80', '8888',0 ).start()
+            TornadoWorker(1, "http+ws", ws_port, http_port,0 ).start()
             LOGGER.info("Web Server Initialized")
         except Exception as e:
             LOGGER.warn(e)
@@ -146,6 +146,7 @@ class TornadoWorker (threading.Thread):
         Creates a thread landler and initializes two tornado instances
     """
     def __init__(self, threadID, name, http_port, ws_port, q):
+        root = os.path.join(os.path.dirname(__file__), "srv/templates")
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
@@ -181,7 +182,7 @@ class ApWorker(threading.Thread):
         self.q = q
     def run(self):
         LOGGER.info( "Starting " + self.name + + " " + str(self.threadID))
-        apScan = ScanForAP('scan', 'wlan0')
+        apScan = ScanForAP('scan', client_iface)
         apScan.start()
         apScan.join()
         ap = apScan.join()
@@ -250,24 +251,24 @@ def init_stop_services():
     LOGGER.info("STOPPED: services")
 
 def init_set_interfaces():
-    write_network_interfaces('wlan0','uap0', '172.24.1.1', 'bc:5f:f4:be:7d:0a')
+    write_network_interfaces(client_iface, ap_iface, ap_iface, ap_iface_mac)
     link_add_vap()
     LOGGER.info("SETUP: interfaces")
 
 def init_hostap_mode():
-    write_hostapd_conf('uap0','nl80211','mycroft',11)
-    write_dnsmasq('uap0','172.24.1.1','172.24.1.10','172.24.1.20')
+    write_hostapd_conf(ap_iface,'nl80211','mycroft',11)
+    write_dnsmasq(ap_iface, ap_iface_ip, ap_iface_ip_range_start, ap_iface_ip_range_end)
     APTools.hostAPDStart()
     DNSTools.dnsmasqServiceStart()
     return APTools.hostAPDStatus()
 
 def try_connect():
-    network_id = WPATools.wpa_cli_add_network('wlan0')
+    network_id = WPATools.wpa_cli_add_network(ap_iface)
     print network_id
     # print wpa_cli_flush()
-    print WPATools.wpa_cli_set_network('wlan0', '0', 'ssid', '"Entrepreneur"')
-    print WPATools.wpa_cli_set_network('wlan0', '0', 'psk', '"startsomething"')
-    print WPATools.wpa_cli_enable_network('wlan0', '0')
+    print WPATools.wpa_cli_set_network(client_iface, '0', 'ssid', '"Entrepreneur"')
+    print WPATools.wpa_cli_set_network(client_iface, '0', 'psk', '"startsomething"')
+    print WPATools.wpa_cli_enable_network(client_iface, '0')
 
 def exit_gracefully(signal, frame):
     INIT = False
