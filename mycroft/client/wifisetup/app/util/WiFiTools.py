@@ -1,21 +1,8 @@
 from subprocess import Popen, PIPE
-from socket import AF_INET
 import httplib
 from pyroute2 import IPRoute
-from wifi import Cell, Scheme
-#from Config import AppConfig
-from collections import defaultdict
-#app_config = './configuration/default.ini'
 
-#config = AppConfig()
-#ip = IPRoute()
 
-#config.open_file(app_config)
-#config.create_section('wifi')
-#config.set_option('wifi','iface','wlan0')
-#config.set_option('wifi','iface','wlp3s0')
-#config.write_file(app_config)
-#config = AppConfig()
 ip = IPRoute()
 
 # wifi schem

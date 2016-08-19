@@ -60,7 +60,7 @@ ap_iface_mac = 'bc:5f:f4:be:7d:0a'
 http_port = '8888'
 ws_port = '80'
 
-dev_link_tools = dev_link_tools('wlan0')
+dev_link_tools = dev_link_tools(client_iface)
 linktools = ap_link_tools()
 
 
