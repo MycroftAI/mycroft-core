@@ -7,8 +7,10 @@ import tornado.websocket
 from shutil import copyfile
 from WiFiTools import ap_link_tools
 from wpaCLITools import wpaClientTools
+from app.util.LinkUtils import ScanForAP
 
 from mycroft.util.log import getLogger
+
 
 LOGGER = getLogger("WiFiSetupClient")
 
@@ -59,7 +61,10 @@ class APConfig():
 
 class MainHandler(tornado.web.RequestHandler):
    def get(self):
-        self.ap = ap_link_tools().scan_ap()
+        apScan = ScanForAP('scan', 'wlan0')
+        apScan.start()
+        apScan.join()
+        self.ap = apScan.join()
         self.render("index.html",
         ap=self.ap)
 		

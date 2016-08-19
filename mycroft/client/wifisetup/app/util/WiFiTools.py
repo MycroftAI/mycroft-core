@@ -25,23 +25,6 @@ ip = IPRoute()
 class ap_link_tools():
     def __init_(self):
         pass
-    def scan_ap(self):
-        print "Availible links:", self.scan_links()
-        interface = 'wlp3s0'
-        print "Configured link:", interface
-        aplist = defaultdict(list)
-        for cell in Cell.all(interface):
-            aplist['network'].append({
-                'ssid': cell.ssid,
-                'signal': cell.signal,
-                'quality': cell.quality,
-                'frequency': cell.frequency,
-                'encrypted': cell.encrypted,
-                'channel': cell.channel,
-                'address': cell.address,
-                'mode': cell.mode
-            })
-        return aplist
 
     def scan_links(self):
         return [x.get_attr('IFLA_IFNAME') for x in ip.get_links()]
