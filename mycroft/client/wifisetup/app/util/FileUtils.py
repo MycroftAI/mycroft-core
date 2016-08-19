@@ -36,8 +36,6 @@ class WriteFileTemplate(threading.Thread):
             return 1
 
 def write_wpa_supplicant_conf(ssid, passphrase):
-    tLock = threading.Lock()
-
     template = """
 country={country}
 ctrl_interface=/var/run/wpa_supplicant
@@ -60,8 +58,6 @@ key_mgmt=WPA-PSK
     wpa_conf_write.join()
 
 def write_hostapd_conf(interface, driver, ssid, channel):
-    tLock = threading.Lock()
-
     template = """interface={interface}
 driver={driver}
 ssid={ssid}

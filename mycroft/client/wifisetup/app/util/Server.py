@@ -1,36 +1,13 @@
 import ast
 import re
-import sys
-from subprocess import Popen, PIPE
-
 import tornado.websocket
 from shutil import copyfile
-from WiFiTools import ap_link_tools
 from wpaCLITools import wpaClientTools
 from app.util.LinkUtils import ScanForAP
-
 from mycroft.util.log import getLogger
-
-
 LOGGER = getLogger("WiFiSetupClient")
 
 import time
-
-
-
-def bash_command(cmd):
-    print cmd
-    try:
-        proc = Popen(cmd, shell=False, stdout=PIPE, stderr=PIPE)
-        stdout,stderr = proc.communicate('n\n')
-    except:
-        LOGGER.warn( "bash fail")
-
-def Exit_gracefully(signal, frame):
-    print "caught SIGINT"
-    S.station_mode_off()
-    print "exiting"
-    sys.exit(0)
 
 class APConfig():
     file_template = 'config.templates/etc/hostapd/hostapd.conf.template'
@@ -109,13 +86,13 @@ class WSHandler(tornado.websocket.WebSocketHandler):
         elif self.is_match("'ap_off'", message) is True:
             station_mode_off()
         elif self.is_match("'scan_networks'", message) is True:
-            print "Need: Refresh page/div/unhide/something"
+            LOGGER.info( "Need: Refresh page/div/unhide/something")
         elif self.is_match("'ssid'", message) is True:
-            print "SSID selected: ", self.dict2['ssid']
+            LOGGER.info( "SSID selected: ", self.dict2['ssid'])
             wifi_connection_settings['ssid'] = self.dict2['ssid']
         elif self.is_match("'passphrase'", message) is True:
-            print "PASSPHRASE Recieved:", self.dict2
-            print self.dict2['passphrase']
+            LOGGER.info( "PASSPHRASE Recieved:", self.dict2)
+            LOGGER.info( self.dict2['passphrase'])
             wifi_connection_settings['passphrase'] = self.dict2['passphrase']
             ssid = wifi_connection_settings['ssid']
             passphrase = self.dict2['passphrase']
@@ -123,22 +100,22 @@ class WSHandler(tornado.websocket.WebSocketHandler):
             passphrase = '''"''' + passphrase + '''"'''
             WiFi = wpaClientTools()
             network_id = WiFi.wpa_cli_add_network('wlan0')['stdout'].strip()
-            print network_id
-            print WiFi.wpa_cli_set_network('wlan0', str(network_id), 'ssid', ssid)
-            print WiFi.wpa_cli_set_network('wlan0', str(network_id), 'psk', passphrase)
-            print WiFi.wpa_cli_enable_network('wlan0', network_id)
+            LOGGER.info( network_id)
+            LOGGER.info( WiFi.wpa_cli_set_network('wlan0', str(network_id), 'ssid', ssid))
+            LOGGER.info( WiFi.wpa_cli_set_network('wlan0', str(network_id), 'psk', passphrase))
+            LOGGER.info( WiFi.wpa_cli_enable_network('wlan0', network_id))
             x = 15
             while x > 0:
                 try:
                     if WiFi.wpa_cli_status('wlan0')['wpa_state'] == 'COMPLETED':
-                        print "CONNECTED"
+                        LOGGER.info("CONNECTED")
                         self.write_message("Authenication Sucessful")
-                        print WiFi.wpa_save_network(str(network_id))
+                        LOGGER.info( WiFi.wpa_save_network(str(network_id)))
                         self.write_message("Saving Network SSID and Passphrase")
-                        print WiFi.wpa_cli_disable_network(str(network_id))
+                        LOGGER.info( WiFi.wpa_cli_disable_network(str(network_id)))
                         x = 0
                 except:
                     self.write_message("Attempting to Authenticate")
-                    print "no"
+                    LOGGER.info( "Attemping to Authenticate")
                     x = x - 1
                     time.sleep(1)
