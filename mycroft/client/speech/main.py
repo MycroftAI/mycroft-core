@@ -124,7 +124,10 @@ def main():
     event_thread.setDaemon(True)
     event_thread.start()
 
-    subprocess.call('echo "eyes.reset" >/dev/ttyAMA0', shell=True)
+    try:
+        subprocess.call('echo "eyes.reset" >/dev/ttyAMA0', shell=True)
+    except:
+        pass
 
     try:
         loop.run()
