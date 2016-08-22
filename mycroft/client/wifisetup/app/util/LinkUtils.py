@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import threading
 from collections import defaultdict
 from wifi import Cell
