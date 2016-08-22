@@ -61,11 +61,12 @@ dev_link_tools = dev_link_tools(client_iface)
 linktools = ap_link_tools()
 
 LOGGER = getLogger("WiFiSetupClient")
+client = None
 # web vars
 
 nameList = ['web', 'ap', 'dns']
 queueLock = threading.Lock()
-workQueue = Queue.Queue(10)
+workQueue = Queue(10)
 threads = []
 threadID = 1
 
@@ -306,24 +307,24 @@ def test_func():
 
 def main():
     # mycroft messagebus client
-    global client
-    client = WebsocketClient()
-    client.on('recognizer_loop:wakeword', test_func)
-    event_thread = Thread(target=connect)
-    event_thread.setDaemon(True)
-    event_thread.start()
-    #try:
-    #    wifi_setup = WiFiSetup(1, 'wifi', 0)
-    #    wifi_setup.start()
-    #    wifi_setup.join()
+    #global client
+    #client = WebsocketClient()
+    #client.on('recognizer_loop:wakeword', test_func)
+    #event_thread = Thread(target=connect)
+    #event_thread.setDaemon(True)
+    #event_thread.start()
+    try:
+        wifi_setup = WiFiSetup(1, 'wifi', 0)
+        wifi_setup.start()
+        wifi_setup.join()
         # t = TornadoWorker(1, 'http+ws', '8081', '8888' , 0)
         # t.start()
         # t.join()
 
-    #except Exception as e:
-    #    print (e)
-    #finally:
-    #    sys.exit()
+    except Exception as e:
+        print (e)
+    finally:
+        sys.exit()
 
 if __name__ == "__main__":
     main()
