@@ -19,28 +19,24 @@ __author__ = 'aatchison'
 
 from Queue import Queue
 from threading import Thread
-
-#mycroft stuff
+# mycroft stuff
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util import str2bool
 from mycroft.util.log import getLogger
-
-#wifi setup stuff
+# wifi setup stuff
 import sys
 import os
 import threading
 import Queue
 from mycroft.client.wifisetup.app.util.Server import MainHandler, WSHandler, JSHandler, BootstrapMinJSHandler, BootstrapMinCSSHandler
-
 # web server stuff
 import tornado.ioloop
 import tornado.template
 import tornado.web
 import tornado.websocket
-from  mycroft.client.wifisetup.app.util.WiFiTools import ap_link_tools
-
+from mycroft.client.wifisetup.app.util.WiFiTools import ap_link_tools
 from app.util.FileUtils import ap_mode_config, write_hostapd_conf, write_network_interfaces, write_dnsmasq
 from app.util.LinkUtils import ScanForAP, link_add_vap
 from app.util.WiFiTools import ap_link_tools,dev_link_tools, hostapd_tools
@@ -74,6 +70,7 @@ workQueue = Queue.Queue(10)
 threads = []
 threadID = 1
 
+
 class WiFiSetup(threading.Thread):
     def __init__(self, threadID, name, q):
         threading.Thread.__init__(self)
@@ -90,6 +87,7 @@ class WiFiSetup(threading.Thread):
             LOGGER.info("Initalizing wireless setup mode.")
             self.client.emit(Message("speak", metadata={
                 'utterance': "Initializing wireless setup mode."}))
+
     def run(self):
         try:
             self.client.run_forever()
@@ -141,6 +139,7 @@ class WiFiSetup(threading.Thread):
         finally:
             sys.exit()
 
+
 class TornadoWorker (threading.Thread):
     """
         Creates a thread landler and initializes two tornado instances
@@ -180,8 +179,9 @@ class ApWorker(threading.Thread):
         self.threadID = threadID
         self.name = name
         self.q = q
+
     def run(self):
-        LOGGER.info( "Starting " + self.name + + " " + str(self.threadID))
+        LOGGER.info( "Starting " + self.name + " " + str(self.threadID))
         apScan = ScanForAP('scan', client_iface)
         apScan.start()
         apScan.join()
@@ -209,12 +209,15 @@ class ApWorker(threading.Thread):
         #        AP.copy_config_ap()
         #        devtools.link_down()
         #        aptools.ap_up()
+
     def station_mode_off(self):
         LOGGER.info("station mode off")
         self.aptools.dnsmasq_stop()
         self.aptools.hostapd_stop()
+
     def dnsmasq_on(self):
         self.aptools.dnsmasq_start()
+
     def dnsmasq_off(self):
         self.aptools.dnsmasq_stop()
 
@@ -224,10 +227,10 @@ class ApWorker(threading.Thread):
     #        devtools.link_down()
     #        devtools.link_up()
 
-
     def join(self, timeout=None):
            threading.Thread.join(self, timeout=self.timeout)
            return self._return()
+
 
 class dnsmasqWorker (threading.Thread):
     def __init__(self, threadID, name, q):
@@ -235,6 +238,7 @@ class dnsmasqWorker (threading.Thread):
         self.threadID = threadID
         self.name = name
         self.q = q
+
     def run(self):
         LOGGER.info("Starting " + self.name + str(self.threadID))
 
@@ -244,23 +248,28 @@ class dnsmasqWorker (threading.Thread):
         except:
             exit(0)
 
+
 def init_stop_services():
     WPATools.wpa_cli_flush()
     DNSTools.dnsmasqServiceStop()
     APTools.hostAPDStop()
     LOGGER.info("STOPPED: services")
 
+
 def init_set_interfaces():
     write_network_interfaces(client_iface, ap_iface, ap_iface, ap_iface_mac)
     link_add_vap()
     LOGGER.info("SETUP: interfaces")
 
+
 def init_hostap_mode():
     write_hostapd_conf(ap_iface,'nl80211','mycroft',11)
-    write_dnsmasq(ap_iface, ap_iface_ip, ap_iface_ip_range_start, ap_iface_ip_range_end)
+    write_dnsmasq(
+        ap_iface, ap_iface_ip, ap_iface_ip_range_start, ap_iface_ip_range_end)
     APTools.hostAPDStart()
     DNSTools.dnsmasqServiceStart()
     return APTools.hostAPDStatus()
+
 
 def try_connect():
     network_id = WPATools.wpa_cli_add_network(ap_iface)
@@ -270,26 +279,26 @@ def try_connect():
     print WPATools.wpa_cli_set_network(client_iface, '0', 'psk', '"startsomething"')
     print WPATools.wpa_cli_enable_network(client_iface, '0')
 
+
 def exit_gracefully(signal, frame):
     INIT = False
     print "caught SIGINT"
     S = Station()
-    #ap_mode_deconfig()
+    # ap_mode_deconfig()
     S.station_mode_off()
     S.dnsmasq_off()
     print "exiting"
     sys.exit(0)
 
 
-
 def main():
     try:
-        wifi_setup = WiFiSetup(1, 'wifi',0)
+        wifi_setup = WiFiSetup(1, 'wifi', 0)
         wifi_setup.start()
         wifi_setup.join()
-        #t = TornadoWorker(1, 'http+ws', '8081', '8888' , 0)
-        #t.start()
-        #t.join()
+        # t = TornadoWorker(1, 'http+ws', '8081', '8888' , 0)
+        # t.start()
+        # t.join()
 
     except Exception as e:
         print (e)

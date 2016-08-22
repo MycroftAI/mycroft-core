@@ -127,5 +127,5 @@ class WSHandler(tornado.websocket.WebSocketHandler):
                 except:
                     self.write_message("Attempting to Authenticate")
                     LOGGER.info("Attemping to Authenticate")
-                    x = x - 1
+                    x -= 1
                     time.sleep(1)

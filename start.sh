@@ -15,8 +15,8 @@ case $1 in
 	"sdkdoc") SCRIPT=${TOP}/doc/generate_sdk_docs.py ;;
     "enclosure") SCRIPT=${TOP}/mycroft/client/enclosure/enclosure.py ;;
     "pairing") SCRIPT=${TOP}/mycroft/pairing/client.py ;;
-    "wifisetup") SCRIPT=${TOP}/mycroft/client/wifisetup/main.py ;;
-	*) echo "Usage: start.sh [service | skills | skill_container | voice | cli | audiotest | collector | unittest | enclosure | pairing | sdkdoc wifisetup]"; exit ;;
+    "wifisetup") SCRIPT=${TOP}/mycroft/client/wifisetup/wifi.py ;;
+	*) echo "Usage: start.sh [service | skills | skill_container | voice | cli | audiotest | collector | unittest | enclosure | pairing | sdkdoc wifi]"; exit ;;
 esac
 
 echo "Starting $@"
