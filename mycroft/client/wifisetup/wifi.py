@@ -187,10 +187,10 @@ class ApWorker(threading.Thread):
 
     def run(self):
         LOGGER.info("Starting " + self.name + " " + str(self.threadID))
-        apScan = ScanForAP('scan', client_iface)
-        apScan.start()
-        apScan.join()
-        ap = apScan.join()
+        #apScan = ScanForAP('scan', client_iface)
+        #apScan.start()
+        #apScan.join()
+        #ap = apScan.join()
 
         try:
             # self.station_mode_on()
@@ -276,13 +276,15 @@ def init_hostap_mode():
 
 
 def try_connect():
+    ssid = 'ssid'
+    passphrase = 'pass'
     network_id = WPATools.wpa_cli_add_network(ap_iface)
     print network_id
     # print wpa_cli_flush()
     print WPATools.wpa_cli_set_network(
-        client_iface, '0', 'ssid', '"Entrepreneur"')
+        client_iface, '0', 'ssid', ssid)
     print WPATools.wpa_cli_set_network(
-        client_iface, '0', 'psk', '"startsomething"')
+        client_iface, '0', 'psk', passphrase)
     print WPATools.wpa_cli_enable_network(client_iface, '0')
 
 
@@ -296,20 +298,32 @@ def exit_gracefully(signal, frame):
     print "exiting"
     sys.exit(0)
 
+def connect():
+    client.run_forever()
+
+def test_func():
+    print "testing 123"
 
 def main():
-    try:
-        wifi_setup = WiFiSetup(1, 'wifi', 0)
-        wifi_setup.start()
-        wifi_setup.join()
+    # mycroft messagebus client
+    global client
+    client = WebsocketClient()
+    client.on('recognizer_loop:wakeword', test_func)
+    event_thread = Thread(target=connect)
+    event_thread.setDaemon(True)
+    event_thread.start()
+    #try:
+    #    wifi_setup = WiFiSetup(1, 'wifi', 0)
+    #    wifi_setup.start()
+    #    wifi_setup.join()
         # t = TornadoWorker(1, 'http+ws', '8081', '8888' , 0)
         # t.start()
         # t.join()
 
-    except Exception as e:
-        print (e)
-    finally:
-        sys.exit()
+    #except Exception as e:
+    #    print (e)
+    #finally:
+    #    sys.exit()
 
 if __name__ == "__main__":
     main()
