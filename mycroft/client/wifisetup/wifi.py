@@ -15,35 +15,36 @@
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
-__author__ = 'aatchison'
-
+import sys
+import os
+import threading
+import Queue
+import tornado.ioloop
+import tornado.template
+import tornado.web
+import tornado.websocket
 from Queue import Queue
 from threading import Thread
-# mycroft stuff
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util import str2bool
 from mycroft.util.log import getLogger
-# wifi setup stuff
-import sys
-import os
-import threading
-import Queue
-from mycroft.client.wifisetup.app.util.Server import MainHandler, WSHandler, JSHandler, BootstrapMinJSHandler, BootstrapMinCSSHandler
-# web server stuff
-import tornado.ioloop
-import tornado.template
-import tornado.web
-import tornado.websocket
 from mycroft.client.wifisetup.app.util.WiFiTools import ap_link_tools
-from mycroft.client.wifisetup.app.util.FileUtils import ap_mode_config, write_hostapd_conf, write_network_interfaces, write_dnsmasq
+from mycroft.client.wifisetup.app.util.FileUtils import ap_mode_config,\
+    write_hostapd_conf, write_network_interfaces, write_dnsmasq
 from mycroft.client.wifisetup.app.util.LinkUtils import ScanForAP, link_add_vap
-from mycroft.client.wifisetup.app.util.WiFiTools import ap_link_tools,dev_link_tools, hostapd_tools
+from mycroft.client.wifisetup.app.util.WiFiTools import ap_link_tools,\
+    dev_link_tools, hostapd_tools
 from mycroft.client.wifisetup.app.util.dnsmasqTools import dnsmasqTools
 from mycroft.client.wifisetup.app.util.hostAPDTools import hostAPServerTools
-from mycroft.client.wifisetup.app.util.Server import MainHandler, JSHandler, BootstrapMinJSHandler, BootstrapMinCSSHandler, WSHandler
+from mycroft.client.wifisetup.app.util.Server import MainHandler,\
+    JSHandler, BootstrapMinJSHandler, BootstrapMinCSSHandler, WSHandler
 from mycroft.client.wifisetup.app.util.wpaCLITools import wpaClientTools
+from mycroft.client.wifisetup.app.util.Server import MainHandler,\
+    WSHandler, JSHandler, BootstrapMinJSHandler, BootstrapMinCSSHandler
+
+__author__ = 'aatchison'
 
 
 # use config file for these
@@ -59,12 +60,10 @@ ws_port = '8080'
 dev_link_tools = dev_link_tools(client_iface)
 linktools = ap_link_tools()
 
-
 LOGGER = getLogger("WiFiSetupClient")
-
 # web vars
 
-nameList = ['web','ap', 'dns']
+nameList = ['web', 'ap', 'dns']
 queueLock = threading.Lock()
 workQueue = Queue.Queue(10)
 threads = []
@@ -91,7 +90,7 @@ class WiFiSetup(threading.Thread):
     def run(self):
         try:
             self.client.run_forever()
-            #self.__init_tornado()
+            # self.__init_tornado()
         except Exception as e:
             LOGGER.error("Client error: {0}".format(e))
             self.stop()
@@ -99,11 +98,9 @@ class WiFiSetup(threading.Thread):
     def stop(self):
         LOGGER.info("Shut down wireless setup mode.")
 
-
     def __register_events(self):
         self.client.on('recognizer_loop:record_begin', self.__update_events)
         self.__register_wifi_events()
-
 
     def __wifi_listeners(self, event=None):
         if event and event.metadata:
@@ -113,12 +110,12 @@ class WiFiSetup(threading.Thread):
             else:
                 self.__remove_wifi_events()
 
-
     def __register_wifi_events(self):
-        self.client.on('recognizer_loop:record_begin',self.__init_tornado())
+        self.client.on('recognizer_loop:record_begin', self.__init_tornado())
 
     def __remove_wifi_events(self):
-        self.client.remove('recognizer_loop:record_begin', self.__init_tornado())
+        self.client.remove('recognizer_loop:record_begin',
+                           self.__init_tornado())
 
     def __update_events(self, event=None):
         if event and event.metadata:
@@ -132,7 +129,7 @@ class WiFiSetup(threading.Thread):
 
     def __init_tornado(self):
         try:
-            TornadoWorker(1, "http+ws", ws_port, http_port,0 ).start()
+            TornadoWorker(1, "http+ws", ws_port, http_port, 0).start()
             LOGGER.info("Web Server Initialized")
         except Exception as e:
             LOGGER.warn(e)
@@ -152,25 +149,33 @@ class TornadoWorker (threading.Thread):
         self.q = q
         self.handlers = [
             (r"/", MainHandler),
-            (r"/jquery-2.2.3.min.js",JSHandler),
-            (r"/img/(.*)", tornado.web.StaticFileHandler, { 'path': os.path.join(root, 'img/') } ),
-            (r"/bootstrap-3.3.7-dist/css/bootstrap.min.css",BootstrapMinCSSHandler),
-            (r"/bootstrap-3.3.7-dist/js/bootstrap.min.js",BootstrapMinJSHandler),
-            (r"/ws",WSHandler)]
-        self.settings = dict(template_path=os.path.join(os.path.dirname(__file__), "./srv/templates"),)
+            (r"/jquery-2.2.3.min.js", JSHandler),
+            (r"/img/(.*)", tornado.web.StaticFileHandler,
+             {'path': os.path.join(root, 'img/')}),
+            (r"/bootstrap-3.3.7-dist/css/bootstrap.min.css",
+             BootstrapMinCSSHandler),
+            (r"/bootstrap-3.3.7-dist/js/bootstrap.min.js",
+             BootstrapMinJSHandler),
+            (r"/ws", WSHandler)]
+        self.settings = dict(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "./srv/templates"),)
         self.http_port = http_port
         self.ws_port = ws_port
         self.ws_app = tornado.web.Application([(r'/ws', WSHandler), ])
         self.http_app = tornado.web.Application(self.handlers, **self.settings)
 
     def run(self):
-        LOGGER.info( "Starting Thread " + self.name + " " +str(self.threadID) +
-                     " with: http_port: " + self.http_port +
-                     " ws_port:"+ self.ws_port)
+        LOGGER.info(
+            "Starting Thread " +
+            self.name + " " +
+            str(self.threadID) +
+            " with: http_port: " +
+            self.http_port + " ws_port:" + self.ws_port)
         self.ws_app.listen(self.ws_port)
         self.http_app.listen(self.http_port)
         tornado.ioloop.IOLoop.current().start()
-        LOGGER.info( "Exiting " + self.name)
+        LOGGER.info("Exiting " + self.name)
 
 
 class ApWorker(threading.Thread):
@@ -181,15 +186,14 @@ class ApWorker(threading.Thread):
         self.q = q
 
     def run(self):
-        LOGGER.info( "Starting " + self.name + " " + str(self.threadID))
+        LOGGER.info("Starting " + self.name + " " + str(self.threadID))
         apScan = ScanForAP('scan', client_iface)
         apScan.start()
         apScan.join()
         ap = apScan.join()
 
-
         try:
-            #self.station_mode_on()
+            # self.station_mode_on()
             LOGGER.info("station on")
         except:
             self._return = exit(0)
@@ -228,8 +232,8 @@ class ApWorker(threading.Thread):
     #        devtools.link_up()
 
     def join(self, timeout=None):
-           threading.Thread.join(self, timeout=self.timeout)
-           return self._return()
+        threading.Thread.join(self, timeout=self.timeout)
+        return self._return()
 
 
 class dnsmasqWorker (threading.Thread):
@@ -263,7 +267,7 @@ def init_set_interfaces():
 
 
 def init_hostap_mode():
-    write_hostapd_conf(ap_iface,'nl80211','mycroft',11)
+    write_hostapd_conf(ap_iface, 'nl80211', 'mycroft', 11)
     write_dnsmasq(
         ap_iface, ap_iface_ip, ap_iface_ip_range_start, ap_iface_ip_range_end)
     APTools.hostAPDStart()
@@ -275,8 +279,10 @@ def try_connect():
     network_id = WPATools.wpa_cli_add_network(ap_iface)
     print network_id
     # print wpa_cli_flush()
-    print WPATools.wpa_cli_set_network(client_iface, '0', 'ssid', '"Entrepreneur"')
-    print WPATools.wpa_cli_set_network(client_iface, '0', 'psk', '"startsomething"')
+    print WPATools.wpa_cli_set_network(
+        client_iface, '0', 'ssid', '"Entrepreneur"')
+    print WPATools.wpa_cli_set_network(
+        client_iface, '0', 'psk', '"startsomething"')
     print WPATools.wpa_cli_enable_network(client_iface, '0')
 
 
