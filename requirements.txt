@@ -34,12 +34,10 @@ psutil==4.1.0
 pep8==1.7.0
 multi_key_dict==2.0.3
 pocketsphinx==0.1.0
-
-#wifisetup
-wifi
-pyroute2
+wifi==0.3.8
+pyroute2==0.4.5
 pyhostapdconf
 python-iptables
-urllib5
-pyric
+urllib5==5.0.0
+pyric==0.1.5.3
 
