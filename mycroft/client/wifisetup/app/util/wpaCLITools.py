@@ -1,19 +1,21 @@
 import time
 from bashThreadHandling import bash_command
 
+
 class wpaClientTools():
     def __init__(self):
         self.name = "name"
+
     def wpa_cli_flush(self):
-        results = bash_command(['wpa_cli','flush'])
+        results = bash_command(['wpa_cli', 'flush'])
         return results
 
-    def wpa_cli_scan(self,iface):
+    def wpa_cli_scan(self, iface):
         bash_command(['wpa_cli', '-i', iface, 'scan'])
-        results = bash_command(['wpa_cli','scan_results'])
+        results = bash_command(['wpa_cli', 'scan_results'])
         return results
 
-    def wpa_cli_status(self,iface):
+    def wpa_cli_status(self, iface):
         status = bash_command(['wpa_cli', '-i', iface, 'status'])
         status = status['stdout'].split('\n', 13)
         results = {
@@ -33,21 +35,32 @@ class wpaClientTools():
         }
         return results
 
-    def wpa_cli_loglevel_debug(self,iface):
+    def wpa_cli_loglevel_debug(self, iface):
         results = bash_command(['wpa_cli', '-i', iface, 'log_level', 'debug'])
         return results
-    def wpa_cli_add_network(self,iface):
+
+    def wpa_cli_add_network(self, iface):
         results = bash_command(['wpa_cli', '-i', iface, 'add_network'])
         return results
-    def wpa_cli_set_network(self,iface, network_id, network_var, network_var_value):
-        results = bash_command(['wpa_cli', '-i', iface, 'set_network', network_id, network_var, network_var_value])
+
+    def wpa_cli_set_network(self, iface,
+                            network_id, network_var, network_var_value):
+        results = bash_command(['wpa_cli',
+                                '-i', iface,
+                                'set_network',
+                                network_id,
+                                network_var,
+                                network_var_value])
         return results
-    def wpa_cli_enable_network(self,iface, network_id):
+
+    def wpa_cli_enable_network(self, iface, network_id):
         results = bash_command(['wpa_cli', '-i', iface, 'enable', network_id])
         return results
+
     def wpa_cli_disable_network(self, network_id):
         results = bash_command(['wpa_cli', '-i', iface, 'disable', network_id])
         return results
+
     def wpa_save_network(self, network_id):
         results = bash_command(['wpa_cli', 'save', network_id])
         return results

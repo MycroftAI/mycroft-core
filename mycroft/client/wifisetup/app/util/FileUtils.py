@@ -2,6 +2,7 @@
 import threading
 from shutil import copyfile
 
+
 class CopyFile(threading.Thread):
     def __init__(self, name, source_path, file_source, dest_path, file_dest):
         threading.Thread.__init__(self)
@@ -10,13 +11,15 @@ class CopyFile(threading.Thread):
         self.file_source = file_source
         self.dest_path = dest_path
         self.file_dest = file_dest
+
     def run(self):
         try:
-             copyfile(self.source_path + '/' + self.file_source, self.dest_path + '/' + self.file_dest)
-             print self.name + " Success -- file copy from: " + self.file_source + " to: " + self.file_dest
+            copyfile(
+                self.source_path + '/' + self.file_source,
+                self.dest_path + '/' + self.file_dest)
         except:
             print self.name + " Failed -- file copy from: " + self.file_source + " to: " + self.file_dest
-            return 1
+
 
 class WriteFileTemplate(threading.Thread):
     def __init__(self, name, file_name, template, context):
@@ -25,6 +28,7 @@ class WriteFileTemplate(threading.Thread):
         self.file_name = file_name
         self.template = template
         self.context = context
+
     def run(self):
         print "Writing file template: " + self.file_name
         try:
@@ -34,6 +38,7 @@ class WriteFileTemplate(threading.Thread):
         except:
             print "FAIL: Writing file template: " + self.file_name
             return 1
+
 
 def write_wpa_supplicant_conf(ssid, passphrase):
     template = """
@@ -53,9 +58,11 @@ key_mgmt=WPA-PSK
         "ssid": ssid,
         "passphrase": passphrase
     }
-    wpa_conf_write = WriteFileTemplate('Write Wireless Settings to wpa_supplicant.conf ', '/etc/wpa_supplicant/wpa_supplicant.conf', template, context)
+    wpa_conf_write = WriteFileTemplate('Write Wireless Settings to wpa_supplicant.conf ',
+                                       '/etc/wpa_supplicant/wpa_supplicant.conf', template, context)
     wpa_conf_write.start()
     wpa_conf_write.join()
+
 
 def write_hostapd_conf(interface, driver, ssid, channel):
     template = """interface={interface}
@@ -75,7 +82,8 @@ ignore_broadcast_ssid=0
         "ssid": ssid,
         "channel": channel
     }
-    hostapd_conf_write = WriteFileTemplate('Write Access Point settings to hostapd.conf ', '/etc/hostapd/hostapd.conf', template, context)
+    hostapd_conf_write = WriteFileTemplate('Write Access Point settings to hostapd.conf ',
+                                           '/etc/hostapd/hostapd.conf', template, context)
     hostapd_conf_write.start()
     hostapd_conf_write.join()
 
@@ -107,9 +115,11 @@ iface {vdev} inet static
         "vdev_address": vdev_address,
         "vdev_hwaddress": vdev_hwaddress
     }
-    network_interfaces_write = WriteFileTemplate('Write Network interface settings to ', '/etc/network/interfaces', template, context)
+    network_interfaces_write = WriteFileTemplate('Write Network interface settings to ',
+                                                 '/etc/network/interfaces', template, context)
     network_interfaces_write.start()
     network_interfaces_write.join()
+
 
 def write_dnsmasq(interface, server, dhcp_range_start, dhcp_range_end):
     template = """interface={interface}
@@ -127,47 +137,63 @@ address=/#/172.24.1.1
         "dhcp_range_start": dhcp_range_start,
         "dhcp_range_end": dhcp_range_end
     }
-    dns_conf_write = WriteFileTemplate('Write Network interface settings to ', '/etc/dnsmasq.conf', template, context)
+    dns_conf_write = WriteFileTemplate('Write Network interface settings to ',
+                                       '/etc/dnsmasq.conf',
+                                       template, context)
     dns_conf_write.start()
     dns_conf_write.join()
 
+
 def backup_system_files():
     backup_path = './config_backup/'
-    etc_network_interfaces = CopyFile('Backup - Network/Interfaces: ', '/etc/network/', 'interfaces', backup_path, 'out.net')
+    etc_network_interfaces = CopyFile('Backup - Network/Interfaces: ',
+                                      '/etc/network/', 'interfaces',
+                                      backup_path, 'out.net')
     etc_network_interfaces.start()
     etc_network_interfaces.join()
 
-    etc_wpa_supplicant = CopyFile('Backup - Network/Interfaces: ', '/etc/wpa_supplicant/', 'wpa_supplicant.conf',backup_path, 'out.wpa')
+    etc_wpa_supplicant = CopyFile('Backup - Network/Interfaces: ',
+                                  '/etc/wpa_supplicant/', 'wpa_supplicant.conf',
+                                  backup_path, 'out.wpa')
     etc_wpa_supplicant.start()
     etc_wpa_supplicant.join()
 
-    etc_hostapd = CopyFile('Backup - HostAPD: ', '/etc/hostapd/', 'hostapd.conf', backup_path, 'out.ap')
+    etc_hostapd = CopyFile('Backup - HostAPD: ', '/etc/hostapd/',
+                           'hostapd.conf', backup_path, 'out.ap')
     etc_hostapd.start()
     etc_hostapd.join()
 
-    etc_default_hostapd = CopyFile('Backup - Default/HostAPD: ', '/etc/default/', 'hostapd', backup_path, 'out.default.ap')
+    etc_default_hostapd = CopyFile('Backup - Default/HostAPD: ',
+                                   '/etc/default/', 'hostapd',
+                                   backup_path, 'out.default.ap')
     etc_default_hostapd.start()
     etc_default_hostapd.join()
 
-    etc_dnsmasq = CopyFile('Backup - DNSMasq: ', '/etc/', 'dnsmasq.conf', backup_path, 'out.dnsmasq')
+    etc_dnsmasq = CopyFile('Backup - DNSMasq: ', '/etc/',
+                           'dnsmasq.conf', backup_path, 'out.dnsmasq')
     etc_dnsmasq.start()
     etc_dnsmasq.join()
 
+
 def restore_system_files():
     backup_path = './config_backup/'
-    etc_network_interfaces = CopyFile('Restore - Network/Interfaces: ',  backup_path, 'out.net', '/etc/network/', 'interfaces')
+    etc_network_interfaces = CopyFile('Restore - Network/Interfaces: ',
+                                      backup_path, 'out.net', '/etc/network/', 'interfaces')
     etc_network_interfaces.start()
     etc_network_interfaces.join()
 
-    etc_wpa_supplicant = CopyFile('Restore - Network/Interfaces: ', backup_path, 'out.wpa', '/etc/wpa_supplicant/', 'wpa_supplicant.conf')
+    etc_wpa_supplicant = CopyFile('Restore - Network/Interfaces: ',
+                                  backup_path, 'out.wpa', '/etc/wpa_supplicant/', 'wpa_supplicant.conf')
     etc_wpa_supplicant.start()
     etc_wpa_supplicant.join()
 
-    etc_hostapd = CopyFile('Restore - HostAPD: ', backup_path, 'out.ap', '/etc/hostapd/', 'hostapd.conf')
+    etc_hostapd = CopyFile('Restore - HostAPD: ', backup_path,
+                           'out.ap', '/etc/hostapd/', 'hostapd.conf')
     etc_hostapd.start()
     etc_hostapd.join()
 
-    etc_default_hostapd = CopyFile('Restore - Default/HostAPD: ', backup_path, 'out.default.ap', '/etc/default/', 'hostapd')
+    etc_default_hostapd = CopyFile('Restore - Default/HostAPD: ',
+                                   backup_path, 'out.default.ap', '/etc/default/', 'hostapd')
     etc_default_hostapd.start()
     etc_default_hostapd.join()
 
@@ -175,15 +201,16 @@ def restore_system_files():
     etc_dnsmasq.start()
     etc_dnsmasq.join()
 
+
 def ap_mode_config():
     backup_system_files()
-    write_network_interfaces('wlan0', 'uap0','172.24.1.1', 'bc:5f:f4:be:7d:0a')
+    write_network_interfaces('wlan0', 'uap0', '172.24.1.1', 'bc:5f:f4:be:7d:0a')
     write_hostapd_conf('uap0', 'nl80211', 'Mycroft-bing-bong-boom', 6)
+
 
 def ap_mode_deconfig():
     restore_system_files()
 
+
 def client_mode_config(iface, ssid, passphrase):
     write_wpa_supplicant_conf(ssid, passphrase)
-
-

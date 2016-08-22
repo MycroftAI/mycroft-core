@@ -2,11 +2,13 @@ import threading
 import subprocess
 import sys
 
+
 class cmd_thread(threading.Thread):
     def __init__(self, cmd):
         threading.Thread.__init__(self)
         self.cmd = cmd
-        self._return ="No Output"
+        self._return = "No Output"
+
     def run(self):
         try:
             proc = subprocess.Popen(self.cmd,
@@ -14,17 +16,24 @@ class cmd_thread(threading.Thread):
                                     stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()
             if stdout:
-                self._return = {'exit':0, 'returncode':proc.returncode,'stdout':stdout}
+                self._return = {
+                    'exit': 0, 'returncode': proc.returncode, 'stdout': stdout}
             if stderr:
-                self._return = {'exit':0, 'returncode':proc.returncode, 'stdout':stderr}
+                self._return = {'exit': 0,
+                                'returncode': proc.returncode,
+                                'stdout': stderr}
         except OSError as e:
-            self._return = {'exit':1, 'os_errno':e.errno, 'os_stderr':e.strerror, 'os_filename':e.filename}
+            self._return = {'exit': 1,
+                            'os_errno': e.errno,
+                            'os_stderr': e.strerror,
+                            'os_filename': e.filename}
         except:
-            self._return = {'exit':2, 'sys':sys.exc_info()[0]}
+            self._return = {'exit': 2, 'sys': sys.exc_info()[0]}
 
     def join(self):
         threading.Thread.join(self)
         return self._return
+
 
 def bash_command(command):
     proc = cmd_thread(command)

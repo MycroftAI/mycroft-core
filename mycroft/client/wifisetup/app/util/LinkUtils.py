@@ -14,11 +14,13 @@ from bashThreadHandling import bash_command
 from mycroft.util.log import getLogger
 LOGGER = getLogger("WiFiSetupClient")
 
+
 class ScanForAP(threading.Thread):
     def __init__(self, name, interface):
         threading.Thread.__init__(self)
         self.name = name
         self.interface = interface
+
     def run(self):
         ap_scan_results = defaultdict(list)
         try:
@@ -58,19 +60,21 @@ class ScanForAP(threading.Thread):
 
 
 def link_add_vap():
-    LOGGER.warn( bash_command('iw dev wlan0 interface add uap0 type __ap'))
+    LOGGER.warn(bash_command('iw dev wlan0 interface add uap0 type __ap'))
     time.sleep(2)
-    LOGGER.warn( bash_command('ifdown upa0'))
+    LOGGER.warn(bash_command('ifdown upa0'))
     time.sleep(2)
-    LOGGER.warn( bash_command('ifup upa0'))
+    LOGGER.warn(bash_command('ifup upa0'))
     time.sleep(2)
     return
+
 
 def client_mode_config(iface, ssid, passphrase):
     write_wpa_supplicant_conf(ssid, passphrase)
 
+
 def client_connect_test(iface, ssid, passphrase):
-    LOGGER.warn( bash_command('wpa_supplicant -iwlan0 -Dnl80211 -c /etc/wpa_supplicant/wpa_supplicant.conf'))
-    LOGGER.warn( bash_command('ifdown wlan0'))
-    LOGGER.warn( bash_command('ifconfig wlan0 up'))
+    LOGGER.warn(bash_command('wpa_supplicant -iwlan0 -Dnl80211 -c /etc/wpa_supplicant/wpa_supplicant.conf'))
+    LOGGER.warn(bash_command('ifdown wlan0'))
+    LOGGER.warn(bash_command('ifconfig wlan0 up'))
     connect = JoinAP('Connecting to Network', iface, ssid, passphrase)
