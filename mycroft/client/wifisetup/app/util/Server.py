@@ -1,5 +1,5 @@
 from wpaCLITools import wpaClientTools
-from mycroft.client.wifisetup.app.util.LinkUtils import ScanForAP
+from LinkUtils import ScanForAP
 from mycroft.util.log import getLogger
 import ast
 import re
@@ -33,7 +33,7 @@ class APConfig():
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
-        self.client_iface = 'wlan0'
+        self.client_iface = 'wlp3s0'
         apScan = ScanForAP('scan', self.client_iface)
         apScan.start()
         apScan.join()

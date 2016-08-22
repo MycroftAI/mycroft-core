@@ -1,12 +1,7 @@
-#!/usr/bin/env python
 import threading
-from subprocess import Popen, PIPE
 from collections import defaultdict
 from wifi import Cell
-import time
-
 from operator import itemgetter
-
 from mycroft.client.wifisetup.app.util.bashThreadHandling import bash_command
 
 
