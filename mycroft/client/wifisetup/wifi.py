@@ -54,7 +54,7 @@ ap_iface_ip_range_start = '172.24.1.10'
 ap_iface_ip_range_end = '172.24.1.20'
 ap_iface_mac = 'bc:5f:f4:be:7d:0a'
 http_port = '8888'
-ws_port = '80'
+ws_port = '8080'
 
 dev_link_tools = dev_link_tools(client_iface)
 linktools = ap_link_tools()
