@@ -1,5 +1,5 @@
 from wpaCLITools import wpaClientTools
-from app.util.LinkUtils import ScanForAP
+from mycroft.client.wifisetup.app.util.LinkUtils import ScanForAP
 from mycroft.util.log import getLogger
 import ast
 import re

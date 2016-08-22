@@ -1,5 +1,5 @@
 import time
-from bashThreadHandling import bash_command
+from mycroft.client.wifisetup.app.util.bashThreadHandling import bash_command
 
 
 class wpaClientTools():

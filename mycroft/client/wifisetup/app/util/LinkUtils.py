@@ -7,7 +7,7 @@ import time
 
 from operator import itemgetter
 
-from bashThreadHandling import bash_command
+from mycroft.client.wifisetup.app.util.bashThreadHandling import bash_command
 
 
 
