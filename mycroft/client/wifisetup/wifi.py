@@ -37,13 +37,13 @@ import tornado.template
 import tornado.web
 import tornado.websocket
 from mycroft.client.wifisetup.app.util.WiFiTools import ap_link_tools
-from app.util.FileUtils import ap_mode_config, write_hostapd_conf, write_network_interfaces, write_dnsmasq
-from app.util.LinkUtils import ScanForAP, link_add_vap
-from app.util.WiFiTools import ap_link_tools,dev_link_tools, hostapd_tools
-from app.util.dnsmasqTools import dnsmasqTools
-from app.util.hostAPDTools import hostAPServerTools
-from app.util.Server import MainHandler, JSHandler, BootstrapMinJSHandler, BootstrapMinCSSHandler, WSHandler
-from app.util.wpaCLITools import wpaClientTools
+from mycroft.client.wifisetup.app.util.FileUtils import ap_mode_config, write_hostapd_conf, write_network_interfaces, write_dnsmasq
+from mycroft.client.wifisetup.app.util.LinkUtils import ScanForAP, link_add_vap
+from mycroft.client.wifisetup.app.util.WiFiTools import ap_link_tools,dev_link_tools, hostapd_tools
+from mycroft.client.wifisetup.app.util.dnsmasqTools import dnsmasqTools
+from mycroft.client.wifisetup.app.util.hostAPDTools import hostAPServerTools
+from mycroft.client.wifisetup.app.util.Server import MainHandler, JSHandler, BootstrapMinJSHandler, BootstrapMinCSSHandler, WSHandler
+from mycroft.client.wifisetup.app.util.wpaCLITools import wpaClientTools
 
 
 # use config file for these
