@@ -1,10 +1,15 @@
-#!/bin/env python
+#!/usr/bin/env python
+import sys
 import threading
+from __future__ import absolute_import
 from collections import defaultdict
 from wifi import Cell
 from operator import itemgetter
 from mycroft.client.wifisetup.app.util.bashThreadHandling import bash_command
 from mycroft.util.log import getLogger
+
+
+
 LOGGER = getLogger("WiFiSetupClient")
 
 
@@ -13,6 +18,7 @@ class ScanForAP(threading.Thread):
         threading.Thread.__init__(self)
         self.name = name
         self.interface = interface
+        print sys.modules['os']
 
     def run(self):
         ap_scan_results = defaultdict(list)

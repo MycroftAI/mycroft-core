@@ -14,7 +14,7 @@ place_manifest('mycroft-base-MANIFEST.in')
 setup(
     name="mycroft-core",
     version=get_version(),
-    install_requires=required('requirements.txt'),
+    install_requires=[required('requirements.txt'), 'wifi'],
     packages=find_all_packages("mycroft"),
     include_package_data=True,
 
