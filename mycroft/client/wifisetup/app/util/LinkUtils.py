@@ -1,12 +1,9 @@
-#!/usr/bin/env python
+#!/bin/env python
 import threading
 from collections import defaultdict
 from wifi import Cell
 from operator import itemgetter
 from mycroft.client.wifisetup.app.util.bashThreadHandling import bash_command
-
-
-
 from mycroft.util.log import getLogger
 LOGGER = getLogger("WiFiSetupClient")
 
