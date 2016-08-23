@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import sys
 import threading
-from __future__ import absolute_import
 from collections import defaultdict
 from wifi import Cell
 from operator import itemgetter

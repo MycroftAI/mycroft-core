@@ -70,7 +70,6 @@ workQueue = Queue(10)
 threads = []
 threadID = 1
 
-
 class WiFiSetup(threading.Thread):
     def __init__(self, threadID, name, q):
         threading.Thread.__init__(self)
@@ -140,7 +139,7 @@ class WiFiSetup(threading.Thread):
 
 class TornadoWorker (threading.Thread):
     """
-        Creates a thread landler and initializes two tornado instances
+        Creates a thread handler and initializes two tornado instances
     """
     def __init__(self, threadID, name, http_port, ws_port, q):
         root = os.path.join(os.path.dirname(__file__), "srv/templates")
@@ -254,6 +253,21 @@ class dnsmasqWorker (threading.Thread):
             exit(0)
 
 
+class ConsumerThread(threading.Thread):
+    def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, verbose=None):
+        super(ConsumerThread, self).__init__()
+        self.target = target
+        self.name = name
+        return
+
+    def run(self):
+        while True:
+            if not ws_q.empty():
+                item = ws_q.get()
+                print item
+                return
+
+
 def init_stop_services():
     WPATools.wpa_cli_flush()
     DNSTools.dnsmasqServiceStop()
@@ -306,6 +320,8 @@ def test_func():
     print "testing 123"
 
 def main():
+    #c = ConsumerThread(name='consumer')
+    #c.start()
     # mycroft messagebus client
     #global client
     #client = WebsocketClient()
@@ -313,10 +329,18 @@ def main():
     #event_thread = Thread(target=connect)
     #event_thread.setDaemon(True)
     #event_thread.start()
+
+    oldap = ScanForAP('scan', 'wlp3s0')
+    oldap.start()
+    #print oldap.join()
+    wifi = wpaClientTools()
+    #ap = wifi.wpa_cli_scan('wlp3s0')
+    #print ap
     try:
         wifi_setup = WiFiSetup(1, 'wifi', 0)
         wifi_setup.start()
-        wifi_setup.join()
+    #    wifi_setup.join()
+
         # t = TornadoWorker(1, 'http+ws', '8081', '8888' , 0)
         # t.start()
         # t.join()
