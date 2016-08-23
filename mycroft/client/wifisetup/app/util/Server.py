@@ -12,13 +12,12 @@ from Queue import Queue
 
 clients = []
 
+wpa_cli = wpaClientTools()
+
 ws_q_in = Queue(10)
 ws_q_out = Queue(10)
-
 ap_q_in = Queue(10)
-
 wifi_q_in = Queue(10)
-
 wifi_connection_settings = {}
 
 LOGGER = getLogger("WiFiSetupClient")
@@ -74,8 +73,15 @@ class WiFiConsumerThread(threading.Thread):
             print message['passphrase']
             wifi_connection_settings['passphrase'] = message['passphrase']
             wifi_q_in.put({'connect': True})
+            for i in range(10):
+                print "connection attempt here"
+                ws_q_out.put('attempting to connect ' + str(i))
+                time.sleep(1)
+            ws_q_out.put('CONNECTION RESULT')
         else:
             pass
+    def stop(self):
+        self.stop()
 
 class ApConsumerThread(threading.Thread):
     def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, verbose=None):
@@ -99,6 +105,7 @@ class ApConsumerThread(threading.Thread):
                 print 'AP mode off here'
         else:
             pass
+
 
 class WsConsumerThread(threading.Thread):
     def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, verbose=None):
@@ -136,41 +143,6 @@ class WsConsumerThread(threading.Thread):
         elif self.is_match("'passphrase'", message) is True:
             ws_q_out.put('PASSPHRASE RECEIVED')
             wifi_q_in.put({'passphrase': self.dict2['passphrase']})
-            #wifi_connection_settings['passphrase'] = self.dict2['passphrase']
-            #ssid = wifi_connection_settings['ssid']
-            #passphrase = self.dict2['passphrase']
-            #ssid = '''"''' + ssid + '''"'''
-            #passphrase = '''"''' + passphrase + '''"'''
-            #WiFi = wpaClientTools()
-            #network_id = WiFi.wpa_cli_add_network(
-            #    self.client_iface)['stdout'].strip()
-            #LOGGER.info(network_id)
-            #LOGGER.info(WiFi.wpa_cli_set_network(
-            #    self.client_iface, str(network_id), 'ssid', ssid))
-            #LOGGER.info(WiFi.wpa_cli_set_network(
-            #    self.client_iface, str(network_id), 'psk', passphrase))
-            #LOGGER.info(WiFi.wpa_cli_enable_network(
-            #    self.client_iface, network_id))
-            #x = 15
-            #while x > 0:
-            #    try:
-            #        if WiFi.wpa_cli_status(
-            #                self.client_iface)['wpa_state'] == 'COMPLETED':
-            #            LOGGER.info("CONNECTED")
-            #            self.write_message("Authenication Sucessful")
-            #            LOGGER.info(
-            #                WiFi.wpa_save_network(str(network_id)))
-            #            self.write_message(
-            #                "Saving Network SSID and Passphrase")
-            #            LOGGER.info(
-            #                WiFi.wpa_cli_disable_network(str(network_id)))
-            #            x = 0
-            #    except:
-            #        self.write_message("Attempting to Authenticate")
-            #        LOGGER.info("Attemping to Authenticate")
-            #        x -= 1
-            #        time.sleep(1)
-
 
 
 p = WsProducerThread('producer')
@@ -211,6 +183,7 @@ class MainHandler(tornado.web.RequestHandler):
         apScan.start()
         apScan.join()
         self.ap = apScan.join()
+        wifi_q_in.put({'scan':True})
         #wifi = wpaClientTools()
         #self.ap = wifi.wpa_cli_scan(self.client_iface).split()
         #print self.ap
