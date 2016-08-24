@@ -17,21 +17,32 @@ class WiFiAPI():
     def __init__(self):
         self.none = None
         self.wpa_tools = wpaClientTools()
+        self.ssid = None
+        self.passphrase = None
 
     def scan(self, iface):
         print "WiFi API Scan Goes Here"
         self.new_net = self.wpa_tools.wpa_cli_add_network('wlan0')
 
-
     def try_connect(self):
         print "WiFi API Connect Goes Here"
-
+        self.ssid = '"' + self.ssid + '"'
+        self.passphrase = '"' + self.passphrase + '"'
+        network_id = self.wpa_tools.wpa_cli_add_network('wlan0')
+        print network_id
+        print self.wpa_tools.wpa_cli_set_network(
+            'wlan0', str(network_id), 'ssid', self.ssid)
+        print self.wpa_tools.wpa_cli_set_network(
+            'wlan0', str(network_id), 'psk', self.passphrase)
+        print self.wpa_tools.wpa_cli_enable_network('wlan0', str(network_id))
 
     def set_ssid(self, ssid):
         print "WiFi API Set SSID Goes Here: " + ssid
+        self.ssid = ssid
         self.wpa_tools.wpa_cli_set_network('wlan0', str(self.new_net), 'ssid', ssid)
 
     def set_psk(self, psk):
+        self.passphrase = psk
         print "WiFi API Set PASSPHRASE Goes Here: " + psk
         self.wpa_tools.wpa_cli_set_network('wlan0', str(self.new_net), '', psk)
 

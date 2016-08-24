@@ -73,16 +73,18 @@ class WiFiConsumerThread(threading.Thread):
         if 'scan' in message:
             wifi_api.scan('uap0')
         if 'connect' in message:
-            wifi_api.connect()
+            print wifi_api.try_connect()
+            ws_q_out.put('CONNECTION RESULT')
+
         elif 'ssid' in message:
             wifi_api.set_ssid(message['ssid'])
         elif 'passphrase' in message:
             wifi_api.set_psk(message['passphrase'])
             wifi_q_in.put({'connect': True})
-            for i in range(10):
-                print "connection attempt here"
-                ws_q_out.put('attempting to connect ' + str(i))
-                time.sleep(1)
+            #for i in range(10):
+             #   print "connection attempt here"
+             #   ws_q_out.put('attempting to connect ' + str(i))
+             #   time.sleep(1)
             ws_q_out.put('CONNECTION RESULT')
         else:
             pass
