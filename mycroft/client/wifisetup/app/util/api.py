@@ -1,7 +1,9 @@
+import time
 from mycroft.client.wifisetup.app.util.hostAPDTools import hostAPServerTools
 from mycroft.client.wifisetup.app.util.dnsmasqTools import dnsmasqTools
 from mycroft.client.wifisetup.app.util.FileUtils import CopyFile, write_dnsmasq, write_hostapd_conf,\
-    write_wpa_supplicant_conf, write_network_interfaces, backup_system_files, restore_system_files
+    write_wpa_supplicant_conf, write_network_interfaces, backup_system_files, restore_system_files,\
+    write_default_hostapd
 from mycroft.client.wifisetup.app.util.wpaCLITools import wpaClientTools
 from pyroute2 import IPRoute
 # from mycroft.client.wifisetup.app.util.LinkUtils import dev_link_tools
@@ -62,14 +64,28 @@ class ApAPI():
     def up(self):
         print "APAPI up Goes Here: "
         print backup_system_files()
+        print bash_command(['iw', 'dev', 'wlan0', 'interface', 'add', 'uap0', 'type', '__ap'])
         print write_network_interfaces('wlan0', 'uap0', '172.24.1.1', 'bc:5f:f4:be:7d:0a')
         print write_dnsmasq('uap0', '172.24.1.1', '172.24.1.10', '172.24.1.20')
         print write_hostapd_conf('uap0', 'nl80211', 'mycroft-doing-stuff', str(6))
-        print self.ap_tools.hostAPDStart()
+        print write_default_hostapd('/etc/hostapd/hostapd.conf')
+        print bash_command(['ifdown', 'wlan0'])
+        print bash_command(['ifup', 'wlan0'])
+        print bash_command(['ifdown', 'uap0'])
+        print bash_command(['ip', 'link', 'set', 'dev', 'uap0', 'address', 'bc:5f:f4:be:7d:0a'])
+        print bash_command(['ifup', 'uap0'])
+        time.sleep(2)
+        print self.dns_tools.dnsmasqServiceStop()
         print self.dns_tools.dnsmasqServiceStart()
+        #print self.ap_tools.hostAPDCli()
+        #print self.dns_tools.dnsmasqCli()
+        print self.ap_tools.hostAPDStop()
+        print self.ap_tools.hostAPDStart()
 
     def down(self):
         print "ApAPI down Goes Here: "
+        # print self.ap_tools.hostAPDStop()
+        print bash_command({'pkill', '-f', '"wifi"'})
         print self.ap_tools.hostAPDStop()
         print self.dns_tools.dnsmasqServiceStop()
         print restore_system_files()

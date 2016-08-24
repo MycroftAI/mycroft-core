@@ -71,23 +71,25 @@ class WiFiConsumerThread(threading.Thread):
 
     def message_switch(self, message):
         if 'scan' in message:
-            wifi_api.scan('wlan0')
+            wifi_api.scan('uap0')
         if 'connect' in message:
             wifi_api.connect()
         elif 'ssid' in message:
             wifi_api.set_ssid(message['ssid'])
         elif 'passphrase' in message:
             wifi_api.set_psk(message['passphrase'])
-            #wifi_q_in.put({'connect': True})
-            #for i in range(10):
-            #    print "connection attempt here"
-            #    ws_q_out.put('attempting to connect ' + str(i))
-            #    time.sleep(1)
-            #ws_q_out.put('CONNECTION RESULT')
-        #else:
-            #pass
+            wifi_q_in.put({'connect': True})
+            for i in range(10):
+                print "connection attempt here"
+                ws_q_out.put('attempting to connect ' + str(i))
+                time.sleep(1)
+            ws_q_out.put('CONNECTION RESULT')
+        else:
+            pass
+
     def stop(self):
         self.stop()
+
 
 class ApConsumerThread(threading.Thread):
     def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, verbose=None):
@@ -106,12 +108,12 @@ class ApConsumerThread(threading.Thread):
     def message_switch(self, message):
         if 'ap_mode' in message:
             if message['ap_mode'] is True:
-                link_api.link_up('uap0')
+                # link_api.link_up('uap0')
                 time.sleep(5)
                 ap_api.up()
             elif message['ap_mode'] is False:
                 ap_api.down()
-                link_api.link_down('uap0')
+                # link_api.link_down('uap0')
         else:
             pass
 
@@ -155,40 +157,24 @@ class WsConsumerThread(threading.Thread):
             wifi_q_in.put({'passphrase': self.dict2['passphrase']})
 
 
+a = ApConsumerThread('ap')
+a.start()
+
+ap_q_in.put({'ap_mode': True})
+
 p = WsProducerThread('producer')
 p.start()
 c = WsConsumerThread('consumer')
 c.start()
 w = WiFiConsumerThread('wifi')
 w.start()
-a = ApConsumerThread('ap')
-a.start()
 
 
-class APConfig():
-    def __init__(self):
-        file_template = 'config.templates/etc/hostapd/hostapd.conf.template'
-        file_path = '/etc/hostapd/hostapd.conf'
-        interface = 'wlan0'
-        driver = 'nl80211'
-        ssid = 'PI3-AP'
-        hw_mode = 'g'
-        channel = 6
-        country_code = 'US'
-        ieee80211n = 1
-        wmm_enabled = 1
-        ht_capab = '[HT40][SHORT-GI-20][DSSS_CCK-40]'
-        macaddr_acl = 0
-        ignore_broadcast_ssid = 0
-
-    def write_config(self):
-        ha.set_ssid(APConf, self.ssid)
-        APConf.write()
 
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
-        self.client_iface = 'wlan0'
+        self.client_iface = 'uap0'
         apScan = ScanForAP('scan', self.client_iface)
         apScan.start()
         apScan.join()

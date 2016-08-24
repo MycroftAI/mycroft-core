@@ -96,6 +96,40 @@ ignore_broadcast_ssid=0
     hostapd_conf_write.start()
     hostapd_conf_write.join()
 
+def write_default_hostapd(config_file_path):
+    template = """# Defaults for hostapd initscript
+#
+# See /usr/share/doc/hostapd/README.Debian for information about alternative
+# methods of managing hostapd.
+#
+# Uncomment and set DAEMON_CONF to the absolute path of a hostapd configuration
+# file and hostapd will be started during system boot. An example configuration
+# file can be found at /usr/share/doc/hostapd/examples/hostapd.conf.gz
+#
+#DAEMON_CONF=""
+
+# Additional daemon options to be appended to hostapd command:-
+#       -d   show more debug messages (-dd for even more)
+#       -K   include key data in debug messages
+#       -t   include timestamps in some debug messages
+#
+# Note that -B (daemon mode) and -P (pidfile) options are automatically
+# configured by the init.d script and must not be added to DAEMON_OPTS.
+#
+#DAEMON_OPTS=""
+DAEMON_CONF="{config_file_path}"
+"""
+    context = {
+        "config_file_path": config_file_path,
+    }
+    default_hostapd_write = WriteFileTemplate(
+        'Write Access Point settings to hostapd.conf ',
+        '/etc/default/hostapd',
+        template,
+        context)
+    default_hostapd_write.start()
+    default_hostapd_write.join()
+
 
 def write_network_interfaces(wdev, vdev, vdev_address, vdev_hwaddress):
     template = """source-directory /etc/network/interfaces.d
@@ -158,7 +192,7 @@ address=/#/172.24.1.1
 
 
 def backup_system_files():
-    backup_path = './config_backup/'
+    backup_path = '/tmp'
     etc_network_interfaces = CopyFile('Backup - Network/Interfaces: ',
                                       '/etc/network/', 'interfaces',
                                       backup_path, 'out.net')
@@ -193,7 +227,7 @@ def backup_system_files():
 
 
 def restore_system_files():
-    backup_path = './config_backup/'
+    backup_path = '/tmp'
     etc_network_interfaces = CopyFile('Restore - Network/Interfaces: ',
                                       backup_path,
                                       'out.net',
