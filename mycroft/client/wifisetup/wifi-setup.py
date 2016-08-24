@@ -33,9 +33,10 @@ from mycroft.util.log import getLogger
 from mycroft.client.wifisetup.app.util.WiFiTools import ap_link_tools
 from mycroft.client.wifisetup.app.util.FileUtils import ap_mode_config,\
     write_hostapd_conf, write_network_interfaces, write_dnsmasq
-from mycroft.client.wifisetup.app.util.LinkUtils import ScanForAP, link_add_vap
+from mycroft.client.wifisetup.app.util.LinkUtils import ScanForAP, link_add_vap#, \
+    # dev_link_tools
 from mycroft.client.wifisetup.app.util.WiFiTools import ap_link_tools,\
-    dev_link_tools, hostapd_tools
+    hostapd_tools
 from mycroft.client.wifisetup.app.util.dnsmasqTools import dnsmasqTools
 from mycroft.client.wifisetup.app.util.hostAPDTools import hostAPServerTools
 from mycroft.client.wifisetup.app.util.Server import MainHandler,\
@@ -55,9 +56,9 @@ ap_iface_ip_range_start = '172.24.1.10'
 ap_iface_ip_range_end = '172.24.1.20'
 ap_iface_mac = 'bc:5f:f4:be:7d:0a'
 http_port = '8888'
-ws_port = '8080'
+ws_port = '80'
 
-dev_link_tools = dev_link_tools(client_iface)
+#dev_link_tools = dev_link_tools()
 linktools = ap_link_tools()
 
 LOGGER = getLogger("WiFiSetupClient")
@@ -330,7 +331,7 @@ def main():
     #event_thread.setDaemon(True)
     #event_thread.start()
 
-    oldap = ScanForAP('scan', 'wlp3s0')
+    oldap = ScanForAP('scan', 'wlan0')
     oldap.start()
     #print oldap.join()
     wifi = wpaClientTools()

@@ -58,7 +58,7 @@ class ScanForAP(threading.Thread):
 
 
 def link_add_vap():
-    LOGGER.warn(bash_command('iw dev wlan0 interface add uap0 type __ap'))
+    LOGGER.warn()
     time.sleep(2)
     LOGGER.warn(bash_command('ifdown upa0'))
     time.sleep(2)
@@ -76,3 +76,23 @@ def client_connect_test(iface, ssid, passphrase):
     LOGGER.warn(bash_command('ifdown wlan0'))
     LOGGER.warn(bash_command('ifconfig wlan0 up'))
     connect = JoinAP('Connecting to Network', iface, ssid, passphrase)
+
+
+class dev_link_tools():
+    def __init__(self):
+        pass
+
+    def link_add(self):
+        interface = self.iface
+        dev = ip.link_lookup(ifname=link)[0]
+
+    def ifup(self, link):
+        pass
+
+    def ifdown(self, link):
+        pass
+
+    def link_add_vap(self):
+        print bash_command('iw dev wlan0 interface add uap0 type __ap')
+        print bash_command('ifdown upa0')
+        print bash_command('ifup upa0')

@@ -89,31 +89,6 @@ class hostapd_tools():
         # bash_command(["pfkill -f 'hostapd'"])
 
 
-class dev_link_tools():
-    def __init__(self, iface):
-        self.iface = 'wlan0'
-        pass
-
-    def link_add(self):
-        interface = self.iface
-        dev = ip.link_lookup(ifname=link)[0]
-
-    def link_up(self, link):
-        interface = self.iface
-        dev = ip.link_lookup(ifname=link)[0]
-        ip.link('set', index=dev, state='up')
-
-    def link_down(self, link):
-        interface = self.iface
-        dev = ip.link_lookup(ifname=interface)[0]
-        ip.link('set', index=dev, state='down')
-
-    def link_add_vap(self):
-        print bash_command('iw dev wlan0 interface add uap0 type __ap')
-        print bash_command('ifdown upa0')
-        print bash_command('ifup upa0')
-
-
 def bash_command(cmd):
     print cmd
     # try:

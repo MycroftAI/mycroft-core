@@ -8,17 +8,26 @@ import tornado.websocket
 import time
 import threading
 
+from mycroft.client.wifisetup.app.util.api import WiFiAPI, ApAPI, FileAPI, LinkAPI
+
 from Queue import Queue
 
 clients = []
 
 wpa_cli = wpaClientTools()
 
+
 ws_q_in = Queue(10)
 ws_q_out = Queue(10)
 ap_q_in = Queue(10)
 wifi_q_in = Queue(10)
 wifi_connection_settings = {}
+
+wifi_api = WiFiAPI()
+ap_api = ApAPI()
+wifi_api = WiFiAPI()
+link_api = LinkAPI()
+
 
 LOGGER = getLogger("WiFiSetupClient")
 
@@ -62,24 +71,21 @@ class WiFiConsumerThread(threading.Thread):
 
     def message_switch(self, message):
         if 'scan' in message:
-            print 'Scan goes here'
+            wifi_api.scan('wlan0')
         if 'connect' in message:
-            print 'Connect goes here'
+            wifi_api.connect()
         elif 'ssid' in message:
-            print message['ssid']
-            wifi_connection_settings['ssid'] = message['ssid']
-            print wifi_connection_settings
+            wifi_api.set_ssid(message['ssid'])
         elif 'passphrase' in message:
-            print message['passphrase']
-            wifi_connection_settings['passphrase'] = message['passphrase']
-            wifi_q_in.put({'connect': True})
-            for i in range(10):
-                print "connection attempt here"
-                ws_q_out.put('attempting to connect ' + str(i))
-                time.sleep(1)
-            ws_q_out.put('CONNECTION RESULT')
-        else:
-            pass
+            wifi_api.set_psk(message['passphrase'])
+            #wifi_q_in.put({'connect': True})
+            #for i in range(10):
+            #    print "connection attempt here"
+            #    ws_q_out.put('attempting to connect ' + str(i))
+            #    time.sleep(1)
+            #ws_q_out.put('CONNECTION RESULT')
+        #else:
+            #pass
     def stop(self):
         self.stop()
 
@@ -100,9 +106,12 @@ class ApConsumerThread(threading.Thread):
     def message_switch(self, message):
         if 'ap_mode' in message:
             if message['ap_mode'] is True:
-                print 'AP mode on Here'
+                link_api.link_up('uap0')
+                time.sleep(5)
+                ap_api.up()
             elif message['ap_mode'] is False:
-                print 'AP mode off here'
+                ap_api.down()
+                link_api.link_down('uap0')
         else:
             pass
 
@@ -131,6 +140,7 @@ class WsConsumerThread(threading.Thread):
         if self.is_match("'ap_on'", message) is True:
             ws_q_out.put('TURN AP ON')
             ap_q_in.put({'ap_mode': True})
+            #ap_api.up()
         elif self.is_match("'ap_off'", message) is True:
             ws_q_out.put('TURN AP OFF')
             ap_q_in.put({'ap_mode': False})
@@ -178,7 +188,7 @@ class APConfig():
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
-        self.client_iface = 'wlp3s0'
+        self.client_iface = 'wlan0'
         apScan = ScanForAP('scan', self.client_iface)
         apScan.start()
         apScan.join()
