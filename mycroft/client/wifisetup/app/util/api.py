@@ -28,16 +28,35 @@ class WiFiAPI():
         print "WiFi API Connect Goes Here"
         self.ssid = '"' + self.ssid + '"'
         self.passphrase = '"' + self.passphrase + '"'
-        network_id = self.wpa_tools.wpa_cli_add_network('wlan0')
-        print network_id
+        print self.ssid
+        print self.passphrase
+        network_id = self.wpa_tools.wpa_cli_add_network('wlan0')['stdout']
         print self.wpa_tools.wpa_cli_set_network(
-            'wlan0', str(network_id), 'ssid', self.ssid)
+            'wlan0', network_id, 'ssid', self.ssid)
         print self.wpa_tools.wpa_cli_set_network(
-            'wlan0', str(network_id), 'psk', self.passphrase)
-        print self.wpa_tools.wpa_cli_enable_network('wlan0', str(network_id))
+            'wlan0', network_id, 'psk', self.passphrase)
+        print self.wpa_tools.wpa_cli_enable_network('wlan0', network_id)
+        connected = False
+        while connected is False:
+            for i in range(22):
+                time.sleep(1)
+                try:
+                    state = self.wpa_tools.wpa_cli_status('wlan0')['wpa_state']
+                    if state == 'COMPLETED':
+                        print "COMPLETED"
+                        connected = True
+                        return True
+                    else:
+                        connected = False
+                except:
+                    print "No state yet: waiting for timeout"
+                    pass
+            if connected is False:
+                return False
+
 
     def set_ssid(self, ssid):
-        print "WiFi API Set SSID Goes Here: " + ssid
+
         self.ssid = ssid
         self.wpa_tools.wpa_cli_set_network('wlan0', str(self.new_net), 'ssid', ssid)
 

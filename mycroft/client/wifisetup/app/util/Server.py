@@ -73,8 +73,11 @@ class WiFiConsumerThread(threading.Thread):
         if 'scan' in message:
             wifi_api.scan('uap0')
         if 'connect' in message:
-            print wifi_api.try_connect()
-            ws_q_out.put('CONNECTION RESULT')
+            if wifi_api.try_connect() is True:
+                ws_q_out.put('CONNECTION RESULT: True')
+            else:
+                ws_q_out.put('CONNECTION RESULT: False -- timeout')
+
 
         elif 'ssid' in message:
             wifi_api.set_ssid(message['ssid'])
@@ -85,7 +88,6 @@ class WiFiConsumerThread(threading.Thread):
              #   print "connection attempt here"
              #   ws_q_out.put('attempting to connect ' + str(i))
              #   time.sleep(1)
-            ws_q_out.put('CONNECTION RESULT')
         else:
             pass
 
