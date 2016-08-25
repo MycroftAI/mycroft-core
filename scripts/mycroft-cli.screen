@@ -1,4 +1,4 @@
 deflog on
-logfile logs/mycroft-cli.log
+logfile scripts/logs/mycroft-cli.log
 logfile flush 1
 

@@ -1,4 +1,4 @@
 deflog on
-logfile logs/mycroft-voice.log
+logfile scripts/logs/mycroft-voice.log
 logfile flush 1
 

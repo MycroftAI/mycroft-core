@@ -16,8 +16,10 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import subprocess
 import sys
 from threading import Thread, Lock
+import re
 
 from mycroft.client.speech.listener import RecognizerLoop
 from mycroft.configuration import ConfigurationManager
@@ -25,7 +27,7 @@ from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.tts import tts_factory
 from mycroft.util.log import getLogger
-from mycroft.util import kill
+from mycroft.util import kill, connected
 
 logger = getLogger("SpeechClient")
 client = None
@@ -76,7 +78,10 @@ def handle_multi_utterance_intent_failure(event):
 
 
 def handle_speak(event):
-    mute_and_speak(event.metadata['utterance'])
+    utterance = event.metadata['utterance']
+    chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s', utterance)
+    for chunk in chunks:
+        mute_and_speak(chunk)
 
 
 def handle_sleep(event):
@@ -118,6 +123,12 @@ def main():
     event_thread = Thread(target=connect)
     event_thread.setDaemon(True)
     event_thread.start()
+
+    try:
+        subprocess.call('echo "eyes.reset" >/dev/ttyAMA0', shell=True)
+    except:
+        pass
+
     try:
         loop.run()
     except KeyboardInterrupt, e:

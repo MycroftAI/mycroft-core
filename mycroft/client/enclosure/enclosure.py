@@ -113,6 +113,31 @@ class EnclosureReader(Thread):
             # Test audio muting on arduino
             subprocess.call('speaker-test -P 10 -l 0 -s 1', shell=True)
 
+        if "unit.shutdown" in data:
+            self.client.emit(
+                Message("enclosure.eyes.timedspin",
+                        metadata={'length': 12000}))
+            self.client.emit(Message("enclosure.mouth.reset"))
+            subprocess.call('systemctl poweroff -i', shell=True)
+
+        if "unit.reboot" in data:
+            self.client.emit(
+                Message("enclosure.eyes.spin"))
+            self.client.emit(Message("enclosure.mouth.reset"))
+            subprocess.call('systemctl reboot -i', shell=True)
+
+        if "unit.setwifi" in data:
+            self.client.emit(Message("wifisetup.start"))
+
+        if "unit.factory-reset" in data:
+            subprocess.call(
+                'rm ~/.mycroft/identity/identity.json',
+                shell=True)
+            self.client.emit(
+                Message("enclosure.eyes.spin"))
+            self.client.emit(Message("enclosure.mouth.reset"))
+            subprocess.call('systemctl reboot -i', shell=True)
+
     def stop(self):
         self.alive = False
         self.join()
