@@ -207,8 +207,8 @@ class MycroftSkill(object):
                 handler(message)
                 if len(self.results) > 0:
                     self.emitter.emit(
-                        Message("results", metadata=self.results))
-                    self.results.clear()
+                        Message("results",
+                                metadata=self.results))
             except:
                 # TODO: Localize
                 self.speak(
