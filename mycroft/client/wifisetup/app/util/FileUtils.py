@@ -96,6 +96,7 @@ ignore_broadcast_ssid=0
     hostapd_conf_write.start()
     hostapd_conf_write.join()
 
+
 def write_default_hostapd(config_file_path):
     template = """# Defaults for hostapd initscript
 #

@@ -13,12 +13,10 @@ class wpaClientTools():
     def wpa_cli_scan(self, iface):
         bash_command(['wpa_cli', '-i', iface, 'scan'])
         results = defaultdict(list)
-        results = bash_command(['wpa_cli', 'scan_results'])['stdout'].split('\n')
+        results = bash_command(
+            ['wpa_cli', 'scan_results'])['stdout'].split('\n')
         for result in results:
             results['network'].append()
-        #results_dict = {
-        #    'mac': results['stdout'].split('\n', 3)
-        #}
         return results
 
     def wpa_cli_status(self, iface):

@@ -8,7 +8,8 @@ import tornado.websocket
 import time
 import threading
 
-from mycroft.client.wifisetup.app.util.api import WiFiAPI, ApAPI, FileAPI, LinkAPI
+from mycroft.client.wifisetup.app.util.api import WiFiAPI,\
+    ApAPI, LinkAPI
 
 from Queue import Queue
 
@@ -31,6 +32,7 @@ link_api = LinkAPI()
 
 LOGGER = getLogger("WiFiSetupClient")
 
+
 def send_to_all_clients(msg):
     for client in clients:
         LOGGER.info('Sending ' + msg + ' to browser')
@@ -38,7 +40,8 @@ def send_to_all_clients(msg):
 
 
 class WsProducerThread(threading.Thread):
-    def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, verbose=None):
+    def __init__(self, group=None, target=None, name=None,
+                 args=(), kwargs=None, verbose=None):
         super(WsProducerThread, self).__init__()
         self.target = target
         self.name = name
@@ -51,8 +54,10 @@ class WsProducerThread(threading.Thread):
                 send_to_all_clients(item)
         return
 
+
 class WiFiConsumerThread(threading.Thread):
-    def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, verbose=None):
+    def __init__(self, group=None, target=None, name=None,
+                 args=(), kwargs=None, verbose=None):
         super(WiFiConsumerThread, self).__init__()
         self.target = target
         self.name = name
@@ -78,16 +83,11 @@ class WiFiConsumerThread(threading.Thread):
             else:
                 ws_q_out.put('unableToConnect')
 
-
         elif 'ssid' in message:
             wifi_api.set_ssid(message['ssid'])
         elif 'passphrase' in message:
             wifi_api.set_psk(message['passphrase'])
             wifi_q_in.put({'connect': True})
-            #for i in range(10):
-             #   print "connection attempt here"
-             #   ws_q_out.put('attempting to connect ' + str(i))
-             #   time.sleep(1)
         else:
             pass
 
@@ -96,7 +96,8 @@ class WiFiConsumerThread(threading.Thread):
 
 
 class ApConsumerThread(threading.Thread):
-    def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, verbose=None):
+    def __init__(self, group=None, target=None, name=None,
+                 args=(), kwargs=None, verbose=None):
         super(ApConsumerThread, self).__init__()
         self.target = target
         self.name = name
@@ -123,7 +124,8 @@ class ApConsumerThread(threading.Thread):
 
 
 class WsConsumerThread(threading.Thread):
-    def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, verbose=None):
+    def __init__(self, group=None, target=None, name=None,
+                 args=(), kwargs=None, verbose=None):
         super(WsConsumerThread, self).__init__()
         self.target = target
         self.name = name
@@ -146,7 +148,7 @@ class WsConsumerThread(threading.Thread):
         if self.is_match("'ap_on'", message) is True:
             ws_q_out.put('TURN AP ON')
             ap_q_in.put({'ap_mode': True})
-            #ap_api.up()
+            # ap_api.up()
         elif self.is_match("'ap_off'", message) is True:
             ws_q_out.put('TURN AP OFF')
             ap_q_in.put({'ap_mode': False})
@@ -174,8 +176,6 @@ w = WiFiConsumerThread('wifi')
 w.start()
 
 
-
-
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
         self.client_iface = 'uap0'
@@ -183,10 +183,10 @@ class MainHandler(tornado.web.RequestHandler):
         apScan.start()
         apScan.join()
         self.ap = apScan.join()
-        wifi_q_in.put({'scan':True})
-        #wifi = wpaClientTools()
-        #self.ap = wifi.wpa_cli_scan(self.client_iface).split()
-        #print self.ap
+        wifi_q_in.put({'scan': True})
+        # wifi = wpaClientTools()
+        # self.ap = wifi.wpa_cli_scan(self.client_iface).split()
+        # print self.ap
         self.render("index.html", ap=self.ap)
 
 
@@ -222,4 +222,3 @@ class WSHandler(tornado.websocket.WebSocketHandler):
     def on_close(self):
         LOGGER.info('connection closed\n')
         clients.remove(self)
-

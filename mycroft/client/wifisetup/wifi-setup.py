@@ -18,30 +18,18 @@
 import sys
 import os
 import threading
-import Queue
 import tornado.ioloop
 import tornado.template
 import tornado.web
 import tornado.websocket
 from Queue import Queue
-from threading import Thread
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util import str2bool
 from mycroft.util.log import getLogger
+
 from mycroft.client.wifisetup.app.util.WiFiTools import ap_link_tools
-from mycroft.client.wifisetup.app.util.FileUtils import ap_mode_config,\
-    write_hostapd_conf, write_network_interfaces, write_dnsmasq
-from mycroft.client.wifisetup.app.util.LinkUtils import ScanForAP, link_add_vap#, \
-    # dev_link_tools
-from mycroft.client.wifisetup.app.util.WiFiTools import ap_link_tools,\
-    hostapd_tools
-from mycroft.client.wifisetup.app.util.dnsmasqTools import dnsmasqTools
-from mycroft.client.wifisetup.app.util.hostAPDTools import hostAPServerTools
-from mycroft.client.wifisetup.app.util.Server import MainHandler,\
-    JSHandler, BootstrapMinJSHandler, BootstrapMinCSSHandler, WSHandler
-from mycroft.client.wifisetup.app.util.wpaCLITools import wpaClientTools
 from mycroft.client.wifisetup.app.util.Server import MainHandler,\
     WSHandler, JSHandler, BootstrapMinJSHandler, BootstrapMinCSSHandler
 
@@ -58,7 +46,7 @@ ap_iface_mac = 'bc:5f:f4:be:7d:0a'
 http_port = '8888'
 ws_port = '80'
 
-#dev_link_tools = dev_link_tools()
+# dev_link_tools = dev_link_tools()
 linktools = ap_link_tools()
 
 LOGGER = getLogger("WiFiSetupClient")
@@ -70,6 +58,7 @@ queueLock = threading.Lock()
 workQueue = Queue(10)
 threads = []
 threadID = 1
+
 
 class WiFiSetup(threading.Thread):
     def __init__(self, threadID, name, q):
@@ -182,8 +171,10 @@ class TornadoWorker (threading.Thread):
 def connect():
     client.run_forever()
 
+
 def test_func():
     print "testing 123"
+
 
 def main():
     try:

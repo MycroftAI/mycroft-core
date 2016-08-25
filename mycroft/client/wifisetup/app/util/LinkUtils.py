@@ -8,7 +8,6 @@ from mycroft.client.wifisetup.app.util.bashThreadHandling import bash_command
 from mycroft.util.log import getLogger
 
 
-
 LOGGER = getLogger("WiFiSetupClient")
 
 
@@ -38,8 +37,11 @@ class ScanForAP(threading.Thread):
             # Clean up the list of networks.
             #################################################
             # First, sort by name and strength
-            nets_byNameAndStr = sorted(ap_scan_results['network'], key=itemgetter('ssid', 'quality'), reverse=True)
-            # now strip out duplicates (e.g. repeaters with the same SSID), keeping the first (strongest)
+            nets_byNameAndStr = sorted(ap_scan_results['network'],
+                                       key=itemgetter('ssid', 'quality'),
+                                       reverse=True)
+            # now strip out duplicates (e.g. repeaters with the same SSID),
+            # keeping the first (strongest)
             lastSSID = "."
             for n in nets_byNameAndStr[:]:
                 if (n['ssid'] == lastSSID):
@@ -47,7 +49,8 @@ class ScanForAP(threading.Thread):
                 else:
                     lastSSID = n['ssid']
                     # Finally, sort by strength alone
-            ap_scan_results['network'] = sorted(nets_byNameAndStr, key=itemgetter('quality'), reverse=True)
+            ap_scan_results['network'] = sorted(
+                nets_byNameAndStr, key=itemgetter('quality'), reverse=True)
             self._return = ap_scan_results
         except:
             print "ap scan fail"
@@ -72,7 +75,9 @@ def client_mode_config(iface, ssid, passphrase):
 
 
 def client_connect_test(iface, ssid, passphrase):
-    LOGGER.warn(bash_command('wpa_supplicant -iwlan0 -Dnl80211 -c /etc/wpa_supplicant/wpa_supplicant.conf'))
+    LOGGER.warn(bash_command(
+        'wpa_supplicant -iwlan0 -Dnl80211 -c'
+        ' /etc/wpa_supplicant/wpa_supplicant.conf'))
     LOGGER.warn(bash_command('ifdown wlan0'))
     LOGGER.warn(bash_command('ifconfig wlan0 up'))
     connect = JoinAP('Connecting to Network', iface, ssid, passphrase)
