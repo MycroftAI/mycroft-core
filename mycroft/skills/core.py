@@ -207,7 +207,7 @@ class MycroftSkill(object):
                 handler(message)
                 if len(self.results) > 0:
                     self.emitter.emit(
-                        Message("results", metadata={"data": self.results}))
+                        Message("results", metadata=self.results))
                     self.results.clear()
             except:
                 # TODO: Localize
@@ -231,8 +231,8 @@ class MycroftSkill(object):
             Message('register_vocab', metadata={'regex': regex_str}))
 
     def add_result(self, key, value):
-        self.results['name'] = self.name
-        self.results[str(key)] = str(value)
+        self.results['skill_name'] = self.name
+        self.results[str(key)] = value
 
     def speak(self, utterance):
         self.emitter.emit(Message("speak", metadata={'utterance': utterance}))
