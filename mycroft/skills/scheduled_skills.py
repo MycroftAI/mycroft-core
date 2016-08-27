@@ -16,14 +16,14 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import abc
 from datetime import datetime
 from threading import Timer, Lock
 from time import mktime
 
+import abc
 import parsedatetime as pdt
-
 from adapt.intent import IntentBuilder
+
 from mycroft.skills import time_rules
 from mycroft.skills.core import MycroftSkill
 from mycroft.util.log import getLogger
@@ -91,8 +91,9 @@ class ScheduledSkill(MycroftSkill):
             else:
                 return "%s minutes and %s seconds from now" % \
                        (int(minutes), int(seconds))
-        return date.strftime(
-            self.config_core.get('time.format'))
+        dt_format = self.config_core.get('date.format')
+        dt_format += " at " + self.config_core.get('time.format')
+        return date.strftime(dt_format)
 
     @abc.abstractmethod
     def get_times(self):
