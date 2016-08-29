@@ -51,14 +51,8 @@ class WiFiAPI:
                 except:
                     LOGGER.info("Connection attempt in progress")
                     pass
-            #if connected is False:
-                #LOGGER.info(
-                    self.wpa_tools.wpa_cli_disable_network('wlan0', network_id)
-                )
-                #LOGGER.info(
-                    self.wpa_tools.wpa_cli_flush()
-                )
-            #    return False
+            if connected is False:
+                return False
 
     def set_ssid(self, ssid):
         self.ssid = ssid
