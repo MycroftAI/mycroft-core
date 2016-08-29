@@ -83,6 +83,7 @@ class WiFiConsumerThread(threading.Thread):
                 ap_api.down()
             else:
                 ws_q_out.put('unableToConnect')
+                wpa_cli.wpa_cli_flush()
 
         elif 'ssid' in message:
             wifi_api.set_ssid(message['ssid'])
