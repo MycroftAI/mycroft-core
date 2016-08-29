@@ -62,7 +62,7 @@ class wpaClientTools():
         results = bash_command(['wpa_cli', '-i', iface, 'enable', network_id])
         return results
 
-    def wpa_cli_disable_network(self, network_id):
+    def wpa_cli_disable_network(self, iface, network_id):
         results = bash_command(['wpa_cli', '-i', iface, 'disable', network_id])
         return results
 
