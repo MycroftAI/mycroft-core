@@ -90,8 +90,8 @@ class ApAPI():
 
     def up(self):
         # bash_command(['service', 'wpa_supplicant', 'restart'])
-        LOGGER.info(
-            ['iw', 'wlan0', 'set', 'power_save', 'off']
+        LOGGER.info(bash_command(
+            ['iw', 'wlan0', 'set', 'power_save', 'off'])
         )
         LOGGER.info(backup_system_files())
         LOGGER.info(
