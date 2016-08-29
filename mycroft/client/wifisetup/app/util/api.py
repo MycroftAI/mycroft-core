@@ -105,7 +105,7 @@ class ApAPI():
             write_dnsmasq('uap0', '172.24.1.1', '172.24.1.10', '172.24.1.20'))
         LOGGER.info(
             write_hostapd_conf(
-                'uap0', 'nl80211', 'mycroft-doing-stuff', str(6)))
+                'uap0', 'nl80211', 'mycroft-doing-stuff', str(1)))
         LOGGER.info(
             write_default_hostapd('/etc/hostapd/hostapd.conf'))
         LOGGER.info(bash_command(['ifdown', 'wlan0']))
@@ -129,4 +129,6 @@ class ApAPI():
         LOGGER.info(self.ap_tools.hostAPDStop())
         LOGGER.info(self.dns_tools.dnsmasqServiceStop())
         LOGGER.info(restore_system_files())
-        sys.exit()
+        LOGGER.info(bash_command(['ifdown', 'uap0']))
+        LOGGER.info(bash_command(['ifdown', 'wlan0']))
+        LOGGER.info(bash_command(['ifup', 'wlan0']))

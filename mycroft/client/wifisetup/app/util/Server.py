@@ -1,3 +1,4 @@
+import sys
 from wpaCLITools import wpaClientTools
 from LinkUtils import ScanForAP
 from wpaCLITools import wpaClientTools
@@ -81,6 +82,7 @@ class WiFiConsumerThread(threading.Thread):
                 ws_q_out.put('success')
                 time.sleep(2)
                 ap_api.down()
+                sys.exit()
             else:
                 ws_q_out.put('unableToConnect')
                 wpa_cli.wpa_cli_flush()
