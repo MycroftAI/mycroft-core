@@ -94,7 +94,7 @@ class ApAPI():
         self.dns_tools = dnsmasqTools()
 
     def up(self):
-        bash_command(['service', 'wpa_supplicant', 'stop'])
+        # bash_command(['service', 'wpa_supplicant', 'stop'])
         LOGGER.info(backup_system_files())
         LOGGER.info(
             bash_command(
