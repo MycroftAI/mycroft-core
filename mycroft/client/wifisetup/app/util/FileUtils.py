@@ -49,8 +49,8 @@ country={country}
 ctrl_interface=/var/run/wpa_supplicant
 update_config=1
 network={b1}
-ssid="{ssid}"
-psk="{passphrase}"
+ssid={ssid}
+psk={passphrase}
 key_mgmt=WPA-PSK
 {b2}
 """
