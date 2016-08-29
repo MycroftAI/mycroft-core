@@ -89,7 +89,7 @@ class ApAPI():
         self.dns_tools = dnsmasqTools()
 
     def up(self):
-        # bash_command(['service', 'wpa_supplicant', 'restart'])
+        LOGGER.info(bash_command(['service', 'dhcpcd', 'stop']))
         LOGGER.info(bash_command(
             ['iw', 'wlan0', 'set', 'power_save', 'off'])
         )
@@ -120,6 +120,9 @@ class ApAPI():
         LOGGER.info(self.dns_tools.dnsmasqServiceStart())
         LOGGER.info(self.ap_tools.hostAPDStop())
         LOGGER.info(self.ap_tools.hostAPDStart())
+        LOGGER.info(
+            bash_command(['service', 'dhcpcd', 'start'])
+        )
 
     def down(self):
         LOGGER.info("ApAPI down Goes Here: ")
