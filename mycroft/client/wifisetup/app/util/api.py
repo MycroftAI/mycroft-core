@@ -51,6 +51,12 @@ class WiFiAPI:
                     LOGGER.info("Connection attempt in progress")
                     pass
             if connected is False:
+                LOGGER.info(
+                    self.wpa_tools.wpa_cli_disable_network('wlan0', network_id)
+                )
+                LOGGER.info(
+                    self.wpa_tools.wpa_cli_flush()
+                )
                 return False
 
     def set_ssid(self, ssid):
@@ -119,7 +125,7 @@ class ApAPI():
 
     def down(self):
         LOGGER.info("ApAPI down Goes Here: ")
-        # print self.ap_tools.hostAPDStop()
+        LOGGER.info(self.ap_tools.hostAPDStop())
         LOGGER.info(bash_command({'pkill', '-f', '"wifi"'}))
         LOGGER.info(self.dns_tools.dnsmasqServiceStop())
         LOGGER.info(restore_system_files())

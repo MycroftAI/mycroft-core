@@ -236,12 +236,6 @@ def restore_system_files():
                                       'interfaces')
     etc_network_interfaces.start()
     etc_network_interfaces.join()
-
-    etc_wpa_supplicant = CopyFile('Restore - Network/Interfaces: ',
-                                  backup_path,
-                                  'out.wpa',
-                                  '/etc/wpa_supplicant/',
-                                  'wpa_supplicant.conf')
     etc_wpa_supplicant.start()
     etc_wpa_supplicant.join()
 
