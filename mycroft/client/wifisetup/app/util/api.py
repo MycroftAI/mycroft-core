@@ -52,7 +52,7 @@ class WiFiAPI:
                     pass
             if connected is False:
                 LOGGER.info(
-                    self.wpa_tools.wpa_cli_disable_network('wlan0', network_id)
+                    self.wpa_tools.wpa_cli_disable_network(network_id)
                 )
                 LOGGER.info(
                     self.wpa_tools.wpa_cli_flush()
