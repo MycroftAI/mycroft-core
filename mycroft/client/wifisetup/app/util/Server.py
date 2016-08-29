@@ -24,7 +24,6 @@ ap_q_in = Queue(10)
 wifi_q_in = Queue(10)
 wifi_connection_settings = {}
 
-wifi_api = WiFiAPI()
 ap_api = ApAPI()
 wifi_api = WiFiAPI()
 link_api = LinkAPI()
@@ -80,6 +79,8 @@ class WiFiConsumerThread(threading.Thread):
         if 'connect' in message:
             if wifi_api.try_connect() is True:
                 ws_q_out.put('success')
+                time.sleep(2)
+                ap_api.down()
             else:
                 ws_q_out.put('unableToConnect')
 
@@ -118,7 +119,6 @@ class ApConsumerThread(threading.Thread):
                 ap_api.up()
             elif message['ap_mode'] is False:
                 ap_api.down()
-                # link_api.link_down('uap0')
         else:
             pass
 

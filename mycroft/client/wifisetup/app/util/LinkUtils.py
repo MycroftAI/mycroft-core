@@ -61,7 +61,6 @@ class ScanForAP(threading.Thread):
 
 
 def link_add_vap():
-    LOGGER.warn()
     time.sleep(2)
     LOGGER.warn(bash_command('ifdown upa0'))
     time.sleep(2)

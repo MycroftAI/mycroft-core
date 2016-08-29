@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from collections import defaultdict
 from mycroft.client.wifisetup.app.util.bashThreadHandling import bash_command
 
