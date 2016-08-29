@@ -169,6 +169,7 @@ class TornadoWorker (threading.Thread):
 def connect():
     client.run_forever()
 
+
 def main():
     try:
         wifi_setup = WiFiSetup(1, 'wifi', 0)

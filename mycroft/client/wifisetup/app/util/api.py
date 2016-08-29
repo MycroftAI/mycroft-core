@@ -124,7 +124,6 @@ class ApAPI():
     def down(self):
         LOGGER.info("ApAPI down Goes Here: ")
         LOGGER.info(self.ap_tools.hostAPDStop())
-        LOGGER.info(bash_command({'pkill', '-f', '"wifi"'}))
         LOGGER.info(self.dns_tools.dnsmasqServiceStop())
         LOGGER.info(restore_system_files())
         sys.exit()

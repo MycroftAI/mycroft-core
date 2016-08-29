@@ -236,8 +236,6 @@ def restore_system_files():
                                       'interfaces')
     etc_network_interfaces.start()
     etc_network_interfaces.join()
-    etc_wpa_supplicant.start()
-    etc_wpa_supplicant.join()
 
     etc_hostapd = CopyFile('Restore - HostAPD: ', backup_path,
                            'out.ap', '/etc/hostapd/', 'hostapd.conf')
