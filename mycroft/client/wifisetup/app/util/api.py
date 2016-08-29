@@ -51,14 +51,14 @@ class WiFiAPI:
                 except:
                     LOGGER.info("Connection attempt in progress")
                     pass
-            if connected is False:
-                LOGGER.info(
+            #if connected is False:
+                #LOGGER.info(
                     self.wpa_tools.wpa_cli_disable_network('wlan0', network_id)
                 )
-                LOGGER.info(
+                #LOGGER.info(
                     self.wpa_tools.wpa_cli_flush()
                 )
-                return False
+            #    return False
 
     def set_ssid(self, ssid):
         self.ssid = ssid
@@ -95,7 +95,10 @@ class ApAPI():
         self.dns_tools = dnsmasqTools()
 
     def up(self):
-        bash_command(['service', 'wpa_supplicant', 'restart'])
+        # bash_command(['service', 'wpa_supplicant', 'restart'])
+        LOGGER.info(
+            ['iw', 'wlan0', 'set', 'power_save', 'off']
+        )
         LOGGER.info(backup_system_files())
         LOGGER.info(
             bash_command(

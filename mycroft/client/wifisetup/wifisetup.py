@@ -52,8 +52,6 @@ linktools = ap_link_tools()
 LOGGER = getLogger("WiFiSetupClient")
 client = None
 # web vars
-
-nameList = ['web', 'ap', 'dns']
 queueLock = threading.Lock()
 workQueue = Queue(10)
 threads = []
@@ -170,11 +168,6 @@ class TornadoWorker (threading.Thread):
 
 def connect():
     client.run_forever()
-
-
-def test_func():
-    print "testing 123"
-
 
 def main():
     try:
