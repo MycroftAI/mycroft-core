@@ -22,7 +22,7 @@ from mycroft.client.wifisetup.app.util.util import HostAPServerTools,\
 from mycroft.client.wifisetup.app.util.FileUtils import write_dnsmasq,\
     write_hostapd_conf, write_wpa_supplicant_conf, write_network_interfaces,\
     backup_system_files, restore_system_files, write_default_hostapd
-from mycroft.client.wifisetup.app.util.bashThreadHandling import bash_command
+from mycroft.client.wifisetup.app.util.BashThreadHandling import bash_command
 from mycroft.util.log import getLogger
 
 

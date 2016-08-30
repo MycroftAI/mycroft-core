@@ -45,9 +45,7 @@ ap_iface_ip_range_end = '172.24.1.20'
 ap_iface_mac = 'bc:5f:f4:be:7d:0a'
 http_port = '8888'
 ws_port = '80'
-
-# dev_link_tools = dev_link_tools()
-linktools = APLinkTools
+linktools = APLinkTools()
 
 LOGGER = getLogger("WiFiSetupClient")
 client = None
@@ -71,7 +69,7 @@ class WiFiSetup(threading.Thread):
     def setup(self):
         must_start_ap_mode = self.config.get(str2bool('must_start_ap_mode'))
         if must_start_ap_mode is not None and must_start_ap_mode is True:
-            LOGGER.info("Initalizing wireless setup mode.")
+            LOGGER.info("Initialising wireless setup mode.")
             self.client.emit(Message("speak", metadata={
                 'utterance': "Initializing wireless setup mode."}))
 
@@ -99,11 +97,11 @@ class WiFiSetup(threading.Thread):
                 self.__remove_wifi_events()
 
     def __register_wifi_events(self):
-        self.client.on('recognizer_loop:record_begin', self.__init_tornado())
+        self.client.on('recognizer_loop:record_begin', self.test())
 
     def __remove_wifi_events(self):
         self.client.remove('recognizer_loop:record_begin',
-                           self.__init_tornado())
+                           self.test())
 
     def __update_events(self, event=None):
         if event and event.metadata:
@@ -123,6 +121,9 @@ class WiFiSetup(threading.Thread):
             LOGGER.warn(e)
         finally:
             sys.exit()
+
+    def test(self):
+           print "ACK ACK ACK ACK"
 
 
 class TornadoWorker (threading.Thread):

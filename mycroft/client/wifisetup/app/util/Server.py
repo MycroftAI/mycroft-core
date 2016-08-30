@@ -24,8 +24,7 @@ import threading
 from Queue import Queue
 from mycroft.client.wifisetup.app.util.util import WpaClientTools, ScanForAP
 from mycroft.util.log import getLogger
-from mycroft.client.wifisetup.app.util.api import WiFiAPI,\
-    ApAPI, LinkAPI
+from mycroft.client.wifisetup.app.util.api import WiFiAPI, ApAPI, LinkAPI
 
 clients = []
 

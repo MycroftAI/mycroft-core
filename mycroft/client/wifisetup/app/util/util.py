@@ -22,7 +22,7 @@ from pyroute2 import IPRoute
 from operator import itemgetter
 from collections import defaultdict
 from wifi import Cell
-from mycroft.client.wifisetup.app.util.bashThreadHandling import bash_command
+from mycroft.client.wifisetup.app.util.BashThreadHandling import bash_command
 from mycroft.util.log import getLogger
 
 ip = IPRoute()
@@ -86,7 +86,6 @@ class WpaClientTools:
 
     def wpa_cli_scan(self, iface):
         bash_command(['wpa_cli', '-i', iface, 'scan'])
-        results = defaultdict(list)
         results = bash_command(
             ['wpa_cli', 'scan_results'])['stdout'].split('\n')
         for result in results:
@@ -144,26 +143,6 @@ class WpaClientTools:
         return results
 
 
-class DevLinkTools:
-    def __init__(self):
-        pass
-
-    def link_add(self):
-        interface = self.iface
-        dev = ip.link_lookup(ifname=link)[0]
-
-    def ifup(self, link):
-        pass
-
-    def ifdown(self, link):
-        pass
-
-    def link_add_vap(self):
-        print bash_command('iw dev wlan0 interface add uap0 type __ap')
-        print bash_command('ifdown upa0')
-        print bash_command('ifup upa0')
-
-
 class ScanForAP(threading.Thread):
     def __init__(self, name, interface):
         threading.Thread.__init__(self)
@@ -214,7 +193,7 @@ class ScanForAP(threading.Thread):
 
 
 class APLinkTools:
-    def __init_(self):
+    def __init__(self):
         pass
 
     def scan_links(self):
