@@ -1,7 +1,23 @@
+# Copyright 2016 Mycroft AI, Inc.
+#
+# This file is part of Mycroft Core.
+#
+# Mycroft Core is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Mycroft Core is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
+
 import threading
 import sys
 import httplib
-from subprocess import Popen, PIPE
 from pyroute2 import IPRoute
 from operator import itemgetter
 from collections import defaultdict
@@ -13,7 +29,7 @@ ip = IPRoute()
 LOGGER = getLogger("WiFiSetupClient")
 
 
-class DnsmasqTools():
+class DnsmasqTools:
     def __init__(self):
         self.name = "name"
 
@@ -39,7 +55,7 @@ class DnsmasqTools():
         return results
 
 
-class HostAPServerTools():
+class HostAPServerTools:
     def __init__(self):
         self.name = "name"
 
@@ -60,7 +76,7 @@ class HostAPServerTools():
         return results
 
 
-class WpaClientTools():
+class WpaClientTools:
     def __init__(self):
         self.name = "name"
 
@@ -128,7 +144,7 @@ class WpaClientTools():
         return results
 
 
-class DevLinkTools():
+class DevLinkTools:
     def __init__(self):
         pass
 
@@ -153,6 +169,7 @@ class ScanForAP(threading.Thread):
         threading.Thread.__init__(self)
         self.name = name
         self.interface = interface
+        self._return = []
         print sys.modules['os']
 
     def run(self):
@@ -169,7 +186,6 @@ class ScanForAP(threading.Thread):
                     'address': cell.address,
                     'mode': cell.mode
                 })
-
             #################################################
             # Clean up the list of networks.
             #################################################
@@ -197,7 +213,7 @@ class ScanForAP(threading.Thread):
         return self._return
 
 
-class APLinkTools():
+class APLinkTools:
     def __init_(self):
         pass
 
@@ -236,15 +252,13 @@ class APLinkTools():
             self.myfile.close()
         try:
             print bash_command(["ip addr flush wlan0"])
-
             print bash_command(["ifdown wlan0"])
-            # bash_command(['ifconfig wlan0 up'])
             print bash_command(["ifup wlan0"])
         except:
             print "connection failed"
 
 
-class HostAPDTools():
+class HostAPDTools:
     def ap_config(self):
         bash_command(
             'bash -x /home/pi/rpi3-headless-wifi-setup/'
@@ -270,12 +284,9 @@ class HostAPDTools():
 
     def dnsmasq_stop(self):
         bash_command(["systemctl", "stop", "dnsmasq.service"])
-        # bash_command(["pkill -f 'dnsmasq'"])
 
     def hostapd_start(self):
         print bash_command(["systemctl", "start", "hostapd.service"])
-        # print bash_command(["hostapd /etc/hostapd/hostapd.conf"])
 
     def hostapd_stop(self):
         print bash_command(['systemctl', 'stop', 'hostapd.service'])
-        # bash_command(["pfkill -f 'hostapd'"])
