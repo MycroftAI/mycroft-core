@@ -29,7 +29,7 @@ from mycroft.messagebus.message import Message
 from mycroft.util import str2bool
 from mycroft.util.log import getLogger
 
-from mycroft.client.wifisetup.app.util.WiFiTools import ap_link_tools
+from mycroft.client.wifisetup.app.util.util import APLinkTools
 from mycroft.client.wifisetup.app.util.Server import MainHandler,\
     WSHandler, JSHandler, BootstrapMinJSHandler, BootstrapMinCSSHandler
 
@@ -47,7 +47,7 @@ http_port = '8888'
 ws_port = '80'
 
 # dev_link_tools = dev_link_tools()
-linktools = ap_link_tools()
+linktools = APLinkTools
 
 LOGGER = getLogger("WiFiSetupClient")
 client = None

@@ -44,8 +44,7 @@ class WriteFileTemplate(threading.Thread):
 
 
 def write_wpa_supplicant_conf(ssid, passphrase):
-    template = """
-country={country}
+    template = """country={country}
 ctrl_interface=/var/run/wpa_supplicant
 update_config=1
 network={b1}

@@ -1,13 +1,10 @@
 import time
-import sys
 from pyroute2 import IPRoute
-
-from mycroft.client.wifisetup.app.util.hostAPDTools import hostAPServerTools
-from mycroft.client.wifisetup.app.util.dnsmasqTools import dnsmasqTools
+from mycroft.client.wifisetup.app.util.util import HostAPServerTools,\
+    DnsmasqTools, WpaClientTools
 from mycroft.client.wifisetup.app.util.FileUtils import write_dnsmasq,\
     write_hostapd_conf, write_wpa_supplicant_conf, write_network_interfaces,\
     backup_system_files, restore_system_files, write_default_hostapd
-from mycroft.client.wifisetup.app.util.wpaCLITools import wpaClientTools
 from mycroft.client.wifisetup.app.util.bashThreadHandling import bash_command
 from mycroft.util.log import getLogger
 
@@ -20,7 +17,7 @@ LOGGER = getLogger("WiFiSetupClient")
 class WiFiAPI:
     def __init__(self):
         self.none = None
-        self.wpa_tools = wpaClientTools()
+        self.wpa_tools = WpaClientTools()
         self.ssid = None
         self.passphrase = None
 
@@ -85,11 +82,11 @@ class LinkAPI():
 class ApAPI():
     def __init__(self):
         self.none = None
-        self.ap_tools = hostAPServerTools()
-        self.dns_tools = dnsmasqTools()
+        self.ap_tools = HostAPServerTools()
+        self.dns_tools = DnsmasqTools()
 
     def up(self):
-        LOGGER.info(bash_command(['service', 'dhcpcd', 'stop']))
+        # LOGGER.info(bash_command(['service', 'dhcpcd', 'stop']))
         LOGGER.info(bash_command(
             ['iw', 'wlan0', 'set', 'power_save', 'off'])
         )
@@ -109,7 +106,6 @@ class ApAPI():
         LOGGER.info(
             write_default_hostapd('/etc/hostapd/hostapd.conf'))
         LOGGER.info(bash_command(['ifdown', 'wlan0']))
-        LOGGER.info(bash_command(['ifup', 'wlan0']))
         LOGGER.info(bash_command(['ifdown', 'uap0']))
         LOGGER.info(bash_command(
             ['ip', 'link', 'set', 'dev', 'uap0',
@@ -120,12 +116,9 @@ class ApAPI():
         LOGGER.info(self.dns_tools.dnsmasqServiceStart())
         LOGGER.info(self.ap_tools.hostAPDStop())
         LOGGER.info(self.ap_tools.hostAPDStart())
-        LOGGER.info(
-            bash_command(['service', 'dhcpcd', 'start'])
-        )
+        LOGGER.info(bash_command(['ifup', 'wlan0']))
 
     def down(self):
-        LOGGER.info("ApAPI down Goes Here: ")
         LOGGER.info(self.ap_tools.hostAPDStop())
         LOGGER.info(self.dns_tools.dnsmasqServiceStop())
         LOGGER.info(restore_system_files())

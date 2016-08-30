@@ -1,34 +1,26 @@
 import sys
-from wpaCLITools import wpaClientTools
-from LinkUtils import ScanForAP
-from wpaCLITools import wpaClientTools
-from mycroft.util.log import getLogger
 import ast
 import re
 import tornado.websocket
 import time
 import threading
-
+from Queue import Queue
+from mycroft.client.wifisetup.app.util.util import WpaClientTools, ScanForAP
+from mycroft.util.log import getLogger
 from mycroft.client.wifisetup.app.util.api import WiFiAPI,\
     ApAPI, LinkAPI
 
-from Queue import Queue
-
 clients = []
 
-wpa_cli = wpaClientTools()
-
-
+wpa_cli = WpaClientTools()
 ws_q_in = Queue(10)
 ws_q_out = Queue(10)
 ap_q_in = Queue(10)
 wifi_q_in = Queue(10)
 wifi_connection_settings = {}
-
 ap_api = ApAPI()
 wifi_api = WiFiAPI()
 link_api = LinkAPI()
-
 
 LOGGER = getLogger("WiFiSetupClient")
 
