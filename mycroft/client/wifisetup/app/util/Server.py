@@ -98,7 +98,7 @@ class WiFiConsumerThread(threading.Thread):
         if 'connect' in message:
             if wifi_api.try_connect() is True:
                 ws_q_out.put('success')
-                time.sleep(2)
+                time.sleep(3)
                 ap_q_in.put({'ap_mode': False})
                 sys.exit()
             else:
@@ -192,9 +192,6 @@ class MainHandler(tornado.web.RequestHandler):
         apScan.join()
         self.ap = apScan.join()
         wifi_q_in.put({'scan': True})
-        # wifi = wpaClientTools()
-        # self.ap = wifi.wpa_cli_scan(self.client_iface).split()
-        # print self.ap
         self.render("index.html", ap=self.ap)
 
 

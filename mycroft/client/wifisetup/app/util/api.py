@@ -62,7 +62,7 @@ class WiFiAPI:
             LOGGER.info(
                 self.wpa_tools.wpa_cli_enable_network(
                     self.client_iface, network_id))
-        elif self.passphrase == '':
+        elif self.passphrase == 'None':
             LOGGER.info(self.wpa_tools.wpa_cli_set_network(
                 self.client_iface, network_id, 'ssid', self.ssid))
             LOGGER.info(self.wpa_tools.wpa_cli_set_network(
@@ -133,7 +133,6 @@ class ApAPI():
         self.ap_iface_mac = self.config.get('ap_iface_mac')
 
     def up(self):
-        # LOGGER.info(bash_command(['service', 'dhcpcd', 'stop']))
         LOGGER.info(bash_command(
             ['iw', self.client_iface, 'set', 'power_save', 'off'])
         )
@@ -262,22 +261,15 @@ class ScanForAP(threading.Thread):
                     'address': cell.address,
                     'mode': cell.mode
                 })
-            #################################################
-            # Clean up the list of networks.
-            #################################################
-            # First, sort by name and strength
             nets_byNameAndStr = sorted(ap_scan_results['network'],
                                        key=itemgetter('ssid', 'quality'),
                                        reverse=True)
-            # now strip out duplicates (e.g. repeaters with the same SSID),
-            # keeping the first (strongest)
             lastSSID = "."
             for n in nets_byNameAndStr[:]:
                 if (n['ssid'] == lastSSID):
                     nets_byNameAndStr.remove(n)
                 else:
                     lastSSID = n['ssid']
-                    # Finally, sort by strength alone
             ap_scan_results['network'] = sorted(
                 nets_byNameAndStr, key=itemgetter('quality'), reverse=True)
             self._return = ap_scan_results

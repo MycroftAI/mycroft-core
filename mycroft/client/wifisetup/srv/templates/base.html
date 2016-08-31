@@ -259,15 +259,17 @@
 			getPass.style.display = 'block';
 			noPass.style.display = 'none';
 			btnConnect.className = '';
+			document.getElementById('pwd').value = '';
 		}
 		else
 		{
 			getPass.style.display = 'none';
 			noPass.style.display = 'block';
 			btnConnect.className = 'btnDefault';
+			document.getElementById('pwd').value = 'None';
 		}
 		
-		document.getElementById('pwd').value = '';
+
 		document.getElementById('network').innerHTML = ssid;
 		document.getElementById('networkNoPass').innerHTML = ssid;
 		document.getElementById('networkFailed').innerHTML = ssid;
