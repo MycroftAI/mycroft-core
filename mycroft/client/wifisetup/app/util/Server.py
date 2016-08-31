@@ -29,10 +29,7 @@ from mycroft.client.wifisetup.app.util.api import WiFiAPI, ApAPI, LinkAPI
 clients = []
 
 wpa_cli = WpaClientTools()
-ws_q_in = Queue(10)
-ws_q_out = Queue(10)
-ap_q_in = Queue(10)
-wifi_q_in = Queue(10)
+
 wifi_connection_settings = {}
 ap_api = ApAPI()
 wifi_api = WiFiAPI()
@@ -40,11 +37,21 @@ link_api = LinkAPI()
 
 LOGGER = getLogger("WiFiSetupClient")
 
+ws_q_in = Queue(10)
+ws_q_out = Queue(10)
+ap_q_in = Queue(10)
+wifi_q_in = Queue(10)
+
 
 def send_to_all_clients(msg):
     for client in clients:
         LOGGER.info('Sending ' + msg + ' to browser')
         client.write_message(msg)
+
+
+def ap_on():
+    print "menu event?"
+    ap_q_in.put({'ap_mode': True})
 
 
 class WsProducerThread(threading.Thread):
@@ -113,19 +120,19 @@ class ApConsumerThread(threading.Thread):
         super(ApConsumerThread, self).__init__()
         self.target = target
         self.name = name
+        self.item = None
         return
 
     def run(self):
         while True:
             if not ap_q_in.empty():
-                item = ap_q_in.get()
-                self.message_switch(item)
+                self.item = ap_q_in.get()
+                self.message_switch(self.item)
         return
 
     def message_switch(self, message):
         if 'ap_mode' in message:
             if message['ap_mode'] is True:
-                # link_api.link_up('uap0')
                 time.sleep(5)
                 ap_api.up()
             elif message['ap_mode'] is False:
@@ -146,7 +153,7 @@ class WsConsumerThread(threading.Thread):
         while True:
             if not ws_q_in.empty():
                 item = ws_q_in.get()
-                LOGGER.info('recieved ' + item + ' from browser')
+                LOGGER.info('received ' + item + ' from browser')
                 self.message_switch(item)
         return
 
@@ -159,7 +166,6 @@ class WsConsumerThread(threading.Thread):
         if self.is_match("'ap_on'", message) is True:
             ws_q_out.put('TURN AP ON')
             ap_q_in.put({'ap_mode': True})
-            # ap_api.up()
         elif self.is_match("'ap_off'", message) is True:
             ws_q_out.put('TURN AP OFF')
             ap_q_in.put({'ap_mode': False})
@@ -172,19 +178,6 @@ class WsConsumerThread(threading.Thread):
         elif self.is_match("'passphrase'", message) is True:
             ws_q_out.put('PASSPHRASE RECEIVED')
             wifi_q_in.put({'passphrase': self.dict2['passphrase']})
-
-
-a = ApConsumerThread('ap')
-a.start()
-
-ap_q_in.put({'ap_mode': True})
-
-p = WsProducerThread('producer')
-p.start()
-c = WsConsumerThread('consumer')
-c.start()
-w = WiFiConsumerThread('wifi')
-w.start()
 
 
 class MainHandler(tornado.web.RequestHandler):
@@ -233,3 +226,15 @@ class WSHandler(tornado.websocket.WebSocketHandler):
     def on_close(self):
         LOGGER.info('connection closed\n')
         clients.remove(self)
+
+a = ApConsumerThread('ap')
+a.start()
+
+p = WsProducerThread('producer')
+p.start()
+
+c = WsConsumerThread('consumer')
+c.start()
+
+w = WiFiConsumerThread('wifi')
+w.start()

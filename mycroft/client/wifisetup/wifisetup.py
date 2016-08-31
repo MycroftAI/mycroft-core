@@ -22,7 +22,9 @@ import tornado.ioloop
 import tornado.template
 import tornado.web
 import tornado.websocket
+
 from Queue import Queue
+from threading import Thread, Lock
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
@@ -31,10 +33,13 @@ from mycroft.util.log import getLogger
 
 from mycroft.client.wifisetup.app.util.util import APLinkTools
 from mycroft.client.wifisetup.app.util.Server import MainHandler,\
-    WSHandler, JSHandler, BootstrapMinJSHandler, BootstrapMinCSSHandler
+    WSHandler, JSHandler, BootstrapMinJSHandler, BootstrapMinCSSHandler,\
+    ap_on
 
 __author__ = 'aatchison'
 
+client = None
+mutex = Lock()
 
 # use config file for these
 client_iface = 'wlan0'
@@ -45,11 +50,11 @@ ap_iface_ip_range_end = '172.24.1.20'
 ap_iface_mac = 'bc:5f:f4:be:7d:0a'
 http_port = '8888'
 ws_port = '80'
-linktools = APLinkTools()
+
+# linktools = APLinkTools()
 
 LOGGER = getLogger("WiFiSetupClient")
-client = None
-# web vars
+
 queueLock = threading.Lock()
 workQueue = Queue(10)
 threads = []
@@ -67,11 +72,9 @@ class WiFiSetup(threading.Thread):
         self.__register_wifi_events()
 
     def setup(self):
-        must_start_ap_mode = self.config.get(str2bool('must_start_ap_mode'))
-        if must_start_ap_mode is not None and must_start_ap_mode is True:
+        must_start = self.config.get(str2bool('must_start'))
+        if must_start is not None and must_start is True:
             LOGGER.info("Initialising wireless setup mode.")
-            self.client.emit(Message("speak", metadata={
-                'utterance': "Initializing wireless setup mode."}))
 
     def run(self):
         try:
@@ -85,7 +88,7 @@ class WiFiSetup(threading.Thread):
         LOGGER.info("Shut down wireless setup mode.")
 
     def __register_events(self):
-        self.client.on('recognizer_loop:record_begin', self.__update_events)
+        self.client.on('mycroft.paired', self.__update_events)
         self.__register_wifi_events()
 
     def __wifi_listeners(self, event=None):
@@ -97,7 +100,7 @@ class WiFiSetup(threading.Thread):
                 self.__remove_wifi_events()
 
     def __register_wifi_events(self):
-        self.client.on('recognizer_loop:record_begin', self.test())
+        self.client.on('recognizer_loop:record_end', self.test())
 
     def __remove_wifi_events(self):
         self.client.remove('recognizer_loop:record_begin',
@@ -112,18 +115,6 @@ class WiFiSetup(threading.Thread):
 
     def __init_wifi_setup(self):
         self.config = ConfigurationManager.get().get("WiFiClient")
-
-    def __init_tornado(self):
-        try:
-            TornadoWorker(1, "http+ws", ws_port, http_port, 0).start()
-            LOGGER.info("Web Server Initialized")
-        except Exception as e:
-            LOGGER.warn(e)
-        finally:
-            sys.exit()
-
-    def test(self):
-           print "ACK ACK ACK ACK"
 
 
 class TornadoWorker (threading.Thread):
@@ -167,15 +158,72 @@ class TornadoWorker (threading.Thread):
         LOGGER.info("Exiting " + self.name)
 
 
-def connect():
-    client.run_forever()
+class WiFi:
+    def __init__(self):
+        self.client = WebsocketClient()
+        self.reader = WiFiSocketReader(self.client)
+        self.config = ConfigurationManager.get().get('WiFiClient')
+
+    def run(self):
+        self.client.run_forever()
+
+    def setup(self):
+        must_start = self.config.get('must_start')
+        if must_start is not None and str2bool(must_start) is True:
+            LOGGER.info("Initialising wireless setup mode.")
+            ConfigurationManager.set('WiFiClient', 'must_upload', False)
+        else:
+            "First run is false"
+
+    def stop(self, event=None):
+        self.alive = False
+        self.join()
+
+
+class WiFiSocketReader(Thread):
+    def __init__(self, client):
+        super(WiFiSocketReader, self).__init__(target=self.run)
+        self.client = client
+        self.alive = True
+        self.daemon = True
+        self.client.on('wifisetup.start', self.up)
+        self.client.on('wifisetup.start', self.__init_tornado)
+
+    def run(self):
+        while self.alive is True:
+            try:
+                self.client.run_forever()
+            except Exception as e:
+                LOGGER.error("Client error: {0}".format(e))
+                self.stop()
+
+    def stop(self):
+        self.alive = False
+        self.join()
+
+    def __init_tornado(self, envent=None):
+        try:
+            TornadoWorker(1, "http+ws", ws_port, http_port, 0).start()
+            LOGGER.info("Web Server Initialized")
+
+        except Exception as e:
+            LOGGER.warn(e)
+        finally:
+            sys.exit()
+
+    def up(self, event=None):
+        self.client.emit(Message("speak", metadata={
+            'utterance': "Initializing wireless setup mode."}))
+        ap_on()
 
 
 def main():
     try:
-        wifi_setup = WiFiSetup(1, 'wifi', 0)
-        wifi_setup.start()
-
+        wifi = WiFi()
+        t = Thread(target=wifi.run)
+        t.start()
+        wifi.setup()
+        t.join()
     except Exception as e:
         print (e)
     finally:
