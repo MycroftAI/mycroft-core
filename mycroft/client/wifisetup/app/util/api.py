@@ -52,28 +52,32 @@ class WiFiAPI:
     def try_connect(self):
         self.ssid = '"' + self.ssid + '"'
         self.passphrase = '"' + self.passphrase + '"'
-        network_id = self.wpa_tools.wpa_cli_add_network(self.client_iface)['stdout']
+        network_id = self.wpa_tools.wpa_cli_add_network(
+            self.client_iface)['stdout']
         if self.passphrase != '':
             LOGGER.info(self.wpa_tools.wpa_cli_set_network(
                 self.client_iface, network_id, 'ssid', self.ssid))
             LOGGER.info(self.wpa_tools.wpa_cli_set_network(
                 self.client_iface, network_id, 'psk', self.passphrase))
             LOGGER.info(
-                self.wpa_tools.wpa_cli_enable_network(self.client_iface, network_id))
+                self.wpa_tools.wpa_cli_enable_network(
+                    self.client_iface, network_id))
         elif self.passphrase == '':
             LOGGER.info(self.wpa_tools.wpa_cli_set_network(
                 self.client_iface, network_id, 'ssid', self.ssid))
             LOGGER.info(self.wpa_tools.wpa_cli_set_network(
                 self.client_iface, network_id, 'key_mgmt', 'NONE'))
             LOGGER.info(
-                self.wpa_tools.wpa_cli_enable_network(self.client_iface, network_id))
+                self.wpa_tools.wpa_cli_enable_network(
+                    self.client_iface, network_id))
 
         connected = False
         while connected is False:
             for i in range(22):
                 time.sleep(1)
                 try:
-                    state = self.wpa_tools.wpa_cli_status(self.client_iface)['wpa_state']
+                    state = self.wpa_tools.wpa_cli_status(
+                        self.client_iface)['wpa_state']
                     if state == 'COMPLETED':
                         self.save_wpa_network(self.ssid, self.passphrase)
                         connected = True
@@ -93,7 +97,8 @@ class WiFiAPI:
 
     def set_psk(self, psk):
         self.passphrase = psk
-        self.wpa_tools.wpa_cli_set_network(self.client_iface, str(self.new_net), '', psk)
+        self.wpa_tools.wpa_cli_set_network(
+            self.client_iface, str(self.new_net), '', psk)
 
     def save_wpa_network(self, ssid, passphrase):
         LOGGER.info(write_wpa_supplicant_conf(ssid, passphrase))
@@ -121,8 +126,10 @@ class ApAPI():
         self.client_iface = self.config.get('client_iface')
         self.ap_iface = self.config.get('ap_iface')
         self.ap_iface_ip = self.config.get('ap_iface_ip')
-        self.ap_iface_ip_range_start = self.config.get('ap_iface_ip_range_start')
-        self.ap_iface_ip_range_end = self.config.get('ap_iface_ip_range_stop')
+        self.ap_iface_ip_range_start = \
+            self.config.get('ap_iface_ip_range_start')
+        self.ap_iface_ip_range_end = \
+            self.config.get('ap_iface_ip_range_stop')
         self.ap_iface_mac = self.config.get('ap_iface_mac')
 
     def up(self):
@@ -316,4 +323,4 @@ class APLinkTools:
             print bash_command(['ifup', self.client_iface])
         except:
             print "connection failed"
-            print bash_command(['ip','addr', 'flush', self.client_iface])
+            print bash_command(['ip', 'addr', 'flush', self.client_iface])

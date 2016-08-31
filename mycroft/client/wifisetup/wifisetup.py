@@ -138,7 +138,8 @@ class WiFiSocketReader(Thread):
 
     def __init_tornado(self, envent=None):
         try:
-            TornadoWorker(1, "http+ws", self.ws_port, self.http_port, 0).start()
+            TornadoWorker(
+                1, "http+ws", self.ws_port, self.http_port, 0).start()
             LOGGER.info("Web Server Initialized")
 
         except Exception as e:
