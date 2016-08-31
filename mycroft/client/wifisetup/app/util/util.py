@@ -8,6 +8,8 @@ from collections import defaultdict
 from wifi import Cell
 from mycroft.client.wifisetup.app.util.BashThreadHandling import bash_command
 from mycroft.util.log import getLogger
+from mycroft.configuration import ConfigurationManager
+
 
 ip = IPRoute()
 LOGGER = getLogger("WiFiSetupClient")
@@ -178,6 +180,8 @@ class ScanForAP(threading.Thread):
 
 class APLinkTools:
     def __init__(self):
+        self.config = ConfigurationManager.get().get('WiFiClient')
+        self.client_iface = self.config.get('client_iface')
         pass
 
     def scan_links(self):
@@ -214,11 +218,12 @@ class APLinkTools:
             self.myfile.write(self.template.format(**self.context))
             self.myfile.close()
         try:
-            print bash_command(["ip addr flush wlan0"])
-            print bash_command(["ifdown wlan0"])
-            print bash_command(["ifup wlan0"])
+            print bash_command(['ip', 'addr', 'flush', self.client_iface])
+            print bash_command(['ifdown', self.client_iface])
+            print bash_command(['ifup', self.client_iface])
         except:
             print "connection failed"
+            print bash_command(['ip','addr', 'flush', self.client_iface])
 
 
 class HostAPDTools:

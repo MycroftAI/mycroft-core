@@ -61,62 +61,6 @@ threads = []
 threadID = 1
 
 
-class WiFiSetup(threading.Thread):
-    def __init__(self, threadID, name, q):
-        threading.Thread.__init__(self)
-        self.threadID = threadID
-        self.name = name
-        self.q = q
-        self.__init_wifi_setup()
-        self.client = WebsocketClient()
-        self.__register_wifi_events()
-
-    def setup(self):
-        must_start = self.config.get(str2bool('must_start'))
-        if must_start is not None and must_start is True:
-            LOGGER.info("Initialising wireless setup mode.")
-
-    def run(self):
-        try:
-            self.client.run_forever()
-            # self.__init_tornado()
-        except Exception as e:
-            LOGGER.error("Client error: {0}".format(e))
-            self.stop()
-
-    def stop(self):
-        LOGGER.info("Shut down wireless setup mode.")
-
-    def __register_events(self):
-        self.client.on('mycroft.paired', self.__update_events)
-        self.__register_wifi_events()
-
-    def __wifi_listeners(self, event=None):
-        if event and event.metadata:
-            active = event.metadata['active']
-            if active:
-                self.__register_wifi_events()
-            else:
-                self.__remove_wifi_events()
-
-    def __register_wifi_events(self):
-        self.client.on('recognizer_loop:record_end', self.test())
-
-    def __remove_wifi_events(self):
-        self.client.remove('recognizer_loop:record_begin',
-                           self.test())
-
-    def __update_events(self, event=None):
-        if event and event.metadata:
-            if event.metadata.get('paired', False):
-                self.__register_wifi_events()
-            else:
-                self.__remove_wifi_events()
-
-    def __init_wifi_setup(self):
-        self.config = ConfigurationManager.get().get("WiFiClient")
-
-
 class TornadoWorker (threading.Thread):
     """
         Creates a thread handler and initializes two tornado instances

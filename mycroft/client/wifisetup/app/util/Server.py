@@ -22,6 +22,7 @@ import tornado.websocket
 import time
 import threading
 from Queue import Queue
+from mycroft.configuration import ConfigurationManager
 from mycroft.client.wifisetup.app.util.util import WpaClientTools, ScanForAP
 from mycroft.util.log import getLogger
 from mycroft.client.wifisetup.app.util.api import WiFiAPI, ApAPI, LinkAPI
@@ -76,6 +77,8 @@ class WiFiConsumerThread(threading.Thread):
         super(WiFiConsumerThread, self).__init__()
         self.target = target
         self.name = name
+        self.config = ConfigurationManager.get().get('WiFiClient')
+        self.client_iface = self.config.get('ap_iface')
         return
 
     def run(self):
@@ -91,7 +94,7 @@ class WiFiConsumerThread(threading.Thread):
 
     def message_switch(self, message):
         if 'scan' in message:
-            wifi_api.scan('uap0')
+            wifi_api.scan('ap_iface')
         if 'connect' in message:
             if wifi_api.try_connect() is True:
                 ws_q_out.put('success')
@@ -182,8 +185,9 @@ class WsConsumerThread(threading.Thread):
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
-        self.client_iface = 'uap0'
-        apScan = ScanForAP('scan', self.client_iface)
+        self.config = ConfigurationManager.get().get('WiFiClient')
+        self.ap_iface = self.config.get('ap_iface')
+        apScan = ScanForAP('scan', self.ap_iface)
         apScan.start()
         apScan.join()
         self.ap = apScan.join()
