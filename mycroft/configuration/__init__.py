@@ -16,13 +16,11 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 import collections
 
-import requests
 from configobj import ConfigObj
 from genericpath import exists, isfile
 from os.path import join, dirname, expanduser
 
-from mycroft.identity import IdentityManager
-from mycroft.util import str2bool
+from mycroft.api import DeviceApi
 from mycroft.util.log import getLogger
 
 __author__ = 'seanfitz, jdorleans'
@@ -106,10 +104,10 @@ class RemoteConfiguration(object):
     config in the [core] config section
     """
     __remote_keys = {
-        "default_location": "location",
-        "default_language": "lang",
-        "timezone": "timezone"
+        "unit": "unit"
     }
+
+    __api = DeviceApi()
 
     @staticmethod
     def validate_config(config):
@@ -119,20 +117,14 @@ class RemoteConfiguration(object):
 
     @staticmethod
     def load(config=None):
+        api = RemoteConfiguration.__api
         RemoteConfiguration.validate_config(config)
+        auto_update = config.get("server", {}).get("auto_update", False)
 
-        identity = IdentityManager().get()
-        config_remote = config.get("remote_configuration", {})
-        enabled = str2bool(config_remote.get("enabled", "False"))
-
-        if enabled and identity.token:
-            url = config_remote.get("url")
-            auth_header = "Bearer %s:%s" % (identity.device_id, identity.token)
+        if auto_update:
             try:
-                response = requests.get(url,
-                                        headers={"Authorization": auth_header})
-                user = response.json()
-                RemoteConfiguration.__load_attributes(config, user)
+                setting = api.find_setting().json()
+                RemoteConfiguration.__load_attributes(config, setting)
             except Exception as e:
                 logger.error(
                     "Failed to fetch remote configuration: %s" % repr(e))
@@ -142,18 +134,16 @@ class RemoteConfiguration(object):
         return config
 
     @staticmethod
-    def __load_attributes(config, user):
+    def __load_attributes(config, setting):
         config_core = config["core"]
 
-        for att in user["attributes"]:
-            att_name = att.get("attribute_name")
-            name = RemoteConfiguration.__remote_keys.get(att_name)
+        for k, v in setting:
+            key = RemoteConfiguration.__remote_keys.get(k)
 
-            if name:
-                config_core[name] = str(att.get("attribute_value"))
-                logger.info(
-                    "Accepting remote configuration: core[%s] == %s" %
-                    (name, att["attribute_value"]))
+            if config_core.__contains__(key):
+                config_core[key] = str(v)
+                logger.info("Setting remote configuration: core[%s] == %s" %
+                            (key, v))
 
 
 class ConfigurationManager(object):

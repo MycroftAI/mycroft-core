@@ -17,18 +17,17 @@
 
 
 from StringIO import StringIO
-from os.path import dirname, join
 
 import re
 import requests
 import wolframalpha
+from os.path import dirname, join
 from six.moves import urllib
 
 from mycroft.identity import IdentityManager
 from mycroft.skills.core import MycroftSkill
 from mycroft.util import CerberusAccessDenied
 from mycroft.util.log import getLogger
-from mycroft.messagebus.message import Message
 
 __author__ = 'seanfitz'
 
@@ -83,14 +82,18 @@ class CerberusWolframAlphaClient(object):
         """
         Query Wolfram|Alpha with query using the v2.0 API
         """
+        response = {}
         identity = IdentityManager().get()
-        bearer_token = 'Bearer %s:%s' % (identity.device_id, identity.token)
-        query = urllib.parse.urlencode(dict(input=query))
-        url = 'https://cerberus.mycroft.ai/wolframalpha/v2/query?' + query
-        headers = {'Authorization': bearer_token}
-        response = requests.get(url, headers=headers)
-        if response.status_code == 401:
-            raise CerberusAccessDenied()
+
+        if identity:
+            bearer_token = 'Bearer %s:%s' % \
+                           (identity.device_id, identity.token)
+            query = urllib.parse.urlencode(dict(input=query))
+            url = 'https://cerberus.mycroft.ai/wolframalpha/v2/query?' + query
+            headers = {'Authorization': bearer_token}
+            response = requests.get(url, headers=headers)
+            if response.status_code == 401:
+                raise CerberusAccessDenied()
         return wolframalpha.Result(StringIO(response.content))
 
 
@@ -195,7 +198,7 @@ class WolframAlphaSkill(MycroftSkill):
             if len(others) > 0:
                 self.speak_dialog('others.found',
                                   data={'utterance': utterance, 'alternative':
-                                        others[0]})
+                                      others[0]})
             else:
                 self.speak_dialog("not.understood", data={'phrase': phrase})
 

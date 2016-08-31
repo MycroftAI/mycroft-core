@@ -80,7 +80,7 @@ class CerberusGoogleProxy(object):
         timer.start()
         identity = IdentityManager().get()
         headers = {}
-        if identity.token:
+        if identity:
             headers['Authorization'] = 'Bearer %s:%s' % (
                 identity.device_id, identity.token)
 
