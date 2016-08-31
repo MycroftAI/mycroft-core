@@ -96,7 +96,7 @@ class WiFiConsumerThread(threading.Thread):
             if wifi_api.try_connect() is True:
                 ws_q_out.put('success')
                 time.sleep(2)
-                ap_api.down()
+                ap_q_in.put({'ap_mode': False})
                 sys.exit()
             else:
                 ws_q_out.put('unableToConnect')
