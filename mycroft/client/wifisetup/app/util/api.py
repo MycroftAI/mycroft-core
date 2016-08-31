@@ -16,10 +16,14 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 import time
+import sys
+import threading
+from operator import itemgetter
+from collections import defaultdict
+from wifi import Cell
 from pyroute2 import IPRoute
 from uuid import getnode as get_mac
-from mycroft.client.wifisetup.app.util.util import HostAPServerTools,\
-    DnsmasqTools, WpaClientTools
+
 from mycroft.client.wifisetup.app.util.FileUtils import write_dnsmasq,\
     write_hostapd_conf, write_wpa_supplicant_conf, write_network_interfaces,\
     backup_system_files, restore_system_files, write_default_hostapd
@@ -121,9 +125,6 @@ class ApAPI():
         self.ap_iface_ip_range_end = self.config.get('ap_iface_ip_range_stop')
         self.ap_iface_mac = self.config.get('ap_iface_mac')
 
-        self.ap_tools = HostAPServerTools()
-        self.dns_tools = DnsmasqTools()
-
     def up(self):
         # LOGGER.info(bash_command(['service', 'dhcpcd', 'stop']))
         LOGGER.info(bash_command(
@@ -154,10 +155,10 @@ class ApAPI():
              'address', self.ap_iface_mac]))
         LOGGER.info(bash_command(['ifup', self.ap_iface]))
         time.sleep(2)
-        LOGGER.info(self.dns_tools.dnsmasqServiceStop())
-        LOGGER.info(self.dns_tools.dnsmasqServiceStart())
-        LOGGER.info(self.ap_tools.hostAPDStop())
-        LOGGER.info(self.ap_tools.hostAPDStart())
+        LOGGER.info(bash_command(['systemctl', 'stop', 'dnsmasq.service']))
+        LOGGER.info(bash_command(['systemctl', 'start', 'dnsmasq.service']))
+        LOGGER.info(bash_command(['systemctl', 'stop', 'hostapd.service']))
+        LOGGER.info(bash_command(['systemctl', 'start', 'hostapd.service']))
         LOGGER.info(bash_command(['ifup', self.client_iface]))
 
     def down(self):
@@ -167,3 +168,152 @@ class ApAPI():
         LOGGER.info(bash_command(['ifdown', self.ap_iface]))
         LOGGER.info(bash_command(['ifdown', self.client_iface]))
         LOGGER.info(bash_command(['ifup', self.client_iface]))
+
+
+class WpaClientTools:
+    def __init__(self):
+        self.name = "name"
+
+    def wpa_cli_flush(self):
+        results = bash_command(['wpa_cli', 'flush'])
+        return results
+
+    def wpa_cli_scan(self, iface):
+        bash_command(['wpa_cli', '-i', iface, 'scan'])
+        results = bash_command(
+            ['wpa_cli', 'scan_results'])['stdout'].split('\n')
+        for result in results:
+            results['network'].append()
+        return results
+
+    def wpa_cli_status(self, iface):
+        status = bash_command(['wpa_cli', '-i', iface, 'status'])
+        status = status['stdout'].split('\n', 13)
+        results = {
+            "bssid": status[0].split("=", 1)[1],
+            "freq": status[1].split("=", 1)[1],
+            "ssid": status[2].split("=", 1)[1],
+            "id": status[3].split("=", 1)[1],
+            "mode": status[4].split("=", 1)[1],
+            "pairwise_cipher": status[5].split("=", 1)[1],
+            "group_cipher": status[6].split("=", 1)[1],
+            "key_mgmt": status[7].split("=", 1)[1],
+            "wpa_state": status[8].split("=", 1)[1],
+            "ip_address": status[9].split("=", 1)[1],
+            "p2p_device_address": status[10].split("=", 1)[1],
+            "address": status[11].split("=", 1)[1],
+            "uuid": status[12].split("=", 1)[1]
+        }
+        return results
+
+    def wpa_cli_add_network(self, iface):
+        results = bash_command(['wpa_cli', '-i', iface, 'add_network'])
+        return results
+
+    def wpa_cli_set_network(self, iface,
+                            network_id, network_var, network_var_value):
+        results = bash_command(['wpa_cli',
+                                '-i', iface,
+                                'set_network',
+                                network_id,
+                                network_var,
+                                network_var_value])
+        return results
+
+    def wpa_cli_enable_network(self, iface, network_id):
+        results = bash_command(['wpa_cli', '-i', iface, 'enable', network_id])
+        return results
+
+    def wpa_cli_disable_network(self, iface, network_id):
+        results = bash_command(['wpa_cli', '-i', iface, 'disable', network_id])
+        return results
+
+    def wpa_save_network(self, network_id):
+        results = bash_command(['wpa_cli', 'save', network_id])
+        return results
+
+
+class ScanForAP(threading.Thread):
+    def __init__(self, name, interface):
+        threading.Thread.__init__(self)
+        self.name = name
+        self.interface = interface
+        self._return = []
+        print sys.modules['os']
+
+    def run(self):
+        ap_scan_results = defaultdict(list)
+        try:
+            for cell in Cell.all(self.interface):
+                ap_scan_results['network'].append({
+                    'ssid': cell.ssid,
+                    'signal': cell.signal,
+                    'quality': cell.quality,
+                    'frequency': cell.frequency,
+                    'encrypted': cell.encrypted,
+                    'channel': cell.channel,
+                    'address': cell.address,
+                    'mode': cell.mode
+                })
+            #################################################
+            # Clean up the list of networks.
+            #################################################
+            # First, sort by name and strength
+            nets_byNameAndStr = sorted(ap_scan_results['network'],
+                                       key=itemgetter('ssid', 'quality'),
+                                       reverse=True)
+            # now strip out duplicates (e.g. repeaters with the same SSID),
+            # keeping the first (strongest)
+            lastSSID = "."
+            for n in nets_byNameAndStr[:]:
+                if (n['ssid'] == lastSSID):
+                    nets_byNameAndStr.remove(n)
+                else:
+                    lastSSID = n['ssid']
+                    # Finally, sort by strength alone
+            ap_scan_results['network'] = sorted(
+                nets_byNameAndStr, key=itemgetter('quality'), reverse=True)
+            self._return = ap_scan_results
+        except:
+            print "ap scan fail"
+
+    def join(self):
+        threading.Thread.join(self)
+        return self._return
+
+
+class APLinkTools:
+    def __init__(self):
+        self.config = ConfigurationManager.get().get('WiFiClient')
+        self.client_iface = self.config.get('client_iface')
+        pass
+
+    def connect_to_wifi(self, ssid, passphrase):
+        print " connecting to wifi:", ssid, passphrase
+        self.template = """country={country}
+    ctrl_interface=/var/run/wpa_supplicant
+    update_config=1
+    network={b1}
+        ssid="{ssid}"
+        psk="{passphrase}"
+        key_mgmt=WPA-PSK
+    {b2}"""
+        self.context = {
+            "b1": '{',
+            "b2": '}',
+            "country": 'US',
+            "ssid": ssid,
+            "passphrase": passphrase
+        }
+        with open(
+                '/etc/wpa_supplicant/wpa_supplicant.conf', 'w'
+        ) as self.myfile:
+            self.myfile.write(self.template.format(**self.context))
+            self.myfile.close()
+        try:
+            print bash_command(['ip', 'addr', 'flush', self.client_iface])
+            print bash_command(['ifdown', self.client_iface])
+            print bash_command(['ifup', self.client_iface])
+        except:
+            print "connection failed"
+            print bash_command(['ip','addr', 'flush', self.client_iface])

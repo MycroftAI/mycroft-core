@@ -31,7 +31,6 @@ from mycroft.messagebus.message import Message
 from mycroft.util import str2bool
 from mycroft.util.log import getLogger
 
-from mycroft.client.wifisetup.app.util.util import APLinkTools
 from mycroft.client.wifisetup.app.util.Server import MainHandler,\
     WSHandler, JSHandler, BootstrapMinJSHandler, BootstrapMinCSSHandler,\
     ap_on
@@ -40,18 +39,6 @@ __author__ = 'aatchison'
 
 client = None
 mutex = Lock()
-
-# use config file for these
-client_iface = 'wlan0'
-ap_iface = 'uap0'
-ap_iface_ip = '172.24.1.1'
-ap_iface_ip_range_start = '172.24.1.10'
-ap_iface_ip_range_end = '172.24.1.20'
-ap_iface_mac = 'bc:5f:f4:be:7d:0a'
-http_port = '8888'
-ws_port = '80'
-
-# linktools = APLinkTools()
 
 LOGGER = getLogger("WiFiSetupClient")
 
@@ -127,6 +114,10 @@ class WiFi:
 class WiFiSocketReader(Thread):
     def __init__(self, client):
         super(WiFiSocketReader, self).__init__(target=self.run)
+        self.config = ConfigurationManager.get().get('WiFiClient')
+        self.ws_port = self.config.get('ws_port')
+        self.http_port = self.config.get('http_port')
+
         self.client = client
         self.alive = True
         self.daemon = True
@@ -147,7 +138,7 @@ class WiFiSocketReader(Thread):
 
     def __init_tornado(self, envent=None):
         try:
-            TornadoWorker(1, "http+ws", ws_port, http_port, 0).start()
+            TornadoWorker(1, "http+ws", self.ws_port, self.http_port, 0).start()
             LOGGER.info("Web Server Initialized")
 
         except Exception as e:
