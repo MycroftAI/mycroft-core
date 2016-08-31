@@ -36,7 +36,7 @@ class WiFiAPI:
         self.none = None
         self.wpa_tools = WpaClientTools()
         self.ssid = None
-        self.passphrase = None
+        self.passphrase = ''
 
     def scan(self, iface):
         self.new_net = self.wpa_tools.wpa_cli_add_network('wlan0')
@@ -45,14 +45,14 @@ class WiFiAPI:
         self.ssid = '"' + self.ssid + '"'
         self.passphrase = '"' + self.passphrase + '"'
         network_id = self.wpa_tools.wpa_cli_add_network('wlan0')['stdout']
-        if self.passphrase is not None:
+        if self.passphrase != '':
             LOGGER.info(self.wpa_tools.wpa_cli_set_network(
                 'wlan0', network_id, 'ssid', self.ssid))
             LOGGER.info(self.wpa_tools.wpa_cli_set_network(
                 'wlan0', network_id, 'psk', self.passphrase))
             LOGGER.info(
                 self.wpa_tools.wpa_cli_enable_network('wlan0', network_id))
-        elif self.passphrase is None:
+        elif self.passphrase == '':
             LOGGER.info(self.wpa_tools.wpa_cli_set_network(
                 'wlan0', network_id, 'ssid', self.ssid))
             LOGGER.info(self.wpa_tools.wpa_cli_set_network(
