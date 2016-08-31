@@ -46,14 +46,11 @@ class DevicePairingClient(object):
             pairing_code if pairing_code else generate_pairing_code())
 
     def on_registration(self, message):
-        # TODO: actually accept the configuration message and store it in
-        # identity
+        payload = message.metadata
         identity = self.identity_manager.get()
-        register_payload = message.metadata
-        if register_payload.get("device_id") == identity.device_id:
-            identity.token = register_payload.get('token')
-            identity.owner = register_payload.get('user')
-            self.identity_manager.update(identity)
+        if identity and payload.get("device_id") == identity.device_id:
+            identity.token = payload.get('token')
+            self.identity_manager.save(identity)
             self.ws_client.close()
             self.paired = True
 

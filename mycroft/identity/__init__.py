@@ -16,47 +16,33 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from uuid import uuid4
 import json
+
 from mycroft.filesystem import FileSystemAccess
 
 
 class DeviceIdentity(object):
     def __init__(self, **kwargs):
         self.device_id = kwargs.get('device_id')
-        self.owner = kwargs.get('owner')
         self.token = kwargs.get('token')
-
-    @staticmethod
-    def load(identity_file_handle):
-        json_blob = json.load(identity_file_handle)
-        return DeviceIdentity(**json_blob)
-
-    def save(self, identity_file_handle):
-        json.dump(self.__dict__, identity_file_handle)
 
 
 class IdentityManager(object):
+    FILE = 'identity.json'
+
     def __init__(self):
-        self.filesystem = FileSystemAccess('identity')
+        self.file_system = FileSystemAccess('identity')
         self.identity = None
-        self.initialize()
+        self.load()
 
-    def initialize(self):
-        if self.filesystem.exists('identity.json'):
-            self.identity = DeviceIdentity.load(self.filesystem.open(
-                'identity.json', 'r'))
-        else:
-            identity = DeviceIdentity(device_id=str(uuid4()))
-            self.update(identity)
+    def load(self):
+        with self.file_system.open(self.FILE, 'r') as f:
+            self.identity = DeviceIdentity(**json.load(f))
 
-    def update(self, identity):
+    def save(self, identity):
         self.identity = identity
-        with self.filesystem.open('identity.json', 'w') as f:
-            self.identity.save(f)
-
-    def is_paired(self):
-        return self.identity is not None and self.identity.owner is not None
+        with self.file_system.open(self.FILE, 'w') as f:
+            json.dump(self.identity, f)
 
     def get(self):
         return self.identity

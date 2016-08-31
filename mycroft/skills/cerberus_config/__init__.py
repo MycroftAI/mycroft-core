@@ -37,7 +37,7 @@ class CerberusConfigSkill(MycroftSkill):
 
     def handle_update_intent(self, message):
         identity = IdentityManager().get()
-        if not identity.owner:
+        if identity:
             self.speak_dialog("not.paired")
         else:
             ConfigurationManager.load_remote()
