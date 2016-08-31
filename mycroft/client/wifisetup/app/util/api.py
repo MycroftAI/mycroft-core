@@ -45,11 +45,21 @@ class WiFiAPI:
         self.ssid = '"' + self.ssid + '"'
         self.passphrase = '"' + self.passphrase + '"'
         network_id = self.wpa_tools.wpa_cli_add_network('wlan0')['stdout']
-        LOGGER.info(self.wpa_tools.wpa_cli_set_network(
-            'wlan0', network_id, 'ssid', self.ssid))
-        LOGGER.info(self.wpa_tools.wpa_cli_set_network(
-            'wlan0', network_id, 'psk', self.passphrase))
-        LOGGER.info(self.wpa_tools.wpa_cli_enable_network('wlan0', network_id))
+        if self.passphrase is not None:
+            LOGGER.info(self.wpa_tools.wpa_cli_set_network(
+                'wlan0', network_id, 'ssid', self.ssid))
+            LOGGER.info(self.wpa_tools.wpa_cli_set_network(
+                'wlan0', network_id, 'psk', self.passphrase))
+            LOGGER.info(
+                self.wpa_tools.wpa_cli_enable_network('wlan0', network_id))
+        elif self.passphrase is None:
+            LOGGER.info(self.wpa_tools.wpa_cli_set_network(
+                'wlan0', network_id, 'ssid', self.ssid))
+            LOGGER.info(self.wpa_tools.wpa_cli_set_network(
+                'wlan0', network_id, 'key_mgmt', 'NONE'))
+            LOGGER.info(
+                self.wpa_tools.wpa_cli_enable_network('wlan0', network_id))
+
         connected = False
         while connected is False:
             for i in range(22):
