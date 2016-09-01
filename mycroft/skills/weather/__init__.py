@@ -86,7 +86,6 @@ class WeatherSkill(MycroftSkill):
             self.enclosure.activate_mouth_listeners(False)
             self.enclosure.weather_display(img_code, temp)
             self.speak_dialog('current.weather', data)
-            self.__condition_feedback(weather)
             time.sleep(5)
             self.enclosure.activate_mouth_listeners(True)
         except APICallError as e:
@@ -94,14 +93,6 @@ class WeatherSkill(MycroftSkill):
         except Exception as e:
             LOGGER.debug(e)
             LOGGER.error("Error: {0}".format(e))
-
-    # TODO - Mapping from http://openweathermap.org/weather-conditions
-    def __condition_feedback(self, weather):
-        status = weather.get_status()
-        if status == 'clear':
-            self.speak_dialog('sunny.weather')
-        elif status == 'rain':
-            self.speak_dialog('rain.weather')
 
     def handle_next_hour_intent(self, message):
         try:
@@ -115,7 +106,6 @@ class WeatherSkill(MycroftSkill):
             self.enclosure.activate_mouth_listeners(False)
             self.enclosure.weather_display(img_code, temp)
             self.speak_dialog('hour.weather', data)
-            self.__condition_feedback(weather)
             time.sleep(5)
             self.enclosure.activate_mouth_listeners(True)
         except APICallError as e:
@@ -136,7 +126,6 @@ class WeatherSkill(MycroftSkill):
             self.enclosure.activate_mouth_listeners(False)
             self.enclosure.weather_display(img_code, temp)
             self.speak_dialog('tomorrow.weather', data)
-            self.__condition_feedback(weather)
             time.sleep(5)
             self.enclosure.activate_mouth_listeners(True)
         except APICallError as e:
