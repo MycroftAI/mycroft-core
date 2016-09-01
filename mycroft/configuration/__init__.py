@@ -105,9 +105,9 @@ class RemoteConfiguration(object):
     @staticmethod
     def load(config=None):
         RemoteConfiguration.validate_config(config)
-        auto_update = config.get("server", {}).get("auto_update")
+        update = config.get("server", {}).get("update")
 
-        if auto_update:
+        if update:
             try:
                 from mycroft.api import DeviceApi
                 setting = DeviceApi().find_setting()
