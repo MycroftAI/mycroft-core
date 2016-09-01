@@ -19,19 +19,20 @@
 import time
 
 import os
+from os.path import join, dirname, abspath
 from pocketsphinx import Decoder
 import tempfile
 
 __author__ = 'seanfitz, jdorleans'
 
-BASEDIR = os.path.dirname(os.path.abspath(__file__))
+BASEDIR = dirname(abspath(__file__))
 
 
 class LocalRecognizer(object):
     def __init__(self, key_phrase, phonemes, threshold, sample_rate=16000,
                  lang="en-us"):
-        self.lang = lang
-        self.key_phrase = key_phrase
+        self.lang = str(lang)
+        self.key_phrase = str(key_phrase)
         self.sample_rate = sample_rate
         self.threshold = threshold
         self.phonemes = phonemes
@@ -49,8 +50,7 @@ class LocalRecognizer(object):
 
     def create_config(self, dict_name):
         config = Decoder.default_config()
-        config.set_string('-hmm', os.path.join(BASEDIR, 'model', self.lang,
-                                               'hmm'))
+        config.set_string('-hmm', join(BASEDIR, 'model', self.lang, 'hmm'))
         config.set_string('-dict', dict_name)
         config.set_string('-keyphrase', self.key_phrase)
         config.set_float('-kws_threshold', float(self.threshold))
