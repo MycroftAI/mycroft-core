@@ -212,7 +212,7 @@ class Enclosure:
         self.test()
 
     def update(self):
-        if self.config.get('auto_update'):
+        if self.config.get('update'):
             try:
                 self.speak("I am upgrading my enclosure version")
                 subprocess.check_call('/opt/enclosure/upload.sh')
