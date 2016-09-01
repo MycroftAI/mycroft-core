@@ -18,6 +18,7 @@
 
 import subprocess
 from os.path import join
+import re
 
 from mycroft import MYCROFT_ROOT_PATH
 from mycroft.tts import TTS, TTSValidator
