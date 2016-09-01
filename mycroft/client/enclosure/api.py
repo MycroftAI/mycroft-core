@@ -110,9 +110,11 @@ class EnclosureAPI:
 
     def weather_display(self, img_code, temp):
         self.client.emit(
-            Message("enclosure.weather.display", metadata={
-                   'img_code': img_code, 'temp': temp}))
+            Message("enclosure.weather.display",
+                    metadata={'img_code': img_code, 'temp': temp}))
 
-    def activate_mouth_listeners(self, active):
-        msg = Message('enclosure.mouth.listeners', metadata={'active': active})
-        self.client.emit(msg)
+    def activate_mouth_events(self):
+        self.client.emit(Message('enclosure.mouth.events.activate'))
+
+    def deactivate_mouth_events(self):
+        self.client.emit(Message('enclosure.mouth.events.deactivate'))
