@@ -88,12 +88,17 @@ class TornadoWorker (threading.Thread):
         tornado.ioloop.IOLoop.current().start()
         LOGGER.info("Exiting " + self.name)
 
+    def stop(self):
+        self.alive = False
+        self.join()
+
 
 class WiFi:
     def __init__(self):
         self.client = WebsocketClient()
         self.reader = WiFiSocketReader(self.client)
         self.config = ConfigurationManager.get().get('WiFiClient')
+        self.alive = True
 
     def run(self):
         self.client.run_forever()
@@ -102,7 +107,7 @@ class WiFi:
         must_start = self.config.get('must_start')
         if must_start is not None and str2bool(must_start) is True:
             LOGGER.info("Initialising wireless setup mode.")
-            ConfigurationManager.set('WiFiClient', 'must_upload', False)
+            ConfigurationManager.set('WiFiClient', 'must_start', False)
         else:
             "First run is false"
 
