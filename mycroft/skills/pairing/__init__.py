@@ -14,55 +14,40 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
-from threading import Thread
+from uuid import uuid4
 
 from adapt.intent import IntentBuilder
 from os.path import dirname
 
-from mycroft.messagebus.message import Message
-from mycroft.pairing.client import DevicePairingClient
+from mycroft.api import DeviceApi
+from mycroft.identity import IdentityManager
 from mycroft.skills.core import MycroftSkill
 
 
 class PairingSkill(MycroftSkill):
     def __init__(self):
-        super(PairingSkill, self).__init__(name="PairingSkill")
-        self.client = None
-        self.displaying = False
+        super(PairingSkill, self).__init__("PairingSkill")
+        self.api = DeviceApi()
+        self.data = None
+        self.state = str(uuid4())
+        self.identity = IdentityManager().get()
 
     def initialize(self):
-        intent = IntentBuilder("PairingIntent").require(
-            "DevicePairingPhrase").build()
         self.load_data_files(dirname(__file__))
-        self.register_intent(intent, handler=self.handle_pairing_request)
+        intent = IntentBuilder("PairingIntent") \
+            .require("PairingKeyword").require("DeviceKeyword").build()
+        self.register_intent(intent, self.handle_pairing)
 
-    def handle_pairing_request(self, message):
-        if not self.client:
-            self.displaying = False
-            self.__emit_paired(False)
-            self.client = DevicePairingClient()
-            Thread(target=self.client.run).start()
-            self.emitter.on("recognizer_loop:audio_output_start",
-                            self.__display_pairing_code)
-        self.speak_dialog(
-            "pairing.instructions",
-            data={"pairing_code": ', ,'.join(self.client.pairing_code)})
+    def handle_pairing(self, message):
+        if not self.api.find():
+            self.data = self.api.get_code(self.state)
+            self.enclosure.deactivate_mouth_events()
+            self.enclosure.mouth_text(self.data.code)
+            self.speak_code()
 
-    def __display_pairing_code(self, event=None):
-        if self.client.paired:
-            self.enclosure.mouth_talk()
-            self.client = None
-            self.__emit_paired(True)
-            self.emitter.remove("recognizer_loop:audio_output_start",
-                                self.__display_pairing_code)
-        elif not self.displaying:
-            self.displaying = True
-            self.enclosure.mouth_text(self.client.pairing_code)
-
-    def __emit_paired(self, paired):
-        msg = Message('mycroft.paired', metadata={'paired': paired})
-        self.emitter.emit(msg)
+    def speak_code(self):
+        data = {"code": ', ,'.join(self.data.code)}
+        self.speak_dialog("pairing.instructions", data)
 
     def stop(self):
         pass

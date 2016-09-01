@@ -23,8 +23,8 @@ from mycroft.filesystem import FileSystemAccess
 
 class DeviceIdentity(object):
     def __init__(self, **kwargs):
-        self.device_id = kwargs.get('device_id')
-        self.token = kwargs.get('token')
+        self.uuid = kwargs.get('uuid', "")
+        self.token = kwargs.get('token', "")
 
 
 class IdentityManager(object):
@@ -32,7 +32,7 @@ class IdentityManager(object):
 
     def __init__(self):
         self.file_system = FileSystemAccess('identity')
-        self.identity = None
+        self.identity = DeviceIdentity()
         self.load()
 
     def load(self):

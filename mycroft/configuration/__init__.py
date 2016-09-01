@@ -14,22 +14,20 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-import collections
+import json
 
-from configobj import ConfigObj
 from genericpath import exists, isfile
 from os.path import join, dirname, expanduser
 
-from mycroft.api import DeviceApi
 from mycroft.util.log import getLogger
 
 __author__ = 'seanfitz, jdorleans'
 
 logger = getLogger(__name__)
 
-DEFAULT_CONFIG = join(dirname(__file__), 'mycroft.ini')
-SYSTEM_CONFIG = '/etc/mycroft/mycroft.ini'
-USER_CONFIG = join(expanduser('~'), '.mycroft/mycroft.ini')
+DEFAULT_CONFIG = join(dirname(__file__), 'mycroft.conf')
+SYSTEM_CONFIG = '/etc/mycroft/mycroft.conf'
+USER_CONFIG = join(expanduser('~'), '.mycroft/mycroft.conf')
 
 
 class ConfigurationLoader(object):
@@ -78,23 +76,14 @@ class ConfigurationLoader(object):
     def __load(config, location):
         if exists(location) and isfile(location):
             try:
-                cobj = ConfigObj(location)
-                config = ConfigurationLoader.__merge(config, cobj)
-                logger.debug("Configuration '%s' loaded" % location)
+                with open(location) as f:
+                    config.update(json.load(f))
+                    logger.debug("Configuration '%s' loaded" % location)
             except Exception, e:
                 logger.error("Error loading configuration '%s'" % location)
                 logger.error(repr(e))
         else:
             logger.debug("Configuration '%s' not found" % location)
-        return config
-
-    @staticmethod
-    def __merge(config, cobj):
-        for k, v in cobj.iteritems():
-            if isinstance(v, collections.Mapping):
-                config[k] = ConfigurationLoader.__merge(config.get(k, {}), v)
-            else:
-                config[k] = cobj[k]
         return config
 
 
@@ -107,8 +96,6 @@ class RemoteConfiguration(object):
         "unit": "unit"
     }
 
-    __api = DeviceApi()
-
     @staticmethod
     def validate_config(config):
         if not (config and isinstance(config, dict)):
@@ -117,13 +104,13 @@ class RemoteConfiguration(object):
 
     @staticmethod
     def load(config=None):
-        api = RemoteConfiguration.__api
         RemoteConfiguration.validate_config(config)
-        auto_update = config.get("server", {}).get("auto_update", False)
+        auto_update = config.get("server", {}).get("auto_update")
 
         if auto_update:
             try:
-                setting = api.find_setting().json()
+                from mycroft.api import DeviceApi
+                setting = DeviceApi().find_setting()
                 RemoteConfiguration.__load_attributes(config, setting)
             except Exception as e:
                 logger.error(
@@ -135,7 +122,7 @@ class RemoteConfiguration(object):
 
     @staticmethod
     def __load_attributes(config, setting):
-        config_core = config["core"]
+        config_core = config
 
         for k, v in setting:
             key = RemoteConfiguration.__remote_keys.get(k)
@@ -182,19 +169,3 @@ class ConfigurationManager(object):
             ConfigurationManager.load_local(locations)
 
         return ConfigurationManager.__config
-
-    @staticmethod
-    def set(section, key, value, is_system=False):
-        """
-        Set a key in the user preferences
-        """
-        if not ConfigurationManager.__config:
-            ConfigurationManager.load_defaults()
-
-        ConfigurationManager.__config[section][key] = value
-
-        location = SYSTEM_CONFIG if is_system else USER_CONFIG
-        config = ConfigObj(location)
-        config.setdefault(section, {})
-        config[section][key] = value
-        config.write()

@@ -14,16 +14,13 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
 import subprocess
 import sys
-import threading
 import time
 from Queue import Queue
 from alsaaudio import Mixer
 from threading import Thread
 
-import os
 import serial
 
 from mycroft.client.enclosure.arduino import EnclosureArduino
@@ -35,7 +32,6 @@ from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util import play_wav
 from mycroft.util import create_signal
-from mycroft.util import str2bool
 from mycroft.util.audio_test import record
 from mycroft.util.log import getLogger
 
@@ -202,6 +198,7 @@ class Enclosure:
     """
 
     def __init__(self):
+        self.config = ConfigurationManager.get().get("enclosure")
         self.__init_serial()
         self.client = WebsocketClient()
         self.reader = EnclosureReader(self.serial, self.client)
@@ -211,43 +208,29 @@ class Enclosure:
         self.system = EnclosureArduino(self.client, self.writer)
         self.weather = EnclosureWeather(self.client, self.writer)
         self.__register_events()
+        self.update()
+        self.test()
 
-    def setup(self):
-        must_upload = self.config.get('must_upload')
-        if must_upload is not None and str2bool(must_upload):
-            ConfigurationManager.set('enclosure', 'must_upload', False)
-            time.sleep(5)
-            self.client.emit(Message("speak", metadata={
-                'utterance': "I am currently uploading to the arduino."}))
-            self.client.emit(Message("speak", metadata={
-                'utterance': "I will be finished in just a moment."}))
-            self.upload_hex()
-            self.client.emit(Message("speak", metadata={
-                'utterance': "Arduino programing complete."}))
+    def update(self):
+        if self.config.get('auto_update'):
+            try:
+                self.speak("I am upgrading my enclosure version")
+                subprocess.check_call('/opt/enclosure/upload.sh')
+                self.speak("Enclosure upgrade completed")
+                time.sleep(5)
+            except:
+                self.speak("I cannot upgrade right now, I'll try later")
 
-        must_start_test = self.config.get('must_start_test')
-        if must_start_test is not None and str2bool(must_start_test):
-            ConfigurationManager.set('enclosure', 'must_start_test', False)
-            time.sleep(0.5)  # Ensure arduino has booted
-            self.client.emit(Message("speak", metadata={
-                'utterance': "Begining hardware self test."}))
+    def test(self):
+        if self.config.get('test'):
+            self.speak("Beginning hardware self test")
             self.writer.write("test.begin")
-
-    @staticmethod
-    def upload_hex():
-        old_path = os.getcwd()
-        try:
-            os.chdir('/opt/enclosure/')
-            subprocess.check_call('./upload.sh')
-        finally:
-            os.chdir(old_path)
 
     def __init_serial(self):
         try:
-            self.config = ConfigurationManager.get().get("enclosure")
             self.port = self.config.get("port")
-            self.rate = int(self.config.get("rate"))
-            self.timeout = int(self.config.get("timeout"))
+            self.rate = self.config.get("rate")
+            self.timeout = self.config.get("timeout")
             self.serial = serial.serial_for_url(
                 url=self.port, baudrate=self.rate, timeout=self.timeout)
             LOGGER.info(
@@ -259,25 +242,19 @@ class Enclosure:
             raise
 
     def __register_events(self):
-        self.client.on('mycroft.paired', self.__update_events)
-        self.client.on('enclosure.mouth.listeners', self.__mouth_listeners)
+        self.client.on('enclosure.mouth.events.activate',
+                       self.__register_mouth_events)
+        self.client.on('enclosure.mouth.events.deactivate',
+                       self.__remove_mouth_events)
         self.__register_mouth_events()
 
-    def __mouth_listeners(self, event=None):
-        if event and event.metadata:
-            active = event.metadata['active']
-            if active:
-                self.__register_mouth_events()
-            else:
-                self.__remove_mouth_events()
-
-    def __register_mouth_events(self):
+    def __register_mouth_events(self, event=None):
         self.client.on('recognizer_loop:record_begin', self.mouth.listen)
         self.client.on('recognizer_loop:record_end', self.mouth.reset)
         self.client.on('recognizer_loop:audio_output_start', self.mouth.talk)
         self.client.on('recognizer_loop:audio_output_end', self.mouth.reset)
 
-    def __remove_mouth_events(self):
+    def __remove_mouth_events(self, event=None):
         self.client.remove('recognizer_loop:record_begin', self.mouth.listen)
         self.client.remove('recognizer_loop:record_end', self.mouth.reset)
         self.client.remove('recognizer_loop:audio_output_start',
@@ -285,12 +262,8 @@ class Enclosure:
         self.client.remove('recognizer_loop:audio_output_end',
                            self.mouth.reset)
 
-    def __update_events(self, event=None):
-        if event and event.metadata:
-            if event.metadata.get('paired', False):
-                self.__register_mouth_events()
-            else:
-                self.__remove_mouth_events()
+    def speak(self, text):
+        self.client.emit(Message("speak", metadata={'utterance': text}))
 
     def run(self):
         try:
@@ -307,11 +280,7 @@ class Enclosure:
 
 def main():
     try:
-        enclosure = Enclosure()
-        t = threading.Thread(target=enclosure.run)
-        t.start()
-        enclosure.setup()
-        t.join()
+        Enclosure().run()
     except Exception as e:
         print(e)
     finally:
