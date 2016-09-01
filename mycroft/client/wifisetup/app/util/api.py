@@ -79,13 +79,14 @@ class WiFiAPI:
 
         connected = False
         while connected is False:
-            for i in range(300):
+            for i in range(220):
                 time.sleep(.1)
                 try:
                     state = self.wpa_tools.wpa_cli_status(
                         self.client_iface)['wpa_state']
                     if state == 'COMPLETED':
-                        self.save_wpa_network(self.ssid, self.passphrase)
+                        self.save_wpa_network(
+                            self.wpa_tools.wpa_save_network(network_id))
                         connected = True
                         return True
                     else:
@@ -105,9 +106,6 @@ class WiFiAPI:
         self.passphrase = psk
         self.wpa_tools.wpa_cli_set_network(
             self.client_iface, str(self.new_net), '', psk)
-
-    def save_wpa_network(self, ssid, passphrase):
-        LOGGER.info(write_wpa_supplicant_conf(ssid, passphrase))
 
 
 class LinkAPI():
