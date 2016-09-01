@@ -227,7 +227,7 @@ class RecognizerLoop(pyee.EventEmitter):
 
     @staticmethod
     def create_wakeup_recognizer(rate, lang):
-        return LocalRecognizer("wake up", "W EY K . AH P", "1e-10", rate, lang)
+        return LocalRecognizer("wake up", "W EY K . AH P", 1e-10, rate, lang)
 
     def start_async(self):
         self.state.running = True
