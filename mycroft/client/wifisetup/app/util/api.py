@@ -54,7 +54,21 @@ class WiFiAPI:
         self.passphrase = '"' + self.passphrase + '"'
         network_id = self.wpa_tools.wpa_cli_add_network(
             self.client_iface)['stdout']
-        if self.passphrase != '':
+        if self.passphrase == '"None"':
+            print "OPEN NETWORK: " + self.ssid + " : " + self.passphrase
+            # LOGGER.info(self.wpa_tools.wpa_cli_flush())
+            time.sleep(2)
+            LOGGER.info(self.wpa_tools.wpa_cli_set_network(
+                self.client_iface, network_id, 'ssid', self.ssid))
+            # LOGGER.info(self.wpa_tools.wpa_cli_set_network(
+            #    self.client_iface, network_id, 'key_mgmt', 'NONE'))
+            LOGGER.info(
+                self.wpa_tools.wpa_cli_enable_network(
+                    self.client_iface, network_id))
+        else:
+            print "REQUIRES passphrase"
+            # LOGGER.info(self.wpa_tools.wpa_cli_flush())
+            # time.sleep(2)
             LOGGER.info(self.wpa_tools.wpa_cli_set_network(
                 self.client_iface, network_id, 'ssid', self.ssid))
             LOGGER.info(self.wpa_tools.wpa_cli_set_network(
@@ -62,19 +76,11 @@ class WiFiAPI:
             LOGGER.info(
                 self.wpa_tools.wpa_cli_enable_network(
                     self.client_iface, network_id))
-        elif self.passphrase == 'None':
-            LOGGER.info(self.wpa_tools.wpa_cli_set_network(
-                self.client_iface, network_id, 'ssid', self.ssid))
-            LOGGER.info(self.wpa_tools.wpa_cli_set_network(
-                self.client_iface, network_id, 'key_mgmt', 'NONE'))
-            LOGGER.info(
-                self.wpa_tools.wpa_cli_enable_network(
-                    self.client_iface, network_id))
 
         connected = False
         while connected is False:
-            for i in range(22):
-                time.sleep(1)
+            for i in range(300):
+                time.sleep(.1)
                 try:
                     state = self.wpa_tools.wpa_cli_status(
                         self.client_iface)['wpa_state']
@@ -151,7 +157,7 @@ class ApAPI():
                 self.ap_iface_ip_range_end))
         LOGGER.info(
             write_hostapd_conf(
-                self.ap_iface, 'nl80211', 'mycroft-' + str(get_mac()), str(1)))
+                self.ap_iface, 'nl80211', 'mycroft-' + str(get_mac()), str(6)))
         LOGGER.info(
             write_default_hostapd('/etc/hostapd/hostapd.conf'))
         LOGGER.info(bash_command(['ifdown',  self.client_iface]))
@@ -161,19 +167,23 @@ class ApAPI():
              'address', self.ap_iface_mac]))
         LOGGER.info(bash_command(['ifup', self.ap_iface]))
         time.sleep(2)
-        LOGGER.info(bash_command(['systemctl', 'stop', 'dnsmasq.service']))
+
         LOGGER.info(bash_command(['systemctl', 'start', 'dnsmasq.service']))
         LOGGER.info(bash_command(['systemctl', 'stop', 'hostapd.service']))
         LOGGER.info(bash_command(['systemctl', 'start', 'hostapd.service']))
         LOGGER.info(bash_command(['ifup', self.client_iface]))
 
     def down(self):
-        LOGGER.info(self.ap_tools.hostAPDStop())
-        LOGGER.info(self.dns_tools.dnsmasqServiceStop())
+        LOGGER.info(bash_command(['systemctl', 'stop', 'hostapd.service']))
+        LOGGER.info(bash_command(['systemctl', 'stop', 'dnsmasq.service']))
         LOGGER.info(restore_system_files())
-        LOGGER.info(bash_command(['ifdown', self.ap_iface]))
-        LOGGER.info(bash_command(['ifdown', self.client_iface]))
-        LOGGER.info(bash_command(['ifup', self.client_iface]))
+        LOGGER.info(bash_command(['cat', '/dev/null>/etc/dnsmasq.conf']))
+        # LOGGER.info(bash_command(['ifdown', self.ap_iface]))
+        # LOGGER.info(bash_command(['ifdown', self.client_iface]))
+        # LOGGER.info(bash_command(['ifup', self.client_iface]))
+        LOGGER.info(
+            bash_command('echo', '/dev/ttyAMA0', 'enclosure.eyes.spin'))
+        LOGGER.info(bash_command(['systemctl', 'reboot', '-i']))
 
 
 class WpaClientTools:

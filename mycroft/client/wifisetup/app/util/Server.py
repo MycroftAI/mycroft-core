@@ -51,8 +51,11 @@ def send_to_all_clients(msg):
 
 
 def ap_on():
-    print "menu event?"
     ap_q_in.put({'ap_mode': True})
+
+
+def ap_off():
+    ap_q_in.put({'ap_mode': False})
 
 
 class WsProducerThread(threading.Thread):
@@ -98,12 +101,12 @@ class WiFiConsumerThread(threading.Thread):
         if 'connect' in message:
             if wifi_api.try_connect() is True:
                 ws_q_out.put('success')
-                time.sleep(3)
+                time.sleep(5)
                 ap_q_in.put({'ap_mode': False})
                 sys.exit()
             else:
                 ws_q_out.put('unableToConnect')
-                wpa_cli.wpa_cli_flush()
+                # wpa_cli.wpa_cli_flush()
 
         elif 'ssid' in message:
             wifi_api.set_ssid(message['ssid'])
