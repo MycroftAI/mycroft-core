@@ -14,6 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
+from threading import Timer
 from uuid import uuid4
 
 from adapt.intent import IntentBuilder
@@ -30,6 +31,8 @@ class PairingSkill(MycroftSkill):
         self.api = DeviceApi()
         self.data = None
         self.state = str(uuid4())
+        self.coder = None
+        self.activator = None
         self.identity = IdentityManager().get()
 
     def initialize(self):
@@ -38,15 +41,33 @@ class PairingSkill(MycroftSkill):
             .require("PairingKeyword").require("DeviceKeyword").build()
         self.register_intent(intent, self.handle_pairing)
 
-    def handle_pairing(self, message):
-        if not self.api.find():
+    def handle_pairing(self, message=None):
+        if not self.is_paired() and not self.data:
             self.data = self.api.get_code(self.state)
             self.enclosure.deactivate_mouth_events()
-            self.enclosure.mouth_text(self.data.code)
+            self.enclosure.mouth_text(self.data.get("code"))
             self.speak_code()
+            self.coder = Timer(self.data.get("expiration"), self.reset)
+            self.activator = Timer(10, self.activate)
+            self.coder.start()
+            self.activator.start()
+
+    def reset(self):
+        self.data = None
+        self.handle_pairing()
+
+    def activate(self):
+        self.api.activate(self.state, self.data.get("token"))
+
+    def is_paired(self):
+        try:
+            device = self.api.find()
+        except:
+            device = None
+        return device is not None
 
     def speak_code(self):
-        data = {"code": ', ,'.join(self.data.code)}
+        data = {"code": '. '.join(self.data.get("code"))}
         self.speak_dialog("pairing.instructions", data)
 
     def stop(self):
