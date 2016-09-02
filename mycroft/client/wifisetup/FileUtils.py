@@ -34,9 +34,9 @@ class CopyFile(threading.Thread):
                 self.source_path + '/' + self.file_source,
                 self.dest_path + '/' + self.file_dest)
         except:
-            print self.name +\
-                  " Failed -- file copy from: " +\
-                  self.file_source + " to: "\
+            print self.name + \
+                  " Failed -- file copy from: " + \
+                  self.file_source + " to: " \
                   + self.file_dest
 
 

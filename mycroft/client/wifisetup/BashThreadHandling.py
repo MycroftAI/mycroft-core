@@ -15,9 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
-import threading
 import subprocess
 import sys
+import threading
 
 
 class cmd_thread(threading.Thread):
@@ -47,7 +47,7 @@ class cmd_thread(threading.Thread):
         except:
             self._return = {'exit': 2, 'sys': sys.exc_info()[0]}
 
-    def join(self):
+    def join(self, timeout=None):
         threading.Thread.join(self)
         return self._return
 

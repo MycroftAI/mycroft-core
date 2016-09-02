@@ -37,3 +37,4 @@ pocketsphinx==0.1.0
 wifi==0.3.8
 pyroute2==0.4.5
 urllib5==5.0.0
+pyric==0.1.6

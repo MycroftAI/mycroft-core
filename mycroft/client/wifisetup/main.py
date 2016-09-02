@@ -14,46 +14,128 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
+import uuid
 
-import sys
+from pyric import pyw
+from wifi import Cell
+from wifi.scheme import Scheme
 
+from mycroft.client.wifisetup.BashThreadHandling import *
+from mycroft.client.wifisetup.FileUtils import *
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
+from mycroft.util import str2bool
 from mycroft.util.log import getLogger
 
 __author__ = 'aatchison'
 
-LOGGER = getLogger("WiFiSetupClient")
+LOGGER = getLogger("WiFiClient")
+
+
+class AccessPoint:
+    def __init__(self):
+        self.iface = 'uap0'
+        self.ip = '172.24.1.1'
+        self.ip_start = '172.24.1.10'
+        self.ip_end = '172.24.1.20'
+
+    def up(self):
+        try:
+            ap = pyw.getcard(self.iface)
+        except:
+            interface = pyw.winterfaces()[0]
+            card = pyw.getcard(interface)
+            pyw.pwrsaveset(card, False)
+            ap = pyw.phyadd(card, self.iface, 'AP')
+        pyw.inetset(ap, self.ip)
+
+        LOGGER.info(write_dnsmasq(
+            self.iface, self.ip, self.ip_start,
+            self.ip_end
+        ))
+        LOGGER.info(write_hostapd_conf(
+            self.iface, 'nl80211', 'mycroft-' + str(uuid.getnode()), str(6)
+        ))
+        LOGGER.info(write_default_hostapd('/etc/hostapd/hostapd.conf'))
+        LOGGER.info(bash_command(['systemctl', 'restart', 'dnsmasq.service']))
+        LOGGER.info(bash_command(['systemctl', 'restart', 'hostapd.service']))
+
+    def down(self):
+        LOGGER.info(bash_command(['systemctl', 'stop', 'hostapd.service']))
+        LOGGER.info(bash_command(['systemctl', 'stop', 'dnsmasq.service']))
+        LOGGER.info(bash_command(['systemctl', 'disable', 'hostapd.service']))
+        LOGGER.info(bash_command(['systemctl', 'disable', 'dnsmasq.service']))
+        LOGGER.info(restore_system_files())
 
 
 class WiFi:
     def __init__(self):
+        self.ap = AccessPoint()
         self.client = WebsocketClient()
         self.config = ConfigurationManager.get().get('WiFiClient')
         self.client.on('mycroft.wifi.start', self.start)
+        self.client.on('mycroft.wifi.stop', self.stop)
+        self.client.on('mycroft.wifi.scan', self.scan)
+        self.client.on('mycroft.wifi.connect', self.connect)
         self.first_setup()
+        self.cells = {}
 
     def first_setup(self):
-        if self.config.get('must_start'):
+        if str2bool(self.config.get('setup')):
             self.start()
             ConfigurationManager.set('WiFiClient', 'must_start', False)
 
     def start(self, event=None):
         self.client.emit(Message("speak", metadata={
             'utterance': "Initializing wireless setup mode."}))
-        # ap_on()
+        self.ap.up()
+
+    def scan(self, event=None):
+        networks = {}
+        self.cells = {}
+        interface = pyw.winterfaces()[0]
+
+        for cell in Cell.all(interface):
+            update = True
+            if networks.__contains__(cell.ssid):
+                update = networks.get(cell.ssid).get("quality") < cell.quality
+            if update and cell.ssid:
+                self.cells[cell.sid] = cell
+                networks[cell.ssid] = {
+                    'quality': cell.quality,
+                    'encrypted': cell.encrypted
+                }
+        self.client.emit(Message("mycroft.wifi.networks",
+                                 {'networks': networks}))
+
+    def connect(self, event=None):
+        if event and event.metadata:
+            try:
+                ssid = event.metadata.get("ssid")
+                passkey = event.metadata.get("pass")
+                cell = self.cells[ssid]
+                scheme = Scheme.for_cell(self.ap.iface, ssid, cell, passkey)
+                scheme.activate()
+                scheme.save()
+                self.client.emit(Message("mycroft.wifi.connected",
+                                         {'connected': True}))
+            except Exception as e:
+                LOGGER.error("Wifi Client error: {0}".format(e))
+                self.client.emit(Message("mycroft.wifi.connected",
+                                         {'connected': False}))
+
+    def stop(self, event=None):
+        self.ap.down()
+        # TODO - STOP EVERYTHING!!!!
+        pass
 
     def run(self):
         try:
             self.client.run_forever()
         except Exception as e:
-            LOGGER.error("Client error: {0}".format(e))
+            LOGGER.error("Wifi Client error: {0}".format(e))
             self.stop()
-
-    def stop(self):
-        # TODO - STOP EVERYTHING!!!!
-        pass
 
 
 def main():
