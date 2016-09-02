@@ -25,9 +25,9 @@
 	/* Aestetics */
 	.container { width: 100%; height: 100%; }
 	.header, .footer { padding: 10px 20px;}
-	.content-body { padding: 20px; }	
-	
-	header { 
+	.content-body { padding: 20px; }
+
+	header {
 		display: none;
 	}
 
@@ -39,7 +39,7 @@
 		-moz-border-radius-topleft: 10px
 		-webkit-border-top-left-radius: 10px;
 	}
-	
+
 	.page {
 		border-collapse: collapse;
 		width: 100%;
@@ -65,11 +65,11 @@
 		appearance: none;
 		box-shadow: none;
 		padding: 0.5em;
-		
+
 		color: lightblue;
 		border: 2px solid lightblue;
 	}
-	
+
 	.btnDefault,
 	button:hover {
 		color: #4fabc9;
@@ -79,7 +79,7 @@
 	button:focus {
 		outline: none;
 	}
-	
+
 	.pairButton {
 		color: #65e765;
 		border: 2px solid #65e765;
@@ -100,11 +100,11 @@
 		border: 2px solid #ff1a1a;
 		background: #ffcccc;
 	}
-	
+
 	#page2 img {
 		width: 2em;
 	}
-	
+
 	#page1,#footer1,
 	#page3, #footer3,
 	#page4, #footer4,
@@ -125,33 +125,33 @@
 		width: 100%;
 		text-align: center;
 	}
-	
+
 	.right {
 		width: 100%;
 		text-align: right;
 	}
-	
+
 	.tblSSID td {
 		width: 100%;
 		border-collapse: collapse;
 		border: 0px;
 	}
-	
+
 	.tblSSID:hover {
 		background: #ddd;
 		border-color: #ddd;
 	}
-	
+
 	#pwd {
 		font-size: 100%;
 		display: block;
 	}
-	
+
 	.pageContent {
 		height: 100%; padding: 1em;
 		font-size: 150%;
 	}
-	
+
 	a {
 		text-decoration: none;
 		color: blue;
@@ -187,17 +187,17 @@
 
 
 
-  
+
   <footer class="footer">
 		{% block footer %}{% end %}
   </footer>
-	
+
 </div>
 
 <script>
 	var 	ws = null;
 	var 	g_ssid = "";
-	
+
 	var 	False = false;	// used in passing encrypted setting to SelectSSID()
 	var 	True = true;
 
@@ -209,7 +209,7 @@
 		var debugInfo = document.getElementById('debug');
 		debugInfo.style.display = "block";
 	}
-	
+
 	function NextPage(iCurPage, iNext)
 	{
 		var iNext = iNext > 0 ? iNext : iCurPage+1;
@@ -218,14 +218,14 @@
 
 		var footer = document.getElementById('footer'+iCurPage);
 		var footerNext = document.getElementById('footer'+iNext);
-		
+
 		page.style.display = "none";
 		pageNext.style.display = "block";
-		
+
 		footer.style.display = "none";
 		footerNext.style.display = "block";
 	}
-	
+
 	function getImagePath(strength)
 	{
 		var parts = strength.split('/');
@@ -242,18 +242,18 @@
 			return "img/wifi_2.png";
 		else if (strength > 0.20)
 			return "img/wifi_1.png";
-		else 
+		else
 			return "img/wifi_0.png";
 	}
 
 	function SelectSSID(ssid, encrypted)
 	{
 		clearTimeout(timeoutRescan);
-		
+
 		var btnConnect = document.getElementById('btnConnect');
 		var getPass = document.getElementById('getPass');
 		var noPass = document.getElementById('noPass');
-		
+
 		if (encrypted)
 		{
 			getPass.style.display = 'block';
@@ -268,13 +268,13 @@
 			btnConnect.className = 'btnDefault';
 			document.getElementById('pwd').value = 'None';
 		}
-		
+
 
 		document.getElementById('network').innerHTML = ssid;
 		document.getElementById('networkNoPass').innerHTML = ssid;
 		document.getElementById('networkFailed').innerHTML = ssid;
 		g_ssid = ssid;
-		
+
 		NextPage(2);
 		document.getElementById('pwd').focus();
 	}
@@ -282,7 +282,7 @@
 	function SSIDToDevice()
 	{
 		NextPage(3);
-		
+
 		// TODO: This should be removed once the websocket starts returning results
 		// setTimeout(function() { Redirect() }, 1000);
 
@@ -317,7 +317,7 @@
 	{
 		if (e.keyCode == 13)
 			return SSIDToDevice();
-			
+
 		var pwd = document.getElementById('pwd');
 		var btnConnect = document.getElementById('btnConnect');
 		if (pwd.value != '')
@@ -332,15 +332,13 @@
 	{
 		document.getElementById('messages_txt').innerHTML += msg+'<P>';
 	}
-	
+
 	$(document).ready(function () {
-		ws = new WebSocket("ws://172.24.1.1:8888/ws")
-		//ws = new WebSocket("ws://127.0.0.1:8888/ws")
-		//ws = new WebSocket("ws://10.42.0.78:8888/ws")
+		ws = new WebSocket("ws://localhost:8000/events/ws")
 		ws.onopen = function(evt) {
 			Log("Web socket connected!");
 		};
-		
+
 		ws.onmessage = function(evt) {
 			Log("Server: " + evt.data);
 			if (evt.data == "success")
@@ -348,7 +346,7 @@
 			if (evt.data == "unableToConnect")
 				NextPage(4, 6);	    // failed :(
 		};
-		
+
 		$("#ap-on").click(function(evt) {
 			var message = "{'station_mode':'ap_on'}"
 			Log("Enabling Station Mode")
@@ -360,7 +358,7 @@
 			ws.send(message);
 		});
 	});
-	
+
 </script>
 
 

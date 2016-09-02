@@ -20,6 +20,8 @@ import sys
 import threading
 from operator import itemgetter
 from collections import defaultdict
+
+import wifi as wifi
 from wifi import Cell
 from pyroute2 import IPRoute
 from uuid import getnode as get_mac
@@ -249,6 +251,7 @@ class WpaClientTools:
 
 class ScanForAP(threading.Thread):
     def __init__(self, name, interface):
+        wifi.Cell.
         threading.Thread.__init__(self)
         self.name = name
         self.interface = interface
@@ -256,7 +259,7 @@ class ScanForAP(threading.Thread):
         print sys.modules['os']
 
     def run(self):
-        ap_scan_results = defaultdict(list)
+        ap_scan_results = {}
         try:
             for cell in Cell.all(self.interface):
                 ap_scan_results['network'].append({

@@ -169,7 +169,7 @@ class WsConsumerThread(threading.Thread):
 
     def message_switch(self, message):
         self.dict2 = ast.literal_eval(message)
-        if self.is_match("'ap_on'", message) is True:
+        if self .is_match("'ap_on'", message) is True:
             ws_q_out.put('TURN AP ON')
             ap_q_in.put({'ap_mode': True})
         elif self.is_match("'ap_off'", message) is True:
@@ -196,24 +196,6 @@ class MainHandler(tornado.web.RequestHandler):
         self.ap = apScan.join()
         wifi_q_in.put({'scan': True})
         self.render("index.html", ap=self.ap)
-
-
-class JSHandler(tornado.web.RequestHandler):
-    def get(self):
-        LOGGER.info("request for jquery.min.js")
-        self.render("jquery-2.2.3.min.js")
-
-
-class BootstrapMinJSHandler(tornado.web.RequestHandler):
-    def get(self):
-        LOGGER.info("request for bootstrap,min.js")
-        self.render("bootstrap-3.3.7-dist/js/bootstrap.min.js")
-
-
-class BootstrapMinCSSHandler(tornado.web.RequestHandler):
-    def get(self):
-        LOGGER.info("request for bootstrap.min.css")
-        self.render("bootstrap-3.3.7-dist/css/bootstrap.min.css")
 
 
 class WSHandler(tornado.websocket.WebSocketHandler):
