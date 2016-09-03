@@ -124,16 +124,23 @@ class WiFi:
 
         for cell in Cell.all(interface):
             update = True
+            quality = self.get_quality(cell.quality)
             if networks.__contains__(cell.ssid):
-                update = networks.get(cell.ssid).get("quality") < cell.quality
+                update = networks.get(cell.ssid).get("quality") < quality
             if update and cell.ssid:
                 self.cells[cell.sid] = cell
                 networks[cell.ssid] = {
-                    'quality': cell.quality,
+                    'quality': quality,
                     'encrypted': cell.encrypted
                 }
-        self.client.emit(Message("mycroft.wifi.networks",
+        self.client.emit(Message("mycroft.wifi.scanned",
                                  {'networks': networks}))
+
+    @staticmethod
+    def get_quality(quality):
+        values = quality.split("/")
+        return float(values[0] / values[1])
+
 
     def connect(self, event=None):
         if event and event.metadata:
