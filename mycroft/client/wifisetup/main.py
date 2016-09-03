@@ -14,13 +14,14 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
+import subprocess
+import sys
 import uuid
 
 from pyric import pyw
 from wifi import Cell
 from wifi.scheme import Scheme
 
-from mycroft.client.wifisetup.BashThreadHandling import *
 from mycroft.client.wifisetup.FileUtils import *
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
@@ -31,6 +32,31 @@ from mycroft.util.log import getLogger
 __author__ = 'aatchison'
 
 LOGGER = getLogger("WiFiClient")
+
+
+def bash_command(command):
+    result = None
+    try:
+        proc = subprocess.Popen(command,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
+        stdout, stderr = proc.communicate()
+        if stdout:
+            result = {
+                'exit': 0, 'returncode': proc.returncode, 'stdout': stdout}
+        if stderr:
+            result = {'exit': 0,
+                      'returncode': proc.returncode,
+                      'stdout': stderr}
+    except OSError as e:
+        result = {'exit': 1,
+                  'os_errno': e.errno,
+                  'os_stderr': e.strerror,
+                  'os_filename': e.filename}
+    except:
+        result = {'exit': 2, 'sys': sys.exc_info()[0]}
+
+    return result
 
 
 class AccessPoint:
@@ -58,14 +84,14 @@ class AccessPoint:
             self.iface, 'nl80211', 'mycroft-' + str(uuid.getnode()), str(6)
         ))
         LOGGER.info(write_default_hostapd('/etc/hostapd/hostapd.conf'))
-        LOGGER.info(bash_command(['systemctl', 'restart', 'dnsmasq.service']))
-        LOGGER.info(bash_command(['systemctl', 'restart', 'hostapd.service']))
+        bash_command(['systemctl', 'restart', 'dnsmasq.service'])
+        bash_command(['systemctl', 'restart', 'hostapd.service'])
 
     def down(self):
-        LOGGER.info(bash_command(['systemctl', 'stop', 'hostapd.service']))
-        LOGGER.info(bash_command(['systemctl', 'stop', 'dnsmasq.service']))
-        LOGGER.info(bash_command(['systemctl', 'disable', 'hostapd.service']))
-        LOGGER.info(bash_command(['systemctl', 'disable', 'dnsmasq.service']))
+        bash_command(['systemctl', 'stop', 'hostapd.service'])
+        bash_command(['systemctl', 'stop', 'dnsmasq.service'])
+        bash_command(['systemctl', 'disable', 'hostapd.service'])
+        bash_command(['systemctl', 'disable', 'dnsmasq.service'])
         LOGGER.info(restore_system_files())
 
 
