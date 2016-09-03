@@ -31,7 +31,7 @@ class PairingSkill(MycroftSkill):
         self.api = DeviceApi()
         self.data = None
         self.state = str(uuid4())
-        self.coder = None
+        self.delay = 10
         self.activator = None
         self.identity = IdentityManager().get()
 
@@ -42,22 +42,30 @@ class PairingSkill(MycroftSkill):
         self.register_intent(intent, self.handle_pairing)
 
     def handle_pairing(self, message=None):
-        if not self.is_paired() and not self.data:
+        if self.is_paired():
+            self.speak_dialog("pairing.paired")
+        elif self.data:
+            self.speak_code()
+        else:
             self.data = self.api.get_code(self.state)
             self.enclosure.deactivate_mouth_events()
             self.enclosure.mouth_text(self.data.get("code"))
             self.speak_code()
-            self.coder = Timer(self.data.get("expiration"), self.reset)
-            self.activator = Timer(10, self.activate)
-            self.coder.start()
+            self.activator = Timer(self.delay, self.activate)
             self.activator.start()
 
-    def reset(self):
-        self.data = None
-        self.handle_pairing()
-
     def activate(self):
-        self.api.activate(self.state, self.data.get("token"))
+        try:
+            self.api.activate(self.state, self.data.get("token"))
+            self.speak_dialog("pairing.paired")
+        except:
+            self.data["expiration"] -= self.delay
+
+            if self.data.get("expiration") <= 0:
+                self.data = None
+                self.handle_pairing()
+            else:
+                self.activator = Timer(self.delay, self.activate)
 
     def is_paired(self):
         try:
@@ -68,7 +76,7 @@ class PairingSkill(MycroftSkill):
 
     def speak_code(self):
         data = {"code": '. '.join(self.data.get("code"))}
-        self.speak_dialog("pairing.instructions", data)
+        self.speak_dialog("pairing.code", data)
 
     def stop(self):
         pass
