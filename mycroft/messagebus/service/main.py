@@ -20,42 +20,33 @@ import tornado.web as web
 
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.service.ws import WebsocketEventHandler
+from mycroft.util import validate_param
 
-__author__ = 'seanfitz'
+__author__ = 'seanfitz', 'jdorleans'
 
 settings = {
     'debug': True
 }
 
 
-def validate_param(value, name):
-    if not value:
-        raise ValueError("Missing or empty %s in mycroft.ini "
-                         "[messagebus_service] section", name)
-
-
 def main():
     import tornado.options
     tornado.options.parse_command_line()
-    config = ConfigurationManager.get()
-    service_config = config.get("messagebus_service")
+    config = ConfigurationManager.get().get("websocket")
 
-    route = service_config.get('route')
-    validate_param(route, 'route')
+    host = config.get("host")
+    port = config.get("port")
+    route = config.get("route")
+    validate_param(host, "websocket.host")
+    validate_param(port, "websocket.port")
+    validate_param(route, "websocket.route")
 
     routes = [
         (route, WebsocketEventHandler)
     ]
-
     application = web.Application(routes, **settings)
-    host = service_config.get("host")
-    port = service_config.get("port")
-    validate_param(host, 'host')
-    validate_param(port, 'port')
-
     application.listen(port, host)
-    loop = ioloop.IOLoop.instance()
-    loop.start()
+    ioloop.IOLoop.instance().start()
 
 
 if __name__ == "__main__":

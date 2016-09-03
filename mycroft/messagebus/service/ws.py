@@ -16,15 +16,15 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import traceback
-import sys
 import json
+import sys
+import traceback
 
-from pyee import EventEmitter
 import tornado.websocket
+from pyee import EventEmitter
 
-from mycroft.messagebus.message import Message
 import mycroft.util.log
+from mycroft.messagebus.message import Message
 
 logger = mycroft.util.log.getLogger(__name__)
 __author__ = 'seanfitz'
