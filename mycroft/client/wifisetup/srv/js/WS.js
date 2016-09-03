@@ -2,6 +2,7 @@ var WS = {
     ws: null,
     wsConnected: false,
     listeners: {},
+    onOpenListeners: [],
 
     connect: function () {
         this.ws = new WebSocket(Config.wsUrl);
@@ -11,6 +12,10 @@ var WS = {
     setWSListeners: function () {
         this.ws.onmessage = this.onMessage.bind(this);
         this.ws.onopen = this.onOpen.bind(this);
+    },
+
+    setOnOpenListener: function (cb) {
+        this.onOpenListeners.push(cb);
     },
 
     onMessage: function (evt) {
@@ -23,6 +28,9 @@ var WS = {
 
     onOpen: function () {
         this.wsConnected = true;
+        this.onOpenListeners.forEach(function (cb) {
+            cb();
+        });
     },
 
     send: function (title, data) {
