@@ -63,7 +63,7 @@ class SkillContainer(object):
         return parser.parse_args(args)
 
     def __init_client(self, params):
-        config = ConfigurationManager.get().get("messagebus_client")
+        config = ConfigurationManager.get().get("websocket")
 
         if not params.host:
             params.host = config.get('host')
