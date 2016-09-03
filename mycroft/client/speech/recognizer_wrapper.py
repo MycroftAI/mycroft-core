@@ -41,7 +41,7 @@ class GoogleRecognizerWrapper(object):
 
     def transcribe(
             self, audio, language="en-US", show_all=False, metrics=None):
-        key = config.get('goog_api_key')
+        key = config.get('credential').get("token")
         return self.recognizer.recognize_google(
             audio, key=key, language=language, show_all=show_all)
 
@@ -54,7 +54,7 @@ class WitRecognizerWrapper(object):
             self, audio, language="en-US", show_all=False, metrics=None):
         assert language == "en-US", \
             "language must be default, language parameter not supported."
-        key = config.get('wit_api_key')
+        key = config.get('credential').get("token")
         return self.recognizer.recognize_wit(audio, key, show_all=show_all)
 
 
@@ -64,8 +64,9 @@ class IBMRecognizerWrapper(object):
 
     def transcribe(
             self, audio, language="en-US", show_all=False, metrics=None):
-        username = config.get('ibm_username')
-        password = config.get('ibm_password')
+        credential = config.get('credential')
+        username = credential.get('username')
+        password = credential.get('password')
         return self.recognizer.recognize_ibm(
             audio, username, password, language=language, show_all=show_all)
 
@@ -79,17 +80,13 @@ class CerberusGoogleProxy(object):
         timer = Stopwatch()
         timer.start()
         identity = IdentityManager().get()
-        headers = {}
-        if identity:
-            headers['Authorization'] = 'Bearer %s:%s' % (
-                identity.device_id, identity.token)
-
-        response = requests.post(config.get("proxy_host") +
+        headers = {'Authorization': 'Bearer ' + identity.token}
+        url = ConfigurationManager.get().get("server").get("url")
+        response = requests.post(url +
                                  "/stt/google_v2?language=%s&version=%s"
                                  % (language, self.version),
                                  audio.get_flac_data(),
                                  headers=headers)
-
         if metrics:
             t = timer.stop()
             metrics.timer("mycroft.cerberus.proxy.client.time_s", t)
@@ -131,8 +128,8 @@ class CerberusGoogleProxy(object):
 
 
 RECOGNIZER_IMPLS = {
+    'mycroft': CerberusGoogleProxy,
     'google': GoogleRecognizerWrapper,
-    'google_proxy': CerberusGoogleProxy,
     'wit': WitRecognizerWrapper,
     'ibm': IBMRecognizerWrapper
 }
@@ -140,7 +137,7 @@ RECOGNIZER_IMPLS = {
 
 class RemoteRecognizerWrapperFactory(object):
     @staticmethod
-    def wrap_recognizer(recognizer, impl=config.get('recognizer_impl')):
+    def wrap_recognizer(recognizer, impl=config.get('module')):
         if impl not in RECOGNIZER_IMPLS.keys():
             raise NotImplementedError("%s recognizer not implemented." % impl)
 

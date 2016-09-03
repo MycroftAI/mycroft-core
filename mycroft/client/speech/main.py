@@ -19,6 +19,7 @@
 import subprocess
 import sys
 from threading import Thread, Lock
+
 import re
 
 from mycroft.client.speech.listener import RecognizerLoop
@@ -26,14 +27,13 @@ from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.tts import tts_factory
+from mycroft.util import kill
 from mycroft.util.log import getLogger
-from mycroft.util import kill, connected
-from mycroft.util import play_mp3
 
 logger = getLogger("SpeechClient")
 client = None
 tts = tts_factory.create()
-mutexTalking = Lock()
+mutex = Lock()
 loop = None
 
 config = ConfigurationManager.get()
@@ -59,28 +59,8 @@ def handle_utterance(event):
     client.emit(Message('recognizer_loop:utterance', event))
 
 
-# class TalkThread (Thread):
-#    def __init__(self, utterance, loop, tts, client, mutex):
-#       Thread.__init__(self)
-#       self.utterance = utterance
-#       self.tts = tts
-#       self.loop = loop
-#       self.client = client
-#       self.mutex = mutex
-#
-#   def run(self):
-#       try:
-#           # logger.info("Speak: " + utterance)
-#           self.loop.mute()
-#           self.tts.execute(self.utterance, self.client)
-#       finally:
-#           self.loop.unmute()
-#           self.mutexTalking.release()
-#           self.client.emit(Message("recognizer_loop:audio_output_end"))
-
-
 def mute_and_speak(utterance):
-    mutexTalking.acquire()
+    mutex.acquire()
     client.emit(Message("recognizer_loop:audio_output_start"))
     try:
         logger.info("Speak: " + utterance)
@@ -88,10 +68,8 @@ def mute_and_speak(utterance):
         tts.execute(utterance, client)
     finally:
         loop.unmute()
-        mutexTalking.release()
+        mutex.release()
         client.emit(Message("recognizer_loop:audio_output_end"))
-    # threadTalk = TalkThread(utterance, loop, tts, client, mutexClient)
-    # threadTalk.start()
 
 
 def handle_multi_utterance_intent_failure(event):
@@ -128,10 +106,7 @@ def main():
     global client
     global loop
     client = WebsocketClient()
-    device_index = config.get('speech_client').get('device_index')
-    if device_index:
-        device_index = int(device_index)
-    loop = RecognizerLoop(device_index=device_index)
+    loop = RecognizerLoop()
     loop.on('recognizer_loop:utterance', handle_utterance)
     loop.on('recognizer_loop:record_begin', handle_record_begin)
     loop.on('recognizer_loop:wakeword', handle_wakeword)
