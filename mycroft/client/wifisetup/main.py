@@ -22,7 +22,7 @@ from pyric import pyw
 from wifi import Cell
 from wifi.scheme import Scheme
 
-from mycroft.client.wifisetup.FileUtils import *
+from mycroft.client.wifisetup.wifi_util import *
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
