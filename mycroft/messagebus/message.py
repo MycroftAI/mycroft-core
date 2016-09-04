@@ -22,14 +22,14 @@ __author__ = 'seanfitz'
 
 
 class Message(object):
-    def __init__(self, message_type, metadata={}, context=None):
-        self.message_type = message_type
+    def __init__(self, type, metadata={}, context=None):
+        self.type = type
         self.metadata = metadata
         self.context = context
 
     def serialize(self):
         return json.dumps({
-            'message_type': self.message_type,
+            'type': self.type,
             'metadata': self.metadata,
             'context': self.context
         })
@@ -37,11 +37,11 @@ class Message(object):
     @staticmethod
     def deserialize(json_str):
         json_message = json.loads(json_str)
-        return Message(json_message.get('message_type'),
+        return Message(json_message.get('type'),
                        metadata=json_message.get('metadata'),
                        context=json_message.get('context'))
 
-    def reply(self, message_type, metadata, context={}):
+    def reply(self, type, metadata, context={}):
         if not context:
             context = {}
         new_context = self.context if self.context else {}
@@ -51,9 +51,9 @@ class Message(object):
             new_context['target'] = metadata['target']
         elif 'client_name' in context:
             context['target'] = context['client_name']
-        return Message(message_type, metadata, context=new_context)
+        return Message(type, metadata, context=new_context)
 
-    def publish(self, message_type, metadata, context={}):
+    def publish(self, type, metadata, context={}):
         if not context:
             context = {}
         new_context = self.context.copy() if self.context else {}
@@ -63,4 +63,4 @@ class Message(object):
         if 'target' in new_context:
             del new_context['target']
 
-        return Message(message_type, metadata, context=new_context)
+        return Message(type, metadata, context=new_context)

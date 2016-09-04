@@ -80,7 +80,7 @@ class WebsocketClient(object):
         self.emitter.emit('message', message)
         parsed_message = Message.deserialize(message)
         self.pool.apply_async(
-            self.emitter.emit, (parsed_message.message_type, parsed_message))
+            self.emitter.emit, (parsed_message.type, parsed_message))
 
     def emit(self, message):
         if (not self.client or not self.client.sock or
@@ -114,7 +114,7 @@ def echo():
         LOG.info(message)
 
     def repeat_utterance(message):
-        message.message_type = 'speak'
+        message.type = 'speak'
         client.emit(message)
 
     client.on('message', echo)

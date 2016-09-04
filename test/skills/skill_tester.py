@@ -1,5 +1,7 @@
 import json
+
 from pyee import EventEmitter
+
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import load_skills
 
@@ -12,14 +14,14 @@ class RegistrationOnlyEmitter(object):
 
     def on(self, event, f):
         if event in [
-                'register_intent',
-                'register_vocab',
-                'recognizer_loop:utterance'
+            'register_intent',
+            'register_vocab',
+            'recognizer_loop:utterance'
         ]:
             self.emitter.on(event, f)
 
     def emit(self, event, *args, **kwargs):
-        event_name = event.message_type
+        event_name = event.type
         self.emitter.emit(event_name, event, *args, **kwargs)
 
 
@@ -55,6 +57,7 @@ class SkillTest(object):
         def compare(intent):
             self.compare_intents(example_json.get('intent'), intent.metadata)
             self.returned_intent = True
+
         self.emitter.once(example_json.get('intent_type'), compare)
         self.emitter.emit(
             'recognizer_loop:utterance',

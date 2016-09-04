@@ -1,6 +1,7 @@
 import unittest
-from re import error
+
 from os.path import join, dirname, abspath
+from re import error
 
 from mycroft.skills.core import load_regex_from_file, load_regex, \
     load_vocab_from_file, load_vocabulary
@@ -15,7 +16,7 @@ class MockEmitter(object):
         self.reset()
 
     def emit(self, message):
-        self.types.append(message.message_type)
+        self.types.append(message.type)
         self.results.append(message.metadata)
 
     def get_types(self):
@@ -52,8 +53,8 @@ class MycroftSkillTest(unittest.TestCase):
         self.check_emitter(result_list)
 
     def check_emitter(self, result_list):
-        for message_type in self.emitter.get_types():
-            self.assertEquals(message_type, 'register_vocab')
+        for type in self.emitter.get_types():
+            self.assertEquals(type, 'register_vocab')
         self.assertEquals(sorted(self.emitter.get_results()),
                           sorted(result_list))
         self.emitter.reset()
@@ -86,8 +87,8 @@ class MycroftSkillTest(unittest.TestCase):
     def test_load_regex_full(self):
         self.check_regex(join(self.regex_path, 'valid'),
                          [{'regex': '(?P<MultipleTest1>.*)'},
-                         {'regex': '(?P<MultipleTest2>.*)'},
-                         {'regex': '(?P<SingleTest>.*)'}])
+                          {'regex': '(?P<MultipleTest2>.*)'},
+                          {'regex': '(?P<SingleTest>.*)'}])
 
     def test_load_regex_empty(self):
         self.check_regex(join(dirname(__file__),
@@ -136,17 +137,17 @@ class MycroftSkillTest(unittest.TestCase):
     def test_load_vocab_full(self):
         self.check_vocab(join(self.vocab_path, 'valid'),
                          [{'start': 'test', 'end': 'single'},
-                         {'start': 'water', 'end': 'singlealias'},
-                         {'start': 'watering', 'end': 'singlealias',
-                          'alias_of': 'water'},
-                         {'start': 'animal', 'end': 'multiple'},
-                         {'start': 'animals', 'end': 'multiple'},
-                         {'start': 'chair', 'end': 'multiplealias'},
-                         {'start': 'chairs', 'end': 'multiplealias',
-                          'alias_of': 'chair'},
-                         {'start': 'table', 'end': 'multiplealias'},
-                         {'start': 'tables', 'end': 'multiplealias',
-                          'alias_of': 'table'}])
+                          {'start': 'water', 'end': 'singlealias'},
+                          {'start': 'watering', 'end': 'singlealias',
+                           'alias_of': 'water'},
+                          {'start': 'animal', 'end': 'multiple'},
+                          {'start': 'animals', 'end': 'multiple'},
+                          {'start': 'chair', 'end': 'multiplealias'},
+                          {'start': 'chairs', 'end': 'multiplealias',
+                           'alias_of': 'chair'},
+                          {'start': 'table', 'end': 'multiplealias'},
+                          {'start': 'tables', 'end': 'multiplealias',
+                           'alias_of': 'table'}])
 
     def test_load_vocab_empty(self):
         self.check_vocab(join(dirname(__file__), 'wolfram_alpha'))
