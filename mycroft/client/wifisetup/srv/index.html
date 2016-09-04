@@ -18,12 +18,13 @@
 <div id="connect" class="panel hide">
     <div class="title">ENTER WIFI PASSWORD</div>
     <div class="body">
-        <a class="backButton"><img src="img/back.png"/><span>Back</span></a>
+        <a id="backList" class="backButton"><img src="img/back.png"/><span>Back</span></a>
         <div class="message">This process is for connecting me to the internet through your wifi.</div>
         <div class="passForm">
+            <div id="formError" class="alert"></div>
             <label>
                 PASSWORD
-                <input type="password"/>
+                <input id="pass" type="password"/>
             </label>
             <button id="passBtn">DONE</button>
         </div>
