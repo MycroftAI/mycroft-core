@@ -16,10 +16,10 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import abc
 import imp
 import time
 
-import abc
 import os.path
 import re
 from adapt.intent import Intent
@@ -199,7 +199,7 @@ class MycroftSkill(object):
 
     def register_intent(self, intent_parser, handler):
         intent_message = create_intent_envelope(intent_parser)
-        intent_message.message_type = "register_intent"
+        intent_message.type = "register_intent"
         self.emitter.emit(intent_message)
         self.registered_intents.append(intent_parser.name)
 

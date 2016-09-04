@@ -62,7 +62,7 @@ def main():
         try:
             _message = json.loads(message)
 
-            if _message.get("message_type") == "registration":
+            if _message.get("type") == "registration":
                 # do not log tokens from registration messages
                 _message["metadata"]["token"] = None
             message = json.dumps(_message)

@@ -52,7 +52,7 @@ class WebsocketEventHandler(tornado.websocket.WebSocketHandler):
 
         try:
             self.emitter.emit(
-                deserialized_message.message_type, deserialized_message)
+                deserialized_message.type, deserialized_message)
         except Exception, e:
             logger.exception(e)
             traceback.print_exc(file=sys.stdout)
