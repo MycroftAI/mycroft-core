@@ -83,7 +83,7 @@ class VolumeSkill(MycroftSkill):
         self.speak_dialog('set.volume', data={'volume': level})
 
     def communicate_volume_change(self, message, dialog, code, changed):
-        play_sound = message.metadata.get('play_sound', False)
+        play_sound = message.data.get('play_sound', False)
         if play_sound:
             if changed:
                 play_wav(self.volume_sound)
@@ -156,7 +156,7 @@ class VolumeSkill(MycroftSkill):
         return new_level, new_level != old_level
 
     def get_volume_level(self, message, default=None):
-        level_str = message.metadata.get('VolumeAmount', default)
+        level_str = message.data.get('VolumeAmount', default)
         level = self.default_level
 
         try:

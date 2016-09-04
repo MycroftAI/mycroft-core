@@ -81,6 +81,6 @@ class EnclosureMouth:
 
     def text(self, event=None):
         text = ""
-        if event and event.metadata:
-            text = event.metadata.get("text", text)
+        if event and event.data:
+            text = event.data.get("text", text)
         self.writer.write("mouth.text=" + text)

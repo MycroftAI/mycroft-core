@@ -1,10 +1,9 @@
+from adapt.intent import IntentBuilder
 from os.path import join, dirname
 
-from adapt.intent import IntentBuilder
-from mycroft.skills.core import MycroftSkill
-from mycroft.messagebus.message import Message
 from mycroft.configuration import ConfigurationManager
-
+from mycroft.messagebus.message import Message
+from mycroft.skills.core import MycroftSkill
 from mycroft.util.log import getLogger
 
 logger = getLogger(__name__)
@@ -22,6 +21,7 @@ class MediaSkill(MycroftSkill):
         But wait there is one more thing! A small event emitter and matching
         handler to stop media currently playing when new media is started.
     """
+
     def __init__(self, name):
         super(MediaSkill, self).__init__(name)
         self.isPlaying = False
@@ -31,7 +31,7 @@ class MediaSkill(MycroftSkill):
     def initialize(self):
         logger.info('Initializing MediaSkill commons')
         logger.info('loading vocab files from ' + join(dirname(__file__),
-                    'vocab', self.lang))
+                                                       'vocab', self.lang))
         self.load_vocab_files(join(dirname(__file__), 'vocab', self.lang))
 
         self._register_common_intents()
@@ -55,7 +55,7 @@ class MediaSkill(MycroftSkill):
             .one_of('PlayKeyword', 'ResumeKeyword')
         self.register_intent(intent, self.handle_play)
 
-        intent = IntentBuilder('CurrentlyPlayingIntent')\
+        intent = IntentBuilder('CurrentlyPlayingIntent') \
             .require('CurrentlyPlayingKeyword')
         self.register_intent(intent, self.handle_currently_playing)
 
@@ -99,8 +99,7 @@ class MediaSkill(MycroftSkill):
            should always be called before the skill starts playback.
         """
         logger.info('Stopping currently playing media if any')
-        self.emitter.emit(Message('mycroft.media.stop',
-                          metadata={'origin': self.name}))
+        self.emitter.emit(Message('mycroft.media.stop', {'origin': self.name}))
 
     def handle_pause(self, message):
         """ handle_pause() should pause currently playing media """
@@ -116,7 +115,7 @@ class MediaSkill(MycroftSkill):
 
     def _media_stop(self, message):
         """ handler for 'mycroft.media.stop' """
-        origin = message.metadata.get('origin', '')
+        origin = message.data.get('origin', '')
         if origin != self.name:
             self.stop()
 

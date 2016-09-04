@@ -64,7 +64,7 @@ def main():
 
             if _message.get("type") == "registration":
                 # do not log tokens from registration messages
-                _message["metadata"]["token"] = None
+                _message["data"]["token"] = None
             message = json.dumps(_message)
         except:
             pass

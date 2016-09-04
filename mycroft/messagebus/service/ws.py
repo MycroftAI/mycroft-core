@@ -51,8 +51,7 @@ class WebsocketEventHandler(tornado.websocket.WebSocketHandler):
             return
 
         try:
-            self.emitter.emit(
-                deserialized_message.type, deserialized_message)
+            self.emitter.emit(deserialized_message.type, deserialized_message)
         except Exception, e:
             logger.exception(e)
             traceback.print_exc(file=sys.stdout)

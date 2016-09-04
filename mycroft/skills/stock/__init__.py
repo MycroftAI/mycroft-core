@@ -15,14 +15,15 @@
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
-from os.path import dirname
 import time
-import requests
 import xml.etree.ElementTree as ET
+
+import requests
+from adapt.intent import IntentBuilder
+from os.path import dirname
 
 from mycroft.skills.core import MycroftSkill
 from mycroft.util.log import getLogger
-from adapt.intent import IntentBuilder
 
 __author__ = 'eward'
 logger = getLogger(__name__)
@@ -35,20 +36,19 @@ class StockSkill(MycroftSkill):
     def initialize(self):
         self.load_data_files(dirname(__file__))
 
-        stock_price_intent = IntentBuilder("StockPriceIntent")\
-            .require("StockPriceKeyword")\
-            .require("Company")\
-            .build()
+        stock_price_intent = IntentBuilder("StockPriceIntent") \
+            .require("StockPriceKeyword").require("Company").build()
         self.register_intent(stock_price_intent,
                              self.handle_stock_price_intent)
 
     def handle_stock_price_intent(self, message):
-        company = message.metadata.get("Company")
+        company = message.data.get("Company")
         try:
             response = self.find_and_query(company)
             self.emitter.once("recognizer_loop:audio_output_start",
                               self.enclosure.mouth_text(
-                                  response['symbol']+": " + response['price']))
+                                  response['symbol'] + ": " + response[
+                                      'price']))
             self.enclosure.activate_mouth_listeners(False)
             self.speak_dialog("stock.price", data=response)
             time.sleep(12)
@@ -61,7 +61,7 @@ class StockSkill(MycroftSkill):
     def _query(self, url, param_name, query):
         payload = {param_name: query}
         response = requests.get(url, params=payload)
-        return(ET.fromstring(response.content))
+        return ET.fromstring(response.content)
 
     def find_and_query(self, query):
         root = self._query(

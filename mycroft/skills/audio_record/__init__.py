@@ -70,7 +70,7 @@ class AudioRecordSkill(ScheduledSkill):
         self.register_intent(intent, self.handle_stop_play)
 
     def handle_record(self, message):
-        utterance = message.metadata.get('utterance')
+        utterance = message.data.get('utterance')
         date = self.get_utc_time(utterance)
         now = self.get_utc_time()
         self.duration = self.get_duration(date, now)

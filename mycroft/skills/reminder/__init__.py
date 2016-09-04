@@ -100,9 +100,9 @@ class ReminderSkill(ScheduledCRUDSkill):
         return datetime.now() + timedelta(seconds=seconds)
 
     def add(self, date, message):
-        utterance = message.metadata.get('utterance').lower()
+        utterance = message.data.get('utterance').lower()
         utterance = utterance.replace(
-            message.metadata.get('ReminderSkillCreateVerb'), '')
+            message.data.get('ReminderSkillCreateVerb'), '')
         utterance = self.__fix_pronouns(utterance)
         self.repeat_data[date] = self.time_rules.get_week_days(utterance)
         self.data[date] = self.__remove_time(utterance).strip()
