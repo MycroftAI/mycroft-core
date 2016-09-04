@@ -49,7 +49,6 @@ var WifiSetup = {
         if (data.connected) {
             alert("Connected :D");
         } else {
-            showPanel("connect");
             showError("Cannot connect on wifi network");
         }
     },
@@ -106,7 +105,6 @@ var WifiSetup = {
     },
 
     clickConnect: function () {
-        showPanel("loading");
         var pass = document.querySelector("#pass");
         this.sendConnect({
             ssid: this.selectedNetword.ssid,

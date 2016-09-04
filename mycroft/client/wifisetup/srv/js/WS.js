@@ -19,9 +19,10 @@ var WS = {
     },
 
     onMessage: function (evt) {
-        if (this.listeners[evt.message_type]) {
-            this.listeners[evt.message_type].forEach(function (cb) {
-                cb(evt.metadata);
+        var msg = JSON.parse(evt.data);
+        if (this.listeners[msg.message_type]) {
+            this.listeners[msg.message_type].forEach(function (cb) {
+                cb(msg.metadata);
             });
         }
     },
@@ -34,10 +35,10 @@ var WS = {
     },
 
     send: function (title, data) {
-        this.ws.send({
+        this.ws.send(JSON.stringify({
             message_title: title,
             metadata: data
-        });
+        }));
     },
 
     addMessageListener: function (title, callback) {
