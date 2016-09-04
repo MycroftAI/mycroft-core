@@ -17,7 +17,7 @@ class MockEmitter(object):
 
     def emit(self, message):
         self.types.append(message.type)
-        self.results.append(message.metadata)
+        self.results.append(message.data)
 
     def get_types(self):
         return self.types

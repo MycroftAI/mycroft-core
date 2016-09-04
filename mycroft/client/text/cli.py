@@ -34,7 +34,7 @@ def handle_speak(event):
     mutex.acquire()
     client.emit(Message("recognizer_loop:audio_output_start"))
     try:
-        utterance = event.metadata.get('utterance')
+        utterance = event.data.get('utterance')
         logger.info("Speak: " + utterance)
         tts.execute(utterance)
     finally:
@@ -60,7 +60,7 @@ def main():
             line = sys.stdin.readline()
             client.emit(
                 Message("recognizer_loop:utterance",
-                        metadata={'utterances': [line.strip()]}))
+                        {'utterances': [line.strip()]}))
     except KeyboardInterrupt, e:
         logger.exception(e)
         event_thread.exit()

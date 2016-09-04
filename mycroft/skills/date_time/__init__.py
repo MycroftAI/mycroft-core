@@ -63,7 +63,7 @@ class TimeSkill(MycroftSkill):
     # This method only handles localtime, for other timezones the task falls
     # to Wolfram.
     def handle_intent(self, message):
-        location = message.metadata.get("Location", None)
+        location = message.data.get("Location", None)
 
         now = datetime.datetime.now(timezone('UTC'))
         if location is None:

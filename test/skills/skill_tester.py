@@ -55,7 +55,7 @@ class SkillTest(object):
         event = {'utterances': [example_json.get('utterance')]}
 
         def compare(intent):
-            self.compare_intents(example_json.get('intent'), intent.metadata)
+            self.compare_intents(example_json.get('intent'), intent.data)
             self.returned_intent = True
 
         self.emitter.once(example_json.get('intent_type'), compare)

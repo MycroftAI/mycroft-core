@@ -45,30 +45,28 @@ logger = getLogger(__name__)
 
 
 def load_vocab_from_file(path, vocab_type, emitter):
-    if(path.endswith('.voc')):
+    if path.endswith('.voc'):
         with open(path, 'r') as voc_file:
             for line in voc_file.readlines():
                 parts = line.strip().split("|")
                 entity = parts[0]
 
-                emitter.emit(
-                    Message("register_vocab",
-                            metadata={'start': entity, 'end': vocab_type}))
+                emitter.emit(Message("register_vocab", {
+                    'start': entity, 'end': vocab_type
+                }))
                 for alias in parts[1:]:
-                    emitter.emit(
-                        Message("register_vocab",
-                                metadata={'start': alias, 'end': vocab_type,
-                                          'alias_of': entity}))
+                    emitter.emit(Message("register_vocab", {
+                        'start': alias, 'end': vocab_type, 'alias_of': entity
+                    }))
 
 
 def load_regex_from_file(path, emitter):
-    if(path.endswith('.rx')):
+    if path.endswith('.rx'):
         with open(path, 'r') as reg_file:
             for line in reg_file.readlines():
                 re.compile(line.strip())
                 emitter.emit(
-                    Message("register_vocab",
-                            metadata={'regex': line.strip()}))
+                    Message("register_vocab", {'regex': line.strip()}))
 
 
 def load_vocabulary(basedir, emitter):
@@ -85,12 +83,8 @@ def load_regex(basedir, emitter):
                 join(basedir, regex_type), emitter)
 
 
-def create_intent_envelope(intent):
-    return Message(None, metadata=intent.__dict__, context={})
-
-
 def open_intent_envelope(message):
-    intent_dict = message.metadata
+    intent_dict = message.data
     return Intent(intent_dict.get('name'),
                   intent_dict.get('requires'),
                   intent_dict.get('at_least_one'),
@@ -145,7 +139,7 @@ def load_skills(emitter, skills_root=SKILLS_BASEDIR):
 
     for skill in skills:
         if (skill['name'] not in PRIMARY_SKILLS and
-                skill['name'] not in BLACKLISTED_SKILLS):
+                    skill['name'] not in BLACKLISTED_SKILLS):
             load_skill(skill, emitter)
 
 
@@ -158,9 +152,8 @@ class MycroftSkill(object):
     def __init__(self, name, emitter=None):
         self.name = name
         self.bind(emitter)
-        config = ConfigurationManager.get()
-        self.config = config.get(name)
-        self.config_core = config.get('core')
+        self.config_core = ConfigurationManager.get()
+        self.config = self.config_core.get(name)
         self.dialog_renderer = None
         self.file_system = FileSystemAccess(join('skills', name))
         self.registered_intents = []
@@ -181,13 +174,13 @@ class MycroftSkill(object):
 
     def __register_stop(self):
         self.stop_time = time.time()
-        self.stop_threshold = self.config_core.get('stop_threshold')
+        self.stop_threshold = self.config_core.get("skills").get(
+            'stop_threshold')
         self.emitter.on('mycroft.stop', self.__handle_stop)
 
     def detach(self):
         for name in self.registered_intents:
-            self.emitter.emit(
-                Message("detach_intent", metadata={"intent_name": name}))
+            self.emitter.emit(Message("detach_intent", {"intent_name": name}))
 
     def initialize(self):
         """
@@ -198,9 +191,7 @@ class MycroftSkill(object):
         raise Exception("Initialize not implemented for skill: " + self.name)
 
     def register_intent(self, intent_parser, handler):
-        intent_message = create_intent_envelope(intent_parser)
-        intent_message.type = "register_intent"
-        self.emitter.emit(intent_message)
+        self.emitter.emit(Message("register_intent", intent_parser.__dict__))
         self.registered_intents.append(intent_parser.name)
 
         def receive_handler(message):
@@ -218,17 +209,16 @@ class MycroftSkill(object):
         self.emitter.on(intent_parser.name, receive_handler)
 
     def register_vocabulary(self, entity, entity_type):
-        self.emitter.emit(
-            Message('register_vocab',
-                    metadata={'start': entity, 'end': entity_type}))
+        self.emitter.emit(Message('register_vocab', {
+            'start': entity, 'end': entity_type
+        }))
 
     def register_regex(self, regex_str):
         re.compile(regex_str)  # validate regex
-        self.emitter.emit(
-            Message('register_vocab', metadata={'regex': regex_str}))
+        self.emitter.emit(Message('register_vocab', {'regex': regex_str}))
 
     def speak(self, utterance):
-        self.emitter.emit(Message("speak", metadata={'utterance': utterance}))
+        self.emitter.emit(Message("speak", {'utterance': utterance}))
 
     def speak_dialog(self, key, data={}):
         self.speak(self.dialog_renderer.render(key, data))

@@ -46,7 +46,7 @@ class WebsocketClient(object):
         self.emitter = EventEmitter()
         self.client = self.create_client()
         self.pool = ThreadPool(10)
-        self.retry = 1
+        self.retry = 5
 
     def build_url(self, host, port, route, ssl):
         scheme = "wss" if ssl else "ws"
@@ -70,7 +70,7 @@ class WebsocketClient(object):
             self.client.close()
         except Exception, e:
             LOG.error(repr(e))
-        LOG.warn("WS Client Error: reconnecting in %d seconds." % self.retry)
+        LOG.warn("WS Client will reconnect in %d seconds." % self.retry)
         time.sleep(self.retry)
         self.retry = min(self.retry * 2, 60)
         self.client = self.create_client()

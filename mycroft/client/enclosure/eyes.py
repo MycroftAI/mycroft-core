@@ -56,37 +56,37 @@ class EnclosureEyes:
 
     def blink(self, event=None):
         side = "b"
-        if event and event.metadata:
-            side = event.metadata.get("side", side)
+        if event and event.data:
+            side = event.data.get("side", side)
         self.writer.write("eyes.blink=" + side)
 
     def narrow(self, event=None):
         self.writer.write("eyes.narrow")
 
     def look(self, event=None):
-        if event and event.metadata:
-            side = event.metadata.get("side", "")
+        if event and event.data:
+            side = event.data.get("side", "")
             self.writer.write("eyes.look=" + side)
 
     def color(self, event=None):
         r, g, b = 255, 255, 255
-        if event and event.metadata:
-            r = int(event.metadata.get("r"), r)
-            g = int(event.metadata.get("g"), g)
-            b = int(event.metadata.get("b"), b)
+        if event and event.data:
+            r = int(event.data.get("r"), r)
+            g = int(event.data.get("g"), g)
+            b = int(event.data.get("b"), b)
         color = (r * 65536) + (g * 256) + b
         self.writer.write("eyes.color=" + str(color))
 
     def brightness(self, event=None):
         level = 30
-        if event and event.metadata:
-            level = event.metadata.get("level", level)
+        if event and event.data:
+            level = event.data.get("level", level)
         self.writer.write("eyes.level=" + str(level))
 
     def volume(self, event=None):
         volume = 4
-        if event and event.metadata:
-            volume = event.metadata.get("volume", volume)
+        if event and event.data:
+            volume = event.data.get("volume", volume)
         self.writer.write("eyes.volume=" + str(volume))
 
     def reset(self, event=None):
@@ -97,6 +97,6 @@ class EnclosureEyes:
 
     def timed_spin(self, event=None):
         length = 5000
-        if event and event.metadata:
-            length = event.metadata.get("length", length)
+        if event and event.data:
+            length = event.data.get("length", length)
         self.writer.write("eyes.spin=" + str(length))

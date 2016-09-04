@@ -16,12 +16,12 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import time
+
 from adapt.intent import IntentBuilder
+from multi_key_dict import multi_key_dict
 from os.path import dirname
 from pyowm.exceptions.api_call_error import APICallError
-from multi_key_dict import multi_key_dict
-
-import time
 
 from mycroft.identity import IdentityManager
 from mycroft.skills.core import MycroftSkill
@@ -77,7 +77,7 @@ class WeatherSkill(MycroftSkill):
 
     def handle_current_intent(self, message):
         try:
-            location = message.metadata.get("Location", self.location)
+            location = message.data.get("Location", self.location)
             weather = self.owm.weather_at_place(location).get_weather()
             data = self.__build_data_condition(location, weather)
             weather_code = str(weather.get_weather_icon_name())
@@ -96,7 +96,7 @@ class WeatherSkill(MycroftSkill):
 
     def handle_next_hour_intent(self, message):
         try:
-            location = message.metadata.get("Location", self.location)
+            location = message.data.get("Location", self.location)
             weather = self.owm.three_hours_forecast(
                 location).get_forecast().get_weathers()[0]
             data = self.__build_data_condition(location, weather)
@@ -115,7 +115,7 @@ class WeatherSkill(MycroftSkill):
 
     def handle_next_day_intent(self, message):
         try:
-            location = message.metadata.get("Location", self.location)
+            location = message.data.get("Location", self.location)
             weather = self.owm.daily_forecast(
                 location).get_forecast().get_weathers()[1]
             data = self.__build_data_condition(

@@ -79,7 +79,7 @@ def handle_multi_utterance_intent_failure(event):
 
 
 def handle_speak(event):
-    utterance = event.metadata['utterance']
+    utterance = event.data['utterance']
     chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s', utterance)
     for chunk in chunks:
         mute_and_speak(chunk)

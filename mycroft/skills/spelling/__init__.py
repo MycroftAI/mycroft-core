@@ -16,11 +16,11 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from os.path import dirname, join
-
 import time
 
 from adapt.intent import IntentBuilder
+from os.path import dirname, join
+
 from mycroft.skills.core import MycroftSkill
 
 __author__ = 'seanfitz'
@@ -43,7 +43,7 @@ class SpellingSkill(MycroftSkill):
         self.register_intent(intent, self.handle_intent)
 
     def handle_intent(self, message):
-        word = message.metadata.get("Word")
+        word = message.data.get("Word")
         self.emitter.once("recognizer_loop:audio_output_start",
                           self.enclosure.mouth_text(word))
         spelled_word = ', '.join(word).lower()

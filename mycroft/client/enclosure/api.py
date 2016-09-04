@@ -43,7 +43,7 @@ class EnclosureAPI:
 
     def system_blink(self, times):
         self.client.emit(
-            Message("enclosure.system.blink", metadata={'times': times}))
+            Message("enclosure.system.blink", {'times': times}))
 
     def eyes_on(self):
         self.client.emit(Message("enclosure.eyes.on"))
@@ -53,33 +53,33 @@ class EnclosureAPI:
 
     def eyes_blink(self, side):
         self.client.emit(
-            Message("enclosure.eyes.blink", metadata={'side': side}))
+            Message("enclosure.eyes.blink", {'side': side}))
 
     def eyes_narrow(self):
         self.client.emit(Message("enclosure.eyes.narrow"))
 
     def eyes_look(self, side):
         self.client.emit(
-            Message("enclosure.eyes.look", metadata={'side': side}))
+            Message("enclosure.eyes.look", {'side': side}))
 
     def eyes_color(self, r=255, g=255, b=255):
         self.client.emit(
-            Message("enclosure.eyes.color", metadata={'r': r, 'g': g, 'b': b}))
+            Message("enclosure.eyes.color", {'r': r, 'g': g, 'b': b}))
 
     def eyes_brightness(self, level=30):
         self.client.emit(
-            Message("enclosure.eyes.level", metadata={'level': level}))
+            Message("enclosure.eyes.level", {'level': level}))
 
     def eyes_reset(self):
         self.client.emit(Message("enclosure.eyes.reset"))
 
     def eyes_timed_spin(self, length):
         self.client.emit(
-            Message("enclosure.eyes.timedspin", metadata={'length': length}))
+            Message("enclosure.eyes.timedspin", {'length': length}))
 
     def eyes_volume(self, volume):
         self.client.emit(
-            Message("enclosure.eyes.volume", metadata={'volume': volume}))
+            Message("enclosure.eyes.volume", {'volume': volume}))
 
     def mouth_reset(self):
         self.client.emit(Message("enclosure.mouth.reset"))
@@ -98,18 +98,16 @@ class EnclosureAPI:
 
     def mouth_viseme(self, visCode):
         self.client.emit(
-            Message("enclosure.mouth.viseme", metadata={
-                   'code': visCode}))
+            Message("enclosure.mouth.viseme", {'code': visCode}))
 
     def mouth_text(self, text=""):
         self.client.emit(
-            Message("enclosure.mouth.text", metadata={
-                   'text': text}))
+            Message("enclosure.mouth.text", {'text': text}))
 
     def weather_display(self, img_code, temp):
         self.client.emit(
             Message("enclosure.weather.display",
-                    metadata={'img_code': img_code, 'temp': temp}))
+                    {'img_code': img_code, 'temp': temp}))
 
     def activate_mouth_events(self):
         self.client.emit(Message('enclosure.mouth.events.activate'))

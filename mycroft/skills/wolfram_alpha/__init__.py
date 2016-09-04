@@ -146,7 +146,7 @@ class WolframAlphaSkill(MycroftSkill):
         self.enclosure.mouth_think()
         logger.debug(
             "Could not determine intent, falling back to WolframAlpha Skill!")
-        utterance = message.metadata.get('utterance')
+        utterance = message.data.get('utterance')
         parsed_question = self.question_parser.parse(utterance)
 
         query = utterance

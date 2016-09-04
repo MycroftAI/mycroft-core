@@ -48,6 +48,6 @@ class EnclosureArduino:
 
     def blink(self, event=None):
         times = 1
-        if event and event.metadata:
-            times = event.metadata.get("times", times)
+        if event and event.data:
+            times = event.data.get("times", times)
         self.writer.write("system.blink=" + str(times))
