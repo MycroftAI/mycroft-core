@@ -49,7 +49,11 @@ var WifiSetup = {
         if (data.connected) {
             alert("Connected :D");
         } else {
-            showError("Cannot connect on wifi network");
+            if (document.querySelector("#list-panel").classList.contains("hide")) {
+                showError("Cannot connect on wifi network");
+            } else {
+                alert("Cannot connect on wifi network");
+            }
         }
     },
 
@@ -90,7 +94,13 @@ var WifiSetup = {
 
     clickNetwork: function (network) {
         this.selectedNetword = network;
-        showPanel("connect");
+        if (network.encrypted) {
+            showPanel("connect");
+        } else {
+            this.sendConnect({
+                ssid: network.ssid
+            });
+        }
     },
 
     sendScan: function () {
