@@ -31,7 +31,7 @@ from mycroft.util.log import getLogger
 
 __author__ = 'aatchison'
 
-LOGGER = getLogger("WiFiClient")
+LOG = getLogger("WiFiClient")
 
 
 def bash_command(command):
@@ -76,14 +76,14 @@ class AccessPoint:
             ap = pyw.phyadd(card, self.iface, 'AP')
         pyw.inetset(ap, self.ip)
 
-        LOGGER.info(write_dnsmasq(
+        LOG.info(write_dnsmasq(
             self.iface, self.ip, self.ip_start,
             self.ip_end
         ))
-        LOGGER.info(write_hostapd_conf(
+        LOG.info(write_hostapd_conf(
             self.iface, 'nl80211', 'mycroft-' + str(uuid.getnode()), str(6)
         ))
-        LOGGER.info(write_default_hostapd('/etc/hostapd/hostapd.conf'))
+        LOG.info(write_default_hostapd('/etc/hostapd/hostapd.conf'))
         bash_command(['systemctl', 'restart', 'dnsmasq.service'])
         bash_command(['systemctl', 'restart', 'hostapd.service'])
 
@@ -92,7 +92,7 @@ class AccessPoint:
         bash_command(['systemctl', 'stop', 'dnsmasq.service'])
         bash_command(['systemctl', 'disable', 'hostapd.service'])
         bash_command(['systemctl', 'disable', 'dnsmasq.service'])
-        LOGGER.info(restore_system_files())
+        LOG.info(restore_system_files())
 
 
 class WiFi:
@@ -113,11 +113,14 @@ class WiFi:
             ConfigurationManager.set('WiFiClient', 'must_start', False)
 
     def start(self, event=None):
+        LOG.info("Starting access point...")
         self.client.emit(Message("speak", metadata={
             'utterance': "Initializing wireless setup mode."}))
         self.ap.up()
+        LOG.info("Access point started!")
 
     def scan(self, event=None):
+        LOG.info("Scanning wifi connections...")
         networks = {}
         self.cells = {}
         interface = pyw.winterfaces()[0]
@@ -135,39 +138,42 @@ class WiFi:
                 }
         self.client.emit(Message("mycroft.wifi.scanned",
                                  {'networks': networks}))
+        LOG.info("Wifi connections scanned: %s" % networks)
 
     @staticmethod
     def get_quality(quality):
         values = quality.split("/")
         return float(values[0] / values[1])
 
-
     def connect(self, event=None):
         if event and event.metadata:
+            ssid = event.metadata.get("ssid")
+            passkey = event.metadata.get("pass")
+            LOG.info("Connecting to: %s" % ssid)
             try:
-                ssid = event.metadata.get("ssid")
-                passkey = event.metadata.get("pass")
                 cell = self.cells[ssid]
                 scheme = Scheme.for_cell(self.ap.iface, ssid, cell, passkey)
                 scheme.activate()
                 scheme.save()
                 self.client.emit(Message("mycroft.wifi.connected",
                                          {'connected': True}))
+                LOG.info("Wifi connected to: %s" + ssid)
             except Exception as e:
-                LOGGER.error("Wifi Client error: {0}".format(e))
+                LOG.warn("Unable to connect to: %s" + ssid)
+                LOG.error("Error: {0}".format(e))
                 self.client.emit(Message("mycroft.wifi.connected",
                                          {'connected': False}))
 
     def stop(self, event=None):
+        LOG.info("Stopping access point...")
         self.ap.down()
-        # TODO - STOP EVERYTHING!!!!
-        pass
+        LOG.info("Access point stopped!")
 
     def run(self):
         try:
             self.client.run_forever()
         except Exception as e:
-            LOGGER.error("Wifi Client error: {0}".format(e))
+            LOG.error("Error: {0}".format(e))
             self.stop()
 
 
