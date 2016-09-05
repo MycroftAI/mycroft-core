@@ -29,7 +29,7 @@ class ESpeak(TTS):
     def __init__(self, lang, voice):
         super(ESpeak, self).__init__(lang, voice)
 
-    def execute(self, sentence):
+    def execute(self, sentence, client):
         subprocess.call(
             ['espeak', '-v', self.lang + '+' + self.voice, sentence])
 

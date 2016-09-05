@@ -41,7 +41,7 @@ class TTS(object):
         self.filename = filename
 
     @abc.abstractmethod
-    def execute(self, sentence):
+    def execute(self, sentence, client):
         pass
 
 

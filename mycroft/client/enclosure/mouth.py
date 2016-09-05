@@ -17,6 +17,7 @@
 
 
 from mycroft.util.log import getLogger
+import time
 
 __author__ = 'jdorleans'
 
@@ -41,6 +42,7 @@ class EnclosureMouth:
         self.client.on('enclosure.mouth.think', self.think)
         self.client.on('enclosure.mouth.listen', self.listen)
         self.client.on('enclosure.mouth.smile', self.smile)
+        self.client.on('enclosure.mouth.viseme', self.viseme)
         self.client.on('enclosure.mouth.text', self.text)
 
     def reset(self, event=None):
@@ -57,6 +59,22 @@ class EnclosureMouth:
 
     def smile(self, event=None):
         self.writer.write("mouth.smile")
+
+    def viseme(self, event=None):
+        visCmds = ''
+        if event and event.metadata:
+            visCmds = event.metadata.get("code", visCmds)
+            # visCmds will be string of viseme codes and cumulative durations
+            # ex:  '0:0.34,1:1.23,0:1.32,'
+            lisPairs = visCmds.split(",")
+            timeStart = time.time()
+            for pair in lisPairs:
+                vis_dur = pair.split(":")
+                if vis_dur[0] >= "0" and vis_dur[0] <= "6":
+                    elap = time.time() - timeStart
+                    self.writer.write("mouth.viseme=" + vis_dur[0])
+                    if elap < float(vis_dur[1]):
+                        time.sleep(float(vis_dur[1]) - elap)
 
     def text(self, event=None):
         text = ""

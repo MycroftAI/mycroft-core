@@ -64,7 +64,7 @@ def mute_and_speak(utterance):
     try:
         logger.info("Speak: " + utterance)
         loop.mute()
-        tts.execute(utterance)
+        tts.execute(utterance, client)
     finally:
         loop.unmute()
         mutex.release()
