@@ -34,16 +34,16 @@ var WS = {
         });
     },
 
-    send: function (title, data) {
+    send: function (type, data) {
         this.ws.send(JSON.stringify({
-            message_title: title,
+            message_type: type,
             metadata: data
         }));
     },
 
-    addMessageListener: function (title, callback) {
-        this.listeners[title] = this.listeners[title] || [];
-        this.listeners[title].push(callback);
+    addMessageListener: function (type, callback) {
+        this.listeners[type] = this.listeners[type] || [];
+        this.listeners[type].push(callback);
     }
 
 };
