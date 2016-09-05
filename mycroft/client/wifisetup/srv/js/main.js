@@ -67,6 +67,13 @@ var WifiSetup = {
             imgLock = null;
 
         showPanel("list-panel");
+        
+        networks = networks.sort(function(a,b){
+            if (a.quality < b.quality){
+                return 1;
+            }
+            return 0;
+        });
 
         Object.keys(networks).forEach(function (network) {
             li = document.createElement("li");
