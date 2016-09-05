@@ -29,7 +29,7 @@ class SpdSay(TTS):
     def __init__(self, lang, voice):
         super(SpdSay, self).__init__(lang, voice)
 
-    def execute(self, sentence):
+    def execute(self, sentence, client):
         subprocess.call(
             ['spd-say', '-l', self.lang, '-t', self.voice, sentence])
 
