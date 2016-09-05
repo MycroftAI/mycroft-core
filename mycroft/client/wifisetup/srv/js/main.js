@@ -104,6 +104,7 @@ var WifiSetup = {
     },
 
     sendScan: function () {
+        showPanel("loading");
         WS.send("mycroft.wifi.scan");
     },
 
