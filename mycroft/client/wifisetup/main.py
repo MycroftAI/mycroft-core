@@ -154,8 +154,8 @@ class WiFi:
                 cell = self.cells[ssid]
                 interface = self.interfaces[1]
                 scheme = Scheme.for_cell(interface, ssid, cell, passkey)
-                scheme.activate()
                 scheme.save()
+                scheme.activate()
                 self.client.emit(Message("mycroft.wifi.connected",
                                          {'connected': True}))
                 LOG.info("Wifi connected to: %s" % ssid)
