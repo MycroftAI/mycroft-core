@@ -35,28 +35,17 @@ LOG = getLogger("WiFiClient")
 
 
 def bash_command(command):
-    result = None
     try:
         proc = subprocess.Popen(command,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
         stdout, stderr = proc.communicate()
         if stdout:
-            result = {
-                'exit': 0, 'returncode': proc.returncode, 'stdout': stdout}
+            LOG.info({'code': proc.returncode, 'stdout': stdout})
         if stderr:
-            result = {'exit': 0,
-                      'returncode': proc.returncode,
-                      'stdout': stderr}
-    except OSError as e:
-        result = {'exit': 1,
-                  'os_errno': e.errno,
-                  'os_stderr': e.strerror,
-                  'os_filename': e.filename}
-    except:
-        result = {'exit': 2, 'sys': sys.exc_info()[0]}
-
-    return result
+            LOG.info({'code': proc.returncode, 'stderr': stderr})
+    except Exception as e:
+        LOG.error("Error: {0}".format(e))
 
 
 class AccessPoint:
