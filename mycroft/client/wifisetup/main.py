@@ -123,15 +123,15 @@ class WiFi:
         LOG.info("Scanning wifi connections...")
         networks = {}
         self.cells = {}
-        interface = pyw.winterfaces()[0]
+        self.interfaces = pyw.winterfaces()
 
-        for cell in Cell.all(interface):
+        for cell in Cell.all(self.interfaces[0]):
             update = True
             quality = self.get_quality(cell.quality)
             if networks.__contains__(cell.ssid):
                 update = networks.get(cell.ssid).get("quality") < quality
             if update and cell.ssid:
-                self.cells[cell.sid] = cell
+                self.cells[cell.ssid] = cell
                 networks[cell.ssid] = {
                     'quality': quality,
                     'encrypted': cell.encrypted
@@ -143,7 +143,7 @@ class WiFi:
     @staticmethod
     def get_quality(quality):
         values = quality.split("/")
-        return float(values[0] / values[1])
+        return float(values[0]) / float(values[1])
 
     def connect(self, event=None):
         if event and event.metadata:
@@ -152,14 +152,15 @@ class WiFi:
             LOG.info("Connecting to: %s" % ssid)
             try:
                 cell = self.cells[ssid]
-                scheme = Scheme.for_cell(self.ap.iface, ssid, cell, passkey)
+                interface = self.interfaces[1]
+                scheme = Scheme.for_cell(interface, ssid, cell, passkey)
                 scheme.activate()
                 scheme.save()
                 self.client.emit(Message("mycroft.wifi.connected",
                                          {'connected': True}))
-                LOG.info("Wifi connected to: %s" + ssid)
+                LOG.info("Wifi connected to: %s" % ssid)
             except Exception as e:
-                LOG.warn("Unable to connect to: %s" + ssid)
+                LOG.warn("Unable to connect to: %s" % ssid)
                 LOG.error("Error: {0}".format(e))
                 self.client.emit(Message("mycroft.wifi.connected",
                                          {'connected': False}))
