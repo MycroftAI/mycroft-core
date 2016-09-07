@@ -77,7 +77,7 @@ class DeviceApi(Api):
 
     def activate(self, state, token):
         return self.request({
-            "path": "/" + self.identity.uuid + "/activate",
+            "path": "/activate",
             "body": {"state": state, "token": token}
         })
 
