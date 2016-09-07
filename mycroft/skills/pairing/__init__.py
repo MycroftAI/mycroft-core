@@ -21,7 +21,6 @@ from adapt.intent import IntentBuilder
 from os.path import dirname
 
 from mycroft.api import DeviceApi
-from mycroft.identity import IdentityManager
 from mycroft.skills.core import MycroftSkill
 
 
@@ -33,7 +32,6 @@ class PairingSkill(MycroftSkill):
         self.state = str(uuid4())
         self.delay = 10
         self.activator = None
-        self.identity = IdentityManager().get()
 
     def initialize(self):
         self.load_data_files(dirname(__file__))
