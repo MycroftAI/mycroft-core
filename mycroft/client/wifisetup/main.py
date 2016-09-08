@@ -16,12 +16,12 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 import subprocess
 import sys
-import uuid
+from time import sleep
 
 from pyric import pyw
 from wifi import Cell
-from wifi.scheme import Scheme
 
+from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.client.wifisetup.wifi_util import *
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
@@ -34,53 +34,60 @@ __author__ = 'aatchison'
 LOG = getLogger("WiFiClient")
 
 
-def bash_command(command):
+def cli(command):
+    result = None
     try:
         proc = subprocess.Popen(command,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
         stdout, stderr = proc.communicate()
         if stdout:
-            LOG.info({'code': proc.returncode, 'stdout': stdout})
+            result = {'code': proc.returncode, 'stdout': stdout}
         if stderr:
-            LOG.info({'code': proc.returncode, 'stderr': stderr})
+            result = {'code': proc.returncode, 'stderr': stderr}
     except Exception as e:
         LOG.error("Error: {0}".format(e))
+    LOG.error(result)
+    return result
 
 
 class AccessPoint:
     def __init__(self):
-        self.iface = 'uap0'
+        self.iface = 'p2p-wlan0-0'
         self.ip = '172.24.1.1'
-        self.ip_start = '172.24.1.10'
-        self.ip_end = '172.24.1.20'
+        self.ip_start = '172.24.1.50'
+        self.ip_end = '172.24.1.150'
+        self.password = None
 
     def up(self):
         try:
-            ap = pyw.getcard(self.iface)
+            card = pyw.getcard(self.iface)
         except:
-            interface = pyw.winterfaces()[0]
-            card = pyw.getcard(interface)
-            pyw.pwrsaveset(card, False)
-            ap = pyw.phyadd(card, self.iface, 'AP')
-        pyw.inetset(ap, self.ip)
+            cli(['wpa_cli', 'p2p_set', 'ssid_postfix', '_MYCROFT'])
+            cli(['wpa_cli', 'p2p_group_add'])
+            self.password = self.get_password()
+            self.iface = self.get_iface()
+            card = pyw.getcard(self.iface)
+        pyw.inetset(card, self.ip)
 
         LOG.info(write_dnsmasq(
-            self.iface, self.ip, self.ip_start,
-            self.ip_end
+            self.iface, self.ip, self.ip_start, self.ip_end
         ))
-        LOG.info(write_hostapd_conf(
-            self.iface, 'nl80211', 'mycroft-' + str(uuid.getnode()), str(6)
-        ))
-        LOG.info(write_default_hostapd('/etc/hostapd/hostapd.conf'))
-        bash_command(['systemctl', 'restart', 'dnsmasq.service'])
-        bash_command(['systemctl', 'restart', 'hostapd.service'])
+        cli(['systemctl', 'restart', 'dnsmasq.service'])
+
+    def get_password(self):
+        result = cli(['wpa_cli', 'p2p_get_passphrase'])
+        return str(result.get("stdout", "").split("\n")[0])
+
+    def get_iface(self):
+        for iface in pyw.winterfaces():
+            if "p2p" in iface:
+                return iface
 
     def down(self):
-        bash_command(['systemctl', 'stop', 'hostapd.service'])
-        bash_command(['systemctl', 'stop', 'dnsmasq.service'])
-        bash_command(['systemctl', 'disable', 'hostapd.service'])
-        bash_command(['systemctl', 'disable', 'dnsmasq.service'])
+        cli(['systemctl', 'stop', 'dnsmasq.service'])
+        cli(['systemctl', 'disable', 'dnsmasq.service'])
+        cli(['wpa_cli', 'p2p_group_remove', self.iface])
         LOG.info(restore_system_files())
 
 
@@ -88,6 +95,7 @@ class WiFi:
     def __init__(self):
         self.ap = AccessPoint()
         self.client = WebsocketClient()
+        self.enclosure = EnclosureAPI(self.client)
         self.config = ConfigurationManager.get().get('WiFiClient')
         self.client.on('mycroft.wifi.start', self.start)
         self.client.on('mycroft.wifi.stop', self.stop)
@@ -106,6 +114,7 @@ class WiFi:
         self.client.emit(Message("speak", metadata={
             'utterance': "Initializing wireless setup mode."}))
         self.ap.up()
+        self.enclosure.mouth_text(self.ap.password)
         LOG.info("Access point started!")
 
     def scan(self, event=None):
@@ -139,20 +148,37 @@ class WiFi:
             ssid = event.metadata.get("ssid")
             passkey = event.metadata.get("pass")
             LOG.info("Connecting to: %s" % ssid)
-            try:
-                cell = self.cells[ssid]
-                interface = self.interfaces[1]
-                scheme = Scheme.for_cell(interface, ssid, cell, passkey)
-                scheme.save()
-                scheme.activate()
-                self.client.emit(Message("mycroft.wifi.connected",
-                                         {'connected': True}))
-                LOG.info("Wifi connected to: %s" % ssid)
-            except Exception as e:
-                LOG.warn("Unable to connect to: %s" % ssid)
-                LOG.error("Error: {0}".format(e))
-                self.client.emit(Message("mycroft.wifi.connected",
-                                         {'connected': False}))
+
+            result = cli(['wpa_cli', '-iwlan0', 'add_network'])
+            net_id = self.get_result(result)
+            cli(['wpa_cli', '-iwlan0', 'set_network', net_id, 'ssid', ssid])
+            if passkey:
+                cli(['wpa_cli', '-iwlan0', 'set_network', net_id, 'psk', passkey])
+            else:
+                cli(['wpa_cli', '-iwlan0', 'set_network', net_id, 'key_mgmt', 'NONE'])
+            cli(['wpa_cli', '-iwlan0', 'enable', net_id])
+
+            connected = self.get_connected()
+            self.client.emit(Message("mycroft.wifi.connected",
+                                     {'connected': connected}))
+            LOG.info("Wifi connection status to: %s" % ssid)
+
+    def get_connected(self):
+        retry = 22
+        connected = self.is_connected()
+        while not connected:
+            connected = self.is_connected()
+            retry -= 1
+            sleep(1)
+        return connected
+
+    def is_connected(self):
+        result = cli(['wpa_cli', '-iwlan0', 'status', '|', 'grep', 'state'])
+        return self.get_result(result) == "wpa_state=COMPLETED"
+
+    def get_result(self, result):
+        return str(result.get("stdout", "").split("\n")[0])
+
 
     def stop(self, event=None):
         LOG.info("Stopping access point...")
