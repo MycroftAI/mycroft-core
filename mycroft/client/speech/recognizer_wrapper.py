@@ -71,15 +71,19 @@ class IBMRecognizerWrapper(object):
             audio, username, password, language=language, show_all=show_all)
 
 
-class CerberusGoogleProxy(object):
+class MycroftRecognizer(object):
     def __init__(self, _):
         self.version = get_version()
 
     def transcribe(
             self, audio, language="en-US", show_all=False, metrics=None):
+
+        # FIXME - Refactor
+        raise CerberusAccessDenied()
+
         timer = Stopwatch()
         timer.start()
-        identity = IdentityManager().get()
+        identity = IdentityManager.get()
         headers = {'Authorization': 'Bearer ' + identity.token}
         url = ConfigurationManager.get().get("server").get("url")
         response = requests.post(url +
@@ -128,7 +132,7 @@ class CerberusGoogleProxy(object):
 
 
 RECOGNIZER_IMPLS = {
-    'mycroft': CerberusGoogleProxy,
+    'mycroft': MycroftRecognizer,
     'google': GoogleRecognizerWrapper,
     'wit': WitRecognizerWrapper,
     'ibm': IBMRecognizerWrapper

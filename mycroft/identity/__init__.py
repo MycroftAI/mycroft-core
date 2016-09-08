@@ -28,21 +28,25 @@ class DeviceIdentity(object):
 
 
 class IdentityManager(object):
-    FILE = 'identity.json'
+    __identity = None
 
-    def __init__(self):
-        self.file_system = FileSystemAccess('identity')
-        self.identity = DeviceIdentity()
-        self.load()
+    @staticmethod
+    def load():
+        try:
+            with FileSystemAccess('identity').open('identity.json', 'r') as f:
+                IdentityManager.__identity = DeviceIdentity(**json.load(f))
+        except:
+            IdentityManager.__identity = DeviceIdentity()
 
-    def load(self):
-        with self.file_system.open(self.FILE, 'r') as f:
-            self.identity = DeviceIdentity(**json.load(f))
+    @staticmethod
+    def save(uuid, token):
+        IdentityManager.__identity.uuid = uuid
+        IdentityManager.__identity.token = token
+        with FileSystemAccess('identity').open('identity.json', 'w') as f:
+            json.dump(IdentityManager.__identity.__dict__, f)
 
-    def save(self, identity):
-        self.identity = identity
-        with self.file_system.open(self.FILE, 'w') as f:
-            json.dump(self.identity, f)
-
-    def get(self):
-        return self.identity
+    @staticmethod
+    def get():
+        if not IdentityManager.__identity:
+            IdentityManager.load()
+        return IdentityManager.__identity

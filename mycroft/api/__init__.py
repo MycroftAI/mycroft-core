@@ -14,14 +14,14 @@ class Api(object):
         config_server = config.get("server")
         self.url = config_server.get("url")
         self.version = config_server.get("version")
-        self.identity = IdentityManager().get()
+        self.identity = IdentityManager.get()
 
     def request(self, params):
         method = params.get("method", "GET")
         headers = self.build_headers(params)
         body = self.build_body(params)
         url = self.build_url(params)
-        response = requests.request(method, url, headers=headers, data=body)
+        response = requests.request(method, url, headers=headers, json=body)
         return self.get_response(response)
 
     @staticmethod
@@ -54,7 +54,7 @@ class Api(object):
     def build_body(self, params):
         body = params.get("body")
         if body and params["headers"]["Content-Type"] == "application/json":
-            for k, v in body:
+            for k, v in body.iteritems():
                 if v == "":
                     body[k] = None
         params["body"] = body
@@ -77,6 +77,7 @@ class DeviceApi(Api):
 
     def activate(self, state, token):
         return self.request({
+            "method": "POST",
             "path": "/activate",
             "body": {"state": state, "token": token}
         })

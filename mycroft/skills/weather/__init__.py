@@ -50,7 +50,7 @@ class WeatherSkill(MycroftSkill):
     @property
     def owm(self):
         return OWM(API_key=self.config.get('api_key', ''),
-                   identity=IdentityManager().get())
+                   identity=IdentityManager.get())
 
     def initialize(self):
         self.load_data_files(dirname(__file__))
