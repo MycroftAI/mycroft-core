@@ -21,6 +21,7 @@ from adapt.intent import IntentBuilder
 from os.path import dirname
 
 from mycroft.api import DeviceApi
+from mycroft.identity import IdentityManager
 from mycroft.skills.core import MycroftSkill
 
 
@@ -54,8 +55,10 @@ class PairingSkill(MycroftSkill):
 
     def activate(self):
         try:
-            self.api.activate(self.state, self.data.get("token"))
+            token = self.data.get("token")
+            uuid = self.api.activate(self.state, token)
             self.speak_dialog("pairing.paired")
+            IdentityManager.save(uuid.get("uuid"), token)
         except:
             self.data["expiration"] -= self.delay
 
@@ -64,6 +67,7 @@ class PairingSkill(MycroftSkill):
                 self.handle_pairing()
             else:
                 self.activator = Timer(self.delay, self.activate)
+                self.activator.start()
 
     def is_paired(self):
         try:

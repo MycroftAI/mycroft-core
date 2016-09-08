@@ -82,18 +82,13 @@ class CerberusWolframAlphaClient(object):
         """
         Query Wolfram|Alpha with query using the v2.0 API
         """
-        response = {}
-        identity = IdentityManager().get()
-
-        if identity:
-            bearer_token = 'Bearer %s:%s' % \
-                           (identity.device_id, identity.token)
-            query = urllib.parse.urlencode(dict(input=query))
-            url = 'https://cerberus.mycroft.ai/wolframalpha/v2/query?' + query
-            headers = {'Authorization': bearer_token}
-            response = requests.get(url, headers=headers)
-            if response.status_code == 401:
-                raise CerberusAccessDenied()
+        identity = IdentityManager.get()
+        query = urllib.parse.urlencode(dict(input=query))
+        url = 'https://cerberus.mycroft.ai/wolframalpha/v2/query?' + query
+        headers = {'Authorization': 'Bearer ' + identity.token}
+        response = requests.get(url, headers=headers)
+        if response.status_code == 401:
+            raise CerberusAccessDenied()
         return wolframalpha.Result(StringIO(response.content))
 
 
