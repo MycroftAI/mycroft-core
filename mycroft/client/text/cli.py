@@ -21,10 +21,10 @@ from threading import Thread, Lock
 
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
-from mycroft.tts import tts_factory
+from mycroft.tts import TTSFactory
 from mycroft.util.log import getLogger
 
-tts = tts_factory.create()
+tts = TTSFactory.create()
 client = None
 mutex = Lock()
 logger = getLogger("CLIClient")

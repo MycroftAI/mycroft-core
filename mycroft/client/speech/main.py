@@ -26,13 +26,13 @@ from mycroft.client.speech.listener import RecognizerLoop
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
-from mycroft.tts import tts_factory
+from mycroft.tts import TTSFactory
 from mycroft.util import kill
 from mycroft.util.log import getLogger
 
 logger = getLogger("SpeechClient")
 client = None
-tts = tts_factory.create()
+tts = TTSFactory.create()
 mutex = Lock()
 loop = None
 
