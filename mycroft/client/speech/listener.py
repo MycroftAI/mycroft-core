@@ -25,12 +25,11 @@ import speech_recognition as sr
 
 from mycroft.client.speech.local_recognizer import LocalRecognizer
 from mycroft.client.speech.mic import MutableMicrophone, ResponsiveRecognizer
-from mycroft.client.speech.recognizer_wrapper import \
-    RemoteRecognizerWrapperFactory
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.message import Message
 from mycroft.metrics import MetricsAggregator
 from mycroft.session import SessionManager
+from mycroft.stt import STTFactory
 from mycroft.util import CerberusAccessDenied, connected
 from mycroft.util.log import getLogger
 
@@ -82,16 +81,16 @@ class AudioConsumer(threading.Thread):
     # In seconds, the minimum audio size to be sent to remote STT
     MIN_AUDIO_SIZE = 0.5
 
-    def __init__(self, state, queue, emitter, wakeup_recognizer,
-                 mycroft_recognizer, remote_recognizer):
+    def __init__(self, state, queue, emitter, stt,
+                 wakeup_recognizer, mycroft_recognizer):
         threading.Thread.__init__(self)
         self.daemon = True
         self.queue = queue
         self.state = state
         self.emitter = emitter
+        self.stt = stt
         self.wakeup_recognizer = wakeup_recognizer
         self.mycroft_recognizer = mycroft_recognizer
-        self.remote_recognizer = remote_recognizer
         self.metrics = MetricsAggregator()
 
     def run(self):
@@ -142,8 +141,7 @@ class AudioConsumer(threading.Thread):
     def _create_remote_stt_runnable(self, audio, utterances):
         def runnable():
             try:
-                text = self.remote_recognizer.transcribe(
-                    audio, metrics=self.metrics).lower()
+                text = self.stt.execute(audio).lower()
             except sr.UnknownValueError:
                 pass
             except sr.RequestError as e:
@@ -229,18 +227,10 @@ class RecognizerLoop(pyee.EventEmitter):
     def start_async(self):
         self.state.running = True
         queue = Queue()
-        AudioProducer(self.state,
-                      queue,
-                      self.microphone,
-                      self.remote_recognizer,
-                      self).start()
-        AudioConsumer(self.state,
-                      queue,
-                      self,
-                      self.wakeup_recognizer,
-                      self.mycroft_recognizer,
-                      RemoteRecognizerWrapperFactory.wrap_recognizer(
-                          self.remote_recognizer)).start()
+        AudioProducer(self.state, queue, self.microphone,
+                      self.remote_recognizer, self).start()
+        AudioConsumer(self.state, queue, self, STTFactory.create(),
+                      self.wakeup_recognizer, self.mycroft_recognizer).start()
 
     def stop(self):
         self.state.running = False
