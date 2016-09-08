@@ -91,3 +91,16 @@ class DeviceApi(Api):
         return self.request({
             "path": "/" + self.identity.uuid + "/setting"
         })
+
+
+class STTApi(Api):
+    def __init__(self):
+        super(STTApi, self).__init__("stt")
+
+    def stt(self, audio, language):
+        return self.request({
+            "method": "POST",
+            "headers": {"Content-Type": "audio/x-flac"},
+            "path": "/stt?language=" + language,
+            "body": audio
+        })

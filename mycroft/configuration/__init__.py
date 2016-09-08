@@ -169,3 +169,14 @@ class ConfigurationManager(object):
             ConfigurationManager.load_local(locations)
 
         return ConfigurationManager.__config
+
+    @staticmethod
+    def update(config):
+        """
+        Update cached configuration with the new ``config``.
+        """
+        if not ConfigurationManager.__config:
+            ConfigurationManager.load_defaults()
+
+        if config:
+            ConfigurationManager.__config.update(config)
