@@ -64,8 +64,7 @@ class AccessPoint:
         try:
             card = pyw.getcard(self.iface)
         except:
-            wpa('p2p_set', 'ssid_postfix', '_MYCROFT')
-            wpa('p2p_group_add')
+            wpa('p2p_group_add', 'persistent=0')
             self.password = wpa('p2p_get_passphrase')
             self.iface = self.get_iface()
             card = pyw.getcard(self.iface)
