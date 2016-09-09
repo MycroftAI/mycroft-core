@@ -44,8 +44,12 @@ def cli(*args):
 
 
 def wpa(*args):
+    idx = 0
     result = cli('wpa_cli', *args)
-    return str(result.get("stdout", "\n").split("\n")[1])
+    out = result.get("stdout", "\n")
+    if "interface" in out:
+        idx = 1
+    return str(out.split("\n")[idx])
 
 
 def sysctrl(*args):
