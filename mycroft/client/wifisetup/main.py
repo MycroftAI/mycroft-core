@@ -165,7 +165,7 @@ class WiFi:
 
             connected = self.get_connected()
             if connected:
-                wpa('save_config')
+                wpa('-i', iface, 'save_config')
 
             self.client.emit(Message("mycroft.wifi.connected",
                                      {'connected': connected}))
