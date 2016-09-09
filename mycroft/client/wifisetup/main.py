@@ -162,20 +162,22 @@ class WiFi:
             else:
                 wpa('-i', iface, 'set_network', net_id, 'key_mgmt', 'NONE')
             wpa('-i', iface, 'enable', net_id)
-            wpa('save_config')
 
             connected = self.get_connected()
+            if connected:
+                wpa('save_config')
+
             self.client.emit(Message("mycroft.wifi.connected",
                                      {'connected': connected}))
             LOG.info("Connection status for %s = %s" % (ssid, connected))
 
     def get_connected(self):
-        retry = 10
+        retry = 5
         connected = self.is_connected()
         while not connected and retry > 0:
-            connected = self.is_connected()
+            sleep(2)
             retry -= 1
-            sleep(1)
+            connected = self.is_connected()
         return connected
 
     def is_connected(self):
