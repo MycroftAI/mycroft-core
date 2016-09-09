@@ -45,7 +45,7 @@ def cli(*args):
 
 def wpa(*args):
     idx = 0
-    result = cli('wpa_cli', *args)
+    result = cli('wpa_cli', '-i', *args)
     out = result.get("stdout", "\n")
     if "interface" in out:
         idx = 1
@@ -57,7 +57,8 @@ def sysctrl(*args):
 
 
 class AccessPoint:
-    def __init__(self):
+    def __init__(self, wiface):
+        self.wiface = wiface
         self.iface = 'p2p-wlan0-0'
         self.ip = '172.24.1.1'
         self.ip_start = '172.24.1.50'
@@ -68,9 +69,9 @@ class AccessPoint:
         try:
             card = pyw.getcard(self.iface)
         except:
-            wpa('p2p_group_add', 'persistent=0')
-            self.password = wpa('p2p_get_passphrase')
+            wpa(self.wiface, 'p2p_group_add', 'persistent=0')
             self.iface = self.get_iface()
+            self.password = wpa(self.iface, 'p2p_get_passphrase')
             card = pyw.getcard(self.iface)
         pyw.inetset(card, self.ip)
 
@@ -87,13 +88,14 @@ class AccessPoint:
     def down(self):
         sysctrl('stop', 'dnsmasq.service')
         sysctrl('disable', 'dnsmasq.service')
-        wpa('p2p_group_remove', self.iface)
+        wpa(self.wiface, 'p2p_group_remove', self.iface)
         LOG.info(restore_system_files())
 
 
 class WiFi:
     def __init__(self):
-        self.ap = AccessPoint()
+        self.iface = pyw.winterfaces()[0]
+        self.ap = AccessPoint(self.iface)
         self.client = WebsocketClient()
         self.enclosure = EnclosureAPI(self.client)
         self.config = ConfigurationManager.get().get('WiFiClient')
@@ -116,14 +118,8 @@ class WiFi:
         self.client.emit(Message("speak", metadata={
             'utterance': "Initializing wireless setup mode."}))
         self.ap.up()
-        self.iface = self.get_iface()
         self.enclosure.mouth_text(self.ap.password)
         LOG.info("Access point started!\n%s" % self.ap.__dict__)
-
-    def get_iface(self):
-        for iface in pyw.winterfaces():
-            if iface != self.ap.iface:
-                return iface
 
     def scan(self, event=None):
         LOG.info("Scanning wifi connections...")
@@ -150,22 +146,21 @@ class WiFi:
 
     def connect(self, event=None):
         if event and event.metadata:
-            iface = self.get_iface()
             ssid = '"' + event.metadata.get("ssid") + '"'
             LOG.info("Connecting to: %s" % ssid)
 
-            net_id = wpa('-i', iface, 'add_network')
-            wpa('-i', iface, 'set_network', net_id, 'ssid', ssid)
+            net_id = wpa(self.iface, 'add_network')
+            wpa(self.iface, 'set_network', net_id, 'ssid', ssid)
             if event.metadata.__contains__("pass"):
                 passkey = '"' + event.metadata.get("pass") + '"'
-                wpa('-i', iface, 'set_network', net_id, 'psk', passkey)
+                wpa(self.iface, 'set_network', net_id, 'psk', passkey)
             else:
-                wpa('-i', iface, 'set_network', net_id, 'key_mgmt', 'NONE')
-            wpa('-i', iface, 'enable', net_id)
+                wpa(self.iface, 'set_network', net_id, 'key_mgmt', 'NONE')
+            wpa(self.iface, 'enable', net_id)
 
             connected = self.get_connected()
             if connected:
-                wpa('-i', iface, 'save_config')
+                wpa(self.iface, 'save_config')
 
             self.client.emit(Message("mycroft.wifi.connected",
                                      {'connected': connected}))
