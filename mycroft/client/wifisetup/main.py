@@ -148,13 +148,13 @@ class WiFi:
     def connect(self, event=None):
         if event and event.metadata:
             iface = self.get_iface()
-            ssid = event.metadata.get("ssid")
-            passkey = event.metadata.get("pass")
+            ssid = '"' + event.metadata.get("ssid") + '"'
             LOG.info("Connecting to: %s" % ssid)
 
             net_id = wpa('-i', iface, 'add_network')
             wpa('-i', iface, 'set_network', net_id, 'ssid', ssid)
-            if passkey:
+            if event.metadata.__contains__("pass"):
+                passkey = '"' + event.metadata.get("pass") + '"'
                 wpa('-i', iface, 'set_network', net_id, 'psk', passkey)
             else:
                 wpa('-i', iface, 'set_network', net_id, 'key_mgmt', 'NONE')
