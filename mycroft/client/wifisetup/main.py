@@ -15,9 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 import sys
+from SimpleHTTPServer import SimpleHTTPRequestHandler
+from SocketServer import TCPServer
 from subprocess import Popen, PIPE
+from threading import Thread
 from time import sleep
 
+import os
+from os.path import join, dirname, realpath
 from pyric import pyw
 from wifi import Cell
 
@@ -54,6 +59,21 @@ def wpa(*args):
 
 def sysctrl(*args):
     return cli('systemctl', *args)
+
+
+class WebServer(Thread):
+    DIR = dirname(realpath(__file__))
+
+    def __init__(self, host, port):
+        super(WebServer, self).__init__()
+        self.server = TCPServer((host, port), SimpleHTTPRequestHandler)
+
+    def run(self):
+        os.chdir(join(self.DIR, 'web'))
+        self.server.serve_forever()
+
+    def stop(self):
+        self.server.shutdown()
 
 
 class AccessPoint:
@@ -118,6 +138,8 @@ class WiFi:
         self.client.emit(Message("speak", metadata={
             'utterance': "Initializing wireless setup mode."}))
         self.ap.up()
+        self.server = WebServer(self.ap.ip, 80)
+        self.server.start()
         self.enclosure.mouth_text(self.ap.password)
         LOG.info("Access point started!\n%s" % self.ap.__dict__)
 
@@ -182,6 +204,7 @@ class WiFi:
     def stop(self, event=None):
         LOG.info("Stopping access point...")
         self.ap.down()
+        self.server.stop()
         LOG.info("Access point stopped!")
 
     def run(self):
