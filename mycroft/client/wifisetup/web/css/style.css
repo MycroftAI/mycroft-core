@@ -25,7 +25,7 @@
 }
 
 .panel .body {
-    min-height: 100px;
+    min-height: 520px;
     display: table;
     list-style: none;
     padding: 0;
@@ -39,13 +39,28 @@
     border-bottom: 1px solid #DDD;
     padding: 10px;
     box-sizing: border-box;
+    cursor: pointer;
+    height: 61px;
+    overflow: hidden;
+}
+
+.panel .body li div {
+    width: 100%;
+    height: 40px;
+    transition: 500ms;
+    display: none;
+}
+
+.panel .body li div.show {
+    transition: 500ms;
+    display: table;
 }
 
 .panel .body li span {
     float: left;
     font-size: 18px;
     margin: 9px 0;
-    max-width: calc(100% - 60px);
+    width: calc(100% - 60px);
     text-overflow: ellipsis;
     word-wrap: break-word;
 }
@@ -56,12 +71,86 @@
 }
 
 .panel .body li img.lock {
-    width: 12px;
+    width: 11px;
     position: relative;
     right: 0;
     bottom: 0;
-    top: 25px;
+    top: 24px;
     left: 40px;
+}
+
+.panel .body li .connect-item img, .panel .body li .error-item img {
+    width: 20px;
+    height: 20px;
+    padding: 10px;
+}
+
+.panel .body li .connect-item label {
+    color: #488fe2;
+    padding: 9.5px 10px 9.5px 0;
+    display: table;
+    float: left;
+    font-size: 18px;
+    width: 80px;
+    text-align: left;
+}
+
+.panel .body li .connect-item label.public {
+    width: calc(100% - 60px);
+}
+
+.panel .body li .connect-item input {
+    padding: 5px;
+    height: 26px;
+    border: 1px solid #DDD;
+    width: calc(100% - 160px);
+}
+
+.panel .body li .error-item span {
+    color: #ff6565;
+    font-weight: bold;
+    padding: 2px;
+    display: table;
+    float: left;
+    font-size: 16px;
+    text-align: left;
+    width: calc(100% - 60px);
+}
+
+#success .title {
+    background: #b8e986;
+    color: #2b3344;
+}
+
+#success span img {
+    position: relative;
+    top: 4px;
+}
+
+#success small {
+    text-align: left;
+    width: 80%;
+    margin: 35px auto;
+    font-size: 18px;
+    display: table;
+    color: #777;
+}
+
+div.connected span {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+div.connected span:not(.connected) {
+    color: #488fe2;
+}
+
+span.connected {
+    display: table;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 14px !important;
+    color: #777;
 }
 
 .backButton {
@@ -118,8 +207,8 @@
     padding: 10px;
 }
 
-#passBtn {
-    margin: 30px auto;
+.button {
+    margin: 0 auto;
     display: table;
     background: #4a90e2;
     border: none;
@@ -127,6 +216,7 @@
     border-radius: 5px;
     color: #FFF;
     cursor: pointer;
+    text-decoration: none;
 }
 
 .alert {
@@ -150,6 +240,21 @@
 
 .hide {
     display: none;
+}
+
+#home span, #success span {
+    color: #4a4a4a;
+    font-weight: bold;
+    font-size: 22px;
+    text-align: left;
+    width: 80%;
+    margin: 80px auto 0 auto;
+    display: table;
+}
+
+#home img {
+    width: 100%;
+    margin: 60px 0;
 }
 
 @media (min-width: 500px) {

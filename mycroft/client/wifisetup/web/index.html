@@ -10,25 +10,19 @@
     <script type="application/javascript" src="js/main.js"></script>
 </head>
 <body>
+
+<div id="home" class="panel hide">
+    <div class="title">HI, MYCROFT HERE</div>
+    <div class="body">
+        <span>This process is for connecting me to the internet through your wifi.</span>
+        <img src="img/connect.png"/>
+        <a id="connectBtn" class="button">LET'S CONNECT</a>
+    </div>
+</div>
+
 <div id="list-panel" class="panel hide">
     <div class="title">CHOOSE YOUR USUAL WIFI</div>
     <ul id="list" class="body"></ul>
-</div>
-
-<div id="connect" class="panel hide">
-    <div class="title">ENTER WIFI PASSWORD</div>
-    <div class="body">
-        <a id="backList" class="backButton"><img src="img/back.png"/><span>Back</span></a>
-        <div class="message">This process is for connecting me to the internet through your wifi.</div>
-        <div class="passForm">
-            <div id="formError" class="alert"></div>
-            <label>
-                PASSWORD
-                <input id="pass" type="password"/>
-            </label>
-            <a id="passBtn">DONE</a>
-        </div>
-    </div>
 </div>
 
 <div id="loading" class="panel">
@@ -37,5 +31,22 @@
         <div class="loader"></div>
     </div>
 </div>
+
+<div id="connecting" class="panel hide">
+    <div class="title">Connecting...</div>
+    <div class="body">
+        <div class="loader"></div>
+    </div>
+</div>
+
+<div id="success" class="panel hide">
+    <div class="title">CONNECTED</div>
+    <div class="body">
+        <span>I'm connected to the internet now. Feels goood <img src="img/love.png"/></span>
+        <small>Final step, register me so you can add new skills to my repertoire.</small>
+        <a class="button" href="https://mycroft.ai">REGISTER ME</a>
+    </div>
+</div>
+
 </body>
 </html>
