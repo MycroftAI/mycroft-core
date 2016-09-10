@@ -69,11 +69,15 @@ class WebServer(Thread):
         self.server = TCPServer((host, port), SimpleHTTPRequestHandler)
 
     def run(self):
+        LOG.info("Starting Web Server at %s:%s" % self.server.server_address)
         os.chdir(join(self.DIR, 'web'))
         self.server.serve_forever()
+        LOG.info("Web Server started!")
 
     def stop(self):
+        LOG.info("Stopping Web Server...")
         self.server.shutdown()
+        LOG.info("Web Server stopped!")
 
 
 class AccessPoint:
