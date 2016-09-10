@@ -31,7 +31,10 @@ var WifiSetup = {
 
         onConnected: function (data) {
             if (data.connected) {
-                showPanel("success");
+                WS.send("mycroft.wifi.stop");
+                setTimeout(function () {
+                    showPanel("success");
+                }, 2000);
             } else {
                 showPanel("list-panel");
                 this.renderErrorItem(this.selectedNetword.el);
@@ -196,6 +199,12 @@ var WifiSetup = {
             this.setListeners();
             showPanel("home");
             document.querySelector("#connectBtn").addEventListener("click", this.sendScan);
+            document.querySelector("#registerBtn").addEventListener("click", function () {
+                setTimeout(function() {
+                    location.href="https://mycroft.ai";
+                }, 2000);
+            });
+
         }
     }
     ;
