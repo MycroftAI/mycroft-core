@@ -150,16 +150,20 @@ class WiFi:
     def scan(self, event=None):
         LOG.info("Scanning wifi connections...")
         networks = {}
+        status = self.get_status()
 
         for cell in Cell.all(self.iface):
             update = True
+            ssid = cell.ssid
             quality = self.get_quality(cell.quality)
-            if networks.__contains__(cell.ssid):
-                update = networks.get(cell.ssid).get("quality") < quality
-            if update and cell.ssid:
-                networks[cell.ssid] = {
+
+            if networks.__contains__(ssid):
+                update = networks.get(ssid).get("quality") < quality
+            if update and ssid:
+                networks[ssid] = {
                     'quality': quality,
-                    'encrypted': cell.encrypted
+                    'encrypted': cell.encrypted,
+                    'connected': self.is_connected(ssid, status)
                 }
         self.client.emit(Message("mycroft.wifi.scanned",
                                  {'networks': networks}))
@@ -172,38 +176,49 @@ class WiFi:
 
     def connect(self, event=None):
         if event and event.metadata:
-            ssid = '"' + event.metadata.get("ssid") + '"'
-            LOG.info("Connecting to: %s" % ssid)
+            ssid = event.metadata.get("ssid")
+            connected = self.is_connected(ssid)
 
-            net_id = wpa(self.iface, 'add_network')
-            wpa(self.iface, 'set_network', net_id, 'ssid', ssid)
-            if event.metadata.__contains__("pass"):
-                passkey = '"' + event.metadata.get("pass") + '"'
-                wpa(self.iface, 'set_network', net_id, 'psk', passkey)
-            else:
-                wpa(self.iface, 'set_network', net_id, 'key_mgmt', 'NONE')
-            wpa(self.iface, 'enable', net_id)
-
-            connected = self.get_connected()
             if connected:
-                wpa(self.iface, 'save_config')
+                LOG.warn("Mycroft is already connected to %s" % ssid)
+            else:
+                LOG.info("Connecting to: %s" % ssid)
+                nid = wpa(self.iface, 'add_network')
+                wpa(self.iface, 'set_network', nid, 'ssid', '"' + ssid + '"')
+
+                if event.metadata.__contains__("pass"):
+                    psk = '"' + event.metadata.get("pass") + '"'
+                    wpa(self.iface, 'set_network', nid, 'psk', psk)
+                else:
+                    wpa(self.iface, 'set_network', nid, 'key_mgmt', 'NONE')
+
+                wpa(self.iface, 'enable', nid)
+                connected = self.get_connected(ssid)
+                if connected:
+                    wpa(self.iface, 'save_config')
 
             self.client.emit(Message("mycroft.wifi.connected",
                                      {'connected': connected}))
             LOG.info("Connection status for %s = %s" % (ssid, connected))
 
-    def get_connected(self):
-        retry = 5
-        connected = self.is_connected()
+    def get_status(self):
+        res = cli('wpa_cli', '-i', self.iface, 'status', '|', 'grep', 'state')
+        out = str(res.get("stdout"))
+        if out:
+            return dict(o.split("=") for o in out.split("\n")[:-1])
+
+    def get_connected(self, ssid, retry=5):
+        connected = self.is_connected(ssid)
         while not connected and retry > 0:
             sleep(2)
             retry -= 1
-            connected = self.is_connected()
+            connected = self.is_connected(ssid)
         return connected
 
-    def is_connected(self):
-        res = cli('wpa_cli', '-i', self.iface, 'status', '|', 'grep', 'state')
-        return "COMPLETED" in str(res.get("stdout"))
+    def is_connected(self, ssid, status=None):
+        status = status or self.get_status()
+        return status.get("ssid") == ssid and \
+               status.get("wpa_state") == "COMPLETED"
 
     def stop(self, event=None):
         LOG.info("Stopping access point...")
