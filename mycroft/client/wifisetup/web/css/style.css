@@ -145,6 +145,10 @@ div.connected span:not(.connected) {
     color: #488fe2;
 }
 
+div.connected .lock {
+    top: 3px !important;
+}
+
 span.connected {
     display: table;
     margin: 0 !important;
