@@ -23,7 +23,6 @@ from threading import Thread
 from time import sleep
 
 import os
-from mycroft.client.wifisetup.wifi_util import *
 from os.path import join, dirname, realpath
 from pyric import pyw
 from wifi import Cell
