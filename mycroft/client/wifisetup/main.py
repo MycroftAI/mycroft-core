@@ -17,17 +17,18 @@
 import sys
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 from SocketServer import TCPServer
+from shutil import copyfile
 from subprocess import Popen, PIPE
 from threading import Thread
 from time import sleep
 
 import os
+from mycroft.client.wifisetup.wifi_util import *
 from os.path import join, dirname, realpath
 from pyric import pyw
 from wifi import Cell
 
 from mycroft.client.enclosure.api import EnclosureAPI
-from mycroft.client.wifisetup.wifi_util import *
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
@@ -72,7 +73,6 @@ class WebServer(Thread):
         LOG.info("Starting Web Server at %s:%s" % self.server.server_address)
         os.chdir(join(self.DIR, 'web'))
         self.server.serve_forever()
-        LOG.info("Web Server started!")
 
     def stop(self):
         LOG.info("Stopping Web Server...")
@@ -81,6 +81,15 @@ class WebServer(Thread):
 
 
 class AccessPoint:
+    template = """interface={interface}
+bind-interfaces
+server={server}
+domain-needed
+bogus-priv
+dhcp-range={dhcp_range_start}, {dhcp_range_end}, 12h
+address=/#/{server}
+"""
+
     def __init__(self, wiface):
         self.wiface = wiface
         self.iface = 'p2p-wlan0-0'
@@ -98,10 +107,8 @@ class AccessPoint:
             self.password = wpa(self.iface, 'p2p_get_passphrase')
             card = pyw.getcard(self.iface)
         pyw.inetset(card, self.ip)
-
-        LOG.info(write_dnsmasq(
-            self.iface, self.ip, self.ip_start, self.ip_end
-        ))
+        copyfile('/etc/dnsmasq.conf', '/tmp/dnsmasq-bk.conf')
+        self.save()
         sysctrl('restart', 'dnsmasq.service')
 
     def get_iface(self):
@@ -113,7 +120,22 @@ class AccessPoint:
         sysctrl('stop', 'dnsmasq.service')
         sysctrl('disable', 'dnsmasq.service')
         wpa(self.wiface, 'p2p_group_remove', self.iface)
-        LOG.info(restore_system_files())
+        copyfile('/tmp/dnsmasq-bk.conf', '/etc/dnsmasq.conf')
+
+    def save(self):
+        data = {
+            "interface": self.iface,
+            "server": self.ip,
+            "dhcp_range_start": self.ip_start,
+            "dhcp_range_end": self.ip_end
+        }
+        try:
+            LOG.error("Writing to: /etc/dnsmasq.conf")
+            with open('/etc/dnsmasq.conf', 'w') as f:
+                f.write(self.template.format(**data))
+        except Exception as e:
+            LOG.error("Fail to write: /etc/dnsmasq.conf")
+            raise e
 
 
 class WiFi:
