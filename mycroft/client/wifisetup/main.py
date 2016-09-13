@@ -76,6 +76,7 @@ class WebServer(Thread):
     def stop(self):
         LOG.info("Stopping Web Server...")
         self.server.shutdown()
+        self.server.server_close()
         LOG.info("Web Server stopped!")
 
 
@@ -129,7 +130,7 @@ address=/#/{server}
             "dhcp_range_end": self.ip_end
         }
         try:
-            LOG.error("Writing to: /etc/dnsmasq.conf")
+            LOG.info("Writing to: /etc/dnsmasq.conf")
             with open('/etc/dnsmasq.conf', 'w') as f:
                 f.write(self.template.format(**data))
         except Exception as e:
