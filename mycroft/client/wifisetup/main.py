@@ -156,7 +156,7 @@ class WiFi:
     def first_setup(self):
         if str2bool(self.config.get('setup')):
             self.start()
-            ConfigurationManager.set('WiFiClient', 'must_start', False)
+            ConfigurationManager.set('WiFiClient', 'setup', False, True)
 
     def start(self, event=None):
         LOG.info("Starting access point...")

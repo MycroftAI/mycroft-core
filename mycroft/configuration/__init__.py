@@ -194,7 +194,7 @@ class ConfigurationManager(object):
         return ConfigurationManager.__config
 
     @staticmethod
-    def set(section, key, value):
+    def set(section, key, value, is_system=False):
         """
         Set a key in the user preferences
         """
@@ -203,7 +203,8 @@ class ConfigurationManager(object):
 
         ConfigurationManager.__config[section][key] = value
 
-        user_config = ConfigObj(USER_CONFIG)
-        user_config.setdefault(section, {})
-        user_config[section][key] = value
-        user_config.write()
+        location = SYSTEM_CONFIG if is_system else USER_CONFIG
+        config = ConfigObj(location)
+        config.setdefault(section, {})
+        config[section][key] = value
+        config.write()
