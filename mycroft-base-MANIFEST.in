@@ -8,3 +8,4 @@ include mycroft/skills/alarm/alarm.mp3
 include mycroft/skills/volume/blop-mark-diangelo.wav
 #include mycroft/tts/mycroft_voice_4.0.flitevox
 recursive-include mycroft/client/wifisetup/web/* *
+include mycroft/client/wifisetup/web/index.html
