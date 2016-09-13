@@ -244,7 +244,8 @@ class WiFi:
     def stop(self, event=None):
         LOG.info("Stopping access point...")
         self.ap.down()
-        self.server.stop()
+        if self.server:
+            self.server.stop()
         LOG.info("Access point stopped!")
 
     def run(self):
