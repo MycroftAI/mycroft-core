@@ -238,8 +238,8 @@ class WiFi:
 
     def is_connected(self, ssid, status=None):
         status = status or self.get_status()
-        return status.get("ssid") == ssid and \
-               status.get("wpa_state") == "COMPLETED"
+        return status.get("ssid") == ssid and status.get(
+            "wpa_state") == "COMPLETED"
 
     def stop(self, event=None):
         LOG.info("Stopping access point...")
