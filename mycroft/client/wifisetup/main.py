@@ -66,6 +66,7 @@ class WebServer(Thread):
 
     def __init__(self, host, port):
         super(WebServer, self).__init__()
+        self.daemon = True
         self.server = TCPServer((host, port), SimpleHTTPRequestHandler)
 
     def run(self):
