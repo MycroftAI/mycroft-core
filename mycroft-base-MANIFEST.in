@@ -7,4 +7,4 @@ recursive-include mycroft/skills/*/regex *
 include mycroft/skills/alarm/alarm.mp3
 include mycroft/skills/volume/blop-mark-diangelo.wav
 #include mycroft/tts/mycroft_voice_4.0.flitevox
-recursive-include mycroft/client/wifisetup/srv/* *
+recursive-include mycroft/client/wifisetup/web/* *
