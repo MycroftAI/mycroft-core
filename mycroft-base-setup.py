@@ -26,7 +26,7 @@ setup(
             'mycroft-echo-observer=mycroft.messagebus.client.ws:echo',
             'mycroft-audio-test=mycroft.util.audio_test:main',
             'mycroft-enclosure-client=mycroft.client.enclosure.enclosure:main',
-            'mycroft-wifi-setup-client=mycroft.client.wifisetup.wifisetup:main'
+            'mycroft-wifi-setup-client=mycroft.client.wifisetup.main:main'
         ]
     }
 )
