@@ -138,12 +138,14 @@ address=/#/{server}
 
 
 class WiFi:
+    NAME = "WiFiClient"
+
     def __init__(self):
         self.iface = pyw.winterfaces()[0]
         self.ap = AccessPoint(self.iface)
         self.client = WebsocketClient()
         self.enclosure = EnclosureAPI(self.client)
-        self.config = ConfigurationManager.get().get('WiFiClient')
+        self.config = ConfigurationManager.get().get(self.NAME)
         self.init_events()
         self.first_setup()
 
@@ -156,7 +158,6 @@ class WiFi:
     def first_setup(self):
         if str2bool(self.config.get('setup')):
             self.start()
-            ConfigurationManager.set('WiFiClient', 'setup', False, True)
 
     def start(self, event=None):
         LOG.info("Starting access point...")
@@ -217,6 +218,7 @@ class WiFi:
                 connected = self.get_connected(ssid)
                 if connected:
                     wpa(self.iface, 'save_config')
+                    ConfigurationManager.set(self.NAME, 'setup', False, True)
 
             self.client.emit(Message("mycroft.wifi.connected",
                                      {'connected': connected}))
@@ -238,8 +240,8 @@ class WiFi:
 
     def is_connected(self, ssid, status=None):
         status = status or self.get_status()
-        return status.get("ssid") == ssid and status.get(
-            "wpa_state") == "COMPLETED"
+        state = status.get("wpa_state")
+        return status.get("ssid") == ssid and state == "COMPLETED"
 
     def stop(self, event=None):
         LOG.info("Stopping access point...")
