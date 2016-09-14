@@ -66,17 +66,20 @@ class WebServer(Thread):
 
     def __init__(self, host, port):
         super(WebServer, self).__init__()
+        self.alive = False
         self.daemon = True
         self.server = TCPServer((host, port), SimpleHTTPRequestHandler)
 
     def run(self):
         LOG.info("Starting Web Server at %s:%s" % self.server.server_address)
         os.chdir(join(self.DIR, 'web'))
-        self.server.serve_forever()
+        self.alive = True
+        while self.alive:
+            self.server.handle_request()
 
     def stop(self):
         LOG.info("Stopping Web Server...")
-        self.server.shutdown()
+        self.alive = False
         self.server.server_close()
         LOG.info("Web Server stopped!")
 
