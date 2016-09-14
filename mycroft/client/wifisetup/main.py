@@ -206,6 +206,7 @@ class WiFi:
             if connected:
                 LOG.warn("Mycroft is already connected to %s" % ssid)
             else:
+                self.disconnect()
                 LOG.info("Connecting to: %s" % ssid)
                 nid = wpa(self.iface, 'add_network')
                 wpa(self.iface, 'set_network', nid, 'ssid', '"' + ssid + '"')
@@ -226,8 +227,16 @@ class WiFi:
                                      {'connected': connected}))
             LOG.info("Connection status for %s = %s" % (ssid, connected))
 
+    def disconnect(self):
+        status = self.get_status()
+        nid = status.get("id")
+        if nid:
+            ssid = status.get("ssid")
+            wpa(self.iface, 'disable', nid)
+            LOG.info("Disconnecting %s id: %s" % (ssid, nid))
+
     def get_status(self):
-        res = cli('wpa_cli', '-i', self.iface, 'status', '|', 'grep', 'state')
+        res = cli('wpa_cli', '-i', self.iface, 'status')
         out = str(res.get("stdout"))
         if out:
             return dict(o.split("=") for o in out.split("\n")[:-1])
