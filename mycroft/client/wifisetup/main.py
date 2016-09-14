@@ -145,6 +145,7 @@ class WiFi:
     def __init__(self):
         self.iface = pyw.winterfaces()[0]
         self.ap = AccessPoint(self.iface)
+        self.server = WebServer(self.ap.ip, 80)
         self.client = WebsocketClient()
         self.enclosure = EnclosureAPI(self.client)
         self.config = ConfigurationManager.get().get(self.NAME)
@@ -166,7 +167,6 @@ class WiFi:
         self.client.emit(Message("speak", metadata={
             'utterance': "Initializing wireless setup mode."}))
         self.ap.up()
-        self.server = WebServer(self.ap.ip, 80)
         self.server.start()
         self.enclosure.mouth_text(self.ap.password)
         LOG.info("Access point started!\n%s" % self.ap.__dict__)
@@ -248,8 +248,7 @@ class WiFi:
     def stop(self, event=None):
         LOG.info("Stopping access point...")
         self.ap.down()
-        if self.server:
-            self.server.stop()
+        self.server.stop()
         LOG.info("Access point stopped!")
 
     def run(self):
