@@ -23,6 +23,7 @@ from threading import Thread
 from time import sleep
 
 import os
+import requests
 from os.path import join, dirname, realpath
 from pyric import pyw
 from wifi import Cell
@@ -68,6 +69,7 @@ class WebServer(Thread):
         super(WebServer, self).__init__()
         self.alive = False
         self.daemon = True
+        self.address = host + ":" + str(80)
         self.server = TCPServer((host, port), SimpleHTTPRequestHandler)
 
     def run(self):
@@ -80,7 +82,7 @@ class WebServer(Thread):
     def stop(self):
         LOG.info("Stopping Web Server...")
         self.alive = False
-        self.server.server_close()
+        requests.request(url=self.address)
         LOG.info("Web Server stopped!")
 
 
