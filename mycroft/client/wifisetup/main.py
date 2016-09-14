@@ -69,7 +69,7 @@ class WebServer(Thread):
         super(WebServer, self).__init__()
         self.alive = False
         self.daemon = True
-        self.address = host + ":" + str(80)
+        self.address = "http://" + host + ":" + str(port)
         self.server = TCPServer((host, port), SimpleHTTPRequestHandler)
 
     def run(self):
@@ -82,7 +82,7 @@ class WebServer(Thread):
     def stop(self):
         LOG.info("Stopping Web Server...")
         self.alive = False
-        requests.request(url=self.address)
+        requests.request(method="GET", url=self.address)
         LOG.info("Web Server stopped!")
 
 
