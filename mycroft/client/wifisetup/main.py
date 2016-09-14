@@ -242,6 +242,7 @@ class WiFi:
         out = str(res.get("stdout"))
         if out:
             return dict(o.split("=") for o in out.split("\n")[:-1])
+        return {}
 
     def get_connected(self, ssid, retry=5):
         connected = self.is_connected(ssid)
