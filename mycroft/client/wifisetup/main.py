@@ -23,7 +23,6 @@ from threading import Thread
 from time import sleep
 
 import os
-import requests
 from os.path import join, dirname, realpath
 from pyric import pyw
 from wifi import Cell
@@ -67,22 +66,13 @@ class WebServer(Thread):
 
     def __init__(self, host, port):
         super(WebServer, self).__init__()
-        self.alive = False
         self.daemon = True
-        self.address = "http://" + host + ":" + str(port)
         self.server = TCPServer((host, port), SimpleHTTPRequestHandler)
 
     def run(self):
         LOG.info("Starting Web Server at %s:%s" % self.server.server_address)
         os.chdir(join(self.DIR, 'web'))
-        self.alive = True
-        while self.alive:
-            self.server.handle_request()
-
-    def stop(self):
-        LOG.info("Stopping Web Server...")
-        self.alive = False
-        requests.request(method="GET", url=self.address)
+        self.server.serve_forever()
         LOG.info("Web Server stopped!")
 
 
@@ -174,7 +164,7 @@ class WiFi:
         self.ap.up()
         if not self.server:
             self.server = WebServer(self.ap.ip, 80)
-        self.server.start()
+            self.server.start()
         self.enclosure.mouth_text(self.ap.password)
         LOG.info("Access point started!\n%s" % self.ap.__dict__)
 
@@ -266,7 +256,10 @@ class WiFi:
         LOG.info("Stopping access point...")
         self.ap.down()
         if self.server:
-            self.server.stop()
+            self.server.server.shutdown()
+            self.server.server.server_close()
+            self.server.join()
+            self.server = None
         LOG.info("Access point stopped!")
 
     def run(self):
