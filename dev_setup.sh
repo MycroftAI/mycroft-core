@@ -45,7 +45,7 @@ cd ${TOP}
 easy_install pip==7.1.2 # force version of pip
 
 # install requirements (except pocketsphinx)
-pip install -r requirements.txt 
+pip2 install -r requirements.txt 
 
 CORES=$(nproc)
 echo Building with $CORES cores.
