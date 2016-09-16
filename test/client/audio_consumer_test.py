@@ -96,7 +96,7 @@ class AudioConsumerTest(unittest.TestCase):
             monitor['pos_end'] = message.get('pos_end')
 
         self.loop.once('recognizer_loop:wakeword', wakeword_callback)
-        self.consumer.read_audio()
+        self.consumer.read()
 
         actual_begin = monitor.get('pos_begin')
         self.assertIsNotNone(actual_begin)
@@ -121,7 +121,7 @@ class AudioConsumerTest(unittest.TestCase):
             monitor['utterances'] = message.get('utterances')
 
         self.loop.once('recognizer_loop:utterance', callback)
-        self.consumer.read_audio()
+        self.consumer.read()
 
         utterances = monitor.get('utterances')
         self.assertIsNotNone(utterances)
@@ -137,7 +137,7 @@ class AudioConsumerTest(unittest.TestCase):
             monitor['utterances'] = message.get('utterances')
 
         self.loop.once('recognizer_loop:utterance', callback)
-        self.consumer.read_audio()
+        self.consumer.read()
 
         utterances = monitor.get('utterances')
         self.assertIsNotNone(utterances)
@@ -154,19 +154,19 @@ class AudioConsumerTest(unittest.TestCase):
             monitor['wakeword'] = message.get('utterance')
 
         self.loop.once('recognizer_loop:wakeword', wakeword_callback)
-        self.consumer.read_audio()
+        self.consumer.read()
         self.assertIsNone(monitor.get('wakeword'))
         self.assertTrue(self.loop.state.sleeping)
 
     def test_wakeup(self):
         self.queue.put(self.__create_sample_from_test_file('mycroft_wakeup'))
         self.loop.sleep()
-        self.consumer.read_audio()
+        self.consumer.read()
         self.assertFalse(self.loop.state.sleeping)
 
     def test_stop(self):
         self.queue.put(self.__create_sample_from_test_file('mycroft'))
-        self.consumer.read_audio()
+        self.consumer.read()
 
         self.queue.put(self.__create_sample_from_test_file('stop'))
         self.recognizer.set_transcriptions(["stop"])
@@ -176,7 +176,7 @@ class AudioConsumerTest(unittest.TestCase):
             monitor['utterances'] = message.get('utterances')
 
         self.loop.once('recognizer_loop:utterance', utterance_callback)
-        self.consumer.read_audio()
+        self.consumer.read()
 
         utterances = monitor.get('utterances')
         self.assertIsNotNone(utterances)
@@ -185,7 +185,7 @@ class AudioConsumerTest(unittest.TestCase):
 
     def test_record(self):
         self.queue.put(self.__create_sample_from_test_file('mycroft'))
-        self.consumer.read_audio()
+        self.consumer.read()
 
         self.queue.put(self.__create_sample_from_test_file('record'))
         self.recognizer.set_transcriptions(["record"])
@@ -195,7 +195,7 @@ class AudioConsumerTest(unittest.TestCase):
             monitor['utterances'] = message.get('utterances')
 
         self.loop.once('recognizer_loop:utterance', utterance_callback)
-        self.consumer.read_audio()
+        self.consumer.read()
 
         utterances = monitor.get('utterances')
         self.assertIsNotNone(utterances)

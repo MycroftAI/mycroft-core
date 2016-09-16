@@ -16,12 +16,13 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import threading
 import time
 from Queue import Queue
+from threading import Thread
 
 import pyee
 import speech_recognition as sr
+from requests import HTTPError
 
 from mycroft.client.speech.local_recognizer import LocalRecognizer
 from mycroft.client.speech.mic import MutableMicrophone, ResponsiveRecognizer
@@ -30,17 +31,17 @@ from mycroft.messagebus.message import Message
 from mycroft.metrics import MetricsAggregator
 from mycroft.session import SessionManager
 from mycroft.stt import STTFactory
-from mycroft.util import CerberusAccessDenied, connected
+from mycroft.util import connected
 from mycroft.util.log import getLogger
 
-logger = getLogger(__name__)
+LOG = getLogger(__name__)
 
 config = ConfigurationManager.get()
 speech_config = config.get('speech_client')
 listener_config = config.get('listener')
 
 
-class AudioProducer(threading.Thread):
+class AudioProducer(Thread):
     """
     AudioProducer
     given a mic and a recognizer implementation, continuously listens to the
@@ -48,7 +49,7 @@ class AudioProducer(threading.Thread):
     """
 
     def __init__(self, state, queue, mic, recognizer, emitter):
-        threading.Thread.__init__(self)
+        super(AudioProducer, self).__init__()
         self.daemon = True
         self.state = state
         self.queue = queue
@@ -72,7 +73,7 @@ class AudioProducer(threading.Thread):
                     self.emitter.emit("recognizer_loop:ioerror", ex)
 
 
-class AudioConsumer(threading.Thread):
+class AudioConsumer(Thread):
     """
     AudioConsumer
     Consumes AudioData chunks off the queue
@@ -83,7 +84,7 @@ class AudioConsumer(threading.Thread):
 
     def __init__(self, state, queue, emitter, stt,
                  wakeup_recognizer, mycroft_recognizer):
-        threading.Thread.__init__(self)
+        super(AudioConsumer, self).__init__()
         self.daemon = True
         self.queue = queue
         self.state = state
@@ -95,41 +96,68 @@ class AudioConsumer(threading.Thread):
 
     def run(self):
         while self.state.running:
-            self.read_audio()
+            self.read()
+
+    def read(self):
+        audio = self.queue.get()
+
+        if self.state.sleeping:
+            self.wake_up(audio)
+        else:
+            self.process(audio)
+
+    # TODO: Localization
+    def wake_up(self, audio):
+        if self.wakeup_recognizer.is_recognized(audio.frame_data,
+                                                self.metrics):
+            SessionManager.touch()
+            self.state.sleeping = False
+            self.__speak("I'm awake.")
+            self.metrics.increment("mycroft.wakeup")
 
     @staticmethod
     def _audio_length(audio):
         return float(len(audio.frame_data)) / (
             audio.sample_rate * audio.sample_width)
 
-    def read_audio(self):
-        audio_data = self.queue.get()
-
-        if self.state.sleeping:
-            self.try_wake_up(audio_data)
-        else:
-            self.process_audio(audio_data)
-
-    def try_wake_up(self, audio):
-        if self.wakeup_recognizer.is_recognized(audio.frame_data,
-                                                self.metrics):
-            SessionManager.touch()
-            self.state.sleeping = False
-            self.__speak("I'm awake.")  # TODO: Localization
-            self.metrics.increment("mycroft.wakeup")
-
-    def process_audio(self, audio):
+    # TODO: Localization
+    def process(self, audio):
         SessionManager.touch()
         payload = {
             'utterance': self.mycroft_recognizer.key_phrase,
             'session': SessionManager.get().session_id,
         }
         self.emitter.emit("recognizer_loop:wakeword", payload)
+
+        if self._audio_length(audio) < self.MIN_AUDIO_SIZE:
+            LOG.warn("Audio too short to be processed")
+        elif connected():
+            self.transcribe(audio)
+        else:
+            self.__speak("Mycroft seems not to be connected to the Internet")
+
+    def transcribe(self, audio):
+        text = None
         try:
-            self.transcribe([audio])
-        except sr.UnknownValueError:  # TODO: Localization
-            logger.warn("Speech Recognition could not understand audio")
-            # self.__speak("Sorry, I didn't catch that.")
+            text = self.stt.execute(audio).lower().strip()
+            LOG.debug("STT: " + text)
+        except sr.RequestError as e:
+            LOG.error("Could not request Speech Recognition {0}".format(e))
+        except HTTPError as e:
+            if e.response.status_code == 401:
+                text = "pair my device"
+                LOG.warn("Access Denied at mycroft.ai")
+        except Exception as e:
+            LOG.error(e)
+            LOG.error("Speech Recognition could not understand audio")
+            self.__speak("Sorry, I didn't catch that")
+        if text:
+            payload = {
+                'utterances': [text],
+                'session': SessionManager.get().session_id
+            }
+            self.emitter.emit("recognizer_loop:utterance", payload)
+            self.metrics.attr('utterances', [text])
 
     def __speak(self, utterance):
         payload = {
@@ -138,65 +166,11 @@ class AudioConsumer(threading.Thread):
         }
         self.emitter.emit("speak", Message("speak", payload))
 
-    def _create_remote_stt_runnable(self, audio, utterances):
-        def runnable():
-            try:
-                text = self.stt.execute(audio).lower()
-            except sr.UnknownValueError:
-                pass
-            except sr.RequestError as e:
-                logger.error(
-                    "Could not request results from Speech Recognition "
-                    "service; {0}".format(e))
-            except CerberusAccessDenied as e:
-                logger.error("AccessDenied from Cerberus proxy.")
-                utterances.append("pair my device")
-            except Exception as e:
-                logger.error("Unexpected exception: {0}".format(e))
-            else:
-                logger.debug("STT: " + text)
-                if text.strip() != '':
-                    utterances.append(text)
-
-        return runnable
-
-    def transcribe(self, audio_segments):
-        utterances = []
-        threads = []
-        if connected():
-            for audio in audio_segments:
-                if self._audio_length(audio) < self.MIN_AUDIO_SIZE:
-                    logger.debug("Audio too short to send to STT")
-                    continue
-
-                target = self._create_remote_stt_runnable(audio, utterances)
-                t = threading.Thread(target=target)
-                t.start()
-                threads.append(t)
-
-            for thread in threads:
-                thread.join()
-            if len(utterances) > 0:
-                payload = {
-                    'utterances': utterances,
-                    'session': SessionManager.get().session_id
-                }
-                self.emitter.emit("recognizer_loop:utterance", payload)
-                self.metrics.attr('utterances', utterances)
-            else:
-                raise sr.UnknownValueError
-        else:
-            self.__speak("This device is not connected to the Internet."
-                         "Either plug in a network cable or hold the button "
-                         "on top for two seconds, then select wifi from the "
-                         "menu")
-
 
 class RecognizerLoopState(object):
     def __init__(self):
         self.running = False
         self.sleeping = False
-        self.skip_wakeword = False
 
 
 class RecognizerLoop(pyee.EventEmitter):
@@ -258,5 +232,5 @@ class RecognizerLoop(pyee.EventEmitter):
             try:
                 time.sleep(1)
             except KeyboardInterrupt as e:
-                logger.error(e)
+                LOG.error(e)
                 self.stop()
