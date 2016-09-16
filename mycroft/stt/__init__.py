@@ -30,54 +30,63 @@ class STT(object):
     __metaclass__ = ABCMeta
 
     def __init__(self):
-        self.config = ConfigurationManager.get().get("stt")
+        config_core = ConfigurationManager.get()
+        self.lang = self.init_language(config_core)
+        self.config = config_core.get("stt")
         self.recognizer = Recognizer()
 
+    @staticmethod
+    def init_language(config_core):
+        langs = config_core.get("lang", "en-US").split("-")
+        return langs[0].lower() + "-" + langs[1].upper()
+
     @abstractmethod
-    def execute(self, audio, language):
+    def execute(self, audio, language=None):
         pass
 
 
-class STTToken(STT):
+class TokenSTT(STT):
     __metaclass__ = ABCMeta
 
     def __init__(self):
-        super(STTToken, self).__init__()
+        super(TokenSTT, self).__init__()
         self.token = self.config.get("credential").get("token")
 
 
-class STTBasic(STT):
+class BasicSTT(STT):
     __metaclass__ = ABCMeta
 
     def __init__(self):
-        super(STTBasic, self).__init__()
+        super(BasicSTT, self).__init__()
         credential = self.config.get("credential")
         self.username = credential.get("username")
         self.password = credential.get("password")
 
 
-class GoogleSTT(STTToken):
+class GoogleSTT(TokenSTT):
     def __init__(self):
         super(GoogleSTT, self).__init__()
 
-    def execute(self, audio, language):
+    def execute(self, audio, language=None):
+        language = language or self.lang
         return self.recognizer.recognize_google(audio, self.token, language)
 
 
-class WITSTT(STTToken):
+class WITSTT(TokenSTT):
     def __init__(self):
         super(WITSTT, self).__init__()
 
-    def execute(self, audio, language):
-        LOG.warn("English is the only language supported by WIT STT.")
+    def execute(self, audio, language=None):
+        LOG.warn("WITSTT language should be configured at wit.ai settings.")
         return self.recognizer.recognize_wit(audio, self.token)
 
 
-class IBMSTT(STTBasic):
+class IBMSTT(BasicSTT):
     def __init__(self):
         super(IBMSTT, self).__init__()
 
-    def execute(self, audio, language):
+    def execute(self, audio, language=None):
+        language = language or self.lang
         return self.recognizer.recognize_ibm(audio, self.username,
                                              self.password, language)
 
@@ -87,8 +96,9 @@ class MycroftSTT(STT):
         super(MycroftSTT, self).__init__()
         self.api = STTApi()
 
-    def execute(self, audio, language):
-        return self.api.stt(audio, language)
+    def execute(self, audio, language=None):
+        language = language or self.lang
+        return self.api.stt(audio.frame_data, language)
 
 
 class STTFactory(object):
