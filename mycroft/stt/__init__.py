@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 from abc import ABCMeta, abstractmethod
-
 from speech_recognition import Recognizer
 
 from mycroft.api import STTApi
@@ -35,7 +34,7 @@ class STT(object):
         self.recognizer = Recognizer()
 
     @abstractmethod
-    def execute(self, audio, lang):
+    def execute(self, audio, language):
         pass
 
 

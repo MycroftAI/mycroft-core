@@ -101,6 +101,6 @@ class STTApi(Api):
         return self.request({
             "method": "POST",
             "headers": {"Content-Type": "audio/x-flac"},
-            "path": "/stt?language=" + language,
+            "path": "/stt?lang=" + language,
             "body": audio
         })
