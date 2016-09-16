@@ -19,9 +19,10 @@ class Api(object):
     def request(self, params):
         method = params.get("method", "GET")
         headers = self.build_headers(params)
-        body = self.build_body(params)
+        json = self.build_json(params)
         url = self.build_url(params)
-        response = requests.request(method, url, headers=headers, json=body)
+        response = requests.request(method, url, headers=headers,
+                                    data=params.get("data"), json=json)
         return self.get_response(response)
 
     @staticmethod
@@ -51,14 +52,14 @@ class Api(object):
         if not headers.__contains__("Authorization"):
             headers["Authorization"] = "Bearer " + self.identity.token
 
-    def build_body(self, params):
-        body = params.get("body")
-        if body and params["headers"]["Content-Type"] == "application/json":
-            for k, v in body.iteritems():
+    def build_json(self, params):
+        json = params.get("json")
+        if json and params["headers"]["Content-Type"] == "application/json":
+            for k, v in json.iteritems():
                 if v == "":
-                    body[k] = None
-        params["body"] = body
-        return body
+                    json[k] = None
+            params["json"] = json
+        return json
 
     def build_url(self, params):
         path = params.get("path", "")
@@ -79,7 +80,7 @@ class DeviceApi(Api):
         return self.request({
             "method": "POST",
             "path": "/activate",
-            "body": {"state": state, "token": token}
+            "json": {"state": state, "token": token}
         })
 
     def find(self):
@@ -102,5 +103,5 @@ class STTApi(Api):
             "method": "POST",
             "headers": {"Content-Type": "audio/x-flac"},
             "path": "/stt?lang=" + language,
-            "body": audio
+            "data": audio
         })
