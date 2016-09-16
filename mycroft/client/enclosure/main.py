@@ -137,7 +137,6 @@ class EnclosureReader(Thread):
 
     def stop(self):
         self.alive = False
-        self.join()
 
 
 class EnclosureWriter(Thread):
@@ -180,10 +179,9 @@ class EnclosureWriter(Thread):
 
     def stop(self):
         self.alive = False
-        self.join()
 
 
-class Enclosure:
+class Enclosure(object):
     """
     Serves as a communication interface between Arduino and Mycroft Core.
 
@@ -276,14 +274,17 @@ class Enclosure:
         self.writer.stop()
         self.reader.stop()
         self.serial.close()
+        self.client.close()
 
 
 def main():
+    enclosure = Enclosure()
     try:
-        Enclosure().run()
+        enclosure.run()
     except Exception as e:
         print(e)
     finally:
+        enclosure.stop()
         sys.exit()
 
 
