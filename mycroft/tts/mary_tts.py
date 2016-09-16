@@ -23,8 +23,6 @@ from mycroft.tts.remote_tts import RemoteTTS
 
 __author__ = 'jdorleans'
 
-NAME = 'marytts'
-
 
 class MaryTTS(RemoteTTS):
     PARAMS = {
@@ -37,7 +35,8 @@ class MaryTTS(RemoteTTS):
     }
 
     def __init__(self, lang, voice, url):
-        super(MaryTTS, self).__init__(lang, voice, url, '/process')
+        super(MaryTTS, self).__init__(lang, voice, url, '/process',
+                                      MaryTTSValidator(self))
 
     def build_request_params(self, sentence):
         params = self.PARAMS.copy()
@@ -48,22 +47,22 @@ class MaryTTS(RemoteTTS):
 
 
 class MaryTTSValidator(TTSValidator):
-    def __init__(self):
-        super(MaryTTSValidator, self).__init__()
+    def __init__(self, tts):
+        super(MaryTTSValidator, self).__init__(tts)
 
-    def validate_lang(self, lang):
+    def validate_lang(self):
         # TODO
         pass
 
-    def validate_connection(self, tts):
+    def validate_connection(self):
         try:
-            resp = requests.get(tts.url + "/version", verify=False)
+            resp = requests.get(self.tts.url + "/version", verify=False)
             if resp.content.find('Mary TTS server') < 0:
                 raise Exception('Invalid MaryTTS server.')
         except:
             raise Exception(
                 'MaryTTS server could not be verified. Check your connection '
-                'to the server: ' + tts.url)
+                'to the server: ' + self.tts.url)
 
-    def get_instance(self):
+    def get_tts_class(self):
         return MaryTTS

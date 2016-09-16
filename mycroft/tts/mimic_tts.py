@@ -16,11 +16,10 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 import subprocess
-from os.path import join
-import re
 import random
 import os
-import time
+
+from os.path import join
 
 from mycroft import MYCROFT_ROOT_PATH
 from mycroft.tts import TTS, TTSValidator
@@ -31,9 +30,7 @@ __author__ = 'jdorleans'
 
 config = ConfigurationManager.get().get("tts", {})
 
-NAME = 'mimic'
-BIN = config.get(
-    "mimic.path", join(MYCROFT_ROOT_PATH, 'mimic', 'bin', 'mimic'))
+BIN = config.get("path", join(MYCROFT_ROOT_PATH, 'mimic', 'bin', 'mimic'))
 
 # Mapping based on Jeffers phoneme to viseme map, seen in table 1 from:
 # http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.221.6377&rep=rep1&type=pdf
@@ -49,7 +46,7 @@ BIN = config.get(
 class Mimic(TTS):
 
     def __init__(self, lang, voice):
-        super(Mimic, self).__init__(lang, voice)
+        super(Mimic, self).__init__(lang, voice, MimicValidator(self))
         self.args = ['-voice', self.voice]
         stretch = config.get('duration_stretch', None)
         if stretch:
@@ -151,19 +148,19 @@ class Mimic(TTS):
 
 
 class MimicValidator(TTSValidator):
-    def __init__(self):
-        super(MimicValidator, self).__init__()
+    def __init__(self, tts):
+        super(MimicValidator, self).__init__(tts)
 
-    def validate_lang(self, lang):
+    def validate_lang(self):
+        # TODO
         pass
 
-    def validate_connection(self, tts):
+    def validate_connection(self):
         try:
             subprocess.call([BIN, '--version'])
         except:
             raise Exception(
-                'Mimic is not installed. Make sure install-mimic.sh ran '
-                'properly.')
+                'Mimic is not installed. Run install-mimic.sh to install it.')
 
-    def get_instance(self):
+    def get_tts_class(self):
         return Mimic
