@@ -18,7 +18,6 @@
 
 import abc
 import re
-
 from requests_futures.sessions import FuturesSession
 
 from mycroft.tts import TTS
@@ -38,8 +37,8 @@ class RemoteTTS(TTS):
     whole sentence into small ones.
     """
 
-    def __init__(self, lang, voice, url, api_path):
-        super(RemoteTTS, self).__init__(lang, voice)
+    def __init__(self, lang, voice, url, api_path, validator):
+        super(RemoteTTS, self).__init__(lang, voice, validator)
         self.api_path = api_path
         self.url = remove_last_slash(url)
         self.session = FuturesSession()
