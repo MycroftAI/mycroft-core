@@ -16,6 +16,7 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 import subprocess
+from time import time, sleep
 
 from os.path import join
 
@@ -45,20 +46,23 @@ class Mimic(TTS):
     def execute(self, sentence):
         output = subprocess.check_output(self.args + ['-t', sentence])
         self.blink(0.5)
+        process = play_wav(self.filename)
         self.visime(output)
-        play_wav(self.filename).communicate()
+        process.communicate()
         self.blink(0.2)
 
     def visime(self, output):
-        codes = []
-        durations = []
         pairs = output.split(" ")
         for pair in pairs:
             pho_dur = pair.split(":")  # phoneme:duration
             if len(pho_dur) == 2:
-                codes.append(VISIMES.get(pho_dur[0], '4'))
-                durations.append(pho_dur[1])
-        self.enclosure.mouth_viseme(codes, durations)
+                start = time()
+                code = VISIMES.get(pho_dur[0], '4')
+                duration = float(pho_dur[1])
+                self.enclosure.mouth_viseme(code, duration)
+                delta = time() - start
+                if delta < duration:
+                    sleep(duration - delta)
 
 
 class MimicValidator(TTSValidator):
