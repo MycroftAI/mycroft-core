@@ -16,8 +16,6 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from time import time, sleep
-
 from mycroft.util.log import getLogger
 
 __author__ = 'jdorleans'
@@ -63,16 +61,9 @@ class EnclosureMouth:
 
     def viseme(self, event=None):
         if event and event.metadata:
-            start = time()
-            codes = event.metadata.get("codes")
-            durations = event.metadata.get("durations")
-            for idx, code in enumerate(codes):
-                if "0" <= code <= "6":
-                    self.writer.write("mouth.viseme=" + code)
-                    duration = float(durations[idx])
-                    delta = time() - start
-                    if delta < duration:
-                        sleep(duration - delta)
+            code = event.metadata.get("code")
+            if code:
+                self.writer.write("mouth.viseme=" + code)
 
     def text(self, event=None):
         text = ""
