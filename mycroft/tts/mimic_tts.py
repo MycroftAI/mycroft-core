@@ -58,8 +58,8 @@ class Mimic(TTS):
             if len(pho_dur) == 2:
                 start = time()
                 code = VISIMES.get(pho_dur[0], '4')
+                self.enclosure.mouth_viseme(code)
                 duration = float(pho_dur[1])
-                self.enclosure.mouth_viseme(code, duration)
                 delta = time() - start
                 if delta < duration:
                     sleep(duration - delta)

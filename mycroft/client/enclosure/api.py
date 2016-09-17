@@ -91,9 +91,8 @@ class EnclosureAPI:
     def mouth_smile(self):
         self.client.emit(Message("enclosure.mouth.smile"))
 
-    def mouth_viseme(self, codes, durations):
-        self.client.emit(Message("enclosure.mouth.viseme",
-                                 {'codes': codes, 'durations': durations}))
+    def mouth_viseme(self, code):
+        self.client.emit(Message("enclosure.mouth.viseme", {'code': code}))
 
     def mouth_text(self, text=""):
         self.client.emit(Message("enclosure.mouth.text", {'text': text}))
