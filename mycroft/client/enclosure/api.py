@@ -42,8 +42,7 @@ class EnclosureAPI:
         self.client.emit(Message("enclosure.system.unmute"))
 
     def system_blink(self, times):
-        self.client.emit(
-            Message("enclosure.system.blink", {'times': times}))
+        self.client.emit(Message("enclosure.system.blink", {'times': times}))
 
     def eyes_on(self):
         self.client.emit(Message("enclosure.eyes.on"))
@@ -52,34 +51,30 @@ class EnclosureAPI:
         self.client.emit(Message("enclosure.eyes.off"))
 
     def eyes_blink(self, side):
-        self.client.emit(
-            Message("enclosure.eyes.blink", {'side': side}))
+        self.client.emit(Message("enclosure.eyes.blink", {'side': side}))
 
     def eyes_narrow(self):
         self.client.emit(Message("enclosure.eyes.narrow"))
 
     def eyes_look(self, side):
-        self.client.emit(
-            Message("enclosure.eyes.look", {'side': side}))
+        self.client.emit(Message("enclosure.eyes.look", {'side': side}))
 
     def eyes_color(self, r=255, g=255, b=255):
-        self.client.emit(
-            Message("enclosure.eyes.color", {'r': r, 'g': g, 'b': b}))
+        self.client.emit(Message("enclosure.eyes.color",
+                                 {'r': r, 'g': g, 'b': b}))
 
     def eyes_brightness(self, level=30):
-        self.client.emit(
-            Message("enclosure.eyes.level", {'level': level}))
+        self.client.emit(Message("enclosure.eyes.level", {'level': level}))
 
     def eyes_reset(self):
         self.client.emit(Message("enclosure.eyes.reset"))
 
     def eyes_timed_spin(self, length):
-        self.client.emit(
-            Message("enclosure.eyes.timedspin", {'length': length}))
+        self.client.emit(Message("enclosure.eyes.timedspin",
+                                 {'length': length}))
 
     def eyes_volume(self, volume):
-        self.client.emit(
-            Message("enclosure.eyes.volume", {'volume': volume}))
+        self.client.emit(Message("enclosure.eyes.volume", {'volume': volume}))
 
     def mouth_reset(self):
         self.client.emit(Message("enclosure.mouth.reset"))
@@ -96,18 +91,16 @@ class EnclosureAPI:
     def mouth_smile(self):
         self.client.emit(Message("enclosure.mouth.smile"))
 
-    def mouth_viseme(self, visCode):
-        self.client.emit(
-            Message("enclosure.mouth.viseme", {'code': visCode}))
+    def mouth_viseme(self, codes, durations):
+        self.client.emit(Message("enclosure.mouth.viseme",
+                                 {'codes': codes, 'durations': durations}))
 
     def mouth_text(self, text=""):
-        self.client.emit(
-            Message("enclosure.mouth.text", {'text': text}))
+        self.client.emit(Message("enclosure.mouth.text", {'text': text}))
 
     def weather_display(self, img_code, temp):
-        self.client.emit(
-            Message("enclosure.weather.display",
-                    {'img_code': img_code, 'temp': temp}))
+        self.client.emit(Message("enclosure.weather.display",
+                                 {'img_code': img_code, 'temp': temp}))
 
     def activate_mouth_events(self):
         self.client.emit(Message('enclosure.mouth.events.activate'))

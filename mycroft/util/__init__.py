@@ -16,20 +16,16 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import socket
+import subprocess
+
 import os
 import os.path
-import subprocess
-from os.path import dirname
-import socket
-
 import psutil
+from os.path import dirname
 import tempfile
 
 __author__ = 'jdorleans'
-
-
-def str2bool(v):
-    return v.lower() in ("yes", "true", "t", "1")
 
 
 def play_wav(file_path):

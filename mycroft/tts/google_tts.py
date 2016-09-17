@@ -28,8 +28,8 @@ class GoogleTTS(TTS):
     def __init__(self, lang, voice):
         super(GoogleTTS, self).__init__(lang, voice, GoogleTTSValidator(self))
 
-    def execute(self, sentence, client):
-        tts = gTTS(text=sentence, lang=self.lang)
+    def execute(self, sentence):
+        tts = gTTS(sentence, self.lang)
         tts.save(self.filename)
         play_wav(self.filename)
 

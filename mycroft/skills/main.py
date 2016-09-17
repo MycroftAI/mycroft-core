@@ -17,12 +17,14 @@
 
 
 import json
+
 from os.path import expanduser, exists
 
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.skills.core import load_skills, THIRD_PARTY_SKILLS_DIR
 from mycroft.util.log import getLogger
+
 logger = getLogger("Skills")
 
 __author__ = 'seanfitz'
@@ -33,12 +35,11 @@ client = None
 def load_skills_callback():
     global client
     load_skills(client)
-    config = ConfigurationManager.get()
-    config_core = config.get("core")
+    config = ConfigurationManager.get().get("skills")
 
     try:
         ini_third_party_skills_dir = expanduser(
-            config_core.get("third_party_skills_dir"))
+            config.get("third_party_skills_dir"))
     except AttributeError as e:
         logger.warning(e.message)
 

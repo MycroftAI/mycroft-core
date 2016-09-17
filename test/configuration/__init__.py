@@ -10,27 +10,30 @@ __author__ = 'jdorleans'
 
 class AbstractConfigurationTest(unittest.TestCase):
     def setUp(self):
-        self.config_path = join(dirname(__file__), 'mycroft.ini')
+        self.config_path = join(dirname(__file__), 'mycroft.conf')
 
     @staticmethod
-    def create_config(lang='en-us', module='mimic'):
+    def create_config(lang='en-us', module='mimic', voice="ap"):
         config = {
-            'core': {'lang': lang},
-            'tts': {'module': module}
+            'lang': lang,
+            'tts': {
+                'module': module,
+                module: {'voice': voice}
+            }
         }
         return config
 
-    def assert_config(self, config, lang='en-us', module='mimic'):
+    def assert_config(self, config, lang='en-us', module='mimic', voice="ap"):
         self.assertIsNotNone(config)
-        core = config.get('core', None)
-        self.assertIsNotNone(core)
-        lan = core.get('lang', None)
+        lan = config.get('lang')
         self.assertIsNotNone(lan)
         self.assertEquals(lan, lang)
-        tts = config.get('tts', None)
+        tts = config.get('tts')
         self.assertIsNotNone(tts)
-        mod = tts.get('module', None)
+        mod = tts.get('module')
         self.assertEquals(mod, module)
+        voi = tts.get(mod, {}).get("voice")
+        self.assertEquals(voi, voice)
 
 
 class ConfigurationLoaderTest(AbstractConfigurationTest):
@@ -63,14 +66,14 @@ class ConfigurationLoaderTest(AbstractConfigurationTest):
         self.assert_config(ConfigurationLoader.load())
 
     def test_load_with_override_custom(self):
-        config = self.create_config('pt-br', 'espeak')
+        config = self.create_config('pt-br', 'espeak', 'f1')
         config = ConfigurationLoader.load(config)
         self.assert_config(config)
 
     def test_load_with_override_default(self):
         config = self.create_config()
         config = ConfigurationLoader.load(config, [self.config_path])
-        self.assert_config(config, 'pt-br', 'espeak')
+        self.assert_config(config, 'pt-br', 'espeak', 'f1')
 
     def test_load_with_extra_custom(self):
         my_config = {'key': 'value'}
@@ -89,7 +92,7 @@ class ConfigurationLoaderTest(AbstractConfigurationTest):
                           None, self.config_path)
 
     def test_load_with_invalid_locations_path(self):
-        locations = ['./invalid/mycroft.ini', './invalid_mycroft.ini']
+        locations = ['./invalid/mycroft.conf', './invalid_mycroft.conf']
         config = ConfigurationLoader.load(None, locations, False)
         self.assertEquals(config, {})
 
@@ -121,7 +124,7 @@ class ConfigurationManagerTest(AbstractConfigurationTest):
     def test_load_local_with_locations(self):
         ConfigurationManager.load_defaults()
         config = ConfigurationManager.load_local([self.config_path])
-        self.assert_config(config, 'pt-br', 'espeak')
+        self.assert_config(config, 'pt-br', 'espeak', 'f1')
 
     def test_load_remote(self):
         ConfigurationManager.load_defaults()
@@ -134,4 +137,4 @@ class ConfigurationManagerTest(AbstractConfigurationTest):
     def test_load_get_with_locations(self):
         ConfigurationManager.load_defaults()
         config = ConfigurationManager.get([self.config_path])
-        self.assert_config(config, 'pt-br', 'espeak')
+        self.assert_config(config, 'pt-br', 'espeak', 'f1')

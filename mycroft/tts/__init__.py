@@ -14,12 +14,14 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
+import random
 
 from abc import ABCMeta, abstractmethod
 from os.path import dirname, exists, isdir
 
+from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.configuration import ConfigurationManager
+from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.util.log import getLogger
 
 __author__ = 'jdorleans'
@@ -42,10 +44,17 @@ class TTS(object):
         self.voice = voice
         self.filename = '/tmp/tts.wav'
         self.validator = validator
+        self.client = WebsocketClient()
+        self.enclosure = EnclosureAPI(self.client)
+        random.seed()
 
     @abstractmethod
     def execute(self, sentence):
         pass
+
+    def blink(self, rate=1.0):
+        if random.random() < rate:
+            self.enclosure.eyes_blink("b")
 
 
 class TTSValidator(object):

@@ -91,8 +91,8 @@ class ScheduledSkill(MycroftSkill):
             else:
                 return "%s minutes and %s seconds from now" % \
                        (int(minutes), int(seconds))
-        dt_format = self.config_core.get('date.format')
-        dt_format += " at " + self.config_core.get('time.format')
+        dt_format = self.config_core.get('date_format')
+        dt_format += " at " + self.config_core.get('time_format')
         return date.strftime(dt_format)
 
     @abc.abstractmethod

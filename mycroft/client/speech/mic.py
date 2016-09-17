@@ -16,19 +16,17 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import collections
 import audioop
-import os
-import os.path
+import collections
 from time import sleep
 
 import pyaudio
+import speech_recognition
 from speech_recognition import (
     Microphone,
     AudioSource,
     AudioData
 )
-import speech_recognition
 
 from mycroft.configuration import ConfigurationManager
 from mycroft.util.log import getLogger
@@ -148,10 +146,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         speech_recognition.Recognizer.__init__(self)
         self.wake_word_recognizer = wake_word_recognizer
         self.audio = pyaudio.PyAudio()
-        self.threshold_multiplier = float(
-            listener_config.get('threshold_multiplier'))
-        self.dynamic_energy_ratio = float(
-            listener_config.get('dynamic_energy_ratio'))
+        self.threshold_multiplier = listener_config.get('threshold_multiplier')
+        self.dynamic_energy_ratio = listener_config.get('dynamic_energy_ratio')
 
     @staticmethod
     def record_sound_chunk(source):
