@@ -76,8 +76,7 @@ class AlarmSkill(ScheduledCRUDSkill):
                 delay = self.__calculate_delay(self.max_delay)
 
                 while self.alarm_on and datetime.now() < delay:
-                    play_mp3(self.file_path)
-                    time.sleep(2)
+                    play_mp3(self.file_path).communicate()
                     self.speak_dialog('alarm.stop')
                     time.sleep(self.repeat_time + 2)
                     if not volume and datetime.now() >= delay:

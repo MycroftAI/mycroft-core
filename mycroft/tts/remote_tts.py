@@ -17,6 +17,7 @@
 
 
 import abc
+
 import re
 from requests_futures.sessions import FuturesSession
 
@@ -79,7 +80,7 @@ class RemoteTTS(TTS):
         resp = req.result()
         if resp.status_code == 200:
             self.__save(resp.content)
-            play_wav(self.filename)
+            play_wav(self.filename).communicate()
         else:
             LOGGER.error(
                 '%s Http Error: %s for url: %s' %
