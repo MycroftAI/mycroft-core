@@ -16,13 +16,13 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from time import time, sleep
+
 from mycroft.util.log import getLogger
-from mycroft.util import check_for_signal
-import time
 
 __author__ = 'jdorleans'
 
-LOGGER = getLogger(__name__)
+LOG = getLogger(__name__)
 
 
 class EnclosureMouth:
@@ -62,22 +62,17 @@ class EnclosureMouth:
         self.writer.write("mouth.smile")
 
     def viseme(self, event=None):
-        visCmds = ''
         if event and event.metadata:
-            visCmds = event.metadata.get("code", visCmds)
-            # visCmds will be string of viseme codes and cumulative durations
-            # ex:  '0:0.34,1:1.23,0:1.32,'
-            lisPairs = visCmds.split(",")
-            timeStart = time.time()
-            for pair in lisPairs:
-                if check_for_signal('buttonPress'):
-                    return    # abort! (aplay should have already been killed)
-                vis_dur = pair.split(":")
-                if vis_dur[0] >= "0" and vis_dur[0] <= "6":
-                    elap = time.time() - timeStart
-                    self.writer.write("mouth.viseme=" + vis_dur[0])
-                    if elap < float(vis_dur[1]):
-                        time.sleep(float(vis_dur[1]) - elap)
+            start = time()
+            codes = event.metadata.get("codes")
+            durations = event.metadata.get("durations")
+            for idx, code in enumerate(codes):
+                if "0" <= code <= "6":
+                    self.writer.write("mouth.viseme=" + code)
+                    duration = float(durations[idx])
+                    delta = time() - start
+                    if delta < duration:
+                        sleep(duration - delta)
 
     def text(self, event=None):
         text = ""

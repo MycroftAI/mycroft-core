@@ -1,5 +1,5 @@
 include requirements.txt
-include mycroft/configuration/defaults/*.ini
+include mycroft/configuration/*.conf
 include mycroft/util/setup_base.py
 include mycroft/__version__.py
 include skills-sdk-MANIFEST.in

@@ -16,14 +16,15 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import re
 import time
-import yaml
 from alsaaudio import Mixer
 from datetime import datetime, timedelta
+
+import re
+import yaml
+from adapt.intent import IntentBuilder
 from os.path import dirname
 
-from adapt.intent import IntentBuilder
 from mycroft.skills.scheduled_skills import ScheduledCRUDSkill
 
 __author__ = 'jdorleans'
@@ -38,9 +39,9 @@ class ReminderSkill(ScheduledCRUDSkill):
         super(ReminderSkill, self).__init__(
             "ReminderSkill", None, dirname(__file__))
         self.reminder_on = False
-        self.max_delay = int(self.config.get('max_delay'))
-        self.repeat_time = int(self.config.get('repeat_time'))
-        self.extended_delay = int(self.config.get('extended_delay'))
+        self.max_delay = self.config.get('max_delay')
+        self.repeat_time = self.config.get('repeat_time')
+        self.extended_delay = self.config.get('extended_delay')
 
     def initialize(self):
         super(ReminderSkill, self).initialize()

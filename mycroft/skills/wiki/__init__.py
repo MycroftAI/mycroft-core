@@ -35,8 +35,8 @@ LOGGER = getLogger(__name__)
 class WikipediaSkill(MycroftSkill):
     def __init__(self):
         super(WikipediaSkill, self).__init__(name="WikipediaSkill")
-        self.max_results = int(self.config['max_results'])
-        self.max_phrases = int(self.config['max_phrases'])
+        self.max_results = self.config['max_results']
+        self.max_phrases = self.config['max_phrases']
         self.question = 'Would you like to know more about '  # TODO - i10n
         self.feedback_prefix = read_stripped_lines(
             join(dirname(__file__), 'dialog', self.lang,

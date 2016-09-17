@@ -1,6 +1,6 @@
 recursive-include mycroft/client/speech/model *
 include requirements.txt
-include mycroft/configuration/*.ini
+include mycroft/configuration/*.conf
 recursive-include mycroft/skills/*/dialog *
 recursive-include mycroft/skills/*/vocab *
 recursive-include mycroft/skills/*/regex *

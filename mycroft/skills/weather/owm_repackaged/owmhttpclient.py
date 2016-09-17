@@ -29,11 +29,11 @@ except ImportError:
     from urllib import urlencode
 
 import socket
+
 from pyowm.exceptions import api_call_error
 
 
 class OWMHTTPClient(object):
-
     """
     An HTTP client class, that can leverage a cache mechanism.
 
@@ -75,8 +75,7 @@ class OWMHTTPClient(object):
         else:
             try:
                 if self._identity and self._identity.token:
-                    bearer_token_header = "Bearer %s:%s" % (
-                        self._identity.device_id, self._identity.token)
+                    bearer_token_header = "Bearer " + self._identity.token
                 else:
                     bearer_token_header = None
                 try:
@@ -139,4 +138,4 @@ class OWMHTTPClient(object):
 
     def __repr__(self):
         return "<%s.%s - cache=%s>" % \
-            (__name__, self.__class__.__name__, repr(self._cache))
+               (__name__, self.__class__.__name__, repr(self._cache))

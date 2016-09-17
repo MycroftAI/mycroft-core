@@ -18,11 +18,11 @@
 
 import math
 import time
-from os.path import dirname
 
 import psutil as psutil
-
 from adapt.intent import IntentBuilder
+from os.path import dirname
+
 from mycroft.skills.scheduled_skills import ScheduledSkill
 from mycroft.util import record, play_wav
 from mycroft.util.log import getLogger
@@ -35,11 +35,11 @@ LOGGER = getLogger(__name__)
 class AudioRecordSkill(ScheduledSkill):
     def __init__(self):
         super(AudioRecordSkill, self).__init__("AudioRecordSkill")
-        self.free_disk = int(self.config.get('free_disk'))
-        self.max_time = int(self.config.get('max_time'))
-        self.notify_delay = int(self.config.get('notify_delay'))
-        self.rate = int(self.config.get('rate'))
-        self.channels = int(self.config.get('channels'))
+        self.free_disk = self.config.get('free_disk')
+        self.max_time = self.config.get('max_time')
+        self.notify_delay = self.config.get('notify_delay')
+        self.rate = self.config.get('rate')
+        self.channels = self.config.get('channels')
         self.file_path = self.config.get('filename')
         self.duration = 0
         self.notify_time = None
@@ -66,7 +66,7 @@ class AudioRecordSkill(ScheduledSkill):
         intent = IntentBuilder('AudioRecordSkillStopPlayIntent').require(
             'AudioRecordSkillStopVerb') \
             .require('AudioRecordSkillPlayVerb').require(
-                'AudioRecordSkillKeyword').build()
+            'AudioRecordSkillKeyword').build()
         self.register_intent(intent, self.handle_stop_play)
 
     def handle_record(self, message):

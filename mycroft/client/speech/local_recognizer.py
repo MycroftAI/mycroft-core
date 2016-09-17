@@ -16,12 +16,12 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import tempfile
 import time
 
 import os
 from os.path import join, dirname, abspath
 from pocketsphinx import Decoder
-import tempfile
 
 __author__ = 'seanfitz, jdorleans'
 
@@ -53,7 +53,7 @@ class LocalRecognizer(object):
         config.set_string('-hmm', join(BASEDIR, 'model', self.lang, 'hmm'))
         config.set_string('-dict', dict_name)
         config.set_string('-keyphrase', self.key_phrase)
-        config.set_float('-kws_threshold', float(self.threshold))
+        config.set_float('-kws_threshold', self.threshold)
         config.set_float('-samprate', self.sample_rate)
         config.set_int('-nfft', 2048)
         config.set_string('-logfn', '/dev/null')

@@ -18,9 +18,10 @@
 
 import time
 from alsaaudio import Mixer
-from os.path import dirname, join
 
 from adapt.intent import IntentBuilder
+from os.path import dirname, join
+
 from mycroft.skills.core import MycroftSkill
 from mycroft.util import play_wav
 from mycroft.util.log import getLogger
@@ -45,8 +46,8 @@ class VolumeSkill(MycroftSkill):
     }
 
     def __init__(self):
-        super(VolumeSkill, self).__init__(name="VolumeSkill")
-        self.default_level = int(self.config.get('default_level'))
+        super(VolumeSkill, self).__init__("VolumeSkill")
+        self.default_level = self.config.get('default_level')
         self.min_volume = self.config.get('min_volume')
         self.max_volume = self.config.get('max_volume')
         self.volume_sound = join(dirname(__file__), "blop-mark-diangelo.wav")
@@ -115,7 +116,7 @@ class VolumeSkill(MycroftSkill):
         :rtype int
         """
         range = self.MAX_LEVEL - self.MIN_LEVEL
-        prop = float(int(volume) - int(self.min_volume)) / int(self.max_volume)
+        prop = float(volume - self.min_volume) / self.max_volume
         level = int(round(self.MIN_LEVEL + range * prop))
         if level > self.MAX_LEVEL:
             level = self.MAX_LEVEL
@@ -128,9 +129,9 @@ class VolumeSkill(MycroftSkill):
         :param level: 0..MAX_LEVEL
         :rtype int
         """
-        range = int(self.max_volume) - int(self.min_volume)
+        range = self.max_volume - self.min_volume
         prop = float(level) / self.MAX_LEVEL
-        volume = int(round(int(self.min_volume) + int(range) * prop))
+        volume = int(round(self.min_volume + int(range) * prop))
 
         return volume
 
