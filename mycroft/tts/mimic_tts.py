@@ -46,7 +46,7 @@ class Mimic(TTS):
         output = subprocess.check_output(self.args + ['-t', sentence])
         self.blink(0.5)
         self.visime(output)
-        play_wav(self.filename)
+        play_wav(self.filename).communicate()
         self.blink(0.2)
 
     def visime(self, output):
