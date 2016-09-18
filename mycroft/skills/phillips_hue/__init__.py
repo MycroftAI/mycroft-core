@@ -362,7 +362,8 @@ class PhillipsHueSkill(MycroftSkill):
 
     @intent_handler
     def handle_set_brightness_intent(self, message, group):
-        brightness = int(float(message.metadata['Value']) / 100 * 254)
+        value = int(message.metadata['Value'].rstrip('%'))
+        brightness = int(value / 100.0 * 254)
         group.brightness = brightness
         group.on = True
         if self.verbose:
