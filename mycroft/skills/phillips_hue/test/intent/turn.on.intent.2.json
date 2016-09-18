@@ -1,0 +1,8 @@
+{
+  "utterance": "turn the lights on",
+  "intent_type": "ToggleIntent",
+  "intent": {
+    "OnKeyword": "on",
+    "LightsKeyword": "lights"
+  }
+}

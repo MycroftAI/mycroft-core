@@ -1,0 +1,8 @@
+{
+  "utterance": "turn down the lights",
+  "intent_type": "AdjustBrightnessIntent",
+  "intent": {
+    "DecreaseKeyword": "down",
+    "LightsKeyword": "lights"
+  }
+}

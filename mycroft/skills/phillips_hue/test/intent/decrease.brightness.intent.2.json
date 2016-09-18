@@ -1,0 +1,8 @@
+{
+  "utterance": "dim the lights",
+  "intent_type": "AdjustBrightnessIntent",
+  "intent": {
+    "DimKeyword": "dim",
+    "LightsKeyword": "lights"
+  }
+}
