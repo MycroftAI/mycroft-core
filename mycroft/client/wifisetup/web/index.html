@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Wifi Setup</title>
+    <link rel="stylesheet" href="css/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script type="application/javascript" src="js/Config.js"></script>
+    <script type="application/javascript" src="js/WS.js"></script>
+    <script type="application/javascript" src="js/main.js"></script>
+</head>
+<body>
+
+<div id="home" class="panel hide">
+    <div class="title">HI, MYCROFT HERE</div>
+    <div class="body">
+        <span>This process is for connecting me to the internet through your wifi.</span>
+        <img src="img/connect.png"/>
+        <a id="connectBtn" class="button">LET'S CONNECT</a>
+    </div>
+</div>
+
+<div id="list-panel" class="panel hide">
+    <div class="title">CHOOSE YOUR USUAL WIFI</div>
+    <ul id="list" class="body"></ul>
+</div>
+
+<div id="loading" class="panel">
+    <div class="title">Loading...</div>
+    <div class="body">
+        <div class="loader"></div>
+    </div>
+</div>
+
+<div id="connecting" class="panel hide">
+    <div class="title">Connecting...</div>
+    <div class="body">
+        <div class="loader"></div>
+    </div>
+</div>
+
+<div id="success" class="panel hide">
+    <div class="title">CONNECTED</div>
+    <div class="body">
+        <span>I'm connected to the internet now. Feels goood <img src="img/love.png"/></span>
+        <small>Final step, register me so you can add new skills to my repertoire.</small>
+        <a class="button" id="registerBtn">REGISTER ME</a>
+    </div>
+</div>
+
+</body>
+</html>
