@@ -71,7 +71,7 @@ class EnclosureMouth:
             timeStart = time.time()
             for pair in lisPairs:
                 if check_for_signal('buttonPress'):
-                   return    # abort! (aplay should have already been killed)
+                    return    # abort! (aplay should have already been killed)
                 vis_dur = pair.split(":")
                 if vis_dur[0] >= "0" and vis_dur[0] <= "6":
                     elap = time.time() - timeStart
