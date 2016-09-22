@@ -159,7 +159,9 @@ class AudioConsumer(threading.Thread):
                 utterances.append("pair my device")
             except ConnectionError as e:
                 logger.error("Connection Error: {0}".format(e))
-                utterances.append("Say this device is not connected to the internet")
+                utterances.append(
+                    "Say this device is not connected, "
+                    "to the internet")
             except Exception as e:
                 logger.error("Unexpected exception: {0}".format(e))
             else:
@@ -193,6 +195,7 @@ class AudioConsumer(threading.Thread):
             self.metrics.attr('utterances', utterances)
         else:
             raise sr.UnknownValueError
+
 
 class RecognizerLoopState(object):
     def __init__(self):
