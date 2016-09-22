@@ -17,11 +17,13 @@
 
 
 import os
+import os.path
 import subprocess
 from os.path import dirname
 import socket
 
 import psutil
+import tempfile
 
 __author__ = 'jdorleans'
 
@@ -107,6 +109,22 @@ def connected(host="8.8.8.8", port=53, timeout=3):
             return True
         except IOError:
             return False
+
+
+def create_signal(signalName):
+    try:
+        f = open(tempfile.gettempdir()+'/'+signalName, 'w')
+        return True
+    except IOError:
+        return False
+
+
+def check_for_signal(signalName):
+    if os.path.isfile(tempfile.gettempdir()+'/'+signalName):
+        os.remove(tempfile.gettempdir()+'/'+signalName)
+        return True
+
+    return False
 
 
 class CerberusAccessDenied(Exception):
