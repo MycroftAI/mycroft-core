@@ -161,7 +161,7 @@ class AudioConsumer(threading.Thread):
                 logger.error("Connection Error: {0}".format(e))
                 utterances.append("Say this device is not connected to the internet")
             except Exception as e:
-                logger.error("Unexpected exception: {0}".format(type(e)))
+                logger.error("Unexpected exception: {0}".format(e))
             else:
                 logger.debug("STT: " + text)
                 if text.strip() != '':
