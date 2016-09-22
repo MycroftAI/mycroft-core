@@ -32,7 +32,7 @@ from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.message import Message
 from mycroft.metrics import MetricsAggregator
 from mycroft.session import SessionManager
-from mycroft.util import CerberusAccessDenied, connected
+from mycroft.util import CerberusAccessDenied
 from mycroft.util.log import getLogger
 
 logger = getLogger(__name__)
