@@ -14,17 +14,17 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
+
 import subprocess
 import sys
+import threading
+import time
 from Queue import Queue
 from alsaaudio import Mixer
 from threading import Thread
 
 import os
 import serial
-import time
-
-import threading
 
 from mycroft.client.enclosure.arduino import EnclosureArduino
 from mycroft.client.enclosure.eyes import EnclosureEyes
@@ -33,11 +33,11 @@ from mycroft.client.enclosure.weather import EnclosureWeather
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
-from mycroft.util import kill, str2bool
 from mycroft.util import play_wav
 from mycroft.util import create_signal
-from mycroft.util.log import getLogger
+from mycroft.util import str2bool
 from mycroft.util.audio_test import record
+from mycroft.util.log import getLogger
 
 __author__ = 'aatchison + jdorleans + iward'
 
@@ -128,7 +128,7 @@ class EnclosureReader(Thread):
             subprocess.call('systemctl reboot -i', shell=True)
 
         if "unit.setwifi" in data:
-            self.client.emit(Message("wifisetup.start"))
+            self.client.emit(Message("mycroft.wifi.start"))
 
         if "unit.factory-reset" in data:
             subprocess.call(
