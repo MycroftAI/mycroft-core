@@ -22,6 +22,7 @@ from Queue import Queue
 
 import pyee
 import speech_recognition as sr
+from requests.exceptions import ConnectionError
 
 from mycroft.client.speech.local_recognizer import LocalRecognizer
 from mycroft.client.speech.mic import MutableMicrophone, ResponsiveRecognizer
@@ -31,7 +32,7 @@ from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.message import Message
 from mycroft.metrics import MetricsAggregator
 from mycroft.session import SessionManager
-from mycroft.util import CerberusAccessDenied, connected
+from mycroft.util import CerberusAccessDenied
 from mycroft.util.log import getLogger
 
 logger = getLogger(__name__)
@@ -156,6 +157,11 @@ class AudioConsumer(threading.Thread):
                     "Your device is not registered yet. To start pairing, "
                     "login at cerberus dot mycroft dot A.I")
                 utterances.append("pair my device")
+            except ConnectionError as e:
+                logger.error("Connection Error: {0}".format(e))
+                utterances.append(
+                    "Say this device is not connected, "
+                    "to the internet")
             except Exception as e:
                 logger.error("Unexpected exception: {0}".format(e))
             else:
@@ -168,30 +174,27 @@ class AudioConsumer(threading.Thread):
     def transcribe(self, audio_segments):
         utterances = []
         threads = []
-        if connected():
-            for audio in audio_segments:
-                if self._audio_length(audio) < self.MIN_AUDIO_SIZE:
-                    logger.debug("Audio too short to send to STT")
-                    continue
+        for audio in audio_segments:
+            if self._audio_length(audio) < self.MIN_AUDIO_SIZE:
+                logger.debug("Audio too short to send to STT")
+                continue
 
-                target = self._create_remote_stt_runnable(audio, utterances)
-                t = threading.Thread(target=target)
-                t.start()
-                threads.append(t)
+            target = self._create_remote_stt_runnable(audio, utterances)
+            t = threading.Thread(target=target)
+            t.start()
+            threads.append(t)
 
-            for thread in threads:
-                thread.join()
-            if len(utterances) > 0:
-                payload = {
-                    'utterances': utterances,
-                    'session': SessionManager.get().session_id
-                }
-                self.emitter.emit("recognizer_loop:utterance", payload)
-                self.metrics.attr('utterances', utterances)
-            else:
-                raise sr.UnknownValueError
-        else:  # TODO: Localization
-            self.__speak("This device is not connected to the Internet")
+        for thread in threads:
+            thread.join()
+        if len(utterances) > 0:
+            payload = {
+                'utterances': utterances,
+                'session': SessionManager.get().session_id
+            }
+            self.emitter.emit("recognizer_loop:utterance", payload)
+            self.metrics.attr('utterances', utterances)
+        else:
+            raise sr.UnknownValueError
 
 
 class RecognizerLoopState(object):
