@@ -130,7 +130,7 @@ class AudioConsumer(threading.Thread):
             self.transcribe([audio])
         except sr.UnknownValueError:  # TODO: Localization
             logger.warn("Speech Recognition could not understand audio")
-            self.__speak("Sorry, I didn't catch that.")
+            # self.__speak("Sorry, I didn't catch that.")
 
     def __speak(self, utterance):
         payload = {

@@ -35,6 +35,7 @@ from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util import kill, str2bool
 from mycroft.util import play_wav
+from mycroft.util import create_signal
 from mycroft.util.log import getLogger
 from mycroft.util.audio_test import record
 
@@ -80,6 +81,7 @@ class EnclosureReader(Thread):
         self.client.emit(Message(data))
 
         if "mycroft.stop" in data:
+            create_signal('buttonPress')
             self.client.emit(Message("mycroft.stop"))
 
         if "volume.up" in data:

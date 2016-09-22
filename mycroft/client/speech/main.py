@@ -28,11 +28,12 @@ from mycroft.messagebus.message import Message
 from mycroft.tts import tts_factory
 from mycroft.util.log import getLogger
 from mycroft.util import kill, connected
+from mycroft.util import play_mp3
 
 logger = getLogger("SpeechClient")
 client = None
 tts = tts_factory.create()
-mutex = Lock()
+mutexTalking = Lock()
 loop = None
 
 config = ConfigurationManager.get()
@@ -58,8 +59,28 @@ def handle_utterance(event):
     client.emit(Message('recognizer_loop:utterance', event))
 
 
+# class TalkThread (Thread):
+#    def __init__(self, utterance, loop, tts, client, mutex):
+#       Thread.__init__(self)
+#       self.utterance = utterance
+#       self.tts = tts
+#       self.loop = loop
+#       self.client = client
+#       self.mutex = mutex
+#
+#   def run(self):
+#       try:
+#           # logger.info("Speak: " + utterance)
+#           self.loop.mute()
+#           self.tts.execute(self.utterance, self.client)
+#       finally:
+#           self.loop.unmute()
+#           self.mutexTalking.release()
+#           self.client.emit(Message("recognizer_loop:audio_output_end"))
+
+
 def mute_and_speak(utterance):
-    mutex.acquire()
+    mutexTalking.acquire()
     client.emit(Message("recognizer_loop:audio_output_start"))
     try:
         logger.info("Speak: " + utterance)
@@ -67,8 +88,10 @@ def mute_and_speak(utterance):
         tts.execute(utterance, client)
     finally:
         loop.unmute()
-        mutex.release()
+        mutexTalking.release()
         client.emit(Message("recognizer_loop:audio_output_end"))
+    # threadTalk = TalkThread(utterance, loop, tts, client, mutexClient)
+    # threadTalk.start()
 
 
 def handle_multi_utterance_intent_failure(event):
@@ -94,6 +117,7 @@ def handle_wake_up(event):
 
 def handle_stop(event):
     kill([config.get('tts').get('module')])
+    kill(["aplay"])
 
 
 def connect():

@@ -18,6 +18,8 @@
 
 import collections
 import audioop
+import os
+import os.path
 from time import sleep
 
 import pyaudio
@@ -30,6 +32,7 @@ import speech_recognition
 
 from mycroft.configuration import ConfigurationManager
 from mycroft.util.log import getLogger
+from mycroft.util import check_for_signal
 
 listener_config = ConfigurationManager.get().get('listener')
 logger = getLogger(__name__)
@@ -223,6 +226,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             recorded_too_much_silence = num_chunks > max_chunks_of_silence
             if quiet_enough and (was_loud_enough or recorded_too_much_silence):
                 phrase_complete = True
+            if check_for_signal('buttonPress'):
+                phrase_complete = True
 
         return byte_data
 
@@ -247,6 +252,10 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         said_wake_word = False
         while not said_wake_word:
+            if check_for_signal('buttonPress'):
+                said_wake_word = True
+                continue
+
             chunk = self.record_sound_chunk(source)
 
             energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
