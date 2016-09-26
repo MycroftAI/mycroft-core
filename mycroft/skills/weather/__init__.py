@@ -83,11 +83,11 @@ class WeatherSkill(MycroftSkill):
             weather_code = str(weather.get_weather_icon_name())
             img_code = self.CODES[weather_code]
             temp = data['temp_current']
-            self.enclosure.activate_mouth_listeners(False)
+            self.enclosure.deactivate_mouth_events()
             self.enclosure.weather_display(img_code, temp)
             self.speak_dialog('current.weather', data)
             time.sleep(5)
-            self.enclosure.activate_mouth_listeners(True)
+            self.enclosure.activate_mouth_events()
         except APICallError as e:
             self.__api_error(e)
         except Exception as e:
@@ -103,11 +103,11 @@ class WeatherSkill(MycroftSkill):
             weather_code = str(weather.get_weather_icon_name())
             img_code = self.CODES[weather_code]
             temp = data['temp_current']
-            self.enclosure.activate_mouth_listeners(False)
+            self.enclosure.deactivate_mouth_events()
             self.enclosure.weather_display(img_code, temp)
             self.speak_dialog('hour.weather', data)
             time.sleep(5)
-            self.enclosure.activate_mouth_listeners(True)
+            self.enclosure.activate_mouth_events()
         except APICallError as e:
             self.__api_error(e)
         except Exception as e:
@@ -123,11 +123,11 @@ class WeatherSkill(MycroftSkill):
             weather_code = str(weather.get_weather_icon_name())
             img_code = self.CODES[weather_code]
             temp = data['temp_current']
-            self.enclosure.activate_mouth_listeners(False)
+            self.enclosure.deactivate_mouth_events()
             self.enclosure.weather_display(img_code, temp)
             self.speak_dialog('tomorrow.weather', data)
             time.sleep(5)
-            self.enclosure.activate_mouth_listeners(True)
+            self.enclosure.activate_mouth_events()
         except APICallError as e:
             self.__api_error(e)
         except Exception as e:

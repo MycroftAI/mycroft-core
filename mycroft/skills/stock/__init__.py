@@ -49,10 +49,10 @@ class StockSkill(MycroftSkill):
                               self.enclosure.mouth_text(
                                   response['symbol'] + ": " + response[
                                       'price']))
-            self.enclosure.activate_mouth_listeners(False)
+            self.enclosure.deactivate_mouth_events()
             self.speak_dialog("stock.price", data=response)
             time.sleep(12)
-            self.enclosure.activate_mouth_listeners(True)
+            self.enclosure.activate_mouth_events()
             self.enclosure.mouth_reset()
 
         except:
