@@ -52,11 +52,11 @@ class Mimic(TTS):
         self.blink(0.2)
 
     def visime(self, output):
+        start = time()
         pairs = output.split(" ")
         for pair in pairs:
             pho_dur = pair.split(":")  # phoneme:duration
             if len(pho_dur) == 2:
-                start = time()
                 code = VISIMES.get(pho_dur[0], '4')
                 self.enclosure.mouth_viseme(code)
                 duration = float(pho_dur[1])
