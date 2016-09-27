@@ -22,7 +22,11 @@ from adapt.intent import IntentBuilder
 from multi_key_dict import multi_key_dict
 from os.path import dirname
 from pyowm.exceptions.api_call_error import APICallError
+from pyowm.webapi25.forecaster import Forecaster
+from pyowm.webapi25.forecastparser import ForecastParser
+from pyowm.webapi25.observationparser import ObservationParser
 
+from mycroft.api import Api
 from mycroft.identity import IdentityManager
 from mycroft.skills.core import MycroftSkill
 from mycroft.skills.weather.owm_repackaged import OWM
@@ -31,6 +35,46 @@ from mycroft.util.log import getLogger
 __author__ = 'jdorleans'
 
 LOGGER = getLogger(__name__)
+
+
+class OWMApi(Api):
+    def __init__(self):
+        super(OWMApi, self).__init__("owm")
+        self.lang = "en"
+        self.observation = ObservationParser()
+        self.forecast = ForecastParser()
+
+    def weather_at_place(self, name):
+        response = self.request({
+            "path": "/weather",
+            "query": {"q": name, "lang": self.lang}
+        })
+        return self.observation.parse_JSON(response)
+
+    def three_hours_forecast(self, name):
+        response = self.request({
+            "path": "/forecast",
+            "query": {"q": name, "lang": self.lang}
+        })
+        return self.to_forecast(response, "3h")
+
+    def daily_forecast(self, name, limit=None):
+        query = {"q": name, "lang": self.lang}
+        if limit is not None:
+            query["cnt"] = limit
+        response = self.request({
+            "path": "/forecast/daily",
+            "query": query
+        })
+        return self.to_forecast(response, "daily")
+
+    def to_forecast(self, response, interval):
+        forecast = self.forecast.parse_JSON(response)
+        if forecast is not None:
+            forecast.set_interval(interval)
+            return Forecaster(forecast)
+        else:
+            return None
 
 
 class WeatherSkill(MycroftSkill):
