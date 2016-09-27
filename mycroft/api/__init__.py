@@ -20,8 +20,9 @@ class Api(object):
         method = params.get("method", "GET")
         headers = self.build_headers(params)
         json = self.build_json(params)
+        query = params.get("query")
         url = self.build_url(params)
-        response = requests.request(method, url, headers=headers,
+        response = requests.request(method, url, headers=headers, params=query,
                                     data=params.get("data"), json=json)
         return self.get_response(response)
 
@@ -102,6 +103,6 @@ class STTApi(Api):
         return self.request({
             "method": "POST",
             "headers": {"Content-Type": "audio/x-flac"},
-            "path": "/stt?lang=" + language,
+            "query": {"lang": language},
             "data": audio
         })
