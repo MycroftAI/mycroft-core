@@ -23,7 +23,7 @@ import wolframalpha
 from os.path import dirname, join
 from requests import HTTPError
 
-from mycroft.api.skill import WAApi
+from mycroft.api import Api
 from mycroft.skills.core import MycroftSkill
 from mycroft.util.log import getLogger
 
@@ -71,12 +71,12 @@ class EnglishQuestionParser(object):
         return None
 
 
-class MycroftWA(object):
+class WAApi(Api):
     def __init__(self):
-        self.api = WAApi()
+        super(WAApi, self).__init__("wa")
 
-    def query(self, query):
-        response = self.api.query(query)
+    def query(self, input):
+        response = self.request({"query": {"input": input}})
         return wolframalpha.Result(StringIO(response.content))
 
 
@@ -94,7 +94,7 @@ class WolframAlphaSkill(MycroftSkill):
         if key:
             self.client = wolframalpha.Client(key)
         else:
-            self.client = MycroftWA()
+            self.client = WAApi()
 
     def initialize(self):
         self.init_dialog(dirname(__file__))
