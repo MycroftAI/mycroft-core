@@ -126,7 +126,3 @@ def check_for_signal(signalName):
 def validate_param(value, name):
     if not value:
         raise ValueError("Missing or empty %s in mycroft.conf " % name)
-
-
-class CerberusAccessDenied(Exception):
-    pass

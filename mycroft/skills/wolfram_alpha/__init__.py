@@ -19,19 +19,17 @@
 from StringIO import StringIO
 
 import re
-import requests
 import wolframalpha
 from os.path import dirname, join
-from six.moves import urllib
+from requests import HTTPError
 
-from mycroft.identity import IdentityManager
+from mycroft.api.skill import WAApi
 from mycroft.skills.core import MycroftSkill
-from mycroft.util import CerberusAccessDenied
 from mycroft.util.log import getLogger
 
 __author__ = 'seanfitz'
 
-logger = getLogger(__name__)
+LOG = getLogger(__name__)
 
 
 class EnglishQuestionParser(object):
@@ -73,26 +71,19 @@ class EnglishQuestionParser(object):
         return None
 
 
-class CerberusWolframAlphaClient(object):
-    """
-    Wolfram|Alpha v2.0 client
-    """
+class MycroftWA(object):
+    def __init__(self):
+        self.api = WAApi()
 
     def query(self, query):
-        """
-        Query Wolfram|Alpha with query using the v2.0 API
-        """
-        identity = IdentityManager.get()
-        query = urllib.parse.urlencode(dict(input=query))
-        url = 'https://cerberus.mycroft.ai/wolframalpha/v2/query?' + query
-        headers = {'Authorization': 'Bearer ' + identity.token}
-        response = requests.get(url, headers=headers)
-        if response.status_code == 401:
-            raise CerberusAccessDenied()
+        response = self.api.query(query)
         return wolframalpha.Result(StringIO(response.content))
 
 
 class WolframAlphaSkill(MycroftSkill):
+    PIDS = ['Value', 'NotableFacts:PeopleData', 'BasicInformation:PeopleData',
+            'Definition', 'DecimalApproximation']
+
     def __init__(self):
         MycroftSkill.__init__(self, name="WolframAlphaSkill")
         self.__init_client()
@@ -103,43 +94,33 @@ class WolframAlphaSkill(MycroftSkill):
         if key:
             self.client = wolframalpha.Client(key)
         else:
-            self.client = CerberusWolframAlphaClient()
+            self.client = MycroftWA()
 
     def initialize(self):
         self.init_dialog(dirname(__file__))
         self.emitter.on('intent_failure', self.handle_fallback)
 
     def get_result(self, res):
-        result = None
         try:
-            result = next(res.results).text
-            return result
+            return next(res.results).text
         except:
+            result = None
             try:
-                result = self.__find_pod_id(res.pods, 'Value')
+                for pid in self.PIDS:
+                    result = self.__find_pod_id(res.pods, pid)
+                    if result:
+                        result = result[:5]
+                        break
                 if not result:
-                    result = self.__find_pod_id(
-                        res.pods, 'NotableFacts:PeopleData')
-                    if not result:
-                        result = self.__find_pod_id(
-                            res.pods, 'BasicInformation:PeopleData')
-                        if not result:
-                            result = self.__find_pod_id(res.pods, 'Definition')
-                            if not result:
-                                result = self.__find_pod_id(
-                                    res.pods, 'DecimalApproximation')
-                                if result:
-                                    result = result[:5]
-                                else:
-                                    result = self.__find_num(
-                                        res.pods, '200')
+                    result = self.__find_num(res.pods, '200')
                 return result
             except:
                 return result
 
+    # TODO: Localization
     def handle_fallback(self, message):
         self.enclosure.mouth_think()
-        logger.debug(
+        LOG.debug(
             "Could not determine intent, falling back to WolframAlpha Skill!")
         utterance = message.data.get('utterance')
         parsed_question = self.question_parser.parse(utterance)
@@ -155,18 +136,20 @@ class WolframAlphaSkill(MycroftSkill):
                 parsed_question['QuestionVerb'] = 'is'
             query = "%s %s %s" % (utt_word, utt_verb, utt_query)
             phrase = "know %s %s %s" % (utt_word, utt_query, utt_verb)
-        else:  # TODO: Localization
+        else:
             phrase = "understand the phrase " + utterance
 
         try:
             res = self.client.query(query)
             result = self.get_result(res)
             others = self._find_did_you_mean(res)
-        except CerberusAccessDenied as e:
-            self.speak_dialog('not.paired')
+        except HTTPError as e:
+            if e.response.status_code == 401:
+                LOG.warn("Access Denied at mycroft.ai")
+                self.speak_dialog('not.paired')
             return
         except Exception as e:
-            logger.exception(e)
+            LOG.exception(e)
             self.speak_dialog("not.understood", data={'phrase': phrase})
             return
 
