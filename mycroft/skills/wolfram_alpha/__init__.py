@@ -75,9 +75,12 @@ class WAApi(Api):
     def __init__(self):
         super(WAApi, self).__init__("wa")
 
+    def get_data(self, response):
+        return response.text
+
     def query(self, input):
-        response = self.request({"query": {"input": input}})
-        return wolframalpha.Result(StringIO(response.content))
+        data = self.request({"query": {"input": input}})
+        return wolframalpha.Result(StringIO(data))
 
 
 class WolframAlphaSkill(MycroftSkill):

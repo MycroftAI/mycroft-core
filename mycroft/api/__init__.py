@@ -20,23 +20,23 @@ class Api(object):
         method = params.get("method", "GET")
         headers = self.build_headers(params)
         json = self.build_json(params)
-        query = params.get("query")
+        query = self.build_query(params)
         url = self.build_url(params)
         response = requests.request(method, url, headers=headers, params=query,
                                     data=params.get("data"), json=json)
         return self.get_response(response)
 
-    @staticmethod
-    def get_response(response):
-        try:
-            data = response.json()
-        except:
-            data = response.text
-
+    def get_response(self, response):
+        data = self.get_data(response)
         if 200 <= response.status_code < 300:
             return data
-        else:
-            raise HTTPError(data, response=response)
+        raise HTTPError(data, response=response)
+
+    def get_data(self, response):
+        try:
+            return response.json()
+        except:
+            return response.text
 
     def build_headers(self, params):
         headers = params.get("headers", {})
@@ -61,6 +61,9 @@ class Api(object):
                     json[k] = None
             params["json"] = json
         return json
+
+    def build_query(self, params):
+        return params.get("query")
 
     def build_url(self, params):
         path = params.get("path", "")
