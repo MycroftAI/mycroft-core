@@ -76,11 +76,11 @@ class WAApi(Api):
         super(WAApi, self).__init__("wa")
 
     def get_data(self, response):
-        return response.text
+        return response
 
     def query(self, input):
         data = self.request({"query": {"input": input}})
-        return wolframalpha.Result(StringIO(data))
+        return wolframalpha.Result(StringIO(data.content))
 
 
 class WolframAlphaSkill(MycroftSkill):
@@ -94,7 +94,7 @@ class WolframAlphaSkill(MycroftSkill):
 
     def __init_client(self):
         key = self.config.get('api_key')
-        if key:
+        if key and not self.config.get('proxy'):
             self.client = wolframalpha.Client(key)
         else:
             self.client = WAApi()

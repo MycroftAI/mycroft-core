@@ -51,7 +51,7 @@ class Api(object):
 
     def add_authorization(self, headers):
         if not headers.__contains__("Authorization"):
-            headers["Authorization"] = "Bearer " + self.identity.token
+            headers["Authorization"] = "Bearer " + self.identity.access
 
     def build_json(self, params):
         json = params.get("json")

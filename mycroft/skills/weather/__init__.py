@@ -14,27 +14,24 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
-
 import time
 
 from adapt.intent import IntentBuilder
 from multi_key_dict import multi_key_dict
 from os.path import dirname
-from pyowm.exceptions.api_call_error import APICallError
+from pyowm import OWM
 from pyowm.webapi25.forecaster import Forecaster
 from pyowm.webapi25.forecastparser import ForecastParser
 from pyowm.webapi25.observationparser import ObservationParser
+from requests import HTTPError
 
 from mycroft.api import Api
-from mycroft.identity import IdentityManager
 from mycroft.skills.core import MycroftSkill
-from mycroft.skills.weather.owm_repackaged import OWM
 from mycroft.util.log import getLogger
 
 __author__ = 'jdorleans'
 
-LOGGER = getLogger(__name__)
+LOG = getLogger(__name__)
 
 
 class OWMApi(Api):
@@ -44,32 +41,39 @@ class OWMApi(Api):
         self.observation = ObservationParser()
         self.forecast = ForecastParser()
 
+    def build_query(self, params):
+        params.get("query").update({"lang": self.lang})
+        return params.get("query")
+
+    def get_data(self, response):
+        return response.text
+
     def weather_at_place(self, name):
-        response = self.request({
+        data = self.request({
             "path": "/weather",
-            "query": {"q": name, "lang": self.lang}
+            "query": {"q": name}
         })
-        return self.observation.parse_JSON(response)
+        return self.observation.parse_JSON(data)
 
     def three_hours_forecast(self, name):
-        response = self.request({
+        data = self.request({
             "path": "/forecast",
-            "query": {"q": name, "lang": self.lang}
+            "query": {"q": name}
         })
-        return self.to_forecast(response, "3h")
+        return self.to_forecast(data, "3h")
 
     def daily_forecast(self, name, limit=None):
-        query = {"q": name, "lang": self.lang}
+        query = {"q": name}
         if limit is not None:
             query["cnt"] = limit
-        response = self.request({
+        data = self.request({
             "path": "/forecast/daily",
             "query": query
         })
-        return self.to_forecast(response, "daily")
+        return self.to_forecast(data, "daily")
 
-    def to_forecast(self, response, interval):
-        forecast = self.forecast.parse_JSON(response)
+    def to_forecast(self, data, interval):
+        forecast = self.forecast.parse_JSON(data)
         if forecast is not None:
             forecast.set_interval(interval)
             return Forecaster(forecast)
@@ -79,8 +83,9 @@ class OWMApi(Api):
 
 class WeatherSkill(MycroftSkill):
     def __init__(self):
-        super(WeatherSkill, self).__init__(name="WeatherSkill")
-        self.temperature = self.config['temperature']
+        super(WeatherSkill, self).__init__("WeatherSkill")
+        self.temperature = self.config.get('temperature')
+        self.__init_owm()
         self.CODES = multi_key_dict()
         self.CODES['01d', '01n'] = 0
         self.CODES['02d', '02n', '03d', '03n'] = 1
@@ -91,10 +96,12 @@ class WeatherSkill(MycroftSkill):
         self.CODES['13d', '13n'] = 6
         self.CODES['50d', '50n'] = 7
 
-    @property
-    def owm(self):
-        return OWM(API_key=self.config.get('api_key', ''),
-                   identity=IdentityManager.get())
+    def __init_owm(self):
+        key = self.config.get('api_key')
+        if key and not self.config.get('proxy'):
+            self.owm = OWM(key)
+        else:
+            self.owm = OWMApi()
 
     def initialize(self):
         self.load_data_files(dirname(__file__))
@@ -132,11 +139,11 @@ class WeatherSkill(MycroftSkill):
             self.speak_dialog('current.weather', data)
             time.sleep(5)
             self.enclosure.activate_mouth_events()
-        except APICallError as e:
+        except HTTPError as e:
             self.__api_error(e)
         except Exception as e:
-            LOGGER.debug(e)
-            LOGGER.error("Error: {0}".format(e))
+            LOG.debug(e)
+            LOG.error("Error: {0}".format(e))
 
     def handle_next_hour_intent(self, message):
         try:
@@ -152,10 +159,10 @@ class WeatherSkill(MycroftSkill):
             self.speak_dialog('hour.weather', data)
             time.sleep(5)
             self.enclosure.activate_mouth_events()
-        except APICallError as e:
+        except HTTPError as e:
             self.__api_error(e)
         except Exception as e:
-            LOGGER.error("Error: {0}".format(e))
+            LOG.error("Error: {0}".format(e))
 
     def handle_next_day_intent(self, message):
         try:
@@ -172,10 +179,10 @@ class WeatherSkill(MycroftSkill):
             self.speak_dialog('tomorrow.weather', data)
             time.sleep(5)
             self.enclosure.activate_mouth_events()
-        except APICallError as e:
+        except HTTPError as e:
             self.__api_error(e)
         except Exception as e:
-            LOGGER.error("Error: {0}".format(e))
+            LOG.error("Error: {0}".format(e))
 
     def __build_data_condition(
             self, location, weather, temp='temp', temp_min='temp_min',
@@ -197,8 +204,8 @@ class WeatherSkill(MycroftSkill):
         pass
 
     def __api_error(self, e):
-        LOGGER.error("Error: {0}".format(e))
-        if e._triggering_error.code == 401:
+        if e.response.status_code == 401:
+            LOG.warn("Access Denied at mycroft.ai")
             self.speak_dialog('not.paired')
 
 
