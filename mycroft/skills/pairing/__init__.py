@@ -56,9 +56,9 @@ class PairingSkill(MycroftSkill):
     def activate(self):
         try:
             token = self.data.get("token")
-            uuid = self.api.activate(self.state, token)
+            login = self.api.activate(self.state, token)
             self.speak_dialog("pairing.paired")
-            IdentityManager.save(uuid.get("uuid"), token)
+            IdentityManager.save(login)
         except:
             self.data["expiration"] -= self.delay
 

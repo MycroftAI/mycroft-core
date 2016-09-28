@@ -23,8 +23,10 @@ from mycroft.filesystem import FileSystemAccess
 
 class DeviceIdentity(object):
     def __init__(self, **kwargs):
-        self.uuid = kwargs.get('uuid', "")
-        self.token = kwargs.get('token', "")
+        self.uuid = kwargs.get("uuid", "")
+        self.access = kwargs.get("access", "")
+        self.refresh = kwargs.get("refresh", "")
+        self.expiration = kwargs.get("expiration", "")
 
 
 class IdentityManager(object):
@@ -39,9 +41,11 @@ class IdentityManager(object):
             IdentityManager.__identity = DeviceIdentity()
 
     @staticmethod
-    def save(uuid, token):
-        IdentityManager.__identity.uuid = uuid
-        IdentityManager.__identity.token = token
+    def save(identity):
+        IdentityManager.__identity.uuid = identity.get("uuid")
+        IdentityManager.__identity.access = identity.get("accessToken")
+        IdentityManager.__identity.refresh = identity.get("refreshToken")
+        IdentityManager.__identity.expiration = identity.get("expiration")
         with FileSystemAccess('identity').open('identity.json', 'w') as f:
             json.dump(IdentityManager.__identity.__dict__, f)
 
