@@ -98,7 +98,7 @@ class MycroftSTT(STT):
 
     def execute(self, audio, language=None):
         language = language or self.lang
-        return self.api.stt(audio.frame_data, language)
+        return self.api.stt(audio.get_flac_data(), language)
 
 
 class STTFactory(object):
