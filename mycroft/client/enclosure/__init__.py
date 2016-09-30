@@ -37,7 +37,7 @@ from mycroft.util.log import getLogger
 
 __author__ = 'aatchison', 'jdorleans', 'iward'
 
-LOGGER = getLogger("EnclosureClient")
+LOG = getLogger("EnclosureClient")
 
 
 class EnclosureReader(Thread):
@@ -69,9 +69,9 @@ class EnclosureReader(Thread):
                 data = self.serial.readline()[:-2]
                 if data:
                     self.process(data)
-                    LOGGER.info("Reading: " + data)
+                    LOG.info("Reading: " + data)
             except Exception as e:
-                LOGGER.error("Reading error: {0}".format(e))
+                LOG.error("Reading error: {0}".format(e))
 
     def process(self, data):
         self.client.emit(Message(data))
@@ -168,10 +168,10 @@ class EnclosureWriter(Thread):
             try:
                 cmd = self.commands.get()
                 self.serial.write(cmd + '\n')
-                LOGGER.info("Writing: " + cmd)
+                LOG.info("Writing: " + cmd)
                 self.commands.task_done()
             except Exception as e:
-                LOGGER.error("Writing error: {0}".format(e))
+                LOG.error("Writing error: {0}".format(e))
 
     def write(self, command):
         self.commands.put(str(command))
@@ -209,19 +209,21 @@ class Enclosure(object):
         self.test()
 
     def update(self):
-        if self.config.get('update'):
+        if self.config.get("update"):
             try:
-                self.speak("I am upgrading my enclosure version")
-                subprocess.check_call('/opt/enclosure/upload.sh')
-                self.speak("Enclosure upgrade completed")
+                self.speak("Upgrading enclosure version")
+                subprocess.check_call("/opt/enclosure/upload.sh")
+                self.speak("Enclosure update completed")
+                ConfigurationManager.save({"enclosure": {"update": False}})
                 time.sleep(5)
             except:
                 self.speak("I cannot upgrade right now, I'll try later")
 
     def test(self):
-        if self.config.get('test'):
-            self.speak("Beginning hardware self test")
+        if self.config.get("test"):
+            self.speak("Beginning hardware test")
             self.writer.write("test.begin")
+            ConfigurationManager.save({"enclosure": {"test": False}})
 
     def __init_serial(self):
         try:
@@ -230,12 +232,10 @@ class Enclosure(object):
             self.timeout = self.config.get("timeout")
             self.serial = serial.serial_for_url(
                 url=self.port, baudrate=self.rate, timeout=self.timeout)
-            LOGGER.info(
-                "Connected to: " + self.port + " rate: " + str(self.rate) +
-                " timeout: " + str(self.timeout))
+            LOG.info("Connected to: %s rate: %s timeout: %s" %
+                     (self.port, self.rate, self.timeout))
         except:
-            LOGGER.error(
-                "It is not possible to connect to serial port: " + self.port)
+            LOG.error("Impossible to connect to serial port: " + self.port)
             raise
 
     def __register_events(self):
@@ -266,7 +266,7 @@ class Enclosure(object):
         try:
             self.client.run_forever()
         except Exception as e:
-            LOGGER.error("Client error: {0}".format(e))
+            LOG.error("Client error: {0}".format(e))
             self.stop()
 
     def stop(self):
