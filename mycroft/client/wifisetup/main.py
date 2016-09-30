@@ -408,8 +408,8 @@ class WiFi:
         return float(values[0]) / float(values[1])
 
     def connect(self, event=None):
-        if event and event.metadata:
-            ssid = event.metadata.get("ssid")
+        if event and event.data:
+            ssid = event.data.get("ssid")
             connected = self.is_connected(ssid)
 
             if connected:
@@ -420,8 +420,8 @@ class WiFi:
                 nid = wpa(self.iface, 'add_network')
                 wpa(self.iface, 'set_network', nid, 'ssid', '"' + ssid + '"')
 
-                if event.metadata.__contains__("pass"):
-                    psk = '"' + event.metadata.get("pass") + '"'
+                if event.data.__contains__("pass"):
+                    psk = '"' + event.data.get("pass") + '"'
                     wpa(self.iface, 'set_network', nid, 'psk', psk)
                 else:
                     wpa(self.iface, 'set_network', nid, 'key_mgmt', 'NONE')

@@ -60,8 +60,8 @@ class EnclosureMouth:
         self.writer.write("mouth.smile")
 
     def viseme(self, event=None):
-        if event and event.metadata:
-            code = event.metadata.get("code")
+        if event and event.data:
+            code = event.data.get("code")
             if code:
                 self.writer.write("mouth.viseme=" + code)
 
