@@ -28,28 +28,26 @@ a Linux system to be selected by end users.  This is achieved by:
   * configuring this device based on that selection
 """
 
+import os
 import sys
-import traceback
 import threading
+import time
+import traceback
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 from SocketServer import TCPServer
+from os.path import dirname, realpath
 from shutil import copyfile
 from subprocess import Popen, PIPE
 from threading import Thread
 from time import sleep
-import urlparse
 
-import os
-import time
-from os.path import dirname, realpath
 from pyric import pyw
 from wifi import Cell
 
 from mycroft.client.enclosure.api import EnclosureAPI
-from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
-from mycroft.util import str2bool, connected
+from mycroft.util import connected
 from mycroft.util.log import getLogger
 
 __author__ = 'aatchison and penrods'
@@ -92,6 +90,7 @@ def sysctrl(*args):
 
 class CaptiveHTTPRequestHandler(SimpleHTTPRequestHandler):
     ''' Serve a single website, 303 redirecting all other requests to it '''
+
     def do_HEAD(self):
         LOG.info("do_HEAD being called....")
         if not self.redirect():
@@ -107,11 +106,11 @@ class CaptiveHTTPRequestHandler(SimpleHTTPRequestHandler):
             LOG.info("***********************")
             LOG.info("**   HTTP Request   ***")
             LOG.info("***********************")
-            LOG.info("Requesting: "+self.path)
-            LOG.info("REMOTE_ADDR:"+self.client_address[0])
-            LOG.info("SERVER_NAME:"+self.server.server_address[0])
-            LOG.info("SERVER_PORT:"+str(self.server.server_address[1]))
-            LOG.info("SERVER_PROTOCOL:"+self.request_version)
+            LOG.info("Requesting: " + self.path)
+            LOG.info("REMOTE_ADDR:" + self.client_address[0])
+            LOG.info("SERVER_NAME:" + self.server.server_address[0])
+            LOG.info("SERVER_PORT:" + str(self.server.server_address[1]))
+            LOG.info("SERVER_PROTOCOL:" + self.request_version)
             LOG.info("HEADERS...")
             LOG.info(self.headers)
             LOG.info("***********************")
@@ -135,6 +134,7 @@ class CaptiveHTTPRequestHandler(SimpleHTTPRequestHandler):
 
 class WebServer(Thread):
     ''' Web server for devices connected to the temporary access point '''
+
     def __init__(self, host, port):
         super(WebServer, self).__init__()
         self.daemon = True
@@ -164,9 +164,9 @@ address=/#/{server}
         self.wiface = wiface
         self.iface = 'p2p-wlan0-0'
         self.subnet = '172.24.1'
-        self.ip = self.subnet+'.1'
-        self.ip_start = self.subnet+'.50'
-        self.ip_end = self.subnet+'.150'
+        self.ip = self.subnet + '.1'
+        self.ip_start = self.subnet + '.50'
+        self.ip_end = self.subnet + '.150'
         self.password = None
 
     def up(self):
@@ -260,11 +260,11 @@ class WiFi:
         # let the user know to connect to it...
         passwordSpelled = ",  ".join(self.ap.password)
         self._speak_and_show(
-           prefix+" Use your mobile device or computer to "
-                  "connect to the wifi network "
-                  "'MYCROFT';  Then enter the uppercase "
-                  "password "+passwordSpelled,
-           self.ap.password)
+            prefix + " Use your mobile device or computer to "
+                     "connect to the wifi network "
+                     "'MYCROFT';  Then enter the uppercase "
+                     "password " + passwordSpelled,
+            self.ap.password)
 
     def _speak_and_show(self, speak, show):
         ''' Communicate with the user throughout the process '''
@@ -288,8 +288,8 @@ class WiFi:
             self.conn_monitor_stop.wait()
 
         self.conn_monitor = threading.Thread(
-                                    target=self._do_connection_monitor,
-                                    args={})
+            target=self._do_connection_monitor,
+            args={})
         self.conn_monitor.daemon = True
         self.conn_monitor.start()
         LOG.info("Monitor thread setup complete.\n")
@@ -316,16 +316,16 @@ class WiFi:
                 bHasConnected = True
                 cARPFailures = 0
                 mtimeLast = mtime
-                timeStarted = time.time()   # reset start time after connection
-                timeLastAnnounced = time.time()-45  # announce how to connect
+                timeStarted = time.time()  # reset start time after connection
+                timeLastAnnounced = time.time() - 45  # announce how to connect
 
-            if time.time()-timeStarted > 60*5:
+            if time.time() - timeStarted > 60 * 5:
                 # After 5 minutes, shut down the access point
                 LOG.info("Auto-shutdown of access point after 5 minutes")
                 self.stop()
                 continue
 
-            if time.time()-timeLastAnnounced >= 45:
+            if time.time() - timeLastAnnounced >= 45:
                 if bHasConnected:
                     self._speak_and_show(
                         "Now you can open your browser and go to start dot "
@@ -343,7 +343,7 @@ class WiFi:
                 # with the ARP tables if still present.
                 if cARPFailures == 0:
                     res = cli_no_output('ip', '-s', '-s', 'neigh', 'flush',
-                                        self.ap.subnet+'.0/24')
+                                        self.ap.subnet + '.0/24')
                     # Give ARP system time to re-register hardware
                     sleep(5)
 
@@ -375,7 +375,7 @@ class WiFi:
                         cli_no_output('/bin/ping', '-c', '1', '-W', 3,
                                       ip_disconnected)
                     else:
-                        return True    # something on subnet is connected!
+                        return True  # something on subnet is connected!
         return False
 
     def scan(self, event=None):
@@ -500,8 +500,8 @@ class WiFi:
             if not connected():
                 LOG.info("No connection initially, waiting 20...")
                 self.net_check = threading.Thread(
-                                            target=self._do_net_check,
-                                            args={})
+                    target=self._do_net_check,
+                    args={})
                 self.net_check.daemon = True
                 self.net_check.start()
             else:
