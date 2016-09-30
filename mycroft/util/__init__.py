@@ -18,12 +18,12 @@
 
 import socket
 import subprocess
+import tempfile
 
 import os
 import os.path
 import psutil
 from os.path import dirname
-import tempfile
 
 __author__ = 'jdorleans'
 
@@ -107,19 +107,19 @@ def connected(host="8.8.8.8", port=53, timeout=3):
             return False
 
 
-def create_signal(signalName):
+def create_signal(signal_name):
     try:
-        f = open(tempfile.gettempdir()+'/'+signalName, 'w')
-        return True
+        with open(tempfile.gettempdir() + '/' + signal_name, 'w'):
+            return True
     except IOError:
         return False
 
 
-def check_for_signal(signalName):
-    if os.path.isfile(tempfile.gettempdir()+'/'+signalName):
-        os.remove(tempfile.gettempdir()+'/'+signalName)
+def check_for_signal(signal_name):
+    filename = tempfile.gettempdir() + '/' + signal_name
+    if os.path.isfile(filename):
+        os.remove(filename)
         return True
-
     return False
 
 
