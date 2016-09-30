@@ -23,7 +23,7 @@ from os.path import join
 from mycroft import MYCROFT_ROOT_PATH
 from mycroft.configuration import ConfigurationManager
 from mycroft.tts import TTS, TTSValidator
-from mycroft.util import play_wav
+from mycroft.util import play_wav, check_for_signal
 
 __author__ = 'jdorleans', 'spenrod'
 
@@ -55,6 +55,8 @@ class Mimic(TTS):
         start = time()
         pairs = output.split(" ")
         for pair in pairs:
+            if check_for_signal('buttonPress'):
+                return
             pho_dur = pair.split(":")  # phoneme:duration
             if len(pho_dur) == 2:
                 code = VISIMES.get(pho_dur[0], '4')
