@@ -31,7 +31,6 @@ from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
-from mycroft.util import str2bool
 from mycroft.util.log import getLogger
 
 __author__ = 'aatchison'
@@ -135,15 +134,13 @@ address=/#/{server}
 
 
 class WiFi:
-    NAME = "WiFiClient"
-
     def __init__(self):
         self.iface = pyw.winterfaces()[0]
         self.ap = AccessPoint(self.iface)
         self.server = None
         self.client = WebsocketClient()
         self.enclosure = EnclosureAPI(self.client)
-        self.config = ConfigurationManager.get().get(self.NAME)
+        self.config = ConfigurationManager.get().get("wifi")
         self.init_events()
         self.first_setup()
 
@@ -154,13 +151,14 @@ class WiFi:
         self.client.on('mycroft.wifi.connect', self.connect)
 
     def first_setup(self):
-        if str2bool(self.config.get('setup')):
+        if self.config.get('setup'):
             self.start()
 
     def start(self, event=None):
         LOG.info("Starting access point...")
-        self.client.emit(Message("speak", metadata={
-            'utterance': "Initializing wireless setup mode."}))
+        self.client.emit(Message("speak", {
+            'utterance': "Initializing wireless setup mode."
+        }))
         self.ap.up()
         if not self.server:
             self.server = WebServer(self.ap.ip, 80)
@@ -218,7 +216,8 @@ class WiFi:
                 connected = self.get_connected(ssid)
                 if connected:
                     wpa(self.iface, 'save_config')
-                    ConfigurationManager.set(self.NAME, 'setup', False, True)
+                    config = {"wifi": {"setup": False}}
+                    ConfigurationManager.save(config, True)
 
             self.client.emit(Message("mycroft.wifi.connected",
                                      {'connected': connected}))

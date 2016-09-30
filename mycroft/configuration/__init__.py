@@ -180,3 +180,14 @@ class ConfigurationManager(object):
 
         if config:
             ConfigurationManager.__config.update(config)
+
+    @staticmethod
+    def save(config, is_system=False):
+        """
+        Save configuration ``config``.
+        """
+        ConfigurationManager.update(config)
+        location = SYSTEM_CONFIG if is_system else USER_CONFIG
+        with open(location, 'rw') as f:
+            config = json.load(f).update(config)
+            json.dump(config, f)
