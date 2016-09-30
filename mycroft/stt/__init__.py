@@ -31,7 +31,7 @@ class STT(object):
 
     def __init__(self):
         config_core = ConfigurationManager.get()
-        self.lang = self.init_language(config_core)
+        self.lang = str(self.init_language(config_core))
         self.config = config_core.get("stt")
         self.recognizer = Recognizer()
 
@@ -50,7 +50,7 @@ class TokenSTT(STT):
 
     def __init__(self):
         super(TokenSTT, self).__init__()
-        self.token = self.config.get("credential").get("token")
+        self.token = str(self.config.get("credential", {}).get("token"))
 
 
 class BasicSTT(STT):
@@ -59,8 +59,8 @@ class BasicSTT(STT):
     def __init__(self):
         super(BasicSTT, self).__init__()
         credential = self.config.get("credential")
-        self.username = credential.get("username")
-        self.password = credential.get("password")
+        self.username = str(credential.get("username"))
+        self.password = str(credential.get("password"))
 
 
 class GoogleSTT(TokenSTT):
