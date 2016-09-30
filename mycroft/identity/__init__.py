@@ -17,6 +17,7 @@
 
 
 import json
+import time
 
 from mycroft.filesystem import FileSystemAccess
 
@@ -26,7 +27,10 @@ class DeviceIdentity(object):
         self.uuid = kwargs.get("uuid", "")
         self.access = kwargs.get("access", "")
         self.refresh = kwargs.get("refresh", "")
-        self.expiration = kwargs.get("expiration", "")
+        self.update_expires_at(kwargs.get("expiration", 0))
+
+    def update_expires_at(self, expiration):
+        self.expires_at = time.time() + expiration
 
 
 class IdentityManager(object):
@@ -41,13 +45,19 @@ class IdentityManager(object):
             IdentityManager.__identity = DeviceIdentity()
 
     @staticmethod
-    def save(identity):
-        IdentityManager.__identity.uuid = identity.get("uuid")
-        IdentityManager.__identity.access = identity.get("accessToken")
-        IdentityManager.__identity.refresh = identity.get("refreshToken")
-        IdentityManager.__identity.expiration = identity.get("expiration")
+    def save(login=None):
+        if login:
+            IdentityManager.update(login)
         with FileSystemAccess('identity').open('identity.json', 'w') as f:
             json.dump(IdentityManager.__identity.__dict__, f)
+
+    @staticmethod
+    def update(login):
+        expiration = login.get("expiration", 0)
+        IdentityManager.__identity.uuid = login.get("uuid")
+        IdentityManager.__identity.access = login.get("accessToken")
+        IdentityManager.__identity.refresh = login.get("refreshToken")
+        IdentityManager.__identity.update_expires_at(expiration)
 
     @staticmethod
     def get():
