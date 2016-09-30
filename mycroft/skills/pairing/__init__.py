@@ -22,6 +22,7 @@ from os.path import dirname
 
 from mycroft.api import DeviceApi
 from mycroft.identity import IdentityManager
+from mycroft.messagebus.message import Message
 from mycroft.skills.core import MycroftSkill
 
 
@@ -59,6 +60,7 @@ class PairingSkill(MycroftSkill):
             login = self.api.activate(self.state, token)
             self.speak_dialog("pairing.paired")
             IdentityManager.save(login)
+            self.emitter.emit(Message("mycroft.device.paired", login))
         except:
             self.data["expiration"] -= self.delay
 
