@@ -20,9 +20,9 @@ var WS = {
 
     onMessage: function (evt) {
         var msg = JSON.parse(evt.data);
-        if (this.listeners[msg.message_type]) {
-            this.listeners[msg.message_type].forEach(function (cb) {
-                cb(msg.metadata);
+        if (this.listeners[msg.type]) {
+            this.listeners[msg.type].forEach(function (cb) {
+                cb(msg.data);
             });
         }
     },
@@ -36,8 +36,8 @@ var WS = {
 
     send: function (type, data) {
         this.ws.send(JSON.stringify({
-            message_type: type,
-            metadata: data
+            type: type,
+            data: data
         }));
     },
 
