@@ -7,7 +7,7 @@ case $1 in
 	"skills") SCRIPT=${TOP}/mycroft/skills/main.py ;;
 	"skill_container") SCRIPT=${TOP}/mycroft/skills/container.py ;;
 	"voice") SCRIPT=${TOP}/mycroft/client/speech/main.py ;;
-	"cli") SCRIPT=${TOP}/mycroft/client/text/cli.py ;;
+	"cli") SCRIPT=${TOP}/mycroft/client/text/main.py ;;
 	"audiotest") SCRIPT=${TOP}/mycroft/util/audio_test.py ;;
 	"collector") SCRIPT=${TOP}/mycroft_data_collection/cli.py ;;
 	"unittest") SCRIPT=${TOP}/test/main.py ;;
