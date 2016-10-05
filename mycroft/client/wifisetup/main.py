@@ -218,7 +218,7 @@ class WiFi:
                 connected = self.get_connected(ssid)
                 if connected:
                     wpa(self.iface, 'save_config')
-                    ConfigurationManager.set(self.NAME, 'setup', False, True)
+                    # ConfigurationManager.set(self.NAME, 'setup', False, True)
 
             self.client.emit(Message("mycroft.wifi.connected",
                                      {'connected': connected}))
