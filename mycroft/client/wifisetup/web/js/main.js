@@ -201,7 +201,7 @@ var WifiSetup = {
             document.querySelector("#connectBtn").addEventListener("click", this.sendScan);
             document.querySelector("#registerBtn").addEventListener("click", function () {
                 setTimeout(function() {
-                    location.href="https://mycroft.ai";
+                    location.href="https://cerberus.mycroft.ai";
                 }, 2000);
             });
 
