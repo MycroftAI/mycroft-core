@@ -252,8 +252,10 @@ class WiFi:
         # let the user know to connect to it...
         passwordSpelled = ",  ".join(self.ap.password)
         self.speakAndShow(
-           prefix+" Use your phone or computer to connect to the wifi network "
-                  "'MYCROFT' and enter the uppercase password "+passwordSpelled,
+           prefix+" Use your phone or computer to "
+                  "connect to the wifi network "
+                  "'MYCROFT' and enter the uppercase "
+                  "password "+passwordSpelled,
            self.ap.password)
 
     def speakAndShow(self, speak, show):
