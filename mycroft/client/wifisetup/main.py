@@ -136,8 +136,8 @@ class WebServer(Thread):
         super(WebServer, self).__init__()
         self.daemon = True
         LOG.info("Creating TCPServer...")
-        # self.server = TCPServer((host, port), MycroftHTTPRequestHandler)
-        self.server = TCPServer((host, port), SimpleHTTPRequestHandler)
+        self.server = TCPServer((host, port), MycroftHTTPRequestHandler)
+        # self.server = TCPServer((host, port), SimpleHTTPRequestHandler)
         LOG.info("Created TCPServer")
 
     def run(self):
@@ -252,7 +252,7 @@ class WiFi:
         # let the user know to connect to it...
         passwordSpelled = ",  ".join(self.ap.password)
         self.speakAndShow(
-           prefix+" Use your phone or computer to "
+           prefix+" Use your mobile phone or computer to "
                   "connect to the wifi network "
                   "'MYCROFT' and enter the uppercase "
                   "password "+passwordSpelled,
@@ -287,6 +287,7 @@ class WiFi:
         bHasConnected = False
         cARPFailures = 0
         timeStarted = time.time()
+        self.threadConMon_stop.clear()
 
         while not self.threadConMon_stop.isSet():
             # do our monitoring...

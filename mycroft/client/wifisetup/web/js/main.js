@@ -14,9 +14,18 @@ function getImagePath(strength) {
 
 function showPanel(id) {
     var panels = document.querySelectorAll(".panel");
-    Object.keys(panels).forEach(function (panel) {
-        panels[panel].classList.add("hide");
-    });
+
+// Under iOS/Safari this Object.keys(panels).forEach... coding structure
+// ends up generating a sequence with panel equaling...
+//  0, 1, 2, 3, 4, length
+// So the panels['length'] call flops.
+//
+//    Object.keys(panels).forEach(function (panel) {
+//        panels[panel].classList.add("hide");
+//    });
+    for (var i=0; i < panels.length; i++)
+        panels[i].classList.add("hide");
+
     document.querySelector("#" + id).classList.remove("hide");
 }
 
@@ -74,6 +83,7 @@ var WifiSetup = {
                 imgSignal = document.createElement("img");
             listItem.className = "list-item show";
             span.textContent = network.ssid;
+            span.className = "ssid";
             imgSignal.src = getImagePath(network.quality);
             imgSignal.className = "wifi";
             listItem.appendChild(span);
@@ -113,31 +123,31 @@ var WifiSetup = {
 
         renderConnectItem: function (li) {
             var connect = li.querySelector(".connect-item");
-            if (connect) {
-                li.querySelector(".list-item").classList.remove("show");
-                connect.classList.add("show");
-                return;
-            }
-            connect = document.createElement("div");
-            var imgArrow = document.createElement("img");
-            var label = document.createElement("label");
-            connect.className = "connect-item";
-            imgArrow.src = "img/next.png";
-            imgArrow.addEventListener("click", this.clickConnect.bind(this));
-            connect.appendChild(label);
-            if (this.selectedNetword.encrypted) {
-                passwordInput = document.createElement("input");
-                label.textContent = "Password: ";
-                passwordInput.type = "password";
-                connect.appendChild(passwordInput);
-            } else {
-                label.className = "public";
-                label.textContent = this.selectedNetword.ssid;
-            }
-            connect.appendChild(imgArrow);
-            li.appendChild(connect);
+            if (!connect) {
+                connect = document.createElement("div");
+                var imgArrow = document.createElement("img");
+                var label = document.createElement("label");
+                connect.className = "connect-item";
+                imgArrow.src = "img/next.png";
+                imgArrow.addEventListener("click", this.clickConnect.bind(this));
+                connect.appendChild(label);
+                if (this.selectedNetword.encrypted) {
+                    connect.passwordInput = document.createElement("input");
+                    label.textContent = "Password: ";
+                    connect.passwordInput.type = "password";
+                    connect.appendChild(connect.passwordInput);
+                } else {
+                    label.className = "public";
+                    label.textContent = this.selectedNetword.ssid;
+                }
+                connect.appendChild(imgArrow);
+
+                li.appendChild(connect);
+	    }
             li.querySelector(".list-item").classList.remove("show");
             connect.classList.add("show");
+            if ('passwordInput' in connect)
+		    connect.passwordInput.focus();
         },
 
         renderErrorItem: function (li) {

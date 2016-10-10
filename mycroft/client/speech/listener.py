@@ -193,7 +193,7 @@ class AudioConsumer(threading.Thread):
         else:  # TODO: Localization
             # TODO: Enclosure virtualization (might not have a button)
             self.__speak("This device is not connected to the Internet."
-                         "Either plug in an ethernet cable or hold the button"
+                         "Either plug in a network cable or hold the button"
                          " on top for two seconds, then select wifi from the "
                          "menu")
 
