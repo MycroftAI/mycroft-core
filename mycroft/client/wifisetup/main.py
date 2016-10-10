@@ -45,20 +45,6 @@ LOG = getLogger("WiFiClient")
 SCRIPT_DIR = dirname(realpath(__file__))
 
 
-def var_dump(var, prefix=''):
-    my_type = '[' + var.__class__.__name__ + '(' + str(len(var)) + ')]:'
-    print(prefix, my_type)
-    prefix += '    '
-    for i in var:
-        if type(i) in (list, tuple, dict, set):
-            var_dump(i, prefix)
-        else:
-            if isinstance(var, dict):
-                print(prefix, i, ': (', var[i].__class__.__name__, ')', var[i])
-            else:
-                print(prefix, '(', i.__class__.__name__, ')', i)
-
-
 def cli_no_output(*args):
     LOG.info("Command: %s" % list(args))
     proc = Popen(args=args, stdout=PIPE, stderr=PIPE)
@@ -358,8 +344,6 @@ class WiFi:
             update = True
             ssid = cell.ssid
             quality = self.get_quality(cell.quality)
-
-            print "SSID: ", var_dump(ssid)
 
             # If there are duplicate network IDs (e.g. repeaters) only
             # report the strongest signal
