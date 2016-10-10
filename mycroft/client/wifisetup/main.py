@@ -211,14 +211,11 @@ class WiFi:
         self.client.on('mycroft.wifi.connect', self.connect)
 
     def start(self, event=None):
-        # Fire up the MYCROFT access point for the user to connect to
-        # with a phone or computer.
+        '''
+           Fire up the MYCROFT access point for the user to connect to
+           with a phone or computer.
+        '''
         LOG.info("Starting access point...")
-
-        # zap any existing leases file because:
-        # a) we don't care about previous leases
-        # b) we will monitor it for connections
-        # os.remove('/var/lib/misc/dnsmasq.leases')
 
         # Fire up our access point
         self.ap.up()
@@ -330,7 +327,7 @@ class WiFi:
                         bHasConnected = False
                 else:
                     cARPFailures = 0
-            sleep(5)  # wait a bit before continuing
+            sleep(5)  # wait a bit to prevent thread from hogging CPU
 
         LOG.info("Exiting monitor thread...\n")
         self.threadConMon_stop.clear()
