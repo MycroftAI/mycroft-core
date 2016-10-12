@@ -121,6 +121,7 @@ input {
     height: 26px;
     border: 1px solid #DDD;
     width: calc(100% - 160px);
+    font-size: 16px;
 }
 
 .panel .body li .error-item span {

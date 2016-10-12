@@ -40,6 +40,16 @@ var WifiSetup = {
 
         onConnected: function (data) {
             if (data.connected) {
+                // NOTE:  Once we send the "mycroft.wifi.stop", the unit will
+                // be shutting down the wifi access point.  So the device
+                // hosting the browser session is probably being disconnected
+                // and hopefully automatically reconnecting to the internet.
+                //
+                // Until the reconnect happens, the user cannot actually
+                // follow the link to http://cerberus.mycroft.ai to register
+                // their device.  That is part of why we are doing this 2 sec
+                // delay.
+                //
                 WS.send("mycroft.wifi.stop");
                 setTimeout(function () {
                     showPanel("success");
