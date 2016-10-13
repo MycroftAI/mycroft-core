@@ -154,7 +154,7 @@ class AudioConsumer(threading.Thread):
                 logger.error("AccessDenied from Cerberus proxy.")
                 self.__speak(
                     "Your device is not registered yet. To start pairing, "
-                    "login at cerberus dot mycroft dot A.I")
+                    "browse to cerberus dot mycroft dot A.I")
                 utterances.append("pair my device")
             except Exception as e:
                 logger.error("Unexpected exception: {0}".format(e))
@@ -191,7 +191,11 @@ class AudioConsumer(threading.Thread):
             else:
                 raise sr.UnknownValueError
         else:  # TODO: Localization
-            self.__speak("This device is not connected to the Internet")
+            # TODO: Enclosure virtualization (might not have a button)
+            self.__speak("This device is not connected to the Internet."
+                         "Either plug in a network cable or hold the button"
+                         " on top for two seconds, then select wifi from the "
+                         "menu")
 
 
 class RecognizerLoopState(object):

@@ -41,6 +41,12 @@ var WS = {
         }));
     },
 
+    close: function () {
+        this.ws.close();
+        this.wsConnected = false;
+        this.ws = null;
+    },
+
     addMessageListener: function (type, callback) {
         this.listeners[type] = this.listeners[type] || [];
         this.listeners[type].push(callback);

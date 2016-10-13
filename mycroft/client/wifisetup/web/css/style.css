@@ -2,15 +2,32 @@
     font-family: sans-serif;
     user-select: none;
     -moz-user-select: none;
-    -webkit-user-select: none;
+    -webkit-user-select: text;
     -ms-user-select: none;
+}
+
+/* Prevent ridiculously long network names from screwing up the layout
+   by forcing them to wrap. */
+.ssid {
+    max-width: 280px;
+}
+
+/* A bug in Safari (as of 10-10-2016) breaks password input when
+   user-select:none is used.  This prevents that bug by allowing
+   text selection for all input fields (which is probably expected
+   by users anyway). */
+input {
+    user-select: text;
+    -moz-user-select: text;
+    -webkit-user-select: text;
+    -ms-user-select: text;
 }
 
 .panel {
     border-radius: 15px;
     box-shadow: 0 0 10px #AAA;
     max-width: 500px;
-    min-width: 320px;
+    min-width: 300px;
 }
 
 .panel .title {
@@ -104,6 +121,7 @@
     height: 26px;
     border: 1px solid #DDD;
     width: calc(100% - 160px);
+    font-size: 16px;
 }
 
 .panel .body li .error-item span {
@@ -221,6 +239,23 @@ span.connected {
     color: #FFF;
     cursor: pointer;
     text-decoration: none;
+}
+
+#centered {
+    margin-right:auto;
+    margin-left:auto;
+}
+#footer {
+    position:fixed;
+    bottom:10px;
+    width:100%;
+}
+#cancelBtn {
+    background: white;
+    z-index: 999;
+    color: #ff6666;
+    padding: 7px;    /* 10px of .button -3px to account for the thick border */
+    border: 3px solid #ff6666;
 }
 
 .alert {

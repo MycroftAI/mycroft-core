@@ -26,14 +26,14 @@
 </div>
 
 <div id="loading" class="panel">
-    <div class="title">Loading...</div>
+    <div class="title">LOADING</div>
     <div class="body">
         <div class="loader"></div>
     </div>
 </div>
 
 <div id="connecting" class="panel hide">
-    <div class="title">Connecting...</div>
+    <div class="title">CONNECTING</div>
     <div class="body">
         <div class="loader"></div>
     </div>
@@ -43,10 +43,14 @@
     <div class="title">CONNECTED</div>
     <div class="body">
         <span>I'm connected to the internet now. Feels goood <img src="img/love.png"/></span>
-        <small>Final step, register me so you can add new skills to my repertoire.</small>
-        <a class="button" id="registerBtn">REGISTER ME</a>
+        <small>If I am registered with your account, I'm ready to roll.  If not, go ahead and register me at cerberus.mycroft.ai.</small>
+        <a class="button hide" id="registerBtn">REGISTER ME</a>
     </div>
 </div>
+
+<p class="centered">
+    <a class="button" id="cancelBtn">CANCEL SETUP</a>
+</p>
 
 </body>
 </html>
