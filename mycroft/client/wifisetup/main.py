@@ -481,17 +481,16 @@ class WiFi:
         LOG.info("Access point stopped!")
 
     def _do_net_check(self):
-        # give system 20 seconds to resolve network or get plugged in
-        sleep(20)
+        # give system 5 seconds to resolve network or get plugged in
+        sleep(5)
 
         LOG.info("Checking internet connection again")
         if not connected() and self.conn_monitor is None:
             # TODO: Enclosure/localization
             self._speak_and_show(
-                "This device is not connected to the Internet."
-                "Either plug in a network cable or hold the button"
-                " on top for two seconds, then select wifi from the "
-                "menu", None)
+                "This device is not connected to the Internet. Either plug "
+                "in a network cable or hold the button on top for two "
+                "seconds, then select wifi from the menu", None)
 
     def run(self):
         try:
