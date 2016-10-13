@@ -15,14 +15,6 @@ function getImagePath(strength) {
 function showPanel(id) {
     var panels = document.querySelectorAll(".panel");
 
-// Under iOS/Safari this Object.keys(panels).forEach... coding structure
-// ends up generating a sequence with panel equaling...
-//  0, 1, 2, 3, 4, length
-// So the panels['length'] call flops.
-//
-//    Object.keys(panels).forEach(function (panel) {
-//        panels[panel].classList.add("hide");
-//    });
     for (var i=0; i < panels.length; i++)
         panels[i].classList.add("hide");
 
@@ -51,8 +43,14 @@ var WifiSetup = {
                 // delay.
                 //
                 WS.send("mycroft.wifi.stop");
+                WS.close();
+
                 setTimeout(function () {
+                    var btnCancel = document.querySelector("#cancelBtn");
+                    btnCancel.classList.add("hide");
+
                     showPanel("success");
+                    startPing();
                 }, 2000);
             } else {
                 showPanel("list-panel");
@@ -190,6 +188,7 @@ var WifiSetup = {
 
         sendScan: function () {
             showPanel("loading");
+            document.querySelector("#cancelBtn").classList.remove("hide");
             WS.send("mycroft.wifi.scan");
         }
         ,
@@ -215,6 +214,12 @@ var WifiSetup = {
         }
         ,
 
+        cancelSetup: function () {
+            WS.send("mycroft.wifi.stop");
+            WS.close();
+        }
+        ,
+
         init: function () {
             this.setListeners();
             showPanel("home");
@@ -224,10 +229,53 @@ var WifiSetup = {
                     location.href="https://cerberus.mycroft.ai";
                 }, 2000);
             });
-
+            document.querySelector("#cancelBtn").addEventListener("click", this.cancelSetup);
         }
+    };
+
+function startPing() {
+    ping("cerberus.mycroft.ai",
+        function(status,e) {
+            if (status == 'responded') {
+                // Un-hide the register button once we detect an
+                // active internet connection.
+                document.querySelector("#registerBtn").classList.remove("hide");
+            }
+            else
+                setTimeout(function() { startPing(); }, 1000);
+        });
+}
+
+function ping(domain, callback) {
+    if (!this.inUse) {
+        this.status = 'unchecked';
+        this.inUse = true;
+        this.callback = callback;
+        this.ip = domain;
+        var _that = this;
+        this.img = new Image();
+        this.img.onload = function () {
+            _that.inUse = false;
+            _that.callback('responded');
+
+        };
+        this.img.onerror = function (e) {
+            if (_that.inUse) {
+                _that.inUse = false;
+                _that.callback('responded', e);
+            }
+
+        };
+        this.start = new Date().getTime();
+        this.img.src = "http://" + domain;
+        this.timer = setTimeout(function () {
+            if (_that.inUse) {
+                _that.inUse = false;
+                _that.callback('timeout');
+            }
+        }, 1500);
     }
-    ;
+}
 
 window.addEventListener("load", function () {
     WS.connect();
