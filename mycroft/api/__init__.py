@@ -1,6 +1,5 @@
 import requests
 from requests import HTTPError
-import time
 
 from mycroft.configuration import ConfigurationManager
 from mycroft.identity import IdentityManager
@@ -18,28 +17,31 @@ class Api(object):
         self.identity = IdentityManager.get()
 
     def check_token(self):
-        if (self.identity.refresh and self.identity.expires_at <= time.time()):
-            data = self.send({
-                "path": "auth/token",
-                "headers": {
-                    "Authorization": "Bearer " + self.identity.refresh
-                }
-            })
-            IdentityManager.save(data)
+        if self.identity.refresh and self.identity.is_expired():
+            self.identity = IdentityManager.load()
+            if self.identity.is_expired():
+                data = self.send({
+                    "path": "auth/token",
+                    "headers": {
+                        "Authorization": "Bearer " + self.identity.refresh
+                    }
+                })
+                IdentityManager.save(data)
 
     def send(self, params):
         method = params.get("method", "GET")
         headers = self.build_headers(params)
+        data = self.build_data(params)
         json = self.build_json(params)
         query = self.build_query(params)
         url = self.build_url(params)
         response = requests.request(method, url, headers=headers, params=query,
-                                    data=params.get("data"), json=json)
+                                    data=data, json=json)
         return self.get_response(response)
 
     def request(self, params):
         self.check_token()
-        params["path"] = self.build_path(params)
+        self.build_path(params)
         return self.send(params)
 
     def get_response(self, response):
@@ -69,6 +71,9 @@ class Api(object):
         if not headers.__contains__("Authorization"):
             headers["Authorization"] = "Bearer " + self.identity.access
 
+    def build_data(self, params):
+        return params.get("data")
+
     def build_json(self, params):
         json = params.get("json")
         if json and params["headers"]["Content-Type"] == "application/json":
@@ -81,14 +86,15 @@ class Api(object):
     def build_query(self, params):
         return params.get("query")
 
+    def build_path(self, params):
+        path = params.get("path", "")
+        params["path"] = self.path + path
+        return params["path"]
+
     def build_url(self, params):
         path = params.get("path", "")
         version = params.get("version", self.version)
         return self.url + "/" + version + "/" + path
-
-    def build_path(self, params):
-        path = params.get("path", "")
-        return self.path + path
 
 
 class DeviceApi(Api):
