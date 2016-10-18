@@ -1,5 +1,6 @@
 import requests
 from requests import HTTPError
+import time
 
 from mycroft.configuration import ConfigurationManager
 from mycroft.identity import IdentityManager
@@ -16,7 +17,17 @@ class Api(object):
         self.version = config_server.get("version")
         self.identity = IdentityManager.get()
 
-    def request(self, params):
+    def check_token(self):
+        if (self.identity.refresh and self.identity.expires_at <= time.time()):
+            data = self.send({
+                "path": "auth/token",
+                "headers": {
+                    "Authorization": "Bearer " + self.identity.refresh
+                }
+            })
+            IdentityManager.save(data)
+
+    def send(self, params):
         method = params.get("method", "GET")
         headers = self.build_headers(params)
         json = self.build_json(params)
@@ -25,6 +36,11 @@ class Api(object):
         response = requests.request(method, url, headers=headers, params=query,
                                     data=params.get("data"), json=json)
         return self.get_response(response)
+
+    def request(self, params):
+        self.check_token()
+        params["path"] = self.build_path(params)
+        return self.send(params)
 
     def get_response(self, response):
         data = self.get_data(response)
@@ -68,7 +84,11 @@ class Api(object):
     def build_url(self, params):
         path = params.get("path", "")
         version = params.get("version", self.version)
-        return self.url + "/" + version + "/" + self.path + path
+        return self.url + "/" + version + "/" + path
+
+    def build_path(self, params):
+        path = params.get("path", "")
+        return self.path + path
 
 
 class DeviceApi(Api):
