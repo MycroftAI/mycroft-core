@@ -27,10 +27,7 @@ class DeviceIdentity(object):
         self.uuid = kwargs.get("uuid", "")
         self.access = kwargs.get("access", "")
         self.refresh = kwargs.get("refresh", "")
-        self.update_expires_at(kwargs.get("expiration", 0))
-
-    def update_expires_at(self, expiration):
-        self.expires_at = time.time() + expiration
+        self.expires_at = kwargs.get("expires_at", 0)
 
 
 class IdentityManager(object):
@@ -53,11 +50,11 @@ class IdentityManager(object):
 
     @staticmethod
     def update(login):
-        expiration = login.get("expiration", 0)
+        expiration = login.get("expiration")
         IdentityManager.__identity.uuid = login.get("uuid")
         IdentityManager.__identity.access = login.get("accessToken")
         IdentityManager.__identity.refresh = login.get("refreshToken")
-        IdentityManager.__identity.update_expires_at(expiration)
+        IdentityManager.__identity.expires_at = time.time() + expiration
 
     @staticmethod
     def get():
