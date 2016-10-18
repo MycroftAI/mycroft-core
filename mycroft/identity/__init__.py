@@ -29,6 +29,9 @@ class DeviceIdentity(object):
         self.refresh = kwargs.get("refresh", "")
         self.expires_at = kwargs.get("expires_at", 0)
 
+    def is_expired(self):
+        return self.refresh and self.expires_at <= time.time()
+
 
 class IdentityManager(object):
     __identity = None
@@ -40,6 +43,7 @@ class IdentityManager(object):
                 IdentityManager.__identity = DeviceIdentity(**json.load(f))
         except:
             IdentityManager.__identity = DeviceIdentity()
+        return IdentityManager.__identity
 
     @staticmethod
     def save(login=None):
