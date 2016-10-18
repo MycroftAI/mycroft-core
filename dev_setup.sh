@@ -37,7 +37,7 @@ TOP=$(cd $(dirname $0) && pwd -L)
 if [ -z "$WORKON_HOME" ]; then
     VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${HOME}/.virtualenvs/mycroft"}
 else
-    VIRTUALENV_ROOT="$WORKON_HOME"
+    VIRTUALENV_ROOT="$WORKON_HOME/mycroft"
 fi
 
 # create virtualenv, consistent with virtualenv-wrapper conventions
