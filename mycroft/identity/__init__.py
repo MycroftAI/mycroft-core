@@ -54,7 +54,7 @@ class IdentityManager(object):
 
     @staticmethod
     def update(login):
-        expiration = login.get("expiration")
+        expiration = login.get("expiration", 0)
         IdentityManager.__identity.uuid = login.get("uuid")
         IdentityManager.__identity.access = login.get("accessToken")
         IdentityManager.__identity.refresh = login.get("refreshToken")
