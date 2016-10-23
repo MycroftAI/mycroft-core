@@ -128,10 +128,10 @@ class STTApi(Api):
     def __init__(self):
         super(STTApi, self).__init__("stt")
 
-    def stt(self, audio, language):
+    def stt(self, audio, language, limit):
         return self.request({
             "method": "POST",
             "headers": {"Content-Type": "audio/x-flac"},
-            "query": {"lang": language},
+            "query": {"lang": language, "limit": limit},
             "data": audio
         })
