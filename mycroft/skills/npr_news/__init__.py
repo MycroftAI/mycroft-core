@@ -19,6 +19,7 @@
 import feedparser
 import time
 from os.path import dirname
+import re
 
 import mycroft.skills.weather as weather
 from adapt.intent import IntentBuilder
@@ -52,7 +53,7 @@ class NPRNewsSkill(MycroftSkill):
             data = feedparser.parse(self.url_rss)
             self.speak_dialog('npr.news')
             time.sleep(3)
-            self.process = play_mp3(data['entries'][0]['links'][0]['href'])
+            self.process = play_mp3(re.sub('https', 'http', data['entries'][0]['links'][0]['href']))
 
         except Exception as e:
             LOGGER.error("Error: {0}".format(e))
