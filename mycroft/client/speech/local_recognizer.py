@@ -16,11 +16,11 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import os
 import tempfile
 import time
-
-import os
 from os.path import join, dirname, abspath
+
 from pocketsphinx import Decoder
 
 __author__ = 'seanfitz, jdorleans'

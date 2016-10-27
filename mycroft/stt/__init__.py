@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 from abc import ABCMeta, abstractmethod
+
 from speech_recognition import Recognizer
 
 from mycroft.api import STTApi
