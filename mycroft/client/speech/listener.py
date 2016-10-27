@@ -20,8 +20,8 @@ import time
 from Queue import Queue
 from threading import Thread
 
-import pyee
 import speech_recognition as sr
+from pyee import EventEmitter
 from requests import HTTPError
 
 from mycroft.client.speech.local_recognizer import LocalRecognizer
@@ -35,10 +35,6 @@ from mycroft.util import connected
 from mycroft.util.log import getLogger
 
 LOG = getLogger(__name__)
-
-config = ConfigurationManager.get()
-speech_config = config.get('speech_client')
-listener_config = config.get('listener')
 
 
 class AudioProducer(Thread):
@@ -173,28 +169,28 @@ class RecognizerLoopState(object):
         self.sleeping = False
 
 
-class RecognizerLoop(pyee.EventEmitter):
-    def __init__(self,
-                 channels=speech_config.get('channels'),
-                 rate=speech_config.get('sample_rate'),
-                 device_index=speech_config.get('device_index'),
-                 lang=config.get('lang')):
-        pyee.EventEmitter.__init__(self)
-        self.microphone = MutableMicrophone(device_index, rate)
+class RecognizerLoop(EventEmitter):
+    def __init__(self):
+        super(RecognizerLoop, self).__init__()
+        config = ConfigurationManager.get()
+        lang = config.get('lang')
+        self.config = config.get('listener')
+        rate = self.config.get('sample_rate')
+        device_index = self.config.get('device_index')
 
+        self.microphone = MutableMicrophone(device_index, rate)
         # FIXME - channels are not been used
-        self.microphone.CHANNELS = channels
+        self.microphone.CHANNELS = self.config.get('channels')
         self.mycroft_recognizer = self.create_mycroft_recognizer(rate, lang)
         # TODO - localization
         self.wakeup_recognizer = self.create_wakeup_recognizer(rate, lang)
         self.remote_recognizer = ResponsiveRecognizer(self.mycroft_recognizer)
         self.state = RecognizerLoopState()
 
-    @staticmethod
-    def create_mycroft_recognizer(rate, lang):
-        wake_word = listener_config.get('wake_word')
-        phonemes = listener_config.get('phonemes')
-        threshold = listener_config.get('threshold')
+    def create_mycroft_recognizer(self, rate, lang):
+        wake_word = self.config.get('wake_word')
+        phonemes = self.config.get('phonemes')
+        threshold = self.config.get('threshold')
         return LocalRecognizer(wake_word, phonemes, threshold, rate, lang)
 
     @staticmethod
