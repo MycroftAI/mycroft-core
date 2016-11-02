@@ -29,6 +29,7 @@ from mycroft.tts import tts_factory
 from mycroft.util.log import getLogger
 from mycroft.util import kill, connected
 from mycroft.util import play_mp3
+from mycroft.client.enclosure.api import EnclosureAPI
 
 logger = getLogger("SpeechClient")
 client = None
@@ -148,10 +149,11 @@ def main():
     event_thread.setDaemon(True)
     event_thread.start()
 
-    try:
-        subprocess.call('echo "eyes.reset" >/dev/ttyAMA0', shell=True)
-    except:
-        pass
+    # Send the enclosure a message to reset the rolling
+    # eyes shown at boot on a unit
+    enclosure = EnclosureAPI(client)
+    enclosure.eyes_reset()
+    enclosure.mouth_reset()
 
     try:
         loop.run()
