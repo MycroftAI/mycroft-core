@@ -202,7 +202,28 @@ class Enclosure:
     """
 
     def __init__(self):
-        self.__init_serial()
+        try:
+            self.config = ConfigurationManager.get().get("enclosure")
+
+            platform = self.config.get('platform')
+            if platform is None:
+                # Use the serial port to check if this is a Mycroft
+                # Mark 1 unit.
+                platform = self.detect_platform()
+                ConfigurationManager.set('enclosure', 'platform',
+                                         platform)
+
+            if platform is "mycroft_mark_1":
+                # We are a mycroft_mark_1 unit, start up the
+                # enclosure client to communicate over the
+                # serial port
+                self.__init_serial()
+            else:
+                raise Exception("Exception: Not a Mycroft Mark 1")
+
+        except:
+            raise Exception("Exception: Unable to load configuration")
+
         self.client = WebsocketClient()
         self.reader = EnclosureReader(self.serial, self.client)
         self.writer = EnclosureWriter(self.serial, self.client)
@@ -211,6 +232,24 @@ class Enclosure:
         self.system = EnclosureArduino(self.client, self.writer)
         self.weather = EnclosureWeather(self.client, self.writer)
         self.__register_events()
+
+    def detect_platform(self):
+        LOGGER.info("Auto-detecting platform")
+        self.__init_serial()
+
+        # Write out "system.ping"
+        self.serial.write("system.ping\n")
+        time.sleep(0.5)
+
+        # Now check to see if we got a response from the ping
+        # This assumes only a Mycroft Arduino responds to this
+        # which is probably a dubious assumption.  But a
+        # decent enough auto-detect.
+        data = self.serial.readline()[:-2]
+        if "Command: system.ping" in data:
+            return "mycroft_mark_1"
+        else:
+            return "unknown"
 
     def setup(self):
         must_upload = self.config.get('must_upload')
@@ -243,8 +282,11 @@ class Enclosure:
             os.chdir(old_path)
 
     def __init_serial(self):
+        if self.port is None:
+            return  # already initialized
+
         try:
-            self.config = ConfigurationManager.get().get("enclosure")
+            LOGGER.info("Opening serial port" + data)
             self.port = self.config.get("port")
             self.rate = int(self.config.get("rate"))
             self.timeout = int(self.config.get("timeout"))
