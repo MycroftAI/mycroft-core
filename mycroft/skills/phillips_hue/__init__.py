@@ -52,10 +52,10 @@ def intent_handler(handler_function):
                 group = Group(self.bridge, group_id)
             try:
                 handler_function(self, message, group)
+            except PhueRequestTimeout:
+                self.speak_dialog('unable.to.perform.action')
             except Exception as e:
-                if isinstance(e, PhueRequestTimeout):
-                    self.speak_dialog('unable.to.perform.action')
-                elif 'No route to host' in e.args:
+                if 'No route to host' in e.args:
                     if self.user_supplied_ip:
                         self.speak_dialog('no.route')
                         return
@@ -75,7 +75,8 @@ class PhillipsHueSkill(MycroftSkill):
         self.brightness_step = int(self.config.get('brightness_step'))
         self.color_temperature_step = \
             int(self.config.get('color_temperature_step'))
-        self.verbose = True if self.config.get('verbose') == 'True' else False
+        self.verbose = True if self.config.get('verbose')\
+                                   .lower() == 'true' else False
         self.username = self.config.get('username')
         if self.username == '':
             self.username = None
@@ -115,7 +116,6 @@ class PhillipsHueSkill(MycroftSkill):
                 break
         if not self.connected:
             self.speak_dialog('failed.to.register')
-            return False
         else:
             self.speak_dialog('successfully.registered')
 
@@ -146,10 +146,10 @@ class PhillipsHueSkill(MycroftSkill):
         UnauthorizedUserException
             If self.username is not None, and is not registered with the bridge
         """
-        if not self.user_supplied_ip:
-            self.ip = _discover_bridge()
-        else:
+        if self.user_supplied_ip:
             self.ip = self.config.get('ip')
+        else:
+            self.ip = _discover_bridge()
         if self.username:
             url = 'http://{ip}/api/{user}'.format(ip=self.ip,
                                                   user=self.username)
@@ -206,6 +206,9 @@ class PhillipsHueSkill(MycroftSkill):
                 self._register_with_bridge()
         except PhueRegistrationException:
             self._register_with_bridge()
+
+        if not self.connected:
+            return False
 
         if acknowledge_successful_connection:
             self.speak_dialog('successfully.connected')
