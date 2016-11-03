@@ -227,9 +227,14 @@ class Enclosure:
         self.client = WebsocketClient()
         self.reader = EnclosureReader(self.serial, self.client)
         self.writer = EnclosureWriter(self.serial, self.client)
+
+        # Create helpers to handle the various parts of the enclosure
         self.eyes = EnclosureEyes(self.client, self.writer)
         self.mouth = EnclosureMouth(self.client, self.writer)
         self.system = EnclosureArduino(self.client, self.writer)
+
+        # TODO: Remove this once the Skill can send images directly
+        #       to the Enclosure.
         self.weather = EnclosureWeather(self.client, self.writer)
         self.__register_events()
 

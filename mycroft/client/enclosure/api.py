@@ -45,6 +45,9 @@ class EnclosureAPI:
         self.client.emit(
             Message("enclosure.system.blink", metadata={'times': times}))
 
+    def system_reset(self):
+        self.client.emit(Message("enclosure.system.reset"))
+
     def eyes_on(self):
         self.client.emit(Message("enclosure.eyes.on"))
 
