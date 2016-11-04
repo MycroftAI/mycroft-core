@@ -210,6 +210,13 @@ class Enclosure:
                 # Use the serial port to check if this is a Mycroft
                 # Mark 1 unit.
                 platform = self.detect_platform()
+                if platform == 'unknown':
+                    # Since this is a semi-permanent detection, be
+                    # certain!  Sometimes noise on the serial line
+                    # causes a faulty mis-detection on a real
+                    # Mycroft Mark 1
+                    platform = self.detect_platform()
+
                 ConfigurationManager.set('enclosure', 'platform',
                                          platform)
         except Exception as e:
@@ -245,6 +252,12 @@ class Enclosure:
         LOGGER.info("Auto-detecting platform")
         try:
             self.__init_serial()
+            self.serial.flushInput()
+            self.serial.flushOutput()
+            time.sleep(1)
+            self.serial.flushInput()
+            self.serial.flushOutput()
+            time.sleep(1)
 
             # Write "system.ping"
             self.serial.write("system.ping")
@@ -264,6 +277,7 @@ class Enclosure:
                 # The Arduino returns a version number in the response
                 # with recent builds.  Empty the serial queue of all
                 # responses to the ping.
+                time.sleep(0.5)
                 self.serial.flushInput()
 
                 return "mycroft_mark_1"
@@ -304,7 +318,6 @@ class Enclosure:
             os.chdir(old_path)
 
     def __init_serial(self):
-        LOGGER.info("__init_serial...")
         if getattr(self, 'serial', None) is not None:
             return  # already initialized
 
