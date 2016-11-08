@@ -29,6 +29,7 @@ from mycroft.tts import tts_factory
 from mycroft.util.log import getLogger
 from mycroft.util import kill, connected
 from mycroft.util import play_mp3
+from mycroft.client.enclosure.api import EnclosureAPI
 
 logger = getLogger("SpeechClient")
 client = None
@@ -120,6 +121,16 @@ def handle_stop(event):
     kill(["aplay"])
 
 
+def handle_open():
+    # The websocket is up and ready for business.  This is a reasonable time
+    # to declare the system is ready for normal operations.  Send the
+    # enclosure a message to reset itself to let the user know the system
+    # is ready to receive input, such as stopping the rolling eyes shown
+    # at boot on a Mycroft Mark 1 unit.
+    enclosure = EnclosureAPI(client)
+    enclosure.reset()
+
+
 def connect():
     client.run_forever()
 
@@ -143,15 +154,11 @@ def main():
         handle_multi_utterance_intent_failure)
     client.on('recognizer_loop:sleep', handle_sleep)
     client.on('recognizer_loop:wake_up', handle_wake_up)
+    client.on('open', handle_open)
     client.on('mycroft.stop', handle_stop)
     event_thread = Thread(target=connect)
     event_thread.setDaemon(True)
     event_thread.start()
-
-    try:
-        subprocess.call('echo "eyes.reset" >/dev/ttyAMA0', shell=True)
-    except:
-        pass
 
     try:
         loop.run()

@@ -26,14 +26,16 @@ LOGGER = getLogger(__name__)
 
 class EnclosureAPI:
     """
-    This API is intended to be used to control Mycroft hardware capabilities.
-
-    It exposes all possible enclosure commands to be performed by a Mycroft
-    unit.
+    This API is intended to be used to interface with the hardware
+    that is running Mycroft.  It exposes all possible commands which
+    can be sent to a Mycroft enclosure implementation.
     """
 
     def __init__(self, client):
         self.client = client
+
+    def reset(self):
+        self.client.emit(Message("enclosure.reset"))
 
     def system_mute(self):
         self.client.emit(Message("enclosure.system.mute"))

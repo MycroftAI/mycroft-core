@@ -39,7 +39,7 @@ from mycroft.util import str2bool
 from mycroft.util.audio_test import record
 from mycroft.util.log import getLogger
 
-__author__ = 'aatchison + jdorleans + iward'
+__author__ = 'aatchison + jdorleans + iward + penrods'
 
 LOGGER = getLogger("EnclosureClient")
 
@@ -191,6 +191,10 @@ class Enclosure:
     """
     Serves as a communication interface between Arduino and Mycroft Core.
 
+    This interface is currently designed to shut itself down when run on
+    a Raspberry Pi that is not connected to a Mycroft Mark 1 board on
+    the serial port.  So it can safely be started on any Raspberry Pi.
+
     ``Enclosure`` initializes and aggregates all enclosures implementation.
 
     E.g. ``EnclosureEyes``, ``EnclosureMouth`` and ``EnclosureArduino``
@@ -202,15 +206,101 @@ class Enclosure:
     """
 
     def __init__(self):
-        self.__init_serial()
+        resetSelf = False
+        try:
+            self.config = ConfigurationManager.get().get("enclosure")
+
+            platform = self.config.get('platform')
+            if platform is None:
+                # Use the serial port to check if this is a Mycroft
+                # Mark 1 unit.
+                platform = self.detect_platform()
+                if platform == 'unknown':
+                    # Since this is a semi-permanent detection, be
+                    # certain!  Sometimes noise on the serial line
+                    # causes a faulty mis-detection on a real
+                    # Mycroft Mark 1
+                    platform = self.detect_platform()
+
+                ConfigurationManager.set('enclosure', 'platform', platform)
+
+                # After a platform detection, the system is usually
+                # already active, so the message from the loop
+                # has already gone by on the messagebus.  So self reset.
+                resetSelf = True
+        except Exception as e:
+            self.disconnect()
+            raise Exception("Exception: Unable to determine platform\n" +
+                            str(e))
+
+        LOGGER.info("Platform = '" + platform + "'")
+        if platform == "mycroft_mark_1":
+            # We are a mycroft_mark_1 unit, start up the
+            # enclosure client to communicate over the
+            # serial port
+            self.__init_serial()
+        else:
+            self.disconnect()
+            raise Exception("Exception: Not a Mycroft Mark 1, shutting down")
+
         self.client = WebsocketClient()
         self.reader = EnclosureReader(self.serial, self.client)
         self.writer = EnclosureWriter(self.serial, self.client)
+
+        # Create helpers to handle the various parts of the enclosure
         self.eyes = EnclosureEyes(self.client, self.writer)
         self.mouth = EnclosureMouth(self.client, self.writer)
         self.system = EnclosureArduino(self.client, self.writer)
+
+        # TODO: Remove EnclosureWeather once the Skill can send images
+        #       directly to the EnclosureAPI.
         self.weather = EnclosureWeather(self.client, self.writer)
         self.__register_events()
+
+        if resetSelf:
+            self.__handle_reset(None)
+
+    def detect_platform(self):
+        LOGGER.info("Auto-detecting platform")
+        try:
+            self.__init_serial()
+
+            # Thoroughly flush the serial port.  Since this happens
+            # right after boot, sometimes there is junk on the serial
+            # port line from electrical noise on a Pi.
+            time.sleep(3)
+            self.serial.flushInput()
+            self.serial.flushOutput()
+
+            # Write "system.ping"
+            self.serial.write("system.ping")
+            time.sleep(1)
+
+            # Now check to see if we got a response from the ping command
+            # command we just sent.  Remember, there might not be a Mark 1
+            # Arduino on the other side of the serial port.
+            data = self.serial.readline()
+            LOGGER.info("Serial response: '" + data + "'")
+
+            # A Mycroft Arduino echos the output to the serial line
+            # prefixed by "Command: ".  This assumes only a Mycroft
+            # Arduino responds to this, which is probably a dubious
+            # assumption, but a decent enough auto-detect for now.
+            if "Command: system.ping" in data:
+                # We have a Mycroft Mark 1!
+
+                # The Arduino returns a version number in the response
+                # with recent builds, but not with older builds.
+                # Empty the serial queue of all responses to the ping.
+                time.sleep(0.5)
+                self.serial.flushInput()
+
+                return "mycroft_mark_1"
+        except:
+            pass
+
+        # Likely running on a generic Raspberry Pi or Linux desktop
+        return "unknown"
 
     def setup(self):
         must_upload = self.config.get('must_upload')
@@ -243,8 +333,11 @@ class Enclosure:
             os.chdir(old_path)
 
     def __init_serial(self):
+        if getattr(self, 'serial', None) is not None:
+            return  # already initialized
+
+        LOGGER.info("Opening serial port")
         try:
-            self.config = ConfigurationManager.get().get("enclosure")
             self.port = self.config.get("port")
             self.rate = int(self.config.get("rate"))
             self.timeout = int(self.config.get("timeout"))
@@ -260,6 +353,7 @@ class Enclosure:
 
     def __register_events(self):
         self.client.on('mycroft.paired', self.__update_events)
+        self.client.on('enclosure.reset', self.__handle_reset)
         self.client.on('enclosure.mouth.listeners', self.__mouth_listeners)
         self.__register_mouth_events()
 
@@ -285,6 +379,12 @@ class Enclosure:
         self.client.remove('recognizer_loop:audio_output_end',
                            self.mouth.reset)
 
+    def __handle_reset(self, event=None):
+        # Reset both the mouth and the eye elements to indicate the unit is
+        # ready for input.
+        self.writer.write("eyes.reset")
+        self.writer.write("mouth.reset")
+
     def __update_events(self, event=None):
         if event and event.metadata:
             if event.metadata.get('paired', False):
@@ -299,10 +399,15 @@ class Enclosure:
             LOGGER.error("Client error: {0}".format(e))
             self.stop()
 
+    def disconnect(self):
+        if getattr(self, 'serial', None) is not None:
+            self.serial.close()
+            self.serial = None
+
     def stop(self):
         self.writer.stop()
         self.reader.stop()
-        self.serial.close()
+        self.disconnect()
 
 
 def main():
