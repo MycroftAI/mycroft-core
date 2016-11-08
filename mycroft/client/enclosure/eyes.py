@@ -48,7 +48,6 @@ class EnclosureEyes:
         self.client.on('enclosure.eyes.spin', self.spin)
         self.client.on('enclosure.eyes.timedspin', self.timed_spin)
         self.client.on('enclosure.eyes.reset', self.reset)
-        self.client.on('enclosure.system.reset', self.system_reset)
 
     def on(self, event=None):
         self.writer.write("eyes.on")
@@ -93,13 +92,6 @@ class EnclosureEyes:
 
     def reset(self, event=None):
         self.writer.write("eyes.reset")
-
-    def system_reset(self, event=None):
-        # This is a little bit of an odd duck.  Handle reset
-        # of both the eyes and the mouth elements of the unit.
-        self.writer.write("eyes.reset")
-        time.sleep(0.25)
-        self.writer.write("mouth.reset")
 
     def spin(self, event=None):
         self.writer.write("eyes.spin")

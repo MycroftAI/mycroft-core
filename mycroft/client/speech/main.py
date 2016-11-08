@@ -122,10 +122,13 @@ def handle_stop(event):
 
 
 def handle_open():
-    # Send the enclosure a message to reset the rolling
-    # eyes shown at boot on a unit
+    # The websocket is up and ready for business.  This is a reasonable time
+    # to declare the system is ready for normal operations.  Send the
+    # enclosure a message to reset itself to let the user know the system
+    # is ready to receive input, such as stopping the rolling eyes shown
+    # at boot on a Mycroft Mark 1 unit.
     enclosure = EnclosureAPI(client)
-    enclosure.system_reset()
+    enclosure.reset()
 
 
 def connect():

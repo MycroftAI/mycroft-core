@@ -191,6 +191,10 @@ class Enclosure:
     """
     Serves as a communication interface between Arduino and Mycroft Core.
 
+    This interface is currently designed to shut itself down when run on
+    a Raspberry Pi that is not connected to a Mycroft Mark 1 board on
+    the serial port.  So it can safely be started on any Raspberry Pi.
+
     ``Enclosure`` initializes and aggregates all enclosures implementation.
 
     E.g. ``EnclosureEyes``, ``EnclosureMouth`` and ``EnclosureArduino``
@@ -202,6 +206,7 @@ class Enclosure:
     """
 
     def __init__(self):
+        resetSelf = False
         try:
             self.config = ConfigurationManager.get().get("enclosure")
 
@@ -217,8 +222,12 @@ class Enclosure:
                     # Mycroft Mark 1
                     platform = self.detect_platform()
 
-                ConfigurationManager.set('enclosure', 'platform',
-                                         platform)
+                ConfigurationManager.set('enclosure', 'platform', platform)
+
+                # After a platform detection, the system is usually
+                # already active, so the message from the loop
+                # has already gone by on the messagebus.  So self reset.
+                resetSelf = True
         except Exception as e:
             self.disconnect()
             raise Exception("Exception: Unable to determine platform\n" +
@@ -248,26 +257,32 @@ class Enclosure:
         self.weather = EnclosureWeather(self.client, self.writer)
         self.__register_events()
 
+        if resetSelf:
+            self.__handle_reset(None)
+
     def detect_platform(self):
         LOGGER.info("Auto-detecting platform")
         try:
             self.__init_serial()
+
+            # Thoroughly flush the serial port.  Since this happens
+            # right after boot, sometimes there is junk on the serial
+            # port line from electrical noise on a Pi.
+            time.sleep(3)
             self.serial.flushInput()
             self.serial.flushOutput()
-            time.sleep(1)
-            self.serial.flushInput()
-            self.serial.flushOutput()
-            time.sleep(1)
 
             # Write "system.ping"
             self.serial.write("system.ping")
             time.sleep(1)
 
-            # Now check to see if we got a response from the ping command.
+            # Now check to see if we got a response from the ping command
+            # command we just sent.  Remember, there might not be a Mark 1
+            # Arduino on the other side of the serial port.
             data = self.serial.readline()
             LOGGER.info("Serial response: '" + data + "'")
 
-            # The Mycroft Arduino echos the output to the serial line
+            # A Mycroft Arduino echos the output to the serial line
             # prefixed by "Command: ".  This assumes only a Mycroft
             # Arduino responds to this, which is probably a dubious
             # assumption, but a decent enough auto-detect for now.
@@ -275,8 +290,8 @@ class Enclosure:
                 # We have a Mycroft Mark 1!
 
                 # The Arduino returns a version number in the response
-                # with recent builds.  Empty the serial queue of all
-                # responses to the ping.
+                # with recent builds, but not with older builds.
+                # Empty the serial queue of all responses to the ping.
                 time.sleep(0.5)
                 self.serial.flushInput()
 
@@ -338,6 +353,7 @@ class Enclosure:
 
     def __register_events(self):
         self.client.on('mycroft.paired', self.__update_events)
+        self.client.on('enclosure.reset', self.__handle_reset)
         self.client.on('enclosure.mouth.listeners', self.__mouth_listeners)
         self.__register_mouth_events()
 
@@ -362,6 +378,12 @@ class Enclosure:
                            self.mouth.talk)
         self.client.remove('recognizer_loop:audio_output_end',
                            self.mouth.reset)
+
+    def __handle_reset(self, event=None):
+        # Reset both the mouth and the eye elements to indicate the unit is
+        # ready for input.
+        self.writer.write("eyes.reset")
+        self.writer.write("mouth.reset")
 
     def __update_events(self, event=None):
         if event and event.metadata:
