@@ -16,14 +16,14 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import re
 import subprocess
 import sys
 from threading import Thread, Lock
 
-import re
-
 from mycroft.client.speech.listener import RecognizerLoop
 from mycroft.configuration import ConfigurationManager
+from mycroft.identity import IdentityManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.tts import TTSFactory
@@ -98,6 +98,10 @@ def handle_stop(event):
     kill(["aplay"])
 
 
+def handle_paired(event):
+    IdentityManager.update(event.data)
+
+
 def connect():
     client.run_forever()
 
@@ -119,6 +123,7 @@ def main():
     client.on('recognizer_loop:sleep', handle_sleep)
     client.on('recognizer_loop:wake_up', handle_wake_up)
     client.on('mycroft.stop', handle_stop)
+    client.on("mycroft.device.paired", handle_paired)
     event_thread = Thread(target=connect)
     event_thread.setDaemon(True)
     event_thread.start()
