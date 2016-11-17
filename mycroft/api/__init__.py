@@ -102,6 +102,7 @@ class DeviceApi(Api):
         super(DeviceApi, self).__init__("device")
 
     def get_code(self, state):
+        IdentityManager.update()
         return self.request({
             "path": "/code?state=" + state
         })
