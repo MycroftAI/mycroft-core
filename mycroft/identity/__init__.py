@@ -53,11 +53,11 @@ class IdentityManager(object):
             json.dump(IdentityManager.__identity.__dict__, f)
 
     @staticmethod
-    def update(login):
+    def update(login={}):
         expiration = login.get("expiration", 0)
-        IdentityManager.__identity.uuid = login.get("uuid")
-        IdentityManager.__identity.access = login.get("accessToken")
-        IdentityManager.__identity.refresh = login.get("refreshToken")
+        IdentityManager.__identity.uuid = login.get("uuid", "")
+        IdentityManager.__identity.access = login.get("accessToken", "")
+        IdentityManager.__identity.refresh = login.get("refreshToken", "")
         IdentityManager.__identity.expires_at = time.time() + expiration
 
     @staticmethod
