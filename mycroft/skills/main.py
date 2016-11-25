@@ -17,7 +17,6 @@
 
 
 import json
-
 from os.path import expanduser, exists
 
 from mycroft.configuration import ConfigurationManager
@@ -38,8 +37,7 @@ def load_skills_callback():
     config = ConfigurationManager.get().get("skills")
 
     try:
-        ini_third_party_skills_dir = expanduser(
-            config.get("third_party_skills_dir"))
+        ini_third_party_skills_dir = expanduser(config.get("directory"))
     except AttributeError as e:
         logger.warning(e.message)
 
@@ -58,6 +56,7 @@ def connect():
 def main():
     global client
     client = WebsocketClient()
+    ConfigurationManager.init(client)
 
     def echo(message):
         try:

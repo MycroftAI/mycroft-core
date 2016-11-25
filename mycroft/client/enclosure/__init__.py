@@ -195,9 +195,10 @@ class Enclosure(object):
     """
 
     def __init__(self):
+        self.client = WebsocketClient()
+        ConfigurationManager.init(self.client)
         self.config = ConfigurationManager.get().get("enclosure")
         self.__init_serial()
-        self.client = WebsocketClient()
         self.reader = EnclosureReader(self.serial, self.client)
         self.writer = EnclosureWriter(self.serial, self.client)
         self.eyes = EnclosureEyes(self.client, self.writer)

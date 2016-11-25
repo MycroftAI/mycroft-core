@@ -110,6 +110,7 @@ def main():
     global client
     global loop
     client = WebsocketClient()
+    ConfigurationManager.init(client)
     loop = RecognizerLoop()
     loop.on('recognizer_loop:utterance', handle_utterance)
     loop.on('recognizer_loop:record_begin', handle_record_begin)

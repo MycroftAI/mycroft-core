@@ -139,6 +139,7 @@ class WiFi:
         self.ap = AccessPoint(self.iface)
         self.server = None
         self.client = WebsocketClient()
+        ConfigurationManager.init(self.client)
         self.enclosure = EnclosureAPI(self.client)
         self.config = ConfigurationManager.get().get("wifi")
         self.init_events()
