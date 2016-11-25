@@ -15,15 +15,17 @@
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 import json
-
+import re
 from genericpath import exists, isfile
 from os.path import join, dirname, expanduser
+
+import inflection
 
 from mycroft.util.log import getLogger
 
 __author__ = 'seanfitz, jdorleans'
 
-logger = getLogger(__name__)
+LOG = getLogger(__name__)
 
 DEFAULT_CONFIG = join(dirname(__file__), 'mycroft.conf')
 SYSTEM_CONFIG = '/etc/mycroft/mycroft.conf'
@@ -50,11 +52,11 @@ class ConfigurationLoader(object):
         return locations
 
     @staticmethod
-    def validate_data(config=None, locations=None):
+    def validate(config=None, locations=None):
         if not (isinstance(config, dict) and isinstance(locations, list)):
-            logger.error("Invalid configuration data type.")
-            logger.error("Locations: %s" % locations)
-            logger.error("Configuration: %s" % config)
+            LOG.error("Invalid configuration data type.")
+            LOG.error("Locations: %s" % locations)
+            LOG.error("Configuration: %s" % config)
             raise TypeError
 
     @staticmethod
@@ -65,7 +67,7 @@ class ConfigurationLoader(object):
         config = ConfigurationLoader.init_config(config)
         locations = ConfigurationLoader.init_locations(locations,
                                                        keep_user_config)
-        ConfigurationLoader.validate_data(config, locations)
+        ConfigurationLoader.validate(config, locations)
 
         for location in locations:
             config = ConfigurationLoader.__load(config, location)
@@ -78,12 +80,12 @@ class ConfigurationLoader(object):
             try:
                 with open(location) as f:
                     config.update(json.load(f))
-                    logger.debug("Configuration '%s' loaded" % location)
+                    LOG.debug("Configuration '%s' loaded" % location)
             except Exception, e:
-                logger.error("Error loading configuration '%s'" % location)
-                logger.error(repr(e))
+                LOG.error("Error loading configuration '%s'" % location)
+                LOG.error(repr(e))
         else:
-            logger.debug("Configuration '%s' not found" % location)
+            LOG.debug("Configuration '%s' not found" % location)
         return config
 
 
@@ -92,45 +94,51 @@ class RemoteConfiguration(object):
     map remote configuration properties to
     config in the [core] config section
     """
-    __remote_keys = {
-        "unit": "unit"
-    }
+    IGNORED_SETTINGS = ["uuid", "@type", "active", "user", "device"]
 
     @staticmethod
-    def validate_config(config):
+    def validate(config):
         if not (config and isinstance(config, dict)):
-            logger.error("Invalid configuration: %s" % config)
+            LOG.error("Invalid configuration: %s" % config)
             raise TypeError
 
     @staticmethod
     def load(config=None):
-        RemoteConfiguration.validate_config(config)
+        RemoteConfiguration.validate(config)
         update = config.get("server", {}).get("update")
 
         if update:
             try:
                 from mycroft.api import DeviceApi
                 setting = DeviceApi().find_setting()
-                RemoteConfiguration.__load_attributes(config, setting)
+                RemoteConfiguration.__load(config, setting)
             except Exception as e:
-                logger.error(
-                    "Failed to fetch remote configuration: %s" % repr(e))
+                LOG.error("Failed to fetch remote configuration: %s" % repr(e))
         else:
-            logger.debug(
-                "Device not paired, cannot retrieve remote configuration.")
+            LOG.debug("Remote configuration not activated.")
         return config
 
     @staticmethod
-    def __load_attributes(config, setting):
-        config_core = config
+    def __load(config, setting):
+        for k, v in setting.iteritems():
+            if k not in RemoteConfiguration.IGNORED_SETTINGS:
+                key = inflection.underscore(re.sub(r"Setting(s)?", "", k))
+                if isinstance(v, dict):
+                    config[key] = config.get(key, {})
+                    RemoteConfiguration.__load(config[key], v)
+                elif isinstance(v, list):
+                    RemoteConfiguration.__load_list(config[key], v)
+                else:
+                    config[key] = v
 
-        for k, v in setting:
-            key = RemoteConfiguration.__remote_keys.get(k)
-
-            if config_core.__contains__(key):
-                config_core[key] = str(v)
-                logger.info("Setting remote configuration: core[%s] == %s" %
-                            (key, v))
+    @staticmethod
+    def __load_list(config, values):
+        for v in values:
+            module = v["@type"]
+            if v.get("active"):
+                config["module"] = module
+            config[module] = config.get(module, {})
+            RemoteConfiguration.__load(config[module], v)
 
 
 class ConfigurationManager(object):
@@ -138,6 +146,11 @@ class ConfigurationManager(object):
     Static management utility for calling up cached configuration.
     """
     __config = None
+    __listener = None
+
+    @staticmethod
+    def init(ws):
+        ConfigurationManager.__listener = ConfigurationListener(ws)
 
     @staticmethod
     def load_defaults():
@@ -191,3 +204,13 @@ class ConfigurationManager(object):
         with open(location, 'rw') as f:
             config = json.load(f).update(config)
             json.dump(config, f)
+
+
+class ConfigurationListener(object):
+    def __init__(self, ws):
+        super(ConfigurationListener, self).__init__()
+        ws.on("configuration.updated", self.updated)
+
+    @staticmethod
+    def updated(message):
+        ConfigurationManager.update(message.data)

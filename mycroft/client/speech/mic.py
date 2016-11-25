@@ -29,8 +29,8 @@ from speech_recognition import (
 )
 
 from mycroft.configuration import ConfigurationManager
-from mycroft.util.log import getLogger
 from mycroft.util import check_for_signal
+from mycroft.util.log import getLogger
 
 listener_config = ConfigurationManager.get().get('listener')
 logger = getLogger(__name__)
@@ -146,8 +146,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         speech_recognition.Recognizer.__init__(self)
         self.wake_word_recognizer = wake_word_recognizer
         self.audio = pyaudio.PyAudio()
-        self.threshold_multiplier = listener_config.get('threshold_multiplier')
-        self.dynamic_energy_ratio = listener_config.get('dynamic_energy_ratio')
+        self.multiplier = listener_config.get('multiplier')
+        self.energy_ratio = listener_config.get('energy_ratio')
 
     @staticmethod
     def record_sound_chunk(source):
@@ -208,7 +208,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             num_chunks += 1
 
             energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
-            test_threshold = self.energy_threshold * self.threshold_multiplier
+            test_threshold = self.energy_threshold * self.multiplier
             is_loud = energy > test_threshold
             if is_loud:
                 noise = increase_noise(noise)
@@ -255,7 +255,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             chunk = self.record_sound_chunk(source)
 
             energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
-            if energy < self.energy_threshold * self.threshold_multiplier:
+            if energy < self.energy_threshold * self.multiplier:
                 self.adjust_threshold(energy, sec_per_buffer)
 
             needs_to_grow = len(byte_data) < max_size
@@ -307,7 +307,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             # account for different chunk sizes and rates
             damping = (
                 self.dynamic_energy_adjustment_damping ** seconds_per_buffer)
-            target_energy = energy * self.dynamic_energy_ratio
+            target_energy = energy * self.energy_ratio
             self.energy_threshold = (
                 self.energy_threshold * damping +
                 target_energy * (1 - damping))

@@ -55,12 +55,12 @@ class ConfigurationLoaderTest(AbstractConfigurationTest):
 
     def test_validate_data(self):
         try:
-            ConfigurationLoader.validate_data({}, [])
+            ConfigurationLoader.validate({}, [])
         except TypeError:
             self.fail()
 
     def test_validate_data_with_invalid_data(self):
-        self.assertRaises(TypeError, ConfigurationLoader.validate_data)
+        self.assertRaises(TypeError, ConfigurationLoader.validate)
 
     def test_load(self):
         self.assert_config(ConfigurationLoader.load())
@@ -100,12 +100,12 @@ class ConfigurationLoaderTest(AbstractConfigurationTest):
 class RemoteConfigurationTest(AbstractConfigurationTest):
     def test_validate_config(self):
         try:
-            RemoteConfiguration.validate_config(self.create_config())
+            RemoteConfiguration.validate(self.create_config())
         except TypeError:
             self.fail()
 
     def test_validate_config_with_invalid_config(self):
-        self.assertRaises(TypeError, RemoteConfiguration.validate_config)
+        self.assertRaises(TypeError, RemoteConfiguration.validate)
 
     def test_load_without_remote_config(self):
         config = self.create_config()
