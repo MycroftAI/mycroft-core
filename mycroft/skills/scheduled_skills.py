@@ -52,6 +52,18 @@ class ScheduledSkill(MycroftSkill):
         self.timer = None
         self.calendar = pdt.Calendar()
         self.time_rules = time_rules.create(self.lang)
+        self.init_format()
+
+    def init_format(self):
+        if self.config_core.get('date_format') == 'DMY':
+            self.format = "%d %B, %Y at "
+        else:
+            self.format = "%B %d, %Y at "
+
+        if self.config_core.get('time_format') == 'full':
+            self.format += "%H:%M"
+        else:
+            self.format += "%I:%M, %p"
 
     def schedule(self):
         times = sorted(self.get_times())
@@ -91,9 +103,7 @@ class ScheduledSkill(MycroftSkill):
             else:
                 return "%s minutes and %s seconds from now" % \
                        (int(minutes), int(seconds))
-        dt_format = self.config_core.get('date_format')
-        dt_format += " at " + self.config_core.get('time_format')
-        return date.strftime(dt_format)
+        return date.strftime(self.format)
 
     @abc.abstractmethod
     def get_times(self):
