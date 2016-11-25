@@ -17,7 +17,7 @@
 
 
 import datetime
-from os.path import dirname, join
+from os.path import dirname
 
 import tzlocal
 from adapt.intent import IntentBuilder
@@ -34,12 +34,13 @@ class TimeSkill(MycroftSkill):
     def __init__(self):
         super(TimeSkill, self).__init__("TimeSkill")
         self.astral = Astral()
-        self.format = self.init_format()
+        self.init_format()
 
     def init_format(self):
-        if self.config_core.get('time_format', 'half') == 'half':
-            return "%I:%M, %p"
-        return "%H:%M"
+        if self.config_core.get('time_format') == 'full':
+            self.format = "%H:%M"
+        else:
+            self.format = "%I:%M, %p"
 
     def initialize(self):
         self.load_data_files(dirname(__file__))
