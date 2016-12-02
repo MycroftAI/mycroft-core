@@ -15,12 +15,15 @@ from os.path import dirname
 
 from mycroft.util.log import getLogger
 
+config = ConfigurationManager.get().get('audio')
 logger = getLogger(abspath(__file__).split('/')[-2])
 __author__ = 'forslund'
 
 sys.path.append(abspath(dirname(__file__)))
-MopidyService = __import__('mopidy_service').MopidyService
-VlcService = __import__('vlc_service').VlcService
+if config.get('audio.mopidy', 'False') == 'True':
+    MopidyService = __import__('mopidy_service').MopidyService
+if config.get('audio.vlc', 'False') == 'True':
+    VlcService = __import__('vlc_service').VlcService
 
 
 class Mpg123Service():
@@ -96,10 +99,12 @@ class PlaybackControlSkill(MediaSkill):
         super(PlaybackControlSkill, self).initialize()
         self.load_data_files(dirname(__file__))
 
-        logger.info('starting VLC service')
-        self.service.append(VlcService(self.emitter))
-        logger.info('starting Mopidy service')
-        self.service.append(MopidyService(self.emitter))
+        if config.get('audio.vlc', 'False') == 'True':
+            logger.info('starting VLC service')
+            self.service.append(VlcService(self.emitter))
+        if config.get('audio.mopidy', 'False') == 'True':
+            logger.info('starting Mopidy service')
+            self.service.append(MopidyService(self.emitter))
         logger.info('starting Mpg123 service')
         self.service.append(Mpg123Service(self.emitter))
         self.emitter.on('MycroftAudioServicePlay', self._play)
