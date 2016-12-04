@@ -7,7 +7,7 @@ sudo pacman -S \
     python2-setuptools \
     python2-virtualenv \
     python2-gobject \
-    python2-virtualenvwrapper \
+    python-virtualenvwrapper \
     libtool \
     libffi \
     openssl \
