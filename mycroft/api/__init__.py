@@ -3,6 +3,7 @@ from requests import HTTPError
 
 from mycroft.configuration import ConfigurationManager
 from mycroft.identity import IdentityManager
+from mycroft.version import VersionManager
 
 __author__ = 'jdorleans'
 
@@ -108,10 +109,14 @@ class DeviceApi(Api):
         })
 
     def activate(self, state, token):
+        version = VersionManager.getVersion()
         return self.request({
             "method": "POST",
             "path": "/activate",
-            "json": {"state": state, "token": token}
+            "json": {"state": state,
+                     "token": token,
+                     "coreVersion": version.get("coreVersion"),
+                     "enclosureVersion": version.get("enclosureVersion")}
         })
 
     def find(self):
