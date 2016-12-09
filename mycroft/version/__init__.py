@@ -25,18 +25,15 @@ __author__ = 'augustnmonteiro'
 LOG = getLogger(__name__)
 
 
-class VersionManager:
-    location = "/opt/mycroft/version.json"
-
-    def __init__(self):
-        pass
+class VersionManager(object):
+    __location = "/opt/mycroft/version.json"
 
     @staticmethod
     def get():
-        if exists(VersionManager.location) and isfile(VersionManager.location):
+        if exists(VersionManager.__location) and isfile(VersionManager.__location):
             try:
-                with open(VersionManager.location) as f:
+                with open(VersionManager.__location) as f:
                     return json.load(f)
             except:
-                LOG.error("Failed to load version from '%s'" % VersionManager.location)
+                LOG.error("Failed to load version from '%s'" % VersionManager.__location)
         return {"coreVersion": None, "enclosureVersion": None}
