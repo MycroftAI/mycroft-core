@@ -6,12 +6,13 @@ logger = getLogger(abspath(__file__).split('/')[-2])
 import vlc
 
 class VlcService():
-    def __init__(self, emitter):
+    def __init__(self, config, emitter=None):
         self.instance = vlc.Instance()
         self.list_player = self.instance.media_list_player_new()
         self.player = self.instance.media_player_new()
         self.list_player.set_media_player(self.player)
 
+        self.config = config
         self.emitter = emitter 
     
     def supported_uris(self):
@@ -51,7 +52,7 @@ class VlcService():
 
     def lower_volume(self):
         self.player.audio_set_volume(30)
-        
+
     def restore_volume(self):
         self.player.audio_set_volume(100)
 

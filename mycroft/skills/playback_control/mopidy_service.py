@@ -14,6 +14,8 @@ class MopidyService():
     def _connect(self, message):
         logger.debug('Could not connect to server, will retry quietly')
         url = 'http://localhost:6680'
+        if self.config is not None:
+            url = self.config.get('audio.mopidy.server', url)
         try:
             self.mopidy = Mopidy(url)
         except:
@@ -26,15 +28,25 @@ class MopidyService():
 
         logger.info('Connected to mopidy server')
     
-    def __init__(self, emitter):
+    def __init__(self, config, emitter):
         self.connection_attempts = 0
         self.emitter = emitter 
+        self.config = config
+
+        self.mopidy = None
         self.emitter.on('MopidyServiceConnect', self._connect)
         self._connect(None)
 
+    @property
+    def name(self):
+        return self.config.get('audio.mopidy.name', 'mopidy')
+
     def supported_uris(self):
-        return ['file', 'http', 'https', 'local', 'spotify', 'gmusic']
-    
+        if self.mopidy:
+            return ['file', 'http', 'https', 'local', 'spotify', 'gmusic']
+        else:
+            return []
+
     def clear_list(self):
         self.mopidy.clear_list()
     

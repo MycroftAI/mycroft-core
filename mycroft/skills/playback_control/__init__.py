@@ -27,7 +27,7 @@ if config.get('audio.vlc', 'False') == 'True':
 
 
 class Mpg123Service():
-    def __init__(self, emitter):
+    def __init__(self, config, emitter):
         self.process = None
         self.emitter = emitter 
         self.emitter.on('Mpg123ServicePlay', self._play)
@@ -101,12 +101,12 @@ class PlaybackControlSkill(MediaSkill):
 
         if config.get('audio.vlc', 'False') == 'True':
             logger.info('starting VLC service')
-            self.service.append(VlcService(self.emitter))
+            self.service.append(VlcService(config, self.emitter))
         if config.get('audio.mopidy', 'False') == 'True':
             logger.info('starting Mopidy service')
-            self.service.append(MopidyService(self.emitter))
+            self.service.append(MopidyService(config, self.emitter))
         logger.info('starting Mpg123 service')
-        self.service.append(Mpg123Service(self.emitter))
+        self.service.append(Mpg123Service(config, self.emitter))
         self.emitter.on('MycroftAudioServicePlay', self._play)
         self.emitter.on('MycroftAudioServiceTrackInfo', self._track_info)
 
