@@ -32,11 +32,11 @@ class VersionManager:
         pass
 
     @staticmethod
-    def getVersion():
+    def get():
         if exists(VersionManager.location) and isfile(VersionManager.location):
             try:
                 with open(VersionManager.location) as f:
                     return json.load(f)
-            except Exception, e:
-                LOG.error("Load version from '%s'" % VersionManager.location)
-        return {"coreVersion": "", "enclosureVersion": ""}
+            except:
+                LOG.error("Failed to load version from '%s'" % VersionManager.location)
+        return {"coreVersion": None, "enclosureVersion": None}
