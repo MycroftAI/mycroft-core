@@ -83,7 +83,7 @@ class Mpg123Service():
         pass
 
     def track_info(self):
-        pass
+        return {}
 
 
 class PlaybackControlSkill(MediaSkill):
@@ -108,6 +108,7 @@ class PlaybackControlSkill(MediaSkill):
         logger.info('starting Mpg123 service')
         self.service.append(Mpg123Service(self.emitter))
         self.emitter.on('MycroftAudioServicePlay', self._play)
+        self.emitter.on('MycroftAudioServiceTrackInfo', self._track_info)
 
     def play(self, tracks):
         logger.info('play')
@@ -183,6 +184,13 @@ class PlaybackControlSkill(MediaSkill):
                 self.speak_dialog('currently_playing', data)
                 time.sleep(6)
 
+    def _track_info(self, message):
+        if self.current:
+            track_info = self.current.track_info
+        else:
+            track_info = {}
+        self.emitter.emit(Message('MycroftAudioServiceTrackInfoReply',
+                                  metadata=track_info))
 
 def create_skill():
     return PlaybackControlSkill()
