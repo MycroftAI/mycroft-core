@@ -109,7 +109,7 @@ class DeviceApi(Api):
         })
 
     def activate(self, state, token):
-        version = VersionManager.getVersion()
+        version = VersionManager.get()
         return self.request({
             "method": "POST",
             "path": "/activate",
