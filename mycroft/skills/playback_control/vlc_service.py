@@ -15,6 +15,10 @@ class VlcService():
         self.config = config
         self.emitter = emitter 
     
+    @property
+    def name(self):
+        return self.config.get('audio.vlc.name', 'vlc')
+
     def supported_uris(self):
         return ['file', 'http']
 
