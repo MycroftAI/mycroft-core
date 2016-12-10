@@ -28,10 +28,15 @@ if config.get('audio.vlc', 'False') == 'True':
 
 class Mpg123Service():
     def __init__(self, config, emitter):
+        self.config = config
         self.process = None
         self.emitter = emitter 
         self.emitter.on('Mpg123ServicePlay', self._play)
-    
+
+    @property
+    def name(self):
+        return self.config.get('audio.mpg123.name', 'mpg123')
+
     def supported_uris(self):
         return ['file', 'http']
 
