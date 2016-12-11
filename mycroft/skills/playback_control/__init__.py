@@ -115,18 +115,21 @@ class PlaybackControlSkill(MediaSkill):
         self.emitter.on('MycroftAudioServicePlay', self._play)
         self.emitter.on('MycroftAudioServiceTrackInfo', self._track_info)
 
-    def play(self, tracks):
+    def play(self, tracks, prefered_service):
         logger.info('play')
         self.stop()
         uri_type = tracks[0].split(':')[0]
         logger.info('uri_type: ' + uri_type)
-        for s in self.service:
-            logger.info(str(s))
-            if uri_type in s.supported_uris():
-                service = s
-                break
-        else:
-            return
+        if prefered_service and uri_type in prefered_service.supported_uris():
+            service = prefered_service
+        else: # Check if any other service can play the media
+            for s in self.service:
+                logger.info(str(s))
+                if uri_type in s.supported_uris():
+                    service = s
+                    break
+            else:
+                return
         logger.info('Clear list')
         service.clear_list()
         logger.info('Add tracks' + str(tracks))
@@ -140,7 +143,17 @@ class PlaybackControlSkill(MediaSkill):
         logger.info(message.metadata['tracks'])
 
         tracks = message.metadata['tracks']
-        self.play(tracks)
+
+        # Find if the user wants to use a specific backend
+        for s in self.service:
+            logger.info(s)
+            if s.name in message.metadata['utterance']:
+                prefered_service = s
+                logger.info(s.name + ' would be prefered')
+                break
+        else:
+            prefered_service = None
+        self.play(tracks, prefered_service)
 
     def stop(self, message=None):
         logger.info('stopping all playing services')
