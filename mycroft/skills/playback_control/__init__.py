@@ -181,17 +181,11 @@ class PlaybackControlSkill(MediaSkill):
                 self.current.restore_volume()
 
     def handle_currently_playing(self, message):
-        if self.current:
-            track_info = self.current.track_info()
-            if track_info is not None:
-                data = {'current_track': track_info['name'],
-                        'artist': track_info['album']}
-                self.speak_dialog('currently_playing', data)
-                time.sleep(6)
+        return
 
     def _track_info(self, message):
         if self.current:
-            track_info = self.current.track_info
+            track_info = self.current.track_info()
         else:
             track_info = {}
         self.emitter.emit(Message('MycroftAudioServiceTrackInfoReply',
