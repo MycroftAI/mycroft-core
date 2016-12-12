@@ -3,7 +3,7 @@ Mycroft [![Build Status](https://travis-ci.org/MycroftAI/mycroft-core.svg?branch
 
 Full docs at: https://docs.mycroft.ai
 
-Pair Mycroft instance with Cerberus Account Management Service: https://cerberus.mycroft.ai
+Pair Mycroft instance: https://home.mycroft.ai
 
 Join the Mycroft Slack(chat) channel: http://mycroft-ai-slack-invite.herokuapp.com/
 

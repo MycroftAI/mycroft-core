@@ -17,35 +17,57 @@
 
 
 from adapt.intent import IntentBuilder
-from os.path import join, dirname
+from os.path import dirname
 
-from mycroft.configuration import ConfigurationManager
+from mycroft.api import DeviceApi
 from mycroft.identity import IdentityManager
-from mycroft.skills.core import MycroftSkill
+from mycroft.messagebus.message import Message
+from mycroft.skills.scheduled_skills import ScheduledSkill
+from mycroft.util.log import getLogger
+
+__author__ = 'augustnmonteiro'
+
+LOGGER = getLogger(__name__)
 
 
-class CerberusConfigSkill(MycroftSkill):
+class ConfigurationSkill(ScheduledSkill):
     def __init__(self):
-        super(CerberusConfigSkill, self).__init__("CerberusConfigSkill")
+        super(ConfigurationSkill, self).__init__("ConfigurationSkill")
+        self.max_delay = self.config.get('max_delay')
 
     def initialize(self):
-        self.load_data_files(join(dirname(__file__)))
+        self.load_data_files(dirname(__file__))
         intent = IntentBuilder("UpdateConfigurationIntent") \
-            .require("UpdateConfigurationPhrase") \
+            .require("ConfigurationSkillKeyword") \
+            .require("ConfigurationSkillUpdateVerb") \
             .build()
         self.register_intent(intent, self.handle_update_intent)
+        self.schedule()
 
     def handle_update_intent(self, message):
         identity = IdentityManager.get()
         if identity.access:
-            self.speak_dialog("not.paired")
-        else:
-            ConfigurationManager.load_remote()
+            self.update_config()
             self.speak_dialog("config.updated")
+        else:
+            self.speak_dialog("not.paired")
+
+    def get_times(self):
+        return [self.get_utc_time() + self.max_delay]
+
+    def notify(self, timestamp):
+        identity = IdentityManager.get()
+        if identity.access:
+            self.update_config()
+        self.schedule()
+
+    def update_config(self):
+        config = DeviceApi().find_setting()
+        self.emitter.emit(Message("configuration.updated", config))
 
     def stop(self):
         pass
 
 
 def create_skill():
-    return CerberusConfigSkill()
+    return ConfigurationSkill()
