@@ -29,11 +29,11 @@ __author__ = 'jdorleans'
 
 
 def play_wav(file_path):
-    return subprocess.Popen(["aplay", file_path])
+    return subprocess.Popen(["aplay", remove_https(file_path)])
 
 
 def play_mp3(file_path):
-    return subprocess.Popen(["mpg123", file_path])
+    return subprocess.Popen(["mpg123", remove_https(file_path)])
 
 
 def record(file_path, duration, rate, channels):
@@ -44,6 +44,10 @@ def record(file_path, duration, rate, channels):
     else:
         return subprocess.Popen(
             ["arecord", "-r", str(rate), "-c", str(channels), file_path])
+
+
+def remove_https(url):
+    return url.replace("https://", "http://")
 
 
 def remove_last_slash(url):
