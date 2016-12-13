@@ -24,7 +24,9 @@ from mycroft.api import DeviceApi
 from mycroft.identity import IdentityManager
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import MycroftSkill
+from mycroft.util.log import getLogger
 
+logger = getLogger(__name__)
 
 class PairingSkill(MycroftSkill):
     def __init__(self):
@@ -40,6 +42,11 @@ class PairingSkill(MycroftSkill):
         intent = IntentBuilder("PairingIntent") \
             .require("PairingKeyword").require("DeviceKeyword").build()
         self.register_intent(intent, self.handle_pairing)
+        self.emitter.on("mycroft.not.paired", self.not_paired)
+
+    def not_paired(self, message):
+        self.speak_dialog("not.paired")
+        self.handle_pairing()
 
     def handle_pairing(self, message=None):
         if self.is_paired():
