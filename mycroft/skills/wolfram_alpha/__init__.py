@@ -24,6 +24,7 @@ from os.path import dirname, join
 from requests import HTTPError
 
 from mycroft.api import Api
+from mycroft.messagebus.message import Message
 from mycroft.skills.core import MycroftSkill
 from mycroft.util.log import getLogger
 
@@ -149,7 +150,7 @@ class WolframAlphaSkill(MycroftSkill):
         except HTTPError as e:
             if e.response.status_code == 401:
                 LOG.warn("Access Denied at mycroft.ai")
-                self.speak_dialog('not.paired')
+                self.emitter.emit(Message("mycroft.not.paired"))
             return
         except Exception as e:
             LOG.exception(e)

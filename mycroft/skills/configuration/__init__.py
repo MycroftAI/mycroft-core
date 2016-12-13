@@ -18,6 +18,7 @@
 
 from adapt.intent import IntentBuilder
 from os.path import dirname
+from requests import HTTPError
 
 from mycroft.api import DeviceApi
 from mycroft.identity import IdentityManager
@@ -45,25 +46,31 @@ class ConfigurationSkill(ScheduledSkill):
         self.schedule()
 
     def handle_update_intent(self, message):
-        identity = IdentityManager.get()
-        if identity.access:
+        try:
             self.update_config()
             self.speak_dialog("config.updated")
-        else:
-            self.speak_dialog("not.paired")
-
-    def get_times(self):
-        return [self.get_utc_time() + self.max_delay]
+        except HTTPError as e:
+            self.__api_error(e)
 
     def notify(self, timestamp):
-        identity = IdentityManager.get()
-        if identity.access:
+        try:
             self.update_config()
+        except HTTPError as e:
+            LOGGER.warn("Error on update settings '%s'", e)
         self.schedule()
 
     def update_config(self):
         config = DeviceApi().find_setting()
         self.emitter.emit(Message("configuration.updated", config))
+
+    def __api_error(self, e):
+        if e.response.status_code == 401:
+            LOGGER.warn("Access Denied at mycroft.ai")
+            self.emitter.emit(Message("mycroft.not.paired"))
+
+
+    def get_times(self):
+        return [self.get_utc_time() + self.max_delay]
 
     def stop(self):
         pass
