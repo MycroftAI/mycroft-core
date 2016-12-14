@@ -28,11 +28,13 @@ from mycroft.messagebus.message import Message
 from mycroft.tts import tts_factory
 from mycroft.util.log import getLogger
 from mycroft.util import kill, connected
+from mycroft.util import play_mp3
+from mycroft.client.enclosure.api import EnclosureAPI
 
 logger = getLogger("SpeechClient")
 client = None
 tts = tts_factory.create()
-mutex = Lock()
+mutexTalking = Lock()
 loop = None
 
 config = ConfigurationManager.get()
@@ -58,17 +60,39 @@ def handle_utterance(event):
     client.emit(Message('recognizer_loop:utterance', event))
 
 
+# class TalkThread (Thread):
+#    def __init__(self, utterance, loop, tts, client, mutex):
+#       Thread.__init__(self)
+#       self.utterance = utterance
+#       self.tts = tts
+#       self.loop = loop
+#       self.client = client
+#       self.mutex = mutex
+#
+#   def run(self):
+#       try:
+#           # logger.info("Speak: " + utterance)
+#           self.loop.mute()
+#           self.tts.execute(self.utterance, self.client)
+#       finally:
+#           self.loop.unmute()
+#           self.mutexTalking.release()
+#           self.client.emit(Message("recognizer_loop:audio_output_end"))
+
+
 def mute_and_speak(utterance):
-    mutex.acquire()
+    mutexTalking.acquire()
     client.emit(Message("recognizer_loop:audio_output_start"))
     try:
         logger.info("Speak: " + utterance)
         loop.mute()
-        tts.execute(utterance)
+        tts.execute(utterance, client)
     finally:
         loop.unmute()
-        mutex.release()
+        mutexTalking.release()
         client.emit(Message("recognizer_loop:audio_output_end"))
+    # threadTalk = TalkThread(utterance, loop, tts, client, mutexClient)
+    # threadTalk.start()
 
 
 def handle_multi_utterance_intent_failure(event):
@@ -94,6 +118,17 @@ def handle_wake_up(event):
 
 def handle_stop(event):
     kill([config.get('tts').get('module')])
+    kill(["aplay"])
+
+
+def handle_open():
+    # The websocket is up and ready for business.  This is a reasonable time
+    # to declare the system is ready for normal operations.  Send the
+    # enclosure a message to reset itself to let the user know the system
+    # is ready to receive input, such as stopping the rolling eyes shown
+    # at boot on a Mycroft Mark 1 unit.
+    enclosure = EnclosureAPI(client)
+    enclosure.reset()
 
 
 def connect():
@@ -119,15 +154,11 @@ def main():
         handle_multi_utterance_intent_failure)
     client.on('recognizer_loop:sleep', handle_sleep)
     client.on('recognizer_loop:wake_up', handle_wake_up)
+    client.on('open', handle_open)
     client.on('mycroft.stop', handle_stop)
     event_thread = Thread(target=connect)
     event_thread.setDaemon(True)
     event_thread.start()
-
-    try:
-        subprocess.call('echo "eyes.reset" >/dev/ttyAMA0', shell=True)
-    except:
-        pass
 
     try:
         loop.run()

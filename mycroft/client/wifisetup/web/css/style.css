@@ -1,0 +1,376 @@
+* {
+    font-family: sans-serif;
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: text;
+    -ms-user-select: none;
+}
+
+/* Prevent ridiculously long network names from screwing up the layout
+   by forcing them to wrap. */
+.ssid {
+    max-width: 280px;
+}
+
+/* A bug in Safari (as of 10-10-2016) breaks password input when
+   user-select:none is used.  This prevents that bug by allowing
+   text selection for all input fields (which is probably expected
+   by users anyway). */
+input {
+    user-select: text;
+    -moz-user-select: text;
+    -webkit-user-select: text;
+    -ms-user-select: text;
+}
+
+.panel {
+    border-radius: 15px;
+    box-shadow: 0 0 10px #AAA;
+    max-width: 500px;
+    min-width: 300px;
+}
+
+.panel .title {
+    background: #2b3344;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    padding: 30px 20px;
+    text-align: center;
+    color: #FFF;
+    font-weight: bold;
+    font-size: 20px;
+}
+
+.panel .body {
+    min-height: 520px;
+    display: table;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+}
+
+.panel .body li {
+    width: 100%;
+    display: table;
+    border-bottom: 1px solid #DDD;
+    padding: 10px;
+    box-sizing: border-box;
+    cursor: pointer;
+    height: 61px;
+    overflow: hidden;
+}
+
+.panel .body li div {
+    width: 100%;
+    height: 40px;
+    transition: 500ms;
+    display: none;
+}
+
+.panel .body li div.show {
+    transition: 500ms;
+    display: table;
+}
+
+.panel .body li span {
+    float: left;
+    font-size: 18px;
+    margin: 9px 0;
+    width: calc(100% - 60px);
+    text-overflow: ellipsis;
+    word-wrap: break-word;
+}
+
+.panel .body li img {
+    width: 40px;
+    float: right;
+}
+
+.panel .body li img.lock {
+    width: 11px;
+    position: relative;
+    right: 0;
+    bottom: 0;
+    top: 24px;
+    left: 40px;
+}
+
+.panel .body li .connect-item img, .panel .body li .error-item img {
+    width: 20px;
+    height: 20px;
+    padding: 10px;
+}
+
+.panel .body li .connect-item label {
+    color: #488fe2;
+    padding: 9.5px 10px 9.5px 0;
+    display: table;
+    float: left;
+    font-size: 18px;
+    width: 80px;
+    text-align: left;
+}
+
+.panel .body li .connect-item label.public {
+    width: calc(100% - 60px);
+}
+
+.panel .body li .connect-item input {
+    padding: 5px;
+    height: 26px;
+    border: 1px solid #DDD;
+    width: calc(100% - 160px);
+    font-size: 16px;
+}
+
+.panel .body li .error-item span {
+    color: #ff6565;
+    font-weight: bold;
+    padding: 2px;
+    display: table;
+    float: left;
+    font-size: 16px;
+    text-align: left;
+    width: calc(100% - 60px);
+}
+
+#success .title {
+    background: #b8e986;
+    color: #2b3344;
+}
+
+#success span img {
+    position: relative;
+    top: 4px;
+}
+
+#success small {
+    text-align: left;
+    width: 80%;
+    margin: 35px auto;
+    font-size: 18px;
+    display: table;
+    color: #777;
+}
+
+div.connected span {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+div.connected span:not(.connected) {
+    color: #488fe2;
+}
+
+div.connected .lock {
+    top: 3px !important;
+}
+
+span.connected {
+    display: table;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 14px !important;
+    color: #777;
+}
+
+.backButton {
+    color: #4b90e2;
+    font-weight: bold;
+    display: table;
+    width: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+
+.backButton img {
+    width: 15px;
+    float: left;
+    margin: 2.5px 0;
+}
+
+.backButton span {
+    float: left;
+    padding: 0 3px;
+    display: table;
+    font-size: 20px;
+}
+
+.message {
+    width: 100%;
+    display: table;
+    text-align: center;
+    margin: 30px 0 40px 0;
+    box-sizing: border-box;
+    padding: 10px 20px;
+}
+
+.passForm {
+    display: table;
+    width: 280px;
+    box-sizing: border-box;
+    margin: 0 auto 50px auto;
+}
+
+.passForm label {
+    color: #444;
+}
+
+.passForm label input {
+    width: 100%;
+    display: table;
+    height: 40px;
+    border: 1px solid #444;
+    border-radius: 5px;
+    margin: 8px 0;
+    box-sizing: border-box;
+    padding: 10px;
+}
+
+.button {
+    margin: 0 auto;
+    display: table;
+    background: #4a90e2;
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    color: #FFF;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+#centered {
+    margin-right:auto;
+    margin-left:auto;
+}
+#footer {
+    position:fixed;
+    bottom:10px;
+    width:100%;
+}
+#cancelBtn {
+    background: white;
+    z-index: 999;
+    color: #ff6666;
+    padding: 7px;    /* 10px of .button -3px to account for the thick border */
+    border: 3px solid #ff6666;
+}
+
+.alert {
+    width: 100%;
+    text-align: center;
+    box-sizing: border-box;
+    margin-bottom: 10px;
+    color: #ff9595;
+    font-weight: bold;
+    height: 0;
+    overflow: hidden;
+    transition: 500ms;
+}
+
+.alert.show {
+    border: 1px solid #ff9595;
+    padding: 10px;
+    height: 40px;
+    transition: 500ms;
+}
+
+.hide {
+    display: none;
+}
+
+#home span, #success span {
+    color: #4a4a4a;
+    font-weight: bold;
+    font-size: 22px;
+    text-align: left;
+    width: 80%;
+    margin: 80px auto 0 auto;
+    display: table;
+}
+
+#home img {
+    width: 100%;
+    margin: 60px 0;
+}
+
+@media (min-width: 500px) {
+    .panel {
+        margin: 0 auto;
+    }
+}
+
+/* loading */
+.loader {
+    color: #4a90e2;
+    font-size: 20px;
+    margin: 150px auto;
+    width: 1em;
+    height: 1em;
+    border-radius: 50%;
+    position: relative;
+    text-indent: -9999em;
+    -webkit-animation: load4 1.3s infinite linear;
+    animation: load4 1.3s infinite linear;
+    -webkit-transform: translateZ(0);
+    -ms-transform: translateZ(0);
+    transform: translateZ(0);
+}
+
+@-webkit-keyframes load4 {
+    0%,
+    100% {
+        box-shadow: 0 -3em 0 0.2em, 2em -2em 0 0em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 0;
+    }
+    12.5% {
+        box-shadow: 0 -3em 0 0, 2em -2em 0 0.2em, 3em 0 0 0, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 -1em;
+    }
+    25% {
+        box-shadow: 0 -3em 0 -0.5em, 2em -2em 0 0, 3em 0 0 0.2em, 2em 2em 0 0, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 -1em;
+    }
+    37.5% {
+        box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0em 0 0, 2em 2em 0 0.2em, 0 3em 0 0em, -2em 2em 0 -1em, -3em 0em 0 -1em, -2em -2em 0 -1em;
+    }
+    50% {
+        box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 0em, 0 3em 0 0.2em, -2em 2em 0 0, -3em 0em 0 -1em, -2em -2em 0 -1em;
+    }
+    62.5% {
+        box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 0, -2em 2em 0 0.2em, -3em 0 0 0, -2em -2em 0 -1em;
+    }
+    75% {
+        box-shadow: 0em -3em 0 -1em, 2em -2em 0 -1em, 3em 0em 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 0, -3em 0em 0 0.2em, -2em -2em 0 0;
+    }
+    87.5% {
+        box-shadow: 0em -3em 0 0, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 0, -3em 0em 0 0, -2em -2em 0 0.2em;
+    }
+}
+
+@keyframes load4 {
+    0%,
+    100% {
+        box-shadow: 0 -3em 0 0.2em, 2em -2em 0 0em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 0;
+    }
+    12.5% {
+        box-shadow: 0 -3em 0 0, 2em -2em 0 0.2em, 3em 0 0 0, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 -1em;
+    }
+    25% {
+        box-shadow: 0 -3em 0 -0.5em, 2em -2em 0 0, 3em 0 0 0.2em, 2em 2em 0 0, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 -1em;
+    }
+    37.5% {
+        box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0em 0 0, 2em 2em 0 0.2em, 0 3em 0 0em, -2em 2em 0 -1em, -3em 0em 0 -1em, -2em -2em 0 -1em;
+    }
+    50% {
+        box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 0em, 0 3em 0 0.2em, -2em 2em 0 0, -3em 0em 0 -1em, -2em -2em 0 -1em;
+    }
+    62.5% {
+        box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 0, -2em 2em 0 0.2em, -3em 0 0 0, -2em -2em 0 -1em;
+    }
+    75% {
+        box-shadow: 0em -3em 0 -1em, 2em -2em 0 -1em, 3em 0em 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 0, -3em 0em 0 0.2em, -2em -2em 0 0;
+    }
+    87.5% {
+        box-shadow: 0em -3em 0 0, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 0, -3em 0em 0 0, -2em -2em 0 0.2em;
+    }
+}

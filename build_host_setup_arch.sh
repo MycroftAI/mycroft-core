@@ -2,11 +2,11 @@
 
 sudo pacman -S \
     git \
-    python \
-    python-pip \
-    python-setuptools \
-    python-virtualenv \
-    python-gobject \
+    python2 \
+    python2-pip \
+    python2-setuptools \
+    python2-virtualenv \
+    python2-gobject \
     python-virtualenvwrapper \
     libtool \
     libffi \
@@ -23,4 +23,4 @@ sudo pacman -S \
     curl
 
 # upgrade virtualenv to latest from pypi
-sudo pip install --upgrade virtualenv
+sudo pip2 install --upgrade virtualenv

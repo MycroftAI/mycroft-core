@@ -7,6 +7,8 @@ Pair Mycroft instance with Cerberus Account Management Service: https://cerberus
 
 Join the Mycroft Slack(chat) channel: http://mycroft-ai-slack-invite.herokuapp.com/
 
+Looking to join in developing?  Check out the [Project Wiki](../../wiki/Home) for tasks you can tackle.
+
 # Getting Started in Ubuntu - Development Environment
 - run `build_host_setup.sh` (installs debian packages with apt-get, please read it) 
 - run `dev_setup.sh` (feel free to read it, as well)
