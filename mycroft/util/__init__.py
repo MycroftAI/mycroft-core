@@ -28,12 +28,12 @@ from os.path import dirname
 __author__ = 'jdorleans'
 
 
-def play_wav(file_path):
-    return subprocess.Popen(["aplay", remove_https(file_path)])
+def play_wav(uri):
+    return subprocess.Popen(["aplay", get_http(uri)])
 
 
-def play_mp3(file_path):
-    return subprocess.Popen(["mpg123", remove_https(file_path)])
+def play_mp3(uri):
+    return subprocess.Popen(["mpg123", get_http(uri)])
 
 
 def record(file_path, duration, rate, channels):
@@ -46,8 +46,8 @@ def record(file_path, duration, rate, channels):
             ["arecord", "-r", str(rate), "-c", str(channels), file_path])
 
 
-def remove_https(url):
-    return url.replace("https://", "http://")
+def get_http(uri):
+    return uri.replace("https://", "http://")
 
 
 def remove_last_slash(url):
