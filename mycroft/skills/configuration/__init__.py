@@ -21,20 +21,17 @@ from os.path import dirname
 from requests import HTTPError
 
 from mycroft.api import DeviceApi
-from mycroft.identity import IdentityManager
 from mycroft.messagebus.message import Message
 from mycroft.skills.scheduled_skills import ScheduledSkill
-from mycroft.util.log import getLogger
 
 __author__ = 'augustnmonteiro'
-
-LOGGER = getLogger(__name__)
 
 
 class ConfigurationSkill(ScheduledSkill):
     def __init__(self):
         super(ConfigurationSkill, self).__init__("ConfigurationSkill")
         self.max_delay = self.config.get('max_delay')
+        self.api = DeviceApi()
 
     def initialize(self):
         self.load_data_files(dirname(__file__))
@@ -47,27 +44,26 @@ class ConfigurationSkill(ScheduledSkill):
 
     def handle_update_intent(self, message):
         try:
-            self.update_config()
+            self.update()
             self.speak_dialog("config.updated")
         except HTTPError as e:
             self.__api_error(e)
 
     def notify(self, timestamp):
         try:
-            self.update_config()
+            self.update()
         except HTTPError as e:
-            LOGGER.warn("Error on update settings '%s'", e)
+            if e.response.status_code == 401:
+                self.log.warn("Impossible to update configuration because device isn't paired")
         self.schedule()
 
-    def update_config(self):
-        config = DeviceApi().find_setting()
+    def update(self):
+        config = self.api.find_setting()
         self.emitter.emit(Message("configuration.updated", config))
 
     def __api_error(self, e):
         if e.response.status_code == 401:
-            LOGGER.warn("Access Denied at mycroft.ai")
             self.emitter.emit(Message("mycroft.not.paired"))
-
 
     def get_times(self):
         return [self.get_utc_time() + self.max_delay]

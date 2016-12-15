@@ -157,6 +157,7 @@ class MycroftSkill(object):
         self.dialog_renderer = None
         self.file_system = FileSystemAccess(join('skills', name))
         self.registered_intents = []
+        self.log = getLogger(name)
 
     @property
     def location(self):

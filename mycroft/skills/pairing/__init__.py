@@ -14,19 +14,17 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-from os.path import dirname
 from threading import Timer
 from uuid import uuid4
 
 from adapt.intent import IntentBuilder
+from os.path import dirname
 
 from mycroft.api import DeviceApi
 from mycroft.identity import IdentityManager
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import MycroftSkill
-from mycroft.util.log import getLogger
 
-logger = getLogger(__name__)
 
 class PairingSkill(MycroftSkill):
     def __init__(self):
