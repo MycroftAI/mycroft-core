@@ -149,7 +149,6 @@ class WolframAlphaSkill(MycroftSkill):
             others = self._find_did_you_mean(res)
         except HTTPError as e:
             if e.response.status_code == 401:
-                LOG.warn("Access Denied at mycroft.ai")
                 self.emitter.emit(Message("mycroft.not.paired"))
             return
         except Exception as e:
