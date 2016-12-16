@@ -164,6 +164,7 @@ class MycroftSkill(object):
         self.dialog_renderer = None
         self.file_system = FileSystemAccess(join('skills', name))
         self.registered_intents = []
+        self.results = {}
 
     @property
     def location(self):
@@ -206,6 +207,11 @@ class MycroftSkill(object):
         def receive_handler(message):
             try:
                 handler(message)
+                if len(self.results) > 0:
+                    self.emitter.emit(
+                        Message("results",
+                                metadata=self.results))
+                    self.results.clear()
             except:
                 # TODO: Localize
                 self.speak(
@@ -226,6 +232,10 @@ class MycroftSkill(object):
         re.compile(regex_str)  # validate regex
         self.emitter.emit(
             Message('register_vocab', metadata={'regex': regex_str}))
+
+    def add_result(self, key, value):
+        self.results['skill_name'] = self.name
+        self.results[str(key)] = value
 
     def speak(self, utterance):
         self.emitter.emit(Message("speak", metadata={'utterance': utterance}))

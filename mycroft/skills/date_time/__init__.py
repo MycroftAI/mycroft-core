@@ -76,6 +76,10 @@ class TimeSkill(MycroftSkill):
                 return
 
         time_value = now.astimezone(tz)
+
+        self.add_result("location", location)
+        self.add_result("time", self.get_time_format(time_value))
+
         self.speak("It is currently " + self.get_time_format(time_value))
 
     def stop(self):
