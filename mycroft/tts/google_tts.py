@@ -19,7 +19,7 @@
 from gtts import gTTS
 
 from mycroft.tts import TTS, TTSValidator
-from mycroft.util import play_wav
+from mycroft.util import play_mp3
 
 __author__ = 'jdorleans'
 
@@ -33,7 +33,7 @@ class GoogleTTS(TTS):
     def execute(self, sentence, client):
         tts = gTTS(text=sentence, lang=self.lang)
         tts.save(self.filename)
-        play_wav(self.filename)
+        play_mp3(self.filename)
 
 
 class GoogleTTSValidator(TTSValidator):
