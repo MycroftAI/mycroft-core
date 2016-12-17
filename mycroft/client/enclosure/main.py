@@ -28,7 +28,6 @@ def main():
     except Exception as e:
         print(e)
     finally:
-        enclosure.stop()
         sys.exit()
 
 

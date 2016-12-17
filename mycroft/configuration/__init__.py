@@ -113,7 +113,7 @@ class RemoteConfiguration(object):
                 setting = DeviceApi().find_setting()
                 RemoteConfiguration.__load(config, setting)
             except Exception as e:
-                LOG.error("Failed to fetch remote configuration: %s" % repr(e))
+                LOG.warn("Failed to fetch remote configuration: %s" % repr(e))
         else:
             LOG.debug("Remote configuration not activated.")
         return config

@@ -20,7 +20,7 @@ import subprocess
 import time
 from Queue import Queue
 from alsaaudio import Mixer
-from threading import Thread
+from threading import Thread, Timer
 
 import serial
 
@@ -76,8 +76,11 @@ class EnclosureReader(Thread):
     def process(self, data):
         self.ws.emit(Message(data))
 
+        if "Command: system.version" in data:
+            self.ws.emit(Message("enclosure.start"))
+
         if "mycroft.stop" in data:
-            create_signal('buttonPress')
+            create_signal('buttonPress')  # FIXME - Must use WS instead
             self.ws.emit(Message("mycroft.stop"))
 
         if "volume.up" in data:
@@ -201,6 +204,12 @@ class Enclosure(object):
         self.__init_serial()
         self.reader = EnclosureReader(self.serial, self.ws)
         self.writer = EnclosureWriter(self.serial, self.ws)
+        self.writer.write("system.version")
+        self.ws.on("enclosure.start", self.start)
+        self.started = False
+        Timer(5, self.stop).start()
+
+    def start(self, event=None):
         self.eyes = EnclosureEyes(self.ws, self.writer)
         self.mouth = EnclosureMouth(self.ws, self.writer)
         self.system = EnclosureArduino(self.ws, self.writer)
@@ -208,6 +217,7 @@ class Enclosure(object):
         self.__register_events()
         self.update()
         self.test()
+        self.started = True
 
     def update(self):
         if self.config.get("update"):
@@ -266,11 +276,12 @@ class Enclosure(object):
         try:
             self.ws.run_forever()
         except Exception as e:
-            LOG.error("Websocket error: {0}".format(e))
+            LOG.error("Error: {0}".format(e))
             self.stop()
 
     def stop(self):
-        self.writer.stop()
-        self.reader.stop()
-        self.serial.close()
-        self.ws.close()
+        if not self.started:
+            self.writer.stop()
+            self.reader.stop()
+            self.serial.close()
+            self.ws.close()
