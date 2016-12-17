@@ -18,7 +18,6 @@
 
 import argparse
 import sys
-
 from os.path import dirname, exists, isdir
 
 from mycroft.configuration import ConfigurationManager
@@ -70,23 +69,23 @@ class SkillContainer(object):
         if not params.port:
             params.port = config.get('port')
 
-        self.client = WebsocketClient(host=params.host,
-                                      port=params.port,
-                                      ssl=params.use_ssl)
+        self.ws = WebsocketClient(host=params.host,
+                                  port=params.port,
+                                  ssl=params.use_ssl)
 
     def try_load_skill(self):
         if self.enable_intent_skill:
             intent_skill = create_intent_skill()
-            intent_skill.bind(self.client)
+            intent_skill.bind(self.ws)
             intent_skill.initialize()
         skill_descriptor = create_skill_descriptor(self.dir)
-        load_skill(skill_descriptor, self.client)
+        load_skill(skill_descriptor, self.ws)
 
     def run(self):
-        self.client.on('message', logger.debug)
-        self.client.on('open', self.try_load_skill)
-        self.client.on('error', logger.error)
-        self.client.run_forever()
+        self.ws.on('message', logger.debug)
+        self.ws.on('open', self.try_load_skill)
+        self.ws.on('error', logger.error)
+        self.ws.run_forever()
 
 
 def main():

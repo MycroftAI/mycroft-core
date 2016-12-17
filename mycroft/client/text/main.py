@@ -25,32 +25,32 @@ from mycroft.tts import TTSFactory
 from mycroft.util.log import getLogger
 
 tts = TTSFactory.create()
-client = None
+ws = None
 mutex = Lock()
 logger = getLogger("CLIClient")
 
 
 def handle_speak(event):
     mutex.acquire()
-    client.emit(Message("recognizer_loop:audio_output_start"))
+    ws.emit(Message("recognizer_loop:audio_output_start"))
     try:
         utterance = event.data.get('utterance')
         logger.info("Speak: " + utterance)
         tts.execute(utterance)
     finally:
         mutex.release()
-        client.emit(Message("recognizer_loop:audio_output_end"))
+        ws.emit(Message("recognizer_loop:audio_output_end"))
 
 
 def connect():
-    client.run_forever()
+    ws.run_forever()
 
 
 def main():
-    global client
-    client = WebsocketClient()
+    global ws
+    ws = WebsocketClient()
     if '--quiet' not in sys.argv:
-        client.on('speak', handle_speak)
+        ws.on('speak', handle_speak)
     event_thread = Thread(target=connect)
     event_thread.setDaemon(True)
     event_thread.start()
@@ -58,7 +58,7 @@ def main():
         while True:
             print("Input:")
             line = sys.stdin.readline()
-            client.emit(
+            ws.emit(
                 Message("recognizer_loop:utterance",
                         {'utterances': [line.strip()]}))
     except KeyboardInterrupt, e:

@@ -28,12 +28,12 @@ logger = getLogger("Skills")
 
 __author__ = 'seanfitz'
 
-client = None
+ws = None
 
 
 def load_skills_callback():
-    global client
-    load_skills(client)
+    global ws
+    load_skills(ws)
     config = ConfigurationManager.get().get("skills")
 
     try:
@@ -42,21 +42,21 @@ def load_skills_callback():
         logger.warning(e.message)
 
     if exists(THIRD_PARTY_SKILLS_DIR):
-        load_skills(client, THIRD_PARTY_SKILLS_DIR)
+        load_skills(ws, THIRD_PARTY_SKILLS_DIR)
 
     if ini_third_party_skills_dir and exists(ini_third_party_skills_dir):
-        load_skills(client, ini_third_party_skills_dir)
+        load_skills(ws, ini_third_party_skills_dir)
 
 
 def connect():
-    global client
-    client.run_forever()
+    global ws
+    ws.run_forever()
 
 
 def main():
-    global client
-    client = WebsocketClient()
-    ConfigurationManager.init(client)
+    global ws
+    ws = WebsocketClient()
+    ConfigurationManager.init(ws)
 
     def echo(message):
         try:
@@ -70,9 +70,9 @@ def main():
             pass
         logger.debug(message)
 
-    client.on('message', echo)
-    client.once('open', load_skills_callback)
-    client.run_forever()
+    ws.on('message', echo)
+    ws.once('open', load_skills_callback)
+    ws.run_forever()
 
 
 if __name__ == "__main__":

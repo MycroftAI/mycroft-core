@@ -17,7 +17,6 @@
 
 
 from mycroft.util.log import getLogger
-import time
 
 __author__ = 'jdorleans'
 
@@ -31,23 +30,23 @@ class EnclosureEyes:
     Performs the associated command on Arduino by writing on the Serial port.
     """
 
-    def __init__(self, client, writer):
-        self.client = client
+    def __init__(self, ws, writer):
+        self.ws = ws
         self.writer = writer
         self.__init_events()
 
     def __init_events(self):
-        self.client.on('enclosure.eyes.on', self.on)
-        self.client.on('enclosure.eyes.off', self.off)
-        self.client.on('enclosure.eyes.blink', self.blink)
-        self.client.on('enclosure.eyes.narrow', self.narrow)
-        self.client.on('enclosure.eyes.look', self.look)
-        self.client.on('enclosure.eyes.color', self.color)
-        self.client.on('enclosure.eyes.level', self.brightness)
-        self.client.on('enclosure.eyes.volume', self.volume)
-        self.client.on('enclosure.eyes.spin', self.spin)
-        self.client.on('enclosure.eyes.timedspin', self.timed_spin)
-        self.client.on('enclosure.eyes.reset', self.reset)
+        self.ws.on('enclosure.eyes.on', self.on)
+        self.ws.on('enclosure.eyes.off', self.off)
+        self.ws.on('enclosure.eyes.blink', self.blink)
+        self.ws.on('enclosure.eyes.narrow', self.narrow)
+        self.ws.on('enclosure.eyes.look', self.look)
+        self.ws.on('enclosure.eyes.color', self.color)
+        self.ws.on('enclosure.eyes.level', self.brightness)
+        self.ws.on('enclosure.eyes.volume', self.volume)
+        self.ws.on('enclosure.eyes.spin', self.spin)
+        self.ws.on('enclosure.eyes.timedspin', self.timed_spin)
+        self.ws.on('enclosure.eyes.reset', self.reset)
 
     def on(self, event=None):
         self.writer.write("eyes.on")

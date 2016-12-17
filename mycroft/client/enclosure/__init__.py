@@ -55,12 +55,12 @@ class EnclosureReader(Thread):
     Note: A command is identified by a line break
     """
 
-    def __init__(self, serial, client):
+    def __init__(self, serial, ws):
         super(EnclosureReader, self).__init__(target=self.read)
         self.alive = True
         self.daemon = True
         self.serial = serial
-        self.client = client
+        self.ws = ws
         self.start()
 
     def read(self):
@@ -74,31 +74,31 @@ class EnclosureReader(Thread):
                 LOG.error("Reading error: {0}".format(e))
 
     def process(self, data):
-        self.client.emit(Message(data))
+        self.ws.emit(Message(data))
 
         if "mycroft.stop" in data:
             create_signal('buttonPress')
-            self.client.emit(Message("mycroft.stop"))
+            self.ws.emit(Message("mycroft.stop"))
 
         if "volume.up" in data:
-            self.client.emit(
+            self.ws.emit(
                 Message("IncreaseVolumeIntent", {'play_sound': True}))
 
         if "volume.down" in data:
-            self.client.emit(
+            self.ws.emit(
                 Message("DecreaseVolumeIntent", {'play_sound': True}))
 
         if "system.test.begin" in data:
-            self.client.emit(Message('recognizer_loop:sleep'))
+            self.ws.emit(Message('recognizer_loop:sleep'))
 
         if "system.test.end" in data:
-            self.client.emit(Message('recognizer_loop:wake_up'))
+            self.ws.emit(Message('recognizer_loop:wake_up'))
 
         if "mic.test" in data:
             mixer = Mixer()
             prev_vol = mixer.getvolume()[0]
             mixer.setvolume(35)
-            self.client.emit(Message("speak", {
+            self.ws.emit(Message("speak", {
                 'utterance': "I am testing one two three"}))
 
             time.sleep(0.5)  # Prevents recording the loud button press
@@ -110,28 +110,28 @@ class EnclosureReader(Thread):
             subprocess.call('speaker-test -P 10 -l 0 -s 1', shell=True)
 
         if "unit.shutdown" in data:
-            self.client.emit(
+            self.ws.emit(
                 Message("enclosure.eyes.timedspin",
                         {'length': 12000}))
-            self.client.emit(Message("enclosure.mouth.reset"))
+            self.ws.emit(Message("enclosure.mouth.reset"))
             subprocess.call('systemctl poweroff -i', shell=True)
 
         if "unit.reboot" in data:
-            self.client.emit(
+            self.ws.emit(
                 Message("enclosure.eyes.spin"))
-            self.client.emit(Message("enclosure.mouth.reset"))
+            self.ws.emit(Message("enclosure.mouth.reset"))
             subprocess.call('systemctl reboot -i', shell=True)
 
         if "unit.setwifi" in data:
-            self.client.emit(Message("wifisetup.start"))
+            self.ws.emit(Message("mycroft.wifi.start"))
 
         if "unit.factory-reset" in data:
             subprocess.call(
                 'rm ~/.mycroft/identity/identity.json',
                 shell=True)
-            self.client.emit(
+            self.ws.emit(
                 Message("enclosure.eyes.spin"))
-            self.client.emit(Message("enclosure.mouth.reset"))
+            self.ws.emit(Message("enclosure.mouth.reset"))
             subprocess.call('systemctl reboot -i', shell=True)
 
     def stop(self):
@@ -154,12 +154,12 @@ class EnclosureWriter(Thread):
     Note: A command has to end with a line break
     """
 
-    def __init__(self, serial, client, size=16):
+    def __init__(self, serial, ws, size=16):
         super(EnclosureWriter, self).__init__(target=self.flush)
         self.alive = True
         self.daemon = True
         self.serial = serial
-        self.client = client
+        self.ws = ws
         self.commands = Queue(size)
         self.start()
 
@@ -195,16 +195,16 @@ class Enclosure(object):
     """
 
     def __init__(self):
-        self.client = WebsocketClient()
-        ConfigurationManager.init(self.client)
+        self.ws = WebsocketClient()
+        ConfigurationManager.init(self.ws)
         self.config = ConfigurationManager.get().get("enclosure")
         self.__init_serial()
-        self.reader = EnclosureReader(self.serial, self.client)
-        self.writer = EnclosureWriter(self.serial, self.client)
-        self.eyes = EnclosureEyes(self.client, self.writer)
-        self.mouth = EnclosureMouth(self.client, self.writer)
-        self.system = EnclosureArduino(self.client, self.writer)
-        self.weather = EnclosureWeather(self.client, self.writer)
+        self.reader = EnclosureReader(self.serial, self.ws)
+        self.writer = EnclosureWriter(self.serial, self.ws)
+        self.eyes = EnclosureEyes(self.ws, self.writer)
+        self.mouth = EnclosureMouth(self.ws, self.writer)
+        self.system = EnclosureArduino(self.ws, self.writer)
+        self.weather = EnclosureWeather(self.ws, self.writer)
         self.__register_events()
         self.update()
         self.test()
@@ -216,7 +216,6 @@ class Enclosure(object):
                 subprocess.check_call("/opt/enclosure/upload.sh")
                 self.speak("Enclosure update completed")
                 ConfigurationManager.save({"enclosure": {"update": False}})
-                time.sleep(5)
             except:
                 self.speak("I cannot upgrade right now, I'll try later")
 
@@ -240,38 +239,38 @@ class Enclosure(object):
             raise
 
     def __register_events(self):
-        self.client.on('enclosure.mouth.events.activate',
-                       self.__register_mouth_events)
-        self.client.on('enclosure.mouth.events.deactivate',
-                       self.__remove_mouth_events)
+        self.ws.on('enclosure.mouth.events.activate',
+                   self.__register_mouth_events)
+        self.ws.on('enclosure.mouth.events.deactivate',
+                   self.__remove_mouth_events)
         self.__register_mouth_events()
 
     def __register_mouth_events(self, event=None):
-        self.client.on('recognizer_loop:record_begin', self.mouth.listen)
-        self.client.on('recognizer_loop:record_end', self.mouth.reset)
-        self.client.on('recognizer_loop:audio_output_start', self.mouth.talk)
-        self.client.on('recognizer_loop:audio_output_end', self.mouth.reset)
+        self.ws.on('recognizer_loop:record_begin', self.mouth.listen)
+        self.ws.on('recognizer_loop:record_end', self.mouth.reset)
+        self.ws.on('recognizer_loop:audio_output_start', self.mouth.talk)
+        self.ws.on('recognizer_loop:audio_output_end', self.mouth.reset)
 
     def __remove_mouth_events(self, event=None):
-        self.client.remove('recognizer_loop:record_begin', self.mouth.listen)
-        self.client.remove('recognizer_loop:record_end', self.mouth.reset)
-        self.client.remove('recognizer_loop:audio_output_start',
-                           self.mouth.talk)
-        self.client.remove('recognizer_loop:audio_output_end',
-                           self.mouth.reset)
+        self.ws.remove('recognizer_loop:record_begin', self.mouth.listen)
+        self.ws.remove('recognizer_loop:record_end', self.mouth.reset)
+        self.ws.remove('recognizer_loop:audio_output_start',
+                       self.mouth.talk)
+        self.ws.remove('recognizer_loop:audio_output_end',
+                       self.mouth.reset)
 
     def speak(self, text):
-        self.client.emit(Message("speak", {'utterance': text}))
+        self.ws.emit(Message("speak", {'utterance': text}))
 
     def run(self):
         try:
-            self.client.run_forever()
+            self.ws.run_forever()
         except Exception as e:
-            LOG.error("Client error: {0}".format(e))
+            LOG.error("Websocket error: {0}".format(e))
             self.stop()
 
     def stop(self):
         self.writer.stop()
         self.reader.stop()
         self.serial.close()
-        self.client.close()
+        self.ws.close()

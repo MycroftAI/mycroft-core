@@ -1,18 +1,16 @@
-import math
 import os
+import time
 import wave
 from glob import glob
+from os.path import dirname, join
 
 import pyee
-import time
-from os.path import dirname, join
 from speech_recognition import AudioSource
 
 from mycroft.client.speech.listener import RecognizerLoop
-from mycroft.client.speech.local_recognizer import LocalRecognizer
 from mycroft.client.speech.mic import ResponsiveRecognizer
-from mycroft.util.log import getLogger
 from mycroft.client.speech.mic import logger as speech_logger
+from mycroft.util.log import getLogger
 
 __author__ = 'wolfgange3311999'
 logger = getLogger('audio_test_runner')

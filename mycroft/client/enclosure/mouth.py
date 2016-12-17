@@ -30,19 +30,19 @@ class EnclosureMouth:
     Performs the associated command on Arduino by writing on the Serial port.
     """
 
-    def __init__(self, client, writer):
-        self.client = client
+    def __init__(self, ws, writer):
+        self.ws = ws
         self.writer = writer
         self.__init_events()
 
     def __init_events(self):
-        self.client.on('enclosure.mouth.reset', self.reset)
-        self.client.on('enclosure.mouth.talk', self.talk)
-        self.client.on('enclosure.mouth.think', self.think)
-        self.client.on('enclosure.mouth.listen', self.listen)
-        self.client.on('enclosure.mouth.smile', self.smile)
-        self.client.on('enclosure.mouth.viseme', self.viseme)
-        self.client.on('enclosure.mouth.text', self.text)
+        self.ws.on('enclosure.mouth.reset', self.reset)
+        self.ws.on('enclosure.mouth.talk', self.talk)
+        self.ws.on('enclosure.mouth.think', self.think)
+        self.ws.on('enclosure.mouth.listen', self.listen)
+        self.ws.on('enclosure.mouth.smile', self.smile)
+        self.ws.on('enclosure.mouth.viseme', self.viseme)
+        self.ws.on('enclosure.mouth.text', self.text)
 
     def reset(self, event=None):
         self.writer.write("mouth.reset")

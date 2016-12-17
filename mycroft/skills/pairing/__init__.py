@@ -14,11 +14,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
+from os.path import dirname
 from threading import Timer
 from uuid import uuid4
 
 from adapt.intent import IntentBuilder
-from os.path import dirname
 
 from mycroft.api import DeviceApi
 from mycroft.identity import IdentityManager
@@ -43,7 +43,7 @@ class PairingSkill(MycroftSkill):
         self.emitter.on("mycroft.not.paired", self.not_paired)
 
     def not_paired(self, message):
-        self.speak_dialog("not.paired")
+        self.speak_dialog("pairing.not.paired")
         self.handle_pairing()
 
     def handle_pairing(self, message=None):
@@ -63,9 +63,10 @@ class PairingSkill(MycroftSkill):
         try:
             token = self.data.get("token")
             login = self.api.activate(self.state, token)
+            self.enclosure.activate_mouth_events()
             self.speak_dialog("pairing.paired")
             IdentityManager.save(login)
-            self.emitter.emit(Message("mycroft.device.paired", login))
+            self.emitter.emit(Message("mycroft.paired", login))
         except:
             self.data["expiration"] -= self.delay
 

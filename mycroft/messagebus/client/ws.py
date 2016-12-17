@@ -108,18 +108,18 @@ class WebsocketClient(object):
 
 
 def echo():
-    client = WebsocketClient()
+    ws = WebsocketClient()
 
     def echo(message):
         LOG.info(message)
 
     def repeat_utterance(message):
         message.type = 'speak'
-        client.emit(message)
+        ws.emit(message)
 
-    client.on('message', echo)
-    client.on('recognizer_loop:utterance', repeat_utterance)
-    client.run_forever()
+    ws.on('message', echo)
+    ws.on('recognizer_loop:utterance', repeat_utterance)
+    ws.run_forever()
 
 
 if __name__ == "__main__":

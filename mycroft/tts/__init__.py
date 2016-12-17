@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 import random
-
 from abc import ABCMeta, abstractmethod
 from os.path import dirname, exists, isdir
 
@@ -44,8 +43,8 @@ class TTS(object):
         self.voice = voice
         self.filename = '/tmp/tts.wav'
         self.validator = validator
-        self.client = WebsocketClient()
-        self.enclosure = EnclosureAPI(self.client)
+        self.ws = WebsocketClient()
+        self.enclosure = EnclosureAPI(self.ws)
         random.seed()
 
     @abstractmethod
