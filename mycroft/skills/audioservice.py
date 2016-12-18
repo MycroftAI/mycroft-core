@@ -11,12 +11,12 @@ class AudioService():
         self.info = None
 
     def _track_info(self, message=None):
-        self.info = message.metadata
+        self.info = message.data
 
     def play(self, tracks=[], utterance=''):
         self.emitter.emit(Message('MycroftAudioServicePlay',
-                                  metadata={'tracks': tracks,
-                                            'utterance': utterance}))
+                                  data={'tracks': tracks,
+                                        'utterance': utterance}))
 
     def track_info(self):
         self.info = None

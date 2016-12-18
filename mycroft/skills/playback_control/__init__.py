@@ -15,15 +15,18 @@ from os.path import dirname
 
 from mycroft.util.log import getLogger
 
-config = ConfigurationManager.get().get('audio')
+config = ConfigurationManager.get().get('Audio')
 logger = getLogger(abspath(__file__).split('/')[-2])
 __author__ = 'forslund'
 
 sys.path.append(abspath(dirname(__file__)))
-if config.get('audio.mopidy', 'False') == 'True':
-    MopidyService = __import__('mopidy_service').MopidyService
-if config.get('audio.vlc', 'False') == 'True':
-    VlcService = __import__('vlc_service').VlcService
+MopidyService = __import__('mopidy_service').MopidyService
+for b in config['backends']:
+    logger.debug(b)
+    b = config['backends'][b]
+    if b['type'] == 'vlc' and b.get('active', False):
+        VlcService = __import__('vlc_service').VlcService
+        break
 
 
 class Mpg123Service():
@@ -104,14 +107,23 @@ class PlaybackControlSkill(MediaSkill):
         super(PlaybackControlSkill, self).initialize()
         self.load_data_files(dirname(__file__))
 
-        if config.get('audio.vlc', 'False') == 'True':
-            logger.info('starting VLC service')
-            self.service.append(VlcService(config, self.emitter))
-        if config.get('audio.mopidy', 'False') == 'True':
-            logger.info('starting Mopidy service')
-            self.service.append(MopidyService(config, self.emitter))
-        logger.info('starting Mpg123 service')
-        self.service.append(Mpg123Service(config, self.emitter))
+        for b in config['backends']:
+            b = config['backends'][b]
+            logger.debug(b)
+            if b['type'] == 'vlc' and b.get('active', False):
+                logger.info('starting VLC service')
+                self.service.append(VlcService(b, self.emitter))
+            if b['type'] == 'mopidy' and b.get('active', False):
+                logger.info('starting Mopidy service')
+                self.service.append(MopidyService(config, self.emitter))
+            if b['type'] == 'mpg123' and b.get('active', False):
+                logger.info('starting Mpg123 service')
+                self.service.append(Mpg123Service(config, self.emitter))
+
+            if b.get('default', False):
+                # Last added service is the default
+                self.default = self.service[-1]
+
         self.emitter.on('MycroftAudioServicePlay', self._play)
         self.emitter.on('MycroftAudioServiceTrackInfo', self._track_info)
 
@@ -140,14 +152,14 @@ class PlaybackControlSkill(MediaSkill):
 
     def _play(self, message):
         logger.info('MycroftAudioServicePlay')
-        logger.info(message.metadata['tracks'])
+        logger.info(message.data['tracks'])
 
-        tracks = message.metadata['tracks']
+        tracks = message.data['tracks']
 
         # Find if the user wants to use a specific backend
         for s in self.service:
             logger.info(s)
-            if s.name in message.metadata['utterance']:
+            if s.name in message.data['utterance']:
                 prefered_service = s
                 logger.info(s.name + ' would be prefered')
                 break
@@ -202,7 +214,7 @@ class PlaybackControlSkill(MediaSkill):
         else:
             track_info = {}
         self.emitter.emit(Message('MycroftAudioServiceTrackInfoReply',
-                                  metadata=track_info))
+                                  data=track_info))
 
 def create_skill():
     return PlaybackControlSkill()
