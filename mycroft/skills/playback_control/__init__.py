@@ -30,15 +30,13 @@ for b in config['backends']:
 
 
 class Mpg123Service():
-    def __init__(self, config, emitter):
+    def __init__(self, config, emitter, name='mpg123'):
         self.config = config
         self.process = None
-        self.emitter = emitter 
-        self.emitter.on('Mpg123ServicePlay', self._play)
+        self.emitter = emitter
+        self.name = name
 
-    @property
-    def name(self):
-        return self.config.get('audio.mpg123.name', 'mpg123')
+        self.emitter.on('Mpg123ServicePlay', self._play)
 
     def supported_uris(self):
         return ['file', 'http']
@@ -107,18 +105,18 @@ class PlaybackControlSkill(MediaSkill):
         super(PlaybackControlSkill, self).initialize()
         self.load_data_files(dirname(__file__))
 
-        for b in config['backends']:
-            b = config['backends'][b]
+        for name in config['backends']:
+            b = config['backends'][name]
             logger.debug(b)
             if b['type'] == 'vlc' and b.get('active', False):
                 logger.info('starting VLC service')
-                self.service.append(VlcService(b, self.emitter))
+                self.service.append(VlcService(b, self.emitter, name))
             if b['type'] == 'mopidy' and b.get('active', False):
                 logger.info('starting Mopidy service')
-                self.service.append(MopidyService(config, self.emitter))
+                self.service.append(MopidyService(config, self.emitter, name))
             if b['type'] == 'mpg123' and b.get('active', False):
                 logger.info('starting Mpg123 service')
-                self.service.append(Mpg123Service(config, self.emitter))
+                self.service.append(Mpg123Service(config, self.emitter, name))
 
             if b.get('default', False):
                 # Last added service is the default
@@ -158,7 +156,7 @@ class PlaybackControlSkill(MediaSkill):
 
         # Find if the user wants to use a specific backend
         for s in self.service:
-            logger.info(s)
+            logger.info(s.name)
             if s.name in message.data['utterance']:
                 prefered_service = s
                 logger.info(s.name + ' would be prefered')

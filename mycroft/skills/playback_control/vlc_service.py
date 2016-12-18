@@ -6,7 +6,7 @@ logger = getLogger(abspath(__file__).split('/')[-2])
 import vlc
 
 class VlcService():
-    def __init__(self, config, emitter=None):
+    def __init__(self, config, emitter=None, name='vlc'):
         self.instance = vlc.Instance()
         self.list_player = self.instance.media_list_player_new()
         self.player = self.instance.media_player_new()
@@ -14,10 +14,7 @@ class VlcService():
 
         self.config = config
         self.emitter = emitter 
-    
-    @property
-    def name(self):
-        return self.config.get('audio.vlc.name', 'vlc')
+        self.name = name
 
     def supported_uris(self):
         return ['file', 'http']

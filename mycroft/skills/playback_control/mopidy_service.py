@@ -28,18 +28,15 @@ class MopidyService():
 
         logger.info('Connected to mopidy server')
     
-    def __init__(self, config, emitter):
+    def __init__(self, config, emitter, name='mopidy'):
         self.connection_attempts = 0
-        self.emitter = emitter 
+        self.emitter = emitter
         self.config = config
+        self.name = name
 
         self.mopidy = None
         self.emitter.on('MopidyServiceConnect', self._connect)
         self._connect(None)
-
-    @property
-    def name(self):
-        return self.config.get('audio.mopidy.name', 'mopidy')
 
     def supported_uris(self):
         if self.mopidy:
