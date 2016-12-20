@@ -37,7 +37,9 @@ __author__ = 'seanfitz'
 PRIMARY_SKILLS = ['intent', 'wake']
 BLACKLISTED_SKILLS = ["send_sms", "media"]
 SKILLS_BASEDIR = dirname(__file__)
-THIRD_PARTY_SKILLS_DIR = ["/opt/mycroft/third_party", "/opt/mycroft/skills"] # Note: /opt/mycroft/skills is recommended, /opt/mycroft/third_party is for backwards compatibility
+THIRD_PARTY_SKILLS_DIR = ["/opt/mycroft/third_party", "/opt/mycroft/skills"]
+# Note: /opt/mycroft/skills is recommended, /opt/mycroft/third_party
+# is for backwards compatibility
 
 MainModule = '__init__'
 
@@ -118,7 +120,7 @@ def get_skills(skills_folder):
     for i in possible_skills:
         location = join(skills_folder, i)
         if (isdir(location) and
-           not MainModule + ".py" in os.listdir(location)):
+                not MainModule + ".py" in os.listdir(location)):
             for j in os.listdir(location):
                 name = join(location, j)
                 if (not isdir(name) or
@@ -146,8 +148,8 @@ def load_skills(emitter, skills_root=SKILLS_BASEDIR):
             load_skill(skill, emitter)
 
     for skill in skills:
-        if (skill['name'] not in PRIMARY_SKILLS and skill['name'] not in
-                BLACKLISTED_SKILLS):
+        if (skill['name'] not in PRIMARY_SKILLS and
+                skill['name'] not in BLACKLISTED_SKILLS):
             load_skill(skill, emitter)
 
 
