@@ -44,7 +44,7 @@ def load_skills_callback():
     for loc in THIRD_PARTY_SKILLS_DIR:
         if exists(loc):
             load_skills(client, loc)
-    
+
     if ini_third_party_skills_dir and exists(ini_third_party_skills_dir):
         load_skills(ws, ini_third_party_skills_dir)
 
