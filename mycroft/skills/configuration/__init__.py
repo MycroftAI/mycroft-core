@@ -54,7 +54,8 @@ class ConfigurationSkill(ScheduledSkill):
             self.update()
         except HTTPError as e:
             if e.response.status_code == 401:
-                self.log.warn("Impossible to update configuration because device isn't paired")
+                self.log.warn("Impossible to update configuration because "
+                              "device isn't paired")
         self.schedule()
 
     def update(self):

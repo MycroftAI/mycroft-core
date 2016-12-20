@@ -179,7 +179,7 @@ class WolframAlphaSkill(MycroftSkill):
             if len(others) > 0:
                 self.speak_dialog('others.found',
                                   data={'utterance': utterance, 'alternative':
-                                      others[0]})
+                                        others[0]})
             else:
                 self.speak_dialog("not.understood", data={'phrase': phrase})
 
