@@ -138,8 +138,8 @@ def load_skills(emitter, skills_root=SKILLS_BASEDIR):
             load_skill(skill, emitter)
 
     for skill in skills:
-        if (skill['name'] not in PRIMARY_SKILLS and
-                    skill['name'] not in BLACKLISTED_SKILLS):
+        if (skill['name'] not in PRIMARY_SKILLS and skill['name'] not in
+                BLACKLISTED_SKILLS):
             load_skill(skill, emitter)
 
 

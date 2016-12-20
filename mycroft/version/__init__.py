@@ -30,10 +30,12 @@ class VersionManager(object):
 
     @staticmethod
     def get():
-        if exists(VersionManager.__location) and isfile(VersionManager.__location):
+        if (exists(VersionManager.__location) and
+                isfile(VersionManager.__location)):
             try:
                 with open(VersionManager.__location) as f:
                     return json.load(f)
             except:
-                LOG.error("Failed to load version from '%s'" % VersionManager.__location)
+                LOG.error("Failed to load version from '%s'"
+                          % VersionManager.__location)
         return {"coreVersion": None, "enclosureVersion": None}

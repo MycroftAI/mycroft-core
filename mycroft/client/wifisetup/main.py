@@ -520,7 +520,7 @@ def main():
     try:
         wifi.run()
     except Exception as e:
-        print (e)
+        print(e)
     finally:
         sys.exit()
 
