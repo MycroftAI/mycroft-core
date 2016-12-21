@@ -114,6 +114,7 @@ def main():
     global ws
     global loop
     ws = WebsocketClient()
+    tts.init(ws)
     ConfigurationManager.init(ws)
     loop = RecognizerLoop()
     loop.on('recognizer_loop:utterance', handle_utterance)
