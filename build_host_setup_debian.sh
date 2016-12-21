@@ -4,7 +4,6 @@ sudo apt-get install -y \
     git \
     python \
     python-dev \
-    python-pip \
     python-setuptools \
     python-virtualenv \
     python-gobject-dev \
@@ -23,5 +22,3 @@ sudo apt-get install -y \
     flac \
     curl
 
-# upgrade virtualenv to latest from pypi
-sudo pip install --upgrade virtualenv
