@@ -113,10 +113,10 @@ class PlaybackControlSkill(MediaSkill):
                 self.service.append(VlcService(b, self.emitter, name))
             if b['type'] == 'mopidy' and b.get('active', False):
                 logger.info('starting Mopidy service')
-                self.service.append(MopidyService(config, self.emitter, name))
+                self.service.append(MopidyService(b, self.emitter, name))
             if b['type'] == 'mpg123' and b.get('active', False):
                 logger.info('starting Mpg123 service')
-                self.service.append(Mpg123Service(config, self.emitter, name))
+                self.service.append(Mpg123Service(b, self.emitter, name))
 
             if b.get('default', False):
                 # Last added service is the default

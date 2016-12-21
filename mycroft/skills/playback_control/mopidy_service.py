@@ -15,7 +15,7 @@ class MopidyService():
         logger.debug('Could not connect to server, will retry quietly')
         url = 'http://localhost:6680'
         if self.config is not None:
-            url = self.config.get('audio.mopidy.server', url)
+            url = self.config.get('url', url)
         try:
             self.mopidy = Mopidy(url)
         except:
