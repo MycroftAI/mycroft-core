@@ -215,25 +215,7 @@ class Enclosure(object):
         self.system = EnclosureArduino(self.ws, self.writer)
         self.weather = EnclosureWeather(self.ws, self.writer)
         self.__register_events()
-        #self.update()
-        self.test()
         self.started = True
-
-    def update(self):
-        if self.config.get("update"):
-            try:
-                self.speak("Upgrading enclosure version")
-                subprocess.check_call("/opt/enclosure/upload.sh")
-                self.speak("Enclosure update completed")
-                ConfigurationManager.save({"enclosure": {"update": False}})
-            except:
-                self.speak("I cannot upgrade right now, I'll try later")
-
-    def test(self):
-        if self.config.get("test"):
-            self.speak("Beginning hardware test")
-            self.writer.write("test.begin")
-            ConfigurationManager.save({"enclosure": {"test": False}})
 
     def __init_serial(self):
         try:
