@@ -1,5 +1,6 @@
 from mycroft.messagebus.message import Message
 from mycroft.util.log import getLogger
+from mycroft.skills.audioservice import AudioBackend
 from os.path import dirname, abspath, basename
 import sys
 import time
@@ -10,7 +11,7 @@ __author__ = 'forslund'
 sys.path.append(abspath(dirname(__file__)))
 Mopidy = __import__('mopidypost').Mopidy
 
-class MopidyService():
+class MopidyService(AudioBackend):
     def _connect(self, message):
         logger.debug('Could not connect to server, will retry quietly')
         url = 'http://localhost:6680'

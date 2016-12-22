@@ -1,11 +1,12 @@
 from os.path import dirname, abspath, basename
 from mycroft.util.log import getLogger
+from mycroft.skills.audioservice import AudioBackend
 
 logger = getLogger(abspath(__file__).split('/')[-2])
 
 import vlc
 
-class VlcService():
+class VlcService(AudioBackend):
     def __init__(self, config, emitter=None, name='vlc'):
         self.instance = vlc.Instance()
         self.list_player = self.instance.media_list_player_new()

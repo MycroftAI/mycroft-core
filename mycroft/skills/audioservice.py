@@ -32,11 +32,6 @@ class AudioBackend():
     def __init__(self, config, emitter):
         pass
 
-    @property
-    @abstractmethod
-    def name(self):
-        pass
-
     @abstractmethod
     def supported_uris(self):
         pass
@@ -57,30 +52,23 @@ class AudioBackend():
     def stop(self):
         pass
 
-    @abstractmethod
     def pause(self):
         pass
 
-    @abstractmethod
     def resume(self):
         pass
 
-    @abstractmethod
     def next(self):
         pass
 
-    @abstractmethod
     def previous(self):
         pass
 
-    @abstractmethod
     def lower_volume(self):
         pass
 
-    @abstractmethod
     def restore_volume(self):
         pass
 
-    @abstractmethod
     def track_info(self):
         pass

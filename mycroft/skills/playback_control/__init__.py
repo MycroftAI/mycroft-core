@@ -5,6 +5,7 @@ from mycroft.skills.media import MediaSkill
 from adapt.intent import IntentBuilder
 from mycroft.messagebus.message import Message
 from mycroft.configuration import ConfigurationManager
+from mycroft.skills.audioservice import AudioBackend
 import subprocess
 
 import time
@@ -29,7 +30,7 @@ for b in config['backends']:
         break
 
 
-class Mpg123Service():
+class Mpg123Service(AudioBackend):
     def __init__(self, config, emitter, name='mpg123'):
         self.config = config
         self.process = None
