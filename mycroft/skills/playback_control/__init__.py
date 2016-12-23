@@ -119,9 +119,14 @@ class PlaybackControlSkill(MediaSkill):
                 logger.info('starting Mpg123 service')
                 self.service.append(Mpg123Service(b, self.emitter, name))
 
-            if b.get('default', False):
-                # Last added service is the default
-                self.default = self.service[-1]
+        default_name =  config.get('default-backend', '')
+        for s in self.service:
+            if s.name == default_name:
+                self.default = s
+                break
+        else:
+            self.default = None
+        logger.info(self.default)
 
         self.emitter.on('MycroftAudioServicePlay', self._play)
         self.emitter.on('MycroftAudioServiceTrackInfo', self._track_info)
@@ -131,8 +136,14 @@ class PlaybackControlSkill(MediaSkill):
         self.stop()
         uri_type = tracks[0].split(':')[0]
         logger.info('uri_type: ' + uri_type)
+        # check if user requested a particular service
         if prefered_service and uri_type in prefered_service.supported_uris():
             service = prefered_service
+        # check if default supports the uri
+        elif self.default and uri_type in self.default.supported_uris():
+            logger.info("Using default backend")
+            logger.info(self.default.name)
+            service = self.default
         else: # Check if any other service can play the media
             for s in self.service:
                 logger.info(str(s))
