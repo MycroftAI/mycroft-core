@@ -13,7 +13,6 @@ Mopidy = __import__('mopidypost').Mopidy
 
 class MopidyService(AudioBackend):
     def _connect(self, message):
-        logger.debug('Could not connect to server, will retry quietly')
         url = 'http://localhost:6680'
         if self.config is not None:
             url = self.config.get('url', url)
@@ -37,7 +36,7 @@ class MopidyService(AudioBackend):
 
         self.mopidy = None
         self.emitter.on('MopidyServiceConnect', self._connect)
-        self._connect(None)
+        self.emitter.emit(Message('MopidyServiceConnect'))
 
     def supported_uris(self):
         if self.mopidy:
