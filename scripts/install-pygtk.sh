@@ -69,7 +69,7 @@ then
     (   cd $CACHE
         curl 'https://pypi.python.org/packages/source/P/PyGTK/pygtk-2.24.0.tar.bz2' > 'pygtk.tar.bz2'
         tar -xvf pygtk.tar.bz2
-        (   cd pygtk*
+        (   cd pygtk-*
             ./configure --prefix=$VIRTUAL_ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$VIRTUAL_ENV/lib/pkgconfig
             make -j$CORES
             make install
