@@ -44,7 +44,7 @@ class Mpg123Service(AudioBackend):
 
     def clear_list(self):
         self.tracks = []
-    
+
     def add_list(self, tracks):
         self.tracks = tracks
         logger.info("Track list is " + str(tracks))
@@ -85,7 +85,7 @@ class Mpg123Service(AudioBackend):
 
     def lower_volume(self):
         pass
-        
+
     def restore_volume(self):
         pass
 
@@ -119,7 +119,7 @@ class PlaybackControlSkill(MediaSkill):
                 logger.info('starting Mpg123 service')
                 self.service.append(Mpg123Service(b, self.emitter, name))
 
-        default_name =  config.get('default-backend', '')
+        default_name = config.get('default-backend', '')
         for s in self.service:
             if s.name == default_name:
                 self.default = s
@@ -144,7 +144,7 @@ class PlaybackControlSkill(MediaSkill):
             logger.info("Using default backend")
             logger.info(self.default.name)
             service = self.default
-        else: # Check if any other service can play the media
+        else:  # Check if any other service can play the media
             for s in self.service:
                 logger.info(str(s))
                 if uri_type in s.supported_uris():
@@ -225,6 +225,7 @@ class PlaybackControlSkill(MediaSkill):
             track_info = {}
         self.emitter.emit(Message('MycroftAudioServiceTrackInfoReply',
                                   data=track_info))
+
 
 def create_skill():
     return PlaybackControlSkill()

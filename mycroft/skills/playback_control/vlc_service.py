@@ -6,6 +6,7 @@ logger = getLogger(abspath(__file__).split('/')[-2])
 
 import vlc
 
+
 class VlcService(AudioBackend):
     def __init__(self, config, emitter=None, name='vlc'):
         self.instance = vlc.Instance()
@@ -14,7 +15,7 @@ class VlcService(AudioBackend):
         self.list_player.set_media_player(self.player)
 
         self.config = config
-        self.emitter = emitter 
+        self.emitter = emitter
         self.name = name
 
     def supported_uris(self):
@@ -22,7 +23,7 @@ class VlcService(AudioBackend):
 
     def clear_list(self):
         empty = self.instance.media_list_new()
-        self.list_player.set_media_list(empty) 
+        self.list_player.set_media_list(empty)
 
     def add_list(self, tracks):
         logger.info("Track list is " + str(tracks))
@@ -66,5 +67,3 @@ class VlcService(AudioBackend):
         ret['artists'] = [t.get_meta(meta.Artist)]
         ret['name'] = t.get_meta(meta.Title)
         return ret
-
-

@@ -11,6 +11,7 @@ __author__ = 'forslund'
 sys.path.append(abspath(dirname(__file__)))
 Mopidy = __import__('mopidypost').Mopidy
 
+
 class MopidyService(AudioBackend):
     def _connect(self, message):
         url = 'http://localhost:6680'
@@ -46,7 +47,7 @@ class MopidyService(AudioBackend):
 
     def clear_list(self):
         self.mopidy.clear_list()
-    
+
     def add_list(self, tracks):
         self.mopidy.add_list(tracks)
 
@@ -86,4 +87,3 @@ class MopidyService(AudioBackend):
             ret['artist'] = ''
             ret['album'] = ''
         return ret
-

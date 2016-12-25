@@ -28,6 +28,7 @@ class AudioService():
 
 class AudioBackend():
     __metaclass__ = ABCMeta
+
     @abstractmethod
     def __init__(self, config, emitter):
         pass
