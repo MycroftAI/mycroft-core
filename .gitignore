@@ -3,6 +3,7 @@
 *.swp
 *~
 mimic
+mimic-dev
 pocketsphinx-python
 *.egg-info/
 build
