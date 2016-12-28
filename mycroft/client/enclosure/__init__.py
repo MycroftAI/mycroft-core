@@ -207,7 +207,7 @@ class Enclosure(object):
         self.writer.write("system.version")
         self.ws.on("enclosure.start", self.start)
         self.started = False
-        Timer(5, self.stop).start()
+        Timer(5, self.stop).start()     # WHY? This at least needs an explaination, this is non-obvious behavior
 
     def start(self, event=None):
         self.eyes = EnclosureEyes(self.ws, self.writer)
@@ -235,6 +235,8 @@ class Enclosure(object):
                    self.__register_mouth_events)
         self.ws.on('enclosure.mouth.events.deactivate',
                    self.__remove_mouth_events)
+        self.ws.on('enclosure.reset',
+                   self.__reset)
         self.__register_mouth_events()
 
     def __register_mouth_events(self, event=None):
@@ -250,6 +252,12 @@ class Enclosure(object):
                        self.mouth.talk)
         self.ws.remove('recognizer_loop:audio_output_end',
                        self.mouth.reset)
+
+    def __reset(self, event=None):
+        # Reset both the mouth and the eye elements to indicate the unit is
+        # ready for input.
+        self.writer.write("eyes.reset")
+        self.writer.write("mouth.reset")
 
     def speak(self, text):
         self.ws.emit(Message("speak", {'utterance': text}))
