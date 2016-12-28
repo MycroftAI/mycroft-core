@@ -43,7 +43,7 @@ fi
 source ${VIRTUALENV_ROOT}/bin/activate
 cd ${TOP}
 easy_install pip==7.1.2 # force version of pip
-sudo pip install --upgrade virtualenv
+pip install --upgrade virtualenv
 
 # install requirements (except pocketsphinx)
 pip2 install -r requirements.txt 
