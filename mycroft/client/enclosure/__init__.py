@@ -215,6 +215,7 @@ class Enclosure(object):
         self.system = EnclosureArduino(self.ws, self.writer)
         self.weather = EnclosureWeather(self.ws, self.writer)
         self.__register_events()
+        self.__reset()
         self.started = True
 
     def __init_serial(self):
