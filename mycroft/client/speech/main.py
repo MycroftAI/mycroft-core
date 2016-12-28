@@ -103,7 +103,8 @@ def handle_paired(event):
 
 
 def handle_open():
-    EnclosureAPI(ws).system_reset()
+    # Reset the UI to indicate ready for speech processing
+    EnclosureAPI(ws).reset()
 
 
 def connect():
