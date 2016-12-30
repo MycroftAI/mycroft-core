@@ -22,6 +22,12 @@ from mycroft.api import STTApi
 from mycroft.configuration import ConfigurationManager
 from mycroft.util.log import getLogger
 
+
+#imports for json handling, requests and string formatting for KaldiSTT
+import json
+import requests
+import re
+
 __author__ = "jdorleans"
 
 LOG = getLogger("STT")
@@ -101,13 +107,38 @@ class MycroftSTT(STT):
         language = language or self.lang
         return self.api.stt(audio.get_flac_data(), language, 1)[0]
 
+#KaldiSTT added. Unsure which class to use BasicSTT, STT or TokenSTT
+#The problem is that with "module": "kaldi" in the config file, mycroft still falls back to MycroftSTT. "update" in config has to be set to false
+
+class KaldiSTT(STT):
+    def __init__(self):
+        super(KaldiSTT, self).__init__()
+        #self.api = STTApi() necessary?
+
+    def execute(self, audio, language=None):
+        language = language or self.lang
+        
+        port_kaldi = 8081 #default port        
+        config = ConfigurationManager.get().get("stt", {})
+        port_kaldi = config.get("port")
+        print("Port for localhost Kaldi Server:", port_kaldi)
+        
+        #the kaldigstserver has to run at localhost on the defined port in the config file under stt "port": xxxx
+        kaldi_server_response = requests.post("http://localhost:%s/client/dynamic/recognize" % port_kaldi, data=audio.get_wav_data())        
+        kaldi_json = json.loads(kaldi_server_response.text)
+        hypotheses = kaldi_json["hypotheses"]
+        
+        #re.sub... deletes all [noise] inserts made by kaldi        
+        return re.sub(r'\s*\[noise\]\s*', '', hypotheses[0]["utterance"])
+
 
 class STTFactory(object):
     CLASSES = {
         "mycroft": MycroftSTT,
         "google": GoogleSTT,
         "wit": WITSTT,
-        "ibm": IBMSTT
+        "ibm": IBMSTT,
+        "kaldi": KaldiSTT
     }
 
     @staticmethod
