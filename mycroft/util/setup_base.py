@@ -42,7 +42,7 @@ def get_version():
         try:
             version = "dev-" + subprocess.check_output(
                 ["git", "rev-parse", "--short", "HEAD"]).strip()
-        except subprocess.CalledProcessError, e2:
+        except subprocess.CalledProcessError as e2:
             version = "development"
             logger.debug(e)
             logger.exception(e2)

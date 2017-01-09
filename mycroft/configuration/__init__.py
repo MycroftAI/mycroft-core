@@ -81,7 +81,7 @@ class ConfigurationLoader(object):
                 with open(location) as f:
                     config.update(json.load(f))
                     LOG.debug("Configuration '%s' loaded" % location)
-            except Exception, e:
+            except Exception as e:
                 LOG.error("Error loading configuration '%s'" % location)
                 LOG.error(repr(e))
         else:

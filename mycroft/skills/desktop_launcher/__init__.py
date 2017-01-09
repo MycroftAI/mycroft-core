@@ -17,7 +17,7 @@
 
 
 import sys
-import urllib2
+from six.moves import urllib as urllib2
 import webbrowser
 
 from adapt.intent import IntentBuilder
