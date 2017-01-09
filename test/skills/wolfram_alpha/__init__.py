@@ -1,9 +1,6 @@
 import unittest
 import wolframalpha
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
+from six import StringIO
 
 from mycroft.skills.wolfram_alpha import WolframAlphaSkill
 from mycroft.util.log import getLogger
