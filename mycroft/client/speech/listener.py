@@ -60,7 +60,7 @@ class AudioProducer(Thread):
                 try:
                     audio = self.recognizer.listen(source, self.emitter)
                     self.queue.put(audio)
-                except IOError, ex:
+                except IOError as ex:
                     # NOTE: Audio stack on raspi is slightly different, throws
                     # IOError every other listen, almost like it can't handle
                     # buffering audio between listen loops.
