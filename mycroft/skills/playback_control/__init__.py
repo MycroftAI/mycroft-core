@@ -19,15 +19,20 @@ from mycroft.util.log import getLogger
 config = ConfigurationManager.get().get('Audio')
 logger = getLogger(abspath(__file__).split('/')[-2])
 __author__ = 'forslund'
-
 sys.path.append(abspath(dirname(__file__)))
 MopidyService = __import__('mopidy_service').MopidyService
+
+# only import services that are configured
 for b in config['backends']:
     logger.debug(b)
     b = config['backends'][b]
     if b['type'] == 'vlc' and b.get('active', False):
         VlcService = __import__('vlc_service').VlcService
-        break
+    if b['type'] == 'chromecast' and b.get('active', False):
+        ChromecastService = __import__('chromecast_service').ChromecastService
+
+if config.get('autodetect-chromecasts', False):
+    autodetect_chromecasts = __import__('chromecast_service').autodetect
 
 
 class Mpg123Service(AudioBackend):
@@ -106,6 +111,7 @@ class PlaybackControlSkill(MediaSkill):
         super(PlaybackControlSkill, self).initialize()
         self.load_data_files(dirname(__file__))
 
+        # Add all manually specified services
         for name in config['backends']:
             b = config['backends'][name]
             logger.debug(b)
@@ -118,6 +124,15 @@ class PlaybackControlSkill(MediaSkill):
             if b['type'] == 'mpg123' and b.get('active', False):
                 logger.info('starting Mpg123 service')
                 self.service.append(Mpg123Service(b, self.emitter, name))
+            if b['type'] == 'chromecast' and b.get('active', False):
+                logger.info('starting Chromecast service')
+                self.service.append(ChromecastService(b, self.emitter, name))
+
+        # Autodetect chromecast devices
+        if config.get('autodetect-chromecasts', False):
+            logger.info('Autodetecting Chromecasts')
+            chromecasts = autodetect_chromecasts({}, self.emitter)
+            self.service = self.service + chromecasts
 
         default_name = config.get('default-backend', '')
         for s in self.service:
