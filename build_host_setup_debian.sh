@@ -16,7 +16,6 @@ sudo apt-get install -y \
     bison \
     swig \
     libglib2.0-dev \
-    s3cmd \
     portaudio19-dev \
     mpg123 \
     screen \

@@ -18,7 +18,6 @@ sudo dnf install -y \
     bison \
     swig \
     glib2-devel \
-    s3cmd \
     portaudio-devel \
     mpg123 \
     screen \
