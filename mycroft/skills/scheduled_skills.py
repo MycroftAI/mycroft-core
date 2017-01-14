@@ -113,6 +113,11 @@ class ScheduledSkill(MycroftSkill):
     def notify(self, timestamp):
         pass
 
+    def cleanup(self):
+        """ Cancel timer making the skill ready for shutdown """
+        if self.timer:
+            self.timer.cancel()
+
 
 class ScheduledCRUDSkill(ScheduledSkill):
     """
