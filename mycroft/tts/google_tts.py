@@ -31,7 +31,8 @@ class GoogleTTS(TTS):
     def execute(self, sentence):
         tts = gTTS(sentence, self.lang)
         tts.save(self.filename)
-        play_mp3(self.filename)
+        p = play_mp3(self.filename)
+        p.communicate()  # Wait for termination
 
 
 class GoogleTTSValidator(TTSValidator):
