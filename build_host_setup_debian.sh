@@ -22,5 +22,3 @@ sudo apt-get install -y \
     flac \
     curl
 
-# upgrade virtualenv to latest from pypi
-sudo pip install --upgrade virtualenv

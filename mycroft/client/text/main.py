@@ -49,6 +49,7 @@ def connect():
 def main():
     global ws
     ws = WebsocketClient()
+    tts.init(ws)
     if '--quiet' not in sys.argv:
         ws.on('speak', handle_speak)
     event_thread = Thread(target=connect)

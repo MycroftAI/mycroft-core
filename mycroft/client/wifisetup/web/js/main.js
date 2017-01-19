@@ -38,7 +38,7 @@ var WifiSetup = {
                 // and hopefully automatically reconnecting to the internet.
                 //
                 // Until the reconnect happens, the user cannot actually
-                // follow the link to http://cerberus.mycroft.ai to register
+                // follow the link to http://home.mycroft.ai to register
                 // their device.  That is part of why we are doing this 2 sec
                 // delay.
                 //
@@ -226,7 +226,7 @@ var WifiSetup = {
             document.querySelector("#connectBtn").addEventListener("click", this.sendScan);
             document.querySelector("#registerBtn").addEventListener("click", function () {
                 setTimeout(function() {
-                    location.href="https://cerberus.mycroft.ai";
+                    location.href="https://home.mycroft.ai";
                 }, 2000);
             });
             document.querySelector("#cancelBtn").addEventListener("click", this.cancelSetup);
@@ -234,7 +234,7 @@ var WifiSetup = {
     };
 
 function startPing() {
-    ping("cerberus.mycroft.ai",
+    ping("home.mycroft.ai",
         function(status,e) {
             if (status == 'responded') {
                 // Un-hide the register button once we detect an
