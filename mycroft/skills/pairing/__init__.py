@@ -85,7 +85,9 @@ class PairingSkill(MycroftSkill):
         return device is not None
 
     def speak_code(self):
-        data = {"code": '. '.join(self.data.get("code"))}
+        code = self.data.get("code")
+        self.log.info("Pairing code: " + code)
+        data = {"code": '. '.join(code).replace("0", "zero")}
         self.speak_dialog("pairing.code", data)
 
     def stop(self):
