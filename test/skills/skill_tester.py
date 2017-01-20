@@ -3,7 +3,7 @@ import json
 from pyee import EventEmitter
 
 from mycroft.messagebus.message import Message
-from mycroft.skills.core import load_skills
+from mycroft.skills.core import load_skills, unload_skills
 
 __author__ = 'seanfitz'
 
@@ -31,8 +31,11 @@ class MockSkillsLoader(object):
         self.emitter = RegistrationOnlyEmitter()
 
     def load_skills(self):
-        load_skills(self.emitter, self.skills_root)
+        self.skills = load_skills(self.emitter, self.skills_root)
         return self.emitter.emitter  # kick out the underlying emitter
+
+    def unload_skills(self):
+        unload_skills(self.skills)
 
 
 class SkillTest(object):

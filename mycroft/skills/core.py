@@ -142,15 +142,22 @@ def create_skill_descriptor(skill_folder):
 
 
 def load_skills(emitter, skills_root=SKILLS_BASEDIR):
+    skill_list = []
     skills = get_skills(skills_root)
     for skill in skills:
         if skill['name'] in PRIMARY_SKILLS:
-            load_skill(skill, emitter)
+            skill_list.append(load_skill(skill, emitter))
 
     for skill in skills:
         if (skill['name'] not in PRIMARY_SKILLS and
                 skill['name'] not in BLACKLISTED_SKILLS):
-            load_skill(skill, emitter)
+            skill_list.append(load_skill(skill, emitter))
+    return skill_list
+
+
+def unload_skills(skills):
+    for s in skills:
+        s.cleanup()
 
 
 class MycroftSkill(object):
@@ -262,3 +269,7 @@ class MycroftSkill(object):
     def is_stop(self):
         passed_time = time.time() - self.stop_time
         return passed_time < self.stop_threshold
+
+    def cleanup(self):
+        """ Clean up running threads, etc. """
+        pass
