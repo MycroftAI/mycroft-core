@@ -6,7 +6,8 @@ requests==2.8.1
 pyOpenSSL==16.0.0
 ndg-httpsclient==0.4.0
 pyasn1==0.1.9
-gTTS==1.0.7
+gTTS==1.1.7
+gTTS-token==1.1.1
 backports.ssl-match-hostname==3.4.0.2
 certifi==2016.2.28
 PyAudio==0.2.8

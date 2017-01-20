@@ -39,7 +39,7 @@ class IdentityManager(object):
     @staticmethod
     def load():
         try:
-            with FileSystemAccess('identity').open('identity.json', 'r') as f:
+            with FileSystemAccess('identity').open('identity2.json', 'r') as f:
                 IdentityManager.__identity = DeviceIdentity(**json.load(f))
         except:
             IdentityManager.__identity = DeviceIdentity()
@@ -49,7 +49,7 @@ class IdentityManager(object):
     def save(login=None):
         if login:
             IdentityManager.update(login)
-        with FileSystemAccess('identity').open('identity.json', 'w') as f:
+        with FileSystemAccess('identity').open('identity2.json', 'w') as f:
             json.dump(IdentityManager.__identity.__dict__, f)
 
     @staticmethod

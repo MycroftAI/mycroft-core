@@ -39,13 +39,15 @@ class TTS(object):
 
     def __init__(self, lang, voice, validator):
         super(TTS, self).__init__()
-        self.lang = lang
+        self.lang = lang or 'en-us'
         self.voice = voice
         self.filename = '/tmp/tts.wav'
         self.validator = validator
-        self.ws = WebsocketClient()
-        self.enclosure = EnclosureAPI(self.ws)
         random.seed()
+
+    def init(self, ws):
+        self.ws = ws
+        self.enclosure = EnclosureAPI(self.ws)
 
     @abstractmethod
     def execute(self, sentence):

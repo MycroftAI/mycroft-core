@@ -103,7 +103,8 @@ def handle_paired(event):
 
 
 def handle_open():
-    EnclosureAPI(ws).system_reset()
+    # Reset the UI to indicate ready for speech processing
+    EnclosureAPI(ws).reset()
 
 
 def connect():
@@ -114,6 +115,7 @@ def main():
     global ws
     global loop
     ws = WebsocketClient()
+    tts.init(ws)
     ConfigurationManager.init(ws)
     loop = RecognizerLoop()
     loop.on('recognizer_loop:utterance', handle_utterance)
