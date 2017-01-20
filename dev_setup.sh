@@ -42,10 +42,10 @@ if [ ! -d ${VIRTUALENV_ROOT} ]; then
 fi
 source ${VIRTUALENV_ROOT}/bin/activate
 cd ${TOP}
-easy_install pip==7.1.2 # force version of pip
-pip install --upgrade virtualenv
 
-# install requirements (except pocketsphinx)
+easy_install pip==9.0.1 # force version of pip
+pip install --upgrade virtualenv
+# install pip requirements
 pip2 install -r requirements.txt 
 
 CORES=$(nproc)

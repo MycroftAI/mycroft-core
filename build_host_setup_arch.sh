@@ -15,7 +15,6 @@ sudo pacman -S --needed \
     bison \
     swig \
     glib2 \
-    s3cmd \
     portaudio \
     mpg123 \
     screen \

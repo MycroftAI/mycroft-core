@@ -2,8 +2,9 @@
 
 sudo apt-get install -y \
     git \
-    python \
-    python-dev \
+    python2.7 \
+    python2.7-dev \
+    python-pip \
     python-setuptools \
     python-virtualenv \
     python-gobject-dev \
@@ -15,7 +16,6 @@ sudo apt-get install -y \
     bison \
     swig \
     libglib2.0-dev \
-    s3cmd \
     portaudio19-dev \
     mpg123 \
     screen \
