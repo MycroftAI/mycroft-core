@@ -37,7 +37,7 @@ class Api(object):
         query = self.build_query(params)
         url = self.build_url(params)
         response = requests.request(method, url, headers=headers, params=query,
-                                    data=data, json=json)
+                                    data=data, json=json, timeout=(3.05, 15))
         return self.get_response(response)
 
     def request(self, params):
