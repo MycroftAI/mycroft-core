@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-sudo pacman -S \
+sudo pacman -S --needed \
     git \
     python2 \
     python2-pip \
