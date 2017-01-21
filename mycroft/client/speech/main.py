@@ -44,7 +44,7 @@ def handle_record_begin():
 
     # If enabled, play a wave file with a short sound to indicate recording has
     # begun.
-    if config.get('confirm_keyword'):
+    if config.get('confirm_listening'):
         play_wav(expanduser(config.get('confirm_ding')))
         
     ws.emit(Message('recognizer_loop:record_begin'))
