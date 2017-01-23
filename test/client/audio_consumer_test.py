@@ -57,7 +57,7 @@ class AudioConsumerTest(unittest.TestCase):
         self.consumer = AudioConsumer(
             self.loop.state, self.queue, self.loop, GoogleSTT(),
             LocalRecognizer(self.loop.wakeup_recognizer.key_phrase,
-                            self.loop.wakeup_recognizer.phonemes, "1e-16"),
+                            self.loop.wakeup_recognizer.phonemes, 1e-16),
             self.loop.mycroft_recognizer)
 
     def __create_sample_from_test_file(self, sample_name):
