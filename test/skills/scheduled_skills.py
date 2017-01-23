@@ -28,4 +28,4 @@ class ScheduledSkillTest(unittest.TestCase):
         date = datetime.now() + timedelta(days=2)
         self.assertEquals(self.skill.
                           get_formatted_time(float(date.strftime('%s'))),
-                          date.strftime("%A, %B %d, %Y at %H:%M"))
+                          date.strftime("%B %d, %Y at %I:%M, %p"))
