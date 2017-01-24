@@ -80,10 +80,22 @@ def handle_multi_utterance_intent_failure(event):
 
 def handle_speak(event):
     utterance = event.data['utterance']
-    chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s', utterance)
-    for chunk in chunks:
-        mute_and_speak(chunk)
-
+   
+    # This is a bit of a hack for Picroft.  The analog audio on a Pi blocks
+    # for 30 seconds fairly often, so we don't want to break on periods
+    # (decreasing the chance of encountering the block).  But we will
+    # keep the split for non-Picroft installs since it give user feedback
+    # faster on longer phrases.
+    #    
+    # TODO: Remove or make an option?  This is really a hack, anyway,
+    # so we likely will want to get rid of this when not running on Mimic
+    if not config.get('enclosure', {}).get('platform') == "picroft":
+        chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s',
+                          utterance)
+        for chunk in chunks:
+            mute_and_speak(chunk)
+    else:
+        mute_and_speak(utterance)
 
 def handle_sleep(event):
     loop.sleep()

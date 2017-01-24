@@ -22,6 +22,16 @@ from mycroft.util.log import getLogger
 
 __author__ = 'augustnmonteiro'
 
+# The following lines are replaced during the release process.
+# START_VERSION_BLOCK
+CORE_VERSION_MAJOR = 0
+CORE_VERSION_MINOR = 8
+CORE_VERSION_BUILD = 1
+# END_VERSION_BLOCK
+
+CORE_VERSION_STR = (str(CORE_VERSION_MAJOR) + "." +
+                    str(CORE_VERSION_MINOR) + "." +
+                    str(CORE_VERSION_BUILD))
 LOG = getLogger(__name__)
 
 
@@ -30,10 +40,12 @@ class VersionManager(object):
 
     @staticmethod
     def get():
-        if exists(VersionManager.__location) and isfile(VersionManager.__location):
+        if (exists(VersionManager.__location) and
+                isfile(VersionManager.__location)):
             try:
                 with open(VersionManager.__location) as f:
                     return json.load(f)
             except:
-                LOG.error("Failed to load version from '%s'" % VersionManager.__location)
+                LOG.error("Failed to load version from '%s'"
+                          % VersionManager.__location)
         return {"coreVersion": None, "enclosureVersion": None}

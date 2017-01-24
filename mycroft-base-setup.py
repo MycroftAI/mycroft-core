@@ -27,6 +27,7 @@ setup(
             'mycroft-audio-test=mycroft.util.audio_test:main',
             'mycroft-enclosure-client=mycroft.client.enclosure.main:main',
             'mycroft-wifi-setup-client=mycroft.client.wifisetup.main:main',
+            'mycroft-skill-container=mycroft.skills.container:main',
             'mycroft-cli-client=mycroft.client.text.main:main'
         ]
     }
