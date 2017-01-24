@@ -3,6 +3,8 @@ import unittest
 
 from mycroft.skills.scheduled_skills import ScheduledSkill
 from mycroft.util.log import getLogger
+from mycroft.configuration import ConfigurationManager
+
 
 __author__ = 'eward'
 
@@ -28,4 +30,4 @@ class ScheduledSkillTest(unittest.TestCase):
         date = datetime.now() + timedelta(days=2)
         self.assertEquals(self.skill.
                           get_formatted_time(float(date.strftime('%s'))),
-                          date.strftime("%B %d, %Y at %I:%M, %p"))
+                          date.strftime(self.skill.format))
