@@ -118,6 +118,11 @@ class ScheduledSkill(MycroftSkill):
         if self.timer:
             self.timer.cancel()
 
+    def shutdown(self):
+        MycroftSkill.shutdown(self)
+        if self.timer:
+            self.timer.cancel()
+
 
 class ScheduledCRUDSkill(ScheduledSkill):
     """
