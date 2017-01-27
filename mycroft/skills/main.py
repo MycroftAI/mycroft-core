@@ -83,5 +83,5 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         for skill in skills:
-            skill.cleanup()
+            skill.shutdown()
 

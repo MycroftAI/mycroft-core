@@ -157,7 +157,7 @@ def load_skills(emitter, skills_root=SKILLS_BASEDIR):
 
 def unload_skills(skills):
     for s in skills:
-        s.cleanup()
+        s.shutdown()
 
 
 class MycroftSkill(object):
@@ -272,4 +272,8 @@ class MycroftSkill(object):
 
     def cleanup(self):
         """ Clean up running threads, etc. """
+        pass
+
+    def shutdown(self):
+        self.stop()
         pass
