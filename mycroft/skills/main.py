@@ -47,7 +47,7 @@ def load_skills_callback():
 
     for loc in THIRD_PARTY_SKILLS_DIR:
         if exists(loc):
-            skills += load_skills(client, loc)
+            skills += load_skills(ws, loc)
 
     if ini_third_party_skills_dir and exists(ini_third_party_skills_dir):
         skills += load_skills(ws, ini_third_party_skills_dir)
