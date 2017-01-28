@@ -17,6 +17,8 @@
 
 
 import json
+
+import sys
 from os.path import expanduser, exists
 
 from mycroft.configuration import ConfigurationManager
@@ -84,4 +86,6 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         for skill in skills:
             skill.shutdown()
+    finally:
+        sys.exit()
 
