@@ -28,7 +28,7 @@ from mycroft.util.log import getLogger
 
 __author__ = 'seanfitz'
 
-logger = getLogger("SkillContainer")
+LOG = getLogger("SkillContainer")
 
 
 class SkillContainer(object):
@@ -73,23 +73,37 @@ class SkillContainer(object):
                                   port=params.port,
                                   ssl=params.use_ssl)
 
-    def try_load_skill(self):
+    def load_skill(self):
         if self.enable_intent_skill:
             intent_skill = create_intent_skill()
             intent_skill.bind(self.ws)
             intent_skill.initialize()
         skill_descriptor = create_skill_descriptor(self.dir)
-        load_skill(skill_descriptor, self.ws)
+        self.skill = load_skill(skill_descriptor, self.ws)
 
     def run(self):
-        self.ws.on('message', logger.debug)
-        self.ws.on('open', self.try_load_skill)
-        self.ws.on('error', logger.error)
-        self.ws.run_forever()
+        try:
+            self.ws.on('message', LOG.debug)
+            self.ws.on('open', self.load_skill)
+            self.ws.on('error', LOG.error)
+            self.ws.run_forever()
+        except Exception as e:
+            LOG.error("Error: {0}".format(e))
+            self.stop()
+
+    def stop(self):
+        if self.skill:
+            self.skill.shutdown()
 
 
 def main():
-    SkillContainer(sys.argv[1:]).run()
+    container = SkillContainer(sys.argv[1:])
+    try:
+        container.run()
+    except KeyboardInterrupt:
+        container.stop()
+    finally:
+        sys.exit()
 
 
 if __name__ == "__main__":
