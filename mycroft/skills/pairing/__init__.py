@@ -14,11 +14,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-from os.path import dirname
 from threading import Timer
 from uuid import uuid4
 
 from adapt.intent import IntentBuilder
+from os.path import dirname
 
 from mycroft.api import DeviceApi
 from mycroft.identity import IdentityManager
@@ -56,8 +56,7 @@ class PairingSkill(MycroftSkill):
             self.enclosure.deactivate_mouth_events()
             self.enclosure.mouth_text(self.data.get("code"))
             self.speak_code()
-            self.activator = Timer(self.delay, self.activate)
-            self.activator.start()
+            self.__create_activator()
 
     def activate(self):
         try:
@@ -74,8 +73,12 @@ class PairingSkill(MycroftSkill):
                 self.data = None
                 self.handle_pairing()
             else:
-                self.activator = Timer(self.delay, self.activate)
-                self.activator.start()
+                self.__create_activator()
+
+    def __create_activator(self):
+        self.activator = Timer(self.delay, self.activate)
+        self.activator.daemon = True
+        self.activator.start()
 
     def is_paired(self):
         try:
@@ -92,6 +95,11 @@ class PairingSkill(MycroftSkill):
 
     def stop(self):
         pass
+
+    def shutdown(self):
+        super(PairingSkill, self).shutdown()
+        if self.activator:
+            self.activator.cancel()
 
 
 def create_skill():
