@@ -40,10 +40,11 @@ def load_skills_callback():
         ini_third_party_skills_dir = expanduser(config.get("directory"))
     except AttributeError as e:
         logger.warning(e.message)
-
+    logger.info("LOADING THIRD PARTY SKILLS")
     for loc in THIRD_PARTY_SKILLS_DIR:
         if exists(loc):
-            load_skills(client, loc)
+            logger.info("LOADING SKILL FROM " + loc)
+            load_skills(ws, loc)
 
     if ini_third_party_skills_dir and exists(ini_third_party_skills_dir):
         load_skills(ws, ini_third_party_skills_dir)

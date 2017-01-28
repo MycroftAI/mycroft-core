@@ -95,6 +95,7 @@ def open_intent_envelope(message):
 
 def load_skill(skill_descriptor, emitter):
     try:
+        logger.info("ATTEMPTING TO LOAD SKILL: " + skill_descriptor["name"])
         skill_module = imp.load_module(
             skill_descriptor["name"] + MainModule, *skill_descriptor["info"])
         if (hasattr(skill_module, 'create_skill') and
@@ -115,6 +116,7 @@ def load_skill(skill_descriptor, emitter):
 
 
 def get_skills(skills_folder):
+    logger.info("LOADING SKILLS FROM "+ skills_folder)
     skills = []
     possible_skills = os.listdir(skills_folder)
     for i in possible_skills:
@@ -142,15 +144,23 @@ def create_skill_descriptor(skill_folder):
 
 
 def load_skills(emitter, skills_root=SKILLS_BASEDIR):
+    logger.info("ATTEMPTING TO LOAD SKILLS FROM " + skills_root)
+    skill_list = []
     skills = get_skills(skills_root)
     for skill in skills:
         if skill['name'] in PRIMARY_SKILLS:
-            load_skill(skill, emitter)
+            skill_list.append(load_skill(skill, emitter))
 
     for skill in skills:
         if (skill['name'] not in PRIMARY_SKILLS and
                 skill['name'] not in BLACKLISTED_SKILLS):
-            load_skill(skill, emitter)
+            skill_list.append(load_skill(skill, emitter))
+    return skill_list
+
+
+def unload_skills(skills):
+    for s in skills:
+        s.cleanup()
 
 
 class MycroftSkill(object):
@@ -262,3 +272,8 @@ class MycroftSkill(object):
     def is_stop(self):
         passed_time = time.time() - self.stop_time
         return passed_time < self.stop_threshold
+
+    def cleanup(self):
+        """ Clean up running threads, etc. """
+        pass
+
