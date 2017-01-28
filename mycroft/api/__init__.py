@@ -1,4 +1,4 @@
-import copy
+from copy import copy
 
 import requests
 from requests import HTTPError
@@ -19,44 +19,19 @@ class Api(object):
         self.version = config_server.get("version")
         self.identity = IdentityManager.get()
 
+    def request(self, params):
+        self.check_token()
+        self.build_path(params)
+        self.old_params = copy(params)
+        return self.send(params)
+
     def check_token(self):
         if self.identity.refresh and self.identity.is_expired():
             self.identity = IdentityManager.load()
             if self.identity.is_expired():
-                data = self.send({
-                    "path": "auth/token",
-                    "headers": {
-                        "Authorization": "Bearer " + self.identity.refresh
-                    }
-                })
-                IdentityManager.save(data)
+                self.refresh_token()
 
-    def send(self, params):
-        old_params = copy.copy(params)
-        method = params.get("method", "GET")
-        headers = self.build_headers(params)
-        data = self.build_data(params)
-        json = self.build_json(params)
-        query = self.build_query(params)
-        url = self.build_url(params)
-        response = requests.request(method, url, headers=headers, params=query,
-                                    data=data, json=json)
-        return self.get_response(response, old_params)
-
-    def request(self, params):
-        self.check_token()
-        self.build_path(params)
-        return self.send(params)
-
-    def get_response(self, response, params):
-        data = self.get_data(response)
-        if 200 <= response.status_code < 300:
-            return data
-        elif (response.status_code == 403 or response.status_code == 401) and not response.url.endswith("auth/token"):
-            return self.refresh_token(params)
-        raise HTTPError(data, response=response)
-
-    def refresh_token(self, params):
+    def refresh_token(self):
         data = self.send({
             "path": "auth/token",
             "headers": {
@@ -64,7 +39,26 @@ class Api(object):
             }
         })
         IdentityManager.save(data)
-        return self.send(params)
+
+    def send(self, params):
+        method = params.get("method", "GET")
+        headers = self.build_headers(params)
+        data = self.build_data(params)
+        json = self.build_json(params)
+        query = self.build_query(params)
+        url = self.build_url(params)
+        response = requests.request(method, url, headers=headers, params=query,
+                                    data=data, json=json, timeout=(3.05, 15))
+        return self.get_response(response)
+
+    def get_response(self, response):
+        data = self.get_data(response)
+        if 200 <= response.status_code < 300:
+            return data
+        elif response.status_code == 401 and not response.url.endswith("auth/token"):
+            self.refresh_token()
+            return self.send(self.old_params)
+        raise HTTPError(data, response=response)
 
     def get_data(self, response):
         try:
