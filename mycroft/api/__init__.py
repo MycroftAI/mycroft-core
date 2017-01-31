@@ -138,6 +138,11 @@ class DeviceApi(Api):
             "path": "/" + self.identity.uuid + "/setting"
         })
 
+    def find_location(self):
+        return self.request({
+            "path": "/" + self.identity.uuid + "/location"
+        })
+
 
 class STTApi(Api):
     def __init__(self):
