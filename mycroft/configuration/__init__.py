@@ -111,6 +111,10 @@ class RemoteConfiguration(object):
             try:
                 from mycroft.api import DeviceApi
                 setting = DeviceApi().find_setting()
+                location = DeviceApi().find_location()
+                if location:
+                    city = location.get("city")
+                    config["location"] = city["name"] + ", " + city["state"]["name"] + ", " + city["state"]["country"]["name"]
                 RemoteConfiguration.__load(config, setting)
             except Exception as e:
                 LOG.warn("Failed to fetch remote configuration: %s" % repr(e))

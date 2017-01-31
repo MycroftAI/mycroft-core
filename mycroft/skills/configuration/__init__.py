@@ -60,6 +60,10 @@ class ConfigurationSkill(ScheduledSkill):
 
     def update(self):
         config = self.api.find_setting()
+        location = DeviceApi().find_location()
+        if location:
+            city = location.get("city")
+            config["location"] = city["name"] + ", " + city["state"]["name"] + ", " + city["state"]["country"]["name"]
         self.emitter.emit(Message("configuration.updated", config))
 
     def __api_error(self, e):
