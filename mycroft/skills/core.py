@@ -163,6 +163,18 @@ def unload_skills(skills):
         s.shutdown()
 
 
+intent_list = []
+
+
+def intent_handler(intent_parser):
+    def real_decorator(func):
+        def handler_method(*args, **kwargs):
+            return func(*args, **kwargs)
+        intent_list.append((intent_parser, func))
+        return handler_method
+    return real_decorator
+
+
 class MycroftSkill(object):
     """
     Abstract base class which provides common behaviour and parameters to all
@@ -242,11 +254,28 @@ class MycroftSkill(object):
         """
         raise Exception("Initialize not implemented for skill: " + self.name)
 
-    def register_intent(self, intent_parser, handler):
+    def register_decorated(self):
+        for intent_parser, handler in intent_list:
+            self.register_intent(intent_parser, handler, need_self=True)
+
+    def register_intent(self, intent_parser, handler, need_self=False):
         name = intent_parser.name
         intent_parser.name = self.name + ':' + intent_parser.name
         self.emitter.emit(Message("register_intent", intent_parser.__dict__))
         self.registered_intents.append((name, intent_parser))
+
+        def receive_handler_with_self(message):
+            print handler
+            try:
+                handler(self, message)
+            except:
+                # TODO: Localize
+                self.speak(
+                    "An error occurred while processing a request in " +
+                    self.name)
+                logger.error(
+                    "An error occurred while processing a request in " +
+                    self.name, exc_info=True)
 
         def receive_handler(message):
             try:
@@ -261,7 +290,10 @@ class MycroftSkill(object):
                     self.name, exc_info=True)
 
         if handler:
-            self.emitter.on(intent_parser.name, receive_handler)
+            if not need_self:
+                self.emitter.on(intent_parser.name, receive_handler)
+            else:
+                self.emitter.on(intent_parser.name, receive_handler_with_self)
             self.events.append((intent_parser.name, receive_handler))
 
     def disable_intent(self, intent_name):
