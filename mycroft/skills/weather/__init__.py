@@ -46,30 +46,25 @@ class OWMApi(Api):
         params.get("query").update({"lang": self.lang})
         return params.get("query")
 
-    def build_location(self, location):
-        city = location.get("city", {})
-        return city.get("name", "Lawrence") + ", " + city.get("state", {}).get("name", "Kansas") + ", " + \
-               city.get("state", {}).get("country", {}).get("name", "United States")
-
     def get_data(self, response):
         return response.text
 
-    def weather_at_place(self, location):
+    def weather_at_place(self, name):
         data = self.request({
             "path": "/weather",
-            "query": {"q": self.build_location(location)}
+            "query": {"q": name}
         })
         return self.observation.parse_JSON(data)
 
-    def three_hours_forecast(self, location):
+    def three_hours_forecast(self, name):
         data = self.request({
             "path": "/forecast",
-            "query": {"q": self.build_location(location)}
+            "query": {"q": name}
         })
         return self.to_forecast(data, "3h")
 
-    def daily_forecast(self, location, limit=None):
-        query = {"q": self.build_location(location)}
+    def daily_forecast(self, name, limit=None):
+        query = {"q": name}
         if limit is not None:
             query["cnt"] = limit
         data = self.request({
@@ -135,7 +130,7 @@ class WeatherSkill(MycroftSkill):
     def handle_current_intent(self, message):
         try:
             location = message.data.get("Location", self.location)
-            weather = self.owm.weather_at_place(location).get_weather()
+            weather = self.owm.weather_at_place(self.__build_location(location)).get_weather()
             data = self.__build_data_condition(location, weather)
             weather_code = str(weather.get_weather_icon_name())
             img_code = self.CODES[weather_code]
@@ -155,7 +150,7 @@ class WeatherSkill(MycroftSkill):
         try:
             location = message.data.get("Location", self.location)
             weather = self.owm.three_hours_forecast(
-                location).get_forecast().get_weathers()[0]
+                self.__build_location(location)).get_forecast().get_weathers()[0]
             data = self.__build_data_condition(location, weather)
             weather_code = str(weather.get_weather_icon_name())
             img_code = self.CODES[weather_code]
@@ -173,8 +168,7 @@ class WeatherSkill(MycroftSkill):
     def handle_next_day_intent(self, message):
         try:
             location = message.data.get("Location", self.location)
-            weather = self.owm.daily_forecast(
-                location).get_forecast().get_weathers()[1]
+            weather = self.owm.daily_forecast(self.__build_location(location)).get_forecast().get_weathers()[1]
             data = self.__build_data_condition(
                 location, weather, 'day', 'min', 'max')
             weather_code = str(weather.get_weather_icon_name())
@@ -190,11 +184,23 @@ class WeatherSkill(MycroftSkill):
         except Exception as e:
             LOG.error("Error: {0}".format(e))
 
+    def __build_location(self, location):
+        try:
+            if type(location) is dict:
+                return location["city"]["name"] + ", " + location["city"]["state"]["name"] + ", " + \
+                       location["city"]["state"]["country"]["name"]
+            else:
+                return location
+        except:
+            self.speak_dialog("location.not.found")
+
     def __build_data_condition(
             self, location, weather, temp='temp', temp_min='temp_min',
             temp_max='temp_max'):
+        if type(location) is dict:
+            location = location["city"]["name"]
         data = {
-            'location': location.get("city", {}).get("name", "Lawrence"),
+            'location': location,
             'scale': self.temperature,
             'condition': weather.get_detailed_status(),
             'temp_current': self.__get_temperature(weather, temp),
