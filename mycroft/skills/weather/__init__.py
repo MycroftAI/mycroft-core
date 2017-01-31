@@ -47,8 +47,9 @@ class OWMApi(Api):
         return params.get("query")
 
     def build_location(self, location):
-        return location["city"]["name"] + ", " + location["city"]["state"]["name"] + ", " + \
-               location["city"]["state"]["country"]["name"]
+        city = location.get("city", {})
+        return city.get("name", "Lawrence") + ", " + city.get("state", {}).get("name", "Kansas") + ", " + \
+               city.get("state", {}).get("country", {}).get("name", "United States")
 
     def get_data(self, response):
         return response.text
@@ -193,7 +194,7 @@ class WeatherSkill(MycroftSkill):
             self, location, weather, temp='temp', temp_min='temp_min',
             temp_max='temp_max'):
         data = {
-            'location': location["city"]["name"],
+            'location': location.get("city", {}).get("name", "Lawrence"),
             'scale': self.temperature,
             'condition': weather.get_detailed_status(),
             'temp_current': self.__get_temperature(weather, temp),
