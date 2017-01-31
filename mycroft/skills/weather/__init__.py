@@ -46,25 +46,29 @@ class OWMApi(Api):
         params.get("query").update({"lang": self.lang})
         return params.get("query")
 
+    def build_location(self, location):
+        return location["city"]["name"] + ", " + location["city"]["state"]["name"] + ", " + \
+               location["city"]["state"]["country"]["name"]
+
     def get_data(self, response):
         return response.text
 
-    def weather_at_place(self, name):
+    def weather_at_place(self, location):
         data = self.request({
             "path": "/weather",
-            "query": {"q": name}
+            "query": {"q": self.build_location(location)}
         })
         return self.observation.parse_JSON(data)
 
-    def three_hours_forecast(self, name):
+    def three_hours_forecast(self, location):
         data = self.request({
             "path": "/forecast",
-            "query": {"q": name}
+            "query": {"q": self.build_location(location)}
         })
         return self.to_forecast(data, "3h")
 
-    def daily_forecast(self, name, limit=None):
-        query = {"q": name}
+    def daily_forecast(self, location, limit=None):
+        query = {"q": self.build_location(location)}
         if limit is not None:
             query["cnt"] = limit
         data = self.request({
@@ -189,7 +193,7 @@ class WeatherSkill(MycroftSkill):
             self, location, weather, temp='temp', temp_min='temp_min',
             temp_max='temp_max'):
         data = {
-            'location': location,
+            'location': location["city"]["name"],
             'scale': self.temperature,
             'condition': weather.get_detailed_status(),
             'temp_current': self.__get_temperature(weather, temp),
