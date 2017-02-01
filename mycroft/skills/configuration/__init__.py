@@ -60,6 +60,9 @@ class ConfigurationSkill(ScheduledSkill):
 
     def update(self):
         config = self.api.find_setting()
+        location = self.api.find_location()
+        if location:
+            config["location"] = location
         self.emitter.emit(Message("configuration.updated", config))
 
     def __api_error(self, e):

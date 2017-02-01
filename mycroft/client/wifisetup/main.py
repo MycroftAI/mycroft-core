@@ -374,7 +374,7 @@ class WiFi:
                     if "(incomplete)" in o:
                         # ping the IP to get the ARP table entry reloaded
                         ip_disconnected = o.split(" ")[0]
-                        cli_no_output('/bin/ping', '-c', '1', '-W', 3,
+                        cli_no_output('/bin/ping', '-c', '1', '-W', '3',
                                       ip_disconnected)
                     else:
                         return True  # something on subnet is connected!

@@ -50,8 +50,13 @@ class IntentTestSequence(unittest.TestCase):
     __metaclass__ = IntentTestSequenceMeta
 
     def setUp(self):
-        self.emitter = MockSkillsLoader(
-            os.path.join(PROJECT_ROOT, 'mycroft', 'skills')).load_skills()
+        self.loader = MockSkillsLoader(
+            os.path.join(PROJECT_ROOT, 'mycroft', 'skills'))
+        self.emitter = self.loader.load_skills()
+
+    def tearDown(self):
+        self.loader.unload_skills()
+
 
 if __name__ == '__main__':
     unittest.main()

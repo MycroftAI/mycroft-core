@@ -33,8 +33,9 @@ class STT(object):
     def __init__(self):
         config_core = ConfigurationManager.get()
         self.lang = str(self.init_language(config_core))
-        self.config = config_core.get("stt")
-        self.credential = self.config.get(self.config.get("module"), {})
+        config_stt = config_core.get("stt", {})
+        self.config = config_stt.get(config_stt.get("module"), {})
+        self.credential = self.config.get("credential", {})
         self.recognizer = Recognizer()
 
     @staticmethod

@@ -17,6 +17,8 @@
 
 
 import json
+
+import sys
 from os.path import expanduser, exists
 
 from mycroft.configuration import ConfigurationManager
@@ -29,11 +31,13 @@ logger = getLogger("Skills")
 __author__ = 'seanfitz'
 
 ws = None
+skills = []
 
 
 def load_skills_callback():
     global ws
-    load_skills(ws)
+    global skills
+    skills += load_skills(ws)
     config = ConfigurationManager.get().get("skills")
 
     try:
@@ -43,11 +47,13 @@ def load_skills_callback():
     logger.info("LOADING THIRD PARTY SKILLS")
     for loc in THIRD_PARTY_SKILLS_DIR:
         if exists(loc):
+
             logger.info("LOADING SKILL FROM " + loc)
-            load_skills(ws, loc)
+            skills += load_skills(ws, loc)
+
 
     if ini_third_party_skills_dir and exists(ini_third_party_skills_dir):
-        load_skills(ws, ini_third_party_skills_dir)
+        skills += load_skills(ws, ini_third_party_skills_dir)
 
 
 def connect():
@@ -78,4 +84,11 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        for skill in skills:
+            skill.shutdown()
+    finally:
+        sys.exit()
+
