@@ -129,8 +129,8 @@ class WeatherSkill(MycroftSkill):
 
     def handle_current_intent(self, message):
         try:
-            location = message.data.get("Location", self.location)
-            weather = self.owm.weather_at_place(self.__build_location(location)).get_weather()
+            location = self.get_location(message)
+            weather = self.owm.weather_at_place(location).get_weather()
             data = self.__build_data_condition(location, weather)
             weather_code = str(weather.get_weather_icon_name())
             img_code = self.CODES[weather_code]
@@ -143,14 +143,13 @@ class WeatherSkill(MycroftSkill):
         except HTTPError as e:
             self.__api_error(e)
         except Exception as e:
-            LOG.debug(e)
             LOG.error("Error: {0}".format(e))
 
     def handle_next_hour_intent(self, message):
         try:
-            location = message.data.get("Location", self.location)
+            location = self.get_location(message)
             weather = self.owm.three_hours_forecast(
-                self.__build_location(location)).get_forecast().get_weathers()[0]
+                location).get_forecast().get_weathers()[0]
             data = self.__build_data_condition(location, weather)
             weather_code = str(weather.get_weather_icon_name())
             img_code = self.CODES[weather_code]
@@ -167,8 +166,9 @@ class WeatherSkill(MycroftSkill):
 
     def handle_next_day_intent(self, message):
         try:
-            location = message.data.get("Location", self.location)
-            weather = self.owm.daily_forecast(self.__build_location(location)).get_forecast().get_weathers()[1]
+            location = self.get_location(message)
+            weather = self.owm.daily_forecast(
+                location).get_forecast().get_weathers()[1]
             data = self.__build_data_condition(
                 location, weather, 'day', 'min', 'max')
             weather_code = str(weather.get_weather_icon_name())
@@ -184,15 +184,19 @@ class WeatherSkill(MycroftSkill):
         except Exception as e:
             LOG.error("Error: {0}".format(e))
 
-    def __build_location(self, location):
+    def get_location(self, message):
         try:
+            location = message.data.get("Location", self.location)
             if type(location) is dict:
-                return location["city"]["name"] + ", " + location["city"]["state"]["name"] + ", " + \
-                       location["city"]["state"]["country"]["name"]
+                city = location["city"]
+                state = city["state"]
+                return city["name"] + ", " + state["name"] + ", " + \
+                       state["country"]["name"]
             else:
                 return location
         except:
             self.speak_dialog("location.not.found")
+            raise ValueError("Location not found")
 
     def __build_data_condition(
             self, location, weather, temp='temp', temp_min='temp_min',
