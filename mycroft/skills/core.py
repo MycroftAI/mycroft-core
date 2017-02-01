@@ -95,6 +95,7 @@ def open_intent_envelope(message):
 
 def load_skill(skill_descriptor, emitter):
     try:
+        logger.info("ATTEMPTING TO LOAD SKILL: " + skill_descriptor["name"])
         skill_module = imp.load_module(
             skill_descriptor["name"] + MainModule, *skill_descriptor["info"])
         if (hasattr(skill_module, 'create_skill') and
@@ -115,6 +116,7 @@ def load_skill(skill_descriptor, emitter):
 
 
 def get_skills(skills_folder):
+    logger.info("LOADING SKILLS FROM "+ skills_folder)
     skills = []
     possible_skills = os.listdir(skills_folder)
     for i in possible_skills:
@@ -142,6 +144,7 @@ def create_skill_descriptor(skill_folder):
 
 
 def load_skills(emitter, skills_root=SKILLS_BASEDIR):
+    logger.info("ATTEMPTING TO LOAD SKILLS FROM " + skills_root)
     skill_list = []
     skills = get_skills(skills_root)
     for skill in skills:
@@ -158,6 +161,7 @@ def load_skills(emitter, skills_root=SKILLS_BASEDIR):
 def unload_skills(skills):
     for s in skills:
         s.shutdown()
+
 
 
 class MycroftSkill(object):
@@ -276,3 +280,4 @@ class MycroftSkill(object):
         The skill implementation must shutdown all processes and operations in execution.
         """
         self.stop()
+
