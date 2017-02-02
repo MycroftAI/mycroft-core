@@ -1,6 +1,6 @@
 import unittest
 import wolframalpha
-from StringIO import StringIO
+from six import StringIO
 
 from mycroft.skills.wolfram_alpha import WolframAlphaSkill
 from mycroft.util.log import getLogger
@@ -38,30 +38,30 @@ class WolframAlphaTest(unittest.TestCase):
 
     def test_result_pod(self):
         res = self.create_result("Result", "7", '300')
-        self.assertEquals(self.skill.get_result(res), "7")
+        self.assertEqual(self.skill.get_result(res), "7")
 
     def test_value_pod(self):
         res = self.create_result("Value", "2^3", '300')
-        self.assertEquals(self.skill.get_result(res), "2^3")
+        self.assertEqual(self.skill.get_result(res), "2^3")
 
     def test_notable_facts_pod(self):
         res = self.create_result("NotableFacts:PeopleData",
                                  "PeopleData", '300')
-        self.assertEquals(self.skill.get_result(res), "PeopleData")
+        self.assertEqual(self.skill.get_result(res), "PeopleData")
 
     def test_basic_information_pod(self):
         res = self.create_result("BasicInformation:PeopleData",
                                  "Born in 1997", '300')
-        self.assertEquals(self.skill.get_result(res), "Born in 1997")
+        self.assertEqual(self.skill.get_result(res), "Born in 1997")
 
     def test_decimal_approximation_pod(self):
         res = self.create_result("DecimalApproximation", "5.6666666666", '300')
-        self.assertEquals(self.skill.get_result(res), "5.666")
+        self.assertEqual(self.skill.get_result(res), "5.666")
 
     def test_definition_pod(self):
         res = self.create_result("Definition:WordData",
                                  "a cat is a feline", '300')
-        self.assertEquals(self.skill.get_result(res),
+        self.assertEqual(self.skill.get_result(res),
                           "a cat is a feline")
 
     def test_numbered_pod(self):
@@ -71,30 +71,30 @@ class WolframAlphaTest(unittest.TestCase):
 
     def test_invalid_pod(self):
         res = self.create_result("InvalidTitle", "Test", '300')
-        self.assertEquals(self.skill.get_result(res), None)
+        self.assertEqual(self.skill.get_result(res), None)
 
     def test_whitespace_process(self):
-        self.assertEquals(self.skill.process_wolfram_string
+        self.assertEqual(self.skill.process_wolfram_string
                           ("Test     string"), "Test string")
 
     def test_pipe_process(self):
-        self.assertEquals(self.skill.process_wolfram_string
+        self.assertEqual(self.skill.process_wolfram_string
                           ("Test | string"), "Test, string")
 
     def test_newline_process(self):
-        self.assertEquals(self.skill.process_wolfram_string
+        self.assertEqual(self.skill.process_wolfram_string
                           ("Test\nstring"), "Test, string")
 
     def test_factorial_process(self):
-        self.assertEquals(self.skill.process_wolfram_string
+        self.assertEqual(self.skill.process_wolfram_string
                           ("Test!"), "Test,factorial")
 
     def test_find_did_you_mean_exists(self):
         values = ['search for power', 'power']
         res = self.create_did_you_mean(values)
-        self.assertEquals(self.skill._find_did_you_mean(res),
+        self.assertEqual(self.skill._find_did_you_mean(res),
                           values)
 
     def test_find_did_you_mean_none(self):
         res = self.create_did_you_mean([])
-        self.assertEquals(self.skill._find_did_you_mean(res), [])
+        self.assertEqual(self.skill._find_did_you_mean(res), [])

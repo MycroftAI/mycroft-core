@@ -80,7 +80,7 @@ def create_file(filename):
 
 
 def kill(names):
-    print psutil.pids()
+    print(psutil.pids())
     for name in names:
         for p in psutil.process_iter():
             try:

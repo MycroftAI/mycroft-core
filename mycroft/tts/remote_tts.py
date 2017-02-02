@@ -51,7 +51,7 @@ class RemoteTTS(TTS):
             for req in self.__requests(phrases):
                 try:
                     self.__play(req)
-                except Exception, e:
+                except Exception as e:
                     LOGGER.error(e.message)
 
     @staticmethod

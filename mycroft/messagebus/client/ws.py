@@ -68,7 +68,7 @@ class WebsocketClient(object):
         try:
             self.emitter.emit('error', error)
             self.client.close()
-        except Exception, e:
+        except Exception as e:
             LOG.error(repr(e))
         LOG.warn("WS Client will reconnect in %d seconds." % self.retry)
         time.sleep(self.retry)

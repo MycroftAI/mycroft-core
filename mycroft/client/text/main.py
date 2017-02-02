@@ -62,7 +62,7 @@ def main():
             ws.emit(
                 Message("recognizer_loop:utterance",
                         {'utterances': [line.strip()]}))
-    except KeyboardInterrupt, e:
+    except KeyboardInterrupt as e:
         logger.exception(e)
         event_thread.exit()
         sys.exit()
