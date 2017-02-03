@@ -22,6 +22,16 @@ from mycroft.util.log import getLogger
 
 __author__ = 'augustnmonteiro'
 
+# The following lines are replaced during the release process.
+# START_VERSION_BLOCK
+CORE_VERSION_MAJOR = 0
+CORE_VERSION_MINOR = 8
+CORE_VERSION_BUILD = 1
+# END_VERSION_BLOCK
+
+CORE_VERSION_STR = (str(CORE_VERSION_MAJOR) + "." +
+                    str(CORE_VERSION_MINOR) + "." +
+                    str(CORE_VERSION_BUILD))
 LOG = getLogger(__name__)
 
 

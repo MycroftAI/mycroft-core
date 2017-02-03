@@ -74,6 +74,7 @@ class ScheduledSkill(MycroftSkill):
             now = self.get_utc_time()
             delay = max(float(t) - now, 1)
             self.timer = Timer(delay, self.notify, [t])
+            self.timer.daemon = True
             self.start()
 
     def start(self):
@@ -113,10 +114,9 @@ class ScheduledSkill(MycroftSkill):
     def notify(self, timestamp):
         pass
 
-    def cleanup(self):
-        """ Cancel timer making the skill ready for shutdown """
-        if self.timer:
-            self.timer.cancel()
+    def shutdown(self):
+        super(ScheduledSkill, self).shutdown()
+        self.cancel()
 
 
 class ScheduledCRUDSkill(ScheduledSkill):

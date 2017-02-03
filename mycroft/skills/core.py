@@ -157,7 +157,7 @@ def load_skills(emitter, skills_root=SKILLS_BASEDIR):
 
 def unload_skills(skills):
     for s in skills:
-        s.cleanup()
+        s.shutdown()
 
 
 class MycroftSkill(object):
@@ -270,6 +270,9 @@ class MycroftSkill(object):
         passed_time = time.time() - self.stop_time
         return passed_time < self.stop_threshold
 
-    def cleanup(self):
-        """ Clean up running threads, etc. """
-        pass
+    def shutdown(self):
+        """
+        This method is intended to be called during the skill process termination.
+        The skill implementation must shutdown all processes and operations in execution.
+        """
+        self.stop()

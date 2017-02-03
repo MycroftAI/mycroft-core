@@ -97,7 +97,7 @@ def handle_speak(event):
     #    
     # TODO: Remove or make an option?  This is really a hack, anyway,
     # so we likely will want to get rid of this when not running on Mimic
-    if not config.get('enclosure')['platform'] == "picroft":
+    if not config.get('enclosure', {}).get('platform') == "picroft":
         chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s',
                           utterance)
         for chunk in chunks:
