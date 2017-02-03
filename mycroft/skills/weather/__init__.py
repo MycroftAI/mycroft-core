@@ -129,15 +129,31 @@ class WeatherSkill(MycroftSkill):
 
     def handle_current_intent(self, message):
         try:
-            location = self.get_location(message)
+            location, pretty_location = self.get_location(message)
+
             weather = self.owm.weather_at_place(location).get_weather()
-            data = self.__build_data_condition(location, weather)
+            data = self.__build_data_condition(pretty_location, weather)
+
+            # BUG:  OWM is commonly reporting incorrect high/low data in the
+            # "current" request.  So grab that from the forecast API call.
+            weather_forecast = self.owm.three_hours_forecast(
+                location).get_forecast().get_weathers()[0]
+            data_forecast = self.__build_data_condition(pretty_location,
+                                                        weather_forecast)
+            data["temp_min"] = data_forecast["temp_min"]
+            data["temp_max"] = data_forecast["temp_max"]
+
             weather_code = str(weather.get_weather_icon_name())
             img_code = self.CODES[weather_code]
             temp = data['temp_current']
             self.enclosure.deactivate_mouth_events()
             self.enclosure.weather_display(img_code, temp)
-            self.speak_dialog('current.weather', data)
+
+            dialog_name = "current"
+            if pretty_location == self.location_pretty:
+                dialog_name += ".local"
+            self.speak_dialog(dialog_name+".weather", data)
+
             time.sleep(5)
             self.enclosure.activate_mouth_events()
         except HTTPError as e:
@@ -147,16 +163,19 @@ class WeatherSkill(MycroftSkill):
 
     def handle_next_hour_intent(self, message):
         try:
-            location = self.get_location(message)
+            location, pretty_location = self.get_location(message)
             weather = self.owm.three_hours_forecast(
                 location).get_forecast().get_weathers()[0]
-            data = self.__build_data_condition(location, weather)
+            data = self.__build_data_condition(pretty_location, weather)
             weather_code = str(weather.get_weather_icon_name())
             img_code = self.CODES[weather_code]
             temp = data['temp_current']
             self.enclosure.deactivate_mouth_events()
             self.enclosure.weather_display(img_code, temp)
-            self.speak_dialog('hour.weather', data)
+            if pretty_location == self.location_pretty:
+                self.speak_dialog('hour.weather', data)
+            else:
+                self.speak_dialog('hour.weather', data)
             time.sleep(5)
             self.enclosure.activate_mouth_events()
         except HTTPError as e:
@@ -166,17 +185,20 @@ class WeatherSkill(MycroftSkill):
 
     def handle_next_day_intent(self, message):
         try:
-            location = self.get_location(message)
+            location, pretty_location = self.get_location(message)
             weather = self.owm.daily_forecast(
                 location).get_forecast().get_weathers()[1]
             data = self.__build_data_condition(
-                location, weather, 'day', 'min', 'max')
+                pretty_location, weather, 'day', 'min', 'max')
             weather_code = str(weather.get_weather_icon_name())
             img_code = self.CODES[weather_code]
             temp = data['temp_current']
             self.enclosure.deactivate_mouth_events()
             self.enclosure.weather_display(img_code, temp)
-            self.speak_dialog('tomorrow.weather', data)
+            if pretty_location == self.location_pretty:
+                self.speak_dialog('tomorrow.local.weather', data)
+            else:
+                self.speak_dialog('tomorrow.weather', data)
             time.sleep(5)
             self.enclosure.activate_mouth_events()
         except HTTPError as e:
@@ -186,25 +208,28 @@ class WeatherSkill(MycroftSkill):
 
     def get_location(self, message):
         try:
-            location = message.data.get("Location", self.location)
+            location = message.data.get("Location", None)
+            if location:
+                return location, location
+
+            location = self.location
             if type(location) is dict:
                 city = location["city"]
                 state = city["state"]
                 return city["name"] + ", " + state["name"] + ", " + \
-                       state["country"]["name"]
-            else:
-                return location
+                    state["country"]["name"], self.location_pretty
+
+            return None
         except:
             self.speak_dialog("location.not.found")
             raise ValueError("Location not found")
 
     def __build_data_condition(
-            self, location, weather, temp='temp', temp_min='temp_min',
+            self, location_pretty, weather, temp='temp', temp_min='temp_min',
             temp_max='temp_max'):
-        if type(location) is dict:
-            location = location["city"]["name"]
+
         data = {
-            'location': location,
+            'location': location_pretty,
             'scale': self.temperature,
             'condition': weather.get_detailed_status(),
             'temp_current': self.__get_temperature(weather, temp),

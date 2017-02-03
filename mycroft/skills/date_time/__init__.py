@@ -50,22 +50,29 @@ class TimeSkill(MycroftSkill):
 
     def get_timezone(self, locale):
         try:
+            # This handles common city names, like "Dallas" or "Paris"
             return timezone(self.astral[locale].timezone)
         except:
-            return None
+            try:
+                # This handles codes like "America/Los_Angeles"
+                return timezone(locale)
+            except:
+                return None
 
-    # This method only handles localtime, for other timezones the task falls
-    # to Wolfram.
     def handle_intent(self, message):
-        location = message.data.get("Location")
-        now = datetime.datetime.now(timezone('UTC'))
-        tz = tzlocal.get_localzone()
+        location = message.data.get("Location")  # optional parameter
+        nowUTC = datetime.datetime.now(timezone('UTC'))
+
+        tz = self.get_timezone(self.location_timezone)
         if location:
             tz = self.get_timezone(location)
-            if not tz:
-                self.speak_dialog("time.tz.not.found", {"location": location})
-                return
-        time = now.astimezone(tz).strftime(self.format)
+
+        if not tz:
+            self.speak_dialog("time.tz.not.found", {"location": location})
+            return
+
+        # Convert UTC to appropriate timezone and format
+        time = nowUTC.astimezone(tz).strftime(self.format)
         self.speak_dialog("time.current", {"time": time})
 
     def stop(self):
