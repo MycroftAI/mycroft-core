@@ -17,6 +17,7 @@
 
 
 import sys
+import time
 from threading import Thread, Lock
 
 from mycroft.messagebus.client.ws import WebsocketClient
@@ -35,11 +36,19 @@ def handle_speak(event):
     ws.emit(Message("recognizer_loop:audio_output_start"))
     try:
         utterance = event.data.get('utterance')
-        logger.info("Speak: " + utterance)
+        print(">> " + utterance)
         tts.execute(utterance)
     finally:
         mutex.release()
         ws.emit(Message("recognizer_loop:audio_output_end"))
+
+
+def handle_quiet(event):
+    try:
+        utterance = event.data.get('utterance')
+        print(">> " + utterance)
+    finally:
+        pass
 
 
 def connect():
@@ -50,18 +59,27 @@ def main():
     global ws
     ws = WebsocketClient()
     tts.init(ws)
-    if '--quiet' not in sys.argv:
+    if '--quiet' in sys.argv:
+        ws.on('speak', handle_quiet)
+    else:
         ws.on('speak', handle_speak)
     event_thread = Thread(target=connect)
     event_thread.setDaemon(True)
     event_thread.start()
     try:
         while True:
-            print("Input:")
+            # TODO: Change this mechanism
+            # Sleep for a while so all the output that results
+            # from the previous command finishes before we print.
+            time.sleep(1.5)
+            print("Input (Ctrl+C to quit):")
             line = sys.stdin.readline()
             ws.emit(
                 Message("recognizer_loop:utterance",
                         {'utterances': [line.strip()]}))
+    except KeyboardInterrupt, e:
+        # User hit Ctrl+C to quit
+        print("")
     except KeyboardInterrupt, e:
         logger.exception(e)
         event_thread.exit()
@@ -70,3 +88,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
