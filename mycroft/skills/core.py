@@ -178,7 +178,26 @@ class MycroftSkill(object):
 
     @property
     def location(self):
+        """ Get the JSON data struction holding location information. """
+        # TODO: Allow Enclosure to override this for devices that
+        # contain a GPS.
         return self.config_core.get('location')
+
+    @property
+    def location_pretty(self):
+        """ Get a more 'human' version of the location as a string. """
+        loc = self.location
+        if type(loc) is dict and loc["city"]:
+            return loc["city"]["name"]
+        return None
+        
+    @property
+    def location_timezone(self):
+        """ Get the timezone code, such as 'America/Los_Angeles' """
+        loc = self.location
+        if type(loc) is dict and loc["timezone"]:
+            return loc["timezone"]["code"]
+        return None
 
     @property
     def lang(self):
