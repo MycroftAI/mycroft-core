@@ -30,7 +30,7 @@ from mycroft.tts import TTSFactory
 from mycroft.util import kill, play_wav
 from mycroft.util.log import getLogger
 
-from os.path import join, dirname, expanduser
+from os.path import expanduser
 
 logger = getLogger("SpeechClient")
 ws = None
