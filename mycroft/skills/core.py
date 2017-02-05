@@ -109,6 +109,7 @@ def load_skill(skill_descriptor, emitter):
             skill._dir = dirname(skill_descriptor['info'][1])
             skill.load_data_files(dirname(skill_descriptor['info'][1]))
             skill.initialize()
+            skill._register_decorated()
             logger.info("Loaded " + skill_descriptor["name"])
             return skill
         else:
