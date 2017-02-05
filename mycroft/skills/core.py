@@ -161,14 +161,15 @@ def unload_skills(skills):
         s.shutdown()
 
 
-intent_list = []
+_intent_list = []
 
 
 def intent_handler(intent_parser):
+    """ Decorator for adding a method as an intent handler. """
     def real_decorator(func):
         def handler_method(*args, **kwargs):
             return func(*args, **kwargs)
-        intent_list.append((intent_parser, func))
+        _intent_list.append((intent_parser, func))
         return handler_method
     return real_decorator
 
@@ -250,11 +251,16 @@ class MycroftSkill(object):
 
         Usually used to create intents rules and register them.
         """
-        raise Exception("Initialize not implemented for skill: " + self.name)
+        logger.debug("No initialize function implemented")
 
-    def register_decorated(self):
-        for intent_parser, handler in intent_list:
+    def _register_decorated(self):
+        """
+        Register all intent handlers that has been decorated with an intent.
+        """
+        global _intent_list
+        for intent_parser, handler in _intent_list:
             self.register_intent(intent_parser, handler, need_self=True)
+        _intent_list = []
 
     def register_intent(self, intent_parser, handler, need_self=False):
         name = intent_parser.name
@@ -263,7 +269,6 @@ class MycroftSkill(object):
         self.registered_intents.append((name, intent_parser))
 
         def receive_handler_with_self(message):
-            print handler
             try:
                 handler(self, message)
             except:
