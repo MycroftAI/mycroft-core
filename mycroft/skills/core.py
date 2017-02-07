@@ -102,6 +102,7 @@ def load_skill(skill_descriptor, emitter):
             # v2 skills framework
             skill = skill_module.create_skill()
             skill.bind(emitter)
+            skill.load_data_files(dirname(skill_descriptor['info'][1]))
             skill.initialize()
             return skill
         else:
