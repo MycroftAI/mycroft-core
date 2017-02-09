@@ -54,7 +54,7 @@ def resolve_resource_file(res_name):
     # First look for fully qualified file (e.g. a user setting)
     if os.path.isfile(res_name):
         return res_name
-    
+
     # Now look for ~/.mycroft/res_name (in user folder)
     filename = os.path.expanduser("~/.mycroft/"+res_name)
     if os.path.isfile(filename):
@@ -66,8 +66,8 @@ def resolve_resource_file(res_name):
         return filename
 
     # Finally look for it in the source package
-    filename = dirname(os.path.abspath(__file__))+"../res/"+res_name
-    filename = os.path.normpath(filename)
+    filename = os.path.join(os.path.dirname(__file__), '..', 'res', res_name)
+    filename = os.path.abspath(os.path.normpath(filename))
     if os.path.isfile(filename):
         return filename
 
