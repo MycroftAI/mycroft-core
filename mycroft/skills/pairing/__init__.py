@@ -34,6 +34,23 @@ class PairingSkill(MycroftSkill):
         self.state = str(uuid4())
         self.delay = 10
         self.activator = None
+        self.nato_dict = {'A': 'A as in Alpha', 'B': 'B as in Bravo',
+                          'C': 'C as in Charlie', 'D': 'D as in Delta',
+                          'E': 'E as in Echo', 'F': 'F as in Fox. trot',
+                          'G': 'G as in Golf', 'H': 'H as in Hotel',
+                          'I': 'I as in India', 'J': 'J as in Juliet',
+                          'K': 'K as in Kilo', 'L': 'L as in Lima',
+                          'M': 'M as in Mike', 'N': 'N as in November',
+                          'O': 'O as in Oscar', 'P': 'P as in Pa-pa',
+                          'Q': 'Q as in Quebec', 'R': 'R as in Romeo',
+                          'S': 'S as in Sierra', 'T': 'T as in Tango',
+                          'U': 'U as in Uniform', 'V': 'V as in Victor',
+                          'W': 'W as in Whiskey', 'X': 'X as in X. Ray',
+                          'Y': 'Y as in Yankee', 'Z': 'Z as in Zulu',
+                          '1': 'One', '2': 'Two', '3': 'Three',
+                          '4': 'Four', '5': 'Five', '6': 'Six',
+                          '7': 'Seven', '8': 'Eight', '9': 'Nine',
+                          '0': 'Zero'}
 
         # TODO: Add translation support
         self.nato_dict = {'A': "'A' as in Apple", 'B': "'B' as in Bravo",
@@ -118,7 +135,6 @@ class PairingSkill(MycroftSkill):
         super(PairingSkill, self).shutdown()
         if self.activator:
             self.activator.cancel()
-
 
 def create_skill():
     return PairingSkill()
