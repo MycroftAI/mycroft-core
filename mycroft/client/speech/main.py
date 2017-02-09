@@ -27,8 +27,10 @@ from mycroft.identity import IdentityManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.tts import TTSFactory
-from mycroft.util import kill
+from mycroft.util import kill, play_wav
 from mycroft.util.log import getLogger
+
+from os.path import expanduser
 
 logger = getLogger("SpeechClient")
 ws = None
@@ -41,6 +43,12 @@ config = ConfigurationManager.get()
 
 def handle_record_begin():
     logger.info("Begin Recording...")
+
+    # If enabled, play a wave file with a short sound to indicate recording has
+    # begun.
+    if config.get('confirm_listening'):
+        play_wav(expanduser(config.get('confirm_ding')))
+        
     ws.emit(Message('recognizer_loop:record_begin'))
 
 
