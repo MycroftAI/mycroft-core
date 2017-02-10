@@ -37,7 +37,7 @@ class ReminderSkill(ScheduledCRUDSkill):
 
     def __init__(self):
         super(ReminderSkill, self).__init__(
-            "ReminderSkill", None, dirname(__file__))
+            "ReminderSkill", None)
         self.reminder_on = False
         self.max_delay = self.config.get('max_delay')
         self.repeat_time = self.config.get('repeat_time')

@@ -35,9 +35,6 @@ class SpellingSkill(MycroftSkill):
         super(SpellingSkill, self).__init__(name="SpellingSkill")
 
     def initialize(self):
-        self.load_vocab_files(join(dirname(__file__), 'vocab', self.lang))
-        self.load_regex_files(join(dirname(__file__), 'regex', self.lang))
-
         intent = IntentBuilder("SpellingIntent").require(
             "SpellingKeyword").require("Word").build()
         self.register_intent(intent, self.handle_intent)

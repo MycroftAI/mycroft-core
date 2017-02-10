@@ -40,7 +40,6 @@ class NPRNewsSkill(MycroftSkill):
         self.process = None
 
     def initialize(self):
-        self.load_data_files(dirname(__file__))
         intent = IntentBuilder("NPRNewsIntent").require(
             "NPRNewsKeyword").build()
         self.register_intent(intent, self.handle_intent)
