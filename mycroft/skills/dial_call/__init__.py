@@ -45,9 +45,6 @@ class DialCallSkill(MycroftSkill):
             'sean': '34567890'}  # TODO - Use API
 
     def initialize(self):
-        self.load_vocab_files(join(dirname(__file__), 'vocab', self.lang))
-        self.load_regex_files(join(dirname(__file__), 'regex', self.lang))
-
         intent = IntentBuilder("DialCallIntent").require(
             "DialCallKeyword").require("Contact").build()
         self.register_intent(intent, self.handle_intent)

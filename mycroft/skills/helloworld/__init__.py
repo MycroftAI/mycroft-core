@@ -32,8 +32,6 @@ class HelloWorldSkill(MycroftSkill):
         super(HelloWorldSkill, self).__init__(name="HelloWorldSkill")
 
     def initialize(self):
-        self.load_data_files(dirname(__file__))
-
         thank_you_intent = IntentBuilder("ThankYouIntent").\
             require("ThankYouKeyword").build()
         self.register_intent(thank_you_intent, self.handle_thank_you_intent)

@@ -34,8 +34,6 @@ class StockSkill(MycroftSkill):
         super(StockSkill, self).__init__(name="StockSkill")
 
     def initialize(self):
-        self.load_data_files(dirname(__file__))
-
         stock_price_intent = IntentBuilder("StockPriceIntent") \
             .require("StockPriceKeyword").require("Company").build()
         self.register_intent(stock_price_intent,

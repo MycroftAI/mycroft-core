@@ -34,7 +34,6 @@ class ConfigurationSkill(ScheduledSkill):
         self.api = DeviceApi()
 
     def initialize(self):
-        self.load_data_files(dirname(__file__))
         intent = IntentBuilder("UpdateConfigurationIntent") \
             .require("ConfigurationSkillKeyword") \
             .require("ConfigurationSkillUpdateVerb") \

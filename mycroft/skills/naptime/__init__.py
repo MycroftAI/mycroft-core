@@ -30,7 +30,6 @@ class NapTimeSkill(MycroftSkill):
         super(NapTimeSkill, self).__init__(name="NapTimeSkill")
 
     def initialize(self):
-        self.load_data_files(dirname(__file__))
         naptime_intent = IntentBuilder("NapTimeIntent").require(
             "SleepCommand").build()
         self.register_intent(naptime_intent, self.handle_intent)

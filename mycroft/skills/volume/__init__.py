@@ -53,7 +53,6 @@ class VolumeSkill(MycroftSkill):
         self.volume_sound = join(dirname(__file__), "blop-mark-diangelo.wav")
 
     def initialize(self):
-        self.load_data_files(dirname(__file__))
         self.__build_set_volume()
 
     def __build_set_volume(self):
