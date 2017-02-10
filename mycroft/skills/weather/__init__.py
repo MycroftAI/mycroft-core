@@ -105,7 +105,6 @@ class WeatherSkill(MycroftSkill):
             self.owm = OWMApi()
 
     def initialize(self):
-        self.load_data_files(dirname(__file__))
         self.__build_current_intent()
         self.__build_next_hour_intent()
         self.__build_next_day_intent()

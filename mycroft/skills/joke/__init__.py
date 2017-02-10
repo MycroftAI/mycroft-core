@@ -34,8 +34,6 @@ class JokingSkill(MycroftSkill):
         super(JokingSkill, self).__init__(name="JokingSkill")
 
     def initialize(self):
-        self.load_vocab_files(join(dirname(__file__), 'vocab', self.lang))
-
         intent = IntentBuilder("JokingIntent").require("JokingKeyword").build()
         self.register_intent(intent, self.handle_intent)
 

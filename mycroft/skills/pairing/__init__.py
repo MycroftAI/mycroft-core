@@ -55,7 +55,6 @@ class PairingSkill(MycroftSkill):
                           '0': 'Zero'}
 
     def initialize(self):
-        self.load_data_files(dirname(__file__))
         intent = IntentBuilder("PairingIntent") \
             .require("PairingKeyword").require("DeviceKeyword").build()
         self.register_intent(intent, self.handle_pairing)

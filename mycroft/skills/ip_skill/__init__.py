@@ -39,8 +39,6 @@ class IPSkill(MycroftSkill):
         super(IPSkill, self).__init__(name="IPSkill")
 
     def initialize(self):
-        self.load_vocab_files(join(dirname(__file__), 'vocab', 'en-us'))
-
         intent = IntentBuilder("IPIntent").require("IPCommand").build()
         self.register_intent(intent, self.handle_intent)
 

@@ -147,12 +147,14 @@ class ScheduledCRUDSkill(ScheduledSkill):
         super(ScheduledCRUDSkill, self).__init__(name, emitter)
         self.data = {}
         self.repeat_data = {}
-        self.basedir = basedir
+        if basedir:
+            logger.debug('basedir argument is no longer required and is ' +
+                         'depreciated.')
+            self.basedir = basedir
 
     def initialize(self):
         self.load_data()
         self.load_repeat_data()
-        self.load_data_files(self.basedir)
         self.register_regex("(?P<" + self.name + "Amount>\d+)")
         self.register_intent(
             self.build_intent_create().build(), self.handle_create)

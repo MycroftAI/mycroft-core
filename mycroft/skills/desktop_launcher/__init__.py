@@ -49,8 +49,6 @@ class DesktopLauncherSkill(MycroftSkill):
                 logger.error("Could not import gio")
                 return
 
-        self.load_vocab_files(join(dirname(__file__), 'vocab', self.lang))
-        self.load_regex_files(join(dirname(__file__), 'regex', self.lang))
         tokenizer = EnglishTokenizer()
 
         for app in gio.app_info_get_all():

@@ -31,8 +31,6 @@ class SpeakSkill(MycroftSkill):
         super(SpeakSkill, self).__init__(name="SpeakSkill")
 
     def initialize(self):
-        self.load_vocab_files(join(dirname(__file__), 'vocab', 'en-us'))
-
         prefixes = [
             'speak', 'say', 'repeat']
         self.__register_prefixed_regex(prefixes, "(?P<Words>.*)")

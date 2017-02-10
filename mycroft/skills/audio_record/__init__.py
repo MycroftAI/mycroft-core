@@ -47,8 +47,6 @@ class AudioRecordSkill(ScheduledSkill):
         self.record_process = None
 
     def initialize(self):
-        self.load_data_files(dirname(__file__))
-
         intent = IntentBuilder("AudioRecordSkillIntent").require(
             "AudioRecordSkillKeyword").build()
         self.register_intent(intent, self.handle_record)

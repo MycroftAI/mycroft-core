@@ -43,7 +43,6 @@ class TimeSkill(MycroftSkill):
             self.format = "%I:%M, %p"
 
     def initialize(self):
-        self.load_data_files(dirname(__file__))
         intent = IntentBuilder("TimeIntent").require("TimeKeyword") \
             .optionally("Location").build()
         self.register_intent(intent, self.handle_intent)
