@@ -102,6 +102,7 @@ def load_skill(skill_descriptor, emitter):
             # v2 skills framework
             skill = skill_module.create_skill()
             skill.bind(emitter)
+            skill.load_data_files(dirname(skill_descriptor['info'][1]))
             skill.initialize()
             return skill
         else:
@@ -261,8 +262,11 @@ class MycroftSkill(object):
         self.speak(self.dialog_renderer.render(key, data))
 
     def init_dialog(self, root_directory):
-        self.dialog_renderer = DialogLoader().load(
-            join(root_directory, 'dialog', self.lang))
+        dialog_dir = join(root_directory, 'dialog', self.lang)
+        if os.path.exists(dialog_dir):
+            self.dialog_renderer = DialogLoader().load(dialog_dir)
+        else:
+            logger.error('No dialog loaded, ' + dialog_dir + ' does not exist')
 
     def load_data_files(self, root_directory):
         self.init_dialog(root_directory)
@@ -272,7 +276,10 @@ class MycroftSkill(object):
             self.load_regex_files(regex_path)
 
     def load_vocab_files(self, vocab_dir):
-        load_vocabulary(vocab_dir, self.emitter)
+        if os.path.exists(vocab_dir):
+            load_vocabulary(vocab_dir, self.emitter)
+        else:
+            logger.error('No vocab loaded, ' + vocab_dir + ' does not exist')
 
     def load_regex_files(self, regex_dir):
         load_regex(regex_dir, self.emitter)

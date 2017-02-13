@@ -33,12 +33,12 @@ __author__ = 'jdorleans'
 # TODO - Localization
 class AlarmSkill(ScheduledCRUDSkill):
     def __init__(self):
-        super(AlarmSkill, self).__init__("AlarmSkill", None, dirname(__file__))
+        super(AlarmSkill, self).__init__("AlarmSkill", None)
         self.alarm_on = False
         self.max_delay = self.config.get('max_delay')
         self.repeat_time = self.config.get('repeat_time')
         self.extended_delay = self.config.get('extended_delay')
-        self.file_path = join(self.basedir, self.config.get('filename'))
+        self.file_path = join(dirname(__file__), self.config.get('filename'))
 
     def initialize(self):
         super(AlarmSkill, self).initialize()

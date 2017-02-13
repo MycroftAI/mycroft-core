@@ -32,8 +32,6 @@ class PersonalSkill(MycroftSkill):
         super(PersonalSkill, self).__init__(name="PersonalSkill")
 
     def initialize(self):
-        self.load_data_files(dirname(__file__))
-
         when_were_you_born_intent = IntentBuilder("WhenWereYouBornIntent")\
             .require("WhenWereYouBornKeyword").build()
         self.register_intent(when_were_you_born_intent,

@@ -27,7 +27,7 @@ from mycroft.identity import IdentityManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.tts import TTSFactory
-from mycroft.util import kill
+from mycroft.util import kill, play_wav, resolve_resource_file
 from mycroft.util.log import getLogger
 
 logger = getLogger("SpeechClient")
@@ -41,6 +41,14 @@ config = ConfigurationManager.get()
 
 def handle_record_begin():
     logger.info("Begin Recording...")
+
+    # If enabled, play a wave file with a short sound to audibly
+    # indicate recording has begun.
+    if config.get('confirm_listening'):
+        file = resolve_resource_file(config.get('sounds').get('start_listening'))
+        if file:
+            play_wav(file)
+
     ws.emit(Message('recognizer_loop:record_begin'))
 
 
@@ -80,13 +88,13 @@ def handle_multi_utterance_intent_failure(event):
 
 def handle_speak(event):
     utterance = event.data['utterance']
-   
+
     # This is a bit of a hack for Picroft.  The analog audio on a Pi blocks
     # for 30 seconds fairly often, so we don't want to break on periods
     # (decreasing the chance of encountering the block).  But we will
     # keep the split for non-Picroft installs since it give user feedback
     # faster on longer phrases.
-    #    
+    #
     # TODO: Remove or make an option?  This is really a hack, anyway,
     # so we likely will want to get rid of this when not running on Mimic
     if not config.get('enclosure', {}).get('platform') == "picroft":
@@ -96,6 +104,7 @@ def handle_speak(event):
             mute_and_speak(chunk)
     else:
         mute_and_speak(utterance)
+
 
 def handle_sleep(event):
     loop.sleep()

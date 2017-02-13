@@ -34,7 +34,6 @@ class StopSkill(MycroftSkill):
 
     def initialize(self):
         # TODO - To be generalized in MycroftSkill
-        self.load_vocab_files(join(dirname(__file__), 'vocab', self.lang))
         intent = IntentBuilder("StopIntent").require("StopKeyword").build()
         self.register_intent(intent, self.handle_intent)
 
