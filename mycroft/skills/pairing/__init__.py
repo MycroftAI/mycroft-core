@@ -119,6 +119,6 @@ class PairingSkill(MycroftSkill):
         if self.activator:
             self.activator.cancel()
 
-            
+
 def create_skill():
     return PairingSkill()
