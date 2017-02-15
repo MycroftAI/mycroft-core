@@ -95,6 +95,7 @@ def open_intent_envelope(message):
 
 def load_skill(skill_descriptor, emitter):
     try:
+        logger.info("ATTEMPTING TO LOAD SKILL: " + skill_descriptor["name"])
         skill_module = imp.load_module(
             skill_descriptor["name"] + MainModule, *skill_descriptor["info"])
         if (hasattr(skill_module, 'create_skill') and
@@ -104,6 +105,7 @@ def load_skill(skill_descriptor, emitter):
             skill.bind(emitter)
             skill.load_data_files(dirname(skill_descriptor['info'][1]))
             skill.initialize()
+            logger.info("Lodaded " + skill_descriptor["name"])
             return skill
         else:
             logger.warn(
@@ -116,6 +118,7 @@ def load_skill(skill_descriptor, emitter):
 
 
 def get_skills(skills_folder):
+    logger.info("LOADING SKILLS FROM "+ skills_folder)
     skills = []
     possible_skills = os.listdir(skills_folder)
     for i in possible_skills:
@@ -143,6 +146,7 @@ def create_skill_descriptor(skill_folder):
 
 
 def load_skills(emitter, skills_root=SKILLS_BASEDIR):
+    logger.info("Checking " + skills_root + " for new skills")
     skill_list = []
     skills = get_skills(skills_root)
     for skill in skills:

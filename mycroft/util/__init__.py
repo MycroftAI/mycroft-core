@@ -24,8 +24,12 @@ import os
 import os.path
 import psutil
 from os.path import dirname
+from mycroft.util.log import getLogger
+import mycroft.configuration
 
 __author__ = 'jdorleans'
+
+LOGGER = getLogger(__name__)
 
 
 def resolve_resource_file(res_name):
@@ -75,11 +79,21 @@ def resolve_resource_file(res_name):
 
 
 def play_wav(uri):
-    return subprocess.Popen(["aplay", get_http(uri)])
+    play_cmd = mycroft.configuration.ConfigurationManager.get().get("play_wav_cmdline")
+    play_wav_cmd = str(play_cmd).split(" ")
+    for index, cmd in enumerate(play_wav_cmd):
+        if cmd == "%1":
+            play_wav_cmd[index] = (get_http(uri))
+    return subprocess.Popen(play_wav_cmd)
 
 
 def play_mp3(uri):
-    return subprocess.Popen(["mpg123", get_http(uri)])
+    play_cmd = mycroft.configuration.ConfigurationManager.get().get("play_mp3_cmdline")
+    play_mp3_cmd = str(play_cmd).split(" ")
+    for index, cmd in enumerate(play_mp3_cmd):
+        if cmd == "%1":
+            play_mp3_cmd[index] = (get_http(uri))
+    return subprocess.Popen(play_mp3_cmd)
 
 
 def record(file_path, duration, rate, channels):
