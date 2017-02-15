@@ -118,7 +118,7 @@ def load_skill(skill_descriptor, emitter):
 
 
 def get_skills(skills_folder):
-    logger.info("LOADING SKILLS FROM "+ skills_folder)
+    logger.info("LOADING SKILLS FROM " + skills_folder)
     skills = []
     possible_skills = os.listdir(skills_folder)
     for i in possible_skills:
@@ -195,7 +195,7 @@ class MycroftSkill(object):
         if type(loc) is dict and loc["city"]:
             return loc["city"]["name"]
         return None
-        
+
     @property
     def location_timezone(self):
         """ Get the timezone code, such as 'America/Los_Angeles' """
@@ -302,7 +302,8 @@ class MycroftSkill(object):
 
     def shutdown(self):
         """
-        This method is intended to be called during the skill process termination.
-        The skill implementation must shutdown all processes and operations in execution.
+        This method is intended to be called during the skill
+        process termination. The skill implementation must
+        shutdown all processes and operations in execution.
         """
         self.stop()
