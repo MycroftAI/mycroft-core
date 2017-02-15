@@ -45,7 +45,8 @@ def handle_record_begin():
     # If enabled, play a wave file with a short sound to audibly
     # indicate recording has begun.
     if config.get('confirm_listening'):
-        file = resolve_resource_file(config.get('sounds').get('start_listening'))
+        file = resolve_resource_file(
+            config.get('sounds').get('start_listening'))
         if file:
             play_wav(file)
 

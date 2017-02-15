@@ -55,7 +55,8 @@ class Api(object):
         data = self.get_data(response)
         if 200 <= response.status_code < 300:
             return data
-        elif response.status_code == 401 and not response.url.endswith("auth/token"):
+        elif response.status_code == 401\
+                and not response.url.endswith("auth/token"):
             self.refresh_token()
             return self.send(self.old_params)
         raise HTTPError(data, response=response)
