@@ -112,8 +112,9 @@ class WolframAlphaSkill(MycroftSkill):
             try:
                 for pid in self.PIDS:
                     result = self.__find_pod_id(res.pods, pid)
-                    if result:
-                        result = result[:5]
+                    if result is not None:
+                        if pid is "DecimalApproximation":
+                            result = result[:5]
                         break
                 if not result:
                     result = self.__find_num(res.pods, '200')

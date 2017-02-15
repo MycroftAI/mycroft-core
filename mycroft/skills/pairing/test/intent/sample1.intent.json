@@ -2,6 +2,7 @@
   "utterance": "let's pair my device",
   "intent_type": "PairingIntent",
   "intent": {
-    "DevicePairingPhrase": "pair my device"
+    "DeviceKeyword": "device",
+    "PairingKeyword": "pair"
   }
 }
