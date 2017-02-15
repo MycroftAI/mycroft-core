@@ -29,7 +29,7 @@ class EnclosureAPI:
     This API is intended to be used to interface with the hardware
     that is running Mycroft.  It exposes all possible commands which
     can be sent to a Mycroft enclosure implementation.
-    
+
     Different enclosure implementations may implement this differently
     and/or may ignore certain API calls completely.  For example,
     the eyes_color() API might be ignore on a Mycroft that uses simple
@@ -42,7 +42,6 @@ class EnclosureAPI:
 
     def reset(self):
         """The enclosure should restore itself to a started state.
-        
         Typically this would be represented by the eyes being 'open'
         and the mouth reset to its default (smile or blank).
         """
@@ -62,7 +61,6 @@ class EnclosureAPI:
 
     def system_blink(self, times):
         """The 'eyes' should blink the given number of times.
-        
         Args:
             times (int): number of times to blink
         """
@@ -78,7 +76,6 @@ class EnclosureAPI:
 
     def eyes_blink(self, side):
         """Make the eyes blink
-        
         Args:
             side (str): 'r', 'l', or 'b' for 'right', 'left' or 'both'
         """
@@ -90,7 +87,6 @@ class EnclosureAPI:
 
     def eyes_look(self, side):
         """Make the eyes look to the given side
-        
         Args:
             side (str): 'r' for right
                         'l' for left
@@ -102,7 +98,6 @@ class EnclosureAPI:
 
     def eyes_color(self, r=255, g=255, b=255):
         """Change the eye color to the given RGB color
-        
         Args:
             r (int): 0-255, red value
             g (int): 0-255, green value
@@ -113,7 +108,6 @@ class EnclosureAPI:
 
     def eyes_brightness(self, level=30):
         """Set the brightness of the eyes in the display.
-        
         Args:
             level (int): 1-30, bigger numbers being brighter
         """
@@ -125,7 +119,6 @@ class EnclosureAPI:
 
     def eyes_timed_spin(self, length):
         """Make the eyes 'roll' for the given time.
-        
         Args:
             length (int): duration in milliseconds of roll, None = forever
         """
@@ -134,7 +127,6 @@ class EnclosureAPI:
 
     def eyes_volume(self, volume):
         """Indicate the volume using the eyes
-        
         Args:
             volume (int): 0 to 11
         """
@@ -162,7 +154,6 @@ class EnclosureAPI:
 
     def mouth_viseme(self, code):
         """Display a viseme mouth shape for synched speech
-        
         Args:
             code (int):  0 = shape for sounds like 'y' or 'aa'
                          1 = shape for sounds like 'aw'
@@ -176,7 +167,6 @@ class EnclosureAPI:
 
     def mouth_text(self, text=""):
         """Display text (scrolling as needed)
-        
         Args:
             text (str): text string to display
         """

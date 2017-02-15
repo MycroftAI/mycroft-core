@@ -207,7 +207,8 @@ class Enclosure(object):
         self.writer.write("system.version")
         self.ws.on("enclosure.start", self.start)
         self.started = False
-        Timer(5, self.stop).start()     # WHY? This at least needs an explaination, this is non-obvious behavior
+        Timer(5, self.stop).start()     # WHY? This at least
+        # needs an explanation, this is non-obvious behavior
 
     def start(self, event=None):
         self.eyes = EnclosureEyes(self.ws, self.writer)
