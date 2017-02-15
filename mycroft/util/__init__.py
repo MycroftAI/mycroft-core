@@ -60,12 +60,12 @@ def resolve_resource_file(res_name):
         return res_name
 
     # Now look for ~/.mycroft/res_name (in user folder)
-    filename = os.path.expanduser("~/.mycroft/"+res_name)
+    filename = os.path.expanduser("~/.mycroft/" + res_name)
     if os.path.isfile(filename):
         return filename
 
     # Next look for /opt/mycroft/res/res_name
-    filename = os.path.expanduser("/opt/mycroft/"+res_name)
+    filename = os.path.expanduser("/opt/mycroft/" + res_name)
     if os.path.isfile(filename):
         return filename
 
@@ -79,7 +79,8 @@ def resolve_resource_file(res_name):
 
 
 def play_wav(uri):
-    play_cmd = mycroft.configuration.ConfigurationManager.get().get("play_wav_cmdline")
+    config = mycroft.configuration.ConfigurationManager.get()
+    play_cmd = config.get("play_mp3_cmdline")
     play_wav_cmd = str(play_cmd).split(" ")
     for index, cmd in enumerate(play_wav_cmd):
         if cmd == "%1":
@@ -88,7 +89,8 @@ def play_wav(uri):
 
 
 def play_mp3(uri):
-    play_cmd = mycroft.configuration.ConfigurationManager.get().get("play_mp3_cmdline")
+    config = mycroft.configuration.ConfigurationManager.get()
+    play_cmd = config.get("play_mp3_cmdline")
     play_mp3_cmd = str(play_cmd).split(" ")
     for index, cmd in enumerate(play_mp3_cmd):
         if cmd == "%1":
