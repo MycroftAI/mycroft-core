@@ -49,7 +49,7 @@ def resolve_resource_file(res_name):
     it would return either '/home/bob/.mycroft/snd/beep.wav' or
     '/opt/mycroft/snd/beep.wav' or '.../mycroft/res/snd/beep.wav',
     where the '...' is replaced by the path where the package has
-    been installed.
+    been installed.subl
 
     Args:
         res_name (str): a resource path/name
