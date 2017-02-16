@@ -80,7 +80,7 @@ def resolve_resource_file(res_name):
 
 def play_wav(uri):
     config = mycroft.configuration.ConfigurationManager.get()
-    play_cmd = config.get("play_mp3_cmdline")
+    play_cmd = config.get("play_wav_cmdline")
     play_wav_cmd = str(play_cmd).split(" ")
     for index, cmd in enumerate(play_wav_cmd):
         if cmd == "%1":
