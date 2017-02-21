@@ -63,8 +63,6 @@ def load_watch_skills():
     timer.daemon = True
     timer.start()
 
-    # last_modified_skill = max(skills.values())
-
 
 def clear_skill_events(instance):
     global ws
