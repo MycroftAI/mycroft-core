@@ -59,7 +59,7 @@ def load_watch_skills():
     except AttributeError as e:
         logger.warning(e.message)
 
-    timer = Timer(0, load_skills)
+    timer = Timer(0, watch_skills)
     timer.daemon = True
     timer.start()
 
@@ -78,16 +78,16 @@ def clear_skill_events(instance):
         del events[event]
 
 
-def load_skills():
+def watch_skills():
     global ws, loaded_skills, last_modified_skill, skills_directories
     for dir in skills_directories:
         if exists(dir):
             list = filter(lambda x: os.path.isdir(os.path.join(dir, x)),
                           os.listdir(dir))
             for skill_folder in list:
-                if not loaded_skills.has_key(skill_folder):
+                if not skill_folder in loaded_skills:
                     loaded_skills[skill_folder] = {}
-                skill = loaded_skills[skill_folder]
+                skill = loaded_skills.get(skill_folder)
                 skill["path"] = os.path.join(dir, skill_folder)
                 if not MainModule + ".py" in os.listdir(skill["path"]):
                     continue
@@ -99,6 +99,7 @@ def load_skills():
                     continue
                 elif skill.get("instance") and skill.get("last_modified",
                                                     0) > last_modified_skill:
+                    logger.debug("Reloading Skill: " + skill_folder)
                     skill["instance"].shutdown()
                     clear_skill_events(skill["instance"])
                     del skill["instance"]
@@ -107,7 +108,7 @@ def load_skills():
     last_modified_skill = max(
         map(lambda x: x.get("last_modified"), loaded_skills.values()))
     time.sleep(2)
-    load_skills()
+    watch_skills()
 
 
 def main():
