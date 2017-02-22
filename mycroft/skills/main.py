@@ -38,6 +38,7 @@ ws = None
 loaded_skills = {}
 last_modified_skill = 0
 skills_directories = []
+skill_reload_thread = None
 
 
 def connect():
@@ -46,7 +47,8 @@ def connect():
 
 
 def load_watch_skills():
-    global ws, loaded_skills, last_modified_skill, skills_directories
+    global ws, loaded_skills, last_modified_skill, skills_directories, \
+        skill_reload_thread
 
     skills_directories = [os.path.dirname(os.path.abspath(__file__))]
     skills_directories = skills_directories + THIRD_PARTY_SKILLS_DIR
@@ -59,9 +61,9 @@ def load_watch_skills():
     except AttributeError as e:
         logger.warning(e.message)
 
-    timer = Timer(0, watch_skills)
-    timer.daemon = True
-    timer.start()
+    skill_reload_thread = Timer(0, watch_skills)
+    skill_reload_thread.daemon = True
+    skill_reload_thread.start()
 
 
 def clear_skill_events(instance):
@@ -85,7 +87,7 @@ def watch_skills():
             list = filter(lambda x: os.path.isdir(os.path.join(dir, x)),
                           os.listdir(dir))
             for skill_folder in list:
-                if not skill_folder in loaded_skills:
+                if skill_folder not in loaded_skills:
                     loaded_skills[skill_folder] = {}
                 skill = loaded_skills.get(skill_folder)
                 skill["path"] = os.path.join(dir, skill_folder)
@@ -94,11 +96,10 @@ def watch_skills():
                 skill["last_modified"] = max(
                     os.path.getmtime(root) for root, _, _ in
                     os.walk(skill["path"]))
-                if skill.get("instance") and skill.get("last_modified",
-                                                    0) <= last_modified_skill:
+                modified = skill.get("last_modified", 0)
+                if skill.get("instance") and modified <= last_modified_skill:
                     continue
-                elif skill.get("instance") and skill.get("last_modified",
-                                                    0) > last_modified_skill:
+                elif skill.get("instance") and modified > last_modified_skill:
                     logger.debug("Reloading Skill: " + skill_folder)
                     skill["instance"].shutdown()
                     clear_skill_events(skill["instance"])
@@ -139,5 +140,8 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         for skill in loaded_skills:
             skill.shutdown()
+        if skill_reload_thread:
+            skill_reload_thread.cancel()
+
     finally:
         sys.exit()
