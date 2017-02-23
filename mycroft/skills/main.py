@@ -82,34 +82,36 @@ def clear_skill_events(instance):
 
 def watch_skills():
     global ws, loaded_skills, last_modified_skill, skills_directories
-    for dir in skills_directories:
-        if exists(dir):
-            list = filter(lambda x: os.path.isdir(os.path.join(dir, x)),
-                          os.listdir(dir))
-            for skill_folder in list:
-                if skill_folder not in loaded_skills:
-                    loaded_skills[skill_folder] = {}
-                skill = loaded_skills.get(skill_folder)
-                skill["path"] = os.path.join(dir, skill_folder)
-                if not MainModule + ".py" in os.listdir(skill["path"]):
-                    continue
-                skill["last_modified"] = max(
-                    os.path.getmtime(root) for root, _, _ in
-                    os.walk(skill["path"]))
-                modified = skill.get("last_modified", 0)
-                if skill.get("instance") and modified <= last_modified_skill:
-                    continue
-                elif skill.get("instance") and modified > last_modified_skill:
-                    logger.debug("Reloading Skill: " + skill_folder)
-                    skill["instance"].shutdown()
-                    clear_skill_events(skill["instance"])
-                    del skill["instance"]
-                skill["instance"] = load_skill(
-                    create_skill_descriptor(skill["path"]), ws)
-    last_modified_skill = max(
-        map(lambda x: x.get("last_modified"), loaded_skills.values()))
-    time.sleep(2)
-    watch_skills()
+    while True:
+        for dir in skills_directories:
+            if exists(dir):
+                list = filter(lambda x: os.path.isdir(os.path.join(dir, x)),
+                              os.listdir(dir))
+                for skill_folder in list:
+                    if skill_folder not in loaded_skills:
+                        loaded_skills[skill_folder] = {}
+                    skill = loaded_skills.get(skill_folder)
+                    skill["path"] = os.path.join(dir, skill_folder)
+                    if not MainModule + ".py" in os.listdir(skill["path"]):
+                        continue
+                    skill["last_modified"] = max(
+                        os.path.getmtime(root) for root, _, _ in
+                        os.walk(skill["path"]))
+                    modified = skill.get("last_modified", 0)
+                    if skill.get(
+                            "instance") and modified <= last_modified_skill:
+                        continue
+                    elif skill.get(
+                            "instance") and modified > last_modified_skill:
+                        logger.debug("Reloading Skill: " + skill_folder)
+                        skill["instance"].shutdown()
+                        clear_skill_events(skill["instance"])
+                        del skill["instance"]
+                    skill["instance"] = load_skill(
+                        create_skill_descriptor(skill["path"]), ws)
+        last_modified_skill = max(
+            map(lambda x: x.get("last_modified"), loaded_skills.values()))
+        time.sleep(2)
 
 
 def main():
