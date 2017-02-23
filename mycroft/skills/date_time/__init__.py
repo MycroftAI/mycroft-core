@@ -43,8 +43,8 @@ class TimeSkill(MycroftSkill):
             self.format = "%I:%M, %p"
 
     def initialize(self):
-        intent = IntentBuilder("TimeIntent").require("TimeKeyword") \
-            .optionally("Location").build()
+        intent = IntentBuilder("TimeIntent").require("QueryKeyword") \
+            .require("TimeKeyword").optionally("Location").build()
         self.register_intent(intent, self.handle_intent)
 
     def get_timezone(self, locale):
