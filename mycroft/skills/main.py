@@ -99,7 +99,7 @@ def watch_skills():
                         os.walk(skill["path"]))
                     modified = skill.get("last_modified", 0)
                     if skill.get(
-                            "instance") and modified <= last_modified_skill:
+                            "loaded") and modified <= last_modified_skill:
                         continue
                     elif skill.get(
                             "instance") and modified > last_modified_skill:
@@ -107,6 +107,7 @@ def watch_skills():
                         skill["instance"].shutdown()
                         clear_skill_events(skill["instance"])
                         del skill["instance"]
+                    skill["loaded"] = True
                     skill["instance"] = load_skill(
                         create_skill_descriptor(skill["path"]), ws)
         last_modified_skill = max(
