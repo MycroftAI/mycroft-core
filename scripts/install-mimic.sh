@@ -10,7 +10,7 @@ MIMIC_VERSION=1.2.0
 if [ ! -d ${MIMIC_DIR} ]; then
     git clone --branch ${MIMIC_VERSION} https://github.com/MycroftAI/mimic.git
     cd ${MIMIC_DIR}
-    ./autogen
+    ./autogen.sh
     ./configure --with-audio=alsa --enable-shared
     make #-j$CORES
 else
@@ -18,7 +18,7 @@ else
     cd ${MIMIC_DIR}
     git pull
     make clean
-    ./autogen
+    ./autogen.sh
     ./configure --with-audio=alsa --enable-shared
     make #-j$CORES
 fi
