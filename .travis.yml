@@ -15,6 +15,3 @@ install:
 script:
  - pep8 mycroft test
 # - ./start.sh unittest --fail-on-error
-# for ubuntu precise in travis, that does not provide pkg-config:
-pkg-config --exists icu-i18n || export CFLAGS="$CFLAGS -I/usr/include/x86_64-linux-gnu"
-pkg-config --exists icu-i18n || export LDFLAGS="$LDFLAGS -licui18n -licuuc -licudata"
