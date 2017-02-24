@@ -4,7 +4,7 @@ set -Ee
 
 MIMIC_DIR=mimic
 CORES=$(nproc)
-MIMIC_VERSION=1.2.0
+MIMIC_VERSION=1.2.0.1
 
 # download and install mimic
 if [ ! -d ${MIMIC_DIR} ]; then
@@ -12,7 +12,8 @@ if [ ! -d ${MIMIC_DIR} ]; then
     cd ${MIMIC_DIR}
     ./autogen.sh
     ./configure --with-audio=alsa --enable-shared --prefix=$(pwd)
-    make -j$CORES CFLAGS=-D_DEFAULT_SOURCE $(CFLAGS)
+    make -j$CORES
+    make install
 else
     # ensure mimic is up to date
     cd ${MIMIC_DIR}
@@ -20,5 +21,6 @@ else
     ./autogen.sh
     ./configure --with-audio=alsa --enable-shared --prefix=$(pwd)
     make clean
-    make -j$CORES CFLAGS=-D_DEFAULT_SOURCE $(CFLAGS)
+    make -j$CORES
+    make install
 fi
