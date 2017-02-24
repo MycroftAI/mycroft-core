@@ -36,7 +36,7 @@ BIN = config.get("path", join(MYCROFT_ROOT_PATH, 'msm'))
 
 class SkillInstallerSkill(MycroftSkill):
     def __init__(self):
-        super(SkillInstallerSkill, self).__init__(name="SkillSkill")
+        super(SkillInstallerSkill, self).__init__(name="SkillInstallerSkill")
 
     def initialize(self):
         install = IntentBuilder("InstallIntent"). \
