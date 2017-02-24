@@ -20,5 +20,6 @@ sudo apt-get install -y \
     mpg123 \
     screen \
     flac \
-    curl
+    curl \
+    libicu-dev
 
