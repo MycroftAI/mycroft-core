@@ -16,20 +16,27 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 import subprocess
 
-from os.path import dirname
+from os.path import dirname, join
 
 from adapt.intent import IntentBuilder
+
+from mycroft import MYCROFT_ROOT_PATH
+from mycroft.configuration import ConfigurationManager
 from mycroft.skills.core import MycroftSkill
 from mycroft.util.log import getLogger
 
-__author__ = 'augustnmonteiro'
+__author__ = 'augustnmonteiro2'
 
 logger = getLogger(__name__)
 
+config = ConfigurationManager.get().get("SkillInstallerSkill")
 
-class SkillSkill(MycroftSkill):
+BIN = config.get("path", join(MYCROFT_ROOT_PATH, 'msm'))
+
+
+class SkillInstallerSkill(MycroftSkill):
     def __init__(self):
-        super(SkillSkill, self).__init__(name="SkillSkill")
+        super(SkillInstallerSkill, self).__init__(name="SkillSkill")
 
     def initialize(self):
         install = IntentBuilder("InstallIntent"). \
@@ -40,7 +47,7 @@ class SkillSkill(MycroftSkill):
         utterance = message.data.get('utterance').lower()
         skill = utterance.replace(message.data.get('InstallKeyword'), '')
         p = subprocess.Popen(
-            ["msm", "install", skill.strip().replace(" ", "-")],
+            [BIN, "install", skill.strip().replace(" ", "-")],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
         text = p.stdout.read()
@@ -59,4 +66,4 @@ class SkillSkill(MycroftSkill):
 
 
 def create_skill():
-    return SkillSkill()
+    return SkillInstallerSkill()
