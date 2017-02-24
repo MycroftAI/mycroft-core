@@ -21,7 +21,7 @@ from adapt.engine import IntentDeterminationEngine
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import open_intent_envelope, MycroftSkill
 from mycroft.util.log import getLogger
-from mycroft.util.parser import normalize
+from mycroft.util.parse import normalize
 
 __author__ = 'seanfitz'
 
