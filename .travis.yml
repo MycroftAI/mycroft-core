@@ -1,7 +1,7 @@
 language: python
 before_install:
  - sudo apt-get update -qq
- - sudo apt-get install -qq mpg123 portaudio19-dev libglib2.0-dev swig bison libtool autoconf libglib2.0-dev
+ - sudo apt-get install -qq mpg123 portaudio19-dev libglib2.0-dev swig bison libtool autoconf libglib2.0-dev libicu-dev
 python:
   - "2.7"
 # don't rebuild pocketsphinx for every build
