@@ -2,5 +2,5 @@
 # exit on any error
 set -Ee
 
-wget https://raw.githubusercontent.com/MycroftAI/msm/master/msm -O msm
-chmod +x msm
+git clone git@github.com:MycroftAI/msm.git msm
+chmod +x msm/msm

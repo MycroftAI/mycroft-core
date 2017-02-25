@@ -31,7 +31,7 @@ logger = getLogger(__name__)
 
 config = ConfigurationManager.get().get("SkillInstallerSkill")
 
-BIN = config.get("path", join(MYCROFT_ROOT_PATH, 'msm'))
+BIN = config.get("path", join(MYCROFT_ROOT_PATH, 'msm', 'msm'))
 
 
 class SkillInstallerSkill(MycroftSkill):
