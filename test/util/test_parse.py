@@ -1,3 +1,4 @@
+ 
 import unittest
 from mycroft.util.parse import normalize
 
@@ -8,7 +9,7 @@ class TestNormalize(unittest.TestCase):
                          "this is test")
         self.assertEqual(normalize("this is the test", remove_articles=True),
                          "this is test")
-        self.assertEqual(normalize("and annother test", remove_articles=True),
+        self.assertEqual(normalize("and another test", remove_articles=True),
                          "and another test")
         self.assertEqual(normalize("this is an extra test",
                                    remove_articles=False),
@@ -16,21 +17,21 @@ class TestNormalize(unittest.TestCase):
 
     def test_spaces(self):
         self.assertEqual(normalize("  this   is  a    test"),
-                         "this is a test")
+                         "this is test")
         self.assertEqual(normalize("  this   is  a    test  "),
-                         "this is a test")
+                         "this is test")
         self.assertEqual(normalize("  this   is  one    test"),
                          "this is 1 test")
 
     def test_numbers(self):
         self.assertEqual(normalize("this is a one two three  test"),
-                         "this is a 1 2 3 test")
+                         "this is 1 2 3 test")
         self.assertEqual(normalize("  it's  a four five six  test"),
-                         "it is a 4 5 6 test")
+                         "it is 4 5 6 test")
         self.assertEqual(normalize("it's  a seven eight nine test"),
-                         "it is a 7 8 9 test")
+                         "it is 7 8 9 test")
         self.assertEqual(normalize("it's a seven eight nine  test"),
-                         "it is a 7 8 9 test")
+                         "it is 7 8 9 test")
         self.assertEqual(normalize("that's a ten eleven twelve test"),
                          "that is 10 11 12 test")
         self.assertEqual(normalize("that's a thirteen fourteen test"),
@@ -133,6 +134,7 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(normalize("what'll"), "what will")
         self.assertEqual(normalize("what're"), "what are")
         # TODO: Ambiguous with "what has" / "what does")
+        self.assertEqual(normalize("whats"), "what is")
         self.assertEqual(normalize("what's"), "what is")
         self.assertEqual(normalize("what've"), "what have")
         # TODO: Ambiguous with "when has"
@@ -186,9 +188,12 @@ class TestNormalize(unittest.TestCase):
                          "someone would not have")
         self.assertEqual(normalize("someone would've"), "someone would have")
         self.assertEqual(normalize("what's the weather like"),
-                         "what is the weather like")
+                         "what is weather like")
         self.assertEqual(normalize("that's what I told you"),
                          "that is what I told you")
+        
+        self.assertEqual(normalize("whats 8 + 4"), "what is 8 + 4")
+
 
 
 if __name__ == "__main__":

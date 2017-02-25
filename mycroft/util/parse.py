@@ -21,6 +21,14 @@ def normalize(text, lang="en-us", remove_articles=True):
 
     This function prepares the given text for parsing by making
     numbers consistent, getting rid of contractions, etc.
+    
+    Args:
+        text (str): the string to normalize
+        lang (str): the code for the language text is in
+        remove_articles (bool): whether to remove articles (like 'a', or 'the')
+        
+    Returns:
+        (str): The normalized string.
     """
     if str(lang).lower().startswith("en"):
         return normalize_en(text, remove_articles)
@@ -51,6 +59,7 @@ def normalize_en(text, remove_articles):
                        "there're", "there's", "they'd", "they'll", "they're",
                        "they've", "wasn't", "we'd", "we'll", "we're", "we've",
                        "weren't", "what'd", "what'll", "what're", "what's",
+                       "whats",  # technically incorrect but some STT does this
                        "what've", "when's", "when'd", "where'd", "where's",
                        "where've", "who'd", "who'd've", "who'll", "who're",
                        "who's", "who've", "why'd", "why're", "why's", "won't",
@@ -73,6 +82,7 @@ def normalize_en(text, remove_articles):
                          "they will", "they are", "they have", "was not",
                          "we would", "we will", "we are", "we have",
                          "were not", "what did", "what will", "what are",
+                         "what is",  
                          "what is", "what have", "when is", "when did",
                          "where did", "where is", "where have", "who would",
                          "who would have", "who will", "who are", "who is",
