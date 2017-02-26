@@ -15,7 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
-
+import os
+import os.path
 import sys
 import time
 import subprocess
@@ -45,6 +46,7 @@ scr = None
 ##############################################################################
 # Helper functions
 
+
 def clamp(n, smallest, largest):
     return max(smallest, min(n, largest))
 
@@ -63,18 +65,18 @@ class LogMonitorThread(Thread):
 
     def run(self):
         global mergedLog
-        
+
         proc = subprocess.Popen(["tail", "-f", self.filename],
-            stdout=subprocess.PIPE)
+                                stdout=subprocess.PIPE)
         while True:
             output = proc.stdout.readline().strip()
             if output == "" and proc.poll() is not None:
                 break
-            
-            # TODO: Filter log output (black and white listing lines)
+
+            # TODO: Allow user to filter log output (blacklist and whitelist)
             if "enclosure.mouth.viseme" in output:
                 continue
-            
+
             if output:
                 mergedLog.append(output)
                 draw_screen()
@@ -84,8 +86,8 @@ def startLogMonitor(filename):
     thread = LogMonitorThread(filename)
     thread.setDaemon(True)  # this thread won't prevent prog from exiting
     thread.start()
-  
-  
+
+
 ##############################################################################
 # Capturing output from Mycroft
 
@@ -113,8 +115,10 @@ def connect():
     # Once the websocket has connected, just watch it for speak events
     ws.run_forever()
 
+
 ##############################################################################
 # Screen handling
+
 
 def init_screen():
     global CLR_CHAT_HEADING
@@ -124,7 +128,7 @@ def init_screen():
     global CLR_INPUT
     global CLR_LOG
     global CLR_LOG_DEBUG
-    
+
     if curses.has_colors():
         bg = curses.COLOR_BLACK
         for i in range(0, curses.COLORS):
@@ -147,7 +151,7 @@ def init_screen():
         # 14= purple
         # 15= cyan
         # 16= white
- 
+
         CLR_CHAT_HEADING = curses.color_pair(3)
         CLR_CHAT_RESP = curses.color_pair(7)
         CLR_CHAT_QUERY = curses.color_pair(8)
@@ -156,15 +160,16 @@ def init_screen():
         CLR_LOG = curses.color_pair(8)
         CLR_LOG_DEBUG = curses.color_pair(4)
 
+
 def draw_screen():
     global scr
     scr.clear()
-    
+
     # Display log output at the top
     scr.addstr(0, 0, "Log Output", curses.A_REVERSE)
     scr.addstr(1, 0,  "=" * (curses.COLS-1), CLR_LOG)
     cLogLines = curses.LINES-13
- 
+
     cLogs = len(mergedLog)
     y = 2
     for i in range(clamp(cLogs-cLogLines, 0, cLogs-1), cLogs):
@@ -182,13 +187,19 @@ def draw_screen():
         log = ("..."+log[-(curses.COLS-3):]) if len(log) > curses.COLS else log
         scr.addstr(y, 0, log, clr)
         y += 1
-        
+
     # Log legend in the lower-right
-    scr.addstr(curses.LINES-10, curses.COLS/2 + 2, "Log Output Legend", curses.A_REVERSE)
+    scr.addstr(curses.LINES-10, curses.COLS/2 + 2, "Log Output Legend",
+               curses.A_REVERSE)
     scr.addstr(curses.LINES-9, curses.COLS/2 + 2, "=" * (curses.COLS/2 - 4))
-    scr.addstr(curses.LINES-8, curses.COLS/2 + 2, "mycroft-skills.log, debug info", CLR_LOG_DEBUG)
-    scr.addstr(curses.LINES-7, curses.COLS/2 + 2, "mycroft-skills.log, non debug", CLR_LOG)
-    scr.addstr(curses.LINES-6, curses.COLS/2 + 2, "mycroft-voice.log", CLR_LOG)
+    scr.addstr(curses.LINES-8, curses.COLS/2 + 2,
+               "mycroft-skills.log, debug info",
+               CLR_LOG_DEBUG)
+    scr.addstr(curses.LINES-7, curses.COLS/2 + 2,
+               "mycroft-skills.log, non debug",
+               CLR_LOG)
+    scr.addstr(curses.LINES-6, curses.COLS/2 + 2, "mycroft-voice.log",
+               CLR_LOG)
 
     # History log in the middle
     scr.addstr(curses.LINES-10, 0, "History", CLR_CHAT_HEADING)
@@ -197,7 +208,7 @@ def draw_screen():
     cChat = len(chat)
     if cChat:
         y = curses.LINES-8
-        for i in range(cChat-clamp(cChat, 1,5), cChat):
+        for i in range(cChat-clamp(cChat, 1, 5), cChat):
             chat_line = chat[i]
             if chat_line.startswith(">> "):
                 clr = CLR_CHAT_RESP
@@ -205,11 +216,12 @@ def draw_screen():
                 clr = CLR_CHAT_QUERY
             scr.addstr(y, 0, stripNonAscii(chat_line), clr)
             y += 1
-    
+
     # Command line at the bottom
     l = line
     if len(line) > 0 and line[0] == ":":
-        scr.addstr(curses.LINES-2, 0, "Command ('help' for options):", CLR_CMDLINE)
+        scr.addstr(curses.LINES-2, 0, "Command ('help' for options):",
+                   CLR_CMDLINE)
         scr.addstr(curses.LINES-1, 0, ":", CLR_CMDLINE)
         l = line[1:]
     else:
@@ -217,10 +229,10 @@ def draw_screen():
         scr.addstr(curses.LINES-1, 0, ">", CLR_CMDLINE)
     scr.addstr(curses.LINES-1, 2, l, CLR_INPUT)
     scr.refresh()
-    
+
 
 ##############################################################################
-# 
+# Main UI
 
 def handle_cmd(cmd):
     if "show" in cmd and "log" in cmd:
@@ -234,17 +246,17 @@ def main(stdscr):
     global scr
     global ws
     global line
-    
+
     scr = stdscr
     init_screen()
-    
+
     ws = WebsocketClient()
-   
+
     ws.on('speak', handle_speak)
     event_thread = Thread(target=connect)
     event_thread.setDaemon(True)
     event_thread.start()
-    
+
     history = []
     hist_idx = -1  # index, from the bottom
     try:
@@ -261,7 +273,7 @@ def main(stdscr):
             if c == curses.KEY_ENTER or c == 10 or c == 13:
                 if line == "":
                     continue
-                    
+
                 if line[:1] == ":":
                     handle_cmd(line[1:])
                 else:
@@ -271,7 +283,7 @@ def main(stdscr):
                         Message("recognizer_loop:utterance",
                                 {'utterances': [line.strip()]}))
                 hist_idx = -1
-                line = ""               
+                line = ""
             elif c == curses.KEY_UP:
                 hist_idx = clamp(hist_idx+1, -1, len(history)-1)
                 if hist_idx >= 0:
@@ -294,7 +306,7 @@ def main(stdscr):
             # if line.startswith("*"):
             #     handle_cmd(line.strip("*"))
             # else:
-            
+
     except KeyboardInterrupt, e:
         # User hit Ctrl+C to quit
         pass
@@ -303,9 +315,18 @@ def main(stdscr):
         event_thread.exit()
         sys.exit()
 
-startLogMonitor("scripts/logs/mycroft-skills.log")
-startLogMonitor("scripts/logs/mycroft-voice.log")
+
+# Find the correct log path relative to this script
+scriptPath = os.path.dirname(os.path.realpath(__file__))
+localLogPath = os.path.realpath(scriptPath+"/../../../scripts/logs")
+
+# Monitor relative logs (for Github installs)
+startLogMonitor(localLogPath + "/mycroft-skills.log")
+startLogMonitor(localLogPath + "/mycroft-voice.log")
+
+# Also monitor system logs (for apt-get installs)
+startLogMonitor("/var/log/mycroft-skills.log")
+startLogMonitor("/var/log/mycroft-voice.log")
 
 if __name__ == "__main__":
-   curses.wrapper(main)
- 
+    curses.wrapper(main)
