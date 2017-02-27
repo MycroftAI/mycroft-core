@@ -73,8 +73,16 @@ def clear_skill_events(instance):
     instance_events = []
     for event in events:
         e = ws.emitter._events[event]
-        if len(e) > 0 and e[0].func_closure and isinstance(
+        if len(e) == 0:
+            continue
+        if getattr(e[0], 'func_closure', None) is not None and isinstance(
                 e[0].func_closure[1].cell_contents, instance.__class__):
+            instance_events.append(event)
+        elif getattr(e[0], 'im_class', None) is not None and e[
+            0].im_class == instance.__class__:
+            instance_events.append(event)
+        elif getattr(e[0], 'im_self', None) is not None and isinstance(
+                e[0].im_self, instance.__class__):
             instance_events.append(event)
 
     for event in instance_events:
