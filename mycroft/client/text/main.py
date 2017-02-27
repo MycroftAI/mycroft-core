@@ -80,12 +80,14 @@ class LogMonitorThread(Thread):
         global mergedLog
 
         while True:
-            st_results = os.stat(self.filename)
-            if not st_results.st_mtime == self.st_results.st_mtime:
-                self.read_file_from(self.st_results.st_size)
-                self.st_results = st_results
-                draw_screen()
-            time.sleep(0.1)
+            try:
+                st_results = os.stat(self.filename)
+                if not st_results.st_mtime == self.st_results.st_mtime:
+                    self.read_file_from(self.st_results.st_size)
+                    self.st_results = st_results
+                    draw_screen()
+            finally:
+                time.sleep(0.1)
 
     def read_file_from(self, bytefrom):
         with open(self.filename, 'rb') as fh:
@@ -228,7 +230,7 @@ def draw_screen():
     for i in range(start, end):
         log = mergedLog[i]
         logid = log[0]
-        if log[5] == '-' and log[8] == '-':  # matches 'YYYY-MM-DD HH:MM:SS'
+        if len(log) > 25 and log[5] == '-' and log[8] == '-':
             log = log[27:]  # skip logid & date/time at the front of log line
         else:
             log = log[1:]   # just skip the logid
