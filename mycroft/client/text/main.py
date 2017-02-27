@@ -164,26 +164,22 @@ def init_screen():
     global CLR_LOG_DEBUG
 
     if curses.has_colors():
-        bg = curses.COLOR_WHITE
-        for i in range(0, curses.COLORS):
+        curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)
+        bg = curses.COLOR_BLACK
+        for i in range(1, curses.COLORS):
             curses.init_pair(i + 1, i, bg)
-            bg = curses.COLOR_BLACK
 
-        # Colors:
-        # 1 = black on white    9 = dk gray
-        # 2 = dk red           10 = red
-        # 3 = dk green         11 = green
-        # 4 = dk yellow        12 = yellow
-        # 5 = dk blue          13 = blue
-        # 6 = dk purple        14 = purple
-        # 7 = dk cyan          15 = cyan
-        # 8 = lt gray          16 = white
-        CLR_HEADING = curses.color_pair(16)
+        # Colors (on black backgound):
+        # 1 = white         5 = dk blue
+        # 2 = dk red        6 = dk purple
+        # 3 = dk green      7 = dk cyan
+        # 4 = dk yellow     8 = lt gray
+        CLR_HEADING = curses.color_pair(1)
         CLR_CHAT_RESP = curses.color_pair(7)
-        CLR_CHAT_QUERY = curses.color_pair(8)
-        CLR_CMDLINE = curses.color_pair(15)
-        CLR_INPUT = curses.color_pair(16)
-        CLR_LOG1 = curses.color_pair(8)
+        CLR_CHAT_QUERY = curses.color_pair(1)
+        CLR_CMDLINE = curses.color_pair(7)
+        CLR_INPUT = curses.color_pair(1)
+        CLR_LOG1 = curses.color_pair(3)
         CLR_LOG2 = curses.color_pair(6)
         CLR_LOG_DEBUG = curses.color_pair(4)
 
@@ -427,7 +423,9 @@ def main(stdscr):
     except KeyboardInterrupt, e:
         logger.exception(e)
     finally:
-        print "quitting"
+        scr.clear()
+        scr.refresh()
+        scr = None
         pass
 
 
@@ -475,3 +473,4 @@ if __name__ == "__main__":
         simple_cli()
     else:
         curses.wrapper(main)
+        curses.endwin()
