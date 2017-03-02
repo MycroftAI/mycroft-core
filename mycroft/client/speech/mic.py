@@ -1,24 +1,25 @@
-# Copyright 2016 Mycroft AI, Inc.
-#
-# This file is part of Mycroft Core.
-#
-# Mycroft Core is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Mycroft Core is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
+""" Copyright 2016 Mycroft AI, Inc.
 
+ This file is part of Mycroft Core.
 
-import audioop
+ Mycroft Core is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ Mycroft Core is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
+"""
+
 import collections
+import datetime
 from time import sleep
+import audioop
 
 import pyaudio
 import speech_recognition
@@ -33,11 +34,14 @@ from mycroft.util import check_for_signal
 from mycroft.util.log import getLogger
 
 listener_config = ConfigurationManager.get().get('listener')
+""" object: this contains configuration info for the listener"""
+
 logger = getLogger(__name__)
 __author__ = 'seanfitz'
 
 
 class MutableStream(object):
+
     def __init__(self, wrapped_stream, format, muted=False):
         assert wrapped_stream is not None
         self.wrapped_stream = wrapped_stream
@@ -83,6 +87,7 @@ class MutableStream(object):
 
 
 class MutableMicrophone(Microphone):
+
     def __init__(self, device_index=None, sample_rate=16000, chunk_size=1024):
         Microphone.__init__(
             self, device_index=device_index, sample_rate=sample_rate,
@@ -148,6 +153,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.audio = pyaudio.PyAudio()
         self.multiplier = listener_config.get('multiplier')
         self.energy_ratio = listener_config.get('energy_ratio')
+        # check the config for the flag to save wake words.
+        self.save_wake_words = listener_config.get('record_wake_words')
 
     @staticmethod
     def record_sound_chunk(source):
@@ -267,7 +274,16 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             buffers_since_check += 1.0
             if buffers_since_check < buffers_per_check:
                 buffers_since_check -= buffers_per_check
-                said_wake_word = self.wake_word_in_audio(byte_data + silence)
+                audio_data = byte_data + silence
+                said_wake_word = self.wake_word_in_audio(audio_data)
+                # if a wake word is success full then record audio in temp
+                # file.
+                if self.save_wake_words and said_wake_word:
+                    audio = self.create_audio_data(audio_data, source)
+                    stamp = str(datetime.datetime.now())
+                    filename = "/tmp/mycroft_wake_success%s.wav" % stamp
+                    with open(filename, 'wb') as filea:
+                        filea.write(audio.get_wav_data())
 
     @staticmethod
     def create_audio_data(raw_data, source):
