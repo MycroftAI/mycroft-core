@@ -39,7 +39,7 @@ loaded_skills = {}
 last_modified_skill = 0
 skills_directories = []
 skill_reload_thread = None
-
+id_counter = 0
 
 def connect():
     global ws
@@ -89,7 +89,10 @@ def watch_skills():
                               os.listdir(dir))
                 for skill_folder in list:
                     if skill_folder not in loaded_skills:
-                        loaded_skills[skill_folder] = {}
+                        ####### register unique ID
+                        global id_counter
+                        id_counter += 1
+                        loaded_skills[skill_folder] = {"id":id_counter}
                     skill = loaded_skills.get(skill_folder)
                     skill["path"] = os.path.join(dir, skill_folder)
                     if not MainModule + ".py" in os.listdir(skill["path"]):
@@ -103,17 +106,34 @@ def watch_skills():
                         continue
                     elif skill.get(
                             "instance") and modified > last_modified_skill:
+                        #### this would break stuff during testing always trigger wolphram alpha on intent reload
+                        if skill_folder == "intent":
+                            continue
+                        #####
                         logger.debug("Reloading Skill: " + skill_folder)
                         skill["instance"].shutdown()
                         clear_skill_events(skill["instance"])
                         del skill["instance"]
                     skill["loaded"] = True
                     skill["instance"] = load_skill(
-                        create_skill_descriptor(skill["path"]), ws)
+                        create_skill_descriptor(skill["path"]), ws, skill["id"])
+
+
         last_modified_skill = max(
             map(lambda x: x.get("last_modified"), loaded_skills.values()))
         time.sleep(2)
 
+
+def doConversation(skill_id, utterance):
+    # always empty when imported in intent skill - help
+    global loaded_skills
+    print loaded_skills
+    # loop trough skills list and call converse for skill with skill_id
+    for skill in loaded_skills:
+        if skill["id"] == skill_id:
+            instance = skill["instance"]
+            return instance.Converse(utterance)
+    return False
 
 def main():
     global ws
@@ -133,6 +153,7 @@ def main():
         logger.debug(message)
 
     ws.on('message', echo)
+    ws.on('converse', doConversation)
     ws.once('open', load_watch_skills)
     ws.run_forever()
 
