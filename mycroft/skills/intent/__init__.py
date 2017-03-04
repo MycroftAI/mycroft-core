@@ -24,7 +24,6 @@ from mycroft.util.log import getLogger
 
 import time
 
-from mycroft.skills.main import doConversation
 
 __author__ = 'seanfitz'
 
@@ -44,35 +43,41 @@ class IntentSkill(MycroftSkill):
         self.emitter.on('register_intent', self.handle_register_intent)
         self.emitter.on('recognizer_loop:utterance', self.handle_utterance)
         self.emitter.on('detach_intent', self.handle_detach_intent)
+        self.emitter.on('converse_status_response', self.handle_conversation_response)
+
+    def doConversation(self, utterances, skill):
+        self.emitter.emit(Message("converse_status_request",{"skill_id":skill, "utterances":utterances}))
+        self.waiting = True
+        self.result = False
+        while self.waiting:
+            pass
+        return self.result
+
+    def handle_conversation_response(self, message):
+        #id = message.data["skill_id"]
+        #no need to crosscheck id because waiting before new request, no other skill will make this request is safe assumption
+        result = message.data["result"]
+        self.result = result
+        self.waiting = False
 
     def handle_utterance(self, message):
-        '''
-
-        a)
-        Track recently invoked skills.  This would be a list of the Skills associated with the best_intent that comes out of Adapt.
-        Whenever a Skill's intent is invoked, it gets moved/placed at the top of the list.
-        This list also gets curated to remove Skills that haven't been invoked in longer than, say 5 minutes.
-
-        b)
-        Before going through the current code that figures out best_intent, loop through the Skills in this list
-        and call skill.Converse(utterance).  If one returns True, then they have handled the utterance
-        and there is no need to do further intent processing or fallback.
-
-        '''
 
         utterances = message.data.get('utterances', '')
 
         ##### loop trough last 5 min skills
+        ### TODO sort by timestamp
         for skill in self.skills_5min:
-            print skill
+            #print skill
             ##### prune last_5mins_intent_dict
-            print str((time.time()- self.skills_5min[skill]) / 60) + " mins ago"
+            #print str((time.time()- self.skills_5min[skill]) / 60) + " mins ago"
             if time.time() - self.skills_5min[skill] >= 5 * 60:  # TODO make configurable?
                 self.skills_5min.pop(skill, None)
             #### call skills in 5minlist skill.Converse(utterance)
-            if doConversation(skill, utterances):
-                ##### skill list always empty
-                ##### how to execute skill.Converse method?
+            if self.doConversation(utterances, skill):
+                ##### skill list always empty if import doConversation from main
+                ##### how to execute skill.Converse method directly? currently using messagebus but thats ugly!
+                #### update timestamp, or there will be a 5min timeout where intent stops conversing
+                self.skills_5min[skill]=time.time()
                 return
         #### no skill wants to handle utterance, proceed
 

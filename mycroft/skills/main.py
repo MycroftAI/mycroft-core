@@ -24,6 +24,7 @@ from threading import Timer
 import os
 from os.path import expanduser, exists
 
+from mycroft.messagebus.message import Message
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.skills.core import load_skills, THIRD_PARTY_SKILLS_DIR, \
@@ -124,16 +125,19 @@ def watch_skills():
         time.sleep(2)
 
 
-def doConversation(skill_id, utterance):
-    # always empty when imported in intent skill - help
-    global loaded_skills
-    print loaded_skills
+def handle_conversation_request(message):
+    skill_id = message.data["skill_id"]
+    utterances = message.data["utterances"]
+    global ws, loaded_skills
     # loop trough skills list and call converse for skill with skill_id
     for skill in loaded_skills:
-        if skill["id"] == skill_id:
-            instance = skill["instance"]
-            return instance.Converse(utterance)
-    return False
+        if loaded_skills[skill]["id"] == skill_id:
+            instance = loaded_skills[skill]["instance"]
+            result = instance.Converse(utterances)
+            ws.emit(Message("converse_status_response", {"skill_id": skill_id, "result": result}))
+            return
+
+
 
 def main():
     global ws
@@ -154,6 +158,7 @@ def main():
 
     ws.on('message', echo)
     ws.once('open', load_watch_skills)
+    ws.on('converse_status_request', handle_conversation_request)
     ws.run_forever()
 
 
