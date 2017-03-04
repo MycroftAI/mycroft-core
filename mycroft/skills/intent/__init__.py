@@ -22,6 +22,10 @@ from mycroft.messagebus.message import Message
 from mycroft.skills.core import open_intent_envelope, MycroftSkill
 from mycroft.util.log import getLogger
 
+import time
+
+from mycroft.skills.main import doConversation
+
 __author__ = 'seanfitz'
 
 logger = getLogger(__name__)
@@ -31,6 +35,9 @@ class IntentSkill(MycroftSkill):
     def __init__(self):
         MycroftSkill.__init__(self, name="IntentSkill")
         self.engine = IntentDeterminationEngine()
+        #### converse
+        self.skills_5min = {}  # name:timestamp
+        self.intent_to_skill = {}  # intent:source_skill
 
     def initialize(self):
         self.emitter.on('register_vocab', self.handle_register_vocab)
@@ -39,7 +46,35 @@ class IntentSkill(MycroftSkill):
         self.emitter.on('detach_intent', self.handle_detach_intent)
 
     def handle_utterance(self, message):
+        '''
+
+        a)
+        Track recently invoked skills.  This would be a list of the Skills associated with the best_intent that comes out of Adapt.
+        Whenever a Skill's intent is invoked, it gets moved/placed at the top of the list.
+        This list also gets curated to remove Skills that haven't been invoked in longer than, say 5 minutes.
+
+        b)
+        Before going through the current code that figures out best_intent, loop through the Skills in this list
+        and call skill.Converse(utterance).  If one returns True, then they have handled the utterance
+        and there is no need to do further intent processing or fallback.
+
+        '''
+
         utterances = message.data.get('utterances', '')
+
+        ##### loop trough last 5 min skills
+        for skill in self.skills_5min:
+            print skill
+            ##### prune last_5mins_intent_dict
+            print str((time.time()- self.skills_5min[skill]) / 60) + " mins ago"
+            if time.time() - self.skills_5min[skill] >= 5 * 60:  # TODO make configurable?
+                self.skills_5min.pop(skill, None)
+            #### call skills in 5minlist skill.Converse(utterance)
+            if doConversation(skill, utterances):
+                ##### skill list always empty
+                ##### how to execute skill.Converse method?
+                return
+        #### no skill wants to handle utterance, proceed
 
         best_intent = None
         for utterance in utterances:
@@ -56,6 +91,13 @@ class IntentSkill(MycroftSkill):
             reply = message.reply(
                 best_intent.get('intent_type'), best_intent)
             self.emitter.emit(reply)
+            #### best intent detected -> update called skills dict
+            name = self.intent_to_skill[best_intent['intent_type']]
+            try:
+                self.skills_5min[name] = time.time()
+            except:
+                self.skills_5min.setdefault(name, time.time())
+            ###############
         elif len(utterances) == 1:
             self.emitter.emit(Message("intent_failure", {
                 "utterance": utterances[0]
@@ -79,6 +121,8 @@ class IntentSkill(MycroftSkill):
     def handle_register_intent(self, message):
         intent = open_intent_envelope(message)
         self.engine.register_intent_parser(intent)
+        # map intent to source skill
+        self.intent_to_skill.setdefault(intent.name, message.data["source_skill"])
 
     def handle_detach_intent(self, message):
         intent_name = message.data.get('intent_name')
