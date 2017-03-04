@@ -153,7 +153,6 @@ def main():
         logger.debug(message)
 
     ws.on('message', echo)
-    ws.on('converse', doConversation)
     ws.once('open', load_watch_skills)
     ws.run_forever()
 
