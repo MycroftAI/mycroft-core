@@ -51,10 +51,11 @@ class ParrotSkill(MycroftSkill):
 
     def Converse(self, transcript, lang="en-us"):
         if self.parroting:
-            self.speak(transcript[0])
-            if "stop" in transcript[0].lower():
+            if "stop" in transcript[0]:
                 self.parroting = False
                 self.speak("Parrot Mode Stopped")
+            else:
+                self.speak(transcript[0])
             return True
         else:
             return False
