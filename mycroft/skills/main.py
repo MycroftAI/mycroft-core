@@ -42,6 +42,7 @@ skills_directories = []
 skill_reload_thread = None
 id_counter = 0
 
+
 def connect():
     global ws
     ws.run_forever()
@@ -90,10 +91,10 @@ def watch_skills():
                               os.listdir(dir))
                 for skill_folder in list:
                     if skill_folder not in loaded_skills:
-                        ####### register unique ID
+                        # register unique ID
                         global id_counter
                         id_counter += 1
-                        loaded_skills[skill_folder] = {"id":id_counter}
+                        loaded_skills[skill_folder] = {"id": id_counter}
                     skill = loaded_skills.get(skill_folder)
                     skill["path"] = os.path.join(dir, skill_folder)
                     if not MainModule + ".py" in os.listdir(skill["path"]):
@@ -107,10 +108,6 @@ def watch_skills():
                         continue
                     elif skill.get(
                             "instance") and modified > last_modified_skill:
-                        #### this would break stuff during testing always trigger wolphram alpha on intent reload
-                        if skill_folder == "intent":
-                            continue
-                        #####
                         logger.debug("Reloading Skill: " + skill_folder)
                         skill["instance"].shutdown()
                         clear_skill_events(skill["instance"])
@@ -118,7 +115,6 @@ def watch_skills():
                     skill["loaded"] = True
                     skill["instance"] = load_skill(
                         create_skill_descriptor(skill["path"]), ws, skill["id"])
-
 
         last_modified_skill = max(
             map(lambda x: x.get("last_modified"), loaded_skills.values()))
@@ -134,9 +130,9 @@ def handle_conversation_request(message):
         if loaded_skills[skill]["id"] == skill_id:
             instance = loaded_skills[skill]["instance"]
             result = instance.Converse(utterances)
-            ws.emit(Message("converse_status_response", {"skill_id": skill_id, "result": result}))
+            ws.emit(Message("converse_status_response", {
+                    "skill_id": skill_id, "result": result}))
             return
-
 
 
 def main():
