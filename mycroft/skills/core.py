@@ -107,7 +107,8 @@ def load_skill(skill_descriptor, emitter, skill_id):
             skill.load_data_files(dirname(skill_descriptor['info'][1]))
             skill.initialize()
 
-            logger.info("Loaded " + skill_descriptor["name"] +" ID: "+str(skill_id))
+            logger.info(
+                "Loaded " + skill_descriptor["name"] + " ID: " + str(skill_id))
             return skill
         else:
             logger.warn(
@@ -236,9 +237,8 @@ class MycroftSkill(object):
         raise Exception("Initialize not implemented for skill: " + self.name)
 
     def register_intent(self, intent_parser, handler):
-        #### add source skill to info
+        # add source skill to info
         dict = {"intent": intent_parser.__dict__, "source_skill": self.id}
-
         self.emitter.emit(Message("register_intent", dict))
         self.registered_intents.append(intent_parser.name)
 
@@ -302,7 +302,7 @@ class MycroftSkill(object):
     def stop(self):
         pass
 
-    def Converse(self, transcript, lang="en-us"): #TODO read language from config?
+    def Converse(self, transcript, lang="en-us"):  # TODO read language from config?
         return False
 
     def is_stop(self):
