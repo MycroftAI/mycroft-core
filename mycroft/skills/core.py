@@ -302,7 +302,8 @@ class MycroftSkill(object):
     def stop(self):
         pass
 
-    def Converse(self, transcript, lang="en-us"):  # TODO read language from config?
+    def Converse(self, transcript, lang="en-us"):
+        # TODO read language from config?
         return False
 
     def is_stop(self):
