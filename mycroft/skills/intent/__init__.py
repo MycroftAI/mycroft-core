@@ -55,7 +55,7 @@ class IntentSkill(MycroftSkill):
         return self.result
 
     def handle_conversation_response(self, message):
-        #id = message.data["skill_id"]
+        # id = message.data["skill_id"]
         # no need to crosscheck id because waiting before new request is made
         # no other skill will make this request is safe assumption
         result = message.data["result"]
