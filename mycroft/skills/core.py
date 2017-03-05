@@ -180,6 +180,7 @@ class MycroftSkill(object):
         self.file_system = FileSystemAccess(join('skills', name))
         self.registered_intents = []
         self.log = getLogger(name)
+        self.reload_skill = True
 
     @property
     def location(self):
