@@ -114,7 +114,8 @@ def watch_skills():
                         del skill["instance"]
                     skill["loaded"] = True
                     skill["instance"] = load_skill(
-                        create_skill_descriptor(skill["path"]), ws, skill["id"])
+                        create_skill_descriptor(skill["path"]),
+                        ws, skill["id"])
 
         last_modified_skill = max(
             map(lambda x: x.get("last_modified"), loaded_skills.values()))
