@@ -31,6 +31,7 @@ class IntentSkill(MycroftSkill):
     def __init__(self):
         MycroftSkill.__init__(self, name="IntentSkill")
         self.engine = IntentDeterminationEngine()
+        self.reload_skill = False
 
     def initialize(self):
         self.emitter.on('register_vocab', self.handle_register_vocab)
