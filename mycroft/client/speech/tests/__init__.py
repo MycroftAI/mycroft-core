@@ -18,9 +18,3 @@
 
 __author__ = 'amcgee7'
 
-import mycroft.client.speech.listener
-import mycroft.client.speech.mic
-
-
-def Run():
-    print "Running tests"
