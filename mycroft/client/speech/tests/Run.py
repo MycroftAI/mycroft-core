@@ -7,33 +7,39 @@ filename_valid = '/home/amcgee7/Documents/projects/mycroft/mycroft-core/mycroft/
 
 filename_invalid = '/home/amcgee7/Documents/projects/mycroft/mycroft-core/mycroft/client/speech/tests/invalid_wake/testing.wav'
 
+def Setup():
+    
+
 def Run():
     print "Running tests"
+    Setup()
     result = TestFile(filename_invalid)
     print "testing ", filename_invalid, " Results ", result
     result = TestFile(filename_valid)
     print "testing ", filename_valid, " Results ", result
 
-
 def TestFile(src):
+    result = {"sphinx":False,"google":False}
     rec = speech_recognition.Recognizer()
     with speech_recognition.AudioFile(src) as audio_file:
         audio = rec.record(audio_file)
     
     try:
-        print "Sphinx ",rec.recognize_sphinx(audio)
+        result["sphinx"] = rec.recognize_sphinx(audio)
+        print "Sphinx ",result["sphinx"]
     except speech_recognition.UnknownValueError:
         print "cound not understand"
     except speech_recognition.RequestError:
         print "Sphinx error"
     
     try:
-        print "Google ",rec.recognize_google(audio)
+        result["google"] = rec.recognize_google(audio)
+        print "Google ",result["google"]
     except speech_recognition.UnknownValueError:
         print "Google didn't understand"
     except speech_recognition.RequestError:
         print "Google Error"
     
-    return True;
+    return result;
 
 Run()
