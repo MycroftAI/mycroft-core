@@ -17,7 +17,7 @@ def Run():
 
 def TestFile(src):
     rec = speech_recognition.Recognizer()
-    with speech_recognition.WavFile(src) as audio_file:
+    with speech_recognition.AudioFile(src) as audio_file:
         audio = rec.record(audio_file)
     
     try:
