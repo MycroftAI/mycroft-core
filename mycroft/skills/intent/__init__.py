@@ -34,18 +34,19 @@ class IntentSkill(MycroftSkill):
     def __init__(self):
         MycroftSkill.__init__(self, name="IntentSkill")
         self.engine = IntentDeterminationEngine()
-        self.skills_5min = {}  # skill_id:timestamp
-        self.intent_to_skill = {}  # intent:source_skill_id
+        self.reload_skill = False
+        self.active_skills = [] # [skill_id , timestamp]
+        self.intent_to_skill = {} # intent:source_skill_id
+        self.converse_timeout = 5 # minutes to prune active_skills
 
     def initialize(self):
         self.emitter.on('register_vocab', self.handle_register_vocab)
         self.emitter.on('register_intent', self.handle_register_intent)
         self.emitter.on('recognizer_loop:utterance', self.handle_utterance)
         self.emitter.on('detach_intent', self.handle_detach_intent)
-        self.emitter.on('converse_status_response',
-                        self.handle_conversation_response)
+        self.emitter.on('converse_status_response', self.handle_conversation_response)
 
-    def doConversation(self, utterances, skill):
+    def do_conversation(self, utterances, skill):
         self.emitter.emit(Message("converse_status_request", {
                           "skill_id": skill, "utterances": utterances}))
         self.waiting = True
@@ -62,20 +63,29 @@ class IntentSkill(MycroftSkill):
         self.result = result
         self.waiting = False
 
+    def remove_active_skill(self, skill_name):
+        for skill in self.active_skills:
+            if skill[0]==skill_name:
+                self.active_skills.remove(skill)
+
+    def add_active_skill(self, skill_name):
+        # you have to search the list for an existing entry that already contains it and remove that reference
+        self.remove_active_skill(skill_name)
+        # add skill with timestamp to start of skill_list
+        self.active_skills.insert(0, [skill_name, time.time()])
+
     def handle_utterance(self, message):
 
         utterances = message.data.get('utterances', '')
 
-        # TODO sort by timestamp
-        for skill in self.skills_5min:
-            # prune last_5mins_intent_dict
-            # TODO make time configurable?
-            if time.time() - self.skills_5min[skill] >= 5 * 60:
-                self.skills_5min.pop(skill, None)
-            if self.doConversation(utterances, skill):
-                # update timestamp, or there will be a 5min timeout where
+        for skill in self.active_skills:
+            # check for conversation time-out
+            if time.time() - skill[1] >= self.converse_timeout * 60:
+                self.remove_active_skill(skill[0])
+            if self.do_conversation(utterances, skill[0]):
+                # update timestamp, or there will be a timeout where
                 # intent stops conversing wether its being used or not
-                self.skills_5min[skill] = time.time()
+                self.add_active_skill(skill[0])
                 return
         # no skill wants to handle utterance, proceed
 
@@ -96,10 +106,7 @@ class IntentSkill(MycroftSkill):
             self.emitter.emit(reply)
             # best intent detected -> update called skills dict
             name = self.intent_to_skill[best_intent['intent_type']]
-            try:
-                self.skills_5min[name] = time.time()
-            except:
-                self.skills_5min.setdefault(name, time.time())
+            self.add_active_skill(name)
         elif len(utterances) == 1:
             self.emitter.emit(Message("intent_failure", {
                 "utterance": utterances[0]
