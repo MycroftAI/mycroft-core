@@ -183,6 +183,7 @@ class MycroftSkill(object):
         self.file_system = FileSystemAccess(join('skills', name))
         self.registered_intents = []
         self.log = getLogger(name)
+        self.reload_skill = True
         self.id = 0
 
     @property
@@ -302,7 +303,7 @@ class MycroftSkill(object):
     def stop(self):
         pass
 
-    def Converse(self, transcript, lang="en-us"):
+    def converse(self, transcript, lang="en-us"):
         # TODO read language from config?
         return False
 
