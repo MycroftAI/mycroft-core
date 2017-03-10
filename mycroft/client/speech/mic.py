@@ -18,6 +18,7 @@
 
 import audioop
 import collections
+import os
 from time import sleep
 
 import pyaudio
@@ -29,8 +30,8 @@ from speech_recognition import (
 )
 
 from mycroft.configuration import ConfigurationManager
-from mycroft.util import check_for_signal
-from mycroft.util.log import getLogger, get_ipc_directory
+from mycroft.util import check_for_signal, get_ipc_directory
+from mycroft.util.log import getLogger
 
 listener_config = ConfigurationManager.get().get('listener')
 logger = getLogger(__name__)
