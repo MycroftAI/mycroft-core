@@ -103,6 +103,8 @@ def watch_skills():
                         continue
                     elif skill.get(
                             "instance") and modified > last_modified_skill:
+                        if not skill["instance"].reload_skill:
+                            continue
                         logger.debug("Reloading Skill: " + skill_folder)
                         skill["instance"].shutdown()
                         clear_skill_events(skill["instance"])
