@@ -34,7 +34,6 @@ class IntentSkill(MycroftSkill):
     def __init__(self):
         MycroftSkill.__init__(self, name="IntentSkill")
         self.engine = IntentDeterminationEngine()
-        self.reload_skill = False
         self.active_skills = [] # [skill_id , timestamp]
         self.intent_to_skill = {} # intent:source_skill_id
         self.converse_timeout = 5 # minutes to prune active_skills
