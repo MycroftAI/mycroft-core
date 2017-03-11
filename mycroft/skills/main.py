@@ -82,6 +82,17 @@ def clear_skill_events(instance):
 
 def watch_skills():
     global ws, loaded_skills, last_modified_skill, skills_directories
+    # load intent skill first
+    if "intent" not in loaded_skills:
+        loaded_skills["intent"] = {}
+        skill = loaded_skills.get("intent")
+        skill["path"] = os.path.join(os.path.dirname(__file__), "intent")
+        if not MainModule + ".py" in os.listdir(skill["path"]):
+            logger.error("intent does not appear to be a skill")
+            sys.exit(1)
+        skill["loaded"] = True
+        skill["instance"] = load_skill(create_skill_descriptor(skill["path"]), ws)
+        
     while True:
         for dir in skills_directories:
             if exists(dir):
