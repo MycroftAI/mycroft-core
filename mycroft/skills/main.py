@@ -91,7 +91,8 @@ def watch_skills():
             logger.error("intent does not appear to be a skill")
             sys.exit(1)
         skill["loaded"] = True
-        skill["instance"] = load_skill(create_skill_descriptor(skill["path"]), ws)
+        skill["instance"] = load_skill(create_skill_descriptor(skill["path"]), 
+                                       ws)
         
     while True:
         for dir in skills_directories:
