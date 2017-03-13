@@ -32,7 +32,7 @@ from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.message import Message
 from mycroft.metrics import MetricsAggregator
 from mycroft.session import SessionManager
-from mycroft.util import CerberusAccessDenied
+from mycroft.util import TartarusAccessDenied
 from mycroft.util.log import getLogger
 
 logger = getLogger(__name__)
@@ -151,8 +151,8 @@ class AudioConsumer(threading.Thread):
                 logger.error(
                     "Could not request results from Speech Recognition "
                     "service; {0}".format(e))
-            except CerberusAccessDenied as e:
-                logger.error("AccessDenied from Cerberus proxy.")
+            except TartarusAccessDenied as e:
+                logger.error("AccessDenied from Tartarus proxy.")
                 self.__speak(
                     "Your device is not registered yet. To start pairing, "
                     "login at cerberus dot mycroft dot A.I")
