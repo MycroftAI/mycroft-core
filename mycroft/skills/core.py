@@ -222,7 +222,8 @@ class MycroftSkill(object):
         self.emitter.on('mycroft.stop', self.__handle_stop)
 
     def detach(self):
-        for name in self.registered_intents:
+        for (name, intent, handler) in self.registered_intents:
+            name = self.name + ':' + name
             self.emitter.emit(Message("detach_intent", {"intent_name": name}))
 
     def initialize(self):
@@ -234,8 +235,10 @@ class MycroftSkill(object):
         raise Exception("Initialize not implemented for skill: " + self.name)
 
     def register_intent(self, intent_parser, handler):
+        name = intent_parser.name
+        intent_parser.name = self.name + ':' + intent_parser.name
         self.emitter.emit(Message("register_intent", intent_parser.__dict__))
-        self.registered_intents.append(intent_parser.name)
+        self.registered_intents.append((name, intent_parser, handler))
 
         def receive_handler(message):
             try:
@@ -248,8 +251,22 @@ class MycroftSkill(object):
                 logger.error(
                     "An error occurred while processing a request in " +
                     self.name, exc_info=True)
+        if handler:
+            self.emitter.on(intent_parser.name, receive_handler)
 
-        self.emitter.on(intent_parser.name, receive_handler)
+    def disable_intent(self, intent_name):
+        """Disable a registered intent"""
+        name = self.name + ':' + intent_name
+        self.emitter.emit(Message("detach_intent", {"intent_name": name}))
+
+    def enable_intent(self, intent_name):
+        """Reenable a registered intent"""
+        for (name, intent, handler) in self.registered_intents:
+            if name == intent_name:
+                self.registered_intents.remove((name, intent, handler))
+                intent.name = name
+                self.register_intent(intent, None)
+                break
 
     def register_vocabulary(self, entity, entity_type):
         self.emitter.emit(Message('register_vocab', {
