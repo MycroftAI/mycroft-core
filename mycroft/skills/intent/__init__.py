@@ -22,6 +22,9 @@ from mycroft.messagebus.message import Message
 from mycroft.skills.core import open_intent_envelope, MycroftSkill
 from mycroft.util.log import getLogger
 
+import time
+
+
 __author__ = 'seanfitz'
 
 logger = getLogger(__name__)
@@ -31,6 +34,9 @@ class IntentSkill(MycroftSkill):
     def __init__(self):
         MycroftSkill.__init__(self, name="IntentSkill")
         self.engine = IntentDeterminationEngine()
+        self.active_skills = [] # [skill_id , timestamp]
+        self.intent_to_skill = {} # intent:source_skill_id
+        self.converse_timeout = 5 # minutes to prune active_skills
         self.reload_skill = False
 
     def initialize(self):
@@ -38,9 +44,50 @@ class IntentSkill(MycroftSkill):
         self.emitter.on('register_intent', self.handle_register_intent)
         self.emitter.on('recognizer_loop:utterance', self.handle_utterance)
         self.emitter.on('detach_intent', self.handle_detach_intent)
+        self.emitter.on('converse_status_response', self.handle_conversation_response)
+
+    def do_conversation(self, utterances, skill):
+        self.emitter.emit(Message("converse_status_request", {
+                          "skill_id": skill, "utterances": utterances}))
+        self.waiting = True
+        self.result = False
+        while self.waiting:
+            pass
+        return self.result
+
+    def handle_conversation_response(self, message):
+        # id = message.data["skill_id"]
+        # no need to crosscheck id because waiting before new request is made
+        # no other skill will make this request is safe assumption
+        result = message.data["result"]
+        self.result = result
+        self.waiting = False
+
+    def remove_active_skill(self, skill_name):
+        for skill in self.active_skills:
+            if skill[0]==skill_name:
+                self.active_skills.remove(skill)
+
+    def add_active_skill(self, skill_name):
+        # you have to search the list for an existing entry that already contains it and remove that reference
+        self.remove_active_skill(skill_name)
+        # add skill with timestamp to start of skill_list
+        self.active_skills.insert(0, [skill_name, time.time()])
 
     def handle_utterance(self, message):
+
         utterances = message.data.get('utterances', '')
+
+        for skill in self.active_skills:
+            # check for conversation time-out
+            if time.time() - skill[1] >= self.converse_timeout * 60:
+                self.remove_active_skill(skill[0])
+            if self.do_conversation(utterances, skill[0]):
+                # update timestamp, or there will be a timeout where
+                # intent stops conversing wether its being used or not
+                self.add_active_skill(skill[0])
+                return
+        # no skill wants to handle utterance, proceed
 
         best_intent = None
         for utterance in utterances:
@@ -57,6 +104,9 @@ class IntentSkill(MycroftSkill):
             reply = message.reply(
                 best_intent.get('intent_type'), best_intent)
             self.emitter.emit(reply)
+            # best intent detected -> update called skills dict
+            name = self.intent_to_skill[best_intent['intent_type']]
+            self.add_active_skill(name)
         elif len(utterances) == 1:
             self.emitter.emit(Message("intent_failure", {
                 "utterance": utterances[0]
@@ -80,6 +130,9 @@ class IntentSkill(MycroftSkill):
     def handle_register_intent(self, message):
         intent = open_intent_envelope(message)
         self.engine.register_intent_parser(intent)
+        # map intent to source skill
+        self.intent_to_skill.setdefault(
+            intent.name, message.data["source_skill"])
 
     def handle_detach_intent(self, message):
         intent_name = message.data.get('intent_name')

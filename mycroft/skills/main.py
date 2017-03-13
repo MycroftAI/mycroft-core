@@ -24,6 +24,7 @@ from threading import Timer
 import os
 from os.path import expanduser, exists
 
+from mycroft.messagebus.message import Message
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.skills.core import load_skills, THIRD_PARTY_SKILLS_DIR, \
@@ -39,6 +40,7 @@ loaded_skills = {}
 last_modified_skill = 0
 skills_directories = []
 skill_reload_thread = None
+id_counter = 0
 
 
 def connect():
@@ -89,7 +91,10 @@ def watch_skills():
                               os.listdir(dir))
                 for skill_folder in list:
                     if skill_folder not in loaded_skills:
-                        loaded_skills[skill_folder] = {}
+                        # register unique ID
+                        global id_counter
+                        id_counter += 1
+                        loaded_skills[skill_folder] = {"id": id_counter}
                     skill = loaded_skills.get(skill_folder)
                     skill["path"] = os.path.join(dir, skill_folder)
                     if not MainModule + ".py" in os.listdir(skill["path"]):
@@ -111,10 +116,26 @@ def watch_skills():
                         del skill["instance"]
                     skill["loaded"] = True
                     skill["instance"] = load_skill(
-                        create_skill_descriptor(skill["path"]), ws)
+                        create_skill_descriptor(skill["path"]),
+                        ws, skill["id"])
+
         last_modified_skill = max(
             map(lambda x: x.get("last_modified"), loaded_skills.values()))
         time.sleep(2)
+
+
+def handle_conversation_request(message):
+    skill_id = message.data["skill_id"]
+    utterances = message.data["utterances"]
+    global ws, loaded_skills
+    # loop trough skills list and call converse for skill with skill_id
+    for skill in loaded_skills:
+        if loaded_skills[skill]["id"] == skill_id:
+            instance = loaded_skills[skill]["instance"]
+            result = instance.converse(utterances)
+            ws.emit(Message("converse_status_response", {
+                    "skill_id": skill_id, "result": result}))
+            return
 
 
 def main():
@@ -136,6 +157,7 @@ def main():
 
     ws.on('message', echo)
     ws.once('open', load_watch_skills)
+    ws.on('converse_status_request', handle_conversation_request)
     ws.run_forever()
 
 

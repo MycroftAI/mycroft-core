@@ -86,14 +86,14 @@ def load_regex(basedir, emitter):
 
 
 def open_intent_envelope(message):
-    intent_dict = message.data
+    intent_dict = message.data["intent"]
     return Intent(intent_dict.get('name'),
                   intent_dict.get('requires'),
                   intent_dict.get('at_least_one'),
                   intent_dict.get('optional'))
 
 
-def load_skill(skill_descriptor, emitter):
+def load_skill(skill_descriptor, emitter, skill_id):
     try:
         logger.info("ATTEMPTING TO LOAD SKILL: " + skill_descriptor["name"])
         if skill_descriptor['name'] in BLACKLISTED_SKILLS:
@@ -105,10 +105,13 @@ def load_skill(skill_descriptor, emitter):
                 callable(skill_module.create_skill)):
             # v2 skills framework
             skill = skill_module.create_skill()
+            skill.id = skill_id  # register unique id
             skill.bind(emitter)
             skill.load_data_files(dirname(skill_descriptor['info'][1]))
             skill.initialize()
-            logger.info("Lodaded " + skill_descriptor["name"])
+
+            logger.info(
+                "Loaded " + skill_descriptor["name"] + " ID: " + str(skill_id))
             return skill
         else:
             logger.warn(
@@ -183,6 +186,7 @@ class MycroftSkill(object):
         self.file_system = FileSystemAccess(join('skills', name))
         self.registered_intents = []
         self.log = getLogger(name)
+        self.id = 0
         self.reload_skill = True
 
     @property
@@ -237,7 +241,9 @@ class MycroftSkill(object):
         raise Exception("Initialize not implemented for skill: " + self.name)
 
     def register_intent(self, intent_parser, handler):
-        self.emitter.emit(Message("register_intent", intent_parser.__dict__))
+        # add source skill to info
+        dict = {"intent": intent_parser.__dict__, "source_skill": self.id}
+        self.emitter.emit(Message("register_intent", dict))
         self.registered_intents.append(intent_parser.name)
 
         def receive_handler(message):
@@ -299,6 +305,10 @@ class MycroftSkill(object):
     @abc.abstractmethod
     def stop(self):
         pass
+
+    def converse(self, transcript, lang="en-us"):
+        # TODO read language from config?
+        return False
 
     def is_stop(self):
         passed_time = time.time() - self.stop_time
