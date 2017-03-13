@@ -16,12 +16,16 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import os
-import subprocess
-from os.path import dirname
 import socket
+import subprocess
+import tempfile
 
+import os
+import os.path
 import psutil
+from os.path import dirname
+from mycroft.util.log import getLogger
+import mycroft.configuration
 
 __author__ = 'jdorleans'
 
@@ -89,5 +93,26 @@ def kill(names):
                 pass
 
 
-class CerberusAccessDenied(Exception):
+def create_signal(signal_name):
+    try:
+        with open(tempfile.gettempdir() + '/' + signal_name, 'w'):
+            return True
+    except IOError:
+        return False
+
+
+def check_for_signal(signal_name):
+    filename = tempfile.gettempdir() + '/' + signal_name
+    if os.path.isfile(filename):
+        os.remove(filename)
+        return True
+    return False
+
+
+def validate_param(value, name):
+    if not value:
+        raise ValueError("Missing or empty %s in mycroft.conf " % name)
+
+
+class TartarusAccessDenied(Exception):
     pass
