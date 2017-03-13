@@ -184,6 +184,7 @@ class MycroftSkill(object):
         self.registered_intents = []
         self.log = getLogger(name)
         self.id = 0
+        self.reload_skill = True
 
     @property
     def location(self):

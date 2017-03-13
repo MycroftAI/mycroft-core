@@ -37,6 +37,7 @@ class IntentSkill(MycroftSkill):
         self.active_skills = [] # [skill_id , timestamp]
         self.intent_to_skill = {} # intent:source_skill_id
         self.converse_timeout = 5 # minutes to prune active_skills
+        self.reload_skill = False
 
     def initialize(self):
         self.emitter.on('register_vocab', self.handle_register_vocab)
