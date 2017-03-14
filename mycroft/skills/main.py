@@ -41,6 +41,7 @@ skills_directories = []
 skill_reload_thread = None
 prioritary_skills = ["intent"]
 
+
 def connect():
     global ws
     ws.run_forever()
@@ -89,12 +90,12 @@ def watch_skills():
             skill = loaded_skills.get(p_skill)
             skill["path"] = os.path.join(os.path.dirname(__file__), p_skill)
             if not MainModule + ".py" in os.listdir(skill["path"]):
-                logger.error(p_skill+" does not appear to be a skill")
+                logger.error(p_skill + " does not appear to be a skill")
                 sys.exit(1)
             skill["loaded"] = True
             skill["instance"] = load_skill(
                 create_skill_descriptor(skill["path"]), ws)
-        
+
     while True:
         for dir in skills_directories:
             if exists(dir):
