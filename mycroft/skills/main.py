@@ -100,8 +100,7 @@ def watch_skills():
     while True:
         for dir in skills_directories:
             if exists(dir):
-                list = filter(lambda x: os.path.isdir(os.path.join(dir, x)),
-                              os.listdir(dir))
+                list = sorted(filter(lambda x: os.path.isdir(os.path.join(dir, x)), os.listdir(dir)))
                 for skill_folder in list:
                     if skill_folder not in loaded_skills:
                         loaded_skills[skill_folder] = {}
