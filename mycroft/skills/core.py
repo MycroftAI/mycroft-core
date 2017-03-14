@@ -222,7 +222,7 @@ class MycroftSkill(object):
         self.emitter.on('mycroft.stop', self.__handle_stop)
 
     def detach(self):
-        for (name, intent, handler) in self.registered_intents:
+        for (name, intent) in self.registered_intents:
             name = self.name + ':' + name
             self.emitter.emit(Message("detach_intent", {"intent_name": name}))
 
@@ -238,7 +238,7 @@ class MycroftSkill(object):
         name = intent_parser.name
         intent_parser.name = self.name + ':' + intent_parser.name
         self.emitter.emit(Message("register_intent", intent_parser.__dict__))
-        self.registered_intents.append((name, intent_parser, handler))
+        self.registered_intents.append((name, intent_parser))
 
         def receive_handler(message):
             try:
@@ -262,9 +262,9 @@ class MycroftSkill(object):
 
     def enable_intent(self, intent_name):
         """Reenable a registered intent"""
-        for (name, intent, handler) in self.registered_intents:
+        for (name, intent) in self.registered_intents:
             if name == intent_name:
-                self.registered_intents.remove((name, intent, handler))
+                self.registered_intents.remove((name, intent))
                 intent.name = name
                 self.register_intent(intent, None)
                 logger.debug('Enabling intent ' + intent_name)
