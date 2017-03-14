@@ -256,6 +256,7 @@ class MycroftSkill(object):
 
     def disable_intent(self, intent_name):
         """Disable a registered intent"""
+        logger.debug('Disabling intent ' + intent_name)
         name = self.name + ':' + intent_name
         self.emitter.emit(Message("detach_intent", {"intent_name": name}))
 
@@ -266,7 +267,11 @@ class MycroftSkill(object):
                 self.registered_intents.remove((name, intent, handler))
                 intent.name = name
                 self.register_intent(intent, None)
+                logger.debug('Enabling intent ' + intent_name)
                 break
+            else:
+                logger.error('Could not enable ' + intent_name +
+                             ', it hasn\'t been registered.')
 
     def register_vocabulary(self, entity, entity_type):
         self.emitter.emit(Message('register_vocab', {
