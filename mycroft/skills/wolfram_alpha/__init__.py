@@ -122,7 +122,6 @@ class WolframAlphaSkill(MycroftSkill):
     def handle_fallback(self, message):
         self.enclosure.mouth_think()
         LOG.debug("Falling back to WolframAlpha Skill!")
-        
         lang = message.data.get('lang')
         if not lang:
             lang = "en-us"
@@ -179,8 +178,8 @@ class WolframAlphaSkill(MycroftSkill):
         else:
             if len(others) > 0:
                 self.speak_dialog('others.found',
-                                  data={'utterance': utterance, 'alternative':
-                                        others[0]})
+                                  data={'utterance': utterance,
+                                        'alternative': others[0]})
             else:
                 self.speak_dialog("not.understood", data={'phrase': phrase})
 

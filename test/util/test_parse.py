@@ -1,4 +1,3 @@
- 
 import unittest
 from mycroft.util.parse import normalize
 
@@ -191,9 +190,8 @@ class TestNormalize(unittest.TestCase):
                          "what is weather like")
         self.assertEqual(normalize("that's what I told you"),
                          "that is what I told you")
-        
-        self.assertEqual(normalize("whats 8 + 4"), "what is 8 + 4")
 
+        self.assertEqual(normalize("whats 8 + 4"), "what is 8 + 4")
 
 
 if __name__ == "__main__":
