@@ -70,8 +70,8 @@ class GoogleSTT(TokenSTT):
         super(GoogleSTT, self).__init__()
 
     def execute(self, audio, language=None):
-        language = language or self.lang
-        return self.recognizer.recognize_google(audio, self.token, language)
+        self.lang = language or self.lang
+        return self.recognizer.recognize_google(audio, self.token, s)
 
 
 class WITSTT(TokenSTT):
@@ -88,9 +88,9 @@ class IBMSTT(BasicSTT):
         super(IBMSTT, self).__init__()
 
     def execute(self, audio, language=None):
-        language = language or self.lang
+        self.lang = language or self.lang
         return self.recognizer.recognize_ibm(audio, self.username,
-                                             self.password, language)
+                                             self.password, self.lang)
 
 
 class MycroftSTT(STT):
@@ -99,8 +99,8 @@ class MycroftSTT(STT):
         self.api = STTApi()
 
     def execute(self, audio, language=None):
-        language = language or self.lang
-        return self.api.stt(audio.get_flac_data(), language, 1)[0]
+        self.lang = language or self.lang
+        return self.api.stt(audio.get_flac_data(), self.lang, 1)[0]
 
 
 class STTFactory(object):

@@ -46,9 +46,6 @@ class EnglishQuestionParser(object):
                 "(?P<Query1>.*) (?P<QuestionVerb>is|are|was|were) "
                 "(?P<Query2>.*)"),
             re.compile(
-                ".*(?P<QuestionWord>what)(?P<QuestionVerb>\'s|s) "
-                "(?P<Query>.*)"),
-            re.compile(
                 ".*(?P<QuestionWord>who|what|when|where|why|which) "
                 "(?P<QuestionVerb>\w+) (?P<Query>.*)")
         ]
@@ -124,9 +121,12 @@ class WolframAlphaSkill(MycroftSkill):
     # TODO: Localization
     def handle_fallback(self, message):
         self.enclosure.mouth_think()
-        LOG.debug(
-            "Could not determine intent, falling back to WolframAlpha Skill!")
-        utterance = message.data.get('utterance')
+        LOG.debug("Falling back to WolframAlpha Skill!")
+        lang = message.data.get('lang')
+        if not lang:
+            lang = "en-us"
+
+        utterance = normalize(message.data.get('utterance'), lang)
         parsed_question = self.question_parser.parse(utterance)
 
         query = utterance
@@ -178,8 +178,8 @@ class WolframAlphaSkill(MycroftSkill):
         else:
             if len(others) > 0:
                 self.speak_dialog('others.found',
-                                  data={'utterance': utterance, 'alternative':
-                                        others[0]})
+                                  data={'utterance': utterance,
+                                        'alternative': others[0]})
             else:
                 self.speak_dialog("not.understood", data={'phrase': phrase})
 

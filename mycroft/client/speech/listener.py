@@ -130,11 +130,13 @@ class AudioConsumer(Thread):
         elif connected():
             self.transcribe(audio)
         else:
+            # TODO: Localization
             self.__speak("Mycroft seems not to be connected to the Internet")
 
     def transcribe(self, audio):
         text = None
         try:
+            # Invoke the STT engine on the audio clip
             text = self.stt.execute(audio).lower().strip()
             LOG.debug("STT: " + text)
         except sr.RequestError as e:
@@ -148,8 +150,10 @@ class AudioConsumer(Thread):
             LOG.error("Speech Recognition could not understand audio")
             self.__speak("Sorry, I didn't catch that")
         if text:
+            # STT succeeded, send the transcribed speech on for processing
             payload = {
                 'utterances': [text],
+                'lang': self.stt.lang,
                 'session': SessionManager.get().session_id
             }
             self.emitter.emit("recognizer_loop:utterance", payload)
@@ -188,6 +192,7 @@ class RecognizerLoop(EventEmitter):
         self.state = RecognizerLoopState()
 
     def create_mycroft_recognizer(self, rate, lang):
+        # Create a local recognizer to hear the wakeup word, e.g. 'Hey Mycroft'
         wake_word = self.config.get('wake_word')
         phonemes = self.config.get('phonemes')
         threshold = self.config.get('threshold')
@@ -195,6 +200,8 @@ class RecognizerLoop(EventEmitter):
 
     @staticmethod
     def create_wakeup_recognizer(rate, lang):
+        # Create a local recognizer to come out of sleep with 'wake up'
+        # TODO - localization
         return LocalRecognizer("wake up", "W EY K . AH P", 1e-10, rate, lang)
 
     def start_async(self):

@@ -82,8 +82,8 @@ def clear_skill_events(instance):
 
 
 def watch_skills():
-    global ws, loaded_skills, last_modified_skill, skills_directories, id_counter, \
-        prioritary_skills
+    global ws, loaded_skills, last_modified_skill, skills_directories, \
+        id_counter, prioritary_skills
     # load prioritary skills first
     for p_skill in prioritary_skills:
         if p_skill not in loaded_skills:
