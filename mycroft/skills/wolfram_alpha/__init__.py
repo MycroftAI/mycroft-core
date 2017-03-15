@@ -27,6 +27,7 @@ from mycroft.api import Api
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import MycroftSkill
 from mycroft.util.log import getLogger
+from mycroft.util.parse import normalize
 
 __author__ = 'seanfitz'
 
