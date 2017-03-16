@@ -35,7 +35,7 @@ from mycroft.util.log import getLogger
 
 __author__ = 'seanfitz'
 
-signal.signal( signal.SIGCHLD, signal.SIG_IGN )
+signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
 PRIMARY_SKILLS = ['intent', 'wake']
 BLACKLISTED_SKILLS = ["send_sms", "media"]
