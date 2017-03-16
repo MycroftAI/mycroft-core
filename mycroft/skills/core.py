@@ -19,6 +19,7 @@
 import abc
 import imp
 import time
+import signal
 
 import os.path
 import re
@@ -33,6 +34,8 @@ from mycroft.messagebus.message import Message
 from mycroft.util.log import getLogger
 
 __author__ = 'seanfitz'
+
+signal.signal( signal.SIGCHLD, signal.SIG_IGN )
 
 PRIMARY_SKILLS = ['intent', 'wake']
 BLACKLISTED_SKILLS = ["send_sms", "media"]
