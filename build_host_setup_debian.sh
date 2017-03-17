@@ -22,5 +22,7 @@ sudo apt-get install -y \
     screen \
     flac \
     curl \
-    libicu-dev
+    libicu-dev \
+    pkgconfig \
+    automake
 

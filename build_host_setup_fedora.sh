@@ -22,7 +22,10 @@ sudo dnf install -y \
     portaudio-devel \
     mpg123 \
     screen \
-    curl
+    curl \
+    pkgconfig \
+    libicu-devel \
+    automake
 
 # upgrade virtualenv to latest from pypi
 sudo pip install --upgrade virtualenv
