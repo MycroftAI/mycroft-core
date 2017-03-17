@@ -203,7 +203,7 @@ class RecognizerLoop(EventEmitter):
         phonemes = self.config.get('standup_phonemes', "W EY K . AH P")
         threshold = self.config.get('standup_threshold', 1e-10)
         return LocalRecognizer(wake_word, phonemes, threshold, rate, lang)
-    
+  
     def start_async(self):
         self.state.running = True
         queue = Queue()
