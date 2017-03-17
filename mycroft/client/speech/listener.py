@@ -198,12 +198,12 @@ class RecognizerLoop(EventEmitter):
         threshold = self.config.get('threshold')
         return LocalRecognizer(wake_word, phonemes, threshold, rate, lang)
 
-    @staticmethod
-    def create_wakeup_recognizer(rate, lang):
-        # Create a local recognizer to come out of sleep with 'wake up'
-        # TODO - localization
-        return LocalRecognizer("wake up", "W EY K . AH P", 1e-10, rate, lang)
-
+    def create_wakeup_recognizer(self, rate, lang):
+        wake_word = self.config.get('standup_word', "wake up")
+        phonemes = self.config.get('standup_phonemes', "W EY K . AH P")
+        threshold = self.config.get('standup_threshold', 1e-10)
+        return LocalRecognizer(wake_word, phonemes, threshold, rate, lang)
+    
     def start_async(self):
         self.state.running = True
         queue = Queue()
