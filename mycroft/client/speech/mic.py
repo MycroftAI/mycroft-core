@@ -285,7 +285,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 byte_data = byte_data[len(chunk):] + chunk
 
             buffers_since_check += 1.0
-            if buffers_since_check < buffers_per_check:
+            if buffers_since_check > buffers_per_check:
                 buffers_since_check -= buffers_per_check
                 said_wake_word = self.wake_word_in_audio(byte_data + silence)
 
