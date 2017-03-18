@@ -21,7 +21,10 @@ if [ ! -d ${MIMIC_DIR} ]; then
 else
     # ensure mimic is up to date
     cd ${MIMIC_DIR}
-    git pull
+    make clean 2> /dev/null || true
+    git remote add all-branches https://github.com/mycroftai/mimic/ 2> /dev/null || true
+    git fetch --all --tags --prune
+    git checkout tags/${MIMIC_VERSION}
     ./autogen.sh
     ./configure --with-audio=alsa --enable-shared --prefix=$(pwd)
     make clean
