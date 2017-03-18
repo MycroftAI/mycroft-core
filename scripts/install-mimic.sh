@@ -4,7 +4,7 @@ set -Ee
 
 MIMIC_DIR=mimic
 CORES=$(nproc)
-MIMIC_VERSION=1.2.0.1
+MIMIC_VERSION=1.2.0.2
 
 # for ubuntu precise in travis, that does not provide pkg-config:
 pkg-config --exists icu-i18n || export CFLAGS="$CFLAGS -I/usr/include/x86_64-linux-gnu"
