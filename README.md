@@ -11,15 +11,17 @@ Join the Mycroft Slack(chat) channel: http://mycroft-ai-slack-invite.herokuapp.c
 
 Looking to join in developing?  Check out the [Project Wiki](../../wiki/Home) for tasks you can tackle!
 
-# Getting Started in Ubuntu - Development Environment
-- run `build_host_setup.sh` (installs debian packages with apt-get, please read it) 
-- run `dev_setup.sh` (feel free to read it, as well)
+# Getting Started
+
+### Ubuntu/Debian, Arch, or Fedora
+- Run the build host setup script for your OS (Ubuntu/Debian: `build_host_setup_debian.sh`, Arch: `build_host_setup_arch.sh`, Fedora: `build_host_setup_fedora.sh`). This installs necessary packages, please read it
+- Run `dev_setup.sh` (feel free to read it, as well)
 - Restart session (reboot computer, or logging out and back in might work).
 
-# Getting Started in other environments
+### Other environments
 
 The following packages are required for setting up the development environment,
- and are what is installed by `build_host_setup.sh`
+ and are what is installed by `build_host_setup` scripts.
 
  - `git`
  - `python 2`
