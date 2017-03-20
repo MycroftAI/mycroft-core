@@ -307,7 +307,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         """
         assert isinstance(source, AudioSource), "Source must be an AudioSource"
 
-        bytes_per_sec = source.SAMPLE_RATE * source.SAMPLE_WIDTH
+#        bytes_per_sec = source.SAMPLE_RATE * source.SAMPLE_WIDTH
         sec_per_buffer = float(source.CHUNK) / source.SAMPLE_RATE
 
         logger.debug("Waiting for wake word...")
