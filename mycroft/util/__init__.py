@@ -19,6 +19,7 @@
 import socket
 import subprocess
 import tempfile
+import time
 
 import os
 import os.path
@@ -159,6 +160,11 @@ def connected(host="8.8.8.8", port=53, timeout=3):
     Host: 8.8.8.8 (google-public-dns-a.google.com)
     OpenPort: 53/tcp
     Service: domain (DNS/TCP)
+
+    NOTE:
+    This is no longer in use by this version
+    New method checks for a connection using ConnectionError only when
+    a question is asked
     """
     try:
         socket.setdefaulttimeout(timeout)
