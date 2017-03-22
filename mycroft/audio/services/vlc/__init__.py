@@ -1,6 +1,6 @@
 from os.path import dirname, abspath, basename
+from mycroft.audio.services import AudioBackend
 from mycroft.util.log import getLogger
-from mycroft.skills.audioservice import AudioBackend
 import vlc
 
 logger = getLogger(abspath(__file__).split('/')[-2])

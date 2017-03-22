@@ -1,5 +1,5 @@
 import subprocess
-from mycroft.skills.audioservice import AudioBackend
+from mycroft.audio.services import AudioBackend
 from mycroft.util.log import getLogger
 from mycroft.messagebus.message import Message
 

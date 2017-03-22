@@ -1,6 +1,6 @@
 from mycroft.messagebus.message import Message
 from mycroft.util.log import getLogger
-from mycroft.skills.audioservice import AudioBackend
+from mycroft.audio.services import AudioBackend
 from os.path import dirname, abspath, basename
 import sys
 import time
