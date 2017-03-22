@@ -17,9 +17,11 @@
 
 
 import json
-from os.path import expanduser, exists, abspath, dirname
+from os.path import expanduser, exists, abspath, dirname, basename, isdir, join
+from os import listdir
 import sys
 import time
+import imp
 
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
@@ -27,6 +29,7 @@ from mycroft.util.log import getLogger
 
 __author__ = 'forslund'
 
+MainModule = '__init__'
 sys.path.append(abspath(dirname(__file__)))
 logger = getLogger("Audio")
 
@@ -36,59 +39,84 @@ default = None
 service = []
 current = None
 
+
+def create_service_descriptor(service_folder):
+    """Prepares a descriptor that can be used together with imp."""
+    info = imp.find_module(MainModule, [service_folder])
+    return {"name": basename(service_folder), "info": info}
+
+
+def get_services(services_folder):
+    """Load and initialize services from all subfolders."""
+    logger.info("Loading skills from " + services_folder)
+    services = []
+    possible_services = listdir(services_folder)
+    for i in possible_services:
+        location = join(services_folder, i)
+        if (isdir(location) and
+                not MainModule + ".py" in listdir(location)):
+            for j in listdir(location):
+                name = join(location, j)
+                if (not isdir(name) or
+                        not MainModule + ".py" in listdir(name)):
+                    continue
+                try:
+                    services.append(create_service_descriptor(name))
+                except:
+                    logger.error('Failed to create service from ' + name,
+                                 exc_info=True)
+        if (not isdir(location) or
+                not MainModule + ".py" in listdir(location)):
+            continue
+        try:
+            services.append(create_service_descriptor(location))
+        except:
+            logger.error('Failed to create service from ' + name,
+                         exc_info=True)
+    return sorted(services, key=lambda p: p.get('name'))
+
+
+def load_services(config, ws):
+    """Search though the service directory and load any services."""
+    logger.info("Loading services")
+    service_directories = get_services(dirname(abspath(__file__)) +
+                                       '/services/')
+    service = []
+    for descriptor in service_directories:
+        logger.info('Loading ' + descriptor['name'])
+        service_module = imp.load_module(descriptor["name"] + MainModule,
+                                         *descriptor["info"])
+        if (hasattr(service_module, 'autodetect') and
+                callable(service_module.autodetect)):
+            s = service_module.autodetect(config, ws)
+            service += s
+        if (hasattr(service_module, 'manual_load')):
+            s = service_module.manual_load(config, ws)
+            service += s
+
+    return service
+
+
 def load_services_callback():
     global ws
     global default
     global service
 
     config = ConfigurationManager.get().get("Audio")
-    logger.info("Loading services")
-    # only import services that are configured
-    from services.mpg123_service import Mpg123Service
-    from services.mopidy_service import MopidyService
-    for b in config['backends']:
-        logger.debug(b)
-        b = config['backends'][b]
-        if b['type'] == 'vlc' and b.get('active', False):
-            from services.vlc_service import VlcService
-        if b['type'] == 'chromecast' and b.get('active', False):
-            from services.chromecast_service import ChromecastService
-
-    if config.get('autodetect-chromecasts', False):
-        autodetect_chromecasts = __import__('chromecast_service').autodetect
-
-
-    # Add all manually specified services
-    for name in config['backends']:
-        b = config['backends'][name]
-        logger.debug(b)
-        if b['type'] == 'vlc' and b.get('active', False):
-            logger.info('starting VLC service')
-            service.append(VlcService(b, ws, name))
-        if b['type'] == 'mopidy' and b.get('active', False):
-            logger.info('starting Mopidy service')
-            service.append(MopidyService(b, ws, name))
-        if b['type'] == 'mpg123' and b.get('active', False):
-            logger.info('starting Mpg123 service')
-            service.append(Mpg123Service(b, ws, name))
-        if b['type'] == 'chromecast' and b.get('active', False):
-            logger.info('starting Chromecast service')
-            service.append(ChromecastService(b, ws, name))
-
-    # Autodetect chromecast devices
-    if config.get('autodetect-chromecasts', False):
-        logger.info('Autodetecting Chromecasts')
-        chromecasts = autodetect_chromecasts({}, ws)
-        service = service + chromecasts
-
+    service = load_services(config, ws)
+    logger.info(service)
     default_name = config.get('default-backend', '')
+    logger.info('Finding default backend...')
     for s in service:
+        logger.info('checking ' + s.name)
         if s.name == default_name:
             default = s
+            logger.info('Found ' + default.name)
             break
     else:
         default = None
-    logger.info(default)
+        logger.info('no default found')
+    logger.info('Default:' + str(default))
 
     ws.on('MycroftAudioServicePlay', _play)
     ws.on('MycroftAudioServicePause', _pause)
@@ -136,6 +164,7 @@ def _lower_volume(message):
         current.lower_volume()
         volume_is_low = True
 
+
 def _restore_volume(message):
     global current
     global volume_is_low
@@ -177,6 +206,7 @@ def play(tracks, prefered_service):
     logger.info('Playing')
     service.play()
     current = service
+
 
 def _play(message):
     global service

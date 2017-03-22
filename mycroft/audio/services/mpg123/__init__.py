@@ -9,6 +9,7 @@ __author__ = 'forslund'
 
 logger = getLogger(abspath(__file__).split('/')[-2])
 
+
 class Mpg123Service(AudioBackend):
     def __init__(self, config, emitter, name='mpg123'):
         self.config = config
@@ -72,3 +73,9 @@ class Mpg123Service(AudioBackend):
         return {}
 
 
+def manual_load(base_config, emitter):
+    backends = base_config.get('backends', [])
+    services = [(b, backends[b]) for b in backends
+                if backends[b]['type'] == 'mpg123']
+    instances = [Mpg123Service(s[1], emitter, s[0]) for s in services]
+    return instances

@@ -28,7 +28,7 @@ class MopidyService(AudioBackend):
             return
 
         logger.info('Connected to mopidy server')
-    
+
     def __init__(self, config, emitter, name='mopidy'):
         self.connection_attempts = 0
         self.emitter = emitter
@@ -87,3 +87,11 @@ class MopidyService(AudioBackend):
             ret['artist'] = ''
             ret['album'] = ''
         return ret
+
+
+def manual_load(base_config, emitter):
+    backends = base_config.get('backends', [])
+    services = [(b, backends[b]) for b in backends
+                if backends[b]['type'] == 'mopidy']
+    instances = [MopidyService(s[1], emitter, s[0]) for s in services]
+    return instances
