@@ -120,6 +120,7 @@ def load_services_callback():
 
     ws.on('MycroftAudioServicePlay', _play)
     ws.on('MycroftAudioServicePause', _pause)
+    ws.on('MycroftAudioServiceResume', _resume)
     ws.on('MycroftAudioServiceStop', _stop)
     ws.on('MycroftAudioServiceNext', _next)
     ws.on('MycroftAudioServicePrev', _prev)
@@ -132,6 +133,12 @@ def _pause(message=None):
     global current
     if current:
         current.pause()
+
+
+def _resume(message=None):
+    global current
+    if current:
+        current.resume()
 
 
 def _next(message=None):
