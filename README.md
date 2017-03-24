@@ -1,6 +1,8 @@
 Mycroft [![Build Status](https://travis-ci.org/MycroftAI/mycroft-core.svg?branch=master)](https://travis-ci.org/MycroftAI/mycroft-core)
 ==========
 
+NOTE: The default branch for this repo is dev. This should be considered a working beta. If you want to clone a more stable version, switch over to the 'master' branch.  
+
 Full docs at: https://docs.mycroft.ai
 
 Release notes at: https://docs.mycroft.ai/release-notes
