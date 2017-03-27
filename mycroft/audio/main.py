@@ -84,15 +84,27 @@ def load_services(config, ws):
     service = []
     for descriptor in service_directories:
         logger.info('Loading ' + descriptor['name'])
-        service_module = imp.load_module(descriptor["name"] + MainModule,
-                                         *descriptor["info"])
+        try:
+            service_module = imp.load_module(descriptor["name"] + MainModule,
+                                             *descriptor["info"])
+        except:
+            logger.error('Failed to import module ' + descriptor['name'],
+                         exc_info=True)
         if (hasattr(service_module, 'autodetect') and
                 callable(service_module.autodetect)):
-            s = service_module.autodetect(config, ws)
-            service += s
+            try:
+                s = service_module.autodetect(config, ws)
+                service += s
+            except:
+                logger.error('Failed to autodetect...',
+                             exc_info=True)
         if (hasattr(service_module, 'load_service')):
-            s = service_module.load_service(config, ws)
-            service += s
+            try:
+                s = service_module.load_service(config, ws)
+                service += s
+            except:
+                logger.error('Failed to load service...',
+                             exc_info=True)
 
     return service
 
