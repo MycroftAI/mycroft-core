@@ -28,7 +28,7 @@ class PlaybackControlSkill(MediaSkill):
 
     def handle_next(self, message):
         self.emitter.emit(Message('MycroftAudioServiceNext'))
-    
+
     def handle_prev(self, message):
         self.emitter.emit(Message('MycroftAudioServicePrev'))
 

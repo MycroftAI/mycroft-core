@@ -2,6 +2,7 @@ from abc import ABCMeta, abstractmethod
 
 __author__ = 'forslund'
 
+
 class AudioBackend():
     __metaclass__ = ABCMeta
 
