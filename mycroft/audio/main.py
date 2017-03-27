@@ -130,31 +130,48 @@ def load_services_callback():
 
     ws.on('mycroft.stop', _stop)
 
+
 def _pause(message=None):
+    """
+        Handler for MycroftAudioServicePause. Pauses the current audio service.
+    """
     global current
     if current:
         current.pause()
 
 
 def _resume(message=None):
+    """
+        Handler for MycroftAudioResume.
+    """
     global current
     if current:
         current.resume()
 
 
 def _next(message=None):
+    """
+        Handler for MycroftAudioNext. Skips current track and starts playing
+        the next.
+    """
     global current
     if current:
         current.next()
 
 
 def _prev(message=None):
+    """
+        Handler for MycroftAudioPrev. Starts playing the previous track.
+    """
     global current
     if current:
         current.prev()
 
 
 def _stop(message=None):
+    """
+        Handler for MycroftStop. Stops any playing service.
+    """
     global current
     logger.info('stopping all playing services')
     print current
@@ -165,6 +182,9 @@ def _stop(message=None):
 
 
 def _lower_volume(message):
+    """
+        Is triggered when mycroft starts to speak and reduces the volume.
+    """
     global current
     global volume_is_low
     logger.info('lowering volume')
@@ -174,6 +194,9 @@ def _lower_volume(message):
 
 
 def _restore_volume(message):
+    """
+        Is triggered when mycroft is done speaking and restores the volume
+    """
     global current
     global volume_is_low
     logger.info('maybe restoring volume')
@@ -186,6 +209,10 @@ def _restore_volume(message):
 
 
 def play(tracks, prefered_service):
+    """
+        play starts playing the audio on the prefered service if it supports
+        the uri. If not the next best backend is found.
+    """
     global current
     logger.info('play')
     _stop()
@@ -217,6 +244,10 @@ def play(tracks, prefered_service):
 
 
 def _play(message):
+    """
+        Handler for MycroftAudioPlay. Starts playback of a tracklist. Also
+        determines if the user requested a special service.
+    """
     global service
     logger.info('MycroftAudioServicePlay')
     logger.info(message.data['tracks'])
@@ -236,6 +267,9 @@ def _play(message):
 
 
 def _track_info(message):
+    """
+        Returns track info on the message bus.
+    """
     global current
     if current:
         track_info = self.current.track_info()
