@@ -90,8 +90,8 @@ def load_services(config, ws):
                 callable(service_module.autodetect)):
             s = service_module.autodetect(config, ws)
             service += s
-        if (hasattr(service_module, 'manual_load')):
-            s = service_module.manual_load(config, ws)
+        if (hasattr(service_module, 'load_service')):
+            s = service_module.load_service(config, ws)
             service += s
 
     return service

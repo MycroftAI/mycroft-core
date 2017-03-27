@@ -89,7 +89,7 @@ class MopidyService(AudioBackend):
         return ret
 
 
-def manual_load(base_config, emitter):
+def load_service(base_config, emitter):
     backends = base_config.get('backends', [])
     services = [(b, backends[b]) for b in backends
                 if backends[b]['type'] == 'mopidy']
