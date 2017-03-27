@@ -128,6 +128,7 @@ def load_services_callback():
     ws.on('recognizer_loop:audio_output_start', _lower_volume)
     ws.on('recognizer_loop:audio_output_end', _restore_volume)
 
+    ws.on('mycroft.stop', _stop)
 
 def _pause(message=None):
     global current
