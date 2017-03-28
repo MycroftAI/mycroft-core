@@ -305,9 +305,8 @@ def main():
         try:
             _message = json.loads(message)
 
-            if _message.get("type") == "registration":
-                # do not log tokens from registration messages
-                _message["data"]["token"] = None
+            if _message.get("type")[:12] != 'MycroftAudio':
+                return
             message = json.dumps(_message)
         except:
             pass
