@@ -78,8 +78,8 @@ def clear_skill_events(instance):
         if getattr(e[0], 'func_closure', None) is not None and isinstance(
                 e[0].func_closure[1].cell_contents, instance.__class__):
             instance_events.append(event)
-        elif getattr(e[0], 'im_class', None) is not None and e[
-            0].im_class == instance.__class__:
+        elif getattr(e[0], 'im_class', None) is not None and e[0].\
+                im_class == instance.__class__:
             instance_events.append(event)
         elif getattr(e[0], 'im_self', None) is not None and isinstance(
                 e[0].im_self, instance.__class__):
