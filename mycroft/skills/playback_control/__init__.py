@@ -5,7 +5,6 @@ from mycroft.skills.media import MediaSkill
 from adapt.intent import IntentBuilder
 from mycroft.messagebus.message import Message
 from mycroft.configuration import ConfigurationManager
-from mycroft.skills.audioservice import AudioBackend
 
 from os.path import dirname
 
