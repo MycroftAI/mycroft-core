@@ -35,3 +35,5 @@ pytz==2017.2
 pillow==4.1.1
 mock
 python-dateutil==2.6.0
+pychromecast==0.7.7
+python-vlc==1.1.2
