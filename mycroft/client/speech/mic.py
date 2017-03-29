@@ -231,8 +231,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             was_loud_enough = num_loud_chunks > min_loud_chunks
             # quiet_enough = noise <= min_noise
             # recorded_too_much_silence = num_chunks > max_chunks_of_silence
-            recorded_too_much_silence =
-                num_silence_chunks > max_chunks_of_silence
+            recorded_too_much_silence = (
+                num_silence_chunks > max_chunks_of_silence )
             if was_loud_enough and recorded_too_much_silence:
                 phrase_complete = True
             if check_for_signal('buttonPress'):
