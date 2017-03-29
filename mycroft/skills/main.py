@@ -39,6 +39,7 @@ loaded_skills = {}
 last_modified_skill = 0
 skills_directories = []
 skill_reload_thread = None
+prioritary_skills = ["intent"]
 
 
 def connect():
@@ -81,12 +82,27 @@ def clear_skill_events(instance):
 
 
 def watch_skills():
-    global ws, loaded_skills, last_modified_skill, skills_directories
+    global ws, loaded_skills, last_modified_skill, skills_directories, \
+        id_counter, prioritary_skills
+    # load prioritary skills first
+    for p_skill in prioritary_skills:
+        if p_skill not in loaded_skills:
+            loaded_skills[p_skill] = {}
+            skill = loaded_skills.get(p_skill)
+            skill["path"] = os.path.join(os.path.dirname(__file__), p_skill)
+            if not MainModule + ".py" in os.listdir(skill["path"]):
+                logger.error(p_skill + " does not appear to be a skill")
+                sys.exit(1)
+            skill["loaded"] = True
+            skill["instance"] = load_skill(
+                create_skill_descriptor(skill["path"]), ws)
+
     while True:
         for dir in skills_directories:
             if exists(dir):
-                list = filter(lambda x: os.path.isdir(os.path.join(dir, x)),
-                              os.listdir(dir))
+                list = sorted(
+                    filter(lambda x: os.path.isdir(os.path.join(dir, x)),
+                           os.listdir(dir)))
                 for skill_folder in list:
                     if skill_folder not in loaded_skills:
                         loaded_skills[skill_folder] = {}

@@ -19,6 +19,7 @@
 import abc
 import imp
 import time
+import signal
 
 import os.path
 import re
@@ -33,6 +34,8 @@ from mycroft.messagebus.message import Message
 from mycroft.util.log import getLogger
 
 __author__ = 'seanfitz'
+
+signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
 PRIMARY_SKILLS = ['intent', 'wake']
 BLACKLISTED_SKILLS = ["send_sms", "media"]
@@ -96,6 +99,9 @@ def open_intent_envelope(message):
 def load_skill(skill_descriptor, emitter):
     try:
         logger.info("ATTEMPTING TO LOAD SKILL: " + skill_descriptor["name"])
+        if skill_descriptor['name'] in BLACKLISTED_SKILLS:
+            logger.info("SKILL IS BLACKLISTED " + skill_descriptor["name"])
+            return None
         skill_module = imp.load_module(
             skill_descriptor["name"] + MainModule, *skill_descriptor["info"])
         if (hasattr(skill_module, 'create_skill') and
@@ -105,15 +111,16 @@ def load_skill(skill_descriptor, emitter):
             skill.bind(emitter)
             skill.load_data_files(dirname(skill_descriptor['info'][1]))
             skill.initialize()
-            logger.info("Lodaded " + skill_descriptor["name"])
+            logger.info("Loaded " + skill_descriptor["name"])
             return skill
         else:
             logger.warn(
                 "Module %s does not appear to be skill" % (
                     skill_descriptor["name"]))
-    except:
+    except Exception as e:
         logger.error(
-            "Failed to load skill: " + skill_descriptor["name"], exc_info=True)
+            "Failed to load skill: " +
+            skill_descriptor["name"], exc_info=True + " " + e)
     return None
 
 
@@ -243,14 +250,15 @@ class MycroftSkill(object):
         def receive_handler(message):
             try:
                 handler(message)
-            except:
+            except Exception as e:
                 # TODO: Localize
                 self.speak(
                     "An error occurred while processing a request in " +
                     self.name)
                 logger.error(
                     "An error occurred while processing a request in " +
-                    self.name, exc_info=True)
+
+                    self.name, exc_info=True + " " + e)
         if handler:
             self.emitter.on(intent_parser.name, receive_handler)
 
@@ -273,6 +281,7 @@ class MycroftSkill(object):
                 logger.error('Could not enable ' + intent_name +
                              ', it hasn\'t been registered.')
 
+
     def register_vocabulary(self, entity, entity_type):
         self.emitter.emit(Message('register_vocab', {
             'start': entity, 'end': entity_type
@@ -282,10 +291,13 @@ class MycroftSkill(object):
         re.compile(regex_str)  # validate regex
         self.emitter.emit(Message('register_vocab', {'regex': regex_str}))
 
-    def speak(self, utterance):
-        self.emitter.emit(Message("speak", {'utterance': utterance}))
+    def speak(self, utterance, expect_response=False):
+        data = {'utterance': utterance,
+                'expect_response': expect_response}
+        self.emitter.emit(Message("speak", data))
 
-    def speak_dialog(self, key, data={}):
+    def speak_dialog(self, key, data={}, expect_response=False):
+        data['expect_response'] = expect_response
         self.speak(self.dialog_renderer.render(key, data))
 
     def init_dialog(self, root_directory):

@@ -173,19 +173,80 @@ def connected(host="8.8.8.8", port=53, timeout=3):
             return False
 
 
+def get_ipc_directory(domain=None):
+    """Get the directory used for Inter Process Communication
+
+    Files in this folder can be accessed by different processes on the
+    machine.  Useful for communication.  This is often a small RAM disk.
+
+    Args:
+        domain (str): The IPC domain.  Basically a subdirectory to prevent
+            overlapping signal filenames.
+
+    Returns:
+        str: a path to the IPC folder
+    """
+    dir = mycroft.configuration.ConfigurationManager.get().get("ipc_path")
+    if not dir:
+        # If not defined, use /tmp/mycroft/ipc
+        dir = os.path.join(tempfile.gettempdir(), "mycroft", "ipc")
+    if domain:
+        dir = os.path.join(dir, domain)
+    dir = os.path.normpath(dir)
+
+    if not os.path.isdir(dir):
+        try:
+            save = os.umask(0)
+            os.makedirs(dir, 0777)  # give everyone rights to r/w to IPC dir
+        except OSError:
+            LOGGER.warn("Failed to create: " + dir)
+            pass
+        finally:
+            os.umask(save)
+
+    return dir
+
+
 def create_signal(signal_name):
+    """Create a named signal
+
+    Args:
+        signal_name (str): The signal's name.  Must only contain characters
+            valid in filenames.
+    """
     try:
-        with open(tempfile.gettempdir() + '/' + signal_name, 'w'):
+        with open(os.path.join(get_ipc_directory(), "signal", signal_name),
+                  'w'):
             return True
     except IOError:
         return False
 
 
-def check_for_signal(signal_name):
-    filename = tempfile.gettempdir() + '/' + signal_name
-    if os.path.isfile(filename):
-        os.remove(filename)
+def check_for_signal(signal_name, sec_lifetime=0):
+    """See if a named signal exists
+
+    Args:
+        signal_name (str): The signal's name.  Must only contain characters
+            valid in filenames.
+        sec_lifetime (int, optional): How many seconds the signal should
+            remain valid.  If 0 or not specified, it is a single-use signal.
+
+    Returns:
+        bool: True if the signal is defined, False otherwise
+    """
+    path = os.path.join(get_ipc_directory(), "signal", signal_name)
+
+    if os.path.isfile(path):
+        if sec_lifetime == 0:
+            # consume this single-use signal
+            os.remove(path)
+        elif int(os.path.getctime(path) + sec_lifetime) < int(time.time()):
+            # remove once expired
+            os.remove(path)
+            return False
         return True
+
+    # No such signal exists
     return False
 
 

@@ -21,6 +21,7 @@ from adapt.engine import IntentDeterminationEngine
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import open_intent_envelope, MycroftSkill
 from mycroft.util.log import getLogger
+from mycroft.util.parse import normalize
 
 __author__ = 'seanfitz'
 
@@ -40,13 +41,20 @@ class IntentSkill(MycroftSkill):
         self.emitter.on('detach_intent', self.handle_detach_intent)
 
     def handle_utterance(self, message):
+        # Get language of the utterance
+        lang = message.data.get('lang', None)
+        if not lang:
+            lang = "en-us"
+
         utterances = message.data.get('utterances', '')
 
         best_intent = None
         for utterance in utterances:
             try:
+                # normalize() changes "it's a boy" to "it is boy", etc.
                 best_intent = next(self.engine.determine_intent(
-                    utterance, 100))
+                    normalize(utterance, lang), 100))
+
                 # TODO - Should Adapt handle this?
                 best_intent['utterance'] = utterance
             except StopIteration, e:
@@ -59,11 +67,13 @@ class IntentSkill(MycroftSkill):
             self.emitter.emit(reply)
         elif len(utterances) == 1:
             self.emitter.emit(Message("intent_failure", {
-                "utterance": utterances[0]
+                "utterance": utterances[0],
+                "lang": lang
             }))
         else:
             self.emitter.emit(Message("multi_utterance_intent_failure", {
-                "utterances": utterances
+                "utterances": utterances,
+                "lang": lang
             }))
 
     def handle_register_vocab(self, message):
