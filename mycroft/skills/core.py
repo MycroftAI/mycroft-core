@@ -281,7 +281,6 @@ class MycroftSkill(object):
                 logger.error('Could not enable ' + intent_name +
                              ', it hasn\'t been registered.')
 
-
     def register_vocabulary(self, entity, entity_type):
         self.emitter.emit(Message('register_vocab', {
             'start': entity, 'end': entity_type
