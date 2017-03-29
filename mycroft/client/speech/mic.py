@@ -179,15 +179,15 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         max_noise = 25
         min_noise = 0
 
-#        def increase_noise(level):
-#            if level < max_noise:
-#                return level + 200 * sec_per_buffer
-#            return level
-#
-#        def decrease_noise(level):
-#            if level > min_noise:
-#                return level - 100 * sec_per_buffer
-#            return level
+        # def increase_noise(level):
+        #   if level < max_noise:
+        #     return level + 200 * sec_per_buffer
+        #   return level
+        #
+        # def decrease_noise(level):
+        #   if level > min_noise:
+        #     return level - 100 * sec_per_buffer
+        # return level
 
         # Smallest number of loud chunks required to return
         min_loud_chunks = int(self.MIN_LOUD_SEC_PER_PHRASE / sec_per_buffer)
@@ -214,11 +214,11 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             test_threshold = self.energy_threshold * self.multiplier
             is_loud = energy > test_threshold
             if is_loud:
-#                noise = increase_noise(noise)
+                # noise = increase_noise(noise)
                 num_loud_chunks += 1
                 num_silence_chunks = 0
             else:
-#                noise = decrease_noise(noise)
+                # noise = decrease_noise(noise)
                 num_silence_chunks += 1
                 self.adjust_threshold(energy, sec_per_buffer)
 
@@ -229,9 +229,10 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 f.close()
 
             was_loud_enough = num_loud_chunks > min_loud_chunks
-#            quiet_enough = noise <= min_noise
-#            recorded_too_much_silence = num_chunks > max_chunks_of_silence
-            recorded_too_much_silence = num_silence_chunks > max_chunks_of_silence
+            # quiet_enough = noise <= min_noise
+            # recorded_too_much_silence = num_chunks > max_chunks_of_silence
+            recorded_too_much_silence = 
+                num_silence_chunks > max_chunks_of_silence
             if was_loud_enough and recorded_too_much_silence:
                 phrase_complete = True
             if check_for_signal('buttonPress'):
