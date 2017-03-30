@@ -16,20 +16,23 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 import subprocess
+import hashlib
+import os
+import os.path
 from time import time, sleep
-
-from os.path import join
 
 from mycroft import MYCROFT_ROOT_PATH
 from mycroft.configuration import ConfigurationManager
 from mycroft.tts import TTS, TTSValidator
-from mycroft.util import play_wav, check_for_signal
+from mycroft.util.log import getLogger
+LOGGER = getLogger(__name__)
 
 __author__ = 'jdorleans', 'spenrod'
 
 config = ConfigurationManager.get().get("tts").get("mimic")
 
-BIN = config.get("path", join(MYCROFT_ROOT_PATH, 'mimic', 'bin', 'mimic'))
+BIN = config.get("path", os.path.join(MYCROFT_ROOT_PATH, 'mimic', 'bin',
+                                      'mimic'))
 
 
 class Mimic(TTS):
@@ -38,16 +41,60 @@ class Mimic(TTS):
         self.init_args()
 
     def init_args(self):
-        self.args = [BIN, '-voice', self.voice, '-psdur', '-o', self.filename]
+        self.args = [BIN, '-voice', self.voice, '-psdur']
         stretch = config.get('duration_stretch', None)
         if stretch:
             self.args += ['--setf', 'duration_stretch=' + stretch]
 
+    def get_tts(self, sentence):
+        key = str(hashlib.md5(sentence).hexdigest())
+        wav_file = os.path.join(mycroft.util.get_cache_directory("tts"),
+                                key + ".wav")
+
+        if os.path.exists(wav_file):
+            phonemes = self.load_phonemes(key)
+            if phonemes:
+                # Using cached value
+                LOGGER.debug("TTS cache hit")
+                return wav_file, phonemes
+
+        # Generate WAV and phonemes
+        phonemes = subprocess.check_output(self.args + ['-o', wav_file,
+                                                        '-t', sentence])
+        self.save_phonemes(key, phonemes)
+        return wav_file, phonemes
+
+    def save_phonemes(self, key, phonemes):
+        # Clean out the cache as needed
+        cache_dir = mycroft.util.get_cache_directory("tts")
+        mycroft.util.curate_cache(cache_dir)
+
+        pho_file = os.path.join(cache_dir, key+".pho")
+        try:
+            with open(pho_file, "w") as cachefile:
+                cachefile.write(phonemes)
+        except:
+            LOGGER.debug("Failed to write .PHO to cache")
+            pass
+
+    def load_phonemes(self, key):
+        pho_file = os.path.join(mycroft.util.get_cache_directory("tts"),
+                                key+".pho")
+        if os.path.exists(pho_file):
+            try:
+                with open(pho_file, "r") as cachefile:
+                    phonemes = cachefile.read().strip()
+                return phonemes
+            except:
+                LOGGER.debug("Failed to read .PHO from cache")
+        return None
+
     def execute(self, sentence):
-        output = subprocess.check_output(self.args + ['-t', sentence])
+        wav_file, phonemes = self.get_tts(sentence)
+
         self.blink(0.5)
-        process = play_wav(self.filename)
-        self.visime(output)
+        process = mycroft.util.play_wav(wav_file)
+        self.visime(phonemes)
         process.communicate()
         self.blink(0.2)
 
@@ -55,12 +102,13 @@ class Mimic(TTS):
         start = time()
         pairs = output.split(" ")
         for pair in pairs:
-            if check_for_signal('buttonPress'):
+            if mycroft.util.check_for_signal('buttonPress'):
                 return
             pho_dur = pair.split(":")  # phoneme:duration
             if len(pho_dur) == 2:
                 code = VISIMES.get(pho_dur[0], '4')
-                self.enclosure.mouth_viseme(code)
+                if self.enclosure:
+                    self.enclosure.mouth_viseme(code)
                 duration = float(pho_dur[1])
                 delta = time() - start
                 if delta < duration:
