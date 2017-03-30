@@ -24,6 +24,7 @@ from time import time, sleep
 from mycroft import MYCROFT_ROOT_PATH
 from mycroft.configuration import ConfigurationManager
 from mycroft.tts import TTS, TTSValidator
+import mycroft.util
 from mycroft.util.log import getLogger
 LOGGER = getLogger(__name__)
 
@@ -127,8 +128,9 @@ class MimicValidator(TTSValidator):
         try:
             subprocess.call([BIN, '--version'])
         except:
+            LOGGER.info("Falied to find mimic at: " + BIN)
             raise Exception(
-                'Mimic is not installed. Run install-mimic.sh to install it.')
+                'Mimic was not found. Run install-mimic.sh to install it.')
 
     def get_tts_class(self):
         return Mimic
