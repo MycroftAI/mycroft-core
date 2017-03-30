@@ -111,16 +111,15 @@ def load_skill(skill_descriptor, emitter):
             skill.bind(emitter)
             skill.load_data_files(dirname(skill_descriptor['info'][1]))
             skill.initialize()
-            logger.info("Loaded " + skill_descriptor["name"])
+            logger.info("Lodaded " + skill_descriptor["name"])
             return skill
         else:
             logger.warn(
                 "Module %s does not appear to be skill" % (
                     skill_descriptor["name"]))
-    except Exception as e:
+    except:
         logger.error(
-            "Failed to load skill: " +
-            skill_descriptor["name"], exc_info=True + " " + e)
+            "Failed to load skill: " + skill_descriptor["name"], exc_info=True)
     return None
 
 
@@ -247,14 +246,14 @@ class MycroftSkill(object):
         def receive_handler(message):
             try:
                 handler(message)
-            except Exception as e:
+            except:
                 # TODO: Localize
                 self.speak(
                     "An error occurred while processing a request in " +
                     self.name)
                 logger.error(
                     "An error occurred while processing a request in " +
-                    self.name, exc_info=True + " " + e)
+                    self.name, exc_info=True)
 
         self.emitter.on(intent_parser.name, receive_handler)
 
