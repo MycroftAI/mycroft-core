@@ -16,7 +16,7 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
-from cStringIO import StringIO
+from io import StringIO
 
 # NOTE: If this script has errors, the following two lines might need to
 # be commented out for them to be displayed (depending on the type of
@@ -128,7 +128,7 @@ class LogMonitorThread(Thread):
 
                 if not ignore:
                     if bSimple:
-                        print line.strip()
+                        print(line.strip())
                     else:
                         mergedLog.append(self.logid+line.strip())
 
@@ -625,10 +625,10 @@ def main(stdscr):
             # else:
             #    line += str(c)
 
-    except KeyboardInterrupt, e:
+    except KeyboardInterrupt as e:
         # User hit Ctrl+C to quit
         pass
-    except KeyboardInterrupt, e:
+    except KeyboardInterrupt as e:
         logger.exception(e)
     finally:
         scr.erase()
@@ -654,10 +654,10 @@ def simple_cli():
             ws.emit(
                 Message("recognizer_loop:utterance",
                         {'utterances': [line.strip()]}))
-    except KeyboardInterrupt, e:
+    except KeyboardInterrupt as e:
         # User hit Ctrl+C to quit
         print("")
-    except KeyboardInterrupt, e:
+    except KeyboardInterrupt as e:
         logger.exception(e)
         event_thread.exit()
         sys.exit()
