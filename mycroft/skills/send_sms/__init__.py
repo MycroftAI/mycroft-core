@@ -17,9 +17,10 @@
 
 
 import subprocess
-from os.path import dirname, join
 
 from adapt.intent import IntentBuilder
+from os.path import dirname, join
+
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import MycroftSkill
 from mycroft.util.log import getLogger
@@ -41,19 +42,17 @@ class SendSMSSkill(MycroftSkill):
                          'sean': '34567890'}  # TODO - Use API
 
     def initialize(self):
-        self.load_vocab_files(join(dirname(__file__), 'vocab', self.lang))
-        self.load_regex_files(join(dirname(__file__), 'regex', self.lang))
         intent = IntentBuilder("SendSMSIntent").require(
             "SendSMSKeyword").require("Contact").require("Message").build()
         self.register_intent(intent, self.handle_intent)
 
     def handle_intent(self, message):
         try:
-            contact = message.metadata.get("Contact").lower()
+            contact = message.data.get("Contact").lower()
 
             if contact in self.contacts:
                 number = self.contacts.get(contact)
-                msg = message.metadata.get("Message")
+                msg = message.data.get("Message")
                 self.__send_sms(number, msg)
                 self.__notify(contact, number, msg)
 
@@ -69,10 +68,9 @@ class SendSMSSkill(MycroftSkill):
 
     def __notify(self, contact, number, msg):
         self.emitter.emit(
-            Message(
-                "send_sms",
-                metadata={'contact': contact, 'number': number,
-                          'message': msg}))
+            Message("send_sms", {
+                'contact': contact, 'number': number, 'message': msg
+            }))
 
     def stop(self):
         pass

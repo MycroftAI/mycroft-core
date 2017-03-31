@@ -18,7 +18,6 @@
 
 import argparse
 import sys
-
 from os.path import dirname, exists, isdir
 
 from mycroft.configuration import ConfigurationManager
@@ -29,7 +28,7 @@ from mycroft.util.log import getLogger
 
 __author__ = 'seanfitz'
 
-logger = getLogger("SkillContainer")
+LOG = getLogger("SkillContainer")
 
 
 class SkillContainer(object):
@@ -52,7 +51,7 @@ class SkillContainer(object):
     @staticmethod
     def __build_params(args):
         parser = argparse.ArgumentParser()
-        parser.add_argument("--config", default="./mycroft.ini")
+        parser.add_argument("--config", default="./mycroft.conf")
         parser.add_argument("dir", nargs='?', default=dirname(__file__))
         parser.add_argument("--lib", default="./lib")
         parser.add_argument("--host", default=None)
@@ -63,34 +62,48 @@ class SkillContainer(object):
         return parser.parse_args(args)
 
     def __init_client(self, params):
-        config = ConfigurationManager.get().get("messagebus_client")
+        config = ConfigurationManager.get().get("websocket")
 
         if not params.host:
             params.host = config.get('host')
         if not params.port:
             params.port = config.get('port')
 
-        self.client = WebsocketClient(host=params.host,
-                                      port=params.port,
-                                      ssl=params.use_ssl)
+        self.ws = WebsocketClient(host=params.host,
+                                  port=params.port,
+                                  ssl=params.use_ssl)
 
-    def try_load_skill(self):
+    def load_skill(self):
         if self.enable_intent_skill:
             intent_skill = create_intent_skill()
-            intent_skill.bind(self.client)
+            intent_skill.bind(self.ws)
             intent_skill.initialize()
         skill_descriptor = create_skill_descriptor(self.dir)
-        load_skill(skill_descriptor, self.client)
+        self.skill = load_skill(skill_descriptor, self.ws)
 
     def run(self):
-        self.client.on('message', logger.debug)
-        self.client.on('open', self.try_load_skill)
-        self.client.on('error', logger.error)
-        self.client.run_forever()
+        try:
+            self.ws.on('message', LOG.debug)
+            self.ws.on('open', self.load_skill)
+            self.ws.on('error', LOG.error)
+            self.ws.run_forever()
+        except Exception as e:
+            LOG.error("Error: {0}".format(e))
+            self.stop()
+
+    def stop(self):
+        if self.skill:
+            self.skill.shutdown()
 
 
 def main():
-    SkillContainer(sys.argv[1:]).run()
+    container = SkillContainer(sys.argv[1:])
+    try:
+        container.run()
+    except KeyboardInterrupt:
+        container.stop()
+    finally:
+        sys.exit()
 
 
 if __name__ == "__main__":

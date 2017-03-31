@@ -30,18 +30,18 @@ class EnclosureWeather:
     Performs the associated command on Arduino by writing on the Serial port.
     """
 
-    def __init__(self, client, writer):
-        self.client = client
+    def __init__(self, ws, writer):
+        self.ws = ws
         self.writer = writer
         self.__init_events()
 
     def __init_events(self):
-        self.client.on('enclosure.weather.display', self.display)
+        self.ws.on('enclosure.weather.display', self.display)
 
     def display(self, event=None):
-        if event and event.metadata:
-            img_code = event.metadata.get("img_code", None)
-            temp = event.metadata.get("temp", None)
+        if event and event.data:
+            img_code = event.data.get("img_code", None)
+            temp = event.data.get("temp", None)
             if img_code is not None and temp is not None:
                 msg = "weather.display=" + str(img_code) + str(temp)
                 self.writer.write(msg)

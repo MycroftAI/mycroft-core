@@ -30,15 +30,19 @@ class EnclosureArduino:
     Performs the associated command on Arduino by writing on the Serial port.
     """
 
-    def __init__(self, client, writer):
-        self.client = client
+    def __init__(self, ws, writer):
+        self.ws = ws
         self.writer = writer
         self.__init_events()
 
     def __init_events(self):
-        self.client.on('enclosure.system.mute', self.mute)
-        self.client.on('enclosure.system.unmute', self.unmute)
-        self.client.on('enclosure.system.blink', self.blink)
+        self.ws.on('enclosure.system.reset', self.reset)
+        self.ws.on('enclosure.system.mute', self.mute)
+        self.ws.on('enclosure.system.unmute', self.unmute)
+        self.ws.on('enclosure.system.blink', self.blink)
+
+    def reset(self, event=None):
+        self.writer.write("system.reset")
 
     def mute(self, event=None):
         self.writer.write("system.mute")
@@ -48,6 +52,6 @@ class EnclosureArduino:
 
     def blink(self, event=None):
         times = 1
-        if event and event.metadata:
-            times = event.metadata.get("times", times)
+        if event and event.data:
+            times = event.data.get("times", times)
         self.writer.write("system.blink=" + str(times))

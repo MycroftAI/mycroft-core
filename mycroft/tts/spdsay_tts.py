@@ -22,33 +22,31 @@ from mycroft.tts import TTS, TTSValidator
 
 __author__ = 'jdorleans'
 
-NAME = 'spdsay'
-
 
 class SpdSay(TTS):
     def __init__(self, lang, voice):
-        super(SpdSay, self).__init__(lang, voice)
+        super(SpdSay, self).__init__(lang, voice, SpdSayValidator(self))
 
-    def execute(self, sentence, client):
+    def execute(self, sentence):
         subprocess.call(
             ['spd-say', '-l', self.lang, '-t', self.voice, sentence])
 
 
 class SpdSayValidator(TTSValidator):
-    def __init__(self):
-        super(SpdSayValidator, self).__init__()
+    def __init__(self, tts):
+        super(SpdSayValidator, self).__init__(tts)
 
-    def validate_lang(self, lang):
+    def validate_lang(self):
         # TODO
         pass
 
-    def validate_connection(self, tts):
+    def validate_connection(self):
         try:
             subprocess.call(['spd-say', '--version'])
         except:
             raise Exception(
-                'SpdSay is not installed. Run on terminal: sudo apt-get'
-                'install speech-dispatcher')
+                'SpdSay is not installed. Run: sudo apt-get install '
+                'speech-dispatcher')
 
-    def get_instance(self):
+    def get_tts_class(self):
         return SpdSay

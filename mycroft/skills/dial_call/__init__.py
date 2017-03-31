@@ -17,9 +17,10 @@
 
 
 import subprocess
-from os.path import join, dirname
 
 from adapt.intent import IntentBuilder
+from os.path import join, dirname
+
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import MycroftSkill
 from mycroft.util.log import getLogger
@@ -44,16 +45,13 @@ class DialCallSkill(MycroftSkill):
             'sean': '34567890'}  # TODO - Use API
 
     def initialize(self):
-        self.load_vocab_files(join(dirname(__file__), 'vocab', self.lang))
-        self.load_regex_files(join(dirname(__file__), 'regex', self.lang))
-
         intent = IntentBuilder("DialCallIntent").require(
             "DialCallKeyword").require("Contact").build()
         self.register_intent(intent, self.handle_intent)
 
     def handle_intent(self, message):
         try:
-            contact = message.metadata.get("Contact").lower()
+            contact = message.data.get("Contact").lower()
 
             if contact in self.contacts:
                 number = self.contacts.get(contact)
@@ -70,9 +68,9 @@ class DialCallSkill(MycroftSkill):
         subprocess.call(cmd)
 
     def __notify(self, contact, number):
-        self.emitter.emit(
-            Message("dial_call",
-                    metadata={'contact': contact, 'number': number}))
+        self.emitter.emit(Message("dial_call", {
+            'contact': contact, 'number': number
+        }))
 
     def stop(self):
         pass

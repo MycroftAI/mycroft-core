@@ -16,15 +16,15 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import traceback
-import sys
 import json
+import sys
+import traceback
 
-from pyee import EventEmitter
 import tornado.websocket
+from pyee import EventEmitter
 
-from mycroft.messagebus.message import Message
 import mycroft.util.log
+from mycroft.messagebus.message import Message
 
 logger = mycroft.util.log.getLogger(__name__)
 __author__ = 'seanfitz'
@@ -51,8 +51,7 @@ class WebsocketEventHandler(tornado.websocket.WebSocketHandler):
             return
 
         try:
-            self.emitter.emit(
-                deserialized_message.message_type, deserialized_message)
+            self.emitter.emit(deserialized_message.type, deserialized_message)
         except Exception, e:
             logger.exception(e)
             traceback.print_exc(file=sys.stdout)

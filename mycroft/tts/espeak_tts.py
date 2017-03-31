@@ -20,35 +20,32 @@ import subprocess
 
 from mycroft.tts import TTS, TTSValidator
 
-__author__ = 'seanfitz'
-
-NAME = 'espeak'
+__author__ = 'seanfitz', 'jdorleans'
 
 
 class ESpeak(TTS):
     def __init__(self, lang, voice):
-        super(ESpeak, self).__init__(lang, voice)
+        super(ESpeak, self).__init__(lang, voice, ESpeakValidator(self))
 
-    def execute(self, sentence, client):
+    def execute(self, sentence):
         subprocess.call(
             ['espeak', '-v', self.lang + '+' + self.voice, sentence])
 
 
 class ESpeakValidator(TTSValidator):
-    def __init__(self):
-        super(ESpeakValidator, self).__init__()
+    def __init__(self, tts):
+        super(ESpeakValidator, self).__init__(tts)
 
-    def validate_lang(self, lang):
+    def validate_lang(self):
         # TODO
         pass
 
-    def validate_connection(self, tts):
+    def validate_connection(self):
         try:
             subprocess.call(['espeak', '--version'])
         except:
             raise Exception(
-                'ESpeak is not installed. Run on terminal: sudo apt-get '
-                'install espeak')
+                'ESpeak is not installed. Run: sudo apt-get install espeak')
 
-    def get_instance(self):
+    def get_tts_class(self):
         return ESpeak

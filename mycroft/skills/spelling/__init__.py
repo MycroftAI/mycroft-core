@@ -16,11 +16,11 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from os.path import dirname, join
-
 import time
 
 from adapt.intent import IntentBuilder
+from os.path import dirname, join
+
 from mycroft.skills.core import MycroftSkill
 
 __author__ = 'seanfitz'
@@ -35,22 +35,19 @@ class SpellingSkill(MycroftSkill):
         super(SpellingSkill, self).__init__(name="SpellingSkill")
 
     def initialize(self):
-        self.load_vocab_files(join(dirname(__file__), 'vocab', self.lang))
-        self.load_regex_files(join(dirname(__file__), 'regex', self.lang))
-
         intent = IntentBuilder("SpellingIntent").require(
             "SpellingKeyword").require("Word").build()
         self.register_intent(intent, self.handle_intent)
 
     def handle_intent(self, message):
-        word = message.metadata.get("Word")
+        word = message.data.get("Word")
         self.emitter.once("recognizer_loop:audio_output_start",
                           self.enclosure.mouth_text(word))
         spelled_word = ', '.join(word).lower()
-        self.enclosure.activate_mouth_listeners(False)
+        self.enclosure.deactivate_mouth_events()
         self.speak(spelled_word)
         time.sleep((self.LETTERS_PER_SCREEN + len(word)) * self.SEC_PER_LETTER)
-        self.enclosure.activate_mouth_listeners(True)
+        self.enclosure.activate_mouth_events()
         self.enclosure.mouth_reset()
 
     def stop(self):

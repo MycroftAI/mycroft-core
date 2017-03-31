@@ -16,47 +16,52 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from uuid import uuid4
 import json
+import time
+
 from mycroft.filesystem import FileSystemAccess
 
 
 class DeviceIdentity(object):
     def __init__(self, **kwargs):
-        self.device_id = kwargs.get('device_id')
-        self.owner = kwargs.get('owner')
-        self.token = kwargs.get('token')
+        self.uuid = kwargs.get("uuid", "")
+        self.access = kwargs.get("access", "")
+        self.refresh = kwargs.get("refresh", "")
+        self.expires_at = kwargs.get("expires_at", 0)
 
-    @staticmethod
-    def load(identity_file_handle):
-        json_blob = json.load(identity_file_handle)
-        return DeviceIdentity(**json_blob)
-
-    def save(self, identity_file_handle):
-        json.dump(self.__dict__, identity_file_handle)
+    def is_expired(self):
+        return self.refresh and self.expires_at <= time.time()
 
 
 class IdentityManager(object):
-    def __init__(self):
-        self.filesystem = FileSystemAccess('identity')
-        self.identity = None
-        self.initialize()
+    __identity = None
 
-    def initialize(self):
-        if self.filesystem.exists('identity.json'):
-            self.identity = DeviceIdentity.load(self.filesystem.open(
-                'identity.json', 'r'))
-        else:
-            identity = DeviceIdentity(device_id=str(uuid4()))
-            self.update(identity)
+    @staticmethod
+    def load():
+        try:
+            with FileSystemAccess('identity').open('identity2.json', 'r') as f:
+                IdentityManager.__identity = DeviceIdentity(**json.load(f))
+        except:
+            IdentityManager.__identity = DeviceIdentity()
+        return IdentityManager.__identity
 
-    def update(self, identity):
-        self.identity = identity
-        with self.filesystem.open('identity.json', 'w') as f:
-            self.identity.save(f)
+    @staticmethod
+    def save(login=None):
+        if login:
+            IdentityManager.update(login)
+        with FileSystemAccess('identity').open('identity2.json', 'w') as f:
+            json.dump(IdentityManager.__identity.__dict__, f)
 
-    def is_paired(self):
-        return self.identity is not None and self.identity.owner is not None
+    @staticmethod
+    def update(login={}):
+        expiration = login.get("expiration", 0)
+        IdentityManager.__identity.uuid = login.get("uuid", "")
+        IdentityManager.__identity.access = login.get("accessToken", "")
+        IdentityManager.__identity.refresh = login.get("refreshToken", "")
+        IdentityManager.__identity.expires_at = time.time() + expiration
 
-    def get(self):
-        return self.identity
+    @staticmethod
+    def get():
+        if not IdentityManager.__identity:
+            IdentityManager.load()
+        return IdentityManager.__identity

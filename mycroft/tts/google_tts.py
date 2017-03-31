@@ -19,38 +19,37 @@
 from gtts import gTTS
 
 from mycroft.tts import TTS, TTSValidator
-from mycroft.util import play_wav
+from mycroft.util import play_mp3
 
 __author__ = 'jdorleans'
-
-NAME = 'gtts'
 
 
 class GoogleTTS(TTS):
     def __init__(self, lang, voice):
-        super(GoogleTTS, self).__init__(lang, voice)
+        super(GoogleTTS, self).__init__(lang, voice, GoogleTTSValidator(self))
 
-    def execute(self, sentence, client):
-        tts = gTTS(text=sentence, lang=self.lang)
+    def execute(self, sentence):
+        tts = gTTS(sentence, self.lang)
         tts.save(self.filename)
-        play_wav(self.filename)
+        p = play_mp3(self.filename)
+        p.communicate()  # Wait for termination
 
 
 class GoogleTTSValidator(TTSValidator):
-    def __init__(self):
-        super(GoogleTTSValidator, self).__init__()
+    def __init__(self, tts):
+        super(GoogleTTSValidator, self).__init__(tts)
 
-    def validate_lang(self, lang):
+    def validate_lang(self):
         # TODO
         pass
 
-    def validate_connection(self, tts):
+    def validate_connection(self):
         try:
-            gTTS(text='Hi').save(tts.filename)
+            gTTS(text='Hi').save(self.tts.filename)
         except:
             raise Exception(
                 'GoogleTTS server could not be verified. Please check your '
                 'internet connection.')
 
-    def get_instance(self):
+    def get_tts_class(self):
         return GoogleTTS

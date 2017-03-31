@@ -16,28 +16,86 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import socket
+import subprocess
+import tempfile
+
 import os
 import os.path
-import subprocess
-from os.path import dirname
-import socket
-
 import psutil
-import tempfile
+from os.path import dirname
+from mycroft.util.log import getLogger
+import mycroft.configuration
 
 __author__ = 'jdorleans'
 
-
-def str2bool(v):
-    return v.lower() in ("yes", "true", "t", "1")
+LOGGER = getLogger(__name__)
 
 
-def play_wav(file_path):
-    return subprocess.Popen(["aplay", file_path])
+def resolve_resource_file(res_name):
+    """Convert a resource into an absolute filename.
+
+    Resource names are in the form: 'filename.ext'
+    or 'path/filename.ext'
+
+    The system wil look for ~/.mycroft/res_name first, and
+    if not found will look at /opt/mycroft/res_name,
+    then finally it will look for res_name in the 'mycroft/res'
+    folder of the source code package.
+
+    Example:
+    With mycroft running as the user 'bob', if you called
+        resolve_resource_file('snd/beep.wav')
+    it would return either '/home/bob/.mycroft/snd/beep.wav' or
+    '/opt/mycroft/snd/beep.wav' or '.../mycroft/res/snd/beep.wav',
+    where the '...' is replaced by the path where the package has
+    been installed.
+
+    Args:
+        res_name (str): a resource path/name
+    """
+
+    # First look for fully qualified file (e.g. a user setting)
+    if os.path.isfile(res_name):
+        return res_name
+
+    # Now look for ~/.mycroft/res_name (in user folder)
+    filename = os.path.expanduser("~/.mycroft/" + res_name)
+    if os.path.isfile(filename):
+        return filename
+
+    # Next look for /opt/mycroft/res/res_name
+    filename = os.path.expanduser("/opt/mycroft/" + res_name)
+    if os.path.isfile(filename):
+        return filename
+
+    # Finally look for it in the source package
+    filename = os.path.join(os.path.dirname(__file__), '..', 'res', res_name)
+    filename = os.path.abspath(os.path.normpath(filename))
+    if os.path.isfile(filename):
+        return filename
+
+    return None  # Resource cannot be resolved
 
 
-def play_mp3(file_path):
-    return subprocess.Popen(["mpg123", file_path])
+def play_wav(uri):
+    config = mycroft.configuration.ConfigurationManager.get()
+    play_cmd = config.get("play_wav_cmdline")
+    play_wav_cmd = str(play_cmd).split(" ")
+    for index, cmd in enumerate(play_wav_cmd):
+        if cmd == "%1":
+            play_wav_cmd[index] = (get_http(uri))
+    return subprocess.Popen(play_wav_cmd)
+
+
+def play_mp3(uri):
+    config = mycroft.configuration.ConfigurationManager.get()
+    play_cmd = config.get("play_mp3_cmdline")
+    play_mp3_cmd = str(play_cmd).split(" ")
+    for index, cmd in enumerate(play_mp3_cmd):
+        if cmd == "%1":
+            play_mp3_cmd[index] = (get_http(uri))
+    return subprocess.Popen(play_mp3_cmd)
 
 
 def record(file_path, duration, rate, channels):
@@ -48,6 +106,10 @@ def record(file_path, duration, rate, channels):
     else:
         return subprocess.Popen(
             ["arecord", "-r", str(rate), "-c", str(channels), file_path])
+
+
+def get_http(uri):
+    return uri.replace("https://", "http://")
 
 
 def remove_last_slash(url):
@@ -111,21 +173,22 @@ def connected(host="8.8.8.8", port=53, timeout=3):
             return False
 
 
-def create_signal(signalName):
+def create_signal(signal_name):
     try:
-        f = open(tempfile.gettempdir()+'/'+signalName, 'w')
-        return True
+        with open(tempfile.gettempdir() + '/' + signal_name, 'w'):
+            return True
     except IOError:
         return False
 
 
-def check_for_signal(signalName):
-    if os.path.isfile(tempfile.gettempdir()+'/'+signalName):
-        os.remove(tempfile.gettempdir()+'/'+signalName)
+def check_for_signal(signal_name):
+    filename = tempfile.gettempdir() + '/' + signal_name
+    if os.path.isfile(filename):
+        os.remove(filename)
         return True
-
     return False
 
 
-class CerberusAccessDenied(Exception):
-    pass
+def validate_param(value, name):
+    if not value:
+        raise ValueError("Missing or empty %s in mycroft.conf " % name)

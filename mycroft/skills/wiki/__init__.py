@@ -16,13 +16,13 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import re
-from os.path import join, dirname
 from random import randrange
 
+import re
 import wikipedia as wiki
-
 from adapt.intent import IntentBuilder
+from os.path import join, dirname
+
 from mycroft.skills.core import MycroftSkill
 from mycroft.util import read_stripped_lines
 from mycroft.util.log import getLogger
@@ -35,8 +35,8 @@ LOGGER = getLogger(__name__)
 class WikipediaSkill(MycroftSkill):
     def __init__(self):
         super(WikipediaSkill, self).__init__(name="WikipediaSkill")
-        self.max_results = int(self.config['max_results'])
-        self.max_phrases = int(self.config['max_phrases'])
+        self.max_results = self.config['max_results']
+        self.max_phrases = self.config['max_phrases']
         self.question = 'Would you like to know more about '  # TODO - i10n
         self.feedback_prefix = read_stripped_lines(
             join(dirname(__file__), 'dialog', self.lang,
@@ -46,16 +46,13 @@ class WikipediaSkill(MycroftSkill):
                  'FeedbackSearch.dialog'))
 
     def initialize(self):
-        self.load_vocab_files(join(dirname(__file__), 'vocab', self.lang))
-        self.load_regex_files(join(dirname(__file__), 'regex', self.lang))
-
         intent = IntentBuilder("WikipediaIntent").require(
             "WikipediaKeyword").require("ArticleTitle").build()
         self.register_intent(intent, self.handle_intent)
 
     def handle_intent(self, message):
         try:
-            title = message.metadata.get("ArticleTitle")
+            title = message.data.get("ArticleTitle")
             self.__feedback_search(title)
             results = wiki.search(title, self.max_results)
             summary = re.sub(

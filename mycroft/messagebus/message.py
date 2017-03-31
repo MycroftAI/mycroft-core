@@ -22,40 +22,34 @@ __author__ = 'seanfitz'
 
 
 class Message(object):
-    def __init__(self, message_type, metadata={}, context=None):
-        self.message_type = message_type
-        self.metadata = metadata
+    def __init__(self, type, data={}, context=None):
+        self.type = type
+        self.data = data
         self.context = context
 
     def serialize(self):
         return json.dumps({
-            'message_type': self.message_type,
-            'metadata': self.metadata,
+            'type': self.type,
+            'data': self.data,
             'context': self.context
         })
 
     @staticmethod
-    def deserialize(json_str):
-        json_message = json.loads(json_str)
-        return Message(json_message.get('message_type'),
-                       metadata=json_message.get('metadata'),
-                       context=json_message.get('context'))
+    def deserialize(value):
+        obj = json.loads(value)
+        return Message(obj.get('type'), obj.get('data'), obj.get('context'))
 
-    def reply(self, message_type, metadata, context={}):
-        if not context:
-            context = {}
+    def reply(self, type, data, context={}):
         new_context = self.context if self.context else {}
         for key in context:
             new_context[key] = context[key]
-        if 'target' in metadata:
-            new_context['target'] = metadata['target']
+        if 'target' in data:
+            new_context['target'] = data['target']
         elif 'client_name' in context:
             context['target'] = context['client_name']
-        return Message(message_type, metadata, context=new_context)
+        return Message(type, data, context=new_context)
 
-    def publish(self, message_type, metadata, context={}):
-        if not context:
-            context = {}
+    def publish(self, type, data, context={}):
         new_context = self.context.copy() if self.context else {}
         for key in context:
             new_context[key] = context[key]
@@ -63,4 +57,4 @@ class Message(object):
         if 'target' in new_context:
             del new_context['target']
 
-        return Message(message_type, metadata, context=new_context)
+        return Message(type, data, context=new_context)

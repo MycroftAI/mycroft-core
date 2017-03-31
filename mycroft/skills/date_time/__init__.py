@@ -17,66 +17,62 @@
 
 
 import datetime
-from os.path import dirname, join
+from os.path import dirname
 
 import tzlocal
+from adapt.intent import IntentBuilder
 from astral import Astral
 from pytz import timezone
 
-from adapt.intent import IntentBuilder
 from mycroft.skills.core import MycroftSkill
 
-__author__ = 'ryanleesipes'
+__author__ = 'ryanleesipes', 'jdorleans'
 
 
 # TODO - Localization
 class TimeSkill(MycroftSkill):
     def __init__(self):
-        super(TimeSkill, self).__init__(name="TimeSkill")
-        self.format = self.config['time_format']
+        super(TimeSkill, self).__init__("TimeSkill")
+        self.astral = Astral()
+        self.init_format()
+
+    def init_format(self):
+        if self.config_core.get('time_format') == 'full':
+            self.format = "%H:%M"
+        else:
+            self.format = "%I:%M, %p"
 
     def initialize(self):
-        self.load_vocab_files(join(dirname(__file__), 'vocab', 'en-us'))
-        self.load_regex_files(join(dirname(__file__), 'regex', 'en-us'))
-
-        intent = IntentBuilder("TimeIntent").require(
-            "TimeKeyword").optionally("Location").build()
-
+        intent = IntentBuilder("TimeIntent").require("TimeKeyword") \
+            .optionally("Location").build()
         self.register_intent(intent, self.handle_intent)
 
-    def get_time_format(self, convert_time):
-
-        if self.format == '12h':
-            current_time = datetime.date.strftime(convert_time, "%I:%M, %p")
-        else:
-            current_time = datetime.date.strftime(convert_time, "%H:%M ")
-        return current_time
-
     def get_timezone(self, locale):
-        a = Astral()
         try:
-            city = a[locale]
-            return city.timezone
+            # This handles common city names, like "Dallas" or "Paris"
+            return timezone(self.astral[locale].timezone)
         except:
-            return None
+            try:
+                # This handles codes like "America/Los_Angeles"
+                return timezone(locale)
+            except:
+                return None
 
-    # This method only handles localtime, for other timezones the task falls
-    # to Wolfram.
     def handle_intent(self, message):
-        location = message.metadata.get("Location", None)
+        location = message.data.get("Location")  # optional parameter
+        nowUTC = datetime.datetime.now(timezone('UTC'))
 
-        now = datetime.datetime.now(timezone('UTC'))
-        if location is None:
-            tz = tzlocal.get_localzone()
-        else:
-            astral_tz = self.get_timezone(location)
-            tz = timezone(astral_tz) if astral_tz else None
-            if not tz:
-                self.speak("I could not find the timezone for " + location)
-                return
+        tz = self.get_timezone(self.location_timezone)
+        if location:
+            tz = self.get_timezone(location)
 
-        time_value = now.astimezone(tz)
-        self.speak("It is currently " + self.get_time_format(time_value))
+        if not tz:
+            self.speak_dialog("time.tz.not.found", {"location": location})
+            return
+
+        # Convert UTC to appropriate timezone and format
+        time = nowUTC.astimezone(tz).strftime(self.format)
+        self.speak_dialog("time.current", {"time": time})
 
     def stop(self):
         pass

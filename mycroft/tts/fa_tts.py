@@ -16,16 +16,12 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import json
-
 import requests
 
 from mycroft.tts import TTSValidator
 from mycroft.tts.remote_tts import RemoteTTS
 
 __author__ = 'jdorleans'
-
-NAME = 'fatts'
 
 
 class FATTS(RemoteTTS):
@@ -39,7 +35,8 @@ class FATTS(RemoteTTS):
     }
 
     def __init__(self, lang, voice, url):
-        super(FATTS, self).__init__(lang, voice, url, '/say')
+        super(FATTS, self).__init__(lang, voice, url, '/say',
+                                    FATTSValidator(self))
 
     def build_request_params(self, sentence):
         params = self.PARAMS.copy()
@@ -50,23 +47,23 @@ class FATTS(RemoteTTS):
 
 
 class FATTSValidator(TTSValidator):
-    def __init__(self):
-        super(FATTSValidator, self).__init__()
+    def __init__(self, tts):
+        super(FATTSValidator, self).__init__(tts)
 
-    def validate_lang(self, lang):
+    def validate_lang(self):
         # TODO
         pass
 
-    def validate_connection(self, tts):
+    def validate_connection(self):
         try:
-            resp = requests.get(tts.url + "/info/version", verify=False)
-            content = json.loads(resp.content)
-            if content['product'].find('FA-TTS') < 0:
+            resp = requests.get(self.tts.url + "/info/version", verify=False)
+            content = resp.json()
+            if content.get('product', '').find('FA-TTS') < 0:
                 raise Exception('Invalid FA-TTS server.')
         except:
             raise Exception(
                 'FA-TTS server could not be verified. Check your connection '
-                'to the server: ' + tts.url)
+                'to the server: ' + self.tts.url)
 
-    def get_instance(self):
+    def get_tts_class(self):
         return FATTS

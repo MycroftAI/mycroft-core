@@ -17,22 +17,20 @@
 
 
 from StringIO import StringIO
-from os.path import dirname, join
 
 import re
-import requests
 import wolframalpha
-from six.moves import urllib
+from os.path import dirname, join
+from requests import HTTPError
 
-from mycroft.identity import IdentityManager
-from mycroft.skills.core import MycroftSkill
-from mycroft.util import CerberusAccessDenied
-from mycroft.util.log import getLogger
+from mycroft.api import Api
 from mycroft.messagebus.message import Message
+from mycroft.skills.core import MycroftSkill
+from mycroft.util.log import getLogger
 
 __author__ = 'seanfitz'
 
-logger = getLogger(__name__)
+LOG = getLogger(__name__)
 
 
 class EnglishQuestionParser(object):
@@ -74,27 +72,22 @@ class EnglishQuestionParser(object):
         return None
 
 
-class CerberusWolframAlphaClient(object):
-    """
-    Wolfram|Alpha v2.0 client
-    """
+class WAApi(Api):
+    def __init__(self):
+        super(WAApi, self).__init__("wa")
 
-    def query(self, query):
-        """
-        Query Wolfram|Alpha with query using the v2.0 API
-        """
-        identity = IdentityManager().get()
-        bearer_token = 'Bearer %s:%s' % (identity.device_id, identity.token)
-        query = urllib.parse.urlencode(dict(input=query))
-        url = 'https://cerberus.mycroft.ai/wolframalpha/v2/query?' + query
-        headers = {'Authorization': bearer_token}
-        response = requests.get(url, headers=headers)
-        if response.status_code == 401:
-            raise CerberusAccessDenied()
-        return wolframalpha.Result(StringIO(response.content))
+    def get_data(self, response):
+        return response
+
+    def query(self, input):
+        data = self.request({"query": {"input": input}})
+        return wolframalpha.Result(StringIO(data.content))
 
 
 class WolframAlphaSkill(MycroftSkill):
+    PIDS = ['Value', 'NotableFacts:PeopleData', 'BasicInformation:PeopleData',
+            'Definition', 'DecimalApproximation']
+
     def __init__(self):
         MycroftSkill.__init__(self, name="WolframAlphaSkill")
         self.__init_client()
@@ -102,48 +95,38 @@ class WolframAlphaSkill(MycroftSkill):
 
     def __init_client(self):
         key = self.config.get('api_key')
-        if key:
+        if key and not self.config.get('proxy'):
             self.client = wolframalpha.Client(key)
         else:
-            self.client = CerberusWolframAlphaClient()
+            self.client = WAApi()
 
     def initialize(self):
         self.init_dialog(dirname(__file__))
         self.emitter.on('intent_failure', self.handle_fallback)
 
     def get_result(self, res):
-        result = None
         try:
-            result = next(res.results).text
-            return result
+            return next(res.results).text
         except:
+            result = None
             try:
-                result = self.__find_pod_id(res.pods, 'Value')
+                for pid in self.PIDS:
+                    result = self.__find_pod_id(res.pods, pid)
+                    if result:
+                        result = result[:5]
+                        break
                 if not result:
-                    result = self.__find_pod_id(
-                        res.pods, 'NotableFacts:PeopleData')
-                    if not result:
-                        result = self.__find_pod_id(
-                            res.pods, 'BasicInformation:PeopleData')
-                        if not result:
-                            result = self.__find_pod_id(res.pods, 'Definition')
-                            if not result:
-                                result = self.__find_pod_id(
-                                    res.pods, 'DecimalApproximation')
-                                if result:
-                                    result = result[:5]
-                                else:
-                                    result = self.__find_num(
-                                        res.pods, '200')
+                    result = self.__find_num(res.pods, '200')
                 return result
             except:
                 return result
 
+    # TODO: Localization
     def handle_fallback(self, message):
         self.enclosure.mouth_think()
-        logger.debug(
+        LOG.debug(
             "Could not determine intent, falling back to WolframAlpha Skill!")
-        utterance = message.metadata.get('utterance')
+        utterance = message.data.get('utterance')
         parsed_question = self.question_parser.parse(utterance)
 
         query = utterance
@@ -157,18 +140,19 @@ class WolframAlphaSkill(MycroftSkill):
                 parsed_question['QuestionVerb'] = 'is'
             query = "%s %s %s" % (utt_word, utt_verb, utt_query)
             phrase = "know %s %s %s" % (utt_word, utt_query, utt_verb)
-        else:  # TODO: Localization
+        else:
             phrase = "understand the phrase " + utterance
 
         try:
             res = self.client.query(query)
             result = self.get_result(res)
             others = self._find_did_you_mean(res)
-        except CerberusAccessDenied as e:
-            self.speak_dialog('not.paired')
+        except HTTPError as e:
+            if e.response.status_code == 401:
+                self.emitter.emit(Message("mycroft.not.paired"))
             return
         except Exception as e:
-            logger.exception(e)
+            LOG.exception(e)
             self.speak_dialog("not.understood", data={'phrase': phrase})
             return
 

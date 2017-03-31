@@ -33,7 +33,12 @@ if [ $(id -u) -eq 0 ]; then
 fi
 
 TOP=$(cd $(dirname $0) && pwd -L)
-VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${HOME}/.virtualenvs/mycroft"}
+
+if [ -z "$WORKON_HOME" ]; then
+    VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${HOME}/.virtualenvs/mycroft"}
+else
+    VIRTUALENV_ROOT="$WORKON_HOME/mycroft"
+fi
 
 # create virtualenv, consistent with virtualenv-wrapper conventions
 if [ ! -d ${VIRTUALENV_ROOT} ]; then
@@ -43,6 +48,7 @@ fi
 source ${VIRTUALENV_ROOT}/bin/activate
 cd ${TOP}
 easy_install pip==7.1.2 # force version of pip
+pip install --upgrade virtualenv
 
 # install requirements (except pocketsphinx)
 pip2 install -r requirements.txt 

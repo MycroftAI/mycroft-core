@@ -1,11 +1,12 @@
 recursive-include mycroft/client/speech/model *
 include requirements.txt
-include mycroft/configuration/*.ini
+include mycroft/configuration/*.conf
 recursive-include mycroft/skills/*/dialog *
 recursive-include mycroft/skills/*/vocab *
 recursive-include mycroft/skills/*/regex *
 include mycroft/skills/alarm/alarm.mp3
 include mycroft/skills/volume/blop-mark-diangelo.wav
+include mycroft/res/snd/start_listening.wav
 #include mycroft/tts/mycroft_voice_4.0.flitevox
 recursive-include mycroft/client/wifisetup/web/* *
 include mycroft/client/wifisetup/web/index.html

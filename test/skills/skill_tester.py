@@ -1,7 +1,9 @@
 import json
+
 from pyee import EventEmitter
+
 from mycroft.messagebus.message import Message
-from mycroft.skills.core import load_skills
+from mycroft.skills.core import load_skills, unload_skills
 
 __author__ = 'seanfitz'
 
@@ -12,14 +14,14 @@ class RegistrationOnlyEmitter(object):
 
     def on(self, event, f):
         if event in [
-                'register_intent',
-                'register_vocab',
-                'recognizer_loop:utterance'
+            'register_intent',
+            'register_vocab',
+            'recognizer_loop:utterance'
         ]:
             self.emitter.on(event, f)
 
     def emit(self, event, *args, **kwargs):
-        event_name = event.message_type
+        event_name = event.type
         self.emitter.emit(event_name, event, *args, **kwargs)
 
 
@@ -29,8 +31,11 @@ class MockSkillsLoader(object):
         self.emitter = RegistrationOnlyEmitter()
 
     def load_skills(self):
-        load_skills(self.emitter, self.skills_root)
+        self.skills = load_skills(self.emitter, self.skills_root)
         return self.emitter.emitter  # kick out the underlying emitter
+
+    def unload_skills(self):
+        unload_skills(self.skills)
 
 
 class SkillTest(object):
@@ -53,8 +58,9 @@ class SkillTest(object):
         event = {'utterances': [example_json.get('utterance')]}
 
         def compare(intent):
-            self.compare_intents(example_json.get('intent'), intent.metadata)
+            self.compare_intents(example_json.get('intent'), intent.data)
             self.returned_intent = True
+
         self.emitter.once(example_json.get('intent_type'), compare)
         self.emitter.emit(
             'recognizer_loop:utterance',

@@ -17,63 +17,74 @@
 
 
 import json
+
+import sys
 from os.path import expanduser, exists
 
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.skills.core import load_skills, THIRD_PARTY_SKILLS_DIR
 from mycroft.util.log import getLogger
+
 logger = getLogger("Skills")
 
 __author__ = 'seanfitz'
 
-client = None
+ws = None
+skills = []
 
 
 def load_skills_callback():
-    global client
-    load_skills(client)
-    config = ConfigurationManager.get()
-    config_core = config.get("core")
+    global ws
+    global skills
+    skills += load_skills(ws)
+    config = ConfigurationManager.get().get("skills")
 
     try:
-        ini_third_party_skills_dir = expanduser(
-            config_core.get("third_party_skills_dir"))
+        ini_third_party_skills_dir = expanduser(config.get("directory"))
     except AttributeError as e:
         logger.warning(e.message)
 
-    if exists(THIRD_PARTY_SKILLS_DIR):
-        load_skills(client, THIRD_PARTY_SKILLS_DIR)
+    for loc in THIRD_PARTY_SKILLS_DIR:
+        if exists(loc):
+            skills += load_skills(ws, loc)
 
     if ini_third_party_skills_dir and exists(ini_third_party_skills_dir):
-        load_skills(client, ini_third_party_skills_dir)
+        skills += load_skills(ws, ini_third_party_skills_dir)
 
 
 def connect():
-    global client
-    client.run_forever()
+    global ws
+    ws.run_forever()
 
 
 def main():
-    global client
-    client = WebsocketClient()
+    global ws
+    ws = WebsocketClient()
+    ConfigurationManager.init(ws)
 
     def echo(message):
         try:
             _message = json.loads(message)
 
-            if _message.get("message_type") == "registration":
+            if _message.get("type") == "registration":
                 # do not log tokens from registration messages
-                _message["metadata"]["token"] = None
+                _message["data"]["token"] = None
             message = json.dumps(_message)
         except:
             pass
         logger.debug(message)
 
-    client.on('message', echo)
-    client.once('open', load_skills_callback)
-    client.run_forever()
+    ws.on('message', echo)
+    ws.once('open', load_skills_callback)
+    ws.run_forever()
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        for skill in skills:
+            skill.shutdown()
+    finally:
+        sys.exit()

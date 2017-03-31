@@ -1,5 +1,6 @@
 import os
 import pdoc
+
 __author__ = 'seanfitz'
 
 DOCS_NAME = "mycroft-skills-sdk"
@@ -7,14 +8,13 @@ DOCS_NAME = "mycroft-skills-sdk"
 DOC_OUTPUT_DIR = "build/doc/%s/html" % DOCS_NAME
 
 documented_sdk_modules = [
-        "mycroft.configuration",
-        "mycroft.configuration.config",
-        "mycroft.dialog",
-        "mycroft.filesystem",
-        "mycroft.session",
-        "mycroft.util",
-        "mycroft.util.log"
-    ]
+    "mycroft.configuration",
+    "mycroft.dialog",
+    "mycroft.filesystem",
+    "mycroft.session",
+    "mycroft.util",
+    "mycroft.util.log"
+]
 
 
 def module_to_docpath(module_name):
@@ -46,7 +46,7 @@ def main():
     root_module = pdoc.Module(mycroft)
     html = root_module.html(external_links=False, link_prefix='', source=True)
     with open(module_to_docpath("mycroft"), 'w') as f:
-            f.write(html)
+        f.write(html)
 
 
 if __name__ == "__main__":

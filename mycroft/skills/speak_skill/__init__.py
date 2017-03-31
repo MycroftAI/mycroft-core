@@ -16,9 +16,9 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from adapt.intent import IntentBuilder
 from os.path import dirname, join
 
-from adapt.intent import IntentBuilder
 from mycroft.skills.core import MycroftSkill
 
 __author__ = 'jasonehines'
@@ -31,8 +31,6 @@ class SpeakSkill(MycroftSkill):
         super(SpeakSkill, self).__init__(name="SpeakSkill")
 
     def initialize(self):
-        self.load_vocab_files(join(dirname(__file__), 'vocab', 'en-us'))
-
         prefixes = [
             'speak', 'say', 'repeat']
         self.__register_prefixed_regex(prefixes, "(?P<Words>.*)")
@@ -46,7 +44,7 @@ class SpeakSkill(MycroftSkill):
             self.register_regex(prefix + ' ' + suffix_regex)
 
     def handle_speak_intent(self, message):
-        words = message.metadata.get("Words")
+        words = message.data.get("Words")
         self.speak(words)
 
     def stop(self):

@@ -17,8 +17,8 @@
 
 
 import abc
-import re
 
+import re
 from requests_futures.sessions import FuturesSession
 
 from mycroft.tts import TTS
@@ -38,13 +38,13 @@ class RemoteTTS(TTS):
     whole sentence into small ones.
     """
 
-    def __init__(self, lang, voice, url, api_path):
-        super(RemoteTTS, self).__init__(lang, voice)
+    def __init__(self, lang, voice, url, api_path, validator):
+        super(RemoteTTS, self).__init__(lang, voice, validator)
         self.api_path = api_path
         self.url = remove_last_slash(url)
         self.session = FuturesSession()
 
-    def execute(self, sentence, client):
+    def execute(self, sentence):
         phrases = self.__get_phrases(sentence)
 
         if len(phrases) > 0:
@@ -80,7 +80,7 @@ class RemoteTTS(TTS):
         resp = req.result()
         if resp.status_code == 200:
             self.__save(resp.content)
-            play_wav(self.filename)
+            play_wav(self.filename).communicate()
         else:
             LOGGER.error(
                 '%s Http Error: %s for url: %s' %

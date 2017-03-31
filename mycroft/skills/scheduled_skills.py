@@ -22,8 +22,8 @@ from threading import Timer, Lock
 from time import mktime
 
 import parsedatetime as pdt
-
 from adapt.intent import IntentBuilder
+
 from mycroft.skills import time_rules
 from mycroft.skills.core import MycroftSkill
 from mycroft.util.log import getLogger
@@ -52,6 +52,18 @@ class ScheduledSkill(MycroftSkill):
         self.timer = None
         self.calendar = pdt.Calendar()
         self.time_rules = time_rules.create(self.lang)
+        self.init_format()
+
+    def init_format(self):
+        if self.config_core.get('date_format') == 'DMY':
+            self.format = "%d %B, %Y at "
+        else:
+            self.format = "%B %d, %Y at "
+
+        if self.config_core.get('time_format') == 'full':
+            self.format += "%H:%M"
+        else:
+            self.format += "%I:%M, %p"
 
     def schedule(self):
         times = sorted(self.get_times())
@@ -62,6 +74,7 @@ class ScheduledSkill(MycroftSkill):
             now = self.get_utc_time()
             delay = max(float(t) - now, 1)
             self.timer = Timer(delay, self.notify, [t])
+            self.timer.daemon = True
             self.start()
 
     def start(self):
@@ -91,8 +104,7 @@ class ScheduledSkill(MycroftSkill):
             else:
                 return "%s minutes and %s seconds from now" % \
                        (int(minutes), int(seconds))
-        return date.strftime(
-            self.config_core.get('time.format'))
+        return date.strftime(self.format)
 
     @abc.abstractmethod
     def get_times(self):
@@ -101,6 +113,10 @@ class ScheduledSkill(MycroftSkill):
     @abc.abstractmethod
     def notify(self, timestamp):
         pass
+
+    def shutdown(self):
+        super(ScheduledSkill, self).shutdown()
+        self.cancel()
 
 
 class ScheduledCRUDSkill(ScheduledSkill):
@@ -131,12 +147,14 @@ class ScheduledCRUDSkill(ScheduledSkill):
         super(ScheduledCRUDSkill, self).__init__(name, emitter)
         self.data = {}
         self.repeat_data = {}
-        self.basedir = basedir
+        if basedir:
+            logger.debug('basedir argument is no longer required and is ' +
+                         'depreciated.')
+            self.basedir = basedir
 
     def initialize(self):
         self.load_data()
         self.load_repeat_data()
-        self.load_data_files(self.basedir)
         self.register_regex("(?P<" + self.name + "Amount>\d+)")
         self.register_intent(
             self.build_intent_create().build(), self.handle_create)
@@ -172,7 +190,7 @@ class ScheduledCRUDSkill(ScheduledSkill):
         return self.data.keys()
 
     def handle_create(self, message):
-        utterance = message.metadata.get('utterance')
+        utterance = message.data.get('utterance')
         date = self.get_utc_time(utterance)
         delay = date - self.get_utc_time()
 
@@ -192,7 +210,7 @@ class ScheduledCRUDSkill(ScheduledSkill):
             self.add(utc_time, message)
 
     def add(self, utc_time, message):
-        utterance = message.metadata.get('utterance')
+        utterance = message.data.get('utterance')
         self.data[utc_time] = None
         self.repeat_data[utc_time] = self.time_rules.get_week_days(utterance)
 
@@ -278,7 +296,7 @@ class ScheduledCRUDSkill(ScheduledSkill):
     # TODO - Localization
     def get_amount(self, message, default=None):
         size = len(self.data)
-        amount = message.metadata.get(self.name + 'Amount', default)
+        amount = message.data.get(self.name + 'Amount', default)
         if amount in ['all', 'my', 'all my', None]:
             total = size
         elif amount in ['one', 'the next', 'the following']:

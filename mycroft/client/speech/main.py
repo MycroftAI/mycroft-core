@@ -16,25 +16,24 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import subprocess
+import re
 import sys
 from threading import Thread, Lock
-import re
 
+from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.client.speech.listener import RecognizerLoop
 from mycroft.configuration import ConfigurationManager
+from mycroft.identity import IdentityManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
-from mycroft.tts import tts_factory
+from mycroft.tts import TTSFactory
+from mycroft.util import kill, play_wav, resolve_resource_file
 from mycroft.util.log import getLogger
-from mycroft.util import kill, connected
-from mycroft.util import play_mp3
-from mycroft.client.enclosure.api import EnclosureAPI
 
 logger = getLogger("SpeechClient")
-client = None
-tts = tts_factory.create()
-mutexTalking = Lock()
+ws = None
+tts = TTSFactory.create()
+lock = Lock()
 loop = None
 
 config = ConfigurationManager.get()
@@ -42,57 +41,44 @@ config = ConfigurationManager.get()
 
 def handle_record_begin():
     logger.info("Begin Recording...")
-    client.emit(Message('recognizer_loop:record_begin'))
+
+    # If enabled, play a wave file with a short sound to audibly
+    # indicate recording has begun.
+    if config.get('confirm_listening'):
+        file = resolve_resource_file(
+            config.get('sounds').get('start_listening'))
+        if file:
+            play_wav(file)
+
+    ws.emit(Message('recognizer_loop:record_begin'))
 
 
 def handle_record_end():
     logger.info("End Recording...")
-    client.emit(Message('recognizer_loop:record_end'))
+    ws.emit(Message('recognizer_loop:record_end'))
 
 
 def handle_wakeword(event):
     logger.info("Wakeword Detected: " + event['utterance'])
-    client.emit(Message('recognizer_loop:wakeword', event))
+    ws.emit(Message('recognizer_loop:wakeword', event))
 
 
 def handle_utterance(event):
     logger.info("Utterance: " + str(event['utterances']))
-    client.emit(Message('recognizer_loop:utterance', event))
-
-
-# class TalkThread (Thread):
-#    def __init__(self, utterance, loop, tts, client, mutex):
-#       Thread.__init__(self)
-#       self.utterance = utterance
-#       self.tts = tts
-#       self.loop = loop
-#       self.client = client
-#       self.mutex = mutex
-#
-#   def run(self):
-#       try:
-#           # logger.info("Speak: " + utterance)
-#           self.loop.mute()
-#           self.tts.execute(self.utterance, self.client)
-#       finally:
-#           self.loop.unmute()
-#           self.mutexTalking.release()
-#           self.client.emit(Message("recognizer_loop:audio_output_end"))
+    ws.emit(Message('recognizer_loop:utterance', event))
 
 
 def mute_and_speak(utterance):
-    mutexTalking.acquire()
-    client.emit(Message("recognizer_loop:audio_output_start"))
+    lock.acquire()
+    ws.emit(Message("recognizer_loop:audio_output_start"))
     try:
         logger.info("Speak: " + utterance)
         loop.mute()
-        tts.execute(utterance, client)
+        tts.execute(utterance)
     finally:
         loop.unmute()
-        mutexTalking.release()
-        client.emit(Message("recognizer_loop:audio_output_end"))
-    # threadTalk = TalkThread(utterance, loop, tts, client, mutexClient)
-    # threadTalk.start()
+        lock.release()
+        ws.emit(Message("recognizer_loop:audio_output_end"))
 
 
 def handle_multi_utterance_intent_failure(event):
@@ -102,10 +88,23 @@ def handle_multi_utterance_intent_failure(event):
 
 
 def handle_speak(event):
-    utterance = event.metadata['utterance']
-    chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s', utterance)
-    for chunk in chunks:
-        mute_and_speak(chunk)
+    utterance = event.data['utterance']
+
+    # This is a bit of a hack for Picroft.  The analog audio on a Pi blocks
+    # for 30 seconds fairly often, so we don't want to break on periods
+    # (decreasing the chance of encountering the block).  But we will
+    # keep the split for non-Picroft installs since it give user feedback
+    # faster on longer phrases.
+    #
+    # TODO: Remove or make an option?  This is really a hack, anyway,
+    # so we likely will want to get rid of this when not running on Mimic
+    if not config.get('enclosure', {}).get('platform') == "picroft":
+        chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s',
+                          utterance)
+        for chunk in chunks:
+            mute_and_speak(chunk)
+    else:
+        mute_and_speak(utterance)
 
 
 def handle_sleep(event):
@@ -121,41 +120,40 @@ def handle_stop(event):
     kill(["aplay"])
 
 
+def handle_paired(event):
+    IdentityManager.update(event.data)
+
+
 def handle_open():
-    # The websocket is up and ready for business.  This is a reasonable time
-    # to declare the system is ready for normal operations.  Send the
-    # enclosure a message to reset itself to let the user know the system
-    # is ready to receive input, such as stopping the rolling eyes shown
-    # at boot on a Mycroft Mark 1 unit.
-    enclosure = EnclosureAPI(client)
-    enclosure.reset()
+    # Reset the UI to indicate ready for speech processing
+    EnclosureAPI(ws).reset()
 
 
 def connect():
-    client.run_forever()
+    ws.run_forever()
 
 
 def main():
-    global client
+    global ws
     global loop
-    client = WebsocketClient()
-    device_index = config.get('speech_client').get('device_index')
-    if device_index:
-        device_index = int(device_index)
-    loop = RecognizerLoop(device_index=device_index)
+    ws = WebsocketClient()
+    tts.init(ws)
+    ConfigurationManager.init(ws)
+    loop = RecognizerLoop()
     loop.on('recognizer_loop:utterance', handle_utterance)
     loop.on('recognizer_loop:record_begin', handle_record_begin)
     loop.on('recognizer_loop:wakeword', handle_wakeword)
     loop.on('recognizer_loop:record_end', handle_record_end)
     loop.on('speak', handle_speak)
-    client.on('speak', handle_speak)
-    client.on(
+    ws.on('open', handle_open)
+    ws.on('speak', handle_speak)
+    ws.on(
         'multi_utterance_intent_failure',
         handle_multi_utterance_intent_failure)
-    client.on('recognizer_loop:sleep', handle_sleep)
-    client.on('recognizer_loop:wake_up', handle_wake_up)
-    client.on('open', handle_open)
-    client.on('mycroft.stop', handle_stop)
+    ws.on('recognizer_loop:sleep', handle_sleep)
+    ws.on('recognizer_loop:wake_up', handle_wake_up)
+    ws.on('mycroft.stop', handle_stop)
+    ws.on("mycroft.paired", handle_paired)
     event_thread = Thread(target=connect)
     event_thread.setDaemon(True)
     event_thread.start()

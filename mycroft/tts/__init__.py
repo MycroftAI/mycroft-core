@@ -14,11 +14,13 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
-
-import abc
+import random
+from abc import ABCMeta, abstractmethod
 from os.path import dirname, exists, isdir
 
+from mycroft.client.enclosure.api import EnclosureAPI
+from mycroft.configuration import ConfigurationManager
+from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.util.log import getLogger
 
 __author__ = 'jdorleans'
@@ -33,16 +35,27 @@ class TTS(object):
     It aggregates the minimum required parameters and exposes
     ``execute(sentence)`` function.
     """
+    __metaclass__ = ABCMeta
 
-    def __init__(self, lang, voice, filename='/tmp/tts.wav'):
+    def __init__(self, lang, voice, validator):
         super(TTS, self).__init__()
-        self.lang = lang
+        self.lang = lang or 'en-us'
         self.voice = voice
-        self.filename = filename
+        self.filename = '/tmp/tts.wav'
+        self.validator = validator
+        random.seed()
 
-    @abc.abstractmethod
-    def execute(self, sentence, client):
+    def init(self, ws):
+        self.ws = ws
+        self.enclosure = EnclosureAPI(self.ws)
+
+    @abstractmethod
+    def execute(self, sentence):
         pass
+
+    def blink(self, rate=1.0):
+        if random.random() < rate:
+            self.enclosure.eyes_blink("b")
 
 
 class TTSValidator(object):
@@ -52,42 +65,86 @@ class TTSValidator(object):
     It exposes and implements ``validate(tts)`` function as a template to
     validate the TTS engines.
     """
+    __metaclass__ = ABCMeta
 
-    def __init__(self):
-        pass
+    def __init__(self, tts):
+        self.tts = tts
 
-    def validate(self, tts):
-        self.__validate_instance(tts)
-        self.__validate_filename(tts.filename)
-        self.validate_lang(tts.lang)
-        self.validate_connection(tts)
+    def validate(self):
+        self.validate_instance()
+        self.validate_filename()
+        self.validate_lang()
+        self.validate_connection()
 
-    def __validate_instance(self, tts):
-        instance = self.get_instance()
-        if not isinstance(tts, instance):
-            raise AttributeError(
-                'tts must be instance of ' + instance.__name__)
-        LOGGER.debug('TTS: ' + str(instance))
+    def validate_instance(self):
+        clazz = self.get_tts_class()
+        if not isinstance(self.tts, clazz):
+            raise AttributeError('tts must be instance of ' + clazz.__name__)
 
-    def __validate_filename(self, filename):
+    def validate_filename(self):
+        filename = self.tts.filename
         if not (filename and filename.endswith('.wav')):
-            raise AttributeError(
-                'filename: ' + filename + ' must be a .wav file!')
+            raise AttributeError('file: %s must be in .wav format!' % filename)
+
         dir_path = dirname(filename)
-
         if not (exists(dir_path) and isdir(dir_path)):
-            raise AttributeError(
-                'filename: ' + filename + ' is not a valid file path!')
-        LOGGER.debug('Filename: ' + filename)
+            raise AttributeError('filename: %s is not valid!' % filename)
 
-    @abc.abstractmethod
-    def validate_lang(self, lang):
+    @abstractmethod
+    def validate_lang(self):
         pass
 
-    @abc.abstractmethod
-    def validate_connection(self, tts):
+    @abstractmethod
+    def validate_connection(self):
         pass
 
-    @abc.abstractmethod
-    def get_instance(self):
+    @abstractmethod
+    def get_tts_class(self):
         pass
+
+
+class TTSFactory(object):
+    from mycroft.tts.espeak_tts import ESpeak
+    from mycroft.tts.fa_tts import FATTS
+    from mycroft.tts.google_tts import GoogleTTS
+    from mycroft.tts.mary_tts import MaryTTS
+    from mycroft.tts.mimic_tts import Mimic
+    from mycroft.tts.spdsay_tts import SpdSay
+
+    CLASSES = {
+        "mimic": Mimic,
+        "google": GoogleTTS,
+        "marytts": MaryTTS,
+        "fatts": FATTS,
+        "espeak": ESpeak,
+        "spdsay": SpdSay
+    }
+
+    @staticmethod
+    def create():
+        """
+        Factory method to create a TTS engine based on configuration.
+
+        The configuration file ``mycroft.conf`` contains a ``tts`` section with
+        the name of a TTS module to be read by this method.
+
+        "tts": {
+            "module": <engine_name>
+        }
+        """
+
+        from mycroft.tts.remote_tts import RemoteTTS
+        config = ConfigurationManager.get().get('tts', {})
+        module = config.get('module', 'mimic')
+        lang = config.get(module).get('lang')
+        voice = config.get(module).get('voice')
+        clazz = TTSFactory.CLASSES.get(module)
+
+        if issubclass(clazz, RemoteTTS):
+            url = config.get(module).get('url')
+            tts = clazz(lang, voice, url)
+        else:
+            tts = clazz(lang, voice)
+
+        tts.validator.validate()
+        return tts

@@ -17,12 +17,10 @@
 
 
 from mycroft.util.log import getLogger
-from mycroft.util import check_for_signal
-import time
 
 __author__ = 'jdorleans'
 
-LOGGER = getLogger(__name__)
+LOG = getLogger(__name__)
 
 
 class EnclosureMouth:
@@ -32,19 +30,19 @@ class EnclosureMouth:
     Performs the associated command on Arduino by writing on the Serial port.
     """
 
-    def __init__(self, client, writer):
-        self.client = client
+    def __init__(self, ws, writer):
+        self.ws = ws
         self.writer = writer
         self.__init_events()
 
     def __init_events(self):
-        self.client.on('enclosure.mouth.reset', self.reset)
-        self.client.on('enclosure.mouth.talk', self.talk)
-        self.client.on('enclosure.mouth.think', self.think)
-        self.client.on('enclosure.mouth.listen', self.listen)
-        self.client.on('enclosure.mouth.smile', self.smile)
-        self.client.on('enclosure.mouth.viseme', self.viseme)
-        self.client.on('enclosure.mouth.text', self.text)
+        self.ws.on('enclosure.mouth.reset', self.reset)
+        self.ws.on('enclosure.mouth.talk', self.talk)
+        self.ws.on('enclosure.mouth.think', self.think)
+        self.ws.on('enclosure.mouth.listen', self.listen)
+        self.ws.on('enclosure.mouth.smile', self.smile)
+        self.ws.on('enclosure.mouth.viseme', self.viseme)
+        self.ws.on('enclosure.mouth.text', self.text)
 
     def reset(self, event=None):
         self.writer.write("mouth.reset")
@@ -62,25 +60,13 @@ class EnclosureMouth:
         self.writer.write("mouth.smile")
 
     def viseme(self, event=None):
-        visCmds = ''
-        if event and event.metadata:
-            visCmds = event.metadata.get("code", visCmds)
-            # visCmds will be string of viseme codes and cumulative durations
-            # ex:  '0:0.34,1:1.23,0:1.32,'
-            lisPairs = visCmds.split(",")
-            timeStart = time.time()
-            for pair in lisPairs:
-                if check_for_signal('buttonPress'):
-                    return    # abort! (aplay should have already been killed)
-                vis_dur = pair.split(":")
-                if vis_dur[0] >= "0" and vis_dur[0] <= "6":
-                    elap = time.time() - timeStart
-                    self.writer.write("mouth.viseme=" + vis_dur[0])
-                    if elap < float(vis_dur[1]):
-                        time.sleep(float(vis_dur[1]) - elap)
+        if event and event.data:
+            code = event.data.get("code")
+            if code:
+                self.writer.write("mouth.viseme=" + code)
 
     def text(self, event=None):
         text = ""
-        if event and event.metadata:
-            text = event.metadata.get("text", text)
+        if event and event.data:
+            text = event.data.get("text", text)
         self.writer.write("mouth.text=" + text)

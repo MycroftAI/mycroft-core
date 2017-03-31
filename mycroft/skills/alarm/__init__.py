@@ -17,12 +17,13 @@
 
 
 import time
-import yaml
 from alsaaudio import Mixer
 from datetime import datetime, timedelta
+
+import yaml
+from adapt.intent import IntentBuilder
 from os.path import dirname, join
 
-from adapt.intent import IntentBuilder
 from mycroft.skills.scheduled_skills import ScheduledCRUDSkill
 from mycroft.util import play_mp3
 
@@ -32,12 +33,12 @@ __author__ = 'jdorleans'
 # TODO - Localization
 class AlarmSkill(ScheduledCRUDSkill):
     def __init__(self):
-        super(AlarmSkill, self).__init__("AlarmSkill", None, dirname(__file__))
+        super(AlarmSkill, self).__init__("AlarmSkill", None)
         self.alarm_on = False
-        self.max_delay = int(self.config.get('max_delay'))
-        self.repeat_time = int(self.config.get('repeat_time'))
-        self.extended_delay = int(self.config.get('extended_delay'))
-        self.file_path = join(self.basedir, self.config.get('filename'))
+        self.max_delay = self.config.get('max_delay')
+        self.repeat_time = self.config.get('repeat_time')
+        self.extended_delay = self.config.get('extended_delay')
+        self.file_path = join(dirname(__file__), self.config.get('filename'))
 
     def initialize(self):
         super(AlarmSkill, self).initialize()
@@ -75,8 +76,7 @@ class AlarmSkill(ScheduledCRUDSkill):
                 delay = self.__calculate_delay(self.max_delay)
 
                 while self.alarm_on and datetime.now() < delay:
-                    play_mp3(self.file_path)
-                    time.sleep(2)
+                    play_mp3(self.file_path).communicate()
                     self.speak_dialog('alarm.stop')
                     time.sleep(self.repeat_time + 2)
                     if not volume and datetime.now() >= delay:

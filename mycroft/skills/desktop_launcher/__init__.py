@@ -16,13 +16,14 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from os.path import dirname, join
 import sys
 import urllib2
 import webbrowser
 
 from adapt.intent import IntentBuilder
 from adapt.tools.text.tokenizer import EnglishTokenizer
+from os.path import dirname, join
+
 from mycroft.skills.core import MycroftSkill
 from mycroft.util.log import getLogger
 
@@ -48,8 +49,6 @@ class DesktopLauncherSkill(MycroftSkill):
                 logger.error("Could not import gio")
                 return
 
-        self.load_vocab_files(join(dirname(__file__), 'vocab', self.lang))
-        self.load_regex_files(join(dirname(__file__), 'regex', self.lang))
         tokenizer = EnglishTokenizer()
 
         for app in gio.app_info_get_all():
@@ -72,32 +71,32 @@ class DesktopLauncherSkill(MycroftSkill):
 
         launch_intent = IntentBuilder(
             "LaunchDesktopApplicationIntent").require("LaunchKeyword").require(
-                "Application").build()
+            "Application").build()
         self.register_intent(launch_intent, self.handle_launch_desktop_app)
 
         launch_website_intent = IntentBuilder(
             "LaunchWebsiteIntent").require("LaunchKeyword").require(
-                "Website").build()
+            "Website").build()
         self.register_intent(launch_website_intent, self.handle_launch_website)
 
         search_website = IntentBuilder("SearchWebsiteIntent").require(
             "SearchKeyword").require("Website").require(
-                "SearchTerms").build()
+            "SearchTerms").build()
         self.register_intent(search_website, self.handle_search_website)
 
     def handle_launch_desktop_app(self, message):
-        app_name = message.metadata.get('Application')
+        app_name = message.data.get('Application')
         apps = self.appmap.get(app_name)
         if apps and len(apps) > 0:
             apps[0].launch()
 
     def handle_launch_website(self, message):
-        site = message.metadata.get("Website")
+        site = message.data.get("Website")
         webbrowser.open(IFL_TEMPLATE % (urllib2.quote(site)))
 
     def handle_search_website(self, message):
-        site = message.metadata.get("Website")
-        search_terms = message.metadata.get("SearchTerms")
+        site = message.data.get("Website")
+        search_terms = message.data.get("SearchTerms")
         search_str = site + " " + search_terms
         webbrowser.open(IFL_TEMPLATE % (urllib2.quote(search_str)))
 
