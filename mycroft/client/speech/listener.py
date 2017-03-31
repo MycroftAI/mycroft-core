@@ -136,10 +136,9 @@ class AudioConsumer(Thread):
         if self.record_file:
             wav_name = self.record_file
             self.record_file = None
-            wav_file = open(wav_name, "wb")
             wav_data = audio.get_wav_data()
-            wav_file.write(wav_data)
-            wav_file.close()
+            with open(wav_name, "wb") as wav_file:
+                wav_file.write(wav_data)
 
         # do not translate if only record is requested
         if self.no_stt:
