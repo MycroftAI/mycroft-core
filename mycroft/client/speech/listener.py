@@ -230,10 +230,12 @@ class RecognizerLoop(EventEmitter):
     def start_async(self):
         self.state.running = True
         queue = Queue()
-        self.audio_producer = AudioProducer(self.state, queue,
+        self.audio_producer = AudioProducer(
+                self.state, queue,
                 self.microphone, self.remote_recognizer, self)
         self.audio_producer.start()
-        self.audio_consumer = AudioConsumer(self.state, queue,
+        self.audio_consumer = AudioConsumer(
+                self.state, queue,
                 self, STTFactory.create(), self.wakeup_recognizer,
                 self.mycroft_recognizer)
         self.audio_consumer.start()
