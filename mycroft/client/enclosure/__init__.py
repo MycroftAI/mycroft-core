@@ -85,11 +85,11 @@ class EnclosureReader(Thread):
 
         if "volume.up" in data:
             self.ws.emit(
-                Message("IncreaseVolumeIntent", {'play_sound': True}))
+                Message("VolumeSkill:IncreaseVolumeIntent", {'play_sound': True}))
 
         if "volume.down" in data:
             self.ws.emit(
-                Message("DecreaseVolumeIntent", {'play_sound': True}))
+                Message("VolumeSkill:DecreaseVolumeIntent", {'play_sound': True}))
 
         if "system.test.begin" in data:
             self.ws.emit(Message('recognizer_loop:sleep'))
