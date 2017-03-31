@@ -85,11 +85,13 @@ class EnclosureReader(Thread):
 
         if "volume.up" in data:
             self.ws.emit(
-                Message("VolumeSkill:IncreaseVolumeIntent", {'play_sound': True}))
+                Message("VolumeSkill:IncreaseVolumeIntent",
+                        {'play_sound': True}))
 
         if "volume.down" in data:
             self.ws.emit(
-                Message("VolumeSkill:DecreaseVolumeIntent", {'play_sound': True}))
+                Message("VolumeSkill:DecreaseVolumeIntent",
+                        {'play_sound': True}))
 
         if "system.test.begin" in data:
             self.ws.emit(Message('recognizer_loop:sleep'))
@@ -207,7 +209,7 @@ class Enclosure(object):
         self.writer.write("system.version")
         self.ws.on("enclosure.start", self.start)
         self.started = False
-        Timer(5, self.stop).start()     # WHY? This at least
+        Timer(5, self.stop).start()  # WHY? This at least
         # needs an explanation, this is non-obvious behavior
 
     def start(self, event=None):
