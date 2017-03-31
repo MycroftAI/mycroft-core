@@ -125,5 +125,5 @@ class STTFactory(object):
         if not clazz:
             p, c = module.rsplit('.', 1)
             mod = importlib.import_module(p)
-            clazz = getattr(mod,c)
+            clazz = getattr(mod, c)
         return clazz()
