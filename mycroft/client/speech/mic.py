@@ -336,5 +336,3 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
     def force_wake(self):
         self.forced_wake = True
-
-
