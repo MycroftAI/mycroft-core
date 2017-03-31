@@ -14,6 +14,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
+
+import importlib
+
 from abc import ABCMeta, abstractmethod
 
 from speech_recognition import Recognizer
@@ -116,4 +119,8 @@ class STTFactory(object):
         config = ConfigurationManager.get().get("stt", {})
         module = config.get("module", "mycroft")
         clazz = STTFactory.CLASSES.get(module)
+        if not clazz:
+            p,c=module.rsplit('.',1)
+            mod=importlib.import_module(p)
+            clazz=getattr(mod,c)
         return clazz()
