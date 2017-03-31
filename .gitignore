@@ -2,6 +2,7 @@
 *.pyc
 *.swp
 *~
+msm
 mimic
 pocketsphinx-python
 *.egg-info/

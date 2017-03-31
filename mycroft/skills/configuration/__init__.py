@@ -17,7 +17,6 @@
 
 
 from adapt.intent import IntentBuilder
-from os.path import dirname
 from requests import HTTPError
 
 from mycroft.api import DeviceApi
