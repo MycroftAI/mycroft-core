@@ -23,6 +23,6 @@ sudo apt-get install -y \
     flac \
     curl \
     libicu-dev \
-    pkgconfig \
+    pkg-config \
     automake
 
