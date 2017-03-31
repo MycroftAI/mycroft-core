@@ -289,7 +289,7 @@ class MycroftSkill(object):
         re.compile(regex_str)  # validate regex
         self.emitter.emit(Message('register_vocab', {'regex': regex_str}))
 
-    def speak(self, utterance, expect_response=False, 
+    def speak(self, utterance, expect_response=False,
               record_characteristics=None):
         data = {'utterance': utterance,
                 'expect_response': expect_response,
