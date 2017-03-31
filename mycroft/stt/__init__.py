@@ -120,7 +120,7 @@ class STTFactory(object):
         module = config.get("module", "mycroft")
         clazz = STTFactory.CLASSES.get(module)
         if not clazz:
-            p,c=module.rsplit('.',1)
-            mod=importlib.import_module(p)
-            clazz=getattr(mod,c)
+            p, c = module.rsplit('.', 1)
+            mod = importlib.import_module(p)
+            clazz = getattr(mod,c)
         return clazz()
