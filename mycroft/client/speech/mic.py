@@ -150,9 +150,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.multiplier = listener_config.get('multiplier')
         self.energy_ratio = listener_config.get('energy_ratio')
         self.mic_level_file = os.path.join(get_ipc_directory(), "mic_level")
-#ifdef NEW
         self.forced_wake = False
-#endif /* NEW */
 
     @staticmethod
     def record_sound_chunk(source):
@@ -260,12 +258,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         said_wake_word = False
         counter = 0
         while not said_wake_word:
-#ifndef NEW
-            if check_for_signal('buttonPress'):
-#else /* NEW */
             if self.forced_wake or check_for_signal('buttonPress'):
                 self.forced_wake = False
-#endif /* NEW */
                 said_wake_word = True
                 continue
 
@@ -315,11 +309,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         """
         assert isinstance(source, AudioSource), "Source must be an AudioSource"
 
-#ifndef NEW
-#        bytes_per_sec = source.SAMPLE_RATE * source.SAMPLE_WIDTH
-#else /* NEW */
         # bytes_per_sec = source.SAMPLE_RATE * source.SAMPLE_WIDTH
-#endif /* NEW */
         sec_per_buffer = float(source.CHUNK) / source.SAMPLE_RATE
 
         logger.debug("Waiting for wake word...")
@@ -343,10 +333,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             self.energy_threshold = (
                 self.energy_threshold * damping +
                 target_energy * (1 - damping))
-#ifdef NEW
 
     def force_wake(self):
         self.forced_wake = True
 
 
-#endif /* NEW */
