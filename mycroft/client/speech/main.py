@@ -111,7 +111,7 @@ def handle_speak(event):
     if expect_response or record_characteristics:
         loop.record_characteristics(expect_response, record_characteristics)
 
-        
+       
 def handle_sleep(event):
     loop.sleep()
 
