@@ -125,7 +125,7 @@ def watch_skills():
 
 
 def handle_conversation_request(message):
-    skill_id = message.data["skill_id"]
+    skill_id = int(message.data["skill_id"])
     utterances = message.data["utterances"]
     global ws, loaded_skills
     # loop trough skills list and call converse for skill with skill_id
@@ -136,6 +136,8 @@ def handle_conversation_request(message):
             ws.emit(Message("converse_status_response", {
                     "skill_id": skill_id, "result": result}))
             return
+     ws.emit(Message("converse_status_response", {
+                    "skill_id": 0, "result": False}))
 
 
 def main():
