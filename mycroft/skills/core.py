@@ -238,10 +238,11 @@ class MycroftSkill(object):
         raise Exception("Initialize not implemented for skill: " + self.name)
 
     def register_intent(self, intent_parser, handler):
-        # add source skill to info
+        name = intent_parser.name
+        intent_parser.name = self.skill_id + ':' + intent_parser.name
         dict = {"intent": intent_parser.__dict__, "source_skill": self.skill_id}
         self.emitter.emit(Message("register_intent", dict))
-        self.registered_intents.append(intent_parser.name)
+        self.registered_intents.append((name, intent_parser))
 
         def receive_handler(message):
             try:
@@ -255,8 +256,28 @@ class MycroftSkill(object):
                     "An error occurred while processing a request in " +
                     self.name, exc_info=True)
 
-        self.emitter.on(intent_parser.name, receive_handler)
+        if handler:
+            self.emitter.on(intent_parser.name, receive_handler)
 
+    def disable_intent(self, intent_name):
+        """Disable a registered intent"""
+        logger.debug('Disabling intent ' + intent_name)
+        name = self.skill_id + ':' + intent_name
+        self.emitter.emit(Message("detach_intent", {"intent_name": name}))
+
+    def enable_intent(self, intent_name):
+        """Reenable a registered intent"""
+        for (name, intent) in self.registered_intents:
+            if name == intent_name:
+                self.registered_intents.remove((name, intent))
+                intent.name = name
+                self.register_intent(intent, None)
+                logger.debug('Enabling intent ' + intent_name)
+                break
+            else:
+                logger.error('Could not enable ' + intent_name +
+                             ', it hasn\'t been registered.')
+                
     def register_vocabulary(self, entity, entity_type):
         self.emitter.emit(Message('register_vocab', {
             'start': entity, 'end': entity_type
@@ -304,7 +325,6 @@ class MycroftSkill(object):
         pass
 
     def converse(self, transcript, lang="en-us"):
-        # TODO read language from config?
         return False
 
     def is_stop(self):
