@@ -102,7 +102,7 @@ def load_skill(skill_descriptor, emitter, skill_id):
                 callable(skill_module.create_skill)):
             # v2 skills framework
             skill = skill_module.create_skill()
-            skill.id = skill_id  # register unique id
+            skill.skill_id = skill_id  # register unique id
             skill.bind(emitter)
             skill.load_data_files(dirname(skill_descriptor['info'][1]))
             skill.initialize()
@@ -183,7 +183,7 @@ class MycroftSkill(object):
         self.file_system = FileSystemAccess(join('skills', name))
         self.registered_intents = []
         self.log = getLogger(name)
-        self.id = 0
+        self.skill_id = 0
         self.reload_skill = True
 
     @property
@@ -239,7 +239,7 @@ class MycroftSkill(object):
 
     def register_intent(self, intent_parser, handler):
         # add source skill to info
-        dict = {"intent": intent_parser.__dict__, "source_skill": self.id}
+        dict = {"intent": intent_parser.__dict__, "source_skill": self.skill_id}
         self.emitter.emit(Message("register_intent", dict))
         self.registered_intents.append(intent_parser.name)
 
