@@ -187,6 +187,7 @@ class MycroftSkill(object):
         self.registered_intents = []
         self.log = getLogger(name)
         self.reload_skill = True
+        self.intent_parser = None
 
     @property
     def location(self):
@@ -245,6 +246,9 @@ class MycroftSkill(object):
         intent_parser.name = self.name + ':' + intent_parser.name
         self.emitter.emit(Message("register_intent", intent_parser.__dict__))
         self.registered_intents.append((name, intent_parser))
+        
+        if self.intent_parser is not None:
+            self.intent_parser.register_intent(intent_parser.__dict__)
 
         def receive_handler(message):
             try:
