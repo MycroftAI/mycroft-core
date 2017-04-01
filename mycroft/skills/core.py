@@ -239,7 +239,7 @@ class MycroftSkill(object):
 
     def register_intent(self, intent_parser, handler):
         name = intent_parser.name
-        intent_parser.name = self.skill_id + ':' + intent_parser.name
+        intent_parser.name = str(self.skill_id) + ':' + intent_parser.name
         dict = {"intent": intent_parser.__dict__, "source_skill": self.skill_id}
         self.emitter.emit(Message("register_intent", dict))
         self.registered_intents.append((name, intent_parser))
@@ -262,7 +262,7 @@ class MycroftSkill(object):
     def disable_intent(self, intent_name):
         """Disable a registered intent"""
         logger.debug('Disabling intent ' + intent_name)
-        name = self.skill_id + ':' + intent_name
+        name = str(self.skill_id) + ':' + intent_name
         self.emitter.emit(Message("detach_intent", {"intent_name": name}))
 
     def enable_intent(self, intent_name):
