@@ -86,7 +86,7 @@ def load_regex(basedir, emitter):
 
 
 def open_intent_envelope(message):
-    intent_dict = message.data["intent"]
+    intent_dict = message.data
     return Intent(intent_dict.get('name'),
                   intent_dict.get('requires'),
                   intent_dict.get('at_least_one'),
@@ -240,8 +240,7 @@ class MycroftSkill(object):
     def register_intent(self, intent_parser, handler):
         name = intent_parser.name
         intent_parser.name = str(self.skill_id) + ':' + intent_parser.name
-        dict = {"intent": intent_parser.__dict__, "source_skill": self.skill_id}
-        self.emitter.emit(Message("register_intent", dict))
+        self.emitter.emit(Message("register_intent", intent_parser.__dict__))
         self.registered_intents.append((name, intent_parser))
 
         def receive_handler(message):
