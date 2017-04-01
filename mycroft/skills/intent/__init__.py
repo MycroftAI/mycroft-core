@@ -35,7 +35,6 @@ class IntentSkill(MycroftSkill):
         MycroftSkill.__init__(self, name="IntentSkill")
         self.engine = IntentDeterminationEngine()
         self.active_skills = [] # [skill_id , timestamp]
-        self.intent_to_skill_id = {} # intent:source_skill_id
         self.converse_timeout = 5 # minutes to prune active_skills
         self.reload_skill = False
 
@@ -106,7 +105,7 @@ class IntentSkill(MycroftSkill):
                 best_intent.get('intent_type'), best_intent)
             self.emitter.emit(reply)
             # update active skills list
-            skill_id = self.intent_to_skill_id[best_intent['intent_type']]
+            skill_id = best_intent['intent_type'].split(":")[0]
             self.add_active_skill(skill_id)
         elif len(utterances) == 1:
             self.emitter.emit(Message("intent_failure", {
@@ -131,9 +130,6 @@ class IntentSkill(MycroftSkill):
     def handle_register_intent(self, message):
         intent = open_intent_envelope(message)
         self.engine.register_intent_parser(intent)
-        # map intent to source skill
-        self.intent_to_skill_id.setdefault(
-            intent.name, message.data["source_skill"])
 
     def handle_detach_intent(self, message):
         intent_name = message.data.get('intent_name')
