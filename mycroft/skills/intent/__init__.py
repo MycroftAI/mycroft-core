@@ -15,13 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
-
-from adapt.engine import IntentDeterminationEngine
-
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import open_intent_envelope, MycroftSkill
 from mycroft.util.log import getLogger
 from mycroft.util.parse import normalize
+
+from mycroft.skills.intent_parser import IntentParser
 
 __author__ = 'seanfitz'
 
@@ -31,14 +30,12 @@ logger = getLogger(__name__)
 class IntentSkill(MycroftSkill):
     def __init__(self):
         MycroftSkill.__init__(self, name="IntentSkill")
-        self.engine = IntentDeterminationEngine()
         self.reload_skill = False
 
     def initialize(self):
-        self.emitter.on('register_vocab', self.handle_register_vocab)
+        self.intent_parser = IntentParser(self.emitter)
         self.emitter.on('register_intent', self.handle_register_intent)
         self.emitter.on('recognizer_loop:utterance', self.handle_utterance)
-        self.emitter.on('detach_intent', self.handle_detach_intent)
 
     def handle_utterance(self, message):
         # Get language of the utterance
@@ -49,22 +46,15 @@ class IntentSkill(MycroftSkill):
         utterances = message.data.get('utterances', '')
 
         best_intent = None
-        for utterance in utterances:
-            try:
-                # normalize() changes "it's a boy" to "it is boy", etc.
-                best_intent = next(self.engine.determine_intent(
-                    normalize(utterance, lang), 100))
+        success = False
 
-                # TODO - Should Adapt handle this?
-                best_intent['utterance'] = utterance
-            except StopIteration, e:
-                logger.exception(e)
-                continue
+        try:
+            success, best_intent = self.intent_parser.determine_intent(utterances, lang)
+        except:
+            logger.error("Could not determine best intent")
 
-        if best_intent and best_intent.get('confidence', 0.0) > 0.0:
-            reply = message.reply(
-                best_intent.get('intent_type'), best_intent)
-            self.emitter.emit(reply)
+        if success:
+            self.intent_parser.execute_intent()
         elif len(utterances) == 1:
             self.emitter.emit(Message("intent_failure", {
                 "utterance": utterances[0],
@@ -76,26 +66,9 @@ class IntentSkill(MycroftSkill):
                 "lang": lang
             }))
 
-    def handle_register_vocab(self, message):
-        start_concept = message.data.get('start')
-        end_concept = message.data.get('end')
-        regex_str = message.data.get('regex')
-        alias_of = message.data.get('alias_of')
-        if regex_str:
-            self.engine.register_regex_entity(regex_str)
-        else:
-            self.engine.register_entity(
-                start_concept, end_concept, alias_of=alias_of)
-
     def handle_register_intent(self, message):
-        intent = open_intent_envelope(message)
-        self.engine.register_intent_parser(intent)
-
-    def handle_detach_intent(self, message):
-        intent_name = message.data.get('intent_name')
-        new_parsers = [
-            p for p in self.engine.intent_parsers if p.name != intent_name]
-        self.engine.intent_parsers = new_parsers
+        intent = message.data
+        self.intent_parser.register_intent(intent)
 
     def stop(self):
         pass
