@@ -20,6 +20,7 @@ import hashlib
 import os
 import os.path
 from time import time, sleep
+import unicodedata
 
 from mycroft import MYCROFT_ROOT_PATH
 from mycroft.configuration import ConfigurationManager
@@ -48,7 +49,7 @@ class Mimic(TTS):
             self.args += ['--setf', 'duration_stretch=' + stretch]
 
     def get_tts(self, sentence):
-        key = str(hashlib.md5(sentence).hexdigest())
+        key = str(hashlib.md5(sentence.encode('utf-8', 'ignore')).hexdigest())
         wav_file = os.path.join(mycroft.util.get_cache_directory("tts"),
                                 key + ".wav")
 
