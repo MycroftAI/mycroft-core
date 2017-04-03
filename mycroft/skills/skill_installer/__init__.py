@@ -50,16 +50,15 @@ class SkillInstallerSkill(MycroftSkill):
             [BIN, "install", skill.strip().replace(" ", "-")],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
-        text = p.stdout.read()
-        status = p.wait()
-        if status == 0:
-            self.speak_dialog("installed", data={'skill': skill})
-        elif status == 2:
+        text, err = p.communicate()
+        if text.splitlines()[1] == "Your search has multiple choices":
             stdout = text.splitlines()
             del stdout[0:3]
             self.speak_dialog("choose", data={'skills': ", ".join(stdout)})
-        elif status == 3:
+        elif text.splitlines()[1] == "Skill not found" or skill == "":
             self.speak_dialog("not.found", data={'skill': skill})
+        elif text.splitlines()[2] == "Skill installed!":
+            self.speak_dialog("installed", data={'skill': skill})
 
     def stop(self):
         pass
