@@ -7,11 +7,13 @@ rm -rf msm
 git clone https://github.com/MycroftAI/msm.git msm
 chmod +x msm/msm
 
-if [ ! -d ${SKILLS_DIR} ]; then
-    sudo chown $USER:$USER ${SKILLS_DIR}
-fi
+if [[ ${IS_TRAVIS} != true ]]; then
+    echo "Create /opt/mycroft/skills if it doesn't exist"
+    if [ ! -d ${SKILLS_DIR} ]; then
+        sudo chown $USER:$USER ${SKILLS_DIR}
+    fi
 
-if [ ! -w ${SKILLS_DIR} ]; then
-	sudo mkdir -p ${SKILLS_DIR}
+    if [ ! -w ${SKILLS_DIR} ]; then
+    	sudo mkdir -p ${SKILLS_DIR}
+    fi
 fi
-
