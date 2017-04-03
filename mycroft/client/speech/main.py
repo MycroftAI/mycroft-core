@@ -103,7 +103,10 @@ def handle_speak(event):
         chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s',
                           utterance)
         for chunk in chunks:
-            mute_and_speak(chunk)
+            try:
+                mute_and_speak(chunk)
+            except:
+                logger.error('Error in mute_and_speak', exc_info=True)
     else:
         mute_and_speak(utterance)
 
