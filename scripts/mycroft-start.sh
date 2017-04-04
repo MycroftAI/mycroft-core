@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-TOP=$(cd $(dirname $0) && pwd -L)
+TOP=$(cd $(dirname $0) && cd .. && pwd -L)
 VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${HOME}/.virtualenvs/mycroft"}
 
 case $1 in
@@ -11,7 +11,7 @@ case $1 in
 	"audiotest") SCRIPT=${TOP}/mycroft/util/audio_test.py ;;
 	"collector") SCRIPT=${TOP}/mycroft_data_collection/cli.py ;;
 	"unittest") SCRIPT=${TOP}/test/main.py ;;
-	"audioaccuracytest") SCRIPT=${TOP}/audio-accuracy-test/audio_accuracy_test.py ;;
+	"audioaccuracytest") SCRIPT=${TOP}/test/audio_accuracy_test/audio_accuracy_test.py ;;
 	"sdkdoc") SCRIPT=${TOP}/doc/generate_sdk_docs.py ;;
     "enclosure") SCRIPT=${TOP}/mycroft/client/enclosure/main.py ;;
     "wifi") SCRIPT=${TOP}/mycroft/client/wifisetup/main.py ;;

@@ -30,27 +30,27 @@ function usage {
   echo
 }
 
-mkdir -p $SCRIPTS/logs
+mkdir -p $DIR/logs
 
 function verify-start {
     if ! screen -list | grep -q "$1";
     then
       echo "$1 failed to start. The log is below:"
       echo
-      tail $SCRIPTS/logs/$1.log
+      tail $DIR/logs/$1.log
     exit 1
     fi
 }
 
 function start-mycroft {
-  screen -mdS mycroft-$1$2 -c $SCRIPTS/mycroft-$1.screen $DIR/start.sh $1 $2
+  screen -mdS mycroft-$1$2 -c $SCRIPTS/mycroft-$1.screen $DIR/scripts/mycroft-start.sh $1 $2
   sleep 1
   verify-start mycroft-$1$2
   echo "Mycroft $1$2 started"
 }
 
 function debug-start-mycroft {
-  screen -c $SCRIPTS/mycroft-$1.screen $DIR/start.sh $1 $2
+  screen -c $SCRIPTS/mycroft-$1.screen $DIR/scripts/mycroft-start.sh $1 $2
   sleep 1
   verify-start mycroft-$1$2
   echo "Mycroft $1$2 started"
