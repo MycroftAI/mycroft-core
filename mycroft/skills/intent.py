@@ -19,7 +19,7 @@
 from adapt.engine import IntentDeterminationEngine
 
 from mycroft.messagebus.message import Message
-from mycroft.skills.core import open_intent_envelope, MycroftSkill
+from mycroft.skills.core import open_intent_envelope
 from mycroft.util.log import getLogger
 from mycroft.util.parse import normalize
 
@@ -28,13 +28,10 @@ __author__ = 'seanfitz'
 logger = getLogger(__name__)
 
 
-class IntentSkill(MycroftSkill):
-    def __init__(self):
-        MycroftSkill.__init__(self, name="IntentSkill")
+class Intent(object):
+    def __init__(self, emitter):
         self.engine = IntentDeterminationEngine()
-        self.reload_skill = False
-
-    def initialize(self):
+        self.emitter = emitter
         self.emitter.on('register_vocab', self.handle_register_vocab)
         self.emitter.on('register_intent', self.handle_register_intent)
         self.emitter.on('recognizer_loop:utterance', self.handle_utterance)
@@ -96,10 +93,3 @@ class IntentSkill(MycroftSkill):
         new_parsers = [
             p for p in self.engine.intent_parsers if p.name != intent_name]
         self.engine.intent_parsers = new_parsers
-
-    def stop(self):
-        pass
-
-
-def create_skill():
-    return IntentSkill()

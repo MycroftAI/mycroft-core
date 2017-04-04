@@ -26,8 +26,9 @@ from os.path import expanduser, exists
 
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
-from mycroft.skills.core import load_skills, THIRD_PARTY_SKILLS_DIR, \
+from mycroft.skills.core import THIRD_PARTY_SKILLS_DIR, \
     load_skill, create_skill_descriptor, MainModule
+from mycroft.skills.intent import Intent
 from mycroft.util.log import getLogger
 
 logger = getLogger("Skills")
@@ -39,7 +40,7 @@ loaded_skills = {}
 last_modified_skill = 0
 skills_directories = []
 skill_reload_thread = None
-prioritary_skills = ["intent"]
+prioritary_skills = []
 
 
 def connect():
@@ -50,6 +51,8 @@ def connect():
 def load_watch_skills():
     global ws, loaded_skills, last_modified_skill, skills_directories, \
         skill_reload_thread
+
+    Intent(ws)
 
     skills_directories = [os.path.dirname(os.path.abspath(__file__))]
     skills_directories = skills_directories + THIRD_PARTY_SKILLS_DIR
