@@ -1,3 +1,0 @@
-for (?P<SearchTerms>.*)
-for (?P<SearchTerms>.*) on
-(?P<SearchTerms>.*) on

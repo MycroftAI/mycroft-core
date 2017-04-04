@@ -1,7 +1,0 @@
-{
-  "utterance": "tell me the news",
-  "intent_type": "NPRNewsIntent",
-  "intent": {
-    "NPRNewsKeyword": "tell me the news"
-  }
-}

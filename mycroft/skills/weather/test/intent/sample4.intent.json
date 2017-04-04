@@ -1,8 +1,0 @@
-{
-  "utterance": "what is the weather going to be like tomorrow in fortaleza brazil",
-  "intent_type": "NextDayWeatherIntent",
-  "intent": {
-    "WeatherKeyword": "weather",
-    "Location": "fortaleza brazil"
-  }
-}
