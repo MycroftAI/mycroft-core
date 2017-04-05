@@ -162,11 +162,7 @@ skills_manager_timer = None
 
 
 def skills_manager():
-    p = subprocess.Popen([MSM_BIN, "default"],
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
-    text, err = p.communicate()
-    logger.debug("Skills Manager" + text)
+    os.system(MSM_BIN + " default")
     skills_manager_timer = Timer(3600.0, skills_manager)
     skills_manager_timer.daemon = True
     skills_manager_timer.start()
