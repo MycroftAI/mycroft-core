@@ -21,9 +21,11 @@ import sys
 import time
 from threading import Timer
 
+import subprocess
 import os
-from os.path import expanduser, exists
+from os.path import expanduser, exists, join
 
+from mycroft import MYCROFT_ROOT_PATH
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.skills.core import THIRD_PARTY_SKILLS_DIR, \
@@ -40,6 +42,9 @@ loaded_skills = {}
 last_modified_skill = 0
 skills_directories = []
 skill_reload_thread = None
+
+installer_config = ConfigurationManager.get().get("SkillInstallerSkill")
+MSM_BIN = installer_config.get("path", join(MYCROFT_ROOT_PATH, 'msm', 'msm'))
 
 
 def connect():
@@ -153,10 +158,26 @@ def main():
     ws.run_forever()
 
 
+skills_manager_timer = None
+
+
+def skills_manager():
+    p = subprocess.Popen([MSM_BIN, "default"],
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE)
+    text, err = p.communicate()
+    logger.debug("Skills Manager" + text)
+    skills_manager_timer = Timer(3600.0, skills_manager)
+    skills_manager_timer.daemon = True
+    skills_manager_timer.start()
+
+
 if __name__ == "__main__":
     try:
+        skills_manager()
         main()
     except KeyboardInterrupt:
+        skills_manager_timer.cancel()
         for skill in loaded_skills:
             skill.shutdown()
         if skill_reload_thread:
