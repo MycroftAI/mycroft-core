@@ -1,7 +1,0 @@
-{
-  "utterance": "would you shut up",
-  "intent_type": "StopIntent",
-  "intent": {
-    "StopKeyword": "shut up"
-  }
-}
