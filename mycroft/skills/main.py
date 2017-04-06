@@ -60,8 +60,7 @@ def skills_manager(message):
             Message("speak", {'utterance': "Checking for Updates"}))
     os.system(MSM_BIN + " default")
     if skills_manager_timer is None:
-        ws.emit(
-            Message("speak", {
+        ws.emit(Message("speak", {
             'utterance': "Skills Updated. Mycroft is ready"}))
     skills_manager_timer = Timer(3600.0, skills_manager_dispatch)
     skills_manager_timer.daemon = True
