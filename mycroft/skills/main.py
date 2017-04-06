@@ -149,9 +149,14 @@ def main():
     ws = WebsocketClient()
     ConfigurationManager.init(ws)
 
+    ignore_logs = ConfigurationManager.get().get("ignore_logs")
+
     def echo(message):
         try:
             _message = json.loads(message)
+
+            if _message.get("type") in ignore_logs:
+                return
 
             if _message.get("type") == "registration":
                 # do not log tokens from registration messages
