@@ -1,7 +1,0 @@
-{
-  "utterance": "terminal",
-  "intent_type": "TerminalIntent",
-  "intent": {
-    "WeatherKeyword": "terminal"
-  }
-}
