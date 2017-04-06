@@ -27,6 +27,7 @@ from os.path import expanduser, exists, join
 from mycroft import MYCROFT_ROOT_PATH
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
+from mycroft.messagebus.message import Message
 from mycroft.skills.core import THIRD_PARTY_SKILLS_DIR, \
     load_skill, create_skill_descriptor, MainModule
 from mycroft.skills.intent import Intent
@@ -51,9 +52,26 @@ def connect():
     ws.run_forever()
 
 
+skills_manager_timer = None
+
+
+def skills_manager(message):
+    os.system(MSM_BIN + " default")
+    skills_manager_timer = Timer(3600.0, skills_manager_dispatch)
+    skills_manager_timer.daemon = True
+    skills_manager_timer.start()
+
+
+def skills_manager_dispatch():
+    ws.emit(Message("skill_manager", {}))
+
+
 def load_watch_skills():
     global ws, loaded_skills, last_modified_skill, skills_directories, \
         skill_reload_thread
+
+    ws.on('skill_manager', skills_manager)
+    ws.emit(Message("skill_manager", {}))
 
     Intent(ws)
 
@@ -157,19 +175,8 @@ def main():
     ws.run_forever()
 
 
-skills_manager_timer = None
-
-
-def skills_manager():
-    os.system(MSM_BIN + " default")
-    skills_manager_timer = Timer(3600.0, skills_manager)
-    skills_manager_timer.daemon = True
-    skills_manager_timer.start()
-
-
 if __name__ == "__main__":
     try:
-        skills_manager()
         main()
     except KeyboardInterrupt:
         skills_manager_timer.cancel()
