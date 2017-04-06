@@ -1,7 +1,0 @@
-{
-  "utterance": "daily meditation",
-  "intent_type": "DailyMeditationIntent",
-  "intent": {
-    "DailyMeditationKeyword": "meditate"
-  }
-}
