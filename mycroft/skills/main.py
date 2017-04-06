@@ -55,14 +55,14 @@ def connect():
 
 def skills_manager(message):
     global skills_manager_timer, ws
-    if skills_manager_timer == None:
+    if skills_manager_timer is None:
         ws.emit(
-            Message("speak", {'utterance': "Installing and Updating Skills"}))
+            Message("speak", {'utterance': "Checking for Updates"}))
     os.system(MSM_BIN + " default")
-    if skills_manager_timer == None:
+    if skills_manager_timer is None:
         ws.emit(
             Message("speak", {
-            'utterance': "Skills Installed and Updated. Mycroft is ready"}))
+            'utterance': "Skills Updated. Mycroft is ready"}))
     skills_manager_timer = Timer(3600.0, skills_manager_dispatch)
     skills_manager_timer.daemon = True
     skills_manager_timer.start()
