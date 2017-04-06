@@ -21,7 +21,6 @@ import sys
 import time
 from threading import Timer
 
-import subprocess
 import os
 from os.path import expanduser, exists, join
 
