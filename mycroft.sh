@@ -121,7 +121,7 @@ then
 elif [[ "$1" == "stop" && -z "$2" ]]
 then
   stop-mycroft service
-  start-mycroft voice
+  stop-mycroft voice
   sleep 3
   stop-mycroft skills
   stop-mycroft cli
