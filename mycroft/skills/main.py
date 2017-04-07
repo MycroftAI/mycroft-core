@@ -136,7 +136,7 @@ def watch_skills():
 
 def main():
     global ws
-    lock = Lock( 'skills' )  # prevent multiply instances of this service
+    lock = Lock('skills')  # prevent multiply instances of this service
     ws = WebsocketClient()
     ConfigurationManager.init(ws)
 
