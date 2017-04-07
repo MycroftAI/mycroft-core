@@ -32,6 +32,7 @@ from mycroft.skills.core import load_skill, create_skill_descriptor, \
     MainModule, SKILLS_DIR
 from mycroft.skills.intent import Intent
 from mycroft.util.log import getLogger
+from mycroft.lock import Lock  # Creates PID file for single instance
 
 logger = getLogger("Skills")
 
@@ -146,6 +147,7 @@ def watch_skills():
 
 def main():
     global ws
+    lock = Lock( 'skills' )  # prevent multiply instances of this service
     ws = WebsocketClient()
     ConfigurationManager.init(ws)
 
