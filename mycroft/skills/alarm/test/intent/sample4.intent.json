@@ -1,7 +1,0 @@
-{
-  "utterance": "set an alarm to next saturday",
-  "intent_type": "AlarmSkillCreateIntent",
-  "intent": {
-    "AlarmSkillCreateVerb": "alarm"
-  }
-}

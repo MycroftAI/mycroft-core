@@ -94,15 +94,17 @@ then
 elif [[ "$1" == "start" && -z "$2" ]]
 then
   start-mycroft service
-  start-mycroft skills
   start-mycroft voice
+  sleep 3
+  start-mycroft skills
   start-mycroft cli --quiet
   exit 0
 elif [[ "$1" == "start" && "$2" == "-v" ]]
 then
   start-mycroft service
-  start-mycroft skills
   start-mycroft voice
+  sleep 3
+  start-mycroft skills
   exit 0
 elif [[ "$1" == "start" && "$2" == "-c" ]]
 then
@@ -119,8 +121,9 @@ then
 elif [[ "$1" == "stop" && -z "$2" ]]
 then
   stop-mycroft service
+  start-mycroft voice
+  sleep 3
   stop-mycroft skills
-  stop-mycroft voice
   stop-mycroft cli
   exit 0
 elif [[ "$1" == "restart" && -z "$2" ]]

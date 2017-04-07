@@ -1,8 +1,0 @@
-{
-  "utterance": "what price is microsoft trading at",
-  "intent_type": "StockPriceIntent",
-  "intent": {
-    "Company": "microsoft",
-    "StockPriceKeyword": "trading at"
-  }
-}
