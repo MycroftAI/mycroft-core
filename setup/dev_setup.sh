@@ -56,9 +56,13 @@ pip2 install -r requirements.txt
 CORES=$(nproc)
 echo Building with $CORES cores.
 
+TOP=$(cd $(dirname $0) && cd .. && pwd -L)
+cd ${TOP}
+
 #build and install pocketsphinx
 #cd ${TOP}
 #${TOP}/scripts/install-pocketsphinx.sh -q
+
 #build and install mimic
 cd ${TOP}
 ${TOP}/scripts/install-mimic.sh
@@ -68,4 +72,3 @@ ${TOP}/scripts/install-msm.sh
 
 # install pygtk for desktop_launcher skill
 ${TOP}/scripts/install-pygtk.sh
-
