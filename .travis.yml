@@ -15,3 +15,5 @@ install:
 script:
  - pep8 mycroft test
 # - ./start.sh unittest --fail-on-error
+env:
+ - IS_TRAVIS=true

@@ -17,15 +17,11 @@
 
 
 from adapt.intent import IntentBuilder
-from os.path import dirname, join
 
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import MycroftSkill
-from mycroft.util.log import getLogger
 
 __author__ = 'jdorleans'
-
-LOGGER = getLogger(__name__)
 
 
 class StopSkill(MycroftSkill):

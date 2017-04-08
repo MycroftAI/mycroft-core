@@ -23,6 +23,7 @@ from threading import Thread
 import speech_recognition as sr
 from pyee import EventEmitter
 from requests import HTTPError
+from requests.exceptions import ConnectionError
 
 from mycroft.client.speech.local_recognizer import LocalRecognizer
 from mycroft.client.speech.mic import MutableMicrophone, ResponsiveRecognizer
@@ -127,11 +128,8 @@ class AudioConsumer(Thread):
 
         if self._audio_length(audio) < self.MIN_AUDIO_SIZE:
             LOG.warn("Audio too short to be processed")
-        elif connected():
-            self.transcribe(audio)
         else:
-            # TODO: Localization
-            self.__speak("Mycroft seems not to be connected to the Internet")
+            self.transcribe(audio)
 
     def transcribe(self, audio):
         text = None
@@ -141,6 +139,9 @@ class AudioConsumer(Thread):
             LOG.debug("STT: " + text)
         except sr.RequestError as e:
             LOG.error("Could not request Speech Recognition {0}".format(e))
+        except ConnectionError as e:
+            LOG.error("Connection Error: {0}".format(e))
+            self.__speak("Mycroft seems not to be connected to the Internet")
         except HTTPError as e:
             if e.response.status_code == 401:
                 text = "pair my device"
