@@ -33,7 +33,7 @@ settings = {
 
 def main():
     import tornado.options
-    lock = Lock( "service" )
+    lock = Lock("service")
     tornado.options.parse_command_line()
     config = ConfigurationManager.get().get("websocket")
 
