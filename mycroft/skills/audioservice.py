@@ -13,6 +13,11 @@ class AudioService():
         self.info = message.data
 
     def play(self, tracks=[], utterance=''):
+        if isinstance(tracks, basestring):
+            tracks = [tracks]
+        elif not isinstance(tracks, list):
+            raise ValueError
+
         self.emitter.emit(Message('MycroftAudioServicePlay',
                                   data={'tracks': tracks,
                                         'utterance': utterance}))
