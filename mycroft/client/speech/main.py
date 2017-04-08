@@ -141,7 +141,7 @@ def connect():
 def main():
     global ws
     global loop
-    lock = PIDLock( "voice" )
+    lock = PIDLock("voice")
     ws = WebsocketClient()
     tts.init(ws)
     ConfigurationManager.init(ws)
