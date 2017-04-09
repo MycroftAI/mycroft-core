@@ -27,7 +27,7 @@ from mycroft.identity import IdentityManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.tts import TTSFactory
-from mycroft.util import kill, play_wav, resolve_resource_file, create_signal
+from mycroft.util import kill, create_signal
 from mycroft.util.log import getLogger
 from mycroft.lock import Lock as PIDLock  # Create/Support PID locking file
 
@@ -42,15 +42,6 @@ config = ConfigurationManager.get()
 
 def handle_record_begin():
     logger.info("Begin Recording...")
-
-    # If enabled, play a wave file with a short sound to audibly
-    # indicate recording has begun.
-    if config.get('confirm_listening'):
-        file = resolve_resource_file(
-            config.get('sounds').get('start_listening'))
-        if file:
-            play_wav(file)
-
     ws.emit(Message('recognizer_loop:record_begin'))
 
 
