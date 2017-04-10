@@ -18,6 +18,7 @@
 
 import audioop
 import collections
+import os
 from time import sleep
 
 import pyaudio
@@ -29,7 +30,7 @@ from speech_recognition import (
 )
 
 from mycroft.configuration import ConfigurationManager
-from mycroft.util import check_for_signal
+from mycroft.util import check_for_signal, get_ipc_directory
 from mycroft.util.log import getLogger
 
 listener_config = ConfigurationManager.get().get('listener')
@@ -133,7 +134,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
     # The maximum length a phrase can be recorded,
     # provided there is noise the entire time
-    RECORDING_TIMEOUT = 30.0
+    RECORDING_TIMEOUT = 10.0
 
     # The maximum time it will continue to record silence
     # when not enough noise has been detected
@@ -148,6 +149,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.audio = pyaudio.PyAudio()
         self.multiplier = listener_config.get('multiplier')
         self.energy_ratio = listener_config.get('energy_ratio')
+        self.mic_level_file = os.path.join(get_ipc_directory(), "mic_level")
 
     @staticmethod
     def record_sound_chunk(source):
@@ -217,6 +219,12 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 noise = decrease_noise(noise)
                 self.adjust_threshold(energy, sec_per_buffer)
 
+            if num_chunks % 10 == 0:
+                with open(self.mic_level_file, 'w') as f:
+                    f.write("Energy:  cur=" + str(energy) + " thresh=" +
+                            str(self.energy_threshold))
+                f.close()
+
             was_loud_enough = num_loud_chunks > min_loud_chunks
             quiet_enough = noise <= min_noise
             recorded_too_much_silence = num_chunks > max_chunks_of_silence
@@ -247,6 +255,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         max_size = self.sec_to_bytes(self.SAVED_WW_SEC, source)
 
         said_wake_word = False
+        counter = 0
         while not said_wake_word:
             if check_for_signal('buttonPress'):
                 said_wake_word = True
@@ -258,6 +267,17 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             if energy < self.energy_threshold * self.multiplier:
                 self.adjust_threshold(energy, sec_per_buffer)
 
+            if counter > 2:
+                with open(self.mic_level_file, 'w') as f:
+                    f.write("Energy:  cur=" + str(energy) + " thresh=" +
+                            str(self.energy_threshold))
+                f.close()
+                counter = 0
+            else:
+                counter += 1
+
+            # At first, the buffer is empty and must fill up.  After that
+            # just drop the first chunk bytes to keep it the same size.
             needs_to_grow = len(byte_data) < max_size
             if needs_to_grow:
                 byte_data += chunk
@@ -265,7 +285,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 byte_data = byte_data[len(chunk):] + chunk
 
             buffers_since_check += 1.0
-            if buffers_since_check < buffers_per_check:
+            if buffers_since_check > buffers_per_check:
                 buffers_since_check -= buffers_per_check
                 said_wake_word = self.wake_word_in_audio(byte_data + silence)
 
@@ -287,8 +307,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         """
         assert isinstance(source, AudioSource), "Source must be an AudioSource"
 
-        bytes_per_sec = source.SAMPLE_RATE * source.SAMPLE_WIDTH
-        sec_per_buffer = float(source.CHUNK) / bytes_per_sec
+#        bytes_per_sec = source.SAMPLE_RATE * source.SAMPLE_WIDTH
+        sec_per_buffer = float(source.CHUNK) / source.SAMPLE_RATE
 
         logger.debug("Waiting for wake word...")
         self.wait_until_wake_word(source, sec_per_buffer)

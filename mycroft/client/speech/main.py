@@ -27,7 +27,7 @@ from mycroft.identity import IdentityManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.tts import TTSFactory
-from mycroft.util import kill, play_wav, resolve_resource_file
+from mycroft.util import kill, play_wav, resolve_resource_file, create_signal
 from mycroft.util.log import getLogger
 
 logger = getLogger("SpeechClient")
@@ -89,6 +89,7 @@ def handle_multi_utterance_intent_failure(event):
 
 def handle_speak(event):
     utterance = event.data['utterance']
+    expect_response = event.data.get('expect_response', False)
 
     # This is a bit of a hack for Picroft.  The analog audio on a Pi blocks
     # for 30 seconds fairly often, so we don't want to break on periods
@@ -105,6 +106,9 @@ def handle_speak(event):
             mute_and_speak(chunk)
     else:
         mute_and_speak(utterance)
+
+    if expect_response:
+        create_signal('buttonPress')
 
 
 def handle_sleep(event):

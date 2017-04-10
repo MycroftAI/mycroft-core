@@ -27,6 +27,7 @@ from mycroft.api import Api
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import MycroftSkill
 from mycroft.util.log import getLogger
+from mycroft.util.parse import normalize
 
 __author__ = 'seanfitz'
 
@@ -42,14 +43,11 @@ class EnglishQuestionParser(object):
     def __init__(self):
         self.regexes = [
             re.compile(
-                ".*(?P<QuestionWord>who|what|when|where|why|which) "
+                ".*(?P<QuestionWord>who|what|when|where|why|which|whose) "
                 "(?P<Query1>.*) (?P<QuestionVerb>is|are|was|were) "
                 "(?P<Query2>.*)"),
             re.compile(
-                ".*(?P<QuestionWord>what)(?P<QuestionVerb>\'s|s) "
-                "(?P<Query>.*)"),
-            re.compile(
-                ".*(?P<QuestionWord>who|what|when|where|why|which) "
+                ".*(?P<QuestionWord>who|what|when|where|why|which|how) "
                 "(?P<QuestionVerb>\w+) (?P<Query>.*)")
         ]
 
@@ -123,10 +121,13 @@ class WolframAlphaSkill(MycroftSkill):
 
     # TODO: Localization
     def handle_fallback(self, message):
-        self.enclosure.mouth_think()
-        LOG.debug(
-            "Could not determine intent, falling back to WolframAlpha Skill!")
-        utterance = message.data.get('utterance')
+        utt = message.data.get('utterance')
+        LOG.debug("WolframAlpha fallback attempt: " + utt)
+        lang = message.data.get('lang')
+        if not lang:
+            lang = "en-us"
+
+        utterance = normalize(utt, lang)
         parsed_question = self.question_parser.parse(utterance)
 
         query = utterance
@@ -140,10 +141,17 @@ class WolframAlphaSkill(MycroftSkill):
                 parsed_question['QuestionVerb'] = 'is'
             query = "%s %s %s" % (utt_word, utt_verb, utt_query)
             phrase = "know %s %s %s" % (utt_word, utt_query, utt_verb)
+            LOG.debug("Falling back to WolframAlpha: " + query)
         else:
-            phrase = "understand the phrase " + utterance
+            # This utterance doesn't look like a question, don't waste
+            # time with WolframAlpha.
+
+            # TODO: Log missed intent
+            LOG.debug("Unknown intent: " + utterance)
+            return
 
         try:
+            self.enclosure.mouth_think()
             res = self.client.query(query)
             result = self.get_result(res)
             others = self._find_did_you_mean(res)
@@ -178,8 +186,8 @@ class WolframAlphaSkill(MycroftSkill):
         else:
             if len(others) > 0:
                 self.speak_dialog('others.found',
-                                  data={'utterance': utterance, 'alternative':
-                                        others[0]})
+                                  data={'utterance': utterance,
+                                        'alternative': others[0]})
             else:
                 self.speak_dialog("not.understood", data={'phrase': phrase})
 

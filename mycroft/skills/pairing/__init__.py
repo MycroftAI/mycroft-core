@@ -14,11 +14,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
+
 from threading import Timer
 from uuid import uuid4
 
 from adapt.intent import IntentBuilder
-from os.path import dirname
 
 from mycroft.api import DeviceApi
 from mycroft.identity import IdentityManager

@@ -43,6 +43,7 @@ class TTS(object):
         self.voice = voice
         self.filename = '/tmp/tts.wav'
         self.validator = validator
+        self.enclosure = None
         random.seed()
 
     def init(self, ws):
@@ -51,10 +52,20 @@ class TTS(object):
 
     @abstractmethod
     def execute(self, sentence):
+        ''' This performs TTS, blocking until audio completes
+
+        This performs the TTS sequence.  Upon completion, the sentence will
+        have been spoken.   Optionally, the TTS engine may have sent visemes
+        to the enclosure by the TTS engine.
+
+        Args:
+            sentence (str): Words to be spoken
+        '''
+        # TODO: Move caching support from mimic_tts to here for all TTS
         pass
 
     def blink(self, rate=1.0):
-        if random.random() < rate:
+        if self.enclosure and random.random() < rate:
             self.enclosure.eyes_blink("b")
 
 
