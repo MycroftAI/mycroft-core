@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-sudo eopkg it -cy system.devel
+sudo eopkg it -y -c system.devel
 sudo eopkg it \
     git \
 #    python \
