@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 sudo eopkg it -y -c system.devel
-sudo eopkg it \
     git \
 #    python \
     pip \
