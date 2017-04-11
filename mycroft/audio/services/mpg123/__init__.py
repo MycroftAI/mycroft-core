@@ -32,6 +32,7 @@ class Mpg123Service(AudioBackend):
     def _play(self, message=None):
         logger.info('Mpg123Service._play')
         track = self.tracks[self.index]
+        track = track.replace('file://', '')
         self.process = subprocess.Popen(['mpg123', track])
         self.process.communicate()
         self.process = None
