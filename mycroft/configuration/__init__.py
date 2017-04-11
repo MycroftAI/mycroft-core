@@ -30,6 +30,9 @@ LOG = getLogger(__name__)
 DEFAULT_CONFIG = join(dirname(__file__), 'mycroft.conf')
 SYSTEM_CONFIG = '/etc/mycroft/mycroft.conf'
 USER_CONFIG = join(expanduser('~'), '.mycroft/mycroft.conf')
+REMOTE_CONFIG = "mycroft.ai"
+
+load_order = [DEFAULT_CONFIG, REMOTE_CONFIG, SYSTEM_CONFIG, USER_CONFIG]
 
 
 class ConfigurationLoader(object):
@@ -158,8 +161,14 @@ class ConfigurationManager(object):
 
     @staticmethod
     def load_defaults():
-        ConfigurationManager.__config = ConfigurationLoader.load()
-        return RemoteConfiguration.load(ConfigurationManager.__config)
+        for location in load_order:
+            LOG.info("Loading configuration: " + location)
+            if location == REMOTE_CONFIG:
+                RemoteConfiguration.load(ConfigurationManager.__config)
+            else:
+                ConfigurationManager.__config = ConfigurationLoader.load(
+                    ConfigurationManager.__config, [location])
+        return ConfigurationManager.__config
 
     @staticmethod
     def load_local(locations=None, keep_user_config=True):
