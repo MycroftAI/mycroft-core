@@ -112,6 +112,9 @@ class ChromecastService(AudioBackend):
 
 
 def autodetect(config, emitter):
+    """
+        Autodetect chromecasts on the network and create backends for each
+    """
     casts = pychromecast.get_chromecasts()
     ret = []
     for c in casts:

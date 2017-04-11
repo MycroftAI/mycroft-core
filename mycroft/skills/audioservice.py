@@ -4,6 +4,15 @@ from mycroft.messagebus.message import Message
 
 
 def ensure_uri(s):
+    """
+        Interprete paths as file:// uri's
+
+        Args:
+            s: string to be checked
+
+        Returns:
+            if s is uri, s is returned otherwise file:// is prepended
+    """
     if '://' not in s:
         return 'file://' + abspath(s)
     else:
@@ -11,19 +20,30 @@ def ensure_uri(s):
 
 
 class AudioService():
+    """
+        AudioService object for interacting with the audio subsystem
+
+        Args:
+            emitter: eventemitter or websocket object
+    """
     def __init__(self, emitter):
         self.emitter = emitter
         self.emitter.on('MycroftAudioServiceTrackInfoReply', self._track_info)
         self.info = None
 
     def _track_info(self, message=None):
+        """
+            Handler for catching returning track info
+        """
         self.info = message.data
 
     def play(self, tracks=[], utterance=''):
         """ Start playback.
-            tracks: track uri or list of track uri's
-            utterance: forward utterance for further processing by the audio
-                       service
+
+            Args:
+                tracks: track uri or list of track uri's
+                utterance: forward utterance for further processing by the
+                           audio service.
         """
         if isinstance(tracks, basestring):
             tracks = [tracks]
@@ -51,7 +71,11 @@ class AudioService():
         self.emitter.emit(Message('MycroftAudioServiceResume'))
 
     def track_info(self):
-        """ Request information of current playing track. """
+        """ Request information of current playing track.
+
+            Returns:
+                Dict with track info.
+        """
         self.info = None
         self.emitter.emit(Message('MycroftAudioServiceTrackInfo'))
         while self.info is None:

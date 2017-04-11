@@ -14,6 +14,10 @@ Mopidy = __import__('mopidypost').Mopidy
 
 class MopidyService(AudioBackend):
     def _connect(self, message):
+        """
+            Callback method to connect to mopidy if server is not available
+            at startup.
+        """
         url = 'http://localhost:6680'
         if self.config is not None:
             url = self.config.get('url', url)
@@ -40,6 +44,11 @@ class MopidyService(AudioBackend):
         self.emitter.emit(Message('MopidyServiceConnect'))
 
     def supported_uris(self):
+        """
+            Return supported uri's if mopidy server is found,
+            otherwise return empty list indicating this service
+            doesn't support anything.
+        """
         if self.mopidy:
             return ['file', 'http', 'https', 'local', 'spotify', 'gmusic']
         else:

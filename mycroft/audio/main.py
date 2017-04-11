@@ -41,13 +41,28 @@ current = None
 
 
 def create_service_descriptor(service_folder):
-    """Prepares a descriptor that can be used together with imp."""
+    """Prepares a descriptor that can be used together with imp.
+
+        Args:
+            service_folder: folder that shall be imported.
+
+        Returns:
+            Dict with import information
+    """
     info = imp.find_module(MainModule, [service_folder])
     return {"name": basename(service_folder), "info": info}
 
 
 def get_services(services_folder):
-    """Load and initialize services from all subfolders."""
+    """
+        Load and initialize services from all subfolders.
+
+        Args:
+            services_folder: base folder to look for services in.
+
+        Returns:
+            Sorted list of audio services.
+    """
     logger.info("Loading skills from " + services_folder)
     services = []
     possible_services = listdir(services_folder)
@@ -77,7 +92,16 @@ def get_services(services_folder):
 
 
 def load_services(config, ws):
-    """Search though the service directory and load any services."""
+    """
+        Search though the service directory and load any services.
+
+        Args:
+            config: configuration dicrt for the audio backends.
+            ws: websocket object for communication.
+
+        Returns:
+            List of started services.
+    """
     logger.info("Loading services")
     service_directories = get_services(dirname(abspath(__file__)) +
                                        '/services/')
@@ -110,6 +134,10 @@ def load_services(config, ws):
 
 
 def load_services_callback():
+    """
+        Main callback function for loading services. Sets up the globals
+        service and default and registers the event handlers for the subsystem.
+    """
     global ws
     global default
     global service
@@ -146,6 +174,9 @@ def load_services_callback():
 def _pause(message=None):
     """
         Handler for MycroftAudioServicePause. Pauses the current audio service.
+
+        Args:
+            message: message bus message, not used but required
     """
     global current
     if current:
@@ -155,6 +186,9 @@ def _pause(message=None):
 def _resume(message=None):
     """
         Handler for MycroftAudioResume.
+
+        Args:
+            message: message bus message, not used but required
     """
     global current
     if current:
@@ -165,6 +199,9 @@ def _next(message=None):
     """
         Handler for MycroftAudioNext. Skips current track and starts playing
         the next.
+
+        Args:
+            message: message bus message, not used but required
     """
     global current
     if current:
@@ -174,6 +211,9 @@ def _next(message=None):
 def _prev(message=None):
     """
         Handler for MycroftAudioPrev. Starts playing the previous track.
+
+        Args:
+            message: message bus message, not used but required
     """
     global current
     if current:
@@ -183,6 +223,9 @@ def _prev(message=None):
 def _stop(message=None):
     """
         Handler for MycroftStop. Stops any playing service.
+
+        Args:
+            message: message bus message, not used but required
     """
     global current
     logger.info('stopping all playing services')
@@ -196,6 +239,9 @@ def _stop(message=None):
 def _lower_volume(message):
     """
         Is triggered when mycroft starts to speak and reduces the volume.
+
+        Args:
+            message: message bus message, not used but required
     """
     global current
     global volume_is_low
@@ -208,6 +254,9 @@ def _lower_volume(message):
 def _restore_volume(message):
     """
         Is triggered when mycroft is done speaking and restores the volume
+
+        Args:
+            message: message bus message, not used but required
     """
     global current
     global volume_is_low
@@ -224,6 +273,11 @@ def play(tracks, prefered_service):
     """
         play starts playing the audio on the prefered service if it supports
         the uri. If not the next best backend is found.
+
+        Args:
+            tracks: list of tracks to play.
+            prefered_service: indecates the service the user prefer to play
+                              the tracks.
     """
     global current
     logger.info('play')
@@ -259,6 +313,9 @@ def _play(message):
     """
         Handler for MycroftAudioPlay. Starts playback of a tracklist. Also
         determines if the user requested a special service.
+
+        Args:
+            message: message bus message, not used but required
     """
     global service
     logger.info('MycroftAudioServicePlay')
@@ -281,6 +338,9 @@ def _play(message):
 def _track_info(message):
     """
         Returns track info on the message bus.
+
+        Args:
+            message: message bus message, not used but required
     """
     global current
     if current:

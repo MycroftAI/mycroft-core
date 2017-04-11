@@ -11,6 +11,10 @@ logger = getLogger(abspath(__file__).split('/')[-2])
 
 
 class Mpg123Service(AudioBackend):
+    """
+        Audio backend for mpg123 player. This one is rather limited and
+        only implements basic usage.
+    """
     def __init__(self, config, emitter, name='mpg123'):
         self.config = config
         self.process = None
@@ -30,9 +34,16 @@ class Mpg123Service(AudioBackend):
         logger.info("Track list is " + str(tracks))
 
     def _play(self, message=None):
+        """ Implementation specific async method to handle playback.
+            This allows mpg123 service to use the "next method as well
+            as basic play/stop.
+        """
         logger.info('Mpg123Service._play')
         track = self.tracks[self.index]
+
+        # Replace file:// uri's with normal paths
         track = track.replace('file://', '')
+
         self.process = subprocess.Popen(['mpg123', track])
         self.process.communicate()
         self.process = None
