@@ -34,6 +34,7 @@ REMOTE_CONFIG = "mycroft.ai"
 
 load_order = [DEFAULT_CONFIG, REMOTE_CONFIG, SYSTEM_CONFIG, USER_CONFIG]
 
+
 class ConfigurationLoader(object):
     """
     A utility for loading Mycroft configuration files.
@@ -165,7 +166,8 @@ class ConfigurationManager(object):
             if location == REMOTE_CONFIG:
                 RemoteConfiguration.load(ConfigurationManager.__config)
             else:
-                ConfigurationManager.__config = ConfigurationLoader.load(ConfigurationManager.__config, [location])
+                ConfigurationManager.__config = ConfigurationLoader.load(
+                    ConfigurationManager.__config, [location])
         return ConfigurationManager.__config
 
     @staticmethod
