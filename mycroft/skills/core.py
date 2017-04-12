@@ -108,6 +108,9 @@ def load_skill(skill_descriptor, emitter):
                 callable(skill_module.create_skill)):
             # v2 skills framework
             skill = skill_module.create_skill()
+            if (not skill.is_current_language_supported()):
+                logger.info("SKILL NOT SUPPORTS CURRENT LANGUAGE")
+                return None
             skill.bind(emitter)
             skill.load_data_files(dirname(skill_descriptor['info'][1]))
             skill.initialize()
@@ -215,6 +218,12 @@ class MycroftSkill(object):
     def lang(self):
         return self.config_core.get('lang')
 
+    def is_current_language_supported(self):
+        # for backward compatibility, by default, 
+        # en-US is the only language supported. 
+        # return unconditionally True if all langauges are supported. 
+        return self.lang == "en-US" 
+
     def bind(self, emitter):
         if emitter:
             self.emitter = emitter
@@ -289,9 +298,11 @@ class MycroftSkill(object):
         re.compile(regex_str)  # validate regex
         self.emitter.emit(Message('register_vocab', {'regex': regex_str}))
 
-    def speak(self, utterance, expect_response=False):
+    def speak(self, utterance, expect_response=False, 
+              record_characteristics=None):
         data = {'utterance': utterance,
-                'expect_response': expect_response}
+                'expect_response': expect_response,
+                'record_characteristics': record_characteristics}
         self.emitter.emit(Message("speak", data))
 
     def speak_dialog(self, key, data={}, expect_response=False):

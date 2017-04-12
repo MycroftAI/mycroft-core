@@ -40,6 +40,10 @@ class IntentSkill(MycroftSkill):
         self.emitter.on('recognizer_loop:utterance', self.handle_utterance)
         self.emitter.on('detach_intent', self.handle_detach_intent)
 
+    def is_current_language_supported(self):
+        # this skill is language independent
+        return True
+
     def handle_utterance(self, message):
         # Get language of the utterance
         lang = message.data.get('lang', None)

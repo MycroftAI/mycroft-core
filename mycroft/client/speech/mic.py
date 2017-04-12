@@ -18,7 +18,6 @@
 
 import audioop
 import collections
-import os
 from time import sleep
 
 import pyaudio
@@ -29,8 +28,9 @@ from speech_recognition import (
     AudioData
 )
 
+from mycroft.client.speech.local_recognizer import LocalRecognizer
 from mycroft.configuration import ConfigurationManager
-from mycroft.util import check_for_signal, get_ipc_directory
+from mycroft.util import check_for_signal
 from mycroft.util.log import getLogger
 
 listener_config = ConfigurationManager.get().get('listener')
@@ -47,9 +47,11 @@ class MutableStream(object):
         self.muted_buffer = b''.join([b'\x00' * self.SAMPLE_WIDTH])
 
     def mute(self):
+        logger.debug("muted")
         self.muted = True
 
     def unmute(self):
+        logger.debug("unmuted")
         self.muted = False
 
     def read(self, size):
@@ -146,10 +148,10 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
     def __init__(self, wake_word_recognizer):
         speech_recognition.Recognizer.__init__(self)
         self.wake_word_recognizer = wake_word_recognizer
-        self.audio = pyaudio.PyAudio()
+#        self.audio = pyaudio.PyAudio()
         self.multiplier = listener_config.get('multiplier')
         self.energy_ratio = listener_config.get('energy_ratio')
-        self.mic_level_file = os.path.join(get_ipc_directory(), "mic_level")
+        self.forced_wake = False
 
     @staticmethod
     def record_sound_chunk(source):
@@ -157,96 +159,42 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
     @staticmethod
     def calc_energy(sound_chunk, sample_width):
-        return audioop.rms(sound_chunk, sample_width)
-
-    def wake_word_in_audio(self, frame_data):
-        hyp = self.wake_word_recognizer.transcribe(frame_data)
-        return self.wake_word_recognizer.found_wake_word(hyp)
+        res = audioop.rms(sound_chunk, sample_width)
+#	logger.debug("energy=%s",res)
+        return res
 
     def record_phrase(self, source, sec_per_buffer):
-        """
-        This attempts to record an entire spoken phrase. Essentially,
-        this waits for a period of silence and then returns the audio
-
-        :rtype: bytearray
-        :param source: AudioSource
-        :param sec_per_buffer: Based on source.SAMPLE_RATE
-        :return: bytearray representing the frame_data of the recorded phrase
-        """
-        num_loud_chunks = 0
-        noise = 0
-
-        max_noise = 25
-        min_noise = 0
-
-        def increase_noise(level):
-            if level < max_noise:
-                return level + 200 * sec_per_buffer
-            return level
-
-        def decrease_noise(level):
-            if level > min_noise:
-                return level - 100 * sec_per_buffer
-            return level
-
-        # Smallest number of loud chunks required to return
-        min_loud_chunks = int(self.MIN_LOUD_SEC_PER_PHRASE / sec_per_buffer)
-
-        # Maximum number of chunks to record before timing out
-        max_chunks = int(self.RECORDING_TIMEOUT / sec_per_buffer)
-        num_chunks = 0
-
-        # Will return if exceeded this even if there's not enough loud chunks
-        max_chunks_of_silence = int(self.RECORDING_TIMEOUT_WITH_SILENCE /
-                                    sec_per_buffer)
-
-        # bytearray to store audio in
-        byte_data = '\0' * source.SAMPLE_WIDTH
-
-        phrase_complete = False
-        while num_chunks < max_chunks and not phrase_complete:
+        in_speech=False
+        LocalRecognizer.decoder.set_search('command')
+        LocalRecognizer.decoder.start_utt()
+        logger.debug("Waiting for command...")
+        while True:
             chunk = self.record_sound_chunk(source)
-            byte_data += chunk
-            num_chunks += 1
 
-            energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
-            test_threshold = self.energy_threshold * self.multiplier
-            is_loud = energy > test_threshold
-            if is_loud:
-                noise = increase_noise(noise)
-                num_loud_chunks += 1
+            LocalRecognizer.decoder.process_raw(chunk, False, False)
+            new_in_speech = LocalRecognizer.decoder.get_in_speech()
+            logger.debug("in_speech=%s new_in_speech=%s",in_speech,new_in_speech)
+            if new_in_speech:
+                # voice
+                in_speech=True
             else:
-                noise = decrease_noise(noise)
-                self.adjust_threshold(energy, sec_per_buffer)
-
-            if num_chunks % 10 == 0:
-                with open(self.mic_level_file, 'w') as f:
-                    f.write("Energy:  cur=" + str(energy) + " thresh=" +
-                            str(self.energy_threshold))
-                f.close()
-
-            was_loud_enough = num_loud_chunks > min_loud_chunks
-            quiet_enough = noise <= min_noise
-            recorded_too_much_silence = num_chunks > max_chunks_of_silence
-            if quiet_enough and (was_loud_enough or recorded_too_much_silence):
-                phrase_complete = True
-            if check_for_signal('buttonPress'):
-                phrase_complete = True
-
-        return byte_data
+                # silence
+                if in_speech:
+                    in_speech=False
+                    LocalRecognizer.decoder.end_utt()
+                    hyp = LocalRecognizer.decoder.hyp()
+                    if hyp:
+                        logger.debug("utt=%s",hyp.hypstr)
+                        return (None,hyp.hypstr)
+                    LocalRecognizer.decoder.start_utt()
 
     @staticmethod
     def sec_to_bytes(sec, source):
         return sec * source.SAMPLE_RATE * source.SAMPLE_WIDTH
 
     def wait_until_wake_word(self, source, sec_per_buffer):
-        num_silent_bytes = int(self.SILENCE_SEC * source.SAMPLE_RATE *
-                               source.SAMPLE_WIDTH)
-
-        silence = '\0' * num_silent_bytes
-
         # bytearray to store audio in
-        byte_data = silence
+        byte_data = ""
 
         buffers_per_check = self.SEC_BETWEEN_WW_CHECKS / sec_per_buffer
         buffers_since_check = 0.0
@@ -254,32 +202,19 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         # Max bytes for byte_data before audio is removed from the front
         max_size = self.sec_to_bytes(self.SAVED_WW_SEC, source)
 
-        said_wake_word = False
-        counter = 0
-        while not said_wake_word:
-            if check_for_signal('buttonPress'):
+        in_speech=False
+        LocalRecognizer.decoder.set_search('wake_up')
+        LocalRecognizer.decoder.start_utt()
+        logger.debug("Waiting for wake word...")
+        while True:
+            if self.forced_wake or check_for_signal('buttonPress'):
+                self.forced_wake = False
                 said_wake_word = True
                 continue
 
             chunk = self.record_sound_chunk(source)
 
-            energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
-            if energy < self.energy_threshold * self.multiplier:
-                self.adjust_threshold(energy, sec_per_buffer)
-
-            if counter > 2:
-                with open(self.mic_level_file, 'w') as f:
-                    f.write("Energy:  cur=" + str(energy) + " thresh=" +
-                            str(self.energy_threshold))
-                f.close()
-                counter = 0
-            else:
-                counter += 1
-
-            # At first, the buffer is empty and must fill up.  After that
-            # just drop the first chunk bytes to keep it the same size.
-            needs_to_grow = len(byte_data) < max_size
-            if needs_to_grow:
+            if len(byte_data) < max_size:
                 byte_data += chunk
             else:  # Remove beginning of audio and add new chunk to end
                 byte_data = byte_data[len(chunk):] + chunk
@@ -287,7 +222,18 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             buffers_since_check += 1.0
             if buffers_since_check > buffers_per_check:
                 buffers_since_check -= buffers_per_check
-                said_wake_word = self.wake_word_in_audio(byte_data + silence)
+                LocalRecognizer.decoder.process_raw(byte_data, False, False)
+                if LocalRecognizer.decoder.get_in_speech():
+                    in_speech=True
+                else:
+                    if in_speech:
+                        in_speech=False
+                        LocalRecognizer.decoder.end_utt()
+                        hyp = LocalRecognizer.decoder.hyp()
+                        if self.wake_word_recognizer.found_wake_word(hyp):
+                            break
+                        LocalRecognizer.decoder.start_utt()
+       
 
     @staticmethod
     def create_audio_data(raw_data, source):
@@ -307,27 +253,26 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         """
         assert isinstance(source, AudioSource), "Source must be an AudioSource"
 
-#        bytes_per_sec = source.SAMPLE_RATE * source.SAMPLE_WIDTH
+        bytes_per_sec = source.SAMPLE_RATE * source.SAMPLE_WIDTH
         sec_per_buffer = float(source.CHUNK) / source.SAMPLE_RATE
 
-        logger.debug("Waiting for wake word...")
         self.wait_until_wake_word(source, sec_per_buffer)
+        logger.debug("wake_word detected")
 
-        logger.debug("Recording...")
         emitter.emit("recognizer_loop:record_begin")
-        frame_data = self.record_phrase(source, sec_per_buffer)
-        audio_data = self.create_audio_data(frame_data, source)
+        logger.debug("recording...")
+        record = self.record_phrase(source, sec_per_buffer)
+        logger.debug("recorded.")
         emitter.emit("recognizer_loop:record_end")
-        logger.debug("Thinking...")
 
-        return audio_data
+        if record[0]:
+            audio_data = self.create_audio_data(record[0], source)
+        else:
+            audio_data = None
 
-    def adjust_threshold(self, energy, seconds_per_buffer):
-        if self.dynamic_energy_threshold and energy > 0:
-            # account for different chunk sizes and rates
-            damping = (
-                self.dynamic_energy_adjustment_damping ** seconds_per_buffer)
-            target_energy = energy * self.energy_ratio
-            self.energy_threshold = (
-                self.energy_threshold * damping +
-                target_energy * (1 - damping))
+        return (audio_data,record[1])
+
+    def force_wake(self):
+        self.forced_wake = True
+
+

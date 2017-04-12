@@ -37,6 +37,9 @@ class WikipediaSkill(MycroftSkill):
         super(WikipediaSkill, self).__init__(name="WikipediaSkill")
         self.max_results = self.config['max_results']
         self.max_phrases = self.config['max_phrases']
+
+
+    def initialize(self):
         self.question = 'Would you like to know more about '  # TODO - i10n
         self.feedback_prefix = read_stripped_lines(
             join(dirname(__file__), 'dialog', self.lang,
@@ -44,8 +47,6 @@ class WikipediaSkill(MycroftSkill):
         self.feedback_search = read_stripped_lines(
             join(dirname(__file__), 'dialog', self.lang,
                  'FeedbackSearch.dialog'))
-
-    def initialize(self):
         intent = IntentBuilder("WikipediaIntent").require(
             "WikipediaKeyword").require("ArticleTitle").build()
         self.register_intent(intent, self.handle_intent)
