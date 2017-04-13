@@ -34,7 +34,7 @@ from mycroft.dialog import DialogLoader
 from mycroft.filesystem import FileSystemAccess
 from mycroft.messagebus.message import Message
 from mycroft.util.log import getLogger
-
+from mycroft.skills.settings import SkillSettings
 __author__ = 'seanfitz'
 
 BLACKLISTED_SKILLS = ["send_sms", "media"]
@@ -108,6 +108,7 @@ def load_skill(skill_descriptor, emitter):
             skill.load_data_files(dirname(skill_descriptor['info'][1]))
             skill.initialize()
             logger.info("Loaded " + skill_descriptor["name"])
+            skill.load_settings(skill_descriptor['info'][1] + '/settings.json')
             return skill
         else:
             logger.warn(
@@ -205,6 +206,9 @@ class MycroftSkill(object):
     @property
     def lang(self):
         return self.config_core.get('lang')
+
+    def load_settings(self, skill_path):
+        self.settings = SkillSettings(skill_path)
 
     def bind(self, emitter):
         if emitter:
