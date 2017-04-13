@@ -39,7 +39,7 @@ load_order = [DEFAULT_CONFIG, REMOTE_CONFIG, SYSTEM_CONFIG, USER_CONFIG]
 class ConfigurationLoader(object):
     """
     A utility for loading Mycroft configuration files.
-    
+
     Mycroft configuration comes from four potential locations:
      * Defaults found in 'mycroft.conf' in the code
      * Remote settings (coming from home.mycroft.ai)
@@ -49,10 +49,10 @@ class ConfigurationLoader(object):
     in the Default would be overridden by a value with the same name found
     in the Remote.  And a value in the Remote would be overridden by a value
     set in the User settings.  Not all values exist at all levels.
-    
+
     See comments in the 'mycroft.conf' for more information about specific
     settings and where they reside.
-    
+
     Note:
         Values are overridden by name.  This includes all data under that name,
         so you if a value contains a complex structure, you cannot specify
@@ -173,7 +173,7 @@ class ConfigurationManager(object):
     """
     Static management utility for accessing the cached configuration.
     This configuration is periodically updated from the remote server
-    to keep in sync.    
+    to keep in sync.
     """
 
     __config = None
@@ -187,7 +187,7 @@ class ConfigurationManager(object):
         Returns:
             dict: A dictionary representing the Mycroft configuration
         """
-        return ConfigurationManager.get();
+        return ConfigurationManager.get()
 
     @staticmethod
     def init(ws):
@@ -257,7 +257,7 @@ class ConfigurationManager(object):
 
 
 class _ConfigurationListener(object):
-    """ Utility to synchronize remote configuration changes locally 
+    """ Utility to synchronize remote configuration changes locally
 
     This listens to the messagebus for 'configuration.updated', and
     refreshes the cached configuration when this is encountered.
