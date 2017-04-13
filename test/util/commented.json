@@ -1,0 +1,168 @@
+// Leading comment
+
+{
+// C-style comment
+  "lang": "en-us",
+  
+  // Comment spaced out  
+  "system_unit": "metric",
+  
+    // Comment tabbed out
+    
+  "time_format": "half",
+  
+    // comment and // another inside
+  "date_format": "MDY",
+  
+  // Comment with " inside it
+  "confirm_listening": true,
+  
+  # Python-style comment
+  "sounds": {
+# Commment with no space
+    "start_listening": "snd/start_listening.wav",
+        # Comment inside with a tab
+        # and multiple lines
+    "end_listening": "snd/end_listening.wav"
+    // and a final thought
+  },
+  "play_wav_cmdline": "aplay %1",
+  "play_mp3_cmdline": "mpg123 %1",
+  "location": {
+    "city": {
+      "code": "Lawrence",
+      "name": "Lawrence",
+      "state": {
+        "code": "KS",
+        "name": "Kansas",
+        "country": {
+          "code": "US",
+          "name": "United States"
+        }
+      }
+    },
+    "coordinate": {
+      "latitude": 38.971669,
+      "longitude": -95.23525
+    },
+    "timezone": {
+      "code": "America/Chicago",
+      "name": "Central Standard Time",
+      "dstOffset": 3600000,
+      "offset": -21600000
+    }
+  },
+  "skills": {
+    "directory": "~/.mycroft/skills",
+    "stop_threshold": 2.0
+  },
+  "server": {
+    "url": "https://api.mycroft.ai",
+    "version": "v1",
+    "update": true,
+    "metrics": false
+  },
+  "websocket": {
+    "host": "0.0.0.0",
+    "port": 8181,
+    "route": "/core",
+    "ssl": false
+  },
+  "listener": {
+    "sample_rate": 16000,
+    "channels": 1,
+    "wake_word": "hey mycroft",
+    "phonemes": "HH EY . M AY K R AO F T",
+    "threshold": 1e-90,
+    "multiplier": 1.0,
+    "energy_ratio": 1.5
+  },
+  "enclosure": {
+    "port": "/dev/ttyAMA0",
+    "rate": 9600,
+    "timeout": 5.0,
+    "update": true,
+    "test": false
+  },
+  "log_level": "DEBUG",
+  "ignore_logs": ["enclosure.mouth.viseme"],
+  "session": {
+    "ttl": 180
+  },
+  "stt": {
+    "module": "mycroft"
+  },
+  "tts": {
+    "module": "mimic",
+    "mimic": {
+      "voice": "ap"
+    },
+    "espeak": {
+      "lang": "english-us",
+      "voice": "m1"
+    }
+  },
+  
+  // Mixture
+  # of types
+  // of comments
+  
+  
+  "wifi": {
+    "setup": false
+  },
+  "ConfigurationSkill": {
+    "max_delay": 60
+  },
+  "WikipediaSkill": {
+    "max_results": 5,
+    "max_phrases": 2
+  },
+  "WolframAlphaSkill": {
+    "api_key": "",
+    "proxy": true
+  },
+  "WeatherSkill": {
+    "api_key": "",
+    "proxy": true,
+    "temperature": "fahrenheit"
+  },
+  "NPRNewsSkill": {
+    "url_rss": "http://www.npr.org/rss/podcast.php?id=500005"
+  },
+  "AlarmSkill": {
+    "filename": "alarm.mp3",
+    "max_delay": 600,
+    "repeat_time": 20,
+    "extended_delay": 60
+  },
+  "ReminderSkill": {
+    "max_delay": 600,
+    "repeat_time": 60,
+    "extended_delay": 60
+  },
+  "VolumeSkill": {
+    "default_level": 6,
+    "min_volume": 0,
+    "max_volume": 100
+  },
+  "AudioRecordSkill": {
+    "filename": "/tmp/mycroft-recording.wav",
+    "free_disk": 100,
+    "max_time": 600,
+    "notify_delay": 5,
+    "rate": 16000,
+    "channels": 1
+  },
+  "SkillInstallerSkill": {
+  }
+}
+
+
+
+
+
+# Trailing comments
+# These go on
+# and on
+    // and on
