@@ -1,7 +1,0 @@
-{
-  "utterance": "notify me on april 1st 2016 at 9am to release a new version",
-  "intent_type": "ReminderSkillCreateIntent",
-  "intent": {
-    "ReminderSkillCreateVerb": "notify me"
-  }
-}

@@ -1,2 +1,0 @@
-price of (?P<Company>.*)
-is (?P<Company>.*) trading at

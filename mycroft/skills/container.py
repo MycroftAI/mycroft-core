@@ -23,7 +23,7 @@ from os.path import dirname, exists, isdir
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.skills.core import create_skill_descriptor, load_skill
-from mycroft.skills.intent import create_skill as create_intent_skill
+from mycroft.skills.intent import Intent
 from mycroft.util.log import getLogger
 
 __author__ = 'seanfitz'
@@ -44,7 +44,7 @@ class SkillContainer(object):
         sys.path.append(params.dir)
         self.dir = params.dir
 
-        self.enable_intent_skill = params.enable_intent_skill
+        self.enable_intent = params.enable_intent
 
         self.__init_client(params)
 
@@ -57,7 +57,7 @@ class SkillContainer(object):
         parser.add_argument("--host", default=None)
         parser.add_argument("--port", default=None)
         parser.add_argument("--use-ssl", action='store_true', default=False)
-        parser.add_argument("--enable-intent-skill", action='store_true',
+        parser.add_argument("--enable-intent", action='store_true',
                             default=False)
         return parser.parse_args(args)
 
@@ -74,10 +74,9 @@ class SkillContainer(object):
                                   ssl=params.use_ssl)
 
     def load_skill(self):
-        if self.enable_intent_skill:
-            intent_skill = create_intent_skill()
-            intent_skill.bind(self.ws)
-            intent_skill.initialize()
+        if self.enable_intent:
+            Intent(self.ws)
+
         skill_descriptor = create_skill_descriptor(self.dir)
         self.skill = load_skill(skill_descriptor, self.ws)
 

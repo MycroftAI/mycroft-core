@@ -29,6 +29,7 @@ from mycroft.messagebus.message import Message
 from mycroft.tts import TTSFactory
 from mycroft.util import kill, play_wav, resolve_resource_file, create_signal
 from mycroft.util.log import getLogger
+from mycroft.lock import Lock as PIDLock  # Create/Support PID locking file
 
 logger = getLogger("SpeechClient")
 ws = None
@@ -103,7 +104,10 @@ def handle_speak(event):
         chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s',
                           utterance)
         for chunk in chunks:
-            mute_and_speak(chunk)
+            try:
+                mute_and_speak(chunk)
+            except:
+                logger.error('Error in mute_and_speak', exc_info=True)
     else:
         mute_and_speak(utterance)
 
@@ -140,6 +144,7 @@ def connect():
 def main():
     global ws
     global loop
+    lock = PIDLock("voice")
     ws = WebsocketClient()
     tts.init(ws)
     ConfigurationManager.init(ws)

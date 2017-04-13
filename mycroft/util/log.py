@@ -14,16 +14,25 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
-
+import json
 import logging
+
+from os.path import isfile
+
+SYSTEM_CONFIG = '/etc/mycroft/mycroft.conf'
 
 __author__ = 'seanfitz'
 
+log_level = "DEBUG"
+
+if isfile(SYSTEM_CONFIG):
+    with open(SYSTEM_CONFIG) as f:
+        config = json.load(f)
+        log_level = config.get("log_level", "DEBUG")
+
 FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-logging.basicConfig(format=FORMAT, level=logging.DEBUG)
+logging.basicConfig(format=FORMAT, level=logging.getLevelName(log_level))
 logger = logging.getLogger("MYCROFT")
-logger.setLevel(logging.DEBUG)
 
 
 def getLogger(name="MYCROFT"):

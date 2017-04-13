@@ -1,2 +1,0 @@
-Tomorrow, it will be {{condition}} in {{location}}, with a high of {{temp_max}} and a low of {{temp_min}}
-Tomorrow, {{location}} will have a high of {{temp_max}} and a low of {{temp_min}}, with {{condition}} conditions
