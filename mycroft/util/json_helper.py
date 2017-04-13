@@ -18,8 +18,9 @@
 
 import json
 
+
 def load_commented_json(filename):
-    """ Loads an JSON file, ignoring comments 
+    """ Loads an JSON file, ignoring comments
 
     Supports a trivial extension to the JSON file format.  Allow comments
     to be embedded within the JSON, requiring that a comment be on an
@@ -59,7 +60,7 @@ def uncomment_json(commented_json_str):
 
     Returns:
         str: uncommented, legal JSON
-    """    
+    """
     lines = commented_json_str.splitlines()
     # remove all comment lines, starting with // or #
     nocomment = []
