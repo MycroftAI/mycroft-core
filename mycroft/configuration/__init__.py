@@ -14,14 +14,15 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-import json
 
+import json
 import inflection
 import re
 from genericpath import exists, isfile
 from os.path import join, dirname, expanduser
 
 from mycroft.util.log import getLogger
+from mycroft.util.json_helper import load_commented_json
 
 __author__ = 'seanfitz, jdorleans'
 
@@ -38,6 +39,25 @@ load_order = [DEFAULT_CONFIG, REMOTE_CONFIG, SYSTEM_CONFIG, USER_CONFIG]
 class ConfigurationLoader(object):
     """
     A utility for loading Mycroft configuration files.
+
+    Mycroft configuration comes from four potential locations:
+     * Defaults found in 'mycroft.conf' in the code
+     * Remote settings (coming from home.mycroft.ai)
+     * System settings (typically found at /etc/mycroft/mycroft.conf
+     * User settings (typically found at /home/<user>/.mycroft/mycroft.conf
+    These get loaded in that order on top of each other.  So a value specified
+    in the Default would be overridden by a value with the same name found
+    in the Remote.  And a value in the Remote would be overridden by a value
+    set in the User settings.  Not all values exist at all levels.
+
+    See comments in the 'mycroft.conf' for more information about specific
+    settings and where they reside.
+
+    Note:
+        Values are overridden by name.  This includes all data under that name,
+        so you if a value contains a complex structure, you cannot specify
+        only a single component of that structure -- you have to override the
+        entire structure.
     """
 
     @staticmethod
@@ -81,9 +101,8 @@ class ConfigurationLoader(object):
     def __load(config, location):
         if exists(location) and isfile(location):
             try:
-                with open(location) as f:
-                    config.update(json.load(f))
-                    LOG.debug("Configuration '%s' loaded" % location)
+                config.update(load_commented_json(location))
+                LOG.debug("Configuration '%s' loaded" % location)
             except Exception, e:
                 LOG.error("Error loading configuration '%s'" % location)
                 LOG.error(repr(e))
@@ -129,6 +148,8 @@ class RemoteConfiguration(object):
     def __load(config, setting):
         for k, v in setting.iteritems():
             if k not in RemoteConfiguration.IGNORED_SETTINGS:
+                # Translate the CamelCase values stored remotely into the
+                # Python-style names used within mycroft-core.
                 key = inflection.underscore(re.sub(r"Setting(s)?", "", k))
                 if isinstance(v, dict):
                     config[key] = config.get(key, {})
@@ -150,14 +171,28 @@ class RemoteConfiguration(object):
 
 class ConfigurationManager(object):
     """
-    Static management utility for calling up cached configuration.
+    Static management utility for accessing the cached configuration.
+    This configuration is periodically updated from the remote server
+    to keep in sync.
     """
+
     __config = None
     __listener = None
 
     @staticmethod
+    def instance():
+        """
+        The cached configuration.
+
+        Returns:
+            dict: A dictionary representing the Mycroft configuration
+        """
+        return ConfigurationManager.get()
+
+    @staticmethod
     def init(ws):
-        ConfigurationManager.__listener = ConfigurationListener(ws)
+        # Start listening for configuration update events on the messagebus
+        ConfigurationManager.__listener = _ConfigurationListener(ws)
 
     @staticmethod
     def load_defaults():
@@ -186,7 +221,8 @@ class ConfigurationManager(object):
         """
         Get cached configuration.
 
-        :return: A dictionary representing Mycroft configuration.
+        Returns:
+            dict: A dictionary representing the Mycroft configuration
         """
         if not ConfigurationManager.__config:
             ConfigurationManager.load_defaults()
@@ -214,14 +250,21 @@ class ConfigurationManager(object):
         """
         ConfigurationManager.update(config)
         location = SYSTEM_CONFIG if is_system else USER_CONFIG
-        with open(location, 'rw') as f:
-            config = json.load(f).update(config)
+        loc_config = load_commented_json(location)
+        with open(location, 'w') as f:
+            config = loc_config.update(config)
             json.dump(config, f)
 
 
-class ConfigurationListener(object):
+class _ConfigurationListener(object):
+    """ Utility to synchronize remote configuration changes locally
+
+    This listens to the messagebus for 'configuration.updated', and
+    refreshes the cached configuration when this is encountered.
+    """
+
     def __init__(self, ws):
-        super(ConfigurationListener, self).__init__()
+        super(_ConfigurationListener, self).__init__()
         ws.on("configuration.updated", self.updated)
 
     @staticmethod
