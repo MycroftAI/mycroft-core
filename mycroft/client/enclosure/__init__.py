@@ -18,7 +18,7 @@
 
 import subprocess
 import time
-from Queue import Queue
+from queue import Queue
 from alsaaudio import Mixer
 from threading import Thread, Timer
 

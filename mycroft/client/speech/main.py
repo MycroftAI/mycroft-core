@@ -169,7 +169,7 @@ def main():
 
     try:
         loop.run()
-    except KeyboardInterrupt, e:
+    except KeyboardInterrupt as e:
         logger.exception(e)
         event_thread.exit()
         sys.exit()

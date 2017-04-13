@@ -21,7 +21,7 @@ import time
 from multiprocessing.pool import ThreadPool
 
 from pyee import EventEmitter
-from websocket import WebSocketApp
+from websocket import WebSocket
 
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.message import Message
@@ -68,7 +68,7 @@ class WebsocketClient(object):
         try:
             self.emitter.emit('error', error)
             self.client.close()
-        except Exception, e:
+        except Exception as e:
             LOG.error(repr(e))
         LOG.warn("WS Client will reconnect in %d seconds." % self.retry)
         time.sleep(self.retry)

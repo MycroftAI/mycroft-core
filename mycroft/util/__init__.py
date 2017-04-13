@@ -145,7 +145,7 @@ def create_file(filename):
 
 
 def kill(names):
-    print psutil.pids()
+    print(psutil.pids())
     for name in names:
         for p in psutil.process_iter():
             try:
@@ -283,7 +283,7 @@ def _ensure_directory_exists(dir, domain=None):
     if not os.path.isdir(dir):
         try:
             save = os.umask(0)
-            os.makedirs(dir, 0777)  # give everyone rights to r/w here
+            os.makedirs(dir, "0777")  # give everyone rights to r/w to IPC dir
         except OSError:
             LOGGER.warn("Failed to create: " + dir)
             pass
