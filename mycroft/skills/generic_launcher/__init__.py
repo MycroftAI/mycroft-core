@@ -49,7 +49,7 @@ class GenericLauncherSkill(MycroftSkill):
 	self.spotify_popen = None
         self.emitter.on('recognizer_loop:record_end', self.on_record_end)
         self.recording=False
-	self.avisa_re=re.compile(r'avisa en (\w+) minutos?')
+	self.avisa_re=re.compile(r'avisa en (.*?) minutos?')
 
     def handle_intent(self, message):
         logger.debug("message.data=%s",str(message.data))
@@ -67,7 +67,6 @@ class GenericLauncherSkill(MycroftSkill):
 	  
     def handle_pon_musica(self):
         logger.debug("poniendo musica ...")
-        return
         if self.spotify_popen and self.spotify_popen.poll() == None:
             return
 	self.spotify_popen = subprocess.Popen("spotify",stdout=self.DEVNULL,stderr=self.DEVNULL)
@@ -99,15 +98,21 @@ class GenericLauncherSkill(MycroftSkill):
     def handle_avisa(self,cmnd):
         logger.debug("avisa:cmnd=%s",cmnd)
         m = self.avisa_re.match(cmnd)
-        if m:
-            self.wait_intv_txt=m.group(1)
-            self.wait_intv=60*self.word2nbr(self.wait_intv_txt)
-            logger.debug("avisa:wait=%s",self.wait_intv)
-            self.speak(u'que debo avisar?', expect_response=True, 
-                record_characteristics =
-                    { 'no_stt' : True, 
-                      'record_filename' : '/tmp/prueba.wav' } )
-            self.recording=True
+        if not m:
+            return
+
+        self.wait_intv_txt=m.group(1)
+        intv=self.word2nbr(self.wait_intv_txt)
+        if not intv:
+            return
+        self.wait_intv=60*intv
+        logger.debug("avisa:wait=%s",self.wait_intv)
+
+        self.speak(u'que debo avisar?', expect_response=True, 
+            record_characteristics =
+                { 'no_stt' : True, 
+                  'record_filename' : '/tmp/prueba.wav' } )
+        self.recording=True
 
     def on_record_end(self, message):
         if self.recording:

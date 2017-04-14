@@ -29,6 +29,7 @@ from mycroft.messagebus.message import Message
 from mycroft.tts import TTSFactory
 from mycroft.util import kill, play_wav, resolve_resource_file, create_signal
 from mycroft.util.log import getLogger
+from mycroft.lock import Lock as PIDLock  # Create/Support PID locking file
 
 logger = getLogger("SpeechClient")
 ws = None
@@ -39,7 +40,7 @@ loop = None
 config = ConfigurationManager.get()
 
 
-def handle_record_begin():
+def handle_record_begin( data=None ):
     logger.info("Begin Recording...")
 
     # If enabled, play a wave file with a short sound to audibly
@@ -53,7 +54,7 @@ def handle_record_begin():
     ws.emit(Message('recognizer_loop:record_begin'))
 
 
-def handle_record_end():
+def handle_record_end( data=None ):
     logger.info("End Recording...")
     ws.emit(Message('recognizer_loop:record_end'))
 
@@ -104,12 +105,21 @@ def handle_speak(event):
         chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s',
                           utterance)
         for chunk in chunks:
-            mute_and_speak(chunk)
+            try:
+                mute_and_speak(chunk)
+            except:
+                logger.error('Error in mute_and_speak', exc_info=True)
     else:
         mute_and_speak(utterance)
 
-    if expect_response or record_characteristics:
-        loop.record_characteristics(expect_response,record_characteristics)
+    if expect_response:
+        create_signal('buttonPress')
+
+    if loop and (expect_response or record_characteristics):
+        loop.set_record_characteristics(
+            expect_response,
+            record_characteristics)
+
 
 def handle_sleep(event):
     loop.sleep()
@@ -140,6 +150,7 @@ def connect():
 def main():
     global ws
     global loop
+    lock = PIDLock("voice")
     ws = WebsocketClient()
     tts.init(ws)
     ConfigurationManager.init(ws)
