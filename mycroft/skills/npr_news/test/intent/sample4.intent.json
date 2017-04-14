@@ -1,7 +1,0 @@
-{
-  "utterance": "what are the latest news",
-  "intent_type": "NPRNewsIntent",
-  "intent": {
-    "NPRNewsKeyword": "news"
-  }
-}

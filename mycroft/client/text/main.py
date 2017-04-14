@@ -32,6 +32,8 @@ import time                                                 # nopep8
 import subprocess                                           # nopep8
 import curses                                               # nopep8
 import curses.ascii                                         # nopep8
+import textwrap                                             # nopep8
+import json                                                 # nopep8
 from threading import Thread, Lock                          # nopep8
 from mycroft.messagebus.client.ws import WebsocketClient    # nopep8
 from mycroft.messagebus.message import Message              # nopep8
@@ -46,7 +48,7 @@ mutex = Lock()
 logger = getLogger("CLIClient")
 
 utterances = []
-chat = []
+chat = []   # chat history, oldest at the lowest index
 line = "What time is it"
 bSimple = '--simple' in sys.argv
 bQuiet = '--quiet' in sys.argv
@@ -56,16 +58,19 @@ log_line_lr_scroll = 0  # amount to scroll left/right for long lines
 longest_visible_line = 0  # for HOME key
 
 mergedLog = []
-log_filters = ["enclosure.mouth.viseme"]
+filteredLog = []
+default_log_filters = ["enclosure.mouth.viseme"]
+log_filters = list(default_log_filters)
 log_files = []
 
 # Values used to display the audio meter
 show_meter = True
 meter_peak = 20
-meter_cur = 8
-meter_thresh = 5
+meter_cur = -1
+meter_thresh = -1
 
 screen_mode = 0   # 0 = main, 1 = help, others in future?
+last_redraw = 0   # time when last full-redraw happened
 
 ##############################################################################
 # Helper functions
@@ -82,6 +87,30 @@ def stripNonAscii(text):
 
 
 ##############################################################################
+# Settings
+
+config_file = os.path.join(os.path.expanduser("~"), ".mycroft_cli.conf")
+
+
+def load_settings():
+    global log_filters
+
+    try:
+        with open(config_file, 'r') as f:
+            config = json.load(f)
+        if "filters" in config:
+            log_filters = config["filters"]
+    except:
+        pass
+
+
+def save_settings():
+    config["filters"] = log_filters
+    with open(config_file, 'w') as f:
+        json.dump(config, f)
+
+
+##############################################################################
 # Log file monitoring
 
 class LogMonitorThread(Thread):
@@ -94,8 +123,6 @@ class LogMonitorThread(Thread):
         log_files.append(filename)
 
     def run(self):
-        global mergedLog
-
         while True:
             try:
                 st_results = os.stat(self.filename)
@@ -111,6 +138,8 @@ class LogMonitorThread(Thread):
     def read_file_from(self, bytefrom):
         global meter_cur
         global meter_thresh
+        global filteredLog
+        global mergedLog
 
         with open(self.filename, 'rb') as fh:
             fh.seek(bytefrom)
@@ -126,10 +155,13 @@ class LogMonitorThread(Thread):
                         ignore = True
                         break
 
-                if not ignore:
+                if ignore:
+                    mergedLog.append(self.logid+line.strip())
+                else:
                     if bSimple:
                         print line.strip()
                     else:
+                        filteredLog.append(self.logid+line.strip())
                         mergedLog.append(self.logid+line.strip())
 
 
@@ -184,6 +216,35 @@ def start_mic_monitor(filename):
         thread.start()
 
 
+def add_log_message(message):
+    """ Show a message for the user (mixed in the logs) """
+    global filteredLog
+    global mergedLog
+
+    message = "@"+message       # the first byte is a code
+    filteredLog.append(message)
+    mergedLog.append(message)
+    scr.erase()
+    scr.refresh()
+
+
+def rebuild_filtered_log():
+    global filteredLog
+    global mergedLog
+
+    filteredLog = []
+    for line in mergedLog:
+        # Apply filters
+        ignore = False
+        for filtered_text in log_filters:
+            if filtered_text in line:
+                ignore = True
+                break
+
+        if not ignore:
+            filteredLog.append(line)
+
+
 ##############################################################################
 # Capturing output from Mycroft
 
@@ -229,6 +290,7 @@ def init_screen():
     global CLR_LOG1
     global CLR_LOG2
     global CLR_LOG_DEBUG
+    global CLR_LOG_CMDMESSAGE
     global CLR_METER_CUR
     global CLR_METER
 
@@ -244,13 +306,14 @@ def init_screen():
         # 3 = dk green      7 = dk cyan
         # 4 = dk yellow     8 = lt gray
         CLR_HEADING = curses.color_pair(1)
-        CLR_CHAT_RESP = curses.color_pair(7)
-        CLR_CHAT_QUERY = curses.color_pair(1)
+        CLR_CHAT_RESP = curses.color_pair(4)
+        CLR_CHAT_QUERY = curses.color_pair(7)
         CLR_CMDLINE = curses.color_pair(7)
-        CLR_INPUT = curses.color_pair(1)
+        CLR_INPUT = curses.color_pair(7)
         CLR_LOG1 = curses.color_pair(3)
         CLR_LOG2 = curses.color_pair(6)
         CLR_LOG_DEBUG = curses.color_pair(4)
+        CLR_LOG_CMDMESSAGE = curses.color_pair(2)
         CLR_METER_CUR = curses.color_pair(2)
         CLR_METER = curses.color_pair(4)
 
@@ -261,15 +324,15 @@ def page_log(page_up):
         log_line_offset += 10
     else:
         log_line_offset -= 10
-    if log_line_offset > len(mergedLog):
-        log_line_offset = len(mergedLog)-10
+    if log_line_offset > len(filteredLog):
+        log_line_offset = len(filteredLog)-10
     if log_line_offset < 0:
         log_line_offset = 0
     draw_screen()
 
 
 def draw_meter():
-    if not show_meter:
+    if not show_meter or meter_cur == -1:
         return
 
     # The meter will look something like this:
@@ -280,7 +343,8 @@ def draw_meter():
     #       *
     #       *
     #       *
-    # Cur       Threshold
+    # Where the left side is the current level and the right side is
+    # the threshold level for 'silence'.
     global scr
     global meter_peak
 
@@ -295,36 +359,46 @@ def draw_meter():
     h_thresh = clamp(int((float(meter_thresh) / scale) * height), 0, height-1)
     clr = curses.color_pair(4)  # dark yellow
 
+    str_level = "{0:3} ".format(int(meter_cur))   # e.g. '  4'
+    str_thresh = "{0:4.2f}".format(meter_thresh)  # e.g. '3.24'
+    meter_width = len(str_level) + len(str_thresh) + 4
     for i in range(0, height):
         meter = ""
         if i == h_cur:
-            meter = "{0:3} ".format(int(meter_cur))  # e.g. '  4'
+            # current energy level
+            meter = str_level
         else:
-            meter = "    "
+            meter = " " * len(str_level)
 
         if i == h_thresh:
-            meter += "---"
-        else:
-            meter += "   "
-
-        if i == h_thresh:
-            meter += "{0:4.2f}".format(meter_thresh)  # e.g. '3.24'
+            # add threshold indicator
+            meter += "--- "
         else:
             meter += "    "
 
-        scr.addstr(curses.LINES-1-i, curses.COLS-12, meter, clr)
+        if i == h_thresh:
+            # 'silence' threshold energy level
+            meter += str_thresh
+
+        # draw the line
+        meter += " " * (meter_width - len(meter))
+        scr.addstr(curses.LINES-1-i, curses.COLS-len(meter)-1, meter, clr)
+
+        # draw an asterisk if the audio energy is at this level
         if i <= h_cur:
             if meter_cur > meter_thresh:
                 clr_bar = curses.color_pair(3)   # dark green for loud
             else:
                 clr_bar = curses.color_pair(5)   # dark blue for 'silent'
-            scr.addstr(curses.LINES-1-i, curses.COLS-7, "*", clr_bar)
+            scr.addstr(curses.LINES-1-i, curses.COLS-len(str_thresh)-4, "*",
+                       clr_bar)
 
 
 def draw_screen():
     global scr
     global log_line_offset
     global longest_visible_line
+    global last_redraw
 
     if not scr:
         return
@@ -332,10 +406,14 @@ def draw_screen():
     if not screen_mode == 0:
         return
 
-    scr.erase()
+    if time.time() - last_redraw > 5:   # every 5 seconds
+        scr.clear()
+        last_redraw = time.time()
+    else:
+        scr.erase()
 
     # Display log output at the top
-    cLogs = len(mergedLog)
+    cLogs = len(filteredLog)
     cLogLinesToShow = curses.LINES-13
     start = clamp(cLogs - cLogLinesToShow, 0, cLogs - 1) - log_line_offset
     end = cLogs - log_line_offset
@@ -354,7 +432,7 @@ def draw_screen():
     y = 2
     len_line = 0
     for i in range(start, end):
-        log = mergedLog[i]
+        log = filteredLog[i]
         logid = log[0]
         if len(log) > 25 and log[5] == '-' and log[8] == '-':
             log = log[27:]  # skip logid & date/time at the front of log line
@@ -368,6 +446,8 @@ def draw_screen():
         else:
             if logid == "1":
                 clr = CLR_LOG1
+            elif logid == "@":
+                clr = CLR_LOG_CMDMESSAGE
             else:
                 clr = CLR_LOG2
 
@@ -390,35 +470,53 @@ def draw_screen():
         y += 1
 
     # Log legend in the lower-right
-    scr.addstr(curses.LINES-10, curses.COLS/2 + 2, "Log Output Legend",
+    scr.addstr(curses.LINES-10, curses.COLS/2 + 2,
+               make_titlebar("Log Output Legend", curses.COLS/2 - 2),
                CLR_HEADING)
-    scr.addstr(curses.LINES-9, curses.COLS/2 + 2, "=" * (curses.COLS/2 - 4),
-               CLR_HEADING)
-    scr.addstr(curses.LINES-8, curses.COLS/2 + 2,
+    scr.addstr(curses.LINES-9, curses.COLS/2 + 2,
                "DEBUG output",
                CLR_LOG_DEBUG)
-    scr.addstr(curses.LINES-7, curses.COLS/2 + 2,
+    scr.addstr(curses.LINES-8, curses.COLS/2 + 2,
                os.path.basename(log_files[0])+", other",
                CLR_LOG1)
     if len(log_files) > 1:
-        scr.addstr(curses.LINES-6, curses.COLS/2 + 2,
+        scr.addstr(curses.LINES-7, curses.COLS/2 + 2,
                    os.path.basename(log_files[1]), CLR_LOG2)
 
     # History log in the middle
-    scr.addstr(curses.LINES-10, 0, "History", CLR_HEADING)
-    scr.addstr(curses.LINES-9, 0,  "=" * (curses.COLS/2), CLR_HEADING)
+    chat_width = curses.COLS/2 - 2
+    chat_height = 7
+    chat_out = []
+    scr.addstr(curses.LINES-10, 0, make_titlebar("History", chat_width),
+               CLR_HEADING)
 
-    cChat = len(chat)
-    if cChat:
-        y = curses.LINES-8
-        for i in range(cChat-clamp(cChat, 1, 5), cChat):
-            chat_line = chat[i]
-            if chat_line.startswith(">> "):
-                clr = CLR_CHAT_RESP
-            else:
-                clr = CLR_CHAT_QUERY
-            scr.addstr(y, 0, stripNonAscii(chat_line), clr)
-            y += 1
+    # Build a nicely wrapped version of the chat log
+    idx_chat = len(chat)-1
+    while len(chat_out) < chat_height and idx_chat >= 0:
+        if chat[idx_chat][0] == '>':
+            wrapper = textwrap.TextWrapper(initial_indent="",
+                                           subsequent_indent="   ",
+                                           width=chat_width)
+        else:
+            wrapper = textwrap.TextWrapper(width=chat_width)
+
+        chatlines = wrapper.wrap(chat[idx_chat])
+        for txt in reversed(chatlines):
+            if len(chat_out) >= chat_height:
+                break
+            chat_out.insert(0, txt)
+
+        idx_chat -= 1
+
+    # Output the chat
+    y = curses.LINES-9
+    for txt in chat_out:
+        if txt.startswith(">> ") or txt.startswith("   "):
+            clr = CLR_CHAT_RESP
+        else:
+            clr = CLR_CHAT_QUERY
+        scr.addstr(y, 1, stripNonAscii(txt), clr)
+        y += 1
 
     # Command line at the bottom
     l = line
@@ -429,13 +527,18 @@ def draw_screen():
         l = line[1:]
     else:
         scr.addstr(curses.LINES-2, 0,
-                   "Input (':' for command mode, Ctrl+C to quit):",
-                   CLR_CMDLINE)
-        scr.addstr(curses.LINES-1, 0, ">", CLR_CMDLINE)
+                   make_titlebar("Input (':' for command, Ctrl+C to quit)",
+                                 curses.COLS-1),
+                   CLR_HEADING)
+        scr.addstr(curses.LINES-1, 0, ">", CLR_HEADING)
 
     draw_meter()
     scr.addstr(curses.LINES-1, 2, l, CLR_INPUT)
     scr.refresh()
+
+
+def make_titlebar(title, bar_length):
+    return title + " " + ("=" * (bar_length - 1 - len(title)))
 
 
 def show_help():
@@ -461,9 +564,12 @@ def show_help():
                CLR_CMDLINE)
     scr.addstr(11, 0,  "=" * (curses.COLS-1),
                CLR_CMDLINE)
-    scr.addstr(12, 0,  ":help              this screen")
-    scr.addstr(13, 0,  ":quit or :exit     exit the program")
-    scr.addstr(14, 0,  ":meter [show|hide] display of microphone level")
+    scr.addstr(12, 0,  ":help                   this screen")
+    scr.addstr(13, 0,  ":quit or :exit          exit the program")
+    scr.addstr(14, 0,  ":meter (show|hide)      display of microphone level")
+    scr.addstr(15, 0,  ":filter [remove] 'str'  adds or removes a log filter")
+    scr.addstr(16, 0,  ":filter (clear|reset)   reset filters")
+    scr.addstr(17, 0,  ":filter (show|list)     display current filters")
 
     scr.addstr(curses.LINES-1, 0,  center(23) + "Press any key to return",
                CLR_HEADING)
@@ -486,6 +592,8 @@ def center(str_len):
 
 def handle_cmd(cmd):
     global show_meter
+    global log_filters
+    global mergedLog
 
     if "show" in cmd and "log" in cmd:
         pass
@@ -494,10 +602,38 @@ def handle_cmd(cmd):
     elif "exit" in cmd or "quit" in cmd:
         return 1
     elif "meter" in cmd:
+        # microphone level meter
         if "hide" in cmd or "off" in cmd:
             show_meter = False
         elif "show" in cmd or "on" in cmd:
             show_meter = True
+    elif "filter" in cmd:
+        if "show" in cmd or "list" in cmd:
+            # display active filters
+            add_log_message("Filters: "+str(log_filters))
+            return
+
+        if "reset" in cmd or "clear" in cmd:
+            log_filters = list(default_log_filters)
+        else:
+            # extract last word(s)
+            cmd = cmd.strip()
+            last_char = cmd[-1]
+            if last_char == '"' or last_char == "'":
+                parts = cmd.split(last_char)
+                word = parts[-2]
+            else:
+                parts = cmd.split(" ")
+                word = parts[-1]
+
+            if "remove" in cmd and word in log_filters:
+                log_filters.remove(word)
+            else:
+                log_filters.append(word)
+
+        rebuild_filtered_log()
+        add_log_message("Filters: "+str(log_filters))
+
     # TODO: More commands
     # elif "find" in cmd:
     #    ... search logs for given string
@@ -645,7 +781,6 @@ def simple_cli():
     event_thread.start()
     try:
         while True:
-            # TODO: Change this mechanism
             # Sleep for a while so all the output that results
             # from the previous command finishes before we print.
             time.sleep(1.5)
@@ -683,5 +818,7 @@ if __name__ == "__main__":
         sys.stderr = sys.__stderr__
         simple_cli()
     else:
+        load_settings()
         curses.wrapper(main)
         curses.endwin()
+        save_settings()
