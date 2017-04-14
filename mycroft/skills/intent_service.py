@@ -28,7 +28,7 @@ __author__ = 'seanfitz'
 logger = getLogger(__name__)
 
 
-class Intent(object):
+class IntentService(object):
     def __init__(self, emitter):
         self.engine = IntentDeterminationEngine()
         self.emitter = emitter
