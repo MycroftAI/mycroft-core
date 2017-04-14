@@ -3,8 +3,10 @@ TOP=$(cd $(dirname $0) && pwd -L)
 VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${HOME}/.virtualenvs/mycroft"}
 
 if [ ! -d "${TOP}/msm" ]; then
+	echo "Installing Mycroft Skill Manager tool..."
 	${TOP}/scripts/install-msm.sh &> /dev/null
 else
+	echo "Updating Mycroft Skill Manager tool..."
 	pushd ${TOP}/msm &> /dev/null
 	git pull origin master &> /dev/null
 	popd &> /dev/null
