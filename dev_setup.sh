@@ -43,27 +43,27 @@ fi
 # create virtualenv, consistent with virtualenv-wrapper conventions
 if [ ! -d ${VIRTUALENV_ROOT} ]; then
    mkdir -p $(dirname ${VIRTUALENV_ROOT})
-  virtualenv -p python2.7 ${VIRTUALENV_ROOT}
+  virtualenv -p python3 ${VIRTUALENV_ROOT}
 fi
 source ${VIRTUALENV_ROOT}/bin/activate
 cd ${TOP}
-easy_install pip==7.1.2 # force version of pip
-pip install --upgrade virtualenv
+#easy_install pip==7.1.2 # force version of pip
+pip3 install --upgrade virtualenv
 
 # install requirements (except pocketsphinx)
-pip2 install -r requirements.txt 
+pip3 install -r requirements.txt 
 
 CORES=$(nproc)
 echo Building with $CORES cores.
 
 #build and install pocketsphinx
-#cd ${TOP}
-#${TOP}/scripts/install-pocketsphinx.sh -q
+cd ${TOP}
+${TOP}/scripts/install-pocketsphinx.sh -q
 #build and install mimic
 cd ${TOP}
 ${TOP}/scripts/install-mimic.sh
 
-cd ${TOP}
+#cd ${TOP}
 ${TOP}/scripts/install-msm.sh
 
 # install pygtk for desktop_launcher skill
