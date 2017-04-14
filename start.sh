@@ -2,6 +2,14 @@
 TOP=$(cd $(dirname $0) && pwd -L)
 VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${HOME}/.virtualenvs/mycroft"}
 
+if [ ! -d "${TOP}/msm" ]; then
+	${TOP}/scripts/install-msm.sh &> /dev/null
+else
+	pushd ${TOP}/msm &> /dev/null
+	git pull origin master &> /dev/null
+	popd &> /dev/null
+fi
+
 case $1 in
 	"service") SCRIPT=${TOP}/mycroft/messagebus/service/main.py ;;
 	"skills") SCRIPT=${TOP}/mycroft/skills/main.py ;;
