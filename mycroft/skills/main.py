@@ -46,8 +46,7 @@ skill_reload_thread = None
 skills_manager_timer = None
 
 installer_config = ConfigurationManager.instance().get("SkillInstallerSkill")
-MSM_BIN = installer_config.get("path", join(MYCROFT_ROOT_PATH, 'msm',
-                                            'msm.sh'))
+MSM_BIN = installer_config.get("path", join(MYCROFT_ROOT_PATH, 'msm', 'msm'))
 
 
 def connect():
@@ -66,7 +65,7 @@ def skills_manager(message):
     # Install default skills and look for updates via Github
     logger.debug("==== Invoking Mycroft Skill Manager: " + MSM_BIN)
     if exists(MSM_BIN):
-        os.system("/bin/bash " + MSM_BIN + " default")
+        os.system(MSM_BIN + " default")
     else:
         logger.error("Unable to invoke Mycroft Skill Manager: " + MSM_BIN)
 
@@ -85,7 +84,7 @@ def _skills_manager_dispatch():
     ws.emit(Message("skill_manager", {}))
 
 
-def _load_watch_skills():
+def _load_skills():
     global ws, loaded_skills, last_modified_skill, skills_directories, \
         skill_reload_thread
 
@@ -195,7 +194,7 @@ def main():
     ws.on('message', _echo)
 
     # Kick off loading of skills
-    ws.once('open', _load_watch_skills)
+    ws.once('open', _load_skills)
     ws.run_forever()
 
 
