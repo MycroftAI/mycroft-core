@@ -33,6 +33,12 @@ from mycroft.skills.core import load_skill, create_skill_descriptor, \
 from mycroft.skills.intent_service import IntentService
 from mycroft.util.log import getLogger
 
+from mycroft.lock import Lock  # Creates PID file for single instance
+import signal
+
+# ignore DIGCHLD to terminate subprocesses correctly
+signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+
 logger = getLogger("Skills")
 
 __author__ = 'seanfitz'
