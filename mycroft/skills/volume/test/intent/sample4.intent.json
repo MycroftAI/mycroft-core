@@ -1,7 +1,0 @@
-{
-  "utterance": "rise volume",
-  "intent_type": "IncreaseVolumeIntent",
-  "intent": {
-    "IncreaseVolumeKeyword": "rise volume"
-  }
-}

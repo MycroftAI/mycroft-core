@@ -49,10 +49,15 @@ function start-mycroft {
   echo "Mycroft $1$2 started"
 }
 
-function debug-start-mycroft {
-  screen -c $SCRIPTS/mycroft-$1.screen $DIR/start.sh $1 $2
+function start-mycroft-nolog {
+  screen -mdS mycroft-$1$2 $DIR/start.sh $1 $2 $3
   sleep 1
   verify-start mycroft-$1$2
+  echo "Mycroft $1$2 started"
+}
+
+function debug-start-mycroft {
+  $DIR/start.sh $1 $2
   echo "Mycroft $1$2 started"
 }
 
@@ -96,7 +101,7 @@ then
   start-mycroft service
   start-mycroft skills
   start-mycroft voice
-  start-mycroft cli --quiet
+  start-mycroft-nolog cli --quiet --simple
   exit 0
 elif [[ "$1" == "start" && "$2" == "-v" ]]
 then
@@ -108,7 +113,7 @@ elif [[ "$1" == "start" && "$2" == "-c" ]]
 then
   start-mycroft service
   start-mycroft skills
-  start-mycroft cli
+  start-mycroft-nolog cli --simple
   exit 0
 elif [[ "$1" == "start" && "$2" == "-d" ]]
 then
