@@ -27,7 +27,7 @@ from mycroft.identity import IdentityManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.tts import TTSFactory
-from mycroft.util import kill, play_wav, resolve_resource_file, create_signal
+from mycroft.util import kill, create_signal
 from mycroft.util.log import getLogger
 from mycroft.lock import Lock as PIDLock  # Create/Support PID locking file
 
@@ -42,15 +42,6 @@ config = ConfigurationManager.get()
 
 def handle_record_begin():
     logger.info("Begin Recording...")
-
-    # If enabled, play a wave file with a short sound to audibly
-    # indicate recording has begun.
-    if config.get('confirm_listening'):
-        file = resolve_resource_file(
-            config.get('sounds').get('start_listening'))
-        if file:
-            play_wav(file)
-
     ws.emit(Message('recognizer_loop:record_begin'))
 
 
@@ -91,7 +82,6 @@ def handle_multi_utterance_intent_failure(event):
 def handle_speak(event):
     utterance = event.data['utterance']
     expect_response = event.data.get('expect_response', False)
-    record_characteristics = event.data.get('record_characteristics', None)
 
     # This is a bit of a hack for Picroft.  The analog audio on a Pi blocks
     # for 30 seconds fairly often, so we don't want to break on periods
@@ -114,11 +104,6 @@ def handle_speak(event):
 
     if expect_response:
         create_signal('buttonPress')
-
-    if loop and (expect_response or record_characteristics):
-        loop.set_record_characteristics(
-            expect_response,
-            record_characteristics)
 
 
 def handle_sleep(event):

@@ -255,9 +255,3 @@ class RecognizerLoop(EventEmitter):
             except KeyboardInterrupt as e:
                 LOG.error(e)
                 self.stop()
-
-    def set_record_characteristics(
-            self, expect_response, record_characteristics):
-        if self.audio_consumer:
-            self.audio_consumer.set_record_characteristics(
-                expect_response, record_characteristics)
