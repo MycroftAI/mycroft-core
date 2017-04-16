@@ -25,7 +25,7 @@ from speech_recognition import WavFile, AudioData
 
 from mycroft.client.speech.listener import AudioConsumer, RecognizerLoop
 from mycroft.client.speech.local_recognizer import LocalRecognizer
-from mycroft.stt import GoogleSTT
+from mycroft.stt import MycroftSTT
 
 __author__ = 'seanfitz'
 
@@ -34,7 +34,8 @@ class MockRecognizer(object):
     def __init__(self):
         self.transcriptions = []
 
-    def recognize_google(self, audio, key=None, language=None, show_all=False):
+    def recognize_mycroft(self, audio, key=None,
+                          language=None, show_all=False):
         if len(self.transcriptions) > 0:
             return self.transcriptions.pop(0)
         else:
@@ -55,7 +56,7 @@ class AudioConsumerTest(unittest.TestCase):
         self.recognizer = MockRecognizer()
 
         self.consumer = AudioConsumer(
-            self.loop.state, self.queue, self.loop, GoogleSTT(),
+            self.loop.state, self.queue, self.loop, MycroftSTT(),
             LocalRecognizer(self.loop.wakeup_recognizer.key_phrase,
                             self.loop.wakeup_recognizer.phonemes, "1e-16"),
             self.loop.mycroft_recognizer)
