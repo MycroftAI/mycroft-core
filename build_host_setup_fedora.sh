@@ -19,6 +19,7 @@ sudo dnf install -y \
     s3cmd \
     portaudio-devel \
     mpg123 \
+    mpg123-plugins-pulseaudio \
     screen \
     curl \
     pkgconfig \
