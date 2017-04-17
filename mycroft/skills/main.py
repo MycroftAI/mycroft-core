@@ -135,8 +135,10 @@ def _watch_skills():
                 skill["loaded"] = True
                 skill["instance"] = load_skill(
                     create_skill_descriptor(skill["path"]), ws)
-        last_modified_skill = max(
-            map(lambda x: x.get("last_modified"), loaded_skills.values()))
+        modified_dates = map(lambda x: x.get("last_modified"),
+                             loaded_skills.values())
+        if len(modified_dates) > 0:
+            last_modified_skill = max(modified_dates)
 
         # Pause briefly before beginning next scan
         time.sleep(2)

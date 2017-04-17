@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+./scripts/prepare-msm.sh
+
 SOURCE="${BASH_SOURCE[0]}"
 while [ -h "$SOURCE" ]; do
   DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
