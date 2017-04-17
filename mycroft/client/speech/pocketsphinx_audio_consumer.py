@@ -53,14 +53,14 @@ class PocketsphinxAudioConsumer(Thread):
         self.source = source
 
         self.forced_wake = False
-        self.no_stt = False
         self.record_file = None
         self.wake_word = str(self.config_listener.get(
              'wake_word', "Hey Mycroft")).lower()
         self.standup_word = str(self.config_listener.get(
              'standup_word', "wake up")).lower()
-        self.default_search_mode = str(self.config_listener.get(
-             'grammar', "lm"))
+        self.default_grammar = str(
+             self.config_listener.get('grammar', "lm"))
+        self.grammar = self.default_grammar
 
         self.msg_awake = self.config_listener.get('msg_awake', "I'm awake")
         self.msg_not_catch = self.config_listener.get(
@@ -81,12 +81,26 @@ class PocketsphinxAudioConsumer(Thread):
     def run(self):
         with self.source:  # open audio
             while self.state.running:
-                self.wait_until_wake_word()
-                logger.debug("wake_word detected.")
+                # start new session
+                SessionManager.touch()
+                self.session = SessionManager.get().session_id
 
-                self.emitter.emit("recognizer_loop:record_begin")
-                audio, text = self.record_phrase(self.default_search_mode)
-                self.emitter.emit("recognizer_loop:record_end")
+                wake_word_found = self.wait_until_wake_word()
+                if wake_word_found:
+                    logger.debug("wake_word detected.")
+
+                    payload = {
+                        'utterance': self.wake_word,
+                        'session': self.session
+                    }
+                    context = {'session': self.session}
+                    self.emitter.emit("recognizer_loop:wakeword",
+                                      payload, context)
+
+                context = {'session': self.session}
+                self.emitter.emit("recognizer_loop:record_begin", context)
+                audio, text = self.record_phrase()
+                self.emitter.emit("recognizer_loop:record_end", context)
                 logger.debug("recorded.")
 
                 if self.state.sleeping:
@@ -103,13 +117,6 @@ class PocketsphinxAudioConsumer(Thread):
 
     def process(self, audio, text):
 
-        SessionManager.touch()
-        payload = {
-            'utterance': self.wake_word,
-            'session': SessionManager.get().session_id,
-        }
-        self.emitter.emit("recognizer_loop:wakeword", payload)
-
         # save this record in file if requested
         if self.record_file:
             wav_name = self.record_file
@@ -121,17 +128,18 @@ class PocketsphinxAudioConsumer(Thread):
             waveFile.writeframes(audio)
             waveFile.close()
 
-        if self.no_stt:
+        if not self.grammar:
             # do not translate if only record is requested
-            self.no_stt = False
+            # recover default mode
+            self.grammar = self.default_grammar
         elif text:
             # already translated in local recognizer
             payload = {
                 'utterances': [text],
                 'lang': self.lang,
-                'session': SessionManager.get().session_id
             }
-            self.emitter.emit("recognizer_loop:utterance", payload)
+            context = {'session': self.session}
+            self.emitter.emit("recognizer_loop:utterance", payload, context)
             self.metrics.attr('utterances', [text])
         else:
             logger.error("Speech Recognition could not understand audio")
@@ -140,7 +148,7 @@ class PocketsphinxAudioConsumer(Thread):
     def __speak(self, utterance):
         payload = {
             'utterance': utterance,
-            'session': SessionManager.get().session_id
+            'session': self.session
         }
         self.emitter.emit("speak", Message("speak", payload))
 
@@ -173,8 +181,8 @@ class PocketsphinxAudioConsumer(Thread):
         # TODO: if muted
         return self.source.stream.wrapped_stream.read(self.source.CHUNK)
 
-    def record_phrase(self, search='lm'):
-        logger.debug("Waiting for command[%s]...", search)
+    def record_phrase(self):
+        logger.debug("Waiting for command[%s]...", self.grammar)
         sec_per_buffer = float(self.source.CHUNK) / self.source.SAMPLE_RATE
 
         # Maximum number of chunks to record before timing out
@@ -186,7 +194,8 @@ class PocketsphinxAudioConsumer(Thread):
         num_chunks = 0
         in_speech = False
         hypstr = None
-        self.decoder.set_search(search)
+        if self.grammar:
+            self.decoder.set_search(self.grammar)
         utt_running = False
 
         self.source.stream.wrapped_stream.start_stream()
@@ -196,7 +205,8 @@ class PocketsphinxAudioConsumer(Thread):
             byte_data += chunk
             num_chunks += 1
 
-            if self.no_stt:
+            if not self.grammar:
+                # no stt, only record
                 continue
 
             if not utt_running:
@@ -208,20 +218,21 @@ class PocketsphinxAudioConsumer(Thread):
             if self.decoder.get_in_speech():
                 # voice
                 in_speech = True
-            else:
+            elif in_speech:
                 # silence
-                if in_speech:
-                    in_speech = False
+                # voice->silence
+                logger.debug("voice->silence")
+                in_speech = False
 
-                    self.decoder.end_utt()
-                    utt_running = False
+                self.decoder.end_utt()
+                utt_running = False
 
-                    hyp = self.decoder.hyp()
-                    if hyp and hyp.hypstr:
-                        hypstr = hyp.hypstr
-                        logger.debug("hyp=%s", hypstr)
-                        break
-                    logger.debug("false speech, discarded")
+                hyp = self.decoder.hyp()
+                if hyp and hyp.hypstr:
+                    hypstr = hyp.hypstr
+                    logger.debug("hyp=%s", hypstr)
+                    break
+                logger.debug("false speech, discarded")
 
         if utt_running:
             self.decoder.end_utt()
@@ -249,7 +260,8 @@ class PocketsphinxAudioConsumer(Thread):
         self.source.stream.wrapped_stream.start_stream()
 
         logger.debug("Waiting for wake word...")
-        while True:
+        wake_word_found = False
+        while not wake_word_found:
             if self.forced_wake or check_for_signal('buttonPress'):
                 logger.debug("Forced wake word...")
                 self.forced_wake = False
@@ -275,28 +287,28 @@ class PocketsphinxAudioConsumer(Thread):
                 if self.decoder.get_in_speech():
                     # voice
                     in_speech = True
-                else:
-                    # silence
-                    if in_speech:
-                        # from voice to silence
-                        in_speech = False
-                        self.decoder.end_utt()
-                        utt_running = False
-                        hyp = self.decoder.hyp()
-                        if hyp and self.wake_word in hyp.hypstr:
-                            break
+                elif in_speech:
+                    # voice->silence
+                    logger.debug("silence->speech")
+                    in_speech = False
+
+                    self.decoder.end_utt()
+                    utt_running = False
+
+                    hyp = self.decoder.hyp()
+                    if hyp:
+                        logger.debug("hypstr=%s", hyp.hypstr)
+                        wake_word_found = (self.wake_word in hyp.hypstr)
 
         if utt_running:
             self.decoder.end_utt()
 
         self.source.stream.wrapped_stream.stop_stream()
 
-    def set_record_characteristics(
-                self, expect_response, record_characteristics):
-        if expect_response:
-            self.forced_wake = True
+        return wake_word_found
 
-        if record_characteristics:
-            self.record_file = record_characteristics.get(
-                                   "record_filename", None)
-            self.no_stt = record_characteristics.get("no_stt", False)
+    def record(self, msg):
+        self.forced_wake = True
+        self.record_file = msg.data.get("record_filename")
+        self.grammar = msg.data.get("grammar", self.default_grammar)
+        self.session = msg.context.get("session")
