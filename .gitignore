@@ -14,3 +14,4 @@ MANIFEST.in
 setup.py
 scripts/logs/*
 logs/*
+mycroft/audio-accuracy-test/data/*
