@@ -101,6 +101,17 @@ def _load_skills():
     skill_reload_thread.start()
 
 
+def _get_last_modified_date(path):
+    dates = []
+    # getting all recursive paths
+    for root, _, _ in os.walk(path):
+        f = root.replace(path, "")
+        # checking if is a hidden path
+        if not f.startswith(".") and not f.startswith("/."):
+            dates.append(os.path.getmtime(path + f))
+    return max(dates)
+
+
 def _watch_skills():
     global ws, loaded_skills, last_modified_skill, \
         id_counter
@@ -109,32 +120,39 @@ def _watch_skills():
     # unload the existing version from memory and reload from the disk.
     while True:
         if exists(SKILLS_DIR):
+            # checking skills dir and getting all skills there
             list = filter(lambda x: os.path.isdir(
                 os.path.join(SKILLS_DIR, x)), os.listdir(SKILLS_DIR))
+
             for skill_folder in list:
                 if skill_folder not in loaded_skills:
                     loaded_skills[skill_folder] = {}
                 skill = loaded_skills.get(skill_folder)
                 skill["path"] = os.path.join(SKILLS_DIR, skill_folder)
+                # checking if is a skill
                 if not MainModule + ".py" in os.listdir(skill["path"]):
                     continue
-                skill["last_modified"] = max(
-                    os.path.getmtime(root) for root, _, _ in
-                    os.walk(skill["path"]))
+                # getting the newest modified date of skill
+                skill["last_modified"] = _get_last_modified_date(skill["path"])
                 modified = skill.get("last_modified", 0)
+                # checking if skill is loaded and wasn't modified
                 if skill.get(
                         "loaded") and modified <= last_modified_skill:
                     continue
+                # checking if skill was modified
                 elif skill.get(
                         "instance") and modified > last_modified_skill:
+                    # checking if skill should be reloaded
                     if not skill["instance"].reload_skill:
                         continue
                     logger.debug("Reloading Skill: " + skill_folder)
+                    # removing listeners and stopping threads
                     skill["instance"].shutdown()
                     del skill["instance"]
                 skill["loaded"] = True
                 skill["instance"] = load_skill(
                     create_skill_descriptor(skill["path"]), ws)
+        # get the last modified skill
         modified_dates = map(lambda x: x.get("last_modified"),
                              loaded_skills.values())
         if len(modified_dates) > 0:
