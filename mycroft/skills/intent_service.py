@@ -28,7 +28,7 @@ __author__ = 'seanfitz'
 logger = getLogger(__name__)
 
 
-class Intent(object):
+class IntentService(object):
     def __init__(self, emitter):
         self.engine = IntentDeterminationEngine()
         self.emitter = emitter
@@ -36,6 +36,7 @@ class Intent(object):
         self.emitter.on('register_intent', self.handle_register_intent)
         self.emitter.on('recognizer_loop:utterance', self.handle_utterance)
         self.emitter.on('detach_intent', self.handle_detach_intent)
+        self.emitter.on('detach_skill', self.handle_detach_skill)
 
     def handle_utterance(self, message):
         # Get language of the utterance
@@ -92,4 +93,11 @@ class Intent(object):
         intent_name = message.data.get('intent_name')
         new_parsers = [
             p for p in self.engine.intent_parsers if p.name != intent_name]
+        self.engine.intent_parsers = new_parsers
+
+    def handle_detach_skill(self, message):
+        skill_name = message.data.get('skill_name')
+        new_parsers = [
+            p for p in self.engine.intent_parsers if
+            not p.name.startswith(skill_name)]
         self.engine.intent_parsers = new_parsers

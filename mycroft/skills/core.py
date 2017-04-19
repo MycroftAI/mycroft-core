@@ -18,13 +18,13 @@
 
 import abc
 import imp
-import time
-import signal
-
 import os.path
 import re
-from adapt.intent import Intent
+import signal
+import time
 from os.path import join, dirname, splitext, isdir
+
+from adapt.intent import Intent
 
 from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.configuration import ConfigurationManager
@@ -180,6 +180,7 @@ class MycroftSkill(object):
         self.registered_intents = []
         self.log = getLogger(name)
         self.reload_skill = True
+        self.events = []
 
     @property
     def location(self):
@@ -259,6 +260,7 @@ class MycroftSkill(object):
 
         if handler:
             self.emitter.on(intent_parser.name, receive_handler)
+            self.events.append((intent_parser.name, receive_handler))
 
     def disable_intent(self, intent_name):
         """Disable a registered intent"""
@@ -340,4 +342,11 @@ class MycroftSkill(object):
         process termination. The skill implementation must
         shutdown all processes and operations in execution.
         """
+
+        # removing events
+        for e, f in self.events:
+            self.emitter.remove(e, f)
+
+        self.emitter.emit(
+            Message("detach_skill", {"skill_name": self.name + ":"}))
         self.stop()

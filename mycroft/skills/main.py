@@ -17,22 +17,21 @@
 
 
 import json
+import os
 import sys
 import time
-from threading import Timer
-
-import os
 from os.path import exists, join
+from threading import Timer
 
 from mycroft import MYCROFT_ROOT_PATH
 from mycroft.configuration import ConfigurationManager
+from mycroft.lock import Lock  # Creates PID file for single instance
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import load_skill, create_skill_descriptor, \
     MainModule, SKILLS_DIR
-from mycroft.skills.intent import Intent
+from mycroft.skills.intent_service import IntentService
 from mycroft.util.log import getLogger
-from mycroft.lock import Lock  # Creates PID file for single instance
 
 logger = getLogger("Skills")
 
@@ -45,7 +44,7 @@ skills_directories = []
 skill_reload_thread = None
 skills_manager_timer = None
 
-installer_config = ConfigurationManager.get().get("SkillInstallerSkill")
+installer_config = ConfigurationManager.instance().get("SkillInstallerSkill")
 MSM_BIN = installer_config.get("path", join(MYCROFT_ROOT_PATH, 'msm', 'msm'))
 
 
@@ -56,31 +55,48 @@ def connect():
 
 def skills_manager(message):
     global skills_manager_timer, ws
+
     if skills_manager_timer is None:
+        # TODO: Localization support
         ws.emit(
             Message("speak", {'utterance': "Checking for Updates"}))
-    os.system(MSM_BIN + " default")
+
+    # Install default skills and look for updates via Github
+    logger.debug("==== Invoking Mycroft Skill Manager: " + MSM_BIN)
+    if exists(MSM_BIN):
+        os.system(MSM_BIN + " default")
+    else:
+        logger.error("Unable to invoke Mycroft Skill Manager: " + MSM_BIN)
+
     if skills_manager_timer is None:
+        # TODO: Localization support
         ws.emit(Message("speak", {
             'utterance': "Skills Updated. Mycroft is ready"}))
-    skills_manager_timer = Timer(3600.0, skills_manager_dispatch)
+
+    # Perform check again once and hour
+    skills_manager_timer = Timer(3600.0, _skills_manager_dispatch)
     skills_manager_timer.daemon = True
     skills_manager_timer.start()
 
 
-def skills_manager_dispatch():
+def _skills_manager_dispatch():
     ws.emit(Message("skill_manager", {}))
 
 
-def load_watch_skills():
+def _load_skills():
     global ws, loaded_skills, last_modified_skill, skills_directories, \
         skill_reload_thread
 
+    # Create skill_manager listener and invoke the first time
     ws.on('skill_manager', skills_manager)
     ws.emit(Message("skill_manager", {}))
 
-    Intent(ws)
-    skill_reload_thread = Timer(0, watch_skills)
+    # Create the Intent manager, which converts utterances to intents
+    # This is the heart of the voice invoked skill system
+    IntentService(ws)
+
+    # Create a thread that monitors the loaded skills, looking for updates
+    skill_reload_thread = Timer(0, _watch_skills)
     skill_reload_thread.daemon = True
     skill_reload_thread.start()
 
@@ -113,6 +129,8 @@ def watch_skills():
     global ws, loaded_skills, last_modified_skill, \
         id_counter
 
+    # Scan the file folder that contains Skills.  If a Skill is updated,
+    # unload the existing version from memory and reload from the disk.
     while True:
         if exists(SKILLS_DIR):
             list = filter(lambda x: os.path.isdir(
@@ -137,25 +155,32 @@ def watch_skills():
                         continue
                     logger.debug("Reloading Skill: " + skill_folder)
                     skill["instance"].shutdown()
-                    clear_skill_events(skill["instance"])
                     del skill["instance"]
                 skill["loaded"] = True
                 skill["instance"] = load_skill(
                     create_skill_descriptor(skill["path"]), ws)
-            last_modified_skill = max(
-                map(lambda x: x.get("last_modified"), loaded_skills.values()))
+
+        modified_dates = map(lambda x: x.get("last_modified"),
+                             loaded_skills.values())
+        if len(modified_dates) > 0:
+            last_modified_skill = max(modified_dates)
+
+        # Pause briefly before beginning next scan
         time.sleep(2)
 
 
 def main():
     global ws
-    lock = Lock('skills')  # prevent multiply instances of this service
+    lock = Lock('skills')  # prevent multiple instances of this service
+
+    # Connect this Skill management process to the websocket
     ws = WebsocketClient()
     ConfigurationManager.init(ws)
 
-    ignore_logs = ConfigurationManager.get().get("ignore_logs")
+    ignore_logs = ConfigurationManager.instance().get("ignore_logs")
 
-    def echo(message):
+    # Listen for messages and echo them for logging
+    def _echo(message):
         try:
             _message = json.loads(message)
 
@@ -170,8 +195,10 @@ def main():
             pass
         logger.debug(message)
 
-    ws.on('message', echo)
-    ws.once('open', load_watch_skills)
+    ws.on('message', _echo)
+
+    # Kick off loading of skills
+    ws.once('open', _load_skills)
     ws.run_forever()
 
 
