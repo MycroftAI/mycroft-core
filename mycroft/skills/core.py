@@ -288,21 +288,16 @@ class MycroftSkill(object):
         re.compile(regex_str)  # validate regex
         self.emitter.emit(Message('register_vocab', {'regex': regex_str}))
 
-    def speak(self, utterance, 
-              expect_response=False, 
-              record_characteristics=None):
+    def speak(self, utterance, expect_response=False, context={} ):
         data = {'utterance': utterance,
-                'expect_response': expect_response,
-                'record_characteristics': record_characteristics}
-        self.emitter.emit(Message("speak", data))
+                'expect_response': expect_response}
+        self.emitter.emit(Message("speak", data, context = context ))
 
-    def speak_dialog(self, key, data={}, 
-              expect_response=False,
-              record_characteristics=None):
+    def speak_dialog(self, key, data={}, expect_response=False, context={} ):
         self.speak(
             self.dialog_renderer.render(key, data),
             expect_response = expect_response,
-            record_characteristics = record_characteristics)
+            context = context )
 
     def init_dialog(self, root_directory):
         dialog_dir = join(root_directory, 'dialog', self.lang)

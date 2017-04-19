@@ -40,29 +40,24 @@ loop = None
 config = ConfigurationManager.get()
 
 
-def handle_record_begin( data=None ):
-    logger.info("Begin Recording...")
-    ws.emit(Message('recognizer_loop:record_begin'))
-
-
-def handle_record_end( data=None ):
-    logger.info("End Recording...")
-    ws.emit(Message('recognizer_loop:record_end'))
-
-
-def handle_wakeword(event):
+def handle_wakeword(event, context=None):
     logger.info("Wakeword Detected: " + event['utterance'])
-    ws.emit(Message('recognizer_loop:wakeword', event))
+    ws.emit(Message('recognizer_loop:wakeword', event, context=context))
 
 
-def handle_utterance(event):
+def handle_utterance(event, context=None):
     logger.info("Utterance: " + str(event['utterances']))
-    ws.emit(Message('recognizer_loop:utterance', event))
+    ws.emit(Message('recognizer_loop:utterance', event, context=context))
 
 
-def mute_and_speak(utterance):
+def mute_and_speak(utterance, in_msg=None):
     lock.acquire()
-    ws.emit(Message("recognizer_loop:audio_output_start"))
+    if in_msg:
+        msg = in_msg.reply("recognizer_loop:audio_output_start", {})
+    else:
+        msg = Message("recognizer_loop:audio_output_start")
+    ws.emit(msg)
+
     try:
         logger.info("Speak: " + utterance)
         loop.mute()
@@ -70,7 +65,11 @@ def mute_and_speak(utterance):
     finally:
         loop.unmute()
         lock.release()
-        ws.emit(Message("recognizer_loop:audio_output_end"))
+        if in_msg:
+            msg = in_msg.reply("recognizer_loop:audio_output_end", {})
+        else:
+            msg = Message("recognizer_loop:audio_output_end")
+        ws.emit(msg)
 
 
 def handle_multi_utterance_intent_failure(event):
@@ -82,7 +81,6 @@ def handle_multi_utterance_intent_failure(event):
 def handle_speak(event):
     utterance = event.data['utterance']
     expect_response = event.data.get('expect_response', False)
-    record_characteristics = event.data.get('record_characteristics', None)
 
     # This is a bit of a hack for Picroft.  The analog audio on a Pi blocks
     # for 30 seconds fairly often, so we don't want to break on periods
@@ -97,19 +95,28 @@ def handle_speak(event):
                           utterance)
         for chunk in chunks:
             try:
-                mute_and_speak(chunk)
+                mute_and_speak(chunk, event)
             except:
                 logger.error('Error in mute_and_speak', exc_info=True)
     else:
-        mute_and_speak(utterance)
+        mute_and_speak(utterance, event)
 
     if expect_response:
         create_signal('buttonPress')
 
-    if loop and (expect_response or record_characteristics):
-        loop.set_record_characteristics(
-            expect_response,
-            record_characteristics)
+
+def handle_record(event):
+    loop.record(event)
+
+
+def handle_record_begin(context=None):
+    logger.info("Begin Recording...")
+    ws.emit(Message('recognizer_loop:record_begin', context=context))
+
+
+def handle_record_end(context=None):
+    logger.info("End Recording...")
+    ws.emit(Message('recognizer_loop:record_end', context=context))
 
 
 def handle_sleep(event):
@@ -153,6 +160,7 @@ def main():
     loop.on('speak', handle_speak)
     ws.on('open', handle_open)
     ws.on('speak', handle_speak)
+    ws.on('record', handle_record)
     ws.on(
         'multi_utterance_intent_failure',
         handle_multi_utterance_intent_failure)
