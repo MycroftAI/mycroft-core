@@ -19,9 +19,12 @@
 import socket
 import subprocess
 import tempfile
+import time
 
 import os
 import os.path
+import time
+from stat import S_ISREG, ST_MTIME, ST_MODE, ST_SIZE
 import psutil
 from os.path import dirname
 from mycroft.util.log import getLogger
@@ -159,6 +162,11 @@ def connected(host="8.8.8.8", port=53, timeout=3):
     Host: 8.8.8.8 (google-public-dns-a.google.com)
     OpenPort: 53/tcp
     Service: domain (DNS/TCP)
+
+    NOTE:
+    This is no longer in use by this version
+    New method checks for a connection using ConnectionError only when
+    a question is asked
     """
     try:
         socket.setdefaulttimeout(timeout)
@@ -173,19 +181,158 @@ def connected(host="8.8.8.8", port=53, timeout=3):
             return False
 
 
+def curate_cache(dir, min_free_percent=5.0):
+    """Clear out the directory if needed
+
+    This assumes all the files in the directory can be deleted as freely
+
+    Args:
+        dir (str): directory path that holds cached files
+        min_free_percent (float): percentage (0.0-100.0) of drive to keep free
+    """
+
+    # Simpleminded implementation -- keep a certain percentage of the
+    # disk available.
+    # TODO: Would be easy to add more options, like whitelisted files, etc.
+    space = psutil.disk_usage(dir)
+
+    # space.percent = space.used/space.total*100.0
+    percent_free = 100.0-space.percent
+    if percent_free < min_free_percent:
+        # calculate how many bytes we need to delete
+        bytes_needed = (min_free_percent - percent_free) / 100.0 * space.total
+        bytes_needed = int(bytes_needed + 1.0)
+
+        # get all entries in the directory w/ stats
+        entries = (os.path.join(dir, fn) for fn in os.listdir(dir))
+        entries = ((os.stat(path), path) for path in entries)
+
+        # leave only regular files, insert modification date
+        entries = ((stat[ST_MTIME], stat[ST_SIZE], path)
+                   for stat, path in entries if S_ISREG(stat[ST_MODE]))
+
+        # delete files with oldest modification date until space is freed
+        space_freed = 0
+        for moddate, fsize, path in sorted(entries):
+            try:
+                os.remove(path)
+                space_freed += fsize
+            except:
+                pass
+
+            if space_freed > bytes_needed:
+                return  # deleted enough!
+
+
+def get_cache_directory(domain=None):
+    """Get a directory for caches data
+
+    This directory can be used to hold temporary caches of data to
+    speed up performance.  This directory will likely be part of a
+    small RAM disk and may be cleared at any time.  So code that
+    uses these cached files must be able to fallback and regenerate
+    the file.
+
+    Args:
+        domain (str): The cache domain.  Basically just a subdirectory.
+
+    Return:
+        str: a path to the directory where you can cache data
+    """
+    dir = mycroft.configuration.ConfigurationManager.get().get("cache_path")
+    if not dir:
+        # If not defined, use /tmp/mycroft/cache
+        dir = os.path.join(tempfile.gettempdir(), "mycroft", "cache")
+    return _ensure_directory_exists(dir, domain)
+
+
+def get_ipc_directory(domain=None):
+    """Get the directory used for Inter Process Communication
+
+    Files in this folder can be accessed by different processes on the
+    machine.  Useful for communication.  This is often a small RAM disk.
+
+    Args:
+        domain (str): The IPC domain.  Basically a subdirectory to prevent
+            overlapping signal filenames.
+
+    Returns:
+        str: a path to the IPC directory
+    """
+    dir = mycroft.configuration.ConfigurationManager.get().get("ipc_path")
+    if not dir:
+        # If not defined, use /tmp/mycroft/ipc
+        dir = os.path.join(tempfile.gettempdir(), "mycroft", "ipc")
+    return _ensure_directory_exists(dir, domain)
+
+
+def _ensure_directory_exists(dir, domain=None):
+    """ Create a directory and give access rights to all
+
+    Args:
+        domain (str): The IPC domain.  Basically a subdirectory to prevent
+            overlapping signal filenames.
+
+    Returns:
+        str: a path to the directory
+    """
+    if domain:
+        dir = os.path.join(dir, domain)
+    dir = os.path.normpath(dir)
+
+    if not os.path.isdir(dir):
+        try:
+            save = os.umask(0)
+            os.makedirs(dir, 0777)  # give everyone rights to r/w here
+        except OSError:
+            LOGGER.warn("Failed to create: " + dir)
+            pass
+        finally:
+            os.umask(save)
+
+    return dir
+
+
 def create_signal(signal_name):
+    """Create a named signal
+
+    Args:
+        signal_name (str): The signal's name.  Must only contain characters
+            valid in filenames.
+    """
     try:
-        with open(tempfile.gettempdir() + '/' + signal_name, 'w'):
+        with open(os.path.join(get_ipc_directory(), "signal", signal_name),
+                  'w'):
             return True
     except IOError:
         return False
 
 
-def check_for_signal(signal_name):
-    filename = tempfile.gettempdir() + '/' + signal_name
-    if os.path.isfile(filename):
-        os.remove(filename)
+def check_for_signal(signal_name, sec_lifetime=0):
+    """See if a named signal exists
+
+    Args:
+        signal_name (str): The signal's name.  Must only contain characters
+            valid in filenames.
+        sec_lifetime (int, optional): How many seconds the signal should
+            remain valid.  If 0 or not specified, it is a single-use signal.
+
+    Returns:
+        bool: True if the signal is defined, False otherwise
+    """
+    path = os.path.join(get_ipc_directory(), "signal", signal_name)
+
+    if os.path.isfile(path):
+        if sec_lifetime == 0:
+            # consume this single-use signal
+            os.remove(path)
+        elif int(os.path.getctime(path) + sec_lifetime) < int(time.time()):
+            # remove once expired
+            os.remove(path)
+            return False
         return True
+
+    # No such signal exists
     return False
 
 

@@ -1,1 +1,0 @@
-(call|phone) (?P<Contact>.*)
