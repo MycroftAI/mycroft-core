@@ -65,3 +65,4 @@ ${TOP}/scripts/install-mimic.sh
 
 # install pygtk for desktop_launcher skill
 ${TOP}/scripts/install-pygtk.sh
+

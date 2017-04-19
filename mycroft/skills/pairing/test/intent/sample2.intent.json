@@ -1,7 +1,0 @@
-{
-  "utterance": "register my device",
-  "intent_type": "PairingIntent",
-  "intent": {
-    "DevicePairingPhrase": "register my device"
-  }
-}

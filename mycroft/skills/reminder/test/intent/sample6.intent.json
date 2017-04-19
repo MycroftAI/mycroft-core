@@ -1,9 +1,0 @@
-{
-  "utterance": "show all my reminders",
-  "intent_type": "ReminderSkillListIntent",
-  "intent": {
-    "ReminderSkillListVerb": "show",
-    "ReminderSkillAmount": "all",
-    "ReminderSkillKeyword": "reminders"
-  }
-}

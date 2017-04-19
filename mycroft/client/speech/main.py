@@ -27,8 +27,9 @@ from mycroft.identity import IdentityManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.tts import TTSFactory
-from mycroft.util import kill, play_wav, resolve_resource_file
+from mycroft.util import kill, create_signal
 from mycroft.util.log import getLogger
+from mycroft.lock import Lock as PIDLock  # Create/Support PID locking file
 
 logger = getLogger("SpeechClient")
 ws = None
@@ -39,38 +40,24 @@ loop = None
 config = ConfigurationManager.get()
 
 
-def handle_record_begin():
-    logger.info("Begin Recording...")
-
-    # If enabled, play a wave file with a short sound to audibly
-    # indicate recording has begun.
-    if config.get('confirm_listening'):
-        file = resolve_resource_file(
-            config.get('sounds').get('start_listening'))
-        if file:
-            play_wav(file)
-
-    ws.emit(Message('recognizer_loop:record_begin'))
-
-
-def handle_record_end():
-    logger.info("End Recording...")
-    ws.emit(Message('recognizer_loop:record_end'))
-
-
-def handle_wakeword(event):
+def handle_wakeword(event, context=None):
     logger.info("Wakeword Detected: " + event['utterance'])
-    ws.emit(Message('recognizer_loop:wakeword', event))
+    ws.emit(Message('recognizer_loop:wakeword', event, context=context))
 
 
-def handle_utterance(event):
+def handle_utterance(event, context=None):
     logger.info("Utterance: " + str(event['utterances']))
-    ws.emit(Message('recognizer_loop:utterance', event))
+    ws.emit(Message('recognizer_loop:utterance', event, context=context))
 
 
-def mute_and_speak(utterance):
+def mute_and_speak(utterance, in_msg=None):
     lock.acquire()
-    ws.emit(Message("recognizer_loop:audio_output_start"))
+    if in_msg:
+        msg = in_msg.reply("recognizer_loop:audio_output_start", {})
+    else:
+        msg = Message("recognizer_loop:audio_output_start")
+    ws.emit(msg)
+
     try:
         logger.info("Speak: " + utterance)
         loop.mute()
@@ -78,7 +65,11 @@ def mute_and_speak(utterance):
     finally:
         loop.unmute()
         lock.release()
-        ws.emit(Message("recognizer_loop:audio_output_end"))
+        if in_msg:
+            msg = in_msg.reply("recognizer_loop:audio_output_end", {})
+        else:
+            msg = Message("recognizer_loop:audio_output_end")
+        ws.emit(msg)
 
 
 def handle_multi_utterance_intent_failure(event):
@@ -89,6 +80,7 @@ def handle_multi_utterance_intent_failure(event):
 
 def handle_speak(event):
     utterance = event.data['utterance']
+    expect_response = event.data.get('expect_response', False)
 
     # This is a bit of a hack for Picroft.  The analog audio on a Pi blocks
     # for 30 seconds fairly often, so we don't want to break on periods
@@ -102,9 +94,29 @@ def handle_speak(event):
         chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s',
                           utterance)
         for chunk in chunks:
-            mute_and_speak(chunk)
+            try:
+                mute_and_speak(chunk, event)
+            except:
+                logger.error('Error in mute_and_speak', exc_info=True)
     else:
-        mute_and_speak(utterance)
+        mute_and_speak(utterance, event)
+
+    if expect_response:
+        create_signal('buttonPress')
+
+
+def handle_record(event):
+    loop.record(event)
+
+
+def handle_record_begin(context=None):
+    logger.info("Begin Recording...")
+    ws.emit(Message('recognizer_loop:record_begin', context=context))
+
+
+def handle_record_end(context=None):
+    logger.info("End Recording...")
+    ws.emit(Message('recognizer_loop:record_end', context=context))
 
 
 def handle_sleep(event):
@@ -136,6 +148,7 @@ def connect():
 def main():
     global ws
     global loop
+    lock = PIDLock("voice")
     ws = WebsocketClient()
     tts.init(ws)
     ConfigurationManager.init(ws)
@@ -147,6 +160,7 @@ def main():
     loop.on('speak', handle_speak)
     ws.on('open', handle_open)
     ws.on('speak', handle_speak)
+    ws.on('record', handle_record)
     ws.on(
         'multi_utterance_intent_failure',
         handle_multi_utterance_intent_failure)
