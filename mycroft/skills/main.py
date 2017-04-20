@@ -102,14 +102,15 @@ def _load_skills():
 
 
 def _get_last_modified_date(path):
-    dates = []
+    last_date = 0
     # getting all recursive paths
     for root, _, _ in os.walk(path):
         f = root.replace(path, "")
         # checking if is a hidden path
         if not f.startswith(".") and not f.startswith("/."):
-            dates.append(os.path.getmtime(path + f))
-    return max(dates)
+            last_date = max(last_date, os.path.getmtime(path + f))
+
+    return last_date
 
 
 def _watch_skills():
