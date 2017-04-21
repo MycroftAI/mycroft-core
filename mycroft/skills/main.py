@@ -44,8 +44,7 @@ skills_directories = []
 skill_reload_thread = None
 skills_manager_timer = None
 
-installer_config = ConfigurationManager.instance().get("SkillInstallerSkill")
-MSM_BIN = installer_config.get("path", join(MYCROFT_ROOT_PATH, 'msm', 'msm'))
+MSM_BIN = join(MYCROFT_ROOT_PATH, 'msm', 'msm')
 
 
 def connect():
