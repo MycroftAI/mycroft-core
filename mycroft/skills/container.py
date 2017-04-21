@@ -23,7 +23,7 @@ from os.path import dirname, exists, isdir
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.skills.core import create_skill_descriptor, load_skill
-from mycroft.skills.intent import Intent
+from mycroft.skills.intent_service import IntentService
 from mycroft.util.log import getLogger
 
 __author__ = 'seanfitz'
@@ -75,7 +75,7 @@ class SkillContainer(object):
 
     def load_skill(self):
         if self.enable_intent:
-            Intent(self.ws)
+            IntentService(self.ws)
 
         skill_descriptor = create_skill_descriptor(self.dir)
         self.skill = load_skill(skill_descriptor, self.ws)
