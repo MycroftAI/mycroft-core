@@ -63,9 +63,6 @@ echo Building with $CORES cores.
 cd ${TOP}
 ${TOP}/scripts/install-mimic.sh
 
-cd ${TOP}
-${TOP}/scripts/install-msm.sh
-
 # install pygtk for desktop_launcher skill
 ${TOP}/scripts/install-pygtk.sh
 

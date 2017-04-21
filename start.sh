@@ -2,6 +2,8 @@
 TOP=$(cd $(dirname $0) && pwd -L)
 VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${HOME}/.virtualenvs/mycroft"}
 
+${TOP}/scripts/prepare-msm.sh
+
 case $1 in
 	"service") SCRIPT=${TOP}/mycroft/messagebus/service/main.py ;;
 	"skills") SCRIPT=${TOP}/mycroft/skills/main.py ;;

@@ -18,13 +18,13 @@
 
 import abc
 import imp
-import time
-import signal
-
 import os.path
 import re
-from adapt.intent import Intent
+import signal
+import time
 from os.path import join, dirname, splitext, isdir
+
+from adapt.intent import Intent
 
 from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.configuration import ConfigurationManager
@@ -37,12 +37,8 @@ __author__ = 'seanfitz'
 
 signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
-PRIMARY_SKILLS = ['intent', 'wake']
 BLACKLISTED_SKILLS = ["send_sms", "media"]
-SKILLS_BASEDIR = dirname(__file__)
-THIRD_PARTY_SKILLS_DIR = ["/opt/mycroft/third_party", "/opt/mycroft/skills"]
-# Note: /opt/mycroft/skills is recommended, /opt/mycroft/third_party
-# is for backwards compatibility
+SKILLS_DIR = "/opt/mycroft/skills"
 
 MainModule = '__init__'
 
@@ -151,18 +147,12 @@ def create_skill_descriptor(skill_folder):
     return {"name": os.path.basename(skill_folder), "info": info}
 
 
-def load_skills(emitter, skills_root=SKILLS_BASEDIR):
+def load_skills(emitter, skills_root=SKILLS_DIR):
     logger.info("Checking " + skills_root + " for new skills")
     skill_list = []
-    skills = get_skills(skills_root)
-    for skill in skills:
-        if skill['name'] in PRIMARY_SKILLS:
-            skill_list.append(load_skill(skill, emitter))
+    for skill in get_skills(skills_root):
+        skill_list.append(load_skill(skill, emitter))
 
-    for skill in skills:
-        if (skill['name'] not in PRIMARY_SKILLS and
-                skill['name'] not in BLACKLISTED_SKILLS):
-            skill_list.append(load_skill(skill, emitter))
     return skill_list
 
 
@@ -187,6 +177,7 @@ class MycroftSkill(object):
         self.registered_intents = []
         self.log = getLogger(name)
         self.reload_skill = True
+        self.events = []
 
     @property
     def location(self):
@@ -260,6 +251,7 @@ class MycroftSkill(object):
 
         if handler:
             self.emitter.on(intent_parser.name, receive_handler)
+            self.events.append((intent_parser.name, receive_handler))
 
     def disable_intent(self, intent_name):
         """Disable a registered intent"""
@@ -339,4 +331,11 @@ class MycroftSkill(object):
         process termination. The skill implementation must
         shutdown all processes and operations in execution.
         """
+
+        # removing events
+        for e, f in self.events:
+            self.emitter.remove(e, f)
+
+        self.emitter.emit(
+            Message("detach_skill", {"skill_name": self.name + ":"}))
         self.stop()

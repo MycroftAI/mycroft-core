@@ -118,10 +118,23 @@ input {
 
 .panel .body li .connect-item input {
     padding: 5px;
-    height: 26px;
+    height: 40px;
     border: 1px solid #DDD;
-    width: calc(100% - 160px);
+    width: calc(100% - 145px);
     font-size: 16px;
+    padding-right: 50px;
+    box-sizing: border-box;
+}
+
+.password-toggle {
+    width: 38px;
+    height: 38px;
+    position: absolute;
+    background: url("../img/eye.png") no-repeat center;
+    border: none;
+    background-size: 30px;
+    outline: none;
+    margin-left: -42px;
 }
 
 .panel .body li .error-item span {
@@ -242,19 +255,21 @@ span.connected {
 }
 
 #centered {
-    margin-right:auto;
-    margin-left:auto;
+    margin-right: auto;
+    margin-left: auto;
 }
+
 #footer {
-    position:fixed;
-    bottom:10px;
-    width:100%;
+    position: fixed;
+    bottom: 10px;
+    width: 100%;
 }
+
 #cancelBtn {
     background: white;
     z-index: 999;
     color: #ff6666;
-    padding: 7px;    /* 10px of .button -3px to account for the thick border */
+    padding: 7px; /* 10px of .button -3px to account for the thick border */
     border: 3px solid #ff6666;
 }
 

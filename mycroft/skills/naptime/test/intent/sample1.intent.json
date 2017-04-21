@@ -1,7 +1,0 @@
-{
-  "utterance": "it's time for nap time",
-  "intent_type": "NapTimeIntent",
-  "intent": {
-    "SleepCommand": "nap time"
-  }
-}
