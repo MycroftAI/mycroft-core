@@ -98,10 +98,20 @@ class ConfigurationLoader(object):
         return config
 
     @staticmethod
+    def merge_conf( base, delta ):
+        for k, dv in delta.iteritems():
+            bv = base.get(k)
+            if isinstance( dv, dict ) and isinstance( bv, dict):
+                ConfigurationLoader.merge_conf( bv, dv )
+            else:
+                base[k]=dv
+
+    @staticmethod
     def __load(config, location):
         if exists(location) and isfile(location):
             try:
-                config.update(load_commented_json(location))
+                ConfigurationLoader.merge_conf(
+                    config, load_commented_json(location))
                 LOG.debug("Configuration '%s' loaded" % location)
             except Exception, e:
                 LOG.error("Error loading configuration '%s'" % location)
