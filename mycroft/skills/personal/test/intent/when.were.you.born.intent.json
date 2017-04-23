@@ -1,7 +1,0 @@
-{
-  "utterance": "when were you born",
-  "intent_type": "WhenWereYouBornIntent",
-  "intent": {
-    "WhenWereYouBornKeyword": "when were you born"
-  }
-}

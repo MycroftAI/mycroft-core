@@ -1,8 +1,0 @@
-{
-  "utterance": "cancel recording",
-  "intent_type": "AudioRecordSkillStopIntent",
-  "intent": {
-    "AudioRecordSkillStopVerb": "cancel",
-    "AudioRecordSkillKeyword": "recording"
-  }
-}

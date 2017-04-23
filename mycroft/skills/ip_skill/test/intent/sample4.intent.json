@@ -1,7 +1,0 @@
-{
-  "utterance": "what's the network address",
-  "intent_type": "IPIntent",
-  "intent": {
-    "IPCommand": "network address"
-  }
-}
