@@ -106,9 +106,9 @@ def load_skill(skill_descriptor, emitter):
             skill = skill_module.create_skill()
             skill.bind(emitter)
             skill.load_data_files(dirname(skill_descriptor['info'][1]))
+            skill.load_settings(dirname(skill_descriptor['info'][1]) + '/settings.json')
             skill.initialize()
             logger.info("Loaded " + skill_descriptor["name"])
-            skill.load_settings(skill_descriptor['info'][1] + '/settings.json')
             return skill
         else:
             logger.warn(
@@ -335,6 +335,8 @@ class MycroftSkill(object):
         process termination. The skill implementation must
         shutdown all processes and operations in execution.
         """
+        # Store settings
+        self.settings.store()
 
         # removing events
         for e, f in self.events:
