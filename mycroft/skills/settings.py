@@ -19,22 +19,29 @@ import json
 import sys
 from os.path import isfile
 
+
 class SkillSettings(dict):
     def __init__(self, settings_file):
         super(SkillSettings, self).__init__()
-        self.path = settings_file
-        if isfile(self.path):
-            with open(self.path) as f:
+        self._path = settings_file
+
+        # if file exist, open and read stored values into self
+        if isfile(self._path):
+            with open(self._path) as f:
                 json_data = json.load(f)
                 for key in json_data:
                     self.__setitem__(key, json_data[key])
+
+        self._is_stored = True
 
     def __getitem__(self, key):
         return super(SkillSettings, self).__getitem__(key)
 
     def __setitem__(self, key, value):
+        self._is_stored = False
         return super(SkillSettings, self).__setitem__(key, value)
 
     def store(self):
-        with open(self.path, 'w')as f:
-            json.dump(self, f)
+        if not self._is_stored:
+            with open(self._path, 'w')as f:
+                json.dump(self, f)
