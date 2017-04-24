@@ -105,8 +105,8 @@ def load_skill(skill_descriptor, emitter):
             # v2 skills framework
             skill = skill_module.create_skill()
             skill.bind(emitter)
+            skill._dir = dirname(skill_descriptor['info'][1])
             skill.load_data_files(dirname(skill_descriptor['info'][1]))
-            skill.load_settings(dirname(skill_descriptor['info'][1]) + '/settings.json')
             skill.initialize()
             logger.info("Loaded " + skill_descriptor["name"])
             return skill
@@ -207,8 +207,14 @@ class MycroftSkill(object):
     def lang(self):
         return self.config_core.get('lang')
 
-    def load_settings(self, skill_path):
-        self.settings = SkillSettings(skill_path)
+    @property
+    def settings(self):
+        """ Load settings if not already loaded. """
+        try:
+            return self._settings
+        except:
+            self._settings = SkillSettings(join(self._dir, 'settings.json'))
+            return self._settings
 
     def bind(self, emitter):
         if emitter:
