@@ -15,12 +15,32 @@
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+    This module provides the SkillSettings dictionary, which is an simple
+    extension of the python dict to enable storing.
+
+    Example:
+        from mycroft.skill.settings import SkillSettings
+
+        s = SkillSettings('./settings.json')
+        s['meaning of life'] = 42
+        s['flower pot sayings'] = 'Not again...'
+        s.store()
+"""
+
 import json
 import sys
 from os.path import isfile
 
 
 class SkillSettings(dict):
+    """
+        SkillSettings creates a dictionary that can easily be stored
+        to file, serialized as json.
+
+        Args:
+            settings_file (str): Path to storage file
+    """
     def __init__(self, settings_file):
         super(SkillSettings, self).__init__()
         self._path = settings_file
@@ -38,10 +58,16 @@ class SkillSettings(dict):
         return super(SkillSettings, self).__getitem__(key)
 
     def __setitem__(self, key, value):
+        """
+            Add/Update key and note that the file needs saving.
+        """
         self._is_stored = False
         return super(SkillSettings, self).__setitem__(key, value)
 
     def store(self):
+        """
+            Store dictionary to file if it has changed
+        """
         if not self._is_stored:
             with open(self._path, 'w')as f:
                 json.dump(self, f)
