@@ -23,6 +23,8 @@
 # This script assists in the installation and management of
 # skills loaded from Github.  
 
+set -Ee
+
 mycroft_skill_folder="/opt/mycroft/skills"
 mycroft_virtualenv=~/.virtualenvs/mycroft/bin/activate
 
