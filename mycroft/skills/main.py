@@ -98,7 +98,8 @@ def _load_skills():
 
     # Create skill_manager listener and invoke the first time
     ws.on('skill_manager', skills_manager)
-    ws.emit(Message("skill_manager", {}))
+    ws.on('mycroft.wifi.connected', install_default_skills)
+    ws.emit(Message('skill_manager', {}))
 
     # Create the Intent manager, which converts utterances to intents
     # This is the heart of the voice invoked skill system
