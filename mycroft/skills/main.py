@@ -32,6 +32,7 @@ from mycroft.messagebus.message import Message
 from mycroft.skills.core import load_skill, create_skill_descriptor, \
     MainModule, SKILLS_DIR
 from mycroft.skills.intent_service import IntentService
+from mycroft.util import connected
 from mycroft.util.log import getLogger
 
 logger = getLogger("Skills")
@@ -96,9 +97,11 @@ def _load_skills():
     global ws, loaded_skills, last_modified_skill, skills_directories, \
         skill_reload_thread
 
+    check_connection()
+
     # Create skill_manager listener and invoke the first time
     ws.on('skill_manager', skills_manager)
-    ws.on('mycroft.wifi.connected', install_default_skills)
+    ws.on('mycroft.internet.connected', install_default_skills)
     ws.emit(Message('skill_manager', {}))
 
     # Create the Intent manager, which converts utterances to intents
@@ -109,6 +112,15 @@ def _load_skills():
     skill_reload_thread = Timer(0, _watch_skills)
     skill_reload_thread.daemon = True
     skill_reload_thread.start()
+
+
+def check_connection():
+    if connected():
+        ws.emit(Message('mycroft.internet.connected'))
+    else:
+        thread = Timer(1, check_connection)
+        thread.daemon = True
+        thread.start()
 
 
 def _get_last_modified_date(path):
