@@ -99,6 +99,14 @@ class ConfigurationLoader(object):
 
     @staticmethod
     def merge_conf(base, delta):
+        """
+            Recursively merging configuration dictionaries.
+
+            Args:
+                base:  Target for merge
+                delta: Dictionary to merge into base
+        """
+
         for k, dv in delta.iteritems():
             bv = base.get(k)
             if isinstance(dv, dict) and isinstance(bv, dict):
