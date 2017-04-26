@@ -97,7 +97,7 @@ function update() {
 }
 
 function install_defaults() {
-	skills=( "alarm" "audio-record" "configuration" "date-time" "desktop-launcher" "ip" "joke" "hello-world" "media" "npr-news" "naptime" "pairing" "personal" "reminder" "installer" "speak" "spelling" "stop" "stock" "volume" "weather" "wiki" "wolfram-alpha" )
+	skills=( "alarm" "audio-record" "configuration" "date-time" "desktop-launcher" "ip" "joke" "hello-world" "media" "npr-news" "naptime" "pairing" "personal" "reminder" "installer" "singing" "speak" "spelling" "stop" "stock" "volume" "weather" "wiki" "wolfram-alpha" )
 	for i in "${skills[@]}"
 	do
 		if [ ! -d "$mycroft_skill_folder/skill-$i" ]; then
