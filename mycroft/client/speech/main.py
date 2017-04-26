@@ -86,6 +86,7 @@ def handle_speak(event):
 
     utterance = event.data['utterance']
     expect_response = event.data.get('expect_response', False)
+    record_characteristics = event.data.get('record_characteristics', None)
 
     # This is a bit of a hack for Picroft.  The analog audio on a Pi blocks
     # for 30 seconds fairly often, so we don't want to break on periods
@@ -109,8 +110,8 @@ def handle_speak(event):
     else:
         mute_and_speak(utterance)
 
-    if expect_response:
-        create_signal('buttonPress')
+    if expect_response or record_characteristics:
+        loop.record_characteristics(expect_response, record_characteristics)
 
 
 def handle_sleep(event):

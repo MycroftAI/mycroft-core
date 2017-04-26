@@ -69,6 +69,10 @@ class AudioProducer(Thread):
                     # http://stackoverflow.com/questions/10733903/pyaudio-input-overflowed
                     self.emitter.emit("recognizer_loop:ioerror", ex)
 
+    def force_wake(self):
+        if self.recognizer:
+            self.recognizer.force_wake()
+
 
 class AudioConsumer(Thread):
     """
@@ -90,6 +94,8 @@ class AudioConsumer(Thread):
         self.wakeup_recognizer = wakeup_recognizer
         self.mycroft_recognizer = mycroft_recognizer
         self.metrics = MetricsAggregator()
+        self.no_stt = False
+        self.record_file = None
 
     def run(self):
         while self.state.running:
@@ -126,7 +132,18 @@ class AudioConsumer(Thread):
         }
         self.emitter.emit("recognizer_loop:wakeword", payload)
 
-        if self._audio_length(audio) < self.MIN_AUDIO_SIZE:
+        # save this record in file if requested
+        if self.record_file:
+            wav_name = self.record_file
+            self.record_file = None
+            wav_data = audio.get_wav_data()
+            with open(wav_name, "wb") as wav_file:
+                wav_file.write(wav_data)
+
+        # do not translate if only record is requested
+        if self.no_stt:
+            self.no_stt = False
+        elif self._audio_length(audio) < self.MIN_AUDIO_SIZE:
             LOG.warn("Audio too short to be processed")
         else:
             self.transcribe(audio)
@@ -166,6 +183,10 @@ class AudioConsumer(Thread):
             'session': SessionManager.get().session_id
         }
         self.emitter.emit("speak", Message("speak", payload))
+
+    def record_characteristics(self, characteristics):
+        self.record_file = characteristics.get("record_filename", None)
+        self.no_stt = characteristics.get("no_stt", False)
 
 
 class RecognizerLoopState(object):
@@ -208,10 +229,15 @@ class RecognizerLoop(EventEmitter):
     def start_async(self):
         self.state.running = True
         queue = Queue()
-        AudioProducer(self.state, queue, self.microphone,
-                      self.remote_recognizer, self).start()
-        AudioConsumer(self.state, queue, self, STTFactory.create(),
-                      self.wakeup_recognizer, self.mycroft_recognizer).start()
+        self.audio_producer = AudioProducer(
+                self.state, queue,
+                self.microphone, self.remote_recognizer, self)
+        self.audio_producer.start()
+        self.audio_consumer = AudioConsumer(
+                self.state, queue,
+                self, STTFactory.create(), self.wakeup_recognizer,
+                self.mycroft_recognizer)
+        self.audio_consumer.start()
 
     def stop(self):
         self.state.running = False
@@ -229,6 +255,12 @@ class RecognizerLoop(EventEmitter):
 
     def awaken(self):
         self.state.sleeping = False
+
+    def record_characteristics(self, expect_response, characteristics):
+        if self.audio_consumer:
+            self.audio_consumer.record_characteristics(characteristics)
+        if expect_response and self.audio_producer:
+            self.audio_producer.force_wake()
 
     def run(self):
         self.start_async()
