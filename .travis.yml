@@ -10,10 +10,15 @@ cache: pocketsphinx-python
 install:
  - VIRTUALENV_ROOT=${VIRTUAL_ENV} ./dev_setup.sh
  - pip install -r requirements.txt
+ - pip install nose2 cov-core
+ - pip install python-coveralls
 # - pip install -r test-requirements.txt
 # command to run tests
 script:
  - pep8 mycroft test
-# - ./start.sh unittest --fail-on-error
+ - nose2 test --with-coverage --config=test/unittest.cfg
 env:
  - IS_TRAVIS=true
+
+after_success:
+  coveralls

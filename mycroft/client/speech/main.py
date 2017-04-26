@@ -19,6 +19,7 @@
 import re
 import sys
 from threading import Thread, Lock
+import time
 
 from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.client.speech.listener import RecognizerLoop
@@ -36,6 +37,7 @@ ws = None
 tts = TTSFactory.create()
 lock = Lock()
 loop = None
+_last_stop_signal = 0
 
 config = ConfigurationManager.get()
 
@@ -80,6 +82,8 @@ def handle_multi_utterance_intent_failure(event):
 
 
 def handle_speak(event):
+    global _last_stop_signal
+
     utterance = event.data['utterance']
     expect_response = event.data.get('expect_response', False)
 
@@ -95,10 +99,13 @@ def handle_speak(event):
         chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s',
                           utterance)
         for chunk in chunks:
+            now = time.time()
             try:
                 mute_and_speak(chunk)
             except:
                 logger.error('Error in mute_and_speak', exc_info=True)
+            if _last_stop_signal > now:
+                break
     else:
         mute_and_speak(utterance)
 
@@ -115,6 +122,8 @@ def handle_wake_up(event):
 
 
 def handle_stop(event):
+    global _last_stop_signal
+    _last_stop_signal = time.time()
     kill([config.get('tts').get('module')])
     kill(["aplay"])
 

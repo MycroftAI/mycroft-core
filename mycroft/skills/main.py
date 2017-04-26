@@ -18,6 +18,7 @@
 
 import json
 import os
+import subprocess
 import sys
 import time
 from os.path import exists, join
@@ -31,7 +32,14 @@ from mycroft.messagebus.message import Message
 from mycroft.skills.core import load_skill, create_skill_descriptor, \
     MainModule, SKILLS_DIR
 from mycroft.skills.intent_service import IntentService
+from mycroft.util import connected
 from mycroft.util.log import getLogger
+
+from mycroft.lock import Lock  # Creates PID file for single instance
+import signal
+
+# ignore DIGCHLD to terminate subprocesses correctly
+signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
 logger = getLogger("Skills")
 
@@ -44,13 +52,28 @@ skills_directories = []
 skill_reload_thread = None
 skills_manager_timer = None
 
-installer_config = ConfigurationManager.instance().get("SkillInstallerSkill")
-MSM_BIN = installer_config.get("path", join(MYCROFT_ROOT_PATH, 'msm', 'msm'))
+MSM_BIN = join(MYCROFT_ROOT_PATH, 'msm', 'msm')
 
 
 def connect():
     global ws
     ws.run_forever()
+
+
+def install_default_skills(speak=True):
+    if exists(MSM_BIN):
+        p = subprocess.Popen(MSM_BIN + " default", stderr=subprocess.STDOUT,
+                             stdout=subprocess.PIPE, shell=True)
+        t = p.communicate()[0]
+        if t.splitlines()[-1] == "Installed!" and speak:
+            ws.emit(Message("speak", {
+                'utterance': "Skills Updated. Mycroft is ready"}))
+        elif speak:
+            ws.emit(Message("speak", {
+                'utterance': "Check your network connection"}))
+
+    else:
+        logger.error("Unable to invoke Mycroft Skill Manager: " + MSM_BIN)
 
 
 def skills_manager(message):
@@ -62,19 +85,11 @@ def skills_manager(message):
             Message("speak", {'utterance': "Checking for Updates"}))
 
     # Install default skills and look for updates via Github
+    install_default_skills(skills_manager_timer is None if True else False)
     logger.debug("==== Invoking Mycroft Skill Manager: " + MSM_BIN)
-    if exists(MSM_BIN):
-        os.system(MSM_BIN + " default")
-    else:
-        logger.error("Unable to invoke Mycroft Skill Manager: " + MSM_BIN)
-
-    if skills_manager_timer is None:
-        # TODO: Localization support
-        ws.emit(Message("speak", {
-            'utterance': "Skills Updated. Mycroft is ready"}))
 
     # Perform check again once and hour
-    skills_manager_timer = Timer(3600.0, _skills_manager_dispatch)
+    skills_manager_timer = Timer(3600, _skills_manager_dispatch)
     skills_manager_timer.daemon = True
     skills_manager_timer.start()
 
@@ -87,9 +102,12 @@ def _load_skills():
     global ws, loaded_skills, last_modified_skill, skills_directories, \
         skill_reload_thread
 
+    check_connection()
+
     # Create skill_manager listener and invoke the first time
     ws.on('skill_manager', skills_manager)
-    ws.emit(Message("skill_manager", {}))
+    ws.on('mycroft.internet.connected', install_default_skills)
+    ws.emit(Message('skill_manager', {}))
 
     # Create the Intent manager, which converts utterances to intents
     # This is the heart of the voice invoked skill system
@@ -101,6 +119,27 @@ def _load_skills():
     skill_reload_thread.start()
 
 
+def check_connection():
+    if connected():
+        ws.emit(Message('mycroft.internet.connected'))
+    else:
+        thread = Timer(1, check_connection)
+        thread.daemon = True
+        thread.start()
+
+
+def _get_last_modified_date(path):
+    last_date = 0
+    # getting all recursive paths
+    for root, _, _ in os.walk(path):
+        f = root.replace(path, "")
+        # checking if is a hidden path
+        if not f.startswith(".") and not f.startswith("/."):
+            last_date = max(last_date, os.path.getmtime(path + f))
+
+    return last_date
+
+
 def _watch_skills():
     global ws, loaded_skills, last_modified_skill, \
         id_counter
@@ -109,32 +148,39 @@ def _watch_skills():
     # unload the existing version from memory and reload from the disk.
     while True:
         if exists(SKILLS_DIR):
+            # checking skills dir and getting all skills there
             list = filter(lambda x: os.path.isdir(
                 os.path.join(SKILLS_DIR, x)), os.listdir(SKILLS_DIR))
+
             for skill_folder in list:
                 if skill_folder not in loaded_skills:
                     loaded_skills[skill_folder] = {}
                 skill = loaded_skills.get(skill_folder)
                 skill["path"] = os.path.join(SKILLS_DIR, skill_folder)
+                # checking if is a skill
                 if not MainModule + ".py" in os.listdir(skill["path"]):
                     continue
-                skill["last_modified"] = max(
-                    os.path.getmtime(root) for root, _, _ in
-                    os.walk(skill["path"]))
+                # getting the newest modified date of skill
+                skill["last_modified"] = _get_last_modified_date(skill["path"])
                 modified = skill.get("last_modified", 0)
+                # checking if skill is loaded and wasn't modified
                 if skill.get(
                         "loaded") and modified <= last_modified_skill:
                     continue
+                # checking if skill was modified
                 elif skill.get(
                         "instance") and modified > last_modified_skill:
+                    # checking if skill should be reloaded
                     if not skill["instance"].reload_skill:
                         continue
                     logger.debug("Reloading Skill: " + skill_folder)
+                    # removing listeners and stopping threads
                     skill["instance"].shutdown()
                     del skill["instance"]
                 skill["loaded"] = True
                 skill["instance"] = load_skill(
                     create_skill_descriptor(skill["path"]), ws)
+        # get the last modified skill
         modified_dates = map(lambda x: x.get("last_modified"),
                              loaded_skills.values())
         if len(modified_dates) > 0:

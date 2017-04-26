@@ -25,7 +25,20 @@ class ScheduledSkillTest(unittest.TestCase):
                           "1 minutes and 59 seconds from now")
 
     def test_formatted_time_days(self):
+        self.skill.config_core = {}
+        self.skill.config_core['time_format'] = 'full'
+        self.skill.config_core['date_format'] = 'DMY'
+        self.skill.init_format()
+
         date = datetime.now() + timedelta(days=2)
         self.assertEquals(self.skill.
                           get_formatted_time(float(date.strftime('%s'))),
-                          date.strftime("%A, %B %d, %Y at %H:%M"))
+                          date.strftime("%d %B, %Y at %H:%M"))
+
+        self.skill.config_core['date_format'] = 'MDY'
+        self.skill.init_format()
+
+        date = datetime.now() + timedelta(days=2)
+        self.assertEquals(self.skill.
+                          get_formatted_time(float(date.strftime('%s'))),
+                          date.strftime("%B %d, %Y at %H:%M"))
