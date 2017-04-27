@@ -136,6 +136,11 @@ def read_dict(filename, div='='):
 
 
 def create_file(filename):
+    """ Create the file filename and create any directories needed
+
+        Args:
+            filename: Path to the file to be created
+    """
     try:
         os.makedirs(dirname(filename))
     except OSError:
