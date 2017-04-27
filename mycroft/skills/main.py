@@ -18,6 +18,7 @@
 
 import json
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -35,9 +36,6 @@ from mycroft.skills.intent_service import IntentService
 from mycroft.util import connected
 from mycroft.util.log import getLogger
 
-from mycroft.lock import Lock  # Creates PID file for single instance
-import signal
-
 # ignore DIGCHLD to terminate subprocesses correctly
 signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
@@ -52,7 +50,8 @@ skills_directories = []
 skill_reload_thread = None
 skills_manager_timer = None
 
-MSM_BIN = join(MYCROFT_ROOT_PATH, 'msm', 'msm')
+installer_config = ConfigurationManager.instance().get("SkillInstallerSkill")
+MSM_BIN = installer_config.get("path", join(MYCROFT_ROOT_PATH, 'msm', 'msm'))
 
 
 def connect():
