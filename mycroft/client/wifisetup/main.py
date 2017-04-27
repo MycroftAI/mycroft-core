@@ -37,7 +37,7 @@ from SimpleHTTPServer import SimpleHTTPRequestHandler
 from SocketServer import TCPServer
 from os.path import dirname, realpath
 from shutil import copyfile
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, call
 from threading import Thread
 from time import sleep
 
@@ -57,7 +57,7 @@ LOG = getLogger("WiFiClient")
 
 SCRIPT_DIR = dirname(realpath(__file__))
 
-WPA_SUPPLICANT ="""# mycroft_p2p_start
+WPA_SUPPLICANT = """# mycroft_p2p_start
 ctrl_interface = /var / run / wpa_supplicant
 driver_param = p2p_device = 1
 update_config = 1
@@ -553,9 +553,11 @@ class WiFi:
         """Resets the wifi to the default """
         try:
             subprocess.call(
-                "echo " + WPA_SUPPLICANT + 
+                "echo " + WPA_SUPPLICANT +
                 "> /etc/wpa_supplicant/wpa_supplicant.conf",
                 shell=True)
+        except Exception as e:
+            LOG.error("Error: {0}".format(e))
 
 
 def main():
