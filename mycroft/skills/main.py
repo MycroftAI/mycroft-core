@@ -84,8 +84,8 @@ def skills_manager(message):
             Message("speak", {'utterance': "Checking for Updates"}))
 
     # Install default skills and look for updates via Github
-    install_default_skills(skills_manager_timer is None if True else False)
     logger.debug("==== Invoking Mycroft Skill Manager: " + MSM_BIN)
+    install_default_skills(False)
 
     # Perform check again once and hour
     skills_manager_timer = Timer(3600, _skills_manager_dispatch)
