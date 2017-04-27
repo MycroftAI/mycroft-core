@@ -134,6 +134,7 @@ class EnclosureReader(Thread):
             subprocess.call(
                 'rm ~/.mycroft/identity/identity2.json',
                 shell=True)
+            self.ws.emit(Message("mycroft.wifi.reset"))
             self.ws.emit(
                 Message("enclosure.eyes.spin"))
             self.ws.emit(Message("enclosure.mouth.reset"))
