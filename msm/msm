@@ -30,6 +30,7 @@ echo "#######  Mycroft Skill Manager #######"
 
 function help() {
 	echo "msm: Mycroft Skill Manager"
+	echo -e "     Copyright (c) 2017 Mycroft AI, Inc.  All rights reserved.\n"
 	echo "usage: msm install <repository> or <name>"
 	echo "     Installs the given Skill into the /opt/mycroft/skills directory"
 	echo "     where <repository> is the address of the skill in Github."
