@@ -16,7 +16,7 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-    This module provides the SkillSettings dictionary, which is an simple
+    This module provides the SkillSettings dictionary, which is a simple
     extension of the python dict to enable storing.
 
     Example:
