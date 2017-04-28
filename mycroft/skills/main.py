@@ -67,8 +67,9 @@ def install_default_skills(speak=True):
         if t.splitlines()[-1] == "Installed!" and speak:
             ws.emit(Message("speak", {
                 'utterance': "Skills Updated. Mycroft is ready"}))
-        ws.emit(Message("speak", {
-            'utterance': "Check your network connection"}))
+        elif not connected():
+            ws.emit(Message("speak", {
+                'utterance': "Check your network connection"}))
 
     else:
         logger.error("Unable to invoke Mycroft Skill Manager: " + MSM_BIN)
