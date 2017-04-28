@@ -142,7 +142,7 @@ class EnclosureReader(Thread):
             subprocess.call('systemctl reboot -i', shell=True)
 
         if "unit.enable-ssh" in data:
-            subprocess.call('sudo touch /ssh', shell=True)
+            subprocess.call('sudo systemctl enable ssh.socket', shell=True)
             self.ws.emit(Message("speak", {
                 'utterance': "SSH will be enabled on next boot"}))
 
