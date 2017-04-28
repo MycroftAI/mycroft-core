@@ -134,10 +134,17 @@ class EnclosureReader(Thread):
             subprocess.call(
                 'rm ~/.mycroft/identity/identity2.json',
                 shell=True)
+            self.ws.emit(Message("mycroft.wifi.reset"))
+            time.delay(5)
             self.ws.emit(
                 Message("enclosure.eyes.spin"))
             self.ws.emit(Message("enclosure.mouth.reset"))
             subprocess.call('systemctl reboot -i', shell=True)
+
+        if "unit.enable-ssh" in data:
+            subprocess.call('touch /ssh', shell=True)
+            self.ws.emit(Message("speak", {
+                'utterance': "SSH will be enabled on next boot"}))
 
     def stop(self):
         self.alive = False
