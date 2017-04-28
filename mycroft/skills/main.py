@@ -67,7 +67,7 @@ def install_default_skills(speak=True):
         if t.splitlines()[-1] == "Installed!" and speak:
             ws.emit(Message("speak", {
                 'utterance': "Skills Updated. Mycroft is ready"}))
-        elif speak:
+        elif not connected():
             ws.emit(Message("speak", {
                 'utterance': "Check your network connection"}))
 
