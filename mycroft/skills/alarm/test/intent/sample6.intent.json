@@ -1,9 +1,0 @@
-{
-  "utterance": "show all my timers",
-  "intent_type": "AlarmSkillListIntent",
-  "intent": {
-    "AlarmSkillListVerb": "show",
-    "AlarmSkillAmount": "all",
-    "AlarmSkillKeyword": "timers"
-  }
-}

@@ -23,6 +23,7 @@ from threading import Thread
 import speech_recognition as sr
 from pyee import EventEmitter
 from requests import HTTPError
+from requests.exceptions import ConnectionError
 
 from mycroft.client.speech.local_recognizer import LocalRecognizer
 from mycroft.client.speech.mic import MutableMicrophone, ResponsiveRecognizer
@@ -127,18 +128,20 @@ class AudioConsumer(Thread):
 
         if self._audio_length(audio) < self.MIN_AUDIO_SIZE:
             LOG.warn("Audio too short to be processed")
-        elif connected():
-            self.transcribe(audio)
         else:
-            self.__speak("Mycroft seems not to be connected to the Internet")
+            self.transcribe(audio)
 
     def transcribe(self, audio):
         text = None
         try:
+            # Invoke the STT engine on the audio clip
             text = self.stt.execute(audio).lower().strip()
             LOG.debug("STT: " + text)
         except sr.RequestError as e:
             LOG.error("Could not request Speech Recognition {0}".format(e))
+        except ConnectionError as e:
+            LOG.error("Connection Error: {0}".format(e))
+            self.__speak("Mycroft seems not to be connected to the Internet")
         except HTTPError as e:
             if e.response.status_code == 401:
                 text = "pair my device"
@@ -148,8 +151,10 @@ class AudioConsumer(Thread):
             LOG.error("Speech Recognition could not understand audio")
             self.__speak("Sorry, I didn't catch that")
         if text:
+            # STT succeeded, send the transcribed speech on for processing
             payload = {
                 'utterances': [text],
+                'lang': self.stt.lang,
                 'session': SessionManager.get().session_id
             }
             self.emitter.emit("recognizer_loop:utterance", payload)
@@ -188,14 +193,17 @@ class RecognizerLoop(EventEmitter):
         self.state = RecognizerLoopState()
 
     def create_mycroft_recognizer(self, rate, lang):
+        # Create a local recognizer to hear the wakeup word, e.g. 'Hey Mycroft'
         wake_word = self.config.get('wake_word')
         phonemes = self.config.get('phonemes')
         threshold = self.config.get('threshold')
         return LocalRecognizer(wake_word, phonemes, threshold, rate, lang)
 
-    @staticmethod
-    def create_wakeup_recognizer(rate, lang):
-        return LocalRecognizer("wake up", "W EY K . AH P", 1e-10, rate, lang)
+    def create_wakeup_recognizer(self, rate, lang):
+        wake_word = self.config.get('standup_word', "wake up")
+        phonemes = self.config.get('standup_phonemes', "W EY K . AH P")
+        threshold = self.config.get('standup_threshold', 1e-10)
+        return LocalRecognizer(wake_word, phonemes, threshold, rate, lang)
 
     def start_async(self):
         self.state.running = True

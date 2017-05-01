@@ -21,6 +21,8 @@ import tornado.web as web
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.service.ws import WebsocketEventHandler
 from mycroft.util import validate_param
+from mycroft.lock import Lock  # creates/supports PID locking file
+
 
 __author__ = 'seanfitz', 'jdorleans'
 
@@ -31,6 +33,7 @@ settings = {
 
 def main():
     import tornado.options
+    lock = Lock("service")
     tornado.options.parse_command_line()
     config = ConfigurationManager.get().get("websocket")
 

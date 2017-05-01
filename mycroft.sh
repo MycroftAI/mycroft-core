@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+./scripts/prepare-msm.sh
+
 SOURCE="${BASH_SOURCE[0]}"
 while [ -h "$SOURCE" ]; do
   DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
@@ -17,7 +19,8 @@ function usage {
   echo "      -h             this help message"
   echo "      start          starts mycroft-service, mycroft-skills, mycroft-voice and mycroft-cli in quiet mode"
   echo "      start -v       starts mycroft-service, mycroft-skills and mycroft-voice"
-  echo "      start -c       starts mycroft-service, mycroft-skills and mycroft-cli"
+  echo "      start -c       starts mycroft-service, mycroft-skills and mycroft-cli in background"
+  echo "      start -d       starts mycroft-service and mycroft skills in quiet mode and an active mycroft-cli"
   echo "      stop           stops mycroft-service, mycroft-skills and mycroft-voice"
   echo "      restart        restarts mycroft-service, mycroft-skills and mycroft-voice"
   echo
@@ -45,6 +48,18 @@ function start-mycroft {
   screen -mdS mycroft-$1$2 -c $SCRIPTS/mycroft-$1.screen $DIR/start.sh $1 $2
   sleep 1
   verify-start mycroft-$1$2
+  echo "Mycroft $1$2 started"
+}
+
+function start-mycroft-nolog {
+  screen -mdS mycroft-$1$2 $DIR/start.sh $1 $2 $3
+  sleep 1
+  verify-start mycroft-$1$2
+  echo "Mycroft $1$2 started"
+}
+
+function debug-start-mycroft {
+  $DIR/start.sh $1 $2
   echo "Mycroft $1$2 started"
 }
 
@@ -88,7 +103,7 @@ then
   start-mycroft service
   start-mycroft skills
   start-mycroft voice
-  start-mycroft cli --quiet
+  start-mycroft-nolog cli --quiet --simple
   exit 0
 elif [[ "$1" == "start" && "$2" == "-v" ]]
 then
@@ -100,7 +115,13 @@ elif [[ "$1" == "start" && "$2" == "-c" ]]
 then
   start-mycroft service
   start-mycroft skills
-  start-mycroft cli
+  start-mycroft-nolog cli --simple
+  exit 0
+elif [[ "$1" == "start" && "$2" == "-d" ]]
+then
+  start-mycroft service
+  start-mycroft skills
+  debug-start-mycroft cli
   exit 0
 elif [[ "$1" == "stop" && -z "$2" ]]
 then

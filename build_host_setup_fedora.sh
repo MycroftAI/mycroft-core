@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-sudo rpm -Uvh http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-23.noarch.rpm
-
 sudo dnf install -y \
     git \
     python \
@@ -21,8 +19,12 @@ sudo dnf install -y \
     s3cmd \
     portaudio-devel \
     mpg123 \
+    mpg123-plugins-pulseaudio \
     screen \
-    curl
+    curl \
+    pkgconfig \
+    libicu-devel \
+    automake
 
 # upgrade virtualenv to latest from pypi
 sudo pip install --upgrade virtualenv

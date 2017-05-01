@@ -1,7 +1,0 @@
-{
-  "utterance": "how's the weather",
-  "intent_type": "CurrentWeatherIntent",
-  "intent": {
-    "WeatherKeyword": "weather"
-  }
-}
