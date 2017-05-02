@@ -549,7 +549,7 @@ class WiFi:
             LOG.error("Error: {0}".format(e))
             self.stop()
 
-    def reset(self):
+    def reset(self, message):
         """Resets the wifi to the default """
         LOG.info("Resetting the WPA_SUPPLICANT File")
         self.ws.emit(Message("speak", {
