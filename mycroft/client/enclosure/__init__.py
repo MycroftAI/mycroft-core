@@ -131,16 +131,16 @@ class EnclosureReader(Thread):
             self.ws.emit(Message("mycroft.wifi.start"))
 
         if "unit.factory-reset" in data:
-            self.ws.emit(
-                Message("enclosure.eyes.spin"))
-            subprocess.call(
-                'rm ~/.mycroft/identity/identity2.json',
-                shell=True)
+            #self.ws.emit(
+                #Message("enclosure.eyes.spin"))
+            #subprocess.call(
+                #'rm ~/.mycroft/identity/identity2.json',
+                #shell=True)
             self.ws.emit(Message("mycroft.wifi.reset"))
-            time.sleep(4)
-            self.ws.emit(Message("enclosure.mouth.reset"))
-            self.ws.emit(Message("speak", {
-                'utterance': "This unit has been reset"}))
+            #time.sleep(4)
+            #self.ws.emit(Message("enclosure.mouth.reset"))
+            #self.ws.emit(Message("speak", {
+                #'utterance': "This unit has been reset"}))
             #subprocess.call('systemctl reboot -i', shell=True)
 
         if "unit.enable-ssh" in data:
