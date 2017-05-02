@@ -553,7 +553,7 @@ class WiFi:
         """Resets the wifi to the default """
         LOG.info("Resetting the WPA_SUPPLICANT File")
         try:
-            subprocess.call(
+            call(
                 "echo " + WPA_SUPPLICANT +
                 "> /etc/wpa_supplicant/wpa_supplicant.conf",
                 shell=True)
