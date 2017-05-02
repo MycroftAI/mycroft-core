@@ -57,37 +57,37 @@ LOG = getLogger("WiFiClient")
 
 SCRIPT_DIR = dirname(realpath(__file__))
 
-WPA_SUPPLICANT = """# mycroft_p2p_start
-ctrl_interface = /var / run / wpa_supplicant
-driver_param = p2p_device = 1
-update_config = 1
-device_name = mycroft - holmes - i
-device_type = 1 - 0050F204 - 1
-p2p_go_intent = 10
-p2p_go_ht40 = 1
-
-network = {
-    ssid = "MYCROFT"
-    psk = "MYCROFT1"
-    proto = RSN
-    key_mgmt = WPA - PSK
-    pairwise = CCMP
-    auth_alg = OPEN
-    mode = 3
-    disabled = 2
-}
-
-network = {
-    ssid = "MYCROFT"
-    psk = "MYCROFT1"
-    proto = RSN
-    key_mgmt = WPA - PSK
-    pairwise = CCMP
-    auth_alg = OPEN
-    mode = 3
-    disabled = 2
-}
-# mycroft_p2p_end"""
+WPA_SUPPLICANT = ("# mycroft_p2p_start\n"
+                  "ctrl_interface = /var / run / wpa_supplicant\n"
+                  "driver_param = p2p_device = 1\n"
+                  "update_config = 1\n"
+                  "device_name = mycroft - holmes - i\n"
+                  "device_type = 1 - 0050F204 - 1\n"
+                  "p2p_go_intent = 10\n"
+                  "p2p_go_ht40 = 1\n"
+                  "\n"
+                  "network = {\n"
+                  "     ssid = \"MYCROFT\"\n"
+                  "     psk = \"MYCROFT1\"\\n"
+                  "     proto = RSN\n"
+                  "     key_mgmt = WPA - PSK\n"
+                  "     pairwise = CCMP\n"
+                  "     auth_alg = OPEN\n"
+                  "     mode = 3\n"
+                  "     disabled = 2\n"
+                  "}\n"
+                  "\n"
+                  "network = {\n"
+                  "    ssid = \"MYCROFT\"\n"
+                  "    psk = \"MYCROFT1\"\n"
+                  "    proto = RSN\n"
+                  "    key_mgmt = WPA - PSK\n"
+                  "    pairwise = CCMP\n"
+                  "    auth_alg = OPEN\n"
+                  "    mode = 3\n"
+                  "   disabled = 2\n"
+                  "}\n"
+                  "# mycroft_p2p_end")
 
 
 def cli_no_output(*args):
