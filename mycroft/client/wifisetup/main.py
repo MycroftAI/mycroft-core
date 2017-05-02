@@ -557,6 +557,7 @@ class WiFi:
                 "echo \"" + WPA_SUPPLICANT +
                 "\"> /etc/wpa_supplicant/wpa_supplicant.conf",
                 shell=True)
+            call("rm -rf /opt/mycroft/skills")
         except Exception as e:
             LOG.error("Error: {0}".format(e))
 
