@@ -551,6 +551,7 @@ class WiFi:
 
     def reset(self):
         """Resets the wifi to the default """
+        LOG.info("Resetting the WPA_SUPPLICANT File")
         try:
             subprocess.call(
                 "echo " + WPA_SUPPLICANT +
