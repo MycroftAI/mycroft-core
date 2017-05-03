@@ -569,11 +569,13 @@ class WiFi:
             call(RM_SKILLS)
         except Exception as e:
             LOG.error("Error: {0}".format(e))
-      
+
     def ssh(self, event=None):
         LOG.info("Enabling SSH")
         try:
             call('sudo touch /boot/ssh', shell=True)
+        except Exception as e:
+            LOG.error("Error: {0}".format(e))
 
 
 def main():
