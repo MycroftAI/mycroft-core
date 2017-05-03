@@ -109,20 +109,23 @@ def normalize_en(text, remove_articles):
     return normalized[1:]  # strip the initial space
 
 
-# TODO: move to indepent file
-# TODO: parse of all numbers
+# TODO: it should be modular in indepent files
+# TODO: numbers greaters than 100
 
-articles_es = ["el", "la", "los", "las", "un", "una", "unos", "unas"]
-textNumbers_es = [
-               u"cero", u"uno", u"dos", u"tres", u"cuatro",
-               u"cinco", u"seis", u"siete", u"ocho", u"nueve",
+es_articles = ["el", "la", "los", "las", "un", "una", "unos", "unas"]
+es_numbers_0_9 = [
+               "cero", "uno", "dos", "tres", "cuatro",
+               "cinco", "seis", "siete", "ocho", "nueve"]
+es_numbers_10_29 = [
                u"diez", u"once", u"doce", u"trece", u"catorce",
                u"quince", u"dieciséis", u"diecisiete",
                u"dieciocho", u"diecinueve",
-               u"veinte", u"veintiuno", u"veintidos",
+               u"veinte", u"veintiuno", u"veintidós",
                u"veintitrés", u"veinticuatro",
                u"veinticinco", u"veintiséis", u"veintisiete",
                u"veintiocho", u"veintinueve"]
+es_numbers_10n = ["treinta", "cuarenta", "cincuenta", "sesenta",
+                  "setenta", "ochenta", "noventa"]
 
 
 def normalize_es(text, remove_articles):
@@ -130,19 +133,29 @@ def normalize_es(text, remove_articles):
 
     words = text.split()  # this also removed extra spaces
     normalized = ""
-    for word in words:
-        if remove_articles and word in articles_es:
+    i = 0
+
+    while i < len(words):
+        word = words[i]
+        i += 1
+
+        if remove_articles and word in es_articles:
             continue
 
-        # Expand common contractions, e.g. "isn't" -> "is not"
-        contraction = []  # spanish has not contractions
-        if word in contraction:
-            expansion = []
-            word = expansion[contraction.index(word)]
+        # Convert numbers into digits: from 0 to 99
+        elif word in es_numbers_0_9:
+            word = str(es_numbers_0_9.index(word))
 
-        # Convert numbers into digits, e.g. "two" -> "2": from 0 to 29
-        if word in textNumbers_es:
-            word = str(textNumbers_es.index(word))
+        elif word in es_numbers_10_29:
+            word = str(es_numbers_10_29.index(word)+10)
+
+        elif word in es_numbers_10n:
+            n = es_numbers_10n.index(word)*10+30
+            if i+1 < len(words) and words[i] == "y" and \
+               words[i+1] in es_numbers_0_9:
+                n += es_numbers_0_9.index(words[i+1])
+                i += 2
+            word = str(n)
 
         normalized += " " + word
 
