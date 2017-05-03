@@ -23,9 +23,6 @@
 # This script assists in the installation and management of
 # skills loaded from Github.  
 
-set -Ee
-set -m
-
 mycroft_skill_folder="/opt/mycroft/skills"
 mycroft_virtualenv=~/.virtualenvs/mycroft/bin/activate
 
@@ -84,7 +81,7 @@ function install() {
 
 function update() {
         cd $mycroft_skill_folder
-	for d in *; do
+	for d in $(ls -d */); do
 		if git -C "$d" rev-parse --git-dir > /dev/null 2>&1; then
 			cd $d
 			if [[ -z $(git status --porcelain) ]]; then

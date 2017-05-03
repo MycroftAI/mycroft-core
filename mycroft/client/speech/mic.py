@@ -304,6 +304,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         while not said_wake_word:
             if check_for_signal('buttonPress'):
+                logger.debug("Button Pressed, wakeword not needed")
                 said_wake_word = True
                 continue
 
