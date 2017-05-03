@@ -25,6 +25,7 @@ from pyee import EventEmitter
 from requests import HTTPError
 from requests.exceptions import ConnectionError
 
+import mycroft.dialog
 from mycroft.client.speech.local_recognizer import LocalRecognizer
 from mycroft.client.speech.mic import MutableMicrophone, ResponsiveRecognizer
 from mycroft.configuration import ConfigurationManager
@@ -109,7 +110,7 @@ class AudioConsumer(Thread):
                                                 self.metrics):
             SessionManager.touch()
             self.state.sleeping = False
-            self.__speak("I'm awake.")
+            self.__speak(mycroft.dialog.get("i am awake", self.stt.lang))
             self.metrics.increment("mycroft.wakeup")
 
     @staticmethod
@@ -141,7 +142,8 @@ class AudioConsumer(Thread):
             LOG.error("Could not request Speech Recognition {0}".format(e))
         except ConnectionError as e:
             LOG.error("Connection Error: {0}".format(e))
-            self.__speak("Mycroft seems not to be connected to the Internet")
+            self.__speak(mycroft.dialog.get("not connected to the internet",
+                                            self.stt.lang))
         except HTTPError as e:
             if e.response.status_code == 401:
                 text = "pair my device"
@@ -149,7 +151,8 @@ class AudioConsumer(Thread):
         except Exception as e:
             LOG.error(e)
             LOG.error("Speech Recognition could not understand audio")
-            self.__speak("Sorry, I didn't catch that")
+            self.__speak(mycroft.dialog.get("i didn't catch that",
+                                            self.stt.lang))
         if text:
             # STT succeeded, send the transcribed speech on for processing
             payload = {
