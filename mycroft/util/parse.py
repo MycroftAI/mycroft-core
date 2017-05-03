@@ -119,7 +119,7 @@ textNumbers_es = [
                u"diez", u"once", u"doce", u"trece", u"catorce",
                u"quince", u"dieciséis", u"diecisiete",
                u"dieciocho", u"diecinueve",
-               u"veinte", u"veintiuno", u"veintidós",
+               u"veinte", u"veintiuno", u"veintidos",
                u"veintitrés", u"veinticuatro",
                u"veinticinco", u"veintiséis", u"veintisiete",
                u"veintiocho", u"veintinueve"]
