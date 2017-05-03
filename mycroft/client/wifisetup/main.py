@@ -58,36 +58,42 @@ LOG = getLogger("WiFiClient")
 SCRIPT_DIR = dirname(realpath(__file__))
 
 WPA_SUPPLICANT = """# mycroft_p2p_start
-ctrl_interface = /var / run / wpa_supplicant
-driver_param = p2p_device = 1
-update_config = 1
-device_name = mycroft - holmes - i
-device_type = 1 - 0050F204 - 1
-p2p_go_intent = 10
-p2p_go_ht40 = 1
+ ctrl_interface = /var / run / wpa_supplicant
+ driver_param = p2p_device = 1
+ update_config = 1
+ device_name = mycroft - holmes - i
+ device_type = 1 - 0050F204 - 1
+ p2p_go_intent = 10
+ p2p_go_ht40 = 1
 
-network = {
-    ssid = "MYCROFT"
-    psk = "MYCROFT1"
-    proto = RSN
-    key_mgmt = WPA - PSK
-    pairwise = CCMP
-    auth_alg = OPEN
-    mode = 3
-    disabled = 2
-}
+ network = {
+     ssid = "MYCROFT"
+     psk = "MYCROFT1"
+     proto = RSN
+     key_mgmt = WPA - PSK
+     pairwise = CCMP
+     auth_alg = OPEN
+     mode = 3
+     disabled = 2
+ }
 
-network = {
-    ssid = "MYCROFT"
-    psk = "MYCROFT1"
-    proto = RSN
-    key_mgmt = WPA - PSK
-    pairwise = CCMP
-    auth_alg = OPEN
-    mode = 3
-    disabled = 2
-}
-# mycroft_p2p_end"""
+ network = {
+     ssid = "MYCROFT"
+     psk = "MYCROFT1"
+     proto = RSN
+     key_mgmt = WPA - PSK
+     pairwise = CCMP
+     auth_alg = OPEN
+     mode = 3
+     disabled = 2
+ }
+ # mycroft_p2p_end"""
+
+RM_SKILLS = """mkdir /opt/mycroft/safety &&
+ mv /opt/mycroft/skills/skill-pairing /opt/mycroft/safety &&
+ rm -rf /opt/mycroft/skills/* &&
+ mv /opt/mycroft/safety/skill-pairing /opt/mycroft/skills &&
+ rm -rf /opt/mycroft/safety"""
 
 
 def cli_no_output(*args):
@@ -549,13 +555,16 @@ class WiFi:
             LOG.error("Error: {0}".format(e))
             self.stop()
 
-    def reset(self):
+    def reset(self, event=None):
         """Resets the wifi to the default """
+        LOG.info("Resetting the WPA_SUPPLICANT File")
         try:
-            subprocess.call(
-                "echo " + WPA_SUPPLICANT +
-                "> /etc/wpa_supplicant/wpa_supplicant.conf",
+            call(
+                "echo \"" + WPA_SUPPLICANT +
+                "\"> /etc/wpa_supplicant/wpa_supplicant.conf",
                 shell=True)
+            # UGLY BUT WORKS
+            call(RM_SKILLS)
         except Exception as e:
             LOG.error("Error: {0}".format(e))
 
