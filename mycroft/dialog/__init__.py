@@ -110,7 +110,7 @@ class DialogLoader(object):
         return self.__renderer
 
 
-def get(phrase, lang, context={}):
+def get(phrase, lang, context=None):
     """
     Looks up a resource file for the given phrase.  If no file
     is found, the requested phrase is returned as the string.
@@ -125,11 +125,14 @@ def get(phrase, lang, context={}):
         str: a randomized and/or translated version of the phrase
     """
 
-    filename = resolve_resource_file("text/"+lang+"/"+phrase+".dialog")
-    print (filename)
-    if not filename:
+    filename = "text/"+lang.lower()+"/"+phrase+".dialog"
+    template = resolve_resource_file(filename)
+    if not template:
+        logger.debug("Resource file not found: " + filename)
         return phrase
 
     stache = MustacheDialogRenderer()
-    stache.load_template_file("template", filename)
+    stache.load_template_file("template", template)
+    if not context:
+        context = {}
     return stache.render("template", context)
