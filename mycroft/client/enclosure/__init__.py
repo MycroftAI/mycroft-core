@@ -143,6 +143,14 @@ class EnclosureReader(Thread):
             self.ws.emit(Message("enclosure.mouth.reset"))
             subprocess.call('systemctl reboot -i', shell=True)
 
+        if "unit.enable-ssh" in data:
+            # This is handled by the wifi client
+            self.ws.emit(Message("mycroft.enable.ssh"))
+            self.ws.emit(Message("speak", {
+                'utterance': "SSH will be enabled on next boot"}))
+            time.sleep(4)
+            subprocess.call('systemctl reboot -i', shell=True)
+
     def stop(self):
         self.alive = False
 
