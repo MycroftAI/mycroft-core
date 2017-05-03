@@ -560,9 +560,9 @@ class WiFi:
             self.stop()
 
     def update_time(self, event=None):
-        LOG.info("Updating Time")
         try:
             call("ntpd -gq")
+            LOG.info("Updating Time")
         except Exception as e:
             LOG.error("Error: {0}".format(e))
 
