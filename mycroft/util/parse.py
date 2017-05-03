@@ -1,3 +1,6 @@
+
+# -*- coding: iso-8859-15 -*-
+
 # Copyright 2017 Mycroft AI, Inc.
 #
 # This file is part of Mycroft Core.
@@ -30,6 +33,8 @@ def normalize(text, lang="en-us", remove_articles=True):
     """
     if str(lang).lower().startswith("en"):
         return normalize_en(text, remove_articles)
+    elif str(lang).lower().startswith("es"):
+        return normalize_es(text, remove_articles)
 
     # TODO: Normalization for other languages
     return text
@@ -98,6 +103,46 @@ def normalize_en(text, remove_articles):
                        "seventeen", "eighteen", "nineteen", "twenty"]
         if word in textNumbers:
             word = str(textNumbers.index(word))
+
+        normalized += " " + word
+
+    return normalized[1:]  # strip the initial space
+
+
+# TODO: move to indepent file
+# TODO: parse of all numbers
+
+articles_es = ["el", "la", "los", "las", "un", "una", "unos", "unas"]
+textNumbers_es = [
+               u"cero", u"uno", u"dos", u"tres", u"cuatro",
+               u"cinco", u"seis", u"siete", u"ocho", u"nueve",
+               u"diez", u"once", u"doce", u"trece", u"catorce",
+               u"quince", u"dieciséis", u"diecisiete",
+               u"dieciocho", u"diecinueve",
+               u"veinte", u"veintiuno", u"veintidós",
+               u"veintitrés", u"veinticuatro",
+               u"veinticinco", u"veintiséis", u"veintisiete",
+               u"veintiocho", u"veintinueve"]
+
+
+def normalize_es(text, remove_articles):
+    """ Spanish string normalization """
+
+    words = text.split()  # this also removed extra spaces
+    normalized = ""
+    for word in words:
+        if remove_articles and word in articles_es:
+            continue
+
+        # Expand common contractions, e.g. "isn't" -> "is not"
+        contraction = []  # spanish has not contractions
+        if word in contraction:
+            expansion = []
+            word = expansion[contraction.index(word)]
+
+        # Convert numbers into digits, e.g. "two" -> "2": from 0 to 29
+        if word in textNumbers_es:
+            word = str(textNumbers_es.index(word))
 
         normalized += " " + word
 
