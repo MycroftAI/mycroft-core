@@ -179,17 +179,17 @@ class DeviceApi(Api):
     def find(self):
         """ Deprecated, see get_location() """
         # TODO: Eliminate ASAP, for backwards compatibility only
-        return self.get(self)
+        return self.get()
 
     def find_setting(self):
         """ Deprecated, see get_settings() """
         # TODO: Eliminate ASAP, for backwards compatibility only
-        return self.get_settings(self)
+        return self.get_settings()
 
     def find_location(self):
         """ Deprecated, see get_location() """
         # TODO: Eliminate ASAP, for backwards compatibility only
-        return self.get_location(self)
+        return self.get_location()
 
 
 class STTApi(Api):
