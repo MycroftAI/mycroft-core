@@ -42,19 +42,20 @@ The process is as follows
 import os.path
 import subprocess
 import time
+import mycroft.util
 
 forever = True
 
-filename = "/tmp/mycroft/ipc/mic_level"
+mic_level_file = os.path.join(get_ipc_directory(), "mic_level")
 """string: location of the mic level file"""
 
 pid_files = ['service','skills','voice']
 #start_mycroft = []
 
+#Expand the the pid_files to the full path of the pid files
 for i, filex in enumerate(pid_files):
-    pid_files[i] = "/tmp/mycroft/"+filex+".pid"
+    pid_files[i] = os.path.join(get_ipc_directory(), filex+".pid")
     #start_mycroft.append(["./start.sh",filex])
-"""Expand the the pid_files to the full path of the pid files"""
 
 
 #start_mycroft = [["./mycroft.sh","start","-v"]]
@@ -68,14 +69,15 @@ oldData = ""
 
 time_idle = 0
 
-if os.path.isfile(filename):
+if os.path.isfile(mic_level_file):
     oldData = open(filename).read()
     indata = oldData
+    #Note: The following code may be needed as an alternate workflow.
     #while(indata==oldData):
     #    time.sleep(1)
     #    print "Waiting for File Changes"
     #    indata = open(filename).read()
-"""setup for no change of mic file"""
+    #setup for no change of mic file
 
 while forever:
     if os.path.isfile(filename):
@@ -85,11 +87,11 @@ while forever:
             print("File Not changed")
             time_idle = time_idle + 1
             if (time_idle > 20):
-                """restart pulseaudio and set source to 0"""
+                #restart pulseaudio and set source to 0
                 subprocess.call(["pulseaudio","-k"])
                 subprocess.call(["pulseaudio","-D"])
                 subprocess.call(["pacmd","set-default-source","0"])
-                """kill mycroft using pid files."""
+                #kill mycroft using pid files.
                 for filen in pid_files:
                     pid = int(open(filen).read())
                     print "Kill -9",pid
@@ -100,13 +102,15 @@ while forever:
                     removing the kill above and just use the script.
                 """
                 subprocess.call(["ssh","pi@localhost","./restart_mycroft.sh"])
+                #Note: the following lines of code used to start services after kill
+                #     Using the script restart_mycroft.sh instead.
                 #subprocess.call(["ssh","pi@localhost","sudo","systemctl","start","mycroft-messagebus"])
                 #subprocess.call(["ssh","pi@localhost","sudo","systemctl","start","mycroft-skills"])
                 #subprocess.call(["ssh","pi@localhost","sudo","systemctl","start","mycroft-speech-client"])
                 #for startx in start_mycroft:
                 #    subprocess.call(startx)
                 time_idle = 0
-                """Watch for mic file changes again and abort after a min"""
+                #Watch for mic file changes again and abort after a min
                 while((indata==oldData)and(time_idle<3)):
                     time.sleep(20)
                     time_idle = time_idle + 1
@@ -119,6 +123,6 @@ while forever:
             print("File Changed")
 
 def on_term():
-    """consider used for handeling termination but seems to work without.
-    Might want to use this later to terminate by handling kill."""
+    #consider used for handeling termination but seems to work without.
+    #Might want to use this later to terminate by handling kill.
     forever = False
