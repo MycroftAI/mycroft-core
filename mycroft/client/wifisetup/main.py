@@ -57,37 +57,37 @@ LOG = getLogger("WiFiClient")
 
 SCRIPT_DIR = dirname(realpath(__file__))
 
-WPA_SUPPLICANT = """# mycroft_p2p_start
- ctrl_interface = /var / run / wpa_supplicant
- driver_param = p2p_device = 1
- update_config = 1
- device_name = mycroft - holmes - i
- device_type = 1 - 0050F204 - 1
- p2p_go_intent = 10
- p2p_go_ht40 = 1
+WPA_SUPPLICANT = """#mycroft_p2p_start
+ctrl_interface=/var/run/wpa_supplicant
+driver_param=p2p_device=1
+update_config=1
+device_name=mycroft-holmes-i
+device_type=1-0050F204-1
+p2p_go_intent=10
+p2p_go_ht40=1
 
- network = {
-     ssid = "MYCROFT"
-     psk = "MYCROFT1"
-     proto = RSN
-     key_mgmt = WPA - PSK
-     pairwise = CCMP
-     auth_alg = OPEN
-     mode = 3
-     disabled = 2
- }
+network={
+    ssid="MYCROFT"
+    psk="MYCROFT1"
+    proto=RSN
+    key_mgmt=WPA-PSK
+    pairwise=CCMP
+    auth_alg=OPEN
+    mode=3
+    disabled=2
+}
 
- network = {
-     ssid = "MYCROFT"
-     psk = "MYCROFT1"
-     proto = RSN
-     key_mgmt = WPA - PSK
-     pairwise = CCMP
-     auth_alg = OPEN
-     mode = 3
-     disabled = 2
- }
- # mycroft_p2p_end"""
+network={
+    ssid="MYCROFT"
+    psk="MYCROFT1"
+    proto=RSN
+    key_mgmt=WPA-PSK
+    pairwise=CCMP
+    auth_alg=OPEN
+    mode=3
+    disabled=2
+}
+#mycroft_p2p_end"""
 
 RM_SKILLS = """mkdir /opt/mycroft/safety &&
  mv /opt/mycroft/skills/skill-pairing /opt/mycroft/safety &&
