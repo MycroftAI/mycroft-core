@@ -149,6 +149,9 @@ class EnclosureReader(Thread):
             time.sleep(4)
             subprocess.call('systemctl reboot -i', shell=True)
 
+        if "mycroft.mark1.demo" in data:
+            self.ws.emit(Message("mycroft.mark1.demo"))
+
     def stop(self):
         self.alive = False
 
