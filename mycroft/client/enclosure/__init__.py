@@ -137,7 +137,7 @@ class EnclosureReader(Thread):
             self.ws.emit(Message("mycroft.wifi.reset"))
             self.ws.emit(Message("speak", {
                 'utterance': "This unit has been reset"}))
-            time.sleep(4)
+            time.sleep(5)
             self.ws.emit(Message("enclosure.mouth.reset"))
             subprocess.call('systemctl reboot -i', shell=True)
 
@@ -146,7 +146,7 @@ class EnclosureReader(Thread):
             self.ws.emit(Message("mycroft.enable.ssh"))
             self.ws.emit(Message("speak", {
                 'utterance': "SSH will be enabled on next boot"}))
-            time.sleep(4)
+            time.sleep(5)
             subprocess.call('systemctl reboot -i', shell=True)
 
         if "mycroft.mark1.demo" in data:
