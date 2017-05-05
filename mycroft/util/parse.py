@@ -31,9 +31,11 @@ def normalize(text, lang="en-us", remove_articles=True):
     Returns:
         (str): The normalized string.
     """
-    if str(lang).lower().startswith("en"):
+
+    lang_lower = str(lang).lower()
+    if lang_lower.startswith("en"):
         return normalize_en(text, remove_articles)
-    elif str(lang).lower().startswith("es"):
+    elif lang_lower.startswith("es"):
         return normalize_es(text, remove_articles)
 
     # TODO: Normalization for other languages
@@ -109,54 +111,187 @@ def normalize_en(text, remove_articles):
     return normalized[1:]  # strip the initial space
 
 
-# TODO: it should be modular in indepent files
-# TODO: numbers greaters than 100
+####################################################################
+# Spanish normalization
+#
+# TODO: numbers greater than 999999
+####################################################################
 
-es_articles = ["el", "la", "los", "las", "un", "una", "unos", "unas"]
-es_numbers_0_9 = [
-               "cero", "uno", "dos", "tres", "cuatro",
-               "cinco", "seis", "siete", "ocho", "nueve"]
-es_numbers_10_29 = [
-               u"diez", u"once", u"doce", u"trece", u"catorce",
-               u"quince", u"dieciséis", u"diecisiete",
-               u"dieciocho", u"diecinueve",
-               u"veinte", u"veintiuno", u"veintidós",
-               u"veintitrés", u"veinticuatro",
-               u"veinticinco", u"veintiséis", u"veintisiete",
-               u"veintiocho", u"veintinueve"]
-es_numbers_10n = ["treinta", "cuarenta", "cincuenta", "sesenta",
-                  "setenta", "ochenta", "noventa"]
+# Undefined articles ["un", "una", "unos", "unas"] can not be supressed,
+# in Spanish, "un caballo" means "a horse" or "one horse".
+es_articles = ["el", "la", "los", "las"]
+
+es_numbers_xlat = {
+    "un": 1,
+    "uno": 1,
+    "una": 1,
+    "dos": 2,
+    "tres": 3,
+    "cuatro": 4,
+    "cinco": 5,
+    "seis": 6,
+    "siete": 7,
+    "ocho": 8,
+    "nueve": 9,
+    "diez": 10,
+    "once": 11,
+    "doce": 12,
+    "trece": 13,
+    "catorce": 14,
+    "quince": 15,
+    u"dieciséis": 16,
+    "diecisiete": 17,
+    "dieciocho": 18,
+    "diecinueve": 19,
+    "veinte": 20,
+    "veintiuno": 21,
+    u"veintidós": 22,
+    u"veintitrés": 23,
+    "veinticuatro": 24,
+    "veinticinco": 25,
+    u"veintiséis": 26,
+    "veintisiete": 27,
+    "veintiocho": 28,
+    "veintinueve": 29,
+    "treinta": 30,
+    "cuarenta": 40,
+    "cincuenta": 50,
+    "sesenta": 60,
+    "setenta": 70,
+    "ochenta": 80,
+    "noventa": 90,
+    "cien": 100,
+    "ciento": 100,
+    "doscientos": 200,
+    "doscientas": 200,
+    "trescientos": 300,
+    "trescientas": 300,
+    "cuatrocientos": 400,
+    "cuatrocientas": 400,
+    "quinientos": 500,
+    "quinientas": 500,
+    "seiscientos": 600,
+    "seiscientas": 600,
+    "setecientos": 700,
+    "setecientas": 700,
+    "ochocientos": 800,
+    "ochocientas": 800,
+    "novecientos": 900,
+    "novecientas": 900}
+
+
+def es_parse(words, i):
+    def es_cte(i, s):
+        if i < len(words) and s == words[i]:
+            return s, i+1
+        return None
+
+    def es_number_word(i, mi, ma):
+        if i < len(words):
+            v = es_numbers_xlat.get(words[i])
+            if v and v >= mi and v <= ma:
+                return v, i+1
+        return None
+
+    def es_number_1_99(i):
+        r1 = es_number_word(i, 1, 29)
+        if r1:
+            return r1
+
+        r1 = es_number_word(i, 30, 90)
+        if r1:
+            v1, i1 = r1
+            r2 = es_cte(i1, "y")
+            if r2:
+                v2, i2 = r2
+                r3 = es_number_word(i2, 1, 9)
+                if r3:
+                    v3, i3 = r3
+                    return v1+v3, i3
+            return r1
+        return None
+
+    def es_number_1_999(i):
+        # [2-9]cientos [1-99])?
+        r1 = es_number_word(i, 200, 900)
+        if r1:
+            v1, i1 = r1
+            r2 = es_number_1_99(i1)
+            if r2:
+                v2, i2 = r2
+                return v1+v2, i2
+            else:
+                return v1, i2
+
+        # ciento [1-99]
+        r1 = es_cte(i, "ciento")
+        if r1:
+            v1, i1 = r1
+            r2 = es_number_1_99(i1)
+            if r2:
+                v2, i2 = r2
+                return (100+v2, i2)
+
+        # 100
+        r1 = es_number_word(i, 100, 100)
+        if r1:
+            return r1
+
+        # [1-99]
+        r1 = es_number_1_99(i)
+        if r1:
+            return r1
+
+        return None
+
+    def es_number(i):
+        # check for cero
+        r1 = es_number_word(i, 0, 0)
+        if r1:
+            return r1
+
+        # check for [1-999] (mil [0-999])?
+        r1 = es_number_1_999(i)
+        if r1:
+            v1, i1 = r1
+            r2 = es_cte(i1, "mil")
+            if r2:
+                v2, i2 = r2
+                r3 = es_number_1_999(i2)
+                if r3:
+                    v3, i3 = r3
+                    return v1*1000+v3, i3
+                else:
+                    return v1*1000, i2
+            else:
+                return r1
+        return None
+
+    return es_number(i)
 
 
 def normalize_es(text, remove_articles):
     """ Spanish string normalization """
 
     words = text.split()  # this also removed extra spaces
+
     normalized = ""
     i = 0
-
     while i < len(words):
         word = words[i]
-        i += 1
 
         if remove_articles and word in es_articles:
+            i += 1
             continue
 
-        # Convert numbers into digits: from 0 to 99
-        elif word in es_numbers_0_9:
-            word = str(es_numbers_0_9.index(word))
-
-        elif word in es_numbers_10_29:
-            word = str(es_numbers_10_29.index(word)+10)
-
-        elif word in es_numbers_10n:
-            n = es_numbers_10n.index(word)*10+30
-            if i+1 < len(words) and words[i] == "y" and \
-               words[i+1] in es_numbers_0_9:
-                n += es_numbers_0_9.index(words[i+1])
-                i += 2
-            word = str(n)
+        # Convert numbers into digits
+        r = es_parse(words, i)
+        if r:
+            v, i = r
+            normalized += " " + str(v)
+            continue
 
         normalized += " " + word
+        i += 1
 
     return normalized[1:]  # strip the initial space

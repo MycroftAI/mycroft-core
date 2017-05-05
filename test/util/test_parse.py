@@ -1,3 +1,6 @@
+
+# -*- coding: iso-8859-15 -*-
+
 import unittest
 from mycroft.util.parse import normalize
 
@@ -192,6 +195,62 @@ class TestNormalize(unittest.TestCase):
                          "that is what I told you")
 
         self.assertEqual(normalize("whats 8 + 4"), "what is 8 + 4")
+
+    #
+    # Spanish
+    #
+    def test_articles_es(self):
+        self.assertEqual(normalize("esta es la prueba", lang="es",
+                                   remove_articles=True),
+                         "esta es prueba")
+        self.assertEqual(normalize("y otra prueba", lang="es",
+                                   remove_articles=True),
+                         "y otra prueba")
+
+    def test_numbers_es(self):
+        self.assertEqual(normalize("esto es un uno una", lang="es"),
+                         "esto es 1 1 1")
+        self.assertEqual(normalize("esto es dos tres prueba", lang="es"),
+                         "esto es 2 3 prueba")
+        self.assertEqual(normalize("esto es cuatro cinco seis prueba",
+                                   lang="es"),
+                         "esto es 4 5 6 prueba")
+        self.assertEqual(normalize("siete más ocho más nueve", lang="es"),
+                         "7 más 8 más 9")
+        self.assertEqual(normalize("diez once doce trece catorce quince",
+                                   lang="es"),
+                         "10 11 12 13 14 15")
+        self.assertEqual(normalize(u"dieciséis diecisiete", lang="es"),
+                         "16 17")
+        self.assertEqual(normalize(u"dieciocho diecinueve", lang="es"),
+                         "18 19")
+        self.assertEqual(normalize(u"veinte treinta cuarenta", lang="es"),
+                         "20 30 40")
+        self.assertEqual(normalize(u"treinta y dos caballos", lang="es"),
+                         "32 caballos")
+        self.assertEqual(normalize(u"cien caballos", lang="es"),
+                         "100 caballos")
+        self.assertEqual(normalize(u"ciento once caballos", lang="es"),
+                         "111 caballos")
+        self.assertEqual(normalize(u"había cuatrocientas una vacas",
+                                   lang="es"),
+                         u"había 401 vacas")
+        self.assertEqual(normalize(u"dos mil", lang="es"),
+                         "2000")
+        self.assertEqual(normalize(u"dos mil trescientas cuarenta y cinco",
+                         lang="es"),
+                         "2345")
+        self.assertEqual(normalize(
+                u"ciento veintitrés mil cuatrocientas cincuenta y seis",
+                lang="es"),
+            "123456")
+        self.assertEqual(normalize(
+                 u"quinientas veinticinco mil", lang="es"),
+             "525000")
+        self.assertEqual(normalize(
+                u"novecientos noventa y nueve mil novecientos noventa y nueve",
+                lang="es"),
+              "999999")
 
 
 if __name__ == "__main__":
