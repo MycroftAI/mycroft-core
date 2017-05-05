@@ -212,8 +212,8 @@ def es_parse(words, i):
         return None
 
     def es_number_1_999(i):
-        # [2-9]cientos [1-99])?
-        r1 = es_number_word(i, 200, 900)
+        # [2-9]cientos [1-99]?
+        r1 = es_number_word(i, 100, 900)
         if r1:
             v1, i1 = r1
             r2 = es_number_1_99(i1)
@@ -221,21 +221,7 @@ def es_parse(words, i):
                 v2, i2 = r2
                 return v1+v2, i2
             else:
-                return v1, i2
-
-        # ciento [1-99]
-        r1 = es_cte(i, "ciento")
-        if r1:
-            v1, i1 = r1
-            r2 = es_number_1_99(i1)
-            if r2:
-                v2, i2 = r2
-                return (100+v2, i2)
-
-        # 100
-        r1 = es_number_word(i, 100, 100)
-        if r1:
-            return r1
+                return r1
 
         # [1-99]
         r1 = es_number_1_99(i)
