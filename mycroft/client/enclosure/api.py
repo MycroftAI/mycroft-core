@@ -173,7 +173,20 @@ class EnclosureAPI:
         self.ws.emit(Message("enclosure.mouth.text", {'text': text}))
 
     def weather_display(self, img_code, temp):
-        """Show a weather icon (deprecated)"""
+        """Show a the temperature and a weather icon
+
+        Args:
+            img_code (char): one of the following icon codes
+                         0 = sunny
+                         1 = partly cloudy
+                         2 = cloudy
+                         3 = light rain
+                         4 = raining
+                         5 = stormy
+                         6 = snowing
+                         7 = wind/mist
+            temp (int): the temperature (either C or F, not indicated)
+        """
         self.ws.emit(Message("enclosure.weather.display",
                              {'img_code': img_code, 'temp': temp}))
 
