@@ -110,7 +110,7 @@ class DialogLoader(object):
         return self.__renderer
 
 
-def get(phrase, lang, context=None):
+def get(phrase, lang=None, context=None):
     """
     Looks up a resource file for the given phrase.  If no file
     is found, the requested phrase is returned as the string.
@@ -124,6 +124,10 @@ def get(phrase, lang, context=None):
     Returns:
         str: a randomized and/or translated version of the phrase
     """
+
+    if not lang:
+        from mycroft.configuration import ConfigurationManager
+        lang = ConfigurationManager.instance().get("lang")
 
     filename = "text/"+lang.lower()+"/"+phrase+".dialog"
     template = resolve_resource_file(filename)
