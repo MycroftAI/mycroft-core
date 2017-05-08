@@ -24,6 +24,7 @@ from threading import Thread, Timer
 
 import serial
 
+import mycroft.dialog
 from mycroft.client.enclosure.arduino import EnclosureArduino
 from mycroft.client.enclosure.eyes import EnclosureEyes
 from mycroft.client.enclosure.mouth import EnclosureMouth
@@ -80,7 +81,7 @@ class EnclosureReader(Thread):
             self.ws.emit(Message("enclosure.start"))
 
         if "mycroft.stop" in data:
-            create_signal('buttonPress')  # FIXME - Must use WS instead
+            create_signal('buttonPress')
             self.ws.emit(Message("mycroft.stop"))
 
         if "volume.up" in data:
@@ -138,7 +139,7 @@ class EnclosureReader(Thread):
                 shell=True)
             self.ws.emit(Message("mycroft.wifi.reset"))
             self.ws.emit(Message("speak", {
-                'utterance': "This unit has been reset"}))
+                'utterance': mycroft.dialog.get("reset to factory defaults")}))
             time.sleep(5)
             self.ws.emit(Message("enclosure.mouth.reset"))
             subprocess.call('systemctl reboot -i', shell=True)
@@ -147,9 +148,13 @@ class EnclosureReader(Thread):
             # This is handled by the wifi client
             self.ws.emit(Message("mycroft.enable.ssh"))
             self.ws.emit(Message("speak", {
-                'utterance': "SSH will be enabled on next boot"}))
-            time.sleep(5)
-            subprocess.call('systemctl reboot -i', shell=True)
+                'utterance': mycroft.dialog.get("ssh enabled")}))
+
+        if "unit.disable-ssh" in data:
+            # This is handled by the wifi client
+            self.ws.emit(Message("mycroft.disable.ssh"))
+            self.ws.emit(Message("speak", {
+                'utterance': mycroft.dialog.get("ssh disabled")}))
 
     def stop(self):
         self.alive = False
