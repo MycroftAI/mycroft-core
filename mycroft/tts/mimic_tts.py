@@ -41,6 +41,7 @@ class Mimic(TTS):
     def __init__(self, lang, voice):
         super(Mimic, self).__init__(lang, voice, MimicValidator(self))
         self.init_args()
+        self.clear_cache()
 
     def init_args(self):
         self.args = [BIN, '-voice', self.voice, '-psdur']
@@ -115,6 +116,16 @@ class Mimic(TTS):
                 delta = time() - start
                 if delta < duration:
                     sleep(duration - delta)
+
+    def clear_cache(self):
+        """ Remove all cached files. """
+        if not os.path.exists(mycroft.util.get_cache_directory('tts')):
+            return
+        for f in os.listdir(mycroft.util.get_cache_directory("tts")):
+            file_path = os.path.join(mycroft.util.get_cache_directory("tts"),
+                                     f)
+            if os.path.isfile(file_path):
+                os.unlink(file_path)
 
 
 class MimicValidator(TTSValidator):

@@ -34,7 +34,8 @@ from mycroft.lock import Lock as PIDLock  # Create/Support PID locking file
 
 logger = getLogger("SpeechClient")
 ws = None
-tts = TTSFactory.create()
+tts = None
+tts_hash = None
 lock = Lock()
 loop = None
 _last_stop_signal = 0
@@ -63,7 +64,16 @@ def handle_utterance(event):
 
 
 def mute_and_speak(utterance):
+    global tts_hash
+    global tts
+
     lock.acquire()
+    # update TTS object if configuration has changed
+    if tts_hash != hash(str(config.get('tts', ''))):
+        tts = TTSFactory.create()
+        tts.init(ws)
+        tts_hash = hash(str(config.get('tts', '')))
+
     ws.emit(Message("recognizer_loop:audio_output_start"))
     try:
         logger.info("Speak: " + utterance)
@@ -144,9 +154,15 @@ def connect():
 def main():
     global ws
     global loop
+    global config
+    global tts
+    global tts_hash
     lock = PIDLock("voice")
     ws = WebsocketClient()
+    config = ConfigurationManager.get()
+    tts = TTSFactory.create()
     tts.init(ws)
+    tts_hash = config.get('tts')
     ConfigurationManager.init(ws)
     loop = RecognizerLoop()
     loop.on('recognizer_loop:utterance', handle_utterance)
