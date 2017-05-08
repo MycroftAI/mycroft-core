@@ -138,6 +138,7 @@ class EnclosureReader(Thread):
                 'rm ~/.mycroft/identity/identity2.json',
                 shell=True)
             self.ws.emit(Message("mycroft.wifi.reset"))
+            self.ws.emit(Message("mycroft.disable.ssh"))
             self.ws.emit(Message("speak", {
                 'utterance': mycroft.dialog.get("reset to factory defaults")}))
             time.sleep(5)
