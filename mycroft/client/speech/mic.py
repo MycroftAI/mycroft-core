@@ -260,6 +260,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             recorded_too_much_silence = num_chunks > max_chunks_of_silence
             if quiet_enough and (was_loud_enough or recorded_too_much_silence):
                 phrase_complete = True
+
+            # Pressing top-button will end recording immediately
             if check_for_signal('buttonPress'):
                 phrase_complete = True
 
@@ -303,10 +305,21 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         counter = 0
 
         while not said_wake_word:
-            if check_for_signal('buttonPress'):
-                logger.debug("Button Pressed, wakeword not needed")
+            # Check if told programatically to skip the wake word for dialog
+            if check_for_signal('startListening'):
                 said_wake_word = True
                 continue
+
+            # Pressing the button can start recording (unless it is being
+            # used to mean 'stop' instead)
+            if check_for_signal('buttonPress', 1):
+                # give others time to consume this as 'stop'
+                sleep(0.25)
+                if check_for_signal('buttonPress'):
+                    # signal is still here, assume it was to begin recording
+                    logger.debug("Button Pressed, wakeword not needed")
+                    said_wake_word = True
+                    continue
 
             chunk = self.record_sound_chunk(source)
 
