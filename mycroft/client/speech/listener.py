@@ -142,8 +142,7 @@ class AudioConsumer(Thread):
             LOG.error("Could not request Speech Recognition {0}".format(e))
         except ConnectionError as e:
             LOG.error("Connection Error: {0}".format(e))
-            self.__speak(mycroft.dialog.get("not connected to the internet",
-                                            self.stt.lang))
+            self.emitter.emit("recognizer_loop:no_internet")
         except HTTPError as e:
             if e.response.status_code == 401:
                 text = "pair my device"
@@ -187,6 +186,9 @@ class RecognizerLoop(EventEmitter):
         device_index = self.config.get('device_index')
 
         self.microphone = MutableMicrophone(device_index, rate)
+        #
+        # TODO:SSP On config change we need to rebuild these objects
+        #
         # FIXME - channels are not been used
         self.microphone.CHANNELS = self.config.get('channels')
         self.mycroft_recognizer = self.create_mycroft_recognizer(rate, lang)
