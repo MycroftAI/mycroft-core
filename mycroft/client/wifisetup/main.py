@@ -574,14 +574,15 @@ class WiFi:
     def ssh_enable(self, event=None):
         LOG.info("Enabling SSH")
         try:
-            call('touch /boot/ssh', shell=True)
+            call('systemctl enable ssh.service', shell=True)
+            call('systemctl start ssh.service', shell=True)
         except Exception as e:
             LOG.error("Error: {0}".format(e))
 
     def ssh_disable(self, event=None):
         LOG.info("Disabling SSH")
         try:
-            call('rm /boot/ssh', shell=True)
+            call('systemctl stop ssh.service', shell=True)
             call('systemctl disable ssh.service', shell=True)
         except Exception as e:
             LOG.error("Error: {0}".format(e))
