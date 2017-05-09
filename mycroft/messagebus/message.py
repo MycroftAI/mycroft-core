@@ -23,36 +23,56 @@ __author__ = 'seanfitz'
 
 class Message(object):
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
     """This class is used to minipulate data to be sent over the websocket
 
         Message objects will be used to send information back and fourth
         between processes of mycroft service, voice, skill and cli
 
+=======
+    """This class is used to minipulate data to be sent over the websocket
+
+>>>>>>> 11c6ae4... This add comments to document the message class
     Attributes:
         type: type of data sent within the message.
         data: data sent within the message
         context: info about the message not part of data such as source,
             destination or domain.
     """
+<<<<<<< HEAD
 >>>>>>> 57ae8ba... Fixes and Typeo's
+=======
+>>>>>>> 11c6ae4... This add comments to document the message class
     def __init__(self, type, data={}, context=None):
+        """Used to construct a message object
+
+        Message objects will be used to send information back and fourth
+        bettween processes of mycroft service, voice, skill and cli
+        """
         self.type = type
         self.data = data
         self.context = context
 
     def serialize(self):
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> 11c6ae4... This add comments to document the message class
         """This returns a string of the message info.
 
         This makes it easy to send over a websocket. This uses
         json dumps to generate the string with type, data and context
+<<<<<<< HEAD
 
         Returns:
             str: a json string representation of the message.
         """
 >>>>>>> 57ae8ba... Fixes and Typeo's
+=======
+        """
+>>>>>>> 11c6ae4... This add comments to document the message class
         return json.dumps({
             'type': self.type,
             'data': self.data,
@@ -62,7 +82,10 @@ class Message(object):
     @staticmethod
     def deserialize(value):
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> 11c6ae4... This add comments to document the message class
         """This takes a string and constructs a message object.
 
         This makes it easy to take strings from the websocket and create
@@ -70,6 +93,7 @@ class Message(object):
         the message object.
 
         Args:
+<<<<<<< HEAD
             value(str): This is the json string received from the websocket
 
         Returns:
@@ -77,12 +101,19 @@ class Message(object):
             int the function.
         """
 >>>>>>> 57ae8ba... Fixes and Typeo's
+=======
+            value(str): This is the string received from the websocket
+        """
+>>>>>>> 11c6ae4... This add comments to document the message class
         obj = json.loads(value)
         return Message(obj.get('type'), obj.get('data'), obj.get('context'))
 
     def reply(self, type, data, context={}):
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> 11c6ae4... This add comments to document the message class
         """This is used to construct a reply message for a give message
 
         This will take the same parameters as a message object but use
@@ -98,11 +129,15 @@ class Message(object):
             type: type of message
             data: data for message
             context: intented context for new message
+<<<<<<< HEAD
 
         Returns:
             Message: Message object to be used on the reply to the message
         """
 >>>>>>> 57ae8ba... Fixes and Typeo's
+=======
+        """
+>>>>>>> 11c6ae4... This add comments to document the message class
         new_context = self.context if self.context else {}
         for key in context:
             new_context[key] = context[key]
@@ -114,22 +149,34 @@ class Message(object):
 
     def publish(self, type, data, context={}):
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
         """
 
         Copy the original context and add passed in context.  Delete
         any target in the new context. Return a new message object with
         passed in data and new context.  Type remains unchanged.
+=======
+        """
+
+        Copy the original context and add passed in context.  delete
+        any target in the new context. return a new message object with
+        passed in data and new context.  type remains unchanged.
+>>>>>>> 11c6ae4... This add comments to document the message class
 
         Args:
             type: type of message
             data: date to send with message
             context: context added to existing context
+<<<<<<< HEAD
 
         Returns:
             Message: Message object to publish
         """
 >>>>>>> 57ae8ba... Fixes and Typeo's
+=======
+        """
+>>>>>>> 11c6ae4... This add comments to document the message class
         new_context = self.context.copy() if self.context else {}
         for key in context:
             new_context[key] = context[key]
