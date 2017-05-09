@@ -57,7 +57,7 @@ LOG = getLogger("WiFiClient")
 
 SCRIPT_DIR = dirname(realpath(__file__))
 
-WPA_SUPPLICANT = """#mycroft_p2p_start
+WPA_SUPPLICANT = '''#mycroft_p2p_start
 ctrl_interface=/var/run/wpa_supplicant
 driver_param=p2p_device=1
 update_config=1
@@ -87,7 +87,7 @@ network={
     mode=3
     disabled=2
 }
-#mycroft_p2p_end"""
+#mycroft_p2p_end'''
 
 RM_SKILLS = """mkdir /opt/mycroft/safety &&
  mv /opt/mycroft/skills/skill-pairing /opt/mycroft/safety &&
@@ -564,8 +564,8 @@ class WiFi:
         LOG.info("Resetting the WPA_SUPPLICANT File")
         try:
             call(
-                "echo \"" + WPA_SUPPLICANT +
-                "\"> /etc/wpa_supplicant/wpa_supplicant.conf",
+                "echo '" + WPA_SUPPLICANT +
+                "'> /etc/wpa_supplicant/wpa_supplicant.conf",
                 shell=True)
             # UGLY BUT WORKS
             call(RM_SKILLS)
