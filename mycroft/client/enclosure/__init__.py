@@ -31,7 +31,7 @@ from mycroft.client.enclosure.weather import EnclosureWeather
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
-from mycroft.util import play_wav, create_signal
+from mycroft.util import play_wav, create_signal, connected
 from mycroft.util.audio_test import record
 from mycroft.util.log import getLogger
 
@@ -224,6 +224,9 @@ class Enclosure(object):
         Timer(5, self.stop).start()  # WHY? This at least
         # needs an explanation, this is non-obvious behavior
 
+        # Notifications from mycroft-core
+        self.ws.on("enclosure.notify.no_internet", self.on_no_internet)
+
     def start(self, event=None):
         self.eyes = EnclosureEyes(self.ws, self.writer)
         self.mouth = EnclosureMouth(self.ws, self.writer)
@@ -232,6 +235,17 @@ class Enclosure(object):
         self.__register_events()
         self.__reset()
         self.started = True
+        # verify internet connection and prompt user on bootup if needed
+        if not connected():
+            self.on_no_internet()
+
+    def on_no_internet(self, event=None):
+        # TODO: This should go into EnclosureMark1 subclass of Enclosure
+        self.ws.emit(Message("speak", {
+            'utterance': "This device is not connected to the Internet. "
+                         "Either plug in a network cable or hold the button "
+                         "on top for two seconds, then select wifi from the "
+                         "menu"}))
 
     def __init_serial(self):
         try:

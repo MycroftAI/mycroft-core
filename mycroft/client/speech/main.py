@@ -52,6 +52,11 @@ def handle_record_end():
     ws.emit(Message('recognizer_loop:record_end'))
 
 
+def handle_no_internet():
+    logger.debug("Notifying enclosure of no internet connection")
+    ws.emit(Message('enclosure.notify.no_internet'))
+
+
 def handle_wakeword(event):
     logger.info("Wakeword Detected: " + event['utterance'])
     ws.emit(Message('recognizer_loop:wakeword', event))
@@ -154,6 +159,7 @@ def main():
     loop.on('recognizer_loop:wakeword', handle_wakeword)
     loop.on('recognizer_loop:record_end', handle_record_end)
     loop.on('speak', handle_speak)
+    loop.on('recognizer_loop:no_internet', handle_no_internet)
     ws.on('open', handle_open)
     ws.on('speak', handle_speak)
     ws.on(
