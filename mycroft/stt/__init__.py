@@ -71,7 +71,7 @@ class GoogleSTT(TokenSTT):
 
     def execute(self, audio, language=None):
         self.lang = language or self.lang
-        return self.recognizer.recognize_google(audio, self.token, s)
+        return self.recognizer.recognize_google(audio, self.token, self.lang)
 
 
 class WITSTT(TokenSTT):
