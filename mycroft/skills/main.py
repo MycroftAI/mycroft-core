@@ -18,7 +18,6 @@
 
 import json
 import os
-import signal
 import subprocess
 import sys
 import time
@@ -36,9 +35,6 @@ from mycroft.skills.intent_service import IntentService
 from mycroft.util import connected
 from mycroft.util.log import getLogger
 import mycroft.dialog
-
-# ignore DIGCHLD to terminate subprocesses correctly
-signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
 logger = getLogger("Skills")
 
