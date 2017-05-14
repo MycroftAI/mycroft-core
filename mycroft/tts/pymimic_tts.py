@@ -15,19 +15,24 @@
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 from os.path import join
+import os
+import hashlib
 
 from mycroft import MYCROFT_ROOT_PATH
 from mycroft.tts import TTS, TTSValidator
 from mycroft.configuration import ConfigurationManager
+import mycroft.util
+from mycroft.util.log import getLogger
 
-import time
+from time import time, sleep
 
 import pymimic
 
 __author__ = 'forslund'
 
+LOGGER = getLogger(__name__)
 # Provide path for non-standard mimic install
-LIB = join(MYCROFT_ROOT_PATH, 'mimic-dev', 'lib')
+LIB = join(MYCROFT_ROOT_PATH, 'mimic', 'lib')
 pymimic.lib_paths.append(LIB)
 
 
@@ -36,14 +41,71 @@ class Pymimic(TTS):
         super(Pymimic, self).__init__(lang, voice, PymimicValidator(self))
         self.voice = pymimic.Voice(voice)
 
-    def execute(self, sentence):
+    def get_tts(self, sentence):
+        key = str(hashlib.md5(sentence.encode('utf-8', 'ignore')).hexdigest())
+        wav_file = os.path.join(mycroft.util.get_cache_directory("tts"),
+                                key + ".wav")
+
+        if os.path.exists(wav_file):
+            phonemes = self.load_phonemes(key)
+            if phonemes:
+                # Using cached value
+                LOGGER.debug("TTS cache hit")
+                return wav_file, phonemes
+
+        # Generate WAV and phonemes
         s = pymimic.Speak(str(sentence), self.voice)
-        s.play()
-        #  self.visime(s.phonemes)
+        s.write(wav_file)
+        self.save_phonemes(key, s.phonemes)
+        return wav_file, s.phonemes
+
+    def save_phonemes(self, key, phonemes):
+        # Clean out the cache as needed
+        s = ''
+        for p in phonemes:
+            s += p[0] + ':' + str(p[1]) + ' '
+        s = s.strip()
+        cache_dir = mycroft.util.get_cache_directory("tts")
+        mycroft.util.curate_cache(cache_dir)
+
+        pho_file = os.path.join(cache_dir, key+".pho")
+        try:
+            with open(pho_file, "w") as cachefile:
+                cachefile.write(s)
+        except:
+            LOGGER.debug("Failed to write .PHO to cache")
+            pass
+
+    def load_phonemes(self, key):
+        pho_file = os.path.join(mycroft.util.get_cache_directory("tts"),
+                                key+".pho")
+        if os.path.exists(pho_file):
+            try:
+                phonemes = []
+                with open(pho_file, 'r') as cachefile:
+                    string = cachefile.read().strip()
+                    pairs = string.split(' ')
+                    for pair in pairs:
+                        phonemes.append(pair.split(':'))
+
+                return phonemes
+            except:
+                LOGGER.error("Failed to read .PHO from cache", exc_info=True)
+        return None
+
+    def execute(self, sentence):
+        wav_file, phonemes = self.get_tts(sentence)
+
+        self.blink(0.5)
+        process = mycroft.util.play_wav(wav_file)
+        self.visime(phonemes)
+        process.communicate()
+        self.blink(0.2)
 
     def visime(self, phoneme_pairs):
+        start = time()
         for pair in phoneme_pairs:
-            if check_for_signal('buttonPress'):
+            if mycroft.util.check_for_signal('buttonPress'):
                 return
             code = VISIMES.get(pair[0], '4')
             print code, pair[1]
