@@ -175,7 +175,6 @@ class MycroftSkill(object):
         self.name = name
         self.bind(emitter)
         self.config_core = ConfigurationManager.get()
-        self.config_apis = self.config_core.get("APIS")
         self.config = self.config_core.get(name)
         self.dialog_renderer = None
         self.file_system = FileSystemAccess(join('skills', name))
@@ -271,7 +270,7 @@ class MycroftSkill(object):
         self.emitter.emit(Message("disable_intent", {"intent_name": intent_name}))
 
     def enable_intent(self, intent_name):
-        """Reenable a registered self intent"""
+        """Reenable a registered intent"""
         self.emitter.emit(Message("enable_intent", {"intent_name": intent_name}))
 
     def handle_enable_intent(self, message):
@@ -283,7 +282,6 @@ class MycroftSkill(object):
                 self.register_intent(intent, None)
                 logger.info("Enabling Intent " + intent_name)
                 return
-        logger.error("Could not Re-enable Intent " + intent_name)
 
     def handle_disable_intent(self, message):
         intent_name = message.data["intent_name"]
