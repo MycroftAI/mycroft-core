@@ -276,22 +276,27 @@ def handle_reload_skill_request(message):
 
 
 def handle_conversation_request(message):
+    global ws, loaded_skills
     skill_id = int(message.data["skill_id"])
     utterances = message.data["utterances"]
     lang = message.data["lang"]
-    global ws, loaded_skills
     # loop trough skills list and call converse for skill with skill_id
     for skill in loaded_skills:
         if loaded_skills[skill]["id"] == skill_id:
             try:
                 instance = loaded_skills[skill]["instance"]
+            except:
+                logger.error("converse requested but skill not loaded")
+                ws.emit(Message("converse_status_response", {
+                    "skill_id": 0, "result": False}))
+                return
+            try:
                 result = instance.converse(utterances, lang)
                 ws.emit(Message("converse_status_response", {
                     "skill_id": skill_id, "result": result}))
                 return
             except:
                 logger.error("Converse method malformed for skill " + str(skill_id))
-                result = False
     ws.emit(Message("converse_status_response", {
         "skill_id": 0, "result": False}))
 
