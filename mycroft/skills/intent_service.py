@@ -40,6 +40,7 @@ class IntentService(object):
         self.emitter.on('converse_status_response', self.handle_conversation_response)
         self.emitter.on('intent_request', self.handle_intent_request)
         self.emitter.on('intent_to_skill_request', self.handle_intent_to_skill_request)
+        self.emitter.on('active_skill_request', self.handle_active_skill_request)
         self.active_skills = []  # [skill_id , timestamp]
         self.skill_ids = {} # {skill_id: [intents]}
         self.converse_timeout = 5  # minutes to prune active_skills
@@ -49,8 +50,11 @@ class IntentService(object):
             "skill_id": skill_id, "utterances": utterances, "lang": lang}))
         self.waiting = True
         self.result = False
-        while self.waiting:
-            pass
+        start_time = time.time()
+        t = 0
+        while self.waiting and t < 5:
+            t = time.time() - start_time
+        self.waiting = False
         return self.result
 
     def handle_intent_to_skill_request(self, message):
@@ -84,6 +88,11 @@ class IntentService(object):
         # add skill with timestamp to start of skill_list
         self.active_skills.insert(0, [skill_id, time.time()])
 
+    def handle_active_skill_request(self, message):
+        # allow external sources to ensure converse method of this skill is called
+        skill_id = message.data["skill_id"]
+        self.add_active_skill(skill_id)
+        
     def handle_intent_request(self, message):
         utterance = message.data["utterance"]
         # Get language of the utterance
@@ -200,7 +209,7 @@ class IntentService(object):
 
 
 class IntentParser():
-    def __init__(self, emitter, time_out = 20):
+    def __init__(self, emitter, time_out=5):
         self.emitter = emitter
         self.waiting = False
         self.intent = ""
