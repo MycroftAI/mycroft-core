@@ -226,7 +226,7 @@ def _watch_skills():
                     elif not skill["instance"].reload_skill:
                         continue
                     logger.debug("Reloading Skill: " + skill_folder)
-                    # remove listeners and stopping threads
+                    # removing listeners and stopping threads
                     try:
                         logger.debug("Shutting down Skill: " + skill_folder)
                         skill["instance"].shutdown()
@@ -248,49 +248,27 @@ def _watch_skills():
 
 
 def handle_shutdown_skill_request(message):
-    global ws, loaded_skills
+    global loaded_skills
     skill_id = message.data["skill_id"]
     for skill in loaded_skills:
         if loaded_skills[skill]["id"] == skill_id:
-            try:
-                if loaded_skills[skill]["loaded"]:
-                    logger.debug("Shutting down " + str(skill_id))
-                    if loaded_skills[skill]["instance"].external_shutdown:
-                        loaded_skills[skill]["instance"].shutdown()
-                        del loaded_skills[skill]["instance"]
-                    else:
-                        logger.debug("external skill shutdown requested but not allowed by skill")
-            except:
-                logger.debug("skill already shutdown, marking as do_not_load")
             # avoid auto-reload
             loaded_skills[skill]["do_not_load"] = True
             loaded_skills[skill]["shutdown"] = True
             loaded_skills[skill]["reload_request"] = False
             loaded_skills[skill]["loaded"] = False
-            return
 
 
 def handle_reload_skill_request(message):
-    global ws, loaded_skills
+    global loaded_skills
     skill_id = message.data["skill_id"]
     for skill in loaded_skills:
         if loaded_skills[skill]["id"] == skill_id:
-            try:
-                logger.info("Shutting down for reload " + str(skill_id))
-                if loaded_skills[skill]["instance"].external_reload:
-                    loaded_skills[skill]["instance"].shutdown()
-                    del loaded_skills[skill]["instance"]
-                else:
-                    logger.debug("external skill reload requested but not allowed by skill")
-                    return
-            except:
-                logger.debug("skill already shutdown, marking to reload")
-
             loaded_skills[skill]["reload_request"] = True
             loaded_skills[skill]["do_not_load"] = False
             loaded_skills[skill]["shutdown"] = False
             loaded_skills[skill]["loaded"] = False
-    # _watch_skills will reload
+    
 
 
 def handle_conversation_request(message):
