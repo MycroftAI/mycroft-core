@@ -275,7 +275,7 @@ class MycroftSkill(object):
                 return
 
     def enable_intent(self, intent_name):
-        """Reenable a registered self intent"""
+        """Reenable a registered intent"""
         for (name, intent) in self.registered_intents:
             if name == intent_name:
                 self.registered_intents.remove((name, intent))
