@@ -77,6 +77,9 @@ class SkillContainer(object):
                                   port=params.port,
                                   ssl=params.use_ssl)
 
+        # Connect configuration manager to message bus to receive updates
+        ConfigurationManager.init(self.ws)
+
     def load_skill(self):
         if self.enable_intent:
             IntentService(self.ws)
