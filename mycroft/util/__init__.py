@@ -136,6 +136,11 @@ def read_dict(filename, div='='):
 
 
 def create_file(filename):
+    """ Create the file filename and create any directories needed
+
+        Args:
+            filename: Path to the file to be created
+    """
     try:
         os.makedirs(dirname(filename))
     except OSError:
@@ -301,9 +306,9 @@ def create_signal(signal_name):
             valid in filenames.
     """
     try:
-        with open(os.path.join(get_ipc_directory(), "signal", signal_name),
-                  'w'):
-            return True
+        path = os.path.join(get_ipc_directory(), "signal", signal_name)
+        create_file(path)
+        return os.path.isfile(path)
     except IOError:
         return False
 
@@ -321,7 +326,6 @@ def check_for_signal(signal_name, sec_lifetime=0):
         bool: True if the signal is defined, False otherwise
     """
     path = os.path.join(get_ipc_directory(), "signal", signal_name)
-
     if os.path.isfile(path):
         if sec_lifetime == 0:
             # consume this single-use signal

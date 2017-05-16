@@ -19,6 +19,7 @@
 import re
 import sys
 from threading import Thread, Lock
+import time
 
 from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.client.speech.listener import RecognizerLoop
@@ -27,7 +28,7 @@ from mycroft.identity import IdentityManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.tts import TTSFactory
-from mycroft.util import kill, create_signal
+from mycroft.util import kill, create_signal, check_for_signal
 from mycroft.util.log import getLogger
 from mycroft.lock import Lock as PIDLock  # Create/Support PID locking file
 
@@ -36,6 +37,7 @@ ws = None
 tts = TTSFactory.create()
 lock = Lock()
 loop = None
+_last_stop_signal = 0
 
 config = ConfigurationManager.get()
 
@@ -80,6 +82,8 @@ def handle_multi_utterance_intent_failure(event):
 
 
 def handle_speak(event):
+    global _last_stop_signal
+
     utterance = event.data['utterance']
     expect_response = event.data.get('expect_response', False)
 
@@ -92,6 +96,7 @@ def handle_speak(event):
     # TODO: Remove or make an option?  This is really a hack, anyway,
     # so we likely will want to get rid of this when not running on Mimic
     if not config.get('enclosure', {}).get('platform') == "picroft":
+        start = time.time()
         chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s',
                           utterance)
         for chunk in chunks:
@@ -99,11 +104,13 @@ def handle_speak(event):
                 mute_and_speak(chunk)
             except:
                 logger.error('Error in mute_and_speak', exc_info=True)
+            if _last_stop_signal > start or check_for_signal('buttonPress'):
+                break
     else:
         mute_and_speak(utterance)
 
     if expect_response:
-        create_signal('buttonPress')
+        create_signal('startListening')
 
 
 def handle_sleep(event):
@@ -115,6 +122,8 @@ def handle_wake_up(event):
 
 
 def handle_stop(event):
+    global _last_stop_signal
+    _last_stop_signal = time.time()
     kill([config.get('tts').get('module')])
     kill(["aplay"])
 

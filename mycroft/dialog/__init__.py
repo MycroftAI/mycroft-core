@@ -19,7 +19,7 @@
 import pystache
 import os
 import random
-from mycroft.util import log
+from mycroft.util import log, resolve_resource_file
 
 __author__ = 'seanfitz'
 logger = log.getLogger(__name__)
@@ -40,11 +40,9 @@ class MustacheDialogRenderer(object):
         """
         Load a template by file name into the templates cache.
 
-        :param template_name: a unique identifier for a group of templates.
-
-        :param filename: a fully qualified filename of a mustache template.
-
-        :return:
+        Args:
+            template_name (str): a unique identifier for a group of templates
+            filename (str): a fully qualified filename of a mustache template.
         """
         with open(filename, 'r') as f:
             for line in f:
@@ -56,20 +54,20 @@ class MustacheDialogRenderer(object):
 
     def render(self, template_name, context={}, index=None):
         """
-        Given a template name, pick a template and render it with the provided
-        context.
+        Given a template name, pick a template and render it using the context
 
-        :param template_name: the name of a template group.
+        Args:
+            template_name (str): the name of a template group.
+            context (dict): dictionary representing values to be rendered
+            index (int): optional, the specific index in the collection of
+                templates
 
-        :param context: dictionary representing values to be rendered
+        Returns:
+            str: the rendered string
 
-        :param index: optional, the specific index in the collection of
-            templates
-
-        :raises NotImplementedError: if no template can be found identified by
-            template_name
-
-        :return:
+        Raises:
+            NotImplementedError: if no template can be found identified by
+                template_name
         """
         if template_name not in self.templates:
             raise NotImplementedError("Template not found: %s" % template_name)
@@ -92,9 +90,11 @@ class DialogLoader(object):
         """
         Load all dialog files within the specified directory.
 
-        :param dialog_dir: directory that contains dialog files
+        Args:
+            dialog_dir (str): directory that contains dialog files
 
-        :return: a loaded instance of a dialog renderer
+        Returns:
+            a loaded instance of a dialog renderer
         """
         if not os.path.exists(dialog_dir) or not os.path.isdir(dialog_dir):
             logger.warn("No dialog found: " + dialog_dir)
@@ -108,3 +108,35 @@ class DialogLoader(object):
                 dialog_entry_name, os.path.join(dialog_dir, f))
 
         return self.__renderer
+
+
+def get(phrase, lang=None, context=None):
+    """
+    Looks up a resource file for the given phrase.  If no file
+    is found, the requested phrase is returned as the string.
+    This will use the default language for translations.
+
+    Args:
+        phrase (str): resource phrase to retrieve/translate
+        lang (str): the language to use
+        context (dict): values to be inserted into the string
+
+    Returns:
+        str: a randomized and/or translated version of the phrase
+    """
+
+    if not lang:
+        from mycroft.configuration import ConfigurationManager
+        lang = ConfigurationManager.instance().get("lang")
+
+    filename = "text/"+lang.lower()+"/"+phrase+".dialog"
+    template = resolve_resource_file(filename)
+    if not template:
+        logger.debug("Resource file not found: " + filename)
+        return phrase
+
+    stache = MustacheDialogRenderer()
+    stache.load_template_file("template", template)
+    if not context:
+        context = {}
+    return stache.render("template", context)

@@ -38,6 +38,7 @@ class DynamicEnergytest(unittest.TestCase):
     def setUp(self):
         pass
 
+    @unittest.skip('Disabled while unittests are brought upto date')
     def testMaxAudioWithBaselineShift(self):
         low_base = b"".join(["\x10\x00\x01\x00"] * 100)
         higher_base = b"".join(["\x01\x00\x00\x01"] * 100)

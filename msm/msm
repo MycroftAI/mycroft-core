@@ -81,18 +81,20 @@ function install() {
 
 function update() {
         cd $mycroft_skill_folder
-	for d in *; do
+	for d in $(ls -d */); do
 		if git -C "$d" rev-parse --git-dir > /dev/null 2>&1; then
 			cd $d
-			git fetch
-			git reset --hard origin/master 
+			if [[ -z $(git status --porcelain) ]]; then
+				git fetch
+				git reset --hard origin/master 
+			fi
 			cd ..
 		fi
 	done
 }
 
 function install_defaults() {
-	skills=( "alarm" "audio-record" "configuration" "date-time" "desktop-launcher" "ip" "joke" "hello-world" "media" "npr-news" "naptime" "pairing" "personal" "reminder" "installer" "speak" "spelling" "stop" "stock" "volume" "weather" "wiki" "wolfram-alpha" )
+	skills=( "alarm" "audio-record" "configuration" "date-time" "desktop-launcher" "ip" "joke" "hello-world" "media" "npr-news" "naptime" "pairing" "personal" "reminder" "installer" "singing" "speak" "spelling" "stop" "stock" "volume" "weather" "wiki" "wolfram-alpha" "mark1-demo" )
 	for i in "${skills[@]}"
 	do
 		if [ ! -d "$mycroft_skill_folder/skill-$i" ]; then
@@ -101,6 +103,7 @@ function install_defaults() {
 	done
 	update
 	echo "Installed!"
+	exit 0
 }
 
 function list() {
@@ -108,7 +111,7 @@ function list() {
 }
 
 if [ "$1" = "install" ]; then
-        install $*
+	install $*
 elif [ "$1" = "list" ]; then
 	echo -e "Searching...\n"
 	list 
@@ -117,5 +120,6 @@ elif [ "$1" = "update" ]; then
 elif [ "$1" = "default" ]; then
 	install_defaults 
 else
-        help
+	help
 fi
+

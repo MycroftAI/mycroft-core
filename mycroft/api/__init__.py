@@ -1,3 +1,20 @@
+# Copyright 2017 Mycroft AI, Inc.
+#
+# This file is part of Mycroft Core.
+#
+# Mycroft Core is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Mycroft Core is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
+
 from copy import copy
 
 import requests
@@ -11,6 +28,8 @@ __author__ = 'jdorleans'
 
 
 class Api(object):
+    """ Generic object to wrap web APIs """
+
     def __init__(self, path):
         self.path = path
         config = ConfigurationManager().get()
@@ -109,6 +128,8 @@ class Api(object):
 
 
 class DeviceApi(Api):
+    """ Web API wrapper for obtaining device-level information """
+
     def __init__(self):
         super(DeviceApi, self).__init__("device")
 
@@ -129,27 +150,66 @@ class DeviceApi(Api):
                      "enclosureVersion": version.get("enclosureVersion")}
         })
 
-    def find(self):
+    def get(self):
+        """ Retrieve all device information from the web backend """
         return self.request({
             "path": "/" + self.identity.uuid
         })
 
-    def find_setting(self):
+    def get_settings(self):
+        """ Retrieve device settings information from the web backend
+
+        Returns:
+            str: JSON string with user configuration information.
+        """
         return self.request({
             "path": "/" + self.identity.uuid + "/setting"
         })
 
-    def find_location(self):
+    def get_location(self):
+        """ Retrieve device location information from the web backend
+
+        Returns:
+            str: JSON string with user location.
+        """
         return self.request({
             "path": "/" + self.identity.uuid + "/location"
         })
 
+    def find(self):
+        """ Deprecated, see get_location() """
+        # TODO: Eliminate ASAP, for backwards compatibility only
+        return self.get()
+
+    def find_setting(self):
+        """ Deprecated, see get_settings() """
+        # TODO: Eliminate ASAP, for backwards compatibility only
+        return self.get_settings()
+
+    def find_location(self):
+        """ Deprecated, see get_location() """
+        # TODO: Eliminate ASAP, for backwards compatibility only
+        return self.get_location()
+
 
 class STTApi(Api):
+    """ Web API wrapper for performing Speech to Text (STT) """
+
     def __init__(self):
         super(STTApi, self).__init__("stt")
 
     def stt(self, audio, language, limit):
+        """ Web API wrapper for performing Speech to Text (STT)
+
+        Args:
+            audio (bytes): The recorded audio, as in a FLAC file
+            language (str): A BCP-47 language code, e.g. "en-US"
+            limit (int): Maximum minutes to transcribe(?)
+
+        Returns:
+            str: JSON structure with transcription results
+        """
+
         return self.request({
             "method": "POST",
             "headers": {"Content-Type": "audio/x-flac"},
