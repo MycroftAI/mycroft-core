@@ -176,7 +176,7 @@ var WifiSetup = {
             error.classList.add("error-item");
             imgClose.src = "img/error.png";
             var message = document.createElement("span");
-            message.textContent = "Try again or connect to a diferent wifi.";
+            message.textContent = "Try again or connect to a different wifi.";
             error.appendChild(message);
             error.appendChild(imgClose);
             li.appendChild(error);
