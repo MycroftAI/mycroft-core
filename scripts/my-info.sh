@@ -176,8 +176,8 @@ checkpulse () {
 mlog "Sound settings..."
 if hash pactl && [[ ${RUN_AS_ROOT} -eq 1 ]] ; then
     mlog " - $(echo "Pulse Audio Defaults:" && pactl info | grep "Default S[i,o]")"
-    mlog " - $(echo "Pulse Audio Sinks:" && pactl list sinks | grep -e ^Sink  -e 'Name:' -e 'device.description' -e 'product_name' -e udev.id -e State:)"
-    mlog " - $(echo "Pulse Audio Sources:" && pactl list sources| grep -e ^Sourc -e 'Name:' -e 'device.description' -e 'product_name' -e udev.id -e State:)"
+    mlog " - $(echo "Pulse Audio Sinks:" && pactl list sinks | grep -e ^Sink  -e 'Name:' -e 'device.description' -e 'product_name' -e udev.id -e 'State:')"
+    mlog " - $(echo "Pulse Audio Sources:" && pactl list sources| grep -e ^Sourc -e 'Name:' -e 'device.description' -e 'product_name' -e udev.id -e 'State:')"
 else 
     mlog " = Error: Can't run pactl, skipping audio checks."
 fi
