@@ -219,6 +219,8 @@ class Enclosure(object):
     E.g. Start and Stop talk animation
     """
 
+    _last_internet_notification = 0
+
     def __init__(self):
         self.ws = WebsocketClient()
         ConfigurationManager.init(self.ws)
@@ -243,7 +245,6 @@ class Enclosure(object):
 
         # Notifications from mycroft-core
         self.ws.on("enclosure.notify.no_internet", self.on_no_internet)
-        self.last_internet_notification = 0
 
     def on_arduino_responded(self, event=None):
         self.eyes = EnclosureEyes(self.ws, self.writer)
@@ -267,11 +268,11 @@ class Enclosure(object):
             # One last check to see if connection was established
             return
 
-        if time.time()-self.last_internet_notification < 30:
+        if time.time()-Enclosure._last_internet_notification < 30:
             # don't bother the user with multiple notifications with 30 secs
             return
 
-        self.last_internet_notification = time.time()
+        Enclosure._last_internet_notification = time.time()
 
         # TODO: This should go into EnclosureMark1 subclass of Enclosure.
         # Handle the translation within that code.
