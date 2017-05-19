@@ -287,4 +287,11 @@ class _ConfigurationListener(object):
 
     @staticmethod
     def updated(message):
-        ConfigurationManager.update(message.data)
+        """
+            Event handler for configuration update events. Forces a reload
+            of all configuration sources.
+
+            Args:
+                message:    message bus message structure
+        """
+        ConfigurationManager.load_defaults()
