@@ -70,6 +70,10 @@ class AudioProducer(Thread):
                     # http://stackoverflow.com/questions/10733903/pyaudio-input-overflowed
                     self.emitter.emit("recognizer_loop:ioerror", ex)
 
+    def stop(self):
+        self.state.running = False
+        self.recognizer.stop()
+
 
 class AudioConsumer(Thread):
     """
@@ -101,7 +105,7 @@ class AudioConsumer(Thread):
 
         if self.state.sleeping:
             self.wake_up(audio)
-        else:
+        elif audio is not None:
             self.process(audio)
 
     # TODO: Localization
@@ -179,7 +183,14 @@ class RecognizerLoopState(object):
 class RecognizerLoop(EventEmitter):
     def __init__(self):
         super(RecognizerLoop, self).__init__()
+        self._load_config()
+
+    def _load_config(self):
+        """
+            Load configuration parameters from configuration
+        """
         config = ConfigurationManager.get()
+        self._config_hash = hash(str(config))
         lang = config.get('lang')
         self.config = config.get('listener')
         rate = self.config.get('sample_rate')
@@ -213,13 +224,21 @@ class RecognizerLoop(EventEmitter):
     def start_async(self):
         self.state.running = True
         queue = Queue()
-        AudioProducer(self.state, queue, self.microphone,
-                      self.remote_recognizer, self).start()
-        AudioConsumer(self.state, queue, self, STTFactory.create(),
-                      self.wakeup_recognizer, self.mycroft_recognizer).start()
+        self.producer = AudioProducer(self.state, queue, self.microphone,
+                                      self.remote_recognizer, self)
+        self.producer.start()
+        self.consumer = AudioConsumer(self.state, queue, self,
+                                      STTFactory.create(),
+                                      self.wakeup_recognizer,
+                                      self.mycroft_recognizer)
+        self.consumer.start()
 
     def stop(self):
         self.state.running = False
+        self.producer.stop()
+        # wait for threads to shutdown
+        self.producer.join()
+        self.consumer.join()
 
     def mute(self):
         if self.microphone:
@@ -240,6 +259,17 @@ class RecognizerLoop(EventEmitter):
         while self.state.running:
             try:
                 time.sleep(1)
+                if self._config_hash != hash(str(ConfigurationManager()
+                                                 .get())):
+                    LOG.debug('Config has changed, reloading...')
+                    self.reload()
             except KeyboardInterrupt as e:
                 LOG.error(e)
                 self.stop()
+
+    def reload(self):
+        self.stop()
+        # load config
+        self._load_config()
+        # restart
+        self.start_async()

@@ -165,6 +165,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         # check the config for the flag to save wake words.
         self.save_wake_words = listener_config.get('record_wake_words')
         self.mic_level_file = os.path.join(get_ipc_directory(), "mic_level")
+        self._stop_signaled = False
 
     @staticmethod
     def record_sound_chunk(source):
@@ -291,6 +292,9 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         return False
 
+    def stop(self):
+        self._stop_signaled = True
+
     def _wait_until_wake_word(self, source, sec_per_buffer):
         """Listen continuously on source until a wake word is spoken
 
@@ -324,10 +328,9 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         counter = 0
 
-        while not said_wake_word:
+        while not said_wake_word and not self._stop_signaled:
             if self._skip_wake_word():
                 break
-
             chunk = self.record_sound_chunk(source)
 
             energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
@@ -419,6 +422,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         logger.debug("Waiting for wake word...")
         self._wait_until_wake_word(source, sec_per_buffer)
+        if self._stop_signaled:
+            return
 
         logger.debug("Recording...")
         emitter.emit("recognizer_loop:record_begin")
