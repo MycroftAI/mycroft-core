@@ -293,6 +293,9 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         return False
 
     def stop(self):
+        """
+            Signal stop and exit waiting state.
+        """
         self._stop_signaled = True
 
     def _wait_until_wake_word(self, source, sec_per_buffer):

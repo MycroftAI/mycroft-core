@@ -71,6 +71,9 @@ class AudioProducer(Thread):
                     self.emitter.emit("recognizer_loop:ioerror", ex)
 
     def stop(self):
+        """
+            Stop producer thread.
+        """
         self.state.running = False
         self.recognizer.stop()
 
@@ -181,6 +184,10 @@ class RecognizerLoopState(object):
 
 
 class RecognizerLoop(EventEmitter):
+    """
+        EventEmitter loop running speech recognition. Local wake word
+        recognizer and remote general speech recognition.
+    """
     def __init__(self):
         super(RecognizerLoop, self).__init__()
         self._load_config()
@@ -197,9 +204,6 @@ class RecognizerLoop(EventEmitter):
         device_index = self.config.get('device_index')
 
         self.microphone = MutableMicrophone(device_index, rate)
-        #
-        # TODO:SSP On config change we need to rebuild these objects
-        #
         # FIXME - channels are not been used
         self.microphone.CHANNELS = self.config.get('channels')
         self.mycroft_recognizer = self.create_mycroft_recognizer(rate, lang)
@@ -222,6 +226,9 @@ class RecognizerLoop(EventEmitter):
         return LocalRecognizer(wake_word, phonemes, threshold, rate, lang)
 
     def start_async(self):
+        """
+            Start consumer and producer threads
+        """
         self.state.running = True
         queue = Queue()
         self.producer = AudioProducer(self.state, queue, self.microphone,
@@ -268,6 +275,9 @@ class RecognizerLoop(EventEmitter):
                 self.stop()
 
     def reload(self):
+        """
+            Reload configuration and restart consumer and producer
+        """
         self.stop()
         # load config
         self._load_config()
