@@ -68,7 +68,7 @@ p2p_go_ht40=1
 
 network={
     ssid="MYCROFT"
-    psk="MYCROFT1"
+    psk="12345678"
     proto=RSN
     key_mgmt=WPA-PSK
     pairwise=CCMP
@@ -79,7 +79,7 @@ network={
 
 network={
     ssid="MYCROFT"
-    psk="MYCROFT1"
+    psk="12345678"
     proto=RSN
     key_mgmt=WPA-PSK
     pairwise=CCMP
