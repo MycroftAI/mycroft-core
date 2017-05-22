@@ -309,7 +309,7 @@ class WiFi:
         self._speak_and_show(
             prefix + " Use your mobile device or computer to "
                      "connect to the wifi network "
-                     "'MYCROFT';  Then enter the uppercase "
+                     "'MYCROFT';  Then enter the "
                      "password " + passwordSpelled,
             self.ap.password)
 
