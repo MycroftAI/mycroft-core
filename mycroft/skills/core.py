@@ -18,8 +18,6 @@
 
 import abc
 import imp
-import time
-
 import os.path
 import re
 import signal
@@ -37,6 +35,7 @@ from mycroft.util.log import getLogger
 
 __author__ = 'seanfitz'
 
+BLACKLISTED_SKILLS = ["send_sms", "media"]
 
 skills_config = ConfigurationManager.instance().get("skills")
 BLACKLISTED_SKILLS = skills_config["blacklisted_skills"]
@@ -351,6 +350,7 @@ class MycroftSkill(object):
         process termination. The skill implementation must
         shutdown all processes and operations in execution.
         """
+
         # removing events
         for e, f in self.events:
             self.emitter.remove(e, f)
