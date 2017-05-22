@@ -22,7 +22,6 @@ import time
 
 import os.path
 import re
-import signal
 import time
 from os.path import join, dirname, splitext, isdir
 
