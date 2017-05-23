@@ -42,6 +42,7 @@ FRACTION_STRING_EN = {
     20: 'twentyith'
 }
 
+
 def nice_number(number, lang="en-us", speech=True, denominators=None):
     """Format a float to human readable functions
 
@@ -64,7 +65,7 @@ def nice_number(number, lang="en-us", speech=True, denominators=None):
         if num == 0:
             return str(whole)
         else:
-         return '{} {}/{}'.format(whole, num, den)
+            return '{} {}/{}'.format(whole, num, den)
 
     lang_lower = str(lang).lower()
     if lang_lower.startswith("en"):
@@ -72,6 +73,7 @@ def nice_number(number, lang="en-us", speech=True, denominators=None):
 
     # TODO: Normalization for other languages
     return str(number)
+
 
 def nice_number_en(result):
     """ English conversion for nice_number """
@@ -86,7 +88,8 @@ def nice_number_en(result):
     if num > 1:
         return_string += 's'
     return return_string
-        
+
+
 def convert_number(number, denominators):
     """ Convert floats to mixed fractions """
     int_number = int(number)
@@ -105,11 +108,3 @@ def convert_number(number, denominators):
         return None
 
     return int_number, int(round(numerator)), denominator
-    
-
-
-        
-
-    
-
-    
