@@ -57,16 +57,25 @@ def connect():
 
 
 def install_default_skills(speak=True):
+    """
+        Install default skill set using msm.
+
+        Args:
+            speak (optional): Enable response for success. Default True
+    """
     if exists(MSM_BIN):
-        p = subprocess.Popen(MSM_BIN + " default", stderr=subprocess.STDOUT,
-                             stdout=subprocess.PIPE, shell=True)
-        t = p.communicate()[0]
-        if t.splitlines()[-1] == "Installed!" and speak:
+        res = subprocess.call(MSM_BIN + " default", stderr=subprocess.STDOUT,
+                              stdout=subprocess.PIPE, shell=True)
+        if res == 0 and speak:
             ws.emit(Message("speak", {
                 'utterance': mycroft.dialog.get("skills updated")}))
         elif not connected():
             ws.emit(Message("speak", {
                 'utterance': mycroft.dialog.get("no network connection")}))
+        elif res != 0:
+            ws.emit(Message("speak", {
+                'utterance': mycroft.dialog.get(
+                             "sorry I couldn't install default skills")}))
 
     else:
         logger.error("Unable to invoke Mycroft Skill Manager: " + MSM_BIN)
