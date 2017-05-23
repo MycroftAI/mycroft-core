@@ -82,7 +82,12 @@ def nice_number_en(result):
         return str(whole)
     den_str = FRACTION_STRING_EN[den]
     if whole == 0:
-        return_string = '{} {}'.format(num, den_str)
+        if num == 1:
+            return_string = 'a {}'.format(den_str)
+        else:
+            return_string = '{} {}'.format(num, den_str)
+    elif num == 1:
+        return_string = '{} and a {}'.format(whole, den_str)
     else:
         return_string = '{} and {} {}'.format(whole, num, den_str)
     if num > 1:
