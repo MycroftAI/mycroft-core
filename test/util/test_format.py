@@ -54,6 +54,14 @@ class TestNieceNumberFormat(unittest.TestCase):
                     nice_number(2.333, denominators=[1,2])
                 ))
 
+    def test_no_speech(self):
+        self.assertEqual(nice_number(6.777, speech=False), \
+                '6 7/9', \
+                'should format 6.777 as 6 7/9 not {}'.format(
+                    nice_number(6.777, speech=False)
+                ))
+
+
     def test_different_language(self):
         self.assertEqual(nice_number(5.5, lang="es-us"), '5.5', \
                 'should format 5.5 as 5.5 not {}'.format(
