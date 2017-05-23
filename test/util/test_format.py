@@ -34,40 +34,40 @@ numbers_fixture = {
     0.05: '1 twentyith'
 }
 
+
 class TestNieceNumberFormat(unittest.TestCase):
 
     def test_convert_float_to_nice_number(self):
         for number, number_str in numbers_fixture.items():
-            self.assertEqual(nice_number(number), number_str, \
-                'should format {} as {} and not {}'.format(
-                    number, number_str, nice_number(number)))
+            self.assertEqual(nice_number(number), number_str,
+                             'should format {} as {} and not {}'.format(
+                             number, number_str, nice_number(number)))
 
     def test_specify_denominator(self):
-        self.assertEqual(nice_number(5.5, denominators=[1,2,3]), \
-                '5 and 1 half', \
-                'should format 5.5 as 5 and 1 half not {}'.format(
-                    nice_number(5.5, denominators=[1,2,3])
-                ))
-        self.assertEqual(nice_number(2.333, denominators=[1,2]), \
-                '2.333', \
-                'should format 2.333 as 2.333 not {}'.format(
-                    nice_number(2.333, denominators=[1,2])
-                ))
+        self.assertEqual(nice_number(5.5, denominators=[1, 2, 3]),
+                         '5 and 1 half',
+                         'should format 5.5 as 5 and 1 half not {}'.format(
+                         nice_number(5.5, denominators=[1, 2, 3])))
+        self.assertEqual(nice_number(2.333, denominators=[1, 2]),
+                         '2.333',
+                         'should format 2.333 as 2.333 not {}'.format(
+                         nice_number(2.333, denominators=[1, 2])))
 
     def test_no_speech(self):
-        self.assertEqual(nice_number(6.777, speech=False), \
-                '6 7/9', \
-                'should format 6.777 as 6 7/9 not {}'.format(
-                    nice_number(6.777, speech=False)
-                ))
-
+        self.assertEqual(nice_number(6.777, speech=False),
+                         '6 7/9',
+                         'should format 6.777 as 6 7/9 not {}'.format(
+                         nice_number(6.777, speech=False)))
+        self.assertEqual(nice_number(6.0, speech=False),
+                         '6',
+                         'should format 6.0 as 6 not {}'.format(
+                         nice_number(6.0, speech=False)))
 
     def test_different_language(self):
-        self.assertEqual(nice_number(5.5, lang="es-us"), '5.5', \
-                'should format 5.5 as 5.5 not {}'.format(
-                    nice_number(5.5, lang="es-us")
-                ))
-        
+        self.assertEqual(nice_number(5.5, lang="es-us"), '5.5',
+                         'should format 5.5 as 5.5 not {}'.format(
+                         nice_number(5.5, lang="es-us")))
+
 
 if __name__ == "__main__":
     unittest.main()
