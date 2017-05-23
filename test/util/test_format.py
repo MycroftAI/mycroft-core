@@ -9,11 +9,11 @@ numbers_fixture = {
     2: '2',
     5.0: '5',
     0.027: '0.027',
-    0.5: '1 half',
-    1.333: '1 and 1 third',
+    0.5: 'a half',
+    1.333: '1 and a third',
     2.666: '2 and 2 thirds',
-    0.25: '1 forth',
-    1.25: '1 and 1 forth',
+    0.25: 'a forth',
+    1.25: '1 and a forth',
     0.75: '3 forths',
     1.75: '1 and 3 forths',
     3.4: '3 and 2 fifths',
@@ -21,17 +21,17 @@ numbers_fixture = {
     12.5714: '12 and 4 sevenths',
     9.625: '9 and 5 eigths',
     6.777: '6 and 7 ninths',
-    3.1: '3 and 1 tenth',
+    3.1: '3 and a tenth',
     2.272: '2 and 3 elevenths',
     5.583: '5 and 7 twelveths',
     8.384: '8 and 5 thirteenths',
-    0.071: '1 fourteenth',
+    0.071: 'a fourteenth',
     6.466: '6 and 7 fifteenths',
     8.312: '8 and 5 sixteenths',
     2.176: '2 and 3 seventeenths',
     200.722: '200 and 13 eighteenths',
     7.421: '7 and 8 nineteenths',
-    0.05: '1 twentyith'
+    0.05: 'a twentyith'
 }
 
 
@@ -45,8 +45,8 @@ class TestNieceNumberFormat(unittest.TestCase):
 
     def test_specify_denominator(self):
         self.assertEqual(nice_number(5.5, denominators=[1, 2, 3]),
-                         '5 and 1 half',
-                         'should format 5.5 as 5 and 1 half not {}'.format(
+                         '5 and a half',
+                         'should format 5.5 as 5 and a half not {}'.format(
                          nice_number(5.5, denominators=[1, 2, 3])))
         self.assertEqual(nice_number(2.333, denominators=[1, 2]),
                          '2.333',
