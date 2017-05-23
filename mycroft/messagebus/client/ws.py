@@ -100,6 +100,9 @@ class WebsocketClient(object):
     def remove(self, event_name, func):
         self.emitter.remove_listener(event_name, func)
 
+    def remove_all_listeners(self, event_name):
+        self.emitter.remove_all_listeners(event_name)
+
     def run_forever(self):
         self.client.run_forever()
 
