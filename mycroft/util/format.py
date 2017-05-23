@@ -60,6 +60,7 @@ def nice_number(number, lang="en-us", speech=True, denominators=None):
         return str(round(number, 3))
 
     if not speech:
+        whole, num, den = result
         if num == 0:
             return str(whole)
         else:
