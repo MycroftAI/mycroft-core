@@ -158,13 +158,13 @@ def load_services_callback():
         logger.info('no default found')
     logger.info('Default:' + str(default))
 
-    ws.on('MycroftAudioServicePlay', _play)
-    ws.on('MycroftAudioServicePause', _pause)
-    ws.on('MycroftAudioServiceResume', _resume)
-    ws.on('MycroftAudioServiceStop', _stop)
-    ws.on('MycroftAudioServiceNext', _next)
-    ws.on('MycroftAudioServicePrev', _prev)
-    ws.on('MycroftAudioServiceTrackInfo', _track_info)
+    ws.on('mycroft.audio.service.play', _play)
+    ws.on('mycroft.audio.service.pause', _pause)
+    ws.on('mycrofr.audio.service.resume', _resume)
+    ws.on('mycroft.audio.service.stop', _stop)
+    ws.on('mycroft.audio.service.next', _next)
+    ws.on('mycroft.audio.service.prev', _prev)
+    ws.on('mycroft.audio.service.track_info', _track_info)
     ws.on('recognizer_loop:audio_output_start', _lower_volume)
     ws.on('recognizer_loop:audio_output_end', _restore_volume)
 
@@ -173,7 +173,8 @@ def load_services_callback():
 
 def _pause(message=None):
     """
-        Handler for MycroftAudioServicePause. Pauses the current audio service.
+        Handler for mycroft.audio.service.pause. Pauses the current audio
+        service.
 
         Args:
             message: message bus message, not used but required
@@ -185,7 +186,7 @@ def _pause(message=None):
 
 def _resume(message=None):
     """
-        Handler for MycroftAudioResume.
+        Handler for mycroft.audio.service.resume.
 
         Args:
             message: message bus message, not used but required
@@ -197,8 +198,8 @@ def _resume(message=None):
 
 def _next(message=None):
     """
-        Handler for MycroftAudioNext. Skips current track and starts playing
-        the next.
+        Handler for mycroft.audio.service.next. Skips current track and
+        starts playing the next.
 
         Args:
             message: message bus message, not used but required
@@ -210,7 +211,8 @@ def _next(message=None):
 
 def _prev(message=None):
     """
-        Handler for MycroftAudioPrev. Starts playing the previous track.
+        Handler for mycroft.audio.service.prev. Starts playing the previous
+        track.
 
         Args:
             message: message bus message, not used but required
@@ -222,7 +224,7 @@ def _prev(message=None):
 
 def _stop(message=None):
     """
-        Handler for MycroftStop. Stops any playing service.
+        Handler for mycroft.stop. Stops any playing service.
 
         Args:
             message: message bus message, not used but required
@@ -311,14 +313,14 @@ def play(tracks, prefered_service):
 
 def _play(message):
     """
-        Handler for MycroftAudioPlay. Starts playback of a tracklist. Also
-        determines if the user requested a special service.
+        Handler for mycroft.audio.service.play. Starts playback of a
+        tracklist. Also  determines if the user requested a special service.
 
         Args:
             message: message bus message, not used but required
     """
     global service
-    logger.info('MycroftAudioServicePlay')
+    logger.info('mycroft.audio.service.play')
     logger.info(message.data['tracks'])
 
     tracks = message.data['tracks']
@@ -347,7 +349,7 @@ def _track_info(message):
         track_info = self.current.track_info()
     else:
         track_info = {}
-    self.emitter.emit(Message('MycroftAudioServiceTrackInfoReply',
+    self.emitter.emit(Message('mycroft.audio.service.track_info_reply',
                               data=track_info))
 
 
@@ -365,7 +367,7 @@ def main():
         try:
             _message = json.loads(message)
 
-            if _message.get("type")[:12] != 'MycroftAudio':
+            if 'mycroft.audio.service' in _message.get('type'):
                 return
             message = json.dumps(_message)
         except:

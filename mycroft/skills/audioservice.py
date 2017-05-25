@@ -28,7 +28,7 @@ class AudioService():
     """
     def __init__(self, emitter):
         self.emitter = emitter
-        self.emitter.on('MycroftAudioServiceTrackInfoReply', self._track_info)
+        self.emitter.on('mycroft.audio.service.info_reply', self._track_info)
         self.info = None
 
     def _track_info(self, message=None):
@@ -50,25 +50,25 @@ class AudioService():
         elif not isinstance(tracks, list):
             raise ValueError
         tracks = [ensure_uri(t) for t in tracks]
-        self.emitter.emit(Message('MycroftAudioServicePlay',
+        self.emitter.emit(Message('mycroft.audio.service.play',
                                   data={'tracks': tracks,
                                         'utterance': utterance}))
 
     def next(self):
         """ Change to next track. """
-        self.emitter.emit(Message('MycroftAudioServiceNext'))
+        self.emitter.emit(Message('mycroft.audio.service.next'))
 
     def prev(self):
         """ Change to previous track. """
-        self.emitter.emit(Message('MycroftAudioServicePrev'))
+        self.emitter.emit(Message('mycroft.audio.service.prev'))
 
     def pause(self):
         """ Pause playback. """
-        self.emitter.emit(Message('MycroftAudioServicePause'))
+        self.emitter.emit(Message('mycroft.audio.service.pause'))
 
     def resume(self):
         """ Resume paused playback. """
-        self.emitter.emit(Message('MycroftAudioServiceResume'))
+        self.emitter.emit(Message('mycroft.audio.service.resume'))
 
     def track_info(self):
         """ Request information of current playing track.
@@ -77,7 +77,7 @@ class AudioService():
                 Dict with track info.
         """
         self.info = None
-        self.emitter.emit(Message('MycroftAudioServiceTrackInfo'))
+        self.emitter.emit(Message('mycroft.audio.service.track_info'))
         while self.info is None:
             time.sleep(0.1)
         return self.info
