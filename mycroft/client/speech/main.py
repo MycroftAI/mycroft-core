@@ -64,6 +64,7 @@ def handle_wakeword(event):
 
 def handle_utterance(event):
     logger.info("Utterance: " + str(event['utterances']))
+    event["source"] = "speech"
     ws.emit(Message('recognizer_loop:utterance', event))
 
 
@@ -91,7 +92,10 @@ def handle_speak(event):
 
     utterance = event.data['utterance']
     expect_response = event.data.get('expect_response', False)
-
+    mute = event.data["mute"]
+    target = event.data["target"]
+    if target != "all" and target != "speech":
+        return
     # This is a bit of a hack for Picroft.  The analog audio on a Pi blocks
     # for 30 seconds fairly often, so we don't want to break on periods
     # (decreasing the chance of encountering the block).  But we will
@@ -100,19 +104,20 @@ def handle_speak(event):
     #
     # TODO: Remove or make an option?  This is really a hack, anyway,
     # so we likely will want to get rid of this when not running on Mimic
-    if not config.get('enclosure', {}).get('platform') == "picroft":
-        start = time.time()
-        chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s',
-                          utterance)
-        for chunk in chunks:
-            try:
-                mute_and_speak(chunk)
-            except:
-                logger.error('Error in mute_and_speak', exc_info=True)
-            if _last_stop_signal > start or check_for_signal('buttonPress'):
-                break
-    else:
-        mute_and_speak(utterance)
+    if not mute:
+        if not config.get('enclosure', {}).get('platform') == "picroft":
+            start = time.time()
+            chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s',
+                              utterance)
+            for chunk in chunks:
+                try:
+                    mute_and_speak(chunk)
+                except:
+                    logger.error('Error in mute_and_speak', exc_info=True)
+                if _last_stop_signal > start or check_for_signal('buttonPress'):
+                    break
+        else:
+            mute_and_speak(utterance)
 
     if expect_response:
         create_signal('startListening')
