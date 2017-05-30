@@ -20,6 +20,7 @@
 
 # ==============================================================
 
+
 # def extractnumber(text, lang="en-us", remove_articles=True):
 def extractnumber(text, lang="en-us"):
     """Takes in a string and extracts a number.
@@ -81,7 +82,7 @@ def extractnumber_en(text):
             val = 1
         elif word == "second":
             val = 2
-        elif isFractional(word) != False:
+        elif isFractional(word):
             val = isFractional(word)
         else:
             if word == "one":
@@ -104,28 +105,31 @@ def extractnumber_en(text):
                 val = 9
             elif word == "ten":
                 val = 10
-            if val != False:
+            if val:
                 if count < (len(aWords) - 1):
                     wordNext = aWords[count+1]
                 else:
                     wordNext = ""
                 valNext = isFractional(wordNext)
 
-                if valNext != False:
+                if valNext:
                     val = val * valNext
                     aWords[count+1] = ""
 
-        if val == False:
+        # if val == False:
+        if not val:
             # look for fractions like "2/3"
             aPieces = word.split('/')
-            if (len(aPieces) == 2 and is_numeric(aPieces[0]) and is_numeric(aPieces[1])):
+            # if (len(aPieces) == 2 and is_numeric(aPieces[0])
+            #   and is_numeric(aPieces[1])):
+            if look_for_fractions(aPieces):
                 val = float(aPieces[0]) / float(aPieces[1])
             elif andPass:
-                # there was nfloat(o "and" th)at float(added to value, quit here)
+                # added to value, quit here
                 val = valPreAnd
                 break
             else:
-                count+=1
+                count += 1
                 continue
 
         aWords[count] = ""
@@ -137,25 +141,45 @@ def extractnumber_en(text):
             andPass = True
             valPreAnd = val
             val = False
-            count+=2
+            count += 2
             continue
         elif count+2 < len(aWords) and aWords[count+2] == 'and':
             andPass = True
             valPreAnd = val
             val = False
-            count+=3
+            count += 3
             continue
 
         break
 
-    if val == False:
+    # if val == False:
+    if not val:
         return False
 
-    # Return the $str with the number related words removed (now empty strings, so strlen == 0)
+    # Return the $str with the number related words removed
+    # (now empty strings, so strlen == 0)
     aWords = [word for word in aWords if len(word) > 0]
     text = ' '.join(aWords)
 
     return val
+
+
+def look_for_fractions(split_list):
+    """"
+    This function takes a list made by fraction & determines if a fraction.
+
+    Args:
+        split_list (list): list created by splitting on '/'
+    Returns:
+        (bool): False if not a fraction, otherwise True
+
+    """
+
+    if len(split_list) == 2:
+        if is_numeric(split_list[0]) and is_numeric(split_list[1]):
+            return True
+
+    return False
 
 
 def isFractional(input_str):
@@ -171,7 +195,8 @@ def isFractional(input_str):
     if input_str.endswith('s', -1):
         input_str = input_str[:len(input_str)-1]		# e.g. "fifths"
 
-    aFrac = ["whole", "half", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth", "eleventh", "twelfth"];
+    aFrac = ["whole", "half", "third", "fourth", "fifth", "sixth",
+             "seventh", "eighth", "ninth", "tenth", "eleventh", "twelfth"]
 
     if input_str.lower() in aFrac:
         return 1.0/(aFrac.index(input_str)+1)
@@ -181,6 +206,7 @@ def isFractional(input_str):
     return False
 
 # ==============================================================
+
 
 def normalize(text, lang="en-us", remove_articles=True):
     """Prepare a string for parsing
