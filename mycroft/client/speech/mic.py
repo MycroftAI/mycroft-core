@@ -130,10 +130,6 @@ class MutableMicrophone(Microphone):
 
 
 class ResponsiveRecognizer(speech_recognition.Recognizer):
-    # The maximum audio in seconds to keep for transcribing a phrase
-    # The wake word must fit in this time
-    SAVED_WW_SEC = 1.0
-
     # Padding of silence when feeding to pocketsphinx
     SILENCE_SEC = 0.01
 
@@ -157,6 +153,12 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
     SEC_BETWEEN_WW_CHECKS = 0.2
 
     def __init__(self, wake_word_recognizer):
+        # The maximum audio in seconds to keep for transcribing a phrase
+        # The wake word must fit in this time
+        num_phonemes = len(listener_config.get('phonemes').split())
+        len_phoneme = listener_config.get('phoneme_duration', 120) / 1000.0
+        self.SAVED_WW_SEC = num_phonemes * len_phoneme
+
         speech_recognition.Recognizer.__init__(self)
         self.wake_word_recognizer = wake_word_recognizer
         self.audio = pyaudio.PyAudio()
