@@ -40,7 +40,6 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extractnumber("three quarter cups"), 3.0/4.0)
         self.assertEqual(extractnumber("three quarters cups"), 3.0/4.0)
 
-
     def test_spaces(self):
         self.assertEqual(normalize("  this   is  a    test"),
                          "this is test")
