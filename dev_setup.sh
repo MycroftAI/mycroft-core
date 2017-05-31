@@ -64,7 +64,7 @@ cd ${TOP}
 ${TOP}/scripts/install-mimic.sh
 
 #build and install pedatious
-#still under development, comment the below out to use
+#still under development, uncomment the below out to use
 #cd ${TOP}
 #${TOP}/scripts/install-pedatious.sh
 
