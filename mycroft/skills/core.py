@@ -198,6 +198,7 @@ class MycroftSkill(object):
         self.config_core = ConfigurationManager.get()
         self.config = self.config_core.get(self.name)
         self.dialog_renderer = None
+        self.vocab_dir = None
         self.file_system = FileSystemAccess(join('skills', self.name))
         self.registered_intents = []
         self.log = getLogger(self.name)
@@ -285,29 +286,8 @@ class MycroftSkill(object):
             self.register_intent(intent_parser, handler, need_self=True)
         _intent_list = []
 
-    def register_intent(self, intent_parser, handler, need_self=False):
-        """
-            Register an Intent with the intent service.
-
-            Args:
-                intent_parser: Intent or IntentBuilder object to parse
-                               utterance for the handler.
-                handler:       handler_function
-                need_self:     optional parameter, when called from a decorated
-                               intent handler the function will need the self
-                               variable passed as well.
-        """
-        if type(intent_parser) == IntentBuilder:
-            intent_parser = intent_parser.build()
-        elif type(intent_parser) != Intent:
-            raise ValueError('intent_parser is not an Intent')
-
-        name = intent_parser.name
-        intent_parser.name = str(self.skill_id) + ':' + intent_parser.name
-        self.emitter.emit(Message("register_intent", intent_parser.__dict__))
-        self.registered_intents.append((name, intent_parser))
-
-        def receive_handler(message):
+    def add_event(self, name, handler, need_self=False):
+        def wrapper(message):
             try:
                 if need_self:
                     # When registring from decorator self is required
@@ -322,10 +302,48 @@ class MycroftSkill(object):
                 logger.error(
                     "An error occurred while processing a request in " +
                     self.name, exc_info=True)
-
         if handler:
-            self.emitter.on(intent_parser.name, receive_handler)
-            self.events.append((intent_parser.name, receive_handler))
+            self.emitter.on(name, wrapper)
+            self.events.append((name, wrapper))
+
+    def register_intent(self, intent_parser, handler, need_self=False):
+        """
+            Register an Intent with the intent service.
+
+            Args:
+                intent_parser: Intent or IntentBuilder object to parse
+                               utterance for the handler.
+                handler:       function to register with intent
+                need_self:     optional parameter, when called from a decorated
+                               intent handler the function will need the self
+                               variable passed as well.
+        """
+        if type(intent_parser) == IntentBuilder:
+            intent_parser = intent_parser.build()
+        elif type(intent_parser) != Intent:
+            raise ValueError('intent_parser is not an Intent')
+
+        name = intent_parser.name
+        intent_parser.name = self.name + ':' + intent_parser.name
+        self.emitter.emit(Message("register_intent", intent_parser.__dict__))
+        self.registered_intents.append((name, intent_parser))
+        self.add_event(intent_parser.name, handler)
+
+    def register_intent_file(self, intent_file, handler):
+        """
+            Register an Intent file with the intent service.
+
+            Args:
+                intent_file: name of file that contains example queries
+                             that should activate the intent
+                handler:     function to register with intent
+        """
+        intent_name = self.name + ':' + intent_file
+        self.emitter.emit(Message("padatious:register_intent", {
+            "file_name": join(self.vocab_dir, intent_file),
+            "intent_name": intent_name
+        }))
+        self.add_event(intent_name, handler)
 
     def disable_intent(self, intent_name):
         """Disable a registered intent"""
@@ -404,6 +422,7 @@ class MycroftSkill(object):
             self.load_regex_files(regex_path)
 
     def load_vocab_files(self, vocab_dir):
+        self.vocab_dir = vocab_dir
         if os.path.exists(vocab_dir):
             load_vocabulary(vocab_dir, self.emitter)
         else:
