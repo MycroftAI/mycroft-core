@@ -4,9 +4,9 @@
 #STILL UNDER CONSTRUCTION
 set -Ee
 
-PEDATIOUS_DIR=pedatious
+PADATIOUS_DIR=padatious
 CORES=$(nproc)
-PEDATIOUS_VERSION=0.1
+PADATIOUS_VERSION=0.1
 
 # for ubuntu precise in travis, that does not provide pkg-config:
 pkg-config --exists icu-i18n || export CFLAGS="$CFLAGS -I/usr/include/x86_64-linux-gnu"
@@ -18,18 +18,23 @@ sudo apt-get install python3 ninja-build build-essential \
     && pip3 install --user meson
 
 # download and install pedatious
-if [ ! -d ${PEDATIOUS_DIR} ]; then
-    git clone --branch ${PEDATIOUS_VERSION} https://github.com/MycroftAI/pedatious.git
-    cd ${PEDATIOUS_DIR}
-    make -j$CORES
+if [ ! -d ${PADATIOUS_DIR} ]; then
+    #TODO: add versioning later
+    git clone https://github.com/MycroftAI/pedatious.git
+    cd ${PADATIOUS_DIR}
+    meson build
+    cd build
+    ninja clean # Optional; same as make clean
+    ninja
 else
     # ensure pedatious is up to date
-    cd ${PEDATIOUS_DIR}
+    cd ${PADATIOUS_DIR}
     make clean 2> /dev/null || true
-    git remote add all-branches https://github.com/mycroftai/pedatious/ 2> /dev/null || true
+    git remote add all-branches https://github.com/mycroftai/padatious/ 2> /dev/null || true
     git fetch --all --tags --prune
-    git checkout tags/${PEDATIOUS_VERSION}
-    make clean
-    make -j$CORES
-    make install
+    #TODO: Add versioning
+    meson build
+    cd build
+    ninja clean # Optional; same as make clean
+    ninja
 fi
