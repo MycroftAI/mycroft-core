@@ -66,7 +66,7 @@ ${TOP}/scripts/install-mimic.sh
 #build and install pedatious
 #still under development, uncomment the below out to use
 #cd ${TOP}
-#${TOP}/scripts/install-pedatious.sh
+#${TOP}/scripts/install-padatious.sh
 
 # install pygtk for desktop_launcher skill
 ${TOP}/scripts/install-pygtk.sh
