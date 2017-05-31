@@ -43,6 +43,7 @@ class EnclosureMouth:
         self.ws.on('enclosure.mouth.smile', self.smile)
         self.ws.on('enclosure.mouth.viseme', self.viseme)
         self.ws.on('enclosure.mouth.text', self.text)
+        self.ws.on('encolsure.mouth.display', self.display)
 
     def reset(self, event=None):
         self.writer.write("mouth.reset")
@@ -70,3 +71,9 @@ class EnclosureMouth:
         if event and event.data:
             text = event.data.get("text", text)
         self.writer.write("mouth.text=" + text)
+    
+    def display(self, event=None):
+        code = ""
+        if event and event.data:
+            code = event.data.get("img_code", None)
+        self.writer.write("mouth.icon=" + code)

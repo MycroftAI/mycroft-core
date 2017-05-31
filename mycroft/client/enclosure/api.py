@@ -171,6 +171,13 @@ class EnclosureAPI:
             text (str): text string to display
         """
         self.ws.emit(Message("enclosure.mouth.text", {'text': text}))
+    
+    def mouth_display(self, img_code=""):
+        """Display images 
+        Args:
+            img_code (str): text string that encodes a black and white image 
+        """
+        self.ws.emit(Message("enclosure.mouth.display", {'img_code': img_code}))
 
     def weather_display(self, img_code, temp):
         """Show a the temperature and a weather icon
