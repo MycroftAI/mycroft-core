@@ -29,7 +29,6 @@ if [ ! -d ${PADATIOUS_DIR} ]; then
 else
     # ensure pedatious is up to date
     cd ${PADATIOUS_DIR}
-    make clean 2> /dev/null || true
     git remote add all-branches https://github.com/mycroftai/padatious/ 2> /dev/null || true
     git fetch --all --tags --prune
     #TODO: Add versioning
