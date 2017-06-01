@@ -20,7 +20,7 @@ sudo apt-get install python3 ninja-build build-essential \
 # download and install pedatious
 if [ ! -d ${PADATIOUS_DIR} ]; then
     #TODO: add versioning later
-    git clone https://github.com/MycroftAI/pedatious.git
+    git clone https://github.com/MycroftAI/padatious.git
     cd ${PADATIOUS_DIR}
     meson build
     cd build
