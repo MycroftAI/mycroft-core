@@ -121,6 +121,7 @@ class TTSFactory(object):
     from mycroft.tts.mary_tts import MaryTTS
     from mycroft.tts.mimic_tts import Mimic
     from mycroft.tts.spdsay_tts import SpdSay
+    from mycroft.tts.pymimic_tts import Pymimic
 
     CLASSES = {
         "mimic": Mimic,
@@ -128,7 +129,8 @@ class TTSFactory(object):
         "marytts": MaryTTS,
         "fatts": FATTS,
         "espeak": ESpeak,
-        "spdsay": SpdSay
+        "spdsay": SpdSay,
+        "pymimic": Pymimic
     }
 
     @staticmethod
