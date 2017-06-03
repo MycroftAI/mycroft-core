@@ -1,0 +1,9 @@
+{
+  "utterance": "what is 25 minus 7",
+  "intent_type": "MathIntent",
+  "intent": {
+    "Value1": "25",
+    "MathKeyword": "-",
+    "Value2": "7"
+  }
+}
