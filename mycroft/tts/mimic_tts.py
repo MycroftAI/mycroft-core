@@ -98,30 +98,18 @@ class Mimic(TTS):
 
     def execute(self, sentence):
         wav_file, phonemes = self.get_tts(sentence)
-
-        self.blink(0.5)
-        process = mycroft.util.play_wav(wav_file)
-        self.visime(phonemes)
-        process.communicate()
-        self.blink(0.2)
+        print "ADDING TO QUEUE!"
+        self.queue.put(('wav', wav_file, self.visime(phonemes)))
 
     def visime(self, output):
+        visimes = []
         start = time()
         pairs = output.split(" ")
         for pair in pairs:
-            if mycroft.util.check_for_signal('buttonPress'):
-                return
-            if mycroft.util.check_for_signal('stoppingTTS', -1):
-                return
             pho_dur = pair.split(":")  # phoneme:duration
             if len(pho_dur) == 2:
-                code = VISIMES.get(pho_dur[0], '4')
-                duration = float(pho_dur[1])
-                delta = time() - start
-                if delta < duration:
-                    if self.enclosure:
-                        self.enclosure.mouth_viseme(code)
-                    sleep(duration - delta)
+                visimes.append((VISIMES.get(pho_dur[0], '4'), float(pho_dur[1])))
+        return visimes
 
     def clear_cache(self):
         """ Remove all cached files. """

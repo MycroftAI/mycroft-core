@@ -17,16 +17,73 @@
 import random
 from abc import ABCMeta, abstractmethod
 from os.path import dirname, exists, isdir
+from threading import Thread
+from Queue import Queue
+from time import time, sleep
 
 from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.util.log import getLogger
+from mycroft.util import play_wav, play_mp3, check_for_signal
 
 __author__ = 'jdorleans'
 
 LOGGER = getLogger(__name__)
 
+
+class PlaybackThread(Thread):
+    def __init__(self, queue):
+        super(PlaybackThread, self).__init__()
+        self.queue = queue
+        self._terminated = False
+
+    def run(self):
+        while not self._terminated:
+            try:
+                snd_type, data, visimes = self.queue.get(timeout=2)
+                print 'Data received!'
+                print (snd_type, data, visimes)
+                self.blink(0.5)
+                if snd_type == 'wav':
+                    print 'playing wav'
+                    p = play_wav(data)
+                elif snd_type == 'mp3':
+                    p = play_mp3(data)
+
+                if visimes:
+                    self.show_visimes(visimes)
+                p.communicate()
+                self.blink(0.2)
+            except:
+                pass
+
+    def show_visimes(self, pairs):
+        start = time()
+        print "VISIMES!"
+        for code, duration in pairs:
+            print code, duration
+            print "checking for signal"
+            if mycroft.util.check_for_signal('buttonPress'):
+                return
+            if check_for_signal('stoppingTTS', -1):
+                return
+            print "writing to enclosure"
+            if self.enclosure:
+                self.enclosure.mouth_viseme(code)
+            print "waiting"
+            delta = time() - start
+            if delta < duration:
+                sleep(duration - delta)
+
+    def blink(self, rate=1.0):
+        if self.enclosure and random.random() < rate:
+            self.enclosure.eyes_blink("b")
+
+    def stop(self):
+        self._terminated = True
+        while not self.queue.empty():
+            queue.get()
 
 class TTS(object):
     """
@@ -45,10 +102,14 @@ class TTS(object):
         self.validator = validator
         self.enclosure = None
         random.seed()
+        self.queue = Queue()
+        self.playback = PlaybackThread(self.queue)
+        self.playback.start()
 
     def init(self, ws):
         self.ws = ws
         self.enclosure = EnclosureAPI(self.ws)
+        self.playback.enclosure = self.enclosure
 
     @abstractmethod
     def execute(self, sentence):
@@ -64,9 +125,9 @@ class TTS(object):
         # TODO: Move caching support from mimic_tts to here for all TTS
         pass
 
-    def blink(self, rate=1.0):
-        if self.enclosure and random.random() < rate:
-            self.enclosure.eyes_blink("b")
+    def __del__(self):
+        self.playback.stop()
+        self.playback.join()
 
 
 class TTSValidator(object):
