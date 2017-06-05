@@ -163,6 +163,7 @@ def handle_mic_unmute(event):
 def handle_stop(event):
     global _last_stop_signal
     _last_stop_signal = time.time()
+    tts.playback.clear_queue()
     stop_speaking()
 
 

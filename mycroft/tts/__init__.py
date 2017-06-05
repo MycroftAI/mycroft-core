@@ -47,6 +47,13 @@ class PlaybackThread(Thread):
         self.queue = queue
         self._terminated = False
 
+    def clear_queue(self):
+        """
+            Remove all pending playbacks.
+        """
+        while not self.queue.empty():
+            self.queue.get()
+
     def run(self):
         """
             Thread main loop. get audio and visime data from queue
@@ -62,7 +69,8 @@ class PlaybackThread(Thread):
                     p = play_mp3(data)
 
                 if visimes:
-                    self.show_visimes(visimes)
+                    if self.show_visimes(visimes):
+                        self.clear_queue()
                 p.communicate()
                 self.blink(0.2)
             except:
@@ -74,18 +82,22 @@ class PlaybackThread(Thread):
 
             Args:
                 pairs(list): Visime and timing pair
+
+            Returns:
+                True if button has been pressed.
         """
         start = time()
         for code, duration in pairs:
             if check_for_signal('stoppingTTS', -1):
                 return
             if check_for_signal('buttonPress'):
-                return
+                return True
             if self.enclosure:
                 self.enclosure.mouth_viseme(code)
             delta = time() - start
             if delta < duration:
                 sleep(duration - delta)
+        return False
 
     def blink(self, rate=1.0):
         """ Blink mycroft's eyes """
@@ -95,8 +107,7 @@ class PlaybackThread(Thread):
     def stop(self):
         """ Stop thread """
         self._terminated = True
-        while not self.queue.empty():
-            queue.get()
+        self.clear_queue()
 
 
 class TTS(object):
