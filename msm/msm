@@ -129,7 +129,7 @@ while [[ $# -gt 0 ]] ; do
     search_string=$1
     shift
     while read -r matches; do
-        if grep -q ^"${search_string}"$ <<< "$search_list}" ; then
+        if [[ "$search_string}" == "${matches}" ]] ; then
             echo "Exact match found: ${matches}"
         else
             echo "Possible match: ${matches}"
