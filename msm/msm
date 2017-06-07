@@ -128,7 +128,7 @@ search_list=$(echo "$skill_list" | grep 'submodule "' | sed 's/\[submodule "//g'
 while [[ $# -gt 0 ]] ; do
     search_string=$1
     shift
-    while read matches; do
+    while read -r matches; do
         if grep -q ^"${search_string}"$ <<< "$search_list}" ; then
             echo "Exact match found: ${matches}"
         else
