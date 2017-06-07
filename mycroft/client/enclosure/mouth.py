@@ -24,6 +24,7 @@ __author__ = 'jdorleans'
 
 LOG = getLogger(__name__)
 
+
 class EnclosureMouth:
     """
     Listens to enclosure commands for Mycroft's Mouth.
@@ -73,7 +74,7 @@ class EnclosureMouth:
         if event and event.data:
             text = event.data.get("text", text)
         self.writer.write("mouth.text=" + text)
-    
+
     def display(self, event=None):
         code = ""
         xOffset = ""
@@ -87,14 +88,14 @@ class EnclosureMouth:
             clearPrevious = event.data.get("clearPrev", clearPrevious)
             clearTime = event.data.get("clearTime", clearTime)
 
-        # clearAfter = int(cleartAfter) # convert clearAfter to 0 or 1 
+        # clearAfter = int(cleartAfter) # convert clearAfter to 0 or 1
         clearPrevious = int(str(clearPrevious) == "True")
         clearPrevious = "cP=" + str(clearPrevious) + ","
         x_offset = "x=" + str(xOffset) + ","
         y_offset = "y=" + str(yOffset) + ","
 
         message = "mouth.icon=" + x_offset + y_offset + clearPrevious + code
-        # Check if message exceeds Arduino's serial buffer input limit, 64 bytes
+        # Check if message exceeds Arduino's serial buffer input limit 64 bytes
         if len(message) > 60:
             message1 = message[:31]
             message2 = message[31:]
@@ -102,9 +103,8 @@ class EnclosureMouth:
             message2 += "$"
             message2 = "mouth.icon=" + message2
             self.writer.write(message1)
-            time.sleep(0.25) # writer bugs out if sending messages too rapidly
+            time.sleep(0.25)  # writer bugs out if sending messages too rapidly
             self.writer.write(message2)
         else:
             time.sleep(0.1)
             self.writer.write(message)
-        
