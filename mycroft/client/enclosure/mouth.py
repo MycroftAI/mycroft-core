@@ -17,11 +17,12 @@
 
 
 from mycroft.util.log import getLogger
+from threading import Timer
+import time
 
 __author__ = 'jdorleans'
 
 LOG = getLogger(__name__)
-
 
 class EnclosureMouth:
     """
@@ -33,6 +34,7 @@ class EnclosureMouth:
     def __init__(self, ws, writer):
         self.ws = ws
         self.writer = writer
+        self.is_timer_on = False
         self.__init_events()
 
     def __init_events(self):
@@ -43,7 +45,7 @@ class EnclosureMouth:
         self.ws.on('enclosure.mouth.smile', self.smile)
         self.ws.on('enclosure.mouth.viseme', self.viseme)
         self.ws.on('enclosure.mouth.text', self.text)
-        self.ws.on('encolsure.mouth.display', self.display)
+        self.ws.on('enclosure.mouth.display', self.display)
 
     def reset(self, event=None):
         self.writer.write("mouth.reset")
@@ -74,6 +76,35 @@ class EnclosureMouth:
     
     def display(self, event=None):
         code = ""
+        xOffset = ""
+        yOffset = ""
+        clearPrevious = ""
+        clearTime = ""
         if event and event.data:
-            code = event.data.get("img_code", None)
-        self.writer.write("mouth.icon=" + code)
+            code = event.data.get("img_code", code)
+            xOffset = event.data.get("xOffset", xOffset)
+            yOffset = event.data.get("yOffset", yOffset)
+            clearPrevious = event.data.get("clearPrev", clearPrevious)
+            clearTime = event.data.get("clearTime", clearTime)
+
+        # clearAfter = int(cleartAfter) # convert clearAfter to 0 or 1 
+        clearPrevious = int(str(clearPrevious) == "True")
+        clearPrevious = "cP=" + str(clearPrevious) + ","
+        x_offset = "x=" + str(xOffset) + ","
+        y_offset = "y=" + str(yOffset) + ","
+
+        message = "mouth.icon=" + x_offset + y_offset + clearPrevious + code
+        # Check if message exceeds Arduino's serial buffer input limit, 64 bytes
+        if len(message) > 60:
+            message1 = message[:31]
+            message2 = message[31:]
+            message1 += "$"
+            message2 += "$"
+            message2 = "mouth.icon=" + message2
+            self.writer.write(message1)
+            time.sleep(0.25) # writer bugs out if sending messages too rapidly
+            self.writer.write(message2)
+        else:
+            time.sleep(0.1)
+            self.writer.write(message)
+        
