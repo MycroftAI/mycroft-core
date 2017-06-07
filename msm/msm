@@ -50,14 +50,13 @@ function help() {
 function list() {
 if hash curl ; then
     if ! curl -s "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules" ; then
-        if ! wget -q0- "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules" ; then
+            echo "Unable to pull master skills list!"
+            exit 111    
+    fi
+else 
+    if ! wget -q0- "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules" ; then
             echo "Unable to pull master skills list!"
             exit 112
-        else
-            echo "Unable to pull master skills list!"
-            exit 111
-        fi
-    
     fi
 fi
 }
@@ -135,7 +134,7 @@ while [[ $# -gt 0 ]] ; do
     search_string=$1
     shift
     while read -r matches; do
-        if [[ "$search_string}" == "${matches}" ]] ; then
+        echo "if [[ "${search_string}" == "${matches}" ]] ; then
             echo "Exact match found: ${matches}"
         else
             echo "Possible match: ${matches}"
