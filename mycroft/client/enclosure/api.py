@@ -277,15 +277,16 @@ class EnclosureAPI:
         binary_values = []
         for i in range(width):
             for j in range(height):
-                LOGGER.info(img.getpixel((i, j)))
                 if img.getpixel((i, j)) < threshold:
-                    binary_values.append('1') if invert is False
-                    else binary_values.append('0')
+                    if invert is False:
+                        binary_values.append('1')
+                    else:
+                        binary_values.append('0')
                 else:
-                    binary_values.append('0') if invert is False
-                    else binary_values.append('1')
-
-        LOGGER.info(binary_values)
+                    if invert is False:
+                        binary_values.append('0')
+                    else:
+                        binary_values.append('1')
 
         # these values are used to determine how binary values
         # needs to be grouped together
