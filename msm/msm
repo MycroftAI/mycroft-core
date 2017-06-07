@@ -29,10 +29,19 @@ if [[ ! -d "${mycroft_skill_folder}" ]] ; then
     exit 101
 fi 
 
-default_skills="alarm audio-record configuration date-time desktop-launcher ip joke hello-world media npr-news naptime pairing personal reminder installer singing speak spelling stop stock volume weather wiki wolfram-alpha mark1-demo"
+# picroft?
+if [[ "$(hostname)" == 'picroft' ]] || [[ -x /home/pi/bin/cli ]] ; then
+    picroft=0
+else
+    picroft=1
+    if locate virtualenvwrapper.sh ; then
+        source $(locate virtualenvwrapper.sh)
+    else
+        echo "Unable to locate virtualenvwrapper.sh, will not be able to install skills!"
+    fi
+fi
 
-# currently unused, so commented out.
-#mycroft_virtualenv=~/.virtualenvs/mycroft/bin/activate
+default_skills="alarm audio-record configuration date-time desktop-launcher ip joke hello-world media npr-news naptime pairing personal reminder installer singing speak spelling stop stock volume weather wiki wolfram-alpha mark1-demo"
 
 echo "#######  Mycroft Skill Manager #######"
 
@@ -71,8 +80,9 @@ cd "${mycroft_skill_folder}"
 
 # loop through list of arguments
 while [[ $# -gt 0 ]] ; do
-    iskill="$1";
+    iskill="${1}";
     shift;
+    echo "Attempting to install ${iskill}..."
     if [[ "${iskill}" == "git@"* || "${iskill}" == "https://"* || "${iskill}" == "http://"* ]]; then
         repo="${iskill}"
     else
@@ -105,11 +115,28 @@ while [[ $# -gt 0 ]] ; do
         echo "Unable to access directory ${name}!"
         exit 102
     fi
-    if [ -f "requirements.txt" ]; then
+    if [[ -f "requirements.txt" ]]; then
         echo "Installing libraries requirements"
-        pip install -r requirements.txt
+        if [[ $picroft -eq 1 ]]; then
+            if workon mycroft ; then
+                if ! pip install -r requirements.txt ; then
+                    echo "Unable to install requirements for skill ${iskill}!"
+                    deactivate
+                    exit 121
+                fi
+            else
+                echo "Unable to activate mycroft virtualenv!"
+                exit 120
+            fi
+        else 
+            if ! pip install -r requirements.txt ; then
+                echo "Unable to install requirements for skill ${iskill}!"
+                exit 121
+            fi
+        fi
+        
     fi 
-    echo "Skill installed!"
+    echo "Skill ${iskill} has been installed!"
 done
 
 }
@@ -134,7 +161,7 @@ while [[ $# -gt 0 ]] ; do
     search_string=$1
     shift
     while read -r matches; do
-        echo "if [[ "${search_string}" == "${matches}" ]] ; then
+        if [[ "${search_string}" == "${matches}" ]] ; then
             echo "Exact match found: ${matches}"
         else
             echo "Possible match: ${matches}"
@@ -152,7 +179,7 @@ case ${OPT} in
     "install") if [[ $# -gt 0 ]] ; then install "$*" ; else  help ; fi;;
     "list") list | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g' ;;
     "update") update ;;
-    "default") install "${default_skills}" ;;
+    "default") install $(echo ${default_skills}) ;;
     "search")  if [[ $# -gt 0 ]] ; then search "$*" ; else  help ; fi;;
     *) help ;;
 esac
