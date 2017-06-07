@@ -42,19 +42,20 @@ function help() {
     echo "usage: msm install <repository> or <name>"
     echo "     Installs the given Skill into the ${mycroft_skill_folder}"
     echo "     where <repository> is the address of the skill in Github."
+    echo "example: msm search rss-skill"
     echo -e "example: msm install https://github.com/ethanaward/demo_skill.git\n"
     exit 1
 }
 
 function list() {
-	curl -s "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules" 
+if ! curl -s "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules" ; then
+    echo "Unable to pull master skills list!"
+    exit 111
+fi
+
 }
 
 function install() {
-if [[ $# -lt 1 ]] ; then
-    help
-    exit 1
-fi
 cd "${mycroft_skill_folder}"
 
 #if [[ -z "$1" ]]; then
@@ -69,11 +70,10 @@ while [[ $# -gt 0 ]] ; do
     if [[ "${iskill}" == "git@"* || "${iskill}" == "https://"* || "${iskill}" == "http://"* ]]; then
         repo="${iskill}"
     else
-#        skill_list="$(curl -s "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules")"
         skill_list=$(list)
         skills=$(echo "$skill_list" | grep -n 'submodule' | sed 's/[[:space:]]//g' | sed 's/\[submodule"//g' | sed 's/"\]//g')
-        exact_match=$(echo "$skills" | grep -i ".*:$2$")
-        skill=$(echo "$skills" | grep -i ".*:.*$2.*")
+        exact_match=$(echo "$skills" | grep -i ".*:${iskill}$")
+        skill=$(echo "$skills" | grep -i ".*:.*${iskill}.*")
         if [[ ! -z "${exact_match}" ]]; then
             skill=${exact_match}
         fi
@@ -122,15 +122,33 @@ fi
 done
 }
 
+function search() {
+skill_list=$(list)
+search_list=$(echo "$skill_list" | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g')
+while [[ $# -gt 0 ]] ; do
+    search_string=$1
+    shift
+    while read matches; do
+        if grep -q ^"${search_string}"$ <<< "$search_list}" ; then
+            echo "Exact match found: ${matches}"
+        else
+            echo "Possible match: ${matches}"
+        fi
+    done < <(grep -i "${search_string}" <<< "${search_list}") 
+done
+}
+    
+
 #### Main
 
 OPT=$1
 shift
 case ${OPT} in
-    "install") install "$*";;
+    "install") if [[ $# -gt 0 ]] ; then install "$*" ; else  help ; fi;;
     "list") list | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g' ;;
     "update") update ;;
     "default") install "${default_skills}" ;;
+    "search")  if [[ $# -gt 0 ]] ; then search "$*" ; else  help ; fi;;
     *) help ;;
 esac
 
