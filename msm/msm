@@ -97,11 +97,11 @@ while [[ $# -gt 0 ]] ; do
     
         if [[ "${skill}" ==  *$'\n'* ]]; then
             echo -e "Your search has multiple choices\n\n$skill" | sed 's/.*://g'
-            exit 3
+            return 3
         else
             if [[ -z "${git_line}" ]]; then
                 echo "Skill not found"
-                exit 3
+                return 3
             fi
         repo_line=$(($git_line + 2))
         repo=$(echo "$skill_list" | sed -n $repo_line'{p;q;}' | sed 's/[[:space:]]//g' | sed 's/url=//g')
@@ -113,7 +113,7 @@ while [[ $# -gt 0 ]] ; do
     git clone "${repo}" >> /dev/null
     if ! cd "${name}" ; then
         echo "Unable to access directory ${name}!"
-        exit 102
+        return 102
     fi
     if [[ -f "requirements.txt" ]]; then
         echo "Installing libraries requirements"
@@ -122,16 +122,17 @@ while [[ $# -gt 0 ]] ; do
                 if ! pip install -r requirements.txt ; then
                     echo "Unable to install requirements for skill ${iskill}!"
                     deactivate
-                    exit 121
+                    return 121
                 fi
             else
                 echo "Unable to activate mycroft virtualenv!"
-                exit 120
+                deactivate
+                return 120
             fi
         else 
             if ! pip install -r requirements.txt ; then
                 echo "Unable to install requirements for skill ${iskill}!"
-                exit 121
+                return 121
             fi
         fi
         
@@ -183,5 +184,7 @@ case ${OPT} in
     "search")  if [[ $# -gt 0 ]] ; then search "$*" ; else  help ; fi;;
     *) help ;;
 esac
-
+if  [[ $? -gt 0 ]] ; then
+    echo "Sorry I'm unable to complete the request! Check the error messages above for why."
+fi
 exit 0
