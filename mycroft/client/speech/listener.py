@@ -152,7 +152,7 @@ class AudioConsumer(Thread):
             self.emitter.emit("recognizer_loop:no_internet")
         except HTTPError as e:
             if e.response.status_code == 401:
-                text = "pair my device"
+                text = "pair my device"  # phrase to start the pairing process
                 LOG.warn("Access Denied at mycroft.ai")
         except Exception as e:
             LOG.error(e)
