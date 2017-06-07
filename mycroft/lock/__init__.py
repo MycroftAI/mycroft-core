@@ -71,11 +71,8 @@ class Signal(object):  # python 3+ class Signal
         there is a previously defined handler call it.
         '''
         self.__user_func()  # call user function
-        try:
-            if self.__previous_func:
-                self.__previous_func(signame, sf)
-        except KeyboardInterrupt as kbi:
-            pass
+        if self.__previous_func:
+            self.__previous_func(signame, sf)
 
     #
     # reset the signal handler
