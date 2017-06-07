@@ -48,11 +48,18 @@ function help() {
 }
 
 function list() {
-if ! curl -s "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules" ; then
-    echo "Unable to pull master skills list!"
-    exit 111
+if hash curl ; then
+    if ! curl -s "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules" ; then
+        if ! wget -q0- "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules" ; then
+            echo "Unable to pull master skills list!"
+            exit 112
+        else
+            echo "Unable to pull master skills list!"
+            exit 111
+        fi
+    
+    fi
 fi
-
 }
 
 function install() {
