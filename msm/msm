@@ -63,7 +63,7 @@ if hash curl ; then
             exit 111    
     fi
 else 
-    if ! wget -q0- "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules" ; then
+    if ! wget -qO- "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules" ; then
             echo "Unable to pull master skills list!"
             exit 112
     fi
@@ -72,12 +72,6 @@ fi
 
 function install() {
 cd "${mycroft_skill_folder}"
-
-#if [[ -z "$1" ]]; then
-#    echo "You must pass the git url or skill name"
-#    exit 2
-#fi
-
 # loop through list of arguments
 while [[ $# -gt 0 ]] ; do
     iskill="${1}";
@@ -184,7 +178,8 @@ case ${OPT} in
     "search")  if [[ $# -gt 0 ]] ; then search "$*" ; else  help ; fi;;
     *) help ;;
 esac
+
 if  [[ $? -gt 0 ]] ; then
-    echo "Sorry I'm unable to complete the request! Check the error messages above for why."
+    echo "Sorry I'm unable to complete the request! Check the error messages above for why."fs
 fi
 exit 0
