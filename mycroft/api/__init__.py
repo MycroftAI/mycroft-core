@@ -25,6 +25,7 @@ from mycroft.identity import IdentityManager
 from mycroft.version import VersionManager
 
 __author__ = 'jdorleans'
+__paired_cache = False
 
 
 class Api(object):
@@ -216,3 +217,29 @@ class STTApi(Api):
             "query": {"lang": language, "limit": limit},
             "data": audio
         })
+
+
+def is_paired():
+    """ Determine if this device has been paired with a web backend
+
+    Determines if the installation of Mycroft has been paired by the user
+    with the backend system.
+
+    Returns:
+        bool: True if paired with backend
+    """
+    global __paired_cache
+    if __paired_cache:
+        # NOTE: This assumes once paired, the unit remains paired.  So
+        # un-pairing must restart the system (or clear this value).
+        # The Mark 1 does perform a restart on RESET.
+        return True
+
+    try:
+        api = DeviceApi()
+        device = api.get()
+        __paired_cache = api.identity.uuid is not None and \
+            api.identity.uuid != ""
+        return __paired_cache
+    except:
+        return False

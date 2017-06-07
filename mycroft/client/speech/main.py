@@ -99,6 +99,10 @@ def handle_multi_utterance_intent_failure(event):
 def handle_speak(event):
     global _last_stop_signal
 
+    # Mild abuse of the signal system to allow other processes to detect
+    # when TTS is happening.  See mycroft.util.is_speaking()
+    create_signal("isSpeaking")
+
     utterance = event.data['utterance']
     expect_response = event.data.get('expect_response', False)
 
@@ -123,6 +127,9 @@ def handle_speak(event):
                 break
     else:
         mute_and_speak(utterance)
+
+    # This check will clear the "signal"
+    check_for_signal("isSpeaking")
 
     if expect_response:
         create_signal('startListening')
