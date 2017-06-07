@@ -343,3 +343,24 @@ def check_for_signal(signal_name, sec_lifetime=0):
 def validate_param(value, name):
     if not value:
         raise ValueError("Missing or empty %s in mycroft.conf " % name)
+
+
+def is_speaking():
+    """Determine if Text to Speech is occurring
+
+    Returns:
+        bool: True while still speaking
+    """
+    return check_for_signal("isSpeaking", 9999)   # check without consuming
+
+
+def wait_while_speaking():
+    """Pause as long as Text to Speech is still happening
+
+    Pause while Text to Speech is still happening.  This always pauses
+    briefly to ensure that any preceeding request to speak has time to
+    begin.
+    """
+    time.sleep(0.1)  # Wait briefly in for any queued speech to begin
+    while is_speaking():
+        time.sleep(0.1)

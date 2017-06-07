@@ -34,6 +34,7 @@ from mycroft.skills.core import load_skill, create_skill_descriptor, \
 from mycroft.skills.intent_service import IntentService
 from mycroft.util import connected
 from mycroft.util.log import getLogger
+from mycroft.api import is_paired
 import mycroft.dialog
 
 logger = getLogger("Skills")
@@ -67,8 +68,9 @@ def install_default_skills(speak=True):
         res = subprocess.call(MSM_BIN + " default", stderr=subprocess.STDOUT,
                               stdout=subprocess.PIPE, shell=True)
         if res == 0 and speak:
-            ws.emit(Message("speak", {
-                'utterance': mycroft.dialog.get("skills updated")}))
+            # ws.emit(Message("speak", {
+            #     'utterance': mycroft.dialog.get("skills updated")}))
+            pass
         elif not connected():
             ws.emit(Message("speak", {
                 'utterance': mycroft.dialog.get("no network connection")}))
@@ -86,9 +88,10 @@ def skills_manager(message):
 
     if connected():
         if skills_manager_timer is None:
-            ws.emit(
-                Message("speak", {'utterance':
-                        mycroft.dialog.get("checking for updates")}))
+            pass
+            # ws.emit(
+            #     Message("speak", {'utterance':
+            #             mycroft.dialog.get("checking for updates")}))
 
         # Install default skills and look for updates via Github
         logger.debug("==== Invoking Mycroft Skill Manager: " + MSM_BIN)
@@ -128,6 +131,14 @@ def _load_skills():
 def check_connection():
     if connected():
         ws.emit(Message('mycroft.internet.connected'))
+        # check for pairing, if not automatically start pairing
+        if not is_paired():
+            # begin the process
+            payload = {
+                'utterances': "pair my device",
+                'lang': "en-us"
+            }
+            ws.emit(Message("recognizer_loop:utterance", payload))
     else:
         thread = Timer(1, check_connection)
         thread.daemon = True

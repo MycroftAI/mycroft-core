@@ -32,9 +32,11 @@ from mycroft.client.enclosure.weather import EnclosureWeather
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
-from mycroft.util import play_wav, create_signal, connected
+from mycroft.util import play_wav, create_signal, connected, \
+    wait_while_speaking
 from mycroft.util.audio_test import record
 from mycroft.util.log import getLogger
+from mycroft.api import is_paired
 
 __author__ = 'aatchison', 'jdorleans', 'iward'
 
@@ -83,8 +85,9 @@ class EnclosureReader(Thread):
             self.ws.emit(Message("enclosure.started"))
 
         if "mycroft.stop" in data:
-            create_signal('buttonPress')
-            self.ws.emit(Message("mycroft.stop"))
+            if is_paired():
+                create_signal('buttonPress')
+                self.ws.emit(Message("mycroft.stop"))
 
         if "volume.up" in data:
             self.ws.emit(
@@ -125,8 +128,7 @@ class EnclosureReader(Thread):
             subprocess.call('systemctl poweroff -i', shell=True)
 
         if "unit.reboot" in data:
-            self.ws.emit(
-                Message("enclosure.eyes.spin"))
+            self.ws.emit(Message("enclosure.eyes.spin"))
             self.ws.emit(Message("enclosure.mouth.reset"))
             subprocess.call('systemctl reboot -i', shell=True)
 
@@ -134,8 +136,7 @@ class EnclosureReader(Thread):
             self.ws.emit(Message("mycroft.wifi.start"))
 
         if "unit.factory-reset" in data:
-            self.ws.emit(
-                Message("enclosure.eyes.spin"))
+            self.ws.emit(Message("enclosure.eyes.spin"))
             subprocess.call(
                 'rm ~/.mycroft/identity/identity2.json',
                 shell=True)
@@ -143,7 +144,9 @@ class EnclosureReader(Thread):
             self.ws.emit(Message("mycroft.disable.ssh"))
             self.ws.emit(Message("speak", {
                 'utterance': mycroft.dialog.get("reset to factory defaults")}))
-            time.sleep(5)
+            wait_while_speaking()
+            self.ws.emit(Message("enclosure.mouth.reset"))
+            self.ws.emit(Message("enclosure.eyes.spin"))
             self.ws.emit(Message("enclosure.mouth.reset"))
             subprocess.call('systemctl reboot -i', shell=True)
 
@@ -224,7 +227,7 @@ class Enclosure(object):
     def __init__(self):
         self.ws = WebsocketClient()
         ConfigurationManager.init(self.ws)
-        self.config = ConfigurationManager.get().get("enclosure")
+        self.config = ConfigurationManager.instance().get("enclosure")
         self.__init_serial()
         self.reader = EnclosureReader(self.serial, self.ws)
         self.writer = EnclosureWriter(self.serial, self.ws)
@@ -275,12 +278,16 @@ class Enclosure(object):
         Enclosure._last_internet_notification = time.time()
 
         # TODO: This should go into EnclosureMark1 subclass of Enclosure.
-        # Handle the translation within that code.
-        self.ws.emit(Message("speak", {
-            'utterance': "This device is not connected to the Internet. "
-                         "Either plug in a network cable or hold the button "
-                         "on top for two seconds, then select wifi from the "
-                         "menu"}))
+        if is_paired():
+            # Handle the translation within that code.
+            self.ws.emit(Message("speak", {
+                'utterance': "This device is not connected to the Internet. "
+                             "Either plug in a network cable or hold the "
+                             "button on top for two seconds, then select "
+                             "wifi from the menu"}))
+        else:
+            # enter wifi-setup mode automatically
+            self.ws.emit(Message("mycroft.wifi.start"))
 
     def __init_serial(self):
         try:
