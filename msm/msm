@@ -74,7 +74,7 @@ while [[ $# -gt 0 ]] ; do
         skills=$(echo "$skill_list" | grep -n 'submodule' | sed 's/[[:space:]]//g' | sed 's/\[submodule"//g' | sed 's/"\]//g')
         exact_match=$(echo "$skills" | grep -i ".*:$2$")
         skill=$(echo "$skills" | grep -i ".*:.*$2.*")
-        if [ ! -z "${exact_match}" ]; then
+        if [[ ! -z "${exact_match}" ]]; then
             skill=${exact_match}
         fi
         git_line=$(echo "$skill" | sed 's/\:.*//')
@@ -95,7 +95,10 @@ while [[ $# -gt 0 ]] ; do
     name=$(echo "$git_name" | sed 's/.git//')
     echo "Cloning repository"
     git clone "${repo}" >> /dev/null
-    cd "${name}"
+    if ! cd "${name}" ; then
+        echo "Unable to access directory ${name}!"
+        exit 102
+    fi
     if [ -f "requirements.txt" ]; then
         echo "Installing libraries requirements"
         pip install -r requirements.txt
@@ -105,16 +108,16 @@ done
 
 }
 
+# updated to enforce explicit paths. 
 function update() {
-cd ${mycroft_skill_folder}
-for d in $(ls -d */); do
+cd "${mycroft_skill_folder}"
+for d in $(find "${mycroft_skill_folder}" -mindepth 1 -maxdepth 1 -type d |grep -v '.git'$ ); do
     if git -C "$d" rev-parse --git-dir > /dev/null 2>&1; then
-        cd "${d}"
+        cd "${d}" 
         if [[ -z $(git status --porcelain) ]]; then
         git fetch
         git reset --hard origin/master 
     fi
-    cd ..
 fi
 done
 }
