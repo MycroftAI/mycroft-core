@@ -218,7 +218,7 @@ class STTApi(Api):
             "data": audio
         })
 
-        
+
 def is_paired():
     """ Determine if this device has been paired with a web backend
 

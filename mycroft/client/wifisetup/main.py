@@ -305,7 +305,7 @@ class WiFi:
         LOG.info("Access point started!\n%s" % self.ap.__dict__)
         self._start_connection_monitor()
 
-    def _connection_prompt(self, intro): 
+    def _connection_prompt(self, intro):
         while self.ap.password is None or self.ap.password == "":
             sleep(1)  # give it time to load
 
