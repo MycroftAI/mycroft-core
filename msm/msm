@@ -85,8 +85,7 @@ while [[ $# -gt 0 ]] ; do
     if [[ "${iskill}" == "git@"* || "${iskill}" == "https://"* || "${iskill}" == "http://"* ]]; then
         repo="${iskill}"
     else
-        skill_list=$(list)
-        skills=$(echo "$skill_list" | grep -n 'submodule' | sed 's/[[:space:]]//g' | sed 's/\[submodule"//g' | sed 's/"\]//g')
+        skills=$(list | grep -n 'submodule' | sed 's/[[:space:]]//g' | sed 's/\[submodule"//g' | sed 's/"\]//g')
         exact_match=$(echo "$skills" | grep -i ".*:${iskill}$")
         skill=$(echo "$skills" | grep -i ".*:.*${iskill}.*")
         if [[ ! -z "${exact_match}" ]]; then
@@ -99,7 +98,7 @@ while [[ $# -gt 0 ]] ; do
             return 3
         else
             if [[ -z "${git_line}" ]]; then
-                echo "Skill ${iskill} not found"
+                echo "A ${iskill} skill was not found"
                 return 3
             fi
         repo_line=$(($git_line + 2))
@@ -136,7 +135,7 @@ while [[ $# -gt 0 ]] ; do
         fi
         
     fi 
-    echo "Skill ${iskill} has been installed!"
+    echo "The ${iskill} skill has been installed!"
 done
 
 }
@@ -155,8 +154,7 @@ done
 }
 
 function search() {
-skill_list=$(list)
-search_list=$(echo "$skill_list" | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g')
+search_list=$(list | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g')
 while [[ $# -gt 0 ]] ; do
     search_string=$1
     shift
