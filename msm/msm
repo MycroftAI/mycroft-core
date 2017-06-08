@@ -124,7 +124,7 @@ while [[ $# -gt 0 ]] ; do
                 return 120
             fi
         else 
-            if ! pip install -r requirements.txt ; then
+            if ! sudo pip install -r requirements.txt ; then
                 echo "Unable to install requirements for skill ${iskill}!"
                 return 121
             fi
