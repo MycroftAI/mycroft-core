@@ -38,6 +38,7 @@ else
         source $(locate virtualenvwrapper.sh)
     else
         echo "Unable to locate virtualenvwrapper.sh, will not be able to install skills!"
+        no_vwrap=0
     fi
 fi
 
@@ -72,6 +73,10 @@ fi
 
 function install() {
 cd "${mycroft_skill_folder}"
+if [[ ${no_vwrap} == 0 ]] ; then
+    echo "Missing virtualwrapper, cowardly refusing to install skills."
+    return 5
+fi
 # loop through list of arguments
 while [[ $# -gt 0 ]] ; do
     iskill="${1}";
