@@ -135,7 +135,7 @@ def check_connection():
         if not is_paired():
             # begin the process
             payload = {
-                'utterances': "pair my device",
+                'utterances': ["pair my device"],
                 'lang': "en-us"
             }
             ws.emit(Message("recognizer_loop:utterance", payload))
