@@ -173,7 +173,7 @@ class EnclosureAPI:
         """
         self.ws.emit(Message("enclosure.mouth.text", {'text': text}))
 
-    def mouth_display(self, img_code="", x=0, y=0, refresh=True, clearTime=60):
+    def mouth_display(self, img_code="", x=0, y=0, refresh=True):
         """Display images on faceplate. Currently supports images up to 16x8,
            or half the face. You can use the 'x' parameter to cover the other
            half of the faceplate.
@@ -191,36 +191,10 @@ class EnclosureAPI:
                              {'img_code': img_code,
                               'xOffset': x,
                               'yOffset': y,
-                              'clearPrev': refresh,
-                              'clearTime': clearTime}))
+                              'clearPrev': refresh}))
 
-    def weather_display(self, img_code, temp):
-        """Show a the temperature and a weather icon
-
-        Args:
-            img_code (char): one of the following icon codes
-                         0 = sunny
-                         1 = partly cloudy
-                         2 = cloudy
-                         3 = light rain
-                         4 = raining
-                         5 = stormy
-                         6 = snowing
-                         7 = wind/mist
-            temp (int): the temperature (either C or F, not indicated)
-        """
-        self.ws.emit(Message("enclosure.weather.display",
-                             {'img_code': img_code, 'temp': temp}))
-
-    def activate_mouth_events(self):
-        """Enable movement of the mouth with speech"""
-        self.ws.emit(Message('enclosure.mouth.events.activate'))
-
-    def deactivate_mouth_events(self):
-        """Disable movement of the mouth with speech"""
-        self.ws.emit(Message('enclosure.mouth.events.deactivate'))
-
-    def encode_png(self, image_absolute_path, threshold=70, invert=False):
+    def mouth_display_png(self, image_absolute_path, threshold=70,
+                          invert=False, x=0, y=0, refresh=True):
         """Converts a png image into the appropriate encoding for the
             Arduino Mark I enclosure.
 
@@ -330,4 +304,34 @@ class EnclosureAPI:
             pixel_code = pixel_codes[number]
             encode += pixel_code
 
-        return encode
+        self.ws.emit(Message("enclosure.mouth.display",
+                             {'img_code': encode,
+                              'xOffset': x,
+                              'yOffset': y,
+                              'clearPrev': refresh}))
+
+    def weather_display(self, img_code, temp):
+        """Show a the temperature and a weather icon
+
+        Args:
+            img_code (char): one of the following icon codes
+                         0 = sunny
+                         1 = partly cloudy
+                         2 = cloudy
+                         3 = light rain
+                         4 = raining
+                         5 = stormy
+                         6 = snowing
+                         7 = wind/mist
+            temp (int): the temperature (either C or F, not indicated)
+        """
+        self.ws.emit(Message("enclosure.weather.display",
+                             {'img_code': img_code, 'temp': temp}))
+
+    def activate_mouth_events(self):
+        """Enable movement of the mouth with speech"""
+        self.ws.emit(Message('enclosure.mouth.events.activate'))
+
+    def deactivate_mouth_events(self):
+        """Disable movement of the mouth with speech"""
+        self.ws.emit(Message('enclosure.mouth.events.deactivate'))
