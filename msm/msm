@@ -99,7 +99,7 @@ while [[ $# -gt 0 ]] ; do
             return 3
         else
             if [[ -z "${git_line}" ]]; then
-                echo "Skill not found"
+                echo "Skill ${iskill} not found"
                 return 3
             fi
         repo_line=$(($git_line + 2))
@@ -176,7 +176,7 @@ done
 OPT=$1
 shift
 case ${OPT} in
-    "install") if [[ $# -gt 0 ]] ; then install "$*" ; else  help ; fi;;
+    "install") if [[ $# -gt 0 ]] ; then install $(echo "$*") ; else  help ; fi;;
     "list") list | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g' ;;
     "update") update ;;
     "default") install $(echo ${default_skills}) ;;
@@ -185,6 +185,6 @@ case ${OPT} in
 esac
 
 if  [[ $? -gt 0 ]] ; then
-    echo "Sorry I'm unable to complete the request! Check the error messages above for why."fs
+    echo "Sorry I'm unable to complete the request! Check the error messages above for why."
 fi
 exit 0
