@@ -180,6 +180,6 @@ case ${OPT} in
 esac
 
 if  [[ $? -gt 0 ]] ; then
-    echo "Sorry I'm unable to complete the request! Check the error messages above for why."fs
+    echo "Sorry I'm unable to complete the request! Check the error messages above for why."
 fi
 exit 0
