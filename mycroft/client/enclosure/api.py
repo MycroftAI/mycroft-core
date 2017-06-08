@@ -185,7 +185,6 @@ class EnclosureAPI:
                             displaying the new image or not.
                             Useful if you'd like to display muliple images
                             on the faceplate at once.
-            clearTime (int): used as a clear delay timer.
         """
         self.ws.emit(Message("enclosure.mouth.display",
                              {'img_code': img_code,
@@ -207,6 +206,14 @@ class EnclosureAPI:
                                  draw on the faceplate it the value is below a
                                  threshold
                 invert (bool): inverts the image being drawn.
+                x (int): x offset for image
+                y (int): y offset for image
+                refresh (bool): specify whether to clear the faceplate before
+                                displaying the new image or not.
+                                Useful if you'd like to display muliple images
+                                on the faceplate at once.
+
+                "
             """
 
         # to understand how this funtion works you need to understand how the
