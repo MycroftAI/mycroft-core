@@ -1,4 +1,6 @@
 import subprocess
+from time import sleep
+
 from mycroft.audio.services import AudioBackend
 from mycroft.util.log import getLogger
 from mycroft.messagebus.message import Message
@@ -20,6 +22,8 @@ class Mpg123Service(AudioBackend):
         self.process = None
         self.emitter = emitter
         self.name = name
+        self._stop_signal = False
+        self._is_playing = False
 
         self.emitter.on('Mpg123ServicePlay', self._play)
 
@@ -39,17 +43,29 @@ class Mpg123Service(AudioBackend):
             as basic play/stop.
         """
         logger.info('Mpg123Service._play')
+        self._is_playing = True
         track = self.tracks[self.index]
 
         # Replace file:// uri's with normal paths
         track = track.replace('file://', '')
 
         self.process = subprocess.Popen(['mpg123', track])
-        self.process.communicate()
-        self.process = None
+        # Wait for completion or stop request
+        while self.process.poll() is None and not self._stop_signal:
+            sleep(0.25)
+
+        if self._stop_signal:
+            self.process.terminate()
+            self.process = None
+            self._is_playing = False
+
+            return
         self.index += 1
-        if self.index >= len(self.tracks):
+        # if there are more tracks available play next
+        if self.index < len(self.tracks):
             self.emitter.emit(Message('Mpg123ServicePlay'))
+        else:
+            self._is_playing = False
 
     def play(self):
         logger.info('Call Mpg123ServicePlay')
@@ -58,10 +74,10 @@ class Mpg123Service(AudioBackend):
 
     def stop(self):
         logger.info('Mpg123ServiceStop')
-        self.clear_list()
-        if self.process:
-            self.process.terminate()
-            self.process = None
+        self._stop_signal = True
+        while self._is_playing:
+            sleep(0.1)
+        self._stop_signal = False
 
     def pause(self):
         pass
@@ -70,6 +86,7 @@ class Mpg123Service(AudioBackend):
         pass
 
     def next(self):
+        # Terminate process to continue to next
         self.process.terminate()
 
     def previous(self):
