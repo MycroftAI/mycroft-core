@@ -62,7 +62,6 @@ function help() {
 }
 
 function list() {
-echo "listing..."
 if hash curl ; then
   if ! curl -s "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules" ; then
     echo "Unable to pull master skills list!"
@@ -77,7 +76,6 @@ fi
 }
 
 function install() {
-echo "Installing $*"
 cd "${mycroft_skill_folder}"
 if [[ "${vwrap}" == 'false' ]] ; then
     echo "Missing virtualwrapper, cowardly refusing to install skills."
@@ -154,7 +152,6 @@ done
 }
 
 function update() {
-echo "Updating!"
 cd "${mycroft_skill_folder}"
 for d in $(find "${mycroft_skill_folder}" -mindepth 1 -maxdepth 1 -type d |grep -v '.git'$ ); do
   if git -C "$d" rev-parse --git-dir > /dev/null 2>&1; then
@@ -168,7 +165,6 @@ done
 }
 
 function search() {
-echo "Searching!"
 search_list=$(list | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g')
 while [[ $# -gt 0 ]] ; do
   search_string=$1
