@@ -25,21 +25,25 @@
 
 mycroft_skill_folder=${mycroft_skill_folder:-"/opt/mycroft/skills"}
 if [[ ! -d "${mycroft_skill_folder}" ]] ; then
-    echo "Uname to access ${mycroft_skill_folder}!"
+    echo "Unable to access ${mycroft_skill_folder}!"
     exit 101
 fi 
 
 # picroft?
 if [[ "$(hostname)" == 'picroft' ]] || [[ -x /home/pi/bin/cli ]] ; then
-    picroft=0
+  picroft='true'
 else
-    picroft=1
-    if locate virtualenvwrapper.sh ; then
-        source $(locate virtualenvwrapper.sh)
-    else
+  picroft='false'
+  if [[ -r /etc/bash_completion.d/virtualenvwrapper ]]; then
+    source /etc/bash_completion.d/virtualenvwrapper
+  else
+    if locate virtualenvwrapper ; then
+      if ! source $(locate virtualenvwrapper) ; then
         echo "Unable to locate virtualenvwrapper.sh, will not be able to install skills!"
-        no_vwrap=0
+        vwrap='false'
+      fi
     fi
+  fi
 fi
 
 default_skills="alarm audio-record configuration date-time desktop-launcher ip joke hello-world media npr-news naptime pairing personal reminder installer singing speak spelling stop stock volume weather wiki wolfram-alpha mark1-demo"
@@ -47,124 +51,135 @@ default_skills="alarm audio-record configuration date-time desktop-launcher ip j
 echo "#######  Mycroft Skill Manager #######"
 
 function help() {
-    echo "msm: Mycroft Skill Manager"
-    echo -e "     Copyright (c) 2017 Mycroft AI, Inc.  All rights reserved.\n"
-    echo "usage: msm install <repository> or <name>"
-    echo "     Installs the given Skill into the ${mycroft_skill_folder}"
-    echo "     where <repository> is the address of the skill in Github."
-    echo "example: msm search rss-skill"
-    echo -e "example: msm install https://github.com/ethanaward/demo_skill.git\n"
-    exit 1
+  echo "msm: Mycroft Skill Manager"
+  echo -e "     Copyright (c) 2017 Mycroft AI, Inc.  All rights reserved.\n"
+  echo "usage: msm install <repository> or <name>"
+  echo "     Installs the given Skill into the ${mycroft_skill_folder}"
+  echo "     where <repository> is the address of the skill in Github."
+  echo "example: msm search rss-skill"
+  echo -e "example: msm install https://github.com/ethanaward/demo_skill.git\n"
+  exit 1
 }
 
 function list() {
+echo "listing..."
 if hash curl ; then
-    if ! curl -s "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules" ; then
-            echo "Unable to pull master skills list!"
-            exit 111    
-    fi
+  if ! curl -s "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules" ; then
+    echo "Unable to pull master skills list!"
+    exit 111    
+  fi
 else 
-    if ! wget -qO- "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules" ; then
-            echo "Unable to pull master skills list!"
-            exit 112
-    fi
+  if ! wget -qO- "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules" ; then
+    echo "Unable to pull master skills list!"
+    exit 112
+  fi
 fi
 }
 
 function install() {
+echo "Installing $*"
 cd "${mycroft_skill_folder}"
-if [[ ${no_vwrap} == 0 ]] ; then
+if [[ "${vwrap}" == 'false' ]] ; then
     echo "Missing virtualwrapper, cowardly refusing to install skills."
     return 5
 fi
 # loop through list of arguments
 while [[ $# -gt 0 ]] ; do
-    iskill="${1}";
-    shift;
-    echo "Attempting to install ${iskill}..."
-    if [[ "${iskill}" == "git@"* || "${iskill}" == "https://"* || "${iskill}" == "http://"* ]]; then
-        repo="${iskill}"
-    else
-        skills=$(list | grep -n 'submodule' | sed 's/[[:space:]]//g' | sed 's/\[submodule"//g' | sed 's/"\]//g')
-        exact_match=$(echo "$skills" | grep -i ".*:${iskill}$")
-        skill=$(echo "$skills" | grep -i ".*:.*${iskill}.*")
-        if [[ ! -z "${exact_match}" ]]; then
-            skill=${exact_match}
-        fi
-        git_line=$(echo "$skill" | sed 's/\:.*//')
+  iskill="${1}";
+  shift;
+  echo "Attempting to install ${iskill}..."
+  if [[ "${iskill}" == "git@"* || "${iskill}" == "https://"* || "${iskill}" == "http://"* ]]; then
+    repo="${iskill}"
+  else
+    skills=$(list | grep -n 'submodule' | sed 's/[[:space:]]//g' | sed 's/\[submodule"//g' | sed 's/"\]//g')
+    exact_match=$(echo "$skills" | grep -i ".*:${iskill}$")
+    skill=$(echo "$skills" | grep -i ".*:.*${iskill}.*")
+    if [[ ! -z "${exact_match}" ]]; then
+      skill=${exact_match}
+    fi
+    git_line=$(echo "$skill" | sed 's/\:.*//')
     
-        if [[ "${skill}" ==  *$'\n'* ]]; then
-            echo -e "Your search has multiple choices\n\n$skill" | sed 's/.*://g'
-            return 3
-        else
-            if [[ -z "${git_line}" ]]; then
-                echo "A ${iskill} skill was not found"
-                return 3
-            fi
-        repo_line=$(($git_line + 2))
-        repo=$(echo "$skill_list" | sed -n $repo_line'{p;q;}' | sed 's/[[:space:]]//g' | sed 's/url=//g')
-        fi 
-    fi
-    git_name=$(echo "${repo}" | sed 's/.*\///')
-    name=$(echo "$git_name" | sed 's/.git//')
-    echo "Cloning repository"
-    git clone "${repo}" >> /dev/null
-    if ! cd "${name}" ; then
-        echo "Unable to access directory ${name}!"
-        return 102
-    fi
-    if [[ -f "requirements.txt" ]]; then
-        echo "Installing libraries requirements"
-        if [[ $picroft -eq 1 ]]; then
-            if workon mycroft ; then
-                if ! pip install -r requirements.txt ; then
-                    echo "Unable to install requirements for skill ${iskill}!"
-                    deactivate
-                    return 121
-                fi
-            else
-                echo "Unable to activate mycroft virtualenv!"
-                deactivate
-                return 120
-            fi
-        else 
-            if ! sudo pip install -r requirements.txt ; then
-                echo "Unable to install requirements for skill ${iskill}!"
-                return 121
-            fi
-        fi
-        
+    if [[ "${skill}" ==  *$'\n'* ]]; then
+      echo -e "Your search has multiple choices\n\n$skill" | sed 's/.*://g'
+      return 3
+    else
+      if [[ -z "${git_line}" ]]; then
+        echo "A ${iskill} skill was not found"
+        return 3
+      fi
+      repo_line=$(($git_line + 2))
+      repo=$(list | sed -n $repo_line'{p;q;}' | sed 's/[[:space:]]//g' | sed 's/url=//g')
     fi 
-    echo "The ${iskill} skill has been installed!"
+  fi
+  git_name=$(echo "${repo}" | sed 's/.*\///')
+  name=$(echo "$git_name" | sed 's/.git//')
+  echo "Cloning repository"
+  git clone "${repo}" >> /dev/null
+  if ! cd "${name}" ; then
+    echo "Unable to access directory ${name}!"
+    return 102
+  fi
+  if [[ -f "requirements.txt" ]]; then
+    echo "Installing libraries requirements"
+    if [[ $picroft == 'false' ]]; then
+      if [[ "${VIRTUAL_ENV}" =~ .mycroft$ ]] ; then
+        if ! pip install -r requirements.txt ; then
+          echo "Unable to install requirements for skill ${iskill}!"
+          return 121
+        fi
+      else
+        if workon mycroft ; then
+          if ! pip install -r requirements.txt ; then
+            echo "Unable to install requirements for skill ${iskill}!"
+            deactivate mycroft
+            return 121
+          fi
+        else
+          echo "Unable to activate mycroft virtualenv!"
+          deactivate
+          return 120
+        fi
+      fi
+    else 
+      if ! sudo pip install -r requirements.txt ; then
+        echo "Unable to install requirements for skill ${iskill}!"
+        return 121
+      fi
+    fi
+        
+  fi 
+  echo "The ${iskill} skill has been installed!"
 done
 
 }
 
 function update() {
+echo "Updating!"
 cd "${mycroft_skill_folder}"
 for d in $(find "${mycroft_skill_folder}" -mindepth 1 -maxdepth 1 -type d |grep -v '.git'$ ); do
-    if git -C "$d" rev-parse --git-dir > /dev/null 2>&1; then
-        cd "${d}" 
-        if [[ -z $(git status --porcelain) ]]; then
-        git fetch
-        git reset --hard origin/master 
-    fi
+  if git -C "$d" rev-parse --git-dir > /dev/null 2>&1; then
+    cd "${d}" 
+    if [[ -z $(git status --porcelain) ]]; then
+    git fetch
+    git reset --hard origin/master 
+  fi
 fi
 done
 }
 
 function search() {
+echo "Searching!"
 search_list=$(list | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g')
 while [[ $# -gt 0 ]] ; do
-    search_string=$1
-    shift
-    while read -r matches; do
-        if [[ "${search_string}" == "${matches}" ]] ; then
-            echo "Exact match found: ${matches}"
-        else
-            echo "Possible match: ${matches}"
-        fi
-    done < <(grep -i "${search_string}" <<< "${search_list}") 
+  search_string=$1
+  shift
+  while read -r matches; do
+    if [[ "${search_string}" == "${matches}" ]] ; then
+      echo "Exact match found: ${matches}"
+    else
+      echo "Possible match: ${matches}"
+    fi
+  done < <(grep -i "${search_string}" <<< "${search_list}") 
 done
 }
     
@@ -174,15 +189,15 @@ done
 OPT=$1
 shift
 case ${OPT} in
-    "install") if [[ $# -gt 0 ]] ; then install $(echo "$*") ; else  help ; fi;;
-    "list") list | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g' ;;
-    "update") update ;;
-    "default") install $(echo ${default_skills}) ;;
-    "search")  if [[ $# -gt 0 ]] ; then search "$*" ; else  help ; fi;;
-    *) help ;;
+  "install") if [[ $# -gt 0 ]] ; then install $(echo "$*") ; else  help ; fi;;
+  "list") list | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g' ;;
+  "update") update ;;
+  "default") install $(echo ${default_skills}) ;;
+  "search")  if [[ $# -gt 0 ]] ; then search "$*" ; else  help ; fi;;
+  *) help ;;
 esac
 
 if  [[ $? -gt 0 ]] ; then
-    echo "Sorry I'm unable to complete the request! Check the error messages above for why."
+  echo "Sorry I'm unable to complete the request! Check the error messages above for why."
 fi
 exit 0
