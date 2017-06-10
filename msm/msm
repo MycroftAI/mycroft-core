@@ -113,7 +113,7 @@ while [[ $# -gt 0 ]] ; do
   name=$(echo "$git_name" | sed 's/.git//')
   if [[ -d "${mycroft_skill_folder}/${name}" ]] ; then
     echo "Skill appears to exist already. Perhaps you meant to use update?"
-    return 169
+    continue 169
   fi
   echo "Cloning repository"
   git clone "${repo}" >> /dev/null
