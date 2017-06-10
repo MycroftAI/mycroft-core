@@ -37,7 +37,7 @@ else
   if [[ -r /etc/bash_completion.d/virtualenvwrapper ]]; then
     source /etc/bash_completion.d/virtualenvwrapper
   else
-    if locate virtualenvwrapper ; then
+    if locate virtualenmvwrapper ; then
       if ! source $(locate virtualenvwrapper) ; then
         echo "Unable to locate virtualenvwrapper.sh, will not be able to install skills!"
         vwrap='false'
@@ -46,7 +46,7 @@ else
   fi
 fi
 
-default_skills="alarm audio-record configuration date-time desktop-launcher ip joke hello-world media npr-news naptime pairing personal reminder installer singing speak spelling stop stock volume weather wiki wolfram-alpha mark1-demo"
+default_skills="skill-alarm skill-audio-record skill-configuration skill-date-time skill-desktop-launcher skill-ip skill-joke skill-hello-world skill-media skill-npr-news skill-naptime skill-pairing skill-personal skill-reminder skill-installer skill-singing skill-speak skill-spelling skill-stop skill-stock skill-volume skill-weather skill-wiki skill-wolfram-alpha skill-mark1-demo"
 
 echo "#######  Mycroft Skill Manager #######"
 
@@ -193,7 +193,7 @@ case ${OPT} in
   "list") list | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g' ;;
   "update") update ;;
   "default") install $(echo ${default_skills}) ;;
-  "search")  if [[ $# -gt 0 ]] ; then search "$*" ; else  help ; fi;;
+  "search")  if [[ $# -gt 0 ]] ; then search $(echo "$*") ; else  help ; fi;;
   *) help ;;
 esac
 
