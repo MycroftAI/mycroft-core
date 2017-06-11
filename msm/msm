@@ -46,7 +46,7 @@ else
   fi
 fi
 
-default_skills="skill-alarm skill-audio-record skill-date-time skill-desktop-launcher skill-ip skill-joke skill-media skill-npr-news skill-personal skill-reminder skill-singing skill-speak skill-spelling skill-stock skill-weather skill-wiki skill-wolfram-alpha skill-mark1-demo"
+default_skills="skill-alarm skill-audio-record skill-configuration skill-date-time skill-desktop-launcher skill-ip skill-joke skill-hello-world skill-media skill-npr-news skill-naptime skill-pairing skill-personal skill-reminder skill-installer skill-singing skill-speak skill-spelling skill-stop skill-stock skill-volume skill-weather skill-wiki skill-wolfram-alpha skill-mark1-demo"
 
 echo "#######  Mycroft Skill Manager #######"
 
@@ -121,9 +121,15 @@ while [[ $# -gt 0 ]] ; do
     echo "Unable to access directory ${name}!"
     return 102
   fi
+  if [[ "${picroft}" == "true" ]] ; then
+    if ! sudo chown -R mycroft:mycroft "${mycroft_skill_folder}/${name}" ; then
+      echo "Unable to chown install directory ${name}!"
+      return 123
+    fi    
+  fi
   if [[ -f "requirements.txt" ]]; then
     echo "Installing libraries requirements"
-    if [[ $picroft == 'false' ]]; then
+    if [[ "${picroft}" == 'false' ]]; then
       if [[ "${VIRTUAL_ENV}" =~ .mycroft$ ]] ; then
         if ! pip install -r requirements.txt ; then
           echo "Unable to install requirements for skill ${iskill}!"
@@ -148,7 +154,6 @@ while [[ $# -gt 0 ]] ; do
         return 121
       fi
     fi
-        
   fi 
   echo "The ${iskill} skill has been installed!"
 done
@@ -197,7 +202,8 @@ case ${OPT} in
   *) help ;;
 esac
 
-if  [[ $? -gt 0 ]] ; then
-  echo "Sorry I'm unable to complete the request! Check the error messages above for why."
+exit_code=$?
+if  [[ ${exit_code} -gt 0 ]] ; then
+  echo "Sorry I'm unable to complete the request! Check the error messages above for why. Err ${exit_code}"
 fi
 exit 0
