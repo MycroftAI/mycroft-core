@@ -37,7 +37,7 @@ else
   if [[ -r /etc/bash_completion.d/virtualenvwrapper ]]; then
     source /etc/bash_completion.d/virtualenvwrapper
   else
-    if locate virtualenmvwrapper ; then
+    if locate virtualenvwrapper ; then
       if ! source $(locate virtualenvwrapper) ; then
         echo "Unable to locate virtualenvwrapper.sh, will not be able to install skills!"
         vwrap='false'
