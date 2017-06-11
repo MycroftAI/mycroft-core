@@ -35,7 +35,8 @@ def extractnumber(text, lang="en-us"):
     if lang_lower.startswith("en"):
         # return extractnumber_en(text, remove_articles)
         return extractnumber_en(text)
-
+    elif lang_lower.startswith("de"):
+        return extractnumber_de(text)
     # TODO: Normalization for other languages
     return text
 
@@ -163,6 +164,112 @@ def extractnumber_en(text):
 
     return val
 
+def extractnumber_de(text):
+    """
+    This function prepares the given text for parsing by making
+    numbers consistent, getting rid of contractions, etc.
+    Args:
+        text (str): the string to normalize
+    Returns:
+        (int) or (float): The value of extracted number
+
+    """
+    aWords = text.split()
+    aWords = [word for word in aWords if word not in ["der", "die", "das","ein","eine"]]
+    andPass = False
+    valPreAnd = False
+    val = False
+    count = 0
+    while count < len(aWords):
+        word = aWords[count]
+        if is_numeric(word):
+            # if word.isdigit():            # doesn't work with decimals
+            val = float(word)
+        elif word == "erste" or word == "erster" or word == "erstes":
+            val = 1
+        elif word == "zweite" or word == "zweiter" or word == "zweites":
+            val = 2
+        elif isFractional(word):
+            val = isFractional(word)
+        else:
+            if word == "eins":
+                val = 1
+            elif word == "zwei":
+                val = 2
+            elif word == "drei":
+                val = 3
+            elif word == "vier":
+                val = 4
+            elif word == "fünf":
+                val = 5
+            elif word == "sechs":
+                val = 6
+            elif word == "sieben":
+                val = 7
+            elif word == "acht":
+                val = 8
+            elif word == "neun":
+                val = 9
+            elif word == "zehn":
+                val = 10
+            if val:
+                if count < (len(aWords) - 1):
+                    wordNext = aWords[count+1]
+                else:
+                    wordNext = ""
+                valNext = isFractional(wordNext)
+
+                if valNext:
+                    val = val * valNext
+                    aWords[count+1] = ""
+
+        # if val == False:
+        if not val:
+            # look for fractions like "2/3"
+            aPieces = word.split('/')
+            # if (len(aPieces) == 2 and is_numeric(aPieces[0])
+            #   and is_numeric(aPieces[1])):
+            if look_for_fractions(aPieces):
+                val = float(aPieces[0]) / float(aPieces[1])
+            elif andPass:
+                # added to value, quit here
+                val = valPreAnd
+                break
+            else:
+                count += 1
+                continue
+
+        aWords[count] = ""
+
+        if (andPass):
+            aWords[count-1] = ''    # remove "and"
+            val += valPreAnd
+        elif count+1 < len(aWords) and aWords[count+1] == 'und':
+            andPass = True
+            valPreAnd = val
+            val = False
+            count += 2
+            continue
+        elif count+2 < len(aWords) and aWords[count+2] == 'und':
+            andPass = True
+            valPreAnd = val
+            val = False
+            count += 3
+            continue
+
+        break
+
+    # if val == False:
+    if not val:
+        return False
+
+    # Return the $str with the number related words removed
+    # (now empty strings, so strlen == 0)
+    aWords = [word for word in aWords if len(word) > 0]
+    text = ' '.join(aWords)
+
+    return val
+
 
 def look_for_fractions(split_list):
     """"
@@ -226,6 +333,8 @@ def normalize(text, lang="en-us", remove_articles=True):
         return normalize_en(text, remove_articles)
     elif lang_lower.startswith("es"):
         return normalize_es(text, remove_articles)
+    elif lang_lower.startswith("de"):
+        return normalize_de(text, remove_articles)
 
     # TODO: Normalization for other languages
     return text
@@ -299,6 +408,27 @@ def normalize_en(text, remove_articles):
 
     return normalized[1:]  # strip the initial space
 
+
+def normalize_de(text, remove_articles):
+    """ German string normalization """
+
+    words = text.split()  # this also removed extra spaces
+    normalized = ""
+    for word in words:
+        if remove_articles and word in ["der", "die", "das","ein","eine"]:
+            continue
+
+        # Convert numbers into digits, e.g. "two" -> "2"
+        textNumbers = ["null", "eins", "zwei", "drei", "vier", "fünf", "sechs",
+                       "sieben", "acht", "neun", "zehn", "elf", "zwölf",
+                       "dreizehn", "vierzehn", "fünfzehn", "sechzehn",
+                       "siebzehn", "achtzehn", "neunzehn", "zwanzig"]
+        if word in textNumbers:
+            word = str(textNumbers.index(word))
+
+        normalized += " " + word
+
+    return normalized[1:]  # strip the initial space
 
 ####################################################################
 # Spanish normalization
