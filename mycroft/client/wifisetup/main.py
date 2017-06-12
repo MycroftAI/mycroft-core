@@ -365,8 +365,10 @@ class WiFi:
                 timeStarted = time.time()  # reset start time after connection
                 timeLastAnnounced = time.time() - 45  # announce how to connect
 
-            if time.time() - timeStarted > 60 * 5:
-                # After 5 minutes, shut down the access point
+            if time.time() - timeStarted > 60 * 5 and is_paired():
+                # After 5 minutes, shut down the access point (unless the
+                # system has never been setup, in which case we stay up
+                # indefinitely)
                 LOG.info("Auto-shutdown of access point after 5 minutes")
                 self.stop()
                 continue
@@ -521,6 +523,7 @@ class WiFi:
             self.server.join()
             self.server = None
         LOG.info("Access point stopped!")
+        self.enclosure.mouth_reset()
 
     def _do_net_check(self):
         # give system 5 seconds to resolve network or get plugged in
