@@ -179,10 +179,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         return audioop.rms(sound_chunk, sample_width)
 
     def wake_word_in_audio(self, frame_data):
-        if not is_paired():
-            return False
         hyp = self.wake_word_recognizer.transcribe(frame_data)
-        return self.wake_word_recognizer.found_wake_word(hyp)
+        return self.wake_word_recognizer.found_wake_word(hyp) and is_paired()
 
     def _record_phrase(self, source, sec_per_buffer):
         """Record an entire spoken phrase.
