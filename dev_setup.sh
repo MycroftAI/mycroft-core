@@ -66,6 +66,7 @@ echo "Building with $CORES cores."
 #${TOP}/scripts/install-pocketsphinx.sh -q
 #build and install mimic
 cd "${TOP}"
+echo "WARNING: The following can take a long time to run!"
 "${TOP}/scripts/install-mimic.sh"
 
 # install pygtk for desktop_launcher skill
