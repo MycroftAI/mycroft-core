@@ -41,28 +41,32 @@ else
 fi
 
 # create virtualenv, consistent with virtualenv-wrapper conventions
-if [ ! -d ${VIRTUALENV_ROOT} ]; then
-   mkdir -p $(dirname ${VIRTUALENV_ROOT})
-  virtualenv -p python2.7 ${VIRTUALENV_ROOT}
+if [ ! -d "${VIRTUALENV_ROOT}" ]; then
+   mkdir -p $(dirname "${VIRTUALENV_ROOT}")
+  virtualenv -p python2.7 "${VIRTUALENV_ROOT}"
 fi
-source ${VIRTUALENV_ROOT}/bin/activate
-cd ${TOP}
+source "${VIRTUALENV_ROOT}/bin/activate"
+cd "${TOP}"
 easy_install pip==7.1.2 # force version of pip
 pip install --upgrade virtualenv
 
 # install requirements (except pocketsphinx)
 pip2 install -r requirements.txt 
 
-CORES=$(nproc)
-echo Building with $CORES cores.
+if  [[ $(free|awk '/^Mem:/{print $2}') -lt  1572864 ]] ; then
+  CORES=1
+else 
+  CORES=$(nproc)
+fi
+
+echo "Building with $CORES cores."
 
 #build and install pocketsphinx
 #cd ${TOP}
 #${TOP}/scripts/install-pocketsphinx.sh -q
 #build and install mimic
-cd ${TOP}
-${TOP}/scripts/install-mimic.sh
+cd "${TOP}"
+"${TOP}/scripts/install-mimic.sh"
 
 # install pygtk for desktop_launcher skill
-${TOP}/scripts/install-pygtk.sh
-
+"${TOP}/scripts/install-pygtk.sh"
