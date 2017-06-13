@@ -357,22 +357,26 @@ class Enclosure(object):
             if has_been_paired():
                 # TODO: Enclosure/localization
                 self.ws.emit(Message("speak", {
-                    'utterance': "This unit is not connected to the Internet. Either "
-                        "plug in a network cable or hold the button on top for "
-                        "two seconds, then select wifi from the menu"}))
+                    'utterance': "This unit is not connected to the Internet."
+                                 " Either plug in a network cable or hold the "
+                                 "button on top for two seconds, then select "
+                                 "wifi from the menu"
+                    }))
             else:
                 # Begin the unit startup process, this is the first time it
                 # is being run with factory defaults.
-                
+
                 # TODO: This logic should be in Enclosure_Mark1
                 # TODO: Enclosure/localization
-                
+
                 # Don't listen to mic during this out-of-box experience
                 self.ws.emit(Message("mycroft.mic.mute", None))
-                
+
                 # Kick off wifi-setup automatically
-                self.ws.emit(Message("mycroft.wifi.start", {'msg': "Hello I am "
-                    "Mycroft, your new assistant.  To assist you I need to be "
-                    "connected to the internet.  You can either plug me in "
-                    "with a network cable, or use wifi.  To setup wifi ",
-                    'allow_timeout': False}))
+                self.ws.emit(Message("mycroft.wifi.start",
+                                     {'msg': "Hello I am Mycroft, your new "
+                                      "assistant.  To assist you I need to be "
+                                      "connected to the internet.  You can "
+                                      "either plug me in with a network cable,"
+                                      " or use wifi.  To setup wifi ",
+                                      'allow_timeout': False}))

@@ -225,10 +225,10 @@ def has_been_paired():
     Returns:
         bool: True if ever paired with backend (not factory reset)
     """
-    id = IdentityManager.get()    
-    return id.uuid is not None and id.uuid != ""    
-    
-    
+    id = IdentityManager.get()
+    return id.uuid is not None and id.uuid != ""
+
+
 def is_paired():
     """ Determine if this device is actively paired with a web backend
 

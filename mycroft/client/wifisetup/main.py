@@ -294,17 +294,17 @@ class WiFi:
         '''
         if self.starting:
             return
-        
+
         self.starting = True
         LOG.info("Starting access point...")
-        
+
         self.intro_msg = ""
         if event and event.data.get("msg"):
             self.intro_msg = event.data.get("msg")
         self.allow_timeout = True
         if event and event.data.get("allow_timeout"):
             self.allow_timeout = event.data.get("allow_timeout")
-        
+
         # Fire up our access point
         self.ap.up()
         if not self.server:
@@ -543,7 +543,7 @@ class WiFi:
             self.server.server.server_close()
             self.server.join()
             self.server = None
-        LOG.info("Access point stopped!")  
+        LOG.info("Access point stopped!")
 
     def run(self):
         try:

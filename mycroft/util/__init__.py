@@ -384,6 +384,6 @@ def stop_speaking():
         kill([config.get('tts').get('module')])
         kill(["aplay"])
         time.sleep(0.25)
-        
+
     # This consumes the signal
     check_for_signal('stoppingTTS')
