@@ -77,7 +77,11 @@ class EnclosureReader(Thread):
                 LOG.error("Reading error: {0}".format(e))
 
     def process(self, data):
-        self.ws.emit(Message(data))
+        # TODO: Look into removing this emit altogether.
+        # We need to check if any other serial bus messages
+        # are handled by other parts of the code
+        if "mycroft.stop" not in data:
+            self.ws.emit(Message(data))
 
         if "Command: system.version" in data:
             # This happens in response to the "system.version" message

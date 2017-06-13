@@ -225,7 +225,9 @@ def has_been_paired():
     Returns:
         bool: True if ever paired with backend (not factory reset)
     """
-    id = IdentityManager.get()
+    # This forces a load from the identity file in case the pairing state
+    # has recently changed
+    id = IdentityManager.load()
     return id.uuid is not None and id.uuid != ""
 
 
