@@ -77,7 +77,8 @@ class EnclosureReader(Thread):
                 LOG.error("Reading error: {0}".format(e))
 
     def process(self, data):
-        self.ws.emit(Message(data))
+        if not "mycroft.stop" in data:
+            self.ws.emit(Message(data))
 
         if "Command: system.version" in data:
             # This happens in response to the "system.version" message
