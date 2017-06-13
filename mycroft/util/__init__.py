@@ -323,6 +323,7 @@ def check_for_signal(signal_name, sec_lifetime=0):
             valid in filenames.
         sec_lifetime (int, optional): How many seconds the signal should
             remain valid.  If 0 or not specified, it is a single-use signal.
+            If -1, it never expires.
 
     Returns:
         bool: True if the signal is defined, False otherwise
@@ -332,6 +333,8 @@ def check_for_signal(signal_name, sec_lifetime=0):
         if sec_lifetime == 0:
             # consume this single-use signal
             os.remove(path)
+        elif sec_lifetime == -1:
+            return True
         elif int(os.path.getctime(path) + sec_lifetime) < int(time.time()):
             # remove once expired
             os.remove(path)
@@ -353,7 +356,7 @@ def is_speaking():
     Returns:
         bool: True while still speaking
     """
-    return check_for_signal("isSpeaking", 9999)   # check without consuming
+    return check_for_signal("isSpeaking", -1)
 
 
 def wait_while_speaking():
@@ -372,5 +375,15 @@ def stop_speaking():
     # TODO: Less hacky approach to this once Audio Manager is implemented
     # Skills should only be able to stop speech they've initiated
     config = mycroft.configuration.ConfigurationManager.instance()
-    kill([config.get('tts').get('module')])
-    kill(["aplay"])
+
+    create_signal('stoppingTTS')
+
+    # Perform in while loop in case the utterance contained periods and was
+    # split into multiple chunks by handle_speak()
+    while check_for_signal("isSpeaking", -1):
+        kill([config.get('tts').get('module')])
+        kill(["aplay"])
+        time.sleep(0.25)
+        
+    # This consumes the signal
+    check_for_signal('stoppingTTS')

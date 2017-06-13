@@ -47,9 +47,9 @@ from wifi import Cell
 from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
-from mycroft.util import connected, wait_while_speaking
+from mycroft.util import connected, wait_while_speaking, is_speaking, \
+    stop_speaking
 from mycroft.util.log import getLogger
-from mycroft.api import is_paired
 
 __author__ = 'aatchison and penrods'
 
@@ -261,6 +261,7 @@ class WiFi:
         self.init_events()
         self.conn_monitor = None
         self.conn_monitor_stop = threading.Event()
+        self.starting = False
 
     def init_events(self):
         '''
@@ -291,8 +292,19 @@ class WiFi:
            Fire up the MYCROFT access point for the user to connect to
            with a phone or computer.
         '''
+        if self.starting:
+            return
+        
+        self.starting = True
         LOG.info("Starting access point...")
-
+        
+        self.intro_msg = ""
+        if event and event.data.get("msg"):
+            self.intro_msg = event.data.get("msg")
+        self.allow_timeout = True
+        if event and event.data.get("allow_timeout"):
+            self.allow_timeout = event.data.get("allow_timeout")
+        
         # Fire up our access point
         self.ap.up()
         if not self.server:
@@ -350,7 +362,7 @@ class WiFi:
         bHasConnected = False
         cARPFailures = 0
         timeStarted = time.time()
-        timeLastAnnounced = timeStarted + 45  # first reminder in 90 secs
+        timeLastAnnounced = timeStarted - 45  # first reminder in 90 secs
         self.conn_monitor_stop.clear()
 
         while not self.conn_monitor_stop.isSet():
@@ -365,7 +377,7 @@ class WiFi:
                 timeStarted = time.time()  # reset start time after connection
                 timeLastAnnounced = time.time() - 45  # announce how to connect
 
-            if time.time() - timeStarted > 60 * 5 and is_paired():
+            if time.time() - timeStarted > 60 * 5 and self.allow_timeout:
                 # After 5 minutes, shut down the access point (unless the
                 # system has never been setup, in which case we stay up
                 # indefinitely)
@@ -381,8 +393,13 @@ class WiFi:
                         "prompt, open your browser and go to start dot "
                         "mycroft dot A I.", "start.mycroft.ai")
                 else:
-                    self._connection_prompt("Allow me to walk you through the "
-                                            " wifi setup process.")
+                    if self.intro_msg:
+                        self._connection_prompt(self.intro_msg)
+                        self.intro_msg = None  # only speak the intro once
+                    else:
+                        self._connection_prompt("Allow me to walk you through "
+                                                "the wifi setup process.")
+
                 timeLastAnnounced = time.time()
 
             if bHasConnected:
@@ -515,52 +532,21 @@ class WiFi:
 
     def stop(self, event=None):
         LOG.info("Stopping access point...")
+        if is_speaking():
+            stop_speaking()  # stop any assistance being spoken
         self._stop_connection_monitor()
         self.ap.down()
+        self.enclosure.mouth_reset()  # remove "start.mycroft.ai"
+        self.starting = False
         if self.server:
             self.server.server.shutdown()
             self.server.server.server_close()
             self.server.join()
             self.server = None
-        LOG.info("Access point stopped!")
-        self.enclosure.mouth_reset()
-
-    def _do_net_check(self):
-        # give system 5 seconds to resolve network or get plugged in
-        sleep(5)
-
-        LOG.info("Checking internet connection again")
-        if not connected():  # and self.conn_monitor is None:
-            if is_paired():
-                # TODO: Enclosure/localization
-                self._speak_and_show(
-                    "This unit is not connected to the Internet. Either "
-                    "plug in a network cable or hold the button on top for "
-                    "two seconds, then select wifi from the menu", None)
-            else:
-                # Begin the unit startup process, this is the first time it
-                # is being run with factory defaults.
-                self._connection_prompt(
-                    "Hello I am Mycroft, your new assistant.  "
-                    "To assist you I need to be connected to the internet.  "
-                    "You can either plug me in with a network cable, or "
-                    "use wifi.  To set up wifi, ")
+        LOG.info("Access point stopped!")  
 
     def run(self):
         try:
-            # When the system first boots up, check for a valid internet
-            # connection.
-            LOG.info("Checking internet connection")
-            if not connected():
-                LOG.info("No connection initially, waiting 5 seconds...")
-                self.net_check = threading.Thread(
-                    target=self._do_net_check,
-                    args={})
-                self.net_check.daemon = True
-                self.net_check.start()
-            else:
-                LOG.info("Connection found!")
-
             self.ws.run_forever()
         except Exception as e:
             LOG.error("Error: {0}".format(e))

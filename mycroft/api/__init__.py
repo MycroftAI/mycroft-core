@@ -219,11 +219,21 @@ class STTApi(Api):
         })
 
 
+def has_been_paired():
+    """ Determine if this device has ever been paired with a web backend
+
+    Returns:
+        bool: True if ever paired with backend (not factory reset)
+    """
+    id = IdentityManager.get()    
+    return id.uuid is not None and id.uuid != ""    
+    
+    
 def is_paired():
-    """ Determine if this device has been paired with a web backend
+    """ Determine if this device is actively paired with a web backend
 
     Determines if the installation of Mycroft has been paired by the user
-    with the backend system.
+    with the backend system, and if that pairing is still active.
 
     Returns:
         bool: True if paired with backend
