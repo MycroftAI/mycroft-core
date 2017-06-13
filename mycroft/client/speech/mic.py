@@ -38,7 +38,6 @@ from mycroft.util import (
     play_wav
 )
 from mycroft.util.log import getLogger
-from mycroft.api import is_paired
 
 config = ConfigurationManager.instance()
 listener_config = config.get('listener')
@@ -129,6 +128,9 @@ class MutableMicrophone(Microphone):
         if self.stream:
             self.stream.unmute()
 
+    def is_muted(self):
+        return self.muted
+
 
 class ResponsiveRecognizer(speech_recognition.Recognizer):
     # Padding of silence when feeding to pocketsphinx
@@ -179,8 +181,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         return audioop.rms(sound_chunk, sample_width)
 
     def wake_word_in_audio(self, frame_data):
-        if not is_paired():
-            return False
         hyp = self.wake_word_recognizer.transcribe(frame_data)
         return self.wake_word_recognizer.found_wake_word(hyp)
 
