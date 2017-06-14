@@ -160,7 +160,7 @@ def load_services_callback():
 
     ws.on('mycroft.audio.service.play', _play)
     ws.on('mycroft.audio.service.pause', _pause)
-    ws.on('mycrofr.audio.service.resume', _resume)
+    ws.on('mycroft.audio.service.resume', _resume)
     ws.on('mycroft.audio.service.stop', _stop)
     ws.on('mycroft.audio.service.next', _next)
     ws.on('mycroft.audio.service.prev', _prev)
@@ -231,7 +231,6 @@ def _stop(message=None):
     """
     global current
     logger.info('stopping all playing services')
-    print current
     if current:
         current.stop()
         current = None
