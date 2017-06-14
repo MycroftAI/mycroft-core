@@ -16,6 +16,7 @@ class VlcService(AudioBackend):
         self.config = config
         self.emitter = emitter
         self.name = name
+        self.normal_volume = None
 
     def supported_uris(self):
         return ['file', 'http']
@@ -53,10 +54,14 @@ class VlcService(AudioBackend):
         self.list_player.previous()
 
     def lower_volume(self):
-        self.player.audio_set_volume(30)
+        if self.normal_volume is None:
+            self.normal_volume = self.player.audio_get_volume()
+            self.player.audio_set_volume(self.normal_volume / 5)
 
     def restore_volume(self):
-        self.player.audio_set_volume(100)
+        if self.normal_volume:
+            self.player.audio_set_volume(self.normal_volume)
+            self.normal_volume = None
 
     def track_info(self):
         ret = {}
