@@ -85,7 +85,7 @@ function screen-script {
   shift
 
   screen -mdS $SCREEN_NAME $args $@
-  sleep 1
+  sleep 0.1
   verify-start $SCREEN_NAME
   echo "Started $SCREEN_NAME"
 }
