@@ -11,25 +11,46 @@ done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 SCRIPTS="$DIR/scripts"
 
-function usage {
-  echo
-  echo "Quickly start, stop or restart Mycroft's esential services in detached screens"
-  echo
-  echo "usage: $0 [-h] (start [-v|-c]|stop|restart)"
-  echo "      -h             this help message"
-  echo "      start          starts mycroft-service, mycroft-skills, mycroft-voice and mycroft-cli in quiet mode"
-  echo "      start -v       starts mycroft-service, mycroft-skills and mycroft-voice"
-  echo "      start -c       starts mycroft-service, mycroft-skills and mycroft-cli in background"
-  echo "      start -d       starts mycroft-service and mycroft skills in quiet mode and an active mycroft-cli"
-  echo "      stop           stops mycroft-service, mycroft-skills and mycroft-voice"
-  echo "      restart        restarts mycroft-service, mycroft-skills and mycroft-voice"
-  echo
-  echo "screen tips:"
-  echo "            run 'screen -list' to see all running screens"
-  echo "            run 'screen -r <screen-name>' (e.g. 'screen -r mycroft-service') to reatach a screen"
-  echo "            press ctrl + a, ctrl + d to detace the screen again"
-  echo "            See the screen man page for more details"
-  echo
+function screen-config {
+  echo "
+    # Generated
+    deflog on
+    logfile scripts/logs/$1.log
+    logfile flush 1
+  "
+}
+
+function usage-exit {
+
+echo "
+
+Quickly start, stop or restart Mycroft's essential services in detached screens
+
+usage: $0 (start|stop|restart) [options]
+
+      start          launch all necessary services to run mycroft
+      stop           end all services
+      restart        stop, then start all services
+      -h, --help     this help message
+
+start options:
+      [nothing]      both cli and voice client
+      -v, --voice    only voice client
+      -c, --cli      only cli
+      -d, --debug    only cli, in current terminal
+
+restart options:
+      (same as start)
+
+screen tips:
+            run 'screen -list' to see all running screens
+            run 'screen -r <screen-name>' (e.g. 'screen -r mycroft-service') to reatach a screen
+            press ctrl + a, ctrl + d to detach the screen again
+            See the screen man page for more details
+
+"
+exit 1
+
 }
 
 mkdir -p $SCRIPTS/logs
@@ -40,101 +61,103 @@ function verify-start {
       echo "$1 failed to start. The log is below:"
       echo
       tail $SCRIPTS/logs/$1.log
-    exit 1
+      exit 1
     fi
+}
+
+function screen-script {
+  SCREEN_NAME="$2"
+
+  if [ "$1" == "log" ]; then
+
+    SCREEN_FILE="$SCRIPTS/$SCREEN_NAME.screen"
+    if [ ! -f "$SCREEN_FILE" ]; then
+      echo "$(screen-config $SCREEN_NAME)" > "$SCREEN_FILE"
+    fi
+
+    args="$args -c $SCREEN_FILE"
+  elif [ "$1" != "no-log" ]; then
+    echo "Invalid argument $1"
+    exit 1
+  fi
+
+  shift
+  shift
+
+  screen -mdS $SCREEN_NAME $args $@
+  sleep 0.1
+  verify-start $SCREEN_NAME
+  echo "Started $SCREEN_NAME"
+}
+
+function start-mycroft-custom {
+  name="mycroft-$1"
+  shift
+  screen-script log "$name" $@
 }
 
 function start-mycroft {
-  screen -mdS mycroft-$1$2 -c $SCRIPTS/mycroft-$1.screen $DIR/start.sh $1 $2
-  sleep 1
-  verify-start mycroft-$1$2
-  echo "Mycroft $1$2 started"
+  start-mycroft-custom "$1" $DIR/start.sh $@
 }
 
 function start-mycroft-nolog {
-  screen -mdS mycroft-$1$2 $DIR/start.sh $1 $2 $3
-  sleep 1
-  verify-start mycroft-$1$2
-  echo "Mycroft $1$2 started"
+  screen-script no-log "mycroft-$1" $DIR/start.sh $@
 }
 
-function debug-start-mycroft {
-  $DIR/start.sh $1 $2
-  echo "Mycroft $1$2 started"
+function start-mycroft-debug {
+  $DIR/start.sh $@
+}
+
+function stop-screen {
+  for i in $(screen -ls "$1"); do
+    if echo $i | grep -q $1; then
+      screen -XS $i quit && echo "Stopped $1" || echo "Could not stop $1"
+    fi
+  done
 }
 
 function stop-mycroft {
-    if screen -list | grep -q "$1";
-    then
-      screen -XS mycroft-$1 quit
-      echo "Mycroft $1 stopped"
-    fi
-}
-
-function restart-mycroft {
-    if screen -list | grep -q "quiet";
-    then
-      $0 stop
-      sleep 1
-      $0 start
-    elif screen -list | grep -q "cli" && ! screen -list | grep -q "quiet";
-    then
-      $0 stop
-      sleep 1
-      $0 start -c
-    elif screen -list | grep -q "voice" && ! screen -list | grep -q "quiet";
-    then
-      $0 stop
-      sleep 1
-      $0 start -v
-    else
-      echo "An error occurred"
-    fi
+    stop-screen "mycroft-$1"
 }
 
 set -e
 
-if [[ -z "$1" || "$1" == "-h" ]]
-then
-  usage
-  exit 1
-elif [[ "$1" == "start" && -z "$2" ]]
-then
+case "$1" in
+"start")
+  $0 stop
   start-mycroft service
   start-mycroft skills
-  start-mycroft voice
-  start-mycroft-nolog cli --quiet --simple
-  exit 0
-elif [[ "$1" == "start" && "$2" == "-v" ]]
-then
-  start-mycroft service
-  start-mycroft skills
-  start-mycroft voice
-  exit 0
-elif [[ "$1" == "start" && "$2" == "-c" ]]
-then
-  start-mycroft service
-  start-mycroft skills
-  start-mycroft-nolog cli --simple
-  exit 0
-elif [[ "$1" == "start" && "$2" == "-d" ]]
-then
-  start-mycroft service
-  start-mycroft skills
-  debug-start-mycroft cli
-  exit 0
-elif [[ "$1" == "stop" && -z "$2" ]]
-then
+
+  case "$2" in
+  "")
+    start-mycroft voice
+    start-mycroft cli --quiet --simple
+    ;;
+  "-v"|"--voice")
+    start-mycroft voice
+    ;;
+  "-c"|"--cli")
+    start-mycroft cli --simple
+    ;;
+  "-d"|"--debug")
+    start-mycroft-debug cli
+    ;;
+  *)
+    echo "Usage"
+    usage-exit
+    ;;
+  esac
+  ;;
+
+"stop")
+  if [[ -n "$2" ]]; then usage-exit; fi
   stop-mycroft service
   stop-mycroft skills
   stop-mycroft voice
   stop-mycroft cli
-  exit 0
-elif [[ "$1" == "restart" && -z "$2" ]]
-then
-  restart-mycroft
-  exit 0
-else
-  usage
-  exit 1
-fi
+  ;;
+
+*)
+  usage-exit
+  ;;
+esac
