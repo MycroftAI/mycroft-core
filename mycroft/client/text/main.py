@@ -37,12 +37,10 @@ import json                                                 # nopep8
 from threading import Thread, Lock                          # nopep8
 from mycroft.messagebus.client.ws import WebsocketClient    # nopep8
 from mycroft.messagebus.message import Message              # nopep8
-from mycroft.tts import TTSFactory                          # nopep8
 from mycroft.util import get_ipc_directory                  # nopep8
 from mycroft.util.log import getLogger                      # nopep8
 from mycroft.configuration import ConfigurationManager      # nopep8
 
-tts = None
 ws = None
 mutex = Lock()
 logger = getLogger("CLIClient")
@@ -51,7 +49,6 @@ utterances = []
 chat = []   # chat history, oldest at the lowest index
 line = "What time is it"
 bSimple = '--simple' in sys.argv
-bQuiet = '--quiet' in sys.argv
 scr = None
 log_line_offset = 0  # num lines back in logs to show
 log_line_lr_scroll = 0  # amount to scroll left/right for long lines
@@ -256,17 +253,6 @@ def handle_speak(event):
     else:
         chat.append(">> " + utterance)
     draw_screen()
-    if not bQuiet:
-        global tts
-
-        mutex.acquire()
-        if not tts:
-            tts = TTSFactory.create()
-            tts.init(ws)
-        try:
-            tts.execute(utterance)
-        finally:
-            mutex.release()
 
 
 def connect():

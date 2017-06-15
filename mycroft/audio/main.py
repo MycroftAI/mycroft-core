@@ -22,10 +22,12 @@ from os import listdir
 import sys
 import time
 import imp
+import subprocess
 
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.util.log import getLogger
+import mycroft.audio.speech as speech
 
 __author__ = 'forslund'
 
@@ -38,6 +40,7 @@ ws = None
 default = None
 service = []
 current = None
+config = None
 
 
 def create_service_descriptor(service_folder):
@@ -167,7 +170,6 @@ def load_services_callback():
     ws.on('mycroft.audio.service.track_info', _track_info)
     ws.on('recognizer_loop:audio_output_start', _lower_volume)
     ws.on('recognizer_loop:audio_output_end', _restore_volume)
-
     ws.on('mycroft.stop', _stop)
 
 
@@ -359,8 +361,11 @@ def connect():
 
 def main():
     global ws
+    global config
     ws = WebsocketClient()
     ConfigurationManager.init(ws)
+    config = ConfigurationManager.get()
+    speech.init(ws)
 
     def echo(message):
         try:
