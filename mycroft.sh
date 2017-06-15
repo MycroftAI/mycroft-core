@@ -11,9 +11,18 @@ done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 SCRIPTS="$DIR/scripts"
 
+function screen-config {
+  echo "
+    # Generated
+    deflog on
+    logfile scripts/logs/$1.log
+    logfile flush 1
+  "
+}
+
 function usage-exit {
 
-cat << EOF
+echo "
 
 Quickly start, stop or restart Mycroft's essential services in detached screens
 
@@ -39,8 +48,7 @@ screen tips:
             press ctrl + a, ctrl + d to detach the screen again
             See the screen man page for more details
 
-EOF
-
+"
 exit 1
 
 }
@@ -53,15 +61,21 @@ function verify-start {
       echo "$1 failed to start. The log is below:"
       echo
       tail $SCRIPTS/logs/$1.log
-    exit 1
+      exit 1
     fi
 }
 
 function screen-script {
-  screen_name="$2"
+  SCREEN_NAME="$2"
 
   if [ "$1" == "log" ]; then
-    args="$args -c $SCRIPTS/$screen_name.screen"
+
+    SCREEN_FILE="$SCRIPTS/$SCREEN_NAME.screen"
+    if [ ! -f "$SCREEN_FILE" ]; then
+      echo "$(screen-config $SCREEN_NAME)" > "$SCREEN_FILE"
+    fi
+
+    args="$args -c $SCREEN_FILE"
   elif [ "$1" != "no-log" ]; then
     echo "Invalid argument $1"
     exit 1
@@ -70,14 +84,20 @@ function screen-script {
   shift
   shift
 
-  screen -mdS $screen_name $args $@
+  screen -mdS $SCREEN_NAME $args $@
   sleep 1
-  verify-start $screen_name
-  echo "Started $screen_name"
+  verify-start $SCREEN_NAME
+  echo "Started $SCREEN_NAME"
+}
+
+function start-mycroft-custom {
+  name="mycroft-$1"
+  shift
+  screen-script log "$name" $@
 }
 
 function start-mycroft {
-  screen-script log "mycroft-$1" $DIR/start.sh $@
+  start-mycroft-custom "$1" $DIR/start.sh $@
 }
 
 function start-mycroft-nolog {
