@@ -67,7 +67,6 @@ def write_data(dictionary):
         LOG.error("Error found in display manager file, deleting...")
         os.remove(path)
         write_data(dictionary)
-        
 
 
 def read_data():
