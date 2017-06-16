@@ -37,10 +37,16 @@ from mycroft.util import play_wav, create_signal, connected, \
 from mycroft.util.audio_test import record
 from mycroft.util.log import getLogger
 from mycroft.api import is_paired
+from mycroft.client.enclosure.display_manager import run as \
+    initiate_display_manager_ws
+
 
 __author__ = 'aatchison', 'jdorleans', 'iward'
 
 LOG = getLogger("EnclosureClient")
+
+# initiates the web sockets on display manager
+initiate_display_manager_ws()
 
 
 class EnclosureReader(Thread):

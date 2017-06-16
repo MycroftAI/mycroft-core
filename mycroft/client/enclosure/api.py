@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
-
+import mycroft.client.enclosure.display_manager as DisplayManager
 from mycroft.messagebus.message import Message
 from mycroft.util.log import getLogger
 from PIL import Image
@@ -23,6 +23,13 @@ from PIL import Image
 __author__ = 'jdorleans'
 
 LOGGER = getLogger(__name__)
+
+
+'''
+API for the functions that affect the Mark I device.
+NOTE: current state management is poorly implemented,
+will be changed in the future.
+'''
 
 
 class EnclosureAPI:
@@ -38,8 +45,18 @@ class EnclosureAPI:
     where there is no face at all.
     """
 
-    def __init__(self, ws):
+    def __init__(self, ws, name=""):
         self.ws = ws
+        self.name = name
+
+    def register(self, skill_name=""):
+        """Registers a skill as active. Used for speak() and speak_dialog()
+        to 'patch' a previous implementation. Somewhat hacky.
+        """
+        if self.name != "":
+            DisplayManager.set_active(self.name)
+        else:
+            DisplayManager.set_active(skill_name)
 
     def reset(self):
         """The enclosure should restore itself to a started state.
@@ -136,22 +153,27 @@ class EnclosureAPI:
     def mouth_reset(self):
         """Restore the mouth display to normal (blank)"""
         self.ws.emit(Message("enclosure.mouth.reset"))
+        DisplayManager.set_active(self.name)
 
     def mouth_talk(self):
         """Show a generic 'talking' animation for non-synched speech"""
         self.ws.emit(Message("enclosure.mouth.talk"))
+        DisplayManager.set_active(self.name)
 
     def mouth_think(self):
         """Show a 'thinking' image or animation"""
         self.ws.emit(Message("enclosure.mouth.think"))
+        DisplayManager.set_active(self.name)
 
     def mouth_listen(self):
         """Show a 'thinking' image or animation"""
         self.ws.emit(Message("enclosure.mouth.listen"))
+        DisplayManager.set_active(self.name)
 
     def mouth_smile(self):
         """Show a 'smile' image or animation"""
         self.ws.emit(Message("enclosure.mouth.smile"))
+        DisplayManager.set_active(self.name)
 
     def mouth_viseme(self, code):
         """Display a viseme mouth shape for synched speech
@@ -171,6 +193,7 @@ class EnclosureAPI:
         Args:
             text (str): text string to display
         """
+        DisplayManager.set_active(self.name)
         self.ws.emit(Message("enclosure.mouth.text", {'text': text}))
 
     def mouth_display(self, img_code="", x=0, y=0, refresh=True):
@@ -186,7 +209,8 @@ class EnclosureAPI:
                             Useful if you'd like to display muliple images
                             on the faceplate at once.
         """
-        self.ws.emit(Message("enclosure.mouth.display",
+        DisplayManager.set_active(self.name)
+        self.ws.emit(Message('enclosure.mouth.display',
                              {'img_code': img_code,
                               'xOffset': x,
                               'yOffset': y,
@@ -212,9 +236,8 @@ class EnclosureAPI:
                                 displaying the new image or not.
                                 Useful if you'd like to display muliple images
                                 on the faceplate at once.
-
-                "
             """
+        DisplayManager.set_active(self.name)
 
         # to understand how this funtion works you need to understand how the
         # Mark I arduino proprietary encoding works to display to the faceplate
@@ -332,6 +355,7 @@ class EnclosureAPI:
                          7 = wind/mist
             temp (int): the temperature (either C or F, not indicated)
         """
+        DisplayManager.set_active(self.name)
         self.ws.emit(Message("enclosure.weather.display",
                              {'img_code': img_code, 'temp': temp}))
 
