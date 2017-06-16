@@ -1,4 +1,5 @@
 import json
+from os.path import dirname
 
 from pyee import EventEmitter
 
@@ -24,11 +25,16 @@ class RegistrationOnlyEmitter(object):
         event_name = event.type
         self.emitter.emit(event_name, event, *args, **kwargs)
 
+    def remove(self, event_name, func):
+        pass
+
 
 class MockSkillsLoader(object):
     def __init__(self, skills_root):
         self.skills_root = skills_root
         self.emitter = RegistrationOnlyEmitter()
+        from mycroft.skills.intent_service import IntentService
+        self.ih = IntentService(self.emitter)
 
     def load_skills(self):
         self.skills = load_skills(self.emitter, self.skills_root)
@@ -53,7 +59,10 @@ class SkillTest(object):
                                                      actual.get(key)))
                 assert False
 
-    def run(self):
+    def run(self, loader):
+        for s in loader.skills:
+            if s and s._dir == self.skill:
+                name = s.name
         example_json = json.load(open(self.example, 'r'))
         event = {'utterances': [example_json.get('utterance')]}
 
@@ -61,7 +70,7 @@ class SkillTest(object):
             self.compare_intents(example_json.get('intent'), intent.data)
             self.returned_intent = True
 
-        self.emitter.once(example_json.get('intent_type'), compare)
+        self.emitter.once(name + ':' + example_json.get('intent_type'), compare)
         self.emitter.emit(
             'recognizer_loop:utterance',
             Message('recognizer_loop:utterance', event))
