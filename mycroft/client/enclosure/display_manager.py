@@ -41,7 +41,7 @@ def write_data(dictionary):
     path = os.path.join(managerIPCDir, "disp_info")
     permission = "r+" if os.path.isfile(path) else "w+"
 
-    if permission == "w+":
+    if permission == "w+" and os.path.isdir(managerIPCDir) is False:
         os.makedirs(managerIPCDir)
 
     try:
@@ -64,6 +64,10 @@ def write_data(dictionary):
 
     except Exception as e:
         LOG.error(e)
+        LOG.error("Error found in display manager file, deleting...")
+        os.remove(path)
+        write_data(dictionary)
+        
 
 
 def read_data():
@@ -74,7 +78,7 @@ def read_data():
     path = os.path.join(managerIPCDir, "disp_info")
     permission = "r" if os.path.isfile(path) else "w+"
 
-    if permission == "w+":
+    if permission == "w+" and os.path.isdir(managerIPCDir) is False:
         os.makedirs(managerIPCDir)
 
     data = {}
@@ -86,6 +90,8 @@ def read_data():
 
     except Exception as e:
         LOG.error(e)
+        os.remove(path)
+        read_data()
 
     return data
 
