@@ -94,7 +94,7 @@ def get_services(services_folder):
     return sorted(services, key=lambda p: p.get('name'))
 
 
-def load_services(config, ws):
+def load_services(config, ws, path=None):
     """
         Search though the service directory and load any services.
 
@@ -106,8 +106,9 @@ def load_services(config, ws):
             List of started services.
     """
     logger.info("Loading services")
-    service_directories = get_services(dirname(abspath(__file__)) +
-                                       '/services/')
+    if path is None:
+        path = dirname(abspath(__file__)) + '/services/'
+    service_directories = get_services(path)
     service = []
     for descriptor in service_directories:
         logger.info('Loading ' + descriptor['name'])
