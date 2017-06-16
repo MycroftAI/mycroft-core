@@ -36,10 +36,9 @@ from mycroft.util import play_wav, create_signal, connected, \
     wait_while_speaking
 from mycroft.util.audio_test import record
 from mycroft.util.log import getLogger
-from mycroft.api import is_paired
 from mycroft.client.enclosure.display_manager import run as \
     initiate_display_manager_ws
-
+from mycroft.api import is_paired, has_been_paired
 
 __author__ = 'aatchison', 'jdorleans', 'iward'
 
@@ -83,7 +82,11 @@ class EnclosureReader(Thread):
                 LOG.error("Reading error: {0}".format(e))
 
     def process(self, data):
-        self.ws.emit(Message(data))
+        # TODO: Look into removing this emit altogether.
+        # We need to check if any other serial bus messages
+        # are handled by other parts of the code
+        if "mycroft.stop" not in data:
+            self.ws.emit(Message(data))
 
         if "Command: system.version" in data:
             # This happens in response to the "system.version" message
@@ -91,7 +94,7 @@ class EnclosureReader(Thread):
             self.ws.emit(Message("enclosure.started"))
 
         if "mycroft.stop" in data:
-            if is_paired():
+            if has_been_paired():
                 create_signal('buttonPress')
                 self.ws.emit(Message("mycroft.stop"))
 
@@ -270,7 +273,7 @@ class Enclosure(object):
             # clients are up and connected to the messagebus in order to
             # receive the "speak".  This was sometimes happening too
             # quickly and the user wasn't notified what to do.
-            Timer(5, self.on_no_internet).start()
+            Timer(5, self._do_net_check).start()
 
     def on_no_internet(self, event=None):
         if connected():
@@ -284,7 +287,7 @@ class Enclosure(object):
         Enclosure._last_internet_notification = time.time()
 
         # TODO: This should go into EnclosureMark1 subclass of Enclosure.
-        if is_paired():
+        if has_been_paired():
             # Handle the translation within that code.
             self.ws.emit(Message("speak", {
                 'utterance': "This device is not connected to the Internet. "
@@ -355,3 +358,34 @@ class Enclosure(object):
             self.reader.stop()
             self.serial.close()
             self.ws.close()
+
+    def _do_net_check(self):
+        # TODO: This should live in the derived Enclosure, e.g. Enclosure_Mark1
+        LOG.info("Checking internet connection")
+        if not connected():  # and self.conn_monitor is None:
+            if has_been_paired():
+                # TODO: Enclosure/localization
+                self.ws.emit(Message("speak", {
+                    'utterance': "This unit is not connected to the Internet."
+                                 " Either plug in a network cable or hold the "
+                                 "button on top for two seconds, then select "
+                                 "wifi from the menu"
+                    }))
+            else:
+                # Begin the unit startup process, this is the first time it
+                # is being run with factory defaults.
+
+                # TODO: This logic should be in Enclosure_Mark1
+                # TODO: Enclosure/localization
+
+                # Don't listen to mic during this out-of-box experience
+                self.ws.emit(Message("mycroft.mic.mute", None))
+
+                # Kick off wifi-setup automatically
+                self.ws.emit(Message("mycroft.wifi.start",
+                                     {'msg': "Hello I am Mycroft, your new "
+                                      "assistant.  To assist you I need to be "
+                                      "connected to the internet.  You can "
+                                      "either plug me in with a network cable,"
+                                      " or use wifi.  To setup wifi ",
+                                      'allow_timeout': False}))

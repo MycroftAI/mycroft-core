@@ -111,6 +111,8 @@ class Mimic(TTS):
         for pair in pairs:
             if mycroft.util.check_for_signal('buttonPress'):
                 return
+            if mycroft.util.check_for_signal('stoppingTTS', -1):
+                return
             pho_dur = pair.split(":")  # phoneme:duration
             if len(pho_dur) == 2:
                 code = VISIMES.get(pho_dur[0], '4')
