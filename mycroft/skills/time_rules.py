@@ -140,6 +140,71 @@ class TimeRulesEnUs(AbstractTimeRules):
         if group.__contains__('sunday'):
             days[6] = True
 
+class TimeRulesDe(AbstractTimeRules):
+    def __init__(self):
+        super(TimeRulesDe, self).__init__()
+
+    def init_rules(self):
+        self.rules = {
+            'time_advs': 'heute|heut nacht|morgen',
+            'time_units': 'sekunde|minute|stunde|tag|woche|monat|jahr',
+            'day_parts': u'daemmerung|morgen|mittag|nachmittag|abend|nacht|mitternacht',
+            'week_days': (
+                'montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag'),
+            'months': (
+                u'januar|februar|maerz|april|mai|juni|juli|august|oktober|'
+                'september|november|dezember'),
+            'mealtimes': (
+                'fruehstueck|mittagszeit|teestunde|essenszeit|mittagsessen|abendessen|'
+                'dessert'),
+            'celebrations': 'ostern|weihnachten',
+            'repeat_time_regex': (
+                '((jede|jeder|jeden) (single )?(tag|(<week_days>)s?( (and )?'
+                '(<week_days>)s?)*))|taeglich|jeden tag'),
+            'time_regex': [
+                '(<time_advs>)',
+                '((at|in the|during the|tomorrow)\s)?(<day_parts>)',
+                '(in )?(ein|eine|einen|zwei|\d+\.?\d*) (<time_units>)s?( later)?',
+                'on (<week_days>)',
+                '(auf|der|die|das) (\d+(rd|st|nd|th)?\s)?(<months>)( the )?'
+                '(\s\d+(rd|st|nd|th)?)?(\s?,?\s?\d*)?',
+                'in (\d\d\d\d)', 'at (<mealtimes>|<celebrations>)',
+                "(at|by) \d+((:| and )\d+)?( and a (quarter|half))?"
+                "\s?((a\.?m\.?|p\.?m\.?)|o'clock)?",
+                '(in |in the )?next (<time_units>|<day_parts>|<week_days>'
+                '|<months>|<mealtimes>|<celebrations>)s?',
+                '<repeat_time_regex>'
+            ]
+        }
+
+    def build_repeat_time_regex(self):
+        week_days = self.rules.get('week_days')
+        repeat_time_regex = self.rules.get('repeat_time_regex')
+        self.rules['repeat_time_regex'] = repeat_time_regex.replace(
+            '<week_days>', week_days)
+
+    def is_all_days(self, group):
+        for d in [' tag', 'taeglich', 'jeden tag']:
+            if group.__contains__(d):
+                return True
+        return False
+
+    def fill_week_days(self, group, days):
+        if group.__contains__('montag'):
+            days[0] = True
+        if group.__contains__('dienstag'):
+            days[1] = True
+        if group.__contains__('mittwoch'):
+            days[2] = True
+        if group.__contains__('donnerstag'):
+            days[3] = True
+        if group.__contains__('freitag'):
+            days[4] = True
+        if group.__contains__('samstag'):
+            days[5] = True
+        if group.__contains__('sonntag'):
+            days[6] = True
+
 
 class TimeRulesPtBr(AbstractTimeRules):
     def __init__(self):
@@ -159,6 +224,7 @@ class TimeRulesPtBr(AbstractTimeRules):
 
 
 KEY_MAP = {
+    'de': TimeRulesDe,
     'en-us': TimeRulesEnUs,
     'pt-br': TimeRulesPtBr
 }
