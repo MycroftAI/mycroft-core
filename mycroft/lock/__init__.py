@@ -188,7 +188,8 @@ class Lock(object):  # python 3+ 'class Lock'
         handler.
         '''
         with open(self.path, 'r') as L:
-            if self.__pid == L.read():
+            pid = int(L.read())
+            if self.__pid == pid:
                 os.unlink(self.path)
 
     # End class Lock
