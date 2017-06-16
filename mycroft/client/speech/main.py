@@ -62,8 +62,8 @@ def handle_utterance(event):
     ws.emit(Message('recognizer_loop:utterance', event))
 
 
-def handle_multi_utterance_intent_failure(event):
-    logger.info("Failed to find intent on multiple intents.")
+def handle_intent_failure(event):
+    logger.info("Failed to find intent.")
     # TODO: Localize
     data = {'utterance':
             "Sorry, I didn't catch that. Please rephrase your request."}
@@ -126,9 +126,14 @@ def main():
     loop.on('recognizer_loop:record_end', handle_record_end)
     loop.on('recognizer_loop:no_internet', handle_no_internet)
     ws.on('open', handle_open)
+<<<<<<< HEAD
     ws.on(
         'multi_utterance_intent_failure',
         handle_multi_utterance_intent_failure)
+=======
+    ws.on('speak', handle_speak)
+    ws.on('intent_failure', handle_intent_failure)
+>>>>>>> Add intent fallback system
     ws.on('recognizer_loop:sleep', handle_sleep)
     ws.on('recognizer_loop:wake_up', handle_wake_up)
     ws.on('mycroft.mic.mute', handle_mic_mute)

@@ -20,6 +20,7 @@ import abc
 import imp
 import time
 
+import operator
 import os.path
 import re
 import time
@@ -188,9 +189,14 @@ class MycroftSkill(object):
     Skills implementation.
     """
 
+    fallback_handlers = {}
+
     def __init__(self, name=None, emitter=None):
         self.name = name or self.__class__.__name__
 
+
+    def __init__(self, name, emitter=None):
+        self.name = name
         self.bind(emitter)
         self.config_core = ConfigurationManager.get()
         self.config = self.config_core.get(self.name)
@@ -200,6 +206,38 @@ class MycroftSkill(object):
         self.log = getLogger(self.name)
         self.reload_skill = True
         self.events = []
+
+    @staticmethod
+    def on_intent_failure(message):
+        """Goes through all fallback handler until one returns true"""
+        for _, handler in sorted(MycroftSkill.fallback_handlers.items(),
+                                 key=operator.itemgetter(0)):
+            if handler(message):
+                return
+        logger.warn('No fallback could handle intent.')
+
+    @staticmethod
+    def register_fallback(handler, priority):
+        """
+        Register a function to be called as a general info fallback
+        Fallback should receive message and return
+        a boolean (True if succeeded or False if failed)
+
+        Lower priority gets run first
+        0 for high priority 100 for low priority
+        """
+        while priority in MycroftSkill.fallback_handlers:
+            priority += 1
+
+        MycroftSkill.fallback_handlers[priority] = handler
+
+    @staticmethod
+    def remove_fallback(handler_to_del):
+        for priority, handler in MycroftSkill.fallback_handlers.items():
+            if handler == handler_to_del:
+                del MycroftSkill.fallback_handlers[priority]
+                return
+        logger.warn('Could not remove fallback!')
 
     @property
     def location(self):
