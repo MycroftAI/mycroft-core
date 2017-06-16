@@ -6,6 +6,7 @@ from test.skills.skill_tester import MockSkillsLoader, SkillTest
 __author__ = 'seanfitz'
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+# PROJECT_ROOT = '/opt'
 
 
 def discover_tests():
@@ -31,7 +32,7 @@ class IntentTestSequenceMeta(type):
     def __new__(mcs, name, bases, d):
         def gen_test(a, b):
             def test(self):
-                SkillTest(a, b, self.emitter).run()
+                SkillTest(a, b, self.emitter).run(self.loader)
             return test
 
         tests = discover_tests()
