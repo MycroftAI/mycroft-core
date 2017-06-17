@@ -63,14 +63,15 @@ class SkillTest(object):
         for s in loader.skills:
             if s and s._dir == self.skill:
                 name = s.name
+                break
         example_json = json.load(open(self.example, 'r'))
         event = {'utterances': [example_json.get('utterance')]}
 
         def compare(intent):
             self.compare_intents(example_json.get('intent'), intent.data)
             self.returned_intent = True
-
-        self.emitter.once(name + ':' + example_json.get('intent_type'), compare)
+        self.emitter.once(name + ':' + example_json.get('intent_type'),
+                          compare)
         self.emitter.emit(
             'recognizer_loop:utterance',
             Message('recognizer_loop:utterance', event))
