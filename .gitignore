@@ -16,3 +16,4 @@ scripts/logs/*
 logs/*
 .coverage
 mycroft/audio-accuracy-test/data/*
+scripts/*.screen
