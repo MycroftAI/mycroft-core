@@ -50,12 +50,14 @@ class IntentTestSequenceMeta(type):
 class IntentTestSequence(unittest.TestCase):
     __metaclass__ = IntentTestSequenceMeta
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(self):
         self.loader = MockSkillsLoader(
             os.path.join(PROJECT_ROOT, 'mycroft', 'skills'))
         self.emitter = self.loader.load_skills()
 
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(self):
         self.loader.unload_skills()
 
 
