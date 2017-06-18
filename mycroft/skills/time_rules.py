@@ -140,6 +140,7 @@ class TimeRulesEnUs(AbstractTimeRules):
         if group.__contains__('sunday'):
             days[6] = True
 
+
 class TimeRulesDe(AbstractTimeRules):
     def __init__(self):
         super(TimeRulesDe, self).__init__()
@@ -147,16 +148,18 @@ class TimeRulesDe(AbstractTimeRules):
     def init_rules(self):
         self.rules = {
             'time_advs': 'heute|heut nacht|morgen',
-            'time_units': 'sekunde|minute|stunde|tag|woche|monat|jahr',
+            'time_units': 'sekunde|minute|stunde|tag|'
+                'woche|monat|jahr',
             'day_parts': u'daemmerung|morgen|mittag|nachmittag|abend|nacht|mitternacht',
             'week_days': (
                 'montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag'),
             'months': (
-                u'januar|februar|maerz|april|mai|juni|juli|august|oktober|'
+                u'januar|februar|maerz|april|mai|'
+                'juni|juli|august|oktober|'
                 'september|november|dezember'),
             'mealtimes': (
-                'fruehstueck|mittagszeit|teestunde|essenszeit|mittagsessen|abendessen|'
-                'dessert'),
+                'fruehstueck|mittagszeit|teestunde|essenszeit|'
+                'mittagsessen|abendessen|dessert'),
             'celebrations': 'ostern|weihnachten',
             'repeat_time_regex': (
                 '((jede|jeder|jeden) (single )?(tag|(<week_days>)s?( (and )?'
