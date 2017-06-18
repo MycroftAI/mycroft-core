@@ -227,6 +227,7 @@ class TimeRulesPtBr(AbstractTimeRules):
     def fill_week_days(self, group, days):
         pass
 
+
 # TODO: do own TimeRules for es and pt.
 KEY_MAP = {
     'de': TimeRulesDe,
