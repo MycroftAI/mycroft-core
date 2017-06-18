@@ -66,7 +66,8 @@ class AudioConsumerTest(unittest.TestCase):
     def __create_sample_from_test_file(self, sample_name):
         root_dir = dirname(dirname(dirname(__file__)))
         filename = join(
-            root_dir, 'test', 'client', 'data', sample_name + '.wav')
+            root_dir, 'unittests', 'client',
+            'data', sample_name + '.wav')
         wavfile = WavFile(filename)
         with wavfile as source:
             return AudioData(
