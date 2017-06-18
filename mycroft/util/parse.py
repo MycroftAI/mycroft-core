@@ -164,6 +164,7 @@ def extractnumber_en(text):
 
     return val
 
+
 def extractnumber_de(text):
     """
     This function prepares the given text for parsing by making
@@ -175,7 +176,7 @@ def extractnumber_de(text):
 
     """
     aWords = text.split()
-    aWords = [word for word in aWords if word not in 
+    aWords = [word for word in aWords if word not in
               ["der", "die", "das", "ein", "eine"]]
     andPass = False
     valPreAnd = False
@@ -420,8 +421,8 @@ def normalize_de(text, remove_articles):
             continue
 
         # Convert numbers into digits, e.g. "two" -> "2"
-        textNumbers = ["null", "eins", "zwei", "drei", "vier", 
-                       u"fünf", "sechs", "sieben", "acht", 
+        textNumbers = ["null", "eins", "zwei", "drei", "vier",
+                       u"fünf", "sechs", "sieben", "acht",
                        "neun", "zehn", "elf", u"zwölf",
                        "dreizehn", "vierzehn", u"fünfzehn", "sechzehn",
                        "siebzehn", "achtzehn", "neunzehn", "zwanzig"]
@@ -431,6 +432,7 @@ def normalize_de(text, remove_articles):
         normalized += " " + word
 
     return normalized[1:]  # strip the initial space
+
 
 ####################################################################
 # Spanish normalization

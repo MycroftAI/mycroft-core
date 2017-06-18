@@ -149,8 +149,9 @@ class TimeRulesDe(AbstractTimeRules):
         self.rules = {
             'time_advs': 'heute|heut nacht|morgen',
             'time_units': 'sekunde|minute|stunde|tag|'
-                'woche|monat|jahr',
-            'day_parts': u'daemmerung|morgen|mittag|nachmittag|abend|nacht|mitternacht',
+                          'woche|monat|jahr',
+            'day_parts': u'daemmerung|morgen|mittag|'
+                         'nachmittag|abend|nacht|mitternacht',
             'week_days': (
                 'montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag'),
             'months': (
@@ -167,7 +168,8 @@ class TimeRulesDe(AbstractTimeRules):
             'time_regex': [
                 '(<time_advs>)',
                 '((at|in the|during the|tomorrow)\s)?(<day_parts>)',
-                '(in )?(ein|eine|einen|zwei|\d+\.?\d*) (<time_units>)s?( later)?',
+                '(in )?(ein|eine|einen|zwei|\d+\.?\d*)'
+                '(<time_units>)s?( later)?',
                 'on (<week_days>)',
                 '(auf|der|die|das) (\d+(rd|st|nd|th)?\s)?(<months>)( the )?'
                 '(\s\d+(rd|st|nd|th)?)?(\s?,?\s?\d*)?',

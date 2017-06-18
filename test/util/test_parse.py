@@ -277,6 +277,8 @@ class TestNormalize(unittest.TestCase):
 
     def test_numbers_de(self):
         self.assertEqual(normalize("es ist null eins zwei drei",
-                                    lang="de"), "es ist 0 1 2 3")
+                                   lang="de"), "es ist 0 1 2 3")
+
+
 if __name__ == "__main__":
     unittest.main()
