@@ -1,4 +1,5 @@
 import os
+import sys
 import glob
 import unittest
 from test.integrationtests.skills.skill_tester import MockSkillsLoader
@@ -6,15 +7,17 @@ from test.integrationtests.skills.skill_tester import SkillTest
 
 __author__ = 'seanfitz'
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-# PROJECT_ROOT = '/opt'
+SKILL_PATH = '/opt/mycroft/skills'
 
 
 def discover_tests():
+    global SKILL_PATH
+    if len(sys.argv) > 1:
+        SKILL_PATH = sys.argv.pop(1)
     tests = {}
     skills = [
         skill for skill
-        in glob.glob(os.path.join(PROJECT_ROOT, 'mycroft/skills/*'))
+        in glob.glob(SKILL_PATH + '/*')
         if os.path.isdir(skill)
     ]
 
@@ -53,8 +56,7 @@ class IntentTestSequence(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
-        self.loader = MockSkillsLoader(
-            os.path.join(PROJECT_ROOT, 'mycroft', 'skills'))
+        self.loader = MockSkillsLoader(SKILL_PATH)
         self.emitter = self.loader.load_skills()
 
     @classmethod
