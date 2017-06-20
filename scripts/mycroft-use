@@ -1,0 +1,19 @@
+#!/bin/bash
+#mycroft-use
+
+if [ $1 = "unstable" ]; then
+        echo "Switching to unstable build..."
+        sudo sh -c 'echo "deb http://repo.mycroft.ai/repos/apt/debian debian-unstable main" > /etc/apt/sources.list.d/repo.mycroft.ai.list'
+        sudo apt-get update
+        sudo apt-get install mycroft-core -y
+elif [ $1 = "stable" ]; then
+        echo "Switching to stable build..."
+        sudo sh -c 'echo "deb http://repo.mycroft.ai/repos/apt/debian debian main" > /etc/apt/sources.list.d/repo.mycroft.ai.list'
+        sudo apt-get remove mycroft-core -y
+        sudo apt-get update
+        sudo apt-get install mycroft-core -y
+#elif [ $1 = "github" ]; then
+#        echo "Switching to github"
+else
+        echo "mycroft-use: usage: mycroft-use [stable | unstable | github]"
+fi
