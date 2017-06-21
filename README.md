@@ -9,7 +9,7 @@ Release notes at: https://docs.mycroft.ai/release-notes
 
 Pair Mycroft instance at: https://home.mycroft.ai
 
-Mycroft Slack (chat) channel: http://mycroft-ai-slack-invite.herokuapp.com/
+Mycroft Slack (chat) channel: https://mycroft.ai/to/chat
 
 Looking to join in developing?  Check out the [Project Wiki](../../wiki/Home) for tasks you can tackle!
 
