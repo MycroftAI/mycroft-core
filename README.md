@@ -76,12 +76,13 @@ These are the keys currently used in Mycroft Core:
 - [Wolfram-Alpha Skill](http://products.wolframalpha.com/api/)
 
 ## Configuration
-Mycroft configuration consists of 3 possible files:
-- `mycroft-core/mycroft/configuration/mycroft.conf`
-- `/etc/mycroft/mycroft.conf`
-- `$HOME/.mycroft/mycroft.conf`
+Mycroft configuration consists of 4 possible locations:
+- `mycroft-core/mycroft/configuration/mycroft.conf`(Defaults)
+- [Mycroft Home](https://home.mycroft.ai) (Remote)
+- `/etc/mycroft/mycroft.conf`(Machine)
+- `$HOME/.mycroft/mycroft.conf`(User)
 
-When the configuration loader starts, it looks in these locations in this order, and loads ALL configurations. Keys that exist in multiple configuration files will be overridden by the last file to contain the value. This results in a minimal amount being written for a specific device and user, without modifying the default distribution files.
+When the configuration loader starts, it looks in these locations in this order, and loads ALL configurations. Keys that exist in multiple configuration files will be overridden by the last file to contain the value. This process results in a minimal amount being written for a specific device and user, without modifying default distribution files.
 
 # Running Mycroft Quick Start
 To start essential tasks, run `./mycroft.sh start`. This command will start the Mycroft service, skills, voice, and command line interface (cli) using `--quiet mode` in a detached screen.  Output of these screens will be written to their respective log files (e.g. ./log/mycroft-service.log).
