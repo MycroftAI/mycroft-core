@@ -177,7 +177,7 @@ def extractnumber_de(text):
     """
     aWords = text.split()
     aWords = [word for word in aWords if word not in
-              ["der", "die", "das", "ein", "eine"]]
+              ["der", "die", "das"]]
     andPass = False
     valPreAnd = False
     val = False
@@ -417,7 +417,7 @@ def normalize_de(text, remove_articles):
     words = text.split()  # this also removed extra spaces
     normalized = ""
     for word in words:
-        if remove_articles and word in ["der", "die", "das", "ein", "eine"]:
+        if remove_articles and word in ["der", "die", "das"]:
             continue
 
         # Convert numbers into digits, e.g. "two" -> "2"
