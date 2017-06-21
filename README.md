@@ -3,13 +3,13 @@ Mycroft [![Build Status](https://travis-ci.org/MycroftAI/mycroft-core.svg?branch
 
 NOTE: The default branch for this repository is 'dev', which should be considered a working beta. If you want to clone a more stable version, switch over to the 'master' branch.  
 
-Full documentation at: https://docs.mycroft.ai
+Documentation: https://docs.mycroft.ai
 
-Release notes at: https://docs.mycroft.ai/release-notes
+Release Notes: https://docs.mycroft.ai/release-notes
 
-Pair Mycroft instance at: https://home.mycroft.ai
+Pair Mycroft Device: https://home.mycroft.ai
 
-Mycroft Slack (chat) channel: https://mycroft.ai/to/chat
+Mycroft Chat Network: https://mycroft.ai/to/chat
 
 Looking to join in developing?  Check out the [Project Wiki](../../wiki/Home) for tasks you can tackle!
 
