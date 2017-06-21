@@ -86,7 +86,6 @@ class EnclosureMouth:
             yOffset = event.data.get("yOffset", yOffset)
             clearPrevious = event.data.get("clearPrev", clearPrevious)
 
-        # clearAfter = int(cleartAfter) # convert clearAfter to 0 or 1
         clearPrevious = int(str(clearPrevious) == "True")
         clearPrevious = "cP=" + str(clearPrevious) + ","
         x_offset = "x=" + str(xOffset) + ","

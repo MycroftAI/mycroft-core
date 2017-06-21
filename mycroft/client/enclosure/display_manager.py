@@ -123,8 +123,8 @@ def remove_active():
     write_data({"active_skill": ""})
 
 
-def run():
-    """ TODO: document
+def initiate_display_manager_ws():
+    """ Initiates the web sockets on the display_manager
     """
 
     # Should remove needs to be an object so it can be referenced in functions
