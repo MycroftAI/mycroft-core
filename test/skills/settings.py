@@ -36,3 +36,41 @@ class SkillSettingsTest(unittest.TestCase):
         s2 = SkillSettings(join(dirname(__file__), 'settings', 'store.json'))
         for key in s:
             self.assertEqual(s[key], s2[key])
+
+    def test_update_list(self):
+        s = SkillSettings(join(dirname(__file__), 'settings', 'store.json'))
+        s['l'] = ['a', 'b', 'c']
+        s.store()
+        s2 = SkillSettings(join(dirname(__file__), 'settings', 'store.json'))
+        self.assertEqual(s['l'], s2['l'])
+
+        # Update list
+        s2['l'].append('d')
+        s2.store()
+        s3 = SkillSettings(join(dirname(__file__), 'settings', 'store.json'))
+        self.assertEqual(s2['l'], s3['l'])
+
+    def test_update_dict(self):
+        s = SkillSettings(join(dirname(__file__), 'settings', 'store.json'))
+        s['d'] = {'a': 1, 'b': 2}
+        s.store()
+        s2 = SkillSettings(join(dirname(__file__), 'settings', 'store.json'))
+        self.assertEqual(s['d'], s2['d'])
+
+        # Update dict
+        s2['d']['c'] = 3
+        s2.store()
+        s3 = SkillSettings(join(dirname(__file__), 'settings', 'store.json'))
+        self.assertEqual(s2['d'], s3['d'])
+
+    def test_no_change(self):
+        s = SkillSettings(join(dirname(__file__), 'settings', 'store.json'))
+        s['d'] = {'a': 1, 'b': 2}
+        s.store()
+
+        s = SkillSettings(join(dirname(__file__), 'settings', 'store.json'))
+        self.assertTrue(s._is_stored)
+
+
+if __name__ == '__main__':
+    unittest.main()
