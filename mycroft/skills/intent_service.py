@@ -54,6 +54,7 @@ class IntentService(object):
         t = 0
         while self.waiting and t < 5:
             t = time.time() - start_time
+            time.sleep(0.1)
         self.waiting = False
         return self.result
 
@@ -225,6 +226,7 @@ class IntentParser():
         t = 0
         while self.waiting and t < self.time_out:
             t = time.time() - start_time
+            time.sleep(0.1)
         return self.intent, self.id
 
     def get_skill_id(self, intent_name):
@@ -235,6 +237,7 @@ class IntentParser():
         t = 0
         while self.waiting and t < self.time_out:
             t = time.time() - start_time
+            time.sleep(0.1)
         self.waiting = False
         return self.id
 

@@ -250,6 +250,11 @@ class MycroftSkill(object):
     def converse(self, transcript, lang="en-us"):
         return False
 
+    def make_active(self):
+        # bump skill to active_skill list in intent_service
+        # this ensures converse method is called
+        self.emitter.emit(Message('active_skill_request', {"skill_id":self.skill_id}))
+
     def register_intent(self, intent_parser, handler):
         name = intent_parser.name
         intent_parser.name = str(self.skill_id) + ':' + intent_parser.name
