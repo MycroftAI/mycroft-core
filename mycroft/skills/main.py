@@ -254,12 +254,13 @@ def _watch_skills():
                 # checking if skill was modified or reload was requested
                 elif (skill.get(
                         "instance") and modified > last_modified_skill) or skill["reload_request"]:
-                    # checking if skill should be reloaded
+                    # checking if skill reload was requested
                     if skill["reload_request"]:
                         logger.debug("External reload for " + skill_folder + " requested")
                         loaded_skills[skill_folder]["reload_request"] = False
                         if skill["external_reload"]:
                             ws.emit(Message("reload_skill_response", {"status": "reloading", "skill_id": skill["id"]}))
+                            skill["do_not_reload"] = False
                         else:
                             ws.emit(Message("reload_skill_response", {"status": "forbidden", "skill_id": skill["id"]}))
                             logger.debug("External reload for " + skill_folder + " is forbidden")
@@ -267,6 +268,11 @@ def _watch_skills():
                     # check if skills allows auto_reload
                     elif not skill["instance"].reload_skill:
                         continue
+                    else:
+                        # allow skill reload
+                        skill["do_not_reload"] = False
+
+                    # check if skill should be shutdown
                     if not skill["do_not_reload"]:
                         logger.debug("Reloading Skill: " + skill_folder)
                         # removing listeners and stopping threads
@@ -277,7 +283,7 @@ def _watch_skills():
                         except:
                             logger.debug("Skill " + skill_folder + " is already shutdown")
 
-                # load skill
+                # check if skill should be loaded
                 if not skill["do_not_reload"]:
                     skill["loaded"] = True
                     skill["instance"] = load_skill(
@@ -303,7 +309,6 @@ def handle_shutdown_skill_request(message):
             loaded_skills[skill]["do_not_load"] = True
             loaded_skills[skill]["shutdown"] = True
             loaded_skills[skill]["reload_request"] = False
-            #loaded_skills[skill]["loaded"] = False
             ws.emit(Message("shutdown_skill_response", {"status": "waiting", "skill_id": skill_id}))
             break
 
