@@ -18,9 +18,9 @@
 
 import abc
 import imp
+import time
 import os.path
 import re
-import signal
 import time
 from os.path import join, dirname, splitext, isdir
 
@@ -32,10 +32,8 @@ from mycroft.dialog import DialogLoader
 from mycroft.filesystem import FileSystemAccess
 from mycroft.messagebus.message import Message
 from mycroft.util.log import getLogger
-
+from mycroft.skills.settings import SkillSettings
 __author__ = 'seanfitz'
-
-BLACKLISTED_SKILLS = ["send_sms", "media"]
 
 skills_config = ConfigurationManager.instance().get("skills")
 BLACKLISTED_SKILLS = skills_config["blacklisted_skills"]
@@ -108,6 +106,7 @@ def load_skill(skill_descriptor, emitter, skill_id):
             skill = skill_module.create_skill()
             skill.bind(emitter)
             skill.skill_id = skill_id
+            skill._dir = dirname(skill_descriptor['info'][1])
             skill.load_data_files(dirname(skill_descriptor['info'][1]))
             skill.initialize()
             logger.info("Loaded " + skill_descriptor["name"] + " with ID " + str(skill_id))
@@ -211,6 +210,15 @@ class MycroftSkill(object):
     @property
     def lang(self):
         return self.config_core.get('lang')
+
+    @property
+    def settings(self):
+        """ Load settings if not already loaded. """
+        try:
+            return self._settings
+        except:
+            self._settings = SkillSettings(join(self._dir, 'settings.json'))
+            return self._settings
 
     def bind(self, emitter):
         if emitter:
@@ -350,6 +358,8 @@ class MycroftSkill(object):
         process termination. The skill implementation must
         shutdown all processes and operations in execution.
         """
+        # Store settings
+        self.settings.store()
 
         # removing events
         for e, f in self.events:

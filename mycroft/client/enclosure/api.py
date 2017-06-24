@@ -52,11 +52,11 @@ class EnclosureAPI:
         self.ws.emit(Message("enclosure.system.reset"))
 
     def system_mute(self):
-        """Turn off the system microphone (not listening for wakeword)."""
+        """Mute (turn off) the system speaker."""
         self.ws.emit(Message("enclosure.system.mute"))
 
     def system_unmute(self):
-        """Turn the system microphone on (listening for wakeword)."""
+        """Unmute (turn on) the system speaker."""
         self.ws.emit(Message("enclosure.system.unmute"))
 
     def system_blink(self, times):
