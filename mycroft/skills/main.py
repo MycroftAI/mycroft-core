@@ -197,7 +197,8 @@ def _watch_skills():
             # register unique ID
             id_counter += 1
             loaded_skills[skill_folder] = {"id": id_counter, "loaded": False, "do_not_reload": False, "do_not_load": False, "reload_request": False, "shutdown":False}
-
+            loaded_skills[skill_folder]["external_reload"] = True
+            loaded_skills[skill_folder]["external_shutdown"] = True
     # Load priority skills first
     load_priority()
 
@@ -262,7 +263,6 @@ def _watch_skills():
                         else:
                             ws.emit(Message("reload_skill_response", {"status": "forbidden", "skill_id": skill["id"]}))
                             logger.debug("External reload for " + skill_folder + " is forbidden")
-                            # check if we are supposed to reload this skill
                             skill["do_not_reload"] = True
                     # check if skills allows auto_reload
                     elif not skill["instance"].reload_skill:
