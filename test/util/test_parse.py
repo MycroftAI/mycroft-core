@@ -3,6 +3,7 @@
 
 import unittest
 from mycroft.util.parse import normalize
+from mycroft.util.parse import extractnumber
 
 
 class TestNormalize(unittest.TestCase):
@@ -16,6 +17,28 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(normalize("this is an extra test",
                                    remove_articles=False),
                          "this is an extra test")
+
+    def test_extractnumber(self):
+        self.assertEqual(extractnumber("this is the first test"), 1)
+        self.assertEqual(extractnumber("this is 2 test"), 2)
+        self.assertEqual(extractnumber("this is second test"), 2)
+        self.assertEqual(extractnumber("this is the third test"), 1.0/3.0)
+        self.assertEqual(extractnumber("this is test number 4"), 4)
+        self.assertEqual(extractnumber("one third of a cup"), 1.0/3.0)
+        self.assertEqual(extractnumber("three cups"), 3)
+        self.assertEqual(extractnumber("1/3 cups"), 1.0/3.0)
+        self.assertEqual(extractnumber("quarter cup"), 0.25)
+        self.assertEqual(extractnumber("1/4 cup"), 0.25)
+        self.assertEqual(extractnumber("one fourth cup"), 0.25)
+        self.assertEqual(extractnumber("2/3 cups"), 2.0/3.0)
+        self.assertEqual(extractnumber("3/4 cups"), 3.0/4.0)
+        self.assertEqual(extractnumber("1 and 3/4 cups"), 1.75)
+        self.assertEqual(extractnumber("1 cup and a half"), 1.5)
+        self.assertEqual(extractnumber("one cup and a half"), 1.5)
+        self.assertEqual(extractnumber("one and a half cups"), 1.5)
+        self.assertEqual(extractnumber("one and one half cups"), 1.5)
+        self.assertEqual(extractnumber("three quarter cups"), 3.0/4.0)
+        self.assertEqual(extractnumber("three quarters cups"), 3.0/4.0)
 
     def test_spaces(self):
         self.assertEqual(normalize("  this   is  a    test"),

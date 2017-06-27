@@ -82,7 +82,7 @@ def resolve_resource_file(res_name):
 
 
 def play_wav(uri):
-    config = mycroft.configuration.ConfigurationManager.get()
+    config = mycroft.configuration.ConfigurationManager.instance()
     play_cmd = config.get("play_wav_cmdline")
     play_wav_cmd = str(play_cmd).split(" ")
     for index, cmd in enumerate(play_wav_cmd):
@@ -92,7 +92,7 @@ def play_wav(uri):
 
 
 def play_mp3(uri):
-    config = mycroft.configuration.ConfigurationManager.get()
+    config = mycroft.configuration.ConfigurationManager.instance()
     play_cmd = config.get("play_mp3_cmdline")
     play_mp3_cmd = str(play_cmd).split(" ")
     for index, cmd in enumerate(play_mp3_cmd):
@@ -230,7 +230,7 @@ def curate_cache(dir, min_free_percent=5.0):
 
 
 def get_cache_directory(domain=None):
-    """Get a directory for caches data
+    """Get a directory for caching data
 
     This directory can be used to hold temporary caches of data to
     speed up performance.  This directory will likely be part of a
@@ -244,7 +244,8 @@ def get_cache_directory(domain=None):
     Return:
         str: a path to the directory where you can cache data
     """
-    dir = mycroft.configuration.ConfigurationManager.get().get("cache_path")
+    config = mycroft.configuration.ConfigurationManager.instance()
+    dir = config.get("cache_path")
     if not dir:
         # If not defined, use /tmp/mycroft/cache
         dir = os.path.join(tempfile.gettempdir(), "mycroft", "cache")
@@ -264,7 +265,8 @@ def get_ipc_directory(domain=None):
     Returns:
         str: a path to the IPC directory
     """
-    dir = mycroft.configuration.ConfigurationManager.get().get("ipc_path")
+    config = mycroft.configuration.ConfigurationManager.instance()
+    dir = config.get("ipc_path")
     if not dir:
         # If not defined, use /tmp/mycroft/ipc
         dir = os.path.join(tempfile.gettempdir(), "mycroft", "ipc")
@@ -321,6 +323,7 @@ def check_for_signal(signal_name, sec_lifetime=0):
             valid in filenames.
         sec_lifetime (int, optional): How many seconds the signal should
             remain valid.  If 0 or not specified, it is a single-use signal.
+            If -1, it never expires.
 
     Returns:
         bool: True if the signal is defined, False otherwise
@@ -330,6 +333,8 @@ def check_for_signal(signal_name, sec_lifetime=0):
         if sec_lifetime == 0:
             # consume this single-use signal
             os.remove(path)
+        elif sec_lifetime == -1:
+            return True
         elif int(os.path.getctime(path) + sec_lifetime) < int(time.time()):
             # remove once expired
             os.remove(path)
@@ -343,3 +348,42 @@ def check_for_signal(signal_name, sec_lifetime=0):
 def validate_param(value, name):
     if not value:
         raise ValueError("Missing or empty %s in mycroft.conf " % name)
+
+
+def is_speaking():
+    """Determine if Text to Speech is occurring
+
+    Returns:
+        bool: True while still speaking
+    """
+    return check_for_signal("isSpeaking", -1)
+
+
+def wait_while_speaking():
+    """Pause as long as Text to Speech is still happening
+
+    Pause while Text to Speech is still happening.  This always pauses
+    briefly to ensure that any preceeding request to speak has time to
+    begin.
+    """
+    time.sleep(0.1)  # Wait briefly in for any queued speech to begin
+    while is_speaking():
+        time.sleep(0.1)
+
+
+def stop_speaking():
+    # TODO: Less hacky approach to this once Audio Manager is implemented
+    # Skills should only be able to stop speech they've initiated
+    config = mycroft.configuration.ConfigurationManager.instance()
+
+    create_signal('stoppingTTS')
+
+    # Perform in while loop in case the utterance contained periods and was
+    # split into multiple chunks by handle_speak()
+    while check_for_signal("isSpeaking", -1):
+        kill([config.get('tts').get('module')])
+        kill(["aplay"])
+        time.sleep(0.25)
+
+    # This consumes the signal
+    check_for_signal('stoppingTTS')

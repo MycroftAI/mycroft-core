@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-sudo rpm -Uvh http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
-
 sudo dnf install -y \
     git \
     python \
@@ -21,6 +19,7 @@ sudo dnf install -y \
     s3cmd \
     portaudio-devel \
     mpg123 \
+    mpg123-plugins-pulseaudio \
     screen \
     curl \
     pkgconfig \
