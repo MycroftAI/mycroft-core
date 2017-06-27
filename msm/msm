@@ -23,6 +23,8 @@
 # This script assists in the installation and management of
 # skills loaded from Github.  
 
+set -e
+
 mycroft_skill_folder="/opt/mycroft/skills"
 mycroft_virtualenv=~/.virtualenvs/mycroft/bin/activate
 
@@ -37,8 +39,17 @@ function help() {
 	echo -e "example: msm install https://github.com/ethanaward/demo_skill.git\n"
 }
 
-function install() {
+
+function goto_skills_dir {
+        if [ ! -d $mycroft_skill_folder ]; then
+            echo "Couldn't install skill, $mycroft_skill_folder does not exist"
+            exit 1
+        fi
         cd $mycroft_skill_folder
+}
+
+function install() {
+        goto_skills_dir
 	if [ -z "$2" ]; then
 		echo "You must pass the git url or skill name"
 		exit 1
@@ -94,7 +105,7 @@ function update() {
 }
 
 function install_defaults() {
-	skills=( "alarm" "audio-record" "configuration" "date-time" "desktop-launcher" "ip" "joke" "hello-world" "media" "npr-news" "naptime" "pairing" "personal" "reminder" "installer" "singing" "speak" "spelling" "stop" "stock" "volume" "weather" "wiki" "wolfram-alpha" )
+	skills=( "alarm" "audio-record" "configuration" "date-time" "desktop-launcher" "ip" "joke" "hello-world" "media" "npr-news" "naptime" "pairing" "personal" "reminder" "installer" "singing" "speak" "spelling" "stop" "stock" "volume" "weather" "wiki" "wolfram-alpha" "mark1-demo" )
 	for i in "${skills[@]}"
 	do
 		if [ ! -d "$mycroft_skill_folder/skill-$i" ]; then

@@ -35,12 +35,17 @@ config = ConfigurationManager.get().get("tts").get("mimic")
 
 BIN = config.get("path", os.path.join(MYCROFT_ROOT_PATH, 'mimic', 'bin',
                                       'mimic'))
+if not os.path.isfile(BIN):
+    # Search for mimic on the path
+    import distutils.spawn
+    BIN = distutils.spawn.find_executable("mimic")
 
 
 class Mimic(TTS):
     def __init__(self, lang, voice):
         super(Mimic, self).__init__(lang, voice, MimicValidator(self))
         self.init_args()
+        self.clear_cache()
 
     def init_args(self):
         self.args = [BIN, '-voice', self.voice, '-psdur']
@@ -106,15 +111,27 @@ class Mimic(TTS):
         for pair in pairs:
             if mycroft.util.check_for_signal('buttonPress'):
                 return
+            if mycroft.util.check_for_signal('stoppingTTS', -1):
+                return
             pho_dur = pair.split(":")  # phoneme:duration
             if len(pho_dur) == 2:
                 code = VISIMES.get(pho_dur[0], '4')
-                if self.enclosure:
-                    self.enclosure.mouth_viseme(code)
                 duration = float(pho_dur[1])
                 delta = time() - start
                 if delta < duration:
+                    if self.enclosure:
+                        self.enclosure.mouth_viseme(code)
                     sleep(duration - delta)
+
+    def clear_cache(self):
+        """ Remove all cached files. """
+        if not os.path.exists(mycroft.util.get_cache_directory('tts')):
+            return
+        for f in os.listdir(mycroft.util.get_cache_directory("tts")):
+            file_path = os.path.join(mycroft.util.get_cache_directory("tts"),
+                                     f)
+            if os.path.isfile(file_path):
+                os.unlink(file_path)
 
 
 class MimicValidator(TTSValidator):
@@ -122,14 +139,14 @@ class MimicValidator(TTSValidator):
         super(MimicValidator, self).__init__(tts)
 
     def validate_lang(self):
-        # TODO
+        # TODO: Verify version of mimic can handle the requested language
         pass
 
     def validate_connection(self):
         try:
             subprocess.call([BIN, '--version'])
         except:
-            LOGGER.info("Falied to find mimic at: " + BIN)
+            LOGGER.info("Failed to find mimic at: " + BIN)
             raise Exception(
                 'Mimic was not found. Run install-mimic.sh to install it.')
 

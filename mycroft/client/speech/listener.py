@@ -70,6 +70,13 @@ class AudioProducer(Thread):
                     # http://stackoverflow.com/questions/10733903/pyaudio-input-overflowed
                     self.emitter.emit("recognizer_loop:ioerror", ex)
 
+    def stop(self):
+        """
+            Stop producer thread.
+        """
+        self.state.running = False
+        self.recognizer.stop()
+
 
 class AudioConsumer(Thread):
     """
@@ -101,7 +108,7 @@ class AudioConsumer(Thread):
 
         if self.state.sleeping:
             self.wake_up(audio)
-        else:
+        elif audio is not None:
             self.process(audio)
 
     # TODO: Localization
@@ -144,9 +151,10 @@ class AudioConsumer(Thread):
             LOG.error("Connection Error: {0}".format(e))
             self.__speak(mycroft.dialog.get("not connected to the internet",
                                             self.stt.lang))
+            self.emitter.emit("recognizer_loop:no_internet")
         except HTTPError as e:
             if e.response.status_code == 401:
-                text = "pair my device"
+                text = "pair my device"  # phrase to start the pairing process
                 LOG.warn("Access Denied at mycroft.ai")
         except Exception as e:
             LOG.error(e)
@@ -178,9 +186,20 @@ class RecognizerLoopState(object):
 
 
 class RecognizerLoop(EventEmitter):
+    """
+        EventEmitter loop running speech recognition. Local wake word
+        recognizer and remote general speech recognition.
+    """
     def __init__(self):
         super(RecognizerLoop, self).__init__()
+        self._load_config()
+
+    def _load_config(self):
+        """
+            Load configuration parameters from configuration
+        """
         config = ConfigurationManager.get()
+        self._config_hash = hash(str(config))
         lang = config.get('lang')
         self.config = config.get('listener')
         rate = self.config.get('sample_rate')
@@ -209,15 +228,26 @@ class RecognizerLoop(EventEmitter):
         return LocalRecognizer(wake_word, phonemes, threshold, rate, lang)
 
     def start_async(self):
+        """
+            Start consumer and producer threads
+        """
         self.state.running = True
         queue = Queue()
-        AudioProducer(self.state, queue, self.microphone,
-                      self.remote_recognizer, self).start()
-        AudioConsumer(self.state, queue, self, STTFactory.create(),
-                      self.wakeup_recognizer, self.mycroft_recognizer).start()
+        self.producer = AudioProducer(self.state, queue, self.microphone,
+                                      self.remote_recognizer, self)
+        self.producer.start()
+        self.consumer = AudioConsumer(self.state, queue, self,
+                                      STTFactory.create(),
+                                      self.wakeup_recognizer,
+                                      self.mycroft_recognizer)
+        self.consumer.start()
 
     def stop(self):
         self.state.running = False
+        self.producer.stop()
+        # wait for threads to shutdown
+        self.producer.join()
+        self.consumer.join()
 
     def mute(self):
         if self.microphone:
@@ -226,6 +256,12 @@ class RecognizerLoop(EventEmitter):
     def unmute(self):
         if self.microphone:
             self.microphone.unmute()
+
+    def is_muted(self):
+        if self.microphone:
+            return self.microphone.is_muted()
+        else:
+            return True  # consider 'no mic' muted
 
     def sleep(self):
         self.state.sleeping = True
@@ -238,6 +274,20 @@ class RecognizerLoop(EventEmitter):
         while self.state.running:
             try:
                 time.sleep(1)
+                if self._config_hash != hash(str(ConfigurationManager()
+                                                 .get())):
+                    LOG.debug('Config has changed, reloading...')
+                    self.reload()
             except KeyboardInterrupt as e:
                 LOG.error(e)
                 self.stop()
+
+    def reload(self):
+        """
+            Reload configuration and restart consumer and producer
+        """
+        self.stop()
+        # load config
+        self._load_config()
+        # restart
+        self.start_async()

@@ -3,7 +3,7 @@ pystache==0.5.4
 configobj==5.0.6
 wikipedia==1.4.0
 requests==2.13.0
-pyOpenSSL==16.0.0
+pyOpenSSL==16.2.0
 ndg-httpsclient==0.4.0
 pyasn1==0.1.9
 gTTS==1.1.7
@@ -42,3 +42,4 @@ pyric==0.1.6
 inflection==0.3.1
 uuid==1.30
 pytz==2017.2
+mock
