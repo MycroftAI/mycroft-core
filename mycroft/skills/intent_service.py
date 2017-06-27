@@ -45,9 +45,8 @@ class ContextManager(object):
         self.frame_stack = []
 
     def remove_context(self, context_id):
-        print "REMOVING CONTEXT!"
-        self.frame_stack = [f for f in self.frame_stack
-                            if context_id in f.get('data', [])]
+        self.frame_stack = [(f, t) for (f, t) in self.frame_stack
+                            if context_id in f.entities[0].get('data', [])]
 
     def inject_context(self, entity, metadata={}):
         """
@@ -87,10 +86,7 @@ class ContextManager(object):
 
         missing_entities = list(missing_entities)
         context = []
-        print "Recalculate confidence"
-        print len(relevant_frames)
         for i in xrange(max_frames):
-            print i
             frame_entities = [entity.copy() for entity in
                               relevant_frames[i].entities]
             for entity in frame_entities:
@@ -110,8 +106,6 @@ class ContextManager(object):
                     missing_entities.remove(entity.get('data'))
         else:
             result = context
-        print result
-        print "RETURNING!"
         return result
 
 
@@ -145,13 +139,11 @@ class IntentService(object):
         best_intent = None
         for utterance in utterances:
             try:
-                print "HANDLING INTENT"
                 # normalize() changes "it's a boy" to "it is boy", etc.
                 best_intent = next(self.engine.determine_intent(
                                    normalize(utterance, lang), 100,
                                    include_tags=True,
                                    context_manager=self.context_manager))
-                print "DONE"
                 # TODO - Should Adapt handle this?
                 best_intent['utterance'] = utterance
             except StopIteration, e:
@@ -161,7 +153,6 @@ class IntentService(object):
         if best_intent and best_intent.get('confidence', 0.0) > 0.0:
             for tag in best_intent['__tags__']:
                 context_entity = tag.get('entities')[0]
-                print context_entity['data'][0]
                 if context_entity['data'][0][1] in self.context_keywords:
                     self.context_manager.inject_context(context_entity)
             reply = message.reply(
@@ -210,7 +201,6 @@ class IntentService(object):
         entity = {'confidence': 1.0}
         context = message.data.get('context')
         word = message.data.get('word')
-        print "Adding " + context
         entity['data'] = [(word, context)]
         entity['match'] = word
         entity['key'] = word
