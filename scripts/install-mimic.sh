@@ -10,15 +10,18 @@ MIMIC_VERSION=1.2.0.2
 pkg-config --exists icu-i18n || export CFLAGS="$CFLAGS -I/usr/include/x86_64-linux-gnu"
 pkg-config --exists icu-i18n || export LDFLAGS="$LDFLAGS -licui18n -licuuc -licudata"
 
-# download and install mimic
-if [ ! -d ${MIMIC_DIR} ]; then
+# Check if you have installed mimic (Fedora 26 and higher provides a rpm for mimic)
+if [ -f /usr/bin/mimic ]; then
+ln -sf /usr/bin/mimic $(pwd)/mimic/bin/mimic
+# download and install mimic if the rpm does not exist
+elif [ ! -d ${MIMIC_DIR} ]; then
     git clone --branch ${MIMIC_VERSION} https://github.com/MycroftAI/mimic.git
     cd ${MIMIC_DIR}
     ./autogen.sh
     ./configure --with-audio=alsa --enable-shared --prefix=$(pwd)
     make -j$CORES
     make install
-else
+elif [ -d ${MIMIC_DIR}/.git ]; then
     # ensure mimic is up to date
     cd ${MIMIC_DIR}
     make clean 2> /dev/null || true
