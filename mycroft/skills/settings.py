@@ -83,7 +83,11 @@ class SkillSettings(dict):
             # self.__setitem__('uuid', response['uuid'])
             # self.store()
 
-        self._is_stored = True
+        self.loaded_hash = hash(str(self))
+
+    @property
+    def _is_stored(self):
+        return hash(str(self)) == self.loaded_hash
 
     def __getitem__(self, key):
         return super(SkillSettings, self).__getitem__(key)
@@ -92,7 +96,6 @@ class SkillSettings(dict):
         """
             Add/Update key and note that the file needs saving.
         """
-        self._is_stored = False
         return super(SkillSettings, self).__setitem__(key, value)
 
     def store(self):
@@ -102,13 +105,13 @@ class SkillSettings(dict):
         if not self._is_stored:
             with open(self._settings_path, 'w') as f:
                 json.dump(self, f)
+            self.loaded_hash = hash(str(self))
 
     def _store_uuid(self, uuid):
         with open(self._uuid_path, 'w') as f:
             json.dump(uuid, f)
-    
-    def _get_request_body(self, meta):
 
+    # def _get_request_body(self, meta):
 
     def _get_settings(self):
         return self.api.request({
