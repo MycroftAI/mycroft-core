@@ -18,7 +18,6 @@
 
 import json
 import os
-import signal
 import subprocess
 import sys
 import time
@@ -37,9 +36,6 @@ from mycroft.util import connected
 from mycroft.util.log import getLogger
 from mycroft.api import is_paired
 import mycroft.dialog
-
-# ignore DIGCHLD to terminate subprocesses correctly
-signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
 logger = getLogger("Skills")
 
