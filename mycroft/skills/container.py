@@ -25,10 +25,6 @@ from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.skills.core import create_skill_descriptor, load_skill
 from mycroft.skills.intent_service import IntentService
 from mycroft.util.log import getLogger
-import signal
-
-# ignore DIGCHLD to terminate subprocesses correctly
-signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
 __author__ = 'seanfitz'
 
