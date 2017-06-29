@@ -83,6 +83,7 @@ if [[ "${vwrap}" == 'false' ]] ; then
 fi
 # loop through list of arguments
 while [[ $# -gt 0 ]] ; do
+  cd "${mycroft_skill_folder}"
   iskill="${1}";
   shift;
   echo "Attempting to install ${iskill}..."
