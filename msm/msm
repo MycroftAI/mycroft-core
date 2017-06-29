@@ -23,8 +23,6 @@
 # This script assists in the installation and management of
 # skills loaded from Github.  
 
-set -e
-
 mycroft_skill_folder="/opt/mycroft/skills"
 mycroft_virtualenv=~/.virtualenvs/mycroft/bin/activate
 
@@ -57,7 +55,9 @@ function install() {
 	if [[ "$2" == "git@"* || "$2" == "https://"* || "$2" == "http://"* ]]; then
 		repo=$2
 	else
+	    set -e
 		skill_list="`curl -s "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules"`"
+		set +e
 		skills=`echo "$skill_list" | grep -n 'submodule' | sed 's/[[:space:]]//g' | sed 's/\[submodule"//g' | sed 's/"\]//g'`
 		exact_match=`echo "$skills" | grep -i ".*:$2$"`
 		skill=`echo "$skills" | grep -i ".*:.*$2.*"`
