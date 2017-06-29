@@ -336,9 +336,12 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         counter = 0
 
-        while not said_wake_word and not self._stop_signaled:
-            if self._skip_wake_word():
-                break
+        while not said_wake_word:
+            if check_for_signal('buttonPress'):
+                logger.debug("Button Pressed, wakeword not needed")
+                said_wake_word = True
+                continue
+
             chunk = self.record_sound_chunk(source)
 
             energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)

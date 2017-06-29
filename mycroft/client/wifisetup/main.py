@@ -557,8 +557,8 @@ class WiFi:
         LOG.info("Resetting the WPA_SUPPLICANT File")
         try:
             call(
-                "echo '" + WPA_SUPPLICANT +
-                "'> /etc/wpa_supplicant/wpa_supplicant.conf",
+                "echo \"" + WPA_SUPPLICANT +
+                "\"> /etc/wpa_supplicant/wpa_supplicant.conf",
                 shell=True)
             # UGLY BUT WORKS
             call(RM_SKILLS)
