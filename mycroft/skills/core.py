@@ -264,6 +264,8 @@ class MycroftSkill(object):
             self.emitter = emitter
             self.enclosure = EnclosureAPI(emitter, self.name)
             self.__register_stop()
+            self.emitter.on('enable_intent', self.handle_enable_intent)
+            self.emitter.on('disable_intent', self.handle_disable_intent)
 
     def __register_stop(self):
         self.stop_time = time.time()
@@ -734,11 +736,22 @@ class MycroftSkill(object):
             "name": name
         }))
 
+    def handle_enable_intent(self, message):
+        intent_name = message.data["intent_name"]
+        self.enable_intent(intent_name)
+
+    def handle_disable_intent(self, message):
+        intent_name = message.data["intent_name"]
+        self.disable_intent(intent_name)
+
     def disable_intent(self, intent_name):
         """Disable a registered intent"""
-        LOG.debug('Disabling intent ' + intent_name)
-        name = str(self.skill_id) + ':' + intent_name
-        self.emitter.emit(Message("detach_intent", {"intent_name": name}))
+        for (name, intent) in self.registered_intents:
+            if name == intent_name:
+                LOG.debug('Disabling intent ' + intent_name)
+                name = str(self.skill_id) + ':' + intent_name
+                self.emitter.emit(Message("detach_intent", {"intent_name": name}))
+                break
 
     def enable_intent(self, intent_name):
         """Reenable a registered intent"""
