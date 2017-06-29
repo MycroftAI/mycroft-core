@@ -149,8 +149,6 @@ class AudioConsumer(Thread):
             LOG.error("Could not request Speech Recognition {0}".format(e))
         except ConnectionError as e:
             LOG.error("Connection Error: {0}".format(e))
-            self.__speak(mycroft.dialog.get("not connected to the internet",
-                                            self.stt.lang))
             self.emitter.emit("recognizer_loop:no_internet")
         except HTTPError as e:
             if e.response.status_code == 401:
