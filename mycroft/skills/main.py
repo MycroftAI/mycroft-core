@@ -55,6 +55,9 @@ skills_manager_timer = None
 installer_config = ConfigurationManager.instance().get("SkillInstallerSkill")
 MSM_BIN = installer_config.get("path", join(MYCROFT_ROOT_PATH, 'msm', 'msm'))
 
+skills_config = ConfigurationManager.instance().get("skills")
+PRIORITY_SKILLS = skills_config["priority_skills"]
+
 
 def connect():
     global ws
@@ -161,10 +164,37 @@ def _get_last_modified_date(path):
     return last_date
 
 
+def load_priority_skills():
+    global ws, loaded_skills, SKILLS_DIR, PRIORITY_SKILLS
+
+    if exists(SKILLS_DIR):
+        for skill_folder in PRIORITY_SKILLS:
+            try:
+                skill = loaded_skills.get(skill_folder)
+                skill["path"] = os.path.join(SKILLS_DIR, skill_folder)
+                # checking if is a skill
+                if not MainModule + ".py" in os.listdir(skill["path"]):
+                    continue
+                # getting the newest modified date of skill
+                skill["last_modified"] = _get_last_modified_date(skill["path"])
+                # checking if skill is loaded
+                if skill.get("loaded"):
+                    continue
+                skill["instance"] = load_skill(
+                    create_skill_descriptor(skill["path"]), ws)
+                if skill.get("instance"):
+                    skill["loaded"] = True
+            except TypeError:
+                logger.error(skill_folder + " does not seem to exist")
+                
+                
 def _watch_skills():
     global ws, loaded_skills, last_modified_skill, \
         id_counter
 
+    # Load priority skills first
+    load_priority_skills()
+    
     # Scan the file folder that contains Skills.  If a Skill is updated,
     # unload the existing version from memory and reload from the disk.
     while True:
