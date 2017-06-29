@@ -36,7 +36,9 @@ from mycroft.util.log import getLogger
 from mycroft.skills.settings import SkillSettings
 __author__ = 'seanfitz'
 
-BLACKLISTED_SKILLS = ["send_sms", "media"]
+skills_config = ConfigurationManager.instance().get("skills")
+BLACKLISTED_SKILLS = skills_config["blacklisted_skills"]
+
 SKILLS_DIR = "/opt/mycroft/skills"
 
 MainModule = '__init__'
