@@ -274,7 +274,7 @@ class WiFi:
         # item being selected.
         self.ws.on('mycroft.wifi.start', self.start)
 
-        # This event is similar to the above, but resets the wifi
+        # This event is similar to the above, but resets the stored wifi
         self.ws.on('mycroft.wifi.reset', self.reset)
         # an event to enable SSH
         self.ws.on('mycroft.enable.ssh', self.ssh_enable)
