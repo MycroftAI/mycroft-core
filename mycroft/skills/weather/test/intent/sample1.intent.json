@@ -1,8 +1,0 @@
-{
-  "utterance": "what's the weather like in seattle",
-  "intent_type": "CurrentWeatherIntent",
-  "intent": {
-    "WeatherKeyword": "weather",
-    "Location": "seattle"
-  }
-}

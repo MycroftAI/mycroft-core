@@ -19,6 +19,7 @@
 import re
 import sys
 from threading import Thread, Lock
+import time
 
 from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.client.speech.listener import RecognizerLoop
@@ -27,35 +28,34 @@ from mycroft.identity import IdentityManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.tts import TTSFactory
-from mycroft.util import kill, play_wav, resolve_resource_file
+from mycroft.util import kill, create_signal, check_for_signal, stop_speaking
 from mycroft.util.log import getLogger
+from mycroft.lock import Lock as PIDLock  # Create/Support PID locking file
 
 logger = getLogger("SpeechClient")
 ws = None
-tts = TTSFactory.create()
+tts = None
+tts_hash = None
 lock = Lock()
 loop = None
+_last_stop_signal = 0
 
 config = ConfigurationManager.get()
 
 
 def handle_record_begin():
     logger.info("Begin Recording...")
-
-    # If enabled, play a wave file with a short sound to audibly
-    # indicate recording has begun.
-    if config.get('confirm_listening'):
-        file = resolve_resource_file(
-            config.get('sounds').get('start_listening'))
-        if file:
-            play_wav(file)
-
     ws.emit(Message('recognizer_loop:record_begin'))
 
 
 def handle_record_end():
     logger.info("End Recording...")
     ws.emit(Message('recognizer_loop:record_end'))
+
+
+def handle_no_internet():
+    logger.debug("Notifying enclosure of no internet connection")
+    ws.emit(Message('enclosure.notify.no_internet'))
 
 
 def handle_wakeword(event):
@@ -69,14 +69,26 @@ def handle_utterance(event):
 
 
 def mute_and_speak(utterance):
+    global tts_hash
+    global tts
+
     lock.acquire()
+    # update TTS object if configuration has changed
+    if tts_hash != hash(str(config.get('tts', ''))):
+        tts = TTSFactory.create()
+        tts.init(ws)
+        tts_hash = hash(str(config.get('tts', '')))
+
     ws.emit(Message("recognizer_loop:audio_output_start"))
+    already_muted = loop.is_muted()
     try:
         logger.info("Speak: " + utterance)
-        loop.mute()
+        if not already_muted:
+            loop.mute()  # only mute if necessary
         tts.execute(utterance)
     finally:
-        loop.unmute()
+        if not already_muted:
+            loop.unmute()  # restore
         lock.release()
         ws.emit(Message("recognizer_loop:audio_output_end"))
 
@@ -88,7 +100,14 @@ def handle_multi_utterance_intent_failure(event):
 
 
 def handle_speak(event):
+    global _last_stop_signal
+
+    # Mild abuse of the signal system to allow other processes to detect
+    # when TTS is happening.  See mycroft.util.is_speaking()
+    create_signal("isSpeaking")
+
     utterance = event.data['utterance']
+    expect_response = event.data.get('expect_response', False)
 
     # This is a bit of a hack for Picroft.  The analog audio on a Pi blocks
     # for 30 seconds fairly often, so we don't want to break on periods
@@ -99,12 +118,24 @@ def handle_speak(event):
     # TODO: Remove or make an option?  This is really a hack, anyway,
     # so we likely will want to get rid of this when not running on Mimic
     if not config.get('enclosure', {}).get('platform') == "picroft":
+        start = time.time()
         chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s',
                           utterance)
         for chunk in chunks:
-            mute_and_speak(chunk)
+            try:
+                mute_and_speak(chunk)
+            except:
+                logger.error('Error in mute_and_speak', exc_info=True)
+            if _last_stop_signal > start or check_for_signal('buttonPress'):
+                break
     else:
         mute_and_speak(utterance)
+
+    # This check will clear the "signal"
+    check_for_signal("isSpeaking")
+
+    if expect_response:
+        create_signal('startListening')
 
 
 def handle_sleep(event):
@@ -115,9 +146,18 @@ def handle_wake_up(event):
     loop.awaken()
 
 
+def handle_mic_mute(event):
+    loop.mute()
+
+
+def handle_mic_unmute(event):
+    loop.unmute()
+
+
 def handle_stop(event):
-    kill([config.get('tts').get('module')])
-    kill(["aplay"])
+    global _last_stop_signal
+    _last_stop_signal = time.time()
+    stop_speaking()
 
 
 def handle_paired(event):
@@ -125,6 +165,7 @@ def handle_paired(event):
 
 
 def handle_open():
+    # TODO: Move this into the Enclosure (not speech client)
     # Reset the UI to indicate ready for speech processing
     EnclosureAPI(ws).reset()
 
@@ -136,8 +177,15 @@ def connect():
 def main():
     global ws
     global loop
+    global config
+    global tts
+    global tts_hash
+    lock = PIDLock("voice")
     ws = WebsocketClient()
+    config = ConfigurationManager.get()
+    tts = TTSFactory.create()
     tts.init(ws)
+    tts_hash = config.get('tts')
     ConfigurationManager.init(ws)
     loop = RecognizerLoop()
     loop.on('recognizer_loop:utterance', handle_utterance)
@@ -145,6 +193,7 @@ def main():
     loop.on('recognizer_loop:wakeword', handle_wakeword)
     loop.on('recognizer_loop:record_end', handle_record_end)
     loop.on('speak', handle_speak)
+    loop.on('recognizer_loop:no_internet', handle_no_internet)
     ws.on('open', handle_open)
     ws.on('speak', handle_speak)
     ws.on(
@@ -152,6 +201,8 @@ def main():
         handle_multi_utterance_intent_failure)
     ws.on('recognizer_loop:sleep', handle_sleep)
     ws.on('recognizer_loop:wake_up', handle_wake_up)
+    ws.on('mycroft.mic.mute', handle_mic_mute)
+    ws.on('mycroft.mic.unmute', handle_mic_unmute)
     ws.on('mycroft.stop', handle_stop)
     ws.on("mycroft.paired", handle_paired)
     event_thread = Thread(target=connect)

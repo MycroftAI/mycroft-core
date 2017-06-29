@@ -12,7 +12,9 @@ DATA_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "data")
 
 class LocalRecognizerTest(unittest.TestCase):
     def setUp(self):
-        self.recognizer = RecognizerLoop.create_mycroft_recognizer(16000,
+        rl = RecognizerLoop()
+        self.recognizer = RecognizerLoop.create_mycroft_recognizer(rl,
+                                                                   16000,
                                                                    "en-us")
 
     def testRecognizerWrapper(self):

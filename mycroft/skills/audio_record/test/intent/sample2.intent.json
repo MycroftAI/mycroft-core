@@ -1,7 +1,0 @@
-{
-  "utterance": "start recording",
-  "intent_type": "AudioRecordSkillIntent",
-  "intent": {
-    "AudioRecordSkillKeyword": "recording"
-  }
-}

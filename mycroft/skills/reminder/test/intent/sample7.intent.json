@@ -1,9 +1,0 @@
-{
-  "utterance": "cancel 1 reminder",
-  "intent_type": "ReminderSkillDeleteIntent",
-  "intent": {
-    "ReminderSkillDeleteVerb": "cancel",
-    "ReminderSkillAmount": "1",
-    "ReminderSkillKeyword": "reminder"
-  }
-}

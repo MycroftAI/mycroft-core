@@ -17,18 +17,25 @@
 
 
 import json
+import os
+import subprocess
 import sys
 import time
+from os.path import exists, join
 from threading import Timer
 
-import os
-from os.path import expanduser, exists
-
+from mycroft import MYCROFT_ROOT_PATH
 from mycroft.configuration import ConfigurationManager
+from mycroft.lock import Lock  # Creates PID file for single instance
 from mycroft.messagebus.client.ws import WebsocketClient
-from mycroft.skills.core import load_skills, THIRD_PARTY_SKILLS_DIR, \
-    load_skill, create_skill_descriptor, MainModule
+from mycroft.messagebus.message import Message
+from mycroft.skills.core import load_skill, create_skill_descriptor, \
+    MainModule, SKILLS_DIR
+from mycroft.skills.intent_service import IntentService
+from mycroft.util import connected
 from mycroft.util.log import getLogger
+from mycroft.api import is_paired
+import mycroft.dialog
 
 logger = getLogger("Skills")
 
@@ -39,6 +46,10 @@ loaded_skills = {}
 last_modified_skill = 0
 skills_directories = []
 skill_reload_thread = None
+skills_manager_timer = None
+
+installer_config = ConfigurationManager.instance().get("SkillInstallerSkill")
+MSM_BIN = installer_config.get("path", join(MYCROFT_ROOT_PATH, 'msm', 'msm'))
 
 
 def connect():
@@ -46,83 +57,173 @@ def connect():
     ws.run_forever()
 
 
-def load_watch_skills():
+def install_default_skills(speak=True):
+    """
+        Install default skill set using msm.
+
+        Args:
+            speak (optional): Enable response for success. Default True
+    """
+    if exists(MSM_BIN):
+        res = subprocess.call(MSM_BIN + " default", stderr=subprocess.STDOUT,
+                              stdout=subprocess.PIPE, shell=True)
+        if res == 0 and speak:
+            # ws.emit(Message("speak", {
+            #     'utterance': mycroft.dialog.get("skills updated")}))
+            pass
+        elif not connected():
+            ws.emit(Message("speak", {
+                'utterance': mycroft.dialog.get("no network connection")}))
+        elif res != 0:
+            ws.emit(Message("speak", {
+                'utterance': mycroft.dialog.get(
+                             "sorry I couldn't install default skills")}))
+
+    else:
+        logger.error("Unable to invoke Mycroft Skill Manager: " + MSM_BIN)
+
+
+def skills_manager(message):
+    global skills_manager_timer, ws
+
+    if connected():
+        if skills_manager_timer is None:
+            pass
+            # ws.emit(
+            #     Message("speak", {'utterance':
+            #             mycroft.dialog.get("checking for updates")}))
+
+        # Install default skills and look for updates via Github
+        logger.debug("==== Invoking Mycroft Skill Manager: " + MSM_BIN)
+        install_default_skills(False)
+
+    # Perform check again once and hour
+    skills_manager_timer = Timer(3600, _skills_manager_dispatch)
+    skills_manager_timer.daemon = True
+    skills_manager_timer.start()
+
+
+def _skills_manager_dispatch():
+    ws.emit(Message("skill_manager", {}))
+
+
+def _load_skills():
     global ws, loaded_skills, last_modified_skill, skills_directories, \
         skill_reload_thread
 
-    skills_directories = [os.path.dirname(os.path.abspath(__file__))]
-    skills_directories = skills_directories + THIRD_PARTY_SKILLS_DIR
+    check_connection()
 
-    try:
-        config = ConfigurationManager.get().get("skills")
-        ini_third_party_skills_dir = expanduser(config.get("directory"))
-        if ini_third_party_skills_dir and exists(ini_third_party_skills_dir):
-            skills_directories.append(ini_third_party_skills_dir)
-    except AttributeError as e:
-        logger.warning(e.message)
+    # Create skill_manager listener and invoke the first time
+    ws.on('skill_manager', skills_manager)
+    ws.on('mycroft.internet.connected', install_default_skills)
+    ws.emit(Message('skill_manager', {}))
 
-    skill_reload_thread = Timer(0, watch_skills)
+    # Create the Intent manager, which converts utterances to intents
+    # This is the heart of the voice invoked skill system
+    IntentService(ws)
+
+    # Create a thread that monitors the loaded skills, looking for updates
+    skill_reload_thread = Timer(0, _watch_skills)
     skill_reload_thread.daemon = True
     skill_reload_thread.start()
 
 
-def clear_skill_events(instance):
-    global ws
-    events = ws.emitter._events
-    instance_events = []
-    for event in events:
-        e = ws.emitter._events[event]
-        if len(e) > 0 and e[0].func_closure and isinstance(
-                e[0].func_closure[1].cell_contents, instance.__class__):
-            instance_events.append(event)
+def check_connection():
+    if connected():
+        ws.emit(Message('mycroft.internet.connected'))
+        # check for pairing, if not automatically start pairing
+        if not is_paired():
+            # begin the process
+            payload = {
+                'utterances': ["pair my device"],
+                'lang': "en-us"
+            }
+            ws.emit(Message("recognizer_loop:utterance", payload))
+    else:
+        thread = Timer(1, check_connection)
+        thread.daemon = True
+        thread.start()
 
-    for event in instance_events:
-        del events[event]
+
+def _get_last_modified_date(path):
+    last_date = 0
+    # getting all recursive paths
+    for root, _, _ in os.walk(path):
+        f = root.replace(path, "")
+        # checking if is a hidden path
+        if not f.startswith(".") and not f.startswith("/."):
+            last_date = max(last_date, os.path.getmtime(path + f))
+
+    return last_date
 
 
-def watch_skills():
-    global ws, loaded_skills, last_modified_skill, skills_directories
+def _watch_skills():
+    global ws, loaded_skills, last_modified_skill, \
+        id_counter
+
+    # Scan the file folder that contains Skills.  If a Skill is updated,
+    # unload the existing version from memory and reload from the disk.
     while True:
-        for dir in skills_directories:
-            if exists(dir):
-                list = filter(lambda x: os.path.isdir(os.path.join(dir, x)),
-                              os.listdir(dir))
-                for skill_folder in list:
-                    if skill_folder not in loaded_skills:
-                        loaded_skills[skill_folder] = {}
-                    skill = loaded_skills.get(skill_folder)
-                    skill["path"] = os.path.join(dir, skill_folder)
-                    if not MainModule + ".py" in os.listdir(skill["path"]):
+        if exists(SKILLS_DIR):
+            # checking skills dir and getting all skills there
+            list = filter(lambda x: os.path.isdir(
+                os.path.join(SKILLS_DIR, x)), os.listdir(SKILLS_DIR))
+
+            for skill_folder in list:
+                if skill_folder not in loaded_skills:
+                    loaded_skills[skill_folder] = {}
+                skill = loaded_skills.get(skill_folder)
+                skill["path"] = os.path.join(SKILLS_DIR, skill_folder)
+                # checking if is a skill
+                if not MainModule + ".py" in os.listdir(skill["path"]):
+                    continue
+                # getting the newest modified date of skill
+                skill["last_modified"] = _get_last_modified_date(skill["path"])
+                modified = skill.get("last_modified", 0)
+                # checking if skill is loaded and wasn't modified
+                if skill.get(
+                        "loaded") and modified <= last_modified_skill:
+                    continue
+                # checking if skill was modified
+                elif skill.get(
+                        "instance") and modified > last_modified_skill:
+                    # checking if skill should be reloaded
+                    if not skill["instance"].reload_skill:
                         continue
-                    skill["last_modified"] = max(
-                        os.path.getmtime(root) for root, _, _ in
-                        os.walk(skill["path"]))
-                    modified = skill.get("last_modified", 0)
-                    if skill.get(
-                            "loaded") and modified <= last_modified_skill:
-                        continue
-                    elif skill.get(
-                            "instance") and modified > last_modified_skill:
-                        logger.debug("Reloading Skill: " + skill_folder)
-                        skill["instance"].shutdown()
-                        clear_skill_events(skill["instance"])
-                        del skill["instance"]
-                    skill["loaded"] = True
-                    skill["instance"] = load_skill(
-                        create_skill_descriptor(skill["path"]), ws)
-        last_modified_skill = max(
-            map(lambda x: x.get("last_modified"), loaded_skills.values()))
+                    logger.debug("Reloading Skill: " + skill_folder)
+                    # removing listeners and stopping threads
+                    skill["instance"].shutdown()
+                    del skill["instance"]
+                skill["loaded"] = True
+                skill["instance"] = load_skill(
+                    create_skill_descriptor(skill["path"]), ws)
+        # get the last modified skill
+        modified_dates = map(lambda x: x.get("last_modified"),
+                             loaded_skills.values())
+        if len(modified_dates) > 0:
+            last_modified_skill = max(modified_dates)
+
+        # Pause briefly before beginning next scan
         time.sleep(2)
 
 
 def main():
     global ws
+    lock = Lock('skills')  # prevent multiple instances of this service
+
+    # Connect this Skill management process to the websocket
     ws = WebsocketClient()
     ConfigurationManager.init(ws)
 
-    def echo(message):
+    ignore_logs = ConfigurationManager.instance().get("ignore_logs")
+
+    # Listen for messages and echo them for logging
+    def _echo(message):
         try:
             _message = json.loads(message)
+
+            if _message.get("type") in ignore_logs:
+                return
 
             if _message.get("type") == "registration":
                 # do not log tokens from registration messages
@@ -132,8 +233,10 @@ def main():
             pass
         logger.debug(message)
 
-    ws.on('message', echo)
-    ws.once('open', load_watch_skills)
+    ws.on('message', _echo)
+
+    # Kick off loading of skills
+    ws.once('open', _load_skills)
     ws.run_forever()
 
 
@@ -141,6 +244,7 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
+        skills_manager_timer.cancel()
         for skill in loaded_skills:
             skill.shutdown()
         if skill_reload_thread:

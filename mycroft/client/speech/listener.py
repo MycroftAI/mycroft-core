@@ -23,7 +23,9 @@ from threading import Thread
 import speech_recognition as sr
 from pyee import EventEmitter
 from requests import HTTPError
+from requests.exceptions import ConnectionError
 
+import mycroft.dialog
 from mycroft.client.speech.local_recognizer import LocalRecognizer
 from mycroft.client.speech.mic import MutableMicrophone, ResponsiveRecognizer
 from mycroft.configuration import ConfigurationManager
@@ -68,6 +70,13 @@ class AudioProducer(Thread):
                     # http://stackoverflow.com/questions/10733903/pyaudio-input-overflowed
                     self.emitter.emit("recognizer_loop:ioerror", ex)
 
+    def stop(self):
+        """
+            Stop producer thread.
+        """
+        self.state.running = False
+        self.recognizer.stop()
+
 
 class AudioConsumer(Thread):
     """
@@ -99,7 +108,7 @@ class AudioConsumer(Thread):
 
         if self.state.sleeping:
             self.wake_up(audio)
-        else:
+        elif audio is not None:
             self.process(audio)
 
     # TODO: Localization
@@ -108,7 +117,7 @@ class AudioConsumer(Thread):
                                                 self.metrics):
             SessionManager.touch()
             self.state.sleeping = False
-            self.__speak("I'm awake.")
+            self.__speak(mycroft.dialog.get("i am awake", self.stt.lang))
             self.metrics.increment("mycroft.wakeup")
 
     @staticmethod
@@ -127,29 +136,34 @@ class AudioConsumer(Thread):
 
         if self._audio_length(audio) < self.MIN_AUDIO_SIZE:
             LOG.warn("Audio too short to be processed")
-        elif connected():
-            self.transcribe(audio)
         else:
-            self.__speak("Mycroft seems not to be connected to the Internet")
+            self.transcribe(audio)
 
     def transcribe(self, audio):
         text = None
         try:
+            # Invoke the STT engine on the audio clip
             text = self.stt.execute(audio).lower().strip()
             LOG.debug("STT: " + text)
         except sr.RequestError as e:
             LOG.error("Could not request Speech Recognition {0}".format(e))
+        except ConnectionError as e:
+            LOG.error("Connection Error: {0}".format(e))
+            self.emitter.emit("recognizer_loop:no_internet")
         except HTTPError as e:
             if e.response.status_code == 401:
-                text = "pair my device"
+                text = "pair my device"  # phrase to start the pairing process
                 LOG.warn("Access Denied at mycroft.ai")
         except Exception as e:
             LOG.error(e)
             LOG.error("Speech Recognition could not understand audio")
-            self.__speak("Sorry, I didn't catch that")
+            self.__speak(mycroft.dialog.get("i didn't catch that",
+                                            self.stt.lang))
         if text:
+            # STT succeeded, send the transcribed speech on for processing
             payload = {
                 'utterances': [text],
+                'lang': self.stt.lang,
                 'session': SessionManager.get().session_id
             }
             self.emitter.emit("recognizer_loop:utterance", payload)
@@ -170,9 +184,20 @@ class RecognizerLoopState(object):
 
 
 class RecognizerLoop(EventEmitter):
+    """
+        EventEmitter loop running speech recognition. Local wake word
+        recognizer and remote general speech recognition.
+    """
     def __init__(self):
         super(RecognizerLoop, self).__init__()
+        self._load_config()
+
+    def _load_config(self):
+        """
+            Load configuration parameters from configuration
+        """
         config = ConfigurationManager.get()
+        self._config_hash = hash(str(config))
         lang = config.get('lang')
         self.config = config.get('listener')
         rate = self.config.get('sample_rate')
@@ -188,25 +213,39 @@ class RecognizerLoop(EventEmitter):
         self.state = RecognizerLoopState()
 
     def create_mycroft_recognizer(self, rate, lang):
+        # Create a local recognizer to hear the wakeup word, e.g. 'Hey Mycroft'
         wake_word = self.config.get('wake_word')
         phonemes = self.config.get('phonemes')
         threshold = self.config.get('threshold')
         return LocalRecognizer(wake_word, phonemes, threshold, rate, lang)
 
-    @staticmethod
-    def create_wakeup_recognizer(rate, lang):
-        return LocalRecognizer("wake up", "W EY K . AH P", 1e-10, rate, lang)
+    def create_wakeup_recognizer(self, rate, lang):
+        wake_word = self.config.get('standup_word', "wake up")
+        phonemes = self.config.get('standup_phonemes', "W EY K . AH P")
+        threshold = self.config.get('standup_threshold', 1e-10)
+        return LocalRecognizer(wake_word, phonemes, threshold, rate, lang)
 
     def start_async(self):
+        """
+            Start consumer and producer threads
+        """
         self.state.running = True
         queue = Queue()
-        AudioProducer(self.state, queue, self.microphone,
-                      self.remote_recognizer, self).start()
-        AudioConsumer(self.state, queue, self, STTFactory.create(),
-                      self.wakeup_recognizer, self.mycroft_recognizer).start()
+        self.producer = AudioProducer(self.state, queue, self.microphone,
+                                      self.remote_recognizer, self)
+        self.producer.start()
+        self.consumer = AudioConsumer(self.state, queue, self,
+                                      STTFactory.create(),
+                                      self.wakeup_recognizer,
+                                      self.mycroft_recognizer)
+        self.consumer.start()
 
     def stop(self):
         self.state.running = False
+        self.producer.stop()
+        # wait for threads to shutdown
+        self.producer.join()
+        self.consumer.join()
 
     def mute(self):
         if self.microphone:
@@ -215,6 +254,12 @@ class RecognizerLoop(EventEmitter):
     def unmute(self):
         if self.microphone:
             self.microphone.unmute()
+
+    def is_muted(self):
+        if self.microphone:
+            return self.microphone.is_muted()
+        else:
+            return True  # consider 'no mic' muted
 
     def sleep(self):
         self.state.sleeping = True
@@ -227,6 +272,20 @@ class RecognizerLoop(EventEmitter):
         while self.state.running:
             try:
                 time.sleep(1)
+                if self._config_hash != hash(str(ConfigurationManager()
+                                                 .get())):
+                    LOG.debug('Config has changed, reloading...')
+                    self.reload()
             except KeyboardInterrupt as e:
                 LOG.error(e)
                 self.stop()
+
+    def reload(self):
+        """
+            Reload configuration and restart consumer and producer
+        """
+        self.stop()
+        # load config
+        self._load_config()
+        # restart
+        self.start_async()

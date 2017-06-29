@@ -12,6 +12,7 @@ sudo apt-get install -y \
     libffi-dev \
     libssl-dev \
     autoconf \
+    automake \
     bison \
     swig \
     libglib2.0-dev \
@@ -21,5 +22,7 @@ sudo apt-get install -y \
     screen \
     flac \
     curl \
-    libicu-dev
+    libicu-dev \
+    pkg-config \
+    automake
 

@@ -1,8 +1,0 @@
-{
-  "utterance": "what will the weather be like in toronto in the next few hours",
-  "intent_type": "NextHoursWeatherIntent",
-  "intent": {
-    "WeatherKeyword": "weather",
-    "Location": "toronto"
-  }
-}

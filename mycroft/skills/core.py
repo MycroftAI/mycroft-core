@@ -22,8 +22,10 @@ import time
 
 import os.path
 import re
-from adapt.intent import Intent
+import time
 from os.path import join, dirname, splitext, isdir
+
+from adapt.intent import Intent
 
 from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.configuration import ConfigurationManager
@@ -31,15 +33,11 @@ from mycroft.dialog import DialogLoader
 from mycroft.filesystem import FileSystemAccess
 from mycroft.messagebus.message import Message
 from mycroft.util.log import getLogger
-
+from mycroft.skills.settings import SkillSettings
 __author__ = 'seanfitz'
 
-PRIMARY_SKILLS = ['intent', 'wake']
 BLACKLISTED_SKILLS = ["send_sms", "media"]
-SKILLS_BASEDIR = dirname(__file__)
-THIRD_PARTY_SKILLS_DIR = ["/opt/mycroft/third_party", "/opt/mycroft/skills"]
-# Note: /opt/mycroft/skills is recommended, /opt/mycroft/third_party
-# is for backwards compatibility
+SKILLS_DIR = "/opt/mycroft/skills"
 
 MainModule = '__init__'
 
@@ -96,6 +94,9 @@ def open_intent_envelope(message):
 def load_skill(skill_descriptor, emitter):
     try:
         logger.info("ATTEMPTING TO LOAD SKILL: " + skill_descriptor["name"])
+        if skill_descriptor['name'] in BLACKLISTED_SKILLS:
+            logger.info("SKILL IS BLACKLISTED " + skill_descriptor["name"])
+            return None
         skill_module = imp.load_module(
             skill_descriptor["name"] + MainModule, *skill_descriptor["info"])
         if (hasattr(skill_module, 'create_skill') and
@@ -103,9 +104,10 @@ def load_skill(skill_descriptor, emitter):
             # v2 skills framework
             skill = skill_module.create_skill()
             skill.bind(emitter)
+            skill._dir = dirname(skill_descriptor['info'][1])
             skill.load_data_files(dirname(skill_descriptor['info'][1]))
             skill.initialize()
-            logger.info("Lodaded " + skill_descriptor["name"])
+            logger.info("Loaded " + skill_descriptor["name"])
             return skill
         else:
             logger.warn(
@@ -145,18 +147,12 @@ def create_skill_descriptor(skill_folder):
     return {"name": os.path.basename(skill_folder), "info": info}
 
 
-def load_skills(emitter, skills_root=SKILLS_BASEDIR):
+def load_skills(emitter, skills_root=SKILLS_DIR):
     logger.info("Checking " + skills_root + " for new skills")
     skill_list = []
-    skills = get_skills(skills_root)
-    for skill in skills:
-        if skill['name'] in PRIMARY_SKILLS:
-            skill_list.append(load_skill(skill, emitter))
+    for skill in get_skills(skills_root):
+        skill_list.append(load_skill(skill, emitter))
 
-    for skill in skills:
-        if (skill['name'] not in PRIMARY_SKILLS and
-                skill['name'] not in BLACKLISTED_SKILLS):
-            skill_list.append(load_skill(skill, emitter))
     return skill_list
 
 
@@ -180,6 +176,8 @@ class MycroftSkill(object):
         self.file_system = FileSystemAccess(join('skills', name))
         self.registered_intents = []
         self.log = getLogger(name)
+        self.reload_skill = True
+        self.events = []
 
     @property
     def location(self):
@@ -208,6 +206,15 @@ class MycroftSkill(object):
     def lang(self):
         return self.config_core.get('lang')
 
+    @property
+    def settings(self):
+        """ Load settings if not already loaded. """
+        try:
+            return self._settings
+        except:
+            self._settings = SkillSettings(join(self._dir, 'settings.json'))
+            return self._settings
+
     def bind(self, emitter):
         if emitter:
             self.emitter = emitter
@@ -221,7 +228,8 @@ class MycroftSkill(object):
         self.emitter.on('mycroft.stop', self.__handle_stop)
 
     def detach(self):
-        for name in self.registered_intents:
+        for (name, intent) in self.registered_intents:
+            name = self.name + ':' + name
             self.emitter.emit(Message("detach_intent", {"intent_name": name}))
 
     def initialize(self):
@@ -233,8 +241,10 @@ class MycroftSkill(object):
         raise Exception("Initialize not implemented for skill: " + self.name)
 
     def register_intent(self, intent_parser, handler):
+        name = intent_parser.name
+        intent_parser.name = self.name + ':' + intent_parser.name
         self.emitter.emit(Message("register_intent", intent_parser.__dict__))
-        self.registered_intents.append(intent_parser.name)
+        self.registered_intents.append((name, intent_parser))
 
         def receive_handler(message):
             try:
@@ -248,7 +258,28 @@ class MycroftSkill(object):
                     "An error occurred while processing a request in " +
                     self.name, exc_info=True)
 
-        self.emitter.on(intent_parser.name, receive_handler)
+        if handler:
+            self.emitter.on(intent_parser.name, receive_handler)
+            self.events.append((intent_parser.name, receive_handler))
+
+    def disable_intent(self, intent_name):
+        """Disable a registered intent"""
+        logger.debug('Disabling intent ' + intent_name)
+        name = self.name + ':' + intent_name
+        self.emitter.emit(Message("detach_intent", {"intent_name": name}))
+
+    def enable_intent(self, intent_name):
+        """Reenable a registered intent"""
+        for (name, intent) in self.registered_intents:
+            if name == intent_name:
+                self.registered_intents.remove((name, intent))
+                intent.name = name
+                self.register_intent(intent, None)
+                logger.debug('Enabling intent ' + intent_name)
+                break
+            else:
+                logger.error('Could not enable ' + intent_name +
+                             ', it hasn\'t been registered.')
 
     def register_vocabulary(self, entity, entity_type):
         self.emitter.emit(Message('register_vocab', {
@@ -259,10 +290,13 @@ class MycroftSkill(object):
         re.compile(regex_str)  # validate regex
         self.emitter.emit(Message('register_vocab', {'regex': regex_str}))
 
-    def speak(self, utterance):
-        self.emitter.emit(Message("speak", {'utterance': utterance}))
+    def speak(self, utterance, expect_response=False):
+        data = {'utterance': utterance,
+                'expect_response': expect_response}
+        self.emitter.emit(Message("speak", data))
 
-    def speak_dialog(self, key, data={}):
+    def speak_dialog(self, key, data={}, expect_response=False):
+        data['expect_response'] = expect_response
         self.speak(self.dialog_renderer.render(key, data))
 
     def init_dialog(self, root_directory):
@@ -306,4 +340,13 @@ class MycroftSkill(object):
         process termination. The skill implementation must
         shutdown all processes and operations in execution.
         """
+        # Store settings
+        self.settings.store()
+
+        # removing events
+        for e, f in self.events:
+            self.emitter.remove(e, f)
+
+        self.emitter.emit(
+            Message("detach_skill", {"skill_name": self.name + ":"}))
         self.stop()
