@@ -148,6 +148,7 @@ class EnclosureReader(Thread):
             self.ws.emit(Message("mycroft.disable.ssh"))
             self.ws.emit(Message("speak", {
                 'utterance': mycroft.dialog.get("reset to factory defaults")}))
+            time.sleep(5)
             wait_while_speaking()
             self.ws.emit(Message("enclosure.mouth.reset"))
             self.ws.emit(Message("enclosure.eyes.spin"))

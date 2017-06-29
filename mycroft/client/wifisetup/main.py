@@ -274,10 +274,9 @@ class WiFi:
         # item being selected.
         self.ws.on('mycroft.wifi.start', self.start)
 
-        # Similar to the above.  Resets to factory defaults
+        # This event is similar to the above, but resets the wifi
         self.ws.on('mycroft.wifi.reset', self.reset)
-
-        # Similar to the above.  Enable/disable SSH
+        # an event to enable SSH
         self.ws.on('mycroft.enable.ssh', self.ssh_enable)
         self.ws.on('mycroft.disable.ssh', self.ssh_disable)
 
@@ -553,7 +552,7 @@ class WiFi:
             self.stop()
 
     def reset(self, event=None):
-        """Reset the unit to the factory defaults """
+        """Resets the wifi to the default """
         LOG.info("Resetting the WPA_SUPPLICANT File")
         try:
             call(
