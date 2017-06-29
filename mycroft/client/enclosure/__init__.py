@@ -32,9 +32,11 @@ from mycroft.client.enclosure.weather import EnclosureWeather
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
-from mycroft.util import play_wav, create_signal
+from mycroft.util import play_wav, create_signal, connected, \
+    wait_while_speaking
 from mycroft.util.audio_test import record
 from mycroft.util.log import getLogger
+from mycroft.api import is_paired, has_been_paired
 
 __author__ = 'aatchison', 'jdorleans', 'iward'
 
@@ -75,14 +77,21 @@ class EnclosureReader(Thread):
                 LOG.error("Reading error: {0}".format(e))
 
     def process(self, data):
-        self.ws.emit(Message(data))
+        # TODO: Look into removing this emit altogether.
+        # We need to check if any other serial bus messages
+        # are handled by other parts of the code
+        if "mycroft.stop" not in data:
+            self.ws.emit(Message(data))
 
         if "Command: system.version" in data:
-            self.ws.emit(Message("enclosure.start"))
+            # This happens in response to the "system.version" message
+            # sent during the construction of Enclosure()
+            self.ws.emit(Message("enclosure.started"))
 
         if "mycroft.stop" in data:
-            create_signal('buttonPress')
-            self.ws.emit(Message("mycroft.stop"))
+            if has_been_paired():
+                create_signal('buttonPress')
+                self.ws.emit(Message("mycroft.stop"))
 
         if "volume.up" in data:
             self.ws.emit(
@@ -123,8 +132,7 @@ class EnclosureReader(Thread):
             subprocess.call('systemctl poweroff -i', shell=True)
 
         if "unit.reboot" in data:
-            self.ws.emit(
-                Message("enclosure.eyes.spin"))
+            self.ws.emit(Message("enclosure.eyes.spin"))
             self.ws.emit(Message("enclosure.mouth.reset"))
             subprocess.call('systemctl reboot -i', shell=True)
 
@@ -132,8 +140,7 @@ class EnclosureReader(Thread):
             self.ws.emit(Message("mycroft.wifi.start"))
 
         if "unit.factory-reset" in data:
-            self.ws.emit(
-                Message("enclosure.eyes.spin"))
+            self.ws.emit(Message("enclosure.eyes.spin"))
             subprocess.call(
                 'rm ~/.mycroft/identity/identity2.json',
                 shell=True)
@@ -142,6 +149,9 @@ class EnclosureReader(Thread):
             self.ws.emit(Message("speak", {
                 'utterance': mycroft.dialog.get("reset to factory defaults")}))
             time.sleep(5)
+            wait_while_speaking()
+            self.ws.emit(Message("enclosure.mouth.reset"))
+            self.ws.emit(Message("enclosure.eyes.spin"))
             self.ws.emit(Message("enclosure.mouth.reset"))
             subprocess.call('systemctl reboot -i', shell=True)
 
@@ -217,27 +227,72 @@ class Enclosure(object):
     E.g. Start and Stop talk animation
     """
 
+    _last_internet_notification = 0
+
     def __init__(self):
         self.ws = WebsocketClient()
         ConfigurationManager.init(self.ws)
-        self.config = ConfigurationManager.get().get("enclosure")
+        self.config = ConfigurationManager.instance().get("enclosure")
         self.__init_serial()
         self.reader = EnclosureReader(self.serial, self.ws)
         self.writer = EnclosureWriter(self.serial, self.ws)
-        self.writer.write("system.version")
-        self.ws.on("enclosure.start", self.start)
-        self.started = False
-        Timer(5, self.stop).start()  # WHY? This at least
-        # needs an explanation, this is non-obvious behavior
 
-    def start(self, event=None):
+        # Send a message to the Arduino across the serial line asking
+        # for a reply with version info.
+        self.writer.write("system.version")
+        # When the Arduino responds, it will generate this message
+        self.ws.on("enclosure.started", self.on_arduino_responded)
+
+        self.arduino_responded = False
+
+        # Start a 5 second timer.  If the serial port hasn't received
+        # any acknowledgement of the "system.version" within those
+        # 5 seconds, assume there is nothing on the other end (e.g.
+        # we aren't running a Mark 1 with an Arduino)
+        Timer(5, self.check_for_response).start()
+
+        # Notifications from mycroft-core
+        self.ws.on("enclosure.notify.no_internet", self.on_no_internet)
+
+    def on_arduino_responded(self, event=None):
         self.eyes = EnclosureEyes(self.ws, self.writer)
         self.mouth = EnclosureMouth(self.ws, self.writer)
         self.system = EnclosureArduino(self.ws, self.writer)
         self.weather = EnclosureWeather(self.ws, self.writer)
         self.__register_events()
         self.__reset()
-        self.started = True
+        self.arduino_responded = True
+
+        # verify internet connection and prompt user on bootup if needed
+        if not connected():
+            # We delay this for several seconds to ensure that the other
+            # clients are up and connected to the messagebus in order to
+            # receive the "speak".  This was sometimes happening too
+            # quickly and the user wasn't notified what to do.
+            Timer(5, self._do_net_check).start()
+
+    def on_no_internet(self, event=None):
+        if connected():
+            # One last check to see if connection was established
+            return
+
+        if time.time()-Enclosure._last_internet_notification < 30:
+            # don't bother the user with multiple notifications with 30 secs
+            return
+
+        Enclosure._last_internet_notification = time.time()
+
+        # TODO: This should go into EnclosureMark1 subclass of Enclosure.
+        if has_been_paired():
+            # Handle the translation within that code.
+            self.ws.emit(Message("speak", {
+                'utterance': "This device is not connected to the Internet. "
+                             "Either plug in a network cable or hold the "
+                             "button on top for two seconds, then select "
+                             "wifi from the menu"}))
+        else:
+            # enter wifi-setup mode automatically
+            self.ws.emit(Message("mycroft.wifi.start"))
 
     def __init_serial(self):
         try:
@@ -291,9 +346,42 @@ class Enclosure(object):
             LOG.error("Error: {0}".format(e))
             self.stop()
 
-    def stop(self):
-        if not self.started:
+    def check_for_response(self):
+        if not self.arduino_responded:
+            # There is nothing on the other end of the serial port
+            # close these serial-port readers and this process
             self.writer.stop()
             self.reader.stop()
             self.serial.close()
             self.ws.close()
+
+    def _do_net_check(self):
+        # TODO: This should live in the derived Enclosure, e.g. Enclosure_Mark1
+        LOG.info("Checking internet connection")
+        if not connected():  # and self.conn_monitor is None:
+            if has_been_paired():
+                # TODO: Enclosure/localization
+                self.ws.emit(Message("speak", {
+                    'utterance': "This unit is not connected to the Internet."
+                                 " Either plug in a network cable or hold the "
+                                 "button on top for two seconds, then select "
+                                 "wifi from the menu"
+                    }))
+            else:
+                # Begin the unit startup process, this is the first time it
+                # is being run with factory defaults.
+
+                # TODO: This logic should be in Enclosure_Mark1
+                # TODO: Enclosure/localization
+
+                # Don't listen to mic during this out-of-box experience
+                self.ws.emit(Message("mycroft.mic.mute", None))
+
+                # Kick off wifi-setup automatically
+                self.ws.emit(Message("mycroft.wifi.start",
+                                     {'msg': "Hello I am Mycroft, your new "
+                                      "assistant.  To assist you I need to be "
+                                      "connected to the internet.  You can "
+                                      "either plug me in with a network cable,"
+                                      " or use wifi.  To setup wifi ",
+                                      'allow_timeout': False}))

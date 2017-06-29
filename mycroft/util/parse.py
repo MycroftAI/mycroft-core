@@ -18,6 +18,195 @@
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
+# ==============================================================
+
+
+# def extractnumber(text, lang="en-us", remove_articles=True):
+def extractnumber(text, lang="en-us"):
+    """Takes in a string and extracts a number.
+    Args:
+        text (str): the string to extract a number from
+        lang (str): the code for the language text is in
+    Returns:
+        (str): The number extracted or the original text.
+    """
+
+    lang_lower = str(lang).lower()
+    if lang_lower.startswith("en"):
+        # return extractnumber_en(text, remove_articles)
+        return extractnumber_en(text)
+
+    # TODO: Normalization for other languages
+    return text
+
+
+def is_numeric(input_str):
+    """
+    Takes in a string and tests to see if it is a number.
+    Args:
+        text (str): string to test if a number
+    Returns:
+        (bool): True if a number, else False
+
+    """
+
+    try:
+        float(input_str)
+        return True
+    except ValueError:
+        return False
+
+
+def extractnumber_en(text):
+    """
+    This function prepares the given text for parsing by making
+    numbers consistent, getting rid of contractions, etc.
+    Args:
+        text (str): the string to normalize
+    Returns:
+        (int) or (float): The value of extracted number
+
+    """
+    aWords = text.split()
+    aWords = [word for word in aWords if word not in ["the", "a", "an"]]
+    andPass = False
+    valPreAnd = False
+    val = False
+    count = 0
+    while count < len(aWords):
+        word = aWords[count]
+        if is_numeric(word):
+            # if word.isdigit():            # doesn't work with decimals
+            val = float(word)
+        elif word == "first":
+            val = 1
+        elif word == "second":
+            val = 2
+        elif isFractional(word):
+            val = isFractional(word)
+        else:
+            if word == "one":
+                val = 1
+            elif word == "two":
+                val = 2
+            elif word == "three":
+                val = 3
+            elif word == "four":
+                val = 4
+            elif word == "five":
+                val = 5
+            elif word == "six":
+                val = 6
+            elif word == "seven":
+                val = 7
+            elif word == "eight":
+                val = 8
+            elif word == "nine":
+                val = 9
+            elif word == "ten":
+                val = 10
+            if val:
+                if count < (len(aWords) - 1):
+                    wordNext = aWords[count+1]
+                else:
+                    wordNext = ""
+                valNext = isFractional(wordNext)
+
+                if valNext:
+                    val = val * valNext
+                    aWords[count+1] = ""
+
+        # if val == False:
+        if not val:
+            # look for fractions like "2/3"
+            aPieces = word.split('/')
+            # if (len(aPieces) == 2 and is_numeric(aPieces[0])
+            #   and is_numeric(aPieces[1])):
+            if look_for_fractions(aPieces):
+                val = float(aPieces[0]) / float(aPieces[1])
+            elif andPass:
+                # added to value, quit here
+                val = valPreAnd
+                break
+            else:
+                count += 1
+                continue
+
+        aWords[count] = ""
+
+        if (andPass):
+            aWords[count-1] = ''    # remove "and"
+            val += valPreAnd
+        elif count+1 < len(aWords) and aWords[count+1] == 'and':
+            andPass = True
+            valPreAnd = val
+            val = False
+            count += 2
+            continue
+        elif count+2 < len(aWords) and aWords[count+2] == 'and':
+            andPass = True
+            valPreAnd = val
+            val = False
+            count += 3
+            continue
+
+        break
+
+    # if val == False:
+    if not val:
+        return False
+
+    # Return the $str with the number related words removed
+    # (now empty strings, so strlen == 0)
+    aWords = [word for word in aWords if len(word) > 0]
+    text = ' '.join(aWords)
+
+    return val
+
+
+def look_for_fractions(split_list):
+    """"
+    This function takes a list made by fraction & determines if a fraction.
+
+    Args:
+        split_list (list): list created by splitting on '/'
+    Returns:
+        (bool): False if not a fraction, otherwise True
+
+    """
+
+    if len(split_list) == 2:
+        if is_numeric(split_list[0]) and is_numeric(split_list[1]):
+            return True
+
+    return False
+
+
+def isFractional(input_str):
+    """
+    This function takes the given text and checks if it is a fraction.
+
+    Args:
+        text (str): the string to check if fractional
+    Returns:
+        (bool) or (float): False if not a fraction, otherwise the fraction
+
+    """
+    if input_str.endswith('s', -1):
+        input_str = input_str[:len(input_str)-1]		# e.g. "fifths"
+
+    aFrac = ["whole", "half", "third", "fourth", "fifth", "sixth",
+             "seventh", "eighth", "ninth", "tenth", "eleventh", "twelfth"]
+
+    if input_str.lower() in aFrac:
+        return 1.0/(aFrac.index(input_str)+1)
+    if input_str == "quarter":
+        return 1.0/4
+
+    return False
+
+# ==============================================================
+
 
 def normalize(text, lang="en-us", remove_articles=True):
     """Prepare a string for parsing
