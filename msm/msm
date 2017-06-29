@@ -91,7 +91,6 @@ function install() {
 }
 
 function update() {
-        cd $mycroft_skill_folder
         goto_skills_dir
 	for d in $(ls -d */); do
 		if git -C "$d" rev-parse --git-dir > /dev/null 2>&1; then
