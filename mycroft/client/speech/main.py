@@ -162,6 +162,7 @@ def handle_stop(event):
     _last_stop_signal = time.time()
     kill([config.get('tts').get('module')])
     kill(["aplay"])
+    stop_speaking()
 
 
 def handle_paired(event):
