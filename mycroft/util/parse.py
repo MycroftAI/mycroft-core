@@ -666,8 +666,7 @@ def extractdatetime_en(str, currentDate=datetime.now()):
             found = True
 
     '''check that we found a date'''
-    if not found and \
-    (datestr == "" and timeStr == "" and
+    if not found and (datestr == "" and timeStr == "" and
                 yearOffset == 0 and monthOffset == 0 and
                 dayOffset is False and hrOffset == 0 and
                 hrAbs == 0 and minOffset == 0 and
@@ -681,9 +680,9 @@ def extractdatetime_en(str, currentDate=datetime.now()):
 
     extractedDate = dateNow
     extractedDate = extractedDate.replace(microsecond=0,
-                                        second=0,
-                                        minute=0,
-                                        hour=0)
+                                            second=0,
+                                            minute=0,
+                                            hour=0)
     if datestr != "":
         temp = datetime.strptime(datestr, "%B %d")
         if not hasYear:

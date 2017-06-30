@@ -8,6 +8,7 @@ from mycroft.util.parse import extractdatetime_en
 from datetime import datetime
 
 class TestNormalize(unittest.TestCase):
+
     def test_articles(self):
         self.assertEqual(normalize("this is a test", remove_articles=True),
                          "this is test")
@@ -64,7 +65,6 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extractWithFormat("remind me to call mom in 8 weeks and 2 days"), "2017-08-24 00:00:00")  # noqa
         self.assertEqual(extractWithFormat("start the attack on Monday at o 600 hours"), "2017-07-03 06:00:00")  # noqa
         self.assertEqual(extractWithFormat("start the attack on Monday at 5 o'clock in the evening"), "2017-07-03 17:00:00")  # noqa
-
 
     def test_spaces(self):
         self.assertEqual(normalize("  this   is  a    test"),
