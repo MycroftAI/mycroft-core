@@ -9,6 +9,7 @@ from datetime import datetime
 
 class TestNormalize(unittest.TestCase):
 
+
     def test_articles(self):
         self.assertEqual(normalize("this is a test", remove_articles=True),
                          "this is test")
