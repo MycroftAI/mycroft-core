@@ -30,6 +30,7 @@
 
 import json
 import sys
+from threading import Timer
 from os.path import isfile, join, exists, expanduser
 from mycroft.util.log import getLogger
 from mycroft.api import DeviceApi
@@ -38,6 +39,7 @@ logger = getLogger(__name__)
 SKILLS_DIR = "/opt/mycroft/skills"
 
 
+# TODO: account for settings changes through skill ie. change default playlist
 class SkillSettings(dict):
     """
         SkillSettings creates a dictionary that can easily be stored
@@ -60,8 +62,8 @@ class SkillSettings(dict):
         self.loaded_hash = hash(str(self))
 
         self._send_settings_meta()
-        self._request_settings()
-        self._load_settings()
+        self._poll_web_settings()
+        self._load_web_settings()
 
     @property
     def _is_stored(self):
@@ -78,9 +80,9 @@ class SkillSettings(dict):
 
     def _send_settings_meta(self):
         """
-            If settings meta data exists and the skill is loaded for the
-            first time, send settingsmeta.json to the backend and store uuid
-            for skill
+            TODO: do a poll, if settingsmeta.json changes, PATCH it to backend
+            If settings meta data exists and skill does not have a uuid,
+            send settingsmeta.json to the backend and store uuid for skill
         """
         if isfile(self._meta_path):
             with open(self._meta_path) as f:
@@ -92,13 +94,12 @@ class SkillSettings(dict):
                 response = self._post_metadata(self.settings_meta)
                 self._store_uuid(response)
 
-    def _request_settings(self):
+    def _poll_web_settings(self):
         """
-            Poll to backend to request settings and store it if it changes
+            If uuid exists for this skill poll to backend to
+            request settings and store it if it changes
             TODO: implement as websocket
-
         """
-        # TODO: A get request for specific skill uuid instead of getting all
         if isfile(self._uuid_path):
             with open(self._uuid_path, 'r') as f:
                 data = json.load(f)
@@ -110,9 +111,13 @@ class SkillSettings(dict):
                     settings_list = skill_setting['skillMetadata']['sections']
                     for section in settings_list:
                         for field in section["fields"]:
-                            pass
+                            self.__setitem__(field["name"], field["value"])
 
-    def _load_settings(self):
+            self.store()
+            # poll backend every 60 seconds for new settings
+            Timer(60, self._poll_web_settings).start()
+
+    def _load_web_settings(self):
         """
             If settings.json exist, open and read stored values into self
         """
@@ -161,12 +166,3 @@ class SkillSettings(dict):
             with open(self._settings_path, 'w') as f:
                 json.dump(self, f)
             self.loaded_hash = hash(str(self))
-
-    def test(self):
-        with open(self._uuid_path, 'r') as f:
-            data = json.load(f)
-        return data
-
-    # account for settings changes through skill ie. change default playlist
-
-    # account for finding a place to store uuid
