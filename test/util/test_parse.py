@@ -44,26 +44,26 @@ class TestNormalize(unittest.TestCase):
     def test_extractdatetime_en(self):
 
         def extractWithFormat(text):
-            date = datetime(2017,06,27,00,00)
-            return extractdatetime_en(text, date)[0].strftime("%Y-%m-%d %H:%M:%S")
+            date = datetime(2017, 06, 27, 00, 00)
+            return extractdatetime_en(text, date)[0].strftime("%Y-%m-%d %H:%M:%S")  # noqa
 
-        self.assertEqual(extractWithFormat("What's the weather next Tuesday?"), "2017-07-04 00:00:00")
-        self.assertEqual(extractWithFormat("What was the weather last Thursday in the evening?"), "2017-06-22 19:00:00")
-        self.assertEqual(extractWithFormat("Build it 3 weeks from today"), "2017-07-18 00:00:00")
-        self.assertEqual(extractWithFormat("Buy a pizza next Wednesday at 3 p.m."), "2017-07-05 15:00:00")
-        self.assertEqual(extractWithFormat("What's the weather tomorrow morning?"), "2017-06-28 08:00:00")
-        self.assertEqual(extractWithFormat("What's the weather 3 weeks from now at 05 15"), "2017-07-18 05:15:00")
-        self.assertEqual(extractWithFormat("What's the weather 2 days from Thursday?"), "2017-07-01 00:00:00")
-        self.assertEqual(extractWithFormat("What's the weather 3 weeks and 3 days from today?"), "2017-07-21 00:00:00")
-        self.assertEqual(extractWithFormat("What's the weather next Tuesday?"), "2017-07-04 00:00:00")
-        self.assertEqual(extractWithFormat("What's the weather on August 11"), "2017-08-11 00:00:00")
-        self.assertEqual(extractWithFormat("What was the weather last Monday?"), "2017-06-26 00:00:00")
-        self.assertEqual(extractWithFormat("What's the weather the day after tomorrow"), "2017-06-29 00:00:00")
-        self.assertEqual(extractWithFormat("What's the weather like on February 19?"), "2018-02-19 00:00:00")
-        self.assertEqual(extractWithFormat("What's the weather at 2 am tomorrow?"), "2017-06-28 02:00:00")
-        self.assertEqual(extractWithFormat("remind me to call mom in 8 weeks and 2 days"), "2017-08-24 00:00:00")
-        self.assertEqual(extractWithFormat("start the attack on Monday at o 600 hours"), "2017-07-03 06:00:00")
-        self.assertEqual(extractWithFormat("start the attack on Monday at 5 o'clock in the evening"), "2017-07-03 17:00:00")
+        self.assertEqual(extractWithFormat("What's the weather next Tuesday?"), "2017-07-04 00:00:00")  # noqa
+        self.assertEqual(extractWithFormat("What was the weather last Thursday in the evening?"), "2017-06-22 19:00:00")  # noqa
+        self.assertEqual(extractWithFormat("Build it 3 weeks from today"), "2017-07-18 00:00:00")  # noqa
+        self.assertEqual(extractWithFormat("Buy a pizza next Wednesday at 3 p.m."), "2017-07-05 15:00:00")  # noqa
+        self.assertEqual(extractWithFormat("What's the weather tomorrow morning?"), "2017-06-28 08:00:00")  # noqa
+        self.assertEqual(extractWithFormat("What's the weather 3 weeks from now at 05 15"), "2017-07-18 05:15:00")  # noqa
+        self.assertEqual(extractWithFormat("What's the weather 2 days from Thursday?"), "2017-07-01 00:00:00")  # noqa
+        self.assertEqual(extractWithFormat("What's the weather 3 weeks and 3 days from today?"), "2017-07-21 00:00:00")  # noqa
+        self.assertEqual(extractWithFormat("What's the weather next Tuesday?"), "2017-07-04 00:00:00")  # noqa
+        self.assertEqual(extractWithFormat("What's the weather on August 11"), "2017-08-11 00:00:00")  # noqa
+        self.assertEqual(extractWithFormat("What was the weather last Monday?"), "2017-06-26 00:00:00")  # noqa
+        self.assertEqual(extractWithFormat("What's the weather the day after tomorrow"), "2017-06-29 00:00:00")  # noqa
+        self.assertEqual(extractWithFormat("What's the weather like on February 19?"), "2018-02-19 00:00:00")  # noqa
+        self.assertEqual(extractWithFormat("What's the weather at 2 am tomorrow?"), "2017-06-28 02:00:00")  # noqa
+        self.assertEqual(extractWithFormat("remind me to call mom in 8 weeks and 2 days"), "2017-08-24 00:00:00")  # noqa
+        self.assertEqual(extractWithFormat("start the attack on Monday at o 600 hours"), "2017-07-03 06:00:00")  # noqa
+        self.assertEqual(extractWithFormat("start the attack on Monday at 5 o'clock in the evening"), "2017-07-03 17:00:00")  # noqa
 
 
     def test_spaces(self):
