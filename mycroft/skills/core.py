@@ -290,7 +290,7 @@ class MycroftSkill(object):
 
     def get_context(self, context=None):
         if context is None:
-            context = {"destinatary": "all", "source": self.name, "mute": False, "more": False}
+            context = {"destinatary": "all", "source": self.name, "mute": False, "more_speech": False}
         else:
             if "destinatary" not in context.keys():
                 context["destinatary"] = self.context.get("destinatary", "all")
@@ -298,8 +298,8 @@ class MycroftSkill(object):
                 context["source"] = self.name
             if "mute" not in context.keys():
                 context["mute"] = self.context.get("mute", False)
-            if "more" not in context.keys():
-                context["more"] = self.context.get("more", False)
+            if "more_speech" not in context.keys():
+                context["more_speech"] = self.context.get("more_speech", False)
         return context
 
     def speak(self, utterance, expect_response=False, metadata={}, context=None):

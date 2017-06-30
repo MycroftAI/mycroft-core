@@ -100,7 +100,7 @@ def handle_speak(event):
     utterance = event.data.get('utterance', "")
     expect_response = event.data.get('expect_response', False)
     mute = event.context.get("mute", False)
-    target = event.context.get("destinatary")
+    target = event.context.get("destinatary", "all")
     if target != "all" and target != client_name:
         return
     # This is a bit of a hack for Picroft.  The analog audio on a Pi blocks

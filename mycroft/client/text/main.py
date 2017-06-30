@@ -257,8 +257,8 @@ def handle_speak(event):
     global chat
     global tts
     mutex.acquire()
-    target = event.context.get("destinatary")
-    mute = event.context.get("mute")
+    target = event.context.get("destinatary", "all")
+    mute = event.context.get("mute", False)
     if target != "all" and target != client_name:
         return
     if not bQuiet and not mute:
