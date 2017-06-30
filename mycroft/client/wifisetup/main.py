@@ -302,7 +302,7 @@ class WiFi:
         if event and event.data.get("msg"):
             self.intro_msg = event.data.get("msg")
         self.allow_timeout = True
-        if event and event.data.get("allow_timeout"):
+        if event and event.data.get("allow_timeout") is False:
             self.allow_timeout = event.data.get("allow_timeout")
 
         # Fire up our access point
@@ -417,7 +417,7 @@ class WiFi:
                 # has disconnected
                 if not self._is_ARP_filled():
                     cARPFailures += 1
-                    if cARPFailures > 2:
+                    if cARPFailures > 5:
                         self._connection_prompt("Connection lost.")
                         bHasConnected = False
                 else:
