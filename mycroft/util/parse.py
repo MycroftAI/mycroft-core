@@ -1,8 +1,6 @@
+# -*- coding: iso-8859-15 -*-
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
-
-
-# -*- coding: iso-8859-15 -*-
 
 # Copyright 2017 Mycroft AI, Inc.
 #
