@@ -20,19 +20,17 @@ import os
 import tempfile
 import time
 
-from abc import ABCMeta, abstractmethod
 from os.path import join, dirname, abspath
-
 from pocketsphinx import Decoder
+
+from mycroft.client.speech.local_recognizer import LocalRecognizer
 
 __author__ = 'seanfitz, jdorleans'
 
 BASEDIR = dirname(abspath(__file__))
 
 
-class LocalRecognizer(object):
-    __metaclass__ = ABCMeta
-
+class PocketsphinxRecognizer(LocalRecognizer):
     def __init__(self, key_phrase, phonemes, threshold, sample_rate=16000,
                  lang="en-us"):
         self.lang = str(lang)
@@ -72,11 +70,6 @@ class LocalRecognizer(object):
             metrics.timer("mycroft.stt.local.time_s", time.time() - start)
         return self.decoder.hyp()
 
-    def is_recognized(self, byte_data, metrics):
-        hyp = self.transcribe(byte_data, metrics)
-        return hyp and self.key_phrase in hyp.hypstr.lower()
-
-    @abstractmethod
     def found_wake_word(self, frame_data):
-        """Tests whether the wake word exists in the raw audio data"""
-        pass
+        hyp = self.transcribe(frame_data)
+        return hyp and self.key_phrase in hyp.hypstr.lower()
