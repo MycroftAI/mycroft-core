@@ -7,6 +7,7 @@ from mycroft.util.parse import extractnumber
 from mycroft.util.parse import extractdatetime_en
 from datetime import datetime
 
+
 class TestNormalize(unittest.TestCase):
 
     def test_articles(self):
