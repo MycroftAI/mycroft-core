@@ -95,10 +95,8 @@ function update() {
 	for d in $(ls -d */); do
 		if git -C "$d" rev-parse --git-dir > /dev/null 2>&1; then
 			cd $d
-			if [[ -z $(git status --porcelain) ]]; then
-				git fetch
-				git reset --hard origin/master 
-			fi
+			git fetch
+			git reset --hard origin/master 
 			cd ..
 		fi
 	done
