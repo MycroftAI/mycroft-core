@@ -175,15 +175,6 @@ returns a 2-element array [date, leftover_string]
 the 'date' is a python datetime object
 the 'leftover_string' contains all keywords not related to the date or time'''
 
-from datetime import datetime, timedelta
-from dateutil.relativedelta import relativedelta
-
-'''authors: spenrod and connorpenrod
-this function takes a sentence and extracts date and time information from it
-returns a 2-element array [date, leftover_string]
-the 'date' is a python datetime object
-the 'leftover_string' contains all keywords not related to the date or time'''
-
 
 def extractdatetime_en(str, currentDate=datetime.now()):
     if str == "":
