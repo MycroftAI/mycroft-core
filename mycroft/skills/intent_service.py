@@ -39,6 +39,8 @@ class IntentService(object):
         self.emitter.on('detach_skill', self.handle_detach_skill)
 
     def get_context(self, context=None):
+        if context is None:
+            context = {}
         context["source"] = "skills"
         # by default set destinatary of reply to source of this message
         context["destinatary"] = context.get("source", "all")
