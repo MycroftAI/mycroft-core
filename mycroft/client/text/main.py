@@ -42,10 +42,15 @@ from mycroft.util import get_ipc_directory                  # nopep8
 from mycroft.util.log import getLogger                      # nopep8
 from mycroft.configuration import ConfigurationManager      # nopep8
 
+
+# client name is the name passed as source of message and used to determine if we are target of received messages
+# TODO make configurable somehow
+client_name = "CLI_Client"
+
 tts = None
 ws = None
 mutex = Lock()
-logger = getLogger("CLIClient")
+logger = getLogger(client_name)
 
 utterances = []
 chat = []   # chat history, oldest at the lowest index
@@ -252,9 +257,9 @@ def handle_speak(event):
     global chat
     global tts
     mutex.acquire()
-    target = event.data.get("target")
-    mute = event.data.get("mute")
-    if target != "all" and target != "cli":
+    target = event.context.get("destinatary")
+    mute = event.context.get("mute")
+    if target != "all" and target != client_name:
         return
     if not bQuiet and not mute:
         ws.emit(Message("recognizer_loop:audio_output_start"))
@@ -705,9 +710,10 @@ def main(stdscr):
                     # Treat this as an utterance
                     history.append(line)
                     chat.append(line)
+                    context={'source': client_name, "destinatary": "skills"}
                     ws.emit(Message("recognizer_loop:utterance",
                                     {'utterances': [line.strip()],
-                                     'lang': 'en-us', 'source': 'cli'}))
+                                     'lang': 'en-us'}, context))
                 hist_idx = -1
                 line = ""
             elif c == curses.KEY_UP:
@@ -790,9 +796,10 @@ def simple_cli():
             time.sleep(1.5)
             print("Input (Ctrl+C to quit):")
             line = sys.stdin.readline()
+            context = {"source": client_name, "destinatary": "skills"}
             ws.emit(
                 Message("recognizer_loop:utterance",
-                        {'utterances': [line.strip()], "source": "cli"}))
+                        {'utterances': [line.strip()]}, context))
     except KeyboardInterrupt, e:
         # User hit Ctrl+C to quit
         print("")

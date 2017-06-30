@@ -32,7 +32,11 @@ from mycroft.util import kill, create_signal, check_for_signal
 from mycroft.util.log import getLogger
 from mycroft.lock import Lock as PIDLock  # Create/Support PID locking file
 
-logger = getLogger("SpeechClient")
+# client name is the name passed as source of message and used to determine if we are target of received messages
+# TODO make configurable somehow
+client_name = "Speech_Client"
+
+logger = getLogger(client_name)
 ws = None
 tts = TTSFactory.create()
 lock = Lock()
@@ -64,8 +68,11 @@ def handle_wakeword(event):
 
 def handle_utterance(event):
     logger.info("Utterance: " + str(event['utterances']))
-    event["source"] = "speech"
-    ws.emit(Message('recognizer_loop:utterance', event))
+    context = {"source": client_name}
+    # NOTE : Proposed default destinatary is skills, this means IntentService Class
+    # useful if we want to avoid IntentService if desired from other message sources
+    context["destinatary"] = "skills"
+    ws.emit(Message('recognizer_loop:utterance', event, context))
 
 
 def mute_and_speak(utterance):
@@ -90,11 +97,11 @@ def handle_multi_utterance_intent_failure(event):
 def handle_speak(event):
     global _last_stop_signal
 
-    utterance = event.data['utterance']
+    utterance = event.data.get('utterance', "")
     expect_response = event.data.get('expect_response', False)
-    mute = event.data["mute"]
-    target = event.data["target"]
-    if target != "all" and target != "speech":
+    mute = event.context.get("mute", False)
+    target = event.context.get("destinatary")
+    if target != "all" and target != client_name:
         return
     # This is a bit of a hack for Picroft.  The analog audio on a Pi blocks
     # for 30 seconds fairly often, so we don't want to break on periods

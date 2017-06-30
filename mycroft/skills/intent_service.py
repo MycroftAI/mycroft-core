@@ -38,20 +38,19 @@ class IntentService(object):
         self.emitter.on('detach_intent', self.handle_detach_intent)
         self.emitter.on('detach_skill', self.handle_detach_skill)
 
+    def get_context(self, context=None):
+        context["source"] = "skills"
+        # by default set destinatary of reply to source of this message
+        context["destinatary"] = context.get("source", "all")
+        context["mute"] = context.get("mute", False)
+
     def handle_utterance(self, message):
         # Get language of the utterance
         lang = message.data.get('lang', None)
         if not lang:
             lang = "en-us"
-
         utterances = message.data.get('utterances', '')
-        source = message.data.get("source")
-        target = message.data.get("target")
-        mute = message.data.get("mute")
-        if target is None:
-            target = source
-        if mute is None:
-            mute = False
+        context = self.get_context(message.context)
         best_intent = None
         for utterance in utterances:
             try:
@@ -66,21 +65,19 @@ class IntentService(object):
                 continue
 
         if best_intent and best_intent.get('confidence', 0.0) > 0.0:
-            best_intent["target"] = target
-            best_intent["mute"] = mute
             reply = message.reply(
-                best_intent.get('intent_type'), best_intent)
+                best_intent.get('intent_type'), best_intent, context)
             self.emitter.emit(reply)
         elif len(utterances) == 1:
             self.emitter.emit(Message("intent_failure", {
                 "utterance": utterances[0],
                 "lang": lang
-            }))
+            }, context))
         else:
             self.emitter.emit(Message("multi_utterance_intent_failure", {
                 "utterances": utterances,
                 "lang": lang
-            }))
+            }, context))
 
     def handle_register_vocab(self, message):
         start_concept = message.data.get('start')
