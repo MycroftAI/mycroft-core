@@ -25,6 +25,8 @@ import re
 import time
 from os.path import join, dirname, splitext, isdir
 
+from functools import wraps
+
 from adapt.intent import Intent
 
 from mycroft.client.enclosure.api import EnclosureAPI
@@ -106,6 +108,7 @@ def load_skill(skill_descriptor, emitter):
             skill.bind(emitter)
             skill._dir = dirname(skill_descriptor['info'][1])
             skill.load_data_files(dirname(skill_descriptor['info'][1]))
+            # Set up intent handlers
             skill.initialize()
             skill._register_decorated()
             logger.info("Loaded " + skill_descriptor["name"])
@@ -168,6 +171,7 @@ _intent_list = []
 def intent_handler(intent_parser):
     """ Decorator for adding a method as an intent handler. """
     def real_decorator(func):
+        @wraps(func)
         def handler_method(*args, **kwargs):
             return func(*args, **kwargs)
         _intent_list.append((intent_parser, func))
@@ -269,21 +273,13 @@ class MycroftSkill(object):
         self.emitter.emit(Message("register_intent", intent_parser.__dict__))
         self.registered_intents.append((name, intent_parser))
 
-        def receive_handler_with_self(message):
-            try:
-                handler(self, message)
-            except:
-                # TODO: Localize
-                self.speak(
-                    "An error occurred while processing a request in " +
-                    self.name)
-                logger.error(
-                    "An error occurred while processing a request in " +
-                    self.name, exc_info=True)
-
         def receive_handler(message):
             try:
-                handler(message)
+                if need_self:
+                    # When registring from decorator self is required
+                    handler(self, message)
+                else:
+                    handler(message)
             except:
                 # TODO: Localize
                 self.speak(
@@ -294,10 +290,7 @@ class MycroftSkill(object):
                     self.name, exc_info=True)
 
         if handler:
-            if not need_self:
-                self.emitter.on(intent_parser.name, receive_handler)
-            else:
-                self.emitter.on(intent_parser.name, receive_handler_with_self)
+            self.emitter.on(intent_parser.name, receive_handler)
             self.events.append((intent_parser.name, receive_handler))
 
     def disable_intent(self, intent_name):
