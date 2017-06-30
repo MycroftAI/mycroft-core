@@ -609,12 +609,29 @@ def extractdatetime_en(str, currentDate=datetime.now()):
                             used += 1
                         if wordNext == "in" or wordNextNext == "in":
                             used += (1 if wordNext == "in" else 2)
-                            if wordNextNext and wordNextNext in timeQualifier or (words[words.index(wordNextNext)+1] and words[words.index(wordNextNext)+1] in timeQualifier):  # noqa
-                                if wordNextNext == "afternoon" or (len(words) > words.index(wordNextNext) + 1 and words[words.index(wordNextNext)+1] == "afternoon"):  # noqa
+                            if (
+                                    wordNextNext and
+                                    wordNextNext in timeQualifier or
+                                    (words[words.index(wordNextNext)+1] and
+                                    words[words.index(wordNextNext)+1] in timeQualifier)  # noqa
+                                ):
+                                if (
+                                        wordNextNext == "afternoon" or
+                                        (len(words) > words.index(wordNextNext) + 1 and  # noqa
+                                        words[words.index(wordNextNext)+1] == "afternoon")  # noqa
+                                    ):
                                     remainder = "pm"
-                                if wordNextNext == "evening" or (len(words) > (words.index(wordNextNext) + 1) and words[words.index(wordNextNext)+1] == "evening"):  # noqa
+                                if (
+                                        wordNextNext == "evening" or
+                                        (len(words) > (words.index(wordNextNext) + 1) and  # noqa
+                                        words[words.index(wordNextNext)+1] == "evening")  # noqa
+                                    ):
                                     remainder = "pm"
-                                if wordNextNext == "morning" or (len(words) > words.index(wordNextNext) + 1 and words[words.index(wordNextNext)+1] == "morning"):  # noqa
+                                if (
+                                        wordNextNext == "morning" or
+                                        (len(words) > words.index(wordNextNext) + 1 and  # noqa
+                                        words[words.index(wordNextNext)+1] == "morning")  # noqa
+                                    ):
                                     remainder = "am"
                         if timeQualifier != "":
                             '''military = True
