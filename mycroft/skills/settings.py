@@ -44,7 +44,6 @@ class SkillSettings(dict):
     def __init__(self, settings_file):
         super(SkillSettings, self).__init__()
         self._path = settings_file
-
         # if file exist, open and read stored values into self
         if isfile(self._path):
             with open(self._path) as f:
@@ -52,7 +51,11 @@ class SkillSettings(dict):
                 for key in json_data:
                     self.__setitem__(key, json_data[key])
 
-        self._is_stored = True
+        self.loaded_hash = hash(str(self))
+
+    @property
+    def _is_stored(self):
+        return hash(str(self)) == self.loaded_hash
 
     def __getitem__(self, key):
         return super(SkillSettings, self).__getitem__(key)
@@ -61,7 +64,6 @@ class SkillSettings(dict):
         """
             Add/Update key and note that the file needs saving.
         """
-        self._is_stored = False
         return super(SkillSettings, self).__setitem__(key, value)
 
     def store(self):
@@ -71,3 +73,4 @@ class SkillSettings(dict):
         if not self._is_stored:
             with open(self._path, 'w')as f:
                 json.dump(self, f)
+            self.loaded_hash = hash(str(self))

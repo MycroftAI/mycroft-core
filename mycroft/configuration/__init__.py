@@ -91,7 +91,6 @@ class ConfigurationLoader(object):
         locations = ConfigurationLoader.init_locations(locations,
                                                        keep_user_config)
         ConfigurationLoader.validate(config, locations)
-
         for location in locations:
             config = ConfigurationLoader.__load(config, location)
 
@@ -135,6 +134,7 @@ class RemoteConfiguration(object):
     config in the [core] config section
     """
     IGNORED_SETTINGS = ["uuid", "@type", "active", "user", "device"]
+    WEB_CONFIG_CACHE = '/opt/mycroft/web_config_cache.json'
 
     @staticmethod
     def validate(config):
@@ -156,8 +156,11 @@ class RemoteConfiguration(object):
                 if location:
                     setting["location"] = location
                 RemoteConfiguration.__load(config, setting)
+                RemoteConfiguration.__store_cache(setting)
             except Exception as e:
                 LOG.warn("Failed to fetch remote configuration: %s" % repr(e))
+                RemoteConfiguration.__load_cache(config)
+
         else:
             LOG.debug("Remote configuration not activated.")
         return config
@@ -173,9 +176,34 @@ class RemoteConfiguration(object):
                     config[key] = config.get(key, {})
                     RemoteConfiguration.__load(config[key], v)
                 elif isinstance(v, list):
+                    if key not in config:
+                        config[key] = {}
                     RemoteConfiguration.__load_list(config[key], v)
                 else:
                     config[key] = v
+
+    @staticmethod
+    def __store_cache(setting):
+        """
+            Cache the received settings locally. The cache will be used if
+            the remote is unreachable to load settings that are as close
+            to the user's as possible
+        """
+        config = {}
+        # Remove server specific entries
+        RemoteConfiguration.__load(config, setting)
+        with open(RemoteConfiguration.WEB_CONFIG_CACHE, 'w') as f:
+            json.dump(config, f)
+
+    @staticmethod
+    def __load_cache(config):
+        """
+            Load cache from file
+        """
+        LOG.info("Using cached configuration if available")
+        ConfigurationLoader.load(config,
+                                 [RemoteConfiguration.WEB_CONFIG_CACHE],
+                                 False)
 
     @staticmethod
     def __load_list(config, values):

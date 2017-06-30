@@ -187,8 +187,11 @@ class Lock(object):  # python 3+ 'class Lock'
         *args: Ignored.  Required as this fuction is called as a signel
         handler.
         '''
-        with open(self.path, 'r') as L:
-            if self.__pid == L.read():
-                os.unlink(self.path)
-
+        try:
+            with open(self.path, 'r') as L:
+                pid = int(L.read())
+                if self.__pid == pid:
+                    os.unlink(self.path)
+        except IOError:
+            pass
     # End class Lock

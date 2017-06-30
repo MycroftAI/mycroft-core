@@ -18,6 +18,7 @@ import json
 import logging
 
 from os.path import isfile
+from mycroft.util.json_helper import load_commented_json
 
 SYSTEM_CONFIG = '/etc/mycroft/mycroft.conf'
 
@@ -26,9 +27,8 @@ __author__ = 'seanfitz'
 log_level = "DEBUG"
 
 if isfile(SYSTEM_CONFIG):
-    with open(SYSTEM_CONFIG) as f:
-        config = json.load(f)
-        log_level = config.get("log_level", "DEBUG")
+    config = load_commented_json(SYSTEM_CONFIG)
+    log_level = config.get("log_level", "DEBUG")
 
 FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 logging.basicConfig(format=FORMAT, level=logging.getLevelName(log_level))
