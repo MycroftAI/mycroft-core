@@ -179,6 +179,15 @@ returns a 2-element array [date, leftover_string]
 the 'date' is a python datetime object
 the 'leftover_string' contains all keywords not related to the date or time'''
 
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
+
+'''authors: spenrod and connorpenrod
+this function takes a sentence and extracts date and time information from it
+returns a 2-element array [date, leftover_string]
+the 'date' is a python datetime object
+the 'leftover_string' contains all keywords not related to the date or time'''
+
 
 def extractdatetime_en(str, currentDate=datetime.now()):
     if str == "":
@@ -295,7 +304,8 @@ def extractdatetime_en(str, currentDate=datetime.now()):
                 yearOffset = -1
                 start -= 1
                 used = 2
-            '''parse Monday, Tuesday, etc., and next Monday, last Tuesday, etc.'''
+            '''parse Monday, Tuesday, etc., and next Monday,
+            last Tuesday, etc.'''
         elif word in days and not fromFlag:
             d = days.index(word)
             dayOffset = (d+1)-int(today)
@@ -614,18 +624,17 @@ def extractdatetime_en(str, currentDate=datetime.now()):
                             used += 1
                         if wordNext == "in" or wordNextNext == "in":
                             used += (1 if wordNext == "in" else 2)
-                            if wordNextNext and wordNextNext in timeQualifier or (words[words.index(wordNextNext)+1] and words[words.index(wordNextNext)+1] in timeQualifier):
-                                if wordNextNext == "afternoon" or \
-                                        (len(words) > words.index(wordNextNext) + 1 and
-                                            words[words.index(wordNextNext)+1] == "afternoon"):
+                            if wordNextNext and wordNextNext in timeQualifier or (words[words.index(wordNextNext)+1] and words[words.index(wordNextNext)+1] in timeQualifier):  # noqa
+                                if wordNextNext == "afternoon" or (len(words) > words.index(wordNextNext) + 1 and words[words.index(wordNextNext)+1] == "afternoon"):  # noqa
                                     remainder = "pm"
-                                if wordNextNext == "evening" or (len(words) > (words.index(wordNextNext) + 1) and words[words.index(wordNextNext)+1] == "evening"):
+                                if wordNextNext == "evening" or (len(words) > (words.index(wordNextNext) + 1) and words[words.index(wordNextNext)+1] == "evening"):  # noqa
                                     remainder = "pm"
-                                if wordNextNext == "morning" or (len(words) > words.index(wordNextNext) + 1 and words[words.index(wordNextNext)+1] == "morning"):
+                                if wordNextNext == "morning" or (len(words) > words.index(wordNextNext) + 1 and words[words.index(wordNextNext)+1] == "morning"):  # noqa
                                     remainder = "am"
                         if timeQualifier != "":
                             '''military = True
-                            #if strHH <= 12 and (timeQualifier == "evening" or timeQualifier == "afternoon"):
+                            #if strHH <= 12 and (timeQualifier == "evening" or
+                            timeQualifier == "afternoon"):
                              #   strHH += 12'''
                             pass
                     else:
@@ -670,7 +679,12 @@ def extractdatetime_en(str, currentDate=datetime.now()):
             found = True
 
     '''check that we found a date'''
-    if not found and (datestr == "" and timeStr == "" and yearOffset == 0 and monthOffset == 0 and dayOffset is False and hrOffset == 0 and hrAbs == 0 and minOffset == 0 and minAbs == 0 and secOffset == 0):
+    if not found and \
+    (datestr == "" and timeStr == "" and
+                yearOffset == 0 and monthOffset == 0 and
+                dayOffset is False and hrOffset == 0 and
+                hrAbs == 0 and minOffset == 0 and
+                minAbs == 0 and secOffset == 0):
         return None
 
     if dayOffset is False:
@@ -679,21 +693,32 @@ def extractdatetime_en(str, currentDate=datetime.now()):
     '''perform date manipulation'''
 
     extractedDate = dateNow
-    extractedDate = extractedDate.replace(microsecond=0, second=0, minute=0, hour=0)
+    extractedDate = extractedDate.replace(microsecond=0,
+                                          second=0,
+                                          minute=0,
+                                          hour=0)
     if datestr != "":
         temp = datetime.strptime(datestr, "%B %d")
         if not hasYear:
             temp = temp.replace(year=extractedDate.year)
             if extractedDate < temp:
-                extractedDate = extractedDate.replace(year=int(currentYear), month=int(temp.strftime("%m")), day=int(temp.strftime("%d")))
+                extractedDate = extractedDate.replace(year=int(currentYear),
+                                                      month=int(temp.strftime("%m")),  # noqa
+                                                      day=int(temp.strftime("%d")))  # noqa
             else:
-                extractedDate = extractedDate.replace(year=int(currentYear)+1, month=int(temp.strftime("%m")), day=int(temp.strftime("%d")))
+                extractedDate = extractedDate.replace(year=int(currentYear)+1,
+                                                      month=int(temp.strftime("%m")),  # noqa
+                                                      day=int(temp.strftime("%d")))  # noqa
         else:
-            extractedDate = extractedDate.replace(year=int(temp.strftime("%Y")), month=int(temp.strftime("%m")), day=int(temp.strftime("%d")))
+            extractedDate = extractedDate.replace(year=int(temp.strftime("%Y")),  # noqa
+                                                 month=int(temp.strftime("%m")),  # noqa
+                                                 day=int(temp.strftime("%d")))
 
     if timeStr != "":
         temp = datetime(timeStr)
-        extractedDate = extractedDate.replace(hour=temp.strftime("%H"), minute=temp.strftime("%M"), second=temp.strftime("%S"))
+        extractedDate = extractedDate.replace(hour=temp.strftime("%H"),
+                                              minute=temp.strftime("%M"),
+                                              second=temp.strftime("%S"))
 
     if yearOffset != 0:
         extractedDate = extractedDate + relativedelta(years=yearOffset)
@@ -703,7 +728,8 @@ def extractdatetime_en(str, currentDate=datetime.now()):
         extractedDate = extractedDate + relativedelta(days=dayOffset)
     if hrAbs != -1 and minAbs != -1:
 
-        extractedDate = extractedDate + relativedelta(hours=hrAbs, minutes=minAbs)
+        extractedDate = extractedDate + relativedelta(hours=hrAbs,
+                                                      minutes=minAbs)
         if (hrAbs != 0 or minAbs != 0) and datestr == "":
             if not daySpecified and dateNow > extractedDate:
                 extractedDate = extractedDate + relativedelta(days=1)
