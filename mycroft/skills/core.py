@@ -302,15 +302,23 @@ class MycroftSkill(object):
                 context["more_speech"] = self.context.get("more_speech", False)
         return context
 
-    def speak(self, utterance, expect_response=False, metadata={}, context=None):
-        metadata["source_skill"] = self.name
+    def speak(self, utterance, expect_response=False, metadata=None, context=None):
+        if metadata is None:
+            metadata = {}
+        if context is None:
+            context = {}
         data = {'utterance': utterance,
                 'expect_response': expect_response,
                 "metadata": metadata}
         self.emitter.emit(Message("speak", data, self.get_context(context)))
 
-    def speak_dialog(self, key, data={}, expect_response=False, metadata={}, context=None):
-        metadata["source_skill"] = self.name
+    def speak_dialog(self, key, data=None, expect_response=False, metadata=None, context=None):
+        if data is None:
+            data = {}
+        if metadata is None:
+            metadata = {}
+        if context is None:
+            context = {}
         data['expect_response'] = expect_response
         data["metadata"] = metadata
         self.speak(self.dialog_renderer.render(key, data), context=self.get_context(context))
