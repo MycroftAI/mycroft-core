@@ -85,7 +85,7 @@ Mycroft configuration consists of 3 possible config files.
 When the configuration loader starts, it looks in those locations in that order, and loads ALL configuration. Keys that exist in multiple config files will be overridden by the last file to contain that config value. This results in a minimal amount of config being written for a specific device/user, without modifying the distribution files.
 
 # Running Mycroft Quick Start
-To start the essential tasks run `./mycroft.sh start`. Which will start the service, skills, voice and cli (using --quiet mode) in a detched screen and log the output of the screens to the their respective log files (e.g. ./log/mycroft-service.log).
+To start the essential tasks run `./mycroft.sh start`. Which will start the service, skills, voice and cli (using --quiet mode) in a detached screen and log the output of the screens to the their respective log files (e.g. ./log/mycroft-service.log).
 Optionally you can run `./mycroft.sh start -v` Which will start the service, skills and voice. Or `./mycroft.sh start -c` Which will start the service, skills and cli.
 
 To stop Mycroft run `./mycroft.sh stop`. This will quit all of the detached screens.
@@ -93,7 +93,7 @@ To restart Mycroft run './mycroft.sh restart`.
 
 Quick screen tips
 - run `screen -list` to see all running screens
-- run `screen -r [screen-name]` (e.g. `screen -r mycroft-service`) to reatach a screen
+- run `screen -r [screen-name]` (e.g. `screen -r mycroft-service`) to reattach a screen
 - to detach a running screen press `ctrl + a, ctrl + d`
 See the screen man page for more details 
 
