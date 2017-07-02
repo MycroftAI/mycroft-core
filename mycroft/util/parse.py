@@ -46,15 +46,48 @@ def extractnumber(text, lang="en-us"):
 
 def extract_datetime(text, anchorDate=None, lang="en-us"):
 
-    """Takes in a string and extracts a date and time.
+    """
+    Parsing function that extracts date and time information
+    from sentences. Parses many of the common ways that humans
+    express dates and times. Includes relative dates like "5 days from today".
+
+    Vague terminology are given arbitrary values, like:
+        - morning = 8 AM
+        - afternoon = 3 PM
+        - evening = 7 PM
+
+    If a time isn't supplied, the function defaults to 12 AM
+
     Args:
-        text (str): the string to extract a date from
-        lang (str): the code for the language text is in
-    Return:
-        ([datetime object, str]): A 2 element list with a
-            datetime object representing the extracted date
-            and the original string with all date/time related
-            keywords removed
+        str (string): the text to be normalized
+        anchortDate (:obj:`datetime`, optional): the date to be used for
+            relative dating (for example, what does "tomorrow" mean?).
+            Defaults to the current date
+            (acquired with datetime.datetime.now())
+        lang (string): the language of the sentence(s)
+
+    Returns:
+        [:obj:`datetime`, :obj:`str`]: 'datetime' is the extracted date
+            as a datetime object. Times are represented in 24 hour notation.
+            'leftover_string' is the original phrase with all date and time
+            related keywords stripped out. See examples for further
+            clarification
+
+            Returns 'None' if no date was extracted.
+
+    Examples:
+
+        >>> extract_datetime(
+        ... "What is the weather like the day after tomorrow?",
+        ... datetime(2017, 06, 30, 00, 00)
+        ... )
+        [datetime.datetime(2017, 7, 2, 0, 0), 'what is weather like']
+
+        >>> extract_datetime(
+        ... "Set up an appointment 2 weeks from Sunday at 5 pm",
+        ... datetime(2016, 02, 19, 00, 00)
+        ... )
+        [datetime.datetime(2016, 3, 6, 17, 0), 'set up appointment']
     """
 
     lang_lower = str(lang).lower()
@@ -190,49 +223,6 @@ def extractnumber_en(text):
 
 
 def extract_datetime_en(str, currentDate=None):
-
-    '''
-    Parsing function that extracts date and time information
-    from sentences. Parses many of the common ways that humans
-    express dates and times. Includes relative dates like "5 days from today".
-
-    Vague terminology are given arbitrary values, like:
-        - morning = 8 AM
-        - afternoon = 3 PM
-        - evening = 7 PM
-
-    If a time isn't supplied, the function defaults to 12 AM
-
-    Args:
-        str (string): the text to be normalized
-        currentDate (:obj:`datetime`, optional): the date to be used for
-            relative dating (for example, what does "tomorrow" mean?).
-            Defaults to the current date
-            (acquired with datetime.datetime.now())
-
-    Returns:
-        [:obj:`datetime`, :obj:`str`]: 'datetime' is the extracted date
-            as a datetime object. Times are represented in 24 hour notation.
-            'leftover_string' is the original phrase with all date and time
-            related keywords stripped out. See examples for further
-            clarification
-
-            Returns 'None' if no date was extracted.
-
-    Examples:
-
-        >>> extract_datetime_en(
-        ... "What is the weather like the day after tomorrow?",
-        ... datetime(2017, 06, 30, 00, 00)
-        ... )
-        [datetime.datetime(2017, 7, 2, 0, 0), 'what is weather like']
-
-        >>> extract_datetime_en(
-        ... "Set up an appointment 2 weeks from Sunday at 5 pm",
-        ... datetime(2016, 02, 19, 00, 00)
-        ... )
-        [datetime.datetime(2016, 3, 6, 17, 0), 'set up appointment']
-    '''
 
     if str == "":
         return None
@@ -622,7 +612,7 @@ def extract_datetime_en(str, currentDate=None):
                         if wordNext == "hours":
                             used += 1
                     elif wordNext == "hours" and word[0] != '0' and \
-                            (int(word) < 0100 and int(word) > 2400):
+                            (int(word) < 100 and int(word) > 2400):
                         # ignores military time
                         # "in 3 hours"
                         hrOffset = int(word)

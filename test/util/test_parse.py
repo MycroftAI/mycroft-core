@@ -51,70 +51,43 @@ class TestNormalize(unittest.TestCase):
             extractedDate = extractedDate.strftime("%Y-%m-%d %H:%M:%S")
             return [extractedDate, leftover]
 
-        self.assertEqual(extractWithFormat("Set the ambush for 5 days from today")[0], "2017-07-02 00:00:00")  # noqa
-        self.assertEqual(extractWithFormat("Set the ambush for 5 days from today")[1], "set ambush")  # noqa
-        self.assertEqual(extractWithFormat("What is the day after tomorrow's weather?")[0], "2017-06-29 00:00:00")  # noqa
-        self.assertEqual(extractWithFormat("What is the day after tomorrow's weather?")[1], "what is weather")  # noqa
-        self.assertEqual(extractWithFormat("Remind me at 10:45 pm")[0], "2017-06-27 22:45:00")  # noqa
-        self.assertEqual(extractWithFormat("Remind me at 10:45 pm")[1], "remind me")  # noqa
-        self.assertEqual(extractWithFormat("what is the weather on friday morning")[0], "2017-06-30 08:00:00")  # noqa
-        self.assertEqual(extractWithFormat("what is the weather on friday morning")[1], "what is weather")  # noqa
-        self.assertEqual(extractWithFormat("what is tomorrow's weather")[0], "2017-06-28 00:00:00")  # noqa
-        self.assertEqual(extractWithFormat("what is tomorrow's weather")[1], "what is weather")  # noqa
-        self.assertEqual(extractWithFormat("remind me to call mom in 8 weeks and 2 days")[0], "2017-08-24 00:00:00")  # noqa
-        self.assertEqual(extractWithFormat("remind me to call mom in 8 weeks and 2 days")[1], "remind me to call mom")  # noqa
-        self.assertEqual(extractWithFormat("Play Rick Astley music 2 days from Friday")[0], "2017-07-02 00:00:00")  # noqa
-        self.assertEqual(extractWithFormat("Play Rick Astley music 2 days from Friday")[1], "play rick astley music")  # noqa
-        self.assertEqual(extractWithFormat("Begin the invasion at 3:45 pm on Thursday")[0], "2017-06-29 15:45:00")  # noqa
-        self.assertEqual(extractWithFormat("Begin the invasion at 3:45 pm on Thursday")[1], "begin invasion")  # noqa
-        self.assertEqual(extractWithFormat("On Monday, order groceries from Price Chopper")[0], "2017-07-03 00:00:00")  # noqa
-        self.assertEqual(extractWithFormat("On Monday, order groceries from Price Chopper")[1], "order groceries from price chopper")  # noqa
-        self.assertEqual(extractWithFormat("Play Happy Birthday music 5 years from today")[0], "2022-06-27 00:00:00")  # noqa
-        self.assertEqual(extractWithFormat("Play Happy Birthday music 5 years from today")[1], "play happy birthday music")  # noqa
-        self.assertEqual(extractWithFormat("Skype Mom at 12:45 pm next Thursday")[0], "2017-07-06 12:45:00")  # noqa
-        self.assertEqual(extractWithFormat("Skype Mom at 12:45 pm next Thursday")[1], "skype mom")  # noqa
-        self.assertEqual(extractWithFormat("What's the weather next Thursday?")[0], "2017-07-06 00:00:00")  # noqa
-        self.assertEqual(extractWithFormat("What's the weather next Thursday?")[1], "what weather")  # noqa
-        self.assertEqual(extractWithFormat("what is the weather next friday morning")[0], "2017-07-07 08:00:00")  # noqa
-        self.assertEqual(extractWithFormat("what is the weather next friday morning")[1], "what is weather")  # noqa
-        self.assertEqual(extractWithFormat("what is the weather next friday evening")[0], "2017-07-07 19:00:00")  # noqa
-        self.assertEqual(extractWithFormat("what is the weather next friday evening")[1], "what is weather")  # noqa
-        self.assertEqual(extractWithFormat("what is the weather next friday afternoon")[0], "2017-07-07 15:00:00")  # noqa
-        self.assertEqual(extractWithFormat("what is the weather next friday afternoon")[1], "what is weather")  # noqa
-        self.assertEqual(extractWithFormat("remind me to call mom on august 3rd")[0], "2017-08-03 00:00:00")  # noqa
-        self.assertEqual(extractWithFormat("remind me to call mom on august 3rd")[1], "remind me to call mom")  # noqa
-        self.assertEqual(extractWithFormat("Buy fireworks on the 4th of July")[0], "2017-07-04 00:00:00")  # noqa
-        self.assertEqual(extractWithFormat("Buy fireworks on the 4th of July")[1], "buy fireworks")  # noqa
-        self.assertEqual(extractWithFormat("what is the weather 2 weeks from next friday")[0], "2017-07-21 00:00:00")  # noqa
-        self.assertEqual(extractWithFormat("what is the weather 2 weeks from next friday")[1], "what is weather")  # noqa
-        self.assertEqual(extractWithFormat("what is the weather wednesday at 0700 hours")[0], "2017-06-28 07:00:00")  # noqa
-        self.assertEqual(extractWithFormat("what is the weather wednesday at 0700 hours")[1], "what is weather")  # noqa
-        self.assertEqual(extractWithFormat("what is the weather wednesday at 7 o'clock")[0], "2017-06-28 07:00:00")  # noqa
-        self.assertEqual(extractWithFormat("what is the weather wednesday at 7 o'clock")[1], "what is weather")  # noqa
-        self.assertEqual(extractWithFormat("Set up an appointment at 12:45 pm next Thursday")[0], "2017-07-06 12:45:00")  # noqa
-        self.assertEqual(extractWithFormat("Set up an appointment at 12:45 pm next Thursday")[1], "set up appointment")  # noqa
-        self.assertEqual(extractWithFormat("What's the weather this Thursday?")[0], "2017-06-29 00:00:00")  # noqa
-        self.assertEqual(extractWithFormat("What's the weather this Thursday?")[1], "what weather")  # noqa
-        self.assertEqual(extractWithFormat("set up the appointment for 2 weeks and 6 days from Saturday")[0], "2017-07-21 00:00:00")  # noqa
-        self.assertEqual(extractWithFormat("set up the appointment for 2 weeks and 6 days from Saturday")[1], "set up appointment")  # noqa
-        self.assertEqual(extractWithFormat("Begin the invasion at 03 45 on Thursday")[0], "2017-06-29 03:45:00")  # noqa
-        self.assertEqual(extractWithFormat("Begin the invasion at 03 45 on Thursday")[1], "begin invasion")  # noqa
-        self.assertEqual(extractWithFormat("Begin the invasion at o 800 hours on Thursday")[0], "2017-06-29 08:00:00")  # noqa
-        self.assertEqual(extractWithFormat("Begin the invasion at o 800 hours on Thursday")[1], "begin invasion")  # noqa
-        self.assertEqual(extractWithFormat("Begin the invasion at 8 o'clock in the evening on Thursday")[0], "2017-06-29 20:00:00")  # noqa
-        self.assertEqual(extractWithFormat("Begin the invasion at 8 o'clock in the evening on Thursday")[1], "begin invasion")  # noqa
-        self.assertEqual(extractWithFormat("Begin the invasion at 8 in the evening on Thursday")[0], "2017-06-29 20:00:00")  # noqa
-        self.assertEqual(extractWithFormat("Begin the invasion at 8 in the evening on Thursday")[1], "begin invasion")  # noqa
-        self.assertEqual(extractWithFormat("Begin the invasion this Thursday at noon")[0], "2017-06-29 12:00:00")  # noqa
-        self.assertEqual(extractWithFormat("Begin the invasion this Thursday at noon")[1], "begin invasion")  # noqa
-        self.assertEqual(extractWithFormat("Begin the invasion on Thursday at midnight")[0], "2017-06-29 00:00:00")  # noqa
-        self.assertEqual(extractWithFormat("Begin the invasion on Thursday at midnight")[1], "begin invasion")  # noqa
-        self.assertEqual(extractWithFormat("Begin the invasion on Thursday at 0500")[0], "2017-06-29 05:00:00")  # noqa
-        self.assertEqual(extractWithFormat("Begin the invasion on Thursday at 0500")[1], "begin invasion")  # noqa
-        self.assertEqual(extractWithFormat("remind me to wake up in 4 years")[0], "2021-06-27 00:00:00")  # noqa
-        self.assertEqual(extractWithFormat("remind me to wake up in 4 years")[1], "remind me to wake up")  # noqa
-        self.assertEqual(extractWithFormat("remind me to wake up in 4 years and 4 days")[0], "2021-07-01 00:00:00")  # noqa
-        self.assertEqual(extractWithFormat("remind me to wake up in 4 years and 4 days")[1], "remind me to wake up")  # noqa
+        def testExtract(text, expected_date, expected_leftover):
+            res = extractWithFormat(text)
+            self.assertEqual(res[0], expected_date)
+            self.assertEqual(res[1], expected_leftover)
+
+        testExtract("Set the ambush for 5 days from today", "2017-07-02 00:00:00", "set ambush")  # noqa
+        testExtract("What is the day after tomorrow's weather?", "2017-06-29 00:00:00", "what is weather")  # noqa
+        testExtract("Remind me at 10:45 pm", "2017-06-27 22:45:00", "remind me")  # noqa
+        testExtract("what is the weather on friday morning", "2017-06-30 08:00:00", "what is weather")  # noqa
+        testExtract("what is tomorrow's weather", "2017-06-28 00:00:00", "what is weather")  # noqa
+        testExtract("remind me to call mom in 8 weeks and 2 days", "2017-08-24 00:00:00", "remind me to call mom")  # noqa
+        testExtract("Play Rick Astley music 2 days from Friday", "2017-07-02 00:00:00", "play rick astley music")  # noqa
+        testExtract("Begin the invasion at 3:45 pm on Thursday", "2017-06-29 15:45:00", "begin invasion")  # noqa
+        testExtract("On Monday, order groceries from Price Chopper", "2017-07-03 00:00:00", "order groceries from price chopper")  # noqa
+        testExtract("Play Happy Birthday music 5 years from today", "2022-06-27 00:00:00", "play happy birthday music")  # noqa
+        testExtract("Skype Mom at 12:45 pm next Thursday", "2017-07-06 12:45:00", "skype mom")  # noqa
+        testExtract("What's the weather next Thursday?", "2017-07-06 00:00:00", "what weather")  # noqa
+        testExtract("what is the weather next friday morning", "2017-07-07 08:00:00", "what is weather")  # noqa
+        testExtract("what is the weather next friday evening", "2017-07-07 19:00:00", "what is weather")  # noqa
+        testExtract("what is the weather next friday afternoon", "2017-07-07 15:00:00", "what is weather")  # noqa
+        testExtract("remind me to call mom on august 3rd", "2017-08-03 00:00:00", "remind me to call mom")  # noqa
+        testExtract("Buy fireworks on the 4th of July", "2017-07-04 00:00:00", "buy fireworks")  # noqa
+        testExtract("what is the weather 2 weeks from next friday", "2017-07-21 00:00:00", "what is weather")  # noqa
+        testExtract("what is the weather wednesday at 0700 hours", "2017-06-28 07:00:00", "what is weather")  # noqa
+        testExtract("what is the weather wednesday at 7 o'clock", "2017-06-28 07:00:00", "what is weather")  # noqa
+        testExtract("Set up an appointment at 12:45 pm next Thursday", "2017-07-06 12:45:00", "set up appointment")  # noqa
+        testExtract("What's the weather this Thursday?", "2017-06-29 00:00:00", "what weather")  # noqa
+        testExtract("set up the appointment for 2 weeks and 6 days from Saturday", "2017-07-21 00:00:00", "set up appointment")  # noqa
+        testExtract("Begin the invasion at 03 45 on Thursday", "2017-06-29 03:45:00", "begin invasion")  # noqa
+        testExtract("Begin the invasion at o 800 hours on Thursday", "2017-06-29 08:00:00", "begin invasion")  # noqa
+        testExtract("Begin the invasion at 8 o'clock in the evening on Thursday", "2017-06-29 20:00:00", "begin invasion")  # noqa
+        testExtract("Begin the invasion at 8 in the evening on Thursday", "2017-06-29 20:00:00", "begin invasion")  # noqa
+        testExtract("Begin the invasion on Thursday at noon", "2017-06-29 12:00:00", "begin invasion")  # noqa
+        testExtract("Begin the invasion on Thursday at midnight", "2017-06-29 00:00:00", "begin invasion")  # noqa
+        testExtract("Begin the invasion on Thursday at 0500", "2017-06-29 05:00:00", "begin invasion")  # noqa
+        testExtract("remind me to wake up in 4 years", "2021-06-27 00:00:00", "remind me to wake up")  # noqa
+        testExtract("remind me to wake up in 4 years and 4 days", "2021-07-01 00:00:00", "remind me to wake up")  # noqa
 
     def test_spaces(self):
         self.assertEqual(normalize("  this   is  a    test"),
