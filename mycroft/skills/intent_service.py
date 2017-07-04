@@ -111,11 +111,12 @@ class ContextManager(object):
 
 class IntentService(object):
     def __init__(self, emitter):
-        self.config = ConfigurationManager.get()
+        self.config = ConfigurationManager.get().get('context', {})
         self.engine = IntentDeterminationEngine()
-        self.context_keywords = self.config.get('context_keywords', [])
-        self.context_max_frames = self.config.get('context_max_frames', 3)
-        self.context_timeout = self.config.get('context_timeout', 2)
+        self.context_keywords = self.config.get('keywords', [])
+        self.context_max_frames = self.config.get('max_frames', 3)
+        self.context_timeout = self.config.get('timeout', 2)
+        self.context_greedy = self.config.get('greedy', False)
         self.context_manager = ContextManager(self.context_timeout)
         self.emitter = emitter
         self.emitter.on('register_vocab', self.handle_register_vocab)
@@ -127,6 +128,14 @@ class IntentService(object):
         self.emitter.on('add_context', self.handle_add_context)
         self.emitter.on('remove_context', self.handle_remove_context)
         self.emitter.on('clear_context', self.handle_clear_context)
+
+    def update_context(self, intent):
+        for tag in intent['__tags__']:
+            context_entity = tag.get('entities')[0]
+            if self.context_greedy:
+                self.context_manager.inject_context(context_entity)
+            elif context_entity['data'][0][1] in self.context_keywords:
+                self.context_manager.inject_context(context_entity)
 
     def handle_utterance(self, message):
         # Get language of the utterance
@@ -151,10 +160,7 @@ class IntentService(object):
                 continue
 
         if best_intent and best_intent.get('confidence', 0.0) > 0.0:
-            for tag in best_intent['__tags__']:
-                context_entity = tag.get('entities')[0]
-                if context_entity['data'][0][1] in self.context_keywords:
-                    self.context_manager.inject_context(context_entity)
+            self.update_context(best_intent)
             reply = message.reply(
                 best_intent.get('intent_type'), best_intent)
             self.emitter.emit(reply)
