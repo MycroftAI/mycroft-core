@@ -166,8 +166,9 @@ cd "${mycroft_skill_folder}"
 for d in $(find "${mycroft_skill_folder}" -mindepth 1 -maxdepth 1 -type d |grep -v '.git'$ ); do
   if git -C "$d" rev-parse --git-dir > /dev/null 2>&1; then
     cd "${d}" 
-    rm .git/info/exclude
-    echo "*.pyc" >> .git/info/exclude
+    if ! cat .git/info/exclude | grep "*.pyc" >> /dev/null; then
+      echo "*.pyc" >> .git/info/exclude
+    fi
     if [[ -z $(git status --porcelain) ]]; then
       git fetch
       git reset --hard origin/master 
