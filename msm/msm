@@ -166,10 +166,15 @@ cd "${mycroft_skill_folder}"
 for d in $(find "${mycroft_skill_folder}" -mindepth 1 -maxdepth 1 -type d |grep -v '.git'$ ); do
   if git -C "$d" rev-parse --git-dir > /dev/null 2>&1; then
     cd "${d}" 
+    UPSTREAM=${1:-'@{u}'}
+    LOCAL=$(git rev-parse @)
+    REMOTE=$(git rev-parse "$UPSTREAM")
+    BASE=$(git merge-base @ "$UPSTREAM")
+
     if ! grep -q '.pyc'$ .git/info/exclude; then
       echo "*.pyc" >> .git/info/exclude
     fi
-    if [[ -z $(git status --porcelain) ]]; then
+    if [[ (-z $(git status --porcelain)) && !($LOCAL != $REMOTE && $REMOTE = $BASE) ]]; then
       git fetch
       git reset --hard origin/master 
       rm -f *.pyc
