@@ -26,8 +26,8 @@ from requests import HTTPError
 from requests.exceptions import ConnectionError
 
 import mycroft.dialog
-from mycroft.client.speech.local_recognizer import LocalRecognizer
 from mycroft.client.speech.mic import MutableMicrophone, ResponsiveRecognizer
+from mycroft.client.speech.recognizer.pocketsphinx_recognizer import PocketsphinxRecognizer
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.message import Message
 from mycroft.metrics import MetricsAggregator
@@ -217,13 +217,13 @@ class RecognizerLoop(EventEmitter):
         wake_word = self.config.get('wake_word')
         phonemes = self.config.get('phonemes')
         threshold = self.config.get('threshold')
-        return LocalRecognizer(wake_word, phonemes, threshold, rate, lang)
+        return PocketsphinxRecognizer(wake_word, phonemes, threshold, rate, lang)
 
     def create_wakeup_recognizer(self, rate, lang):
         wake_word = self.config.get('standup_word', "wake up")
         phonemes = self.config.get('standup_phonemes', "W EY K . AH P")
         threshold = self.config.get('standup_threshold', 1e-10)
-        return LocalRecognizer(wake_word, phonemes, threshold, rate, lang)
+        return PocketsphinxRecognizer(wake_word, phonemes, threshold, rate, lang)
 
     def start_async(self):
         """
