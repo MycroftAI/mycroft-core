@@ -107,9 +107,12 @@ class AudioConsumer(Thread):
     def read(self):
         audio = self.queue.get()
 
+        if audio is None:
+            return
+
         if self.state.sleeping:
             self.wake_up(audio)
-        elif audio is not None:
+        else:
             self.process(audio)
 
     # TODO: Localization
@@ -223,7 +226,7 @@ class RecognizerLoop(EventEmitter):
     def create_wakeup_recognizer(self, rate, lang):
         wake_word = self.config.get('standup_word', "wake up")
         phonemes = self.config.get('standup_phonemes', "W EY K . AH P")
-        threshold = self.config.get('standup_threshold', 1e-10)
+        threshold = self.config.get('standup_threshold', 1e-18)
         return PocketsphinxRecognizer(wake_word, phonemes,
                                       threshold, rate, lang)
 
