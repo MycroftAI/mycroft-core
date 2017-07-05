@@ -306,7 +306,7 @@ class MycroftSkill(object):
         if os.path.exists(dialog_dir):
             self.dialog_renderer = DialogLoader().load(dialog_dir)
         else:
-            logger.error('No dialog loaded, ' + dialog_dir + ' does not exist')
+            logger.debug('No dialog loaded, ' + dialog_dir + ' does not exist')
 
     def load_data_files(self, root_directory):
         self.init_dialog(root_directory)
@@ -319,7 +319,7 @@ class MycroftSkill(object):
         if os.path.exists(vocab_dir):
             load_vocabulary(vocab_dir, self.emitter)
         else:
-            logger.error('No vocab loaded, ' + vocab_dir + ' does not exist')
+            logger.debug('No vocab loaded, ' + vocab_dir + ' does not exist')
 
     def load_regex_files(self, regex_dir):
         load_regex(regex_dir, self.emitter)
