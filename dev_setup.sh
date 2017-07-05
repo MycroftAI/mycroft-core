@@ -40,6 +40,14 @@ else
     VIRTUALENV_ROOT="$WORKON_HOME/mycroft"
 fi
 
+# check for existing mimic (f26/previous build/etc)
+if hash mimic ; then
+  if mimic -lv | grep -q Voice ; then
+    echo "Existing mimic installation. press y to build mimic again, any other key to skip."
+    read -n1 build_mimic
+  fi
+fi
+
 # create virtualenv, consistent with virtualenv-wrapper conventions
 if [ ! -d "${VIRTUALENV_ROOT}" ]; then
    mkdir -p $(dirname "${VIRTUALENV_ROOT}")
@@ -51,14 +59,14 @@ easy_install pip==7.1.2 # force version of pip
 pip install --upgrade virtualenv
 
 # install requirements (except pocketsphinx)
-pip2 install -r requirements.txt 
+# removing the pip2 explicit usage here for consistency with the above use.
+pip install -r requirements.txt 
 
 if  [[ $(free|awk '/^Mem:/{print $2}') -lt  1572864 ]] ; then
   CORES=1
 else 
   CORES=$(nproc)
 fi
-
 echo "Building with $CORES cores."
 
 #build and install pocketsphinx
@@ -66,8 +74,14 @@ echo "Building with $CORES cores."
 #${TOP}/scripts/install-pocketsphinx.sh -q
 #build and install mimic
 cd "${TOP}"
-echo "WARNING: The following can take a long time to run!"
-"${TOP}/scripts/install-mimic.sh"
+
+build_mimic="${build_mimic:-n}"  
+if [[ "$build_mimic" == 'y' ]] ; then
+  echo "WARNING: The following can take a long time to run!"
+  "${TOP}/scripts/install-mimic.sh"
+else
+  echo "Skipping mimic build."
+fi
 
 # install pygtk for desktop_launcher skill
 "${TOP}/scripts/install-pygtk.sh"
