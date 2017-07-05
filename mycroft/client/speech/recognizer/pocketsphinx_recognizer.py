@@ -23,7 +23,7 @@ import time
 from os.path import join, dirname, abspath
 from pocketsphinx import Decoder
 
-from mycroft.client.speech.local_recognizer import LocalRecognizer
+from mycroft.client.speech.recognizer.local_recognizer import LocalRecognizer
 
 __author__ = 'seanfitz, jdorleans'
 
