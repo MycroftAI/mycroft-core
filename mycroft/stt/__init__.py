@@ -116,8 +116,7 @@ class KaldiSTT(STT):
 
     def execute(self, audio, language=None):
         language = language or self.lang
-        config = ConfigurationManager.get().get("stt", {})
-        response = post(config.get("uri"), data=audio.get_wav_data())
+        response = post(self.config.get("uri"), data=audio.get_wav_data())
         return self.get_response(response)
 
     def get_response(self, response):
