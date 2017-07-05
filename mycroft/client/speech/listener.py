@@ -255,6 +255,12 @@ class RecognizerLoop(EventEmitter):
         if self.microphone:
             self.microphone.unmute()
 
+    def is_muted(self):
+        if self.microphone:
+            return self.microphone.is_muted()
+        else:
+            return True  # consider 'no mic' muted
+
     def sleep(self):
         self.state.sleeping = True
 

@@ -248,28 +248,43 @@ def rebuild_filtered_log():
 ##############################################################################
 # Capturing output from Mycroft
 
-def handle_speak(event):
-    global chat
+tts_threads = []
+
+
+def start_tts(utterance):
+    """
+    Begin speaking in another thread to redirect output
+    Otherwise, the CLI get's polluted with text to speech debug
+    """
     global tts
     mutex.acquire()
+
     if not bQuiet:
         ws.emit(Message("recognizer_loop:audio_output_start"))
     try:
-        utterance = event.data.get('utterance')
-        if bSimple:
-            print(">> " + utterance)
-        else:
-            chat.append(">> " + utterance)
-        draw_screen()
-        if not bQuiet:
-            if not tts:
-                tts = TTSFactory.create()
-                tts.init(ws)
-            tts.execute(utterance)
+        if not tts:
+            tts = TTSFactory.create()
+            tts.init(ws)
+        tts.execute(utterance)
     finally:
         mutex.release()
         if not bQuiet:
             ws.emit(Message("recognizer_loop:audio_output_end"))
+
+
+def handle_speak(event):
+    global chat
+    global tts_threads
+    utterance = event.data.get('utterance')
+    if bSimple:
+        print(">> " + utterance)
+    else:
+        chat.append(">> " + utterance)
+    draw_screen()
+    if not bQuiet:
+        t = Thread(start_tts, utterance)
+        t.start()
+        tts_threads.append(t)
 
 
 def connect():
@@ -749,7 +764,7 @@ def main(stdscr):
                 # resizeterm() causes another curses.KEY_RESIZE, so
                 # we need to capture that to prevent a loop of resizes
                 c = scr.getch()
-            elif c == curses.KEY_BACKSPACE:
+            elif c == curses.KEY_BACKSPACE or c == 127:
                 # Backspace to erase a character in the utterance
                 line = line[:-1]
             elif curses.ascii.isascii(c):
