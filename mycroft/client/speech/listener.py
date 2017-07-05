@@ -113,7 +113,7 @@ class AudioConsumer(Thread):
 
     # TODO: Localization
     def wake_up(self, audio):
-        if self.wakeup_recognizer.is_recognized(audio.frame_data,
+        if self.wakeup_recognizer.found_wake_word(audio.frame_data,
                                                 self.metrics):
             SessionManager.touch()
             self.state.sleeping = False
