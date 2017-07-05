@@ -24,7 +24,8 @@ from os.path import dirname, join
 from speech_recognition import WavFile, AudioData
 
 from mycroft.client.speech.listener import AudioConsumer, RecognizerLoop
-from mycroft.client.speech.recognizer.pocketsphinx_recognizer import PocketsphinxRecognizer
+from mycroft.client.speech.recognizer.pocketsphinx_recognizer \
+    import PocketsphinxRecognizer
 from mycroft.stt import MycroftSTT
 
 __author__ = 'seanfitz'
@@ -58,7 +59,8 @@ class AudioConsumerTest(unittest.TestCase):
         self.consumer = AudioConsumer(
             self.loop.state, self.queue, self.loop, MycroftSTT(),
             PocketsphinxRecognizer(self.loop.wakeup_recognizer.key_phrase,
-                            self.loop.wakeup_recognizer.phonemes, "1e-16"),
+                                   self.loop.wakeup_recognizer.phonemes,
+                                   "1e-16"),
             self.loop.mycroft_recognizer)
 
     def __create_sample_from_test_file(self, sample_name):

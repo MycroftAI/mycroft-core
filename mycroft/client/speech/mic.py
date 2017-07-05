@@ -379,7 +379,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             if buffers_since_check > buffers_per_check:
                 buffers_since_check -= buffers_per_check
                 audio_data = byte_data + silence
-                said_wake_word = self.wake_word_recognizer.found_wake_word(audio_data)
+                said_wake_word = \
+                    self.wake_word_recognizer.found_wake_word(audio_data)
                 # if a wake word is success full then record audio in temp
                 # file.
                 if self.save_wake_words and said_wake_word:

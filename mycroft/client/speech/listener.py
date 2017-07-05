@@ -27,7 +27,8 @@ from requests.exceptions import ConnectionError
 
 import mycroft.dialog
 from mycroft.client.speech.mic import MutableMicrophone, ResponsiveRecognizer
-from mycroft.client.speech.recognizer.pocketsphinx_recognizer import PocketsphinxRecognizer
+from mycroft.client.speech.recognizer.pocketsphinx_recognizer \
+    import PocketsphinxRecognizer
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.message import Message
 from mycroft.metrics import MetricsAggregator
@@ -113,8 +114,7 @@ class AudioConsumer(Thread):
 
     # TODO: Localization
     def wake_up(self, audio):
-        if self.wakeup_recognizer.is_recognized(audio.frame_data,
-                                                self.metrics):
+        if self.wakeup_recognizer.found_wake_word(audio.frame_data):
             SessionManager.touch()
             self.state.sleeping = False
             self.__speak(mycroft.dialog.get("i am awake", self.stt.lang))
@@ -217,13 +217,15 @@ class RecognizerLoop(EventEmitter):
         wake_word = self.config.get('wake_word')
         phonemes = self.config.get('phonemes')
         threshold = self.config.get('threshold')
-        return PocketsphinxRecognizer(wake_word, phonemes, threshold, rate, lang)
+        return PocketsphinxRecognizer(wake_word, phonemes,
+                                      threshold, rate, lang)
 
     def create_wakeup_recognizer(self, rate, lang):
         wake_word = self.config.get('standup_word', "wake up")
         phonemes = self.config.get('standup_phonemes', "W EY K . AH P")
         threshold = self.config.get('standup_threshold', 1e-10)
-        return PocketsphinxRecognizer(wake_word, phonemes, threshold, rate, lang)
+        return PocketsphinxRecognizer(wake_word, phonemes,
+                                      threshold, rate, lang)
 
     def start_async(self):
         """
