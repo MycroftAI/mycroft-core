@@ -24,6 +24,8 @@ from mycroft.util.log import getLogger
 
 import re
 
+from requests import post
+
 __author__ = "jdorleans"
 
 LOG = getLogger("STT")
@@ -115,10 +117,10 @@ class KaldiSTT(STT):
     def execute(self, audio, language=None):
         language = language or self.lang
         config = ConfigurationManager.get().get("stt", {})
-        response = requests.post(self.config.get("uri"), data=audio.get_wav_data())
-        return get_response(response)
+        response = post(self.config.get("uri"), data=audio.get_wav_data())
+        return self.get_response(response)
 
-    def get_response(response):
+    def get_response(self, response):
         try:
             hypotheses = response.json()["hypotheses"]
             return re.sub(r'\s*\[noise\]\s*', '', hypotheses[0]["utterance"])
