@@ -40,13 +40,19 @@ else
     VIRTUALENV_ROOT="$WORKON_HOME/mycroft"
 fi
 
-# check for existing mimic (f26/previous build/etc)
-if hash mimic ; then
+# skip mimic build?
+if [[ "$1" == '-sm' ]] ; then 
+  build_mimic='n'
+fi
+
+if [[ $1 -ne '-sm' ]] && hash mimic ; then
   if mimic -lv | grep -q Voice ; then
     echo "Existing mimic installation. press y to build mimic again, any other key to skip."
     read -n1 build_mimic
   fi
 fi
+
+
 
 # create virtualenv, consistent with virtualenv-wrapper conventions
 if [ ! -d "${VIRTUALENV_ROOT}" ]; then
