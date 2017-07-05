@@ -113,8 +113,7 @@ class AudioConsumer(Thread):
 
     # TODO: Localization
     def wake_up(self, audio):
-        if self.wakeup_recognizer.is_recognized(audio.frame_data,
-                                                self.metrics):
+        if self.wakeup_recognizer.found_wake_word(audio.frame_data):
             SessionManager.touch()
             self.state.sleeping = False
             self.__speak(mycroft.dialog.get("i am awake", self.stt.lang))
