@@ -41,6 +41,7 @@ from mycroft.util.log import getLogger
 
 config = ConfigurationManager.instance()
 listener_config = config.get('listener')
+""" object: this contains configuration info for the listener"""
 logger = getLogger(__name__)
 __author__ = 'seanfitz'
 
