@@ -46,6 +46,7 @@ class PlaybackThread(Thread):
         super(PlaybackThread, self).__init__()
         self.queue = queue
         self._terminated = False
+        self.is_playing = False
 
     def clear_queue(self):
         """
@@ -65,7 +66,8 @@ class PlaybackThread(Thread):
         """
         while not self._terminated:
             try:
-                snd_type, data, visimes = self.queue.get(timeout=2)
+                snd_type, data, visimes = self.queue.get(timeout=1)
+                self.is_playing = True
                 self.blink(0.5)
                 if snd_type == 'wav':
                     self.p = play_wav(data)
@@ -79,7 +81,7 @@ class PlaybackThread(Thread):
                     self.p.communicate()
                 self.blink(0.2)
             except:
-                pass
+                self.is_playing = False
 
     def show_visimes(self, pairs):
         """
