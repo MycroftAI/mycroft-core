@@ -30,7 +30,7 @@ LOG = getLogger("Display Manager (mycroft.client.enclosure)")
 managerIPCDir = os.path.join(get_ipc_directory(), "managers")
 
 
-def write_data(dictionary):
+def _write_data(dictionary):
     """Writes the parama as JSON to the
         IPC dir (/tmp/mycroft/ipc/managers)
         args:
@@ -66,10 +66,10 @@ def write_data(dictionary):
         LOG.error(e)
         LOG.error("Error found in display manager file, deleting...")
         os.remove(path)
-        write_data(dictionary)
+        _write_data(dictionary)
 
 
-def read_data():
+def _read_data():
     """ Reads the file in (/tmp/mycroft/ipc/managers/disp_info)
         and returns the the data as python dict
     """
@@ -90,7 +90,7 @@ def read_data():
     except Exception as e:
         LOG.error(e)
         os.remove(path)
-        read_data()
+        _read_data()
 
     return data
 
@@ -100,14 +100,14 @@ def set_active(skill_name):
         args:
             string: skill_name
     """
-    write_data({"active_skill": skill_name})
+    _write_data({"active_skill": skill_name})
     LOG.info("Setting active skill to " + skill_name)
 
 
 def get_active():
     """ Get active skill in the display manager
     """
-    data = read_data()
+    data = _read_data()
     active_skill = ""
 
     if "active_skill" in data:
@@ -120,7 +120,7 @@ def remove_active():
     """ Remove the active skill in the skill manager
     """
     LOG.error("Removing active skill...")
-    write_data({"active_skill": ""})
+    _write_data({"active_skill": ""})
 
 
 def initiate_display_manager_ws():
@@ -146,7 +146,7 @@ def initiate_display_manager_ws():
         ws.run_forever()
 
     def remove_wake_word():
-        data = read_data()
+        data = _read_data()
         if "active_skill" in data and data["active_skill"] == "wakeword":
             remove_active()
 
