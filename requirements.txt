@@ -31,6 +31,5 @@ pocketsphinx==0.1.0
 wifi==0.3.8
 pyric==0.1.6
 inflection==0.3.1
-uuid==1.30
 pytz==2017.2
 mock
