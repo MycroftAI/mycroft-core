@@ -209,7 +209,7 @@ case ${OPT} in
   "install") if [[ $# -gt 0 ]] ; then install $(echo "$*") ; else  help ; fi;;
   "list") list | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g' ;;
   "update") update ;;
-  "default") install $(echo ${default_skills}) ;;
+  "default") install $(echo ${default_skills}); update ;;
   "search")  if [[ $# -gt 0 ]] ; then search $(echo "$*") ; else  help ; fi;;
   *) help ;;
 esac
