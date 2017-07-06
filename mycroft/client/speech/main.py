@@ -75,6 +75,10 @@ def mute_and_speak(utterance):
     lock.acquire()
     # update TTS object if configuration has changed
     if tts_hash != hash(str(config.get('tts', ''))):
+        # Stop tts playback thread
+        tts.playback.stop()
+        tts.playback.join()
+        # Create new tts instance
         tts = TTSFactory.create()
         tts.init(ws)
         tts_hash = hash(str(config.get('tts', '')))
@@ -124,6 +128,8 @@ def handle_speak(event):
         for chunk in chunks:
             try:
                 mute_and_speak(chunk)
+            except KeyboardInterrupt:
+                raise
             except:
                 logger.error('Error in mute_and_speak', exc_info=True)
             if _last_stop_signal > start or check_for_signal('buttonPress'):
@@ -157,6 +163,7 @@ def handle_mic_unmute(event):
 def handle_stop(event):
     global _last_stop_signal
     _last_stop_signal = time.time()
+    tts.playback.clear_queue()
     stop_speaking()
 
 
@@ -212,8 +219,9 @@ def main():
     try:
         loop.run()
     except KeyboardInterrupt, e:
+        tts.playback.stop()
+        tts.playback.join()
         logger.exception(e)
-        event_thread.exit()
         sys.exit()
 
 

@@ -166,11 +166,22 @@ cd "${mycroft_skill_folder}"
 for d in $(find "${mycroft_skill_folder}" -mindepth 1 -maxdepth 1 -type d |grep -v '.git'$ ); do
   if git -C "$d" rev-parse --git-dir > /dev/null 2>&1; then
     cd "${d}" 
-    if [[ -z $(git status --porcelain) ]]; then
-    git fetch
-    git reset --hard origin/master 
+    UPSTREAM=${1:-'@{u}'}
+    LOCAL=$(git rev-parse @)
+    REMOTE=$(git rev-parse "$UPSTREAM")
+    BASE=$(git merge-base @ "$UPSTREAM")
+
+    if ! grep -q '.pyc'$ .git/info/exclude; then
+      echo "*.pyc" >> .git/info/exclude
+    fi
+
+    # Checking if the repo isn't dirty or have commits to push
+    if [[ (-z $(git status --porcelain --untracked-files=no)) && !($LOCAL != $REMOTE && $REMOTE = $BASE) ]]; then
+      git fetch
+      git reset --hard origin/master 
+      rm -f *.pyc
+    fi
   fi
-fi
 done
 }
 
