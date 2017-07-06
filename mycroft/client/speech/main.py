@@ -70,11 +70,11 @@ def handle_utterance(event):
 
 def mute_and_speak(utterance):
     global tts_hash
-    global tts
 
     lock.acquire()
     # update TTS object if configuration has changed
     if tts_hash != hash(str(config.get('tts', ''))):
+        global tts
         # Stop tts playback thread
         tts.playback.stop()
         tts.playback.join()
@@ -83,18 +83,11 @@ def mute_and_speak(utterance):
         tts.init(ws)
         tts_hash = hash(str(config.get('tts', '')))
 
-    ws.emit(Message("recognizer_loop:audio_output_start"))
-    already_muted = loop.is_muted()
+    logger.info("Speak: " + utterance)
     try:
-        logger.info("Speak: " + utterance)
-        if not already_muted:
-            loop.mute()  # only mute if necessary
         tts.execute(utterance)
     finally:
-        if not already_muted:
-            loop.unmute()  # restore
         lock.release()
-        ws.emit(Message("recognizer_loop:audio_output_end"))
 
 
 def handle_multi_utterance_intent_failure(event):
@@ -171,6 +164,15 @@ def handle_paired(event):
     IdentityManager.update(event.data)
 
 
+def handle_audio_start(event):
+    if not loop.is_muted():
+        loop.mute()  # only mute if necessary
+
+
+def handle_audio_end(event):
+    loop.unmute()  # restore
+
+
 def handle_open():
     # TODO: Move this into the Enclosure (not speech client)
     # Reset the UI to indicate ready for speech processing
@@ -212,6 +214,8 @@ def main():
     ws.on('mycroft.mic.unmute', handle_mic_unmute)
     ws.on('mycroft.stop', handle_stop)
     ws.on("mycroft.paired", handle_paired)
+    ws.on('recognizer_loop:audio_output_start', handle_audio_start)
+    ws.on('recognizer_loop:audio_output_end', handle_audio_end)
     event_thread = Thread(target=connect)
     event_thread.setDaemon(True)
     event_thread.start()

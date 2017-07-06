@@ -28,8 +28,10 @@ class SpdSay(TTS):
         super(SpdSay, self).__init__(lang, voice, SpdSayValidator(self))
 
     def execute(self, sentence):
+        self.begin_audio()
         subprocess.call(
             ['spd-say', '-l', self.lang, '-t', self.voice, sentence])
+        self.end_audio()
 
 
 class SpdSayValidator(TTSValidator):
