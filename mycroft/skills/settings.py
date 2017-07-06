@@ -56,12 +56,13 @@ class SkillSettings(dict):
         self._device_identity = self.api.identity.uuid
         self._settings_path = join(directory, 'settings.json')
         self._meta_path = join(directory, 'settingsmeta.json')
-        self._uuid_path = join(expanduser('~/.mycroft/skills/') + self.name,
-                               'identity.json')
+        self._identity_path = join(
+            expanduser('~/.mycroft/skills/') + self.name, 'identity.json')
         self._api_path = "/" + self._device_identity + "/skill"
         self.loaded_hash = hash(str(self))
 
         self._send_settings_meta()
+        # self._patch_settings_meta()
         self._poll_web_settings()
         self._load_web_settings()
 
@@ -80,7 +81,6 @@ class SkillSettings(dict):
 
     def _send_settings_meta(self):
         """
-            TODO: do a poll, if settingsmeta.json changes, PATCH it to backend
             If settings meta data exists and skill does not have a uuid,
             send settingsmeta.json to the backend and store uuid for skill
         """
@@ -90,9 +90,44 @@ class SkillSettings(dict):
 
             # If skill is loaded for the first time post metadata
             # to backend and store uuid for skill
-            if not isfile(self._uuid_path):
-                response = self._post_metadata(self.settings_meta)
-                self._store_uuid(response)
+            try:
+                if not isfile(self._identity_path):
+                    response = self._post_metadata(self.settings_meta)
+                    self._store_uuid(response)
+            except Exception as e:
+                logger.error(e)
+                self.__store_uuid("none")
+
+    # To be implemented
+    # def _patch_settings_meta(self):
+    #     """
+    #         If settingsmeta.json changes do a Patch request to
+    #         implement the changes
+    #     """
+    #     with open(self._meta_path) as f:
+    #         settings_meta = hash(str(json.load(f)))
+
+    #     with open(self._identity_path) as f:
+    #         identity = json.load(f)
+
+    #     if "hashed_meta" in identity.keys():
+    #         if settings_meta != identity["hashed_meta"]:
+    #             response = self._get_settings()
+
+    #         settings = response["sections"]
+
+    #         for section in sections:
+    #             for field in section["fields"]:
+
+    #             # self.api.request({
+    #             #     "method": "PATCH",
+    #             #     "path": self._api_path,
+    #             #     "json": settings_meta
+    #             # })
+    #     else:
+    #         with open(self._identity_path, 'w') as f:
+    #             identity["hashed_meta"] = settings_meta
+    #             json.dump(identity, f)
 
     def _poll_web_settings(self):
         """
@@ -100,8 +135,8 @@ class SkillSettings(dict):
             request settings and store it if it changes
             TODO: implement as websocket
         """
-        if isfile(self._uuid_path):
-            with open(self._uuid_path, 'r') as f:
+        if isfile(self._identity_path):
+            with open(self._identity_path, 'r') as f:
                 data = json.load(f)
 
             response = self._get_settings()
@@ -136,7 +171,7 @@ class SkillSettings(dict):
         """
             Store uuid as identity.json in ~/.mycroft/skills/{skillname}
         """
-        with open(self._uuid_path, 'w') as f:
+        with open(self._identity_path, 'w') as f:
             json.dump(uuid, f)
 
     def _get_settings(self):
