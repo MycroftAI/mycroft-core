@@ -83,7 +83,6 @@ def mute_and_speak(utterance):
         tts.init(ws)
         tts_hash = hash(str(config.get('tts', '')))
 
-    ws.emit(Message("recognizer_loop:audio_output_start"))
     already_muted = loop.is_muted()
     try:
         logger.info("Speak: " + utterance)
@@ -94,13 +93,16 @@ def mute_and_speak(utterance):
         if not already_muted:
             loop.unmute()  # restore
         lock.release()
-        ws.emit(Message("recognizer_loop:audio_output_end"))
 
 
 def handle_multi_utterance_intent_failure(event):
     logger.info("Failed to find intent on multiple intents.")
     # TODO: Localize
+    ws.emit(Message("recognizer_loop:audio_output_start"))
     mute_and_speak("Sorry, I didn't catch that. Please rephrase your request.")
+    while tts.playback.is_playing:
+        time.sleep(0.1)
+    ws.emit(Message("recognizer_loop:audio_output_end"))
 
 
 def handle_speak(event):
@@ -121,6 +123,7 @@ def handle_speak(event):
     #
     # TODO: Remove or make an option?  This is really a hack, anyway,
     # so we likely will want to get rid of this when not running on Mimic
+    ws.emit(Message("recognizer_loop:audio_output_start"))
     if not config.get('enclosure', {}).get('platform') == "picroft":
         start = time.time()
         chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s',
@@ -137,6 +140,10 @@ def handle_speak(event):
     else:
         mute_and_speak(utterance)
 
+    time.sleep(0.5)
+    while tts.playback.is_playing:
+        time.sleep(0.1)
+    ws.emit(Message("recognizer_loop:audio_output_end"))
     # This check will clear the "signal"
     check_for_signal("isSpeaking")
 
