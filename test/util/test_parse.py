@@ -56,38 +56,72 @@ class TestNormalize(unittest.TestCase):
             self.assertEqual(res[0], expected_date)
             self.assertEqual(res[1], expected_leftover)
 
-        testExtract("Set the ambush for 5 days from today", "2017-07-02 00:00:00", "set ambush")  # noqa
-        testExtract("What is the day after tomorrow's weather?", "2017-06-29 00:00:00", "what is weather")  # noqa
-        testExtract("Remind me at 10:45 pm", "2017-06-27 22:45:00", "remind me")  # noqa
-        testExtract("what is the weather on friday morning", "2017-06-30 08:00:00", "what is weather")  # noqa
-        testExtract("what is tomorrow's weather", "2017-06-28 00:00:00", "what is weather")  # noqa
-        testExtract("remind me to call mom in 8 weeks and 2 days", "2017-08-24 00:00:00", "remind me to call mom")  # noqa
-        testExtract("Play Rick Astley music 2 days from Friday", "2017-07-02 00:00:00", "play rick astley music")  # noqa
-        testExtract("Begin the invasion at 3:45 pm on Thursday", "2017-06-29 15:45:00", "begin invasion")  # noqa
-        testExtract("On Monday, order groceries from Price Chopper", "2017-07-03 00:00:00", "order groceries from price chopper")  # noqa
-        testExtract("Play Happy Birthday music 5 years from today", "2022-06-27 00:00:00", "play happy birthday music")  # noqa
-        testExtract("Skype Mom at 12:45 pm next Thursday", "2017-07-06 12:45:00", "skype mom")  # noqa
-        testExtract("What's the weather next Thursday?", "2017-07-06 00:00:00", "what weather")  # noqa
-        testExtract("what is the weather next friday morning", "2017-07-07 08:00:00", "what is weather")  # noqa
-        testExtract("what is the weather next friday evening", "2017-07-07 19:00:00", "what is weather")  # noqa
-        testExtract("what is the weather next friday afternoon", "2017-07-07 15:00:00", "what is weather")  # noqa
-        testExtract("remind me to call mom on august 3rd", "2017-08-03 00:00:00", "remind me to call mom")  # noqa
-        testExtract("Buy fireworks on the 4th of July", "2017-07-04 00:00:00", "buy fireworks")  # noqa
-        testExtract("what is the weather 2 weeks from next friday", "2017-07-21 00:00:00", "what is weather")  # noqa
-        testExtract("what is the weather wednesday at 0700 hours", "2017-06-28 07:00:00", "what is weather")  # noqa
-        testExtract("what is the weather wednesday at 7 o'clock", "2017-06-28 07:00:00", "what is weather")  # noqa
-        testExtract("Set up an appointment at 12:45 pm next Thursday", "2017-07-06 12:45:00", "set up appointment")  # noqa
-        testExtract("What's the weather this Thursday?", "2017-06-29 00:00:00", "what weather")  # noqa
-        testExtract("set up the appointment for 2 weeks and 6 days from Saturday", "2017-07-21 00:00:00", "set up appointment")  # noqa
-        testExtract("Begin the invasion at 03 45 on Thursday", "2017-06-29 03:45:00", "begin invasion")  # noqa
-        testExtract("Begin the invasion at o 800 hours on Thursday", "2017-06-29 08:00:00", "begin invasion")  # noqa
-        testExtract("Begin the invasion at 8 o'clock in the evening on Thursday", "2017-06-29 20:00:00", "begin invasion")  # noqa
-        testExtract("Begin the invasion at 8 in the evening on Thursday", "2017-06-29 20:00:00", "begin invasion")  # noqa
-        testExtract("Begin the invasion on Thursday at noon", "2017-06-29 12:00:00", "begin invasion")  # noqa
-        testExtract("Begin the invasion on Thursday at midnight", "2017-06-29 00:00:00", "begin invasion")  # noqa
-        testExtract("Begin the invasion on Thursday at 0500", "2017-06-29 05:00:00", "begin invasion")  # noqa
-        testExtract("remind me to wake up in 4 years", "2021-06-27 00:00:00", "remind me to wake up")  # noqa
-        testExtract("remind me to wake up in 4 years and 4 days", "2021-07-01 00:00:00", "remind me to wake up")  # noqa
+        testExtract("Set the ambush for 5 days from today",
+                    "2017-07-02 00:00:00", "set ambush")
+        testExtract("What is the day after tomorrow's weather?",
+                    "2017-06-29 00:00:00", "what is weather")
+        testExtract("Remind me at 10:45 pm",
+                    "2017-06-27 22:45:00", "remind me")
+        testExtract("what is the weather on friday morning",
+                    "2017-06-30 08:00:00", "what is weather")
+        testExtract("what is tomorrow's weather",
+                    "2017-06-28 00:00:00", "what is weather")
+        testExtract("remind me to call mom in 8 weeks and 2 days",
+                    "2017-08-24 00:00:00", "remind me to call mom")
+        testExtract("Play Rick Astley music 2 days from Friday",
+                    "2017-07-02 00:00:00", "play rick astley music")
+        testExtract("Begin the invasion at 3:45 pm on Thursday",
+                    "2017-06-29 15:45:00", "begin invasion")
+        testExtract("On Monday, order pie from the bakery",
+                    "2017-07-03 00:00:00", "order pie from bakery")
+        testExtract("Play Happy Birthday music 5 years from today",
+                    "2022-06-27 00:00:00", "play happy birthday music")
+        testExtract("Skype Mom at 12:45 pm next Thursday",
+                    "2017-07-06 12:45:00", "skype mom")
+        testExtract("What's the weather next Thursday?",
+                    "2017-07-06 00:00:00", "what weather")
+        testExtract("what is the weather next friday morning",
+                    "2017-07-07 08:00:00", "what is weather")
+        testExtract("what is the weather next friday evening",
+                    "2017-07-07 19:00:00", "what is weather")
+        testExtract("what is the weather next friday afternoon",
+                    "2017-07-07 15:00:00", "what is weather")
+        testExtract("remind me to call mom on august 3rd",
+                    "2017-08-03 00:00:00", "remind me to call mom")
+        testExtract("Buy fireworks on the 4th of July",
+                    "2017-07-04 00:00:00", "buy fireworks")
+        testExtract("what is the weather 2 weeks from next friday",
+                    "2017-07-21 00:00:00", "what is weather")
+        testExtract("what is the weather wednesday at 0700 hours",
+                    "2017-06-28 07:00:00", "what is weather")
+        testExtract("what is the weather wednesday at 7 o'clock",
+                    "2017-06-28 07:00:00", "what is weather")
+        testExtract("Set up an appointment at 12:45 pm next Thursday",
+                    "2017-07-06 12:45:00", "set up appointment")
+        testExtract("What's the weather this Thursday?",
+                    "2017-06-29 00:00:00", "what weather")
+        testExtract("set up the visit for 2 weeks and 6 days from Saturday",
+                    "2017-07-21 00:00:00", "set up visit")
+        testExtract("Begin the invasion at 03 45 on Thursday",
+                    "2017-06-29 03:45:00", "begin invasion")
+        testExtract("Begin the invasion at o 800 hours on Thursday",
+                    "2017-06-29 08:00:00", "begin invasion")
+        testExtract("Begin the party at 8 o'clock in the evening on Thursday",
+                    "2017-06-29 20:00:00", "begin party")
+        testExtract("Begin the invasion at 8 in the evening on Thursday",
+                    "2017-06-29 20:00:00", "begin invasion")
+        testExtract("Begin the invasion on Thursday at noon",
+                    "2017-06-29 12:00:00", "begin invasion")
+        testExtract("Begin the invasion on Thursday at midnight",
+                    "2017-06-29 00:00:00", "begin invasion")
+        testExtract("Begin the invasion on Thursday at 0500",
+                    "2017-06-29 05:00:00", "begin invasion")
+        testExtract("remind me to wake up in 4 years",
+                    "2021-06-27 00:00:00", "remind me to wake up")
+        testExtract("remind me to wake up in 4 years and 4 days",
+                    "2021-07-01 00:00:00", "remind me to wake up")
+        testExtract("What is the weather 3 days after tomorrow?",
+                    "2017-07-01 00:00:00", "what is weather")
 
     def test_spaces(self):
         self.assertEqual(normalize("  this   is  a    test"),

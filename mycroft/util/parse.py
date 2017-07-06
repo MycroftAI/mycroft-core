@@ -224,10 +224,39 @@ def extractnumber_en(text):
 
 def extract_datetime_en(str, currentDate=None):
 
+    def clean_string(str):
+        # cleans the input string of unneeded punctuation and capitalization
+        # among other things
+        str = str.lower().replace('?', '').replace('.', '').replace(',', '')\
+            .replace(' the ', ' ').replace(' a ', ' ').replace(' an ', ' ')
+        wordList = str.split()
+        for idx, word in enumerate(wordList):
+            word = word.replace("'s", "")
+
+            ordinals = ["rd", "st", "nd", "th"]
+            if word[0].isdigit():
+                for ord in ordinals:
+                    if ord in word:
+                        word = word.replace(ord, "")
+            wordList[idx] = word
+
+        return wordList
+
+    def date_found():
+        return found or \
+            (
+                datestr != "" or timeStr != "" or
+                yearOffset != 0 or monthOffset != 0 or
+                dayOffset is True or hrOffset != 0 or
+                hrAbs != 0 or minOffset != 0 or
+                minAbs != 0 or secOffset != 0
+            )
+
     if str == "":
         return None
     if currentDate is None:
         currentDate = datetime.now()
+
     found = False
     daySpecified = False
     dayOffset = False
@@ -241,10 +270,6 @@ def extract_datetime_en(str, currentDate=None):
     hasYear = False
     timeQualifier = ""
 
-    str = str.lower().replace('?', '').replace('.', '').replace(',', '')\
-        .replace(' the ', ' ').replace(' a ', ' ').replace(' an ', ' ')
-    words = str.split()
-
     timeQualifiersList = ['morning', 'afternoon', 'evening']
     markers = ['at', 'in', 'on', 'by', 'this', 'around', 'for', 'of']
     days = ['monday', 'tuesday', 'wednesday',
@@ -254,25 +279,17 @@ def extract_datetime_en(str, currentDate=None):
     monthsShort = ['jan', 'feb', 'mar', 'apr', 'may', 'june', 'july', 'aug',
                    'sept', 'oct', 'nov', 'dec']
 
-    # strip out 's, plurals, and ordinals (3rd becomes 3)
-    for idx, word in enumerate(words):
-        word = word.replace("'s", "")
-
-        ordinals = ["rd", "st", "nd", "th"]
-        if word[0].isdigit():
-            for ord in ordinals:
-                if ord in word:
-                    word = word.replace(ord, "")
-        words[idx] = word
+    words = clean_string(str)
 
     for idx, word in enumerate(words):
         if word == "":
             continue
-
         wordPrevPrev = words[idx-2] if idx > 1 else ""
         wordPrev = words[idx-1] if idx > 0 else ""
         wordNext = words[idx+1] if idx+1 < len(words) else ""
         wordNextNext = words[idx+2] if idx+2 < len(words) else ""
+
+        # this isn't in clean string because I don't want to save back to words
         word = word.rstrip('s')
         start = idx
         used = 0
@@ -286,8 +303,11 @@ def extract_datetime_en(str, currentDate=None):
         elif word == "tomorrow" and not fromFlag:
             dayOffset = 1
             used += 1
-        elif word == "day" and wordNext == "after" and \
-                wordNextNext == "tomorrow" and not fromFlag:
+        elif (word == "day" and
+                wordNext == "after" and
+                wordNextNext == "tomorrow" and
+                not fromFlag and
+                not wordPrev[0].isdigit()):
             dayOffset = 2
             used = 3
             if wordPrev == "the":
@@ -398,7 +418,7 @@ def extract_datetime_en(str, currentDate=None):
         validFollowups.append("next")
         validFollowups.append("last")
         validFollowups.append("now")
-        if word == "from" and wordNext in validFollowups:
+        if (word == "from" or word == "after") and wordNext in validFollowups:
             used = 2
             fromFlag = True
             if wordNext == "tomorrow":
@@ -584,13 +604,20 @@ def extract_datetime_en(str, currentDate=None):
 
                 if remainder == "":
                     remainder = wordNext.replace(".", "").lstrip().rstrip()
-                if remainder == "pm" or wordNext == "pm" or \
-                        remainder == "p.m." or wordNext == "p.m.":
+
+                if (
+                        remainder == "pm" or
+                        wordNext == "pm" or
+                        remainder == "p.m." or
+                        wordNext == "p.m."):
                     strHH = strNum
                     remainder = "pm"
                     used = 1
-                elif remainder == "am" or wordNext == "am" or \
-                        remainder == "a.m." or wordNext == "a.m.":
+                elif(
+                        remainder == "am" or
+                        wordNext == "am" or
+                        remainder == "a.m." or
+                        wordNext == "a.m."):
                     strHH = strNum
                     remainder = "am"
                     used = 1
@@ -603,16 +630,25 @@ def extract_datetime_en(str, currentDate=None):
                         strHH = strNum
                         remainder = "am"
                         used = 1
-                    elif int(word) > 100 and \
-                            (wordPrev == "o" or wordPrev == "oh"):
+                    elif(
+                            int(word) > 100 and
+                            (
+                                wordPrev == "o" or
+                                wordPrev == "oh"
+                            )):
                         # 0800 hours (pronounced oh-eight-hundred)
                         strHH = int(word)/100
                         strMM = int(word) - strHH*100
                         military = True
                         if wordNext == "hours":
                             used += 1
-                    elif wordNext == "hours" and word[0] != '0' and \
-                            (int(word) < 100 and int(word) > 2400):
+                    elif(
+                            wordNext == "hours" and
+                            word[0] != '0' and
+                            (
+                                int(word) < 100 and
+                                int(word) > 2400
+                            )):
                         # ignores military time
                         # "in 3 hours"
                         hrOffset = int(word)
@@ -648,10 +684,15 @@ def extract_datetime_en(str, currentDate=None):
                         used += 1
                         if wordNextNext == "hours":
                             used += 1
-                    elif wordNext == "" or wordNext == "o'clock" or \
-                            (wordNext == "in" and
-                                (wordNextNext == "the" or
-                                    wordNextNext == timeQualifier)):
+                    elif(
+                            wordNext == "" or wordNext == "o'clock" or
+                            (
+                                wordNext == "in" and
+                                (
+                                    wordNextNext == "the" or
+                                    wordNextNext == timeQualifier
+                                )
+                            )):
                         strHH = word
                         strMM = 00
                         if wordNext == "o'clock":
@@ -723,16 +764,7 @@ def extract_datetime_en(str, currentDate=None):
             found = True
 
     # check that we found a date
-    if (
-            not found and
-            (
-                datestr == "" and timeStr == "" and
-                yearOffset == 0 and monthOffset == 0 and
-                dayOffset is False and hrOffset == 0 and
-                hrAbs == 0 and minOffset == 0 and
-                minAbs == 0 and secOffset == 0
-            )
-            ):
+    if not date_found:
         return None
 
     if dayOffset is False:
