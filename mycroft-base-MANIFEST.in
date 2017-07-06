@@ -1,4 +1,4 @@
-recursive-include mycroft/client/speech/model *
+recursive-include mycroft/client/speech/recognizer/model *
 include requirements.txt
 include mycroft/configuration/*.conf
 #include mycroft/tts/mycroft_voice_4.0.flitevox
