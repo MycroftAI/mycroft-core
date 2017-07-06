@@ -53,6 +53,10 @@ class PlaybackThread(Thread):
         """
         while not self.queue.empty():
             self.queue.get()
+        try:
+            self.p.terminate()
+        except:
+            pass
 
     def run(self):
         """
@@ -64,14 +68,15 @@ class PlaybackThread(Thread):
                 snd_type, data, visimes = self.queue.get(timeout=2)
                 self.blink(0.5)
                 if snd_type == 'wav':
-                    p = play_wav(data)
+                    self.p = play_wav(data)
                 elif snd_type == 'mp3':
-                    p = play_mp3(data)
+                    self.p = play_mp3(data)
 
                 if visimes:
                     if self.show_visimes(visimes):
                         self.clear_queue()
-                p.communicate()
+                else:
+                    self.p.communicate()
                 self.blink(0.2)
             except:
                 pass
