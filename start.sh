@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 TOP=$(cd $(dirname $0) && pwd -L)
-VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${HOME}/.virtualenvs/mycroft"}
+
+if [ -z "$WORKON_HOME" ]; then
+    VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${HOME}/.virtualenvs/mycroft"}
+else
+    VIRTUALENV_ROOT="$WORKON_HOME/mycroft"
+fi
 
 ${TOP}/scripts/prepare-msm.sh
 

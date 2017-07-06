@@ -17,6 +17,7 @@
 
 import tornado.ioloop as ioloop
 import tornado.web as web
+import tornado.autoreload as autoreload
 
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.service.ws import WebsocketEventHandler
@@ -35,6 +36,13 @@ def main():
     import tornado.options
     lock = Lock("service")
     tornado.options.parse_command_line()
+
+    def reload_hook():
+        """ Hook to release lock when autoreload is triggered. """
+        lock.delete()
+
+    tornado.autoreload.add_reload_hook(reload_hook)
+
     config = ConfigurationManager.get().get("websocket")
 
     host = config.get("host")

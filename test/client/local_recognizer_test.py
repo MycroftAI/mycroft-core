@@ -20,15 +20,12 @@ class LocalRecognizerTest(unittest.TestCase):
     def testRecognizerWrapper(self):
         source = WavFile(os.path.join(DATA_DIR, "hey_mycroft.wav"))
         with source as audio:
-            hyp = self.recognizer.transcribe(audio.stream.read())
-            assert self.recognizer.key_phrase in hyp.hypstr.lower()
+            assert self.recognizer.found_wake_word(audio.stream.read())
         source = WavFile(os.path.join(DATA_DIR, "mycroft.wav"))
         with source as audio:
-            hyp = self.recognizer.transcribe(audio.stream.read())
-            assert self.recognizer.key_phrase in hyp.hypstr.lower()
+            assert self.recognizer.found_wake_word(audio.stream.read())
 
     def testRecognitionInLongerUtterance(self):
         source = WavFile(os.path.join(DATA_DIR, "weather_mycroft.wav"))
         with source as audio:
-            hyp = self.recognizer.transcribe(audio.stream.read())
-            assert self.recognizer.key_phrase in hyp.hypstr.lower()
+            assert self.recognizer.found_wake_word(audio.stream.read())
