@@ -284,6 +284,7 @@ class RecognizerLoop(EventEmitter):
             except KeyboardInterrupt as e:
                 LOG.error(e)
                 self.stop()
+                raise  # Re-raise KeyboardInterrupt
 
     def reload(self):
         """
