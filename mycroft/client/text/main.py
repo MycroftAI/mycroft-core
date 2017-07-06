@@ -248,33 +248,8 @@ def rebuild_filtered_log():
 ##############################################################################
 # Capturing output from Mycroft
 
-tts_threads = []
-
-
-def start_tts(utterance):
-    """
-    Begin speaking in another thread to redirect output
-    Otherwise, the CLI get's polluted with text to speech debug
-    """
-    global tts
-    mutex.acquire()
-
-    if not bQuiet:
-        ws.emit(Message("recognizer_loop:audio_output_start"))
-    try:
-        if not tts:
-            tts = TTSFactory.create()
-            tts.init(ws)
-        tts.execute(utterance)
-    finally:
-        mutex.release()
-        if not bQuiet:
-            ws.emit(Message("recognizer_loop:audio_output_end"))
-
-
 def handle_speak(event):
     global chat
-    global tts_threads
     utterance = event.data.get('utterance')
     if bSimple:
         print(">> " + utterance)
@@ -282,9 +257,16 @@ def handle_speak(event):
         chat.append(">> " + utterance)
     draw_screen()
     if not bQuiet:
-        t = Thread(start_tts, utterance)
-        t.start()
-        tts_threads.append(t)
+        global tts
+
+        mutex.acquire()
+        if not tts:
+            tts = TTSFactory.create()
+            tts.init(ws)
+        try:
+            tts.execute(utterance)
+        finally:
+            mutex.release()
 
 
 def connect():

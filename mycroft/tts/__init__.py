@@ -26,7 +26,7 @@ import hashlib
 
 from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.configuration import ConfigurationManager
-from mycroft.messagebus.client.ws import WebsocketClient
+from mycroft.messagebus.message import Message
 from mycroft.util.log import getLogger
 from mycroft.util import play_wav, play_mp3, check_for_signal
 import mycroft.util
@@ -46,6 +46,9 @@ class PlaybackThread(Thread):
         super(PlaybackThread, self).__init__()
         self.queue = queue
         self._terminated = False
+
+    def init(self, tts):
+        self.tts = tts
 
     def clear_queue(self):
         """
@@ -67,6 +70,7 @@ class PlaybackThread(Thread):
             try:
                 snd_type, data, visimes = self.queue.get(timeout=2)
                 self.blink(0.5)
+                self.tts.begin_audio()
                 if snd_type == 'wav':
                     self.p = play_wav(data)
                 elif snd_type == 'mp3':
@@ -77,6 +81,8 @@ class PlaybackThread(Thread):
                         self.clear_queue()
                 else:
                     self.p.communicate()
+                self.p.wait()
+                self.tts.end_audio()
                 self.blink(0.2)
             except:
                 pass
@@ -137,8 +143,17 @@ class TTS(object):
         self.playback.start()
         self.clear_cache()
 
+    def begin_audio(self):
+        """Helper function for child classes to call in execute()"""
+        self.ws.emit(Message("recognizer_loop:audio_output_start"))
+
+    def end_audio(self):
+        """Helper function for child classes to call in execute()"""
+        self.ws.emit(Message("recognizer_loop:audio_output_end"))
+
     def init(self, ws):
         self.ws = ws
+        self.playback.init(self)
         self.enclosure = EnclosureAPI(self.ws)
         self.playback.enclosure = self.enclosure
 
