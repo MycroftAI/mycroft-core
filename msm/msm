@@ -176,7 +176,7 @@ for d in $(find "${mycroft_skill_folder}" -mindepth 1 -maxdepth 1 -type d |grep 
     fi
 
     # Checking if the repo isn't dirty or have commits to push
-    if [[ (-z $(git status --porcelain)) && !($LOCAL != $REMOTE && $REMOTE = $BASE) ]]; then
+    if [[ (-z $(git status --porcelain --untracked-files=no)) && !($LOCAL != $REMOTE && $REMOTE = $BASE) ]]; then
       git fetch
       git reset --hard origin/master 
       rm -f *.pyc
