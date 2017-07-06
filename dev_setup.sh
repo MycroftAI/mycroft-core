@@ -80,7 +80,7 @@ echo "Building with $CORES cores."
 #build and install mimic
 cd "${TOP}"
 
-build_mimic="${build_mimic:-n}"  
+build_mimic="${build_mimic:-y}"  
 if [[ "$build_mimic" == 'y' ]] ; then
   echo "WARNING: The following can take a long time to run!"
   "${TOP}/scripts/install-mimic.sh"
