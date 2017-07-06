@@ -89,7 +89,7 @@ class PlaybackThread(Thread):
         start = time()
         for code, duration in pairs:
             if check_for_signal('stoppingTTS', -1):
-                return
+                return True
             if check_for_signal('buttonPress'):
                 return True
             if self.enclosure:
