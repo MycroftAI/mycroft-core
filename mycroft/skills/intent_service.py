@@ -106,6 +106,16 @@ class ContextManager(object):
                     missing_entities.remove(entity.get('data'))
         else:
             result = context
+
+        # Only use the latest instance of each keyword
+        stripped = []
+        processed = []
+        for f in result:
+            keyword = f['data'][0][1]
+            if keyword not in processed:
+                stripped.append(f)
+                processed.append(keyword)
+        result = stripped
         return result
 
 
@@ -113,7 +123,7 @@ class IntentService(object):
     def __init__(self, emitter):
         self.config = ConfigurationManager.get().get('context', {})
         self.engine = IntentDeterminationEngine()
-        self.context_keywords = self.config.get('keywords', [])
+        self.context_keywords = self.config.get('keywords', ['Location'])
         self.context_max_frames = self.config.get('max_frames', 3)
         self.context_timeout = self.config.get('timeout', 2)
         self.context_greedy = self.config.get('greedy', False)
