@@ -18,7 +18,7 @@ import random
 from abc import ABCMeta, abstractmethod
 from os.path import dirname, exists, isdir
 from threading import Thread
-from Queue import Queue
+from Queue import Queue, Empty
 from time import time, sleep
 import os
 import os.path
@@ -46,6 +46,7 @@ class PlaybackThread(Thread):
         super(PlaybackThread, self).__init__()
         self.queue = queue
         self._terminated = False
+        self._processing_queue = False
 
     def init(self, tts):
         self.tts = tts
@@ -70,7 +71,10 @@ class PlaybackThread(Thread):
             try:
                 snd_type, data, visimes = self.queue.get(timeout=2)
                 self.blink(0.5)
-                self.tts.begin_audio()
+                if not self._processing_queue:
+                    self._processing_queue = True
+                    self.tts.begin_audio()
+
                 if snd_type == 'wav':
                     self.p = play_wav(data)
                 elif snd_type == 'mp3':
@@ -82,11 +86,18 @@ class PlaybackThread(Thread):
                 else:
                     self.p.communicate()
                 self.p.wait()
-                if len(self.queue) == 0:
+
+                if self.queue.empty():
                     self.tts.end_audio()
+                    self._processing_queue = False
                 self.blink(0.2)
-            except:
+            except Empty:
                 pass
+            except Exception, e:
+                LOGGER.exception(e)
+                if self._processing_queue:
+                    self.tts.end_audio()
+                    self._processing_queue = False
 
     def show_visimes(self, pairs):
         """
