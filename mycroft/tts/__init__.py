@@ -18,7 +18,7 @@ import random
 from abc import ABCMeta, abstractmethod
 from os.path import dirname, exists, isdir
 from threading import Thread
-from Queue import Queue
+from Queue import Queue, Empty
 from time import time, sleep
 import os
 import os.path
@@ -85,8 +85,10 @@ class PlaybackThread(Thread):
                 if self.queue.empty():
                     self.tts.end_audio()
                 self.blink(0.2)
-            except:
+            except Empty:
                 pass
+            except Exception, e:
+                LOGGER.exception(e)
 
     def show_visimes(self, pairs):
         """
