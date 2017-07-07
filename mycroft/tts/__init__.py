@@ -82,7 +82,7 @@ class PlaybackThread(Thread):
                 else:
                     self.p.communicate()
                 self.p.wait()
-                if len(self.queue) == 0:
+                if self.queue.empty():
                     self.tts.end_audio()
                 self.blink(0.2)
             except:
