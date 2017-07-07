@@ -65,8 +65,9 @@ def handle_utterance(event):
 def handle_multi_utterance_intent_failure(event):
     logger.info("Failed to find intent on multiple intents.")
     # TODO: Localize
-    ws.emit(Message('speak', data={'utterance':
-        "Sorry, I didn't catch that. Please rephrase your request."}))
+    data = {'utterance':
+            "Sorry, I didn't catch that. Please rephrase your request."}
+    ws.emit(Message('speak', data))
 
 
 def handle_sleep(event):
