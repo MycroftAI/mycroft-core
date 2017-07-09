@@ -794,6 +794,7 @@ def simple_cli():
         event_thread.exit()
         sys.exit()
 
+
 # Find the correct log path relative to this script
 scriptPath = os.path.dirname(os.path.realpath(__file__))
 localLogPath = os.path.realpath(scriptPath+"/../../../scripts/logs")
