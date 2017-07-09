@@ -217,14 +217,14 @@ class RecognizerLoop(EventEmitter):
 
     def create_mycroft_recognizer(self, rate, lang):
         # Create a local recognizer to hear the wakeup word, e.g. 'Hey Mycroft'
-        wake_word = self.config.get('wake_word')
+        wake_word = self.config.get('wake_word').lower()
         phonemes = self.config.get('phonemes')
         threshold = self.config.get('threshold')
         return PocketsphinxRecognizer(wake_word, phonemes,
                                       threshold, rate, lang)
 
     def create_wakeup_recognizer(self, rate, lang):
-        wake_word = self.config.get('standup_word', "wake up")
+        wake_word = self.config.get('standup_word', "wake up").lower()
         phonemes = self.config.get('standup_phonemes', "W EY K . AH P")
         threshold = self.config.get('standup_threshold', 1e-18)
         return PocketsphinxRecognizer(wake_word, phonemes,
