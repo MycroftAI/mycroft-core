@@ -12,7 +12,7 @@ if [[ ${IS_TRAVIS} != true ]]; then
     fi
 
     if [ ! -w ${SKILLS_DIR} ]; then
-        echo "Changing ownsership of /opt/mycroft/skills"
+        echo "Changing ownership of /opt/mycroft/skills"
         sudo chown $USER:$USER ${SKILLS_DIR}
     fi
 fi
