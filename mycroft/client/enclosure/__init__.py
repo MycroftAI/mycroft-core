@@ -33,7 +33,7 @@ from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util import play_wav, create_signal, connected, \
-    wait_while_speaking
+    wait_while_speaking, check_for_signal
 from mycroft.util.audio_test import record
 from mycroft.util.log import getLogger
 from mycroft.api import is_paired, has_been_paired
@@ -347,12 +347,17 @@ class Enclosure(object):
 
     def check_for_response(self):
         if not self.arduino_responded:
+            if check_for_signal("reboot"):
+                Timer(30, self._reboot).start()
             # There is nothing on the other end of the serial port
             # close these serial-port readers and this process
             self.writer.stop()
             self.reader.stop()
             self.serial.close()
             self.ws.close()
+
+    def _reboot(self):
+        self.reader.process("unit.reboot")
 
     def _do_net_check(self):
         # TODO: This should live in the derived Enclosure, e.g. Enclosure_Mark1
