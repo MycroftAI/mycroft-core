@@ -33,3 +33,4 @@ pyric==0.1.6
 inflection==0.3.1
 pytz==2017.2
 mock
+python-dateutil==2.6.0
