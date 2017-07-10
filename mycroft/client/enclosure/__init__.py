@@ -249,6 +249,8 @@ class Enclosure(object):
         # 5 seconds, assume there is nothing on the other end (e.g.
         # we aren't running a Mark 1 with an Arduino)
         Timer(5, self.check_for_response).start()
+        Timer(20, self.check_for_reboot_signal).start()
+
 
         # Notifications from mycroft-core
         self.ws.on("enclosure.notify.no_internet", self.on_no_internet)
@@ -345,10 +347,12 @@ class Enclosure(object):
             LOG.error("Error: {0}".format(e))
             self.stop()
 
+    def check_for_reboot_signal(self):
+        if check_for_signal("reboot"):
+            Timer(30, self._reboot).start()
+
     def check_for_response(self):
         if not self.arduino_responded:
-            if check_for_signal("reboot"):
-                Timer(30, self._reboot).start()
             # There is nothing on the other end of the serial port
             # close these serial-port readers and this process
             self.writer.stop()
