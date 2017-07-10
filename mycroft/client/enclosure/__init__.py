@@ -251,7 +251,6 @@ class Enclosure(object):
         Timer(5, self.check_for_response).start()
         Timer(20, self.check_for_reboot_signal).start()
 
-
         # Notifications from mycroft-core
         self.ws.on("enclosure.notify.no_internet", self.on_no_internet)
 
