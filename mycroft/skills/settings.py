@@ -105,9 +105,10 @@ class SkillSettings(dict):
             implement the changes
             TODO: allow structure changes i.e. ability to add more sections
         """
-        with open(self._meta_path, 'r') as f:
-            self.settings_meta = json.load(f)
-            hashed_meta = hash(str(self.settings_meta))
+        if isfile(self._meta_path):
+            with open(self._meta_path, 'r') as f:
+                self.settings_meta = json.load(f)
+                hashed_meta = hash(str(self.settings_meta))
 
         if isfile(self._hashed_meta_path):
             with open(self._hashed_meta_path, 'r') as f:
@@ -126,9 +127,12 @@ class SkillSettings(dict):
 
                 self._put_metadata(settings)
         else:
-            with open(self._hashed_meta_path, 'w') as f:
-                hashed_data = {"hashed_meta": hash(str(self.settings_meta))}
-                json.dump(hashed_data, f)
+            try:
+                with open(self._hashed_meta_path, 'w') as f:
+                    hashed_data = {"hashed_meta": hash(str(self.settings_meta))}
+                    json.dump(hashed_data, f)
+            except Exception as e: 
+                logger.error(e)
 
     def _poll_skill_settings(self):
         """
