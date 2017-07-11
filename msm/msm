@@ -29,8 +29,8 @@ if [[ ! -d "${mycroft_skill_folder}" ]] ; then
     exit 101
 fi 
 
-# picroft?
-if [[ "$(hostname)" == 'picroft' ]] || [[ -x /home/pi/bin/cli ]] ; then
+# picroft/mk1?
+if [[ "$(hostname)" == 'picroft' ]] || [[ "$(hostname)" =~ "mark_1" ]] &&  [[ -x /usr/local/bin/mycroft-wifi-setup-client ]] ; then
   picroft='true'
 else
   picroft='false'
@@ -145,7 +145,6 @@ while [[ $# -gt 0 ]] ; do
           fi
         else
           echo "Unable to activate mycroft virtualenv!"
-          deactivate
           return 120
         fi
       fi
