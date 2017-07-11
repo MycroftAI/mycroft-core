@@ -211,6 +211,29 @@ def _watch_skills():
         time.sleep(2)
 
 
+def _starting_up():
+    global ws
+
+    # TEMPORARY HACK:  Look for multiple instance of the mycroft-skills, which
+    # could happen when upgrading a shipping Mark 1 from release 0.8.17 or
+    # before.  When found, force the unit to reboot...
+    import psutil
+    count_instances = 0
+    for process in psutil.process_iter():
+        if process.cmdline() == ['python2.7', '/usr/local/bin/mycroft-skills']:
+            count_instances += 1
+    if (count_instances > 1):
+        ws.emit(Message("enclosure.eyes.spin"))
+        ws.emit(Message("enclosure.mouth.reset"))
+        time.sleep(0.5)  # Allows system time to start the eyes spinning
+        subprocess.call('systemctl reboot -i', shell=True)
+    # END HACK
+    # TODO: Remove this hack ASAP
+
+    # Startup:  Kick off loading of skills, etc.
+    _load_skills()
+
+
 def main():
     global ws
     lock = Lock('skills')  # prevent multiple instances of this service
@@ -239,8 +262,8 @@ def main():
 
     ws.on('message', _echo)
 
-    # Kick off loading of skills
-    ws.once('open', _load_skills)
+    # Startup will be called after websocket is full live
+    ws.once('open', _starting_up)
     ws.run_forever()
 
 
