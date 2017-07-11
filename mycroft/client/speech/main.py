@@ -178,24 +178,6 @@ def handle_open():
     # Reset the UI to indicate ready for speech processing
     EnclosureAPI(ws).reset()
 
-    # TEMPORARY HACK:  Look for multiple instance of the mycroft-speech-client
-    # which could happen when upgrading a shipping Mark 1 from release 0.8.17
-    # or before.  When found, force the unit to reboot...
-    import psutil
-    import subprocess
-    count_instances = 0
-    for process in psutil.process_iter():
-        if process.cmdline() == ['python2.7',
-                                 '/usr/local/bin/mycroft-speech-client']:
-            count_instances += 1
-    if (count_instances > 1):
-        ws.emit(Message("enclosure.eyes.spin"))
-        ws.emit(Message("enclosure.mouth.reset"))
-        time.sleep(0.5)  # Allows system time to start the eyes spinning
-        subprocess.call('systemctl reboot -i', shell=True)
-    # END HACK
-    # TODO: Remove this hack ASAP
-
 
 def connect():
     ws.run_forever()

@@ -212,25 +212,7 @@ def _watch_skills():
 
 
 def _starting_up():
-    global ws
-
-    # TEMPORARY HACK:  Look for multiple instance of the mycroft-skills, which
-    # could happen when upgrading a shipping Mark 1 from release 0.8.17 or
-    # before.  When found, force the unit to reboot...
-    import psutil
-    count_instances = 0
-    for process in psutil.process_iter():
-        if process.cmdline() == ['python2.7', '/usr/local/bin/mycroft-skills']:
-            count_instances += 1
-    if (count_instances > 1):
-        ws.emit(Message("enclosure.eyes.spin"))
-        ws.emit(Message("enclosure.mouth.reset"))
-        time.sleep(0.5)  # Allows system time to start the eyes spinning
-        subprocess.call('systemctl reboot -i', shell=True)
-    # END HACK
-    # TODO: Remove this hack ASAP
-
-    # Startup:  Kick off loading of skills, etc.
+    # Startup:  Kick off loading of skills
     _load_skills()
 
 

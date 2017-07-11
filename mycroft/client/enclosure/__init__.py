@@ -270,6 +270,8 @@ class Enclosure(object):
             # quickly and the user wasn't notified what to do.
             Timer(5, self._do_net_check).start()
 
+        Timer(60, self._hack_check_for_duplicates).start()
+
     def on_no_internet(self, event=None):
         if connected():
             # One last check to see if connection was established
@@ -384,3 +386,39 @@ class Enclosure(object):
                                       "either plug me in with a network cable,"
                                       " or use wifi.  To setup wifi ",
                                       'allow_timeout': False}))
+
+    def _hack_check_for_duplicates(self):
+        # TEMPORARY HACK:  Look for multiple instance of the
+        # mycroft-speech-client and/or mycroft-skills services, which could
+        # happen when upgrading a shipping Mark 1 from release 0.8.17 or
+        # before.  When found, force the unit to reboot.
+        import psutil
+
+        LOG.info("Hack to check for duplicate service instances")
+
+        count_instances = 0
+        needs_reboot = False
+        for process in psutil.process_iter():
+            if process.cmdline() == ['python2.7',
+                                     '/usr/local/bin/mycroft-speech-client']:
+                count_instances += 1
+        if (count_instances > 1):
+            LOG.info("Duplicate mycroft-speech-client found")
+            needs_reboot = True
+
+        count_instances = 0
+        for process in psutil.process_iter():
+            if process.cmdline() == ['python2.7',
+                                     '/usr/local/bin/mycroft-skills']:
+                count_instances += 1
+        if (count_instances > 1):
+            LOG.info("Duplicate mycroft-skills found")
+            needs_reboot = True
+
+        if needs_reboot:
+            LOG.info("Hack reboot...")
+            self.reader.process("unit.reboot")
+            ws.emit(Message("enclosure.eyes.spin"))
+            ws.emit(Message("enclosure.mouth.reset"))
+        # END HACK
+        # TODO: Remove this hack ASAP
