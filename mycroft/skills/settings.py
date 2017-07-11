@@ -105,34 +105,38 @@ class SkillSettings(dict):
             implement the changes
             TODO: allow structure changes i.e. ability to add more sections
         """
-        if isfile(self._meta_path):
-            with open(self._meta_path, 'r') as f:
-                self.settings_meta = json.load(f)
-                hashed_meta = hash(str(self.settings_meta))
+        try:
+            if isfile(self._meta_path):
+                with open(self._meta_path, 'r') as f:
+                    self.settings_meta = json.load(f)
+                    hashed_meta = hash(str(self.settings_meta))
 
-        if isfile(self._hashed_meta_path):
-            with open(self._hashed_meta_path, 'r') as f:
-                hashed_data = json.load(f)
+            if isfile(self._hashed_meta_path):
+                with open(self._hashed_meta_path, 'r') as f:
+                    hashed_data = json.load(f)
 
-            if hashed_data["hashed_meta"] != hashed_meta:
-                skill_object = self._get_settings()
-                skill_identity = self._get_skill_identity()
+                if hashed_data["hashed_meta"] != hashed_meta:
+                    skill_object = self._get_settings()
+                    skill_identity = self._get_skill_identity()
 
-                settings = {}
-                for skill_setting in skill_object:
-                    if skill_setting['uuid'] == skill_identity:
-                        settings = skill_setting
-                        settings["skillMetadata"]["sections"] = \
-                            self.settings_meta["skillMetadata"]["sections"]
+                    settings = {}
+                    for skill_setting in skill_object:
+                        if skill_setting['uuid'] == skill_identity:
+                            settings = skill_setting
+                            settings["skillMetadata"]["sections"] = \
+                                self.settings_meta["skillMetadata"]["sections"]
 
-                self._put_metadata(settings)
-        else:
-            try:
-                with open(self._hashed_meta_path, 'w') as f:
-                    hashed_data = {"hashed_meta": hash(str(self.settings_meta))}
-                    json.dump(hashed_data, f)
-            except Exception as e: 
-                logger.error(e)
+                    self._put_metadata(settings)
+            else:
+                if isfile(self._meta_path):
+                    with open(self._hashed_meta_path, 'w') as f:
+                        hashed_data = {
+                            "hashed_meta": hash(str(self.settings_meta))
+                            }
+                        json.dump(hashed_data, f)
+
+        except Exception as e:
+            logger.error(e)
 
     def _poll_skill_settings(self):
         """
