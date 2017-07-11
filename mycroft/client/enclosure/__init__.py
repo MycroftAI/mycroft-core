@@ -33,7 +33,7 @@ from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util import play_wav, create_signal, connected, \
-    wait_while_speaking
+    wait_while_speaking, check_for_signal
 from mycroft.util.audio_test import record
 from mycroft.util.log import getLogger
 from mycroft.api import is_paired, has_been_paired
@@ -249,6 +249,7 @@ class Enclosure(object):
         # 5 seconds, assume there is nothing on the other end (e.g.
         # we aren't running a Mark 1 with an Arduino)
         Timer(5, self.check_for_response).start()
+        Timer(20, self.check_for_reboot_signal).start()
 
         # Notifications from mycroft-core
         self.ws.on("enclosure.notify.no_internet", self.on_no_internet)
@@ -347,6 +348,10 @@ class Enclosure(object):
             LOG.error("Error: {0}".format(e))
             self.stop()
 
+    def check_for_reboot_signal(self):
+        if check_for_signal("reboot"):
+            Timer(30, self._reboot).start()
+
     def check_for_response(self):
         if not self.arduino_responded:
             # There is nothing on the other end of the serial port
@@ -355,6 +360,9 @@ class Enclosure(object):
             self.reader.stop()
             self.serial.close()
             self.ws.close()
+
+    def _reboot(self):
+        self.reader.process("unit.reboot")
 
     def _do_net_check(self):
         # TODO: This should live in the derived Enclosure, e.g. Enclosure_Mark1
