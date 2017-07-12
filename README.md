@@ -6,8 +6,6 @@ Mycroft is a hackable open source voice assistant.
 
 NOTE: The default branch for this repository is 'dev', which should be considered a working beta. If you want to clone a more stable version, switch over to the 'master' branch.  
 
-Looking to join in developing?  Check out the [Project Wiki](../../wiki/Home) for tasks you can tackle!
-
 # Table of Contents
 * [Getting Started](#getting-started)
 * [Getting Involved](#getting-involved)
