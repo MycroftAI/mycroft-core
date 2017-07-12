@@ -117,7 +117,7 @@ def _load_skills():
 
     check_connection()
 
-    ws.on('intent_failure', MycroftSkill.on_intent_failure)
+    ws.on('intent_failure', MycroftSkill.make_intent_failure_handler(ws))
 
     # Create skill_manager listener and invoke the first time
     ws.on('skill_manager', skills_manager)

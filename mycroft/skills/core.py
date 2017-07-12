@@ -208,13 +208,19 @@ class MycroftSkill(object):
         self.events = []
 
     @staticmethod
-    def on_intent_failure(message):
-        """Goes through all fallback handler until one returns true"""
-        for _, handler in sorted(MycroftSkill.fallback_handlers.items(),
-                                 key=operator.itemgetter(0)):
-            if handler(message):
-                return
-        logger.warn('No fallback could handle intent.')
+    def make_intent_failure_handler(ws):
+        """Goes through all fallback handlers until one returns true"""
+        def handler(message):
+            for _, handler in sorted(MycroftSkill.fallback_handlers.items(),
+                                     key=operator.itemgetter(0)):
+                try:
+                    if handler(message):
+                        return
+                except Exception as e:
+                    logger.info('Exception in fallback: ' + str(e))
+            ws.emit(Message('complete_intent_failure'))
+            logger.warn('No fallback could handle intent.')
+        return handler
 
     @staticmethod
     def register_fallback(handler, priority):
