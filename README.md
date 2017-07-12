@@ -1,17 +1,22 @@
 Mycroft [![Build Status](https://travis-ci.org/MycroftAI/mycroft-core.svg?branch=master)](https://travis-ci.org/MycroftAI/mycroft-core) [![Coverage Status](https://coveralls.io/repos/github/MycroftAI/mycroft-core/badge.svg?branch=dev)](https://coveralls.io/github/MycroftAI/mycroft-core?branch=dev)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
 ==========
+
+Mycroft is a hackable open source voice assistant.
 
 NOTE: The default branch for this repository is 'dev', which should be considered a working beta. If you want to clone a more stable version, switch over to the 'master' branch.  
 
-Documentation: https://docs.mycroft.ai
-
-Release Notes: https://docs.mycroft.ai/release-notes
-
-Pair Mycroft Device: https://home.mycroft.ai
-
-Mycroft Chat Network: https://mycroft.ai/to/chat
-
 Looking to join in developing?  Check out the [Project Wiki](../../wiki/Home) for tasks you can tackle!
+
+# Table of Contents
+* [Getting Started](#getting-started)
+* [Getting Involved](#getting-involved)
+* [Creating a Skill](https://docs.mycroft.ai/skill.creation)
+* [Documentation](https://docs.mycroft.ai)
+* [Release Notes](https://docs.mycroft.ai/release-notes)
+* [Pair Mycroft Device](https://home.mycroft.ai)
+* [Mycroft Chat](https://mycroft.ai/to/chat)
+* [Our blog](https://mycroft.ai/blog)
 
 # Getting Started
 
@@ -132,6 +137,14 @@ source ~/.virtualenvs/mycroft/bin/activate
 - Run `PYTHONPATH=. python client/skills/main.py` # Main skills executable, loads all skills under skills directory.
 
 *Note: The above scripts are blocking, so each will need to be run in a separate terminal session. Each terminal session will require that the virtualenv be activated. There are very few reasons to use this method.*
+
+# Getting Involved
+
+This is an open source project and we would love your help. We have prepared a [contributing](./CONTRIBUTING.md) guide to help you get started.
+
+If this is your first PR or you're not sure where to get started,
+say hi in [Mycroft Chat](https://mycroft.ai/to/chat) and a team member would be happy to mentor you.
+
 
 # FAQ / Common Errors
 
