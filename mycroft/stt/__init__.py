@@ -22,6 +22,10 @@ from mycroft.api import STTApi
 from mycroft.configuration import ConfigurationManager
 from mycroft.util.log import getLogger
 
+import re
+
+from requests import post
+
 __author__ = "jdorleans"
 
 LOG = getLogger("STT")
@@ -106,12 +110,30 @@ class MycroftSTT(STT):
         return self.api.stt(audio.get_flac_data(), self.lang, 1)[0]
 
 
+class KaldiSTT(STT):
+    def __init__(self):
+        super(KaldiSTT, self).__init__()
+
+    def execute(self, audio, language=None):
+        language = language or self.lang
+        response = post(self.config.get("uri"), data=audio.get_wav_data())
+        return self.get_response(response)
+
+    def get_response(self, response):
+        try:
+            hypotheses = response.json()["hypotheses"]
+            return re.sub(r'\s*\[noise\]\s*', '', hypotheses[0]["utterance"])
+        except:
+            return None
+
+
 class STTFactory(object):
     CLASSES = {
         "mycroft": MycroftSTT,
         "google": GoogleSTT,
         "wit": WITSTT,
-        "ibm": IBMSTT
+        "ibm": IBMSTT,
+        "kaldi": KaldiSTT
     }
 
     @staticmethod
