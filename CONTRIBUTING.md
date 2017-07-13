@@ -1,3 +1,6 @@
+# Contributing to Mycroft
+:+1::tada: First off, thanks for taking the time to contribute! :tada::+1:
+
 # How to contribute
 
 So you want to contribute to Mycroft?
