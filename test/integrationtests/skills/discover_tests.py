@@ -2,9 +2,10 @@ import os
 import sys
 import glob
 import unittest
-import json
+import time
 from test.integrationtests.skills.skill_tester import MockSkillsLoader
 from test.integrationtests.skills.skill_tester import SkillTest
+
 
 __author__ = 'seanfitz'
 
@@ -29,12 +30,12 @@ def discover_tests():
         ]
         if len(test_intent_files) > 0:
             tests[skill] = test_intent_files
-        for file in test_intent_files:
-            output_file = open(file, 'r')
-            output = output_file.read()
-            data_json = json.loads(output)
-            my_dict = {}
-            my_dict = data_json
+        #for file in test_intent_files:
+        #    output_file = open(file, 'r')
+        #    output = output_file.read()
+        #    data_json = json.loads(output)
+        #   my_dict = {}
+        #    my_dict = data_json
 
     return tests
 
@@ -43,6 +44,7 @@ class IntentTestSequenceMeta(type):
     def __new__(mcs, name, bases, d):
         def gen_test(a, b):
             def test(self):
+                time.sleep(2)
                 SkillTest(a, b, self.emitter).run(self.loader)
             return test
 
@@ -61,7 +63,6 @@ class IntentTestSequenceMeta(type):
         print "3: Finished"
         return type.__new__(mcs, name, bases, d)
 
-
 class IntentTestSequence(unittest.TestCase):
     __metaclass__ = IntentTestSequenceMeta
 
@@ -76,4 +77,5 @@ class IntentTestSequence(unittest.TestCase):
 
 
 if __name__ == '__main__':
+
     unittest.main()
