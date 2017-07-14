@@ -5,9 +5,11 @@ from pyee import EventEmitter
 
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import load_skills, unload_skills
-from test.integrationtests.skills.discover_tests import discover_tests
+# from test.integrationtests.skills.dialog import discover_dialog
 
 __author__ = 'seanfitz'
+
+
 
 
 class RegistrationOnlyEmitter(object):
@@ -36,6 +38,9 @@ class RegistrationOnlyEmitter(object):
         event_name = event.type
         self.emitter.emit(event_name, event, *args, **kwargs)
 
+    def once(self, event, f):
+        self.emitter.once(event, f)
+
     def remove(self, event_name, func):
         pass
 
@@ -61,7 +66,9 @@ class SkillTest(object):
         self.skill = skill
         self.example = example
         self.emitter = emitter
+        self.dict = dict
         self.returned_intent = False
+        self.output_file = None
 
     def compare_intents(self, expected, actual):
         for key in expected.keys():
@@ -71,25 +78,60 @@ class SkillTest(object):
                                                      actual.get(key)))
                 assert False
 
+    # Emit an utterance, just like the STT engine does.  This sends the
+    # provided text to the skill engine for intent matching and it then
+    # invokes the skill.
+    #
+    def check_speech(self, message):
+        print "Spoken response: " + message.data['utterance']
+
+        def run_test(output_file, utterance):
+            dialog_file = open( output_file, 'r' )
+            dialog_line = [line.rstrip( '\n' ) for line in dialog_file]
+            match_found = False
+            for i in range( len( dialog_line ) ):
+                if '{{' in dialog_line[i]:
+                    replaced_dialog = re.sub( '\{\{(\S+)\}\}', '.*', dialog_line[i] )
+                    m = re.match(replaced_dialog, utterance)
+                    if m is not None:
+                        match_found = True
+                else:
+                    if dialog_line[i] == utterance:
+                        match_found = True
+
+            if match_found is True:
+                print "success"
+            else:
+                print "failure"
+            dialog_file.close()
+
+        run_test( self.output_file , message.data['utterance'])
+
+        #print "SkillTest Ended: " + str( self.skill )
+
     def run(self, loader):
-        print "SkillTest Started: "+str(self.skill)
+        #print "SkillTest Started: "+str(self.skill)
         for s in loader.skills:
             if s and s._dir == self.skill:
                 name = s.name
                 break
         example_json = json.load(open(self.example, 'r'))
         event = {'utterances': [example_json.get('utterance')]}
+        output_file = str(example_json.get("expected_output"))
+        self.output_file = output_file
+        #print 'output_file: ' + self.output_file
+        #print type(self.output_file)
+
 
         def compare(intent):
             self.compare_intents(example_json.get('intent'), intent.data)
             self.returned_intent = True
+
         self.emitter.once(name + ':' + example_json.get('intent_type'),
                           compare)
 
-        # Emit an utterance, just like the STT engine does.  This sends the
-        # provided text to the skill engine for intent matching and it then
-        # invokes the skill.
-        #
+        self.emitter.once( 'speak', self.check_speech )
+
         self.emitter.emit(
             'recognizer_loop:utterance',
             Message('recognizer_loop:utterance', event))
@@ -99,32 +141,7 @@ class SkillTest(object):
 
 
 
-        def check_speech(message):
-            print "Spoken response: " + Message.data['utterance']
-            self.emitter.once( 'speak', check_speech )
-            print "SkillTest Ended: " + str( self.skill )
-            if discover_tests.my_dict['utterance'] is not None:
-                # single case
-                run_test( discover_tests.my_dict )
-                pass
-            else:
-                # multiple test case?
-                for item in discover_tests.my_dict:
-                    if item['utterance'] is not None:
-                        run_test(item)
 
 
 
-        def run_test(test_json):
-            for test_item in test_json:
-                if str( test_item ) == "expected_output":
-                    dialog_file = open( test_json['expected_output'], 'r' )
-                    dialog_line = [line.rstrip( '\n' ) for line in dialog_file]
-                    for i in range( len( dialog_line ) ):
-                        if '{{' in dialog_line[i]:
-                            replaced_dialog = re.sub( '\{\{(\S+)\}\}', r'.*', dialog_line[i] )
-                            compare_dialog_files( replaced_dialog )
-
-        def compare_dialog_files(regex_file):
-            re.match(regex_file,Message.data['utterance'])
 

@@ -50,19 +50,19 @@ def run_test(test_json):
             dialog_file = open(test_json['expected_output'], 'r')
             dialog_line = [line.rstrip('\n') for line in dialog_file]
             for i in range(len(dialog_line)):
+                print type(dialog_file)
                 if '{{' in dialog_line[i]:
                     replaced_dialog = re.sub('\{\{(\S+)\}\}','.*', dialog_line[i])
-                    compare_dialog_files(replaced_dialog)
+                    print replaced_dialog
 
-def compare_dialog_files(regex_file):
-    if '.*' in regex_file:
-        m = re.match(regex_file,Message.data['utterance'])
-        print m.group(1)
-        # actual_output = Message.data['utterance'].split(' ')
-        # re.match(Message.data['utterance'], regex_file)
-
-
-
+# def compare_dialog_files(regex_file):
+#     if '.*' in regex_file:
+#         m = re.match(regex_file,Message.data['utterance'])
+#         print m.group(1)
+#         # actual_output = Message.data['utterance'].split(' ')
+#         # re.match(Message.data['utterance'], regex_file)
+#     elif regex_file == Message.data['utterance'] :
+#        print "success"
 
 
 discover_dialog()
