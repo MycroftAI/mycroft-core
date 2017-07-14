@@ -15,15 +15,12 @@ Looking to join in developing?  Check out the [Project Wiki](../../wiki/Home) fo
 
 # Getting Started
 
-### Ubuntu/Debian, Arch, or Fedora
-- Run the build host setup script for your OS (Ubuntu/Debian: `build_host_setup_debian.sh`, Arch: `build_host_setup_arch.sh`, Fedora: `build_host_setup_fedora.sh`). This script installs necessary packages. Please read it!
+- Run `install.sh` (It will install OS dependencies and prepare the python virtualenv).
 
-- Run `dev_setup.sh` (Feel free to read it, as well).
-
-- Restart session (Rebooting, or logging out and back in might work).
+- [Running Mycroft Quick Start](#running-mycroft-quick-start)
 
 ### Other Environments
-The following packages are required for setting up the development environment and are installed by `build_host_setup` scripts:
+The following packages are required for setting up the development environment and are installed by `./scripts/distro/install_<DISTRO>.sh` scripts:
 
  - `git`
  - `python 2`
