@@ -408,12 +408,12 @@ class FallbackSkill(MycroftSkill):
     def __init__(self, name, emitter=None):
         MycroftSkill.__init__(self, name, emitter)
 
-    @staticmethod
-    def make_intent_failure_handler(ws):
+    @classmethod
+    def make_intent_failure_handler(cls, ws):
         """Goes through all fallback handlers until one returns true"""
 
         def handler(message):
-            for _, handler in sorted(FallbackSkill.fallback_handlers.items(),
+            for _, handler in sorted(cls.fallback_handlers.items(),
                                      key=operator.itemgetter(0)):
                 try:
                     if handler(message):
@@ -425,8 +425,8 @@ class FallbackSkill(MycroftSkill):
 
         return handler
 
-    @staticmethod
-    def register_fallback(handler, priority):
+    @classmethod
+    def register_fallback(cls, handler, priority):
         """
         Register a function to be called as a general info fallback
         Fallback should receive message and return
@@ -435,15 +435,15 @@ class FallbackSkill(MycroftSkill):
         Lower priority gets run first
         0 for high priority 100 for low priority
         """
-        while priority in FallbackSkill.fallback_handlers:
+        while priority in cls.fallback_handlers:
             priority += 1
 
-        FallbackSkill.fallback_handlers[priority] = handler
+        cls.fallback_handlers[priority] = handler
 
-    @staticmethod
-    def remove_fallback(handler_to_del):
-        for priority, handler in FallbackSkill.fallback_handlers.items():
+    @classmethod
+    def remove_fallback(cls, handler_to_del):
+        for priority, handler in cls.fallback_handlers.items():
             if handler == handler_to_del:
-                del FallbackSkill.fallback_handlers[priority]
+                del cls.fallback_handlers[priority]
                 return
         logger.warn('Could not remove fallback!')
