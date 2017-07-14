@@ -63,9 +63,14 @@ class IntentService(object):
             reply = message.reply(
                 best_intent.get('intent_type'), best_intent)
             self.emitter.emit(reply)
-        else:
+        elif len(utterances) == 1:
             self.emitter.emit(Message("intent_failure", {
                 "utterance": utterances[0],
+                "lang": lang
+            }))
+        else:
+            self.emitter.emit(Message("multi_utterance_intent_failure", {
+                "utterances": utterances,
                 "lang": lang
             }))
 

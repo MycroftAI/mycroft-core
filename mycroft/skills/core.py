@@ -14,11 +14,12 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
+
+
 import abc
 import imp
 import time
 
-import operator
 import os.path
 import re
 import time
@@ -382,50 +383,3 @@ class MycroftSkill(object):
         self.emitter.emit(
             Message("detach_skill", {"skill_name": self.name + ":"}))
         self.stop()
-
-
-class FallbackSkill(MycroftSkill):
-    fallback_handlers = {}
-
-    def __init__(self, name, emitter=None):
-        MycroftSkill.__init__(self, name, emitter)
-
-    @classmethod
-    def make_intent_failure_handler(cls, ws):
-        """Goes through all fallback handlers until one returns true"""
-
-        def handler(message):
-            for _, handler in sorted(cls.fallback_handlers.items(),
-                                     key=operator.itemgetter(0)):
-                try:
-                    if handler(message):
-                        return
-                except Exception as e:
-                    logger.info('Exception in fallback: ' + str(e))
-            ws.emit(Message('complete_intent_failure'))
-            logger.warn('No fallback could handle intent.')
-
-        return handler
-
-    @classmethod
-    def register_fallback(cls, handler, priority):
-        """
-        Register a function to be called as a general info fallback
-        Fallback should receive message and return
-        a boolean (True if succeeded or False if failed)
-
-        Lower priority gets run first
-        0 for high priority 100 for low priority
-        """
-        while priority in cls.fallback_handlers:
-            priority += 1
-
-        cls.fallback_handlers[priority] = handler
-
-    @classmethod
-    def remove_fallback(cls, handler_to_del):
-        for priority, handler in cls.fallback_handlers.items():
-            if handler == handler_to_del:
-                del cls.fallback_handlers[priority]
-                return
-        logger.warn('Could not remove fallback!')
