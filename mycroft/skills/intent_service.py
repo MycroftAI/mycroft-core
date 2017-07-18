@@ -16,6 +16,8 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import time
+
 from adapt.engine import IntentDeterminationEngine
 
 from mycroft.messagebus.message import Message
@@ -40,8 +42,8 @@ class IntentService(object):
         self.emitter.on('intent_request', self.handle_intent_request)
         self.emitter.on('intent_to_skill_request', self.handle_intent_to_skill_request)
         self.skills = {}
-    
-    def get_intent(self, utterance=None, lang="en-us):
+
+    def get_intent(self, utterance=None, lang="en-us"):
         best_intent = None
         if utterance:
             try:
@@ -53,24 +55,23 @@ class IntentService(object):
                 best_intent['utterance'] = utterance
             except StopIteration, e:
                 logger.exception(e)
-        else:
-             logger.error("No utterance provided")
+            except:
+                logger.error("No utterance provided")
         return best_intent
-                   
+
     def handle_intent_request(self, message):
         utterance = message.data.get("utterance", None)
         # Get language of the utterance
         lang = message.data.get('lang', None)
         if not lang:
-           lang = "en-us"
+            lang = "en-us"
         best_intent = self.get_intent(utterance, lang)
         if best_intent and best_intent.get('confidence', 0.0) > 0.0:
             skill_name = best_intent['intent_type'].split(":")[0]
             intent_name = best_intent['intent_type'].split(":")[1]
-            
+
         self.emitter.emit(Message("intent_response", {
             "skill_name": skill_name, "utterance": utterance, "lang": lang, "intent_name": intent_name}))
-      
 
     def handle_intent_to_skill_request(self, message):
         # tell which skills this intent belongs to
@@ -84,7 +85,6 @@ class IntentService(object):
                         skills.append(skill_name)
         self.emitter.emit(Message("intent_to_skill_response", {
             "skills": skills, "intent_name": intent}))
-       
 
     def handle_utterance(self, message):
         # Get language of the utterance
@@ -147,8 +147,9 @@ class IntentService(object):
             p for p in self.engine.intent_parsers if
             not p.name.startswith(skill_name)]
         self.engine.intent_parsers = new_parsers
-                   
-                   
+        self.skills.pop(skill_name)
+
+
 class IntentParser():
     def __init__(self, emitter, time_out=5):
         self.emitter = emitter
@@ -171,23 +172,23 @@ class IntentParser():
             t = time.time() - start_time
             time.sleep(0.1)
         return self.waiting
-                   
+
     def get_intent(self, utterance, lang="en-us"):
         # return the intent this utterance will trigger
         self.emitter.emit(Message("intent_request", {"utterance": utterance, "lang": lang}))
-        self.wait(self.timeout)
+        self.wait(self.time_out)
         return self.intent
-    
+
     def get_skill_from_utterance(self, utterance, lang="en-us"):
         # return the skill this utterance will trigger
         self.emitter.emit(Message("intent_request", {"utterance": utterance, "lang": lang}))
-        self.wait(self.timeout)
+        self.wait(self.time_out)
         return self.skill
 
     def get_skill_from_intent(self, intent_name):
         # return a list of skills containing this intent
         self.emitter.emit(Message("intent_to_skill_request", {"intent_name": intent_name}))
-        self.wait(self.timeout)
+        self.wait(self.time_out)
         return self.skills
 
     def handle_receive_intent(self, message):
@@ -197,4 +198,4 @@ class IntentParser():
 
     def handle_receive_skills(self, message):
         self.skills = message.data.get("skills")
-        self.waiting = False                   
+        self.waiting = False
