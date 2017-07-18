@@ -1,11 +1,13 @@
 import json
 from os.path import dirname
 import re
+from time import sleep
+
 from pyee import EventEmitter
 
+from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import load_skills, unload_skills
-# from test.integrationtests.skills.dialog import discover_dialog
 
 __author__ = 'seanfitz'
 
@@ -17,7 +19,7 @@ class RegistrationOnlyEmitter(object):
         self.emitter = EventEmitter()
 
     def on(self, event, f):
-        allow_events_to_execute = True  # this is for debugging purposes
+        allow_events_to_execute = True
 
         if allow_events_to_execute:
             # don't filter events, just run them all
@@ -67,8 +69,8 @@ class SkillTest(object):
         self.example = example
         self.emitter = emitter
         self.dict = dict
-        self.returned_intent = False
         self.output_file = None
+        self.returned_intent = False
 
     def compare_intents(self, expected, actual):
         for key in expected.keys():
@@ -78,13 +80,11 @@ class SkillTest(object):
                                                      actual.get(key)))
                 assert False
 
-    # Emit an utterance, just like the STT engine does.  This sends the
-    # provided text to the skill engine for intent matching and it then
-    # invokes the skill.
-    #
+
+
     def check_speech(self, message):
         print "Spoken response: " + message.data['utterance']
-
+        # Comparing the expected output and actual spoken response
         def run_test(output_file, utterance):
             dialog_file = open( output_file, 'r' )
             dialog_line = [line.rstrip( '\n' ) for line in dialog_file]
@@ -100,28 +100,30 @@ class SkillTest(object):
                         match_found = True
 
             if match_found is True:
-                print "success"
-            else:
-                print "failure"
-            dialog_file.close()
+                assert True
 
+            else:
+                assert False
+
+            dialog_file.close()
         run_test( self.output_file , message.data['utterance'])
 
-        #print "SkillTest Ended: " + str( self.skill )
 
     def run(self, loader):
-        #print "SkillTest Started: "+str(self.skill)
         for s in loader.skills:
             if s and s._dir == self.skill:
                 name = s.name
                 break
+        print('file: ' + self.example)
         example_json = json.load(open(self.example, 'r'))
         event = {'utterances': [example_json.get('utterance')]}
-        output_file = str(example_json.get("expected_output"))
-        self.output_file = output_file
-        #print 'output_file: ' + self.output_file
-        #print type(self.output_file)
-
+        #Extracting the expected output from json file
+        if "expected_output" in example_json:
+            output_file = str(example_json.get("expected_output"))
+            self.output_file = output_file
+            self.emitter.once( 'speak', self.check_speech )
+        else:
+            pass
 
         def compare(intent):
             self.compare_intents(example_json.get('intent'), intent.data)
@@ -130,11 +132,16 @@ class SkillTest(object):
         self.emitter.once(name + ':' + example_json.get('intent_type'),
                           compare)
 
-        self.emitter.once( 'speak', self.check_speech )
+        # Emit an utterance, just like the STT engine does.  This sends the
+        # provided text to the skill engine for intent matching and it then
+        # invokes the skill.
 
         self.emitter.emit(
             'recognizer_loop:utterance',
             Message('recognizer_loop:utterance', event))
+
+        sleep(0.2)                   #wait for 0.2 seconds
+        self.emitter.remove_all_listeners('speak') #remove the skill which is not responding
         if not self.returned_intent:
             print("No intent handled")
             assert False
