@@ -187,15 +187,16 @@ class MycroftSkill(object):
     Skills implementation.
     """
 
-    def __init__(self, name, emitter=None):
-        self.name = name
+    def __init__(self, name=None, emitter=None):
+        self.name = name or self.__class__.__name__
+
         self.bind(emitter)
         self.config_core = ConfigurationManager.get()
-        self.config = self.config_core.get(name)
+        self.config = self.config_core.get(self.name)
         self.dialog_renderer = None
-        self.file_system = FileSystemAccess(join('skills', name))
+        self.file_system = FileSystemAccess(join('skills', self.name))
         self.registered_intents = []
-        self.log = getLogger(name)
+        self.log = getLogger(self.name)
         self.reload_skill = True
         self.events = []
 
