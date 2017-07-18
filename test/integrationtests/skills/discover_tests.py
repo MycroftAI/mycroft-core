@@ -42,14 +42,16 @@ class IntentTestSequenceMeta(type):
 
         tests = discover_tests()
         for skill in tests.keys():
-            skill_name = os.path.basename(skill) # Path of the skill
+            skill_name = os.path.basename(skill)  # Path of the skill
             for example in tests[skill]:
+                # Name of the intent
                 example_name = os.path.basename(
-                    os.path.splitext(os.path.splitext(example)[0])[0]) # Name of the intent
+                    os.path.splitext(os.path.splitext(example)[0])[0])
                 test_name = "test_IntentValidation[%s:%s]" % (skill_name,
                                                               example_name)
                 d[test_name] = gen_test(skill, example)
         return type.__new__(mcs, name, bases, d)
+
 
 class IntentTestSequence(unittest.TestCase):
     __metaclass__ = IntentTestSequenceMeta

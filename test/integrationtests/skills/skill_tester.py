@@ -12,8 +12,6 @@ from mycroft.skills.core import load_skills, unload_skills
 __author__ = 'seanfitz'
 
 
-
-
 class RegistrationOnlyEmitter(object):
     def __init__(self):
         self.emitter = EventEmitter()
@@ -24,7 +22,7 @@ class RegistrationOnlyEmitter(object):
         if allow_events_to_execute:
             # don't filter events, just run them all
             print "Event: "+str(event)
-            self.emitter.on( event, f )
+            self.emitter.on(event, f)
         else:
             # filter to just the registration events,
             # preventing them from actually executing
@@ -33,7 +31,7 @@ class RegistrationOnlyEmitter(object):
                 'register_vocab',
                 'recognizer_loop:utterance'
             ]:
-                print "Event: " + str( event )
+                print "Event: " + str(event)
                 self.emitter.on(event, f)
 
     def emit(self, event, *args, **kwargs):
@@ -80,18 +78,18 @@ class SkillTest(object):
                                                      actual.get(key)))
                 assert False
 
-
-
     def check_speech(self, message):
         print "Spoken response: " + message.data['utterance']
         # Comparing the expected output and actual spoken response
+
         def run_test(output_file, utterance):
-            dialog_file = open( output_file, 'r' )
-            dialog_line = [line.rstrip( '\n' ) for line in dialog_file]
+            dialog_file = open(output_file, 'r')
+            dialog_line = [line.rstrip('\n') for line in dialog_file]
             match_found = False
-            for i in range( len( dialog_line ) ):
+            for i in range(len(dialog_line)):
                 if '{{' in dialog_line[i]:
-                    replaced_dialog = re.sub( '\{\{(\S+)\}\}', '.*', dialog_line[i] )
+                    replaced_dialog = re.sub('\{\{(\S+)\}\}',
+                                             '.*', dialog_line[i])
                     m = re.match(replaced_dialog, utterance)
                     if m is not None:
                         match_found = True
@@ -106,8 +104,7 @@ class SkillTest(object):
                 assert False
 
             dialog_file.close()
-        run_test( self.output_file , message.data['utterance'])
-
+        run_test(self.output_file, message.data['utterance'])
 
     def run(self, loader):
         for s in loader.skills:
@@ -117,11 +114,11 @@ class SkillTest(object):
         print('file: ' + self.example)
         example_json = json.load(open(self.example, 'r'))
         event = {'utterances': [example_json.get('utterance')]}
-        #Extracting the expected output from json file
+        # Extracting the expected output from json file
         if "expected_output" in example_json:
             output_file = str(example_json.get("expected_output"))
             self.output_file = output_file
-            self.emitter.once( 'speak', self.check_speech )
+            self.emitter.once('speak', self.check_speech)
         else:
             pass
 
@@ -140,15 +137,9 @@ class SkillTest(object):
             'recognizer_loop:utterance',
             Message('recognizer_loop:utterance', event))
 
-        sleep(0.2)                   #wait for 0.2 seconds
-        self.emitter.remove_all_listeners('speak') #remove the skill which is not responding
+        sleep(0.2)  # wait for 0.2 seconds
+        # remove the skill which is not responding
+        self.emitter.remove_all_listeners('speak')
         if not self.returned_intent:
             print("No intent handled")
             assert False
-
-
-
-
-
-
-
