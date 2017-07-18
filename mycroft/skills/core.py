@@ -286,7 +286,7 @@ class MycroftSkill(object):
                 # TODO: Localize
                 self.speak(
                     "An error occurred while processing a request in " +
-                    self.name + " " + e.message)
+                    self.name)
                 logger.error(
                     "An error occurred while processing a request in " +
                     self.name, exc_info=True)
