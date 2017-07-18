@@ -86,7 +86,6 @@ class IntentService(object):
             for intent_name in self.skills[skill_name]:
                 if intent_name == intent:
                     skills.append(skill_name)
-                    continue
         self.emitter.emit(Message("intent_to_skill_response", {
             "skills": skills, "intent_name": intent}))
 
