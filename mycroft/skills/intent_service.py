@@ -40,7 +40,8 @@ class IntentService(object):
         self.emitter.on('detach_intent', self.handle_detach_intent)
         self.emitter.on('detach_skill', self.handle_detach_skill)
         self.emitter.on('intent_request', self.handle_intent_request)
-        self.emitter.on('intent_to_skill_request', self.handle_intent_to_skill_request)
+        self.emitter.on('intent_to_skill_request',
+                        self.handle_intent_to_skill_request)
         self.skills = {}
 
     def get_intent(self, utterance=None, lang="en-us"):
@@ -55,8 +56,8 @@ class IntentService(object):
                 best_intent['utterance'] = utterance
             except StopIteration, e:
                 logger.exception(e)
-            except:
-                logger.error("No utterance provided")
+        else:
+            logger.error("No utterance provided")
         return best_intent
 
     def handle_intent_request(self, message):
@@ -65,13 +66,16 @@ class IntentService(object):
         lang = message.data.get('lang', None)
         if not lang:
             lang = "en-us"
+        skill_name = None
+        intent_name = None
         best_intent = self.get_intent(utterance, lang)
         if best_intent and best_intent.get('confidence', 0.0) > 0.0:
             skill_name = best_intent['intent_type'].split(":")[0]
             intent_name = best_intent['intent_type'].split(":")[1]
 
         self.emitter.emit(Message("intent_response", {
-            "skill_name": skill_name, "utterance": utterance, "lang": lang, "intent_name": intent_name}))
+            "skill_name": skill_name, "utterance": utterance,
+            "lang": lang, "intent_name": intent_name}))
 
     def handle_intent_to_skill_request(self, message):
         # tell which skills this intent belongs to
@@ -175,19 +179,22 @@ class IntentParser():
 
     def get_intent(self, utterance, lang="en-us"):
         # return the intent this utterance will trigger
-        self.emitter.emit(Message("intent_request", {"utterance": utterance, "lang": lang}))
+        self.emitter.emit(Message("intent_request",
+                                  {"utterance": utterance, "lang": lang}))
         self.wait(self.time_out)
         return self.intent
 
     def get_skill_from_utterance(self, utterance, lang="en-us"):
         # return the skill this utterance will trigger
-        self.emitter.emit(Message("intent_request", {"utterance": utterance, "lang": lang}))
+        self.emitter.emit(Message("intent_request",
+                                  {"utterance": utterance, "lang": lang}))
         self.wait(self.time_out)
         return self.skill
 
     def get_skill_from_intent(self, intent_name):
         # return a list of skills containing this intent
-        self.emitter.emit(Message("intent_to_skill_request", {"intent_name": intent_name}))
+        self.emitter.emit(Message("intent_to_skill_request",
+                                  {"intent_name": intent_name}))
         self.wait(self.time_out)
         return self.skills
 
