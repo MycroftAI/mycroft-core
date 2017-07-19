@@ -194,7 +194,7 @@ class TTS(object):
         """
         key = str(hashlib.md5(sentence.encode('utf-8', 'ignore')).hexdigest())
         wav_file = os.path.join(mycroft.util.get_cache_directory("tts"),
-                                key + self.type)
+                                key + '.' + self.type)
 
         if os.path.exists(wav_file):
             LOGGER.debug("TTS cache hit")
