@@ -47,6 +47,7 @@ last_modified_skill = 0
 skills_directories = []
 skill_reload_thread = None
 skills_manager_timer = None
+id_counter = 0
 
 installer_config = ConfigurationManager.instance().get("SkillInstallerSkill")
 MSM_BIN = installer_config.get("path", join(MYCROFT_ROOT_PATH, 'msm', 'msm'))
@@ -175,7 +176,8 @@ def _watch_skills():
 
             for skill_folder in list:
                 if skill_folder not in loaded_skills:
-                    loaded_skills[skill_folder] = {}
+                    id_counter += 1
+                    loaded_skills[skill_folder] = {"id": id_counter}
                 skill = loaded_skills.get(skill_folder)
                 skill["path"] = os.path.join(SKILLS_DIR, skill_folder)
                 # checking if is a skill
@@ -200,7 +202,7 @@ def _watch_skills():
                     del skill["instance"]
                 skill["loaded"] = True
                 skill["instance"] = load_skill(
-                    create_skill_descriptor(skill["path"]), ws)
+                    create_skill_descriptor(skill["path"]), ws, skill["id"])
         # get the last modified skill
         modified_dates = map(lambda x: x.get("last_modified"),
                              loaded_skills.values())
@@ -214,6 +216,32 @@ def _watch_skills():
 def _starting_up():
     # Startup:  Kick off loading of skills
     _load_skills()
+
+
+def handle_converse_request(message):
+    skill_id = int(message.data["skill_id"])
+    utterances = message.data["utterances"]
+    lang = message.data["lang"]
+    global ws, loaded_skills
+    # loop trough skills list and call converse for skill with skill_id
+    for skill in loaded_skills:
+        if loaded_skills[skill]["id"] == skill_id:
+            try:
+                instance = loaded_skills[skill]["instance"]
+            except:
+                logger.error("converse requested but skill not loaded")
+                ws.emit(Message("skill.converse.response", {
+                    "skill_id": 0, "result": False}))
+                return
+            try:
+                result = instance.converse(utterances, lang)
+                ws.emit(Message("skill.converse.response", {
+                    "skill_id": skill_id, "result": result}))
+                return
+            except:
+                logger.error("Converse method malformed for skill " + str(skill_id))
+    ws.emit(Message("skill.converse.response", {
+        "skill_id": 0, "result": False}))
 
 
 def main():
@@ -243,7 +271,7 @@ def main():
         logger.debug(message)
 
     ws.on('message', _echo)
-
+    ws.on('skill.converse.request', handle_converse_request)
     # Startup will be called after websocket is full live
     ws.once('open', _starting_up)
     ws.run_forever()
