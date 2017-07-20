@@ -95,9 +95,10 @@ def open_intent_envelope(message):
                   intent_dict.get('optional'))
 
 
-def load_skill(skill_descriptor, emitter):
+def load_skill(skill_descriptor, emitter, skill_id):
     try:
-        logger.info("ATTEMPTING TO LOAD SKILL: " + skill_descriptor["name"])
+        logger.info("ATTEMPTING TO LOAD SKILL: " + skill_descriptor["name"] +
+                    " with ID " + str(skill_id))
         if skill_descriptor['name'] in BLACKLISTED_SKILLS:
             logger.info("SKILL IS BLACKLISTED " + skill_descriptor["name"])
             return None
@@ -108,6 +109,7 @@ def load_skill(skill_descriptor, emitter):
             # v2 skills framework
             skill = skill_module.create_skill()
             skill.bind(emitter)
+            skill.skill_id = skill_id
             skill._dir = dirname(skill_descriptor['info'][1])
             skill.load_data_files(dirname(skill_descriptor['info'][1]))
             # Set up intent handlers
@@ -199,6 +201,7 @@ class MycroftSkill(object):
         self.log = getLogger(self.name)
         self.reload_skill = True
         self.events = []
+        self.skill_id = 0
 
     @property
     def location(self):
@@ -250,7 +253,7 @@ class MycroftSkill(object):
 
     def detach(self):
         for (name, intent) in self.registered_intents:
-            name = self.name + ':' + name
+            name = str(self.skill_id) + ':' + name
             self.emitter.emit(Message("detach_intent", {"intent_name": name}))
 
     def initialize(self):
@@ -260,6 +263,16 @@ class MycroftSkill(object):
         Usually used to create intents rules and register them.
         """
         logger.debug("No initialize function implemented")
+
+    def converse(self, utterances, lang="en-us"):
+        return False
+
+    def make_active(self):
+        # bump skill to active_skill list in intent_service
+        # this enables converse method to be called even without skill being
+        # used in last 5 minutes
+        self.emitter.emit(Message('active_skill_request',
+                                  {"skill_id": self.skill_id}))
 
     def _register_decorated(self):
         """
@@ -272,7 +285,7 @@ class MycroftSkill(object):
 
     def register_intent(self, intent_parser, handler, need_self=False):
         name = intent_parser.name
-        intent_parser.name = self.name + ':' + intent_parser.name
+        intent_parser.name = str(self.skill_id) + ':' + intent_parser.name
         self.emitter.emit(Message("register_intent", intent_parser.__dict__))
         self.registered_intents.append((name, intent_parser))
 
@@ -299,7 +312,7 @@ class MycroftSkill(object):
     def disable_intent(self, intent_name):
         """Disable a registered intent"""
         logger.debug('Disabling intent ' + intent_name)
-        name = self.name + ':' + intent_name
+        name = str(self.skill_id) + ':' + intent_name
         self.emitter.emit(Message("detach_intent", {"intent_name": name}))
 
     def enable_intent(self, intent_name):
@@ -382,5 +395,5 @@ class MycroftSkill(object):
             self.emitter.remove(e, f)
 
         self.emitter.emit(
-            Message("detach_skill", {"skill_name": self.name + ":"}))
+            Message("detach_skill", {"skill_id": self.skill_id}))
         self.stop()
