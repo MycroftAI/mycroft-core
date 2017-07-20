@@ -42,7 +42,6 @@ class IntentService(object):
         self.emitter.on('skill.converse.response',
                         self.handle_converse_response)
         self.active_skills = []  # [skill_id , timestamp]
-        self.skill_ids = {}  # {skill_id: [intents]}
         self.converse_timeout = 5  # minutes to prune active_skills
 
     def do_converse(self, utterances, skill_id, lang):
@@ -146,14 +145,6 @@ class IntentService(object):
     def handle_register_intent(self, message):
         intent = open_intent_envelope(message)
         self.engine.register_intent_parser(intent)
-
-        #  map intent_name to skill_id
-        skill_id = int(intent.name.split(":")[0])
-        intent_name = intent.name.split(":")[1]
-        if skill_id not in self.skill_ids.keys():
-            self.skill_ids[skill_id] = []
-        if intent_name not in self.skill_ids[skill_id]:
-            self.skill_ids[skill_id].append(intent_name)
 
     def handle_detach_intent(self, message):
         intent_name = message.data.get('intent_name')
