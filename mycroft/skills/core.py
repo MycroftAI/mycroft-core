@@ -36,6 +36,7 @@ from mycroft.filesystem import FileSystemAccess
 from mycroft.messagebus.message import Message
 from mycroft.util.log import getLogger
 from mycroft.skills.settings import SkillSettings
+
 __author__ = 'seanfitz'
 
 skills_config = ConfigurationManager.instance().get("skills")
@@ -239,7 +240,7 @@ class MycroftSkill(object):
     def bind(self, emitter):
         if emitter:
             self.emitter = emitter
-            self.enclosure = EnclosureAPI(emitter)
+            self.enclosure = EnclosureAPI(emitter, self.name)
             self.__register_stop()
 
     def __register_stop(self):
@@ -325,6 +326,8 @@ class MycroftSkill(object):
         self.emitter.emit(Message('register_vocab', {'regex': regex_str}))
 
     def speak(self, utterance, expect_response=False):
+        # registers the skill as being active
+        self.enclosure.register(self.name)
         data = {'utterance': utterance,
                 'expect_response': expect_response}
         self.emitter.emit(Message("speak", data))
