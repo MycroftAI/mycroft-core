@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-sudo dnf install -y \
+pkexec dnf -y install \
     git \
     python \
     python-devel \
@@ -24,6 +24,7 @@ sudo dnf install -y \
     curl \
     pkgconfig \
     libicu-devel \
+    procps-ng \
     automake
 
 # upgrade virtualenv to latest from pypi
