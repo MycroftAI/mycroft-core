@@ -14,6 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
+from subprocess import call
 from time import time as get_time, sleep
 
 from threading import Event
@@ -25,8 +26,6 @@ from mycroft.skills.core import FallbackSkill
 from mycroft.util.log import getLogger
 from mycroft.util.parse import normalize
 
-from padatious import IntentContainer
-
 __author__ = 'matthewscholefield'
 
 logger = getLogger(__name__)
@@ -36,10 +35,24 @@ class PadatiousService(object):
     def __init__(self, emitter):
         self.config = ConfigurationManager.get()['padatious']
         intent_cache = expanduser(self.config['intent_cache'])
+
+        try:
+            from padatious import IntentContainer
+        except ImportError:
+            logger.error('Padatious not installed. Please re-run dev_setup.sh')
+            try:
+                call(['notify-send', 'Padatious not installed',
+                      'Please run build_host_setup and dev_setup again'])
+            except OSError:
+                pass
+            return
+
         self.container = IntentContainer(intent_cache)
 
         self.train_delay = self.config['train_delay']
         self.train_time = -1.0
+
+
 
         self.emitter = emitter
         self.emitter.on('padatious:register_intent', self.register_intent)
