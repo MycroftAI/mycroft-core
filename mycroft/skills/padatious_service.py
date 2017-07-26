@@ -49,15 +49,14 @@ class PadatiousService(object):
 
         self.container = IntentContainer(intent_cache)
 
-        self.train_delay = self.config['train_delay']
-        self.train_time = -1.0
-
-
-
         self.emitter = emitter
         self.emitter.on('padatious:register_intent', self.register_intent)
         FallbackSkill.register_fallback(self.handle_fallback, 5)
         self.finished_training_event = Event()
+
+        self.train_delay = self.config['train_delay']
+        self.train_time = get_time() + self.train_delay
+        self.wait_and_train()
 
     def wait_and_train(self):
         sleep(self.train_delay)
