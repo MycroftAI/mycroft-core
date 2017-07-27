@@ -68,7 +68,7 @@ class SkillSettings(dict):
             self._send_settings_meta()
             # start polling timer
             Timer(60, self._poll_skill_settings).start()
-        
+
         self.load_skill_settings()
 
     def __getitem__(self, key):
@@ -97,9 +97,9 @@ class SkillSettings(dict):
 
     def _send_settings_meta(self):
         """
-            send settingsmeta.json to the backend if skill doesn't 
+            send settingsmeta.json to the backend if skill doesn't
             already exist
-        """ 
+        """
         try:
             if self._skill_exist_in_backend is False:
                 response = self._put_metadata(self.settings_meta)
@@ -123,7 +123,7 @@ class SkillSettings(dict):
                         for section in sections:
                             for field in section["fields"]:
                                 self.__setitem__(field["name"], field["value"])
-                
+
                 # store value if settings has changed from backend
                 new_hash = hash(str(self))
                 if new_hash != self.loaded_hash:
@@ -132,7 +132,7 @@ class SkillSettings(dict):
 
             except Exception as e:
                 logger.error(e)
-            
+
             # poll backend every 60 seconds for new settings
             Timer(60, self._poll_skill_settings).start()
 
@@ -143,7 +143,7 @@ class SkillSettings(dict):
         try:
             return self.settings_meta["identifier"]
         except Exception as e:
-            logger.error(e) 
+            logger.error(e)
             return None
 
     def load_skill_settings(self):

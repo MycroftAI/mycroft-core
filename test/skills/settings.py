@@ -29,11 +29,11 @@ class SkillSettingsTest(unittest.TestCase):
         s['string'] = 'Always carry a towel'
         s['list'] = ['batman', 2, True, 'superman']
         s.store()
-        
+
         s2 = SkillSettings(join(dirname(__file__), 'settings'))
         for key in s:
             self.assertEqual(s[key], s2[key])
-    
+
     def test_update_list(self):
         s = SkillSettings(join(dirname(__file__), 'settings'))
         s['l'] = ['a', 'b', 'c']
