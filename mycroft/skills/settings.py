@@ -44,33 +44,32 @@ class SkillSettings(dict):
     """
         SkillSettings creates a dictionary that can easily be stored
         to file, serialized as json. It also syncs to the backend for
-        skill configuration
+        skill settings
 
         Args:
             settings_file (str): Path to storage file
     """
-    def __init__(self, directory, name):
+    def __init__(self, directory):
         super(SkillSettings, self).__init__()
         self.api = DeviceApi()
-        self.name = name
         self._device_identity = self.api.identity.uuid
+
+        # set file paths
         self._settings_path = join(directory, 'settings.json')
         self._meta_path = join(directory, 'settingsmeta.json')
-        self._identity_path = join(
-            expanduser('~/.mycroft/skills/') + self.name, 'identity.json')
-        self._hashed_meta_path = join(
-            expanduser('~/.mycroft/skills/' + self.name), 'hashed_meta.json')
         self._api_path = "/" + self._device_identity + "/skill"
+
         self.loaded_hash = hash(str(self))
 
-        self._send_settings_meta()
-        self._patch_settings_meta()
-        self._poll_skill_settings()
-        self._load_skill_settings()
-
-    @property
-    def _is_stored(self):
-        return hash(str(self)) == self.loaded_hash
+        # if settingsmeta.json exists
+        if isfile(self._meta_path):
+            self.settings_meta = self._load_settings_meta()
+            self.settings = self._get_settings()
+            self._send_settings_meta()
+            # start polling timer
+            Timer(60, self._poll_skill_settings).start()
+        
+        self.load_skill_settings()
 
     def __getitem__(self, key):
         return super(SkillSettings, self).__getitem__(key)
@@ -81,102 +80,73 @@ class SkillSettings(dict):
         """
         return super(SkillSettings, self).__setitem__(key, value)
 
+    def _load_settings_meta(self):
+        with open(self._meta_path) as f:
+            data = json.load(f)
+        return data
+
+    def _skill_exist_in_backend(self):
+        """
+            see if skill settings already exist in the backend
+        """
+        skill_identity = self._get_skill_identity()
+        for skill_setting in self.settings:
+            if skill_identity == skill_setting["identifier"]:
+                return True
+        return False
+
     def _send_settings_meta(self):
         """
-            If settings meta data exists and skill does not have a uuid,
-            send settingsmeta.json to the backend and store uuid for skill
-        """
-        if isfile(self._meta_path):
-            with open(self._meta_path) as f:
-                self.settings_meta = json.load(f)
-
-            # If skill is loaded for the first time post metadata
-            # to backend and store uuid for skill
-            try:
-                if not isfile(self._identity_path):
-                    response = self._put_metadata(self.settings_meta)
-                    self._store_uuid(response)
-            except Exception as e:
-                logger.error(e)
-
-    def _patch_settings_meta(self):
-        """
-            If settingsmeta.json is edited, do a PUT request to
-            implement the changes
-            TODO: allow structure changes i.e. ability to add more sections
-        """
+            send settingsmeta.json to the backend if skill doesn't 
+            already exist
+        """ 
         try:
-            if isfile(self._meta_path):
-                with open(self._meta_path, 'r') as f:
-                    self.settings_meta = json.load(f)
-                    hashed_meta = hash(str(self.settings_meta))
-
-            if isfile(self._hashed_meta_path):
-                with open(self._hashed_meta_path, 'r') as f:
-                    hashed_data = json.load(f)
-
-                if hashed_data["hashed_meta"] != hashed_meta:
-                    skill_object = self._get_settings()
-                    skill_identity = self._get_skill_identity()
-
-                    settings = {}
-                    for skill_setting in skill_object:
-                        if skill_setting['uuid'] == skill_identity:
-                            settings = skill_setting
-                            settings["skillMetadata"]["sections"] = \
-                                self.settings_meta["skillMetadata"]["sections"]
-
-                    self._put_metadata(settings)
-            else:
-                if isfile(self._meta_path):
-                    with open(self._hashed_meta_path, 'w') as f:
-                        hashed_data = {
-                            "hashed_meta": hash(str(self.settings_meta))
-                            }
-                        json.dump(hashed_data, f)
-
+            if self._skill_exist_in_backend is False:
+                response = self._put_metadata(self.settings_meta)
         except Exception as e:
             logger.error(e)
 
     def _poll_skill_settings(self):
         """
-            If uuid exists for this skill poll to backend to
+            If identifier exists for this skill poll to backend to
             request settings and store it if it changes
             TODO: implement as websocket
         """
-        if isfile(self._identity_path):
-            skill_identity = self._get_skill_identity()
-
+        if self._skill_exist_in_backend:
             try:
-                response = self._get_settings()
-
-                for skill_setting in response:
-                    if skill_setting['uuid'] == skill_identity:
+                # update settings
+                self.settings = self._get_settings()
+                skill_identity = self._get_skill_identity()
+                for skill_setting in self.settings:
+                    if skill_setting['identifier'] == skill_identity:
                         sections = skill_setting['skillMetadata']['sections']
                         for section in sections:
                             for field in section["fields"]:
                                 self.__setitem__(field["name"], field["value"])
+                
+                # store value if settings has changed from backend
+                new_hash = hash(str(self))
+                if new_hash != self.loaded_hash:
+                    self.store()
+                    self.loaded_hash = hash(str(self))
+
             except Exception as e:
                 logger.error(e)
-
-            self.store()
+            
             # poll backend every 60 seconds for new settings
             Timer(60, self._poll_skill_settings).start()
 
     def _get_skill_identity(self):
         """
-            returns the skill uuid
+            returns the skill identifier
         """
         try:
-            with open(self._identity_path, 'r') as f:
-                data = json.load(f)
-            return data["uuid"]
-
+            return self.settings_meta["identifier"]
         except Exception as e:
-            logger.error(e)
+            logger.error(e) 
             return None
 
-    def _load_skill_settings(self):
+    def load_skill_settings(self):
         """
             If settings.json exist, open and read stored values into self
         """
@@ -190,13 +160,6 @@ class SkillSettings(dict):
                     # TODO: Show error on webUI.  Dev will have to fix
                     # metadata to be able to edit later.
                     logger.error(e)
-
-    def _store_uuid(self, uuid):
-        """
-            Store uuid as identity.json in ~/.mycroft/skills/{skillname}
-        """
-        with open(self._identity_path, 'w') as f:
-            json.dump(uuid, f)
 
     def _get_settings(self):
         """
@@ -220,9 +183,7 @@ class SkillSettings(dict):
 
     def store(self):
         """
-            Store dictionary to file if it has changed
+            Store dictionary to file
         """
-        if not self._is_stored:
-            with open(self._settings_path, 'w') as f:
-                json.dump(self, f)
-            self.loaded_hash = hash(str(self))
+        with open(self._settings_path, 'w') as f:
+            json.dump(self, f)
