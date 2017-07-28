@@ -53,7 +53,6 @@ class SkillSettings(dict):
         super(SkillSettings, self).__init__()
         self.api = DeviceApi()
         self._device_identity = self.api.identity.uuid
-        logger.info("init the skill settings")
         # set file paths
         self._settings_path = join(directory, 'settings.json')
         self._meta_path = join(directory, 'settingsmeta.json')
@@ -65,7 +64,6 @@ class SkillSettings(dict):
         if isfile(self._meta_path):
             self.settings_meta = self._load_settings_meta()
             self.settings = self._get_settings()
-            logger.info('self.settings'+str(self.settings_meta["identifier"]))
             self._send_settings_meta()
             # start polling timer
             Timer(60, self._poll_skill_settings).start()
