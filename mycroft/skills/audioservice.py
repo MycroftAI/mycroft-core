@@ -28,7 +28,8 @@ class AudioService():
     """
     def __init__(self, emitter):
         self.emitter = emitter
-        self.emitter.on('mycroft.audio.service.info_reply', self._track_info)
+        self.emitter.on('mycroft.audio.service.track_info_reply',
+                        self._track_info)
         self.info = None
 
     def _track_info(self, message=None):
@@ -78,6 +79,9 @@ class AudioService():
         """
         self.info = None
         self.emitter.emit(Message('mycroft.audio.service.track_info'))
-        while self.info is None:
+        wait = 5.0
+        while self.info is None and wait >= 0:
             time.sleep(0.1)
-        return self.info
+            wait -= 0.1
+
+        return self.info or {}

@@ -26,6 +26,7 @@ import subprocess
 
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
+from mycroft.messagebus.message import Message
 from mycroft.util.log import getLogger
 import mycroft.audio.speech as speech
 
@@ -348,11 +349,11 @@ def _track_info(message):
     """
     global current
     if current:
-        track_info = self.current.track_info()
+        track_info = current.track_info()
     else:
         track_info = {}
-    self.emitter.emit(Message('mycroft.audio.service.track_info_reply',
-                              data=track_info))
+    ws.emit(Message('mycroft.audio.service.track_info_reply',
+                    data=track_info))
 
 
 def connect():

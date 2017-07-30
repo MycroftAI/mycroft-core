@@ -98,9 +98,6 @@ class Mpg123Service(AudioBackend):
     def restore_volume(self):
         pass
 
-    def track_info(self):
-        return {}
-
 
 def load_service(base_config, emitter):
     backends = base_config.get('backends', [])

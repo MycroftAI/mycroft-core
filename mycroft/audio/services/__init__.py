@@ -98,4 +98,7 @@ class AudioBackend():
             Returns:
                 Dict with track info.
         """
-        pass
+        ret = {}
+        ret['artist'] = ''
+        ret['album'] = ''
+        return ret
