@@ -30,6 +30,11 @@ from mycroft.messagebus.message import Message
 from mycroft.util.log import getLogger
 import mycroft.audio.speech as speech
 
+try:
+    import pulsectl
+except:
+    pulsectl = None
+
 __author__ = 'forslund'
 
 MainModule = '__init__'
@@ -42,6 +47,7 @@ default = None
 service = []
 current = None
 config = None
+pulse = None
 
 
 def create_service_descriptor(service_folder):
@@ -171,7 +177,9 @@ def load_services_callback():
     ws.on('mycroft.audio.service.prev', _prev)
     ws.on('mycroft.audio.service.track_info', _track_info)
     ws.on('recognizer_loop:audio_output_start', _lower_volume)
+    ws.on('recognizer_loop:record_begin', _lower_volume)
     ws.on('recognizer_loop:audio_output_end', _restore_volume)
+    ws.on('recognizer_loop:record_end', _restore_volume)
     ws.on('mycroft.stop', _stop)
 
 
@@ -254,6 +262,33 @@ def _lower_volume(message):
     if current:
         current.lower_volume()
         volume_is_low = True
+    try:
+        if pulse:
+            pulse_mute()
+    except Exception as e:
+        print e
+
+
+muted_sinks = []
+
+
+def pulse_mute():
+    global muted_sinks
+    print "MUTING PULSE AUDIO INPUT SINKS!"
+    for sink in pulse.sink_input_list():
+        if sink.name != 'mycroft-voice':
+            pulse.sink_input_mute(sink.index, 1)
+            muted_sinks.append(sink.index)
+
+
+def pulse_unmute():
+    print muted_sinks
+    global muted_sinks
+    for sink in pulse.sink_input_list():
+        print "checking " + str(sink.index)
+        if sink.index in muted_sinks:
+            pulse.sink_input_mute(sink.index, 0)
+    muted_sinks = []
 
 
 def _restore_volume(message):
@@ -272,6 +307,8 @@ def _restore_volume(message):
         if not volume_is_low:
             logger.info('restoring volume')
             current.restore_volume()
+    if pulse:
+        pulse_unmute()
 
 
 def play(tracks, prefered_service):
@@ -364,10 +401,17 @@ def connect():
 def main():
     global ws
     global config
+    global pulse
     ws = WebsocketClient()
     ConfigurationManager.init(ws)
     config = ConfigurationManager.get()
     speech.init(ws)
+
+    # Setup control of pulse audio
+    if pulsectl and config.get('Audio').get('pulseaudio') == 'mute':
+        pulse = pulsectl.Pulse('Mycroft-audio-service')
+    else:
+        pulse = None
 
     def echo(message):
         try:
