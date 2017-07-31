@@ -85,3 +85,7 @@ class AudioService():
             wait -= 0.1
 
         return self.info or {}
+
+    @property
+    def is_playing(self):
+        return self.track_info() != {}
