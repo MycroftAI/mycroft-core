@@ -33,7 +33,7 @@ import mycroft.audio
 
 __author__ = 'jdorleans'
 
-LOGGER = getLogger(__name__)
+logger = getLogger(__name__)
 
 
 def resolve_resource_file(res_name):
