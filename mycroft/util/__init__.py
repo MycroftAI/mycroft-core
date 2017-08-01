@@ -26,9 +26,10 @@ import os.path
 import time
 from stat import S_ISREG, ST_MTIME, ST_MODE, ST_SIZE
 import psutil
-from os.path import dirname
 from mycroft.util.log import getLogger
+from mycroft.util.signal import *
 import mycroft.configuration
+import mycroft.audio
 
 __author__ = 'jdorleans'
 
@@ -135,32 +136,6 @@ def read_dict(filename, div='='):
     return d
 
 
-def create_file(filename):
-    """ Create the file filename and create any directories needed
-
-        Args:
-            filename: Path to the file to be created
-    """
-    try:
-        os.makedirs(dirname(filename))
-    except OSError:
-        pass
-    with open(filename, 'w') as f:
-        f.write('')
-
-
-def kill(names):
-    print psutil.pids()
-    for name in names:
-        for p in psutil.process_iter():
-            try:
-                if p.name() == name:
-                    p.kill()
-                    break
-            except:
-                pass
-
-
 def connected(host="8.8.8.8", port=53, timeout=3):
     """
     Thanks to 7h3rAm on
@@ -249,100 +224,7 @@ def get_cache_directory(domain=None):
     if not dir:
         # If not defined, use /tmp/mycroft/cache
         dir = os.path.join(tempfile.gettempdir(), "mycroft", "cache")
-    return _ensure_directory_exists(dir, domain)
-
-
-def get_ipc_directory(domain=None):
-    """Get the directory used for Inter Process Communication
-
-    Files in this folder can be accessed by different processes on the
-    machine.  Useful for communication.  This is often a small RAM disk.
-
-    Args:
-        domain (str): The IPC domain.  Basically a subdirectory to prevent
-            overlapping signal filenames.
-
-    Returns:
-        str: a path to the IPC directory
-    """
-    config = mycroft.configuration.ConfigurationManager.instance()
-    dir = config.get("ipc_path")
-    if not dir:
-        # If not defined, use /tmp/mycroft/ipc
-        dir = os.path.join(tempfile.gettempdir(), "mycroft", "ipc")
-    return _ensure_directory_exists(dir, domain)
-
-
-def _ensure_directory_exists(dir, domain=None):
-    """ Create a directory and give access rights to all
-
-    Args:
-        domain (str): The IPC domain.  Basically a subdirectory to prevent
-            overlapping signal filenames.
-
-    Returns:
-        str: a path to the directory
-    """
-    if domain:
-        dir = os.path.join(dir, domain)
-    dir = os.path.normpath(dir)
-
-    if not os.path.isdir(dir):
-        try:
-            save = os.umask(0)
-            os.makedirs(dir, 0777)  # give everyone rights to r/w here
-        except OSError:
-            LOGGER.warn("Failed to create: " + dir)
-            pass
-        finally:
-            os.umask(save)
-
-    return dir
-
-
-def create_signal(signal_name):
-    """Create a named signal
-
-    Args:
-        signal_name (str): The signal's name.  Must only contain characters
-            valid in filenames.
-    """
-    try:
-        path = os.path.join(get_ipc_directory(), "signal", signal_name)
-        create_file(path)
-        return os.path.isfile(path)
-    except IOError:
-        return False
-
-
-def check_for_signal(signal_name, sec_lifetime=0):
-    """See if a named signal exists
-
-    Args:
-        signal_name (str): The signal's name.  Must only contain characters
-            valid in filenames.
-        sec_lifetime (int, optional): How many seconds the signal should
-            remain valid.  If 0 or not specified, it is a single-use signal.
-            If -1, it never expires.
-
-    Returns:
-        bool: True if the signal is defined, False otherwise
-    """
-    path = os.path.join(get_ipc_directory(), "signal", signal_name)
-    if os.path.isfile(path):
-        if sec_lifetime == 0:
-            # consume this single-use signal
-            os.remove(path)
-        elif sec_lifetime == -1:
-            return True
-        elif int(os.path.getctime(path) + sec_lifetime) < int(time.time()):
-            # remove once expired
-            os.remove(path)
-            return False
-        return True
-
-    # No such signal exists
-    return False
+    return ensure_directory_exists(dir, domain)
 
 
 def validate_param(value, name):
@@ -356,7 +238,9 @@ def is_speaking():
     Returns:
         bool: True while still speaking
     """
-    return check_for_signal("isSpeaking", -1)
+    logger.info("mycroft.utils.is_speaking() is depreciated, use "
+                "mycroft.audio.is_speaking() instead.")
+    return mycroft.audio.is_speaking()
 
 
 def wait_while_speaking():
@@ -366,24 +250,14 @@ def wait_while_speaking():
     briefly to ensure that any preceeding request to speak has time to
     begin.
     """
-    time.sleep(0.1)  # Wait briefly in for any queued speech to begin
-    while is_speaking():
-        time.sleep(0.1)
+    logger.info("mycroft.utils.wait_while_speaking() is depreciated, use "
+                "mycroft.audio.wait_while_speaking() instead.")
+    return mycroft.audio.wait_while_speaking()
 
 
 def stop_speaking():
     # TODO: Less hacky approach to this once Audio Manager is implemented
     # Skills should only be able to stop speech they've initiated
-    config = mycroft.configuration.ConfigurationManager.instance()
-
-    create_signal('stoppingTTS')
-
-    # Perform in while loop in case the utterance contained periods and was
-    # split into multiple chunks by handle_speak()
-    while check_for_signal("isSpeaking", -1):
-        kill([config.get('tts').get('module')])
-        kill(["aplay"])
-        time.sleep(0.25)
-
-    # This consumes the signal
-    check_for_signal('stoppingTTS')
+    logger.info("mycroft.utils.stop_speaking() is depreciated, use "
+                "mycroft.audio.stop_speaking() instead.")
+    mycroft.audio.stop_speaking()

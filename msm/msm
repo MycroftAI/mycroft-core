@@ -46,7 +46,7 @@ else
   fi
 fi
 
-default_skills="skill-alarm skill-audio-record skill-configuration skill-date-time skill-desktop-launcher skill-ip skill-joke skill-hello-world skill-media skill-npr-news skill-naptime skill-pairing skill-personal skill-reminder skill-installer skill-singing skill-speak skill-spelling skill-stop skill-stock skill-volume skill-weather skill-wiki skill-wolfram-alpha skill-mark1-demo"
+default_skills="skill-alarm skill-audio-record skill-configuration skill-date-time skill-desktop-launcher skill-ip skill-joke skill-hello-world skill-media skill-npr-news skill-naptime skill-pairing skill-personal skill-playback-control skill-reminder skill-installer skill-singing skill-speak skill-spelling skill-stop skill-stock skill-volume skill-weather skill-wiki skill-wolfram-alpha skill-mark1-demo"
 
 echo "#######  Mycroft Skill Manager #######"
 
