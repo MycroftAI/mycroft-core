@@ -70,6 +70,10 @@ class SkillSettings(dict):
 
         self.load_skill_settings()
 
+    @property
+    def _is_stored(self):
+        return hash(str(self)) == self.loaded_hash
+
     def __getitem__(self, key):
         return super(SkillSettings, self).__getitem__(key)
 
@@ -111,7 +115,7 @@ class SkillSettings(dict):
             request settings and store it if it changes
             TODO: implement as websocket
         """
-        if self._skill_exist_in_backend:
+        if self._skill_exist_in_backend():
             try:
                 # update settings
                 self.settings = self._get_settings()
@@ -124,8 +128,7 @@ class SkillSettings(dict):
                                 self.__setitem__(field["name"], field["value"])
 
                 # store value if settings has changed from backend
-                new_hash = hash(str(self))
-                if new_hash != self.loaded_hash:
+                if not self._is_stored:
                     self.store()
                     self.loaded_hash = hash(str(self))
 

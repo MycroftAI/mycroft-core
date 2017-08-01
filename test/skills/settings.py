@@ -2,6 +2,7 @@ from mycroft.skills.settings import SkillSettings
 
 from os.path import join, dirname, abspath
 from os import remove
+import json
 import unittest
 
 
@@ -67,6 +68,13 @@ class SkillSettingsTest(unittest.TestCase):
 
         s2 = SkillSettings(join(dirname(__file__), 'settings'))
         self.assertTrue(len(s) == len(s2))
+
+    def test_load_existing(self):
+        directory = join(dirname(__file__), 'settings', 'settings.json')
+        with open(directory, 'w') as f:
+            json.dump({"test": "1"}, f)
+        s = SkillSettings(join(dirname(__file__), 'settings'))
+        self.assertEqual(len(s), 1)
 
 
 if __name__ == '__main__':
