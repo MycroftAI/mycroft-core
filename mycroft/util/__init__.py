@@ -33,7 +33,7 @@ import mycroft.audio
 
 __author__ = 'jdorleans'
 
-LOGGER = getLogger(__name__)
+logger = getLogger(__name__)
 
 
 def resolve_resource_file(res_name):
@@ -238,7 +238,7 @@ def is_speaking():
     Returns:
         bool: True while still speaking
     """
-    LOGGER.info("mycroft.utils.is_speaking() is depreciated, use "
+    logger.info("mycroft.utils.is_speaking() is depreciated, use "
                 "mycroft.audio.is_speaking() instead.")
     return mycroft.audio.is_speaking()
 
@@ -250,7 +250,7 @@ def wait_while_speaking():
     briefly to ensure that any preceeding request to speak has time to
     begin.
     """
-    LOGGER.info("mycroft.utils.wait_while_speaking() is depreciated, use "
+    logger.info("mycroft.utils.wait_while_speaking() is depreciated, use "
                 "mycroft.audio.wait_while_speaking() instead.")
     return mycroft.audio.wait_while_speaking()
 
@@ -258,6 +258,6 @@ def wait_while_speaking():
 def stop_speaking():
     # TODO: Less hacky approach to this once Audio Manager is implemented
     # Skills should only be able to stop speech they've initiated
-    LOGGER.info("mycroft.utils.stop_speaking() is depreciated, use "
+    logger.info("mycroft.utils.stop_speaking() is depreciated, use "
                 "mycroft.audio.stop_speaking() instead.")
     mycroft.audio.stop_speaking()
