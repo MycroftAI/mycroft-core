@@ -23,6 +23,7 @@ setup(
             'mycroft-speech-client=mycroft.client.speech.main:main',
             'mycroft-messagebus=mycroft.messagebus.service.main:main',
             'mycroft-skills=mycroft.skills.main:main',
+            'mycroft-audio=mycroft.audio.main:main',
             'mycroft-echo-observer=mycroft.messagebus.client.ws:echo',
             'mycroft-audio-test=mycroft.util.audio_test:main',
             'mycroft-enclosure-client=mycroft.client.enclosure.main:main',
