@@ -32,6 +32,10 @@ if [ $(id -u) -eq 0 ]; then
   exit 1
 fi
 
+# Configure to use the standard commit template for
+# this repo only.
+git config commit.template .gitmessage
+
 TOP=$(cd $(dirname $0) && pwd -L)
 
 if [ -z "$WORKON_HOME" ]; then
