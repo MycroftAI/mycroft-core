@@ -2,6 +2,7 @@ import os
 import os.path
 import tempfile
 import mycroft
+import time
 
 
 def get_ipc_directory(domain=None):

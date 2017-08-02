@@ -88,13 +88,6 @@ def handle_mic_unmute(event):
         loop.unmute()
 
 
-def handle_stop(event):
-    global _last_stop_signal
-    _last_stop_signal = time.time()
-    tts.playback.clear_queue()
-    stop_speaking()
-
-
 def handle_paired(event):
     IdentityManager.update(event.data)
 
@@ -150,8 +143,6 @@ def main():
     try:
         loop.run()
     except KeyboardInterrupt, e:
-        tts.playback.stop()
-        tts.playback.join()
         logger.exception(e)
         sys.exit()
 

@@ -424,7 +424,12 @@ def main():
     logger.info("Staring Audio Services")
     ws.on('message', echo)
     ws.once('open', load_services_callback)
-    ws.run_forever()
+    try:
+        ws.run_forever()
+    except KeyboardInterrupt, e:
+        logger.exception(e)
+        speech.shutdown()
+        sys.exit()
 
 
 if __name__ == "__main__":
