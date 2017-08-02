@@ -100,11 +100,11 @@ while [[ $# -gt 0 ]] ; do
     
     if [[ "${skill}" ==  *$'\n'* ]]; then
       echo -e "Your search has multiple choices\n\n$skill" | sed 's/.*://g'
-      return 3
+      return 301
     else
       if [[ -z "${git_line}" ]]; then
         echo "A ${iskill} skill was not found"
-        return 3
+        return 302
       fi
       repo_line=$(($git_line + 2))
       repo=$(list | sed -n $repo_line'{p;q;}' | sed 's/[[:space:]]//g' | sed 's/url=//g')
