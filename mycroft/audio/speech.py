@@ -105,6 +105,7 @@ def handle_stop(event):
     """
     global _last_stop_signal
     _last_stop_signal = time.time()
+    tts.playback.clear_queue()
     stop_speaking()
 
 
@@ -127,3 +128,10 @@ def init(websocket):
     tts = TTSFactory.create()
     tts.init(ws)
     tts_hash = config.get('tts')
+
+
+def shutdown():
+    global tts
+    if tts:
+        tts.playback.stop()
+        tts.playback.join()
