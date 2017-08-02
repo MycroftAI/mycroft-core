@@ -33,7 +33,7 @@ pyric==0.1.6
 inflection==0.3.1
 pytz==2017.2
 pillow==4.1.1
-mock
+mock==2.0.0
 python-dateutil==2.6.0
 pychromecast==0.7.7
 python-vlc==1.1.2
