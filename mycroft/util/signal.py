@@ -3,7 +3,7 @@ import os.path
 import tempfile
 import mycroft
 import time
-from logging import getLogger
+from mycroft.util.logging import getLogger
 
 LOG = getLogger(__name__)
 
