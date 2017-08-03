@@ -82,10 +82,12 @@ pip install --upgrade virtualenv
 # removing the pip2 explicit usage here for consistency with the above use.
 pip install -r requirements.txt 
 
-if  [[ $(free|awk '/^Mem:/{print $2}') -lt  1572864 ]] ; then
-  CORES=1
-else 
-  CORES=$(nproc)
+SYSMEM=$(free|awk '/^Mem:/{print $2}')
+MAXCORES=$(($SYSMEM / 512000))
+CORES=$(nproc)
+
+if [[ ${MAXCORES} -lt ${CORES} ]]; then
+  CORES=${MAXCORES}  
 fi
 echo "Building with $CORES cores."
 
