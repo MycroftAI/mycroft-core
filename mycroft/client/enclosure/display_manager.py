@@ -130,7 +130,7 @@ def initiate_display_manager_ws():
     """ Initiates the web sockets on the display_manager
     """
     LOG.info("Initiating dispaly manager websocket")
-    
+
     # Should remove needs to be an object so it can be referenced in functions
     # [https://stackoverflow.com/questions/986006/how-do-i-pass-a-variable-by-reference]
     should_remove = [True]
