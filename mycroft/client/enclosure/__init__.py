@@ -44,9 +44,6 @@ __author__ = 'aatchison', 'jdorleans', 'iward'
 
 LOG = getLogger("EnclosureClient")
 
-# initiates the web sockets on display manager
-initiate_display_manager_ws()
-
 
 class EnclosureReader(Thread):
     """
@@ -248,6 +245,10 @@ class Enclosure(object):
         self.ws.on("enclosure.started", self.on_arduino_responded)
 
         self.arduino_responded = False
+
+        # initiates the web sockets on display manager
+        # NOTE: this is a temporary place to initiate display manager sockets
+        initiate_display_manager_ws()
 
         # Start a 5 second timer.  If the serial port hasn't received
         # any acknowledgement of the "system.version" within those

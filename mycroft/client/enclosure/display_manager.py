@@ -104,7 +104,7 @@ def set_active(skill_name):
             string: skill_name
     """
     _write_data({"active_skill": skill_name})
-    LOG.info("Setting active skill to " + skill_name)
+    LOG.debug("Setting active skill to " + skill_name)
 
 
 def get_active():
@@ -122,13 +122,14 @@ def get_active():
 def remove_active():
     """ Remove the active skill in the skill manager
     """
-    LOG.error("Removing active skill...")
+    LOG.debug("Removing active skill...")
     _write_data({"active_skill": ""})
 
 
 def initiate_display_manager_ws():
     """ Initiates the web sockets on the display_manager
     """
+    LOG.info("Initiating dispaly manager websocket")
 
     # Should remove needs to be an object so it can be referenced in functions
     # [https://stackoverflow.com/questions/986006/how-do-i-pass-a-variable-by-reference]
