@@ -360,8 +360,16 @@ class MycroftSkill(object):
         load_regex(regex_dir, self.emitter)
 
     def __handle_stop(self, event):
+        """
+            Handler for the "mycroft.stop" signal. Runs the user defined
+            `stop()` method.
+        """
         self.stop_time = time.time()
-        self.stop()
+        try:
+            self.stop()
+        except:
+            logger.error("Failed to stop skill: {}".format(self.name),
+                         exc_info=True)
 
     @abc.abstractmethod
     def stop(self):
@@ -386,4 +394,8 @@ class MycroftSkill(object):
 
         self.emitter.emit(
             Message("detach_skill", {"skill_name": self.name + ":"}))
-        self.stop()
+        try:
+            self.stop()
+        except:
+            logger.error("Failed to stop skill: {}".format(self.name),
+                         exc_info=True)
