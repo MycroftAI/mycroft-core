@@ -44,18 +44,29 @@ else
     VIRTUALENV_ROOT="$WORKON_HOME/mycroft"
 fi
 
-# skip mimic build?
+# Check whether to build mimic (it takes a really long time!)
+build_mimic='y'
 if [[ "$1" == '-sm' ]] ; then 
   build_mimic='n'
-fi
+else
+  # first, look for a build of mimic in the folder
+  has_mimic=""
+  if [[ -f ${TOP}/mimic/bin/mimic ]] ; then
+      has_mimic=$( ${TOP}/mimic/bin/mimic -lv | grep Voice )
+  fi
 
-if [[ "$1" != '-sm' ]] && hash mimic ; then
-  if mimic -lv | grep -q Voice ; then
-    echo "Existing mimic installation. press y to build mimic again, any other key to skip."
+  # in not, check the system path
+  if [ "$has_mimic" = "" ] ; then
+    if [ -x "$(command -v mimic)" ]; then
+      has_mimic="$( mimic -lv | grep Voice )"
+    fi
+  fi
+
+  if ! [ "$has_mimic" == "" ] ; then
+    echo "Mimic is installed. Press 'y' to rebuild mimic, any other key to skip."
     read -n1 build_mimic
   fi
 fi
-
 
 # create virtualenv, consistent with virtualenv-wrapper conventions
 if [ ! -d "${VIRTUALENV_ROOT}" ]; then
@@ -84,8 +95,7 @@ echo "Building with $CORES cores."
 #build and install mimic
 cd "${TOP}"
 
-build_mimic="${build_mimic:-y}"  
-if [[ "$build_mimic" == 'y' ]] ; then
+if [[ "$build_mimic" == 'y' ]] || [[ "$build_mimic" == 'Y' ]]; then
   echo "WARNING: The following can take a long time to run!"
   "${TOP}/scripts/install-mimic.sh"
 else
