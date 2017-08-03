@@ -3,6 +3,9 @@ import os.path
 import tempfile
 import mycroft
 import time
+from logging import getLogger
+
+LOG = getLogger(__name__)
 
 
 def get_ipc_directory(domain=None):
@@ -45,7 +48,7 @@ def ensure_directory_exists(dir, domain=None):
             save = os.umask(0)
             os.makedirs(dir, 0777)  # give everyone rights to r/w here
         except OSError:
-            LOGGER.warn("Failed to create: " + dir)
+            LOG.warn("Failed to create: " + dir)
             pass
         finally:
             os.umask(save)
