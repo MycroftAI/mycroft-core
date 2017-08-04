@@ -46,7 +46,7 @@ if [[ "$1" == '-sm' ]] ; then
 fi
 
 set +Ee
-if [[ "$1" != '-sm' ]] && hash mimic ; then
+if [[ "$1" != '-sm' ]] && hash mimic 2&>1; then
   if mimic -lv | grep -q Voice ; then
     echo "Existing mimic installation. press y to build mimic again, any other key to skip."
     read -n1 build_mimic
@@ -61,12 +61,12 @@ if [ ! -d "${VIRTUALENV_ROOT}" ]; then
 fi
 source "${VIRTUALENV_ROOT}/bin/activate"
 cd "${TOP}"
-easy_install pip==7.1.2 # force version of pip
-pip install --upgrade virtualenv
+#easy_install pip==7.1.2 # force version of pip
+#pip install --upgrade virtualenv
 
 # install requirements (except pocketsphinx)
 # removing the pip2 explicit usage here for consistency with the above use.
-pip install -r requirements.txt 
+#pip install -r requirements.txt 
 
 SYSMEM=$(free|awk '/^Mem:/{print $2}')
 MAXCORES=$(($SYSMEM / 512000))
@@ -86,10 +86,10 @@ cd "${TOP}"
 build_mimic="${build_mimic:-y}"  
 if [[ "$build_mimic" == 'y' ]] ; then
   echo "WARNING: The following can take a long time to run!"
-  "${TOP}/scripts/install-mimic.sh ${CORES}"
+  "${TOP}/scripts/install-mimic.sh" " ${CORES}"
 else
   echo "Skipping mimic build."
 fi
 
 # install pygtk for desktop_launcher skill
-"${TOP}/scripts/install-pygtk.sh ${CORES}"
+"${TOP}/scripts/install-pygtk.sh" " ${CORES}"
