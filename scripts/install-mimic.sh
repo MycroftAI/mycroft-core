@@ -3,8 +3,15 @@
 set -Ee
 
 MIMIC_DIR=mimic
-CORES=$(nproc)
 MIMIC_VERSION=1.2.0.2
+SYSMEM=$(free|awk '/^Mem:/{print $2}')
+MAXCORES=$(($SYSMEM / 512000))
+CORES=$(nproc)
+
+if [[ ${MAXCORES} -lt ${CORES} ]]; then
+  CORES=${MAXCORES}  
+fi
+echo "Building with $CORES cores."
 
 # for ubuntu precise in travis, that does not provide pkg-config:
 pkg-config --exists icu-i18n || export CFLAGS="$CFLAGS -I/usr/include/x86_64-linux-gnu"
