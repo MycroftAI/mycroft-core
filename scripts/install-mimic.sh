@@ -3,15 +3,8 @@
 set -Ee
 
 MIMIC_DIR=mimic
+CORES=$1
 MIMIC_VERSION=1.2.0.2
-SYSMEM=$(free|awk '/^Mem:/{print $2}')
-MAXCORES=$(($SYSMEM / 512000))
-CORES=$(nproc)
-
-if [[ ${MAXCORES} -lt ${CORES} ]]; then
-  CORES=${MAXCORES}  
-fi
-echo "Building with $CORES cores."
 
 # for ubuntu precise in travis, that does not provide pkg-config:
 pkg-config --exists icu-i18n || export CFLAGS="$CFLAGS -I/usr/include/x86_64-linux-gnu"
@@ -23,7 +16,7 @@ if [ ! -d ${MIMIC_DIR} ]; then
     cd ${MIMIC_DIR}
     ./autogen.sh
     ./configure --with-audio=alsa --enable-shared --prefix=$(pwd)
-    make -j$CORES
+    make -j${CORES}
     make install
 else
     # ensure mimic is up to date
@@ -35,6 +28,6 @@ else
     ./autogen.sh
     ./configure --with-audio=alsa --enable-shared --prefix=$(pwd)
     make clean
-    make -j$CORES
+    make -j${CORES}
     make install
 fi
