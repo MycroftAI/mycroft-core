@@ -216,7 +216,7 @@ class IntentService(object):
     def handle_add_context(self, message):
         entity = {'confidence': 1.0}
         context = message.data.get('context')
-        word = message.data.get('word')
+        word = message.data.get('word') or ''
         entity['data'] = [(word, context)]
         entity['match'] = word
         entity['key'] = word
