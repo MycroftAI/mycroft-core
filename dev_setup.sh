@@ -61,12 +61,12 @@ if [ ! -d "${VIRTUALENV_ROOT}" ]; then
 fi
 source "${VIRTUALENV_ROOT}/bin/activate"
 cd "${TOP}"
-#easy_install pip==7.1.2 # force version of pip
-#pip install --upgrade virtualenv
+easy_install pip==7.1.2 # force version of pip
+pip install --upgrade virtualenv
 
 # install requirements (except pocketsphinx)
 # removing the pip2 explicit usage here for consistency with the above use.
-#pip install -r requirements.txt 
+pip install -r requirements.txt 
 
 SYSMEM=$(free|awk '/^Mem:/{print $2}')
 MAXCORES=$(($SYSMEM / 512000))
