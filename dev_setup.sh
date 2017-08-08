@@ -49,13 +49,14 @@ if [[ "$1" == '-sm' ]] ; then
   build_mimic='n'
 fi
 
-if [[ "$1" != '-sm' ]] && hash mimic ; then
+set +Ee
+if [[ "$1" != '-sm' ]] && hash mimic 2&>1; then
   if mimic -lv | grep -q Voice ; then
     echo "Existing mimic installation. press y to build mimic again, any other key to skip."
     read -n1 build_mimic
   fi
 fi
-
+set -Ee
 
 # create virtualenv, consistent with virtualenv-wrapper conventions
 if [ ! -d "${VIRTUALENV_ROOT}" ]; then
@@ -71,10 +72,12 @@ pip install --upgrade virtualenv
 # removing the pip2 explicit usage here for consistency with the above use.
 pip install -r requirements.txt 
 
-if  [[ $(free|awk '/^Mem:/{print $2}') -lt  1572864 ]] ; then
-  CORES=1
-else 
-  CORES=$(nproc)
+SYSMEM=$(free|awk '/^Mem:/{print $2}')
+MAXCORES=$(($SYSMEM / 512000))
+CORES=$(nproc)
+
+if [[ ${MAXCORES} -lt ${CORES} ]]; then
+  CORES=${MAXCORES}  
 fi
 echo "Building with $CORES cores."
 
@@ -87,10 +90,10 @@ cd "${TOP}"
 build_mimic="${build_mimic:-y}"  
 if [[ "$build_mimic" == 'y' ]] ; then
   echo "WARNING: The following can take a long time to run!"
-  "${TOP}/scripts/install-mimic.sh"
+  "${TOP}/scripts/install-mimic.sh" " ${CORES}"
 else
   echo "Skipping mimic build."
 fi
 
 # install pygtk for desktop_launcher skill
-"${TOP}/scripts/install-pygtk.sh"
+"${TOP}/scripts/install-pygtk.sh" " ${CORES}"
