@@ -413,8 +413,7 @@ def main():
     def echo(message):
         try:
             _message = json.loads(message)
-
-            if 'mycroft.audio.service' in _message.get('type'):
+            if 'mycroft.audio.service' not in _message.get('type'):
                 return
             message = json.dumps(_message)
         except:
