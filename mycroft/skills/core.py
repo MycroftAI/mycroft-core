@@ -402,7 +402,7 @@ class MycroftSkill(object):
 class FallbackSkill(MycroftSkill):
     fallback_handlers = {}
 
-    def __init__(self, name, emitter=None):
+    def __init__(self, name=None, emitter=None):
         MycroftSkill.__init__(self, name, emitter)
 
     @classmethod
