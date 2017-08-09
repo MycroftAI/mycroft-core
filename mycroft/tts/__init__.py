@@ -47,6 +47,7 @@ class PlaybackThread(Thread):
         self.queue = queue
         self._terminated = False
         self._processing_queue = False
+        self._clear_visimes = False
 
     def init(self, tts):
         self.tts = tts
@@ -111,9 +112,8 @@ class PlaybackThread(Thread):
         """
         start = time()
         for code, duration in pairs:
-            if check_for_signal('stoppingTTS', -1):
-                return True
-            if check_for_signal('buttonPress'):
+            if self._clear_visimes:
+                self._clear_visimes = False
                 return True
             if self.enclosure:
                 self.enclosure.mouth_viseme(code)
@@ -121,6 +121,9 @@ class PlaybackThread(Thread):
             if delta < duration:
                 sleep(duration - delta)
         return False
+
+    def clear_visimes(self):
+        self._clear_visimes = True
 
     def blink(self, rate=1.0):
         """ Blink mycroft's eyes """
