@@ -55,7 +55,7 @@ function help() {
   echo -e "     Copyright (c) 2017 Mycroft AI, Inc.  All rights reserved.\n"
   echo "usage: msm <action> <optional parameters>"
   echo "  actions include:"
-  echo "    install:  Installs skill <repository> or <repository github url>."
+  echo "    install:  Installs skill <name> or <repository github url>."
   echo "    list:  lists all skills available in the mycroft-skills repo."
   echo "    update:  updates installed skills."
   echo "    default:  installs default skill list."
