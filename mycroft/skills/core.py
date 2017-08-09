@@ -189,9 +189,6 @@ class MycroftSkill(object):
 
     def __init__(self, name=None, emitter=None):
         self.name = name or self.__class__.__name__
-
-    def __init__(self, name, emitter=None):
-        self.name = name
         self.bind(emitter)
         self.config_core = ConfigurationManager.get()
         self.config = self.config_core.get(self.name)
