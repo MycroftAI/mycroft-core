@@ -257,6 +257,11 @@ class ConfigurationManager(object):
                                         keep_user_config)
 
     @staticmethod
+    def load_internal(config):
+        LOG.info("Updating config internally")
+        ConfigurationManager.update(config)
+
+    @staticmethod
     def load_remote():
         if not ConfigurationManager.__config:
             ConfigurationManager.__config = ConfigurationLoader.load()
@@ -305,21 +310,44 @@ class ConfigurationManager(object):
 class _ConfigurationListener(object):
     """ Utility to synchronize remote configuration changes locally
 
-    This listens to the messagebus for 'configuration.updated', and
-    refreshes the cached configuration when this is encountered.
+    This listens to the messagebus for
+    'configuration.updated', and refreshes the cached configuration when this
+    is encountered.
+     'configuration.update', and updates the cached configuration when this
+    is encountered. optionally saves as new user_config
+
+
     """
 
     def __init__(self, ws):
         super(_ConfigurationListener, self).__init__()
         ws.on("configuration.updated", self.updated)
+        ws.on("configuration.update", self.update)
 
     @staticmethod
     def updated(message):
         """
-            Event handler for configuration update events. Forces a reload
+            Event handler for configuration updated events. Forces a reload
             of all configuration sources.
 
             Args:
                 message:    message bus message structure
         """
         ConfigurationManager.load_defaults()
+
+    @staticmethod
+    def update(message):
+        """
+            Event handler for configuration update events.
+            Update config with provided data
+            Save config as user_config if requested
+            Args:
+                message:    message bus message structure
+        """
+        config = message.data.get("config", {})
+        ConfigurationManager.load_internal(config)
+        save = message.data.get("save", False)
+        if save:
+            ConfigurationManager.save(config)
+
+
