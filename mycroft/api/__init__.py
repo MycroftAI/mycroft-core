@@ -189,8 +189,12 @@ class DeviceApi(Api):
             status of subscription. True if device is connected to a paying
             subscriber.
         """
-        subscription_type = self.get_subscription().get('@type')
-        return subscription_type != 'free'
+        return self.get_subscription().get('@type') != 'free'
+
+    def get_subscriber_voice_url(self, voice):
+        self.check_token()
+        return self.build_path(
+            {'path': '/' + self.identity.uuid + '/voices/' + voice})
 
     def find(self):
         """ Deprecated, see get_location() """
