@@ -318,7 +318,7 @@ class _ConfigurationListener(object):
     'configuration.updated', and refreshes the cached configuration when this
     is encountered.
      'configuration.update', and updates the cached configuration when this
-    is encountered. optionally saves as new user_config
+    is encountered. 
 
 
     """
@@ -344,13 +344,8 @@ class _ConfigurationListener(object):
         """
             Event handler for configuration update events.
             Update config with provided data
-            Save config as user or system config if requested
             Args:
                 message:    message bus message structure
         """
         config = message.data.get("config", {})
         ConfigurationManager.load_internal(config)
-        save = message.data.get("save", False)
-        system = message.data.get("system", False)
-        if save:
-            ConfigurationManager.save(config, is_system=system)
