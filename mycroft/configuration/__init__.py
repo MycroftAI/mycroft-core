@@ -301,10 +301,14 @@ class ConfigurationManager(object):
         """
         ConfigurationManager.update(config)
         location = SYSTEM_CONFIG if is_system else USER_CONFIG
-        loc_config = load_commented_json(location)
-        with open(location, 'w') as f:
-            config = loc_config.update(config)
-            json.dump(config, f)
+        try:
+            LOG.info("Saving config")
+            loc_config = load_commented_json(location)
+            with open(location, 'w') as f:
+                config = loc_config.update(config)
+                json.dump(config, f)
+        except Exception as e:
+            LOG.error(e)
 
 
 class _ConfigurationListener(object):
@@ -322,7 +326,7 @@ class _ConfigurationListener(object):
     def __init__(self, ws):
         super(_ConfigurationListener, self).__init__()
         ws.on("configuration.updated", self.updated)
-        ws.on("configuration.update", self.update)
+        ws.on("configuration.patch", self.patch)
 
     @staticmethod
     def updated(message):
@@ -336,18 +340,17 @@ class _ConfigurationListener(object):
         ConfigurationManager.load_defaults()
 
     @staticmethod
-    def update(message):
+    def patch(message):
         """
             Event handler for configuration update events.
             Update config with provided data
-            Save config as user_config if requested
+            Save config as user or system config if requested
             Args:
                 message:    message bus message structure
         """
         config = message.data.get("config", {})
         ConfigurationManager.load_internal(config)
         save = message.data.get("save", False)
+        system = message.data.get("system", False)
         if save:
-            ConfigurationManager.save(config)
-
-
+            ConfigurationManager.save(config, is_system=system)
