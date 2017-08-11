@@ -15,39 +15,93 @@
 import subprocess
 from time import time
 
+import os
+import stat
 import os.path
 
 from mycroft import MYCROFT_ROOT_PATH
 from mycroft.configuration import ConfigurationManager
 from mycroft.tts import TTS, TTSValidator
 from mycroft.util.log import LOG
+import mycroft.util
+from mycroft.util.download import download
+from mycroft.api import DeviceApi
+
+from mycroft.util.log import getLogger
 
 
 config = ConfigurationManager.get().get("tts").get("mimic")
 
-BIN = config.get("path", os.path.join(MYCROFT_ROOT_PATH, 'mimic', 'bin',
-                                      'mimic'))
+BIN = config.get("path",
+    os.path.join(MYCROFT_ROOT_PATH, 'mimic', 'bin', 'mimic'))
 if not os.path.isfile(BIN):
     # Search for mimic on the path
     import distutils.spawn
     BIN = distutils.spawn.find_executable("mimic")
 
+subscriber_voices = {'trinity': '/opt/mycroft/voices/mimic_tn'}
+
 
 class Mimic(TTS):
     def __init__(self, lang, voice):
         super(Mimic, self).__init__(lang, voice, MimicValidator(self))
-        self.init_args()
+        self.dl = None
+        self.init_args(self.get_binary(voice))
         self.clear_cache()
         self.type = 'wav'
 
-    def init_args(self):
+    def get_binary(self, voice):
+        """
+            Get mimic binary. to use. Handles selection based on subscriber
+            voice and/or existence of system installations.
+
+            Args:
+                voice:  mimic voice to be used
+
+            Returns: path to binary
+        """
+        if voice in subscriber_voices and DeviceApi().is_subscriber:
+            if os.path.exists(subscriber_voices[voice]):
+                return subscriber_voices[voice]
+            else:
+                self.download(voice)
+                self.voice = 'ap'
+        elif not DeviceApi().is_subscriber:
+            LOG.info("Sorry you are not a Premium member. "
+                        "Using default voice.")
+            self.voice = 'ap'
+
+        return BIN
+
+    def download(self, voice):
+        def make_executable(dest):
+            # make executable
+            st = os.stat(dest)
+            os.chmod(dest, st.st_mode | stat.S_IEXEC)
+
+        # Download the binary
+        LOG.info('DOWNLOADING MIMIC BINARY!')
+        url = DeviceApi().get_subscriber_voice_url(voice)
+        self.dl = download(url, subscriber_voices[voice], make_executable)
+        self.dl_voice = voice
+
+    def init_args(self, BIN):
+        LOG.info('Current bin: ' + BIN)
         self.args = [BIN, '-voice', self.voice, '-psdur']
         stretch = config.get('duration_stretch', None)
         if stretch:
             self.args += ['--setf', 'duration_stretch=' + stretch]
 
     def get_tts(self, sentence, wav_file):
-        # Generate WAV and phonemes
+        if self.dl and self.dl.done:
+            if self.dl.status == 200:
+                self.init_args(self.dl.dest)
+                self.dl.join()
+                self.dl = None
+            else:
+                self.download(self.dl_voice)
+
+        #  Generate WAV and phonemes
         phonemes = subprocess.check_output(self.args + ['-o', wav_file,
                                                         '-t', sentence])
         return wav_file, phonemes
