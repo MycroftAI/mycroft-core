@@ -23,9 +23,6 @@ from time import sleep
 import audioop
 
 import pyaudio
-from mycroft.client.speech.recognizer.snowboy_recognizer import SnowboyRecognizer
-from mycroft.client.speech.recognizer.pocketsphinx_recognizer \
-    import PocketsphinxRecognizer
 
 import speech_recognition
 from speech_recognition import (
@@ -159,7 +156,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
     # Time between pocketsphinx checks for the wake word
     SEC_BETWEEN_WW_CHECKS = 0.2
 
-    def __init__(self, wake_word_recognizer):
+    def __init__(self, wake_word_recognizer, hot_word_engines={}):
         # The maximum audio in seconds to keep for transcribing a phrase
         # The wake word must fit in this time
         num_phonemes = len(listener_config.get('phonemes').split())
@@ -174,35 +171,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.save_wake_words = listener_config.get('record_wake_words')
         self.mic_level_file = os.path.join(get_ipc_directory(), "mic_level")
         self._stop_signaled = False
-        self.hot_word_engines = self.create_hot_word_engines()
-
-    def create_hot_word_engines(self):
-        hot_words = listener_config.get("hot_words", {})
-        for word in hot_words:
-            data = hot_words[word]
-            engine = data["module"]
-            ding = data.get("sound")
-            utterance = data.get("utterance", False)
-            listen = data.get("listen", False)
-            if engine == "pocket_sphinx":
-                lang = data.get("lang", config.get("lang", "en-us"))
-                rate = data.get("rate", listener_config.get("rate"))
-                hot_word = data.get("hot_word").lower()
-                phonemes = data.get('phonemes')
-                threshold = data.get('threshold')
-                engine = PocketsphinxRecognizer(hot_word, phonemes,
-                                                threshold, rate, lang)
-                self.hot_word_engines[word] = [engine, ding, utterance, listen]
-            elif engine == "snowboy":
-                models = data.get("models", {})
-                sensitivity = data.get("sensitivity", 0.5)
-                paths = []
-                for model in models.keys():
-                    paths.append(models[model])
-                engine = SnowboyRecognizer(paths, sensitivity)
-                self.hot_word_engines[word] = [engine, ding, utterance, listen]
-            else:
-                logger.error("unknown hotword engine " + engine)
+        self.hot_word_engines = hot_word_engines
 
     @staticmethod
     def record_sound_chunk(source):
@@ -453,7 +422,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 if listen:
                 # start listening
                     return True
-                return False
+        return False
 
     @staticmethod
     def _create_audio_data(raw_data, source):
