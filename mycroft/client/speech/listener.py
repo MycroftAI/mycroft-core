@@ -36,7 +36,7 @@ from mycroft.session import SessionManager
 from mycroft.stt import STTFactory
 from mycroft.util import connected
 from mycroft.util.log import getLogger
-
+from mycroft.client.speech.recognizer.snowboy_recognizer import SnowboyRecognizer
 LOG = getLogger(__name__)
 
 
@@ -99,6 +99,8 @@ class AudioConsumer(Thread):
         self.wakeup_recognizer = wakeup_recognizer
         self.mycroft_recognizer = mycroft_recognizer
         self.metrics = MetricsAggregator()
+        self.config = ConfigurationManager.get()
+
 
     def run(self):
         while self.state.running:
@@ -136,7 +138,6 @@ class AudioConsumer(Thread):
             'session': SessionManager.get().session_id,
         }
         self.emitter.emit("recognizer_loop:wakeword", payload)
-
         if self._audio_length(audio) < self.MIN_AUDIO_SIZE:
             LOG.warn("Audio too short to be processed")
         else:
@@ -209,26 +210,62 @@ class RecognizerLoop(EventEmitter):
         self.microphone = MutableMicrophone(device_index, rate)
         # FIXME - channels are not been used
         self.microphone.CHANNELS = self.config.get('channels')
-        self.mycroft_recognizer = self.create_mycroft_recognizer(rate, lang)
+        self.mycroft_recognizer = self.create_wake_word_recognizer(rate, lang)
         # TODO - localization
         self.wakeup_recognizer = self.create_wakeup_recognizer(rate, lang)
         self.remote_recognizer = ResponsiveRecognizer(self.mycroft_recognizer)
         self.state = RecognizerLoopState()
 
-    def create_mycroft_recognizer(self, rate, lang):
+    def create_wake_word_recognizer(self, rate, lang):
         # Create a local recognizer to hear the wakeup word, e.g. 'Hey Mycroft'
-        wake_word = self.config.get('wake_word').lower()
-        phonemes = self.config.get('phonemes')
-        threshold = self.config.get('threshold')
-        return PocketsphinxRecognizer(wake_word, phonemes,
+        module = self.config.get('module', "pocketsphinx")
+        if module == "snowboy":
+            LOG.info("Using snowboy wake word detector")
+            models = self.config.get("models", {})
+            sensitivity = self.config.get("sensitivity", 0.5)
+            paths = []
+            for model in models.keys():
+                paths.append(models[model])
+            return SnowboyRecognizer(paths, sensitivity)
+        elif module == "pocketsphinx":
+            LOG.info("Using PocketSphinx wake word detector")
+            wake_word = self.config.get('wake_word').lower()
+            phonemes = self.config.get('phonemes')
+            threshold = self.config.get('threshold')
+            return PocketsphinxRecognizer(wake_word, phonemes,
+                                          threshold, rate, lang)
+        else:
+            LOG.error("Bad wake word configuration, attempting pocketsphinx")
+            wake_word = self.config.get('wake_word').lower()
+            phonemes = self.config.get('phonemes')
+            threshold = self.config.get('threshold')
+            return PocketsphinxRecognizer(wake_word, phonemes,
                                       threshold, rate, lang)
 
     def create_wakeup_recognizer(self, rate, lang):
-        wake_word = self.config.get('standup_word', "wake up").lower()
-        phonemes = self.config.get('standup_phonemes', "W EY K . AH P")
-        threshold = self.config.get('standup_threshold', 1e-18)
-        return PocketsphinxRecognizer(wake_word, phonemes,
-                                      threshold, rate, lang)
+        module = self.config.get('wake_up_module', "pocketsphinx")
+        if module == "snowboy":
+            LOG.info("Using snowboy wake up detector")
+            models = self.config.get("wake_up_models", {})
+            sensitivity = self.config.get("wake_up_sensitivity", 0.5)
+            paths = []
+            for model in models.keys():
+                paths.append(models[model])
+            return SnowboyRecognizer(paths, sensitivity)
+        elif module == "pocketsphinx":
+            LOG.info("Using PocketSphinx wake up detector")
+            wake_word = self.config.get('standup_word', "wake up").lower()
+            phonemes = self.config.get('standup_phonemes', "W EY K . AH P")
+            threshold = self.config.get('standup_threshold', 1e-18)
+            return PocketsphinxRecognizer(wake_word, phonemes,
+                                          threshold, rate, lang)
+        else:
+            LOG.error("Bad wake up word configuration, attempting pocketsphinx")
+            wake_word = self.config.get('standup_word', "wake up").lower()
+            phonemes = self.config.get('standup_phonemes', "W EY K . AH P")
+            threshold = self.config.get('standup_threshold', 1e-18)
+            return PocketsphinxRecognizer(wake_word, phonemes,
+                                          threshold, rate, lang)
 
     def start_async(self):
         """
