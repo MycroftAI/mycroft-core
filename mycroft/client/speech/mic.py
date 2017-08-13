@@ -23,6 +23,10 @@ from time import sleep
 import audioop
 
 import pyaudio
+from mycroft.client.speech.recognizer.snowboy_recognizer import SnowboyRecognizer
+from mycroft.client.speech.recognizer.pocketsphinx_recognizer \
+    import PocketsphinxRecognizer
+
 import speech_recognition
 from speech_recognition import (
     Microphone,
@@ -161,7 +165,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         num_phonemes = len(listener_config.get('phonemes').split())
         len_phoneme = listener_config.get('phoneme_duration', 120) / 1000.0
         self.SAVED_WW_SEC = num_phonemes * len_phoneme
-
         speech_recognition.Recognizer.__init__(self)
         self.wake_word_recognizer = wake_word_recognizer
         self.audio = pyaudio.PyAudio()
@@ -171,6 +174,35 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.save_wake_words = listener_config.get('record_wake_words')
         self.mic_level_file = os.path.join(get_ipc_directory(), "mic_level")
         self._stop_signaled = False
+        self.hot_word_engines = self.create_hot_word_engines()
+
+    def create_hot_word_engines(self):
+        hot_words = listener_config.get("hot_words", {})
+        for word in hot_words:
+            data = hot_words[word]
+            engine = data["module"]
+            ding = data.get("sound")
+            utterance = data.get("utterance", False)
+            listen = data.get("listen", False)
+            if engine == "pocket_sphinx":
+                lang = data.get("config", config.get("lang", "en-us"))
+                rate = data.get("rate", listener_config.get("rate"))
+                hot_word = data.get("hot_word").lower()
+                phonemes = data.get('phonemes')
+                threshold = data.get('threshold')
+                engine = PocketsphinxRecognizer(hot_word, phonemes,
+                                                threshold, rate, lang)
+                self.hot_word_engines[word] = [engine, ding, utterance, listen]
+            elif engine == "snowboy":
+                models = data.get("models", {})
+                sensitivity = data.get("sensitivity", 0.5)
+                paths = []
+                for model in models.keys():
+                    paths.append(models[model])
+                engine = SnowboyRecognizer(paths, sensitivity)
+                self.hot_word_engines[word] = [engine, ding, utterance, listen]
+            else:
+                logger.error("unknown hotword engine " + engine)
 
     @staticmethod
     def record_sound_chunk(source):
@@ -299,7 +331,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         """
         self._stop_signaled = True
 
-    def _wait_until_wake_word(self, source, sec_per_buffer):
+    def _wait_until_wake_word(self, source, sec_per_buffer, emitter):
         """Listen continuously on source until a wake word is spoken
 
         Args:
@@ -379,8 +411,10 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             if buffers_since_check > buffers_per_check:
                 buffers_since_check -= buffers_per_check
                 audio_data = byte_data + silence
-                said_wake_word = \
-                    self.wake_word_recognizer.found_wake_word(audio_data)
+                if self.check_for_hotwords(audio_data, emitter):
+                    said_wake_word = True
+                else:
+                    said_wake_word = self.wake_word_recognizer.found_wake_word(audio_data)
                 # if a wake word is success full then record audio in temp
                 # file.
                 if self.save_wake_words and said_wake_word:
@@ -389,6 +423,37 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                     filename = "/tmp/mycroft_wake_success%s.wav" % stamp
                     with open(filename, 'wb') as filea:
                         filea.write(audio.get_wav_data())
+
+    def check_for_hotwords(self, audio_data, emitter):
+        # check hot word
+        for engine in self.hot_word_engines:
+            engine, ding, utterance, listen = self.hot_word_engines[engine]
+            text = engine.found_wake_word(audio_data)
+            if text:
+                logger.debug("Hot Word: " + text)
+                # If enabled, play a wave file with a short sound to audibly
+                # indicate hotword was detected.
+                if ding:
+                    file = resolve_resource_file(ding)
+                    if file:
+                        play_wav(file)
+                # Hot Word succeeded
+                payload = {
+                    'hotword': text,
+                    'start_listening': listen,
+                    'sound': ding
+                }
+                emitter.emit("recognizer_loop:hotword", payload)
+                if utterance:
+                # send the transcribed word on for processing
+                    payload = {
+                        'utterances': [text]
+                    }
+                    emitter.emit("recognizer_loop:utterance", payload)
+                if listen:
+                # start listening
+                    return True
+                return False
 
     @staticmethod
     def _create_audio_data(raw_data, source):
@@ -426,7 +491,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.adjust_for_ambient_noise(source, 1.0)
 
         logger.debug("Waiting for wake word...")
-        self._wait_until_wake_word(source, sec_per_buffer)
+        self._wait_until_wake_word(source, sec_per_buffer, emitter)
         if self._stop_signaled:
             return
 
