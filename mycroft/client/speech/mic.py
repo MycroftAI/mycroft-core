@@ -185,7 +185,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             utterance = data.get("utterance", False)
             listen = data.get("listen", False)
             if engine == "pocket_sphinx":
-                lang = data.get("config", config.get("lang", "en-us"))
+                lang = data.get("lang", config.get("lang", "en-us"))
                 rate = data.get("rate", listener_config.get("rate"))
                 hot_word = data.get("hot_word").lower()
                 phonemes = data.get('phonemes')
