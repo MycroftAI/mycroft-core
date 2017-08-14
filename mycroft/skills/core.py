@@ -189,9 +189,6 @@ class MycroftSkill(object):
 
     def __init__(self, name=None, emitter=None):
         self.name = name or self.__class__.__name__
-
-    def __init__(self, name, emitter=None):
-        self.name = name
         self.bind(emitter)
         self.config_core = ConfigurationManager.get()
         self.config = self.config_core.get(self.name)
@@ -405,8 +402,11 @@ class MycroftSkill(object):
 class FallbackSkill(MycroftSkill):
     fallback_handlers = {}
 
-    def __init__(self, name, emitter=None):
+    def __init__(self, name=None, emitter=None):
         MycroftSkill.__init__(self, name, emitter)
+
+        #  list of fallback handlers registered by this instance
+        self.instance_fallback_handlers = []
 
     @classmethod
     def make_intent_failure_handler(cls, ws):
@@ -426,7 +426,7 @@ class FallbackSkill(MycroftSkill):
         return handler
 
     @classmethod
-    def register_fallback(cls, handler, priority):
+    def _register_fallback(cls, handler, priority):
         """
         Register a function to be called as a general info fallback
         Fallback should receive message and return
@@ -440,10 +440,39 @@ class FallbackSkill(MycroftSkill):
 
         cls.fallback_handlers[priority] = handler
 
+    def register_fallback(self, handler, priority):
+        """
+            register a fallback with the list of fallback handlers
+            and with the list of handlers registered by this instance
+        """
+        self.instance_fallback_handlers.append(handler)
+        self._register_fallback(handler, priority)
+
     @classmethod
     def remove_fallback(cls, handler_to_del):
+        """
+            Remove a fallback handler
+
+            Args:
+                handler_to_del: reference to handler
+        """
         for priority, handler in cls.fallback_handlers.items():
             if handler == handler_to_del:
                 del cls.fallback_handlers[priority]
                 return
         logger.warn('Could not remove fallback!')
+
+    def remove_instance_handlers(self):
+        """
+            Remove all fallback handlers registered by the fallback skill.
+        """
+        while len(self.instance_fallback_handlers):
+            handler = self.instance_fallback_handlers.pop()
+            self.remove_fallback(handler)
+
+    def shutdown(self):
+        """
+            Remove all registered handlers and perform skill shutdown.
+        """
+        self.remove_instance_handlers()
+        super(FallbackSkill, self).shutdown()

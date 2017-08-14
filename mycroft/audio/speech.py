@@ -106,6 +106,7 @@ def handle_stop(event):
     global _last_stop_signal
     _last_stop_signal = time.time()
     tts.playback.clear_queue()
+    tts.playback.clear_visimes()
     stop_speaking()
 
 

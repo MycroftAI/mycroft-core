@@ -81,6 +81,7 @@ function help() {
   echo "  msm search date-time-skill"
   echo "  msm install daily meditation"
   echo "  msm install https://github.com/ethanaward/demo_skill.git"
+
   exit 1
 }
 
