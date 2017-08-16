@@ -78,6 +78,9 @@ cd "${TOP}"
 easy_install pip==7.1.2 # force version of pip
 pip install --upgrade virtualenv
 
+# Add mycroft-core to the virtualenv path
+echo "$TOP" > ${VIRTUALENV_ROOT}/lib/python2.7/site-packages/mycroft-core.pth
+
 # install requirements (except pocketsphinx)
 # removing the pip2 explicit usage here for consistency with the above use.
 pip install -r requirements.txt 
