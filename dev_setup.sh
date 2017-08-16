@@ -46,7 +46,7 @@ fi
 
 # Check whether to build mimic (it takes a really long time!)
 build_mimic='y'
-if [[ "$1" == '-sm' ]] ; then 
+if [[ "$1" == '-sm' ]] ; then
   build_mimic='n'
 else
   # first, look for a build of mimic in the folder
@@ -79,15 +79,23 @@ easy_install pip==7.1.2 # force version of pip
 pip install --upgrade virtualenv
 
 # Add mycroft-core to the virtualenv path
-echo "$TOP" > ${VIRTUALENV_ROOT}/lib/python2.7/site-packages/mycroft-core.pth
+# (This is equivalent to typing 'add2virtualenv $TOP', except
+# you can't invoke that shell function from inside a script)
+if ! grep -q "mycroft-core" "${VIRTUALENV_ROOT}/lib/python2.7/site-packages/_virtualenv_path_extensions.pth"; then
+   echo "Adding mycroft-core to virtualenv path"
+   sed -i.tmp '1 a\
+'"$TOP"'
+' "${VIRTUALENV_ROOT}/lib/python2.7/site-packages/_virtualenv_path_extensions.pth"
+fi
+
 
 # install requirements (except pocketsphinx)
 # removing the pip2 explicit usage here for consistency with the above use.
-pip install -r requirements.txt 
+pip install -r requirements.txt
 
 if  [[ $(free|awk '/^Mem:/{print $2}') -lt  1572864 ]] ; then
   CORES=1
-else 
+else
   CORES=$(nproc)
 fi
 echo "Building with $CORES cores."
