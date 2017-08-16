@@ -31,8 +31,9 @@ __author__ = 'matthewscholefield'
 logger = getLogger(__name__)
 
 
-class PadatiousService(object):
+class PadatiousService(FallbackSkill):
     def __init__(self, emitter):
+        FallbackSkill.__init__(self)
         self.config = ConfigurationManager.get()['padatious']
         intent_cache = expanduser(self.config['intent_cache'])
 
@@ -51,7 +52,7 @@ class PadatiousService(object):
 
         self.emitter = emitter
         self.emitter.on('padatious:register_intent', self.register_intent)
-        FallbackSkill.register_fallback(self.handle_fallback, 5)
+        self.register_fallback(self.handle_fallback, 5)
         self.finished_training_event = Event()
 
         self.train_delay = self.config['train_delay']
