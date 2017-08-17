@@ -318,8 +318,7 @@ class _ConfigurationListener(object):
     'configuration.updated', and refreshes the cached configuration when this
     is encountered.
      'configuration.update', and updates the cached configuration when this
-    is encountered. 
-
+    is encountered.
 
     """
 
