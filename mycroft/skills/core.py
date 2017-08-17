@@ -170,6 +170,7 @@ def unload_skills(skills):
 
 
 _intent_list = []
+_intent_file_list = []
 
 
 def intent_handler(intent_parser):
@@ -183,6 +184,17 @@ def intent_handler(intent_parser):
         _intent_list.append((intent_parser, func))
         return handler_method
 
+    return real_decorator
+
+
+def intent_file_handler(intent_file):
+    """ Decorator for adding a method as an intent file handler. """
+    def real_decorator(func):
+        @wraps(func)
+        def handler_method(*args, **kwargs):
+            return func(*args, **kwargs)
+        _intent_file_list.append((intent_file, func))
+        return handler_method
     return real_decorator
 
 
@@ -281,12 +293,15 @@ class MycroftSkill(object):
         """
         Register all intent handlers that has been decorated with an intent.
         """
-        global _intent_list
+        global _intent_list, _intent_file_list
         for intent_parser, handler in _intent_list:
             self.register_intent(intent_parser, handler, need_self=True)
+        for intent_file, handler in _intent_file_list:
+            self.register_intent_file(intent_file, handler, need_self=True)
         _intent_list = []
+        _intent_file_list = []
 
-    def add_event(self, name, handler, need_self=False):
+    def add_event(self, name, handler, need_self):
         def wrapper(message):
             try:
                 if need_self:
@@ -327,9 +342,9 @@ class MycroftSkill(object):
         intent_parser.name = self.name + ':' + intent_parser.name
         self.emitter.emit(Message("register_intent", intent_parser.__dict__))
         self.registered_intents.append((name, intent_parser))
-        self.add_event(intent_parser.name, handler)
+        self.add_event(intent_parser.name, handler, need_self)
 
-    def register_intent_file(self, intent_file, handler):
+    def register_intent_file(self, intent_file, handler, need_self=False):
         """
             Register an Intent file with the intent service.
 
@@ -337,13 +352,14 @@ class MycroftSkill(object):
                 intent_file: name of file that contains example queries
                              that should activate the intent
                 handler:     function to register with intent
+                need_self:   use for decorator. See register_intent
         """
         intent_name = self.name + ':' + intent_file
         self.emitter.emit(Message("padatious:register_intent", {
             "file_name": join(self.vocab_dir, intent_file),
             "intent_name": intent_name
         }))
-        self.add_event(intent_name, handler)
+        self.add_event(intent_name, handler, need_self)
 
     def disable_intent(self, intent_name):
         """Disable a registered intent"""
