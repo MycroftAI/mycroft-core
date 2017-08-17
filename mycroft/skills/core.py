@@ -750,7 +750,8 @@ class MycroftSkill(object):
             if name == intent_name:
                 LOG.debug('Disabling intent ' + intent_name)
                 name = str(self.skill_id) + ':' + intent_name
-                self.emitter.emit(Message("detach_intent", {"intent_name": name}))
+                self.emitter.emit(
+                    Message("detach_intent", {"intent_name": name}))
                 break
 
     def enable_intent(self, intent_name):
