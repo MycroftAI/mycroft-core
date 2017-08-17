@@ -38,6 +38,7 @@ class ContextManager(object):
     Use to track context throughout the course of a conversational session.
     How to manage a session's lifecycle is not captured here.
     """
+
     def __init__(self, timeout):
         self.frame_stack = []
         self.timeout = timeout * 60  # minutes to seconds
@@ -92,7 +93,7 @@ class ContextManager(object):
                               relevant_frames[i].entities]
             for entity in frame_entities:
                 entity['confidence'] = entity.get('confidence', 1.0) \
-                    / (2.0 + i)
+                                       / (2.0 + i)
             context += frame_entities
 
         result = []
@@ -213,9 +214,9 @@ class IntentService(object):
             try:
                 # normalize() changes "it's a boy" to "it is boy", etc.
                 best_intent = next(self.engine.determine_intent(
-                                   normalize(utterance, lang), 100,
-                                   include_tags=True,
-                                   context_manager=self.context_manager))
+                    normalize(utterance, lang), 100,
+                    include_tags=True,
+                    context_manager=self.context_manager))
                 # TODO - Should Adapt handle this?
                 best_intent['utterance'] = utterance
             except StopIteration, e:

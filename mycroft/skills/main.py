@@ -82,7 +82,7 @@ def install_default_skills(speak=True):
             logger.error('msm failed with error {}: {}'.format(res, output))
             ws.emit(Message("speak", {
                 'utterance': mycroft.dialog.get(
-                             "sorry I couldn't install default skills")}))
+                    "sorry I couldn't install default skills")}))
 
     else:
         logger.error("Unable to invoke Mycroft Skill Manager: " + MSM_BIN)
@@ -241,7 +241,8 @@ def handle_converse_request(message):
                     "skill_id": skill_id, "result": result}))
                 return
             except:
-                logger.error("Converse method malformed for skill " + str(skill_id))
+                logger.error(
+                    "Converse method malformed for skill " + str(skill_id))
     ws.emit(Message("skill.converse.response", {
         "skill_id": 0, "result": False}))
 
