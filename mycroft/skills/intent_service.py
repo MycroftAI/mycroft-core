@@ -157,7 +157,9 @@ class IntentService(object):
             try:
                 # normalize() changes "it's a boy" to "it is boy", etc.
                 best_intent = next(self.engine.determine_intent(
-                    normalize(utterance, lang), 100))
+                    normalize(utterance, lang), 100,
+                    include_tags=True,
+                    context_manager=self.context_manager))
 
                 # TODO - Should Adapt handle this?
                 best_intent['utterance'] = utterance
@@ -173,15 +175,15 @@ class IntentService(object):
         lang = message.data.get('lang', None)
         if not lang:
             lang = "en-us"
-        skill_name = None
+        skill_id = 0
         intent_name = None
         best_intent = self.get_intent(utterance, lang)
         if best_intent and best_intent.get('confidence', 0.0) > 0.0:
-            skill_name = best_intent['intent_type'].split(":")[0]
+            skill_id = best_intent['intent_type'].split(":")[0]
             intent_name = best_intent['intent_type'].split(":")[1]
 
         self.emitter.emit(Message("intent_response", {
-            "skill_name": skill_name, "utterance": utterance,
+            "skill_id": skill_id, "utterance": utterance,
             "lang": lang, "intent_name": intent_name}))
 
     def handle_intent_to_skill_request(self, message):
@@ -189,10 +191,10 @@ class IntentService(object):
         intent = message.data.get("intent_name")
         # list of skills because intent may be shared
         skills = []
-        for skill_name in self.skills.keys():
-            for intent_name in self.skills[skill_name]:
+        for skill_id in self.skills.keys():
+            for intent_name in self.skills[skill_id]:
                 if intent_name == intent:
-                    skills.append(skill_name)
+                    skills.append(skill_id)
         self.emitter.emit(Message("intent_to_skill_response", {
             "skills": skills, "intent_name": intent}))
 
@@ -261,17 +263,7 @@ class IntentService(object):
         # no skill wants to handle utterance
         best_intent = None
         for utterance in utterances:
-            try:
-                # normalize() changes "it's a boy" to "it is boy", etc.
-                best_intent = next(self.engine.determine_intent(
-                    normalize(utterance, lang), 100,
-                    include_tags=True,
-                    context_manager=self.context_manager))
-                # TODO - Should Adapt handle this?
-                best_intent['utterance'] = utterance
-            except StopIteration, e:
-                logger.exception(e)
-                continue
+            best_intent = self.get_intent(utterance, lang)
 
         if best_intent and best_intent.get('confidence', 0.0) > 0.0:
             self.update_context(best_intent)
@@ -303,18 +295,20 @@ class IntentService(object):
         intent = open_intent_envelope(message)
         self.engine.register_intent_parser(intent)
         #  map intent_name to source skill
-        skill_name = intent.name.split(":")[0]
+        skill_id = intent.name.split(":")[0]
         intent_name = intent.name.split(":")[1]
-        if skill_name not in self.skills.keys():
-            self.skills[skill_name] = []
-        if intent_name not in self.skills[skill_name]:
-            self.skills[skill_name].append(intent_name)
+        if skill_id not in self.skills.keys():
+            self.skills[skill_id] = []
+        if intent_name not in self.skills[skill_id]:
+            self.skills[skill_id].append(intent_name)
 
     def handle_detach_intent(self, message):
         intent_name = message.data.get('intent_name')
         new_parsers = [
             p for p in self.engine.intent_parsers if p.name != intent_name]
         self.engine.intent_parsers = new_parsers
+        skill_id, intent_name = intent_name.split(":")
+        self.skills[skill_id].remove(intent_name)
 
     def handle_detach_skill(self, message):
         skill_id = message.data.get('skill_id')
@@ -339,6 +333,7 @@ class IntentService(object):
 
     def handle_clear_context(self, message):
         self.context_manager.clear_context()
+
 
 class IntentParser():
     def __init__(self, emitter, time_out=5):
@@ -385,7 +380,7 @@ class IntentParser():
         return self.skills
 
     def handle_receive_intent(self, message):
-        self.skill = message.data.get("skill_name", None)
+        self.skill = message.data.get("skill_id", None)
         self.intent = message.data.get("intent_name", None)
         self.waiting = False
 
