@@ -1,0 +1,35 @@
+Commit headline -- not longer than this line (50)
+
+This is the template for commits to mycroft-core and also an example of
+a commit message. To use this template, change the first line (think of
+it as a "headline" for the commit) and then edit this message with a
+longer description of the change.  To be nice, keep lines to 72
+characters or less (The first two lines of this template are exactly
+that length).  Also use imperative writing, e.g. "Fix broken code" or
+"Implement my new feature", not "Fixes the broken code" or
+"Implemented my new feature".
+
+Sections below can then be filled out and edited as appropriate.
+Unused sections can optionally be removed.
+
+Please fill this out carefully.  This moment is when the code is
+clearest in the mind of you, the foremost expert in this change.
+Please pause to think of side effects and impacts.
+
+==== Fixed Issues ====
+NONE - replace with associated issue numbers, e.g. #123, #304
+
+====  Tech Notes ==== 
+NONE - explain new algorithms in detail, tool changes, etc.
+
+====  Documentation Notes ==== 
+NONE - description of a new feature or notes on behavior changes
+
+==== Localization Notes ==== 
+NONE - point to new strings, language specific functions, etc.
+
+==== Environment Notes ==== 
+NONE - new package requirements, new files being written to disk, etc.
+
+==== Protocol Notes ====
+NONE - message types added or changed, new signals, APIs, etc.

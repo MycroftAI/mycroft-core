@@ -1,18 +1,24 @@
 import os
+import sys
 import glob
 import unittest
-from test.skills.skill_tester import MockSkillsLoader, SkillTest
+from test.integrationtests.skills.skill_tester import MockSkillsLoader
+from test.integrationtests.skills.skill_tester import SkillTest
+
 
 __author__ = 'seanfitz'
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+SKILL_PATH = '/opt/mycroft/skills'
 
 
 def discover_tests():
+    global SKILL_PATH
+    if len(sys.argv) > 1:
+        SKILL_PATH = sys.argv.pop(1)
     tests = {}
     skills = [
         skill for skill
-        in glob.glob(os.path.join(PROJECT_ROOT, 'mycroft/skills/*'))
+        in glob.glob(SKILL_PATH + '/*')
         if os.path.isdir(skill)
     ]
 
@@ -31,13 +37,14 @@ class IntentTestSequenceMeta(type):
     def __new__(mcs, name, bases, d):
         def gen_test(a, b):
             def test(self):
-                SkillTest(a, b, self.emitter).run()
+                SkillTest(a, b, self.emitter).run(self.loader)
             return test
 
         tests = discover_tests()
         for skill in tests.keys():
-            skill_name = os.path.basename(skill)
+            skill_name = os.path.basename(skill)  # Path of the skill
             for example in tests[skill]:
+                # Name of the intent
                 example_name = os.path.basename(
                     os.path.splitext(os.path.splitext(example)[0])[0])
                 test_name = "test_IntentValidation[%s:%s]" % (skill_name,
@@ -49,14 +56,16 @@ class IntentTestSequenceMeta(type):
 class IntentTestSequence(unittest.TestCase):
     __metaclass__ = IntentTestSequenceMeta
 
-    def setUp(self):
-        self.loader = MockSkillsLoader(
-            os.path.join(PROJECT_ROOT, 'mycroft', 'skills'))
+    @classmethod
+    def setUpClass(self):
+        self.loader = MockSkillsLoader(SKILL_PATH)
         self.emitter = self.loader.load_skills()
 
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(self):
         self.loader.unload_skills()
 
 
 if __name__ == '__main__':
+
     unittest.main()

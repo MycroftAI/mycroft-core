@@ -14,12 +14,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
-
 import abc
 import imp
 import time
 
+import operator
 import os.path
 import re
 import time
@@ -27,7 +26,7 @@ from os.path import join, dirname, splitext, isdir
 
 from functools import wraps
 
-from adapt.intent import Intent
+from adapt.intent import Intent, IntentBuilder
 
 from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.configuration import ConfigurationManager
@@ -36,6 +35,7 @@ from mycroft.filesystem import FileSystemAccess
 from mycroft.messagebus.message import Message
 from mycroft.util.log import getLogger
 from mycroft.skills.settings import SkillSettings
+
 __author__ = 'seanfitz'
 
 skills_config = ConfigurationManager.instance().get("skills")
@@ -191,7 +191,6 @@ class MycroftSkill(object):
 
     def __init__(self, name=None, emitter=None):
         self.name = name or self.__class__.__name__
-
         self.bind(emitter)
         self.config_core = ConfigurationManager.get()
         self.config = self.config_core.get(self.name)
@@ -236,13 +235,13 @@ class MycroftSkill(object):
         try:
             return self._settings
         except:
-            self._settings = SkillSettings(join(self._dir, 'settings.json'))
+            self._settings = SkillSettings(self._dir)
             return self._settings
 
     def bind(self, emitter):
         if emitter:
             self.emitter = emitter
-            self.enclosure = EnclosureAPI(emitter)
+            self.enclosure = EnclosureAPI(emitter, self.name)
             self.__register_stop()
 
     def __register_stop(self):
@@ -284,6 +283,22 @@ class MycroftSkill(object):
         _intent_list = []
 
     def register_intent(self, intent_parser, handler, need_self=False):
+        """
+            Register an Intent with the intent service.
+
+            Args:
+                intent_parser: Intent or IntentBuilder object to parse
+                               utterance for the handler.
+                handler:       handler_function
+                need_self:     optional parameter, when called from a decorated
+                               intent handler the function will need the self
+                               variable passed as well.
+        """
+        if type(intent_parser) == IntentBuilder:
+            intent_parser = intent_parser.build()
+        elif type(intent_parser) != Intent:
+            raise ValueError('intent_parser is not an Intent')
+
         name = intent_parser.name
         intent_parser.name = str(self.skill_id) + ':' + intent_parser.name
         self.emitter.emit(Message("register_intent", intent_parser.__dict__))
@@ -328,6 +343,29 @@ class MycroftSkill(object):
                 logger.error('Could not enable ' + intent_name +
                              ', it hasn\'t been registered.')
 
+    def set_context(self, context, word=''):
+        """
+            Add context to intent service
+
+            Args:
+                context:    Keyword
+                word:       word connected to keyword
+        """
+        if not isinstance(context, basestring):
+            raise ValueError('context should be a string')
+        if not isinstance(word, basestring):
+            raise ValueError('word should be a string')
+        self.emitter.emit(Message('add_context', {'context': context, 'word':
+                          word}))
+
+    def remove_context(self, context):
+        """
+            remove_context removes a keyword from from the context manager.
+        """
+        if not isinstance(context, basestring):
+            raise ValueError('context should be a string')
+        self.emitter.emit(Message('remove_context', {'context': context}))
+
     def register_vocabulary(self, entity, entity_type):
         self.emitter.emit(Message('register_vocab', {
             'start': entity, 'end': entity_type
@@ -338,6 +376,8 @@ class MycroftSkill(object):
         self.emitter.emit(Message('register_vocab', {'regex': regex_str}))
 
     def speak(self, utterance, expect_response=False):
+        # registers the skill as being active
+        self.enclosure.register(self.name)
         data = {'utterance': utterance,
                 'expect_response': expect_response}
         self.emitter.emit(Message("speak", data))
@@ -370,8 +410,16 @@ class MycroftSkill(object):
         load_regex(regex_dir, self.emitter)
 
     def __handle_stop(self, event):
+        """
+            Handler for the "mycroft.stop" signal. Runs the user defined
+            `stop()` method.
+        """
         self.stop_time = time.time()
-        self.stop()
+        try:
+            self.stop()
+        except:
+            logger.error("Failed to stop skill: {}".format(self.name),
+                         exc_info=True)
 
     @abc.abstractmethod
     def stop(self):
@@ -395,5 +443,88 @@ class MycroftSkill(object):
             self.emitter.remove(e, f)
 
         self.emitter.emit(
-            Message("detach_skill", {"skill_id": self.skill_id}))
-        self.stop()
+            Message("detach_skill", {"skill_id": self.skill_id + ":"}))
+        try:
+            self.stop()
+        except:
+            logger.error("Failed to stop skill: {}".format(self.name),
+                         exc_info=True)
+
+
+class FallbackSkill(MycroftSkill):
+    fallback_handlers = {}
+
+    def __init__(self, name=None, emitter=None):
+        MycroftSkill.__init__(self, name, emitter)
+
+        #  list of fallback handlers registered by this instance
+        self.instance_fallback_handlers = []
+
+    @classmethod
+    def make_intent_failure_handler(cls, ws):
+        """Goes through all fallback handlers until one returns true"""
+
+        def handler(message):
+            for _, handler in sorted(cls.fallback_handlers.items(),
+                                     key=operator.itemgetter(0)):
+                try:
+                    if handler(message):
+                        return
+                except Exception as e:
+                    logger.info('Exception in fallback: ' + str(e))
+            ws.emit(Message('complete_intent_failure'))
+            logger.warn('No fallback could handle intent.')
+
+        return handler
+
+    @classmethod
+    def _register_fallback(cls, handler, priority):
+        """
+        Register a function to be called as a general info fallback
+        Fallback should receive message and return
+        a boolean (True if succeeded or False if failed)
+
+        Lower priority gets run first
+        0 for high priority 100 for low priority
+        """
+        while priority in cls.fallback_handlers:
+            priority += 1
+
+        cls.fallback_handlers[priority] = handler
+
+    def register_fallback(self, handler, priority):
+        """
+            register a fallback with the list of fallback handlers
+            and with the list of handlers registered by this instance
+        """
+        self.instance_fallback_handlers.append(handler)
+        self._register_fallback(handler, priority)
+
+    @classmethod
+    def remove_fallback(cls, handler_to_del):
+        """
+            Remove a fallback handler
+
+            Args:
+                handler_to_del: reference to handler
+        """
+        for priority, handler in cls.fallback_handlers.items():
+            if handler == handler_to_del:
+                del cls.fallback_handlers[priority]
+                return
+        logger.warn('Could not remove fallback!')
+
+    def remove_instance_handlers(self):
+        """
+            Remove all fallback handlers registered by the fallback skill.
+        """
+        while len(self.instance_fallback_handlers):
+            handler = self.instance_fallback_handlers.pop()
+            self.remove_fallback(handler)
+
+    def shutdown(self):
+        """
+            Remove all registered handlers and perform skill shutdown.
+        """
+        self.remove_instance_handlers()
+        super(FallbackSkill, self).shutdown()
