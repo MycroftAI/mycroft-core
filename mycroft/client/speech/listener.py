@@ -34,9 +34,8 @@ from mycroft.messagebus.message import Message
 from mycroft.metrics import MetricsAggregator
 from mycroft.session import SessionManager
 from mycroft.stt import STTFactory
-from mycroft.util import connected
 from mycroft.util.log import getLogger
-from mycroft.client.speech.recognizer.snowboy_recognizer import SnowboyRecognizer
+
 LOG = getLogger(__name__)
 
 
@@ -57,9 +56,11 @@ class AudioProducer(Thread):
         self.emitter = emitter
 
     def run(self):
+
         with self.mic as source:
             self.recognizer.adjust_for_ambient_noise(source)
             while self.state.running:
+                LOG.info("Microphone listening started")
                 try:
                     audio = self.recognizer.listen(source, self.emitter)
                     self.queue.put(audio)
@@ -89,7 +90,7 @@ class AudioConsumer(Thread):
     MIN_AUDIO_SIZE = 0.5
 
     def __init__(self, state, queue, emitter, stt,
-                 wakeup_recognizer, mycroft_recognizer):
+                 wakeup_recognizer, wakeword_recognizer):
         super(AudioConsumer, self).__init__()
         self.daemon = True
         self.queue = queue
@@ -97,10 +98,15 @@ class AudioConsumer(Thread):
         self.emitter = emitter
         self.stt = stt
         self.wakeup_recognizer = wakeup_recognizer
-        self.mycroft_recognizer = mycroft_recognizer
+        self.wakeword_recognizer = wakeword_recognizer
         self.metrics = MetricsAggregator()
         self.config = ConfigurationManager.get()
+        emitter.on("recognizer_loop:hotword", self.set_word)
 
+    def set_word(self, event):
+        if event.get("start_listening"):
+            # set new hot word
+            self.hotword = event.get("hotword", self.wakeword_recognizer.key_phrase)
 
     def run(self):
         while self.state.running:
@@ -133,8 +139,13 @@ class AudioConsumer(Thread):
     # TODO: Localization
     def process(self, audio):
         SessionManager.touch()
+        if self.hotword:
+            word = self.hotword
+            self.hotword = None
+        else:
+            word = self.wakeword_recognizer.key_phrase
         payload = {
-            'utterance': self.mycroft_recognizer.key_phrase,
+            'utterance': word,
             'session': SessionManager.get().session_id,
         }
         self.emitter.emit("recognizer_loop:wakeword", payload)
@@ -144,6 +155,7 @@ class AudioConsumer(Thread):
             self.transcribe(audio)
 
     def transcribe(self, audio):
+        LOG.debug("Transcribing audio")
         text = None
         try:
             # Invoke the STT engine on the audio clip
@@ -163,6 +175,10 @@ class AudioConsumer(Thread):
             LOG.error("Speech Recognition could not understand audio")
             self.__speak(mycroft.dialog.get("i didn't catch that",
                                             self.stt.lang))
+            payload = {
+                'utterance': "Speech Recognition could not understand audio"
+            }
+            self.emitter.emit("recognizer_loop:speak", payload)
         if text:
             # STT succeeded, send the transcribed speech on for processing
             payload = {
@@ -203,7 +219,7 @@ class RecognizerLoop(EventEmitter):
         config = ConfigurationManager.get()
         self.config_core = config
         self._config_hash = hash(str(config))
-        lang = config.get('lang')
+        self.lang = config.get('lang')
         self.config = config.get('listener')
         rate = self.config.get('sample_rate')
         device_index = self.config.get('device_index')
@@ -211,84 +227,51 @@ class RecognizerLoop(EventEmitter):
         self.microphone = MutableMicrophone(device_index, rate)
         # FIXME - channels are not been used
         self.microphone.CHANNELS = self.config.get('channels')
-        self.mycroft_recognizer = self.create_wake_word_recognizer(rate, lang)
+        self.wakeword_recognizer = self.create_wake_word_recognizer(rate,
+                                                                    self.lang)
         # TODO - localization
         self.hot_word_engines = {}
         self.create_hot_word_engines()
-        self.wakeup_recognizer = self.create_wakeup_recognizer(rate, lang)
-        self.remote_recognizer = ResponsiveRecognizer(self.mycroft_recognizer, self.hot_word_engines)
+        self.wakeup_recognizer = self.create_wakeup_recognizer(rate, self.lang)
+        self.responsive_recognizer = ResponsiveRecognizer(self.wakeword_recognizer, self.hot_word_engines)
         self.state = RecognizerLoopState()
 
     def create_hot_word_engines(self):
+        LOG.info("creating hotword engines")
         hot_words = self.config.get("hot_words", {})
         for word in hot_words:
             data = hot_words[word]
-            engine = data["module"]
+            if not data.get("active", True):
+                continue
             ding = data.get("sound")
-            utterance = data.get("utterance", False)
+            utterance = data.get("utterance")
             listen = data.get("listen", False)
-            if engine == "pocket_sphinx":
-                lang = data.get("lang", self.config_core.get("lang", "en-us"))
-                rate = data.get("rate", self.config.get("rate"))
-                hot_word = data.get("hot_word").lower()
-                phonemes = data.get('phonemes')
-                threshold = data.get('threshold')
-                engine = PocketsphinxRecognizer(hot_word, phonemes,
-                                                threshold, rate, lang)
-                self.hot_word_engines[word] = [engine, ding, utterance, listen]
-            elif engine == "snowboy":
-                models = data.get("models", {})
-                sensitivity = data.get("sensitivity", 0.5)
-                paths = []
-                for model in models.keys():
-                    paths.append(models[model])
-                engine = SnowboyRecognizer(paths, sensitivity)
-                self.hot_word_engines[word] = [engine, ding, utterance, listen]
-            else:
-                LOG.error("unknown hotword engine " + engine)
+            data = data["data"]
+            LOG.info("Creating hotword engine for " + word)
+            lang = data.get("lang", self.config_core.get("lang", "en-us"))
+            rate = data.get("rate", self.config.get("rate"))
+            hot_word = data.get("hot_word").lower()
+            phonemes = data.get('phonemes')
+            threshold = data.get('threshold')
+            engine = PocketsphinxRecognizer(hot_word, phonemes,
+                                            threshold, rate, lang)
+            self.hot_word_engines[word] = [engine, ding, utterance,
+                                           listen]
 
     def create_wake_word_recognizer(self, rate, lang):
         # Create a local recognizer to hear the wakeup word, e.g. 'Hey Mycroft'
-        module = self.config.get('module', "pocketsphinx")
-        if module == "snowboy":
-            LOG.info("Using snowboy wake word detector")
-            models = self.config.get("models", {})
-            sensitivity = self.config.get("sensitivity", 0.5)
-            paths = []
-            for model in models.keys():
-                paths.append(models[model])
-            return SnowboyRecognizer(paths, sensitivity)
-        elif module == "pocketsphinx":
-            LOG.info("Using PocketSphinx wake word detector")
-            wake_word = self.config.get('wake_word').lower()
-            phonemes = self.config.get('phonemes')
-            threshold = self.config.get('threshold')
-            return PocketsphinxRecognizer(wake_word, phonemes,
-                                          threshold, rate, lang)
-        else:
-            LOG.error("Bad wake word configuration")
-            return None
+        wake_word = self.config.get('wake_word').lower()
+        phonemes = self.config.get('phonemes')
+        threshold = self.config.get('threshold')
+        return PocketsphinxRecognizer(wake_word, phonemes,
+                                      threshold, rate, lang)
 
     def create_wakeup_recognizer(self, rate, lang):
-        module = self.config.get('wake_up_module', "pocketsphinx")
-        if module == "snowboy":
-            LOG.info("Using snowboy wake up detector")
-            models = self.config.get("wake_up_models", {})
-            sensitivity = self.config.get("wake_up_sensitivity", 0.5)
-            paths = []
-            for model in models.keys():
-                paths.append(models[model])
-            return SnowboyRecognizer(paths, sensitivity)
-        elif module == "pocketsphinx":
-            LOG.info("Using PocketSphinx wake up detector")
-            wake_word = self.config.get('standup_word', "wake up").lower()
-            phonemes = self.config.get('standup_phonemes', "W EY K . AH P")
-            threshold = self.config.get('standup_threshold', 1e-18)
-            return PocketsphinxRecognizer(wake_word, phonemes,
-                                          threshold, rate, lang)
-        else:
-            LOG.error("Bad wake up word configuration")
-            return None
+        wake_word = self.config.get('standup_word', "wake up").lower()
+        phonemes = self.config.get('standup_phonemes', "W EY K . AH P")
+        threshold = self.config.get('standup_threshold', 1e-18)
+        return PocketsphinxRecognizer(wake_word, phonemes,
+                                      threshold, rate, lang)
 
     def start_async(self):
         """
@@ -297,12 +280,12 @@ class RecognizerLoop(EventEmitter):
         self.state.running = True
         queue = Queue()
         self.producer = AudioProducer(self.state, queue, self.microphone,
-                                      self.remote_recognizer, self)
+                                      self.responsive_recognizer, self)
         self.producer.start()
         self.consumer = AudioConsumer(self.state, queue, self,
                                       STTFactory.create(),
                                       self.wakeup_recognizer,
-                                      self.mycroft_recognizer)
+                                      self.wakeword_recognizer)
         self.consumer.start()
 
     def stop(self):
