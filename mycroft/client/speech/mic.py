@@ -180,10 +180,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
     def calc_energy(sound_chunk, sample_width):
         return audioop.rms(sound_chunk, sample_width)
 
-    def wake_word_in_audio(self, frame_data):
-        hyp = self.wake_word_recognizer.transcribe(frame_data)
-        return self.wake_word_recognizer.found_wake_word(hyp)
-
     def _record_phrase(self, source, sec_per_buffer):
         """Record an entire spoken phrase.
 
@@ -383,11 +379,12 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             if buffers_since_check > buffers_per_check:
                 buffers_since_check -= buffers_per_check
                 audio_data = byte_data + silence
-                said_wake_word = self.wake_word_in_audio(audio_data)
+                said_wake_word = \
+                    self.wake_word_recognizer.found_wake_word(audio_data)
                 # if a wake word is success full then record audio in temp
                 # file.
                 if self.save_wake_words and said_wake_word:
-                    audio = self.create_audio_data(audio_data, source)
+                    audio = self._create_audio_data(audio_data, source)
                     stamp = str(datetime.datetime.now())
                     filename = "/tmp/mycroft_wake_success%s.wav" % stamp
                     with open(filename, 'wb') as filea:

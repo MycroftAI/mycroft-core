@@ -36,8 +36,8 @@ def place_manifest(manifest_file):
 def get_version():
     version = None
     try:
-        import mycroft.__version__
-        version = mycroft.__version__.version
+        from mycroft.version import CORE_VERSION_STR
+        version = CORE_VERSION_STR
     except Exception as e:
         try:
             version = "dev-" + subprocess.check_output(

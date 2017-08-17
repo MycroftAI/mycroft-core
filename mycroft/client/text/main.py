@@ -37,12 +37,10 @@ import json                                                 # nopep8
 from threading import Thread, Lock                          # nopep8
 from mycroft.messagebus.client.ws import WebsocketClient    # nopep8
 from mycroft.messagebus.message import Message              # nopep8
-from mycroft.tts import TTSFactory                          # nopep8
 from mycroft.util import get_ipc_directory                  # nopep8
 from mycroft.util.log import getLogger                      # nopep8
 from mycroft.configuration import ConfigurationManager      # nopep8
 
-tts = None
 ws = None
 mutex = Lock()
 logger = getLogger("CLIClient")
@@ -51,7 +49,6 @@ utterances = []
 chat = []   # chat history, oldest at the lowest index
 line = "What time is it"
 bSimple = '--simple' in sys.argv
-bQuiet = '--quiet' in sys.argv
 scr = None
 log_line_offset = 0  # num lines back in logs to show
 log_line_lr_scroll = 0  # amount to scroll left/right for long lines
@@ -248,43 +245,14 @@ def rebuild_filtered_log():
 ##############################################################################
 # Capturing output from Mycroft
 
-tts_threads = []
-
-
-def start_tts(utterance):
-    """
-    Begin speaking in another thread to redirect output
-    Otherwise, the CLI get's polluted with text to speech debug
-    """
-    global tts
-    mutex.acquire()
-
-    if not bQuiet:
-        ws.emit(Message("recognizer_loop:audio_output_start"))
-    try:
-        if not tts:
-            tts = TTSFactory.create()
-            tts.init(ws)
-        tts.execute(utterance)
-    finally:
-        mutex.release()
-        if not bQuiet:
-            ws.emit(Message("recognizer_loop:audio_output_end"))
-
-
 def handle_speak(event):
     global chat
-    global tts_threads
     utterance = event.data.get('utterance')
     if bSimple:
         print(">> " + utterance)
     else:
         chat.append(">> " + utterance)
     draw_screen()
-    if not bQuiet:
-        t = Thread(start_tts, utterance)
-        t.start()
-        tts_threads.append(t)
 
 
 def connect():

@@ -26,8 +26,9 @@ from requests import HTTPError
 from requests.exceptions import ConnectionError
 
 import mycroft.dialog
-from mycroft.client.speech.local_recognizer import LocalRecognizer
 from mycroft.client.speech.mic import MutableMicrophone, ResponsiveRecognizer
+from mycroft.client.speech.recognizer.pocketsphinx_recognizer \
+    import PocketsphinxRecognizer
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.message import Message
 from mycroft.metrics import MetricsAggregator
@@ -106,15 +107,17 @@ class AudioConsumer(Thread):
     def read(self):
         audio = self.queue.get()
 
+        if audio is None:
+            return
+
         if self.state.sleeping:
             self.wake_up(audio)
-        elif audio is not None:
+        else:
             self.process(audio)
 
     # TODO: Localization
     def wake_up(self, audio):
-        if self.wakeup_recognizer.is_recognized(audio.frame_data,
-                                                self.metrics):
+        if self.wakeup_recognizer.found_wake_word(audio.frame_data):
             SessionManager.touch()
             self.state.sleeping = False
             self.__speak(mycroft.dialog.get("i am awake", self.stt.lang))
@@ -149,8 +152,6 @@ class AudioConsumer(Thread):
             LOG.error("Could not request Speech Recognition {0}".format(e))
         except ConnectionError as e:
             LOG.error("Connection Error: {0}".format(e))
-            self.__speak(mycroft.dialog.get("not connected to the internet",
-                                            self.stt.lang))
             self.emitter.emit("recognizer_loop:no_internet")
         except HTTPError as e:
             if e.response.status_code == 401:
@@ -216,16 +217,18 @@ class RecognizerLoop(EventEmitter):
 
     def create_mycroft_recognizer(self, rate, lang):
         # Create a local recognizer to hear the wakeup word, e.g. 'Hey Mycroft'
-        wake_word = self.config.get('wake_word')
+        wake_word = self.config.get('wake_word').lower()
         phonemes = self.config.get('phonemes')
         threshold = self.config.get('threshold')
-        return LocalRecognizer(wake_word, phonemes, threshold, rate, lang)
+        return PocketsphinxRecognizer(wake_word, phonemes,
+                                      threshold, rate, lang)
 
     def create_wakeup_recognizer(self, rate, lang):
-        wake_word = self.config.get('standup_word', "wake up")
+        wake_word = self.config.get('standup_word', "wake up").lower()
         phonemes = self.config.get('standup_phonemes', "W EY K . AH P")
-        threshold = self.config.get('standup_threshold', 1e-10)
-        return LocalRecognizer(wake_word, phonemes, threshold, rate, lang)
+        threshold = self.config.get('standup_threshold', 1e-18)
+        return PocketsphinxRecognizer(wake_word, phonemes,
+                                      threshold, rate, lang)
 
     def start_async(self):
         """
@@ -281,6 +284,7 @@ class RecognizerLoop(EventEmitter):
             except KeyboardInterrupt as e:
                 LOG.error(e)
                 self.stop()
+                raise  # Re-raise KeyboardInterrupt
 
     def reload(self):
         """
