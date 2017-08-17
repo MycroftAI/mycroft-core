@@ -26,6 +26,7 @@ from mycroft.configuration import ConfigurationManager
 
 from adapt.context import ContextManagerFrame
 import time
+
 __author__ = 'seanfitz'
 
 logger = getLogger(__name__)
@@ -37,6 +38,7 @@ class ContextManager(object):
     Use to track context throughout the course of a conversational session.
     How to manage a session's lifecycle is not captured here.
     """
+
     def __init__(self, timeout):
         self.frame_stack = []
         self.timeout = timeout * 60  # minutes to seconds
@@ -91,7 +93,7 @@ class ContextManager(object):
                               relevant_frames[i].entities]
             for entity in frame_entities:
                 entity['confidence'] = entity.get('confidence', 1.0) \
-                    / (2.0 + i)
+                                       / (2.0 + i)
             context += frame_entities
 
         result = []
@@ -138,6 +140,44 @@ class IntentService(object):
         self.emitter.on('add_context', self.handle_add_context)
         self.emitter.on('remove_context', self.handle_remove_context)
         self.emitter.on('clear_context', self.handle_clear_context)
+        # Converse method
+        self.emitter.on('skill.converse.response',
+                        self.handle_converse_response)
+        self.active_skills = []  # [skill_id , timestamp]
+        self.converse_timeout = 5  # minutes to prune active_skills
+
+    def do_converse(self, utterances, skill_id, lang):
+        self.emitter.emit(Message("skill.converse.request", {
+            "skill_id": skill_id, "utterances": utterances, "lang": lang}))
+        self.waiting = True
+        self.result = False
+        start_time = time.time()
+        t = 0
+        while self.waiting and t < 5:
+            t = time.time() - start_time
+            time.sleep(0.1)
+        self.waiting = False
+        return self.result
+
+    def handle_converse_response(self, message):
+        # id = message.data["skill_id"]
+        # no need to crosscheck id because waiting before new request is made
+        # no other skill will make this request is safe assumption
+        result = message.data["result"]
+        self.result = result
+        self.waiting = False
+
+    def remove_active_skill(self, skill_id):
+        for skill in self.active_skills:
+            if skill[0] == skill_id:
+                self.active_skills.remove(skill)
+
+    def add_active_skill(self, skill_id):
+        # search the list for an existing entry that already contains it
+        # and remove that reference
+        self.remove_active_skill(skill_id)
+        # add skill with timestamp to start of skill_list
+        self.active_skills.insert(0, [skill_id, time()])
 
     def update_context(self, intent):
         for tag in intent['__tags__']:
@@ -155,14 +195,28 @@ class IntentService(object):
 
         utterances = message.data.get('utterances', '')
 
+        # check for conversation time-out
+        self.active_skills = [skill for skill in self.active_skills
+                              if time.time() - skill[
+                                  1] <= self.converse_timeout * 60]
+
+        # check if any skill wants to handle utterance
+        for skill in self.active_skills:
+            if self.do_converse(utterances, skill[0], lang):
+                # update timestamp, or there will be a timeout where
+                # intent stops conversing whether its being used or not
+                self.add_active_skill(skill[0])
+                return
+
+        # no skill wants to handle utterance
         best_intent = None
         for utterance in utterances:
             try:
                 # normalize() changes "it's a boy" to "it is boy", etc.
                 best_intent = next(self.engine.determine_intent(
-                                   normalize(utterance, lang), 100,
-                                   include_tags=True,
-                                   context_manager=self.context_manager))
+                    normalize(utterance, lang), 100,
+                    include_tags=True,
+                    context_manager=self.context_manager))
                 # TODO - Should Adapt handle this?
                 best_intent['utterance'] = utterance
             except StopIteration, e:
@@ -174,6 +228,10 @@ class IntentService(object):
             reply = message.reply(
                 best_intent.get('intent_type'), best_intent)
             self.emitter.emit(reply)
+            # update active skills
+            skill_id = int(best_intent['intent_type'].split(":")[0])
+            self.add_active_skill(skill_id)
+
         else:
             self.emitter.emit(Message("intent_failure", {
                 "utterance": utterances[0],
@@ -202,10 +260,10 @@ class IntentService(object):
         self.engine.intent_parsers = new_parsers
 
     def handle_detach_skill(self, message):
-        skill_name = message.data.get('skill_name')
+        skill_id = message.data.get('skill_id')
         new_parsers = [
             p for p in self.engine.intent_parsers if
-            not p.name.startswith(skill_name)]
+            not p.name.startswith(skill_id)]
         self.engine.intent_parsers = new_parsers
 
     def handle_add_context(self, message):
