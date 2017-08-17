@@ -358,8 +358,8 @@ class MycroftSkill(object):
             raise ValueError('context should be a string')
         if not isinstance(word, basestring):
             raise ValueError('word should be a string')
-        self.emitter.emit(Message('add_context', {'context': context, 'word':
-            word}))
+        self.emitter.emit(Message('add_context',
+                                  {'context': context, 'word': word}))
 
     def remove_context(self, context):
         """
