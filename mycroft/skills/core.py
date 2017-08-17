@@ -26,7 +26,7 @@ from os.path import join, dirname, splitext, isdir
 
 from functools import wraps
 
-from adapt.intent import Intent
+from adapt.intent import Intent, IntentBuilder
 
 from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.configuration import ConfigurationManager
@@ -270,6 +270,22 @@ class MycroftSkill(object):
         _intent_list = []
 
     def register_intent(self, intent_parser, handler, need_self=False):
+        """
+            Register an Intent with the intent service.
+
+            Args:
+                intent_parser: Intent or IntentBuilder object to parse
+                               utterance for the handler.
+                handler:       handler_function
+                need_self:     optional parameter, when called from a decorated
+                               intent handler the function will need the self
+                               variable passed as well.
+        """
+        if type(intent_parser) == IntentBuilder:
+            intent_parser = intent_parser.build()
+        elif type(intent_parser) != Intent:
+            raise ValueError('intent_parser is not an Intent')
+
         name = intent_parser.name
         intent_parser.name = self.name + ':' + intent_parser.name
         self.emitter.emit(Message("register_intent", intent_parser.__dict__))
