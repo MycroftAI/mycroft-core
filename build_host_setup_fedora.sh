@@ -25,7 +25,8 @@ sudo dnf install -y \
     pkgconfig \
     libicu-devel \
     automake \
-    libjpeg-turbo-devel
+    libjpeg-turbo-devel \
+    python-opencv
 
 # upgrade virtualenv to latest from pypi
 sudo pip install --upgrade virtualenv

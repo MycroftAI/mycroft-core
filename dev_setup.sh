@@ -82,6 +82,10 @@ pip install --upgrade virtualenv
 # removing the pip2 explicit usage here for consistency with the above use.
 pip install -r requirements.txt 
 
+# copy global open-cv to virtual env
+# https://medium.com/@manuganji/installation-of-opencv-numpy-scipy-inside-a-virtualenv-bf4d82220313
+sudo cp /usr/lib/python2.7/dist-packages/cv* $VIRTUALENV_ROOT/lib/python2.7/site-packages/
+
 if  [[ $(free|awk '/^Mem:/{print $2}') -lt  1572864 ]] ; then
   CORES=1
 else 
