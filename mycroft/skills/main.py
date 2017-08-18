@@ -22,7 +22,7 @@ import subprocess
 import sys
 import time
 from os.path import exists, join
-from threading import Timer
+from threading import Timer, Thread
 
 from mycroft import MYCROFT_ROOT_PATH
 from mycroft.configuration import ConfigurationManager
@@ -90,15 +90,15 @@ def install_default_skills(speak=True):
 
 
 def skills_manager(message):
+    """
+        skills_manager runs on a Timer every hour and checks for updated
+        skills.
+    """
     global skills_manager_timer, ws
 
     if connected():
         if skills_manager_timer is None:
             pass
-            # ws.emit(
-            #     Message("speak", {'utterance':
-            #             mycroft.dialog.get("checking for updates")}))
-
         # Install default skills and look for updates via Github
         logger.debug("==== Invoking Mycroft Skill Manager: " + MSM_BIN)
         install_default_skills(False)
@@ -113,7 +113,17 @@ def _skills_manager_dispatch():
     ws.emit(Message("skill_manager", {}))
 
 
-def _load_skills():
+def _starting_up():
+    """
+        Start loading skills.
+
+        Starts
+        - reloading of skills when needed
+        - a timer to check for internet connection
+        - a timer for updating skills every hour
+        - adapt intent service
+        - padatious intent service
+    """
     global ws, loaded_skills, last_modified_skill, skills_directories, \
         skill_reload_thread
 
@@ -133,7 +143,7 @@ def _load_skills():
     IntentService(ws)
 
     # Create a thread that monitors the loaded skills, looking for updates
-    skill_reload_thread = Timer(0, _watch_skills)
+    skill_reload_thread = Thread(target=_watch_skills)
     skill_reload_thread.daemon = True
     skill_reload_thread.start()
 
@@ -231,11 +241,6 @@ def _watch_skills():
 
         # Pause briefly before beginning next scan
         time.sleep(2)
-
-
-def _starting_up():
-    # Startup:  Kick off loading of skills
-    _load_skills()
 
 
 def handle_converse_request(message):
