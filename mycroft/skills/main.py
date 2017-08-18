@@ -156,14 +156,30 @@ def check_connection():
 
 
 def _get_last_modified_date(path):
-    last_date = 0
-    # getting all recursive paths
-    for root, _, _ in os.walk(path):
-        f = root.replace(path, "")
-        # checking if is a hidden path
-        if not f.startswith(".") and not f.startswith("/."):
-            last_date = max(last_date, os.path.getmtime(path + f))
+    """
+        Get last modified date excluding compiled python files, hidden
+        directories and the settings.json file.
 
+        Arg:
+            path:   skill directory to check
+        Returns:    time of last change
+    """
+    last_date = 0
+    root_dir, subdirs, files = os.walk(path).next()
+    # get subdirs and remove hidden ones
+    subdirs = [s for s in subdirs if not s.startswith('.')]
+    for subdir in subdirs:
+        for root, _, _ in os.walk(os.path.join(path, subdir)):
+            base = os.path.basename(root)
+            # checking if is a hidden path
+            if not base.startswith(".") and not base.startswith("/."):
+                last_date = max(last_date, os.path.getmtime(root))
+
+    # check files of interest in the skill root directory
+    files = [f for f in files
+             if not f.endswith('.pyc') and f != 'settings.json']
+    for f in files:
+        last_date = max(last_date, os.path.getmtime(os.path.join(path, f)))
     return last_date
 
 
@@ -196,8 +212,7 @@ def _watch_skills():
                         "loaded") and modified <= last_modified_skill:
                     continue
                 # checking if skill was modified
-                elif skill.get(
-                        "instance") and modified > last_modified_skill:
+                elif skill.get("instance") and modified > last_modified_skill:
                     # checking if skill should be reloaded
                     if not skill["instance"].reload_skill:
                         continue
