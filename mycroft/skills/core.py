@@ -481,7 +481,7 @@ class MycroftSkill(object):
             self.emitter.remove(e, f)
 
         self.emitter.emit(
-            Message("detach_skill", {"skill_id": self.skill_id + ":"}))
+            Message("detach_skill", {"skill_id": str(self.skill_id) + ":"}))
         try:
             self.stop()
         except:
