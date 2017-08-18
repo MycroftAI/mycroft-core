@@ -21,13 +21,26 @@
 # @author Augusto Monteiro
 #
 # This script assists in the installation and management of
-# skills loaded from Github.  
+# skills loaded from Github.
+
+
+# These skills are automatically installed on all mycroft-core
+# installations.
+DEFAULT_SKILLS="skill-alarm skill-audio-record skill-configuration "\
+"skill-date-time skill-desktop-launcher skill-ip skill-joke "\
+"skill-hello-world skill-media skill-npr-news skill-naptime skill-pairing "\
+"skill-personal skill-playback-control skill-reminder skill-installer "\
+"skill-singing skill-speak skill-spelling skill-stop skill-stock "\
+"skill-volume skill-weather skill-wiki fallback-wolfram-alpha "\
+"fallback-aiml skill-mark1-demo "
+
 
 mycroft_skill_folder=${mycroft_skill_folder:-"/opt/mycroft/skills"}
 if [[ ! -d "${mycroft_skill_folder}" ]] ; then
-    echo "Unable to access ${mycroft_skill_folder}!"
+    echo "ERROR: Unable to access ${mycroft_skill_folder}!"
     exit 101
-fi 
+fi
+
 
 # picroft/mk1?
 if [[ "$(hostname)" == 'picroft' ]] || [[ "$(hostname)" =~ "mark_1" ]] &&  [[ -x /usr/local/bin/mycroft-wifi-setup-client ]] ; then
@@ -39,182 +52,226 @@ else
   else
     if locate virtualenvwrapper ; then
       if ! source $(locate virtualenvwrapper) ; then
-        echo "Unable to locate virtualenvwrapper.sh, will not be able to install skills!"
+        echo "WARNING: Unable to locate virtualenvwrapper.sh, not able to install skills!"
         vwrap='false'
       fi
     fi
   fi
 fi
 
-default_skills="skill-alarm skill-audio-record skill-configuration skill-date-time skill-desktop-launcher skill-ip skill-joke skill-hello-world skill-media skill-npr-news skill-naptime skill-pairing skill-personal skill-playback-control skill-reminder skill-installer skill-singing skill-speak skill-spelling skill-stop skill-stock skill-volume skill-weather skill-wiki skill-wolfram-alpha skill-mark1-demo"
-
-echo "#######  Mycroft Skill Manager #######"
 
 function help() {
   echo "msm: Mycroft Skill Manager"
-  echo -e "     Copyright (c) 2017 Mycroft AI, Inc.  All rights reserved.\n"
-  echo "usage: msm install <repository> or <name>"
-  echo "     Installs the given Skill into the ${mycroft_skill_folder}"
-  echo "     where <repository> is the address of the skill in Github."
-  echo "example: msm search rss-skill"
-  echo -e "example: msm install https://github.com/ethanaward/demo_skill.git\n"
+  echo "usage: msm [option] [repo | name]"
+  echo
+  echo "Options:"
+  echo "  default           installs the default skills, updates all others"
+  echo "  install <repo>    installs from the specified github repo"
+  echo "  install <name>    installs the mycroft-skill matching <name>"
+  echo "  list              list all mycroft-skills"
+  echo "  update            update all installed skills"
+  echo "  search [<name>]   search mycroft-skills for match for <name>"
+  echo
+  echo "Params:"
+  echo "  <repo>   full URL to a Github repo"
+  echo "  <name>   one or more substrings to match against submodule names"
+  echo "           in the https://github.com/MycroftAI/mycroft-skills repo"
+  echo
+  echo "Examples:"
+  echo "  msm search twitter"
+  echo "  msm search date-time-skill"
+  echo "  msm install daily meditation"
+  echo "  msm install https://github.com/ethanaward/demo_skill.git"
+
   exit 1
 }
 
+
+LIST_CACHE=''  # only retrieve list once per MSM invocation
 function list() {
-if hash curl ; then
-  if ! curl -s "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules" ; then
-    echo "Unable to pull master skills list!"
-    exit 111    
+  if ! [[ ${LIST_CACHE} ]] ; then
+    if hash curl ; then
+      LIST_CACHE=$( curl -s "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules" )
+      if ! [[ "${LIST_CACHE}" ]] ; then
+        echo "ERROR:  Unable to retrieve master skills list!"
+        exit 111
+      fi
+    else
+      _LIST=$( wget -qO- "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules" )
+      if ! [[ "${LIST_CACHE}" ]] ; then
+        echo "ERROR:  Unable to retrieve master skills list!"
+        exit 112
+      fi
+    fi
   fi
-else 
-  if ! wget -qO- "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules" ; then
-    echo "Unable to pull master skills list!"
-    exit 112
-  fi
-fi
+
+  echo "${LIST_CACHE}"
 }
 
+
 function install() {
-cd "${mycroft_skill_folder}"
-if [[ "${vwrap}" == 'false' ]] ; then
-    echo "Missing virtualwrapper, cowardly refusing to install skills."
-    return 5
-fi
-# loop through list of arguments
-while [[ $# -gt 0 ]] ; do
   cd "${mycroft_skill_folder}"
-  iskill="${1}";
-  shift;
-  echo "Attempting to install ${iskill}..."
-  if [[ "${iskill}" == "git@"* || "${iskill}" == "https://"* || "${iskill}" == "http://"* ]]; then
-    repo="${iskill}"
-  else
-    skills=$(list | grep -n 'submodule' | sed 's/[[:space:]]//g' | sed 's/\[submodule"//g' | sed 's/"\]//g')
-    exact_match=$(echo "$skills" | grep -i ".*:${iskill}$")
-    skill=$(echo "$skills" | grep -i ".*:.*${iskill}.*")
-    if [[ ! -z "${exact_match}" ]]; then
-      skill=${exact_match}
-    fi
-    git_line=$(echo "$skill" | sed 's/\:.*//')
-    
-    if [[ "${skill}" ==  *$'\n'* ]]; then
-      echo -e "Your search has multiple choices\n\n$skill" | sed 's/.*://g'
-      return 301
+  if [[ "${vwrap}" == 'false' ]] ; then
+      echo "ERROR:  Missing virtualwrapper, cowardly refusing to install skills."
+      return 5
+  fi
+
+  # loop through arguments, treat each as a independent request
+  while [[ $# -gt 0 ]] ; do
+    cd "${mycroft_skill_folder}"
+
+    iskill="${1}";
+    shift;
+
+    if [[ "${iskill}" == "git@"* || "${iskill}" == "https://"* || "${iskill}" == "http://"* ]]; then
+      # Repo was given
+      repo="${iskill}"
     else
-      if [[ -z "${git_line}" ]]; then
-        echo "A ${iskill} skill was not found"
-        return 302
+      # Name was given, search for a match
+      skills=$(list | grep -n 'submodule' | sed 's/[[:space:]]//g' | sed 's/\[submodule"//g' | sed 's/"\]//g')
+      exact_match=$(echo "$skills" | grep -i ".*:${iskill}$")
+      skill=$(echo "$skills" | grep -i ".*:.*${iskill}.*")
+      if [[ ! -z "${exact_match}" ]]; then
+        skill=${exact_match}
       fi
-      repo_line=$(($git_line + 2))
-      repo=$(list | sed -n $repo_line'{p;q;}' | sed 's/[[:space:]]//g' | sed 's/url=//g')
-    fi 
-  fi
-  git_name=$(echo "${repo}" | sed 's/.*\///')
-  name=$(echo "$git_name" | sed 's/.git//')
-  if [[ -d "${mycroft_skill_folder}/${name}" ]] ; then
-    echo "Skill appears to exist already. Perhaps you meant to use update?"
-    continue 169
-  fi
-  echo "Cloning repository"
-  git clone "${repo}" >> /dev/null
-  if ! cd "${name}" ; then
-    echo "Unable to access directory ${name}!"
-    return 102
-  fi
-  if [[ "${picroft}" == "true" ]] ; then
-    if ! sudo chown -R mycroft:mycroft "${mycroft_skill_folder}/${name}" ; then
-      echo "Unable to chown install directory ${name}!"
-      return 123
-    fi    
-  fi
-  if [[ -f "requirements.txt" ]]; then
-    echo "Installing libraries requirements"
-    if [[ "${picroft}" == 'false' ]]; then
-      if [[ "${VIRTUAL_ENV}" =~ .mycroft$ ]] ; then
-        if ! pip install -r requirements.txt ; then
-          echo "Unable to install requirements for skill ${iskill}!"
-          return 121
-        fi
+      git_line=$(echo "$skill" | sed 's/\:.*//')
+
+      if [[ "${skill}" ==  *$'\n'* ]]; then
+        # TODO: Installer skill was searching for this exact string
+        #       and expects three lines as a header
+        echo -e "Your search has multiple choices\n--------------------------------"
+        echo "$skill" | sed 's/.*://g' | sort
+        return 201
       else
-        if workon mycroft ; then
+        if [[ -z "${git_line}" ]]; then
+          # TODO: Installer skill was searching for this exact string
+          echo "A ${iskill} skill was not found"
+          return 202
+        fi
+        repo_line=$(($git_line + 2))
+        repo=$(list | sed -n $repo_line'{p;q;}' | sed 's/[[:space:]]//g' | sed 's/url=//g')
+      fi
+    fi
+
+    git_name=$(echo "${repo}" | sed 's/.*\///')
+    name=$(echo "$git_name" | sed 's/.git//')
+    if [[ -d "${mycroft_skill_folder}/${name}" ]] ; then
+      # Don't show message when verify default skills
+      if [[ "${INSTALLING_DEFAULTS}" == "false" ]] ; then
+         echo "Skill already installed.  Perhaps you meant to use update?"
+      fi
+      continue 169
+    fi
+
+    echo "Cloning repository..."
+    git clone "${repo}" >> /dev/null
+    if ! cd "${name}" ; then
+      echo "ERROR: Unable to access directory ${name}!"
+      return 102
+    fi
+    if [[ "${picroft}" == "true" ]] ; then
+      if ! sudo chown -R mycroft:mycroft "${mycroft_skill_folder}/${name}" ; then
+        echo "ERROR: Unable to chown install directory ${name}!"
+        return 123
+      fi
+    fi
+    if [[ -f "requirements.txt" ]]; then
+      echo "Installing requirements..."
+      if [[ "${picroft}" == 'false' ]]; then
+        if [[ "${VIRTUAL_ENV}" =~ .mycroft$ ]] ; then
           if ! pip install -r requirements.txt ; then
-            echo "Unable to install requirements for skill ${iskill}!"
-            deactivate mycroft
+            echo "ERROR: Unable to install requirements for skill ${iskill}!"
             return 121
           fi
         else
-          echo "Unable to activate mycroft virtualenv!"
-          return 120
+          if workon mycroft ; then
+            if ! pip install -r requirements.txt ; then
+              echo "ERROR: Unable to install requirements for skill ${iskill}!"
+              deactivate mycroft
+              return 121
+            fi
+          else
+            echo "ERROR: Unable to activate mycroft virtualenv!"
+            return 120
+          fi
+        fi
+      else
+        if ! sudo pip install -r requirements.txt ; then
+          echo "ERROR: Unable to install requirements for skill ${iskill}!"
+          return 121
         fi
       fi
-    else 
-      if ! sudo pip install -r requirements.txt ; then
-        echo "Unable to install requirements for skill ${iskill}!"
-        return 121
-      fi
     fi
-  fi 
-  echo "The ${iskill} skill has been installed!"
-done
-
+    echo "The ${iskill} skill has been installed!"
+    echo
+  done
 }
+
 
 function update() {
-cd "${mycroft_skill_folder}"
-for d in $(find "${mycroft_skill_folder}" -mindepth 1 -maxdepth 1 -type d |grep -v '.git'$ ); do
-  if git -C "$d" rev-parse --git-dir > /dev/null 2>&1; then
-    cd "${d}" 
-    UPSTREAM=${1:-'@{u}'}
-    LOCAL=$(git rev-parse @)
-    REMOTE=$(git rev-parse "$UPSTREAM")
-    BASE=$(git merge-base @ "$UPSTREAM")
+  echo "=== Updating installed skills"
+  cd "${mycroft_skill_folder}"
+  for d in $(find "${mycroft_skill_folder}" -mindepth 1 -maxdepth 1 -type d |grep -v '.git'$ ); do
+    if git -C "$d" rev-parse --git-dir > /dev/null 2>&1; then
+      cd "${d}"
+      UPSTREAM=${1:-'@{u}'}
+      LOCAL=$(git rev-parse @)
+      REMOTE=$(git rev-parse "$UPSTREAM")
+      BASE=$(git merge-base @ "$UPSTREAM")
 
-    if ! grep -q '.pyc'$ .git/info/exclude; then
-      echo "*.pyc" >> .git/info/exclude
-    fi
+      if ! grep -q '.pyc'$ .git/info/exclude; then
+        echo "*.pyc" >> .git/info/exclude
+      fi
 
-    # Checking if the repo isn't dirty or have commits to push
-    if [[ (-z $(git status --porcelain --untracked-files=no)) && !($LOCAL != $REMOTE && $REMOTE = $BASE) ]]; then
-      git fetch
-      git reset --hard origin/master 
-      rm -f *.pyc
+      # Check if the repo is dirty or has commits to push
+      if [[ (-z $(git status --porcelain --untracked-files=no)) && !($LOCAL != $REMOTE && $REMOTE = $BASE) ]]; then
+        echo "Updating ${d}..."
+        echo -n "  "
+        git fetch
+        git reset --hard origin/master
+        rm -f *.pyc
+      else
+        echo "Ignoring ${d}, skill has been modified."
+      fi
     fi
-  fi
-done
+  done
 }
+
 
 function search() {
-search_list=$(list | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g')
-while [[ $# -gt 0 ]] ; do
-  search_string=$1
-  shift
-  while read -r matches; do
-    if [[ "${search_string}" == "${matches}" ]] ; then
-      echo "Exact match found: ${matches}"
-    else
-      echo "Possible match: ${matches}"
-    fi
-  done < <(grep -i "${search_string}" <<< "${search_list}") 
-done
+  search_list=$(list | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g')
+  while [[ $# -gt 0 ]] ; do
+    search_string=$1
+    shift
+    while read -r matches; do
+      if [[ "${search_string}" == "${matches}" ]] ; then
+        echo "Exact match found: ${matches}"
+      else
+        echo "Possible match: ${matches}"
+      fi
+    done < <(grep -i "${search_string}" <<< "${search_list}")
+  done
 }
-    
 
-#### Main
 
+######################################################################
+## Main program
+######################################################################
+
+INSTALLING_DEFAULTS='false'
 OPT=$1
 shift
 case ${OPT} in
   "install") if [[ $# -gt 0 ]] ; then install $(echo "$*") ; else  help ; fi;;
-  "list") list | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g' ;;
-  "update") update ;;
-  "default") install $(echo ${default_skills}); update ;;
-  "search")  if [[ $# -gt 0 ]] ; then search $(echo "$*") ; else  help ; fi;;
-  *) help ;;
+  "list")    list | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g' | sort ;;
+  "update")  update ;;
+  "default") echo "=== Checking for default skills" ; INSTALLING_DEFAULTS='true' ; install $(echo ${DEFAULT_SKILLS}); update ;;
+  "search")  if [[ $# -gt 0 ]] ; then search $(echo "$*") | sort ; else  help ; fi;;
+  *)         help ;;
 esac
 
 exit_code=$?
 if  [[ ${exit_code} -gt 0 ]] ; then
-  echo "Sorry I'm unable to complete the request! Check the error messages above for why. Err ${exit_code}"
+  echo "Failed to complete request.  Err=${exit_code}"
 fi
-exit 0
+exit ${exit_code}

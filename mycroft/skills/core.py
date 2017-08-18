@@ -14,12 +14,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
-
 import abc
 import imp
 import time
 
+import operator
 import os.path
 import re
 import time
@@ -27,7 +26,7 @@ from os.path import join, dirname, splitext, isdir
 
 from functools import wraps
 
-from adapt.intent import Intent
+from adapt.intent import Intent, IntentBuilder
 
 from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.configuration import ConfigurationManager
@@ -96,9 +95,10 @@ def open_intent_envelope(message):
                   intent_dict.get('optional'))
 
 
-def load_skill(skill_descriptor, emitter):
+def load_skill(skill_descriptor, emitter, skill_id):
     try:
-        logger.info("ATTEMPTING TO LOAD SKILL: " + skill_descriptor["name"])
+        logger.info("ATTEMPTING TO LOAD SKILL: " + skill_descriptor["name"] +
+                    " with ID " + str(skill_id))
         if skill_descriptor['name'] in BLACKLISTED_SKILLS:
             logger.info("SKILL IS BLACKLISTED " + skill_descriptor["name"])
             return None
@@ -109,6 +109,7 @@ def load_skill(skill_descriptor, emitter):
             # v2 skills framework
             skill = skill_module.create_skill()
             skill.bind(emitter)
+            skill.skill_id = skill_id
             skill._dir = dirname(skill_descriptor['info'][1])
             skill.load_data_files(dirname(skill_descriptor['info'][1]))
             # Set up intent handlers
@@ -169,15 +170,30 @@ def unload_skills(skills):
 
 
 _intent_list = []
+_intent_file_list = []
 
 
 def intent_handler(intent_parser):
     """ Decorator for adding a method as an intent handler. """
+
     def real_decorator(func):
         @wraps(func)
         def handler_method(*args, **kwargs):
             return func(*args, **kwargs)
+
         _intent_list.append((intent_parser, func))
+        return handler_method
+
+    return real_decorator
+
+
+def intent_file_handler(intent_file):
+    """ Decorator for adding a method as an intent file handler. """
+    def real_decorator(func):
+        @wraps(func)
+        def handler_method(*args, **kwargs):
+            return func(*args, **kwargs)
+        _intent_file_list.append((intent_file, func))
         return handler_method
     return real_decorator
 
@@ -190,16 +206,17 @@ class MycroftSkill(object):
 
     def __init__(self, name=None, emitter=None):
         self.name = name or self.__class__.__name__
-
         self.bind(emitter)
         self.config_core = ConfigurationManager.get()
         self.config = self.config_core.get(self.name)
         self.dialog_renderer = None
+        self.vocab_dir = None
         self.file_system = FileSystemAccess(join('skills', self.name))
         self.registered_intents = []
         self.log = getLogger(self.name)
         self.reload_skill = True
         self.events = []
+        self.skill_id = 0
 
     @property
     def location(self):
@@ -251,7 +268,7 @@ class MycroftSkill(object):
 
     def detach(self):
         for (name, intent) in self.registered_intents:
-            name = self.name + ':' + name
+            name = str(self.skill_id) + ':' + name
             self.emitter.emit(Message("detach_intent", {"intent_name": name}))
 
     def initialize(self):
@@ -262,22 +279,30 @@ class MycroftSkill(object):
         """
         logger.debug("No initialize function implemented")
 
+    def converse(self, utterances, lang="en-us"):
+        return False
+
+    def make_active(self):
+        # bump skill to active_skill list in intent_service
+        # this enables converse method to be called even without skill being
+        # used in last 5 minutes
+        self.emitter.emit(Message('active_skill_request',
+                                  {"skill_id": self.skill_id}))
+
     def _register_decorated(self):
         """
         Register all intent handlers that has been decorated with an intent.
         """
-        global _intent_list
+        global _intent_list, _intent_file_list
         for intent_parser, handler in _intent_list:
             self.register_intent(intent_parser, handler, need_self=True)
+        for intent_file, handler in _intent_file_list:
+            self.register_intent_file(intent_file, handler, need_self=True)
         _intent_list = []
+        _intent_file_list = []
 
-    def register_intent(self, intent_parser, handler, need_self=False):
-        name = intent_parser.name
-        intent_parser.name = self.name + ':' + intent_parser.name
-        self.emitter.emit(Message("register_intent", intent_parser.__dict__))
-        self.registered_intents.append((name, intent_parser))
-
-        def receive_handler(message):
+    def add_event(self, name, handler, need_self):
+        def wrapper(message):
             try:
                 if need_self:
                     # When registring from decorator self is required
@@ -292,15 +317,54 @@ class MycroftSkill(object):
                 logger.error(
                     "An error occurred while processing a request in " +
                     self.name, exc_info=True)
-
         if handler:
-            self.emitter.on(intent_parser.name, receive_handler)
-            self.events.append((intent_parser.name, receive_handler))
+            self.emitter.on(name, wrapper)
+            self.events.append((name, wrapper))
+
+    def register_intent(self, intent_parser, handler, need_self=False):
+        """
+            Register an Intent with the intent service.
+
+            Args:
+                intent_parser: Intent or IntentBuilder object to parse
+                               utterance for the handler.
+                handler:       function to register with intent
+                need_self:     optional parameter, when called from a decorated
+                               intent handler the function will need the self
+                               variable passed as well.
+        """
+        if type(intent_parser) == IntentBuilder:
+            intent_parser = intent_parser.build()
+        elif type(intent_parser) != Intent:
+            raise ValueError('intent_parser is not an Intent')
+
+        name = intent_parser.name
+        intent_parser.name = self.name + ':' + intent_parser.name
+        self.emitter.emit(Message("register_intent", intent_parser.__dict__))
+        self.registered_intents.append((name, intent_parser))
+        self.add_event(intent_parser.name, handler, need_self)
+
+    def register_intent_file(self, intent_file, handler, need_self=False):
+        """
+            Register an Intent file with the intent service.
+
+            Args:
+                intent_file: name of file that contains example queries
+                             that should activate the intent
+                handler:     function to register with intent
+                need_self:   use for decorator. See register_intent
+        """
+        intent_name = self.name + ':' + intent_file
+        self.emitter.emit(Message("padatious:register_intent", {
+            "file_name": join(self.vocab_dir, intent_file),
+            "intent_name": intent_name
+        }))
+        self.add_event(intent_name, handler, need_self)
 
     def disable_intent(self, intent_name):
         """Disable a registered intent"""
         logger.debug('Disabling intent ' + intent_name)
-        name = self.name + ':' + intent_name
+        name = str(self.skill_id) + ':' + intent_name
         self.emitter.emit(Message("detach_intent", {"intent_name": name}))
 
     def enable_intent(self, intent_name):
@@ -315,6 +379,29 @@ class MycroftSkill(object):
             else:
                 logger.error('Could not enable ' + intent_name +
                              ', it hasn\'t been registered.')
+
+    def set_context(self, context, word=''):
+        """
+            Add context to intent service
+
+            Args:
+                context:    Keyword
+                word:       word connected to keyword
+        """
+        if not isinstance(context, basestring):
+            raise ValueError('context should be a string')
+        if not isinstance(word, basestring):
+            raise ValueError('word should be a string')
+        self.emitter.emit(Message('add_context',
+                                  {'context': context, 'word': word}))
+
+    def remove_context(self, context):
+        """
+            remove_context removes a keyword from from the context manager.
+        """
+        if not isinstance(context, basestring):
+            raise ValueError('context should be a string')
+        self.emitter.emit(Message('remove_context', {'context': context}))
 
     def register_vocabulary(self, entity, entity_type):
         self.emitter.emit(Message('register_vocab', {
@@ -351,6 +438,7 @@ class MycroftSkill(object):
             self.load_regex_files(regex_path)
 
     def load_vocab_files(self, vocab_dir):
+        self.vocab_dir = vocab_dir
         if os.path.exists(vocab_dir):
             load_vocabulary(vocab_dir, self.emitter)
         else:
@@ -393,9 +481,88 @@ class MycroftSkill(object):
             self.emitter.remove(e, f)
 
         self.emitter.emit(
-            Message("detach_skill", {"skill_name": self.name + ":"}))
+            Message("detach_skill", {"skill_id": str(self.skill_id) + ":"}))
         try:
             self.stop()
         except:
             logger.error("Failed to stop skill: {}".format(self.name),
                          exc_info=True)
+
+
+class FallbackSkill(MycroftSkill):
+    fallback_handlers = {}
+
+    def __init__(self, name=None, emitter=None):
+        MycroftSkill.__init__(self, name, emitter)
+
+        #  list of fallback handlers registered by this instance
+        self.instance_fallback_handlers = []
+
+    @classmethod
+    def make_intent_failure_handler(cls, ws):
+        """Goes through all fallback handlers until one returns true"""
+
+        def handler(message):
+            for _, handler in sorted(cls.fallback_handlers.items(),
+                                     key=operator.itemgetter(0)):
+                try:
+                    if handler(message):
+                        return
+                except Exception as e:
+                    logger.info('Exception in fallback: ' + str(e))
+            ws.emit(Message('complete_intent_failure'))
+            logger.warn('No fallback could handle intent.')
+
+        return handler
+
+    @classmethod
+    def _register_fallback(cls, handler, priority):
+        """
+        Register a function to be called as a general info fallback
+        Fallback should receive message and return
+        a boolean (True if succeeded or False if failed)
+
+        Lower priority gets run first
+        0 for high priority 100 for low priority
+        """
+        while priority in cls.fallback_handlers:
+            priority += 1
+
+        cls.fallback_handlers[priority] = handler
+
+    def register_fallback(self, handler, priority):
+        """
+            register a fallback with the list of fallback handlers
+            and with the list of handlers registered by this instance
+        """
+        self.instance_fallback_handlers.append(handler)
+        self._register_fallback(handler, priority)
+
+    @classmethod
+    def remove_fallback(cls, handler_to_del):
+        """
+            Remove a fallback handler
+
+            Args:
+                handler_to_del: reference to handler
+        """
+        for priority, handler in cls.fallback_handlers.items():
+            if handler == handler_to_del:
+                del cls.fallback_handlers[priority]
+                return
+        logger.warn('Could not remove fallback!')
+
+    def remove_instance_handlers(self):
+        """
+            Remove all fallback handlers registered by the fallback skill.
+        """
+        while len(self.instance_fallback_handlers):
+            handler = self.instance_fallback_handlers.pop()
+            self.remove_fallback(handler)
+
+    def shutdown(self):
+        """
+            Remove all registered handlers and perform skill shutdown.
+        """
+        self.remove_instance_handlers()
+        super(FallbackSkill, self).shutdown()

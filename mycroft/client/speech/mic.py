@@ -384,7 +384,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 # if a wake word is success full then record audio in temp
                 # file.
                 if self.save_wake_words and said_wake_word:
-                    audio = self.create_audio_data(audio_data, source)
+                    audio = self._create_audio_data(audio_data, source)
                     stamp = str(datetime.datetime.now())
                     filename = "/tmp/mycroft_wake_success%s.wav" % stamp
                     with open(filename, 'wb') as filea:

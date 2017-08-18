@@ -33,8 +33,9 @@ pyric==0.1.6
 inflection==0.3.1
 pytz==2017.2
 pillow==4.1.1
-mock==2.0.0
 python-dateutil==2.6.0
 pychromecast==0.7.7
 python-vlc==1.1.2
 pulsectl==17.7.4
+padatious==0.1.4
+aiml==0.8.6

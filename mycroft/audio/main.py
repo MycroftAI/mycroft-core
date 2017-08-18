@@ -48,6 +48,8 @@ service = []
 current = None
 config = None
 pulse = None
+pulse_quiet = None
+pulse_restore = None
 
 
 def create_service_descriptor(service_folder):
@@ -263,8 +265,8 @@ def _lower_volume(message):
         current.lower_volume()
         volume_is_low = True
     try:
-        if pulse:
-            pulse_mute()
+        if pulse_quiet:
+            pulse_quiet()
     except Exception as e:
         logger.error(e)
 
@@ -273,6 +275,10 @@ muted_sinks = []
 
 
 def pulse_mute():
+    """
+        Mute all pulse audio input sinks except for the one named
+        'mycroft-voice'.
+    """
     global muted_sinks
     for sink in pulse.sink_input_list():
         if sink.name != 'mycroft-voice':
@@ -281,11 +287,38 @@ def pulse_mute():
 
 
 def pulse_unmute():
+    """
+        Unmute all pulse audio input sinks.
+    """
     global muted_sinks
     for sink in pulse.sink_input_list():
         if sink.index in muted_sinks:
             pulse.sink_input_mute(sink.index, 0)
     muted_sinks = []
+
+
+def pulse_lower_volume():
+    """
+        Lower volume of all pulse audio input sinks except the one named
+        'mycroft-voice'.
+    """
+    for sink in pulse.sink_input_list():
+        if sink.name != 'mycroft-voice':
+            v = sink.volume
+            v.value_flat *= 0.3
+            pulse.volume_set(sink, v)
+
+
+def pulse_restore_volume():
+    """
+        Restore volume of all pulse audio input sinks except the one named
+        'mycroft-voice'.
+    """
+    for sink in pulse.sink_input_list():
+        if sink.name != 'mycroft-voice':
+            v = sink.volume
+            v.value_flat /= 0.3
+            pulse.volume_set(sink, v)
 
 
 def _restore_volume(message):
@@ -304,8 +337,8 @@ def _restore_volume(message):
         if not volume_is_low:
             logger.info('restoring volume')
             current.restore_volume()
-    if pulse:
-        pulse_unmute()
+    if pulse_restore:
+        pulse_restore()
 
 
 def play(tracks, prefered_service):
@@ -390,6 +423,26 @@ def _track_info(message):
                     data=track_info))
 
 
+def setup_pulseaudio_handlers(pulse_choice=None):
+    """
+        Select functions for handling lower volume/restore of
+        pulse audio input sinks.
+
+        Args:
+            pulse_choice: method selection, can be eithe 'mute' or 'lower'
+    """
+    global pulse, pulse_quiet, pulse_restore
+
+    if pulsectl and pulse_choice is not None:
+        pulse = pulsectl.Pulse('Mycroft-audio-service')
+        if pulse_choice == 'mute':
+            pulse_quiet = pulse_mute
+            pulse_restore = pulse_unmute
+        elif pulse_choice == 'lower':
+            pulse_quiet = pulse_lower_volume
+            pulse_restore = pulse_restore_volume
+
+
 def connect():
     global ws
     ws.run_forever()
@@ -398,23 +451,18 @@ def connect():
 def main():
     global ws
     global config
-    global pulse
     ws = WebsocketClient()
     ConfigurationManager.init(ws)
     config = ConfigurationManager.get()
     speech.init(ws)
 
     # Setup control of pulse audio
-    if pulsectl and config.get('Audio').get('pulseaudio') == 'mute':
-        pulse = pulsectl.Pulse('Mycroft-audio-service')
-    else:
-        pulse = None
+    setup_pulseaudio_handlers(config.get('Audio').get('pulseaudio'))
 
     def echo(message):
         try:
             _message = json.loads(message)
-
-            if 'mycroft.audio.service' in _message.get('type'):
+            if 'mycroft.audio.service' not in _message.get('type'):
                 return
             message = json.dumps(_message)
         except:

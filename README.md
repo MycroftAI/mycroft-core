@@ -46,6 +46,7 @@ The following packages are required for setting up the development environment a
  - `mpg123`
  - `flac`
  - `curl`
+ - `fann`
 
 ## Home Device and Account Manager
 Mycroft AI, Inc. maintains a device and account management system known as Mycroft Home. Developers may sign up at: https://home.mycroft.ai
