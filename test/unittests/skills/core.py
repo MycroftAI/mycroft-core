@@ -1,10 +1,13 @@
 import unittest
-
+import sys
 from os.path import join, dirname, abspath
 from re import error
 
 from mycroft.skills.core import load_regex_from_file, load_regex, \
-    load_vocab_from_file, load_vocabulary
+    load_vocab_from_file, load_vocabulary, MycroftSkill, \
+    load_skill, create_skill_descriptor
+from adapt.intent import IntentBuilder
+
 from mycroft.util.log import getLogger
 
 __author__ = 'eward'
@@ -25,6 +28,9 @@ class MockEmitter(object):
     def get_results(self):
         return self.results
 
+    def on(self, event, f):
+        pass
+
     def reset(self):
         self.types = []
         self.results = []
@@ -34,6 +40,9 @@ class MycroftSkillTest(unittest.TestCase):
     emitter = MockEmitter()
     regex_path = abspath(join(dirname(__file__), '../regex_test'))
     vocab_path = abspath(join(dirname(__file__), '../vocab_test'))
+
+    def setUp(self):
+        self.emitter.reset()
 
     def check_vocab_from_file(self, filename, vocab_type=None, result_list=[]):
         load_vocab_from_file(join(self.vocab_path, filename), vocab_type,
@@ -158,3 +167,133 @@ class MycroftSkillTest(unittest.TestCase):
                                   'vocab_test_fail'))
         except OSError as e:
             self.assertEquals(e.strerror, 'No such file or directory')
+
+    def check_register_intent(self, result_list):
+        for type in self.emitter.get_types():
+            self.assertEquals(type, 'register_intent')
+        self.assertEquals(sorted(self.emitter.get_results()),
+                          sorted(result_list))
+        self.emitter.reset()
+
+    def test_register_intent(self):
+        # Test register Intent object
+        s = TestSkill1()
+        s.bind(self.emitter)
+        s.initialize()
+        expected = [{'at_least_one': [],
+                     'name': 'TestSkill1:a',
+                     'optional': [],
+                     'requires': [('Keyword', 'Keyword')]}]
+        self.check_register_intent(expected)
+
+        # Test register IntentBuilder object
+        s = TestSkill2()
+        s.bind(self.emitter)
+        s.initialize()
+        expected = [{'at_least_one': [],
+                     'name': 'TestSkill2:a',
+                     'optional': [],
+                     'requires': [('Keyword', 'Keyword')]}]
+
+        self.check_register_intent(expected)
+
+        # Test register IntentBuilder object
+        with self.assertRaises(ValueError):
+            s = TestSkill3()
+            s.bind(self.emitter)
+            s.initialize()
+
+    def check_register_intent_file(self, result_list):
+        for type in self.emitter.get_types():
+            self.assertEquals(type, 'padatious:register_intent')
+        self.assertEquals(sorted(self.emitter.get_results()),
+                          sorted(result_list))
+        self.emitter.reset()
+
+    def test_register_intent_file(self):
+        s = TestSkill4()
+        s.bind(self.emitter)
+        s.vocab_dir = join(dirname(__file__), 'intent_file')
+        s.initialize()
+
+        expected = [{
+            'file_name': join(dirname(__file__), 'intent_file', 'test.intent'),
+            'intent_name': s.name + ':test.intent'}]
+
+        self.check_register_intent_file(expected)
+
+    def check_register_decorators(self, result_list):
+        self.assertEquals(sorted(self.emitter.get_results()),
+                          sorted(result_list))
+        self.emitter.reset()
+
+    def test_register_decorators(self):
+        """ Test decorated intents """
+        path_orig = sys.path
+        sys.path.append(abspath(dirname(__file__)))
+        TestSkill5 = __import__('decorator_test_skill').TestSkill
+        s = TestSkill5()
+        s.vocab_dir = join(dirname(__file__), 'intent_file')
+        s.bind(self.emitter)
+        s.initialize()
+        s._register_decorated()
+        expected = [{'at_least_one': [],
+                     'name': 'TestSkill:a',
+                     'optional': [],
+                     'requires': [('Keyword', 'Keyword')]},
+                    {
+                     'file_name': join(dirname(__file__), 'intent_file',
+                                       'test.intent'),
+                     'intent_name': s.name + ':test.intent'}]
+
+        self.check_register_decorators(expected)
+
+
+class TestSkill1(MycroftSkill):
+    """ Test skill for normal intent builder syntax """
+    def initialize(self):
+        i = IntentBuilder('a').require('Keyword').build()
+        self.register_intent(i, self.handler)
+
+    def handler(self, message):
+        pass
+
+    def stop(self):
+        pass
+
+
+class TestSkill2(MycroftSkill):
+    """ Test skill for intent builder without .build() """
+    def initialize(self):
+        i = IntentBuilder('a').require('Keyword')
+        self.register_intent(i, self.handler)
+
+    def handler(self, message):
+        pass
+
+    def stop(self):
+        pass
+
+
+class TestSkill3(MycroftSkill):
+    """ Test skill for invalid Intent for register_intent """
+    def initialize(self):
+        self.register_intent('string', self.handler)
+
+    def handler(self, message):
+        pass
+
+    def stop(self):
+        pass
+
+
+class TestSkill4(MycroftSkill):
+    """ Test skill for padatious intent """
+    def initialize(self):
+        self.register_intent_file('test.intent', self.handler)
+
+    def handler(self, message):
+        pass
+
+    def stop(self):
+        pass
