@@ -168,6 +168,14 @@ class MycroftSkillTest(unittest.TestCase):
         except OSError as e:
             self.assertEquals(e.strerror, 'No such file or directory')
 
+    def test_load_skill(self):
+        """ Verify skill load function. """
+        e_path = join(dirname(__file__), 'test_skill')
+        s = load_skill(create_skill_descriptor(e_path), MockEmitter(), 847)
+        self.assertEquals(s._dir, e_path)
+        self.assertEquals(s.skill_id, 847)
+        self.assertEquals(s.name, 'LoadTestSkill')
+
     def check_register_intent(self, result_list):
         for type in self.emitter.get_types():
             self.assertEquals(type, 'register_intent')
