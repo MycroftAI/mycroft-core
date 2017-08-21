@@ -31,7 +31,8 @@ DEFAULT_SKILLS="skill-alarm skill-audio-record skill-configuration "\
 "skill-hello-world skill-media skill-npr-news skill-naptime skill-pairing "\
 "skill-personal skill-playback-control skill-reminder skill-installer "\
 "skill-singing skill-speak skill-spelling skill-stop skill-stock "\
-"skill-volume skill-weather skill-wiki fallback-wolfram-alpha skill-mark1-demo"
+"skill-volume skill-weather skill-wiki fallback-wolfram-alpha "\
+"fallback-aiml skill-mark1-demo "
 
 
 mycroft_skill_folder=${mycroft_skill_folder:-"/opt/mycroft/skills"}
