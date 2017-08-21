@@ -24,6 +24,7 @@ from requests_futures.sessions import FuturesSession
 from mycroft.tts import TTS
 from mycroft.util import remove_last_slash, play_wav
 from mycroft.util.log import getLogger
+from mycroft.messagebus.message import Message
 
 __author__ = 'jdorleans'
 
@@ -50,9 +51,12 @@ class RemoteTTS(TTS):
         if len(phrases) > 0:
             for req in self.__requests(phrases):
                 try:
+                    self.begin_audio()
                     self.__play(req)
                 except Exception, e:
                     LOGGER.error(e.message)
+                finally:
+                    self.end_audio()
 
     @staticmethod
     def __get_phrases(sentence):

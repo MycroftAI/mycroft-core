@@ -3,9 +3,13 @@
 
 import unittest
 from mycroft.util.parse import normalize
+from mycroft.util.parse import extractnumber
+from mycroft.util.parse import extract_datetime
+from datetime import datetime
 
 
 class TestNormalize(unittest.TestCase):
+
     def test_articles(self):
         self.assertEqual(normalize("this is a test", remove_articles=True),
                          "this is test")
@@ -16,6 +20,108 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(normalize("this is an extra test",
                                    remove_articles=False),
                          "this is an extra test")
+
+    def test_extractnumber(self):
+        self.assertEqual(extractnumber("this is the first test"), 1)
+        self.assertEqual(extractnumber("this is 2 test"), 2)
+        self.assertEqual(extractnumber("this is second test"), 2)
+        self.assertEqual(extractnumber("this is the third test"), 1.0/3.0)
+        self.assertEqual(extractnumber("this is test number 4"), 4)
+        self.assertEqual(extractnumber("one third of a cup"), 1.0/3.0)
+        self.assertEqual(extractnumber("three cups"), 3)
+        self.assertEqual(extractnumber("1/3 cups"), 1.0/3.0)
+        self.assertEqual(extractnumber("quarter cup"), 0.25)
+        self.assertEqual(extractnumber("1/4 cup"), 0.25)
+        self.assertEqual(extractnumber("one fourth cup"), 0.25)
+        self.assertEqual(extractnumber("2/3 cups"), 2.0/3.0)
+        self.assertEqual(extractnumber("3/4 cups"), 3.0/4.0)
+        self.assertEqual(extractnumber("1 and 3/4 cups"), 1.75)
+        self.assertEqual(extractnumber("1 cup and a half"), 1.5)
+        self.assertEqual(extractnumber("one cup and a half"), 1.5)
+        self.assertEqual(extractnumber("one and a half cups"), 1.5)
+        self.assertEqual(extractnumber("one and one half cups"), 1.5)
+        self.assertEqual(extractnumber("three quarter cups"), 3.0/4.0)
+        self.assertEqual(extractnumber("three quarters cups"), 3.0/4.0)
+
+    def test_extractdatetime_en(self):
+
+        def extractWithFormat(text):
+            date = datetime(2017, 06, 27, 00, 00)
+            [extractedDate, leftover] = extract_datetime(text, date)
+            extractedDate = extractedDate.strftime("%Y-%m-%d %H:%M:%S")
+            return [extractedDate, leftover]
+
+        def testExtract(text, expected_date, expected_leftover):
+            res = extractWithFormat(text)
+            self.assertEqual(res[0], expected_date)
+            self.assertEqual(res[1], expected_leftover)
+
+        testExtract("Set the ambush for 5 days from today",
+                    "2017-07-02 00:00:00", "set ambush")
+        testExtract("What is the day after tomorrow's weather?",
+                    "2017-06-29 00:00:00", "what is weather")
+        testExtract("Remind me at 10:45 pm",
+                    "2017-06-27 22:45:00", "remind me")
+        testExtract("what is the weather on friday morning",
+                    "2017-06-30 08:00:00", "what is weather")
+        testExtract("what is tomorrow's weather",
+                    "2017-06-28 00:00:00", "what is weather")
+        testExtract("remind me to call mom in 8 weeks and 2 days",
+                    "2017-08-24 00:00:00", "remind me to call mom")
+        testExtract("Play Rick Astley music 2 days from Friday",
+                    "2017-07-02 00:00:00", "play rick astley music")
+        testExtract("Begin the invasion at 3:45 pm on Thursday",
+                    "2017-06-29 15:45:00", "begin invasion")
+        testExtract("On Monday, order pie from the bakery",
+                    "2017-07-03 00:00:00", "order pie from bakery")
+        testExtract("Play Happy Birthday music 5 years from today",
+                    "2022-06-27 00:00:00", "play happy birthday music")
+        testExtract("Skype Mom at 12:45 pm next Thursday",
+                    "2017-07-06 12:45:00", "skype mom")
+        testExtract("What's the weather next Thursday?",
+                    "2017-07-06 00:00:00", "what weather")
+        testExtract("what is the weather next friday morning",
+                    "2017-07-07 08:00:00", "what is weather")
+        testExtract("what is the weather next friday evening",
+                    "2017-07-07 19:00:00", "what is weather")
+        testExtract("what is the weather next friday afternoon",
+                    "2017-07-07 15:00:00", "what is weather")
+        testExtract("remind me to call mom on august 3rd",
+                    "2017-08-03 00:00:00", "remind me to call mom")
+        testExtract("Buy fireworks on the 4th of July",
+                    "2017-07-04 00:00:00", "buy fireworks")
+        testExtract("what is the weather 2 weeks from next friday",
+                    "2017-07-21 00:00:00", "what is weather")
+        testExtract("what is the weather wednesday at 0700 hours",
+                    "2017-06-28 07:00:00", "what is weather")
+        testExtract("what is the weather wednesday at 7 o'clock",
+                    "2017-06-28 07:00:00", "what is weather")
+        testExtract("Set up an appointment at 12:45 pm next Thursday",
+                    "2017-07-06 12:45:00", "set up appointment")
+        testExtract("What's the weather this Thursday?",
+                    "2017-06-29 00:00:00", "what weather")
+        testExtract("set up the visit for 2 weeks and 6 days from Saturday",
+                    "2017-07-21 00:00:00", "set up visit")
+        testExtract("Begin the invasion at 03 45 on Thursday",
+                    "2017-06-29 03:45:00", "begin invasion")
+        testExtract("Begin the invasion at o 800 hours on Thursday",
+                    "2017-06-29 08:00:00", "begin invasion")
+        testExtract("Begin the party at 8 o'clock in the evening on Thursday",
+                    "2017-06-29 20:00:00", "begin party")
+        testExtract("Begin the invasion at 8 in the evening on Thursday",
+                    "2017-06-29 20:00:00", "begin invasion")
+        testExtract("Begin the invasion on Thursday at noon",
+                    "2017-06-29 12:00:00", "begin invasion")
+        testExtract("Begin the invasion on Thursday at midnight",
+                    "2017-06-29 00:00:00", "begin invasion")
+        testExtract("Begin the invasion on Thursday at 0500",
+                    "2017-06-29 05:00:00", "begin invasion")
+        testExtract("remind me to wake up in 4 years",
+                    "2021-06-27 00:00:00", "remind me to wake up")
+        testExtract("remind me to wake up in 4 years and 4 days",
+                    "2021-07-01 00:00:00", "remind me to wake up")
+        testExtract("What is the weather 3 days after tomorrow?",
+                    "2017-07-01 00:00:00", "what is weather")
 
     def test_spaces(self):
         self.assertEqual(normalize("  this   is  a    test"),

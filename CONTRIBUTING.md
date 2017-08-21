@@ -57,5 +57,5 @@ git push -f
 # Additional Resources
 
 * [General GitHub documentation](http://help.github.com/)
-* [GitHub pull request documentation](http://help.github.com/send-pull-requests/)
+* [GitHub pull request documentation](https://help.github.com/articles/about-pull-requests/)
 * [Read the Issue Guidelines by @necolas](https://github.com/necolas/issue-guidelines/blob/master/CONTRIBUTING.md) for more details

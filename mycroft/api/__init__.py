@@ -25,6 +25,7 @@ from mycroft.identity import IdentityManager
 from mycroft.version import VersionManager
 
 __author__ = 'jdorleans'
+__paired_cache = False
 
 
 class Api(object):
@@ -176,6 +177,25 @@ class DeviceApi(Api):
             "path": "/" + self.identity.uuid + "/location"
         })
 
+    def get_subscription(self):
+        """
+            Get information about type of subscrition this unit is connected
+            to.
+
+            Returns: dictionary with subscription information
+        """
+        return self.request({
+            'path': '/' + self.identity.uuid + '/subscription'})
+
+    @property
+    def is_subscriber(self):
+        """
+            status of subscription. True if device is connected to a paying
+            subscriber.
+        """
+        subscription_type = self.get_subscription().get('@type')
+        return subscription_type != 'free'
+
     def find(self):
         """ Deprecated, see get_location() """
         # TODO: Eliminate ASAP, for backwards compatibility only
@@ -216,3 +236,41 @@ class STTApi(Api):
             "query": {"lang": language, "limit": limit},
             "data": audio
         })
+
+
+def has_been_paired():
+    """ Determine if this device has ever been paired with a web backend
+
+    Returns:
+        bool: True if ever paired with backend (not factory reset)
+    """
+    # This forces a load from the identity file in case the pairing state
+    # has recently changed
+    id = IdentityManager.load()
+    return id.uuid is not None and id.uuid != ""
+
+
+def is_paired():
+    """ Determine if this device is actively paired with a web backend
+
+    Determines if the installation of Mycroft has been paired by the user
+    with the backend system, and if that pairing is still active.
+
+    Returns:
+        bool: True if paired with backend
+    """
+    global __paired_cache
+    if __paired_cache:
+        # NOTE: This assumes once paired, the unit remains paired.  So
+        # un-pairing must restart the system (or clear this value).
+        # The Mark 1 does perform a restart on RESET.
+        return True
+
+    try:
+        api = DeviceApi()
+        device = api.get()
+        __paired_cache = api.identity.uuid is not None and \
+            api.identity.uuid != ""
+        return __paired_cache
+    except:
+        return False

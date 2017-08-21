@@ -17,7 +17,6 @@
 
 
 import sys
-
 from mycroft.client.enclosure import Enclosure
 
 

@@ -26,13 +26,14 @@ import os.path
 import time
 from stat import S_ISREG, ST_MTIME, ST_MODE, ST_SIZE
 import psutil
-from os.path import dirname
 from mycroft.util.log import getLogger
+from mycroft.util.signal import *
 import mycroft.configuration
+import mycroft.audio
 
 __author__ = 'jdorleans'
 
-LOGGER = getLogger(__name__)
+logger = getLogger(__name__)
 
 
 def resolve_resource_file(res_name):
@@ -82,7 +83,7 @@ def resolve_resource_file(res_name):
 
 
 def play_wav(uri):
-    config = mycroft.configuration.ConfigurationManager.get()
+    config = mycroft.configuration.ConfigurationManager.instance()
     play_cmd = config.get("play_wav_cmdline")
     play_wav_cmd = str(play_cmd).split(" ")
     for index, cmd in enumerate(play_wav_cmd):
@@ -92,7 +93,7 @@ def play_wav(uri):
 
 
 def play_mp3(uri):
-    config = mycroft.configuration.ConfigurationManager.get()
+    config = mycroft.configuration.ConfigurationManager.instance()
     play_cmd = config.get("play_mp3_cmdline")
     play_mp3_cmd = str(play_cmd).split(" ")
     for index, cmd in enumerate(play_mp3_cmd):
@@ -133,32 +134,6 @@ def read_dict(filename, div='='):
             (key, val) = line.split(div)
             d[key.strip()] = val.strip()
     return d
-
-
-def create_file(filename):
-    """ Create the file filename and create any directories needed
-
-        Args:
-            filename: Path to the file to be created
-    """
-    try:
-        os.makedirs(dirname(filename))
-    except OSError:
-        pass
-    with open(filename, 'w') as f:
-        f.write('')
-
-
-def kill(names):
-    print psutil.pids()
-    for name in names:
-        for p in psutil.process_iter():
-            try:
-                if p.name() == name:
-                    p.kill()
-                    break
-            except:
-                pass
 
 
 def connected(host="8.8.8.8", port=53, timeout=3):
@@ -230,7 +205,7 @@ def curate_cache(dir, min_free_percent=5.0):
 
 
 def get_cache_directory(domain=None):
-    """Get a directory for caches data
+    """Get a directory for caching data
 
     This directory can be used to hold temporary caches of data to
     speed up performance.  This directory will likely be part of a
@@ -244,102 +219,45 @@ def get_cache_directory(domain=None):
     Return:
         str: a path to the directory where you can cache data
     """
-    dir = mycroft.configuration.ConfigurationManager.get().get("cache_path")
+    config = mycroft.configuration.ConfigurationManager.instance()
+    dir = config.get("cache_path")
     if not dir:
         # If not defined, use /tmp/mycroft/cache
         dir = os.path.join(tempfile.gettempdir(), "mycroft", "cache")
-    return _ensure_directory_exists(dir, domain)
-
-
-def get_ipc_directory(domain=None):
-    """Get the directory used for Inter Process Communication
-
-    Files in this folder can be accessed by different processes on the
-    machine.  Useful for communication.  This is often a small RAM disk.
-
-    Args:
-        domain (str): The IPC domain.  Basically a subdirectory to prevent
-            overlapping signal filenames.
-
-    Returns:
-        str: a path to the IPC directory
-    """
-    dir = mycroft.configuration.ConfigurationManager.get().get("ipc_path")
-    if not dir:
-        # If not defined, use /tmp/mycroft/ipc
-        dir = os.path.join(tempfile.gettempdir(), "mycroft", "ipc")
-    return _ensure_directory_exists(dir, domain)
-
-
-def _ensure_directory_exists(dir, domain=None):
-    """ Create a directory and give access rights to all
-
-    Args:
-        domain (str): The IPC domain.  Basically a subdirectory to prevent
-            overlapping signal filenames.
-
-    Returns:
-        str: a path to the directory
-    """
-    if domain:
-        dir = os.path.join(dir, domain)
-    dir = os.path.normpath(dir)
-
-    if not os.path.isdir(dir):
-        try:
-            save = os.umask(0)
-            os.makedirs(dir, 0777)  # give everyone rights to r/w here
-        except OSError:
-            LOGGER.warn("Failed to create: " + dir)
-            pass
-        finally:
-            os.umask(save)
-
-    return dir
-
-
-def create_signal(signal_name):
-    """Create a named signal
-
-    Args:
-        signal_name (str): The signal's name.  Must only contain characters
-            valid in filenames.
-    """
-    try:
-        path = os.path.join(get_ipc_directory(), "signal", signal_name)
-        create_file(path)
-        return os.path.isfile(path)
-    except IOError:
-        return False
-
-
-def check_for_signal(signal_name, sec_lifetime=0):
-    """See if a named signal exists
-
-    Args:
-        signal_name (str): The signal's name.  Must only contain characters
-            valid in filenames.
-        sec_lifetime (int, optional): How many seconds the signal should
-            remain valid.  If 0 or not specified, it is a single-use signal.
-
-    Returns:
-        bool: True if the signal is defined, False otherwise
-    """
-    path = os.path.join(get_ipc_directory(), "signal", signal_name)
-    if os.path.isfile(path):
-        if sec_lifetime == 0:
-            # consume this single-use signal
-            os.remove(path)
-        elif int(os.path.getctime(path) + sec_lifetime) < int(time.time()):
-            # remove once expired
-            os.remove(path)
-            return False
-        return True
-
-    # No such signal exists
-    return False
+    return ensure_directory_exists(dir, domain)
 
 
 def validate_param(value, name):
     if not value:
         raise ValueError("Missing or empty %s in mycroft.conf " % name)
+
+
+def is_speaking():
+    """Determine if Text to Speech is occurring
+
+    Returns:
+        bool: True while still speaking
+    """
+    logger.info("mycroft.utils.is_speaking() is depreciated, use "
+                "mycroft.audio.is_speaking() instead.")
+    return mycroft.audio.is_speaking()
+
+
+def wait_while_speaking():
+    """Pause as long as Text to Speech is still happening
+
+    Pause while Text to Speech is still happening.  This always pauses
+    briefly to ensure that any preceeding request to speak has time to
+    begin.
+    """
+    logger.info("mycroft.utils.wait_while_speaking() is depreciated, use "
+                "mycroft.audio.wait_while_speaking() instead.")
+    return mycroft.audio.wait_while_speaking()
+
+
+def stop_speaking():
+    # TODO: Less hacky approach to this once Audio Manager is implemented
+    # Skills should only be able to stop speech they've initiated
+    logger.info("mycroft.utils.stop_speaking() is depreciated, use "
+                "mycroft.audio.stop_speaking() instead.")
+    mycroft.audio.stop_speaking()

@@ -37,26 +37,18 @@ import json                                                 # nopep8
 from threading import Thread, Lock                          # nopep8
 from mycroft.messagebus.client.ws import WebsocketClient    # nopep8
 from mycroft.messagebus.message import Message              # nopep8
-from mycroft.tts import TTSFactory                          # nopep8
 from mycroft.util import get_ipc_directory                  # nopep8
 from mycroft.util.log import getLogger                      # nopep8
 from mycroft.configuration import ConfigurationManager      # nopep8
 
-
-# client name is the name passed as source of message and used to determine if we are target of received messages
-# TODO make configurable somehow
-client_name = "CLI_Client"
-
-tts = None
 ws = None
 mutex = Lock()
-logger = getLogger(client_name)
+logger = getLogger("CLIClient")
 
 utterances = []
 chat = []   # chat history, oldest at the lowest index
 line = "What time is it"
 bSimple = '--simple' in sys.argv
-bQuiet = '--quiet' in sys.argv
 scr = None
 log_line_offset = 0  # num lines back in logs to show
 log_line_lr_scroll = 0  # amount to scroll left/right for long lines
@@ -255,30 +247,12 @@ def rebuild_filtered_log():
 
 def handle_speak(event):
     global chat
-    global tts
-    mutex.acquire()
-    target = event.context.get("destinatary", "all")
-    mute = event.context.get("mute", False)
-    if target != "all" and target != client_name:
-        return
-    if not bQuiet and not mute:
-        ws.emit(Message("recognizer_loop:audio_output_start"))
-    try:
-        utterance = event.data.get('utterance')
-        if bSimple:
-            print(">> " + utterance)
-        else:
-            chat.append(">> " + utterance)
-        draw_screen()
-        if not bQuiet and not mute:
-            if not tts:
-                tts = TTSFactory.create()
-                tts.init(ws)
-            tts.execute(utterance)
-    finally:
-        mutex.release()
-        if not bQuiet:
-            ws.emit(Message("recognizer_loop:audio_output_end"))
+    utterance = event.data.get('utterance')
+    if bSimple:
+        print(">> " + utterance)
+    else:
+        chat.append(">> " + utterance)
+    draw_screen()
 
 
 def connect():
@@ -710,10 +684,9 @@ def main(stdscr):
                     # Treat this as an utterance
                     history.append(line)
                     chat.append(line)
-                    context={'source': client_name, "destinatary": "skills"}
                     ws.emit(Message("recognizer_loop:utterance",
                                     {'utterances': [line.strip()],
-                                     'lang': 'en-us'}, context))
+                                     'lang': 'en-us'}))
                 hist_idx = -1
                 line = ""
             elif c == curses.KEY_UP:
@@ -759,7 +732,7 @@ def main(stdscr):
                 # resizeterm() causes another curses.KEY_RESIZE, so
                 # we need to capture that to prevent a loop of resizes
                 c = scr.getch()
-            elif c == curses.KEY_BACKSPACE:
+            elif c == curses.KEY_BACKSPACE or c == 127:
                 # Backspace to erase a character in the utterance
                 line = line[:-1]
             elif curses.ascii.isascii(c):
@@ -796,10 +769,9 @@ def simple_cli():
             time.sleep(1.5)
             print("Input (Ctrl+C to quit):")
             line = sys.stdin.readline()
-            context = {"source": client_name, "destinatary": "skills"}
             ws.emit(
                 Message("recognizer_loop:utterance",
-                        {'utterances': [line.strip()]}, context))
+                        {'utterances': [line.strip()]}))
     except KeyboardInterrupt, e:
         # User hit Ctrl+C to quit
         print("")

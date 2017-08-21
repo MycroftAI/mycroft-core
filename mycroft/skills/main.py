@@ -30,10 +30,12 @@ from mycroft.lock import Lock  # Creates PID file for single instance
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import load_skill, create_skill_descriptor, \
-    MainModule, SKILLS_DIR
+    MainModule, SKILLS_DIR, FallbackSkill
 from mycroft.skills.intent_service import IntentService
+from mycroft.skills.padatious_service import PadatiousService
 from mycroft.util import connected
 from mycroft.util.log import getLogger
+from mycroft.api import is_paired
 import mycroft.dialog
 
 logger = getLogger("Skills")
@@ -46,6 +48,7 @@ last_modified_skill = 0
 skills_directories = []
 skill_reload_thread = None
 skills_manager_timer = None
+id_counter = 0
 
 installer_config = ConfigurationManager.instance().get("SkillInstallerSkill")
 MSM_BIN = installer_config.get("path", join(MYCROFT_ROOT_PATH, 'msm', 'msm'))
@@ -64,18 +67,23 @@ def install_default_skills(speak=True):
             speak (optional): Enable response for success. Default True
     """
     if exists(MSM_BIN):
-        res = subprocess.call(MSM_BIN + " default", stderr=subprocess.STDOUT,
-                              stdout=subprocess.PIPE, shell=True)
+        p = subprocess.Popen(MSM_BIN + " default", stderr=subprocess.STDOUT,
+                             stdout=subprocess.PIPE, shell=True)
+        (output, err) = p.communicate()
+        res = p.returncode
         if res == 0 and speak:
-            ws.emit(Message("speak", {
-                'utterance': mycroft.dialog.get("skills updated")}))
+            # ws.emit(Message("speak", {
+            #     'utterance': mycroft.dialog.get("skills updated")}))
+            pass
         elif not connected():
+            logger.error('msm failed, network connection is not available')
             ws.emit(Message("speak", {
                 'utterance': mycroft.dialog.get("no network connection")}))
         elif res != 0:
+            logger.error('msm failed with error {}: {}'.format(res, output))
             ws.emit(Message("speak", {
                 'utterance': mycroft.dialog.get(
-                             "sorry I couldn't install default skills")}))
+                    "sorry I couldn't install default skills")}))
 
     else:
         logger.error("Unable to invoke Mycroft Skill Manager: " + MSM_BIN)
@@ -86,9 +94,10 @@ def skills_manager(message):
 
     if connected():
         if skills_manager_timer is None:
-            ws.emit(
-                Message("speak", {'utterance':
-                        mycroft.dialog.get("checking for updates")}))
+            pass
+            # ws.emit(
+            #     Message("speak", {'utterance':
+            #             mycroft.dialog.get("checking for updates")}))
 
         # Install default skills and look for updates via Github
         logger.debug("==== Invoking Mycroft Skill Manager: " + MSM_BIN)
@@ -110,6 +119,8 @@ def _load_skills():
 
     check_connection()
 
+    ws.on('intent_failure', FallbackSkill.make_intent_failure_handler(ws))
+
     # Create skill_manager listener and invoke the first time
     ws.on('skill_manager', skills_manager)
     ws.on('mycroft.internet.connected', install_default_skills)
@@ -117,6 +128,8 @@ def _load_skills():
 
     # Create the Intent manager, which converts utterances to intents
     # This is the heart of the voice invoked skill system
+
+    PadatiousService(ws)
     IntentService(ws)
 
     # Create a thread that monitors the loaded skills, looking for updates
@@ -128,6 +141,14 @@ def _load_skills():
 def check_connection():
     if connected():
         ws.emit(Message('mycroft.internet.connected'))
+        # check for pairing, if not automatically start pairing
+        if not is_paired():
+            # begin the process
+            payload = {
+                'utterances': ["pair my device"],
+                'lang': "en-us"
+            }
+            ws.emit(Message("recognizer_loop:utterance", payload))
     else:
         thread = Timer(1, check_connection)
         thread.daemon = True
@@ -135,14 +156,30 @@ def check_connection():
 
 
 def _get_last_modified_date(path):
-    last_date = 0
-    # getting all recursive paths
-    for root, _, _ in os.walk(path):
-        f = root.replace(path, "")
-        # checking if is a hidden path
-        if not f.startswith(".") and not f.startswith("/."):
-            last_date = max(last_date, os.path.getmtime(path + f))
+    """
+        Get last modified date excluding compiled python files, hidden
+        directories and the settings.json file.
 
+        Arg:
+            path:   skill directory to check
+        Returns:    time of last change
+    """
+    last_date = 0
+    root_dir, subdirs, files = os.walk(path).next()
+    # get subdirs and remove hidden ones
+    subdirs = [s for s in subdirs if not s.startswith('.')]
+    for subdir in subdirs:
+        for root, _, _ in os.walk(os.path.join(path, subdir)):
+            base = os.path.basename(root)
+            # checking if is a hidden path
+            if not base.startswith(".") and not base.startswith("/."):
+                last_date = max(last_date, os.path.getmtime(root))
+
+    # check files of interest in the skill root directory
+    files = [f for f in files
+             if not f.endswith('.pyc') and f != 'settings.json']
+    for f in files:
+        last_date = max(last_date, os.path.getmtime(os.path.join(path, f)))
     return last_date
 
 
@@ -160,7 +197,8 @@ def _watch_skills():
 
             for skill_folder in list:
                 if skill_folder not in loaded_skills:
-                    loaded_skills[skill_folder] = {}
+                    id_counter += 1
+                    loaded_skills[skill_folder] = {"id": id_counter}
                 skill = loaded_skills.get(skill_folder)
                 skill["path"] = os.path.join(SKILLS_DIR, skill_folder)
                 # checking if is a skill
@@ -174,8 +212,7 @@ def _watch_skills():
                         "loaded") and modified <= last_modified_skill:
                     continue
                 # checking if skill was modified
-                elif skill.get(
-                        "instance") and modified > last_modified_skill:
+                elif skill.get("instance") and modified > last_modified_skill:
                     # checking if skill should be reloaded
                     if not skill["instance"].reload_skill:
                         continue
@@ -185,7 +222,7 @@ def _watch_skills():
                     del skill["instance"]
                 skill["loaded"] = True
                 skill["instance"] = load_skill(
-                    create_skill_descriptor(skill["path"]), ws)
+                    create_skill_descriptor(skill["path"]), ws, skill["id"])
         # get the last modified skill
         modified_dates = map(lambda x: x.get("last_modified"),
                              loaded_skills.values())
@@ -194,6 +231,38 @@ def _watch_skills():
 
         # Pause briefly before beginning next scan
         time.sleep(2)
+
+
+def _starting_up():
+    # Startup:  Kick off loading of skills
+    _load_skills()
+
+
+def handle_converse_request(message):
+    skill_id = int(message.data["skill_id"])
+    utterances = message.data["utterances"]
+    lang = message.data["lang"]
+    global ws, loaded_skills
+    # loop trough skills list and call converse for skill with skill_id
+    for skill in loaded_skills:
+        if loaded_skills[skill]["id"] == skill_id:
+            try:
+                instance = loaded_skills[skill]["instance"]
+            except:
+                logger.error("converse requested but skill not loaded")
+                ws.emit(Message("skill.converse.response", {
+                    "skill_id": 0, "result": False}))
+                return
+            try:
+                result = instance.converse(utterances, lang)
+                ws.emit(Message("skill.converse.response", {
+                    "skill_id": skill_id, "result": result}))
+                return
+            except:
+                logger.error(
+                    "Converse method malformed for skill " + str(skill_id))
+    ws.emit(Message("skill.converse.response", {
+        "skill_id": 0, "result": False}))
 
 
 def main():
@@ -223,9 +292,9 @@ def main():
         logger.debug(message)
 
     ws.on('message', _echo)
-
-    # Kick off loading of skills
-    ws.once('open', _load_skills)
+    ws.on('skill.converse.request', handle_converse_request)
+    # Startup will be called after websocket is full live
+    ws.once('open', _starting_up)
     ws.run_forever()
 
 

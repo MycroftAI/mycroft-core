@@ -16,7 +16,6 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 import subprocess
-import hashlib
 import os
 import os.path
 from time import time, sleep
@@ -35,12 +34,18 @@ config = ConfigurationManager.get().get("tts").get("mimic")
 
 BIN = config.get("path", os.path.join(MYCROFT_ROOT_PATH, 'mimic', 'bin',
                                       'mimic'))
+if not os.path.isfile(BIN):
+    # Search for mimic on the path
+    import distutils.spawn
+    BIN = distutils.spawn.find_executable("mimic")
 
 
 class Mimic(TTS):
     def __init__(self, lang, voice):
         super(Mimic, self).__init__(lang, voice, MimicValidator(self))
         self.init_args()
+        self.clear_cache()
+        self.type = 'wav'
 
     def init_args(self):
         self.args = [BIN, '-voice', self.voice, '-psdur']
@@ -48,73 +53,22 @@ class Mimic(TTS):
         if stretch:
             self.args += ['--setf', 'duration_stretch=' + stretch]
 
-    def get_tts(self, sentence):
-        key = str(hashlib.md5(sentence.encode('utf-8', 'ignore')).hexdigest())
-        wav_file = os.path.join(mycroft.util.get_cache_directory("tts"),
-                                key + ".wav")
-
-        if os.path.exists(wav_file):
-            phonemes = self.load_phonemes(key)
-            if phonemes:
-                # Using cached value
-                LOGGER.debug("TTS cache hit")
-                return wav_file, phonemes
-
+    def get_tts(self, sentence, wav_file):
         # Generate WAV and phonemes
         phonemes = subprocess.check_output(self.args + ['-o', wav_file,
                                                         '-t', sentence])
-        self.save_phonemes(key, phonemes)
         return wav_file, phonemes
 
-    def save_phonemes(self, key, phonemes):
-        # Clean out the cache as needed
-        cache_dir = mycroft.util.get_cache_directory("tts")
-        mycroft.util.curate_cache(cache_dir)
-
-        pho_file = os.path.join(cache_dir, key+".pho")
-        try:
-            with open(pho_file, "w") as cachefile:
-                cachefile.write(phonemes)
-        except:
-            LOGGER.debug("Failed to write .PHO to cache")
-            pass
-
-    def load_phonemes(self, key):
-        pho_file = os.path.join(mycroft.util.get_cache_directory("tts"),
-                                key+".pho")
-        if os.path.exists(pho_file):
-            try:
-                with open(pho_file, "r") as cachefile:
-                    phonemes = cachefile.read().strip()
-                return phonemes
-            except:
-                LOGGER.debug("Failed to read .PHO from cache")
-        return None
-
-    def execute(self, sentence):
-        wav_file, phonemes = self.get_tts(sentence)
-
-        self.blink(0.5)
-        process = mycroft.util.play_wav(wav_file)
-        self.visime(phonemes)
-        process.communicate()
-        self.blink(0.2)
-
     def visime(self, output):
+        visimes = []
         start = time()
         pairs = output.split(" ")
         for pair in pairs:
-            if mycroft.util.check_for_signal('buttonPress'):
-                return
             pho_dur = pair.split(":")  # phoneme:duration
             if len(pho_dur) == 2:
-                code = VISIMES.get(pho_dur[0], '4')
-                if self.enclosure:
-                    self.enclosure.mouth_viseme(code)
-                duration = float(pho_dur[1])
-                delta = time() - start
-                if delta < duration:
-                    sleep(duration - delta)
+                visimes.append((VISIMES.get(pho_dur[0], '4'),
+                                float(pho_dur[1])))
+        return visimes
 
 
 class MimicValidator(TTSValidator):
@@ -122,14 +76,14 @@ class MimicValidator(TTSValidator):
         super(MimicValidator, self).__init__(tts)
 
     def validate_lang(self):
-        # TODO
+        # TODO: Verify version of mimic can handle the requested language
         pass
 
     def validate_connection(self):
         try:
             subprocess.call([BIN, '--version'])
         except:
-            LOGGER.info("Falied to find mimic at: " + BIN)
+            LOGGER.info("Failed to find mimic at: " + BIN)
             raise Exception(
                 'Mimic was not found. Run install-mimic.sh to install it.')
 

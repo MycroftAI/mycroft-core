@@ -24,7 +24,9 @@ sudo dnf install -y \
     curl \
     pkgconfig \
     libicu-devel \
-    automake
+    automake \
+    libjpeg-turbo-devel \
+    fann-devel
 
 # upgrade virtualenv to latest from pypi
 sudo pip install --upgrade virtualenv
