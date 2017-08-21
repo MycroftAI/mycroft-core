@@ -189,7 +189,7 @@ class MycroftSkillTest(unittest.TestCase):
         s.bind(self.emitter)
         s.initialize()
         expected = [{'at_least_one': [],
-                     'name': 'TestSkill1:a',
+                     'name': '0:a',
                      'optional': [],
                      'requires': [('Keyword', 'Keyword')]}]
         self.check_register_intent(expected)
@@ -199,7 +199,7 @@ class MycroftSkillTest(unittest.TestCase):
         s.bind(self.emitter)
         s.initialize()
         expected = [{'at_least_one': [],
-                     'name': 'TestSkill2:a',
+                     'name': '0:a',
                      'optional': [],
                      'requires': [('Keyword', 'Keyword')]}]
 
@@ -226,7 +226,7 @@ class MycroftSkillTest(unittest.TestCase):
 
         expected = [{
             'file_name': join(dirname(__file__), 'intent_file', 'test.intent'),
-            'intent_name': s.name + ':test.intent'}]
+            'intent_name': str(s.skill_id) + ':test.intent'}]
 
         self.check_register_intent_file(expected)
 
@@ -246,13 +246,13 @@ class MycroftSkillTest(unittest.TestCase):
         s.initialize()
         s._register_decorated()
         expected = [{'at_least_one': [],
-                     'name': 'TestSkill:a',
+                     'name': '0:a',
                      'optional': [],
                      'requires': [('Keyword', 'Keyword')]},
                     {
                      'file_name': join(dirname(__file__), 'intent_file',
                                        'test.intent'),
-                     'intent_name': s.name + ':test.intent'}]
+                     'intent_name': str(s.skill_id) + ':test.intent'}]
 
         self.check_register_decorators(expected)
 
