@@ -177,7 +177,7 @@ class IntentService(object):
         # and remove that reference
         self.remove_active_skill(skill_id)
         # add skill with timestamp to start of skill_list
-        self.active_skills.insert(0, [skill_id, time()])
+        self.active_skills.insert(0, [skill_id, time.time()])
 
     def update_context(self, intent):
         for tag in intent['__tags__']:
