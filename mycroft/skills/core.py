@@ -217,6 +217,7 @@ class MycroftSkill(object):
         self.reload_skill = True
         self.events = []
         self.skill_id = 0
+        self.message_context = self.get_message_context()
 
     @property
     def location(self):
@@ -318,6 +319,7 @@ class MycroftSkill(object):
                     "An error occurred while processing a request in " +
                     self.name, exc_info=True)
         if handler:
+            self.emitter.on(name, self.handle_update_message_context)
             self.emitter.on(name, wrapper)
             self.events.append((name, wrapper))
 
@@ -339,7 +341,7 @@ class MycroftSkill(object):
             raise ValueError('intent_parser is not an Intent')
 
         name = intent_parser.name
-        intent_parser.name = self.name + ':' + intent_parser.name
+        intent_parser.name = str(self.skill_id) + ':' + intent_parser.name
         self.emitter.emit(Message("register_intent", intent_parser.__dict__))
         self.registered_intents.append((name, intent_parser))
         self.add_event(intent_parser.name, handler, need_self)
@@ -354,7 +356,7 @@ class MycroftSkill(object):
                 handler:     function to register with intent
                 need_self:   use for decorator. See register_intent
         """
-        intent_name = self.name + ':' + intent_file
+        intent_name = str(self.skill_id) + ':' + intent_file
         self.emitter.emit(Message("padatious:register_intent", {
             "file_name": join(self.vocab_dir, intent_file),
             "intent_name": intent_name
@@ -379,6 +381,9 @@ class MycroftSkill(object):
             else:
                 logger.error('Could not enable ' + intent_name +
                              ', it hasn\'t been registered.')
+
+    def handle_update_message_context(self, message):
+        self.message_context = self.get_message_context(message.context)
 
     def set_context(self, context, word=''):
         """
@@ -412,16 +417,41 @@ class MycroftSkill(object):
         re.compile(regex_str)  # validate regex
         self.emitter.emit(Message('register_vocab', {'regex': regex_str}))
 
-    def speak(self, utterance, expect_response=False):
+    def get_message_context(self, message_context=None):
+        if message_context is None:
+            message_context = {"destinatary": "all", "source": self.name, "mute": False, "more_speech": False, "target": "all"}
+        else:
+            if "destinatary" not in message_context.keys():
+                message_context["destinatary"] = self.message_context.get("destinatary", "all")
+            if "target" not in message_context.keys():
+                message_context["target"] = self.message_context.get("target", "all")
+            if "mute" not in message_context.keys():
+                message_context["mute"] = self.message_context.get("mute", False)
+            if "more_speech" not in message_context.keys():
+                message_context["more_speech"] = self.message_context.get("more_speech", False)
+        if message_context.get("source", "skills") == "skills":
+            message_context["source"] = self.name
+        return message_context
+
+    def speak(self, utterance, expect_response=False, metadata=None, message_context=None):
+        if message_context is None:
+            # use current context
+            message_context = {}
+        if metadata is None:
+            metadata = {}
         # registers the skill as being active
         self.enclosure.register(self.name)
         data = {'utterance': utterance,
-                'expect_response': expect_response}
-        self.emitter.emit(Message("speak", data))
+                'expect_response': expect_response,
+                "metadata": metadata}
+        self.emitter.emit(Message("speak", data, self.get_message_context(message_context)))
 
-    def speak_dialog(self, key, data={}, expect_response=False):
-        data['expect_response'] = expect_response
-        self.speak(self.dialog_renderer.render(key, data))
+    def speak_dialog(self, key, data=None, expect_response=False, metadata=None, message_context=None):
+        if data is None:
+            data = {}
+        self.speak(self.dialog_renderer.render(key, data),
+                   expect_response=expect_response, metadata=metadata,
+                   message_context=message_context)
 
     def init_dialog(self, root_directory):
         dialog_dir = join(root_directory, 'dialog', self.lang)
@@ -503,9 +533,11 @@ class FallbackSkill(MycroftSkill):
         """Goes through all fallback handlers until one returns true"""
 
         def handler(message):
-            for _, handler in sorted(cls.fallback_handlers.items(),
+            for _, handler, context_update_handler  in sorted(cls.fallback_handlers.items(),
                                      key=operator.itemgetter(0)):
                 try:
+                    if context_update_handler is not None:
+                        context_update_handler(message)
                     if handler(message):
                         return
                 except Exception as e:
@@ -516,7 +548,8 @@ class FallbackSkill(MycroftSkill):
         return handler
 
     @classmethod
-    def _register_fallback(cls, handler, priority):
+    def _register_fallback(cls, handler, priority, skill_folder=None,
+                           context_update_handler=None):
         """
         Register a function to be called as a general info fallback
         Fallback should receive message and return
@@ -528,7 +561,7 @@ class FallbackSkill(MycroftSkill):
         while priority in cls.fallback_handlers:
             priority += 1
 
-        cls.fallback_handlers[priority] = handler
+        cls.fallback_handlers[priority] = handler, context_update_handler
 
     def register_fallback(self, handler, priority):
         """
@@ -536,7 +569,8 @@ class FallbackSkill(MycroftSkill):
             and with the list of handlers registered by this instance
         """
         self.instance_fallback_handlers.append(handler)
-        self._register_fallback(handler, priority)
+        self._register_fallback(handler, priority,
+                                self.handle_update_message_context)
 
     @classmethod
     def remove_fallback(cls, handler_to_del):

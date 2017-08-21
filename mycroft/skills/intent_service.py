@@ -177,7 +177,7 @@ class IntentService(object):
         # and remove that reference
         self.remove_active_skill(skill_id)
         # add skill with timestamp to start of skill_list
-        self.active_skills.insert(0, [skill_id, time()])
+        self.active_skills.insert(0, [skill_id, time.time()])
 
     def update_context(self, intent):
         for tag in intent['__tags__']:
@@ -187,14 +187,29 @@ class IntentService(object):
             elif context_entity['data'][0][1] in self.context_keywords:
                 self.context_manager.inject_context(context_entity)
 
+    def get_message_context(self, context=None):
+        if context is None:
+            context = {}
+        # by default set destinatary of reply to source of this message
+        context["destinatary"] = context.get("source", "all")
+        context["mute"] = context.get("mute", False)
+        context["source"] = "skills"
+        return context
+
     def handle_utterance(self, message):
+        # Check if this message is for us
+        if message.context is None:
+            message.context = {}
+        destinatary = message.context.get("destinatary", "skills")
+        if destinatary != "skills" and destinatary != "all":
+            return
         # Get language of the utterance
         lang = message.data.get('lang', None)
         if not lang:
             lang = "en-us"
 
         utterances = message.data.get('utterances', '')
-
+        context = self.get_message_context(message.context)
         # check for conversation time-out
         self.active_skills = [skill for skill in self.active_skills
                               if time.time() - skill[
@@ -226,7 +241,7 @@ class IntentService(object):
         if best_intent and best_intent.get('confidence', 0.0) > 0.0:
             self.update_context(best_intent)
             reply = message.reply(
-                best_intent.get('intent_type'), best_intent)
+                best_intent.get('intent_type'), best_intent, context)
             self.emitter.emit(reply)
             # update active skills
             skill_id = int(best_intent['intent_type'].split(":")[0])
@@ -236,7 +251,7 @@ class IntentService(object):
             self.emitter.emit(Message("intent_failure", {
                 "utterance": utterances[0],
                 "lang": lang
-            }))
+            }, context))
 
     def handle_register_vocab(self, message):
         start_concept = message.data.get('start')
