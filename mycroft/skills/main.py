@@ -30,7 +30,7 @@ from mycroft.lock import Lock  # Creates PID file for single instance
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import load_skill, create_skill_descriptor, \
-    MainModule, SKILLS_DIR, FallbackSkill
+    MainModule, FallbackSkill
 from mycroft.skills.intent_service import IntentService
 from mycroft.skills.padatious_service import PadatiousService
 from mycroft.util import connected
@@ -49,6 +49,7 @@ skills_directories = []
 skill_reload_thread = None
 skills_manager_timer = None
 id_counter = 0
+SKILLS_DIR = '/opt/mycroft/skills'
 
 installer_config = ConfigurationManager.instance().get("SkillInstallerSkill")
 MSM_BIN = installer_config.get("path", join(MYCROFT_ROOT_PATH, 'msm', 'msm'))

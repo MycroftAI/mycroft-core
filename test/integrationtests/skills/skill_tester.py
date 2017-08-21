@@ -1,5 +1,6 @@
 import json
-from os.path import dirname
+import os
+from os.path import dirname, join, isdir
 import re
 from time import sleep
 
@@ -7,9 +8,48 @@ from pyee import EventEmitter
 
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
-from mycroft.skills.core import load_skills, unload_skills
+from mycroft.skills.core import create_skill_descriptor, load_skill
 
 __author__ = 'seanfitz'
+
+MainModule = '__init__'
+
+
+def get_skills(skills_folder):
+    skills = []
+    possible_skills = os.listdir(skills_folder)
+    for i in possible_skills:
+        location = join(skills_folder, i)
+        if (isdir(location) and
+                not MainModule + ".py" in os.listdir(location)):
+            for j in os.listdir(location):
+                name = join(location, j)
+                if (not isdir(name) or
+                        not MainModule + ".py" in os.listdir(name)):
+                    continue
+                skills.append(create_skill_descriptor(name))
+        if (not isdir(location) or
+                not MainModule + ".py" in os.listdir(location)):
+            continue
+
+        skills.append(create_skill_descriptor(location))
+    skills = sorted(skills, key=lambda p: p.get('name'))
+    return skills
+
+
+def load_skills(emitter, skills_root):
+    skill_list = []
+    skill_id = 0
+    for skill in get_skills(skills_root):
+        skill_list.append(load_skill(skill, emitter, skill_id))
+        skill_id += 1
+
+    return skill_list
+
+
+def unload_skills(skills):
+    for s in skills:
+        s.shutdown()
 
 
 class RegistrationOnlyEmitter(object):

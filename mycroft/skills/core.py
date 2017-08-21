@@ -41,8 +41,6 @@ __author__ = 'seanfitz'
 skills_config = ConfigurationManager.instance().get("skills")
 BLACKLISTED_SKILLS = skills_config.get("blacklisted_skills", [])
 
-SKILLS_DIR = "/opt/mycroft/skills"
-
 MainModule = '__init__'
 
 logger = getLogger(__name__)
@@ -136,46 +134,9 @@ def load_skill(skill_descriptor, emitter, skill_id):
     return None
 
 
-def get_skills(skills_folder):
-    logger.info("LOADING SKILLS FROM " + skills_folder)
-    skills = []
-    possible_skills = os.listdir(skills_folder)
-    for i in possible_skills:
-        location = join(skills_folder, i)
-        if (isdir(location) and
-                not MainModule + ".py" in os.listdir(location)):
-            for j in os.listdir(location):
-                name = join(location, j)
-                if (not isdir(name) or
-                        not MainModule + ".py" in os.listdir(name)):
-                    continue
-                skills.append(create_skill_descriptor(name))
-        if (not isdir(location) or
-                not MainModule + ".py" in os.listdir(location)):
-            continue
-
-        skills.append(create_skill_descriptor(location))
-    skills = sorted(skills, key=lambda p: p.get('name'))
-    return skills
-
-
 def create_skill_descriptor(skill_folder):
     info = imp.find_module(MainModule, [skill_folder])
     return {"name": os.path.basename(skill_folder), "info": info}
-
-
-def load_skills(emitter, skills_root=SKILLS_DIR):
-    logger.info("Checking " + skills_root + " for new skills")
-    skill_list = []
-    for skill in get_skills(skills_root):
-        skill_list.append(load_skill(skill, emitter))
-
-    return skill_list
-
-
-def unload_skills(skills):
-    for s in skills:
-        s.shutdown()
 
 
 _intent_list = []
