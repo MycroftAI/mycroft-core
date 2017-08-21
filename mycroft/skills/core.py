@@ -96,6 +96,15 @@ def open_intent_envelope(message):
 
 
 def load_skill(skill_descriptor, emitter, skill_id):
+    """
+        load skill from skill descriptor.
+
+        Args:
+            skill_descriptor: descriptor of skill to load
+            emitter:          messagebus emitter
+            skill_id:         id number for skill
+    """
+
     try:
         logger.info("ATTEMPTING TO LOAD SKILL: " + skill_descriptor["name"] +
                     " with ID " + str(skill_id))
