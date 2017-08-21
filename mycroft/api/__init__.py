@@ -33,7 +33,7 @@ class Api(object):
 
     def __init__(self, path):
         self.path = path
-        config = ConfigurationManager().get()
+        config = ConfigurationManager.get()
         config_server = config.get("server")
         self.url = config_server.get("url")
         self.version = config_server.get("version")
