@@ -248,6 +248,9 @@ def rebuild_filtered_log():
 def handle_speak(event):
     global chat
     utterance = event.data.get('utterance')
+    target = event.context.get('destinatary', 'all')
+    if target != "all" and "cli" not in target:
+        return
     if bSimple:
         print(">> " + utterance)
     else:
@@ -686,7 +689,7 @@ def main(stdscr):
                     chat.append(line)
                     ws.emit(Message("recognizer_loop:utterance",
                                     {'utterances': [line.strip()],
-                                     'lang': 'en-us', 'source': 'cli'}))
+                                     'lang': 'en-us'}, {'source': 'cli'}))
                 hist_idx = -1
                 line = ""
             elif c == curses.KEY_UP:
@@ -771,7 +774,7 @@ def simple_cli():
             line = sys.stdin.readline()
             ws.emit(
                 Message("recognizer_loop:utterance",
-                        {'utterances': [line.strip()], "source": "cli"}))
+                        {'utterances': [line.strip()]}, {'source': 'cli'}))
     except KeyboardInterrupt, e:
         # User hit Ctrl+C to quit
         print("")
