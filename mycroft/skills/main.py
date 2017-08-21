@@ -111,6 +111,9 @@ def skills_manager(message):
 
 
 def _skills_manager_dispatch():
+    """
+        Thread function to trigger skill_manager over message bus.
+    """
     ws.emit(Message("skill_manager", {}))
 
 
@@ -150,6 +153,10 @@ def _starting_up():
 
 
 def check_connection():
+    """
+        Check for network connection. If not paired trigger pairing.
+        Runs as a Timer every second until connection is detected.
+    """
     if connected():
         ws.emit(Message('mycroft.internet.connected'))
         # check for pairing, if not automatically start pairing
@@ -195,6 +202,9 @@ def _get_last_modified_date(path):
 
 
 def _watch_skills():
+    """
+        Thread function to reload skills when a change is detected.
+    """
     global ws, loaded_skills, last_modified_skill, \
         id_counter
 
@@ -245,6 +255,10 @@ def _watch_skills():
 
 
 def handle_converse_request(message):
+    """
+        handle_converse_request checks if the targeted skill id can handle
+        conversation.
+    """
     skill_id = int(message.data["skill_id"])
     utterances = message.data["utterances"]
     lang = message.data["lang"]
@@ -267,8 +281,8 @@ def handle_converse_request(message):
             except:
                 logger.error(
                     "Converse method malformed for skill " + str(skill_id))
-    ws.emit(Message("skill.converse.response", {
-        "skill_id": 0, "result": False}))
+    ws.emit(Message("skill.converse.response",
+                    {"skill_id": 0, "result": False}))
 
 
 def main():
