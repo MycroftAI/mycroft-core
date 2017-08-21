@@ -339,7 +339,7 @@ class MycroftSkill(object):
             raise ValueError('intent_parser is not an Intent')
 
         name = intent_parser.name
-        intent_parser.name = self.name + ':' + intent_parser.name
+        intent_parser.name = str(self.skill_id) + ':' + intent_parser.name
         self.emitter.emit(Message("register_intent", intent_parser.__dict__))
         self.registered_intents.append((name, intent_parser))
         self.add_event(intent_parser.name, handler, need_self)
@@ -354,7 +354,7 @@ class MycroftSkill(object):
                 handler:     function to register with intent
                 need_self:   use for decorator. See register_intent
         """
-        intent_name = self.name + ':' + intent_file
+        intent_name = str(self.skill_id) + ':' + intent_file
         self.emitter.emit(Message("padatious:register_intent", {
             "file_name": join(self.vocab_dir, intent_file),
             "intent_name": intent_name
