@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import unittest
 import sys
 from os.path import join, dirname, abspath
@@ -5,7 +7,9 @@ from re import error
 
 from mycroft.skills.core import load_regex_from_file, load_regex, \
     load_vocab_from_file, load_vocabulary, MycroftSkill, \
-    load_skill, create_skill_descriptor
+    load_skill, create_skill_descriptor, open_intent_envelope
+
+from mycroft.messagebus.message import Message
 from adapt.intent import IntentBuilder
 
 from mycroft.util.log import getLogger
@@ -168,6 +172,14 @@ class MycroftSkillTest(unittest.TestCase):
         except OSError as e:
             self.assertEquals(e.strerror, 'No such file or directory')
 
+    def test_open_envelope(self):
+        name = 'Jerome'
+        intent = IntentBuilder(name).require('Keyword')
+        intent.name = name
+        m = Message("register_intent", intent.__dict__)
+        unpacked_intent = open_intent_envelope(m)
+        self.assertEqual(intent.__dict__, unpacked_intent.__dict__)
+
     def test_load_skill(self):
         """ Verify skill load function. """
         e_path = join(dirname(__file__), 'test_skill')
@@ -255,6 +267,63 @@ class MycroftSkillTest(unittest.TestCase):
                      'intent_name': str(s.skill_id) + ':test.intent'}]
 
         self.check_register_decorators(expected)
+
+    def test_failing_set_context(self):
+        s = TestSkill1()
+        s.bind(self.emitter)
+        with self.assertRaises(ValueError):
+            s.set_context(1)
+        with self.assertRaises(ValueError):
+            s.set_context(1, 1)
+        with self.assertRaises(ValueError):
+            s.set_context('Kowabunga', 1)
+
+    def test_set_context(self):
+        def check_set_context(result_list):
+            for type in self.emitter.get_types():
+                self.assertEquals(type, 'add_context')
+            self.assertEquals(sorted(self.emitter.get_results()),
+                              sorted(result_list))
+            self.emitter.reset()
+
+        s = TestSkill1()
+        s.bind(self.emitter)
+        # No context content
+        s.set_context('TurtlePower')
+        expected = [{'context': 'TurtlePower', 'word': ''}]
+        check_set_context(expected)
+
+        # context with content
+        s.set_context('Technodrome', 'Shredder')
+        expected = [{'context': 'Technodrome', 'word': 'Shredder'}]
+        check_set_context(expected)
+
+        # UTF-8 context
+        s.set_context(u'Smörgåsbord€15')
+        expected = [{'context': u'Smörgåsbord€15', 'word': ''}]
+        check_set_context(expected)
+
+        self.emitter.reset()
+
+    def test_failing_remove_context(self):
+        s = TestSkill1()
+        s.bind(self.emitter)
+        with self.assertRaises(ValueError):
+            s.remove_context(1)
+
+    def test_remove_context(self):
+        def check_remove_context(result_list):
+            for type in self.emitter.get_types():
+                self.assertEquals(type, 'remove_context')
+            self.assertEquals(sorted(self.emitter.get_results()),
+                              sorted(result_list))
+            self.emitter.reset()
+
+        s = TestSkill1()
+        s.bind(self.emitter)
+        s.remove_context('Donatello')
+        expected = [{'context': 'Donatello'}]
+        check_remove_context(expected)
 
 
 class TestSkill1(MycroftSkill):
