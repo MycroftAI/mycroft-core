@@ -187,7 +187,7 @@ def _get_last_modified_date(path):
     # get subdirs and remove hidden ones
     subdirs = [s for s in subdirs if not s.startswith('.')]
     for subdir in subdirs:
-        for root, _, _ in os.walk(os.path.join(path, subdir)):
+        for root, _, _ in os.walk(join(path, subdir)):
             base = os.path.basename(root)
             # checking if is a hidden path
             if not base.startswith(".") and not base.startswith("/."):

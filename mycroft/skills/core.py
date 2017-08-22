@@ -19,11 +19,9 @@ import imp
 import time
 
 import operator
-import os.path
 import re
-import time
-from os.path import join, dirname, splitext, isdir
-
+from os.path import join, dirname, splitext, isdir, basename, exists
+from os import listdir
 from functools import wraps
 
 from adapt.intent import Intent, IntentBuilder
@@ -89,14 +87,14 @@ def load_regex_from_file(path, emitter):
 
 
 def load_vocabulary(basedir, emitter):
-    for vocab_type in os.listdir(basedir):
+    for vocab_type in listdir(basedir):
         if vocab_type.endswith(".voc"):
             load_vocab_from_file(
                 join(basedir, vocab_type), splitext(vocab_type)[0], emitter)
 
 
 def load_regex(basedir, emitter):
-    for regex_type in os.listdir(basedir):
+    for regex_type in listdir(basedir):
         if regex_type.endswith(".rx"):
             load_regex_from_file(
                 join(basedir, regex_type), emitter)
@@ -154,7 +152,7 @@ def load_skill(skill_descriptor, emitter, skill_id):
 
 def create_skill_descriptor(skill_folder):
     info = imp.find_module(MainModule, [skill_folder])
-    return {"name": os.path.basename(skill_folder), "info": info}
+    return {"name": basename(skill_folder), "info": info}
 
 
 # Lists used when adding skill handlers using decorators
@@ -466,7 +464,7 @@ class MycroftSkill(object):
 
     def init_dialog(self, root_directory):
         dialog_dir = join(root_directory, 'dialog', self.lang)
-        if os.path.exists(dialog_dir):
+        if exists(dialog_dir):
             self.dialog_renderer = DialogLoader().load(dialog_dir)
         else:
             logger.debug('No dialog loaded, ' + dialog_dir + ' does not exist')
@@ -475,12 +473,12 @@ class MycroftSkill(object):
         self.init_dialog(root_directory)
         self.load_vocab_files(join(root_directory, 'vocab', self.lang))
         regex_path = join(root_directory, 'regex', self.lang)
-        if os.path.exists(regex_path):
+        if exists(regex_path):
             self.load_regex_files(regex_path)
 
     def load_vocab_files(self, vocab_dir):
         self.vocab_dir = vocab_dir
-        if os.path.exists(vocab_dir):
+        if exists(vocab_dir):
             load_vocabulary(vocab_dir, self.emitter)
         else:
             logger.debug('No vocab loaded, ' + vocab_dir + ' does not exist')
