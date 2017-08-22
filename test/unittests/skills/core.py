@@ -4,11 +4,13 @@ import unittest
 import sys
 from os.path import join, dirname, abspath
 from re import error
+import mock
 
 from mycroft.skills.core import load_regex_from_file, load_regex, \
     load_vocab_from_file, load_vocabulary, MycroftSkill, \
     load_skill, create_skill_descriptor, open_intent_envelope
 
+from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.message import Message
 from adapt.intent import IntentBuilder
 
@@ -324,6 +326,51 @@ class MycroftSkillTest(unittest.TestCase):
         s.remove_context('Donatello')
         expected = [{'context': 'Donatello'}]
         check_remove_context(expected)
+
+    @mock.patch.object(ConfigurationManager, 'get')
+    def test_skill_location(self, mock_config_get):
+        test_config = {
+            "location": {
+                "city": {
+                    "code": "Lawrence",
+                    "name": "Lawrence",
+                    "state": {
+                        "code": "KS",
+                        "name": "Kansas",
+                        "country": {
+                            "code": "US",
+                            "name": "United States"
+                        }
+                    }
+                },
+                "coordinate": {
+                    "latitude": 38.971669,
+                    "longitude": -95.23525
+                },
+                "timezone": {
+                    "code": "America/Chicago",
+                    "name": "Central Standard Time",
+                    "dstOffset": 3600000,
+                    "offset": -21600000
+                }
+            }
+        }
+        mock_config_get.return_value = test_config
+        s = TestSkill1()
+        self.assertEqual(s.location, test_config.get('location'))
+        self.assertEqula(s.location_pretty,
+                         test_config['location']['city']['name'])
+        self.assertEqual(s.location_timezone,
+                         test_config['location']['timezone']['code'])
+
+    @mock.patch.object(ConfigurationManager, 'get')
+    def test_skill_location(self, mock_config_get):
+        test_config = {}
+        mock_config_get.return_value = test_config
+        s = TestSkill1()
+        self.assertEqual(s.location, None)
+        self.assertEqual(s.location_pretty, None)
+        self.assertEqual(s.location_timezone, None)
 
 
 class TestSkill1(MycroftSkill):
