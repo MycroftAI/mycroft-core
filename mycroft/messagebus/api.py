@@ -5,17 +5,14 @@ __author__ = "jarbas"
 
 
 class BusQuery():
-    def __init__(self, emitter, name, message_data=None, message_context=None):
+    def __init__(self, emitter, message_type, message_data=None,
+                 message_context=None):
         self.emitter = emitter
-        self.name = name
-        if message_data is None:
-            message_data = {}
-        if message_context is None:
-            message_context = {}
-        self.data = message_data
-        self.context = message_context
         self.waiting = False
         self.response = Message(None, None, None)
+        self.query_type = message_type
+        self.query_data = message_data
+        self.query_context = message_context
 
     def _end_wait(self, message):
         self.response = message
@@ -32,9 +29,10 @@ class BusQuery():
 
     def send(self, response_type=None, timeout=10):
         if response_type is None:
-            response_type = self.name + ".reply"
+            response_type = self.query_type + ".reply"
         self.emitter.on(response_type, self._end_wait)
-        self.emitter.emit(Message(self.name, self.data, self.context))
+        self.emitter.emit(
+            Message(self.query_type, self.query_data, self.query_context))
         self._wait_response(timeout)
         return self.response.data
 
@@ -52,15 +50,11 @@ class BusResponder():
     def __init__(self, emitter, response_type, response_data=None,
                  response_context=None, trigger_messages=None):
         self.emitter = emitter
-        if response_data is None:
-            response_data = {}
-        if response_context is None:
-            response_context = {}
-        if trigger_messages is None:
-            trigger_messages = []
         self.response_type = response_type
         self.response_data = response_data
         self.response_context = response_context
+        if trigger_messages is None:
+            trigger_messages = []
         for message_type in trigger_messages:
             self.listen(message_type)
 
