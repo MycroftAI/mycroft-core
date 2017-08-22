@@ -28,6 +28,7 @@ class BusQuery():
         self.waiting = False
 
     def send(self, response_type=None, timeout=10):
+        self.response = Message(None, None, None)
         if response_type is None:
             response_type = self.query_type + ".reply"
         self.emitter.on(response_type, self._end_wait)
