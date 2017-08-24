@@ -31,7 +31,7 @@ class BusQuery():
         self.response = Message(None, None, None)
         if response_type is None:
             response_type = self.query_type + ".reply"
-        self.emitter.on(response_type, self._end_wait)
+        self.emitter.once(response_type, self._end_wait)
         self.emitter.emit(
             Message(self.query_type, self.query_data, self.query_context))
         self._wait_response(timeout)
