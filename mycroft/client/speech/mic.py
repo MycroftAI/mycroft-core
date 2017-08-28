@@ -18,12 +18,18 @@
 
 import collections
 import datetime
+from subprocess import Popen
+from tempfile import gettempdir
+
 import os
-from time import sleep
+from time import sleep, time as get_time
 import audioop
 
 import pyaudio
 import speech_recognition
+from os import mkdir
+from os.path import isdir, join, expanduser, isfile
+import shutil
 from speech_recognition import (
     Microphone,
     AudioSource,
@@ -31,6 +37,7 @@ from speech_recognition import (
 )
 
 from mycroft.configuration import ConfigurationManager
+from mycroft.session import SessionManager
 from mycroft.util import (
     check_for_signal,
     get_ipc_directory,
@@ -164,11 +171,14 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         self.config = ConfigurationManager.instance()
         listener_config = self.config.get('listener')
+        self.upload_config = listener_config.get('wake_word_upload')
+        self.wake_word_name = listener_config['wake_word']
         # The maximum audio in seconds to keep for transcribing a phrase
         # The wake word must fit in this time
         num_phonemes = len(listener_config.get('phonemes').split())
         len_phoneme = listener_config.get('phoneme_duration', 120) / 1000.0
-        self.SAVED_WW_SEC = num_phonemes * len_phoneme
+        self.TEST_WW_SEC = int(num_phonemes * len_phoneme)
+        self.SAVED_WW_SEC = 10 if self.upload_config['enable'] else self.TEST_WW_SEC
 
         speech_recognition.Recognizer.__init__(self)
         self.wake_word_recognizer = wake_word_recognizer
@@ -176,8 +186,12 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.multiplier = listener_config.get('multiplier')
         self.energy_ratio = listener_config.get('energy_ratio')
         # check the config for the flag to save wake words.
-        self.save_wake_words = listener_config.get('record_wake_words', False)
+
         self.save_utterances = listener_config.get('record_utterances', False)
+        self.save_wake_words = listener_config.get('record_wake_words') \
+            or self.upload_config['enable']
+        self.save_wake_words_dir = join(gettempdir(), 'mycroft_wake_words')
+        self.filenames_to_upload, self.filenames_to_delete = [], []
         self.mic_level_file = os.path.join(get_ipc_directory(), "mic_level")
         self._stop_signaled = False
 
@@ -328,6 +342,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         # Max bytes for byte_data before audio is removed from the front
         max_size = self.sec_to_bytes(self.SAVED_WW_SEC, source)
+        test_size = self.sec_to_bytes(self.TEST_WW_SEC, source)
 
         said_wake_word = False
 
@@ -387,17 +402,55 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             buffers_since_check += 1.0
             if buffers_since_check > buffers_per_check:
                 buffers_since_check -= buffers_per_check
-                audio_data = byte_data + silence
+                chopped = byte_data[-test_size:] \
+                    if test_size < len(byte_data) else byte_data
+                audio_data = chopped + silence
                 said_wake_word = \
                     self.wake_word_recognizer.found_wake_word(audio_data)
                 # if a wake word is success full then record audio in temp
                 # file.
                 if self.save_wake_words and said_wake_word:
-                    audio = self._create_audio_data(audio_data, source)
-                    stamp = str(datetime.datetime.now())
-                    filename = "/tmp/mycroft_wake_success%s.wav" % stamp
-                    with open(filename, 'wb') as filea:
-                        filea.write(audio.get_wav_data())
+                    audio = self._create_audio_data(byte_data, source)
+                    stamp = str(int(1000 * get_time()))
+                    uid = SessionManager.get().session_id
+                    if not isdir(self.save_wake_words_dir):
+                        mkdir(self.save_wake_words_dir)
+
+                    dr = self.save_wake_words_dir
+                    ww = self.wake_word_name.replace(' ', '-')
+                    filename = join(dr, ww + '.' + stamp + '.' + uid + '.wav')
+                    with open(filename, 'wb') as f:
+                        f.write(audio.get_wav_data())
+
+                    if self.upload_config['enable']:
+                        server = self.upload_config['server']
+                        if os.system('ping -c 1 ' + server) == 0:
+                            logger.debug('Uploading ' + filename + '...')
+                            keyfile = resolve_resource_file('wakeword_rsa')
+                            userfile = expanduser('~/.mycroft/wakeword_rsa')
+                            if not isfile(userfile):
+                                shutil.copy2(keyfile, userfile)
+                                os.chmod(userfile, 0o600)
+                                keyfile = userfile
+                            address = self.upload_config['user'] + '@' + \
+                                server + ':' + \
+                                self.upload_config['folder']
+                            for fn in self.filenames_to_delete:
+                                try:
+                                    os.remove(fn)
+                                except Exception:
+                                    pass
+                            self.filenames_to_delete = []
+                            for fn in self.filenames_to_upload + [filename]:
+                                os.chmod(fn, 0o666)
+                                Popen(['scp', '-o', 'StrictHostKeyChecking=no',
+                                       '-P', str(self.upload_config['port']),
+                                       '-i', keyfile, fn, address])
+                                self.filenames_to_delete.append(fn)
+                            self.filenames_to_upload = []
+                        else:
+                            logger.debug('Could not upload to ' + server)
+                            self.filenames_to_upload.append(filename)
 
     @staticmethod
     def _create_audio_data(raw_data, source):

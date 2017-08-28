@@ -168,6 +168,16 @@ class EnclosureReader(Thread):
             self.ws.emit(Message("speak", {
                 'utterance': mycroft.dialog.get("ssh disabled")}))
 
+        if "unit.enable-learning" in data or "unit.disable-learning" in data:
+            enable = 'enable' in data
+            word = 'enabled' if enable else 'disabled'
+
+            LOG.info("Setting wake word upload to: " + word)
+            new_config = {'listener': {'wake_word_upload': {'enable': enable}}}
+            ConfigurationManager.save(new_config)
+            self.ws.emit(Message("speak", {
+                'utterance': mycroft.dialog.get("learning " + word)}))
+
     def stop(self):
         self.alive = False
 
