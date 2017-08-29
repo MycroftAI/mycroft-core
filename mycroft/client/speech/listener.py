@@ -17,7 +17,6 @@
 
 
 import time
-import wave
 from Queue import Queue
 from threading import Thread
 
@@ -104,8 +103,11 @@ class AudioConsumer(Thread):
                         self.handle_external_audio_request)
 
     def read_wave_file(self, wave_file_path):
-        wr = wave.open(wave_file_path, 'r')
-        return wr.readframes(wr.getnframes()-1)
+        # use the audio file as the audio source
+        r = sr.Recognizer()
+        with sr.AudioFile(wave_file_path) as source:
+            audio = r.record(source)
+        return audio
 
     def handle_external_audio_request(self, event):
         wave_file = event.get("wave_file")
