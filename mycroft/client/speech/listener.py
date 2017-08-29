@@ -17,6 +17,7 @@
 
 
 import time
+import wave
 from Queue import Queue
 from threading import Thread
 
@@ -99,6 +100,20 @@ class AudioConsumer(Thread):
         self.wakeup_recognizer = wakeup_recognizer
         self.mycroft_recognizer = mycroft_recognizer
         self.metrics = MetricsAggregator()
+        self.emitter.on("recognizer_loop:external_audio", 
+                        self.handle_external_audio_request)
+
+    def read_wave_file(self, wave_file_path):
+        wr = wave.open(wave_file_path, 'r')
+        return wr.readframes(wr.getnframes()-1)
+
+    def handle_external_audio_request(self, event):
+        wave_file = event.get("wave_file")
+        audio = self.read_wave_file(wave_file)
+        if audio is not None:
+            text = self.transcribe(audio, False)
+            self.emitter.emit("recognizer_loop:external_audio.reply",
+                               {"stt": text})
 
     def run(self):
         while self.state.running:
@@ -142,7 +157,7 @@ class AudioConsumer(Thread):
         else:
             self.transcribe(audio)
 
-    def transcribe(self, audio):
+    def transcribe(self, audio, emit_response=True):
         text = None
         try:
             # Invoke the STT engine on the audio clip
@@ -162,7 +177,7 @@ class AudioConsumer(Thread):
             LOG.error("Speech Recognition could not understand audio")
             self.__speak(mycroft.dialog.get("i didn't catch that",
                                             self.stt.lang))
-        if text:
+        if text and emit_response:
             # STT succeeded, send the transcribed speech on for processing
             payload = {
                 'utterances': [text],
@@ -171,6 +186,7 @@ class AudioConsumer(Thread):
             }
             self.emitter.emit("recognizer_loop:utterance", payload)
             self.metrics.attr('utterances', [text])
+         return text
 
     def __speak(self, utterance):
         payload = {
