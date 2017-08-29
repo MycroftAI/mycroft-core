@@ -56,6 +56,16 @@ def handle_wakeword(event):
     logger.info("Wakeword Detected: " + event['utterance'])
     ws.emit(Message('recognizer_loop:wakeword', event))
 
+    
+def handle_external_audio(event):
+    logger.info("External audio STT request: " + event.data["wave_file"])
+    loop.emit(Message('recognizer_loop:external_audio', event.data))
+    
+
+def handle_external_audio_reply(event):
+    logger.info("External audio STT result: " + event["stt"])
+    ws.emit(Message('recognizer_loop:external_audio.reply', event))
+    
 
 def handle_utterance(event):
     logger.info("Utterance: " + str(event['utterances']))
@@ -125,7 +135,9 @@ def main():
     loop.on('recognizer_loop:wakeword', handle_wakeword)
     loop.on('recognizer_loop:record_end', handle_record_end)
     loop.on('recognizer_loop:no_internet', handle_no_internet)
+    loop.on('recognizer_loop:external_audio.reply', handle_external_audio_reply)
     ws.on('open', handle_open)
+    ws.on('recognizer_loop:external_audio', handle_external_audio)
     ws.on('complete_intent_failure', handle_complete_intent_failure)
     ws.on('recognizer_loop:sleep', handle_sleep)
     ws.on('recognizer_loop:wake_up', handle_wake_up)
