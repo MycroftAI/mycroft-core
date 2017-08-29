@@ -181,7 +181,9 @@ class IntentService(object):
 
     def update_context(self, intent):
         for tag in intent['__tags__']:
-            context_entity = tag.get('entities')[0]
+            if 'entities' not in tag:
+                continue
+            context_entity = tag['entities'][0]
             if self.context_greedy:
                 self.context_manager.inject_context(context_entity)
             elif context_entity['data'][0][1] in self.context_keywords:
@@ -250,8 +252,10 @@ class IntentService(object):
                 start_concept, end_concept, alias_of=alias_of)
 
     def handle_register_intent(self, message):
+        print "registring " + str(message.data)
         intent = open_intent_envelope(message)
         self.engine.register_intent_parser(intent)
+        print "Done"
 
     def handle_detach_intent(self, message):
         intent_name = message.data.get('intent_name')
