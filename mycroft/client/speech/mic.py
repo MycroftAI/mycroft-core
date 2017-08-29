@@ -168,7 +168,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.multiplier = listener_config.get('multiplier')
         self.energy_ratio = listener_config.get('energy_ratio')
         # check the config for the flag to save wake words.
-        self.save_wake_words = listener_config.get('record_wake_words')
+        self.save_wake_words = listener_config.get('record_wake_words', False)
+        self.save_utterances = listener_config.get('record_utterances', False)
         self.mic_level_file = os.path.join(get_ipc_directory(), "mic_level")
         self._stop_signaled = False
 
@@ -444,7 +445,13 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         frame_data = self._record_phrase(source, sec_per_buffer)
         audio_data = self._create_audio_data(frame_data, source)
         emitter.emit("recognizer_loop:record_end")
-        logger.debug("Thinking...")
+        if self.save_utterances:
+           logger.info("Recording utterance")
+           stamp = str(datetime.datetime.now())
+           filename = "/tmp/mycroft_utterance%s.wav" % stamp
+           with open(filename, 'wb') as filea:
+               filea.write(audio_data.get_wav_data())
+           logger.debug("Thinking...")
 
         return audio_data
 
