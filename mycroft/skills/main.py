@@ -33,6 +33,7 @@ from mycroft.skills.core import load_skill, create_skill_descriptor, \
     MainModule, FallbackSkill
 from mycroft.skills.intent_service import IntentService
 from mycroft.skills.padatious_service import PadatiousService
+from mycroft.skills.event_scheduler import EventScheduler
 from mycroft.util import connected
 from mycroft.util.log import getLogger
 from mycroft.api import is_paired
@@ -43,6 +44,7 @@ logger = getLogger("Skills")
 __author__ = 'seanfitz'
 
 ws = None
+event_scheduler = None
 loaded_skills = {}
 last_modified_skill = 0
 skill_reload_thread = None
@@ -127,7 +129,7 @@ def _starting_up():
         - adapt intent service
         - padatious intent service
     """
-    global ws, skill_reload_thread
+    global ws, skill_reload_thread, event_scheduler
 
     check_connection()
 
@@ -143,7 +145,7 @@ def _starting_up():
 
     PadatiousService(ws)
     IntentService(ws)
-
+    event_scheduler = EventScheduler(ws)
     # Create a thread that monitors the loaded skills, looking for updates
     skill_reload_thread = WatchSkills()
     skill_reload_thread.daemon = True
@@ -339,6 +341,8 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
+        if event_scheduler:
+            event_scheduler.shutdown()
         # Do a clean shutdown of all skills and terminate all running threads
         for skill in loaded_skills:
             try:

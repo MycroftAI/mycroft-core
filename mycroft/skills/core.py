@@ -544,6 +544,73 @@ class MycroftSkill(object):
             logger.error("Failed to stop skill: {}".format(self.name),
                          exc_info=True)
 
+    def _schedule_event(self, handler, datetime, data={}, name=None,
+                        repeat=None):
+        """
+            Underlying method for schedle_event and schedule_repeating_event.
+            Takes scheduling information and sends it of on the message bus
+        """
+        if not name:
+            name = self.name + handler.__name__
+        name = str(self.skill_id) + ':' + name
+        self.add_event(name, handler, False)
+        event_data = {}
+        event_data['time'] = time.mktime(datetime.timetuple())
+        event_data['event'] = name
+        event_data['repeat'] = repeat
+        event_data['data'] = data
+        self.emitter.emit(Message('mycroft.scheduler.schedule_event',
+                                  data=event_data))
+
+    def schedule_event(self, handler, datetime, data={}, name=None):
+        """
+            schedule a single event
+
+            Args:
+                handler:    method to be called
+                datetime:   time for calling the handler
+                data:       optional data to send along to the handler
+                name:       Optional name parameter
+        """
+        self._schedule_event(handler, datetime, data, name)
+
+    def schedule_repeating_event(self, handler, datetime, frequency,
+                                 data={}, name=None):
+        """
+            schedule a repeating event
+
+            Args:
+                handler:    method to be called
+                datetime:   time for calling the handler
+                frequency:  time in sconds between calls
+                data:       optional data to send along to the handler
+                name:       Optional name parameter
+        """
+        self._schedule_event(handler, datetime, data, name, frequency)
+
+    def update_event(self, name):
+        """
+            Change data of event
+
+            Args:
+                name:   Name of event
+        """
+        data = {
+            'event': name,
+            'data': data
+        }
+        self.emitter.emit(Message('mycroft.schedule.update_event',
+                                  data=data))
+
+    def cancel_event(self, name):
+        """
+            Cancel a pending event. The event will no longer be scheduled
+            to be executed
+        """
+        data = {'event': name}
+        self.emitter.emit(Message('mycroft.scheduler.remove_event',
+                                  data=data))
+
 
 class FallbackSkill(MycroftSkill):
     """
