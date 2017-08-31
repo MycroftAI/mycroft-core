@@ -494,7 +494,7 @@ def draw_screen():
     # Meter
     if show_meter:
         scr.addstr(curses.LINES - 10, curses.COLS - 14, " Mic Level ",
-               CLR_HEADING)
+                   CLR_HEADING)
 
     # History log in the middle
     chat_width = curses.COLS / 2 - 2
@@ -653,7 +653,7 @@ def handle_cmd(cmd):
     return 0  # do nothing upon return
 
 
-def main(stdscr):
+def gui_main(stdscr):
     global scr
     global ws
     global line
@@ -829,13 +829,17 @@ start_log_monitor("/var/log/mycroft-speech-client.log")
 # Monitor IPC file containing microphone level info
 start_mic_monitor(os.path.join(get_ipc_directory(), "mic_level"))
 
-if __name__ == "__main__":
+
+def main():
     if bSimple:
         sys.stdout = sys.__stdout__
         sys.stderr = sys.__stderr__
         simple_cli()
     else:
         load_settings()
-        curses.wrapper(main)
+        curses.wrapper(gui_main)
         curses.endwin()
         save_settings()
+
+if __name__ == "__main__":
+    main()
