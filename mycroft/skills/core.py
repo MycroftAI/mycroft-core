@@ -463,8 +463,7 @@ class MycroftSkill(object):
                                     for response.
         """
 
-        data['expect_response'] = expect_response
-        self.speak(self.dialog_renderer.render(key, data))
+        self.speak(self.dialog_renderer.render(key, data), expect_response)
 
     def init_dialog(self, root_directory):
         dialog_dir = join(root_directory, 'dialog', self.lang)
