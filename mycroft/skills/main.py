@@ -240,6 +240,14 @@ def _watch_skills():
                     logger.debug("Reloading Skill: " + skill_folder)
                     # removing listeners and stopping threads
                     skill["instance"].shutdown()
+
+                    # - 2 since there are two local references that are known
+                    refs = sys.getrefcount(skill["instance"]) - 2
+                    if refs > 0:
+                        logger.warn("After shutdown of {} there are still "
+                                    "{} references remaining. The skill "
+                                    "won't be cleaned from memory."
+                                    .format(skill['instance'].name, refs))
                     del skill["instance"]
                 skill["loaded"] = True
                 skill["instance"] = load_skill(

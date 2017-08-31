@@ -256,7 +256,7 @@ class MycroftSkill(object):
         self.stop_time = time.time()
         self.stop_threshold = self.config_core.get("skills").get(
             'stop_threshold')
-        self.emitter.on('mycroft.stop', self.__handle_stop)
+        self.add_event('mycroft.stop', self.__handle_stop, False)
 
     def detach(self):
         for (name, intent) in self.registered_intents:
@@ -308,7 +308,7 @@ class MycroftSkill(object):
         _intent_list = []
         _intent_file_list = []
 
-    def add_event(self, name, handler, need_self):
+    def add_event(self, name, handler, need_self=False):
         """
             Create event handler for executing intent
 
@@ -521,6 +521,7 @@ class MycroftSkill(object):
         # removing events
         for e, f in self.events:
             self.emitter.remove(e, f)
+        self.events = None  # Remove reference to wrappers
 
         self.emitter.emit(
             Message("detach_skill", {"skill_id": str(self.skill_id) + ":"}))
