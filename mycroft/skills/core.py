@@ -17,10 +17,12 @@
 import abc
 import imp
 import time
+import sys
 
 import operator
 import re
-from os.path import join, dirname, splitext, isdir, basename, exists
+from os.path import join, abspath, dirname, splitext, isdir, \
+                    basename, exists
 from os import listdir
 from functools import wraps
 
@@ -133,7 +135,6 @@ def load_skill(skill_descriptor, emitter, skill_id):
             skill = skill_module.create_skill()
             skill.bind(emitter)
             skill.skill_id = skill_id
-            skill._dir = dirname(skill_descriptor['info'][1])
             skill.load_data_files(dirname(skill_descriptor['info'][1]))
             # Set up intent handlers
             skill.initialize()
@@ -193,6 +194,9 @@ class MycroftSkill(object):
 
     def __init__(self, name=None, emitter=None):
         self.name = name or self.__class__.__name__
+        # Get directory of skill
+        self._dir = dirname(abspath(sys.modules[self.__module__].__file__))
+
         self.bind(emitter)
         self.config_core = ConfigurationManager.get()
         self.config = self.config_core.get(self.name)
