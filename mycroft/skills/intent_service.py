@@ -180,8 +180,20 @@ class IntentService(object):
         self.active_skills.insert(0, [skill_id, time.time()])
 
     def update_context(self, intent):
+        """
+            updates context with keyword from the intent.
+
+            NOTE: This method currently won't handle one_of intent keywords
+                  since it's not using quite the same format as other intent
+                  keywords. This is under investigation in adapt, PR pending.
+
+            Args:
+                intent: Intent to scan for keywords
+        """
         for tag in intent['__tags__']:
-            context_entity = tag.get('entities')[0]
+            if 'entities' not in tag:
+                continue
+            context_entity = tag['entities'][0]
             if self.context_greedy:
                 self.context_manager.inject_context(context_entity)
             elif context_entity['data'][0][1] in self.context_keywords:
@@ -250,8 +262,10 @@ class IntentService(object):
                 start_concept, end_concept, alias_of=alias_of)
 
     def handle_register_intent(self, message):
+        print "registring " + str(message.data)
         intent = open_intent_envelope(message)
         self.engine.register_intent_parser(intent)
+        print "Done"
 
     def handle_detach_intent(self, message):
         intent_name = message.data.get('intent_name')
