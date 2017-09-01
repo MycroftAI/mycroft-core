@@ -1030,6 +1030,38 @@ pt_numbers = {
     u"milhão":1000000}
 
 
+def isFractional_pt(input_str):
+    """
+    This function takes the given text and checks if it is a fraction.
+
+    Args:
+        text (str): the string to check if fractional
+    Returns:
+        (bool) or (float): False if not a fraction, otherwise the fraction
+
+    """
+    if input_str.endswith('s', -1):
+        input_str = input_str[:len(input_str)-1]		# e.g. "fifths"
+
+    aFrac = ["meio", "terço", "quarto", "quinto", "sexto",
+             "setimo", "oitavo", "nono", "décimo"]
+
+    if input_str.lower() in aFrac:
+        return 1.0/(aFrac.index(input_str)+2)
+    if input_str == "vigésimo":
+        return 1.0/20
+    if input_str == "trigésimo":
+        return 1.0/30
+    if input_str == "centésimo":
+        return 1.0/100
+    if input_str == "milésimo":
+        return 1.0/1000
+    if input_str == "sétimo" or input_str == "septimo" or input_str == "séptimo":
+        return 1.0/7
+
+    return False
+
+
 def extractnumber_pt(text):
     """
     This function prepares the given text for parsing by making
@@ -1041,9 +1073,7 @@ def extractnumber_pt(text):
 
     """
     aWords = text.split()
-
     #aWords = [word for word in aWords if word not in []]
-    print aWords
     andPass = False
     valPreAnd = False
     val = False
@@ -1056,24 +1086,9 @@ def extractnumber_pt(text):
             val = int(word)
         elif is_numeric(word):
             val = float(word)
-        elif isFractional(word):
-            val = isFractional(word)
-        else:
-            # TODO test this bellow
-            if val:
-                count += 1
-                if count < (len(aWords) - 1):
-                    wordNext = aWords[count+1]
-                else:
-                    wordNext = ""
+        elif isFractional_pt(word):
+            val = isFractional_pt(word)
 
-                valNext = isFractional(wordNext)
-
-                if valNext:
-                    val = val * valNext
-                    aWords[count+1] = ""
-
-        # if val == False:
         if not val:
             # look for fractions like "2/3"
             aPieces = word.split('/')
@@ -1110,10 +1125,15 @@ def extractnumber_pt(text):
             val = False
             count += 2
             continue
-        ## TODO handle X "dot" Y
-        ## TODO handle X "decimos" (x times 0.1)
-        ## TODO handle X "centesimos" (x times 0.01)
-        ## TODO handle X "milesimos" (x times 0.001)
+        # next word is "dot",  1.107
+        elif count + 1 < len(aWords) and aWords[count + 1] == 'ponto':
+            valPreDot = val
+            newWords = aWords[count+2:]
+            newText = ""
+            for word in newWords:
+                newText += word + " "
+            afterDotVal = extractnumber_pt(newText[:-1])
+            val = float(str(valPreDot) + "." + str(afterDotVal))
 
         break
 
