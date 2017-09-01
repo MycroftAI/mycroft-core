@@ -79,7 +79,7 @@ class SkillSettings(dict):
 
     def __setitem__(self, key, value):
         """
-            Add/Update key and note that the file needs saving.
+            Add/Update key.
         """
         return super(SkillSettings, self).__setitem__(key, value)
 
@@ -128,9 +128,7 @@ class SkillSettings(dict):
                                 self.__setitem__(field["name"], field["value"])
 
                 # store value if settings has changed from backend
-                if not self._is_stored:
-                    self.store()
-                    self.loaded_hash = hash(str(self))
+                self.store()
 
             except Exception as e:
                 logger.error(e)
@@ -183,9 +181,14 @@ class SkillSettings(dict):
             "json": settings_meta
         })
 
-    def store(self):
+    def store(self, force=False):
         """
-            Store dictionary to file
+            Store dictionary to file if a change has occured.
+
+            Args:
+                force:  Force write despite no change
         """
-        with open(self._settings_path, 'w') as f:
-            json.dump(self, f)
+        if force or not self._is_stored:
+            with open(self._settings_path, 'w') as f:
+                json.dump(self, f)
+            self.loaded_hash = hash(str(self))
