@@ -517,7 +517,7 @@ class MycroftSkill(object):
         shutdown all processes and operations in execution.
         """
         # Store settings
-        self.settings.store(force=True)  # Force saving of settings
+        self.settings.store()
 
         # removing events
         for e, f in self.events:
