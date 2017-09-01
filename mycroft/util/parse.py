@@ -22,9 +22,6 @@ from dateutil.relativedelta import relativedelta
 # ==============================================================
 
 
-# def extractnumber(text, lang="en-us", remove_articles=True):
-
-
 def extractnumber(text, lang="en-us"):
 
     """Takes in a string and extracts a number.
@@ -39,6 +36,8 @@ def extractnumber(text, lang="en-us"):
     if lang_lower.startswith("en"):
         # return extractnumber_en(text, remove_articles)
         return extractnumber_en(text)
+    elif lang_lower.startswith("pt"):
+        return extractnumber_pt(text)
 
     # TODO: Normalization for other languages
     return text
@@ -965,6 +964,287 @@ def normalize_en(text, remove_articles):
 
 
 ####################################################################
+# PT-PT normalization
+#
+# TODO: numbers greater than 999999
+####################################################################
+
+# Undefined articles ["um", "uma", "uns", "umas"] can not be supressed,
+# in PT, "um cavalo" means "a horse" or "one horse".
+pt_articles = ["o", "a", "os", "as"]
+
+pt_numbers = {
+    "um": 1,
+    "uma": 1,
+    "uns": 1,
+    "umas": 1,
+    "primeiro": 1,
+    "segundo": 2,
+    "terceiro": 3,
+    "dois": 2,
+    "tres": 3,
+    u"três": 3,
+    "quatro": 4,
+    "cinco": 5,
+    "seis": 6,
+    "sete": 7,
+    "oito": 8,
+    "nove": 9,
+    "dez": 10,
+    "onze": 11,
+    "doze": 12,
+    "treze": 13,
+    "catorze": 14,
+    "quinze": 15,
+    "dezasseis": 16,
+    "dezassete": 17,
+    "dezoito": 18,
+    "dezanove": 19,
+    "vinte": 20,
+    "trinta": 30,
+    "quarenta": 40,
+    "cinquenta": 50,
+    "sessenta": 60,
+    "setenta": 70,
+    "oitenta": 80,
+    "noventa": 90,
+    "cem": 100,
+    "cento": 100,
+    "duzentos": 200,
+    "duzentas": 200,
+    "trezentos": 300,
+    "trezentas": 300,
+    "quatrocentos": 400,
+    "quatrocentas": 400,
+    "quinhentos": 500,
+    "quinhentas": 500,
+    "seiscentos": 600,
+    "seiscentas": 600,
+    "setecentos": 700,
+    "setecentas": 700,
+    "oitocentos": 800,
+    "oitocentas": 800,
+    "novecentos": 900,
+    "novecentas": 900,
+    "mil": 1000,
+    u"milhão":1000000}
+
+
+def extractnumber_pt(text):
+    """
+    This function prepares the given text for parsing by making
+    numbers consistent, getting rid of contractions, etc.
+    Args:
+        text (str): the string to normalize
+    Returns:
+        (int) or (float): The value of extracted number
+
+    """
+    aWords = text.split()
+
+    #aWords = [word for word in aWords if word not in []]
+    print aWords
+    andPass = False
+    valPreAnd = False
+    val = False
+    count = 0
+    while count < len(aWords):
+        word = aWords[count]
+        if word in pt_numbers:
+            val = pt_numbers[word]
+        elif word.isdigit():            # doesn't work with decimals
+            val = int(word)
+        elif is_numeric(word):
+            val = float(word)
+        elif isFractional(word):
+            val = isFractional(word)
+        else:
+            # TODO test this bellow
+            if val:
+                count += 1
+                if count < (len(aWords) - 1):
+                    wordNext = aWords[count+1]
+                else:
+                    wordNext = ""
+
+                valNext = isFractional(wordNext)
+
+                if valNext:
+                    val = val * valNext
+                    aWords[count+1] = ""
+
+        # if val == False:
+        if not val:
+            # look for fractions like "2/3"
+            aPieces = word.split('/')
+            # if (len(aPieces) == 2 and is_numeric(aPieces[0])
+            #   and is_numeric(aPieces[1])):
+            if look_for_fractions(aPieces):
+                val = float(aPieces[0]) / float(aPieces[1])
+            elif andPass:
+                # added to value, quit here
+                val = valPreAnd
+                break
+            else:
+                count += 1
+                continue
+        aWords[count] = ""
+
+        # if this word is a "and" bypass it
+        if (andPass):
+            aWords[count - 1] = ''  # remove "and"
+            val += valPreAnd
+        # if next word is a number, add it
+        elif count + 1 < len(aWords) and is_numeric(aWords[count + 1]):
+            andPass = True
+            valPreAnd = val + float(aWords[count + 1])
+            count += 2
+            if aWords[count] == 'e':
+                count += 1
+            val = False
+            continue
+        # if next word is a "and"  flag it
+        elif count + 1 < len(aWords) and aWords[count + 1] == 'e':
+            andPass = True
+            valPreAnd = val
+            val = False
+            count += 2
+            continue
+        ## TODO handle X "dot" Y
+        ## TODO handle X "decimos" (x times 0.1)
+        ## TODO handle X "centesimos" (x times 0.01)
+        ## TODO handle X "milesimos" (x times 0.001)
+
+        break
+
+    if not val:
+        return False
+
+    # Return the $str with the number related words removed
+    # (now empty strings, so strlen == 0)
+    #aWords = [word for word in aWords if len(word) > 0]
+    #text = ' '.join(aWords)
+    if "." in str(val):
+        integer, dec = str(val).split(".")
+        # cast float to int
+        if dec == "0":
+            val = int(integer)
+
+    return val
+
+
+def pt_number_parse(words, i):
+    def pt_cte(i, s):
+        if i < len(words) and s == words[i]:
+            return s, i+1
+        return None
+
+    def pt_number_word(i, mi, ma):
+        if i < len(words):
+            v = pt_numbers.get(words[i])
+            if v and v >= mi and v <= ma:
+                return v, i+1
+        return None
+
+    def pt_number_1_99(i):
+        r1 = pt_number_word(i, 1, 29)
+        if r1:
+            return r1
+
+        r1 = pt_number_word(i, 30, 90)
+        if r1:
+            v1, i1 = r1
+            r2 = pt_cte(i1, "e")
+            if r2:
+                v2, i2 = r2
+                r3 = pt_number_word(i2, 1, 9)
+                if r3:
+                    v3, i3 = r3
+                    return v1+v3, i3
+            return r1
+        return None
+
+    def pt_number_1_999(i):
+        # [2-9]cientos [1-99]?
+        r1 = pt_number_word(i, 100, 900)
+        if r1:
+            v1, i1 = r1
+            r2 = pt_number_1_99(i1)
+            if r2:
+                v2, i2 = r2
+                return v1+v2, i2
+            else:
+                return r1
+
+        # [1-99]
+        r1 = pt_number_1_99(i)
+        if r1:
+            return r1
+
+        return None
+
+    def pt_number(i):
+        # check for cero
+        r1 = pt_number_word(i, 0, 0)
+        if r1:
+            return r1
+
+        # check for [1-999] (mil [0-999])?
+        r1 = pt_number_1_999(i)
+        if r1:
+            v1, i1 = r1
+            r2 = pt_cte(i1, "mil")
+            if r2:
+                v2, i2 = r2
+                r3 = pt_number_1_999(i2)
+                if r3:
+                    v3, i3 = r3
+                    return v1*1000+v3, i3
+                else:
+                    return v1*1000, i2
+            else:
+                return r1
+        return None
+
+    return pt_number(i)
+
+
+def normalize_pt(text, remove_articles):
+    """ PT string normalization """
+
+    words = text.split()  # this also removed extra spaces
+    normalized = ""
+    for word in words:
+        # Contractions are not common in PT
+
+        # Convert numbers into digits, e.g. "dois" -> "2"
+        normalized = ""
+        i = 0
+        while i < len(words):
+            word = words[i]
+            # remove articles
+            if remove_articles and word in pt_articles:
+                i += 1
+                continue
+
+            # Convert numbers into digits
+            r = pt_number_parse(words, i)
+            if r:
+                v, i = r
+                normalized += " " + str(v)
+                continue
+
+            # NOTE temporary , handle some numbers above >999
+            if word in pt_numbers:
+                word = str(pt_numbers[word])
+            ### end temporary
+            normalized += " " + word
+            i += 1
+
+    return normalized[1:]  # strip the initial space
+
+
+####################################################################
 # Spanish normalization
 #
 # TODO: numbers greater than 999999
@@ -1134,3 +1414,4 @@ def normalize_es(text, remove_articles):
         i += 1
 
     return normalized[1:]  # strip the initial space
+
