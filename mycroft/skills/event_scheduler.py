@@ -34,7 +34,7 @@ class EventScheduler(Thread):
 
     def load(self):
         """
-            Load json data with active events from json file
+            Load json data with active events from json file.
         """
         if isfile(self.schedule_file):
             with open(self.schedule_file) as f:
@@ -51,7 +51,7 @@ class EventScheduler(Thread):
 
     def fetch_new_events(self):
         """
-            Fetch new events and add to list of pending events
+            Fetch new events and add to list of pending events.
         """
         while not self.add.empty():
             event, sched_time, repeat, data = self.add.get(timeout=1)
@@ -63,7 +63,7 @@ class EventScheduler(Thread):
 
     def remove_events(self):
         """
-            remove event from event list
+            Remove event from event list.
         """
         while not self.remove.empty():
             event = self.remove.get()
@@ -72,7 +72,7 @@ class EventScheduler(Thread):
 
     def update_events(self):
         """
-            update event list with new data
+            Update event list with new data.
         """
         while not self.remove.empty():
             event, data = self.update.get()
@@ -109,7 +109,7 @@ class EventScheduler(Thread):
             time.sleep(0.5)
 
     def schedule_event(self, event, sched_time, repeat=None, data={}):
-        """ Send event to thread using thread safe queue """
+        """ Send event to thread using thread safe queue. """
         self.add.put((event, sched_time, repeat, data))
 
     def schedule_event_handler(self, message):
@@ -136,11 +136,11 @@ class EventScheduler(Thread):
             logger.error('Scheduled event time not provided')
 
     def remove_event(self, event):
-        """ Remove event using thread safe queue """
+        """ Remove event using thread safe queue. """
         self.remove.put(event)
 
     def remove_event_handler(self, message):
-        """ Messagebus interface to the remove_event method """
+        """ Messagebus interface to the remove_event method. """
         event = message.data.get('event')
         self.remove_event(event)
 
@@ -148,18 +148,18 @@ class EventScheduler(Thread):
         self.update((event, data))
 
     def update_event_handler(self, message):
-        """ Messagebus interface to the update_event method """
+        """ Messagebus interface to the update_event method. """
         event = message.data.get('event')
 
     def store(self):
         """
-            Write current schedule to disk
+            Write current schedule to disk.
         """
         with open(self.schedule_file, 'w') as f:
             json.dump(self.events, f)
 
     def shutdown(self):
-        """ Stop the running thread """
+        """ Stop the running thread. """
         self.isRunning = False
         # Remove listeners
         self.emitter.remove_all_listeners('mycroft.scheduler.schedule_event')
