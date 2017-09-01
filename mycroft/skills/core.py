@@ -17,10 +17,12 @@
 import abc
 import imp
 import time
+import sys
 
 import operator
 import re
-from os.path import join, dirname, splitext, isdir, basename, exists
+from os.path import join, abspath, dirname, splitext, isdir, \
+                    basename, exists
 from os import listdir
 from functools import wraps
 
@@ -135,7 +137,6 @@ def load_skill(skill_descriptor, emitter, skill_id):
             skill = skill_module.create_skill()
             skill.bind(emitter)
             skill.skill_id = skill_id
-            skill._dir = dirname(skill_descriptor['info'][1])
             skill.load_data_files(dirname(skill_descriptor['info'][1]))
             # Set up intent handlers
             skill.initialize()
@@ -195,6 +196,9 @@ class MycroftSkill(object):
 
     def __init__(self, name=None, emitter=None):
         self.name = name or self.__class__.__name__
+        # Get directory of skill
+        self._dir = dirname(abspath(sys.modules[self.__module__].__file__))
+
         self.bind(emitter)
         self.config_core = ConfigurationManager.get()
         self.config = self.config_core.get(self.name)
@@ -254,7 +258,7 @@ class MycroftSkill(object):
         self.stop_time = time.time()
         self.stop_threshold = self.config_core.get("skills").get(
             'stop_threshold')
-        self.emitter.on('mycroft.stop', self.__handle_stop)
+        self.add_event('mycroft.stop', self.__handle_stop, False)
 
     def detach(self):
         for (name, intent) in self.registered_intents:
@@ -306,7 +310,7 @@ class MycroftSkill(object):
         _intent_list = []
         _intent_file_list = []
 
-    def add_event(self, name, handler, need_self):
+    def add_event(self, name, handler, need_self=False):
         """
             Create event handler for executing intent
 
@@ -334,6 +338,7 @@ class MycroftSkill(object):
                         handler()
                     else:
                         raise TypeError
+                self.settings.store()  # Store settings if they've changed
             except:
                 # TODO: Localize
                 self.speak(
@@ -471,8 +476,7 @@ class MycroftSkill(object):
                                     for response.
         """
 
-        data['expect_response'] = expect_response
-        self.speak(self.dialog_renderer.render(key, data))
+        self.speak(self.dialog_renderer.render(key, data), expect_response)
 
     def init_dialog(self, root_directory):
         dialog_dir = join(root_directory, 'dialog', self.lang)
@@ -530,6 +534,7 @@ class MycroftSkill(object):
         # removing events
         for e, f in self.events:
             self.emitter.remove(e, f)
+        self.events = None  # Remove reference to wrappers
 
         self.emitter.emit(
             Message("detach_skill", {"skill_id": str(self.skill_id) + ":"}))

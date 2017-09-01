@@ -15,6 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
+# Officially exported methods from this file:
+# play_wav, play_mp3, get_cache_directory,
+# resolve_resource_file, wait_while_speaking
+from mycroft.util.log import getLogger
+from mycroft.util.parse import extract_datetime, extractnumber, normalize
+from mycroft.util.format import nice_number, convert_number
 
 import socket
 import subprocess
@@ -26,7 +32,6 @@ import os.path
 import time
 from stat import S_ISREG, ST_MTIME, ST_MODE, ST_SIZE
 import psutil
-from mycroft.util.log import getLogger
 from mycroft.util.signal import *
 import mycroft.configuration
 import mycroft.audio

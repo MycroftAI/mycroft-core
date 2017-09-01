@@ -22,7 +22,7 @@ import subprocess
 import sys
 import time
 from os.path import exists, join
-from threading import Timer, Thread
+from threading import Timer, Thread, Event
 
 from mycroft import MYCROFT_ROOT_PATH
 from mycroft.configuration import ConfigurationManager
@@ -45,7 +45,6 @@ __author__ = 'seanfitz'
 ws = None
 loaded_skills = {}
 last_modified_skill = 0
-skills_directories = []
 skill_reload_thread = None
 skills_manager_timer = None
 id_counter = 0
@@ -95,7 +94,7 @@ def skills_manager(message):
         skills_manager runs on a Timer every hour and checks for updated
         skills.
     """
-    global skills_manager_timer, ws
+    global skills_manager_timer
 
     if connected():
         if skills_manager_timer is None:
@@ -114,6 +113,7 @@ def _skills_manager_dispatch():
     """
         Thread function to trigger skill_manager over message bus.
     """
+    global ws
     ws.emit(Message("skill_manager", {}))
 
 
@@ -128,8 +128,7 @@ def _starting_up():
         - adapt intent service
         - padatious intent service
     """
-    global ws, loaded_skills, last_modified_skill, skills_directories, \
-        skill_reload_thread
+    global ws, skill_reload_thread
 
     check_connection()
 
@@ -147,7 +146,7 @@ def _starting_up():
     IntentService(ws)
 
     # Create a thread that monitors the loaded skills, looking for updates
-    skill_reload_thread = Thread(target=_watch_skills)
+    skill_reload_thread = WatchSkills()
     skill_reload_thread.daemon = True
     skill_reload_thread.start()
 
@@ -201,57 +200,76 @@ def _get_last_modified_date(path):
     return last_date
 
 
-def _watch_skills():
+class WatchSkills(Thread):
     """
         Thread function to reload skills when a change is detected.
     """
-    global ws, loaded_skills, last_modified_skill, \
-        id_counter
+    def __init__(self):
+        super(WatchSkills, self).__init__()
+        self._stop_event = Event()
 
-    # Scan the file folder that contains Skills.  If a Skill is updated,
-    # unload the existing version from memory and reload from the disk.
-    while True:
-        if exists(SKILLS_DIR):
-            # checking skills dir and getting all skills there
-            list = filter(lambda x: os.path.isdir(
-                os.path.join(SKILLS_DIR, x)), os.listdir(SKILLS_DIR))
+    def run(self):
+        global ws, loaded_skills, last_modified_skill, \
+            id_counter
 
-            for skill_folder in list:
-                if skill_folder not in loaded_skills:
-                    id_counter += 1
-                    loaded_skills[skill_folder] = {"id": id_counter}
-                skill = loaded_skills.get(skill_folder)
-                skill["path"] = os.path.join(SKILLS_DIR, skill_folder)
-                # checking if is a skill
-                if not MainModule + ".py" in os.listdir(skill["path"]):
-                    continue
-                # getting the newest modified date of skill
-                skill["last_modified"] = _get_last_modified_date(skill["path"])
-                modified = skill.get("last_modified", 0)
-                # checking if skill is loaded and wasn't modified
-                if skill.get(
-                        "loaded") and modified <= last_modified_skill:
-                    continue
-                # checking if skill was modified
-                elif skill.get("instance") and modified > last_modified_skill:
-                    # checking if skill should be reloaded
-                    if not skill["instance"].reload_skill:
+        # Scan the file folder that contains Skills.  If a Skill is updated,
+        # unload the existing version from memory and reload from the disk.
+        while not self._stop_event.is_set():
+            if exists(SKILLS_DIR):
+                # checking skills dir and getting all skills there
+                list = filter(lambda x: os.path.isdir(
+                    os.path.join(SKILLS_DIR, x)), os.listdir(SKILLS_DIR))
+
+                for skill_folder in list:
+                    if skill_folder not in loaded_skills:
+                        id_counter += 1
+                        loaded_skills[skill_folder] = {"id": id_counter}
+                    skill = loaded_skills.get(skill_folder)
+                    skill["path"] = os.path.join(SKILLS_DIR, skill_folder)
+                    # checking if is a skill
+                    if not MainModule + ".py" in os.listdir(skill["path"]):
                         continue
-                    logger.debug("Reloading Skill: " + skill_folder)
-                    # removing listeners and stopping threads
-                    skill["instance"].shutdown()
-                    del skill["instance"]
-                skill["loaded"] = True
-                skill["instance"] = load_skill(
-                    create_skill_descriptor(skill["path"]), ws, skill["id"])
-        # get the last modified skill
-        modified_dates = map(lambda x: x.get("last_modified"),
-                             loaded_skills.values())
-        if len(modified_dates) > 0:
-            last_modified_skill = max(modified_dates)
+                    # getting the newest modified date of skill
+                    last_mod = _get_last_modified_date(skill["path"])
+                    skill["last_modified"] = last_mod
+                    modified = skill.get("last_modified", 0)
+                    # checking if skill is loaded and wasn't modified
+                    if skill.get(
+                            "loaded") and modified <= last_modified_skill:
+                        continue
+                    # checking if skill was modified
+                    elif (skill.get("instance") and
+                          modified > last_modified_skill):
+                        # checking if skill should be reloaded
+                        if not skill["instance"].reload_skill:
+                            continue
+                        logger.debug("Reloading Skill: " + skill_folder)
+                        # removing listeners and stopping threads
+                        skill["instance"].shutdown()
 
-        # Pause briefly before beginning next scan
-        time.sleep(2)
+                        # -2 since two local references that are known
+                        refs = sys.getrefcount(skill["instance"]) - 2
+                        if refs > 0:
+                            logger.warn("After shutdown of {} there are still "
+                                        "{} references remaining. The skill "
+                                        "won't be cleaned from memory."
+                                        .format(skill['instance'].name, refs))
+                        del skill["instance"]
+                    skill["loaded"] = True
+                    skill["instance"] = load_skill(
+                        create_skill_descriptor(skill["path"]),
+                        ws, skill["id"])
+            # get the last modified skill
+            modified_dates = map(lambda x: x.get("last_modified"),
+                                 loaded_skills.values())
+            if len(modified_dates) > 0:
+                last_modified_skill = max(modified_dates)
+
+            # Pause briefly before beginning next scan
+            time.sleep(2)
+
+    def stop(self):
+        self._stop_event.set()
 
 
 def handle_converse_request(message):
@@ -322,11 +340,17 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        skills_manager_timer.cancel()
+        # Do a clean shutdown of all skills and terminate all running threads
         for skill in loaded_skills:
-            skill.shutdown()
+            try:
+                loaded_skills[skill]['instance'].shutdown()
+            except:
+                pass
+        if skills_manager_timer:
+            skills_manager_timer.cancel()
         if skill_reload_thread:
-            skill_reload_thread.cancel()
+            skill_reload_thread.stop()
+            skill_reload_thread.join()
 
     finally:
         sys.exit()
