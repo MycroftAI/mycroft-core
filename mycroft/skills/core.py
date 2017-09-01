@@ -326,6 +326,7 @@ class MycroftSkill(object):
                     handler(self, message)
                 else:
                     handler(message)
+                self.settings.store()  # Store settings if they've changed
             except:
                 # TODO: Localize
                 self.speak(
@@ -516,7 +517,7 @@ class MycroftSkill(object):
         shutdown all processes and operations in execution.
         """
         # Store settings
-        self.settings.store()
+        self.settings.store(force=True)  # Force saving of settings
 
         # removing events
         for e, f in self.events:
