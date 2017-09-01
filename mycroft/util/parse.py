@@ -22,9 +22,6 @@ from dateutil.relativedelta import relativedelta
 # ==============================================================
 
 
-# def extractnumber(text, lang="en-us", remove_articles=True):
-
-
 def extractnumber(text, lang="en-us"):
 
     """Takes in a string and extracts a number.
@@ -39,6 +36,8 @@ def extractnumber(text, lang="en-us"):
     if lang_lower.startswith("en"):
         # return extractnumber_en(text, remove_articles)
         return extractnumber_en(text)
+    elif lang_lower.startswith("pt"):
+        return extractnumber_pt(text)
 
     # TODO: Normalization for other languages
     return text
@@ -202,6 +201,153 @@ def extractnumber_en(text):
             count += 2
             continue
         elif count+2 < len(aWords) and aWords[count+2] == 'and':
+            andPass = True
+            valPreAnd = val
+            val = False
+            count += 3
+            continue
+
+        break
+
+    # if val == False:
+    if not val:
+        return False
+
+    # Return the $str with the number related words removed
+    # (now empty strings, so strlen == 0)
+    aWords = [word for word in aWords if len(word) > 0]
+    text = ' '.join(aWords)
+
+    return val
+
+
+def extractnumber_pt(text):
+    """
+    This function prepares the given text for parsing by making
+    numbers consistent, getting rid of contractions, etc.
+    Args:
+        text (str): the string to normalize
+    Returns:
+        (int) or (float): The value of extracted number
+
+    """
+    aWords = text.split()
+    aWords = [word for word in aWords if word not in ["o", "a", "e"]]
+    andPass = False
+    valPreAnd = False
+    val = False
+    count = 0
+    while count < len(aWords):
+        word = aWords[count]
+        if is_numeric(word):
+            # if word.isdigit():            # doesn't work with decimals
+            val = float(word)
+        elif word == "primeiro":
+            val = 1
+        elif word == "segundo":
+            val = 2
+        elif word == "terceiro":
+            val = 3
+        elif isFractional(word):
+            val = isFractional(word)
+        else:
+            if word == "um":
+                val = 1
+            elif word == "dois":
+                val = 2
+            elif word == u"três":
+                val = 3
+            elif word == "quatro":
+                val = 4
+            elif word == "cinco":
+                val = 5
+            elif word == "seis":
+                val = 6
+            elif word == "sete":
+                val = 7
+            elif word == "oito":
+                val = 8
+            elif word == "nove":
+                val = 9
+            elif word == "dez":
+                val = 10
+            elif word == "vinte":
+                val = 20
+            elif word == "trinta":
+                val = 30
+            elif word == "quarenta":
+                val = 40
+            elif word == "cinquenta":
+                val = 50
+            elif word == "sessenta":
+                val = 60
+            elif word == "setenta":
+                val = 70
+            elif word == "oitenta":
+                val = 80
+            elif word == "noventa":
+                val = 90
+            elif word == "cem" or word == "cento":
+                val = 100
+            elif word == "duzentos":
+                val = 200
+            elif word == "trezentos":
+                val = 300
+            elif word == "quatrocentos":
+                val = 400
+            elif word == "quinhentos":
+                val = 500
+            elif word == "seiscentos":
+                val = 600
+            elif word == "setecentos":
+                val = 700
+            elif word == "oitocentos":
+                val = 800
+            elif word == "novecentos":
+                val = 900
+            elif word == "mil":
+                val = 1000
+            elif word == u"milhão":
+                val = 1000000
+            if val:
+                if count < (len(aWords) - 1):
+                    wordNext = aWords[count+1]
+                else:
+                    wordNext = ""
+                valNext = isFractional(wordNext)
+
+                if valNext:
+                    val = val * valNext
+                    aWords[count+1] = ""
+
+        # if val == False:
+        if not val:
+            # look for fractions like "2/3"
+            aPieces = word.split('/')
+            # if (len(aPieces) == 2 and is_numeric(aPieces[0])
+            #   and is_numeric(aPieces[1])):
+            if look_for_fractions(aPieces):
+                val = float(aPieces[0]) / float(aPieces[1])
+            elif andPass:
+                # added to value, quit here
+                val = valPreAnd
+                break
+            else:
+                count += 1
+                continue
+
+        aWords[count] = ""
+
+        if (andPass):
+            aWords[count-1] = ''     # remove "and"
+            val += valPreAnd
+        elif count+1 < len(aWords) and aWords[count+1] == 'e':
+            andPass = True
+            valPreAnd = val
+            val = False
+            count += 2
+            continue
+        elif count+2 < len(aWords) and aWords[count+2] == 'e':
             andPass = True
             valPreAnd = val
             val = False
@@ -992,17 +1138,17 @@ es_numbers_xlat = {
     "trece": 13,
     "catorce": 14,
     "quince": 15,
-    u"dieciséis": 16,
+    u"diecisÃ©is": 16,
     "diecisiete": 17,
     "dieciocho": 18,
     "diecinueve": 19,
     "veinte": 20,
     "veintiuno": 21,
-    u"veintidós": 22,
-    u"veintitrés": 23,
+    u"veintidÃ³s": 22,
+    u"veintitrÃ©s": 23,
     "veinticuatro": 24,
     "veinticinco": 25,
-    u"veintiséis": 26,
+    u"veintisÃ©is": 26,
     "veintisiete": 27,
     "veintiocho": 28,
     "veintinueve": 29,
