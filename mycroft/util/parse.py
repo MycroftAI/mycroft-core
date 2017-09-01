@@ -139,8 +139,8 @@ def extractnumber_en(text):
             val = 1
         elif word == "second":
             val = 2
-        elif isFractional(word):
-            val = isFractional(word)
+        elif isFractional_en(word):
+            val = isFractional_en(word)
         else:
             if word == "one":
                 val = 1
@@ -167,7 +167,7 @@ def extractnumber_en(text):
                     wordNext = aWords[count+1]
                 else:
                     wordNext = ""
-                valNext = isFractional(wordNext)
+                valNext = isFractional_en(wordNext)
 
                 if valNext:
                     val = val * valNext
@@ -845,7 +845,7 @@ def look_for_fractions(split_list):
     return False
 
 
-def isFractional(input_str):
+def isFractional_en(input_str):
     """
     This function takes the given text and checks if it is a fraction.
 
@@ -889,7 +889,8 @@ def normalize(text, lang="en-us", remove_articles=True):
         return normalize_en(text, remove_articles)
     elif lang_lower.startswith("es"):
         return normalize_es(text, remove_articles)
-
+    elif lang_lower.startswith("pt"):
+        return normalize_pt(text, remove_articles)
     # TODO: Normalization for other languages
     return text
 
@@ -964,9 +965,10 @@ def normalize_en(text, remove_articles):
 
 
 ####################################################################
-# PT-PT normalization
+# PT-PT
 #
 # TODO: numbers greater than 999999
+# TODO: date time pt
 ####################################################################
 
 # Undefined articles ["um", "uma", "uns", "umas"] can not be supressed,
