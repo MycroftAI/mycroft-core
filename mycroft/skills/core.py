@@ -532,56 +532,56 @@ class MycroftSkill(object):
             logger.error("Failed to stop skill: {}".format(self.name),
                          exc_info=True)
 
-    def _schedule_event(self, handler, datetime, data={}, name=None,
+    def _schedule_event(self, handler, when, data={}, name=None,
                         repeat=None):
         """
             Underlying method for schedle_event and schedule_repeating_event.
-            Takes scheduling information and sends it of on the message bus
+            Takes scheduling information and sends it of on the message bus.
         """
         if not name:
             name = self.name + handler.__name__
         name = str(self.skill_id) + ':' + name
         self.add_event(name, handler, False)
         event_data = {}
-        event_data['time'] = time.mktime(datetime.timetuple())
+        event_data['time'] = time.mktime(when.timetuple())
         event_data['event'] = name
         event_data['repeat'] = repeat
         event_data['data'] = data
         self.emitter.emit(Message('mycroft.scheduler.schedule_event',
                                   data=event_data))
 
-    def schedule_event(self, handler, datetime, data={}, name=None):
+    def schedule_event(self, handler, when, data={}, name=None):
         """
-            schedule a single event
+            Schedule a single event.
 
             Args:
-                handler:    method to be called
-                datetime:   time for calling the handler
-                data:       optional data to send along to the handler
-                name:       Optional name parameter
+                handler:               method to be called
+                when (datetime):       when the handler should be called
+                data (dict, optional): data to send when the handler is called
+                name (str, optional):  friendly name parameter
         """
-        self._schedule_event(handler, datetime, data, name)
+        self._schedule_event(handler, when, data, name)
 
-    def schedule_repeating_event(self, handler, datetime, frequency,
+    def schedule_repeating_event(self, handler, when, frequency,
                                  data={}, name=None):
         """
-            schedule a repeating event
+            Schedule a repeating event.
 
             Args:
-                handler:    method to be called
-                datetime:   time for calling the handler
-                frequency:  time in sconds between calls
-                data:       optional data to send along to the handler
-                name:       Optional name parameter
+                handler:                method to be called
+                when (datetime):        time for calling the handler
+                frequency (float/int):  time in seconds between calls
+                data (dict, optional):  data to send along to the handler
+                name (str, optional):   friendly name parameter
         """
-        self._schedule_event(handler, datetime, data, name, frequency)
+        self._schedule_event(handler, when, data, name, frequency)
 
     def update_event(self, name):
         """
-            Change data of event
+            Change data of event.
 
             Args:
-                name:   Name of event
+                name (str):   Name of event
         """
         data = {
             'event': name,
@@ -594,6 +594,9 @@ class MycroftSkill(object):
         """
             Cancel a pending event. The event will no longer be scheduled
             to be executed
+
+            Args:
+                name (str):   Name of event
         """
         data = {'event': name}
         self.emitter.emit(Message('mycroft.scheduler.remove_event',
