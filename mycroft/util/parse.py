@@ -1109,7 +1109,11 @@ def extractnumber_pt(text):
                 val = float(aPieces[0]) / float(aPieces[1])
 
         if val:
-            result += val
+            # handle fractions
+            if next_word != "avos":
+                result += val
+            else:
+                result = result / val
 
         if next_word is None:
             break
