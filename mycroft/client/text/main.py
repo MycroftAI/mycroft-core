@@ -53,10 +53,11 @@ scr = None
 log_line_offset = 0  # num lines back in logs to show
 log_line_lr_scroll = 0  # amount to scroll left/right for long lines
 longest_visible_line = 0  # for HOME key
+auto_scroll = True
 
 mergedLog = []
 filteredLog = []
-default_log_filters = ["enclosure.mouth.viseme"]
+default_log_filters = ["mouth.viseme"]
 log_filters = list(default_log_filters)
 log_files = []
 
@@ -102,6 +103,7 @@ def load_settings():
 
 
 def save_settings():
+    config = {}
     config["filters"] = log_filters
     with open(config_file, 'w') as f:
         json.dump(config, f)
@@ -137,6 +139,7 @@ class LogMonitorThread(Thread):
         global meter_thresh
         global filteredLog
         global mergedLog
+        global log_line_offset
 
         with open(self.filename, 'rb') as fh:
             fh.seek(bytefrom)
@@ -153,13 +156,15 @@ class LogMonitorThread(Thread):
                         break
 
                 if ignore:
-                    mergedLog.append(self.logid+line.strip())
+                    mergedLog.append(self.logid + line.strip())
                 else:
                     if bSimple:
                         print line.strip()
                     else:
-                        filteredLog.append(self.logid+line.strip())
-                        mergedLog.append(self.logid+line.strip())
+                        filteredLog.append(self.logid + line.strip())
+                        mergedLog.append(self.logid + line.strip())
+                        if not auto_scroll:
+                            log_line_offset += 1
 
 
 def start_log_monitor(filename):
@@ -202,8 +207,8 @@ class MicMonitorThread(Thread):
                 # Just adjust meter settings
                 # Ex:Energy:  cur=4 thresh=1.5
                 parts = line.split("=")
-                meter_thresh = float(parts[len(parts)-1])
-                meter_cur = float(parts[len(parts)-2].split(" ")[0])
+                meter_thresh = float(parts[len(parts) - 1])
+                meter_cur = float(parts[len(parts) - 2].split(" ")[0])
 
 
 def start_mic_monitor(filename):
@@ -217,10 +222,14 @@ def add_log_message(message):
     """ Show a message for the user (mixed in the logs) """
     global filteredLog
     global mergedLog
+    global log_line_offset
 
-    message = "@"+message       # the first byte is a code
+    message = "@" + message       # the first byte is a code
     filteredLog.append(message)
     mergedLog.append(message)
+
+    if log_line_offset != 0:
+        log_line_offset = 0  # scroll so the user can see the message
     scr.erase()
     scr.refresh()
 
@@ -259,6 +268,14 @@ def connect():
     # Once the websocket has connected, just watch it for speak events
     ws.run_forever()
 
+
+##############################################################################
+# Capturing the messagebus
+
+def handle_message(msg):
+    # TODO: Think this thru a little bit -- remove this logging within core?
+    # add_log_message(msg)
+    pass
 
 ##############################################################################
 # Screen handling
@@ -304,11 +321,11 @@ def init_screen():
 def page_log(page_up):
     global log_line_offset
     if page_up:
-        log_line_offset += 10
-    else:
         log_line_offset -= 10
+    else:
+        log_line_offset += 10
     if log_line_offset > len(filteredLog):
-        log_line_offset = len(filteredLog)-10
+        log_line_offset = len(filteredLog) - 10
     if log_line_offset < 0:
         log_line_offset = 0
     draw_screen()
@@ -332,14 +349,15 @@ def draw_meter():
     global meter_peak
 
     if meter_cur > meter_peak:
-        meter_peak = meter_cur+1
+        meter_peak = meter_cur + 1
 
-    height = curses.LINES/3
+    height = 9  # curses.LINES/3
     scale = meter_peak
-    if meter_peak > meter_thresh*3:
-        scale = meter_thresh*3
-    h_cur = clamp(int((float(meter_cur) / scale) * height), 0, height-1)
-    h_thresh = clamp(int((float(meter_thresh) / scale) * height), 0, height-1)
+    if meter_peak > meter_thresh * 3:
+        scale = meter_thresh * 3
+    h_cur = clamp(int((float(meter_cur) / scale) * height), 0, height - 1)
+    h_thresh = clamp(
+        int((float(meter_thresh) / scale) * height), 0, height - 1)
     clr = curses.color_pair(4)  # dark yellow
 
     str_level = "{0:3} ".format(int(meter_cur))   # e.g. '  4'
@@ -365,7 +383,8 @@ def draw_meter():
 
         # draw the line
         meter += " " * (meter_width - len(meter))
-        scr.addstr(curses.LINES-1-i, curses.COLS-len(meter)-1, meter, clr)
+        scr.addstr(curses.LINES - 1 - i, curses.COLS -
+                   len(meter) - 1, meter, clr)
 
         # draw an asterisk if the audio energy is at this level
         if i <= h_cur:
@@ -373,8 +392,8 @@ def draw_meter():
                 clr_bar = curses.color_pair(3)   # dark green for loud
             else:
                 clr_bar = curses.color_pair(5)   # dark blue for 'silent'
-            scr.addstr(curses.LINES-1-i, curses.COLS-len(str_thresh)-4, "*",
-                       clr_bar)
+            scr.addstr(curses.LINES - 1 - i, curses.COLS - len(str_thresh) - 4,
+                       "*", clr_bar)
 
 
 def draw_screen():
@@ -382,6 +401,7 @@ def draw_screen():
     global log_line_offset
     global longest_visible_line
     global last_redraw
+    global auto_scroll
 
     if not scr:
         return
@@ -396,8 +416,8 @@ def draw_screen():
         scr.erase()
 
     # Display log output at the top
-    cLogs = len(filteredLog)
-    cLogLinesToShow = curses.LINES-13
+    cLogs = len(filteredLog) + 1  # +1 for the '--end--'
+    cLogLinesToShow = curses.LINES - 13
     start = clamp(cLogs - cLogLinesToShow, 0, cLogs - 1) - log_line_offset
     end = cLogs - log_line_offset
     if start < 0:
@@ -406,16 +426,21 @@ def draw_screen():
     if end > cLogs:
         end = cLogs
 
+    auto_scroll = (end == cLogs)
+
     # adjust the line offset (prevents paging up too far)
     log_line_offset = cLogs - end
 
-    scr.addstr(0, 0, "Log Output:" + " " * (curses.COLS-31) + str(start) +
+    scr.addstr(0, 0, "Log Output:" + " " * (curses.COLS - 31) + str(start) +
                "-" + str(end) + " of " + str(cLogs), CLR_HEADING)
-    scr.addstr(1, 0,  "=" * (curses.COLS-1), CLR_HEADING)
+    scr.addstr(1, 0,  "=" * (curses.COLS - 1), CLR_HEADING)
     y = 2
     len_line = 0
     for i in range(start, end):
-        log = filteredLog[i]
+        if i >= cLogs-1:
+            log = '   ^--- NEWEST ---^ '
+        else:
+            log = filteredLog[i]
         logid = log[0]
         if len(log) > 25 and log[5] == '-' and log[8] == '-':
             log = log[27:]  # skip logid & date/time at the front of log line
@@ -443,7 +468,7 @@ def draw_screen():
             end = start + (curses.COLS - 4)
             if start == 0:
                 log = log[start:end] + "~~~~"   # start....
-            elif end >= len_line-1:
+            elif end >= len_line - 1:
                 log = "~~~~" + log[start:end]   # ....end
             else:
                 log = "~~" + log[start:end] + "~~"  # ..middle..
@@ -453,28 +478,33 @@ def draw_screen():
         y += 1
 
     # Log legend in the lower-right
-    scr.addstr(curses.LINES-10, curses.COLS/2 + 2,
-               make_titlebar("Log Output Legend", curses.COLS/2 - 2),
+    scr.addstr(curses.LINES - 10, curses.COLS / 2 + 2,
+               make_titlebar("Log Output Legend", curses.COLS / 2 - 2),
                CLR_HEADING)
-    scr.addstr(curses.LINES-9, curses.COLS/2 + 2,
+    scr.addstr(curses.LINES - 9, curses.COLS / 2 + 2,
                "DEBUG output",
                CLR_LOG_DEBUG)
-    scr.addstr(curses.LINES-8, curses.COLS/2 + 2,
-               os.path.basename(log_files[0])+", other",
+    scr.addstr(curses.LINES - 8, curses.COLS / 2 + 2,
+               os.path.basename(log_files[0]) + ", other",
                CLR_LOG1)
     if len(log_files) > 1:
-        scr.addstr(curses.LINES-7, curses.COLS/2 + 2,
+        scr.addstr(curses.LINES - 7, curses.COLS / 2 + 2,
                    os.path.basename(log_files[1]), CLR_LOG2)
 
+    # Meter
+    if show_meter:
+        scr.addstr(curses.LINES - 10, curses.COLS - 14, " Mic Level ",
+                   CLR_HEADING)
+
     # History log in the middle
-    chat_width = curses.COLS/2 - 2
+    chat_width = curses.COLS / 2 - 2
     chat_height = 7
     chat_out = []
-    scr.addstr(curses.LINES-10, 0, make_titlebar("History", chat_width),
+    scr.addstr(curses.LINES - 10, 0, make_titlebar("History", chat_width),
                CLR_HEADING)
 
     # Build a nicely wrapped version of the chat log
-    idx_chat = len(chat)-1
+    idx_chat = len(chat) - 1
     while len(chat_out) < chat_height and idx_chat >= 0:
         if chat[idx_chat][0] == '>':
             wrapper = textwrap.TextWrapper(initial_indent="",
@@ -492,7 +522,7 @@ def draw_screen():
         idx_chat -= 1
 
     # Output the chat
-    y = curses.LINES-9
+    y = curses.LINES - 9
     for txt in chat_out:
         if txt.startswith(">> ") or txt.startswith("   "):
             clr = CLR_CHAT_RESP
@@ -504,19 +534,19 @@ def draw_screen():
     # Command line at the bottom
     l = line
     if len(line) > 0 and line[0] == ":":
-        scr.addstr(curses.LINES-2, 0, "Command ('help' for options):",
+        scr.addstr(curses.LINES - 2, 0, "Command ('help' for options):",
                    CLR_CMDLINE)
-        scr.addstr(curses.LINES-1, 0, ":", CLR_CMDLINE)
+        scr.addstr(curses.LINES - 1, 0, ":", CLR_CMDLINE)
         l = line[1:]
     else:
-        scr.addstr(curses.LINES-2, 0,
+        scr.addstr(curses.LINES - 2, 0,
                    make_titlebar("Input (':' for command, Ctrl+C to quit)",
-                                 curses.COLS-1),
+                                 curses.COLS - 1),
                    CLR_HEADING)
-        scr.addstr(curses.LINES-1, 0, ">", CLR_HEADING)
+        scr.addstr(curses.LINES - 1, 0, ">", CLR_HEADING)
 
     draw_meter()
-    scr.addstr(curses.LINES-1, 2, l, CLR_INPUT)
+    scr.addstr(curses.LINES - 1, 2, l, CLR_INPUT)
     scr.refresh()
 
 
@@ -535,7 +565,7 @@ def show_help():
     scr.erase()
     scr.addstr(0, 0,  center(25) + "Mycroft Command Line Help",
                CLR_CMDLINE)
-    scr.addstr(1, 0,  "=" * (curses.COLS-1),
+    scr.addstr(1, 0,  "=" * (curses.COLS - 1),
                CLR_CMDLINE)
     scr.addstr(2, 0,  "Up / Down         scroll thru query history")
     scr.addstr(3, 0,  "PgUp / PgDn       scroll thru log history")
@@ -545,7 +575,7 @@ def show_help():
 
     scr.addstr(10, 0,  "Commands (type ':' to enter command mode)",
                CLR_CMDLINE)
-    scr.addstr(11, 0,  "=" * (curses.COLS-1),
+    scr.addstr(11, 0,  "=" * (curses.COLS - 1),
                CLR_CMDLINE)
     scr.addstr(12, 0,  ":help                   this screen")
     scr.addstr(13, 0,  ":quit or :exit          exit the program")
@@ -554,7 +584,7 @@ def show_help():
     scr.addstr(16, 0,  ":filter (clear|reset)   reset filters")
     scr.addstr(17, 0,  ":filter (show|list)     display current filters")
 
-    scr.addstr(curses.LINES-1, 0,  center(23) + "Press any key to return",
+    scr.addstr(curses.LINES - 1, 0,  center(23) + "Press any key to return",
                CLR_HEADING)
 
     scr.refresh()
@@ -593,7 +623,7 @@ def handle_cmd(cmd):
     elif "filter" in cmd:
         if "show" in cmd or "list" in cmd:
             # display active filters
-            add_log_message("Filters: "+str(log_filters))
+            add_log_message("Filters: " + str(log_filters))
             return
 
         if "reset" in cmd or "clear" in cmd:
@@ -615,7 +645,7 @@ def handle_cmd(cmd):
                 log_filters.append(word)
 
         rebuild_filtered_log()
-        add_log_message("Filters: "+str(log_filters))
+        add_log_message("Filters: " + str(log_filters))
 
     # TODO: More commands
     # elif "find" in cmd:
@@ -623,7 +653,7 @@ def handle_cmd(cmd):
     return 0  # do nothing upon return
 
 
-def main(stdscr):
+def gui_main(stdscr):
     global scr
     global ws
     global line
@@ -635,9 +665,12 @@ def main(stdscr):
 
     ws = WebsocketClient()
     ws.on('speak', handle_speak)
+    ws.on('message', handle_message)
     event_thread = Thread(target=connect)
     event_thread.setDaemon(True)
     event_thread.start()
+
+    add_log_message("  v--- OLDEST ---v")
 
     history = []
     hist_idx = -1  # index, from the bottom
@@ -691,24 +724,24 @@ def main(stdscr):
                 line = ""
             elif c == curses.KEY_UP:
                 # Move up the history stack
-                hist_idx = clamp(hist_idx+1, -1, len(history)-1)
+                hist_idx = clamp(hist_idx + 1, -1, len(history) - 1)
                 if hist_idx >= 0:
-                    line = history[len(history)-hist_idx-1]
+                    line = history[len(history) - hist_idx - 1]
                 else:
                     line = ""
             elif c == curses.KEY_DOWN:
                 # Move down the history stack
-                hist_idx = clamp(hist_idx-1, -1, len(history)-1)
+                hist_idx = clamp(hist_idx - 1, -1, len(history) - 1)
                 if hist_idx >= 0:
-                    line = history[len(history)-hist_idx-1]
+                    line = history[len(history) - hist_idx - 1]
                 else:
                     line = ""
             elif c == curses.KEY_LEFT:
                 # scroll long log lines left
-                log_line_lr_scroll += curses.COLS/4
+                log_line_lr_scroll += curses.COLS / 4
             elif c == curses.KEY_RIGHT:
                 # scroll long log lines right
-                log_line_lr_scroll -= curses.COLS/4
+                log_line_lr_scroll -= curses.COLS / 4
                 if log_line_lr_scroll < 0:
                     log_line_lr_scroll = 0
             elif c == curses.KEY_HOME:
@@ -780,9 +813,10 @@ def simple_cli():
         event_thread.exit()
         sys.exit()
 
+
 # Find the correct log path relative to this script
 scriptPath = os.path.dirname(os.path.realpath(__file__))
-localLogPath = os.path.realpath(scriptPath+"/../../../scripts/logs")
+localLogPath = os.path.realpath(scriptPath + "/../../../scripts/logs")
 
 # Monitor relative logs (for Github installs)
 start_log_monitor(localLogPath + "/mycroft-skills.log")
@@ -795,13 +829,17 @@ start_log_monitor("/var/log/mycroft-speech-client.log")
 # Monitor IPC file containing microphone level info
 start_mic_monitor(os.path.join(get_ipc_directory(), "mic_level"))
 
-if __name__ == "__main__":
+
+def main():
     if bSimple:
         sys.stdout = sys.__stdout__
         sys.stderr = sys.__stderr__
         simple_cli()
     else:
         load_settings()
-        curses.wrapper(main)
+        curses.wrapper(gui_main)
         curses.endwin()
         save_settings()
+
+if __name__ == "__main__":
+    main()
