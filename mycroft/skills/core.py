@@ -17,13 +17,13 @@
 import abc
 import imp
 import time
+import sys
 
 import operator
-import os.path
 import re
-import time
-from os.path import join, dirname, splitext, isdir
-
+from os.path import join, abspath, dirname, splitext, isdir, \
+                    basename, exists
+from os import listdir
 from functools import wraps
 
 from adapt.intent import Intent, IntentBuilder
@@ -36,12 +36,12 @@ from mycroft.messagebus.message import Message
 from mycroft.util.log import getLogger
 from mycroft.skills.settings import SkillSettings
 
+from inspect import getargspec
+
 __author__ = 'seanfitz'
 
 skills_config = ConfigurationManager.instance().get("skills")
 BLACKLISTED_SKILLS = skills_config.get("blacklisted_skills", [])
-
-SKILLS_DIR = "/opt/mycroft/skills"
 
 MainModule = '__init__'
 
@@ -49,6 +49,15 @@ logger = getLogger(__name__)
 
 
 def load_vocab_from_file(path, vocab_type, emitter):
+    """
+        Load mycroft vocabulary from file. and send it on the message bus for
+        the intent handler.
+
+        Args:
+            path:       path to vocabulary file (*.voc)
+            vocab_type: keyword name
+            emitter:    emitter to access the message bus
+    """
     if path.endswith('.voc'):
         with open(path, 'r') as voc_file:
             for line in voc_file.readlines():
@@ -65,6 +74,14 @@ def load_vocab_from_file(path, vocab_type, emitter):
 
 
 def load_regex_from_file(path, emitter):
+    """
+        Load regex from file and send it on the message bus for
+        the intent handler.
+
+        Args:
+            path:       path to vocabulary file (*.voc)
+            emitter:    emitter to access the message bus
+    """
     if path.endswith('.rx'):
         with open(path, 'r') as reg_file:
             for line in reg_file.readlines():
@@ -74,20 +91,21 @@ def load_regex_from_file(path, emitter):
 
 
 def load_vocabulary(basedir, emitter):
-    for vocab_type in os.listdir(basedir):
+    for vocab_type in listdir(basedir):
         if vocab_type.endswith(".voc"):
             load_vocab_from_file(
                 join(basedir, vocab_type), splitext(vocab_type)[0], emitter)
 
 
 def load_regex(basedir, emitter):
-    for regex_type in os.listdir(basedir):
+    for regex_type in listdir(basedir):
         if regex_type.endswith(".rx"):
             load_regex_from_file(
                 join(basedir, regex_type), emitter)
 
 
 def open_intent_envelope(message):
+    """ Convert dictionary received over messagebus to Intent. """
     intent_dict = message.data
     return Intent(intent_dict.get('name'),
                   intent_dict.get('requires'),
@@ -96,6 +114,15 @@ def open_intent_envelope(message):
 
 
 def load_skill(skill_descriptor, emitter, skill_id):
+    """
+        load skill from skill descriptor.
+
+        Args:
+            skill_descriptor: descriptor of skill to load
+            emitter:          messagebus emitter
+            skill_id:         id number for skill
+    """
+
     try:
         logger.info("ATTEMPTING TO LOAD SKILL: " + skill_descriptor["name"] +
                     " with ID " + str(skill_id))
@@ -110,7 +137,6 @@ def load_skill(skill_descriptor, emitter, skill_id):
             skill = skill_module.create_skill()
             skill.bind(emitter)
             skill.skill_id = skill_id
-            skill._dir = dirname(skill_descriptor['info'][1])
             skill.load_data_files(dirname(skill_descriptor['info'][1]))
             # Set up intent handlers
             skill.initialize()
@@ -127,49 +153,14 @@ def load_skill(skill_descriptor, emitter, skill_id):
     return None
 
 
-def get_skills(skills_folder):
-    logger.info("LOADING SKILLS FROM " + skills_folder)
-    skills = []
-    possible_skills = os.listdir(skills_folder)
-    for i in possible_skills:
-        location = join(skills_folder, i)
-        if (isdir(location) and
-                not MainModule + ".py" in os.listdir(location)):
-            for j in os.listdir(location):
-                name = join(location, j)
-                if (not isdir(name) or
-                        not MainModule + ".py" in os.listdir(name)):
-                    continue
-                skills.append(create_skill_descriptor(name))
-        if (not isdir(location) or
-                not MainModule + ".py" in os.listdir(location)):
-            continue
-
-        skills.append(create_skill_descriptor(location))
-    skills = sorted(skills, key=lambda p: p.get('name'))
-    return skills
-
-
 def create_skill_descriptor(skill_folder):
     info = imp.find_module(MainModule, [skill_folder])
-    return {"name": os.path.basename(skill_folder), "info": info}
+    return {"name": basename(skill_folder), "info": info}
 
 
-def load_skills(emitter, skills_root=SKILLS_DIR):
-    logger.info("Checking " + skills_root + " for new skills")
-    skill_list = []
-    for skill in get_skills(skills_root):
-        skill_list.append(load_skill(skill, emitter))
-
-    return skill_list
-
-
-def unload_skills(skills):
-    for s in skills:
-        s.shutdown()
-
-
+# Lists used when adding skill handlers using decorators
 _intent_list = []
+_intent_file_list = []
 
 
 def intent_handler(intent_parser):
@@ -186,6 +177,17 @@ def intent_handler(intent_parser):
     return real_decorator
 
 
+def intent_file_handler(intent_file):
+    """ Decorator for adding a method as an intent file handler. """
+    def real_decorator(func):
+        @wraps(func)
+        def handler_method(*args, **kwargs):
+            return func(*args, **kwargs)
+        _intent_file_list.append((intent_file, func))
+        return handler_method
+    return real_decorator
+
+
 class MycroftSkill(object):
     """
     Abstract base class which provides common behaviour and parameters to all
@@ -194,10 +196,14 @@ class MycroftSkill(object):
 
     def __init__(self, name=None, emitter=None):
         self.name = name or self.__class__.__name__
+        # Get directory of skill
+        self._dir = dirname(abspath(sys.modules[self.__module__].__file__))
+
         self.bind(emitter)
         self.config_core = ConfigurationManager.get()
         self.config = self.config_core.get(self.name)
         self.dialog_renderer = None
+        self.vocab_dir = None
         self.file_system = FileSystemAccess(join('skills', self.name))
         self.registered_intents = []
         self.log = getLogger(self.name)
@@ -242,6 +248,7 @@ class MycroftSkill(object):
             return self._settings
 
     def bind(self, emitter):
+        """ Register emitter with skill. """
         if emitter:
             self.emitter = emitter
             self.enclosure = EnclosureAPI(emitter, self.name)
@@ -251,7 +258,7 @@ class MycroftSkill(object):
         self.stop_time = time.time()
         self.stop_threshold = self.config_core.get("skills").get(
             'stop_threshold')
-        self.emitter.on('mycroft.stop', self.__handle_stop)
+        self.add_event('mycroft.stop', self.__handle_stop, False)
 
     def detach(self):
         for (name, intent) in self.registered_intents:
@@ -267,12 +274,27 @@ class MycroftSkill(object):
         logger.debug("No initialize function implemented")
 
     def converse(self, utterances, lang="en-us"):
+        """
+            Handle conversation. This method can be used to override the normal
+            intent handler after the skill has been invoked once.
+
+            To enable this override thise converse method and return True to
+            indicate that the utterance has been handled.
+
+            Args:
+                utterances: The utterances from the user
+                lang:       language the utterance is in
+
+            Returns:    True if an utterance was handled, otherwise False
+        """
         return False
 
     def make_active(self):
-        # bump skill to active_skill list in intent_service
-        # this enables converse method to be called even without skill being
-        # used in last 5 minutes
+        """
+            Bump skill to active_skill list in intent_service
+            this enables converse method to be called even without skill being
+            used in last 5 minutes
+        """
         self.emitter.emit(Message('active_skill_request',
                                   {"skill_id": self.skill_id}))
 
@@ -280,10 +302,54 @@ class MycroftSkill(object):
         """
         Register all intent handlers that has been decorated with an intent.
         """
-        global _intent_list
+        global _intent_list, _intent_file_list
         for intent_parser, handler in _intent_list:
             self.register_intent(intent_parser, handler, need_self=True)
+        for intent_file, handler in _intent_file_list:
+            self.register_intent_file(intent_file, handler, need_self=True)
         _intent_list = []
+        _intent_file_list = []
+
+    def add_event(self, name, handler, need_self=False):
+        """
+            Create event handler for executing intent
+
+            Args:
+                name:       IntentParser name
+                handler:    method to call
+                need_self:     optional parameter, when called from a decorated
+                               intent handler the function will need the self
+                               variable passed as well.
+        """
+        def wrapper(message):
+            try:
+                if need_self:
+                    # When registring from decorator self is required
+                    if len(getargspec(handler).args) == 2:
+                        handler(self, message)
+                    elif len(getargspec(handler).args) == 1:
+                        handler(self)
+                    else:
+                        raise TypeError
+                else:
+                    if len(getargspec(handler).args) == 2:
+                        handler(message)
+                    elif len(getargspec(handler).args) == 1:
+                        handler()
+                    else:
+                        raise TypeError
+                self.settings.store()  # Store settings if they've changed
+            except:
+                # TODO: Localize
+                self.speak(
+                    "An error occurred while processing a request in " +
+                    self.name)
+                logger.error(
+                    "An error occurred while processing a request in " +
+                    self.name, exc_info=True)
+        if handler:
+            self.emitter.on(name, wrapper)
+            self.events.append((name, wrapper))
 
     def register_intent(self, intent_parser, handler, need_self=False):
         """
@@ -292,7 +358,7 @@ class MycroftSkill(object):
             Args:
                 intent_parser: Intent or IntentBuilder object to parse
                                utterance for the handler.
-                handler:       handler_function
+                handler:       function to register with intent
                 need_self:     optional parameter, when called from a decorated
                                intent handler the function will need the self
                                variable passed as well.
@@ -306,26 +372,24 @@ class MycroftSkill(object):
         intent_parser.name = str(self.skill_id) + ':' + intent_parser.name
         self.emitter.emit(Message("register_intent", intent_parser.__dict__))
         self.registered_intents.append((name, intent_parser))
+        self.add_event(intent_parser.name, handler, need_self)
 
-        def receive_handler(message):
-            try:
-                if need_self:
-                    # When registring from decorator self is required
-                    handler(self, message)
-                else:
-                    handler(message)
-            except:
-                # TODO: Localize
-                self.speak(
-                    "An error occurred while processing a request in " +
-                    self.name)
-                logger.error(
-                    "An error occurred while processing a request in " +
-                    self.name, exc_info=True)
+    def register_intent_file(self, intent_file, handler, need_self=False):
+        """
+            Register an Intent file with the intent service.
 
-        if handler:
-            self.emitter.on(intent_parser.name, receive_handler)
-            self.events.append((intent_parser.name, receive_handler))
+            Args:
+                intent_file: name of file that contains example queries
+                             that should activate the intent
+                handler:     function to register with intent
+                need_self:   use for decorator. See register_intent
+        """
+        intent_name = str(self.skill_id) + ':' + intent_file
+        self.emitter.emit(Message("padatious:register_intent", {
+            "file_name": join(self.vocab_dir, intent_file),
+            "intent_name": intent_name
+        }))
+        self.add_event(intent_name, handler, need_self)
 
     def disable_intent(self, intent_name):
         """Disable a registered intent"""
@@ -370,6 +434,12 @@ class MycroftSkill(object):
         self.emitter.emit(Message('remove_context', {'context': context}))
 
     def register_vocabulary(self, entity, entity_type):
+        """ Register a word to an keyword
+
+            Args:
+                entity:         word to register
+                entity_type:    Intent handler entity to tie the word to
+        """
         self.emitter.emit(Message('register_vocab', {
             'start': entity, 'end': entity_type
         }))
@@ -379,6 +449,15 @@ class MycroftSkill(object):
         self.emitter.emit(Message('register_vocab', {'regex': regex_str}))
 
     def speak(self, utterance, expect_response=False):
+        """
+            Speak a sentence.
+
+            Args:
+                utterance:          sentence mycroft should speak
+                expect_response:    set to True if Mycroft should expect a
+                                    response from the user and start listening
+                                    for response.
+        """
         # registers the skill as being active
         self.enclosure.register(self.name)
         data = {'utterance': utterance,
@@ -386,12 +465,22 @@ class MycroftSkill(object):
         self.emitter.emit(Message("speak", data))
 
     def speak_dialog(self, key, data={}, expect_response=False):
-        data['expect_response'] = expect_response
-        self.speak(self.dialog_renderer.render(key, data))
+        """
+            Speak sentance based of dialog file.
+
+            Args
+                key: dialog file key (filname without extension)
+                data: information to populate sentence with
+                expect_response:    set to True if Mycroft should expect a
+                                    response from the user and start listening
+                                    for response.
+        """
+
+        self.speak(self.dialog_renderer.render(key, data), expect_response)
 
     def init_dialog(self, root_directory):
         dialog_dir = join(root_directory, 'dialog', self.lang)
-        if os.path.exists(dialog_dir):
+        if exists(dialog_dir):
             self.dialog_renderer = DialogLoader().load(dialog_dir)
         else:
             logger.debug('No dialog loaded, ' + dialog_dir + ' does not exist')
@@ -400,11 +489,12 @@ class MycroftSkill(object):
         self.init_dialog(root_directory)
         self.load_vocab_files(join(root_directory, 'vocab', self.lang))
         regex_path = join(root_directory, 'regex', self.lang)
-        if os.path.exists(regex_path):
+        if exists(regex_path):
             self.load_regex_files(regex_path)
 
     def load_vocab_files(self, vocab_dir):
-        if os.path.exists(vocab_dir):
+        self.vocab_dir = vocab_dir
+        if exists(vocab_dir):
             load_vocabulary(vocab_dir, self.emitter)
         else:
             logger.debug('No vocab loaded, ' + vocab_dir + ' does not exist')
@@ -444,9 +534,10 @@ class MycroftSkill(object):
         # removing events
         for e, f in self.events:
             self.emitter.remove(e, f)
+        self.events = None  # Remove reference to wrappers
 
         self.emitter.emit(
-            Message("detach_skill", {"skill_id": self.skill_id + ":"}))
+            Message("detach_skill", {"skill_id": str(self.skill_id) + ":"}))
         try:
             self.stop()
         except:
@@ -455,6 +546,12 @@ class MycroftSkill(object):
 
 
 class FallbackSkill(MycroftSkill):
+    """
+        FallbackSkill is used to declare a fallback to be called when
+        no skill is matching an intent. The fallbackSkill implements a
+        number of fallback handlers to be called in an order determined
+        by their priority.
+    """
     fallback_handlers = {}
 
     def __init__(self, name=None, emitter=None):
@@ -465,7 +562,7 @@ class FallbackSkill(MycroftSkill):
 
     @classmethod
     def make_intent_failure_handler(cls, ws):
-        """Goes through all fallback handlers until one returns true"""
+        """Goes through all fallback handlers until one returns True"""
 
         def handler(message):
             for _, handler in sorted(cls.fallback_handlers.items(),
