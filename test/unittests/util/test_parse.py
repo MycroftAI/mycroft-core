@@ -344,6 +344,10 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extractnumber("sete ponto cinco", lang="pt"), 7.5)
         self.assertEqual(extractnumber("sete ponto 5", lang="pt"), 7.5)
         self.assertEqual(extractnumber("sete e meio", lang="pt"), 7.5)
+        self.assertEqual(extractnumber("vinte treze avos", lang="pt"),
+                         20.0 / 13.0)
+        self.assertEqual(extractnumber("seiscentos e sessenta e seis",
+                                       lang="pt"), 666)
         self.assertEqual(extractnumber("seis virgula seiscentos e sessenta",
                                        lang="pt"), 6.66)
 

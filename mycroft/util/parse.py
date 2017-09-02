@@ -1099,7 +1099,7 @@ def extractnumber_pt(text):
     """
     aWords = text.split()
     count = 0
-    result = 0
+    result = None
     while count < len(aWords):
         val = 0
         word = aWords[count]
@@ -1119,7 +1119,7 @@ def extractnumber_pt(text):
         elif is_numeric(word):
             val = float(word)
         elif isFractional_pt(word):
-            if result == 0:
+            if not result:
                 result = 1
             result = result * isFractional_pt(word)
             count += 1
@@ -1134,35 +1134,35 @@ def extractnumber_pt(text):
                 val = float(aPieces[0]) / float(aPieces[1])
 
         if val:
+            if result is None:
+                result = 0
             # handle fractions
             if next_word != "avos":
                 result += val
             else:
-                result = result / val
+                result = float(result) / float(val)
 
         if next_word is None:
             break
-        decimals = ["ponto", "virgula", u"vírgula", ".", ","]
-        if next_word in decimals:
-            newWords = aWords[count + 2:]
-            newText = ""
-            for word in newWords:
-                newText += word + " "
-            afterDotVal = extractnumber_pt(newText[:-1])
-            result = float(str(result) + "." + str(afterDotVal))
-            break
+
         # number word and fraction
         ands = ["e"]
         if next_word in ands:
+            if result is None:
+                count += 1
+                continue
             newWords = aWords[count + 2:]
             newText = ""
             for word in newWords:
                 newText += word + " "
             afterAndVal = extractnumber_pt(newText[:-1])
             if afterAndVal:
+                if result < afterAndVal:
+                    while afterAndVal > 1:
+                        afterAndVal = afterAndVal / 10.0
                 result += afterAndVal
                 break
-        if next_next_word is not None:
+        elif next_next_word is not None:
             if next_next_word in ands:
                 newWords = aWords[count + 3:]
                 newText = ""
@@ -1170,12 +1170,23 @@ def extractnumber_pt(text):
                     newText += word + " "
                 afterAndVal = extractnumber_pt(newText[:-1])
                 if afterAndVal:
+                    if result is None:
+                        result = 0
                     result += afterAndVal
                     break
 
+        decimals = ["ponto", "virgula", u"vírgula", ".", ","]
+        if next_word in decimals:
+            newWords = aWords[count + 2:]
+            newText = ""
+            for word in newWords:
+                newText += word + " "
+            afterDotVal = str(extractnumber_pt(newText[:-1]))
+            result = float(str(result) + "." + afterDotVal)
+            break
         count += 1
 
-    if not result:
+    if result is None:
         return False
 
     # Return the $str with the number related words removed
