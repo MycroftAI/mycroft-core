@@ -1121,7 +1121,8 @@ def extractnumber_pt(text):
 
         if next_word is None:
             break
-        if next_word == "ponto" or next_word == ".":
+        decimals = ["ponto", "virgula", u"vírgula", ".", ","]
+        if next_word in decimals:
             newWords = aWords[count + 2:]
             newText = ""
             for word in newWords:
@@ -1131,6 +1132,15 @@ def extractnumber_pt(text):
             break
         # number word and fraction
         ands = ["e"]
+        if next_word in ands:
+            newWords = aWords[count + 2:]
+            newText = ""
+            for word in newWords:
+                newText += word + " "
+            afterAndVal = extractnumber_pt(newText[:-1])
+            if afterAndVal:
+                result += afterAndVal
+                break
         if next_next_word is not None:
             if next_next_word in ands:
                 newWords = aWords[count + 3:]

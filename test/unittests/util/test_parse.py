@@ -341,6 +341,11 @@ class TestNormalize(unittest.TestCase):
                          3.0 / 4.0)
         self.assertEqual(extractnumber(u"três quarto de chocolate",
                                        lang="pt"), 3.0 / 4.0)
+        self.assertEqual(extractnumber("sete ponto cinco", lang="pt"), 7.5)
+        self.assertEqual(extractnumber("sete ponto 5", lang="pt"), 7.5)
+        self.assertEqual(extractnumber("sete e meio", lang="pt"), 7.5)
+        self.assertEqual(extractnumber("seis virgula seiscentos e sessenta",
+                                       lang="pt"), 6.66)
 
     def test_contractions_pt(self):
         # no contractions in pt
