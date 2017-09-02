@@ -302,6 +302,57 @@ class TestNormalize(unittest.TestCase):
 
         self.assertEqual(normalize("whats 8 + 4"), "what is 8 + 4")
 
+    # Pt-pt
+    def test_articles_pt(self):
+        self.assertEqual(normalize(u"isto é o teste",
+                                   lang="pt", remove_articles=True),
+                         u"isto é teste")
+        self.assertEqual(
+            normalize(u"isto é a frase", lang="pt", remove_articles=True),
+            u"isto é frase")
+        self.assertEqual(
+            normalize("e outro teste", lang="pt", remove_articles=True),
+            "e outro teste")
+        self.assertEqual(normalize(u"isto é o teste extra", lang="pt",
+                                   remove_articles=False),
+                         u"isto é o teste extra")
+
+    def test_extractnumber_pt(self):
+        self.assertEqual(extractnumber("isto e o primeiro teste", lang="pt"), 1)
+        self.assertEqual(extractnumber("isto e o 2 teste", lang="pt"), 2)
+        self.assertEqual(extractnumber("isto e o segundo teste", lang="pt"), 2)
+        self.assertEqual(extractnumber(u"isto e um terço de teste", lang="pt"),
+                         1.0 / 3.0)
+        self.assertEqual(extractnumber("isto e o teste numero quatro",
+                                       lang="pt"), 4)
+        self.assertEqual(extractnumber(u"um terço de chavena", lang="pt"),
+                         1.0 / 3.0)
+        self.assertEqual(extractnumber("3 canecos", lang="pt"), 3)
+        self.assertEqual(extractnumber("1/3 canecos", lang="pt"), 1.0 / 3.0)
+        self.assertEqual(extractnumber("quarto de hora", lang="pt"), 0.25)
+        self.assertEqual(extractnumber("1/4 hora", lang="pt"), 0.25)
+        self.assertEqual(extractnumber("um quarto hora", lang="pt"), 0.25)
+        self.assertEqual(extractnumber("2/3 pinga", lang="pt"), 2.0 / 3.0)
+        self.assertEqual(extractnumber("3/4 pinga", lang="pt"), 3.0 / 4.0)
+        self.assertEqual(extractnumber("1 e 3/4 cafe", lang="pt"), 1.75)
+        self.assertEqual(extractnumber("1 cafe e meio", lang="pt"), 1.5)
+        self.assertEqual(extractnumber("um cafe e um meio", lang="pt"), 1.5)
+        self.assertEqual(extractnumber("tres quartos de chocolate", lang="pt"),
+                         3.0 / 4.0)
+        self.assertEqual(extractnumber(u"três quarto de chocolate",
+                                       lang="pt"), 3.0 / 4.0)
+
+    def test_contractions_pt(self):
+        # no contractions in pt
+        pass
+
+    def test_spaces_pt(self):
+        self.assertEqual(normalize("  isto   e  o    teste", lang="pt"),
+                         "isto e teste")
+        self.assertEqual(normalize("  isto   sao os    testes  ", lang="pt"),
+                         "isto sao testes")
+        self.assertEqual(normalize("  isto   e  um    teste", lang="pt"),
+                         "isto e 1 teste")
     #
     # Spanish
     #
