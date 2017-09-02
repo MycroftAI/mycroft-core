@@ -107,7 +107,11 @@ class MycroftSTT(STT):
 
     def execute(self, audio, language=None):
         self.lang = language or self.lang
-        return self.api.stt(audio.get_flac_data(), self.lang, 1)[0]
+        try:
+            return self.api.stt(audio.get_flac_data(convert_rate=16000),
+                                self.lang, 1)[0]
+        except:
+            return self.api.stt(audio.get_flac_data(), self.lang, 1)[0]
 
 
 class KaldiSTT(STT):
