@@ -353,6 +353,30 @@ class TestNormalize(unittest.TestCase):
                          "isto sao testes")
         self.assertEqual(normalize("  isto   e  um    teste", lang="pt"),
                          "isto e 1 teste")
+
+    def test_numbers_pt(self):
+        self.assertEqual(normalize(u"isto e o um dois três teste", lang="pt"),
+                         u"isto e 1 2 3 teste")
+        self.assertEqual(normalize(u"é a sete oito nove  test", lang="pt"),
+                         u"é 7 8 9 test")
+        self.assertEqual(
+            normalize("teste dez onze doze treze", lang="pt"),
+            "teste 10 11 12 13")
+        self.assertEqual(
+            normalize("teste mil seiscentos e sessenta e seis", lang="pt"),
+            "teste 1000 600 e 66")
+        self.assertEqual(
+            normalize("teste sete e meio", lang="pt"),
+            "teste 7 e meio")
+        self.assertEqual(
+            normalize("teste dois ponto nove", lang="pt"),
+            "teste 2 ponto 9")
+        self.assertEqual(
+            normalize("teste cento e nove", lang="pt"),
+            "teste 100 e 9")
+        self.assertEqual(
+            normalize("teste vinte e 1", lang="pt"),
+            "teste 20 e 1")
     #
     # Spanish
     #
