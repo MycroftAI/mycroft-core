@@ -1082,10 +1082,14 @@ def extractnumber_pt(text):
     while count < len(aWords):
         val = 0
         word = aWords[count]
+        next_next_word = None
         if count + 1 < len(aWords):
             next_word = aWords[count + 1]
+            if count + 2 < len(aWords):
+                next_next_word = aWords[count + 2]
         else:
             next_word = None
+
         # is current word a number?
         if word in pt_numbers:
             val = pt_numbers[word]
@@ -1125,6 +1129,18 @@ def extractnumber_pt(text):
             afterDotVal = extractnumber_pt(newText[:-1])
             result = float(str(result) + "." + str(afterDotVal))
             break
+        # number word and fraction
+        ands = ["e"]
+        if next_next_word is not None:
+            if next_next_word in ands:
+                newWords = aWords[count + 3:]
+                newText = ""
+                for word in newWords:
+                    newText += word + " "
+                afterAndVal = extractnumber_pt(newText[:-1])
+                if afterAndVal:
+                    result += afterAndVal
+                    break
 
         count += 1
 
