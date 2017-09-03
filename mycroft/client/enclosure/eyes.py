@@ -77,7 +77,6 @@ class EnclosureEyes:
         color = (r * 65536) + (g * 256) + b
         self.writer.write("eyes.color=" + str(color))
 
-
     def brightness(self, event=None):
         level = 30
         if event and event.data:
