@@ -71,9 +71,9 @@ class EnclosureEyes:
     def color(self, event=None):
         r, g, b = 255, 255, 255
         if event and event.data:
-            r = int(event.data.get("r"), r)
-            g = int(event.data.get("g"), g)
-            b = int(event.data.get("b"), b)
+            r = int(event.data.get("r", r))
+            g = int(event.data.get("g", g))
+            b = int(event.data.get("b", b))
         color = (r * 65536) + (g * 256) + b
         self.writer.write("eyes.color=" + str(color))
 
