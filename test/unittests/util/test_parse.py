@@ -475,19 +475,14 @@ class TestNormalize(unittest.TestCase):
                     "2017-06-30 10:00:00", "como tempo")
         testExtract("lembra me para ligar a mae no dia 3 de agosto",
                     "2017-08-03 00:00:00", "lembra ligar mae")
-
-        # testExtract("Buy fireworks on the 4th of July",
-        #             "2017-07-04 00:00:00", "buy fireworks")
-        # testExtract("what is the weather 2 weeks from next friday",
-        #             "2017-07-21 00:00:00", "what is weather")
-        # testExtract("what is the weather wednesday at 0700 hours",
-        #             "2017-06-28 07:00:00", "what is weather")
-        # testExtract("what is the weather wednesday at 7 o'clock",
-        #             "2017-06-28 07:00:00", "what is weather")
-        # testExtract("Set up an appointment at 12:45 pm next Thursday",
-        #             "2017-07-06 12:45:00", "set up appointment")
-        # testExtract("What's the weather this Thursday?",
-        #             "2017-06-29 00:00:00", "what weather")
+        testExtract(u"compra facas no 13º dia de maio",
+                    "2018-05-13 00:00:00", "compra facas")
+        testExtract(u"gasta dinheiro no maio dia 13",
+                    "2018-05-13 00:00:00", "gasta dinheiro")
+        testExtract(u"compra velas a maio 13",
+                    "2018-05-13 00:00:00", "compra velas")
+        testExtract(u"bebe cerveja a 13 maio",
+                    "2018-05-13 00:00:00", "bebe cerveja")
 
     #
     # Spanish

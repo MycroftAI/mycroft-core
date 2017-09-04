@@ -1334,11 +1334,11 @@ def normalize_pt(text, remove_articles):
     return pt_pruning(normalized[1:], agressive=remove_articles)
 
 
-def extract_datetime_pt(str, currentDate=None):
+def extract_datetime_pt(input_str, currentDate=None):
     def clean_string(str):
         # cleans the input string of unneeded punctuation and capitalization
         # among other things
-        symbols = [".", ",", ";", "-", "_", "?", "!"]
+        symbols = [".", ",", ";", "-", "_", "?", "!", u"º", u"ª"]
         noise_words = ["o", "os", "a", "as", "aos", "ao", "de", "da", "do",
                        "dos",
                        "das"]
@@ -1378,7 +1378,7 @@ def extract_datetime_pt(str, currentDate=None):
                    minAbs != 0 or secOffset != 0
                )
 
-    if str == "":
+    if input_str == "":
         return None
     if currentDate is None:
         currentDate = datetime.now()
@@ -1396,7 +1396,7 @@ def extract_datetime_pt(str, currentDate=None):
     hasYear = False
     timeQualifier = ""
 
-    words = clean_string(str).split(" ")
+    words = clean_string(input_str).split(" ")
     timeQualifiersList = ['manha', 'tarde', 'noite']
     time_indicators = ["em", "as", "nas", "pelas", "volta", "depois", "estas",
                        "no", "dia"]
@@ -1471,10 +1471,17 @@ def extract_datetime_pt(str, currentDate=None):
         elif word == "dia":
             if wordNext == "depois" or wordNext == "antes":
                 used += 1
-            elif wordPrev[0].isdigit():
+            elif wordPrev and wordPrev[0].isdigit() and wordNext not in months \
+                    and wordNext not in monthsShort:
                 dayOffset += int(wordPrev)
                 start -= 1
                 used = 2
+            elif wordNext and wordNext[0].isdigit() and wordNextNext not in \
+                    months and wordNextNext not in monthsShort:
+                dayOffset += int(wordNext)
+                start -= 1
+                used = 2
+
         elif word == "semana" and not fromFlag:
             if wordPrev[0].isdigit():
                 dayOffset += int(wordPrev) * 7
@@ -1584,14 +1591,15 @@ def extract_datetime_pt(str, currentDate=None):
             if wordNext == "feira":
                 used += 1
         # parse 15 of July, June 20th, Feb 18, 19 of February
-        elif word in months or word in monthsShort and not fromFlag:
+        elif word in months or word in monthsShort:
             try:
                 m = months.index(word)
             except ValueError:
                 m = monthsShort.index(word)
             used += 1
             datestr = months[m]
-            if wordPrev[0].isdigit():
+            if wordPrev and wordPrev[0].isdigit():
+                # 13 maio
                 datestr += " " + wordPrev
                 start -= 1
                 used += 1
@@ -1603,6 +1611,7 @@ def extract_datetime_pt(str, currentDate=None):
                     hasYear = False
 
             elif wordNext and wordNext[0].isdigit():
+                # maio 13
                 datestr += " " + wordNext
                 used += 1
                 if wordNextNext and wordNextNext[0].isdigit():
@@ -1611,6 +1620,33 @@ def extract_datetime_pt(str, currentDate=None):
                     hasYear = True
                 else:
                     hasYear = False
+
+            elif wordPrevPrev and wordPrevPrev[0].isdigit():
+                # 13 dia maio
+                datestr += " " + wordPrevPrev
+
+                start -= 2
+                used += 2
+                if wordNext and word[0].isdigit():
+                    datestr += " " + wordNext
+                    used += 1
+                    hasYear = True
+                else:
+                    hasYear = False
+
+            elif wordNextNext and wordNextNext[0].isdigit():
+                # maio dia 13
+                datestr += " " + wordNextNext
+                used += 2
+                if wordNextNextNext and wordNextNextNext[0].isdigit():
+                    datestr += " " + wordNextNextNext
+                    used += 1
+                    hasYear = True
+                else:
+                    hasYear = False
+
+            if datestr in months:
+                datestr = ""
 
         # parse 5 days from tomorrow, 10 weeks from next thursday,
         # 2 months from July
@@ -1625,6 +1661,7 @@ def extract_datetime_pt(str, currentDate=None):
 
         # TODO debug word "depois" that one is failing for some reason
         if word in froms and wordNext in validFollowups:
+
             if not (wordNext == "amanha" and word == "depois"):
                 used = 2
                 fromFlag = True
@@ -1668,6 +1705,8 @@ def extract_datetime_pt(str, currentDate=None):
                 dayOffset += tmpOffset
                 if wordNextNextNext == "feira":
                     used += 1
+        if wordNext in months:
+            used -= 1
         if used > 0:
 
             if start - 1 > 0 and words[start - 1] in lists:
@@ -1795,7 +1834,7 @@ def extract_datetime_pt(str, currentDate=None):
                         remainder = nextWord
                         used += 1
                     elif wordNext == "manha":
-                        reaminder = "am"
+                        remainder = "am"
                         used += 1
                     elif wordNext == "tarde":
                         remainder = "pm"
@@ -1856,7 +1895,7 @@ def extract_datetime_pt(str, currentDate=None):
                 else:
                     if wordNext == "pm" or wordNext == "p.m.":
                         strHH = strNum
-                        reaminder = "pm"
+                        remainder = "pm"
                         used = 1
                     elif wordNext == "am" or wordNext == "a.m.":
                         strHH = strNum
@@ -1938,8 +1977,8 @@ def extract_datetime_pt(str, currentDate=None):
 
             strHH = int(strHH) if strHH else 0
             strMM = int(strMM) if strMM else 0
-            strHH = strHH + 12 if remainder == "pm" and strHH < 12 else strHH
-            strHH = strHH - 12 if remainder == "am" and strHH >= 12 else strHH
+            strHH = strHH + 12 if remainder == "pm" and 0 < strHH < 12 else strHH
+            strHH = strHH - 12 if remainder == "am" and 0 < strHH >= 12 else strHH
             if strHH > 24 or strMM > 59:
                 isTime = False
                 used = 0
@@ -1989,6 +2028,7 @@ def extract_datetime_pt(str, currentDate=None):
             datestr = datestr.replace(months[idx], en_month)
         for idx, en_month in enumerate(en_monthsShort):
             datestr = datestr.replace(monthsShort[idx], en_month)
+
         temp = datetime.strptime(datestr, "%B %d")
         if not hasYear:
             temp = temp.replace(year=extractedDate.year)
@@ -2076,6 +2116,7 @@ def pt_pruning(text, symbols=True, accents=True, agressive=True):
         text = " ".join(text_words)
         text = ' '.join(text.split())
     return text
+
 
 ####################################################################
 # Spanish normalization
