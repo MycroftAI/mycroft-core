@@ -45,7 +45,6 @@ from pyric import pyw
 from wifi import Cell
 
 from mycroft.client.enclosure.api import EnclosureAPI
-from mycroft.configuration import ConfigurationManager, USER_CONFIG
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util import connected, wait_while_speaking, is_speaking, \

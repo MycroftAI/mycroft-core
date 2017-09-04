@@ -18,8 +18,8 @@
 
 import collections
 import datetime
-from subprocess import Popen
 from tempfile import gettempdir
+from threading import Thread, Lock
 
 import os
 from time import sleep, time as get_time
@@ -178,7 +178,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         num_phonemes = len(listener_config.get('phonemes').split())
         len_phoneme = listener_config.get('phoneme_duration', 120) / 1000.0
         self.TEST_WW_SEC = int(num_phonemes * len_phoneme)
-        self.SAVED_WW_SEC = 10 if self.upload_config['enable'] else self.TEST_WW_SEC
+        self.SAVED_WW_SEC = (10 if self.upload_config['enable']
+                             else self.TEST_WW_SEC)
 
         speech_recognition.Recognizer.__init__(self)
         self.wake_word_recognizer = wake_word_recognizer
@@ -190,8 +191,9 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.save_utterances = listener_config.get('record_utterances', False)
         self.save_wake_words = listener_config.get('record_wake_words') \
             or self.upload_config['enable']
+        self.upload_lock = Lock()
         self.save_wake_words_dir = join(gettempdir(), 'mycroft_wake_words')
-        self.filenames_to_upload, self.filenames_to_delete = [], []
+        self.filenames_to_upload = []
         self.mic_level_file = os.path.join(get_ipc_directory(), "mic_level")
         self._stop_signaled = False
 
@@ -322,6 +324,36 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         """
         self._stop_signaled = True
 
+    def _upload_file(self, filename):
+        server = self.upload_config['server']
+        keyfile = resolve_resource_file('wakeword_rsa')
+        userfile = expanduser('~/.mycroft/wakeword_rsa')
+
+        if not isfile(userfile):
+            shutil.copy2(keyfile, userfile)
+            os.chmod(userfile, 0o600)
+            keyfile = userfile
+
+        address = self.upload_config['user'] + '@' + \
+            server + ':' + self.upload_config['folder']
+
+        self.upload_lock.acquire()
+        try:
+            self.filenames_to_upload.append(filename)
+            for i, fn in enumerate(self.filenames_to_upload):
+                logger.debug('Uploading ' + fn + '...')
+                os.chmod(fn, 0o666)
+                cmd = 'scp -o StrictHostKeyChecking=no -P ' + \
+                      str(self.upload_config['port']) + ' -i ' + \
+                      keyfile + ' ' + fn + ' ' + address
+                if os.system(cmd) == 0:
+                    del self.filenames_to_upload[i]
+                    os.remove(fn)
+                else:
+                    logger.debug('Could not upload ' + fn + ' to ' + server)
+        finally:
+            self.upload_lock.release()
+
     def _wait_until_wake_word(self, source, sec_per_buffer):
         """Listen continuously on source until a wake word is spoken
 
@@ -423,34 +455,9 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                         f.write(audio.get_wav_data())
 
                     if self.upload_config['enable']:
-                        server = self.upload_config['server']
-                        if os.system('ping -c 1 ' + server) == 0:
-                            logger.debug('Uploading ' + filename + '...')
-                            keyfile = resolve_resource_file('wakeword_rsa')
-                            userfile = expanduser('~/.mycroft/wakeword_rsa')
-                            if not isfile(userfile):
-                                shutil.copy2(keyfile, userfile)
-                                os.chmod(userfile, 0o600)
-                                keyfile = userfile
-                            address = self.upload_config['user'] + '@' + \
-                                server + ':' + \
-                                self.upload_config['folder']
-                            for fn in self.filenames_to_delete:
-                                try:
-                                    os.remove(fn)
-                                except Exception:
-                                    pass
-                            self.filenames_to_delete = []
-                            for fn in self.filenames_to_upload + [filename]:
-                                os.chmod(fn, 0o666)
-                                Popen(['scp', '-o', 'StrictHostKeyChecking=no',
-                                       '-P', str(self.upload_config['port']),
-                                       '-i', keyfile, fn, address])
-                                self.filenames_to_delete.append(fn)
-                            self.filenames_to_upload = []
-                        else:
-                            logger.debug('Could not upload to ' + server)
-                            self.filenames_to_upload.append(filename)
+                        t = Thread(target=self._upload_file, args=(filename,))
+                        t.daemon = True
+                        t.start()
 
     @staticmethod
     def _create_audio_data(raw_data, source):
