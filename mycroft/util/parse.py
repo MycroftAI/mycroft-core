@@ -2117,7 +2117,7 @@ def pt_pruning(text, symbols=True, accents=True, agressive=True):
              "lhe", "lhes", "me", "e", "no", "nas", "na", "nos", "em", "para",
              "este",
              "esta", "deste", "desta", "neste", "nesta", "nesse",
-             "nessa", "foi", "que", "qual", "quem"]
+             "nessa", "foi", "que"]
     if symbols:
         symbols = [".", ",", ";", ":", "!", "?", u"º", u"ª"]
         for symbol in symbols:

@@ -369,14 +369,14 @@ class TestNormalize(unittest.TestCase):
                                        lang="pt"), 600.0006)
 
     def test_agressive_pruning_pt(self):
-        self.assertEqual(normalize("qual palavra um", lang="pt"),
-                         "palavra 1")
+        self.assertEqual(normalize("uma palavra", lang="pt"),
+                         "1 palavra")
         self.assertEqual(normalize("esta palavra um", lang="pt"),
                          "palavra 1")
         self.assertEqual(normalize("o homem batia-lhe", lang="pt"),
                          "homem batia")
         self.assertEqual(normalize("quem disse asneira nesse dia", lang="pt"),
-                         "disse asneira dia")
+                         "quem disse asneira dia")
 
     def test_spaces_pt(self):
         self.assertEqual(normalize("  isto   e  o    teste", lang="pt"),
