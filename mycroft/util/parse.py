@@ -1327,7 +1327,11 @@ def normalize_pt(text, remove_articles):
 
         normalized += " " + word
         i += 1
-    return normalized[1:]  # strip the initial space
+    # some articles in pt-pt can not be removed, but many words can
+    # this is experimental and some meaning may be lost
+    # maybe agressive should default to False
+    # only usage will tell, as a native speaker this seems reasonable
+    return pt_pruning(normalized[1:], agressive=remove_articles)
 
 
 def extract_datetime_pt(str, currentDate=None):
@@ -1335,15 +1339,19 @@ def extract_datetime_pt(str, currentDate=None):
         # cleans the input string of unneeded punctuation and capitalization
         # among other things
         symbols = [".", ",", ";", "-", "_", "?", "!"]
-        noise_words = ["o", "os", "a", "as", "de", "da", "do", "dos", "das"]
+        noise_words = ["o", "os", "a", "as", "aos", "ao", "de", "da", "do",
+                       "dos",
+                       "das"]
 
         for word in symbols:
             str = str.replace(word, "")
         for word in noise_words:
             str = str.replace(" " + word + " ", " ")
-        str = str.lower().replace(u"á", "a").replace(u"ç", "o").replace(u"à",
+        str = str.lower().replace(u"á", "a").replace(u"ç", "c").replace(u"à",
                                                                         "a").replace(
-            u"ã", "a").replace(u"ê", "e")
+            u"ã", "a").replace(u"ê", "e").replace(u"é", "e").replace(u"è",
+                                                                     "e").replace(
+            u"ó", "o").replace(u"ò", "o")
         # handle synonims and equivalents, "tomorrow early = tomorrow morning
         synonims = {"manha": ["manhazinha", "cedo", "cedinho"],
                     "tarde": ["tardinha", "tarde"],
@@ -1391,7 +1399,7 @@ def extract_datetime_pt(str, currentDate=None):
     words = clean_string(str).split(" ")
     timeQualifiersList = ['manha', 'tarde', 'noite']
     time_indicators = ["em", "as", "nas", "pelas", "volta", "depois", "estas",
-                       "no"]
+                       "no", "dia"]
     days = ['segunda', 'terca', 'quarta',
             'quinta', 'sexta', 'sabado', 'domingo']
     months = ['janeiro', 'febreiro', 'marco', 'abril', 'maio', 'junho',
@@ -1402,7 +1410,14 @@ def extract_datetime_pt(str, currentDate=None):
     suffix_nexts = ["seguinte", "subsequente", "seguir"]
     lasts = ["ultimo", "ultima"]
     suffix_lasts = ["passada", "passado", "anterior", "antes"]
-
+    nxts = ["depois", "seguir", "seguida", "seguinte", "proxima", "proximo"]
+    prevs = ["antes", "ante", "previa", "previamente", "anterior"]
+    froms = ["partir", "em", "para", "na", "no", "daqui", "seguir",
+             "depois", "por", "proxima", "proximo"]
+    thises = ["este", "esta", "deste", "desta", "neste", "nesta", "nesse",
+              "nessa"]
+    froms += thises
+    lists = nxts + prevs + froms + time_indicators
     for idx, word in enumerate(words):
         if word == "":
             continue
@@ -1540,6 +1555,7 @@ def extract_datetime_pt(str, currentDate=None):
         # parse Monday, Tuesday, etc., and next Monday,
         # last Tuesday, etc.
         elif word in days and not fromFlag:
+
             d = days.index(word)
             dayOffset = (d + 1) - int(today)
             used = 1
@@ -1565,6 +1581,8 @@ def extract_datetime_pt(str, currentDate=None):
                     dayOffset -= 7
                     used += 1
                     start -= 1
+            if wordNext == "feira":
+                used += 1
         # parse 15 of July, June 20th, Feb 18, 19 of February
         elif word in months or word in monthsShort and not fromFlag:
             try:
@@ -1604,13 +1622,7 @@ def extract_datetime_pt(str, currentDate=None):
         validFollowups.append("agora")
         validFollowups.append("ja")
         validFollowups.append("ante")
-        nxts = ["depois", "seguir", "seguida", "seguinte"]
-        prevs = ["antes", "ante", "previa", "previamente", "anterior"]
-        froms = ["partir", "em", "para", "na", "no", "daqui", "seguir",
-                 "depois", "por"]
-        thises = ["este", "esta", "deste", "desta", "neste", "nesta", "nesse",
-                  "nessa"]
-        froms += thises
+
         # TODO debug word "depois" that one is failing for some reason
         if word in froms and wordNext in validFollowups:
             if not (wordNext == "amanha" and word == "depois"):
@@ -1630,6 +1642,8 @@ def extract_datetime_pt(str, currentDate=None):
                 d = days.index(wordNext)
                 tmpOffset = (d + 1) - int(today)
                 used = 2
+                if wordNextNext == "feira":
+                    used += 1
                 if tmpOffset < 0:
                     tmpOffset += 7
                 if wordNextNext:
@@ -1652,8 +1666,10 @@ def extract_datetime_pt(str, currentDate=None):
                         tmpOffset -= 7
                         used += 1
                 dayOffset += tmpOffset
+                if wordNextNextNext == "feira":
+                    used += 1
         if used > 0:
-            lists = thises + nxts + prevs + froms
+
             if start - 1 > 0 and words[start - 1] in lists:
                 start -= 1
                 used += 1
@@ -1661,7 +1677,7 @@ def extract_datetime_pt(str, currentDate=None):
             for i in range(0, used):
                 words[i + start] = ""
 
-            if (start - 1 >= 0 and words[start - 1] in time_indicators):
+            if (start - 1 >= 0 and words[start - 1] in lists):
                 words[start - 1] = ""
             found = True
             daySpecified = True
@@ -1963,6 +1979,16 @@ def extract_datetime_pt(str, currentDate=None):
                                           minute=0,
                                           hour=0)
     if datestr != "":
+        en_months = ['january', 'february', 'march', 'april', 'may', 'june',
+                     'july', 'august', 'september', 'october', 'november',
+                     'december']
+        en_monthsShort = ['jan', 'feb', 'mar', 'apr', 'may', 'june', 'july',
+                          'aug',
+                          'sept', 'oct', 'nov', 'dec']
+        for idx, en_month in enumerate(en_months):
+            datestr = datestr.replace(months[idx], en_month)
+        for idx, en_month in enumerate(en_monthsShort):
+            datestr = datestr.replace(monthsShort[idx], en_month)
         temp = datetime.strptime(datestr, "%B %d")
         if not hasYear:
             temp = temp.replace(year=extractedDate.year)
@@ -2013,15 +2039,43 @@ def extract_datetime_pt(str, currentDate=None):
         extractedDate = extractedDate + relativedelta(minutes=minOffset)
     if secOffset != 0:
         extractedDate = extractedDate + relativedelta(seconds=secOffset)
-    for idx, word in enumerate(words):
-        if words[idx] == "e" and words[idx - 1] == "" and words[
-                    idx + 1] == "":
-            words[idx] = ""
 
     resultStr = " ".join(words)
     resultStr = ' '.join(resultStr.split())
+    resultStr = pt_pruning(resultStr)
     return [extractedDate, resultStr]
 
+
+def pt_pruning(text, symbols=True, accents=True, agressive=True):
+    # agressive pt word pruning
+    words = ["a", "o", "os", "as", "de", "dos", "das",
+             "lhe", "lhes", "me", "e", "no", "nas", "na", "nos", "em", "para",
+             "este",
+             "esta", "deste", "desta", "neste", "nesta", "nesse",
+             "nessa", "foi", "que", "qual", "quem"]
+    if symbols:
+        symbols = [".", ",", ";", ":", "!", "?", u"º", u"ª"]
+        for symbol in symbols:
+            text = text.replace(symbol, "")
+        text = text.replace("-", " ").replace("_", " ")
+    if accents:
+        accents = {"a": [u"á", u"à", u"ã", u"â"],
+                   "e": [u"é", u"è", u"ê"],
+                   "i": [u"í", u"ì"],
+                   "o": [u"ó", u"ò"],
+                   "u": [u"ù", u"ú"],
+                   "c": [u"ç", u"Ç"]}
+        for char in accents:
+            for acc in accents[char]:
+                text = text.replace(acc, char)
+    if agressive:
+        text_words = text.split(" ")
+        for idx, word in enumerate(text_words):
+            if word in words:
+                text_words[idx] = ""
+        text = " ".join(text_words)
+        text = ' '.join(text.split())
+    return text
 
 ####################################################################
 # Spanish normalization
