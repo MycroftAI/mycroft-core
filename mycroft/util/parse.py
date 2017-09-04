@@ -891,6 +891,16 @@ def isFractional_en(input_str):
     return False
 
 
+def get_gender(word, input_string="", lang="en-us"):
+    '''
+    guess gender of word, optionally use raw input text for context
+    returns "m" if the word is male, "f" if female, False if unknown
+    '''
+    if "pt" in lang or "es" in lang:
+        # spanish follows same rules
+        return get_gender_pt(word, input_string)
+    return False
+
 # ==============================================================
 
 
@@ -1338,10 +1348,9 @@ def extract_datetime_pt(input_str, currentDate=None):
     def clean_string(str):
         # cleans the input string of unneeded punctuation and capitalization
         # among other things
-        symbols = [".", ",", ";", "-", "_", "?", "!", u"º", u"ª"]
-        noise_words = ["o", "os", "a", "as", "aos", "ao", "de", "da", "do",
-                       "dos",
-                       "das"]
+        symbols = [".", ",", ";", "?", "!", u"º", u"ª"]
+        noise_words = ["o", "os", "a", "as", "do", "da", "dos", "das", "de",
+                       "ao", "aos"]
 
         for word in symbols:
             str = str.replace(word, "")
@@ -1351,18 +1360,20 @@ def extract_datetime_pt(input_str, currentDate=None):
                                                                         "a").replace(
             u"ã", "a").replace(u"ê", "e").replace(u"é", "e").replace(u"è",
                                                                      "e").replace(
-            u"ó", "o").replace(u"ò", "o")
+            u"ó", "o").replace(u"ò", "o").replace("-", " ").replace("_", "")
         # handle synonims and equivalents, "tomorrow early = tomorrow morning
         synonims = {"manha": ["manhazinha", "cedo", "cedinho"],
                     "tarde": ["tardinha", "tarde"],
-                    "noite": ["noitinha", "anoitecer"]}
+                    "noite": ["noitinha", "anoitecer"],
+                    "todos": ["ao", "aos"],
+                    "em": ["do", "da", "dos", "das", "de"]}
         for syn in synonims:
             for word in synonims[syn]:
                 str = str.replace(" " + word + " ", " " + syn + " ")
         # relevant plurals, cant just extract all s in pt
         wordlist = ["manhas", "noites", "tardes", "dias", "semanas", "anos",
                     "minutos", "segundos", "nas", "nos", "proximas",
-                    "seguintes"]
+                    "seguintes", "horas"]
         for idx, word in enumerate(wordlist):
             str = str.replace(word, word.rstrip('s'))
         str = str.replace("meses", "mes").replace("anteriores", "anterior")
@@ -1399,7 +1410,7 @@ def extract_datetime_pt(input_str, currentDate=None):
     words = clean_string(input_str).split(" ")
     timeQualifiersList = ['manha', 'tarde', 'noite']
     time_indicators = ["em", "as", "nas", "pelas", "volta", "depois", "estas",
-                       "no", "dia"]
+                       "no", "dia", "hora"]
     days = ['segunda', 'terca', 'quarta',
             'quinta', 'sexta', 'sabado', 'domingo']
     months = ['janeiro', 'febreiro', 'marco', 'abril', 'maio', 'junho',
@@ -1413,7 +1424,7 @@ def extract_datetime_pt(input_str, currentDate=None):
     nxts = ["depois", "seguir", "seguida", "seguinte", "proxima", "proximo"]
     prevs = ["antes", "ante", "previa", "previamente", "anterior"]
     froms = ["partir", "em", "para", "na", "no", "daqui", "seguir",
-             "depois", "por", "proxima", "proximo"]
+             "depois", "por", "proxima", "proximo", "da", "do", "de"]
     thises = ["este", "esta", "deste", "desta", "neste", "nesta", "nesse",
               "nessa"]
     froms += thises
@@ -1460,9 +1471,8 @@ def extract_datetime_pt(input_str, currentDate=None):
             used += 1
         # day after tomorrow
         elif word == "depois" and wordNext == "amanha" and not fromFlag:
-            dayOffset = 2
+            dayOffset += 2
             used = 2
-
         # day before yesterday
         elif word == "antes" and wordNext == "ontem" and not fromFlag:
             dayOffset -= 2
@@ -1471,16 +1481,21 @@ def extract_datetime_pt(input_str, currentDate=None):
         elif word == "dia":
             if wordNext == "depois" or wordNext == "antes":
                 used += 1
+                if wordPrev and wordPrev[0].isdigit():
+                    dayOffset += int(wordPrev)
+                    start -= 1
+                    used += 1
             elif wordPrev and wordPrev[0].isdigit() and wordNext not in months \
                     and wordNext not in monthsShort:
                 dayOffset += int(wordPrev)
                 start -= 1
-                used = 2
+                used += 2
             elif wordNext and wordNext[0].isdigit() and wordNextNext not in \
                     months and wordNextNext not in monthsShort:
                 dayOffset += int(wordNext)
                 start -= 1
-                used = 2
+                used += 2
+
 
         elif word == "semana" and not fromFlag:
             if wordPrev[0].isdigit():
@@ -1662,7 +1677,8 @@ def extract_datetime_pt(input_str, currentDate=None):
         # TODO debug word "depois" that one is failing for some reason
         if word in froms and wordNext in validFollowups:
 
-            if not (wordNext == "amanha" and word == "depois"):
+            if not (wordNext == "amanha" and wordNext == "ontem") and not (
+                                word == "depois" or word == "antes" or word == "em"):
                 used = 2
                 fromFlag = True
             if wordNext == "amanha" and word != "depois":
@@ -1738,6 +1754,7 @@ def extract_datetime_pt(input_str, currentDate=None):
         wordPrev = words[idx - 1] if idx > 0 else ""
         wordNext = words[idx + 1] if idx + 1 < len(words) else ""
         wordNextNext = words[idx + 2] if idx + 2 < len(words) else ""
+        wordNextNextNext = words[idx + 3] if idx + 3 < len(words) else ""
         # parse noon, midnight, morning, afternoon, evening
         used = 0
         if word == "meio" and wordNext == "dia":
@@ -1861,6 +1878,7 @@ def extract_datetime_pt(input_str, currentDate=None):
                                     (timeQualifier == "manha" or
                                              timeQualifier == "tarde"):
                                 strHH += 12
+
             else:
                 # try to parse # s without colons
                 # 5 hours, 10 minutes etc.
@@ -1893,11 +1911,13 @@ def extract_datetime_pt(input_str, currentDate=None):
                     remainder = "am"
                     used = 1
                 else:
-                    if wordNext == "pm" or wordNext == "p.m.":
+                    if wordNext == "pm" or wordNext == "p.m." or wordNext == \
+                            "tarde":
                         strHH = strNum
                         remainder = "pm"
                         used = 1
-                    elif wordNext == "am" or wordNext == "a.m.":
+                    elif wordNext == "am" or wordNext == "a.m." or wordNext == \
+                            "manha":
                         strHH = strNum
                         remainder = "am"
                         used = 1
@@ -1956,15 +1976,20 @@ def extract_datetime_pt(input_str, currentDate=None):
                         strMM = 00
                         if wordNext == "em" and wordNextNext == "ponto":
                             used += 2
-                        if wordNext in timeQualifier:
-                            if wordNext == "tarde":
+                            if wordNextNextNext == "tarde":
                                 remainder = "pm"
-                            if wordNext == "noite":
-                                remainder = "pm"
-                            if wordNext == "manha":
+                                used += 1
+                            elif wordNextNextNext == "manha":
                                 remainder = "am"
-                        if timeQualifier != "":
-                            military = True
+                                used += 1
+                            elif wordNextNextNext == "noite":
+                                if 0 > strHH > 6:
+                                    remainder = "am"
+                                else:
+                                    remainder = "pm"
+                                used += 1
+
+
                     elif wordNext[0].isdigit():
                         strHH = word
                         strMM = wordNext
@@ -2117,6 +2142,22 @@ def pt_pruning(text, symbols=True, accents=True, agressive=True):
         text = ' '.join(text.split())
     return text
 
+
+def get_gender_pt(word, raw_string=""):
+    word = word.rstrip("s")
+    gender = False
+    words = raw_string.split(" ")
+    for idx, w in enumerate(words):
+        if w == word and idx != 0:
+            previous = words[idx - 1]
+            gender = get_gender_pt(previous)
+            break
+    if not gender:
+        if word[-1] == "a":
+            gender = "f"
+        if word[-1] == "o" or word[-1] == "e":
+            gender = "m"
+    return gender
 
 ####################################################################
 # Spanish normalization

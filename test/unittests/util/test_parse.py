@@ -3,6 +3,7 @@
 
 import unittest
 from mycroft.util.parse import normalize
+from mycroft.util.parse import get_gender
 from mycroft.util.parse import extractnumber
 from mycroft.util.parse import extract_datetime
 from datetime import datetime
@@ -302,6 +303,9 @@ class TestNormalize(unittest.TestCase):
 
         self.assertEqual(normalize("whats 8 + 4"), "what is 8 + 4")
 
+    def test_gender(self):
+        self.assertEqual(get_gender("person"),
+                         False)
     # Pt-pt
     def test_articles_pt(self):
         self.assertEqual(normalize(u"isto é o teste",
@@ -475,6 +479,7 @@ class TestNormalize(unittest.TestCase):
                     "2017-06-30 10:00:00", "como tempo")
         testExtract("lembra me para ligar a mae no dia 3 de agosto",
                     "2017-08-03 00:00:00", "lembra ligar mae")
+
         testExtract(u"compra facas no 13º dia de maio",
                     "2018-05-13 00:00:00", "compra facas")
         testExtract(u"gasta dinheiro no maio dia 13",
@@ -483,6 +488,48 @@ class TestNormalize(unittest.TestCase):
                     "2018-05-13 00:00:00", "compra velas")
         testExtract(u"bebe cerveja a 13 maio",
                     "2018-05-13 00:00:00", "bebe cerveja")
+        testExtract("como esta o tempo 1 dia a seguir a amanha",
+                    "2017-06-29 00:00:00", "como tempo")
+        testExtract(u"como esta o tempo ás 0700 horas",
+                    "2017-06-27 07:00:00", "como tempo")
+        testExtract(u"como esta o tempo amanha ás 7 em ponto",
+                    "2017-06-28 07:00:00", "como tempo")
+        testExtract(u"como esta o tempo amanha pelas 2 da tarde",
+                    "2017-06-28 14:00:00", "como tempo")
+        testExtract(u"como esta o tempo amanha pelas 2",
+                    "2017-06-28 02:00:00", "como tempo")
+        testExtract(u"como esta o tempo pelas 2 da tarde da proxima sexta",
+                    "2017-06-30 14:00:00", "como tempo")
+        testExtract("lembra-me de acordar em 4 anos",
+                    "2021-06-27 00:00:00", "lembra acordar")
+        testExtract("lembra-me de acordar em 4 anos e 4 dias",
+                    "2021-07-01 00:00:00", "lembra acordar")
+        testExtract("dorme 3 dias depois de amanha",
+                    "2017-07-02 00:00:00", "dorme")
+        testExtract("marca consulta para 2 semanas e 6 dias depois de Sabado",
+                    "2017-07-21 00:00:00", "marca consulta")
+        testExtract(u"começa a festa ás 8 em ponto da noite de quinta",
+                    "2017-06-29 20:00:00", "comeca festa")
+
+    def test_gender_pt(self):
+        self.assertEqual(get_gender("vaca", lang="pt"),
+                         "f")
+        self.assertEqual(get_gender("cavalo", lang="pt"),
+                         "m")
+        self.assertEqual(get_gender("vacas", lang="pt"),
+                         "f")
+        self.assertEqual(get_gender("boi", "o boi come erva", lang="pt"),
+                         "m")
+        self.assertEqual(get_gender("boi", lang="pt"),
+                         False)
+        self.assertEqual(get_gender("homem", "estes homem come merda",
+                                    lang="pt"),
+                         "m")
+        self.assertEqual(get_gender("ponte", lang="pt"),
+                         "m")
+        self.assertEqual(get_gender("ponte", "essa ponte caiu",
+                                    lang="pt"),
+                         "f")
 
     #
     # Spanish
