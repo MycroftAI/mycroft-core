@@ -131,8 +131,6 @@ def _starting_up():
     """
     global ws, skill_reload_thread, event_scheduler
 
-    check_connection()
-
     ws.on('intent_failure', FallbackSkill.make_intent_failure_handler(ws))
 
     # Create skill_manager listener and invoke the first time
@@ -150,6 +148,11 @@ def _starting_up():
     skill_reload_thread = WatchSkills()
     skill_reload_thread.daemon = True
     skill_reload_thread.start()
+
+    # Wait until skills have been loaded once before starting to check
+    # network connection
+    skill_reload_thread.wait_loaded_once()
+    check_connection()
 
 
 def check_connection():
@@ -208,6 +211,7 @@ class WatchSkills(Thread):
     def __init__(self):
         super(WatchSkills, self).__init__()
         self._stop_event = Event()
+        self._loaded_once = Event()
 
     def run(self):
         global ws, loaded_skills, last_modified_skill
@@ -266,10 +270,22 @@ class WatchSkills(Thread):
             if len(modified_dates) > 0:
                 last_modified_skill = max(modified_dates)
 
+            if not self._loaded_once.is_set():
+                self._loaded_once.set()
             # Pause briefly before beginning next scan
             time.sleep(2)
 
+    def wait_loaded_once(self):
+        """
+            Block until skills have loaded at least once.
+        """
+        while not self._loaded_once.is_set():
+            time.sleep(1)
+
     def stop(self):
+        """
+            Stop the thread.
+        """
         self._stop_event.set()
 
 
