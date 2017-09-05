@@ -901,6 +901,7 @@ def get_gender(word, input_string="", lang="en-us"):
         return get_gender_pt(word, input_string)
     return False
 
+
 # ==============================================================
 
 
@@ -2158,6 +2159,7 @@ def get_gender_pt(word, raw_string=""):
         if word[-1] == "o" or word[-1] == "e":
             gender = "m"
     return gender
+
 
 ####################################################################
 # Spanish normalization
