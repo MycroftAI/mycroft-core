@@ -50,6 +50,10 @@ class TestMathExtractFormat(unittest.TestCase):
             "1 + 2frogs")
 
         self.assertEqual(
+            solve_expression("evil divided by evil plus two frogs"),
+            "1 + 2frogs")
+
+        self.assertEqual(
             solve_expression("one dog minus one dog plus 1"),
             "1")
 
@@ -70,7 +74,6 @@ class TestMathExtractFormat(unittest.TestCase):
         # self.assertEqual(
         #    solve_expression("one dog multiplied by one dog plus two frogs"),
         #    "1dog squared + 2frogs")
-
 
         # self.assertEqual(
         #    solve_expression("one dog minus + one dog plus two frogs"),
