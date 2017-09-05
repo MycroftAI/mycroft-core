@@ -49,8 +49,12 @@ class TestMathExtractFormat(unittest.TestCase):
             '3628800')
 
         self.assertEqual(
-            solve_expression("one plus pi plus x"),
+            solve_expression("one plus pi plus x", nice=False),
             "4.14159265359 + x")
+
+        self.assertEqual(
+            solve_expression("one plus pi plus x", nice=True),
+            "4 and a seventh + x")
 
         self.assertEqual(
             solve_expression("y divided by x"),

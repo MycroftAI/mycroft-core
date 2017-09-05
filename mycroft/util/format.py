@@ -294,6 +294,7 @@ class StringOperation():
         res = res.replace("++", "+")
         res = res.replace("--", "-")
         res = res.replace("/1", "")
+
         while len(res) > 2 and res[0] in ["+", "0"] and res[1] != ".":
             if res[0] == "+":
                 res = res[1:]
@@ -310,7 +311,7 @@ class StringOperation():
         self.result = res
         return res
 
-    def solve(self, debug=False):
+    def solve(self, debug=False, nice=True):
         if debug:
             print "normalized string:", self.string
             print "raw string:", self.raw_str
@@ -339,12 +340,19 @@ class StringOperation():
         if debug:
             print "vars:", OP.variables
             print "\n"
+        # make nice numbers
+        if nice:
+            words = res.split(" ")
+            for idx, word in enumerate(words):
+                if is_numeric(word):
+                    words[idx] = nice_number(float(word))
+            res = " ".join(words)
         return res
 
 
-def solve_expression(string, lang="en-us", debug=False):
+def solve_expression(string, nice=True, lang="en-us", debug=False):
     OP = StringOperation(string, lang=lang)
-    return OP.solve(debug=debug)
+    return OP.solve(debug=debug, nice=nice)
 
 
 def extract_expression(string, lang="en-us"):
