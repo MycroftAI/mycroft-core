@@ -1,4 +1,3 @@
-
 # -*- coding: iso-8859-15 -*-
 
 # Copyright 2017 Mycroft AI, Inc.
@@ -115,7 +114,9 @@ def convert_number(number, denominators):
 
     return int_number, int(round(numerator)), denominator
 
-operations = ["+","-","/","*","!","^","**","exp","log","(",")"]
+
+operations = ["+", "-", "/", "*", "!", "^", "**", "exp", "log", "sqrt", "(",
+              ")"]
 
 
 class ElementalOperation():
@@ -220,8 +221,8 @@ class StringOperation():
         OP = ElementalOperation()
         OP.variables = self.variables
         # prioritize operations by this order
-        passes= [
-            ["!", "exp", "log", "^", "sqrt"],
+        passes = [
+            ["!", "exp", "log", "^", "sqrt", "**"],
             ["*", "/", "%"],
             ["+", "-"]
         ]
@@ -229,7 +230,7 @@ class StringOperation():
             for idx, op in enumerate(operations):
                 if not op or op[1] not in current_pass:
                     continue
-                prev_op = operations[idx-1] if idx-1 >= 0 else ""
+                prev_op = operations[idx - 1] if idx - 1 >= 0 else ""
 
                 # check for numbers
                 if op[0] in OP.constants:
@@ -241,13 +242,16 @@ class StringOperation():
                 if op[2] in OP.variables:
                     op[2] = OP.variables[op[2]]
 
+                # var definition
                 if is_numeric(op[2]) and op[1] == "is":
                     OP.set(op[0], op[2], op[1])
                     result = OP.operate()
                     operations[idx] = ""
                     continue
 
-                elif is_numeric(op[0]) and op[1] == "!":
+                # single input expressions
+                elif is_numeric(op[0]) and op[1] in ["!", "exp", "sqrt", "^",
+                                                     "**"]:
                     OP.set(op[0], op[0], op[1])
                     result = OP.operate()
                     operations[idx] = [0, "+", result]
@@ -275,7 +279,7 @@ class StringOperation():
             chain.append(op)
             for element in op:
                 if element and element != "prev" and element != "next":
-                    result+=str(element)
+                    result += str(element)
         return chain, result
 
     def _get_result(self):
@@ -302,7 +306,7 @@ class StringOperation():
             if res[-2:] == ".0":
                 res = res[:-2]
         for op in operations:
-            res = res.replace(op, " "+op+" ")
+            res = res.replace(op, " " + op + " ")
         self.result = res
         return res
 
@@ -350,86 +354,87 @@ def extract_expression(string, lang="en-us"):
 
 
 def extract_expression_en(string):
-        expressions = {"+": ["add", "adding", "plus","added"],
-                       "-": ["subtract", "subtracting", "minus", "negative",
-                             "subtracted"],
-                       "/": ["divide", "dividing","divided"],
-                       "*": ["multiply", "multiplying", "times","multiplied"],
-                       "%": ["modulus"],
-                       "!": ["factorial"],
-                       "is": ["equals"],
-                       "^": ["**", "elevated"],
-                       "exp": ["exponent", "exponentiate", "exponentiated"],
-                       "(": ["open"],
-                       ")": ["close"]}
-        # clean string
-        noise_words = ["by","and","the","in","at","a","for","an","to","with"]
+    expressions = {"+": ["add", "adding", "plus", "added"],
+                   "-": ["subtract", "subtracting", "minus", "negative",
+                         "subtracted"],
+                   "/": ["divide", "dividing", "divided"],
+                   "*": ["multiply", "multiplying", "times", "multiplied"],
+                   "%": ["modulus"],
+                   "!": ["factorial"],
+                   "is": ["equals"],
+                   "^": ["**", "elevated"],
+                   "exp": ["exponent", "exponentiate", "exponentiated"],
+                   "(": ["open"],
+                   ")": ["close"]}
+    # clean string
+    noise_words = ["by", "and", "the", "in", "at", "a", "for", "an", "to",
+                   "with"]
 
-        # replace natural language expression
-        for op in expressions:
-            string = string.replace(op, " " + op + " ")
-        words = string.replace(",", "").split(" ")
-        for idx, word in enumerate(words):
-            for operation in expressions:
-                if word in expressions[operation]:
-                    words[idx] = operation
-            if word in noise_words:
+    # replace natural language expression
+    for op in expressions:
+        string = string.replace(op, " " + op + " ")
+    words = string.replace(",", "").split(" ")
+    for idx, word in enumerate(words):
+        for operation in expressions:
+            if word in expressions[operation]:
+                words[idx] = operation
+        if word in noise_words:
+            words[idx] = ""
+
+    words = [word for word in words if word]
+    exps = []
+    # convert all numbers
+    for idx, word in enumerate(words):
+        if not word:
+            continue
+        if extractnumber(word):
+            words[idx] = str(extractnumber(word))
+        # join unknown vars nums
+        if idx + 1 < len(words) and words[idx + 1] not in operations:
+            # 3 x = 3x
+            if is_numeric(word) and not is_numeric(words[idx + 1]):
+                words[idx] = word + words[idx + 1]
+                words[idx + 1] = ""
+        if idx - 1 >= 0 and word not in operations:
+            # 1 2 x = 1 2x
+            if not is_numeric(word) and is_numeric(words[idx - 1]):
+                words[idx] = words[idx - 1] + word
+                words[idx - 1] = ""
+
+    words = [word for word in words if word]
+
+    # extract operations
+    for idx, word in enumerate(words):
+        if not word:
+            continue
+        # is an operation
+        if word in expressions:
+            operation = word
+            if idx > 0:
+                woi = words[idx - 1:idx + 2]
+                words[idx - 1] = ""
+                if idx + 1 < len(words):
+                    words[idx + 1] = ""
                 words[idx] = ""
-
-        words = [word for word in words if word]
-        exps = []
-        # convert all numbers
-        for idx, word in enumerate(words):
-            if not word:
-                continue
-            if extractnumber(word):
-                words[idx] = str(extractnumber(word))
-            # join unknown vars nums
-            if idx + 1 < len(words) and words[idx + 1] not in operations:
-                # 3 x = 3x
-                if is_numeric(word) and not is_numeric(words[idx + 1]):
-                    words[idx] = word + words[idx + 1]
-                    words[idx + 1] = ""
-            if idx-1 >= 0 and word not in operations:
-                # 1 2 x = 1 2x
-                if not is_numeric(word) and is_numeric(words[idx-1]):
-                    words[idx] = words[idx-1]+word
-                    words[idx-1] = ""
-
-        words = [word for word in words if word]
-
-        # extract operations
-        for idx, word in enumerate(words):
-            if not word:
-                continue
-            # is an operation
-            if word in expressions:
-                operation = word
-                if idx > 0:
-                    woi = words[idx - 1:idx + 2]
-                    words[idx - 1] = ""
-                    if idx+1 < len(words):
-                        words[idx + 1] = ""
-                    words[idx] = ""
-                    x = woi[0]
-                    try:
-                        y = woi[2]
-                    except:
-                        y = "next"
-                    if x == "":
-                        x = "prev"
-                    exps.append([x, operation, y])
-                else:
+                x = woi[0]
+                try:
+                    y = woi[2]
+                except:
+                    y = "next"
+                if x == "":
+                    x = "prev"
+                exps.append([x, operation, y])
+            else:
                 # operation at first, is a sign
-                    y = words[idx + 1]
-                    words[idx + 1] = ""
-                    words[idx] = ""
-                    if operation == "-":
-                        x = "-"+y
-                        y = 0
-                        operation = "+"
-                        exps.append([x, operation, y])
+                y = words[idx + 1]
+                words[idx + 1] = ""
+                words[idx] = ""
+                if operation == "-":
+                    x = "-" + y
+                    y = 0
+                    operation = "+"
+                    exps.append([x, operation, y])
 
-        if not exps and extractnumber(string):
-            exps = [["0", "+", str(extractnumber(string))]]
-        return exps
+    if not exps and extractnumber(string):
+        exps = [["0", "+", str(extractnumber(string))]]
+    return exps
