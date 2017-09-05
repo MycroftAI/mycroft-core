@@ -1,4 +1,3 @@
-
 # -*- coding: iso-8859-15 -*-
 
 import unittest
@@ -10,7 +9,6 @@ from datetime import datetime
 
 
 class TestNormalize(unittest.TestCase):
-
     def test_articles(self):
         self.assertEqual(normalize("this is a test", remove_articles=True),
                          "this is test")
@@ -26,26 +24,25 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extractnumber("this is the first test"), 1)
         self.assertEqual(extractnumber("this is 2 test"), 2)
         self.assertEqual(extractnumber("this is second test"), 2)
-        self.assertEqual(extractnumber("this is the third test"), 1.0/3.0)
+        self.assertEqual(extractnumber("this is the third test"), 1.0 / 3.0)
         self.assertEqual(extractnumber("this is test number 4"), 4)
-        self.assertEqual(extractnumber("one third of a cup"), 1.0/3.0)
+        self.assertEqual(extractnumber("one third of a cup"), 1.0 / 3.0)
         self.assertEqual(extractnumber("three cups"), 3)
-        self.assertEqual(extractnumber("1/3 cups"), 1.0/3.0)
+        self.assertEqual(extractnumber("1/3 cups"), 1.0 / 3.0)
         self.assertEqual(extractnumber("quarter cup"), 0.25)
         self.assertEqual(extractnumber("1/4 cup"), 0.25)
         self.assertEqual(extractnumber("one fourth cup"), 0.25)
-        self.assertEqual(extractnumber("2/3 cups"), 2.0/3.0)
-        self.assertEqual(extractnumber("3/4 cups"), 3.0/4.0)
+        self.assertEqual(extractnumber("2/3 cups"), 2.0 / 3.0)
+        self.assertEqual(extractnumber("3/4 cups"), 3.0 / 4.0)
         self.assertEqual(extractnumber("1 and 3/4 cups"), 1.75)
         self.assertEqual(extractnumber("1 cup and a half"), 1.5)
         self.assertEqual(extractnumber("one cup and a half"), 1.5)
         self.assertEqual(extractnumber("one and a half cups"), 1.5)
         self.assertEqual(extractnumber("one and one half cups"), 1.5)
-        self.assertEqual(extractnumber("three quarter cups"), 3.0/4.0)
-        self.assertEqual(extractnumber("three quarters cups"), 3.0/4.0)
+        self.assertEqual(extractnumber("three quarter cups"), 3.0 / 4.0)
+        self.assertEqual(extractnumber("three quarters cups"), 3.0 / 4.0)
 
     def test_extractdatetime_en(self):
-
         def extractWithFormat(text):
             date = datetime(2017, 06, 27, 00, 00)
             [extractedDate, leftover] = extract_datetime(text, date)
@@ -306,6 +303,7 @@ class TestNormalize(unittest.TestCase):
     def test_gender(self):
         self.assertEqual(get_gender("person"),
                          False)
+
     # Pt-pt
     def test_articles_pt(self):
         self.assertEqual(normalize(u"isto � o teste",
@@ -573,19 +571,19 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(normalize(u"dos mil", lang="es"),
                          "2000")
         self.assertEqual(normalize(u"dos mil trescientas cuarenta y cinco",
-                         lang="es"),
+                                   lang="es"),
                          "2345")
         self.assertEqual(normalize(
-                u"ciento veintitrés mil cuatrocientas cincuenta y seis",
-                lang="es"),
+            u"ciento veintitrés mil cuatrocientas cincuenta y seis",
+            lang="es"),
             "123456")
         self.assertEqual(normalize(
-                 u"quinientas veinticinco mil", lang="es"),
-             "525000")
+            u"quinientas veinticinco mil", lang="es"),
+            "525000")
         self.assertEqual(normalize(
-                u"novecientos noventa y nueve mil novecientos noventa y nueve",
-                lang="es"),
-              "999999")
+            u"novecientos noventa y nueve mil novecientos noventa y nueve",
+            lang="es"),
+            "999999")
 
 
 if __name__ == "__main__":

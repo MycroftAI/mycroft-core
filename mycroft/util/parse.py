@@ -1334,7 +1334,7 @@ def normalize_pt(text, remove_articles):
         # NOTE temporary , handle some numbers above >999
         if word in pt_numbers:
             word = str(pt_numbers[word])
-        ### end temporary
+        # end temporary
 
         normalized += " " + word
         i += 1
@@ -1357,11 +1357,29 @@ def extract_datetime_pt(input_str, currentDate=None):
             str = str.replace(word, "")
         for word in noise_words:
             str = str.replace(" " + word + " ", " ")
-        str = str.lower().replace(u"á", "a").replace(u"ç", "c").replace(u"à",
-                                                                        "a").replace(
-            u"ã", "a").replace(u"ê", "e").replace(u"é", "e").replace(u"è",
-                                                                     "e").replace(
-            u"ó", "o").replace(u"ò", "o").replace("-", " ").replace("_", "")
+        str = str.lower().replace(
+            u"á",
+            "a").replace(
+            u"ç",
+            "c").replace(
+            u"à",
+            "a").replace(
+            u"ã",
+            "a").replace(
+            u"ê",
+            "e").replace(
+            u"é",
+            "e").replace(
+            u"è",
+            "e").replace(
+            u"ó",
+            "o").replace(
+            u"ò",
+            "o").replace(
+            "-",
+            " ").replace(
+            "_",
+            "")
         # handle synonims and equivalents, "tomorrow early = tomorrow morning
         synonims = {"manha": ["manhazinha", "cedo", "cedinho"],
                     "tarde": ["tardinha", "tarde"],
@@ -1496,7 +1514,6 @@ def extract_datetime_pt(input_str, currentDate=None):
                 dayOffset += int(wordNext)
                 start -= 1
                 used += 2
-
 
         elif word == "semana" and not fromFlag:
             if wordPrev[0].isdigit():
@@ -1989,7 +2006,6 @@ def extract_datetime_pt(input_str, currentDate=None):
                                 else:
                                     remainder = "pm"
                                 used += 1
-
 
                     elif wordNext[0].isdigit():
                         strHH = word
