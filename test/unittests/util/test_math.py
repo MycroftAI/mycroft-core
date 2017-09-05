@@ -38,11 +38,73 @@ class TestMathExtractFormat(unittest.TestCase):
     def test_solve_exps(self):
         self.assertEqual(
             solve_expression("one dog plus one dog plus two frogs"),
-            "1dog + 1dog + 2frogs")
+            "2dog + 2frogs")
+
+        self.assertEqual(
+            solve_expression("one dog plus one dog plus one plus two "
+                             "frogs"),
+            "2dog + 1 + 2frogs")
+
+        self.assertEqual(
+            solve_expression("one dog divided by one dog plus two frogs"),
+            "1 + 2frogs")
+
+        self.assertEqual(
+            solve_expression("one dog minus one dog plus 1"),
+            "1")
+
+        self.assertEqual(
+            solve_expression("one dog minus one dog"),
+            "")
+
+        # TODO
+        # self.assertEqual(
+        #    solve_expression("one dog plus one dog plus one dog plus two "
+        #                     "frogs"),
+        #    "3dog + 2frogs") #2dog + 1dog +2frogs
+
+        # self.assertEqual(
+        #    solve_expression("one dog minus one dog plus one cat"),
+        #    "1cat")
+
+        # self.assertEqual(
+        #    solve_expression("one dog multiplied by one dog plus two frogs"),
+        #    "1dog squared + 2frogs")
+
+
+        # self.assertEqual(
+        #    solve_expression("one dog minus + one dog plus two frogs"),
+        #    "2frogs")
+
+        # self.assertEqual(
+        #    solve_expression("one dog minus one dog plus two frogs"),
+        #    "2frogs")
+
+
+        # TODO 3dog + 1 cat
+        self.assertEqual(
+            solve_expression("one dog plus one cat plus two dog"),
+            "1dog + 1cat + 2dog")
 
         self.assertEqual(
             solve_expression("one plus two plus one"),
             '4')
+
+        self.assertEqual(
+            solve_expression("two squared"),
+            '4')
+
+        self.assertEqual(
+            solve_expression("3 cubed"),
+            '27')
+
+        self.assertEqual(
+            solve_expression("square root of four"),
+            '2')
+
+        #  self.assertEqual(
+        #      solve_expression("x equals one plus two"),
+        #      '3')#TODO = operation
 
         self.assertEqual(
             solve_expression("ten factorial"),

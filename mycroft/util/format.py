@@ -116,7 +116,7 @@ def convert_number(number, denominators):
 
 
 operations = ["+", "-", "/", "*", "!", "^", "**", "exp", "log", "sqrt", "(",
-              ")"]
+              ")", "sqr", "qb", "pow", "=", "is"]
 
 
 class ElementalOperation():
@@ -131,6 +131,7 @@ class ElementalOperation():
         self.variables[var] = str(value)
 
     def _operate(self, operation, x=0, y=1):
+        # TODO equations
         if operation == "is":
             self.define_var(x, str(y))
             return str(x) + " = " + str(y)
@@ -164,8 +165,12 @@ class ElementalOperation():
             return math.log(x, y)
         if operation == "exp":
             return math.exp(x)
-        if operation == "^":
-            return x ** y
+        if operation in ["^", "**", "pow"]:
+            return math.pow(x, y)
+        if operation == "sqr":
+            return math.pow(x, 2)
+        if operation == "qb":
+            return math.pow(x, 3)
         # TODO priority
         if operation == "(":
             pass
@@ -222,7 +227,8 @@ class StringOperation():
         OP.variables = self.variables
         # prioritize operations by this order
         passes = [
-            ["!", "exp", "log", "^", "sqrt", "**"],
+            # ["="],
+            ["is", "!", "exp", "log", "^", "sqrt", "**", "sqr", "qb", "pow"],
             ["*", "/", "%"],
             ["+", "-"]
         ]
@@ -242,16 +248,9 @@ class StringOperation():
                 if op[2] in OP.variables:
                     op[2] = OP.variables[op[2]]
 
-                # var definition
-                if is_numeric(op[2]) and op[1] == "is":
-                    OP.set(op[0], op[2], op[1])
-                    result = OP.operate()
-                    operations[idx] = ""
-                    continue
-
-                # single input expressions
-                elif is_numeric(op[0]) and op[1] in ["!", "exp", "sqrt", "^",
-                                                     "**"]:
+                if is_numeric(op[0]) and op[1] in ["!", "exp", "sqrt", "^",
+                                                   "**", "qb", "sqr", "pow",
+                                                   "log"]:
                     OP.set(op[0], op[0], op[1])
                     result = OP.operate()
                     operations[idx] = [0, "+", result]
@@ -270,6 +269,35 @@ class StringOperation():
                     OP.set(op[0], op[2], op[1])
                     result = OP.operate()
                     operations[idx] = [0, "+", result]
+                    continue
+
+                # handle vars
+                if not is_numeric(op[0]) and not is_numeric(op[2]):
+                    if op[0] == op[2]:
+                        # find num
+                        num = ""
+                        for i in range(0, len(op[2])):
+                            char = op[2][i]
+                            if is_numeric(char) or char == ".":
+                                num += char
+                        if op[1] == "-":
+                            operations[idx] = ["0", "+", "0"]
+                            continue
+                        if op[1] == "/":
+                            operations[idx] = ["0", "+", "1"]
+                            continue
+                        if op[1] == "*":
+                            operations[idx] = [op[0], "sqr", "next"]
+                            continue
+                        if op[1] == "+":
+                            if not num:
+                                operations[idx] = ["0", "+", "2" + op[0]]
+                                continue
+                            op[0] = op[0].replace(str(num), "")
+                            num = 2 * int(num)
+                            operations[idx] = ["0", "+", str(num) + op[0]]
+                            continue
+                            # TODO other ops ^ exp log sqr qb sqrt
 
         self.variables = OP.variables
         # clean empty elements
@@ -291,10 +319,16 @@ class StringOperation():
         res = res.replace("prev", "")
         res = res.replace(" ", "")
         res = res.replace("+-", "-")
+        res = res.replace("-+", "-")
         res = res.replace("++", "+")
         res = res.replace("--", "-")
+        res = res.replace("+ -", "-")
+        res = res.replace("- +", "-")
+        res = res.replace("+ +", "+")
+        res = res.replace("- -", "-")
         res = res.replace("/1", "")
-
+        res = res.replace("sqr", " squared")
+        res = res.replace("qb", " cubed")
         while len(res) > 2 and res[0] in ["+", "0"] and res[1] != ".":
             if res[0] == "+":
                 res = res[1:]
@@ -369,25 +403,34 @@ def extract_expression_en(string):
                    "*": ["multiply", "multiplying", "times", "multiplied"],
                    "%": ["modulus"],
                    "!": ["factorial"],
-                   "is": ["equals"],
-                   "^": ["**", "elevated"],
+                   "is": ["set"],  # TODO find better keyword for x = value
+                   # "=": ["equals"],
+                   "^": ["**", "^", "pow" "elevated", "power", "powered",
+                         "raised"],
+                   "sqr": ["squared"],
+                   "sqrt": ["square_root"],
+                   "qb": ["cubed", "qubed"],
                    "exp": ["exponent", "exponentiate", "exponentiated"],
                    "(": ["open"],
                    ")": ["close"]}
     # clean string
     noise_words = ["by", "and", "the", "in", "at", "a", "for", "an", "to",
-                   "with"]
+                   "with", "off", "of"]
 
     # replace natural language expression
     for op in expressions:
         string = string.replace(op, " " + op + " ")
-    words = string.replace(",", "").split(" ")
+    words = string.replace(",", "").replace("square root",
+                                            "sqrt").split(" ")
+
     for idx, word in enumerate(words):
-        for operation in expressions:
-            if word in expressions[operation]:
-                words[idx] = operation
         if word in noise_words:
             words[idx] = ""
+        else:
+            for operation in expressions:
+                if word in expressions[operation]:
+                    words[idx] = operation
+
 
     words = [word for word in words if word]
     exps = []
@@ -431,6 +474,8 @@ def extract_expression_en(string):
                     y = "next"
                 if x == "":
                     x = "prev"
+                if operation == "sqrt":
+                    x = y
                 exps.append([x, operation, y])
             else:
                 # operation at first, is a sign
@@ -442,6 +487,11 @@ def extract_expression_en(string):
                     y = 0
                     operation = "+"
                     exps.append([x, operation, y])
+                # or square root
+                if operation == "sqrt":
+                    x = y
+                    exps.append([x, operation, y])
+                    # TODO exponent, log
 
     if not exps and extractnumber(string):
         exps = [["0", "+", str(extractnumber(string))]]
