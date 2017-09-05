@@ -20,6 +20,10 @@ class TestMathExtractFormat(unittest.TestCase):
             [['10', '!', 'next']])
 
         self.assertEqual(
+            extract_expression("square root of 4"),
+            [['4.0', 'sqrt', 'next']])
+
+        self.assertEqual(
             extract_expression("one plus pi plus x"),
             [['1', '+', 'pi'], ['prev', '+', 'x']])
 

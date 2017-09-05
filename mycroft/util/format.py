@@ -490,6 +490,7 @@ def extract_expression_en(string):
                 # or square root
                 if operation == "sqrt":
                     x = y
+                    y = "next"
                     exps.append([x, operation, y])
                     # TODO exponent, log
 
