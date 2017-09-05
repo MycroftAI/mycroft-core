@@ -201,8 +201,9 @@ class ElementalOperation():
 
 
 class StringOperation():
-    def __init__(self, input_str, variables=None, lang="en-us"):
+    def __init__(self, input_str, variables=None, nice=False, lang="en-us"):
         self.lang = lang
+        self.nice = nice
         if variables is None:
             variables = {}
         self.variables = variables
@@ -294,11 +295,56 @@ class StringOperation():
                                 operations[idx] = ["0", "+", "2" + op[0]]
                                 continue
                             op[0] = op[0].replace(str(num), "")
-                            num = 2 * int(num)
-                            operations[idx] = ["0", "+", str(num) + op[0]]
+                            num = str(2 * float(num))
+                            if len(num) >= 3 and num[-2:] == ".0":
+                                num = num[:-2]
+                            operations[idx] = ["0", "+", num + op[0]]
                             continue
                             # TODO other ops ^ exp log sqr qb sqrt
 
+                    else:
+                        # find nums
+                        num1 = ""
+                        num2 = ""
+                        var1 = 1
+                        var2 = 2
+                        for i in range(0, len(op[0])):
+                            char = op[0][i]
+                            if is_numeric(char) or char == ".":
+                                num1 += char
+                                var1 = op[0][i + 1:]
+                        for i in range(0, len(op[2])):
+                            char = op[2][i]
+                            if is_numeric(char) or char == ".":
+                                num2 += char
+                                var2 = op[2][i + 1:]
+                        if var1 == var2:
+                            var = var1
+                            if op[1] == "-":
+                                num = str(float(num1) - float(num2))
+                                if len(num) >= 3 and num[-2:] == ".0":
+                                    num = num[:-2]
+                                operations[idx] = ["0", "+", str(num) + var]
+                                continue
+                            if op[1] == "/":
+                                num = str(float(num1) / float(num2))
+                                if len(num) >= 3 and num[-2:] == ".0":
+                                    num = num[:-2]
+                                operations[idx] = ["0", "+", str(num) + var]
+                                continue
+                            if op[1] == "*":
+                                num = str(float(num1) * float(num2))
+                                if len(num) >= 3 and num[-2:] == ".0":
+                                    num = num[:-2]
+                                operations[idx] = ["0", "+", str(num) + var]
+                                continue
+                            if op[1] == "+":
+                                num = str(float(num1) + float(num2))
+                                if len(num) >= 3 and num[-2:] == ".0":
+                                    num = num[:-2]
+                                operations[idx] = ["0", "+", str(num) + var]
+                                continue
+                                # TODO other ops ^ exp log sqr qb sqrt
         self.variables = OP.variables
         # clean empty elements
         result = ""
@@ -345,7 +391,7 @@ class StringOperation():
         self.result = res
         return res
 
-    def solve(self, debug=False, nice=True):
+    def solve(self, debug=False):
         if debug:
             print "normalized string:", self.string
             print "raw string:", self.raw_str
@@ -375,7 +421,7 @@ class StringOperation():
             print "vars:", OP.variables
             print "\n"
         # make nice numbers
-        if nice:
+        if self.nice:
             words = res.split(" ")
             for idx, word in enumerate(words):
                 if is_numeric(word):
@@ -385,8 +431,8 @@ class StringOperation():
 
 
 def solve_expression(string, nice=True, lang="en-us", debug=False):
-    OP = StringOperation(string, lang=lang)
-    return OP.solve(debug=debug, nice=nice)
+    OP = StringOperation(string, lang=lang, nice=nice)
+    return OP.solve(debug=debug)
 
 
 def extract_expression(string, lang="en-us"):

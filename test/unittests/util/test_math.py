@@ -65,12 +65,12 @@ class TestMathExtractFormat(unittest.TestCase):
             solve_expression("one dog minus one dog"),
             "")
 
-        # TODO
-        # self.assertEqual(
-        #    solve_expression("one dog plus one dog plus one dog plus two "
-        #                     "frogs"),
-        #    "3dog + 2frogs") #2dog + 1dog +2frogs
+        self.assertEqual(
+            solve_expression("one dog plus one dog plus one dog plus two "
+                             "frogs"),
+            "3dog + 2frogs")
 
+        # TODO
         # self.assertEqual(
         #    solve_expression("one dog minus one dog plus one cat"),
         #    "1cat")
