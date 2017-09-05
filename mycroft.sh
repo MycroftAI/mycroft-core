@@ -139,10 +139,22 @@ function stop-mycroft {
     stop-screen "mycroft-$1"
 }
 
+function found_exe {
+    hash "$1" 2>/dev/null
+}
+
 set -e
 
 case "$1" in
 "start")
+
+  if [ ! -f .installed ] || ! md5sum -c &>/dev/null < .installed; then
+    echo "Please update dependencies by running ./dev_setup.sh again."
+    if found_exe notify-send; then
+      notify-send "Please Update Dependencies" "Run ./dev_setup.sh again"
+    fi
+  fi
+
   $0 stop
   start-mycroft service
   start-mycroft audio
