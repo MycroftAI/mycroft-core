@@ -486,13 +486,13 @@ class MycroftSkill(object):
                    Speak a sentence.
 
                    Args:
-                       utterance:           sentence mycroft should speak
-                       expect_response:     set to True if Mycroft should expect
-                                            a response from the user and start
-                                            listening for response.
-                       metadata:            Extra data to be transmitted
-                                            together with speech
-                       message_context:     message.context field
+                       utterance:          sentence mycroft should speak
+                       expect_response:    set to True if Mycroft should expect
+                                           a response from the user and start
+                                           listening for response.
+                       metadata:           Extra data to be transmitted
+                                           together with speech
+                       message_context:    message.context field
                """
         if message_context is None:
             # use current context
@@ -507,8 +507,8 @@ class MycroftSkill(object):
         self.emitter.emit(
             Message("speak", data, self.get_message_context(message_context)))
 
-    def speak_dialog(self, key, data=None, expect_response=False, metadata=None,
-                     message_context=None):
+    def speak_dialog(self, key, data=None, expect_response=False,
+                     metadata=None, message_context=None):
         """
             Speak sentance based of dialog file.
 

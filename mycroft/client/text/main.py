@@ -719,7 +719,8 @@ def gui_main(stdscr):
                     chat.append(line)
                     ws.emit(Message("recognizer_loop:utterance",
                                     {'utterances': [line.strip()]},
-                                    {'source': 'cli', 'destinatary': 'skills'}))
+                                    {'source': 'cli',
+                                     'destinatary': 'skills'}))
                 hist_idx = -1
                 line = ""
             elif c == curses.KEY_UP:
