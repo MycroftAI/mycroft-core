@@ -12,7 +12,7 @@ LOG = getLogger("HotwordFactory")
 BASEDIR = dirname(abspath(__file__)).join("recognizer")
 
 
-class HotWordEngine():
+class HotWordEngine(object):
     def __init__(self, key_phrase, config=None, lang="en-us"):
         self.lang = str(lang).lower()
         self.key_phrase = str(key_phrase).lower()
