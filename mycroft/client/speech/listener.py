@@ -189,6 +189,7 @@ class RecognizerLoop(EventEmitter):
         EventEmitter loop running speech recognition. Local wake word
         recognizer and remote general speech recognition.
     """
+
     def __init__(self):
         super(RecognizerLoop, self).__init__()
         self.mute_calls = 0
@@ -213,7 +214,8 @@ class RecognizerLoop(EventEmitter):
         self.wakeword_recognizer = self.create_wake_word_recognizer()
         # TODO - localization
         self.wakeup_recognizer = self.create_wakeup_recognizer()
-        self.responsive_recognizer = ResponsiveRecognizer(self.wakeword_recognizer, self.hot_word_engines)
+        self.responsive_recognizer = ResponsiveRecognizer(
+            self.wakeword_recognizer)
         self.state = RecognizerLoopState()
 
     def create_wake_word_recognizer(self):
@@ -291,8 +293,8 @@ class RecognizerLoop(EventEmitter):
         while self.state.running:
             try:
                 time.sleep(1)
-                if self._config_hash != hash(str(ConfigurationManager
-                                                 .get())):
+                if self._config_hash != hash(str(ConfigurationManager()
+                                                         .get())):
                     LOG.debug('Config has changed, reloading...')
                     self.reload()
             except KeyboardInterrupt as e:
