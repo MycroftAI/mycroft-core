@@ -26,6 +26,7 @@ class AudioService():
         Args:
             emitter: eventemitter or websocket object
     """
+
     def __init__(self, emitter):
         self.emitter = emitter
         self.emitter.on('mycroft.audio.service.track_info_reply',

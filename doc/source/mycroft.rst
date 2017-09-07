@@ -2,24 +2,24 @@ mycroft package
 ===============
 
 .. toctree::
-    mycroft.util
+mycroft.util
 
 MycroftSkill class
 ------------------
 
 .. autoclass:: mycroft.MycroftSkill
-    :members:
+:members:
 
 FallbackSkill class
 -------------------
 .. autoclass:: mycroft.FallbackSkill
-    :show-inheritance:
-    :members:
+:show-inheritance:
+        :members:
 
 Api class
 ---------
 .. autoclass:: mycroft.Api
-    :members:
+:members:
 
 intent_handler decorator
 ------------------------

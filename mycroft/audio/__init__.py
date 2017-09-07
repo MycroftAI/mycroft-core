@@ -2,6 +2,7 @@ from mycroft.util.signal import check_for_signal
 import psutil
 
 import time
+
 __author__ = "forslund"
 
 

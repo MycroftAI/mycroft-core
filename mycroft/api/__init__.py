@@ -270,7 +270,7 @@ def is_paired():
         api = DeviceApi()
         device = api.get()
         __paired_cache = api.identity.uuid is not None and \
-            api.identity.uuid != ""
+                         api.identity.uuid != ""
         return __paired_cache
     except:
         return False

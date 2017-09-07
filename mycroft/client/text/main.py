@@ -32,21 +32,21 @@ import time                                                 # nopep8
 import subprocess                                           # nopep8
 import curses                                               # nopep8
 import curses.ascii                                         # nopep8
-import textwrap                                             # nopep8
-import json                                                 # nopep8
+import textwrap  # nopep8
+import json  # nopep8
 from threading import Thread, Lock                          # nopep8
 from mycroft.messagebus.client.ws import WebsocketClient    # nopep8
 from mycroft.messagebus.message import Message              # nopep8
-from mycroft.util import get_ipc_directory                  # nopep8
+from mycroft.util import get_ipc_directory  # nopep8
 from mycroft.util.log import getLogger                      # nopep8
-from mycroft.configuration import ConfigurationManager      # nopep8
+from mycroft.configuration import ConfigurationManager  # nopep8
 
 ws = None
 mutex = Lock()
 logger = getLogger("CLIClient")
 
 utterances = []
-chat = []   # chat history, oldest at the lowest index
+chat = []  # chat history, oldest at the lowest index
 line = "What time is it"
 bSimple = '--simple' in sys.argv
 scr = None
@@ -67,8 +67,8 @@ meter_peak = 20
 meter_cur = -1
 meter_thresh = -1
 
-screen_mode = 0   # 0 = main, 1 = help, others in future?
-last_redraw = 0   # time when last full-redraw happened
+screen_mode = 0  # 0 = main, 1 = help, others in future?
+last_redraw = 0  # time when last full-redraw happened
 
 ##############################################################################
 # Helper functions
@@ -224,7 +224,7 @@ def add_log_message(message):
     global mergedLog
     global log_line_offset
 
-    message = "@" + message       # the first byte is a code
+    message = "@" + message  # the first byte is a code
     filteredLog.append(message)
     mergedLog.append(message)
 
@@ -360,7 +360,7 @@ def draw_meter():
         int((float(meter_thresh) / scale) * height), 0, height - 1)
     clr = curses.color_pair(4)  # dark yellow
 
-    str_level = "{0:3} ".format(int(meter_cur))   # e.g. '  4'
+    str_level = "{0:3} ".format(int(meter_cur))  # e.g. '  4'
     str_thresh = "{0:4.2f}".format(meter_thresh)  # e.g. '3.24'
     meter_width = len(str_level) + len(str_thresh) + 4
     for i in range(0, height):
@@ -389,9 +389,9 @@ def draw_meter():
         # draw an asterisk if the audio energy is at this level
         if i <= h_cur:
             if meter_cur > meter_thresh:
-                clr_bar = curses.color_pair(3)   # dark green for loud
+                clr_bar = curses.color_pair(3)  # dark green for loud
             else:
-                clr_bar = curses.color_pair(5)   # dark blue for 'silent'
+                clr_bar = curses.color_pair(5)  # dark blue for 'silent'
             scr.addstr(curses.LINES - 1 - i, curses.COLS - len(str_thresh) - 4,
                        "*", clr_bar)
 
@@ -409,7 +409,7 @@ def draw_screen():
     if not screen_mode == 0:
         return
 
-    if time.time() - last_redraw > 5:   # every 5 seconds
+    if time.time() - last_redraw > 5:  # every 5 seconds
         scr.clear()
         last_redraw = time.time()
     else:
@@ -433,11 +433,11 @@ def draw_screen():
 
     scr.addstr(0, 0, "Log Output:" + " " * (curses.COLS - 31) + str(start) +
                "-" + str(end) + " of " + str(cLogs), CLR_HEADING)
-    scr.addstr(1, 0,  "=" * (curses.COLS - 1), CLR_HEADING)
+    scr.addstr(1, 0, "=" * (curses.COLS - 1), CLR_HEADING)
     y = 2
     len_line = 0
     for i in range(start, end):
-        if i >= cLogs-1:
+        if i >= cLogs - 1:
             log = '   ^--- NEWEST ---^ '
         else:
             log = filteredLog[i]
@@ -467,9 +467,9 @@ def draw_screen():
                 start = 0
             end = start + (curses.COLS - 4)
             if start == 0:
-                log = log[start:end] + "~~~~"   # start....
+                log = log[start:end] + "~~~~"  # start....
             elif end >= len_line - 1:
-                log = "~~~~" + log[start:end]   # ....end
+                log = "~~~~" + log[start:end]  # ....end
             else:
                 log = "~~" + log[start:end] + "~~"  # ..middle..
         if len_line > longest_visible_line:
@@ -565,26 +565,26 @@ def show_help():
     scr.erase()
     scr.addstr(0, 0,  center(25) + "Mycroft Command Line Help",
                CLR_CMDLINE)
-    scr.addstr(1, 0,  "=" * (curses.COLS - 1),
+    scr.addstr(1, 0, "=" * (curses.COLS - 1),
                CLR_CMDLINE)
     scr.addstr(2, 0,  "Up / Down         scroll thru query history")
-    scr.addstr(3, 0,  "PgUp / PgDn       scroll thru log history")
-    scr.addstr(4, 0,  "Left / Right      scroll long log lines left/right")
-    scr.addstr(5, 0,  "Home              scroll to start of long log lines")
-    scr.addstr(6, 0,  "End               scroll to end of long log lines")
+    scr.addstr(3, 0, "PgUp / PgDn       scroll thru log history")
+    scr.addstr(4, 0, "Left / Right      scroll long log lines left/right")
+    scr.addstr(5, 0, "Home              scroll to start of long log lines")
+    scr.addstr(6, 0, "End               scroll to end of long log lines")
 
     scr.addstr(10, 0,  "Commands (type ':' to enter command mode)",
                CLR_CMDLINE)
-    scr.addstr(11, 0,  "=" * (curses.COLS - 1),
+    scr.addstr(11, 0, "=" * (curses.COLS - 1),
                CLR_CMDLINE)
-    scr.addstr(12, 0,  ":help                   this screen")
-    scr.addstr(13, 0,  ":quit or :exit          exit the program")
-    scr.addstr(14, 0,  ":meter (show|hide)      display of microphone level")
-    scr.addstr(15, 0,  ":filter [remove] 'str'  adds or removes a log filter")
-    scr.addstr(16, 0,  ":filter (clear|reset)   reset filters")
-    scr.addstr(17, 0,  ":filter (show|list)     display current filters")
+    scr.addstr(12, 0, ":help                   this screen")
+    scr.addstr(13, 0, ":quit or :exit          exit the program")
+    scr.addstr(14, 0, ":meter (show|hide)      display of microphone level")
+    scr.addstr(15, 0, ":filter [remove] 'str'  adds or removes a log filter")
+    scr.addstr(16, 0, ":filter (clear|reset)   reset filters")
+    scr.addstr(17, 0, ":filter (show|list)     display current filters")
 
-    scr.addstr(curses.LINES - 1, 0,  center(23) + "Press any key to return",
+    scr.addstr(curses.LINES - 1, 0, center(23) + "Press any key to return",
                CLR_HEADING)
 
     scr.refresh()
@@ -840,6 +840,7 @@ def main():
         curses.wrapper(gui_main)
         curses.endwin()
         save_settings()
+
 
 if __name__ == "__main__":
     main()

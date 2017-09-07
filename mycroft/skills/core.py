@@ -22,7 +22,7 @@ import sys
 import operator
 import re
 from os.path import join, abspath, dirname, splitext, isdir, \
-                    basename, exists
+    basename, exists
 from os import listdir
 from functools import wraps
 
@@ -179,12 +179,15 @@ def intent_handler(intent_parser):
 
 def intent_file_handler(intent_file):
     """ Decorator for adding a method as an intent file handler. """
+
     def real_decorator(func):
         @wraps(func)
         def handler_method(*args, **kwargs):
             return func(*args, **kwargs)
+
         _intent_file_list.append((intent_file, func))
         return handler_method
+
     return real_decorator
 
 
@@ -201,6 +204,7 @@ class MycroftSkill(object):
 
         self.bind(emitter)
         self.config_core = ConfigurationManager.get()
+        self.APIS = self.config_core.get("APIS", {})
         self.config = self.config_core.get(self.name)
         self.dialog_renderer = None
         self.vocab_dir = None
@@ -321,6 +325,7 @@ class MycroftSkill(object):
                                intent handler the function will need the self
                                variable passed as well.
         """
+
         def wrapper(message):
             try:
                 if need_self:
@@ -347,6 +352,7 @@ class MycroftSkill(object):
                 logger.error(
                     "An error occurred while processing a request in " +
                     self.name, exc_info=True)
+
         if handler:
             self.emitter.on(name, wrapper)
             self.events.append((name, wrapper))

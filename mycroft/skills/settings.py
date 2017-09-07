@@ -49,6 +49,7 @@ class SkillSettings(dict):
         Args:
             settings_file (str): Path to storage file
     """
+
     def __init__(self, directory):
         super(SkillSettings, self).__init__()
         self.api = DeviceApi()

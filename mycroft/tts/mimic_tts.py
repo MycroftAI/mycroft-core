@@ -26,6 +26,7 @@ from mycroft.configuration import ConfigurationManager
 from mycroft.tts import TTS, TTSValidator
 import mycroft.util
 from mycroft.util.log import getLogger
+
 LOGGER = getLogger(__name__)
 
 __author__ = 'jdorleans', 'spenrod'
@@ -37,6 +38,7 @@ BIN = config.get("path", os.path.join(MYCROFT_ROOT_PATH, 'mimic', 'bin',
 if not os.path.isfile(BIN):
     # Search for mimic on the path
     import distutils.spawn
+
     BIN = distutils.spawn.find_executable("mimic")
 
 
