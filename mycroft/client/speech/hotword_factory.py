@@ -13,7 +13,7 @@ BASEDIR = dirname(abspath(__file__)).join("recognizer")
 
 
 class PocketsphinxHotWord():
-    def __init__(self, key_phrase, lang="en-us", config=None):
+    def __init__(self, key_phrase, config=None, lang="en-us"):
         if config is None:
             config = ConfigurationManager.get().get("hot_words", {})
             config = config.get(key_phrase, {})
@@ -72,7 +72,7 @@ class PocketsphinxHotWord():
 
 
 class SnowboyHotWord():
-    def __init__(self, key_phrase, lang="en-us", config=None):
+    def __init__(self, key_phrase, config=None, lang="en-us"):
         if config is None:
             config = ConfigurationManager.get().get("hot_words", {})
             config = config.get(key_phrase, {})
@@ -106,29 +106,30 @@ class HotWordFactory(object):
     }
 
     @staticmethod
-    def create_hotword(hotword):
+    def create_hotword(hotword, lang="en-us"):
         LOG.info("creating " + hotword)
         config = ConfigurationManager.get().get("hot_words", {})
         module = config.get(hotword).get("module")
+        config = config.get(hotword, {"module": module})
         clazz = HotWordFactory.CLASSES.get(module)
-        return clazz(hotword)
+        return clazz(hotword, config, lang=lang)
 
     @staticmethod
-    def create_wake_word():
+    def create_wake_word(lang="en-us"):
         config = ConfigurationManager.get().get("listener", {})
         wake_word = config.get('wake_word', "hey mycroft").lower()
         LOG.info("creating " + wake_word)
         config = config.get("wake_word_config", {})
         module = config.get('module', "pocketsphinx")
         clazz = HotWordFactory.CLASSES.get(module)
-        return clazz(wake_word, config)
+        return clazz(wake_word, config, lang=lang)
 
     @staticmethod
-    def create_standup_word():
+    def create_standup_word(lang="en-us"):
         config = ConfigurationManager.get().get("listener", {})
         standup_word = config.get('standup_word', "wake up").lower()
         LOG.info("creating " + standup_word)
         config = config.get("standup_word_config", {})
         module = config.get('module', "pocketsphinx")
         clazz = HotWordFactory.CLASSES.get(module)
-        return clazz(standup_word, config)
+        return clazz(standup_word, config, lang=lang)
