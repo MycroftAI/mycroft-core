@@ -12,23 +12,32 @@ LOG = getLogger("HotwordFactory")
 BASEDIR = dirname(abspath(__file__)).join("recognizer")
 
 
-class PocketsphinxHotWord():
+class HotWordEngine():
     def __init__(self, key_phrase, config=None, lang="en-us"):
+        self.lang = str(lang).lower()
+        self.key_phrase = str(key_phrase).lower()
         if config is None:
             config = ConfigurationManager.get().get("hot_words", {})
-            config = config.get(key_phrase, {})
+            config = config.get(self.key_phrase, {})
+        self.config = config
+
+    def found_wake_word(self, frame_data):
+        return False
+
+
+class PocketsphinxHotWord(HotWordEngine):
+    def __init__(self, key_phrase, config=None, lang="en-us"):
+        super(PocketsphinxHotWord, self).__init__(key_phrase, config, lang)
         # Hotword module imports
         from pocketsphinx import Decoder
         # Hotword module config
-        module = config.get("module")
+        module = self.config.get("module")
         if module != "pocketsphinx":
             LOG.warning("module does not match with Hotword class")
         # Hotword module params
-        self.phonemes = config.get("phonemes", "HH EY . M AY K R AO F T")
-        self.threshold = config.get("threshold", 1e-90)
-        self.sample_rate = config.get("sample_rate", 1600)
-        self.lang = str(lang).lower()
-        self.key_phrase = str(key_phrase).lower()
+        self.phonemes = self.config.get("phonemes", "HH EY . M AY K R AO F T")
+        self.threshold = self.config.get("threshold", 1e-90)
+        self.sample_rate = self.config.get("sample_rate", 1600)
         dict_name = self.create_dict(key_phrase, self.phonemes)
         self.decoder = Decoder(self.create_config(dict_name, Decoder))
 
@@ -71,24 +80,22 @@ class PocketsphinxHotWord():
         return hyp and self.key_phrase in hyp.hypstr.lower()
 
 
-class SnowboyHotWord():
+class SnowboyHotWord(HotWordEngine):
     def __init__(self, key_phrase, config=None, lang="en-us"):
-        if config is None:
-            config = ConfigurationManager.get().get("hot_words", {})
-            config = config.get(key_phrase, {})
+        super(SnowboyHotWord, self).__init__(key_phrase, config, lang)
         # Hotword module imports
         from snowboydecoder import HotwordDetector
         # Hotword module config
-        module = config.get("module")
+        module = self.config.get("module")
         if module != "snowboy":
             LOG.warning(module + " module does not match with Hotword class "
                                  "snowboy")
         # Hotword params
-        models = config.get("models", {})
+        models = self.config.get("models", {})
         paths = []
         for key in models:
             paths.append(models[key])
-        sensitivity = config.get("sensitivity", 0.5)
+        sensitivity = self.config.get("sensitivity", 0.5)
         self.snowboy = HotwordDetector(paths,
                                        sensitivity=[sensitivity] * len(paths))
         self.lang = str(lang).lower()
