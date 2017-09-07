@@ -219,11 +219,11 @@ class RecognizerLoop(EventEmitter):
     def create_wake_word_recognizer(self):
         # Create a local recognizer to hear the wakeup word, e.g. 'Hey Mycroft'
         LOG.info("creating wake word engine")
-        return HotWordFactory.create_wake_word()
+        return HotWordFactory.create_wake_word(self.lang)
 
     def create_wakeup_recognizer(self):
         LOG.info("creating stand up word engine")
-        return HotWordFactory.create_standup_word()
+        return HotWordFactory.create_standup_word(self.lang)
 
     def start_async(self):
         """
