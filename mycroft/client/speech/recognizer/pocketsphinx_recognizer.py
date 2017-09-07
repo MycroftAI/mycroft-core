@@ -20,7 +20,7 @@ import os
 import tempfile
 import time
 
-from os.path import join, dirname, abspath
+from os.path import join, dirname, abspath, exists
 from pocketsphinx import Decoder
 
 from mycroft.client.speech.recognizer.local_recognizer import LocalRecognizer
@@ -52,7 +52,12 @@ class PocketsphinxRecognizer(LocalRecognizer):
 
     def create_config(self, dict_name):
         config = Decoder.default_config()
-        config.set_string('-hmm', join(BASEDIR, 'model', self.lang, 'hmm'))
+        model_file = join(BASEDIR, 'model', self.lang, 'hmm')
+        if not exists(model_file):
+            LOG.error('PocketSphinx model not found for {}', self.lang)
+            model_file = join(BASEDIR, 'model', 'en-us', 'hmm')
+
+        config.set_string('-hmm', model_file)
         config.set_string('-dict', dict_name)
         config.set_string('-keyphrase', self.key_phrase)
         config.set_float('-kws_threshold', float(self.threshold))

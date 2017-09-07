@@ -24,7 +24,6 @@ setup(
         "mycroft.messagebus",
         "mycroft.messagebus.client",
         "mycroft.session",
-        "mycroft.skills.intent",
         "mycroft.skills",
         "mycroft.util",
         "mycroft"
