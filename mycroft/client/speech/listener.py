@@ -97,11 +97,6 @@ class AudioConsumer(Thread):
         self.wakeup_recognizer = wakeup_recognizer
         self.wakeword_recognizer = wakeword_recognizer
         self.metrics = MetricsAggregator()
-        self.word = self.wakeword_recognizer.key_phrase
-        self.emitter.on("recognizer_loop:hotword", self.set_word)
-
-    def set_word(self, event):
-        self.word = event.get("hotword", self.wakeword_recognizer.key_phrase)
 
     def run(self):
         while self.state.running:
@@ -135,7 +130,7 @@ class AudioConsumer(Thread):
     def process(self, audio):
         SessionManager.touch()
         payload = {
-            'utterance': self.word,
+            'utterance': self.wakeword_recognizer.key_phrase,
             'session': SessionManager.get().session_id,
         }
         self.emitter.emit("recognizer_loop:wakeword", payload)
@@ -144,8 +139,6 @@ class AudioConsumer(Thread):
             LOG.warn("Audio too short to be processed")
         else:
             self.transcribe(audio)
-
-        self.word = self.wakeword_recognizer.key_phrase
 
     def transcribe(self, audio):
         text = None
