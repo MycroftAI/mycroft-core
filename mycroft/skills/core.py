@@ -486,10 +486,13 @@ class MycroftSkill(object):
                    Speak a sentence.
 
                    Args:
-                       utterance:          sentence mycroft should speak
-                       expect_response:    set to True if Mycroft should expect a
-                                           response from the user and start listening
-                                           for response.
+                       utterance:           sentence mycroft should speak
+                       expect_response:     set to True if Mycroft should expect
+                                            a response from the user and start
+                                            listening for response.
+                       metadata:            Extra data to be transmitted
+                                            together with speech
+                       message_context:     message.context field
                """
         if message_context is None:
             # use current context
