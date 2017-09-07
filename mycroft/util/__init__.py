@@ -182,7 +182,7 @@ def curate_cache(dir, min_free_percent=5.0):
     space = psutil.disk_usage(dir)
 
     # space.percent = space.used/space.total*100.0
-    percent_free = 100.0-space.percent
+    percent_free = 100.0 - space.percent
     if percent_free < min_free_percent:
         # calculate how many bytes we need to delete
         bytes_needed = (min_free_percent - percent_free) / 100.0 * space.total

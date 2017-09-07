@@ -283,7 +283,7 @@ class Enclosure(object):
             # One last check to see if connection was established
             return
 
-        if time.time()-Enclosure._last_internet_notification < 30:
+        if time.time() - Enclosure._last_internet_notification < 30:
             # don't bother the user with multiple notifications with 30 secs
             return
 
@@ -373,7 +373,7 @@ class Enclosure(object):
                                  " Either plug in a network cable or hold the "
                                  "button on top for two seconds, then select "
                                  "wifi from the menu"
-                    }))
+                }))
             else:
                 # Begin the unit startup process, this is the first time it
                 # is being run with factory defaults.
@@ -387,10 +387,10 @@ class Enclosure(object):
                 # Kick off wifi-setup automatically
                 self.ws.emit(Message("mycroft.wifi.start",
                                      {'msg': "Hello I am Mycroft, your new "
-                                      "assistant.  To assist you I need to be "
-                                      "connected to the internet.  You can "
-                                      "either plug me in with a network cable,"
-                                      " or use wifi.  To setup wifi ",
+                                             "assistant.  To assist you I need to be "
+                                             "connected to the internet.  You can "
+                                             "either plug me in with a network cable,"
+                                             " or use wifi.  To setup wifi ",
                                       'allow_timeout': False}))
 
     def _hack_check_for_duplicates(self):
@@ -426,5 +426,5 @@ class Enclosure(object):
             self.reader.process("unit.reboot")
             ws.emit(Message("enclosure.eyes.spin"))
             ws.emit(Message("enclosure.mouth.reset"))
-        # END HACK
-        # TODO: Remove this hack ASAP
+            # END HACK
+            # TODO: Remove this hack ASAP

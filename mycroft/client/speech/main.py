@@ -66,7 +66,7 @@ def handle_complete_intent_failure(event):
     logger.info("Failed to find intent.")
     # TODO: Localize
     data = {'utterance':
-            "Sorry, I didn't catch that. Please rephrase your request."}
+                "Sorry, I didn't catch that. Please rephrase your request."}
     ws.emit(Message('speak', data))
 
 

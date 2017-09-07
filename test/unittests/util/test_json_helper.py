@@ -5,7 +5,6 @@ from mycroft.util.json_helper import load_commented_json, uncomment_json
 
 
 class TestFileLoad(unittest.TestCase):
-
     def test_load(self):
         root_dir = dirname(__file__)
         # Load normal JSON file

@@ -17,6 +17,7 @@ class Mpg123Service(AudioBackend):
         Audio backend for mpg123 player. This one is rather limited and
         only implements basic usage.
     """
+
     def __init__(self, config, emitter, name='mpg123'):
         self.config = config
         self.process = None

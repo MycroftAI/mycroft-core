@@ -130,7 +130,7 @@ def get(phrase, lang=None, context=None):
         from mycroft.configuration import ConfigurationManager
         lang = ConfigurationManager.instance().get("lang")
 
-    filename = "text/"+lang.lower()+"/"+phrase+".dialog"
+    filename = "text/" + lang.lower() + "/" + phrase + ".dialog"
     template = resolve_resource_file(filename)
     if not template:
         logger.debug("Resource file not found: " + filename)

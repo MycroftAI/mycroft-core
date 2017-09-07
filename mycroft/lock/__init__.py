@@ -1,4 +1,3 @@
-
 # Time-stamp: <2017-04-06 15:55:05 dmendyke>   -*- mode: python; -*-
 
 # Copyright 2016 Mycroft AI, Inc.
@@ -22,7 +21,6 @@
 # Required Modules
 from signal import getsignal, signal, SIGKILL, SIGINT, SIGTERM  # signals
 import os  # Operating System functions
-
 
 #
 # Written by Daniel Mendyke [dmendyke@jaguarlandrover.com]
@@ -83,7 +81,7 @@ class Signal(object):  # python 3+ class Signal
         '''
         signal(self.__sig_value, self.__previous_func)
 
-    # End class Signal
+        # End class Signal
 
 
 # ----------------------------------------------------------------------------
@@ -194,4 +192,4 @@ class Lock(object):  # python 3+ 'class Lock'
                     os.unlink(self.path)
         except IOError:
             pass
-    # End class Lock
+            # End class Lock

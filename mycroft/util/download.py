@@ -12,7 +12,7 @@ def _get_download_tmp(dest):
         return tmp_base
     else:
         i = 1
-        while(True):
+        while (True):
             tmp = tmp_base + '.' + str(i)
             if not exists(tmp):
                 return tmp
@@ -35,6 +35,7 @@ class Downloader(Thread):
             complet_action: Function to run when download is complete.
                             `func(dest)`
     """
+
     def __init__(self, url, dest, complete_action=None):
         super(Downloader, self).__init__()
         self.url = url

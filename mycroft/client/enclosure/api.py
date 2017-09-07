@@ -24,7 +24,6 @@ __author__ = 'jdorleans'
 
 LOGGER = getLogger(__name__)
 
-
 '''
 API for the functions that affect the Mark I device.
 NOTE: current state management is poorly implemented,

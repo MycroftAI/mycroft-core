@@ -204,6 +204,7 @@ class WatchSkills(Thread):
     """
         Thread function to reload skills when a change is detected.
     """
+
     def __init__(self):
         super(WatchSkills, self).__init__()
         self._stop_event = Event()
@@ -239,7 +240,7 @@ class WatchSkills(Thread):
                         continue
                     # checking if skill was modified
                     elif (skill.get("instance") and
-                          modified > last_modified_skill):
+                                  modified > last_modified_skill):
                         # checking if skill should be reloaded
                         if not skill["instance"].reload_skill:
                             continue

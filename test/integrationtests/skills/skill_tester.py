@@ -61,7 +61,7 @@ class RegistrationOnlyEmitter(object):
 
         if allow_events_to_execute:
             # don't filter events, just run them all
-            print "Event: "+str(event)
+            print "Event: " + str(event)
             self.emitter.on(event, f)
         else:
             # filter to just the registration events,
@@ -120,6 +120,7 @@ class SkillTest(object):
 
     def check_speech(self, message):
         print "Spoken response: " + message.data['utterance']
+
         # Comparing the expected output and actual spoken response
 
         def run_test(output_file, utterance):
@@ -144,6 +145,7 @@ class SkillTest(object):
                 assert False
 
             dialog_file.close()
+
         run_test(self.output_file, message.data['utterance'])
 
     def run(self, loader):

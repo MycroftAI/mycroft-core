@@ -10,7 +10,6 @@ import mycroft.audio
     Tests for public interface for audio interface
 """
 
-
 done_waiting = False
 
 

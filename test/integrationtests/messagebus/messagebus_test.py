@@ -18,6 +18,7 @@ class TestMessagebusMethods(unittest.TestCase):
     It currently only tests send and receive.  The tests could include
     more.
     """
+
     def setUp(self):
         """
         This sets up for testing the message buss
@@ -92,6 +93,7 @@ class TestMessagebusMethods(unittest.TestCase):
 class TestMessageMethods(unittest.TestCase):
     """This tests the Message class functions
     """
+
     def setUp(self):
         """This sets up some basic messages for testing.
         """

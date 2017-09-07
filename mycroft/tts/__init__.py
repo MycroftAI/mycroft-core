@@ -257,7 +257,7 @@ class TTS(object):
                 Key:    Key identifying phoneme cache
         """
         pho_file = os.path.join(mycroft.util.get_cache_directory("tts"),
-                                key+".pho")
+                                key + ".pho")
         if os.path.exists(pho_file):
             try:
                 with open(pho_file, "r") as cachefile:

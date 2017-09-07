@@ -1,4 +1,3 @@
-
 # Copyright 2017 Mycroft AI, Inc.
 #
 # This file is part of Mycroft Core.
@@ -24,7 +23,6 @@ import os
 from logging import getLogger
 
 __author__ = 'connorpenrod', 'michaelnguyen'
-
 
 LOG = getLogger("Display Manager (mycroft.client.enclosure)")
 managerIPCDir = os.path.join(get_ipc_directory(), "managers")

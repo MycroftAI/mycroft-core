@@ -1,4 +1,3 @@
-
 # -*- coding: iso-8859-15 -*-
 
 # Copyright 2017 Mycroft AI, Inc.
