@@ -204,7 +204,8 @@ class MycroftSkill(object):
 
         self.bind(emitter)
         self.config_core = ConfigurationManager.get()
-        self.APIS = self.config_core.get("APIS", {})
+        self.APIS_config = self.config_core.get("APIS", {})
+        self.API = self.APIS_config.get(self.name)
         self.config = self.config_core.get(self.name)
         self.dialog_renderer = None
         self.vocab_dir = None
