@@ -22,7 +22,7 @@ import sys
 import operator
 import re
 from os.path import join, abspath, dirname, splitext, isdir, \
-                    basename, exists
+    basename, exists
 from os import listdir
 from functools import wraps
 
@@ -179,12 +179,15 @@ def intent_handler(intent_parser):
 
 def intent_file_handler(intent_file):
     """ Decorator for adding a method as an intent file handler. """
+
     def real_decorator(func):
         @wraps(func)
         def handler_method(*args, **kwargs):
             return func(*args, **kwargs)
+
         _intent_file_list.append((intent_file, func))
         return handler_method
+
     return real_decorator
 
 
@@ -322,6 +325,7 @@ class MycroftSkill(object):
                                intent handler the function will need the self
                                variable passed as well.
         """
+
         def wrapper(message):
             try:
                 if need_self:
@@ -348,6 +352,7 @@ class MycroftSkill(object):
                 logger.error(
                     "An error occurred while processing a request in " +
                     self.name, exc_info=True)
+
         if handler:
             self.emitter.on(name, self.handle_update_message_context)
             self.emitter.on(name, wrapper)
@@ -455,21 +460,28 @@ class MycroftSkill(object):
 
     def get_message_context(self, message_context=None):
         if message_context is None:
-            message_context = {"destinatary": "all", "source": self.name, "mute": False, "more_speech": False, "target": "all"}
+            message_context = {"destinatary": "all", "source": self.name,
+                               "mute": False, "more_speech": False,
+                               "target": "all"}
         else:
             if "destinatary" not in message_context.keys():
-                message_context["destinatary"] = self.message_context.get("destinatary", "all")
+                message_context["destinatary"] = self.message_context.get(
+                    "destinatary", "all")
             if "target" not in message_context.keys():
-                message_context["target"] = self.message_context.get("target", "all")
+                message_context["target"] = self.message_context.get("target",
+                                                                     "all")
             if "mute" not in message_context.keys():
-                message_context["mute"] = self.message_context.get("mute", False)
+                message_context["mute"] = self.message_context.get("mute",
+                                                                   False)
             if "more_speech" not in message_context.keys():
-                message_context["more_speech"] = self.message_context.get("more_speech", False)
+                message_context["more_speech"] = self.message_context.get(
+                    "more_speech", False)
         if message_context.get("source", "skills") == "skills":
             message_context["source"] = self.name
         return message_context
 
-    def speak(self, utterance, expect_response=False, metadata=None, message_context=None):
+    def speak(self, utterance, expect_response=False, metadata=None,
+              message_context=None):
         """
                    Speak a sentence.
 
@@ -489,9 +501,11 @@ class MycroftSkill(object):
         data = {'utterance': utterance,
                 'expect_response': expect_response,
                 "metadata": metadata}
-        self.emitter.emit(Message("speak", data, self.get_message_context(message_context)))
+        self.emitter.emit(
+            Message("speak", data, self.get_message_context(message_context)))
 
-    def speak_dialog(self, key, data=None, expect_response=False, metadata=None, message_context=None):
+    def speak_dialog(self, key, data=None, expect_response=False, metadata=None,
+                     message_context=None):
         """
             Speak sentance based of dialog file.
 
@@ -596,8 +610,9 @@ class FallbackSkill(MycroftSkill):
         """Goes through all fallback handlers until one returns True"""
 
         def handler(message):
-            for _, handler, context_update_handler  in sorted(cls.fallback_handlers.items(),
-                                     key=operator.itemgetter(0)):
+            for _, handler, context_update_handler in sorted(
+                    cls.fallback_handlers.items(),
+                    key=operator.itemgetter(0)):
                 try:
                     if context_update_handler is not None:
                         context_update_handler(message)
