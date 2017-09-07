@@ -27,15 +27,13 @@ from requests.exceptions import ConnectionError
 
 import mycroft.dialog
 from mycroft.client.speech.mic import MutableMicrophone, ResponsiveRecognizer
-from mycroft.client.speech.recognizer.pocketsphinx_recognizer \
-    import PocketsphinxRecognizer
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.message import Message
 from mycroft.metrics import MetricsAggregator
 from mycroft.session import SessionManager
 from mycroft.stt import STTFactory
-from mycroft.util import connected
 from mycroft.util.log import getLogger
+from mycroft.client.speech.hotword_factory import HotWordFactory
 
 LOG = getLogger(__name__)
 
@@ -89,7 +87,7 @@ class AudioConsumer(Thread):
     MIN_AUDIO_SIZE = 0.5
 
     def __init__(self, state, queue, emitter, stt,
-                 wakeup_recognizer, mycroft_recognizer):
+                 wakeup_recognizer, wakeword_recognizer):
         super(AudioConsumer, self).__init__()
         self.daemon = True
         self.queue = queue
@@ -97,8 +95,13 @@ class AudioConsumer(Thread):
         self.emitter = emitter
         self.stt = stt
         self.wakeup_recognizer = wakeup_recognizer
-        self.mycroft_recognizer = mycroft_recognizer
+        self.wakeword_recognizer = wakeword_recognizer
         self.metrics = MetricsAggregator()
+        self.word = self.wakeword_recognizer.key_phrase
+        self.emitter.on("recognizer_loop:hotword", self.set_word)
+
+    def set_word(self, event):
+        self.word = event.get("hotword", self.wakeword_recognizer.key_phrase)
 
     def run(self):
         while self.state.running:
@@ -132,7 +135,7 @@ class AudioConsumer(Thread):
     def process(self, audio):
         SessionManager.touch()
         payload = {
-            'utterance': self.mycroft_recognizer.key_phrase,
+            'utterance': self.word,
             'session': SessionManager.get().session_id,
         }
         self.emitter.emit("recognizer_loop:wakeword", payload)
@@ -141,6 +144,8 @@ class AudioConsumer(Thread):
             LOG.warn("Audio too short to be processed")
         else:
             self.transcribe(audio)
+
+        self.word = self.wakeword_recognizer.key_phrase
 
     def transcribe(self, audio):
         text = None
@@ -201,8 +206,9 @@ class RecognizerLoop(EventEmitter):
             Load configuration parameters from configuration
         """
         config = ConfigurationManager.get()
+        self.config_core = config
         self._config_hash = hash(str(config))
-        lang = config.get('lang')
+        self.lang = config.get('lang')
         self.config = config.get('listener')
         rate = self.config.get('sample_rate')
         device_index = self.config.get('device_index')
@@ -211,26 +217,20 @@ class RecognizerLoop(EventEmitter):
                                             mute=self.mute_calls > 0)
         # FIXME - channels are not been used
         self.microphone.CHANNELS = self.config.get('channels')
-        self.mycroft_recognizer = self.create_mycroft_recognizer(rate, lang)
+        self.wakeword_recognizer = self.create_wake_word_recognizer()
         # TODO - localization
-        self.wakeup_recognizer = self.create_wakeup_recognizer(rate, lang)
-        self.remote_recognizer = ResponsiveRecognizer(self.mycroft_recognizer)
+        self.wakeup_recognizer = self.create_wakeup_recognizer()
+        self.responsive_recognizer = ResponsiveRecognizer(self.wakeword_recognizer, self.hot_word_engines)
         self.state = RecognizerLoopState()
 
-    def create_mycroft_recognizer(self, rate, lang):
+    def create_wake_word_recognizer(self):
         # Create a local recognizer to hear the wakeup word, e.g. 'Hey Mycroft'
-        wake_word = self.config.get('wake_word').lower()
-        phonemes = self.config.get('phonemes')
-        threshold = self.config.get('threshold')
-        return PocketsphinxRecognizer(wake_word, phonemes,
-                                      threshold, rate, lang)
+        LOG.info("creating wake word engine")
+        return HotWordFactory.create_wake_word()
 
-    def create_wakeup_recognizer(self, rate, lang):
-        wake_word = self.config.get('standup_word', "wake up").lower()
-        phonemes = self.config.get('standup_phonemes', "W EY K . AH P")
-        threshold = self.config.get('standup_threshold', 1e-18)
-        return PocketsphinxRecognizer(wake_word, phonemes,
-                                      threshold, rate, lang)
+    def create_wakeup_recognizer(self):
+        LOG.info("creating stand up word engine")
+        return HotWordFactory.create_standup_word()
 
     def start_async(self):
         """
@@ -239,12 +239,12 @@ class RecognizerLoop(EventEmitter):
         self.state.running = True
         queue = Queue()
         self.producer = AudioProducer(self.state, queue, self.microphone,
-                                      self.remote_recognizer, self)
+                                      self.responsive_recognizer, self)
         self.producer.start()
         self.consumer = AudioConsumer(self.state, queue, self,
                                       STTFactory.create(),
                                       self.wakeup_recognizer,
-                                      self.mycroft_recognizer)
+                                      self.wakeword_recognizer)
         self.consumer.start()
 
     def stop(self):
