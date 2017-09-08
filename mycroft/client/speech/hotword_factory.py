@@ -51,7 +51,9 @@ class PocketsphinxHotWord(HotWordEngine):
         # Hotword module config
         module = self.config.get("module")
         if module != "pocketsphinx":
-            LOG.warning("module does not match with Hotword class")
+            LOG.warning(
+                module + " module does not match with Hotword class "
+                         "pocketsphinx")
         # Hotword module params
         self.phonemes = self.config.get("phonemes", "HH EY . M AY K R AO F T")
         self.threshold = self.config.get("threshold", 1e-90)
