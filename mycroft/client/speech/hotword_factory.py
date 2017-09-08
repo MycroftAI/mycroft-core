@@ -134,7 +134,7 @@ class HotWordFactory(object):
     def create_hotword(hotword, config=None, lang="en-us"):
         LOG.info("creating " + hotword)
         if not config:
-            config = ConfigurationManager.get().get("hot_words", {})
+            config = ConfigurationManager.get().get("hotwords", {})
         module = config.get(hotword).get("module", "pocketsphinx")
         config = config.get(hotword, {"module": module})
         clazz = HotWordFactory.CLASSES.get(module)
