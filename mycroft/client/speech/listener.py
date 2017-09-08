@@ -222,12 +222,18 @@ class RecognizerLoop(EventEmitter):
         # Create a local recognizer to hear the wakeup word, e.g. 'Hey Mycroft'
         LOG.info("creating wake word engine")
         word = self.config.get("wake_word", "hey mycroft")
-        return HotWordFactory.create_hotword(word, self.lang)
+        # TODO remove this, only for server settings compatibility
+        phonemes = self.config.get("phonemes")
+        config = None
+        if phonemes:
+            config = self.config_core.get("hotwords", {})
+            config[word]["phonemes"] = phonemes
+        return HotWordFactory.create_hotword(word, config, self.lang)
 
     def create_wakeup_recognizer(self):
         LOG.info("creating stand up word engine")
         word = self.config.get("stand_up_word", "wake up")
-        return HotWordFactory.create_hotword(word, self.lang)
+        return HotWordFactory.create_hotword(word, lang=self.lang)
 
     def start_async(self):
         """

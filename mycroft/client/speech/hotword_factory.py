@@ -131,10 +131,11 @@ class HotWordFactory(object):
     }
 
     @staticmethod
-    def create_hotword(hotword, lang="en-us"):
+    def create_hotword(hotword, config=None, lang="en-us"):
         LOG.info("creating " + hotword)
-        config = ConfigurationManager.get().get("hot_words", {})
-        module = config.get(hotword).get("module")
+        if not config:
+            config = ConfigurationManager.get().get("hot_words", {})
+        module = config.get(hotword).get("module", "pocketsphinx")
         config = config.get(hotword, {"module": module})
         clazz = HotWordFactory.CLASSES.get(module)
         return clazz(hotword, config, lang=lang)
