@@ -26,7 +26,7 @@ __author__ = 'seanfitz, jdorleans, jarbas'
 
 LOG = getLogger("HotwordFactory")
 
-BASEDIR = dirname(abspath(__file__)).join("recognizer")
+RECOGNIZER_DIR = dirname(abspath(__file__)).join("recognizer")
 
 
 class HotWordEngine(object):
@@ -72,10 +72,10 @@ class PocketsphinxHotWord(HotWordEngine):
         return file_name
 
     def create_config(self, dict_name, config):
-        model_file = join(BASEDIR, 'recognizer', 'model', self.lang, 'hmm')
+        model_file = join(RECOGNIZER_DIR, 'model', self.lang, 'hmm')
         if not exists(model_file):
             LOG.error('PocketSphinx model not found for ' + str(self.lang))
-            model_file = join(BASEDIR, 'model', 'en-us', 'hmm')
+            model_file = join(RECOGNIZER_DIR, 'model', 'en-us', 'hmm')
 
         config.set_string('-hmm', model_file)
         config.set_string('-dict', dict_name)
