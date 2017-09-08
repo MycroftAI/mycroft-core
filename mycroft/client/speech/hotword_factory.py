@@ -52,15 +52,15 @@ class PocketsphinxHotWord(HotWordEngine):
         module = self.config.get("module")
         if module != "pocketsphinx":
             LOG.warning(
-                module + " module does not match with Hotword class "
+                str(module) + " module does not match with Hotword class "
                          "pocketsphinx")
         # Hotword module params
         self.phonemes = self.config.get("phonemes", "HH EY . M AY K R AO F T")
         self.threshold = self.config.get("threshold", 1e-90)
         self.sample_rate = self.listener_config.get("sample_rate", 1600)
         dict_name = self.create_dict(key_phrase, self.phonemes)
-        config = Decoder.default_config()
-        self.decoder = Decoder(self.create_config(dict_name, config))
+        config = self.create_config(dict_name, Decoder.default_config())
+        self.decoder = Decoder(config)
 
     def create_dict(self, key_phrase, phonemes):
         (fd, file_name) = tempfile.mkstemp()
@@ -74,7 +74,7 @@ class PocketsphinxHotWord(HotWordEngine):
     def create_config(self, dict_name, config):
         model_file = join(BASEDIR, 'recognizer', 'model', self.lang, 'hmm')
         if not exists(model_file):
-            LOG.error('PocketSphinx model not found for {}', self.lang)
+            LOG.error('PocketSphinx model not found for ' + str(self.lang))
             model_file = join(BASEDIR, 'model', 'en-us', 'hmm')
 
         config.set_string('-hmm', model_file)
