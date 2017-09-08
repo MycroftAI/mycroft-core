@@ -61,7 +61,7 @@ class AudioConsumerTest(unittest.TestCase):
             PocketsphinxRecognizer(self.loop.wakeup_recognizer.key_phrase,
                                    self.loop.wakeup_recognizer.phonemes,
                                    "1e-16"),
-            self.loop.mycroft_recognizer)
+            self.loop.wakeword_recognizer)
 
     def __create_sample_from_test_file(self, sample_name):
         root_dir = dirname(dirname(dirname(__file__)))
