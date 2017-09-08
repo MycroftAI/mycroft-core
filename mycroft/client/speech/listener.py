@@ -301,8 +301,8 @@ class RecognizerLoop(EventEmitter):
         while self.state.running:
             try:
                 time.sleep(1)
-                if self._config_hash != hash(str(ConfigurationManager()
-                                                         .get())):
+                if self._config_hash != hash(str(
+                        ConfigurationManager().get())):
                     LOG.debug('Config has changed, reloading...')
                     self.reload()
             except KeyboardInterrupt as e:
