@@ -13,9 +13,7 @@ DATA_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "data")
 class LocalRecognizerTest(unittest.TestCase):
     def setUp(self):
         rl = RecognizerLoop()
-        self.recognizer = RecognizerLoop.create_mycroft_recognizer(rl,
-                                                                   16000,
-                                                                   "en-us")
+        self.recognizer = RecognizerLoop.create_wake_word_recognizer(rl)
 
     def testRecognizerWrapper(self):
         source = WavFile(os.path.join(DATA_DIR, "hey_mycroft.wav"))
