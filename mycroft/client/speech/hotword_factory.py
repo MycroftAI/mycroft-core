@@ -1,3 +1,20 @@
+# Copyright 2017 Mycroft AI, Inc.
+#
+# This file is part of Mycroft Core.
+#
+# Mycroft Core is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Mycroft Core is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
+
 from mycroft.configuration import ConfigurationManager
 from mycroft.util.log import getLogger
 from os.path import dirname, exists, join, abspath
@@ -20,6 +37,7 @@ class HotWordEngine(object):
             config = ConfigurationManager.get().get("hot_words", {})
             config = config.get(self.key_phrase, {})
         self.config = config
+        self.listener_config = ConfigurationManager.get().get("listener", {})
 
     def found_wake_word(self, frame_data):
         return False
@@ -37,7 +55,7 @@ class PocketsphinxHotWord(HotWordEngine):
         # Hotword module params
         self.phonemes = self.config.get("phonemes", "HH EY . M AY K R AO F T")
         self.threshold = self.config.get("threshold", 1e-90)
-        self.sample_rate = self.config.get("sample_rate", 1600)
+        self.sample_rate = self.listener_config.get("sample_rate", 1600)
         dict_name = self.create_dict(key_phrase, self.phonemes)
         self.decoder = Decoder(self.create_config(dict_name, Decoder))
 
@@ -120,23 +138,3 @@ class HotWordFactory(object):
         config = config.get(hotword, {"module": module})
         clazz = HotWordFactory.CLASSES.get(module)
         return clazz(hotword, config, lang=lang)
-
-    @staticmethod
-    def create_wake_word(lang="en-us"):
-        config = ConfigurationManager.get().get("listener", {})
-        wake_word = config.get('wake_word', "hey mycroft").lower()
-        LOG.info("creating " + wake_word)
-        config = config.get("wake_word_config", {})
-        module = config.get('module', "pocketsphinx")
-        clazz = HotWordFactory.CLASSES.get(module)
-        return clazz(wake_word, config, lang=lang)
-
-    @staticmethod
-    def create_standup_word(lang="en-us"):
-        config = ConfigurationManager.get().get("listener", {})
-        standup_word = config.get('standup_word', "wake up").lower()
-        LOG.info("creating " + standup_word)
-        config = config.get("standup_word_config", {})
-        module = config.get('module', "pocketsphinx")
-        clazz = HotWordFactory.CLASSES.get(module)
-        return clazz(standup_word, config, lang=lang)
