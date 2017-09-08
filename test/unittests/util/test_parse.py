@@ -320,7 +320,8 @@ class TestNormalize(unittest.TestCase):
                          u"isto e o teste extra")
 
     def test_extractnumber_pt(self):
-        self.assertEqual(extractnumber("isto e o primeiro teste", lang="pt"), 1)
+        self.assertEqual(extractnumber("isto e o primeiro teste", lang="pt")
+                         , 1)
         self.assertEqual(extractnumber("isto e o 2 teste", lang="pt"), 2)
         self.assertEqual(extractnumber("isto e o segundo teste", lang="pt"), 2)
         self.assertEqual(extractnumber(u"isto e um terÁo de teste", lang="pt"),
@@ -548,12 +549,12 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(normalize("esto es cuatro cinco seis prueba",
                                    lang="es"),
                          "esto es 4 5 6 prueba")
-        self.assertEqual(normalize("siete m√°s ocho m√°s nueve", lang="es"),
-                         "7 m√°s 8 m√°s 9")
+        self.assertEqual(normalize(u"siete m·°s ocho m·°s nueve", lang="es"),
+                         u"7 m·°s 8 m·°s 9")
         self.assertEqual(normalize("diez once doce trece catorce quince",
                                    lang="es"),
                          "10 11 12 13 14 15")
-        self.assertEqual(normalize(u"diecis√©is diecisiete", lang="es"),
+        self.assertEqual(normalize(u"diecisÈis diecisiete", lang="es"),
                          "16 17")
         self.assertEqual(normalize(u"dieciocho diecinueve", lang="es"),
                          "18 19")
@@ -565,16 +566,16 @@ class TestNormalize(unittest.TestCase):
                          "100 caballos")
         self.assertEqual(normalize(u"ciento once caballos", lang="es"),
                          "111 caballos")
-        self.assertEqual(normalize(u"hab√≠a cuatrocientas una vacas",
+        self.assertEqual(normalize(u"habÌa cuatrocientas una vacas",
                                    lang="es"),
-                         u"hab√≠a 401 vacas")
+                         u"habÌa 401 vacas")
         self.assertEqual(normalize(u"dos mil", lang="es"),
                          "2000")
         self.assertEqual(normalize(u"dos mil trescientas cuarenta y cinco",
                                    lang="es"),
                          "2345")
         self.assertEqual(normalize(
-            u"ciento veintitr√©s mil cuatrocientas cincuenta y seis",
+            u"ciento veintitrÈs mil cuatrocientas cincuenta y seis",
             lang="es"),
             "123456")
         self.assertEqual(normalize(
