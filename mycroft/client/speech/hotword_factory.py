@@ -72,7 +72,7 @@ class PocketsphinxHotWord(HotWordEngine):
 
     def create_config(self, dict_name, Decoder):
         config = Decoder.default_config()
-        model_file = join(BASEDIR, 'model', self.lang, 'hmm')
+        model_file = join(BASEDIR, 'recognizer', 'model', self.lang, 'hmm')
         if not exists(model_file):
             LOG.error('PocketSphinx model not found for {}', self.lang)
             model_file = join(BASEDIR, 'model', 'en-us', 'hmm')
