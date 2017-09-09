@@ -26,7 +26,7 @@ __author__ = 'seanfitz, jdorleans, jarbas'
 
 LOG = getLogger("HotwordFactory")
 
-RECOGNIZER_DIR = abspath(dirname(__file__)).join(["recognizer"])
+RECOGNIZER_DIR = abspath(dirname(__file__).join(["recognizer"]))
 
 
 class HotWordEngine(object):
@@ -44,7 +44,7 @@ class HotWordEngine(object):
 
 
 class PocketsphinxHotWord(HotWordEngine):
-    def __init__(self, key_phrase, config=None, lang="en-us"):
+    def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
         super(PocketsphinxHotWord, self).__init__(key_phrase, config, lang)
         # Hotword module imports
         from pocketsphinx import Decoder
@@ -99,7 +99,7 @@ class PocketsphinxHotWord(HotWordEngine):
 
 
 class SnowboyHotWord(HotWordEngine):
-    def __init__(self, key_phrase, config=None, lang="en-us"):
+    def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
         super(SnowboyHotWord, self).__init__(key_phrase, config, lang)
         # Hotword module imports
         from snowboydecoder import HotwordDetector
