@@ -221,7 +221,7 @@ class RecognizerLoop(EventEmitter):
     def create_wake_word_recognizer(self):
         # Create a local recognizer to hear the wakeup word, e.g. 'Hey Mycroft'
         LOG.info("creating wake word engine")
-        word = self.config.get("wake_word", "hey mycroft")
+        word = "hey mycroft"  # self.config.get("wake_word", "hey mycroft")
         # TODO remove this, only for server settings compatibility
         phonemes = self.config.get("phonemes")
         config = None

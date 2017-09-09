@@ -26,11 +26,11 @@ __author__ = 'seanfitz, jdorleans, jarbas'
 
 LOG = getLogger("HotwordFactory")
 
-RECOGNIZER_DIR = dirname(abspath(__file__)).join("recognizer")
+RECOGNIZER_DIR = abspath(dirname(__file__)).join(["recognizer"])
 
 
 class HotWordEngine(object):
-    def __init__(self, key_phrase, config=None, lang="en-us"):
+    def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
         self.lang = str(lang).lower()
         self.key_phrase = str(key_phrase).lower()
         if config is None:
@@ -52,8 +52,8 @@ class PocketsphinxHotWord(HotWordEngine):
         module = self.config.get("module")
         if module != "pocketsphinx":
             LOG.warning(
-                str(module) + " module does not match with Hotword class "
-                         "pocketsphinx")
+                str(module) + " module does not match with "
+                              "Hotword class pocketsphinx")
         # Hotword module params
         self.phonemes = self.config.get("phonemes", "HH EY . M AY K R AO F T")
         self.threshold = self.config.get("threshold", 1e-90)
@@ -74,9 +74,7 @@ class PocketsphinxHotWord(HotWordEngine):
     def create_config(self, dict_name, config):
         model_file = join(RECOGNIZER_DIR, 'model', self.lang, 'hmm')
         if not exists(model_file):
-            LOG.error('PocketSphinx model not found for ' + str(self.lang))
-            model_file = join(RECOGNIZER_DIR, 'model', 'en-us', 'hmm')
-
+            LOG.error('PocketSphinx model not found at ' + str(model_file))
         config.set_string('-hmm', model_file)
         config.set_string('-dict', dict_name)
         config.set_string('-keyphrase', self.key_phrase)
@@ -133,7 +131,7 @@ class HotWordFactory(object):
     }
 
     @staticmethod
-    def create_hotword(hotword, config=None, lang="en-us"):
+    def create_hotword(hotword="hey mycroft", config=None, lang="en-us"):
         LOG.info("creating " + hotword)
         if not config:
             config = ConfigurationManager.get().get("hotwords", {})
