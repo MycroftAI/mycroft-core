@@ -31,13 +31,16 @@ from mycroft.util.log import getLogger
 __author__ = 'seanfitz', 'jdorleans'
 
 LOG = getLogger(__name__)
-config = ConfigurationManager.get().get("websocket")
 
 
 class WebsocketClient(object):
-    def __init__(self, host=config.get("host"), port=config.get("port"),
-                 route=config.get("route"), ssl=config.get("ssl")):
+    def __init__(self, host=None, port=None, route=None, ssl=None):
 
+        config = ConfigurationManager.get().get("websocket")
+        host = host or config.get("host")
+        port = port or config.get("port")
+        route = route or config.get("route")
+        ssl = ssl or config.get("ssl")
         validate_param(host, "websocket.host")
         validate_param(port, "websocket.port")
         validate_param(route, "websocket.route")

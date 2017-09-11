@@ -39,8 +39,6 @@ from mycroft.util import (
 )
 from mycroft.util.log import getLogger
 
-config = ConfigurationManager.instance()
-listener_config = config.get('listener')
 logger = getLogger(__name__)
 __author__ = 'seanfitz'
 
@@ -154,6 +152,9 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
     SEC_BETWEEN_WW_CHECKS = 0.2
 
     def __init__(self, wake_word_recognizer):
+
+        self.config = ConfigurationManager.instance()
+        listener_config = self.config.get('listener')
         # The maximum audio in seconds to keep for transcribing a phrase
         # The wake word must fit in this time
         num_phonemes = len(listener_config.get('phonemes').split())
@@ -434,9 +435,9 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         # If enabled, play a wave file with a short sound to audibly
         # indicate recording has begun.
-        if config.get('confirm_listening'):
+        if self.config.get('confirm_listening'):
             file = resolve_resource_file(
-                config.get('sounds').get('start_listening'))
+                self.config.get('sounds').get('start_listening'))
             if file:
                 play_wav(file)
 

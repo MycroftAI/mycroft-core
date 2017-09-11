@@ -47,6 +47,10 @@ loaded_skills = {}
 last_modified_skill = 0
 skill_reload_thread = None
 skills_manager_timer = None
+
+skills_config = ConfigurationManager.instance().get("skills")
+BLACKLISTED_SKILLS = skills_config.get("blacklisted_skills", [])
+
 SKILLS_DIR = '/opt/mycroft/skills'
 
 installer_config = ConfigurationManager.instance().get("SkillInstallerSkill")
@@ -257,7 +261,8 @@ class WatchSkills(Thread):
                     skill["loaded"] = True
                     skill["instance"] = load_skill(
                         create_skill_descriptor(skill["path"]),
-                        ws, skill["id"])
+                        ws, skill["id"],
+                        BLACKLISTED_SKILLS)
             # get the last modified skill
             modified_dates = map(lambda x: x.get("last_modified"),
                                  loaded_skills.values())
