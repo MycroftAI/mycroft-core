@@ -26,7 +26,7 @@ __author__ = 'seanfitz, jdorleans, jarbas'
 
 LOG = getLogger("HotwordFactory")
 
-RECOGNIZER_DIR = abspath(dirname(__file__).join(["recognizer"]))
+RECOGNIZER_DIR = abspath(dirname(__file__)).join("recognizer")
 
 
 class HotWordEngine(object):
