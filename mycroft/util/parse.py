@@ -303,11 +303,9 @@ def extract_datetime_en(str, currentDate=None):
         elif word == "tomorrow" and not fromFlag:
             dayOffset = 1
             used += 1
-        elif (word == "day" and
-                      wordNext == "after" and
-                      wordNextNext == "tomorrow" and
-                  not fromFlag and
-                  not wordPrev[0].isdigit()):
+        elif (
+                            word == "day" and wordNext == "after" and wordNextNext == "tomorrow" and not fromFlag and not
+        wordPrev[0].isdigit()):
             dayOffset = 2
             used = 3
             if wordPrev == "the":
