@@ -223,10 +223,8 @@ class WatchSkills(Thread):
                     filter(lambda x: os.path.isdir(os.path.join(SKILLS_DIR, x)),
                            os.listdir(SKILLS_DIR)) if folder in PRIORITY_SKILLS]
             for skill_folder in list:
-                if skill_folder not in loaded_skills:
-                    id_counter += 1
-                    loaded_skills[skill_folder] = {"id": id_counter}
-                skill = loaded_skills.get(skill_folder)
+                id_counter += 1
+                skill = {"id": id_counter}
                 skill["path"] = os.path.join(SKILLS_DIR, skill_folder)
                 # checking if is a skill
                 if not MainModule + ".py" in os.listdir(skill["path"]):
@@ -239,6 +237,7 @@ class WatchSkills(Thread):
                 skill["instance"] = load_skill(
                     create_skill_descriptor(skill["path"]),
                     ws, skill["id"])
+                loaded_skills[skill_folder] = skill
 
         # Scan the file folder that contains Skills.  If a Skill is updated,
         # unload the existing version from memory and reload from the disk.
