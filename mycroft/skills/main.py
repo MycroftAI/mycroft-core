@@ -214,7 +214,7 @@ class WatchSkills(Thread):
 
     def run(self):
         global ws, loaded_skills, last_modified_skill, \
-            id_counter, PRIORITY_SKILLS
+            id_counter
 
         # Load priority skills first by order
         if exists(SKILLS_DIR):
