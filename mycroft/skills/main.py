@@ -54,7 +54,7 @@ installer_config = ConfigurationManager.instance().get("SkillInstallerSkill")
 MSM_BIN = installer_config.get("path", join(MYCROFT_ROOT_PATH, 'msm', 'msm'))
 
 skills_config = ConfigurationManager.instance().get("skills")
-PRIORITY_SKILLS = skills_config["priority_skills"]
+PRIORITY_SKILLS = skills_config.get("priority_skills", [])
 
 
 def connect():
