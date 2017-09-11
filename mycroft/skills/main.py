@@ -213,18 +213,41 @@ class WatchSkills(Thread):
 
     def run(self):
         global ws, loaded_skills, last_modified_skill, \
-            id_counter
+            id_counter, PRIORITY_SKILLS
 
-    # Load priority skills first
-    load_priority_skills()
-
-    # Scan the file folder that contains Skills.  If a Skill is updated,
-    # unload the existing version from memory and reload from the disk.
-    while True:
+        # Load priority skills first by order
         if exists(SKILLS_DIR):
             # checking skills dir and getting all skills there
             list = filter(lambda x: os.path.isdir(
                 os.path.join(SKILLS_DIR, x)), os.listdir(SKILLS_DIR))
+
+            for skill_folder in list:
+                if skill_folder not in PRIORITY_SKILLS:
+                    continue
+                if skill_folder not in loaded_skills:
+                    id_counter += 1
+                    loaded_skills[skill_folder] = {"id": id_counter}
+                skill = loaded_skills.get(skill_folder)
+                skill["path"] = os.path.join(SKILLS_DIR, skill_folder)
+                # checking if is a skill
+                if not MainModule + ".py" in os.listdir(skill["path"]):
+                    continue
+                # getting the newest modified date of skill
+                last_mod = _get_last_modified_date(skill["path"])
+                skill["last_modified"] = last_mod
+                # loading skill
+                skill["loaded"] = True
+                skill["instance"] = load_skill(
+                    create_skill_descriptor(skill["path"]),
+                    ws, skill["id"])
+
+        # Scan the file folder that contains Skills.  If a Skill is updated,
+        # unload the existing version from memory and reload from the disk.
+        while True:
+            if exists(SKILLS_DIR):
+                # checking skills dir and getting all skills there
+                list = filter(lambda x: os.path.isdir(
+                    os.path.join(SKILLS_DIR, x)), os.listdir(SKILLS_DIR))
 
                 for skill_folder in list:
                     if skill_folder not in loaded_skills:
