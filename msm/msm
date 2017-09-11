@@ -223,8 +223,13 @@ function update() {
         echo "*.pyc" >> .git/info/exclude
       fi
 
-      # Check if the repo is dirty or has commits to push
-      if [[ (-z $(git status --porcelain --untracked-files=no)) && !($LOCAL != $REMOTE && $REMOTE = $BASE) ]]; then
+      BRANCH="$(git symbolic-ref HEAD 2>/dev/null)"
+      BRANCH="${BRANCH##refs/heads/}"
+
+      if [[ (-z $(git status --porcelain --untracked-files=no)) &&  # No Modified files
+            !($LOCAL != $REMOTE && $REMOTE = $BASE) &&  # No new commits
+            "$BRANCH" = "master" ]]  # On master branch
+      then
         echo "Updating ${d}..."
         echo -n "  "
         git fetch
