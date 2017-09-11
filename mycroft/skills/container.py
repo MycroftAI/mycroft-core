@@ -25,10 +25,6 @@ from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.skills.core import create_skill_descriptor, load_skill
 from mycroft.skills.intent_service import IntentService
 from mycroft.util.log import getLogger
-import signal
-
-# ignore DIGCHLD to terminate subprocesses correctly
-signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
 __author__ = 'seanfitz'
 
@@ -85,7 +81,8 @@ class SkillContainer(object):
             IntentService(self.ws)
 
         skill_descriptor = create_skill_descriptor(self.dir)
-        self.skill = load_skill(skill_descriptor, self.ws)
+        # skill_id set to -1 to not interfere with the normal skills
+        self.skill = load_skill(skill_descriptor, self.ws, -1)
 
     def run(self):
         try:

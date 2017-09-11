@@ -25,4 +25,7 @@ apt-get install -y \
     curl \
     libicu-dev \
     pkg-config \
-    automake
+    automake \
+    libjpeg-dev \
+    libfann-dev
+    

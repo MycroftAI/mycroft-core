@@ -26,14 +26,19 @@ class Message(object):
 
         Message objects will be used to send information back and fourth
         between processes of mycroft service, voice, skill and cli
-
     Attributes:
         type: type of data sent within the message.
         data: data sent within the message
         context: info about the message not part of data such as source,
             destination or domain.
     """
+
     def __init__(self, type, data={}, context=None):
+        """Used to construct a message object
+
+        Message objects will be used to send information back and fourth
+        bettween processes of mycroft service, voice, skill and cli
+        """
         self.type = type
         self.data = data
         self.context = context
@@ -67,6 +72,7 @@ class Message(object):
         Returns:
             Message: message object constructed from the json string passed
             int the function.
+            value(str): This is the string received from the websocket
         """
         obj = json.loads(value)
         return Message(obj.get('type'), obj.get('data'), obj.get('context'))
@@ -91,6 +97,7 @@ class Message(object):
         Returns:
             Message: Message object to be used on the reply to the message
         """
+
         new_context = self.context if self.context else {}
         for key in context:
             new_context[key] = context[key]

@@ -14,6 +14,7 @@ setup(
         "configobj==5.0.6",
         "pyee==1.0.1",
         "adapt-parser==0.2.1",
+        "padatious==0.1.4"
         "websocket-client==0.32.0"
     ],
     packages=[
@@ -23,7 +24,6 @@ setup(
         "mycroft.messagebus",
         "mycroft.messagebus.client",
         "mycroft.session",
-        "mycroft.skills.intent",
         "mycroft.skills",
         "mycroft.util",
         "mycroft"

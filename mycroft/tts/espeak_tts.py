@@ -28,8 +28,10 @@ class ESpeak(TTS):
         super(ESpeak, self).__init__(lang, voice, ESpeakValidator(self))
 
     def execute(self, sentence):
+        self.begin_audio()
         subprocess.call(
             ['espeak', '-v', self.lang + '+' + self.voice, sentence])
+        self.end_audio()
 
 
 class ESpeakValidator(TTSValidator):

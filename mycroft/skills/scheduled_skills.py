@@ -116,7 +116,11 @@ class ScheduledSkill(MycroftSkill):
 
     def shutdown(self):
         super(ScheduledSkill, self).shutdown()
+        # if timer method is running wait for it to complete
         self.cancel()
+        if self.timer and self.timer.isAlive():
+            self.timer.join()
+        self.timer = None
 
 
 class ScheduledCRUDSkill(ScheduledSkill):

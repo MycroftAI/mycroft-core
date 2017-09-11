@@ -17,6 +17,7 @@
 
 
 import pystache
+from io import open
 import os
 import random
 from mycroft.util import log, resolve_resource_file

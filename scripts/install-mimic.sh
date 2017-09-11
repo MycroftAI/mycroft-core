@@ -3,7 +3,7 @@
 set -Ee
 
 MIMIC_DIR=mimic
-CORES=$(nproc)
+CORES=$1
 MIMIC_VERSION=1.2.0.2
 
 # for ubuntu precise in travis, that does not provide pkg-config:
@@ -12,11 +12,11 @@ pkg-config --exists icu-i18n || export LDFLAGS="$LDFLAGS -licui18n -licuuc -licu
 
 # download and install mimic
 if [ ! -d ${MIMIC_DIR} ]; then
-    git clone --branch ${MIMIC_VERSION} https://github.com/MycroftAI/mimic.git
+    git clone --branch ${MIMIC_VERSION} https://github.com/MycroftAI/mimic.git --depth=1
     cd ${MIMIC_DIR}
     ./autogen.sh
     ./configure --with-audio=alsa --enable-shared --prefix=$(pwd)
-    make -j$CORES
+    make -j${CORES}
     make install
 else
     # ensure mimic is up to date
@@ -28,6 +28,6 @@ else
     ./autogen.sh
     ./configure --with-audio=alsa --enable-shared --prefix=$(pwd)
     make clean
-    make -j$CORES
+    make -j${CORES}
     make install
 fi

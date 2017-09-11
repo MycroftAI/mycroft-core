@@ -177,6 +177,25 @@ class DeviceApi(Api):
             "path": "/" + self.identity.uuid + "/location"
         })
 
+    def get_subscription(self):
+        """
+            Get information about type of subscrition this unit is connected
+            to.
+
+            Returns: dictionary with subscription information
+        """
+        return self.request({
+            'path': '/' + self.identity.uuid + '/subscription'})
+
+    @property
+    def is_subscriber(self):
+        """
+            status of subscription. True if device is connected to a paying
+            subscriber.
+        """
+        subscription_type = self.get_subscription().get('@type')
+        return subscription_type != 'free'
+
     def find(self):
         """ Deprecated, see get_location() """
         # TODO: Eliminate ASAP, for backwards compatibility only

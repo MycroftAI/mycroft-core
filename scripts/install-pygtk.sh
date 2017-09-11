@@ -8,7 +8,7 @@ fi
 
 # Setup variables.
 CACHE="/tmp/install-pygtk-$$"
-CORES=$(nproc)
+CORES=$1
 
 # Make temp directory.
 mkdir -p $CACHE
@@ -29,7 +29,7 @@ then
         (   cd py2cairo*
             autoreconf -ivf
             ./configure --prefix=$VIRTUAL_ENV --disable-dependency-tracking
-            make -j$CORES
+            make -j${CORES}
             make install
         )
     )
@@ -50,7 +50,7 @@ then
         tar -xvf pygobject.tar.bz2
         (   cd pygobject*
             ./configure --prefix=$VIRTUAL_ENV --disable-introspection
-            make -j$CORES
+            make -j${CORES}
             make install
         )
     )
@@ -71,7 +71,7 @@ then
         tar -xvf pygtk.tar.bz2
         (   cd pygtk-*
             ./configure --prefix=$VIRTUAL_ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$VIRTUAL_ENV/lib/pkgconfig
-            make -j$CORES
+            make -j${CORES}
             make install
         )
     )

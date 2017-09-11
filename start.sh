@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
 TOP=$(cd $(dirname $0) && pwd -L)
-VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${HOME}/.virtualenvs/mycroft"}
+
+if [ -z "$WORKON_HOME" ]; then
+    VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${HOME}/.virtualenvs/mycroft"}
+else
+    VIRTUALENV_ROOT="$WORKON_HOME/mycroft"
+fi
 
 ${TOP}/scripts/prepare-msm.sh
 
 case $1 in
 	"service") SCRIPT=${TOP}/mycroft/messagebus/service/main.py ;;
 	"skills") SCRIPT=${TOP}/mycroft/skills/main.py ;;
+	"audio") SCRIPT=${TOP}/mycroft/audio/main.py ;;
 	"skill_container") SCRIPT=${TOP}/mycroft/skills/container.py ;;
 	"voice") SCRIPT=${TOP}/mycroft/client/speech/main.py ;;
 	"cli") SCRIPT=${TOP}/mycroft/client/text/main.py ;;

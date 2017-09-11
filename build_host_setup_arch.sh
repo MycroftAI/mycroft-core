@@ -23,7 +23,8 @@ sudo pacman -S --needed \
     curl \
     pkg-config \
     icu \
-    automake
+    automake \
+    libjpeg-turbo
 
 # upgrade virtualenv to latest from pypi
 sudo pip2 install --upgrade virtualenv

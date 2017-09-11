@@ -257,6 +257,11 @@ class ConfigurationManager(object):
                                         keep_user_config)
 
     @staticmethod
+    def load_internal(config):
+        LOG.info("Updating config internally")
+        ConfigurationManager.update(config)
+
+    @staticmethod
     def load_remote():
         if not ConfigurationManager.__config:
             ConfigurationManager.__config = ConfigurationLoader.load()
@@ -296,30 +301,50 @@ class ConfigurationManager(object):
         """
         ConfigurationManager.update(config)
         location = SYSTEM_CONFIG if is_system else USER_CONFIG
-        loc_config = load_commented_json(location)
-        with open(location, 'w') as f:
-            config = loc_config.update(config)
-            json.dump(config, f)
+        try:
+            LOG.info("Saving config")
+            loc_config = load_commented_json(location)
+            with open(location, 'w') as f:
+                config = loc_config.update(config)
+                json.dump(config, f)
+        except Exception as e:
+            LOG.error(e)
 
 
 class _ConfigurationListener(object):
     """ Utility to synchronize remote configuration changes locally
 
-    This listens to the messagebus for 'configuration.updated', and
-    refreshes the cached configuration when this is encountered.
+    This listens to the messagebus for
+    'configuration.updated', and refreshes the cached configuration when this
+    is encountered.
+     'configuration.update', and updates the cached configuration when this
+    is encountered.
+
     """
 
     def __init__(self, ws):
         super(_ConfigurationListener, self).__init__()
         ws.on("configuration.updated", self.updated)
+        ws.on("configuration.patch", self.patch)
 
     @staticmethod
     def updated(message):
         """
-            Event handler for configuration update events. Forces a reload
+            Event handler for configuration updated events. Forces a reload
             of all configuration sources.
 
             Args:
                 message:    message bus message structure
         """
         ConfigurationManager.load_defaults()
+
+    @staticmethod
+    def patch(message):
+        """
+            Event handler for configuration update events.
+            Update config with provided data
+            Args:
+                message:    message bus message structure
+        """
+        config = message.data.get("config", {})
+        ConfigurationManager.load_internal(config)

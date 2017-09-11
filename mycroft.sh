@@ -111,7 +111,26 @@ function start-mycroft-debug {
 function stop-screen {
   for i in $(screen -ls "$1"); do
     if echo $i | grep -q $1; then
-      screen -XS $i quit && echo "Stopped $1" || echo "Could not stop $1"
+       screen -S $i -X stuff '^C'&& echo "Stopping $1" || echo "Cound not stop $1"
+
+       # Give process 2 secs to shutdown
+       c=1
+       while [ $c -le 20 ]
+       do
+           if ! screen -list | grep -q "$i";
+           then
+              c=999
+           else
+              (( c++ ))
+              sleep 0.1
+           fi
+       done
+
+       # Kill if still up
+       if screen -list | grep -q "$i";
+       then
+           screen -XS $i quit && echo "Killed $1" || echo "Could not kill $1"
+       fi
     fi
   done
 }
@@ -120,12 +139,25 @@ function stop-mycroft {
     stop-screen "mycroft-$1"
 }
 
+function found_exe {
+    hash "$1" 2>/dev/null
+}
+
 set -e
 
 case "$1" in
 "start")
+
+  if [ ! -f .installed ] || ! md5sum -c &>/dev/null < .installed; then
+    echo "Please update dependencies by running ./dev_setup.sh again."
+    if found_exe notify-send; then
+      notify-send "Please Update Dependencies" "Run ./dev_setup.sh again"
+    fi
+  fi
+
   $0 stop
   start-mycroft service
+  start-mycroft audio
   start-mycroft skills
 
   case "$2" in
@@ -155,8 +187,20 @@ case "$1" in
   stop-mycroft skills
   stop-mycroft voice
   stop-mycroft cli
+  stop-mycroft audio
   ;;
 
+"restart")
+  case "$2" in
+  ""|"-v"|"--voice"|"-c"|"--cli"|"-d"|"--debug")
+    $0 stop
+    $0 start $2
+    ;;
+  *)
+    usage-exit
+    ;;
+  esac
+  ;;
 *)
   usage-exit
   ;;
