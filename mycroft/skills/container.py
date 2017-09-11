@@ -81,8 +81,7 @@ class SkillContainer(object):
             IntentService(self.ws)
 
         skill_descriptor = create_skill_descriptor(self.dir)
-        # skill_id set to -1 to not interfere with the normal skills
-        self.skill = load_skill(skill_descriptor, self.ws, -1)
+        self.skill = load_skill(skill_descriptor, self.ws, hash(self.dir))
 
     def run(self):
         try:
