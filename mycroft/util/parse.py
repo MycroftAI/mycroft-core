@@ -274,7 +274,8 @@ def extract_datetime_en(str, currentDate=None):
     days = ['monday', 'tuesday', 'wednesday',
             'thursday', 'friday', 'saturday', 'sunday']
     months = ['january', 'february', 'march', 'april', 'may', 'june',
-              'july', 'august', 'september', 'october', 'november', 'december']
+              'july', 'august', 'september', 'october', 'november',
+              'december']
     monthsShort = ['jan', 'feb', 'mar', 'apr', 'may', 'june', 'july', 'aug',
                    'sept', 'oct', 'nov', 'dec']
 
@@ -795,24 +796,27 @@ def extract_datetime_en(str, currentDate=None):
             if extractedDate < temp:
                 extractedDate = extractedDate.replace(year=int(currentYear),
                                                       month=int(
-                                                          temp.strftime("%m")),
+                                                          temp.strftime(
+                                                              "%m")),
                                                       # noqa
                                                       day=int(temp.strftime(
                                                           "%d")))  # noqa
             else:
-                extractedDate = extractedDate.replace(year=int(currentYear) + 1,
-                                                      month=int(
-                                                          temp.strftime("%m")),
-                                                      # noqa
-                                                      day=int(temp.strftime(
-                                                          "%d")))  # noqa
+                extractedDate = extractedDate.replace(
+                    year=int(currentYear) + 1,
+                    month=int(
+                        temp.strftime("%m")),
+                    # noqa
+                    day=int(temp.strftime(
+                        "%d")))  # noqa
         else:
-            extractedDate = extractedDate.replace(year=int(temp.strftime("%Y")),
-                                                  # noqa
-                                                  month=int(
-                                                      temp.strftime("%m")),
-                                                  # noqa
-                                                  day=int(temp.strftime("%d")))
+            extractedDate = extractedDate.replace(
+                year=int(temp.strftime("%Y")),
+                # noqa
+                month=int(
+                    temp.strftime("%m")),
+                # noqa
+                day=int(temp.strftime("%d")))
 
     if timeStr != "":
         temp = datetime(timeStr)
@@ -944,14 +948,16 @@ def normalize_en(text, remove_articles):
                        "hadn't", "hasn't", "haven't", "he'd", "he'll", "he's",
                        "how'd", "how'll", "how's", "I'd", "I'll", "I'm",
                        "I've", "isn't", "it'd", "it'll", "it's", "mightn't",
-                       "might've", "mustn't", "must've", "needn't", "oughtn't",
+                       "might've", "mustn't", "must've", "needn't",
+                       "oughtn't",
                        "shan't", "she'd", "she'll", "she's", "shouldn't",
                        "should've", "somebody's", "someone'd", "someone'll",
                        "someone's", "that'll", "that's", "that'd", "there'd",
                        "there're", "there's", "they'd", "they'll", "they're",
                        "they've", "wasn't", "we'd", "we'll", "we're", "we've",
                        "weren't", "what'd", "what'll", "what're", "what's",
-                       "whats",  # technically incorrect but some STT does this
+                       "whats",
+                       # technically incorrect but some STT does this
                        "what've", "when's", "when'd", "where'd", "where's",
                        "where've", "who'd", "who'd've", "who'll", "who're",
                        "who's", "who've", "why'd", "why're", "why's", "won't",
@@ -962,7 +968,8 @@ def normalize_en(text, remove_articles):
             expansion = ["is not", "are not", "can not", "could have",
                          "could not", "did not", "does not", "do not",
                          "going to", "got to", "had not", "has not",
-                         "have not", "he would", "he will", "he is", "how did",
+                         "have not", "he would", "he will", "he is",
+                         "how did",
                          "how will", "how is", "I would", "I will", "I am",
                          "I have", "is not", "it would", "it will", "it is",
                          "might not", "might have", "must not", "must have",
@@ -1433,7 +1440,8 @@ def extract_datetime_pt(input_str, currentDate=None):
     days = ['segunda', 'terca', 'quarta',
             'quinta', 'sexta', 'sabado', 'domingo']
     months = ['janeiro', 'febreiro', 'marco', 'abril', 'maio', 'junho',
-              'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
+              'julho', 'agosto', 'setembro', 'outubro', 'novembro',
+              'dezembro']
     monthsShort = ['jan', 'feb', 'mar', 'abr', 'mai', 'jun', 'jul', 'ag',
                    'set', 'out', 'nov', 'dec']
     nexts = ["proximo", "proxima"]
@@ -2077,24 +2085,27 @@ def extract_datetime_pt(input_str, currentDate=None):
             if extractedDate < temp:
                 extractedDate = extractedDate.replace(year=int(currentYear),
                                                       month=int(
-                                                          temp.strftime("%m")),
+                                                          temp.strftime(
+                                                              "%m")),
                                                       # noqa
                                                       day=int(temp.strftime(
                                                           "%d")))  # noqa
             else:
-                extractedDate = extractedDate.replace(year=int(currentYear) + 1,
-                                                      month=int(
-                                                          temp.strftime("%m")),
-                                                      # noqa
-                                                      day=int(temp.strftime(
-                                                          "%d")))  # noqa
+                extractedDate = extractedDate.replace(
+                    year=int(currentYear) + 1,
+                    month=int(
+                        temp.strftime("%m")),
+                    # noqa
+                    day=int(temp.strftime(
+                        "%d")))  # noqa
         else:
-            extractedDate = extractedDate.replace(year=int(temp.strftime("%Y")),
-                                                  # noqa
-                                                  month=int(
-                                                      temp.strftime("%m")),
-                                                  # noqa
-                                                  day=int(temp.strftime("%d")))
+            extractedDate = extractedDate.replace(
+                year=int(temp.strftime("%Y")),
+                # noqa
+                month=int(
+                    temp.strftime("%m")),
+                # noqa
+                day=int(temp.strftime("%d")))
 
     if timeStr != "":
         temp = datetime(timeStr)

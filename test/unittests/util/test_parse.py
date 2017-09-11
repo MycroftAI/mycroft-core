@@ -320,12 +320,13 @@ class TestNormalize(unittest.TestCase):
                          u"isto e o teste extra")
 
     def test_extractnumber_pt(self):
-        self.assertEqual(extractnumber("isto e o primeiro teste", lang="pt")
-                         , 1)
+        self.assertEqual(extractnumber("isto e o primeiro teste", lang="pt"),
+                         1)
         self.assertEqual(extractnumber("isto e o 2 teste", lang="pt"), 2)
-        self.assertEqual(extractnumber("isto e o segundo teste", lang="pt"), 2)
-        self.assertEqual(extractnumber(u"isto e um terço de teste", lang="pt"),
-                         1.0 / 3.0)
+        self.assertEqual(extractnumber("isto e o segundo teste", lang="pt"),
+                         2)
+        self.assertEqual(extractnumber(u"isto e um terço de teste",
+                                       lang="pt"), 1.0 / 3.0)
         self.assertEqual(extractnumber("isto e o teste numero quatro",
                                        lang="pt"), 4)
         self.assertEqual(extractnumber(u"um terço de chavena", lang="pt"),
@@ -340,8 +341,9 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extractnumber("1 e 3/4 cafe", lang="pt"), 1.75)
         self.assertEqual(extractnumber("1 cafe e meio", lang="pt"), 1.5)
         self.assertEqual(extractnumber("um cafe e um meio", lang="pt"), 1.5)
-        self.assertEqual(extractnumber("tres quartos de chocolate", lang="pt"),
-                         3.0 / 4.0)
+        self.assertEqual(
+            extractnumber("tres quartos de chocolate", lang="pt"),
+            3.0 / 4.0)
         self.assertEqual(extractnumber(u"três quarto de chocolate",
                                        lang="pt"), 3.0 / 4.0)
         self.assertEqual(extractnumber("sete ponto cinco", lang="pt"), 7.5)
@@ -416,7 +418,8 @@ class TestNormalize(unittest.TestCase):
     def test_extractdatetime_pt(self):
         def extractWithFormat(text):
             date = datetime(2017, 06, 27, 00, 00)
-            [extractedDate, leftover] = extract_datetime(text, date, lang="pt")
+            [extractedDate, leftover] = extract_datetime(text, date,
+                                                         lang="pt")
             extractedDate = extractedDate.strftime("%Y-%m-%d %H:%M:%S")
             return [extractedDate, leftover]
 
