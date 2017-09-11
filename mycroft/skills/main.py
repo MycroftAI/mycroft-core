@@ -47,7 +47,6 @@ loaded_skills = {}
 last_modified_skill = 0
 skill_reload_thread = None
 skills_manager_timer = None
-id_counter = 0
 SKILLS_DIR = '/opt/mycroft/skills'
 
 installer_config = ConfigurationManager.instance().get("SkillInstallerSkill")
@@ -209,8 +208,7 @@ class WatchSkills(Thread):
         self._stop_event = Event()
 
     def run(self):
-        global ws, loaded_skills, last_modified_skill, \
-            id_counter
+        global ws, loaded_skills, last_modified_skill
 
         # Scan the file folder that contains Skills.  If a Skill is updated,
         # unload the existing version from memory and reload from the disk.
@@ -222,8 +220,9 @@ class WatchSkills(Thread):
 
                 for skill_folder in list:
                     if skill_folder not in loaded_skills:
-                        id_counter += 1
-                        loaded_skills[skill_folder] = {"id": id_counter}
+                        loaded_skills[skill_folder] = {
+                            "id": hash(os.path.join(SKILLS_DIR, skill_folder))
+                        }
                     skill = loaded_skills.get(skill_folder)
                     skill["path"] = os.path.join(SKILLS_DIR, skill_folder)
                     # checking if is a skill
