@@ -241,7 +241,7 @@ class WatchSkills(Thread):
 
         # Scan the file folder that contains Skills.  If a Skill is updated,
         # unload the existing version from memory and reload from the disk.
-        while True:
+        while not self._stop_event.is_set():
             if exists(SKILLS_DIR):
                 # checking skills dir and getting all skills there
                 list = filter(lambda x: os.path.isdir(
