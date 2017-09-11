@@ -207,6 +207,7 @@ class WatchSkills(Thread):
     """
         Thread function to reload skills when a change is detected.
     """
+
     def __init__(self):
         super(WatchSkills, self).__init__()
         self._stop_event = Event()
@@ -217,13 +218,11 @@ class WatchSkills(Thread):
 
         # Load priority skills first by order
         if exists(SKILLS_DIR):
-            # checking skills dir and getting all skills there
-            list = filter(lambda x: os.path.isdir(
-                os.path.join(SKILLS_DIR, x)), os.listdir(SKILLS_DIR))
-
+            # checking skills dir and getting all priority skills there
+            list = [folder for folder in
+                    filter(lambda x: os.path.isdir(os.path.join(SKILLS_DIR, x)),
+                           os.listdir(SKILLS_DIR)) if folder in PRIORITY_SKILLS]
             for skill_folder in list:
-                if skill_folder not in PRIORITY_SKILLS:
-                    continue
                 if skill_folder not in loaded_skills:
                     id_counter += 1
                     loaded_skills[skill_folder] = {"id": id_counter}
@@ -268,7 +267,7 @@ class WatchSkills(Thread):
                         continue
                     # checking if skill was modified
                     elif (skill.get("instance") and
-                          modified > last_modified_skill):
+                                  modified > last_modified_skill):
                         # checking if skill should be reloaded
                         if not skill["instance"].reload_skill:
                             continue
