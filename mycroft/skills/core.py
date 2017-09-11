@@ -40,8 +40,6 @@ from inspect import getargspec
 
 __author__ = 'seanfitz'
 
-skills_config = ConfigurationManager.instance().get("skills")
-BLACKLISTED_SKILLS = skills_config.get("blacklisted_skills", [])
 
 MainModule = '__init__'
 
@@ -113,7 +111,7 @@ def open_intent_envelope(message):
                   intent_dict.get('optional'))
 
 
-def load_skill(skill_descriptor, emitter, skill_id):
+def load_skill(skill_descriptor, emitter, skill_id, BLACKLISTED_SKILLS=None):
     """
         load skill from skill descriptor.
 
@@ -122,7 +120,7 @@ def load_skill(skill_descriptor, emitter, skill_id):
             emitter:          messagebus emitter
             skill_id:         id number for skill
     """
-
+    BLACKLISTED_SKILLS = BLACKLISTED_SKILLS or []
     try:
         logger.info("ATTEMPTING TO LOAD SKILL: " + skill_descriptor["name"] +
                     " with ID " + str(skill_id))

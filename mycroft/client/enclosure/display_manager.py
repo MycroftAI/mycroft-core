@@ -27,7 +27,6 @@ __author__ = 'connorpenrod', 'michaelnguyen'
 
 
 LOG = getLogger("Display Manager (mycroft.client.enclosure)")
-managerIPCDir = os.path.join(get_ipc_directory(), "managers")
 
 
 def _write_data(dictionary):
@@ -37,6 +36,7 @@ def _write_data(dictionary):
             dict: dictionary
     """
 
+    managerIPCDir = os.path.join(get_ipc_directory(), "managers")
     # change read/write permissions based on if file exists or not
     path = os.path.join(managerIPCDir, "disp_info")
     permission = "r+" if os.path.isfile(path) else "w+"
@@ -76,6 +76,7 @@ def _read_data():
     """ Reads the file in (/tmp/mycroft/ipc/managers/disp_info)
         and returns the the data as python dict
     """
+    managerIPCDir = os.path.join(get_ipc_directory(), "managers")
 
     path = os.path.join(managerIPCDir, "disp_info")
     permission = "r" if os.path.isfile(path) else "w+"
