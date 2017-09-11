@@ -143,6 +143,7 @@ This is an open source project and we would love your help. We have prepared a [
 
 If this is your first PR or you're not sure where to get started,
 say hi in [Mycroft Chat](https://chat.mycroft.ai/) and a team member would be happy to mentor you.
+Join the [Mycroft Forum](https://community.mycroft.ai/) for questions and answers. 
 
 
 # FAQ / Common Errors
