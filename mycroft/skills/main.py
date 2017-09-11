@@ -219,9 +219,9 @@ class WatchSkills(Thread):
         # Load priority skills first by order
         if exists(SKILLS_DIR):
             # checking skills dir and getting all priority skills there
-            list = [folder for folder in
-                    filter(lambda x: os.path.isdir(os.path.join(SKILLS_DIR, x)),
-                           os.listdir(SKILLS_DIR)) if folder in PRIORITY_SKILLS]
+            list = [folder for folder in filter(
+                lambda x: os.path.isdir(os.path.join(SKILLS_DIR, x)),
+                os.listdir(SKILLS_DIR)) if folder in PRIORITY_SKILLS]
             for skill_folder in list:
                 id_counter += 1
                 skill = {"id": id_counter}
@@ -265,8 +265,8 @@ class WatchSkills(Thread):
                             "loaded") and modified <= last_modified_skill:
                         continue
                     # checking if skill was modified
-                    elif (skill.get("instance") and
-                                  modified > last_modified_skill):
+                    elif (skill.get("instance") and modified >
+                        last_modified_skill):
                         # checking if skill should be reloaded
                         if not skill["instance"].reload_skill:
                             continue
@@ -277,10 +277,11 @@ class WatchSkills(Thread):
                         # -2 since two local references that are known
                         refs = sys.getrefcount(skill["instance"]) - 2
                         if refs > 0:
-                            logger.warn("After shutdown of {} there are still "
-                                        "{} references remaining. The skill "
-                                        "won't be cleaned from memory."
-                                        .format(skill['instance'].name, refs))
+                            logger.warn(
+                                "After shutdown of {} there are still "
+                                "{} references remaining. The skill "
+                                "won't be cleaned from memory."
+                                .format(skill['instance'].name, refs))
                         del skill["instance"]
                     skill["loaded"] = True
                     skill["instance"] = load_skill(
