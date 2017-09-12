@@ -79,13 +79,11 @@ def handle_wake_up(event):
 
 
 def handle_mic_mute(event):
-    if not loop.is_muted():
-        loop.mute()
+    loop.mute()
 
 
 def handle_mic_unmute(event):
-    if loop.is_muted():
-        loop.unmute()
+    loop.unmute()
 
 
 def handle_paired(event):
