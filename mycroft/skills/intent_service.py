@@ -335,7 +335,7 @@ class IntentService(object):
         self.context_manager.clear_context()
 
 
-class IntentParser():
+class IntentParser:
     def __init__(self, emitter, time_out=5):
         self.emitter = emitter
         self.waiting = False
