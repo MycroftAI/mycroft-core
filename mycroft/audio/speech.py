@@ -78,6 +78,7 @@ def mute_and_speak(utterance, mute):
 
         Args:
             utterance: The sentence to be spoken
+            mute:      Do not execute tts
     """
     global tts_hash
 
