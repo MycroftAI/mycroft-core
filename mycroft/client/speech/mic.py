@@ -52,12 +52,17 @@ class MutableStream(object):
         self.muted = muted
         self.SAMPLE_WIDTH = pyaudio.get_sample_size(format)
         self.muted_buffer = b''.join([b'\x00' * self.SAMPLE_WIDTH])
+        self.mute_calls = 0
 
     def mute(self):
+        self.mute_calls = self.mute_calls + 1
         self.muted = True
 
     def unmute(self):
-        self.muted = False
+        self.mute_calls = self.mute_calls - 1
+        if self.mute_calls <= 0:
+            self.mute_calls = 0
+            self.muted = False
 
     def read(self, size):
         frames = collections.deque()
@@ -95,7 +100,13 @@ class MutableMicrophone(Microphone):
         Microphone.__init__(
             self, device_index=device_index, sample_rate=sample_rate,
             chunk_size=chunk_size)
-        self.muted = False
+
+    @property
+    def muted(self):
+        if self.stream:
+            return self.stream.muted
+        else:
+            return False
 
     def __enter__(self):
         assert self.stream is None, \
@@ -117,12 +128,10 @@ class MutableMicrophone(Microphone):
         self.audio.terminate()
 
     def mute(self):
-        self.muted = True
         if self.stream:
             self.stream.mute()
 
     def unmute(self):
-        self.muted = False
         if self.stream:
             self.stream.unmute()
 
