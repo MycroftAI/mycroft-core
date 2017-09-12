@@ -108,8 +108,9 @@ class EventScheduler(Thread):
                 self.events[event] = remaining
             time.sleep(0.5)
 
-    def schedule_event(self, event, sched_time, repeat=None, data={}):
+    def schedule_event(self, event, sched_time, repeat=None, data=None):
         """ Send event to thread using thread safe queue. """
+        data = data or {}
         self.add.put((event, sched_time, repeat, data))
 
     def schedule_event_handler(self, message):
@@ -150,6 +151,8 @@ class EventScheduler(Thread):
     def update_event_handler(self, message):
         """ Messagebus interface to the update_event method. """
         event = message.data.get('event')
+        data = message.data.get('data')
+        self.update_event(event, data)
 
     def store(self):
         """
