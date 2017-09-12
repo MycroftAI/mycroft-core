@@ -28,7 +28,7 @@ from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.message import Message
 from mycroft.util.log import getLogger
-from mycroft.util import play_wav, play_mp3, check_for_signal
+from mycroft.util import play_wav, play_mp3, check_for_signal, create_signal
 import mycroft.util
 
 __author__ = 'jdorleans'
@@ -161,10 +161,14 @@ class TTS(object):
     def begin_audio(self):
         """Helper function for child classes to call in execute()"""
         self.ws.emit(Message("recognizer_loop:audio_output_start"))
+        create_signal("isSpeaking")
 
     def end_audio(self):
         """Helper function for child classes to call in execute()"""
         self.ws.emit(Message("recognizer_loop:audio_output_end"))
+
+        # This check will clear the "signal"
+        check_for_signal("isSpeaking")
 
     def init(self, ws):
         self.ws = ws
