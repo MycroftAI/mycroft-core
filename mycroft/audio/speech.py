@@ -50,35 +50,38 @@ def handle_speak(event):
     # keep the split for non-Picroft installs since it give user feedback
     # faster on longer phrases.
     #
-    # TODO: Remove or make an option?  This is really a hack, anyway,
-    # so we likely will want to get rid of this when not running on Mimic
-    if not config.get('enclosure', {}).get('platform') == "picroft":
-        start = time.time()
-        chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s',
-                          utterance)
-        for chunk in chunks:
-            try:
-                mute_and_speak(chunk)
-            except KeyboardInterrupt:
-                raise
-            except:
-                logger.error('Error in mute_and_speak', exc_info=True)
-            if _last_stop_signal > start or check_for_signal('buttonPress'):
-                break
-    else:
-        mute_and_speak(utterance, mute)
+
+    logger.info("Speak: " + utterance)
+    if not mute:
+        # TODO: Remove or make an option?  This is really a hack, anyway,
+        # so we likely will want to get rid of this when not running on Mimic
+        if not config.get('enclosure', {}).get('platform') == "picroft":
+            start = time.time()
+            chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s',
+                              utterance)
+            for chunk in chunks:
+                try:
+                    mute_and_speak(chunk)
+                except KeyboardInterrupt:
+                    raise
+                except:
+                    logger.error('Error in mute_and_speak', exc_info=True)
+                if _last_stop_signal > start or check_for_signal(
+                        'buttonPress'):
+                    break
+        else:
+            mute_and_speak(utterance)
 
     # This check will clear the "signal"
     check_for_signal("isSpeaking")
 
 
-def mute_and_speak(utterance, mute):
+def mute_and_speak(utterance):
     """
         Mute mic and start speaking the utterance using selected tts backend.
 
         Args:
             utterance: The sentence to be spoken
-            mute:      Do not execute tts
     """
     global tts_hash
 
@@ -94,10 +97,8 @@ def mute_and_speak(utterance, mute):
         tts.init(ws)
         tts_hash = hash(str(config.get('tts', '')))
 
-    logger.info("Speak: " + utterance)
     try:
-        if not mute:
-            tts.execute(utterance)
+        tts.execute(utterance)
     finally:
         lock.release()
 
