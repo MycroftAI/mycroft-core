@@ -22,7 +22,7 @@ import sys
 import operator
 import re
 from os.path import join, abspath, dirname, splitext, isdir, \
-                    basename, exists
+    basename, exists
 from os import listdir
 from functools import wraps
 
@@ -149,7 +149,8 @@ def load_skill(skill_descriptor, emitter, skill_id):
                     skill_descriptor["name"]))
     except:
         logger.error(
-            "Failed to load skill: " + skill_descriptor["name"], exc_info=True)
+            "Failed to load skill: " + skill_descriptor["name"],
+            exc_info=True)
     return None
 
 
@@ -179,12 +180,15 @@ def intent_handler(intent_parser):
 
 def intent_file_handler(intent_file):
     """ Decorator for adding a method as an intent file handler. """
+
     def real_decorator(func):
         @wraps(func)
         def handler_method(*args, **kwargs):
             return func(*args, **kwargs)
+
         _intent_file_list.append((intent_file, func))
         return handler_method
+
     return real_decorator
 
 
@@ -321,6 +325,7 @@ class MycroftSkill(object):
                                intent handler the function will need the self
                                variable passed as well.
         """
+
         def wrapper(message):
             try:
                 if need_self:
@@ -347,6 +352,7 @@ class MycroftSkill(object):
                 logger.error(
                     "An error occurred while processing a request in " +
                     self.name, exc_info=True)
+
         if handler:
             self.emitter.on(name, wrapper)
             self.events.append((name, wrapper))
@@ -448,7 +454,8 @@ class MycroftSkill(object):
         re.compile(regex_str)  # validate regex
         self.emitter.emit(Message('register_vocab', {'regex': regex_str}))
 
-    def speak(self, utterance, expect_response=False, mute=False, metadata=None):
+    def speak(self, utterance, expect_response=False, mute=False,
+              more_speech=False, metadata=None):
         """
             Speak a sentence.
 
@@ -458,20 +465,24 @@ class MycroftSkill(object):
                                     response from the user and start listening
                                     for response.
                 mute:               do not execute TTS
+                more_speech:        more speak messages expected
                 metadata:           arbitrary data, like source urls
+
         """
         # registers the skill as being active
         self.enclosure.register(self.name)
         # add metadata
         if metadata is None:
-          metadata = {}
+            metadata = {}
         data = {'utterance': utterance,
                 'expect_response': expect_response,
                 'metadata': metadata}
-        context = {"mute": mute}
+        context = {"mute": mute,
+                   "more_speech": more_speech}
         self.emitter.emit(Message("speak", data, context))
 
-    def speak_dialog(self, key, data={}, expect_response=False, mute=False, metadata=None):
+    def speak_dialog(self, key, data=None, expect_response=False, mute=False,
+                     more_speech=False, metadata=None):
         """
             Speak sentance based of dialog file.
 
@@ -482,17 +493,21 @@ class MycroftSkill(object):
                                     response from the user and start listening
                                     for response.
                 mute:               do not execute TTS
+                more_speech:        more speak messages expected
                 metadata:           arbitrary data, like source urls
         """
-
-        self.speak(self.dialog_renderer.render(key, data), expect_response, mute, metadata)
+        if data is None:
+            data = {}
+        self.speak(self.dialog_renderer.render(key, data), expect_response,
+                   mute, more_speech, metadata)
 
     def init_dialog(self, root_directory):
         dialog_dir = join(root_directory, 'dialog', self.lang)
         if exists(dialog_dir):
             self.dialog_renderer = DialogLoader().load(dialog_dir)
         else:
-            logger.debug('No dialog loaded, ' + dialog_dir + ' does not exist')
+            logger.debug(
+                'No dialog loaded, ' + dialog_dir + ' does not exist')
 
     def load_data_files(self, root_directory):
         self.init_dialog(root_directory)
