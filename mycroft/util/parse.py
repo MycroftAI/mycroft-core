@@ -872,7 +872,7 @@ def isFractional(input_str):
 # ==============================================================
 
 
-def normalize(text, lang="en-us", remove_articles=True):
+def normalize(text, lang="en-us", remove_articles=False):
     """Prepare a string for parsing
 
     This function prepares the given text for parsing by making
