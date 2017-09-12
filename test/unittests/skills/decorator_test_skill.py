@@ -5,6 +5,7 @@ from adapt.intent import IntentBuilder
 
 class TestSkill(MycroftSkill):
     """ Test skill for intent_handler decorator. """
+
     @intent_handler(IntentBuilder('a').require('Keyword').build())
     def handler(self, message):
         pass

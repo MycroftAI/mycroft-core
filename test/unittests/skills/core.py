@@ -264,9 +264,9 @@ class MycroftSkillTest(unittest.TestCase):
                      'optional': [],
                      'requires': [('Keyword', 'Keyword')]},
                     {
-                     'file_name': join(dirname(__file__), 'intent_file',
-                                       'test.intent'),
-                     'intent_name': str(s.skill_id) + ':test.intent'}]
+                        'file_name': join(dirname(__file__), 'intent_file',
+                                          'test.intent'),
+                        'intent_name': str(s.skill_id) + ':test.intent'}]
 
         self.check_register_decorators(expected)
 
@@ -375,6 +375,7 @@ class MycroftSkillTest(unittest.TestCase):
 
 class TestSkill1(MycroftSkill):
     """ Test skill for normal intent builder syntax """
+
     def initialize(self):
         i = IntentBuilder('a').require('Keyword').build()
         self.register_intent(i, self.handler)
@@ -388,6 +389,7 @@ class TestSkill1(MycroftSkill):
 
 class TestSkill2(MycroftSkill):
     """ Test skill for intent builder without .build() """
+
     def initialize(self):
         i = IntentBuilder('a').require('Keyword')
         self.register_intent(i, self.handler)
@@ -401,6 +403,7 @@ class TestSkill2(MycroftSkill):
 
 class TestSkill3(MycroftSkill):
     """ Test skill for invalid Intent for register_intent """
+
     def initialize(self):
         self.register_intent('string', self.handler)
 
@@ -413,6 +416,7 @@ class TestSkill3(MycroftSkill):
 
 class TestSkill4(MycroftSkill):
     """ Test skill for padatious intent """
+
     def initialize(self):
         self.register_intent_file('test.intent', self.handler)
 

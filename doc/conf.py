@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.abspath('../'))
 # General Configuration
 
 extensions = [
-	'sphinx.ext.autodoc',
+    'sphinx.ext.autodoc',
     'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
@@ -22,12 +22,12 @@ extensions = [
 ]
 
 autodoc_mock_imports = [
-	'speech_recognition',
-	'pyaudio',
-	'pyalsaaudio',
-	'pocketsphinx',
-	'padatious',
-	'alsaaudio'
+    'speech_recognition',
+    'pyaudio',
+    'pyalsaaudio',
+    'pocketsphinx',
+    'padatious',
+    'alsaaudio'
 ]
 
 templates_path = ['_templates']
@@ -51,6 +51,7 @@ pygments_style = 'sphinx'
 todo_include_todos = False
 
 import sphinx_rtd_theme
+
 html_theme = "sphinx_rtd_theme"
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 html_theme_options = {
@@ -68,14 +69,12 @@ latex_documents = [
      'Matthew Scholefield', 'manual'),
 ]
 
-
 # Options for manual page output
 
 man_pages = [
     (master_doc, 'mycroft', 'Mycroft Documentation',
      [author], 1)
 ]
-
 
 # Options for Texinfo output
 
@@ -89,5 +88,3 @@ texinfo_documents = [
 
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
-
-

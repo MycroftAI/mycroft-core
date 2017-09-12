@@ -22,7 +22,7 @@ import sys
 import operator
 import re
 from os.path import join, abspath, dirname, splitext, isdir, \
-                    basename, exists
+    basename, exists
 from os import listdir
 from functools import wraps
 
@@ -179,12 +179,15 @@ def intent_handler(intent_parser):
 
 def intent_file_handler(intent_file):
     """ Decorator for adding a method as an intent file handler. """
+
     def real_decorator(func):
         @wraps(func)
         def handler_method(*args, **kwargs):
             return func(*args, **kwargs)
+
         _intent_file_list.append((intent_file, func))
         return handler_method
+
     return real_decorator
 
 
@@ -210,6 +213,7 @@ class MycroftSkill(object):
         self.reload_skill = True
         self.events = []
         self.skill_id = 0
+        self.message_context = self.get_message_context()
 
     @property
     def location(self):
@@ -321,6 +325,7 @@ class MycroftSkill(object):
                                intent handler the function will need the self
                                variable passed as well.
         """
+
         def wrapper(message):
             try:
                 if need_self:
@@ -347,7 +352,9 @@ class MycroftSkill(object):
                 logger.error(
                     "An error occurred while processing a request in " +
                     self.name, exc_info=True)
+
         if handler:
+            self.emitter.on(name, self.handle_update_message_context)
             self.emitter.on(name, wrapper)
             self.events.append((name, wrapper))
 
@@ -410,6 +417,9 @@ class MycroftSkill(object):
                 logger.error('Could not enable ' + intent_name +
                              ', it hasn\'t been registered.')
 
+    def handle_update_message_context(self, message):
+        self.message_context = self.get_message_context(message.context)
+
     def set_context(self, context, word=''):
         """
             Add context to intent service
@@ -448,23 +458,57 @@ class MycroftSkill(object):
         re.compile(regex_str)  # validate regex
         self.emitter.emit(Message('register_vocab', {'regex': regex_str}))
 
-    def speak(self, utterance, expect_response=False):
-        """
-            Speak a sentence.
+    def get_message_context(self, message_context=None):
+        if message_context is None:
+            message_context = {"destinatary": "all", "source": self.name,
+                               "mute": False, "more_speech": False,
+                               "target": "all"}
+        else:
+            if "destinatary" not in message_context.keys():
+                message_context["destinatary"] = self.message_context.get(
+                    "destinatary", "all")
+            if "target" not in message_context.keys():
+                message_context["target"] = self.message_context.get("target",
+                                                                     "all")
+            if "mute" not in message_context.keys():
+                message_context["mute"] = self.message_context.get("mute",
+                                                                   False)
+            if "more_speech" not in message_context.keys():
+                message_context["more_speech"] = self.message_context.get(
+                    "more_speech", False)
+        if message_context.get("source", "skills") == "skills":
+            message_context["source"] = self.name
+        return message_context
 
-            Args:
-                utterance:          sentence mycroft should speak
-                expect_response:    set to True if Mycroft should expect a
-                                    response from the user and start listening
-                                    for response.
+    def speak(self, utterance, expect_response=False, metadata=None,
+              message_context=None):
         """
+                   Speak a sentence.
+
+                   Args:
+                       utterance:          sentence mycroft should speak
+                       expect_response:    set to True if Mycroft should expect
+                                           a response from the user and start
+                                           listening for response.
+                       metadata:           Extra data to be transmitted
+                                           together with speech
+                       message_context:    message.context field
+               """
+        if message_context is None:
+            # use current context
+            message_context = {}
+        if metadata is None:
+            metadata = {}
         # registers the skill as being active
         self.enclosure.register(self.name)
         data = {'utterance': utterance,
-                'expect_response': expect_response}
-        self.emitter.emit(Message("speak", data))
+                'expect_response': expect_response,
+                "metadata": metadata}
+        self.emitter.emit(
+            Message("speak", data, self.get_message_context(message_context)))
 
-    def speak_dialog(self, key, data={}, expect_response=False):
+    def speak_dialog(self, key, data=None, expect_response=False,
+                     metadata=None, message_context=None):
         """
             Speak sentance based of dialog file.
 
@@ -476,7 +520,11 @@ class MycroftSkill(object):
                                     for response.
         """
 
-        self.speak(self.dialog_renderer.render(key, data), expect_response)
+        if data is None:
+            data = {}
+        self.speak(self.dialog_renderer.render(key, data),
+                   expect_response=expect_response, metadata=metadata,
+                   message_context=message_context)
 
     def init_dialog(self, root_directory):
         dialog_dir = join(root_directory, 'dialog', self.lang)
@@ -565,9 +613,12 @@ class FallbackSkill(MycroftSkill):
         """Goes through all fallback handlers until one returns True"""
 
         def handler(message):
-            for _, handler in sorted(cls.fallback_handlers.items(),
-                                     key=operator.itemgetter(0)):
+            for _, handler, context_update_handler in sorted(
+                    cls.fallback_handlers.items(),
+                    key=operator.itemgetter(0)):
                 try:
+                    if context_update_handler is not None:
+                        context_update_handler(message)
                     if handler(message):
                         return
                 except Exception as e:
@@ -578,7 +629,8 @@ class FallbackSkill(MycroftSkill):
         return handler
 
     @classmethod
-    def _register_fallback(cls, handler, priority):
+    def _register_fallback(cls, handler, priority, skill_folder=None,
+                           context_update_handler=None):
         """
         Register a function to be called as a general info fallback
         Fallback should receive message and return
@@ -590,7 +642,7 @@ class FallbackSkill(MycroftSkill):
         while priority in cls.fallback_handlers:
             priority += 1
 
-        cls.fallback_handlers[priority] = handler
+        cls.fallback_handlers[priority] = handler, context_update_handler
 
     def register_fallback(self, handler, priority):
         """
@@ -598,7 +650,8 @@ class FallbackSkill(MycroftSkill):
             and with the list of handlers registered by this instance
         """
         self.instance_fallback_handlers.append(handler)
-        self._register_fallback(handler, priority)
+        self._register_fallback(handler, priority,
+                                self.handle_update_message_context)
 
     @classmethod
     def remove_fallback(cls, handler_to_del):

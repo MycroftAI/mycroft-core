@@ -224,7 +224,7 @@ def add_log_message(message):
     global mergedLog
     global log_line_offset
 
-    message = "@" + message       # the first byte is a code
+    message = "@" + message  # the first byte is a code
     filteredLog.append(message)
     mergedLog.append(message)
 
@@ -433,11 +433,11 @@ def draw_screen():
 
     scr.addstr(0, 0, "Log Output:" + " " * (curses.COLS - 31) + str(start) +
                "-" + str(end) + " of " + str(cLogs), CLR_HEADING)
-    scr.addstr(1, 0,  "=" * (curses.COLS - 1), CLR_HEADING)
+    scr.addstr(1, 0, "=" * (curses.COLS - 1), CLR_HEADING)
     y = 2
     len_line = 0
     for i in range(start, end):
-        if i >= cLogs-1:
+        if i >= cLogs - 1:
             log = '   ^--- NEWEST ---^ '
         else:
             log = filteredLog[i]
@@ -565,7 +565,7 @@ def show_help():
     scr.erase()
     scr.addstr(0, 0,  center(25) + "Mycroft Command Line Help",
                CLR_CMDLINE)
-    scr.addstr(1, 0,  "=" * (curses.COLS - 1),
+    scr.addstr(1, 0, "=" * (curses.COLS - 1),
                CLR_CMDLINE)
     scr.addstr(2, 0,  "Up / Down         scroll thru query history")
     scr.addstr(3, 0,  "PgUp / PgDn       scroll thru log history")
@@ -575,7 +575,7 @@ def show_help():
 
     scr.addstr(10, 0,  "Commands (type ':' to enter command mode)",
                CLR_CMDLINE)
-    scr.addstr(11, 0,  "=" * (curses.COLS - 1),
+    scr.addstr(11, 0, "=" * (curses.COLS - 1),
                CLR_CMDLINE)
     scr.addstr(12, 0,  ":help                   this screen")
     scr.addstr(13, 0,  ":quit or :exit          exit the program")
@@ -584,7 +584,7 @@ def show_help():
     scr.addstr(16, 0,  ":filter (clear|reset)   reset filters")
     scr.addstr(17, 0,  ":filter (show|list)     display current filters")
 
-    scr.addstr(curses.LINES - 1, 0,  center(23) + "Press any key to return",
+    scr.addstr(curses.LINES - 1, 0, center(23) + "Press any key to return",
                CLR_HEADING)
 
     scr.refresh()
@@ -718,8 +718,9 @@ def gui_main(stdscr):
                     history.append(line)
                     chat.append(line)
                     ws.emit(Message("recognizer_loop:utterance",
-                                    {'utterances': [line.strip()],
-                                     'lang': 'en-us'}))
+                                    {'utterances': [line.strip()]},
+                                    {'source': 'cli',
+                                     'destinatary': 'skills'}))
                 hist_idx = -1
                 line = ""
             elif c == curses.KEY_UP:
@@ -804,7 +805,8 @@ def simple_cli():
             line = sys.stdin.readline()
             ws.emit(
                 Message("recognizer_loop:utterance",
-                        {'utterances': [line.strip()]}))
+                        {'utterances': [line.strip()]},
+                        {'source': 'cli', 'destinatary': 'skills'}))
     except KeyboardInterrupt, e:
         # User hit Ctrl+C to quit
         print("")
@@ -840,6 +842,7 @@ def main():
         curses.wrapper(gui_main)
         curses.endwin()
         save_settings()
+
 
 if __name__ == "__main__":
     main()
