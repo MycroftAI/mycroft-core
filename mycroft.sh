@@ -111,7 +111,26 @@ function start-mycroft-debug {
 function stop-screen {
   for i in $(screen -ls "$1"); do
     if echo $i | grep -q $1; then
-      screen -XS $i quit && echo "Stopped $1" || echo "Could not stop $1"
+       screen -S $i -X stuff '^C'&& echo "Stopping $1" || echo "Cound not stop $1"
+
+       # Give process 2 secs to shutdown
+       c=1
+       while [ $c -le 20 ]
+       do
+           if ! screen -list | grep -q "$i";
+           then
+              c=999
+           else
+              (( c++ ))
+              sleep 0.1
+           fi
+       done
+
+       # Kill if still up
+       if screen -list | grep -q "$i";
+       then
+           screen -XS $i quit && echo "Killed $1" || echo "Could not kill $1"
+       fi
     fi
   done
 }

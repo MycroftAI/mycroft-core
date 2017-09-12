@@ -167,5 +167,5 @@ KEY_MAP = {
 def create(lang):
     clazz = KEY_MAP.get(lang)
     if not clazz:
-        clazz = TimeRulesEnUs()
+        clazz = TimeRulesEnUs
     return clazz()
