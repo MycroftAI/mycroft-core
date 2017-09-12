@@ -452,7 +452,7 @@ class MycroftSkill(object):
                 'expect_response': expect_response}
         self.emitter.emit(Message("speak", data))
 
-    def speak_dialog(self, key, data={}, expect_response=False):
+    def speak_dialog(self, key, data=None, expect_response=False):
         """
             Speak sentance based of dialog file.
 
@@ -463,7 +463,7 @@ class MycroftSkill(object):
                                     response from the user and start listening
                                     for response.
         """
-
+        data = data or {}
         self.speak(self.dialog_renderer.render(key, data), expect_response)
 
     def init_dialog(self, root_directory):
@@ -532,12 +532,13 @@ class MycroftSkill(object):
             logger.error("Failed to stop skill: {}".format(self.name),
                          exc_info=True)
 
-    def _schedule_event(self, handler, when, data={}, name=None,
+    def _schedule_event(self, handler, when, data=None, name=None,
                         repeat=None):
         """
             Underlying method for schedle_event and schedule_repeating_event.
             Takes scheduling information and sends it of on the message bus.
         """
+        data = data or {}
         if not name:
             name = self.name + handler.__name__
         name = str(self.skill_id) + ':' + name
@@ -550,7 +551,7 @@ class MycroftSkill(object):
         self.emitter.emit(Message('mycroft.scheduler.schedule_event',
                                   data=event_data))
 
-    def schedule_event(self, handler, when, data={}, name=None):
+    def schedule_event(self, handler, when, data=None, name=None):
         """
             Schedule a single event.
 
@@ -560,10 +561,11 @@ class MycroftSkill(object):
                 data (dict, optional): data to send when the handler is called
                 name (str, optional):  friendly name parameter
         """
+        data = data or {}
         self._schedule_event(handler, when, data, name)
 
     def schedule_repeating_event(self, handler, when, frequency,
-                                 data={}, name=None):
+                                 data=None, name=None):
         """
             Schedule a repeating event.
 
@@ -574,15 +576,17 @@ class MycroftSkill(object):
                 data (dict, optional):  data to send along to the handler
                 name (str, optional):   friendly name parameter
         """
+        data = data or {}
         self._schedule_event(handler, when, data, name, frequency)
 
-    def update_event(self, name):
+    def update_event(self, name, data=None):
         """
             Change data of event.
 
             Args:
                 name (str):   Name of event
         """
+        data = data or {}
         data = {
             'event': name,
             'data': data
