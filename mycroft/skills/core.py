@@ -467,9 +467,9 @@ class MycroftSkill(object):
           metadata = {}
         data = {'utterance': utterance,
                 'expect_response': expect_response,
-                'mute': mute,
                 'metadata': metadata}
-        self.emitter.emit(Message("speak", data))
+        context = {"mute": mute}
+        self.emitter.emit(Message("speak", data, context))
 
     def speak_dialog(self, key, data={}, expect_response=False, mute=False, metadata=None):
         """
