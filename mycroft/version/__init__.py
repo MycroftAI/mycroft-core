@@ -49,3 +49,27 @@ class VersionManager(object):
                 LOG.error("Failed to load version from '%s'"
                           % VersionManager.__location)
         return {"coreVersion": None, "enclosureVersion": None}
+
+
+def check_version(version_string):
+    """
+        Check if current version is equal or higher than the
+        version string provided to the function
+
+        Args:
+            version_string (string): version string ('Major.Minor.Build')
+    """
+    major, minor, build = version_string.split('.')
+    major = int(major)
+    minor = int(minor)
+    build = int(build)
+
+    if CORE_VERSION_MAJOR > major:
+        return True
+    elif CORE_VERSION_MAJOR == major and CORE_VERSION_MINOR > minor:
+        return True
+    elif major == CORE_VERSION_MAJOR and minor == CORE_VERSION_MINOR and \
+            CORE_VERSION_BUILD >= build:
+        return True
+    else:
+        return False
