@@ -33,8 +33,8 @@ class HotWordEngine(object):
     def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
         self.lang = str(lang).lower()
         self.key_phrase = str(key_phrase).lower()
-        # needed for phoneme length calc in non pocket sphinx modules
-        self.phonemes = "HH EY . M AY K R AO F T"
+        # rough estimate 1 phoneme per 2 chars
+        self.num_phonemes = len(key_phrase) / 2 + 1
         if config is None:
             config = ConfigurationManager.get().get("hot_words", {})
             config = config.get(self.key_phrase, {})
@@ -58,6 +58,7 @@ class PocketsphinxHotWord(HotWordEngine):
                               "Hotword class pocketsphinx")
         # Hotword module params
         self.phonemes = self.config.get("phonemes", "HH EY . M AY K R AO F T")
+        self.num_phonemes = len(self.phonemes.split())
         self.threshold = self.config.get("threshold", 1e-90)
         self.sample_rate = self.listener_config.get("sample_rate", 1600)
         dict_name = self.create_dict(key_phrase, self.phonemes)
