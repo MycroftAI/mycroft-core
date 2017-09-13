@@ -33,6 +33,8 @@ class HotWordEngine(object):
     def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
         self.lang = str(lang).lower()
         self.key_phrase = str(key_phrase).lower()
+        # needed for phoneme length calc in non pocket sphinx modules
+        self.phonemes = "HH EY . M AY K R AO F T"
         if config is None:
             config = ConfigurationManager.get().get("hot_words", {})
             config = config.get(self.key_phrase, {})

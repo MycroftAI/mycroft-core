@@ -224,10 +224,12 @@ class RecognizerLoop(EventEmitter):
         word = "hey mycroft"  # self.config.get("wake_word", "hey mycroft")
         # TODO remove this, only for server settings compatibility
         phonemes = self.config.get("phonemes")
-        config = None
-        if phonemes:
-            config = self.config_core.get("hotwords", {})
-            config[word]["phonemes"] = phonemes
+        thresh = self.config.get("threshold")
+        config = self.config_core.get("hotwords", {word: {}})
+        config[word]["phonemes"] = phonemes
+        config[word]["threshold"] = thresh
+        if not phonemes and not thresh:
+            config = None
         return HotWordFactory.create_hotword(word, config, self.lang)
 
     def create_wakeup_recognizer(self):
