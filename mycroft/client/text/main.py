@@ -75,6 +75,7 @@ last_redraw = 0   # time when last full-redraw happened
 
 # Curses color codes (reassigned at runtime)
 CLR_HEADING = 0
+CLR_FIND = 0
 CLR_CHAT_RESP = 0
 CLR_CHAT_QUERY = 0
 CLR_CMDLINE = 0
