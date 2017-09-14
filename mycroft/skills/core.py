@@ -321,6 +321,8 @@ class MycroftSkill(object):
         """
         def wrapper(message):
             try:
+                # Indicate that the skill handler is starting
+                self.emitter.emit(Message("mycroft.skill.handler.start"))
                 if need_self:
                     # When registring from decorator self is required
                     if len(getargspec(handler).args) == 2:
@@ -345,6 +347,9 @@ class MycroftSkill(object):
                 logger.error(
                     "An error occurred while processing a request in " +
                     self.name, exc_info=True)
+            finally:
+                # Indicate that the skill handler has completed
+                self.emitter.emit(Message('mycroft.skill.handler.complete'))
         if handler:
             self.emitter.on(name, wrapper)
             self.events.append((name, wrapper))
