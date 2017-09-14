@@ -193,6 +193,7 @@ class RecognizerLoop(EventEmitter):
     """
     def __init__(self):
         super(RecognizerLoop, self).__init__()
+        self.mute_calls = 0
         self._load_config()
 
     def _load_config(self):
@@ -206,7 +207,8 @@ class RecognizerLoop(EventEmitter):
         rate = self.config.get('sample_rate')
         device_index = self.config.get('device_index')
 
-        self.microphone = MutableMicrophone(device_index, rate)
+        self.microphone = MutableMicrophone(device_index, rate,
+                                            mute=self.mute_calls > 0)
         # FIXME - channels are not been used
         self.microphone.CHANNELS = self.config.get('channels')
         self.mycroft_recognizer = self.create_mycroft_recognizer(rate, lang)
@@ -253,12 +255,31 @@ class RecognizerLoop(EventEmitter):
         self.consumer.join()
 
     def mute(self):
+        """
+            Mute microphone and increase number of requests to mute
+        """
+        self.mute_calls += 1
         if self.microphone:
             self.microphone.mute()
 
     def unmute(self):
-        if self.microphone:
+        """
+            Unmute mic if as many unmute calls as mute calls have been
+            received.
+        """
+        if self.mute_calls > 0:
+            self.mute_calls -= 1
+
+        if self.mute_calls <= 0 and self.microphone:
             self.microphone.unmute()
+            self.mute_calls = 0
+
+    def force_unmute(self):
+        """
+            Completely unmute mic dispite the number of calls to mute
+        """
+        self.mute_calls = 0
+        self.unmute()
 
     def is_muted(self):
         if self.microphone:

@@ -91,12 +91,25 @@ def handle_paired(event):
 
 
 def handle_audio_start(event):
-    if not loop.is_muted():
-        loop.mute()  # only mute if necessary
+    """
+        Mute recognizer loop
+    """
+    loop.mute()
 
 
 def handle_audio_end(event):
+    """
+        Request unmute, if more sources has requested the mic to be muted
+        it will remain muted.
+    """
     loop.unmute()  # restore
+
+
+def handle_stop(event):
+    """
+        Handler for mycroft.stop, i.e. button press
+    """
+    loop.force_unmute()
 
 
 def handle_open():
@@ -132,6 +145,7 @@ def main():
     ws.on("mycroft.paired", handle_paired)
     ws.on('recognizer_loop:audio_output_start', handle_audio_start)
     ws.on('recognizer_loop:audio_output_end', handle_audio_end)
+    ws.on('mycroft.stop', handle_stop)
     event_thread = Thread(target=connect)
     event_thread.setDaemon(True)
     event_thread.start()
