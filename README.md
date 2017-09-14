@@ -13,7 +13,8 @@ NOTE: The default branch for this repository is 'dev', which should be considere
 * [Documentation](https://docs.mycroft.ai)
 * [Release Notes](https://docs.mycroft.ai/release-notes)
 * [Pair Mycroft Device](https://home.mycroft.ai)
-* [Mycroft Chat](https://mycroft.ai/to/chat)
+* [Mycroft Chat](https://chat.mycroft.ai)
+* [Mycroft Forum](https://community.mycroft.ai)
 * [Mycroft Blog](https://mycroft.ai/blog)
 
 # Getting Started
