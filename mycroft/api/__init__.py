@@ -124,11 +124,7 @@ class Api(object):
 
     def build_url(self, params):
         path = params.get("path", "")
-        print "PATH"
-        print path
-        print "VERSION"
         version = params.get("version", self.version)
-        print version
         return self.url + "/" + version + "/" + path
 
 
