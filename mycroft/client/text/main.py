@@ -73,6 +73,20 @@ meter_thresh = -1
 screen_mode = 0   # 0 = main, 1 = help, others in future?
 last_redraw = 0   # time when last full-redraw happened
 
+# Curses color codes (reassigned at runtime)
+CLR_HEADING = 0
+CLR_CHAT_RESP = 0
+CLR_CHAT_QUERY = 0
+CLR_CMDLINE = 0
+CLR_INPUT = 0
+CLR_LOG1 = 0
+CLR_LOG2 = 0
+CLR_LOG_DEBUG = 0
+CLR_LOG_CMDMESSAGE = 0
+CLR_METER_CUR = 0
+CLR_METER = 0
+
+
 ##############################################################################
 # Helper functions
 
@@ -694,7 +708,7 @@ def handle_cmd(cmd):
     elif "history" in cmd:
         # extract last word(s)
         lines = int(_get_cmd_param(cmd))
-        if (lines < 1):
+        if lines < 1:
             lines = 1
         cy_chat_area = lines
 
