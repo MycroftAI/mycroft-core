@@ -157,10 +157,10 @@ elif [ "${change_to}" = "github" ]; then
 	if [ -d ${path} ]; then
 	        if  [ -f /usr/local/bin/mimic ]; then
 	                echo "file exists"
-	                sed -i 's_.*${TOP}/scripts/install-mimic.sh.*_#${TOP}/scripts/install-mimic.sh_g' ${path}/dev_setup.sh
+	                sed -i "s_.*'${TOP}/scripts/install-mimic.sh'.*_#'${TOP}/scripts/install-mimic.sh'_g" ${path}/dev_setup.sh
 	        else
 	                echo "file doesn't exist"
-	                sed -i 's_.*#${TOP}/scripts/install-mimic.sh.*_${TOP}/scripts/install-mimic.sh_g' ${path}/dev_setup.sh
+	                sed -i "s_.*#'${TOP}/scripts/install-mimic.sh'.*_'${TOP}/scripts/install-mimic.sh'_g" ${path}/dev_setup.sh
 	        fi
 	        ${path}/build_host_setup_debian.sh
 	        ${path}/dev_setup.sh
