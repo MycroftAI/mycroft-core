@@ -22,7 +22,7 @@ user=$(whoami)
 #Build being changed to
 change_to=${1}
 #path to mycroft-core checkout
-path=${2:-"/home/"${user}"/mycroft-core"}
+path=${2:-"/home/${user}/mycroft-core"}
 #currently installed package
 current_pkg=$(cat /etc/apt/sources.list.d/repo.mycroft.ai.list)
 stable_pkg="deb http://repo.mycroft.ai/repos/apt/debian debian main"
@@ -157,10 +157,10 @@ elif [ "${change_to}" = "github" ]; then
 	if [ -d ${path} ]; then
 	        if  [ -f /usr/local/bin/mimic ]; then
 	                echo "file exists"
-	                sed -i 's_.*"${TOP}/scripts/install-mimic.sh".*_#"${TOP}/scripts/install-mimic.sh"_g' ${path}/dev_setup.sh
+	                sed -i 's_.*${TOP}/scripts/install-mimic.sh.*_#${TOP}/scripts/install-mimic.sh_g' ${path}/dev_setup.sh
 	        else
 	                echo "file doesn't exist"
-	                sed -i 's_.*#"${TOP}/scripts/install-mimic.sh".*_"${TOP}/scripts/install-mimic.sh"_g' ${path}/dev_setup.sh
+	                sed -i 's_.*#${TOP}/scripts/install-mimic.sh.*_${TOP}/scripts/install-mimic.sh_g' ${path}/dev_setup.sh
 	        fi
 	        ${path}/build_host_setup_debian.sh
 	        ${path}/dev_setup.sh
