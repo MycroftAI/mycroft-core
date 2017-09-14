@@ -156,6 +156,24 @@ def create_skill_descriptor(skill_folder):
     return {"name": basename(skill_folder), "info": info}
 
 
+def get_handler_name(handler):
+    """
+        Return name (including class if available) of handler
+        function.
+
+        Args:
+            handler (function): Function to be named
+
+        Returns: handler name as string
+    """
+    name = ''
+    if '__self__' in dir(handler) and \
+            'name' in dir(handler.__self__):
+        name += handler.__self__.name + '.'
+    name += handler.__name__
+    return name
+
+
 # Lists used when adding skill handlers using decorators
 _intent_list = []
 _intent_file_list = []
@@ -322,7 +340,9 @@ class MycroftSkill(object):
         def wrapper(message):
             try:
                 # Indicate that the skill handler is starting
-                self.emitter.emit(Message("mycroft.skill.handler.start"))
+                name = get_handler_name(handler)
+                self.emitter.emit(Message("mycroft.skill.handler.start",
+                                          data={'handler': name}))
                 if need_self:
                     # When registring from decorator self is required
                     if len(getargspec(handler).args) == 2:
@@ -339,7 +359,7 @@ class MycroftSkill(object):
                     else:
                         raise TypeError
                 self.settings.store()  # Store settings if they've changed
-            except:
+            except Exception as e:
                 # TODO: Localize
                 self.speak(
                     "An error occurred while processing a request in " +
@@ -347,9 +367,13 @@ class MycroftSkill(object):
                 logger.error(
                     "An error occurred while processing a request in " +
                     self.name, exc_info=True)
-            finally:
-                # Indicate that the skill handler has completed
-                self.emitter.emit(Message('mycroft.skill.handler.complete'))
+                # indicate completion with exception
+                self.emitter.emit(Message('mycroft.skill.handler.complete',
+                                          data={'handler': name,
+                                                'exception': e.message}))
+            # Indicate that the skill handler has completed
+            self.emitter.emit(Message('mycroft.skill.handler.complete',
+                                      data={'handler': name}))
         if handler:
             self.emitter.on(name, wrapper)
             self.events.append((name, wrapper))
