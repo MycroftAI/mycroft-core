@@ -158,6 +158,7 @@ case "$1" in
   $0 stop
   start-mycroft service
   start-mycroft audio
+  start-mycroft display
   start-mycroft skills
 
   case "$2" in

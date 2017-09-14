@@ -105,6 +105,10 @@ if ! pip install -r requirements.txt; then
     fi
 fi
 
+# copy global open-cv to virtual env
+# https://medium.com/@manuganji/installation-of-opencv-numpy-scipy-inside-a-virtualenv-bf4d82220313
+sudo cp /usr/lib/python2.7/dist-packages/cv* $VIRTUALENV_ROOT/lib/python2.7/site-packages/
+
 SYSMEM=$(free|awk '/^Mem:/{print $2}')
 MAXCORES=$(($SYSMEM / 512000))
 CORES=$(nproc)

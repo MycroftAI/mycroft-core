@@ -24,7 +24,8 @@ sudo pacman -S --needed \
     pkg-config \
     icu \
     automake \
-    libjpeg-turbo
+    libjpeg-turbo \
+    python-opencv
 
 # upgrade virtualenv to latest from pypi
 sudo pip2 install --upgrade virtualenv

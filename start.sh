@@ -13,6 +13,7 @@ case $1 in
 	"service") SCRIPT=${TOP}/mycroft/messagebus/service/main.py ;;
 	"skills") SCRIPT=${TOP}/mycroft/skills/main.py ;;
 	"audio") SCRIPT=${TOP}/mycroft/audio/main.py ;;
+	"display") SCRIPT=${TOP}/mycroft/screen_display/main.py ;;
 	"skill_container") SCRIPT=${TOP}/mycroft/skills/container.py ;;
 	"voice") SCRIPT=${TOP}/mycroft/client/speech/main.py ;;
 	"cli") SCRIPT=${TOP}/mycroft/client/text/main.py ;;

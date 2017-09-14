@@ -26,5 +26,6 @@ sudo apt-get install -y \
     pkg-config \
     automake \
     libjpeg-dev \
-    libfann-dev
+    libfann-dev \
+    python-opencv
 
