@@ -25,7 +25,7 @@ from mycroft.identity import IdentityManager
 from mycroft.version import VersionManager
 
 __author__ = 'jdorleans'
-__paired_cache = False
+_paired_cache = False
 
 
 class Api(object):
@@ -259,8 +259,8 @@ def is_paired():
     Returns:
         bool: True if paired with backend
     """
-    global __paired_cache
-    if __paired_cache:
+    global _paired_cache
+    if _paired_cache:
         # NOTE: This assumes once paired, the unit remains paired.  So
         # un-pairing must restart the system (or clear this value).
         # The Mark 1 does perform a restart on RESET.
@@ -269,8 +269,8 @@ def is_paired():
     try:
         api = DeviceApi()
         device = api.get()
-        __paired_cache = api.identity.uuid is not None and \
+        _paired_cache = api.identity.uuid is not None and \
             api.identity.uuid != ""
-        return __paired_cache
+        return _paired_cache
     except:
         return False
