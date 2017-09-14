@@ -20,14 +20,15 @@ NOTE: The default branch for this repository is 'dev', which should be considere
 # Getting Started
 
 ### Ubuntu/Debian, Arch, or Fedora
-- Run the build host setup script for your OS (Ubuntu/Debian: `build_host_setup_debian.sh`, Arch: `build_host_setup_arch.sh`, Fedora: `build_host_setup_fedora.sh`). This script installs necessary packages. Please read it!
 
-- Run `dev_setup.sh` (Feel free to read it, as well).
-
+- Run `dev_setup.sh`. This script sets up dependencies and a [virtualenv][about-virtualenv]. Please read it!
 - Restart session (Rebooting, or logging out and back in might work).
 
+[about-virtualenv]:https://virtualenv.pypa.io/en/stable/
+
 ### Other Environments
-The following packages are required for setting up the development environment and are installed by `build_host_setup` scripts:
+
+The following packages are required for setting up the development environment and are normally installed by `dev_setup.sh` scripts:
 
  - `git`
  - `python 2`
@@ -48,6 +49,8 @@ The following packages are required for setting up the development environment a
  - `flac`
  - `curl`
  - `fann`
+
+After manually installing these packages using your package manager, you can now run `./dev_setup.sh`. After this completes, restart the session (rebooting, or logging out and back in might work).
 
 ## Home Device and Account Manager
 Mycroft AI, Inc. maintains a device and account management system known as Mycroft Home. Developers may sign up at: https://home.mycroft.ai

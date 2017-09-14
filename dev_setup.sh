@@ -61,6 +61,8 @@ install_deps() {
     fi
 }
 
+install_deps
+
 # Configure to use the standard commit template for
 # this repo only.
 git config commit.template .gitmessage
