@@ -60,6 +60,9 @@ filteredLog = []
 default_log_filters = ["mouth.viseme"]
 log_filters = list(default_log_filters)
 log_files = []
+find_str = None
+cy_chat_area = 7  # default chat history height (in lines)
+
 
 # Values used to display the audio meter
 show_meter = True
@@ -69,6 +72,21 @@ meter_thresh = -1
 
 screen_mode = 0   # 0 = main, 1 = help, others in future?
 last_redraw = 0   # time when last full-redraw happened
+
+# Curses color codes (reassigned at runtime)
+CLR_HEADING = 0
+CLR_FIND = 0
+CLR_CHAT_RESP = 0
+CLR_CHAT_QUERY = 0
+CLR_CMDLINE = 0
+CLR_INPUT = 0
+CLR_LOG1 = 0
+CLR_LOG2 = 0
+CLR_LOG_DEBUG = 0
+CLR_LOG_CMDMESSAGE = 0
+CLR_METER_CUR = 0
+CLR_METER = 0
+
 
 ##############################################################################
 # Helper functions
@@ -92,12 +110,15 @@ config_file = os.path.join(os.path.expanduser("~"), ".mycroft_cli.conf")
 
 def load_settings():
     global log_filters
+    global cy_chat_area
 
     try:
         with open(config_file, 'r') as f:
             config = json.load(f)
         if "filters" in config:
             log_filters = config["filters"]
+        if "cy_chat_area" in config:
+            cy_chat_area = config["cy_chat_area"]
     except:
         pass
 
@@ -105,6 +126,7 @@ def load_settings():
 def save_settings():
     config = {}
     config["filters"] = log_filters
+    config["cy_chat_area"] = cy_chat_area
     with open(config_file, 'w') as f:
         json.dump(config, f)
 
@@ -150,10 +172,14 @@ class LogMonitorThread(Thread):
 
                 # Allow user to filter log output
                 ignore = False
-                for filtered_text in log_filters:
-                    if filtered_text in line:
+                if find_str:
+                    if find_str not in line:
                         ignore = True
-                        break
+                else:
+                    for filtered_text in log_filters:
+                        if filtered_text in line:
+                            ignore = True
+                            break
 
                 if ignore:
                     mergedLog.append(self.logid + line.strip())
@@ -242,10 +268,17 @@ def rebuild_filtered_log():
     for line in mergedLog:
         # Apply filters
         ignore = False
-        for filtered_text in log_filters:
-            if filtered_text in line:
+
+        if find_str and find_str != "":
+            # Searching log
+            if find_str not in line:
                 ignore = True
-                break
+        else:
+            # Apply filters
+            for filtered_text in log_filters:
+                if filtered_text in line:
+                    ignore = True
+                    break
 
         if not ignore:
             filteredLog.append(line)
@@ -283,6 +316,7 @@ def handle_message(msg):
 
 def init_screen():
     global CLR_HEADING
+    global CLR_FIND
     global CLR_CHAT_RESP
     global CLR_CHAT_QUERY
     global CLR_CMDLINE
@@ -308,6 +342,7 @@ def init_screen():
         CLR_HEADING = curses.color_pair(1)
         CLR_CHAT_RESP = curses.color_pair(4)
         CLR_CHAT_QUERY = curses.color_pair(7)
+        CLR_FIND = curses.color_pair(4)
         CLR_CMDLINE = curses.color_pair(7)
         CLR_INPUT = curses.color_pair(7)
         CLR_LOG1 = curses.color_pair(3)
@@ -331,7 +366,7 @@ def page_log(page_up):
     draw_screen()
 
 
-def draw_meter():
+def draw_meter(height):
     if not show_meter or meter_cur == -1:
         return
 
@@ -351,7 +386,6 @@ def draw_meter():
     if meter_cur > meter_peak:
         meter_peak = meter_cur + 1
 
-    height = 9  # curses.LINES/3
     scale = meter_peak
     if meter_peak > meter_thresh * 3:
         scale = meter_thresh * 3
@@ -417,7 +451,7 @@ def draw_screen():
 
     # Display log output at the top
     cLogs = len(filteredLog) + 1  # +1 for the '--end--'
-    cLogLinesToShow = curses.LINES - 13
+    cLogLinesToShow = curses.LINES - (cy_chat_area + 5)  # 5 = headers+input
     start = clamp(cLogs - cLogLinesToShow, 0, cLogs - 1) - log_line_offset
     end = cLogs - log_line_offset
     if start < 0:
@@ -431,8 +465,18 @@ def draw_screen():
     # adjust the line offset (prevents paging up too far)
     log_line_offset = cLogs - end
 
-    scr.addstr(0, 0, "Log Output:" + " " * (curses.COLS - 31) + str(start) +
-               "-" + str(end) + " of " + str(cLogs), CLR_HEADING)
+    # Top header and line counts
+    if find_str:
+        scr.addstr(0, 0, "Search Results: ", CLR_HEADING)
+        scr.addstr(0, 16, find_str, CLR_FIND)
+        scr.addstr(0, 16+len(find_str), " ctrl+X to end" +
+                   " " * (curses.COLS - 31 - 12 - len(find_str)) +
+                   str(start) + "-" + str(end) + " of " + str(cLogs),
+                   CLR_HEADING)
+    else:
+        scr.addstr(0, 0, "Log Output:" + " " * (curses.COLS - 31) +
+                   str(start) + "-" + str(end) + " of " + str(cLogs),
+                   CLR_HEADING)
     scr.addstr(1, 0,  "=" * (curses.COLS - 1), CLR_HEADING)
     y = 2
     len_line = 0
@@ -478,34 +522,36 @@ def draw_screen():
         y += 1
 
     # Log legend in the lower-right
-    scr.addstr(curses.LINES - 10, curses.COLS / 2 + 2,
+    y_log_legend = curses.LINES - (3+cy_chat_area)
+    scr.addstr(y_log_legend, curses.COLS / 2 + 2,
                make_titlebar("Log Output Legend", curses.COLS / 2 - 2),
                CLR_HEADING)
-    scr.addstr(curses.LINES - 9, curses.COLS / 2 + 2,
+    scr.addstr(y_log_legend+1, curses.COLS / 2 + 2,
                "DEBUG output",
                CLR_LOG_DEBUG)
-    scr.addstr(curses.LINES - 8, curses.COLS / 2 + 2,
+    scr.addstr(y_log_legend+2, curses.COLS / 2 + 2,
                os.path.basename(log_files[0]) + ", other",
                CLR_LOG1)
     if len(log_files) > 1:
-        scr.addstr(curses.LINES - 7, curses.COLS / 2 + 2,
+        scr.addstr(y_log_legend+3, curses.COLS / 2 + 2,
                    os.path.basename(log_files[1]), CLR_LOG2)
 
     # Meter
+    y_meter = y_log_legend
     if show_meter:
-        scr.addstr(curses.LINES - 10, curses.COLS - 14, " Mic Level ",
+        scr.addstr(y_meter, curses.COLS - 14, " Mic Level ",
                    CLR_HEADING)
 
     # History log in the middle
+    y_chat_history = curses.LINES - (3+cy_chat_area)
     chat_width = curses.COLS / 2 - 2
-    chat_height = 7
     chat_out = []
-    scr.addstr(curses.LINES - 10, 0, make_titlebar("History", chat_width),
+    scr.addstr(y_chat_history, 0, make_titlebar("History", chat_width),
                CLR_HEADING)
 
     # Build a nicely wrapped version of the chat log
     idx_chat = len(chat) - 1
-    while len(chat_out) < chat_height and idx_chat >= 0:
+    while len(chat_out) < cy_chat_area and idx_chat >= 0:
         if chat[idx_chat][0] == '>':
             wrapper = textwrap.TextWrapper(initial_indent="",
                                            subsequent_indent="   ",
@@ -515,14 +561,14 @@ def draw_screen():
 
         chatlines = wrapper.wrap(chat[idx_chat])
         for txt in reversed(chatlines):
-            if len(chat_out) >= chat_height:
+            if len(chat_out) >= cy_chat_area:
                 break
             chat_out.insert(0, txt)
 
         idx_chat -= 1
 
     # Output the chat
-    y = curses.LINES - 9
+    y = curses.LINES - (2+cy_chat_area)
     for txt in chat_out:
         if txt.startswith(">> ") or txt.startswith("   "):
             clr = CLR_CHAT_RESP
@@ -545,7 +591,7 @@ def draw_screen():
                    CLR_HEADING)
         scr.addstr(curses.LINES - 1, 0, ">", CLR_HEADING)
 
-    draw_meter()
+    draw_meter(cy_chat_area+2)
     scr.addstr(curses.LINES - 1, 2, l, CLR_INPUT)
     scr.refresh()
 
@@ -583,6 +629,8 @@ def show_help():
     scr.addstr(15, 0,  ":filter [remove] 'str'  adds or removes a log filter")
     scr.addstr(16, 0,  ":filter (clear|reset)   reset filters")
     scr.addstr(17, 0,  ":filter (show|list)     display current filters")
+    scr.addstr(18, 0,  ":history (# lines)      set number of history lines")
+    scr.addstr(19, 0,  ":find 'str'             show logs containing 'str'")
 
     scr.addstr(curses.LINES - 1, 0,  center(23) + "Press any key to return",
                CLR_HEADING)
@@ -603,10 +651,26 @@ def center(str_len):
 ##############################################################################
 # Main UI lopo
 
+def _get_cmd_param(cmd):
+    # Returns parameter to a command.  Will de-quote.
+    # Ex: find 'abc def'   returns: abc def
+    #    find abc def     returns: abc def
+    cmd = cmd.strip()
+    last_char = cmd[-1]
+    if last_char == '"' or last_char == "'":
+        parts = cmd.split(last_char)
+        return parts[-2]
+    else:
+        parts = cmd.split(" ")
+        return parts[-1]
+
+
 def handle_cmd(cmd):
     global show_meter
     global log_filters
     global mergedLog
+    global cy_chat_area
+    global find_str
 
     if "show" in cmd and "log" in cmd:
         pass
@@ -620,6 +684,9 @@ def handle_cmd(cmd):
             show_meter = False
         elif "show" in cmd or "on" in cmd:
             show_meter = True
+    elif "find" in cmd:
+        find_str = _get_cmd_param(cmd)
+        rebuild_filtered_log()
     elif "filter" in cmd:
         if "show" in cmd or "list" in cmd:
             # display active filters
@@ -630,22 +697,21 @@ def handle_cmd(cmd):
             log_filters = list(default_log_filters)
         else:
             # extract last word(s)
-            cmd = cmd.strip()
-            last_char = cmd[-1]
-            if last_char == '"' or last_char == "'":
-                parts = cmd.split(last_char)
-                word = parts[-2]
-            else:
-                parts = cmd.split(" ")
-                word = parts[-1]
+            param = get_cmd_param(cmd)
 
-            if "remove" in cmd and word in log_filters:
-                log_filters.remove(word)
+            if "remove" in cmd and param in log_filters:
+                log_filters.remove(param)
             else:
-                log_filters.append(word)
+                log_filters.append(param)
 
         rebuild_filtered_log()
         add_log_message("Filters: " + str(log_filters))
+    elif "history" in cmd:
+        # extract last word(s)
+        lines = int(_get_cmd_param(cmd))
+        if lines < 1:
+            lines = 1
+        cy_chat_area = lines
 
     # TODO: More commands
     # elif "find" in cmd:
@@ -659,6 +725,7 @@ def gui_main(stdscr):
     global line
     global log_line_lr_scroll
     global longest_visible_line
+    global find_str
 
     scr = stdscr
     init_screen()
@@ -768,6 +835,13 @@ def gui_main(stdscr):
             elif c == curses.KEY_BACKSPACE or c == 127:
                 # Backspace to erase a character in the utterance
                 line = line[:-1]
+            elif c == 6:  # Ctrl+F
+                line = ":find "
+            elif c == 24:  # Ctrl+X
+                if find_str:
+                    # End the find session
+                    find_str = None
+                    rebuild_filtered_log()
             elif curses.ascii.isascii(c):
                 # Accept typed character in the utterance
                 line += chr(c)
