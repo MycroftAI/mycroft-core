@@ -161,7 +161,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         listener_config = self.config.get('listener')
         # The maximum audio in seconds to keep for transcribing a phrase
         # The wake word must fit in this time
-        num_phonemes = len(listener_config.get('phonemes').split())
+        num_phonemes = wake_word_recognizer.num_phonemes
         len_phoneme = listener_config.get('phoneme_duration', 120) / 1000.0
         self.SAVED_WW_SEC = num_phonemes * len_phoneme
 
