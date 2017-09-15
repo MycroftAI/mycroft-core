@@ -58,6 +58,9 @@ SKILLS_DIR = '/opt/mycroft/skills'
 installer_config = ConfigurationManager.instance().get("SkillInstallerSkill")
 MSM_BIN = installer_config.get("path", join(MYCROFT_ROOT_PATH, 'msm', 'msm'))
 
+skills_config = ConfigurationManager.instance().get("skills")
+PRIORITY_SKILLS = skills_config.get("priority_skills", [])
+
 
 def connect():
     global ws
@@ -212,6 +215,7 @@ class WatchSkills(Thread):
     """
         Thread function to reload skills when a change is detected.
     """
+
     def __init__(self):
         super(WatchSkills, self).__init__()
         self._stop_event = Event()
@@ -219,6 +223,29 @@ class WatchSkills(Thread):
 
     def run(self):
         global ws, loaded_skills, last_modified_skill
+
+        # Load priority skills first by order
+        if exists(SKILLS_DIR):
+            # checking skills dir and getting all priority skills there
+            list = [folder for folder in filter(
+                lambda x: os.path.isdir(os.path.join(SKILLS_DIR, x)),
+                os.listdir(SKILLS_DIR)) if folder in PRIORITY_SKILLS]
+            for skill_folder in list:
+                id_counter += 1
+                skill = {"id": id_counter}
+                skill["path"] = os.path.join(SKILLS_DIR, skill_folder)
+                # checking if is a skill
+                if not MainModule + ".py" in os.listdir(skill["path"]):
+                    continue
+                # getting the newest modified date of skill
+                last_mod = _get_last_modified_date(skill["path"])
+                skill["last_modified"] = last_mod
+                # loading skill
+                skill["loaded"] = True
+                skill["instance"] = load_skill(
+                    create_skill_descriptor(skill["path"]),
+                    ws, skill["id"])
+                loaded_skills[skill_folder] = skill
 
         # Scan the file folder that contains Skills.  If a Skill is updated,
         # unload the existing version from memory and reload from the disk.
@@ -247,8 +274,8 @@ class WatchSkills(Thread):
                             "loaded") and modified <= last_modified_skill:
                         continue
                     # checking if skill was modified
-                    elif (skill.get("instance") and
-                          modified > last_modified_skill):
+                    elif (skill.get("instance") and modified >
+                            last_modified_skill):
                         # checking if skill should be reloaded
                         if not skill["instance"].reload_skill:
                             continue
@@ -259,10 +286,11 @@ class WatchSkills(Thread):
                         # -2 since two local references that are known
                         refs = sys.getrefcount(skill["instance"]) - 2
                         if refs > 0:
-                            logger.warn("After shutdown of {} there are still "
-                                        "{} references remaining. The skill "
-                                        "won't be cleaned from memory."
-                                        .format(skill['instance'].name, refs))
+                            logger.warn(
+                                "After shutdown of {} there are still "
+                                "{} references remaining. The skill "
+                                "won't be cleaned from memory."
+                                .format(skill['instance'].name, refs))
                         del skill["instance"]
                     skill["loaded"] = True
                     skill["instance"] = load_skill(
