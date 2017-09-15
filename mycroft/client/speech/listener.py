@@ -28,7 +28,6 @@ from requests.exceptions import ConnectionError
 import mycroft.dialog
 from mycroft.client.speech.mic import MutableMicrophone, ResponsiveRecognizer
 from mycroft.configuration import ConfigurationManager
-from mycroft.messagebus.message import Message
 from mycroft.metrics import MetricsAggregator
 from mycroft.session import SessionManager
 from mycroft.stt import STTFactory
@@ -158,8 +157,6 @@ class AudioConsumer(Thread):
         except Exception as e:
             LOG.error(e)
             LOG.error("Speech Recognition could not understand audio")
-            self.__speak(mycroft.dialog.get("i didn't catch that",
-                                            self.stt.lang))
         if text:
             # STT succeeded, send the transcribed speech on for processing
             payload = {
@@ -175,7 +172,7 @@ class AudioConsumer(Thread):
             'utterance': utterance,
             'session': SessionManager.get().session_id
         }
-        self.emitter.emit("speak", Message("speak", payload))
+        self.emitter.emit("speak", payload)
 
 
 class RecognizerLoopState(object):
