@@ -52,14 +52,12 @@ skills_manager_timer = None
 
 skills_config = ConfigurationManager.instance().get("skills")
 BLACKLISTED_SKILLS = skills_config.get("blacklisted_skills", [])
+PRIORITY_SKILLS = skills_config.get("priority_skills", [])
 
 SKILLS_DIR = '/opt/mycroft/skills'
 
 installer_config = ConfigurationManager.instance().get("SkillInstallerSkill")
 MSM_BIN = installer_config.get("path", join(MYCROFT_ROOT_PATH, 'msm', 'msm'))
-
-skills_config = ConfigurationManager.instance().get("skills")
-PRIORITY_SKILLS = skills_config.get("priority_skills", [])
 
 
 def connect():
@@ -211,6 +209,35 @@ def _get_last_modified_date(path):
     return last_date
 
 
+def load_skill_list(skills_to_load):
+    """
+        load list of specific skills.
+
+        Args:
+            skills_to_load (list): list of skill directories to load
+    """
+    if exists(SKILLS_DIR):
+        # checking skills dir and getting all priority skills there
+        skill_list = [folder for folder in filter(
+            lambda x: os.path.isdir(os.path.join(SKILLS_DIR, x)),
+            os.listdir(SKILLS_DIR)) if folder in skills_to_load]
+        for skill_folder in skill_list:
+            skill = {"id": hash(os.path.join(SKILLS_DIR, skill_folder))}
+            skill["path"] = os.path.join(SKILLS_DIR, skill_folder)
+            # checking if is a skill
+            if not MainModule + ".py" in os.listdir(skill["path"]):
+                continue
+            # getting the newest modified date of skill
+            last_mod = _get_last_modified_date(skill["path"])
+            skill["last_modified"] = last_mod
+            # loading skill
+            skill["loaded"] = True
+            skill["instance"] = load_skill(
+                create_skill_descriptor(skill["path"]),
+                ws, skill["id"])
+            loaded_skills[skill_folder] = skill
+
+
 class WatchSkills(Thread):
     """
         Thread function to reload skills when a change is detected.
@@ -225,27 +252,7 @@ class WatchSkills(Thread):
         global ws, loaded_skills, last_modified_skill
 
         # Load priority skills first by order
-        if exists(SKILLS_DIR):
-            # checking skills dir and getting all priority skills there
-            list = [folder for folder in filter(
-                lambda x: os.path.isdir(os.path.join(SKILLS_DIR, x)),
-                os.listdir(SKILLS_DIR)) if folder in PRIORITY_SKILLS]
-            for skill_folder in list:
-                id_counter += 1
-                skill = {"id": id_counter}
-                skill["path"] = os.path.join(SKILLS_DIR, skill_folder)
-                # checking if is a skill
-                if not MainModule + ".py" in os.listdir(skill["path"]):
-                    continue
-                # getting the newest modified date of skill
-                last_mod = _get_last_modified_date(skill["path"])
-                skill["last_modified"] = last_mod
-                # loading skill
-                skill["loaded"] = True
-                skill["instance"] = load_skill(
-                    create_skill_descriptor(skill["path"]),
-                    ws, skill["id"])
-                loaded_skills[skill_folder] = skill
+        load_skill_list(PRIORITY_SKILLS)
 
         # Scan the file folder that contains Skills.  If a Skill is updated,
         # unload the existing version from memory and reload from the disk.
