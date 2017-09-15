@@ -156,7 +156,7 @@ def _starting_up():
 
     # Wait until skills have been loaded once before starting to check
     # network connection
-    skill_reload_thread.wait_loaded_once()
+    skill_reload_thread.wait_loaded_priority()
     check_connection()
 
 
@@ -247,12 +247,14 @@ class WatchSkills(Thread):
         super(WatchSkills, self).__init__()
         self._stop_event = Event()
         self._loaded_once = Event()
+        self._loaded_priority = Event()
 
     def run(self):
         global ws, loaded_skills, last_modified_skill
 
         # Load priority skills first by order
         load_skill_list(PRIORITY_SKILLS)
+        self._loaded_priority.set()
 
         # Scan the file folder that contains Skills.  If a Skill is updated,
         # unload the existing version from memory and reload from the disk.
@@ -314,6 +316,13 @@ class WatchSkills(Thread):
                 self._loaded_once.set()
             # Pause briefly before beginning next scan
             time.sleep(2)
+
+    def wait_loaded_priority(self):
+        """
+            Block until priority skills have loaded
+        """
+        while not self._loaded_priority.is_set():
+            time.sleep(1)
 
     def wait_loaded_once(self):
         """
