@@ -228,7 +228,7 @@ class RecognizerLoop(EventEmitter):
         config = self.config_core.get("hotwords", {word: {}})
         config[word]["phonemes"] = phonemes
         config[word]["threshold"] = thresh
-        if not phonemes and not thresh:
+        if phonemes is None or thresh is None:
             config = None
         return HotWordFactory.create_hotword(word, config, self.lang)
 
