@@ -62,6 +62,13 @@ def handle_utterance(event):
     ws.emit(Message('recognizer_loop:utterance', event))
 
 
+def handle_speak(event):
+    """
+        Forward speak message to message bus.
+    """
+    ws.emit(Message('speak', event))
+
+
 def handle_complete_intent_failure(event):
     logger.info("Failed to find intent.")
     # TODO: Localize
@@ -132,6 +139,7 @@ def main():
     ConfigurationManager.init(ws)
     loop = RecognizerLoop()
     loop.on('recognizer_loop:utterance', handle_utterance)
+    loop.on('speak', handle_speak)
     loop.on('recognizer_loop:record_begin', handle_record_begin)
     loop.on('recognizer_loop:wakeword', handle_wakeword)
     loop.on('recognizer_loop:record_end', handle_record_end)
