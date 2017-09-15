@@ -96,14 +96,12 @@ class EnclosureReader(Thread):
                 self.ws.emit(Message("mycroft.stop"))
 
         if "volume.up" in data:
-            self.ws.emit(
-                Message("VolumeSkill:IncreaseVolumeIntent",
-                        {'play_sound': True}))
+            self.ws.emit(Message("mycroft.volume.increase",
+                                 {'play_sound': True}))
 
         if "volume.down" in data:
-            self.ws.emit(
-                Message("VolumeSkill:DecreaseVolumeIntent",
-                        {'play_sound': True}))
+            self.ws.emit(Message("mycroft.volume.decrease",
+                                 {'play_sound': True}))
 
         if "system.test.begin" in data:
             self.ws.emit(Message('recognizer_loop:sleep'))
