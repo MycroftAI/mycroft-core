@@ -9,18 +9,21 @@ msm \- The Mycroft Skill Manager
 \fBinstall \fBrss-skill
 
 .SH DESCRIPTION
-Msm is a command line tool for installing and updating Mycroft skills. The command performs a number of operations inclding installing all default skills
+msm is a command line tool for installing and updating Mycroft skills. The command performs a number of operations inclding installing all default skills
 
 .SH OPTIONS
 .TP
-\fBinstall \fISkill-name\fR
-Install the skill named \fISkill-name\fR.
+\fBinstall \fIname\fR
+Install the skill matching \fIname\fR found at https://github.com/MycroftAI/mycroft-skills
 .TP
 \fBinstall \fIgit-repository\fR
 Install skill from the git repository \fIgit-repository\fR
 .TP
+\fBremove \fIname\fR
+Remove the skill matching \fIname\fR
+.TP
 \fBupdate\fR
-Update all installed skills
+Update all installed skills to head of latest master branch
 .TP
 \fBdefault
 Install and update all default skills
@@ -28,6 +31,6 @@ Install and update all default skills
 \fBlist
 Lists available skills
 .TP
-\fBsearch
-Search for a skill without installing it
+\fBsearch \fIname\fR
+Search for a skill in https://github.com/MycroftAI/mycroft-skills without installing it
 .TP
