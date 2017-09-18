@@ -253,7 +253,7 @@ function install() {
       echo "ERROR: Unable to access directory ${name}!"
       return 102
     fi
-    if [[ "${picroft_mk1t}" == "true" ]] ; then
+    if [[ "${picroft_mk1}" == "true" ]] ; then
       if ! sudo chown -R mycroft:mycroft "${mycroft_skill_folder}/${name}" ; then
         echo "ERROR: Unable to chown install directory ${name}!"
         return 123
@@ -261,7 +261,7 @@ function install() {
     fi
     if [[ -f "requirements.txt" ]]; then
       echo "  Installing requirements..."
-      if [[ "${picroft_mk1t}" == "false" ]]; then
+      if [[ "${picroft_mk1}" == "false" ]]; then
         if [[ "${VIRTUAL_ENV}" =~ .mycroft$ ]] ; then
           if ! pip install -r requirements.txt ; then
             echo "ERROR: Unable to install requirements for skill '${name}'"
