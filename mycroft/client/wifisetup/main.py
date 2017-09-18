@@ -28,26 +28,26 @@ a Linux system to be selected by end users.  This is achieved by:
   * configuring this device based on that selection
 """
 
-import os
 import sys
 import threading
 import time
 import traceback
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 from SocketServer import TCPServer
-from os.path import dirname, realpath
 from shutil import copyfile
 from subprocess import Popen, PIPE, call
 from threading import Thread
 from time import sleep
 
+import os
+from os.path import dirname, realpath
 from pyric import pyw
 from wifi import Cell
 
 from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
-from mycroft.util import connected, wait_while_speaking, is_speaking, \
+from mycroft.util import wait_while_speaking, is_speaking, \
     stop_speaking
 from mycroft.util.log import LOG
 

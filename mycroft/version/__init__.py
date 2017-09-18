@@ -16,6 +16,7 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
+
 from genericpath import exists, isfile
 
 from mycroft.util.log import LOG

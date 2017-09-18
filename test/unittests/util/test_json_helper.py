@@ -1,7 +1,9 @@
-from os.path import dirname, join
-import unittest
 import json
-from mycroft.util.json_helper import load_commented_json, uncomment_json
+import unittest
+
+from os.path import dirname, join
+
+from mycroft.util.json_helper import load_commented_json
 
 
 class TestFileLoad(unittest.TestCase):

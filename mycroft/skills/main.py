@@ -17,28 +17,28 @@
 
 
 import json
-import os
 import subprocess
 import sys
 import time
-from os.path import exists, join
 from threading import Timer, Thread, Event
 
+import os
+from os.path import exists, join
+
+import mycroft.dialog
 from mycroft import MYCROFT_ROOT_PATH
+from mycroft.api import is_paired
 from mycroft.configuration import ConfigurationManager
 from mycroft.lock import Lock  # Creates PID file for single instance
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import load_skill, create_skill_descriptor, \
     MainModule, FallbackSkill
+from mycroft.skills.event_scheduler import EventScheduler
 from mycroft.skills.intent_service import IntentService
 from mycroft.skills.padatious_service import PadatiousService
-from mycroft.skills.event_scheduler import EventScheduler
 from mycroft.util import connected
 from mycroft.util.log import LOG
-from mycroft.api import is_paired
-import mycroft.dialog
-
 
 __author__ = 'seanfitz'
 

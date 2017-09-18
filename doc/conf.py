@@ -4,10 +4,9 @@
 # Mycroft documentation build configuration file
 #
 
-import os
 import sys
 
-from os import listdir
+import os
 
 sys.path.insert(0, os.path.abspath('../'))
 

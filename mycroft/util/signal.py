@@ -1,10 +1,11 @@
+import tempfile
+import time
+
 import os
 import os.path
-import tempfile
-import mycroft
-import time
-from mycroft.util.log import LOG
 
+import mycroft
+from mycroft.util.log import LOG
 
 
 def get_ipc_directory(domain=None):

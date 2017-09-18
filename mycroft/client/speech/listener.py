@@ -26,14 +26,13 @@ from requests import HTTPError
 from requests.exceptions import ConnectionError
 
 import mycroft.dialog
+from mycroft.client.speech.hotword_factory import HotWordFactory
 from mycroft.client.speech.mic import MutableMicrophone, ResponsiveRecognizer
 from mycroft.configuration import ConfigurationManager
 from mycroft.metrics import MetricsAggregator
 from mycroft.session import SessionManager
 from mycroft.stt import STTFactory
 from mycroft.util.log import LOG
-from mycroft.client.speech.hotword_factory import HotWordFactory
-
 
 
 class AudioProducer(Thread):

@@ -14,25 +14,25 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
+import hashlib
 import random
-from abc import ABCMeta, abstractmethod
-from os.path import dirname, exists, isdir
-from threading import Thread
 from Queue import Queue, Empty
+from threading import Thread
 from time import time, sleep
+
 import os
 import os.path
-import hashlib
+from abc import ABCMeta, abstractmethod
+from os.path import dirname, exists, isdir
 
+import mycroft.util
 from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.message import Message
-from mycroft.util.log import LOG
 from mycroft.util import play_wav, play_mp3, check_for_signal, create_signal
-import mycroft.util
+from mycroft.util.log import LOG
 
 __author__ = 'jdorleans'
-
 
 
 class PlaybackThread(Thread):
@@ -260,7 +260,7 @@ class TTS(object):
                 Key:    Key identifying phoneme cache
         """
         pho_file = os.path.join(mycroft.util.get_cache_directory("tts"),
-                                key+".pho")
+                                key + ".pho")
         if os.path.exists(pho_file):
             try:
                 with open(pho_file, "r") as cachefile:

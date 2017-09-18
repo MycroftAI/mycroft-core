@@ -16,20 +16,19 @@
  along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+import audioop
 import collections
 import datetime
+import shutil
 from tempfile import gettempdir
 from threading import Thread, Lock
+from time import sleep, time as get_time
 
 import os
-from time import sleep, time as get_time
-import audioop
-
 import pyaudio
 import speech_recognition
 from os import mkdir
 from os.path import isdir, join, expanduser, isfile
-import shutil
 from speech_recognition import (
     Microphone,
     AudioSource,

@@ -2,13 +2,10 @@ import subprocess
 from time import sleep
 
 from mycroft.audio.services import AudioBackend
-from mycroft.util.log import LOG
 from mycroft.messagebus.message import Message
-
-from os.path import abspath
+from mycroft.util.log import LOG
 
 __author__ = 'forslund'
-
 
 
 class Mpg123Service(AudioBackend):
@@ -16,6 +13,7 @@ class Mpg123Service(AudioBackend):
         Audio backend for mpg123 player. This one is rather limited and
         only implements basic usage.
     """
+
     def __init__(self, config, emitter, name='mpg123'):
         self.config = config
         self.process = None

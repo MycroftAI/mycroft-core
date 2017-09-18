@@ -1,8 +1,7 @@
-from os.path import dirname, abspath, basename
-from mycroft.audio.services import AudioBackend
-from mycroft.util.log import LOG
 import vlc
 
+from mycroft.audio.services import AudioBackend
+from mycroft.util.log import LOG
 
 
 class VlcService(AudioBackend):

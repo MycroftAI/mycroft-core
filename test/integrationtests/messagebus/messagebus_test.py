@@ -4,12 +4,13 @@ It's important to note that this requires this test to run mycroft service
 to test the buss.  It is not expected that the service be already running
 when the tests are ran.
 """
+import time
 import unittest
-from mycroft.messagebus.message import Message
-from mycroft.messagebus.client.ws import WebsocketClient
 from subprocess import Popen, call
 from threading import Thread
-import time
+
+from mycroft.messagebus.client.ws import WebsocketClient
+from mycroft.messagebus.message import Message
 
 
 class TestMessagebusMethods(unittest.TestCase):

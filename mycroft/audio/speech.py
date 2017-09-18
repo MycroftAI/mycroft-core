@@ -1,14 +1,12 @@
-from mycroft.tts import TTSFactory
-from mycroft.util import create_signal, stop_speaking, check_for_signal
-from mycroft.lock import Lock as PIDLock  # Create/Support PID locking file
-from mycroft.configuration import ConfigurationManager
-from mycroft.messagebus.message import Message
-from mycroft.util.log import LOG
-
-from threading import Lock
 import time
+from threading import Lock
+
 import re
 
+from mycroft.configuration import ConfigurationManager
+from mycroft.tts import TTSFactory
+from mycroft.util import create_signal, stop_speaking, check_for_signal
+from mycroft.util.log import LOG
 
 ws = None
 config = None

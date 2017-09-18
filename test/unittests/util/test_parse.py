@@ -2,10 +2,11 @@
 # -*- coding: iso-8859-15 -*-
 
 import unittest
-from mycroft.util.parse import normalize
-from mycroft.util.parse import extractnumber
-from mycroft.util.parse import extract_datetime
 from datetime import datetime
+
+from mycroft.util.parse import extract_datetime
+from mycroft.util.parse import extractnumber
+from mycroft.util.parse import normalize
 
 
 class TestNormalize(unittest.TestCase):

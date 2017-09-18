@@ -15,11 +15,13 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
+import json
 from threading import Thread, Timer
+
+import os
+
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.util import get_ipc_directory
-import json
-import os
 from mycroft.util.log import LOG
 
 __author__ = 'connorpenrod', 'michaelnguyen'

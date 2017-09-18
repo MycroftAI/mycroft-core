@@ -1,5 +1,7 @@
-from os.path import dirname, join, abspath
 import unittest
+
+from os.path import dirname, join, abspath
+
 import mycroft.audio.main as audio_service
 
 """

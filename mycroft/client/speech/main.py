@@ -16,7 +16,6 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import re
 import sys
 from threading import Thread, Lock
 
@@ -24,10 +23,10 @@ from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.client.speech.listener import RecognizerLoop
 from mycroft.configuration import ConfigurationManager
 from mycroft.identity import IdentityManager
+from mycroft.lock import Lock as PIDLock  # Create/Support PID locking file
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
-from mycroft.lock import Lock as PIDLock  # Create/Support PID locking file
 
 ws = None
 lock = Lock()

@@ -14,8 +14,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
-
 import json
 import sys
 import traceback
@@ -23,8 +21,8 @@ import traceback
 import tornado.websocket
 from pyee import EventEmitter
 
-from mycroft.util.log import LOG
 from mycroft.messagebus.message import Message
+from mycroft.util.log import LOG
 
 __author__ = 'seanfitz'
 

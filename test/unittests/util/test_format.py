@@ -2,6 +2,7 @@
 # -*- coding: iso-8859-15 -*-
 
 import unittest
+
 from mycroft.util.format import nice_number
 
 numbers_fixture = {

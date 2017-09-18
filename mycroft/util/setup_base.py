@@ -16,12 +16,13 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import os
-import subprocess
-from setuptools import find_packages
 import shutil
-from mycroft.util.log import LOG
+import subprocess
 
+import os
+from setuptools import find_packages
+
+from mycroft.util.log import LOG
 
 __author__ = 'seanfitz'
 

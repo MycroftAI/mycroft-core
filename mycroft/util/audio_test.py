@@ -16,10 +16,12 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import argparse
+
 from speech_recognition import Recognizer
+
 from mycroft.client.speech.mic import MutableMicrophone
 from mycroft.util import play_wav
-import argparse
 
 __author__ = 'seanfitz'
 """

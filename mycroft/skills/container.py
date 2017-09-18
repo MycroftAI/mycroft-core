@@ -18,6 +18,7 @@
 
 import argparse
 import sys
+
 from os.path import dirname, exists, isdir
 
 from mycroft.configuration import ConfigurationManager
@@ -27,7 +28,6 @@ from mycroft.skills.intent_service import IntentService
 from mycroft.util.log import LOG
 
 __author__ = 'seanfitz'
-
 
 
 class SkillContainer(object):

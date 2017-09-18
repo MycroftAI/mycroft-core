@@ -15,29 +15,24 @@
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
+import socket
+import subprocess
+
+import os.path
+import psutil
+from stat import S_ISREG, ST_MTIME, ST_MODE, ST_SIZE
+
+import mycroft.audio
+import mycroft.configuration
+from mycroft.util.format import nice_number, convert_number
 # Officially exported methods from this file:
 # play_wav, play_mp3, get_cache_directory,
 # resolve_resource_file, wait_while_speaking
 from mycroft.util.log import LOG
 from mycroft.util.parse import extract_datetime, extractnumber, normalize
-from mycroft.util.format import nice_number, convert_number
-
-import socket
-import subprocess
-import tempfile
-import time
-
-import os
-import os.path
-import time
-from stat import S_ISREG, ST_MTIME, ST_MODE, ST_SIZE
-import psutil
 from mycroft.util.signal import *
-import mycroft.configuration
-import mycroft.audio
 
 __author__ = 'jdorleans'
-
 
 
 def resolve_resource_file(res_name):
@@ -181,7 +176,7 @@ def curate_cache(dir, min_free_percent=5.0):
     space = psutil.disk_usage(dir)
 
     # space.percent = space.used/space.total*100.0
-    percent_free = 100.0-space.percent
+    percent_free = 100.0 - space.percent
     if percent_free < min_free_percent:
         # calculate how many bytes we need to delete
         bytes_needed = (min_free_percent - percent_free) / 100.0 * space.total
@@ -243,7 +238,7 @@ def is_speaking():
         bool: True while still speaking
     """
     LOG.info("mycroft.utils.is_speaking() is depreciated, use "
-                "mycroft.audio.is_speaking() instead.")
+             "mycroft.audio.is_speaking() instead.")
     return mycroft.audio.is_speaking()
 
 
@@ -255,7 +250,7 @@ def wait_while_speaking():
     begin.
     """
     LOG.info("mycroft.utils.wait_while_speaking() is depreciated, use "
-                "mycroft.audio.wait_while_speaking() instead.")
+             "mycroft.audio.wait_while_speaking() instead.")
     return mycroft.audio.wait_while_speaking()
 
 
@@ -263,5 +258,5 @@ def stop_speaking():
     # TODO: Less hacky approach to this once Audio Manager is implemented
     # Skills should only be able to stop speech they've initiated
     LOG.info("mycroft.utils.stop_speaking() is depreciated, use "
-                "mycroft.audio.stop_speaking() instead.")
+             "mycroft.audio.stop_speaking() instead.")
     mycroft.audio.stop_speaking()

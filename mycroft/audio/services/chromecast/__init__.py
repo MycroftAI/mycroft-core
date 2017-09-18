@@ -1,12 +1,11 @@
-from mycroft.messagebus.message import Message
-from mycroft.util.log import LOG
-from mycroft.audio.services import AudioBackend
-from os.path import dirname, abspath, basename
-import sys
 import time
 from mimetypes import guess_type
 
 import pychromecast
+
+from mycroft.audio.services import AudioBackend
+from mycroft.messagebus.message import Message
+from mycroft.util.log import LOG
 
 __author__ = 'forslund'
 

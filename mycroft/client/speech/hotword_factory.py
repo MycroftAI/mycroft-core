@@ -15,12 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
+import tempfile
+import time
+
+import os
+from os.path import dirname, exists, join, abspath
+
 from mycroft.configuration import ConfigurationManager
 from mycroft.util.log import LOG
-from os.path import dirname, exists, join, abspath
-import os
-import time
-import tempfile
 
 __author__ = 'seanfitz, jdorleans, jarbas'
 

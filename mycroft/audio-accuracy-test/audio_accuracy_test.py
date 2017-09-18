@@ -1,10 +1,10 @@
-import os
 import time
 import wave
 from glob import glob
-from os.path import dirname, join
 
+import os
 import pyee
+from os.path import dirname, join
 from speech_recognition import AudioSource
 
 from mycroft.client.speech.listener import RecognizerLoop

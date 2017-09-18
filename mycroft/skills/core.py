@@ -14,35 +14,31 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-import abc
 import imp
-import time
-import sys
-
 import operator
-import re
-from os.path import join, abspath, dirname, splitext, isdir, \
-                    basename, exists
-from os import listdir
+import sys
+import time
 from functools import wraps
+from inspect import getargspec
 
+import abc
+import re
 from adapt.intent import Intent, IntentBuilder
+from os import listdir
+from os.path import join, abspath, dirname, splitext, basename, exists
 
 from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.configuration import ConfigurationManager
 from mycroft.dialog import DialogLoader
 from mycroft.filesystem import FileSystemAccess
 from mycroft.messagebus.message import Message
-from mycroft.util.log import LOG
 from mycroft.skills.settings import SkillSettings
-
-from inspect import getargspec
+from mycroft.util.log import LOG
 
 __author__ = 'seanfitz'
 
 
 MainModule = '__init__'
-
 
 
 def load_vocab_from_file(path, vocab_type, emitter):
@@ -122,7 +118,7 @@ def load_skill(skill_descriptor, emitter, skill_id, BLACKLISTED_SKILLS=None):
     BLACKLISTED_SKILLS = BLACKLISTED_SKILLS or []
     try:
         LOG.info("ATTEMPTING TO LOAD SKILL: " + skill_descriptor["name"] +
-                    " with ID " + str(skill_id))
+                 " with ID " + str(skill_id))
         if skill_descriptor['name'] in BLACKLISTED_SKILLS:
             LOG.info("SKILL IS BLACKLISTED " + skill_descriptor["name"])
             return None
@@ -434,7 +430,7 @@ class MycroftSkill(object):
                 break
             else:
                 LOG.error('Could not enable ' + intent_name +
-                             ', it hasn\'t been registered.')
+                          ', it hasn\'t been registered.')
 
     def set_context(self, context, word=''):
         """
@@ -538,7 +534,7 @@ class MycroftSkill(object):
             self.stop()
         except:
             LOG.error("Failed to stop skill: {}".format(self.name),
-                         exc_info=True)
+                      exc_info=True)
 
     @abc.abstractmethod
     def stop(self):
@@ -568,7 +564,7 @@ class MycroftSkill(object):
             self.stop()
         except:
             LOG.error("Failed to stop skill: {}".format(self.name),
-                         exc_info=True)
+                      exc_info=True)
 
     def _schedule_event(self, handler, when, data=None, name=None,
                         repeat=None):

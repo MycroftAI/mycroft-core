@@ -14,20 +14,16 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
+import re
 from abc import ABCMeta, abstractmethod
-
+from requests import post
 from speech_recognition import Recognizer
 
 from mycroft.api import STTApi
 from mycroft.configuration import ConfigurationManager
 from mycroft.util.log import LOG
 
-import re
-
-from requests import post
-
 __author__ = "jdorleans"
-
 
 
 class STT(object):

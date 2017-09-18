@@ -14,16 +14,13 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
 import tornado.ioloop as ioloop
 import tornado.web as web
-import tornado.autoreload as autoreload
 
 from mycroft.configuration import ConfigurationManager
+from mycroft.lock import Lock  # creates/supports PID locking file
 from mycroft.messagebus.service.ws import WebsocketEventHandler
 from mycroft.util import validate_param
-from mycroft.lock import Lock  # creates/supports PID locking file
-
 
 __author__ = 'seanfitz', 'jdorleans'
 

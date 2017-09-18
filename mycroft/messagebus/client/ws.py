@@ -14,8 +14,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
-
 import json
 import time
 from multiprocessing.pool import ThreadPool
@@ -29,7 +27,6 @@ from mycroft.util import validate_param
 from mycroft.util.log import LOG
 
 __author__ = 'seanfitz', 'jdorleans'
-
 
 
 class WebsocketClient(object):

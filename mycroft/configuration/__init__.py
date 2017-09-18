@@ -16,13 +16,14 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
+
 import inflection
 import re
 from genericpath import exists, isfile
 from os.path import join, dirname, expanduser
 
-from mycroft.util.log import LOG
 from mycroft.util.json_helper import load_commented_json
+from mycroft.util.log import LOG
 
 __author__ = 'seanfitz, jdorleans'
 
@@ -157,7 +158,8 @@ class RemoteConfiguration(object):
                 RemoteConfiguration.__load(config, setting)
                 RemoteConfiguration.__store_cache(setting)
             except Exception as e:
-                LOG.warning("Failed to fetch remote configuration: %s" % repr(e))
+                LOG.warning("Failed to fetch remote configuration: %s" %
+                            repr(e))
                 RemoteConfiguration.__load_cache(config)
 
         else:

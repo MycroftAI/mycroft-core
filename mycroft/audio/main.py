@@ -16,19 +16,19 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import imp
 import json
-from os.path import expanduser, exists, abspath, dirname, basename, isdir, join
-from os import listdir
 import sys
 import time
-import imp
-import subprocess
 
+from os import listdir
+from os.path import abspath, dirname, basename, isdir, join
+
+import mycroft.audio.speech as speech
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
-import mycroft.audio.speech as speech
 
 try:
     import pulsectl
@@ -90,7 +90,7 @@ def get_services(services_folder):
                     services.append(create_service_descriptor(name))
                 except:
                     LOG.error('Failed to create service from ' + name,
-                                 exc_info=True)
+                              exc_info=True)
         if (not isdir(location) or
                 not MainModule + ".py" in listdir(location)):
             continue
@@ -98,7 +98,7 @@ def get_services(services_folder):
             services.append(create_service_descriptor(location))
         except:
             LOG.error('Failed to create service from ' + name,
-                         exc_info=True)
+                      exc_info=True)
     return sorted(services, key=lambda p: p.get('name'))
 
 
@@ -125,7 +125,7 @@ def load_services(config, ws, path=None):
                                              *descriptor["info"])
         except:
             LOG.error('Failed to import module ' + descriptor['name'],
-                         exc_info=True)
+                      exc_info=True)
         if (hasattr(service_module, 'autodetect') and
                 callable(service_module.autodetect)):
             try:
@@ -133,14 +133,14 @@ def load_services(config, ws, path=None):
                 service += s
             except:
                 LOG.error('Failed to autodetect...',
-                             exc_info=True)
+                          exc_info=True)
         if (hasattr(service_module, 'load_service')):
             try:
                 s = service_module.load_service(config, ws)
                 service += s
             except:
                 LOG.error('Failed to load service...',
-                             exc_info=True)
+                          exc_info=True)
 
     return service
 

@@ -15,9 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 from subprocess import call
+from threading import Event
 from time import time as get_time, sleep
 
-from threading import Event
 from os.path import expanduser, isfile
 from pkg_resources import get_distribution
 
@@ -53,7 +53,7 @@ class PadatiousService(FallbackSkill):
         LOG.warning('VERSION: ' + ver)
         if ver != PADATIOUS_VERSION:
             LOG.warning('Using Padatious v' + ver + '. Please re-run ' +
-                           'dev_setup.sh to install ' + PADATIOUS_VERSION)
+                        'dev_setup.sh to install ' + PADATIOUS_VERSION)
 
         self.container = IntentContainer(intent_cache)
 
@@ -82,7 +82,7 @@ class PadatiousService(FallbackSkill):
 
     def register_intent(self, message):
         LOG.debug('Registering Padatious intent: ' +
-                     message.data['intent_name'])
+                  message.data['intent_name'])
 
         file_name = message.data['file_name']
         intent_name = message.data['intent_name']

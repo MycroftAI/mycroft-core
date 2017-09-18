@@ -1,13 +1,12 @@
-from mycroft.messagebus.message import Message
-from mycroft.util.log import LOG
-
-from threading import Thread
-from Queue import Queue
-import time
 import json
+import time
+from Queue import Queue
+from threading import Thread
+
 from os.path import isfile
 
-
+from mycroft.messagebus.message import Message
+from mycroft.util.log import LOG
 
 
 class EventScheduler(Thread):

@@ -1,6 +1,7 @@
 from threading import Thread
-import requests
+
 import os
+import requests
 from os.path import exists
 
 _running_downloads = {}
@@ -35,6 +36,7 @@ class Downloader(Thread):
             complet_action: Function to run when download is complete.
                             `func(dest)`
     """
+
     def __init__(self, url, dest, complete_action=None):
         super(Downloader, self).__init__()
         self.url = url

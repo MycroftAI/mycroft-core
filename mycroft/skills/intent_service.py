@@ -16,19 +16,18 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import time
+
+from adapt.context import ContextManagerFrame
 from adapt.engine import IntentDeterminationEngine
 
+from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import open_intent_envelope
 from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
-from mycroft.configuration import ConfigurationManager
-
-from adapt.context import ContextManagerFrame
-import time
 
 __author__ = 'seanfitz'
-
 
 
 class ContextManager(object):
@@ -100,7 +99,7 @@ class ContextManager(object):
                               relevant_frames[i].entities]
             for entity in frame_entities:
                 entity['confidence'] = entity.get('confidence', 1.0) \
-                                       / (2.0 + i)
+                    / (2.0 + i)
             context += frame_entities
 
         result = []

@@ -1,6 +1,7 @@
-import requests
-from copy import copy
 import json
+from copy import copy
+
+import requests
 
 MOPIDY_API = '/mopidy/rpc'
 

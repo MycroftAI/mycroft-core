@@ -44,10 +44,12 @@ class LOG:
     @classmethod
     def init(cls):
         sys_config = '/etc/mycroft/mycroft.conf'
-        cls.level = logging.getLevelName(load_commented_json(sys_config)['log_level']
-                                         if isfile(sys_config) else 'DEBUG')
+        level_name = load_commented_json(sys_config)['log_level'] \
+            if isfile(sys_config) else 'DEBUG'
+        cls.level = logging.getLevelName(level_name)
 
-        fmt = '%(asctime)s.%(msecs)03d - %(name)s - %(levelname)s - %(message)s'
+        fmt = '%(asctime)s.%(msecs)03d - ' \
+              '%(name)s - %(levelname)s - %(message)s'
         datefmt = '%H:%M:%S'
         formatter = logging.Formatter(fmt, datefmt)
         cls.ch = logging.StreamHandler(sys.stdout)
@@ -87,7 +89,8 @@ class LOG:
             # [3] - function
             # ...
             record = stack[2]
-            name = inspect.getmodule(record[0]).__name__ + ':' + record[3] + ':' + str(record[2])
+            module_name = inspect.getmodule(record[0]).__name__
+            name = module_name + ':' + record[3] + ':' + str(record[2])
         func(cls.create_logger(name), *args, **kwargs)
 
     @classmethod

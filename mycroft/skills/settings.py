@@ -29,11 +29,12 @@
 """
 
 import json
-import sys
 from threading import Timer
-from os.path import isfile, join, exists, expanduser
-from mycroft.util.log import LOG
+
+from os.path import isfile, join
+
 from mycroft.api import DeviceApi
+from mycroft.util.log import LOG
 
 SKILLS_DIR = "/opt/mycroft/skills"
 
@@ -48,6 +49,7 @@ class SkillSettings(dict):
         Args:
             settings_file (str): Path to storage file
     """
+
     def __init__(self, directory):
         super(SkillSettings, self).__init__()
         self.api = DeviceApi()

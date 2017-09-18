@@ -16,11 +16,13 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import pystache
-from io import open
-import os
 import random
-from mycroft.util import log, resolve_resource_file
+from io import open
+
+import os
+import pystache
+
+from mycroft.util import resolve_resource_file
 from mycroft.util.log import LOG
 
 __author__ = 'seanfitz'
@@ -34,6 +36,7 @@ class MustacheDialogRenderer(object):
     """
     A dialog template renderer based on the mustache templating language.
     """
+
     def __init__(self):
         self.templates = {}
 
@@ -84,6 +87,7 @@ class DialogLoader(object):
     """
     Loads a collection of dialog files into a renderer implementation.
     """
+
     def __init__(self, renderer_factory=MustacheDialogRenderer):
         self.__renderer = renderer_factory()
 
@@ -130,7 +134,7 @@ def get(phrase, lang=None, context=None):
         from mycroft.configuration import ConfigurationManager
         lang = ConfigurationManager.instance().get("lang")
 
-    filename = "text/"+lang.lower()+"/"+phrase+".dialog"
+    filename = "text/" + lang.lower() + "/" + phrase + ".dialog"
     template = resolve_resource_file(filename)
     if not template:
         LOG.debug("Resource file not found: " + filename)
