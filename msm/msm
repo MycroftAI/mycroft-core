@@ -53,7 +53,7 @@ DEFAULT_SKILLS="skill-alarm skill-audio-record skill-configuration "\
 "skill-hello-world skill-media skill-npr-news skill-naptime skill-pairing "\
 "skill-personal skill-playback-control skill-reminder skill-installer "\
 "skill-singing skill-speak skill-spelling skill-stop skill-stock "\
-"skill-volume skill-weather skill-wiki fallback-wolfram-alpha "\
+"skill-volume skill-weather skill-wiki "\
 "fallback-aiml skill-mark1-demo "
 
 
@@ -110,10 +110,10 @@ function remove() {
   echo "Searching for '$str'..."
 
   cd "${mycroft_skill_folder}"
-  
+
   # NOTE: Using the same process that was used in the install.
   # So you can install and remove with partial names.
-  
+
   # Search for the given word(s) as the submodule
   skills=$(echo "${LIST_CACHE}" | grep -n 'submodule' | sed 's/[[:space:]]//g' | sed 's/\[submodule"//g' | sed 's/"\]//g')
 
@@ -156,7 +156,7 @@ function remove() {
   if [[ -d "${mycroft_skill_folder}/${name}" ]] ; then
      # TODO: Build mechanism for removing all requirements.txt
      # that are no longer used (e.g. via a master Mycroft list).
-     
+
      # Delete the skill folder
      echo -n "Removing '${name}'..."
      rm -rf "${name}"
@@ -197,7 +197,7 @@ function install() {
   else
       # Search for the given word(s) as the submodule
       skills=$(echo "${LIST_CACHE}" | grep -n 'submodule' | sed 's/[[:space:]]//g' | sed 's/\[submodule"//g' | sed 's/"\]//g')
-      
+
       # Test for exact name match
       exact_match=$(echo "$skills" | grep -i ".*:${str}$")
       if [[ ! -z "${exact_match}" ]]; then
@@ -254,9 +254,14 @@ function install() {
       return 102
     fi
     if [[ "${picroft_mk1}" == "true" ]] ; then
-      if ! sudo chown -R mycroft:mycroft "${mycroft_skill_folder}/${name}" ; then
-        echo "ERROR: Unable to chown install directory ${name}!"
-        return 123
+      # Verify skill folder is accessible to the 'mycroft' user
+      owner=$( stat -c %U "${mycroft_skill_folder}/${name}" )
+      group=$( stat -c %G "${mycroft_skill_folder}/${name}" )
+      if [[ "${group}" != "mycroft" ]] || [[ "${owner}" != "mycroft" ]] ; then
+         if ! sudo chown -R mycroft:mycroft "${mycroft_skill_folder}/${name}" ; then
+           echo "ERROR: Unable to chown install directory ${name}!"
+           return 123
+         fi
       fi
     fi
     if [[ -f "requirements.txt" ]]; then
@@ -356,7 +361,7 @@ case ${OPT} in
              echo "${script}: error ${exit_code}"
              exit ${exit_code}
          fi
-        
+
          for str in "$@"
          do
             install $str
@@ -382,7 +387,7 @@ case ${OPT} in
              echo "${script}: error ${exit_code}"
              exit ${exit_code}
          fi
-         
+
          for str in "$@"
          do
             remove $str
@@ -430,7 +435,7 @@ case ${OPT} in
          echo "${script}: error ${exit_code}"
          exit ${exit_code}
       fi
-      
+
       for name in ${DEFAULT_SKILLS}
       do
          install $name
@@ -460,7 +465,7 @@ case ${OPT} in
             echo "${script}: error ${exit_code}"
             exit ${exit_code}
          fi
-         
+
          res=""
          for str in "$@"
          do
