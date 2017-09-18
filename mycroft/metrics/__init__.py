@@ -24,10 +24,9 @@ import requests
 
 from mycroft.configuration import ConfigurationManager
 from mycroft.session import SessionManager
-from mycroft.util.log import getLogger
+from mycroft.util.log import LOG
 from mycroft.util.setup_base import get_version
 
-LOG = getLogger("Metrics")
 
 config = ConfigurationManager.get().get('server')
 

@@ -35,14 +35,13 @@ from mycroft.messagebus.message import Message
 from mycroft.util import play_wav, create_signal, connected, \
     wait_while_speaking
 from mycroft.util.audio_test import record
-from mycroft.util.log import getLogger
+from mycroft.util.log import LOG
 from mycroft.client.enclosure.display_manager import \
     initiate_display_manager_ws
 from mycroft.api import is_paired, has_been_paired
 
 __author__ = 'aatchison', 'jdorleans', 'iward'
 
-LOG = getLogger("EnclosureClient")
 
 
 class EnclosureReader(Thread):

@@ -24,12 +24,11 @@ from pkg_resources import get_distribution
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import FallbackSkill
-from mycroft.util.log import getLogger
+from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
 
 __author__ = 'matthewscholefield'
 
-logger = getLogger(__name__)
 
 PADATIOUS_VERSION = '0.2.2'  # Also update in requirements.txt
 
@@ -43,7 +42,7 @@ class PadatiousService(FallbackSkill):
         try:
             from padatious import IntentContainer
         except ImportError:
-            logger.error('Padatious not installed. Please re-run dev_setup.sh')
+            LOG.error('Padatious not installed. Please re-run dev_setup.sh')
             try:
                 call(['notify-send', 'Padatious not installed',
                       'Please run build_host_setup and dev_setup again'])
@@ -51,9 +50,9 @@ class PadatiousService(FallbackSkill):
                 pass
             return
         ver = get_distribution('padatious').version
-        logger.warning('VERSION: ' + ver)
+        LOG.warning('VERSION: ' + ver)
         if ver != PADATIOUS_VERSION:
-            logger.warning('Using Padatious v' + ver + '. Please re-run ' +
+            LOG.warning('Using Padatious v' + ver + '. Please re-run ' +
                            'dev_setup.sh to install ' + PADATIOUS_VERSION)
 
         self.container = IntentContainer(intent_cache)
@@ -76,13 +75,13 @@ class PadatiousService(FallbackSkill):
             self.train_time = -1.0
 
             self.finished_training_event.clear()
-            logger.info('Training...')
+            LOG.info('Training...')
             self.container.train(print_updates=False)
-            logger.info('Training complete.')
+            LOG.info('Training complete.')
             self.finished_training_event.set()
 
     def register_intent(self, message):
-        logger.debug('Registering Padatious intent: ' +
+        LOG.debug('Registering Padatious intent: ' +
                      message.data['intent_name'])
 
         file_name = message.data['file_name']
@@ -96,12 +95,12 @@ class PadatiousService(FallbackSkill):
 
     def handle_fallback(self, message):
         utt = message.data.get('utterance')
-        logger.debug("Padatious fallback attempt: " + utt)
+        LOG.debug("Padatious fallback attempt: " + utt)
 
         utt = normalize(utt, message.data.get('lang', 'en-us'))
 
         if not self.finished_training_event.is_set():
-            logger.debug('Waiting for training to finish...')
+            LOG.debug('Waiting for training to finish...')
             self.finished_training_event.wait()
 
         data = self.container.calc_intent(utt)

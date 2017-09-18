@@ -14,10 +14,9 @@ from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.message import Message
 from adapt.intent import IntentBuilder
 
-from mycroft.util.log import getLogger
+from mycroft.util.log import LOG
 
 __author__ = 'eward'
-logger = getLogger(__name__)
 
 
 class MockEmitter(object):

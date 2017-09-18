@@ -26,11 +26,10 @@ from adapt.intent import IntentBuilder
 
 from mycroft.skills import time_rules
 from mycroft.skills.core import MycroftSkill
-from mycroft.util.log import getLogger
+from mycroft.util.log import LOG
 
 __author__ = 'jdorleans'
 
-logger = getLogger(__name__)
 
 
 class ScheduledSkill(MycroftSkill):
@@ -152,7 +151,7 @@ class ScheduledCRUDSkill(ScheduledSkill):
         self.data = {}
         self.repeat_data = {}
         if basedir:
-            logger.debug('basedir argument is no longer required and is ' +
+            LOG.debug('basedir argument is no longer required and is ' +
                          'depreciated.')
             self.basedir = basedir
 

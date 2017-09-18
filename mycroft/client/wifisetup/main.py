@@ -49,11 +49,10 @@ from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util import connected, wait_while_speaking, is_speaking, \
     stop_speaking
-from mycroft.util.log import getLogger
+from mycroft.util.log import LOG
 
 __author__ = 'aatchison and penrods'
 
-LOG = getLogger("WiFiClient")
 
 SCRIPT_DIR = dirname(realpath(__file__))
 
@@ -480,7 +479,7 @@ class WiFi:
             connected = self.is_connected(ssid)
 
             if connected:
-                LOG.warn("Mycroft is already connected to %s" % ssid)
+                LOG.warning("Mycroft is already connected to %s" % ssid)
             else:
                 self.disconnect()
                 LOG.info("Connecting to: %s" % ssid)

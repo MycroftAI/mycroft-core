@@ -1,5 +1,5 @@
 from mycroft.messagebus.message import Message
-from mycroft.util.log import getLogger
+from mycroft.util.log import LOG
 
 from threading import Thread
 from Queue import Queue
@@ -8,7 +8,6 @@ import json
 from os.path import isfile
 
 
-logger = getLogger(__name__)
 
 
 class EventScheduler(Thread):
@@ -41,7 +40,7 @@ class EventScheduler(Thread):
                 try:
                     json_data = json.load(f)
                 except Exception as e:
-                    logger.error(e)
+                    LOG.error(e)
             current_time = time.time()
             for key in json_data:
                 event_list = json_data[key]
@@ -132,9 +131,9 @@ class EventScheduler(Thread):
         if event and sched_time:
             self.schedule_event(event, sched_time, repeat, data)
         elif not event:
-            logger.error('Scheduled event name not provided')
+            LOG.error('Scheduled event name not provided')
         else:
-            logger.error('Scheduled event time not provided')
+            LOG.error('Scheduled event time not provided')
 
     def remove_event(self, event):
         """ Remove event using thread safe queue. """

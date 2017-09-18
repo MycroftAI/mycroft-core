@@ -2,11 +2,10 @@ from datetime import datetime, timedelta
 import unittest
 
 from mycroft.skills.scheduled_skills import ScheduledSkill
-from mycroft.util.log import getLogger
+from mycroft.util.log import LOG
 
 __author__ = 'eward'
 
-logger = getLogger(__name__)
 
 
 class ScheduledSkillTest(unittest.TestCase):

@@ -21,10 +21,9 @@ from threading import Lock
 from uuid import uuid4
 
 from mycroft.configuration import ConfigurationManager
-from mycroft.util import log
+from mycroft.util.log import LOG
 
 __author__ = 'seanfitz'
-logger = log.getLogger(__name__)
 config = ConfigurationManager.get().get('session')
 
 
@@ -77,7 +76,7 @@ class SessionManager(object):
                     SessionManager.__current_session.expired()):
                 SessionManager.__current_session = Session(
                     str(uuid4()), expiration_seconds=config.get('ttl', 180))
-                logger.info(
+                LOG.info(
                     "New Session Start: " +
                     SessionManager.__current_session.session_id)
             return SessionManager.__current_session

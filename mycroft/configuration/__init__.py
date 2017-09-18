@@ -21,12 +21,11 @@ import re
 from genericpath import exists, isfile
 from os.path import join, dirname, expanduser
 
-from mycroft.util.log import getLogger
+from mycroft.util.log import LOG
 from mycroft.util.json_helper import load_commented_json
 
 __author__ = 'seanfitz, jdorleans'
 
-LOG = getLogger(__name__)
 
 DEFAULT_CONFIG = join(dirname(__file__), 'mycroft.conf')
 SYSTEM_CONFIG = '/etc/mycroft/mycroft.conf'
@@ -158,7 +157,7 @@ class RemoteConfiguration(object):
                 RemoteConfiguration.__load(config, setting)
                 RemoteConfiguration.__store_cache(setting)
             except Exception as e:
-                LOG.warn("Failed to fetch remote configuration: %s" % repr(e))
+                LOG.warning("Failed to fetch remote configuration: %s" % repr(e))
                 RemoteConfiguration.__load_cache(config)
 
         else:

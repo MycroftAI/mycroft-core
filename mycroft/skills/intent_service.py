@@ -20,7 +20,7 @@ from adapt.engine import IntentDeterminationEngine
 
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import open_intent_envelope
-from mycroft.util.log import getLogger
+from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
 from mycroft.configuration import ConfigurationManager
 
@@ -29,7 +29,6 @@ import time
 
 __author__ = 'seanfitz'
 
-logger = getLogger(__name__)
 
 
 class ContextManager(object):
@@ -240,7 +239,7 @@ class IntentService(object):
                 # TODO - Should Adapt handle this?
                 best_intent['utterance'] = utterance
             except StopIteration, e:
-                logger.exception(e)
+                LOG.exception(e)
                 continue
 
         if best_intent and best_intent.get('confidence', 0.0) > 0.0:
@@ -270,10 +269,9 @@ class IntentService(object):
                 start_concept, end_concept, alias_of=alias_of)
 
     def handle_register_intent(self, message):
-        print "registring " + str(message.data)
+        print "Registering: " + str(message.data)
         intent = open_intent_envelope(message)
         self.engine.register_intent_parser(intent)
-        print "Done"
 
     def handle_detach_intent(self, message):
         intent_name = message.data.get('intent_name')

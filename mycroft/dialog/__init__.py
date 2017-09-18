@@ -21,9 +21,9 @@ from io import open
 import os
 import random
 from mycroft.util import log, resolve_resource_file
+from mycroft.util.log import LOG
 
 __author__ = 'seanfitz'
-logger = log.getLogger(__name__)
 
 __doc__ = """
 
@@ -98,7 +98,7 @@ class DialogLoader(object):
             a loaded instance of a dialog renderer
         """
         if not os.path.exists(dialog_dir) or not os.path.isdir(dialog_dir):
-            logger.warn("No dialog found: " + dialog_dir)
+            LOG.warning("No dialog found: " + dialog_dir)
             return self.__renderer
 
         for f in sorted(
@@ -133,7 +133,7 @@ def get(phrase, lang=None, context=None):
     filename = "text/"+lang.lower()+"/"+phrase+".dialog"
     template = resolve_resource_file(filename)
     if not template:
-        logger.debug("Resource file not found: " + filename)
+        LOG.debug("Resource file not found: " + filename)
         return phrase
 
     stache = MustacheDialogRenderer()

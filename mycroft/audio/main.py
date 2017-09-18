@@ -27,7 +27,7 @@ import subprocess
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
-from mycroft.util.log import getLogger
+from mycroft.util.log import LOG
 import mycroft.audio.speech as speech
 
 try:
@@ -39,7 +39,6 @@ __author__ = 'forslund'
 
 MainModule = '__init__'
 sys.path.append(abspath(dirname(__file__)))
-logger = getLogger("Audio")
 
 ws = None
 
@@ -75,7 +74,7 @@ def get_services(services_folder):
         Returns:
             Sorted list of audio services.
     """
-    logger.info("Loading skills from " + services_folder)
+    LOG.info("Loading skills from " + services_folder)
     services = []
     possible_services = listdir(services_folder)
     for i in possible_services:
@@ -90,7 +89,7 @@ def get_services(services_folder):
                 try:
                     services.append(create_service_descriptor(name))
                 except:
-                    logger.error('Failed to create service from ' + name,
+                    LOG.error('Failed to create service from ' + name,
                                  exc_info=True)
         if (not isdir(location) or
                 not MainModule + ".py" in listdir(location)):
@@ -98,7 +97,7 @@ def get_services(services_folder):
         try:
             services.append(create_service_descriptor(location))
         except:
-            logger.error('Failed to create service from ' + name,
+            LOG.error('Failed to create service from ' + name,
                          exc_info=True)
     return sorted(services, key=lambda p: p.get('name'))
 
@@ -114,18 +113,18 @@ def load_services(config, ws, path=None):
         Returns:
             List of started services.
     """
-    logger.info("Loading services")
+    LOG.info("Loading services")
     if path is None:
         path = dirname(abspath(__file__)) + '/services/'
     service_directories = get_services(path)
     service = []
     for descriptor in service_directories:
-        logger.info('Loading ' + descriptor['name'])
+        LOG.info('Loading ' + descriptor['name'])
         try:
             service_module = imp.load_module(descriptor["name"] + MainModule,
                                              *descriptor["info"])
         except:
-            logger.error('Failed to import module ' + descriptor['name'],
+            LOG.error('Failed to import module ' + descriptor['name'],
                          exc_info=True)
         if (hasattr(service_module, 'autodetect') and
                 callable(service_module.autodetect)):
@@ -133,14 +132,14 @@ def load_services(config, ws, path=None):
                 s = service_module.autodetect(config, ws)
                 service += s
             except:
-                logger.error('Failed to autodetect...',
+                LOG.error('Failed to autodetect...',
                              exc_info=True)
         if (hasattr(service_module, 'load_service')):
             try:
                 s = service_module.load_service(config, ws)
                 service += s
             except:
-                logger.error('Failed to load service...',
+                LOG.error('Failed to load service...',
                              exc_info=True)
 
     return service
@@ -157,19 +156,19 @@ def load_services_callback():
 
     config = ConfigurationManager.get().get("Audio")
     service = load_services(config, ws)
-    logger.info(service)
+    LOG.info(service)
     default_name = config.get('default-backend', '')
-    logger.info('Finding default backend...')
+    LOG.info('Finding default backend...')
     for s in service:
-        logger.info('checking ' + s.name)
+        LOG.info('checking ' + s.name)
         if s.name == default_name:
             default = s
-            logger.info('Found ' + default.name)
+            LOG.info('Found ' + default.name)
             break
     else:
         default = None
-        logger.info('no default found')
-    logger.info('Default:' + str(default))
+        LOG.info('no default found')
+    LOG.info('Default:' + str(default))
 
     ws.on('mycroft.audio.service.play', _play)
     ws.on('mycroft.audio.service.pause', _pause)
@@ -244,11 +243,11 @@ def _stop(message=None):
             message: message bus message, not used but required
     """
     global current
-    logger.info('stopping all playing services')
+    LOG.info('stopping all playing services')
     if current:
         current.stop()
         current = None
-    logger.info('Stopped')
+    LOG.info('Stopped')
 
 
 def _lower_volume(message):
@@ -260,7 +259,7 @@ def _lower_volume(message):
     """
     global current
     global volume_is_low
-    logger.info('lowering volume')
+    LOG.info('lowering volume')
     if current:
         current.lower_volume()
         volume_is_low = True
@@ -268,7 +267,7 @@ def _lower_volume(message):
         if pulse_quiet:
             pulse_quiet()
     except Exception as e:
-        logger.error(e)
+        LOG.error(e)
 
 
 muted_sinks = []
@@ -330,12 +329,12 @@ def _restore_volume(message):
     """
     global current
     global volume_is_low
-    logger.info('maybe restoring volume')
+    LOG.info('maybe restoring volume')
     if current:
         volume_is_low = False
         time.sleep(2)
         if not volume_is_low:
-            logger.info('restoring volume')
+            LOG.info('restoring volume')
             current.restore_volume()
     if pulse_restore:
         pulse_restore()
@@ -352,31 +351,31 @@ def play(tracks, prefered_service):
                               the tracks.
     """
     global current
-    logger.info('play')
+    LOG.info('play')
     _stop()
     uri_type = tracks[0].split(':')[0]
-    logger.info('uri_type: ' + uri_type)
+    LOG.info('uri_type: ' + uri_type)
     # check if user requested a particular service
     if prefered_service and uri_type in prefered_service.supported_uris():
         service = prefered_service
     # check if default supports the uri
     elif default and uri_type in default.supported_uris():
-        logger.info("Using default backend")
-        logger.info(default.name)
+        LOG.info("Using default backend")
+        LOG.info(default.name)
         service = default
     else:  # Check if any other service can play the media
         for s in service:
-            logger.info(str(s))
+            LOG.info(str(s))
             if uri_type in s.supported_uris():
                 service = s
                 break
         else:
             return
-    logger.info('Clear list')
+    LOG.info('Clear list')
     service.clear_list()
-    logger.info('Add tracks' + str(tracks))
+    LOG.info('Add tracks' + str(tracks))
     service.add_list(tracks)
-    logger.info('Playing')
+    LOG.info('Playing')
     service.play()
     current = service
 
@@ -390,17 +389,17 @@ def _play(message):
             message: message bus message, not used but required
     """
     global service
-    logger.info('mycroft.audio.service.play')
-    logger.info(message.data['tracks'])
+    LOG.info('mycroft.audio.service.play')
+    LOG.info(message.data['tracks'])
 
     tracks = message.data['tracks']
 
     # Find if the user wants to use a specific backend
     for s in service:
-        logger.info(s.name)
+        LOG.info(s.name)
         if s.name in message.data['utterance']:
             prefered_service = s
-            logger.info(s.name + ' would be prefered')
+            LOG.info(s.name + ' would be prefered')
             break
     else:
         prefered_service = None
@@ -467,15 +466,15 @@ def main():
             message = json.dumps(_message)
         except:
             pass
-        logger.debug(message)
+        LOG.debug(message)
 
-    logger.info("Staring Audio Services")
+    LOG.info("Staring Audio Services")
     ws.on('message', echo)
     ws.once('open', load_services_callback)
     try:
         ws.run_forever()
     except KeyboardInterrupt, e:
-        logger.exception(e)
+        LOG.exception(e)
         speech.shutdown()
         sys.exit()
 

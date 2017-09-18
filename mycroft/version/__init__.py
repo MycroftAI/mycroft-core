@@ -18,7 +18,7 @@
 import json
 from genericpath import exists, isfile
 
-from mycroft.util.log import getLogger
+from mycroft.util.log import LOG
 
 __author__ = 'augustnmonteiro'
 
@@ -32,7 +32,6 @@ CORE_VERSION_BUILD = 20
 CORE_VERSION_STR = (str(CORE_VERSION_MAJOR) + "." +
                     str(CORE_VERSION_MINOR) + "." +
                     str(CORE_VERSION_BUILD))
-LOG = getLogger(__name__)
 
 
 class VersionManager(object):

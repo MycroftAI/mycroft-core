@@ -38,12 +38,11 @@ from threading import Thread, Lock                          # nopep8
 from mycroft.messagebus.client.ws import WebsocketClient    # nopep8
 from mycroft.messagebus.message import Message              # nopep8
 from mycroft.util import get_ipc_directory                  # nopep8
-from mycroft.util.log import getLogger                      # nopep8
+from mycroft.util.log import LOG                      # nopep8
 from mycroft.configuration import ConfigurationManager      # nopep8
 
 ws = None
 mutex = Lock()
-logger = getLogger("CLIClient")
 
 utterances = []
 chat = []   # chat history, oldest at the lowest index
@@ -855,7 +854,7 @@ def gui_main(stdscr):
         # User hit Ctrl+C to quit
         pass
     except KeyboardInterrupt, e:
-        logger.exception(e)
+        LOG.exception(e)
     finally:
         scr.erase()
         scr.refresh()
@@ -883,7 +882,7 @@ def simple_cli():
         # User hit Ctrl+C to quit
         print("")
     except KeyboardInterrupt, e:
-        logger.exception(e)
+        LOG.exception(e)
         event_thread.exit()
         sys.exit()
 

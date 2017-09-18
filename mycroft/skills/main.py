@@ -35,11 +35,10 @@ from mycroft.skills.intent_service import IntentService
 from mycroft.skills.padatious_service import PadatiousService
 from mycroft.skills.event_scheduler import EventScheduler
 from mycroft.util import connected
-from mycroft.util.log import getLogger
+from mycroft.util.log import LOG
 from mycroft.api import is_paired
 import mycroft.dialog
 
-logger = getLogger("Skills")
 
 __author__ = 'seanfitz'
 
@@ -82,17 +81,17 @@ def install_default_skills(speak=True):
             #     'utterance': mycroft.dialog.get("skills updated")}))
             pass
         elif not connected():
-            logger.error('msm failed, network connection is not available')
+            LOG.error('msm failed, network connection is not available')
             ws.emit(Message("speak", {
                 'utterance': mycroft.dialog.get("no network connection")}))
         elif res != 0:
-            logger.error('msm failed with error {}: {}'.format(res, output))
+            LOG.error('msm failed with error {}: {}'.format(res, output))
             ws.emit(Message("speak", {
                 'utterance': mycroft.dialog.get(
                     "sorry I couldn't install default skills")}))
 
     else:
-        logger.error("Unable to invoke Mycroft Skill Manager: " + MSM_BIN)
+        LOG.error("Unable to invoke Mycroft Skill Manager: " + MSM_BIN)
 
 
 def skills_manager(message):
@@ -106,7 +105,7 @@ def skills_manager(message):
         if skills_manager_timer is None:
             pass
         # Install default skills and look for updates via Github
-        logger.debug("==== Invoking Mycroft Skill Manager: " + MSM_BIN)
+        LOG.debug("==== Invoking Mycroft Skill Manager: " + MSM_BIN)
         install_default_skills(False)
 
     # Perform check again once and hour
@@ -288,14 +287,14 @@ class WatchSkills(Thread):
                         # checking if skill should be reloaded
                         if not skill["instance"].reload_skill:
                             continue
-                        logger.debug("Reloading Skill: " + skill_folder)
+                        LOG.debug("Reloading Skill: " + skill_folder)
                         # removing listeners and stopping threads
                         skill["instance"].shutdown()
 
                         # -2 since two local references that are known
                         refs = sys.getrefcount(skill["instance"]) - 2
                         if refs > 0:
-                            logger.warn(
+                            LOG.warning(
                                 "After shutdown of {} there are still "
                                 "{} references remaining. The skill "
                                 "won't be cleaned from memory."
@@ -353,7 +352,7 @@ def handle_converse_request(message):
             try:
                 instance = loaded_skills[skill]["instance"]
             except:
-                logger.error("converse requested but skill not loaded")
+                LOG.error("converse requested but skill not loaded")
                 ws.emit(Message("skill.converse.response", {
                     "skill_id": 0, "result": False}))
                 return
@@ -363,7 +362,7 @@ def handle_converse_request(message):
                     "skill_id": skill_id, "result": result}))
                 return
             except:
-                logger.error(
+                LOG.error(
                     "Converse method malformed for skill " + str(skill_id))
     ws.emit(Message("skill.converse.response",
                     {"skill_id": 0, "result": False}))
@@ -393,7 +392,7 @@ def main():
             message = json.dumps(_message)
         except:
             pass
-        logger.debug(message)
+        LOG('SKILLS').debug(message)
 
     ws.on('message', _echo)
     ws.on('skill.converse.request', handle_converse_request)

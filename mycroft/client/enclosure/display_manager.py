@@ -17,16 +17,12 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 from threading import Thread, Timer
 from mycroft.messagebus.client.ws import WebsocketClient
-from mycroft.configuration import ConfigurationManager
 from mycroft.util import get_ipc_directory
 import json
 import os
-from logging import getLogger
+from mycroft.util.log import LOG
 
 __author__ = 'connorpenrod', 'michaelnguyen'
-
-
-LOG = getLogger("Display Manager (mycroft.client.enclosure)")
 
 
 def _write_data(dictionary):

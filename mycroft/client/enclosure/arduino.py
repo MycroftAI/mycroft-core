@@ -16,11 +16,10 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from mycroft.util.log import getLogger
+from mycroft.util.log import LOG
 
 __author__ = 'jdorleans'
 
-LOGGER = getLogger(__name__)
 
 
 class EnclosureArduino:

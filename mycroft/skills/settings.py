@@ -32,10 +32,9 @@ import json
 import sys
 from threading import Timer
 from os.path import isfile, join, exists, expanduser
-from mycroft.util.log import getLogger
+from mycroft.util.log import LOG
 from mycroft.api import DeviceApi
 
-logger = getLogger(__name__)
 SKILLS_DIR = "/opt/mycroft/skills"
 
 
@@ -107,7 +106,7 @@ class SkillSettings(dict):
             if self._skill_exist_in_backend() is False:
                 response = self._put_metadata(self.settings_meta)
         except Exception as e:
-            logger.error(e)
+            LOG.error(e)
 
     def _poll_skill_settings(self):
         """
@@ -131,7 +130,7 @@ class SkillSettings(dict):
                 self.store()
 
             except Exception as e:
-                logger.error(e)
+                LOG.error(e)
 
             # poll backend every 60 seconds for new settings
             Timer(60, self._poll_skill_settings).start()
@@ -143,7 +142,7 @@ class SkillSettings(dict):
         try:
             return self.settings_meta["identifier"]
         except Exception as e:
-            logger.error(e)
+            LOG.error(e)
             return None
 
     def load_skill_settings(self):
@@ -159,7 +158,7 @@ class SkillSettings(dict):
                 except Exception as e:
                     # TODO: Show error on webUI.  Dev will have to fix
                     # metadata to be able to edit later.
-                    logger.error(e)
+                    LOG.error(e)
 
     def _get_settings(self):
         """

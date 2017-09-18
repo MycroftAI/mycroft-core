@@ -17,12 +17,11 @@
 
 import mycroft.client.enclosure.display_manager as DisplayManager
 from mycroft.messagebus.message import Message
-from mycroft.util.log import getLogger
+from mycroft.util.log import LOG
 from PIL import Image
 
 __author__ = 'jdorleans'
 
-LOGGER = getLogger(__name__)
 
 
 '''

@@ -26,11 +26,10 @@ from websocket import WebSocketApp
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.message import Message
 from mycroft.util import validate_param
-from mycroft.util.log import getLogger
+from mycroft.util.log import LOG
 
 __author__ = 'seanfitz', 'jdorleans'
 
-LOG = getLogger(__name__)
 
 
 class WebsocketClient(object):
@@ -75,7 +74,7 @@ class WebsocketClient(object):
             self.client.close()
         except Exception, e:
             LOG.error(repr(e))
-        LOG.warn("WS Client will reconnect in %d seconds." % self.retry)
+        LOG.warning("WS Client will reconnect in %d seconds." % self.retry)
         time.sleep(self.retry)
         self.retry = min(self.retry * 2, 60)
         self.client = self.create_client()
