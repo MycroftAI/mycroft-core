@@ -12,7 +12,6 @@ tornado==4.2.1
 websocket-client==0.32.0
 adapt-parser==0.3.0
 pyowm==2.6.1
-wolframalpha==3.0
 futures==3.0.3
 requests-futures==0.9.5
 astral==1.4
