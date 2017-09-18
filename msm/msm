@@ -53,7 +53,7 @@ DEFAULT_SKILLS="skill-alarm skill-audio-record skill-configuration "\
 "skill-hello-world skill-media skill-npr-news skill-naptime skill-pairing "\
 "skill-personal skill-playback-control skill-reminder skill-installer "\
 "skill-singing skill-speak skill-spelling skill-stop skill-stock "\
-"skill-volume skill-weather skill-wiki fallback-wolfram-alpha "\
+"skill-volume skill-weather skill-wiki "\
 "fallback-aiml skill-mark1-demo "
 
 
