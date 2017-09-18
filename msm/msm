@@ -138,9 +138,9 @@ function remove() {
     # due to ambiguity.
     #
     echo "Multiple matches for '${str}', be more specific."
-    echo "----------------------------------------------------------------------"
+    echo "------------------------------------------------------------"
     echo "$skill" | sed 's/.*://g' | sort
-    echo "----------------------------------------------------------------------"
+    echo "------------------------------------------------------------"
     return 251
   else
     if [[ -z "${git_line}" ]]; then
@@ -219,9 +219,9 @@ function install() {
         # The str matches multiple skill repos, don't install
         # due to ambiguity.
         echo "Multiple matches for '${str}', be more specfic."
-        echo "----------------------------------------------------------------------"
+        echo "------------------------------------------------------------"
         echo "$skill" | sed 's/.*://g' | sort
-        echo "----------------------------------------------------------------------"
+        echo "------------------------------------------------------------"
         return 201
       else
         if [[ -z "${git_line}" ]]; then
@@ -253,7 +253,7 @@ function install() {
       echo "ERROR: Unable to access directory ${name}!"
       return 102
     fi
-    if [[ "${picroft}" == "true" ]] ; then
+    if [[ "${picroft_mk1t}" == "true" ]] ; then
       if ! sudo chown -R mycroft:mycroft "${mycroft_skill_folder}/${name}" ; then
         echo "ERROR: Unable to chown install directory ${name}!"
         return 123
@@ -261,7 +261,7 @@ function install() {
     fi
     if [[ -f "requirements.txt" ]]; then
       echo "  Installing requirements..."
-      if [[ "${picroft}" == "false" ]]; then
+      if [[ "${picroft_mk1t}" == "false" ]]; then
         if [[ "${VIRTUAL_ENV}" =~ .mycroft$ ]] ; then
           if ! pip install -r requirements.txt ; then
             echo "ERROR: Unable to install requirements for skill '${name}'"
@@ -275,7 +275,7 @@ function install() {
               return 121
             fi
           else
-            echo "ERROR: Unable to activate Mycroft virtualenv, requirements not installed."
+            echo "ERROR: Unable to activate 'mycroft' virtualenv, requirements not installed."
             return 120
           fi
         fi
