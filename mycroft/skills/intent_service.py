@@ -348,7 +348,7 @@ class IntentService(object):
         self.context_manager.clear_context()
 
 
-class IntentParser:
+class IntentParser(object):
     def __init__(self, emitter, time_out=5):
         self.emitter = emitter
         self.waiting = False
@@ -356,7 +356,8 @@ class IntentParser:
         self.skill = None
         self.skills = None
         self.emitter.on("intent_response", self.handle_receive_intent)
-        self.emitter.on("intent_to_skill_response", self.handle_receive_skills)
+        self.emitter.on("intent_to_skill_response",
+                        self.handle_receive_skills)
         self.time_out = time_out
 
     def wait(self, time_out):
