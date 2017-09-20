@@ -48,7 +48,7 @@ function help() {
 
 # These skills are automatically installed on all mycroft-core
 # installations.
-DEFAULT_SKILLS="skill-alarm skill-audio-record skill-configuration "\
+default_skills="skill-alarm skill-audio-record skill-configuration "\
 "skill-date-time skill-desktop-launcher skill-ip skill-joke "\
 "skill-hello-world skill-media skill-npr-news skill-naptime skill-pairing "\
 "skill-personal skill-playback-control skill-reminder skill-installer "\
@@ -67,7 +67,7 @@ fi
 
 # Determine if on picroft/mk1?
 picroft_mk1="false"
-vwrap="true"
+vwrap="false"
 if [[ "$(hostname)" == "picroft" ]] || [[ "$(hostname)" =~ "mark_1" ]] && [[ -x /usr/local/bin/mycroft-wifi-setup-client ]] ; then
   picroft_mk1="true"
 else
@@ -76,29 +76,30 @@ else
   else
     if locate virtualenvwrapper ; then
       if ! source $(locate virtualenvwrapper) ; then
-        echo "WARNING: Unable to locate virtualenvwrapper.sh, not able to install skills!"
-        vwrap="false"
+        echo "INFO: Unable to locate virtualenvwrapper.sh."
+      else 
+        vwrap="true"
       fi
     fi
   fi
 fi
 
 # Cache to only retrieve list once per MSM invocation
-LIST_CACHE=''
+list_cache=''
 
 function get_skill_list() {
-  if ! [[ ${LIST_CACHE} ]] ; then
+  if ! [[ ${list_cache} ]] ; then
     echo "1" >> ~/count.txt
     if hash curl ; then
       # retrieve using curl
-      LIST_CACHE=$( curl -s "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules" )
-      if ! [[ "${LIST_CACHE}" ]] ; then
+      list_cache=$( curl -s "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules" )
+      if ! [[ "${list_cache}" ]] ; then
          return 111
       fi
     else
       # retrieve using wget
-      LIST_CACHE=$( wget -qO- "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules" )
-      if ! [[ "${LIST_CACHE}" ]] ; then
+      list_cache=$( wget -qO- "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules" )
+      if ! [[ "${list_cache}" ]] ; then
          return 112
       fi
     fi
@@ -115,7 +116,7 @@ function remove() {
   # So you can install and remove with partial names.
 
   # Search for the given word(s) as the submodule
-  skills=$(echo "${LIST_CACHE}" | grep -n 'submodule' | sed 's/[[:space:]]//g' | sed 's/\[submodule"//g' | sed 's/"\]//g')
+  skills=$(echo "${list_cache}" | grep -n 'submodule' | sed 's/[[:space:]]//g' | sed 's/\[submodule"//g' | sed 's/"\]//g')
 
   # Test for exact name match
   exact_match=$(echo "$skills" | grep -i ".*:${str}$")
@@ -148,7 +149,7 @@ function remove() {
       return 252
     fi
     repo_line=$(($git_line + 2))
-    repo=$(echo "${LIST_CACHE}" | sed -n $repo_line'{p;q;}' | sed 's/[[:space:]]//g' | sed 's/[[:space:]]//g' | sed 's/url=//g')
+    repo=$(echo "${list_cache}" | sed -n $repo_line'{p;q;}' | sed 's/[[:space:]]//g' | sed 's/[[:space:]]//g' | sed 's/url=//g')
   fi
 
   git_name=$(echo "${repo}" | sed 's/.*\///')
@@ -177,16 +178,10 @@ function remove() {
 function install() {
   # This could be either a string or a URL
   str=$*
-  if [[ "${INSTALLING_DEFAULTS}" == "false" ]] ; then
+  if [[ "${installing_defaults}" == "false" ]] ; then
      echo "Searching for for '$str'..."
   else
      echo -n "Searching for for '$str'..."
-  fi
-
-  # TODO: Allow skipping virtualwrapper with an option?
-  if [[ "$vwrap" = "false" ]] ; then
-    echo "ERROR:  Missing virtualwrapper, cowardly refusing to install skills"
-    return 5
   fi
 
   cd "${mycroft_skill_folder}"
@@ -196,7 +191,7 @@ function install() {
       repo="${str}"
   else
       # Search for the given word(s) as the submodule
-      skills=$(echo "${LIST_CACHE}" | grep -n 'submodule' | sed 's/[[:space:]]//g' | sed 's/\[submodule"//g' | sed 's/"\]//g')
+      skills=$(echo "${list_cache}" | grep -n 'submodule' | sed 's/[[:space:]]//g' | sed 's/\[submodule"//g' | sed 's/"\]//g')
 
       # Test for exact name match
       exact_match=$(echo "$skills" | grep -i ".*:${str}$")
@@ -229,7 +224,7 @@ function install() {
           return 202
         fi
         repo_line=$(($git_line + 2))
-        repo=$(echo "${LIST_CACHE}" | sed -n $repo_line'{p;q;}' | sed 's/[[:space:]]//g' | sed 's/[[:space:]]//g' | sed 's/url=//g')
+        repo=$(echo "${list_cache}" | sed -n $repo_line'{p;q;}' | sed 's/[[:space:]]//g' | sed 's/[[:space:]]//g' | sed 's/url=//g')
       fi
     fi
 
@@ -237,7 +232,7 @@ function install() {
     name=$(echo "$git_name" | sed 's/.git//')
     if [[ -d "${mycroft_skill_folder}/${name}" ]] ; then
       # Don't show message when verify default skills
-      if [[ "${INSTALLING_DEFAULTS}" == "false" ]] ; then
+      if [[ "${installing_defaults}" == "false" ]] ; then
          echo "Skill already installed.  Perhaps you meant to use update?"
       else
          echo "exists"
@@ -273,15 +268,9 @@ function install() {
             return 121
           fi
         else
-          if workon mycroft ; then
-            if ! pip install -r requirements.txt ; then
-              echo "ERROR: Unable to install requirements for skill '${name}'"
-              deactivate mycroft
-              return 121
-            fi
-          else
-            echo "ERROR: Unable to activate 'mycroft' virtualenv, requirements not installed."
-            return 120
+          if ! pip install -r requirements.txt ; then
+            echo "ERROR: Unable to install requirements for skill '${name}'"
+            return 121
           fi
         fi
       else
@@ -298,7 +287,7 @@ function install() {
 
 function search() {
   # Find the search string among the skills in the Skill repo
-  search_list=$(echo "${LIST_CACHE}" | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g')
+  search_list=$(echo "${list_cache}" | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g')
   search_string="$*"
   shift
   while read -r matches; do
@@ -319,23 +308,23 @@ function update() {
     # Go in to all folders that are git checkouts
     if git -C "$d" rev-parse --git-dir > /dev/null 2>&1; then
       cd "${d}"
-      UPSTREAM=${1:-'@{u}'}
-      LOCAL=$(git rev-parse @)
-      REMOTE=$(git rev-parse "$UPSTREAM")
-      BASE=$(git merge-base @ "$UPSTREAM")
+      upstream=${1:-'@{u}'}
+      local-branch=$(git rev-parse @)
+      remote-branch=$(git rev-parse "$upstream")
+      base=$(git merge-base @ "$upstream")
 
       # Force ignoring the generated .pyc files
       if ! grep -q '.pyc'$ .git/info/exclude; then
         echo "*.pyc" >> .git/info/exclude
       fi
 
-      BRANCH="$(git symbolic-ref HEAD 2>/dev/null)"
-      BRANCH="${BRANCH##refs/heads/}"
+      branchname="$(git symbolic-ref HEAD 2>/dev/null)"
+      branchname="${branchname##refs/heads/}"
 
       # Only update checkouts that have not been modified at all
       if [[ (-z $(git status --porcelain --untracked-files=no)) &&  # No Modified files
-            !($LOCAL != $REMOTE && $REMOTE = $BASE) &&  # No new commits
-            "$BRANCH" = "master" ]]  # On master branch
+             !(${local-branch} != ${remote-branch} && ${remote-branch} = ${base}) &&  # No new commits
+            "${branchname}" = "master" ]]  # On master branch
       then
         echo "Updating ${d}..."
         echo -n "  "
@@ -348,6 +337,14 @@ function update() {
     fi
   done
 }
+
+if [[ ${vwrap} -eq 'true' ]] ; then
+  if ! workon mycroft ; then
+    echo "ERROR: unable to start virtualenv!"
+    exit 120
+  fi
+fi
+
 
 OPT=$1
 shift
@@ -412,7 +409,7 @@ case ${OPT} in
           echo "${script}: error ${exit_code}"
           exit ${exit_code}
       fi
-      echo "${LIST_CACHE}" | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g' | sort
+      echo "${list_cache}" | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g' | sort
       exit_code=$?
       ;;
   "update")
@@ -428,7 +425,7 @@ case ${OPT} in
       ;;
   "default")
       echo "=== Checking for default skills"
-      INSTALLING_DEFAULTS="true"
+      installing_defaults="true"
       get_skill_list
       exit_code=$?
       if [[ ${exit_code} -gt 0 ]] ; then
@@ -436,7 +433,7 @@ case ${OPT} in
          exit ${exit_code}
       fi
 
-      for name in ${DEFAULT_SKILLS}
+      for name in ${default_skills}
       do
          install $name
          rc=$?
@@ -486,6 +483,9 @@ case ${OPT} in
       ;;
 esac
 
+if [[ ${vwrap} -eq 'true' ]] ; then
+  deactivate
+fi
 
 if [[ ${exit_code} -gt 0 ]] ; then
    echo "${script}: error ${exit_code}"
