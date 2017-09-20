@@ -17,7 +17,6 @@
 import inspect
 import logging
 import sys
-from traceback import format_exception
 
 from os.path import isfile
 
@@ -40,30 +39,38 @@ class LOG:
     """
 
     _custom_name = None
+    handler = None
+    level = None
 
     @classmethod
     def init(cls):
         sys_config = '/etc/mycroft/mycroft.conf'
-        level_name = load_commented_json(sys_config)['log_level'] \
-            if isfile(sys_config) else 'DEBUG'
-        cls.level = logging.getLevelName(level_name)
-
+        config = load_commented_json(sys_config) if isfile(sys_config) else {}
+        cls.level = logging.getLevelName(config.get('log_level', 'DEBUG'))
         fmt = '%(asctime)s.%(msecs)03d - ' \
               '%(name)s - %(levelname)s - %(message)s'
         datefmt = '%H:%M:%S'
         formatter = logging.Formatter(fmt, datefmt)
-        cls.ch = logging.StreamHandler(sys.stdout)
-        cls.ch.setFormatter(formatter)
+        cls.handler = logging.StreamHandler(sys.stdout)
+        cls.handler.setFormatter(formatter)
         cls.create_logger('')  # Enables logging in external modules
+
+        def make_method(fn):
+            @classmethod
+            def method(cls, *args, **kwargs):
+                cls._log(fn, *args, **kwargs)
+            method.__func__.__doc__ = fn.__doc__
+            return method
+
+        # Copy actual logging methods from logging.Logger
+        for name in ['debug', 'info', 'warning', 'error', 'exception']:
+            setattr(cls, name, make_method(getattr(logging.Logger, name)))
 
     @classmethod
     def create_logger(cls, name):
         l = logging.getLogger(name)
         l.propagate = False
-        if not hasattr(cls, 'level'):
-            cls.init()
-
-        l.addHandler(cls.ch)
+        l.addHandler(cls.handler)
         l.setLevel(cls.level)
         return l
 
@@ -71,7 +78,7 @@ class LOG:
         LOG._custom_name = name
 
     @classmethod
-    def _log(cls, func, args, kwargs):
+    def _log(cls, func, *args, **kwargs):
         if cls._custom_name is not None:
             name = cls._custom_name
             cls._custom_name = None
@@ -89,41 +96,9 @@ class LOG:
             # [3] - function
             # ...
             record = stack[2]
-            module_name = inspect.getmodule(record[0]).__name__
+            mod = inspect.getmodule(record[0])
+            module_name = mod.__name__ if mod else ''
             name = module_name + ':' + record[3] + ':' + str(record[2])
         func(cls.create_logger(name), *args, **kwargs)
 
-    @classmethod
-    def debug(cls, *args, **kwargs):
-        cls._log(logging.Logger.debug, args, kwargs)
-
-    @classmethod
-    def info(cls, *args, **kwargs):
-        cls._log(logging.Logger.info, args, kwargs)
-
-    @classmethod
-    def warning(cls, *args, **kwargs):
-        cls._log(logging.Logger.warning, args, kwargs)
-
-    @classmethod
-    def error(cls, *args, **kwargs):
-        cls._log(logging.Logger.error, args, kwargs)
-
-    @classmethod
-    def exception(cls, *args, **kwargs):
-        cls._log(logging.Logger.exception, args, kwargs)
-
-    @classmethod
-    def print_trace(cls, location='', warn=False, *args):
-        trace_lines = format_exception(*sys.exc_info())
-        if warn:
-            intro = 'Warning' + ('in ' + location + ': ' if location else ': ')
-            trace_str = intro + trace_lines[-1].strip()
-            t = logging.Logger.info
-        else:
-            trace_str = '\n' + ''.join(trace_lines)
-            if location:
-                trace_str = '\n=== ' + location + ' ===' + trace_str
-            trace_str = '\n' + trace_str
-            t = logging.Logger.error
-        cls._log(t, trace_str, args)
+LOG.init()
