@@ -14,8 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-import tornado.ioloop as ioloop
-import tornado.web as web
+from tornado import autoreload, web, ioloop
 
 from mycroft.configuration import ConfigurationManager
 from mycroft.lock import Lock  # creates/supports PID locking file
@@ -38,7 +37,7 @@ def main():
         """ Hook to release lock when autoreload is triggered. """
         lock.delete()
 
-    tornado.autoreload.add_reload_hook(reload_hook)
+    autoreload.add_reload_hook(reload_hook)
 
     config = ConfigurationManager.get().get("websocket")
 
