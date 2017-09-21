@@ -1,12 +1,11 @@
 import json
-import os
-from os.path import dirname, join, isdir
-import re
 from time import sleep
 
+import os
+import re
+from os.path import join, isdir
 from pyee import EventEmitter
 
-from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import create_skill_descriptor, load_skill
 

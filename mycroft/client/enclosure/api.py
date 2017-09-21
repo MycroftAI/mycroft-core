@@ -15,15 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
-import mycroft.client.enclosure.display_manager as DisplayManager
-from mycroft.messagebus.message import Message
-from mycroft.util.log import getLogger
 from PIL import Image
 
+import mycroft.client.enclosure.display_manager as DisplayManager
+from mycroft.messagebus.message import Message
+
 __author__ = 'jdorleans'
-
-LOGGER = getLogger(__name__)
-
 
 '''
 API for the functions that affect the Mark I device.

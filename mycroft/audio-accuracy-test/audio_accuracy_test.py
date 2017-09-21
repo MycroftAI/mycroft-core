@@ -1,19 +1,16 @@
-import os
 import time
 import wave
 from glob import glob
-from os.path import dirname, join
 
+import os
 import pyee
+from os.path import dirname, join
 from speech_recognition import AudioSource
 
 from mycroft.client.speech.listener import RecognizerLoop
 from mycroft.client.speech.mic import ResponsiveRecognizer
-from mycroft.client.speech.mic import logger as speech_logger
-from mycroft.util.log import getLogger
 
 __author__ = 'wolfgange3311999'
-logger = getLogger('audio_test_runner')
 
 
 def to_percent(val):
@@ -79,7 +76,6 @@ class AudioTester(object):
             samp_rate, 'en-us')
         self.listener = ResponsiveRecognizer(self.ww_recognizer)
         print
-        speech_logger.setLevel(100)  # Disables logging to clean output
 
     def test_audio(self, file_name):
         source = FileMockMicrophone(file_name)

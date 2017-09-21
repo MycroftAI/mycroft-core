@@ -1,23 +1,20 @@
 # -*- coding: utf-8 -*-
 
-import unittest
 import sys
+import unittest
+
+import mock
+from adapt.intent import IntentBuilder
 from os.path import join, dirname, abspath
 from re import error
-import mock
 
+from mycroft.configuration import ConfigurationManager
+from mycroft.messagebus.message import Message
 from mycroft.skills.core import load_regex_from_file, load_regex, \
     load_vocab_from_file, load_vocabulary, MycroftSkill, \
     load_skill, create_skill_descriptor, open_intent_envelope
 
-from mycroft.configuration import ConfigurationManager
-from mycroft.messagebus.message import Message
-from adapt.intent import IntentBuilder
-
-from mycroft.util.log import getLogger
-
 __author__ = 'eward'
-logger = getLogger(__name__)
 
 
 class MockEmitter(object):

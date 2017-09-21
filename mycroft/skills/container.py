@@ -18,17 +18,16 @@
 
 import argparse
 import sys
+
 from os.path import dirname, exists, isdir
 
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.skills.core import create_skill_descriptor, load_skill
 from mycroft.skills.intent_service import IntentService
-from mycroft.util.log import getLogger
+from mycroft.util.log import LOG
 
 __author__ = 'seanfitz'
-
-LOG = getLogger("SkillContainer")
 
 
 class SkillContainer(object):

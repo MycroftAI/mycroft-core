@@ -16,11 +16,7 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from mycroft.util.log import getLogger
-
 __author__ = 'iward'
-
-LOGGER = getLogger(__name__)
 
 
 class EnclosureWeather:
@@ -70,6 +66,6 @@ class EnclosureWeather:
 
             temp = event.data.get("temp", None)
             if icon is not None and temp is not None:
-                icon = "x=2,"+icon
+                icon = "x=2," + icon
                 msg = "weather.display=" + str(temp) + "," + str(icon)
                 self.writer.write(msg)

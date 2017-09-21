@@ -17,18 +17,14 @@
 
 
 import abc
-
 import re
 from requests_futures.sessions import FuturesSession
 
 from mycroft.tts import TTS
 from mycroft.util import remove_last_slash, play_wav
-from mycroft.util.log import getLogger
-from mycroft.messagebus.message import Message
+from mycroft.util.log import LOG
 
 __author__ = 'jdorleans'
-
-LOGGER = getLogger(__name__)
 
 
 class RemoteTTS(TTS):
@@ -54,7 +50,7 @@ class RemoteTTS(TTS):
                     self.begin_audio()
                     self.__play(req)
                 except Exception, e:
-                    LOGGER.error(e.message)
+                    LOG.error(e.message)
                 finally:
                     self.end_audio()
 
@@ -86,7 +82,7 @@ class RemoteTTS(TTS):
             self.__save(resp.content)
             play_wav(self.filename).communicate()
         else:
-            LOGGER.error(
+            LOG.error(
                 '%s Http Error: %s for url: %s' %
                 (resp.status_code, resp.reason, resp.url))
 

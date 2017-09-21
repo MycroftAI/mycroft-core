@@ -1,9 +1,7 @@
-from os.path import dirname, abspath, basename
-from mycroft.audio.services import AudioBackend
-from mycroft.util.log import getLogger
 import vlc
 
-logger = getLogger(abspath(__file__).split('/')[-2])
+from mycroft.audio.services import AudioBackend
+from mycroft.util.log import LOG
 
 
 class VlcService(AudioBackend):
@@ -26,18 +24,18 @@ class VlcService(AudioBackend):
         self.list_player.set_media_list(empty)
 
     def add_list(self, tracks):
-        logger.info("Track list is " + str(tracks))
+        LOG.info("Track list is " + str(tracks))
         vlc_tracks = self.instance.media_list_new()
         for t in tracks:
             vlc_tracks.add_media(self.instance.media_new(t))
         self.list_player.set_media_list(vlc_tracks)
 
     def play(self):
-        logger.info('VLCService Play')
+        LOG.info('VLCService Play')
         self.list_player.play()
 
     def stop(self):
-        logger.info('VLCService Stop')
+        LOG.info('VLCService Stop')
         self.clear_list()
         self.list_player.stop()
 

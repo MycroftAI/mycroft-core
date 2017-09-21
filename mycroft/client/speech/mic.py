@@ -16,20 +16,19 @@
  along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+import audioop
 import collections
 import datetime
+import shutil
 from tempfile import gettempdir
 from threading import Thread, Lock
+from time import sleep, time as get_time
 
 import os
-from time import sleep, time as get_time
-import audioop
-
 import pyaudio
 import speech_recognition
 from os import mkdir
 from os.path import isdir, join, expanduser, isfile
-import shutil
 from speech_recognition import (
     Microphone,
     AudioSource,
@@ -44,9 +43,8 @@ from mycroft.util import (
     resolve_resource_file,
     play_wav
 )
-from mycroft.util.log import getLogger
+from mycroft.util.log import LOG
 
-logger = getLogger(__name__)
 __author__ = 'seanfitz'
 
 
@@ -81,7 +79,7 @@ class MutableStream(object):
             return self.muted_buffer
         input_latency = self.wrapped_stream.get_input_latency()
         if input_latency > 0.2:
-            logger.warn("High input latency: %f" % input_latency)
+            LOG.warning("High input latency: %f" % input_latency)
         audio = b"".join(list(frames))
         return audio
 
@@ -308,7 +306,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             if check_for_signal('buttonPress'):
                 # Signal is still here, assume it was intended to
                 # begin recording
-                logger.debug("Button Pressed, wakeword not needed")
+                LOG.debug("Button Pressed, wakeword not needed")
                 return True
 
         return False
@@ -336,7 +334,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         try:
             self.filenames_to_upload.append(filename)
             for i, fn in enumerate(self.filenames_to_upload):
-                logger.debug('Uploading ' + fn + '...')
+                LOG.debug('Uploading ' + fn + '...')
                 os.chmod(fn, 0o666)
                 cmd = 'scp -o StrictHostKeyChecking=no -P ' + \
                       str(self.upload_config['port']) + ' -i ' + \
@@ -345,7 +343,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                     del self.filenames_to_upload[i]
                     os.remove(fn)
                 else:
-                    logger.debug('Could not upload ' + fn + ' to ' + server)
+                    LOG.debug('Could not upload ' + fn + ' to ' + server)
         finally:
             self.upload_lock.release()
 
@@ -489,12 +487,12 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         #       speech is detected, but there is no code to actually do that.
         self.adjust_for_ambient_noise(source, 1.0)
 
-        logger.debug("Waiting for wake word...")
+        LOG.debug("Waiting for wake word...")
         self._wait_until_wake_word(source, sec_per_buffer)
         if self._stop_signaled:
             return
 
-        logger.debug("Recording...")
+        LOG.debug("Recording...")
         emitter.emit("recognizer_loop:record_begin")
 
         # If enabled, play a wave file with a short sound to audibly
@@ -509,12 +507,12 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         audio_data = self._create_audio_data(frame_data, source)
         emitter.emit("recognizer_loop:record_end")
         if self.save_utterances:
-            logger.info("Recording utterance")
+            LOG.info("Recording utterance")
             stamp = str(datetime.datetime.now())
             filename = "/tmp/mycroft_utterance%s.wav" % stamp
             with open(filename, 'wb') as filea:
                 filea.write(audio_data.get_wav_data())
-            logger.debug("Thinking...")
+            LOG.debug("Thinking...")
 
         return audio_data
 

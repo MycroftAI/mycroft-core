@@ -2,14 +2,10 @@ import subprocess
 from time import sleep
 
 from mycroft.audio.services import AudioBackend
-from mycroft.util.log import getLogger
 from mycroft.messagebus.message import Message
-
-from os.path import abspath
+from mycroft.util.log import LOG
 
 __author__ = 'forslund'
-
-logger = getLogger(abspath(__file__).split('/')[-2])
 
 
 class Mpg123Service(AudioBackend):
@@ -17,6 +13,7 @@ class Mpg123Service(AudioBackend):
         Audio backend for mpg123 player. This one is rather limited and
         only implements basic usage.
     """
+
     def __init__(self, config, emitter, name='mpg123'):
         self.config = config
         self.process = None
@@ -35,14 +32,14 @@ class Mpg123Service(AudioBackend):
 
     def add_list(self, tracks):
         self.tracks = tracks
-        logger.info("Track list is " + str(tracks))
+        LOG.info("Track list is " + str(tracks))
 
     def _play(self, message=None):
         """ Implementation specific async method to handle playback.
             This allows mpg123 service to use the "next method as well
             as basic play/stop.
         """
-        logger.info('Mpg123Service._play')
+        LOG.info('Mpg123Service._play')
         self._is_playing = True
         track = self.tracks[self.index]
 
@@ -68,12 +65,12 @@ class Mpg123Service(AudioBackend):
             self._is_playing = False
 
     def play(self):
-        logger.info('Call Mpg123ServicePlay')
+        LOG.info('Call Mpg123ServicePlay')
         self.index = 0
         self.emitter.emit(Message('Mpg123ServicePlay'))
 
     def stop(self):
-        logger.info('Mpg123ServiceStop')
+        LOG.info('Mpg123ServiceStop')
         self._stop_signal = True
         while self._is_playing:
             sleep(0.1)

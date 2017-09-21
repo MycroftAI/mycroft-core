@@ -21,8 +21,8 @@
 #
 # Required Modules
 from signal import getsignal, signal, SIGKILL, SIGINT, SIGTERM  # signals
-import os  # Operating System functions
 
+import os  # Operating System functions
 
 #
 # Written by Daniel Mendyke [dmendyke@jaguarlandrover.com]

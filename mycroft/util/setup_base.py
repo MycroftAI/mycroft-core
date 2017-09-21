@@ -16,17 +16,17 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import os
-import subprocess
-from setuptools import find_packages
 import shutil
-from mycroft.util.log import getLogger
+import subprocess
 
+import os
+from setuptools import find_packages
+
+from mycroft.util.log import LOG
 
 __author__ = 'seanfitz'
 
 BASEDIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-logger = getLogger(__name__)
 
 
 def place_manifest(manifest_file):
@@ -44,8 +44,8 @@ def get_version():
                 ["git", "rev-parse", "--short", "HEAD"]).strip()
         except subprocess.CalledProcessError, e2:
             version = "development"
-            logger.debug(e)
-            logger.exception(e2)
+            LOG.debug(e)
+            LOG.exception(e2)
 
     return version
 

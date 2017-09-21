@@ -1,10 +1,12 @@
-from os.path import dirname, exists
-from threading import Thread
 import unittest
 from shutil import rmtree
+from threading import Thread
 from time import sleep
-from mycroft.util import create_signal, check_for_signal
+
+from os.path import exists
+
 import mycroft.audio
+from mycroft.util import create_signal, check_for_signal
 
 """
     Tests for public interface for audio interface

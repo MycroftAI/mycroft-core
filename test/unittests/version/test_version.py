@@ -1,8 +1,8 @@
 import unittest
+
 import mock
 
 import mycroft.version
-
 
 VERSION_INFO = """
 {

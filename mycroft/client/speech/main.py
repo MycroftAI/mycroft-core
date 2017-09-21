@@ -16,7 +16,6 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import re
 import sys
 from threading import Thread, Lock
 
@@ -24,12 +23,11 @@ from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.client.speech.listener import RecognizerLoop
 from mycroft.configuration import ConfigurationManager
 from mycroft.identity import IdentityManager
+from mycroft.lock import Lock as PIDLock  # Create/Support PID locking file
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
-from mycroft.util.log import getLogger
-from mycroft.lock import Lock as PIDLock  # Create/Support PID locking file
+from mycroft.util.log import LOG
 
-logger = getLogger("SpeechClient")
 ws = None
 lock = Lock()
 loop = None
@@ -38,27 +36,27 @@ config = ConfigurationManager.get()
 
 
 def handle_record_begin():
-    logger.info("Begin Recording...")
+    LOG.info("Begin Recording...")
     ws.emit(Message('recognizer_loop:record_begin'))
 
 
 def handle_record_end():
-    logger.info("End Recording...")
+    LOG.info("End Recording...")
     ws.emit(Message('recognizer_loop:record_end'))
 
 
 def handle_no_internet():
-    logger.debug("Notifying enclosure of no internet connection")
+    LOG.debug("Notifying enclosure of no internet connection")
     ws.emit(Message('enclosure.notify.no_internet'))
 
 
 def handle_wakeword(event):
-    logger.info("Wakeword Detected: " + event['utterance'])
+    LOG.info("Wakeword Detected: " + event['utterance'])
     ws.emit(Message('recognizer_loop:wakeword', event))
 
 
 def handle_utterance(event):
-    logger.info("Utterance: " + str(event['utterances']))
+    LOG.info("Utterance: " + str(event['utterances']))
     ws.emit(Message('recognizer_loop:utterance', event))
 
 
@@ -70,7 +68,7 @@ def handle_speak(event):
 
 
 def handle_complete_intent_failure(event):
-    logger.info("Failed to find intent.")
+    LOG.info("Failed to find intent.")
     # TODO: Localize
     data = {'utterance':
             "Sorry, I didn't catch that. Please rephrase your request."}
@@ -161,7 +159,7 @@ def main():
     try:
         loop.run()
     except KeyboardInterrupt, e:
-        logger.exception(e)
+        LOG.exception(e)
         sys.exit()
 
 

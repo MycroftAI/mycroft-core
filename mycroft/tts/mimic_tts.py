@@ -16,17 +16,14 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 import subprocess
-import os
+from time import time
+
 import os.path
-from time import time, sleep
-import unicodedata
 
 from mycroft import MYCROFT_ROOT_PATH
 from mycroft.configuration import ConfigurationManager
 from mycroft.tts import TTS, TTSValidator
-import mycroft.util
-from mycroft.util.log import getLogger
-LOGGER = getLogger(__name__)
+from mycroft.util.log import LOG
 
 __author__ = 'jdorleans', 'spenrod'
 
@@ -83,7 +80,7 @@ class MimicValidator(TTSValidator):
         try:
             subprocess.call([BIN, '--version'])
         except:
-            LOGGER.info("Failed to find mimic at: " + BIN)
+            LOG.info("Failed to find mimic at: " + BIN)
             raise Exception(
                 'Mimic was not found. Run install-mimic.sh to install it.')
 

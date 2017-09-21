@@ -1,8 +1,10 @@
-from copy import copy
 import unittest
+from copy import copy
+
 import mock
-import mycroft.configuration
+
 import mycroft.api
+import mycroft.configuration
 
 CONFIG = {
     'server': {

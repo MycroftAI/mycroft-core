@@ -1,9 +1,11 @@
-from os.path import dirname, join, exists, isfile
-import os
 import signal
 import unittest
-import mock
 from shutil import rmtree
+
+import mock
+import os
+from os.path import exists, isfile
+
 from mycroft.lock import Lock
 
 

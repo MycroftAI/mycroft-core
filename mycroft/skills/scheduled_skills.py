@@ -16,21 +16,19 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import abc
 from datetime import datetime
 from threading import Timer, Lock
 from time import mktime
 
+import abc
 import parsedatetime as pdt
 from adapt.intent import IntentBuilder
 
 from mycroft.skills import time_rules
 from mycroft.skills.core import MycroftSkill
-from mycroft.util.log import getLogger
+from mycroft.util.log import LOG
 
 __author__ = 'jdorleans'
-
-logger = getLogger(__name__)
 
 
 class ScheduledSkill(MycroftSkill):
@@ -152,8 +150,8 @@ class ScheduledCRUDSkill(ScheduledSkill):
         self.data = {}
         self.repeat_data = {}
         if basedir:
-            logger.debug('basedir argument is no longer required and is ' +
-                         'depreciated.')
+            LOG.debug('basedir argument is no longer required and is ' +
+                      'depreciated.')
             self.basedir = basedir
 
     def initialize(self):

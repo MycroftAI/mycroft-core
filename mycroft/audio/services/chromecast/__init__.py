@@ -1,23 +1,21 @@
-from mycroft.messagebus.message import Message
-from mycroft.util.log import getLogger
-from mycroft.audio.services import AudioBackend
-from os.path import dirname, abspath, basename
-import sys
 import time
 from mimetypes import guess_type
 
 import pychromecast
 
-logger = getLogger(abspath(__file__).split('/')[-2])
+from mycroft.audio.services import AudioBackend
+from mycroft.messagebus.message import Message
+from mycroft.util.log import LOG
+
 __author__ = 'forslund'
 
 
 class ChromecastService(AudioBackend):
     def _connect(self, message):
-        logger.info('Trying to connect to chromecast')
+        LOG.info('Trying to connect to chromecast')
         casts = pychromecast.get_chromecasts()
         if self.config is None or 'identifier' not in self.config:
-            logger.error("Chromecast identifier not found!")
+            LOG.error("Chromecast identifier not found!")
             return  # Can't connect since no id is specified
         else:
             identifier = self.config['identifier']
@@ -26,7 +24,7 @@ class ChromecastService(AudioBackend):
                 self.cast = c
                 break
         else:
-            logger.info('Couldn\'t find chromecast ' + identifier)
+            LOG.info('Couldn\'t find chromecast ' + identifier)
             self.connection_attempts += 1
             time.sleep(10)
             self.emitter.emit(Message('ChromecastServiceConnect'))
@@ -118,7 +116,7 @@ def autodetect(config, emitter):
     casts = pychromecast.get_chromecasts()
     ret = []
     for c in casts:
-        logger.info(c.name + " found.")
+        LOG.info(c.name + " found.")
         ret.append(ChromecastService(config, emitter, c.name.lower(), c))
 
     return ret

@@ -1,5 +1,7 @@
-import mock
 import unittest
+
+import mock
+
 import mycroft.stt
 from mycroft.configuration import ConfigurationManager
 

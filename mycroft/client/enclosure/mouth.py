@@ -16,13 +16,9 @@
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from mycroft.util.log import getLogger
-from threading import Timer
 import time
 
 __author__ = 'jdorleans'
-
-LOG = getLogger(__name__)
 
 
 class EnclosureMouth:

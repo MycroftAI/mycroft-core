@@ -14,26 +14,25 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
+import hashlib
 import random
-from abc import ABCMeta, abstractmethod
-from os.path import dirname, exists, isdir
-from threading import Thread
 from Queue import Queue, Empty
+from threading import Thread
 from time import time, sleep
+
 import os
 import os.path
-import hashlib
+from abc import ABCMeta, abstractmethod
+from os.path import dirname, exists, isdir
 
+import mycroft.util
 from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.message import Message
-from mycroft.util.log import getLogger
 from mycroft.util import play_wav, play_mp3, check_for_signal, create_signal
-import mycroft.util
+from mycroft.util.log import LOG
 
 __author__ = 'jdorleans'
-
-LOGGER = getLogger(__name__)
 
 
 class PlaybackThread(Thread):
@@ -95,7 +94,7 @@ class PlaybackThread(Thread):
             except Empty:
                 pass
             except Exception, e:
-                LOGGER.exception(e)
+                LOG.exception(e)
                 if self._processing_queue:
                     self.tts.end_audio()
                     self._processing_queue = False
@@ -204,7 +203,7 @@ class TTS(object):
                                 key + '.' + self.type)
 
         if os.path.exists(wav_file):
-            LOGGER.debug("TTS cache hit")
+            LOG.debug("TTS cache hit")
             phonemes = self.load_phonemes(key)
         else:
             wav_file, phonemes = self.get_tts(sentence, wav_file)
@@ -250,7 +249,7 @@ class TTS(object):
             with open(pho_file, "w") as cachefile:
                 cachefile.write(phonemes)
         except:
-            LOGGER.debug("Failed to write .PHO to cache")
+            LOG.debug("Failed to write .PHO to cache")
             pass
 
     def load_phonemes(self, key):
@@ -261,14 +260,14 @@ class TTS(object):
                 Key:    Key identifying phoneme cache
         """
         pho_file = os.path.join(mycroft.util.get_cache_directory("tts"),
-                                key+".pho")
+                                key + ".pho")
         if os.path.exists(pho_file):
             try:
                 with open(pho_file, "r") as cachefile:
                     phonemes = cachefile.read().strip()
                 return phonemes
             except:
-                LOGGER.debug("Failed to read .PHO from cache")
+                LOG.debug("Failed to read .PHO from cache")
         return None
 
     def __del__(self):

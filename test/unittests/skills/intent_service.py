@@ -1,5 +1,6 @@
 import unittest
-from mycroft.skills.intent_service import IntentService, ContextManager
+
+from mycroft.skills.intent_service import ContextManager
 
 
 class MockEmitter(object):

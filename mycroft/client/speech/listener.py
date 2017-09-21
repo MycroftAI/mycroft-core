@@ -26,15 +26,13 @@ from requests import HTTPError
 from requests.exceptions import ConnectionError
 
 import mycroft.dialog
+from mycroft.client.speech.hotword_factory import HotWordFactory
 from mycroft.client.speech.mic import MutableMicrophone, ResponsiveRecognizer
 from mycroft.configuration import ConfigurationManager
 from mycroft.metrics import MetricsAggregator
 from mycroft.session import SessionManager
 from mycroft.stt import STTFactory
-from mycroft.util.log import getLogger
-from mycroft.client.speech.hotword_factory import HotWordFactory
-
-LOG = getLogger(__name__)
+from mycroft.util.log import LOG
 
 
 class AudioProducer(Thread):
@@ -135,7 +133,7 @@ class AudioConsumer(Thread):
         self.emitter.emit("recognizer_loop:wakeword", payload)
 
         if self._audio_length(audio) < self.MIN_AUDIO_SIZE:
-            LOG.warn("Audio too short to be processed")
+            LOG.warning("Audio too short to be processed")
         else:
             self.transcribe(audio)
 
@@ -153,7 +151,7 @@ class AudioConsumer(Thread):
         except HTTPError as e:
             if e.response.status_code == 401:
                 text = "pair my device"  # phrase to start the pairing process
-                LOG.warn("Access Denied at mycroft.ai")
+                LOG.warning("Access Denied at mycroft.ai")
         except Exception as e:
             LOG.error(e)
             LOG.error("Speech Recognition could not understand audio")

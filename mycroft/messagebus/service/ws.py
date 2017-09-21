@@ -14,8 +14,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
-
 import json
 import sys
 import traceback
@@ -23,10 +21,9 @@ import traceback
 import tornado.websocket
 from pyee import EventEmitter
 
-import mycroft.util.log
 from mycroft.messagebus.message import Message
+from mycroft.util.log import LOG
 
-logger = mycroft.util.log.getLogger(__name__)
 __author__ = 'seanfitz'
 
 EventBusEmitter = EventEmitter()
@@ -44,7 +41,7 @@ class WebsocketEventHandler(tornado.websocket.WebSocketHandler):
         self.emitter.on(event_name, handler)
 
     def on_message(self, message):
-        logger.debug(message)
+        LOG.debug(message)
         try:
             deserialized_message = Message.deserialize(message)
         except:
@@ -53,7 +50,7 @@ class WebsocketEventHandler(tornado.websocket.WebSocketHandler):
         try:
             self.emitter.emit(deserialized_message.type, deserialized_message)
         except Exception, e:
-            logger.exception(e)
+            LOG.exception(e)
             traceback.print_exc(file=sys.stdout)
             pass
 

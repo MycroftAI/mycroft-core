@@ -14,8 +14,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
-
 import json
 import threading
 import time
@@ -24,10 +22,8 @@ import requests
 
 from mycroft.configuration import ConfigurationManager
 from mycroft.session import SessionManager
-from mycroft.util.log import getLogger
+from mycroft.util.log import LOG
 from mycroft.util.setup_base import get_version
-
-LOG = getLogger("Metrics")
 
 config = ConfigurationManager.get().get('server')
 

@@ -1,10 +1,11 @@
-import os
-import sys
 import glob
+import sys
 import unittest
+
+import os
+
 from test.integrationtests.skills.skill_tester import MockSkillsLoader
 from test.integrationtests.skills.skill_tester import SkillTest
-
 
 __author__ = 'seanfitz'
 
