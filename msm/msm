@@ -73,6 +73,8 @@ if [[ "$(hostname)" == "picroft" ]] || [[ "$(hostname)" =~ "mark_1" ]] && [[ -x 
 else
   if [[ -r /etc/bash_completion.d/virtualenvwrapper ]]; then
     source /etc/bash_completion.d/virtualenvwrapper
+   elif [[ -r /usr/bin/virtualenvwrapper.sh ]]; then
+    source /usr/bin/virtualenvwrapper.sh
   else
     if locate virtualenvwrapper ; then
       if ! source $(locate virtualenvwrapper) ; then
