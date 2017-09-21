@@ -65,19 +65,15 @@ if [[ ! -d "${mycroft_skill_folder}" ]] ; then
 fi
 
 
-# Determine if on picroft/mk1?
+# Determine if on picroft/mk1, virtualenv, or none of the above. 
 picroft_mk1="false"
 vwrap="false"
 if [[ "$(hostname)" == "picroft" ]] || [[ "$(hostname)" =~ "mark_1" ]] && [[ -x /usr/local/bin/mycroft-wifi-setup-client ]] ; then
   picroft_mk1="true"
 else
-  if [[ -r /etc/bash_completion.d/virtualenvwrapper ]]; then
-    source /etc/bash_completion.d/virtualenvwrapper
-  else
-    if locate virtualenvwrapper ; then
-      if ! source $(locate virtualenvwrapper) ; then
-        echo "INFO: Unable to locate virtualenvwrapper.sh."
-      else 
+  if source $(locate virtualenvwrapper.sh) ; then
+    if hash lsvirtualenv ; then
+      if lsvirtualenv -b | grep -q mycroft ; then
         vwrap="true"
       fi
     fi
