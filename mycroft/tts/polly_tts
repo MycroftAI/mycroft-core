@@ -35,7 +35,10 @@ class Polly(TTS):
     def __init__(self, lang, voice):
         super(Polly, self).__init__(lang, voice, PollyValidator(self))
         config = ConfigurationManager.get().get('tts', {}).get("polly", {})
-        from boto3 import Session
+        try:
+            from boto3 import Session
+        except:
+            logger.error("Missing boto3 python requirement for PollyTTS")
         # FS cache
         self.cache = config.get("cache", True)
         # Voice ID
@@ -121,7 +124,6 @@ class PollyValidator(TTSValidator):
         pass
 
     def validate_connection(self):
-        # TODO
         pass
 
     def get_tts_class(self):
