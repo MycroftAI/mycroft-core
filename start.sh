@@ -18,7 +18,7 @@ case $1 in
 	"cli") SCRIPT=${TOP}/mycroft/client/text/main.py ;;
 	"audiotest") SCRIPT=${TOP}/mycroft/util/audio_test.py ;;
 	"collector") SCRIPT=${TOP}/mycroft_data_collection/cli.py ;;
-	"unittest") SCRIPT=${TOP}/test/main.py ;;
+	"unittest") SCRIPT=${TOP}/test/unittests/main.py ;;
 	"audioaccuracytest") SCRIPT=${TOP}/mycroft/audio-accuracy-test/audio_accuracy_test.py ;;
 	"sdkdoc") SCRIPT=${TOP}/doc/generate_sdk_docs.py ;;
     "enclosure") SCRIPT=${TOP}/mycroft/client/enclosure/main.py ;;
