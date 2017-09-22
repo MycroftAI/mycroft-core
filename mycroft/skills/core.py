@@ -661,15 +661,25 @@ class FallbackSkill(MycroftSkill):
         """Goes through all fallback handlers until one returns True"""
 
         def handler(message):
+            # indicate fallback handling start
+            self.emitter.emit(Message("mycroft.skill.handler.start",
+                                          data={'handler': "fallback"}))
             for _, handler in sorted(cls.fallback_handlers.items(),
                                      key=operator.itemgetter(0)):
                 try:
                     if handler(message):
+                        #  indicate completion
+                        self.emitter.emit(Message('mycroft.skill.handler.complete',
+                                      data={'handler': handler.__self__.name}))
                         return
                 except Exception as e:
                     LOG.info('Exception in fallback: ' + str(e))
             ws.emit(Message('complete_intent_failure'))
             LOG.warning('No fallback could handle intent.')
+            #  indicate completion with exception
+            self.emitter.emit(Message('mycroft.skill.handler.complete',
+                                      data={'handler': name,
+                                            'exception': "No fallback could handle intent."}))
 
         return handler
 
