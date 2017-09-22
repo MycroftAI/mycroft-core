@@ -41,12 +41,14 @@ ws = None
 event_scheduler = None
 skill_manager = None
 
-skills_config = ConfigurationManager.instance().get("skills")
+skills_config = ConfigurationManager.get("skills")
 BLACKLISTED_SKILLS = skills_config.get("blacklisted_skills", [])
 PRIORITY_SKILLS = skills_config.get("priority_skills", [])
 SKILLS_DIR = '/opt/mycroft/skills'
-MSM_BIN = ConfigurationManager.instance().get("SkillInstallerSkill").get(
-    "path", join(MYCROFT_ROOT_PATH, 'msm', 'msm'))
+
+installer_config = ConfigurationManager.get("SkillInstallerSkill")
+MSM_BIN = installer_config.get("path", join(MYCROFT_ROOT_PATH, 'msm', 'msm'))
+
 MINUTES = 60  # number of seconds in a minute (syntatic sugar)
 
 
@@ -389,15 +391,21 @@ class SkillManager(Thread):
 
 def main():
     global ws
+<<<<<<< HEAD
 
     # Create PID file, prevent multiple instancesof this service
     mycroft.lock.Lock('skills')
 
+=======
+    lock = Lock('skills')  # prevent multiple instances of this service
+    print "initing websocket"
+>>>>>>> Refactor configuration handling
     # Connect this Skill management process to the websocket
     ws = WebsocketClient()
+    print "connecting config"
     ConfigurationManager.init(ws)
-
-    ignore_logs = ConfigurationManager.instance().get("ignore_logs")
+    print "ignoring logs"
+    ignore_logs = ConfigurationManager.get("ignore_logs")
 
     # Listen for messages and echo them for logging
     def _echo(message):

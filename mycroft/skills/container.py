@@ -17,7 +17,7 @@ import sys
 
 from os.path import dirname, exists, isdir
 
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.skills.core import create_skill_descriptor, load_skill
 from mycroft.skills.intent_service import IntentService
@@ -29,7 +29,7 @@ class SkillContainer(object):
         params = self.__build_params(args)
 
         if params.config:
-            ConfigurationManager.load_local([params.config])
+            Configuration.get([params.config])
 
         if exists(params.lib) and isdir(params.lib):
             sys.path.append(params.lib)
@@ -55,7 +55,7 @@ class SkillContainer(object):
         return parser.parse_args(args)
 
     def __init_client(self, params):
-        config = ConfigurationManager.get().get("websocket")
+        config = Configuration.get().get("websocket")
 
         if not params.host:
             params.host = config.get('host')
@@ -67,7 +67,7 @@ class SkillContainer(object):
                                   ssl=params.use_ssl)
 
         # Connect configuration manager to message bus to receive updates
-        ConfigurationManager.init(self.ws)
+        Configuration.init(self.ws)
 
     def load_skill(self):
         if self.enable_intent:
