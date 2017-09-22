@@ -85,11 +85,13 @@ def download_subscriber_voices(selected_voice):
 
 
 class Mimic(TTS):
-    def __init__(self, lang, voice):
-        super(Mimic, self).__init__(lang, voice, MimicValidator(self))
+    def __init__(self, lang, config):
+        super(Mimic, self).__init__(lang, config, MimicValidator(self))
         self.dl = None
         self.clear_cache()
         self.type = 'wav'
+        self.extra_tags = ["voice", "emphasis", "audio", "sub", "ssml"]
+
         # Download subscriber voices if needed
         self.is_subscriber = DeviceApi().is_subscriber
         if self.is_subscriber:
@@ -115,6 +117,10 @@ class Mimic(TTS):
             voice = self.voice
 
         args = [mimic_bin, '-voice', voice, '-psdur']
+
+        if self.ssml_support:
+            args += ['-ssml']
+
         stretch = config.get('duration_stretch', None)
         if stretch:
             args += ['--setf', 'duration_stretch=' + stretch]

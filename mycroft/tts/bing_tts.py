@@ -18,8 +18,8 @@ from mycroft.configuration import Configuration
 
 
 class BingTTS(TTS):
-    def __init__(self, lang, voice):
-        super(BingTTS, self).__init__(lang, voice, BingTTSValidator(self))
+    def __init__(self, lang, config):
+        super(BingTTS, self).__init__(lang, config, BingTTSValidator(self))
         self.type = 'wav'
         from bingtts import Translator
         self.config = Configuration.get().get("tts", {}).get("bing", {})

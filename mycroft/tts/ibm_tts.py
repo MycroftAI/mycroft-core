@@ -22,9 +22,9 @@ from requests.auth import HTTPBasicAuth
 class WatsonTTS(RemoteTTS):
     PARAMS = {'accept': 'audio/wav'}
 
-    def __init__(self, lang, voice="en-US_AllisonVoice",
+    def __init__(self, lang, config,
                  url="https://stream.watsonplatform.net/text-to-speech/api"):
-        super(WatsonTTS, self).__init__(lang, voice, url, '/v1/synthesize',
+        super(WatsonTTS, self).__init__(lang, config, url, '/v1/synthesize',
                                         WatsonTTSValidator(self))
         self.type = "wav"
         self.config = Configuration.get().get("tts", {}).get("watson", {})
