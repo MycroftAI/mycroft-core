@@ -24,7 +24,7 @@ from requests.exceptions import ConnectionError
 import mycroft.dialog
 from mycroft.client.speech.hotword_factory import HotWordFactory
 from mycroft.client.speech.mic import MutableMicrophone, ResponsiveRecognizer
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration
 from mycroft.metrics import MetricsAggregator
 from mycroft.session import SessionManager
 from mycroft.stt import STTFactory
@@ -193,7 +193,7 @@ class RecognizerLoop(EventEmitter):
         """
             Load configuration parameters from configuration
         """
-        config = ConfigurationManager.get()
+        config = Configuration.get()
         self.config_core = config
         self._config_hash = hash(str(config))
         self.lang = config.get('lang')
@@ -302,7 +302,7 @@ class RecognizerLoop(EventEmitter):
             try:
                 time.sleep(1)
                 if self._config_hash != hash(
-                        str(ConfigurationManager().get())):
+                        str(Configuration().get())):
                     LOG.debug('Config has changed, reloading...')
                     self.reload()
             except KeyboardInterrupt as e:

@@ -35,7 +35,7 @@ def get_ipc_directory(domain=None):
     Returns:
         str: a path to the IPC directory
     """
-    config = mycroft.configuration.ConfigurationManager.instance()
+    config = mycroft.configuration.Configuration.get()
     dir = config.get("ipc_path")
     if not dir:
         # If not defined, use /tmp/mycroft/ipc

@@ -77,7 +77,7 @@ def resolve_resource_file(res_name):
 
 
 def play_wav(uri):
-    config = mycroft.configuration.ConfigurationManager.instance()
+    config = mycroft.configuration.Configuration.get()
     play_cmd = config.get("play_wav_cmdline")
     play_wav_cmd = str(play_cmd).split(" ")
     for index, cmd in enumerate(play_wav_cmd):
@@ -87,7 +87,7 @@ def play_wav(uri):
 
 
 def play_mp3(uri):
-    config = mycroft.configuration.ConfigurationManager.instance()
+    config = mycroft.configuration.Configuration.get()
     play_cmd = config.get("play_mp3_cmdline")
     play_mp3_cmd = str(play_cmd).split(" ")
     for index, cmd in enumerate(play_mp3_cmd):
@@ -213,7 +213,7 @@ def get_cache_directory(domain=None):
     Return:
         str: a path to the directory where you can cache data
     """
-    config = mycroft.configuration.ConfigurationManager.instance()
+    config = mycroft.configuration.Configuration.get()
     dir = config.get("cache_path")
     if not dir:
         # If not defined, use /tmp/mycroft/cache
