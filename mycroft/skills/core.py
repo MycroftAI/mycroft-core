@@ -470,6 +470,44 @@ class MycroftSkill(object):
         re.compile(regex_str)  # validate regex
         self.emitter.emit(Message('register_vocab', {'regex': regex_str}))
 
+    def check_for_ssml(self, text):
+        """ checks if current TTS engine supports SSML , if it doesn't
+        removes all SSML tags, if it does removes unsupported SSML tags,
+        returns processed text """ 
+        
+        module = self.config_core.get("tts", {}).get("module")
+        config = self.config_core.get("tts", {}).get(module, {})
+        ssml_support = config.get("ssml", False)
+
+        # if ssml is not supported by TTS engine remove all tags
+        if not ssml_support:
+            return re.sub('<[^>]*>', '', text)
+
+        # default ssml tags all engines should support
+        default_tags = ["speak", "lang", "p", "phoneme", "prosody", "s",
+                        "say-as", "sub", "w"]
+        all_tags = self.config_core.get("ssml_tags", default_tags)
+        # check for engine overrided default supported tags
+        supported_tags = config.get("supported_tags", all_tags)
+        # extra engine specific supported tags ("drc", "whispered" for pollyTTS)
+        extra_tags = config.get("extra_tags", [])
+        supported_tags = supported_tags + extra_tags
+
+        # find tags in string
+        tags = re.findall('<[^>]*>', text)
+
+        for tag in tags:
+            flag = False  # not supported
+            for supported in supported_tags:
+                if supported in tag:
+                    flag = True  # supported
+            if not flag:
+                # remove unsupported tag
+                text = text.replace(tag, "")
+
+        # return text with supported ssml tags only
+        return text
+
     def speak(self, utterance, expect_response=False):
         """
             Speak a sentence.
@@ -482,6 +520,8 @@ class MycroftSkill(object):
         """
         # registers the skill as being active
         self.enclosure.register(self.name)
+        # process SSML 
+        utterance = self.check_for_ssml(utterance)
         data = {'utterance': utterance,
                 'expect_response': expect_response}
         self.emitter.emit(Message("speak", data))
