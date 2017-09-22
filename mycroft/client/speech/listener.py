@@ -221,6 +221,8 @@ class RecognizerLoop(EventEmitter):
         phonemes = self.config.get("phonemes")
         thresh = self.config.get("threshold")
         config = self.config_core.get("hotwords", {word: {}})
+        if word not in config:
+            config[word] = {}
         if phonemes:
             config[word]["phonemes"] = phonemes
         if thresh:
