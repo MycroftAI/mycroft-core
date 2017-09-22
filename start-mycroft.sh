@@ -31,7 +31,11 @@ function help() {
   echo "usage: ${script} [command]"
   echo
   echo "Services:"
-  echo "  (none)                   runs core services: bus, audio, skills, voice"
+  echo "  all                      runs core services: bus, audio, skills, voice"
+  echo "  debug                    runs core services, then starts the CLI"
+  echo "  restart                  stops and restart core services"
+  echo
+  echo "Services:"
   echo "  bus                      the messagebus service"
   echo "  audio                    the audio playback service"
   echo "  skills                   the skill service"
@@ -92,7 +96,7 @@ function launch-process() {
     name-to-script-path ${1}
     
     # Launch process in background, sending log to scripts/log/mycroft-*.log
-    echo "Starting background service $1"
+    echo "Starting $1"
     python ${_script} $_params
 }
 
@@ -108,7 +112,7 @@ function launch-background() {
     name-to-script-path ${1}
     
     # Launch process in background, sending log to scripts/log/mycroft-*.log
-    echo "Starting $1"
+    echo "Starting background service $1"
     python ${_script} $_params >> ${scripts_dir}/logs/mycroft-${1}.log 2>&1 &
 }
 
@@ -127,7 +131,7 @@ case ${_opt} in
     launch-background voice
     ;;
     
-  "")
+  "all")
     echo "Starting all mycroft-core services"
     launch-background bus
     launch-background skills
@@ -148,7 +152,15 @@ case ${_opt} in
     launch-background ${_opt} 
     ;;
 
-
+  "debug")
+    echo "Starting all mycroft-core services"
+    launch-background bus
+    launch-background skills
+    launch-background audio
+    launch-background voice
+    launch-process cli
+    ;;
+  
   "cli")
     launch-process ${_opt}
     ;;
