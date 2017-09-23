@@ -229,6 +229,16 @@ class TTS(object):
         # return text with supported ssml tags only
         return utterance
 
+    def validate_and_execute(self, sentence):
+        """
+            validate ssml, execute text to speech
+
+            Args:
+                sentence(str): Sentence to execute
+        """
+        sentence = self.validate_ssml(sentence)
+        self.execute(sentence)
+
     def execute(self, sentence):
         """
             Convert sentence to speech.
