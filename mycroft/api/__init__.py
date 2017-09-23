@@ -35,7 +35,7 @@ class Api(object):
         config = Configuration.get([LocalConf(DEFAULT_CONFIG),
                                     LocalConf(SYSTEM_CONFIG),
                                     LocalConf(USER_CONFIG)],
-                                    cache=False)
+                                   cache=False)
         config_server = config.get("server")
         self.url = config_server.get("url")
         self.version = config_server.get("version")
