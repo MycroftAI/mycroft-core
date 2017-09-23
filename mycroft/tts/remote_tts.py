@@ -38,7 +38,7 @@ class RemoteTTS(TTS):
     def __init__(self, lang, config, validator):
         super(RemoteTTS, self).__init__(lang, config, validator)
         self.api_path = ""
-        url = self.config.get("url")
+        url = self.config.get("url", "")
         self.url = remove_last_slash(url)
         self.session = FuturesSession()
 
