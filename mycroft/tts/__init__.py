@@ -150,7 +150,6 @@ class TTS(object):
         self.lang = lang or 'en-us'
         self.config = config
         self.voice = config.get("voice")
-        self.ssml_support = self.config.get("ssml", False)
         self.filename = '/tmp/tts.wav'
         self.validator = validator
         self.enclosure = None
@@ -159,6 +158,13 @@ class TTS(object):
         self.playback = PlaybackThread(self.queue)
         self.playback.start()
         self.clear_cache()
+        self.ssml_support = self.config.get("ssml", False)
+        default_tags = ["speak", "lang", "p", "phoneme", "prosody", "s",
+                        "say-as", "sub", "w"]
+        # check for engine overrided default supported tags
+        self.supported_tags = self.config.get("supported_tags", default_tags)
+        # extra engine specific tags
+        self.extra_tags = self.config.get("extra_tags", [])
 
     def begin_audio(self):
         """Helper function for child classes to call in execute()"""
@@ -205,16 +211,9 @@ class TTS(object):
         if not self.ssml_support:
             return re.sub('<[^>]*>', '', utterance)
 
-        # default ssml tags all engines should support
-        default_tags = ["speak", "lang", "p", "phoneme", "prosody", "s",
-                        "say-as", "sub", "w"]
-        # check for engine overrided default supported tags
-        supported_tags = self.config.get("supported_tags", default_tags)
-        # extra engine specific tags
-        extra_tags = self.config.get("extra_tags", [])
-        supported_tags = supported_tags + extra_tags
+        supported_tags = self.supported_tags + self.extra_tags
 
-        # find tags in string
+        # find ssml tags in string
         tags = re.findall('<[^>]*>', utterance)
 
         for tag in tags:
