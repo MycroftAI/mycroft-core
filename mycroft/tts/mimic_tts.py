@@ -43,6 +43,7 @@ class Mimic(TTS):
         self.init_args()
         self.clear_cache()
         self.type = 'wav'
+        self.extra_tags = ["voice", "emphasis", "audio", "sub", "ssml"]
 
     def init_args(self):
         self.args = [BIN, '-voice', self.voice, '-psdur']

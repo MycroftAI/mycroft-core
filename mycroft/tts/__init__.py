@@ -159,8 +159,8 @@ class TTS(object):
         self.playback.start()
         self.clear_cache()
         self.ssml_support = self.config.get("ssml", False)
-        default_tags = ["speak", "lang", "p", "phoneme", "prosody", "s",
-                        "say-as", "sub", "w"]
+        default_tags = ["speak", "lang", "p", "phoneme", "prosody", "break",
+                        "sub"]
         # check for engine overrided default supported tags
         self.supported_tags = self.config.get("supported_tags", default_tags)
         # extra engine specific tags
