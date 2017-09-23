@@ -227,7 +227,7 @@ class TTS(object):
                 utterance = utterance.replace(tag, "")
 
         # return text with supported ssml tags only
-        return utterance
+        return utterance.replace("  ", " ")
 
     def validate_and_execute(self, sentence):
         """

@@ -23,15 +23,15 @@ class TestSTT(unittest.TestCase):
                    "Do you like <prosody pitch='+5%'> speech with a pitch " \
                    "that is higher, </prosody> or <prosody pitch='-10%'> " \
                    "is a lower pitch preferable?</prosody></speak>"
-        sentence_no_ssml = "Prosody can be used to change the " \
-                           "way words sound. The following words are  " \
-                           "quite a bit louder than the rest of this " \
-                           "passage.  Each morning when I wake up, " \
-                           "I speak quite slowly and deliberately until " \
-                           "I have my coffee. I can also change the pitch " \
-                           "of my voice using prosody. Do you like  " \
-                           "speech with a pitch that is higher,  " \
-                           "or  is a lower pitch preferable?"
+        sentence_no_ssml = "Prosody can be used to change the way " \
+                           "words sound. The following words are quite " \
+                           "a bit louder than the rest of this passage. " \
+                           "Each morning when I wake up, I speak quite " \
+                           "slowly and deliberately until I have my " \
+                           "coffee. I can also change the pitch of my " \
+                           "voice using prosody. Do you like speech " \
+                           "with a pitch that is higher, or is " \
+                           "a lower pitch preferable?"
         sentence_bad_ssml = "<foo_invalid>" + sentence + \
                             "</foo_invalid end=whatever>"
         sentence_extra_ssml = "<whispered>whisper tts<\whispered>"
