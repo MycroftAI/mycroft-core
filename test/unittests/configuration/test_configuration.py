@@ -64,3 +64,6 @@ class TestConfiguration(TestCase):
         mock_local.return_value = {'a': 2}
         mycroft.configuration.Configuration.updated('message')
         self.assertEquals(c, {'a': 2})
+
+    def tearDown(self):
+        mycroft.configuration.Configuration.load_config_stack([{}], True)

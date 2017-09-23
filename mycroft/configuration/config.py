@@ -87,7 +87,8 @@ class LocalConf(dict):
     """
     def __init__(self, path):
         super(LocalConf, self).__init__()
-        self.load_local(path)
+        if path:
+            self.load_local(path)
 
     def load_local(self, path):
         """
@@ -124,7 +125,7 @@ class RemoteConf(LocalConf):
         Config dict fetched from mycroft.ai
     """
     def __init__(self, cache=None):
-        super(LocalConf, self).__init__()
+        super(RemoteConf, self).__init__(None)
 
         cache = cache or '/opt/mycroft/web_config_cache.json'
 
@@ -155,7 +156,7 @@ USER_CONFIG = join(expanduser('~'), '.mycroft/mycroft.conf')
 REMOTE_CONFIG = "mycroft.ai"
 
 
-class Configuration:
+class Configuration(object):
     __config = {}  # Cached config
     __patch = {}  # Patch config that skills can update to override config
 
