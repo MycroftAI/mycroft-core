@@ -37,7 +37,6 @@ from mycroft.util.log import LOG
 
 __author__ = 'seanfitz'
 
-
 MainModule = '__init__'
 
 
@@ -142,7 +141,8 @@ def load_skill(skill_descriptor, emitter, skill_id, BLACKLISTED_SKILLS=None):
                     skill_descriptor["name"]))
     except:
         LOG.error(
-            "Failed to load skill: " + skill_descriptor["name"], exc_info=True)
+            "Failed to load skill: " + skill_descriptor["name"],
+            exc_info=True)
     return None
 
 
@@ -163,7 +163,7 @@ def get_handler_name(handler):
     """
     name = ''
     if '__self__' in dir(handler) and \
-            'name' in dir(handler.__self__):
+                    'name' in dir(handler.__self__):
         name += handler.__self__.name + '.'
     name += handler.__name__
     return name
@@ -190,12 +190,15 @@ def intent_handler(intent_parser):
 
 def intent_file_handler(intent_file):
     """ Decorator for adding a method as an intent file handler. """
+
     def real_decorator(func):
         @wraps(func)
         def handler_method(*args, **kwargs):
             return func(*args, **kwargs)
+
         _intent_file_list.append((intent_file, func))
         return handler_method
+
     return real_decorator
 
 
@@ -332,6 +335,7 @@ class MycroftSkill(object):
                                intent handler the function will need the self
                                variable passed as well.
         """
+
         def wrapper(message):
             try:
                 # Indicate that the skill handler is starting
@@ -369,6 +373,7 @@ class MycroftSkill(object):
             # Indicate that the skill handler has completed
             self.emitter.emit(Message('mycroft.skill.handler.complete',
                                       data={'handler': name}))
+
         if handler:
             self.emitter.on(name, wrapper)
             self.events.append((name, wrapper))
@@ -473,8 +478,8 @@ class MycroftSkill(object):
     def check_for_ssml(self, text):
         """ checks if current TTS engine supports SSML , if it doesn't
         removes all SSML tags, if it does removes unsupported SSML tags,
-        returns processed text """ 
-        
+        returns processed text """
+
         module = self.config_core.get("tts", {}).get("module")
         config = self.config_core.get("tts", {}).get(module, {})
         ssml_support = config.get("ssml", False)
@@ -489,7 +494,7 @@ class MycroftSkill(object):
         all_tags = self.config_core.get("ssml_tags", default_tags)
         # check for engine overrided default supported tags
         supported_tags = config.get("supported_tags", all_tags)
-        # extra engine specific supported tags ("drc", "whispered" for pollyTTS)
+        # extra engine specific tags
         extra_tags = config.get("extra_tags", [])
         supported_tags = supported_tags + extra_tags
 
