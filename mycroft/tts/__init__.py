@@ -31,6 +31,7 @@ from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.message import Message
 from mycroft.util import play_wav, play_mp3, check_for_signal, create_signal
 from mycroft.util.log import LOG
+import re
 
 __author__ = 'jdorleans'
 
@@ -140,14 +141,15 @@ class TTS(object):
     TTS abstract class to be implemented by all TTS engines.
 
     It aggregates the minimum required parameters and exposes
-    ``execute(sentence)`` function.
+    ``execute(sentence)`` and ``validate_ssml(sentence)`` functions.
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, lang, voice, validator):
+    def __init__(self, lang, config, validator):
         super(TTS, self).__init__()
         self.lang = lang or 'en-us'
-        self.voice = voice
+        self.config = config
+        self.voice = config.get("voice")
         self.filename = '/tmp/tts.wav'
         self.validator = validator
         self.enclosure = None
@@ -156,6 +158,13 @@ class TTS(object):
         self.playback = PlaybackThread(self.queue)
         self.playback.start()
         self.clear_cache()
+        self.ssml_support = self.config.get("ssml", False)
+        default_tags = ["speak", "lang", "p", "phoneme", "prosody", "break",
+                        "sub"]
+        # check for engine overrided default supported tags
+        self.supported_tags = self.config.get("supported_tags", default_tags)
+        # extra engine specific tags
+        self.extra_tags = self.config.get("extra_tags", [])
 
     def begin_audio(self):
         """Helper function for child classes to call in execute()"""
@@ -187,6 +196,47 @@ class TTS(object):
             Returns: (wav_file, phoneme) tuple
         """
         pass
+
+    def validate_ssml(self, utterance):
+        """
+            Check if engine supports ssml, if not remove all tags
+            Remove unsupported / invalid tags
+
+            Args:
+                sentence(str): Sentence to validate
+
+            Returns: validated_sentence (str)
+        """
+        # if ssml is not supported by TTS engine remove all tags
+        if not self.ssml_support:
+            return re.sub('<[^>]*>', '', utterance)
+
+        supported_tags = self.supported_tags + self.extra_tags
+
+        # find ssml tags in string
+        tags = re.findall('<[^>]*>', utterance)
+
+        for tag in tags:
+            flag = False  # not supported
+            for supported in supported_tags:
+                if supported in tag:
+                    flag = True  # supported
+            if not flag:
+                # remove unsupported tag
+                utterance = utterance.replace(tag, "")
+
+        # return text with supported ssml tags only
+        return utterance.replace("  ", " ")
+
+    def validate_and_execute(self, sentence):
+        """
+            validate ssml, execute text to speech
+
+            Args:
+                sentence(str): Sentence to execute
+        """
+        sentence = self.validate_ssml(sentence)
+        self.execute(sentence)
 
     def execute(self, sentence):
         """
@@ -327,6 +377,10 @@ class TTSFactory(object):
     from mycroft.tts.mary_tts import MaryTTS
     from mycroft.tts.mimic_tts import Mimic
     from mycroft.tts.spdsay_tts import SpdSay
+    from mycroft.tts.pico_tts import Pico
+    from mycroft.tts.polly_tts import Polly
+    from mycroft.tts.bing_tts import BingTTS
+    from mycroft.tts.ibm_tts import WatsonTTS
 
     CLASSES = {
         "mimic": Mimic,
@@ -334,7 +388,11 @@ class TTSFactory(object):
         "marytts": MaryTTS,
         "fatts": FATTS,
         "espeak": ESpeak,
-        "spdsay": SpdSay
+        "spdsay": SpdSay,
+        "pico": Pico,
+        "polly": Polly,
+        "bing": BingTTS,
+        "ibm": WatsonTTS
     }
 
     @staticmethod
@@ -349,19 +407,12 @@ class TTSFactory(object):
             "module": <engine_name>
         }
         """
-
-        from mycroft.tts.remote_tts import RemoteTTS
-        config = ConfigurationManager.get().get('tts', {})
-        module = config.get('module', 'mimic')
-        lang = config.get(module).get('lang')
-        voice = config.get(module).get('voice')
-        clazz = TTSFactory.CLASSES.get(module)
-
-        if issubclass(clazz, RemoteTTS):
-            url = config.get(module).get('url')
-            tts = clazz(lang, voice, url)
-        else:
-            tts = clazz(lang, voice)
-
+        config = ConfigurationManager.get()
+        lang = config.get("lang", "en-us")
+        tts_module = config.get('tts', {}).get('module', 'mimic')
+        tts_config = config.get('tts', {}).get(tts_module, {})
+        tts_lang = tts_config.get('lang', lang)
+        clazz = TTSFactory.CLASSES.get(tts_module)
+        tts = clazz(tts_lang, tts_config)
         tts.validator.validate()
         return tts
