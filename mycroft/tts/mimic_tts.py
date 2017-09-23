@@ -38,8 +38,8 @@ if not os.path.isfile(BIN):
 
 
 class Mimic(TTS):
-    def __init__(self, lang, voice):
-        super(Mimic, self).__init__(lang, voice, MimicValidator(self))
+    def __init__(self, lang, config):
+        super(Mimic, self).__init__(lang, config, MimicValidator(self))
         self.init_args()
         self.clear_cache()
         self.type = 'wav'

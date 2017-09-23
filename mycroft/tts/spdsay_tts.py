@@ -24,8 +24,8 @@ __author__ = 'jdorleans'
 
 
 class SpdSay(TTS):
-    def __init__(self, lang, voice):
-        super(SpdSay, self).__init__(lang, voice, SpdSayValidator(self))
+    def __init__(self, lang, config):
+        super(SpdSay, self).__init__(lang, config, SpdSayValidator(self))
 
     def execute(self, sentence):
         self.begin_audio()

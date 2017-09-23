@@ -87,6 +87,7 @@ def mute_and_speak(utterance):
 
     LOG.info("Speak: " + utterance)
     try:
+        utterance = tts.validate_ssml(utterance)
         tts.execute(utterance)
     finally:
         lock.release()

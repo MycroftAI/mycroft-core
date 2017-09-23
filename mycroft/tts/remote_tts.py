@@ -35,9 +35,10 @@ class RemoteTTS(TTS):
     whole sentence into small ones.
     """
 
-    def __init__(self, lang, voice, url, api_path, validator):
-        super(RemoteTTS, self).__init__(lang, voice, validator)
+    def __init__(self, lang, config, api_path, validator):
+        super(RemoteTTS, self).__init__(lang, config, validator)
         self.api_path = api_path
+        url = self.config.get("url")
         self.url = remove_last_slash(url)
         self.session = FuturesSession()
 
