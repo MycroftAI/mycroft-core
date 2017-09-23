@@ -29,6 +29,7 @@ class PicoEngine(object):
     A text to speech engine class based on svox pico tts.
     """
 
+    # https://github.com/JarbasAI/JarbasAI/blob/patch-15/scripts/install-pico.sh
     def __init__(self, language="en-GB", lang_dir=None):
         """
         Initialize engine with the given language.
