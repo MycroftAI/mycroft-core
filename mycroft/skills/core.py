@@ -37,7 +37,6 @@ from mycroft.util.log import LOG
 
 __author__ = 'seanfitz'
 
-
 MainModule = '__init__'
 
 
@@ -142,7 +141,8 @@ def load_skill(skill_descriptor, emitter, skill_id, BLACKLISTED_SKILLS=None):
                     skill_descriptor["name"]))
     except:
         LOG.error(
-            "Failed to load skill: " + skill_descriptor["name"], exc_info=True)
+            "Failed to load skill: " + skill_descriptor["name"],
+            exc_info=True)
     return None
 
 
@@ -163,7 +163,7 @@ def get_handler_name(handler):
     """
     name = ''
     if '__self__' in dir(handler) and \
-            'name' in dir(handler.__self__):
+                    'name' in dir(handler.__self__):
         name += handler.__self__.name + '.'
     name += handler.__name__
     return name
@@ -190,12 +190,15 @@ def intent_handler(intent_parser):
 
 def intent_file_handler(intent_file):
     """ Decorator for adding a method as an intent file handler. """
+
     def real_decorator(func):
         @wraps(func)
         def handler_method(*args, **kwargs):
             return func(*args, **kwargs)
+
         _intent_file_list.append((intent_file, func))
         return handler_method
+
     return real_decorator
 
 
@@ -332,6 +335,7 @@ class MycroftSkill(object):
                                intent handler the function will need the self
                                variable passed as well.
         """
+
         def wrapper(message):
             try:
                 # Indicate that the skill handler is starting
@@ -369,6 +373,7 @@ class MycroftSkill(object):
             # Indicate that the skill handler has completed
             self.emitter.emit(Message('mycroft.skill.handler.complete',
                                       data={'handler': name}))
+
         if handler:
             self.emitter.on(name, wrapper)
             self.events.append((name, wrapper))
@@ -662,24 +667,26 @@ class FallbackSkill(MycroftSkill):
 
         def handler(message):
             # indicate fallback handling start
-            self.emitter.emit(Message("mycroft.skill.handler.start",
-                                          data={'handler': "fallback"}))
+            ws.emit(Message("mycroft.skill.handler.start",
+                            data={'handler': "fallback"}))
             for _, handler in sorted(cls.fallback_handlers.items(),
                                      key=operator.itemgetter(0)):
                 try:
                     if handler(message):
                         #  indicate completion
-                        self.emitter.emit(Message('mycroft.skill.handler.complete',
-                                      data={'handler': handler.__self__.name}))
+                        ws.emit(Message(
+                            'mycroft.skill.handler.complete',
+                            data={'handler': handler.__self__.name}))
                         return
                 except Exception as e:
                     LOG.info('Exception in fallback: ' + str(e))
             ws.emit(Message('complete_intent_failure'))
             LOG.warning('No fallback could handle intent.')
             #  indicate completion with exception
-            self.emitter.emit(Message('mycroft.skill.handler.complete',
-                                      data={'handler': name,
-                                            'exception': "No fallback could handle intent."}))
+            ws.emit(Message('mycroft.skill.handler.complete',
+                            data={'handler': "fallback",
+                                  'exception':
+                                      "No fallback could handle intent."}))
 
         return handler
 
