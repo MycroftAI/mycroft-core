@@ -46,6 +46,8 @@ class Mimic(TTS):
 
     def init_args(self):
         self.args = [BIN, '-voice', self.voice, '-psdur']
+        if self.ssml_support:
+            self.args += ['-ssml']
         stretch = config.get('duration_stretch', None)
         if stretch:
             self.args += ['--setf', 'duration_stretch=' + stretch]
