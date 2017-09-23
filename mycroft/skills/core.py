@@ -524,7 +524,7 @@ class MycroftSkill(object):
         """
         # registers the skill as being active
         self.enclosure.register(self.name)
-        # process SSML 
+        # process SSML
         utterance = self.check_for_ssml(utterance)
         data = {'utterance': utterance,
                 'expect_response': expect_response}
