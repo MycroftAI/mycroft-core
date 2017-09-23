@@ -17,7 +17,7 @@ from copy import copy
 import requests
 from requests import HTTPError
 
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration
 from mycroft.configuration.config import DEFAULT_CONFIG, SYSTEM_CONFIG, \
     USER_CONFIG, LocalConf
 from mycroft.identity import IdentityManager
@@ -31,10 +31,10 @@ class Api(object):
 
     def __init__(self, path):
         self.path = path
-        config = ConfigurationManager.get([LocalConf(DEFAULT_CONFIG),
-                                           LocalConf(SYSTEM_CONFIG),
-                                           LocalConf(USER_CONFIG)],
-                                          cache=False)
+        config = Configuration.get([LocalConf(DEFAULT_CONFIG),
+                                    LocalConf(SYSTEM_CONFIG),
+                                    LocalConf(USER_CONFIG)],
+                                    cache=False)
         config_server = config.get("server")
         self.url = config_server.get("url")
         self.version = config_server.get("version")

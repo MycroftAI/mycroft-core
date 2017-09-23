@@ -14,7 +14,7 @@
 #
 from tornado import autoreload, web, ioloop
 
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration
 from mycroft.lock import Lock  # creates/supports PID locking file
 from mycroft.messagebus.service.ws import WebsocketEventHandler
 from mycroft.util import validate_param
@@ -36,7 +36,7 @@ def main():
 
     autoreload.add_reload_hook(reload_hook)
 
-    config = ConfigurationManager.get().get("websocket")
+    config = Configuration.get().get("websocket")
 
     host = config.get("host")
     port = config.get("port")

@@ -25,7 +25,7 @@ from os.path import dirname, exists, isdir
 
 import mycroft.util
 from mycroft.client.enclosure.api import EnclosureAPI
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util import play_wav, play_mp3, check_for_signal, create_signal
 from mycroft.util.log import LOG
@@ -347,7 +347,7 @@ class TTSFactory(object):
         """
 
         from mycroft.tts.remote_tts import RemoteTTS
-        config = ConfigurationManager.get().get('tts', {})
+        config = Configuration.get().get('tts', {})
         module = config.get('module', 'mimic')
         lang = config.get(module).get('lang')
         voice = config.get(module).get('voice')

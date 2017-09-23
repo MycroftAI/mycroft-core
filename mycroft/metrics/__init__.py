@@ -18,13 +18,12 @@ import time
 
 import requests
 
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration
 from mycroft.session import SessionManager
 from mycroft.util.log import LOG
 from mycroft.util.setup_base import get_version
 
-
-config = ConfigurationManager.get().get('server')
+config = Configuration.get().get('server')
 
 
 class Stopwatch(object):

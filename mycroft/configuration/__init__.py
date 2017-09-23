@@ -14,3 +14,5 @@
 #
 from config import Configuration
 ConfigurationManager = Configuration
+
+from config import Configuration, LocalConf, RemoteConf

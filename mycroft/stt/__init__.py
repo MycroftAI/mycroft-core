@@ -18,7 +18,7 @@ from requests import post
 from speech_recognition import Recognizer
 
 from mycroft.api import STTApi
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration
 from mycroft.util.log import LOG
 
 
@@ -26,7 +26,7 @@ class STT(object):
     __metaclass__ = ABCMeta
 
     def __init__(self):
-        config_core = ConfigurationManager.get()
+        config_core = Configuration.get()
         self.lang = str(self.init_language(config_core))
         config_stt = config_core.get("stt", {})
         self.config = config_stt.get(config_stt.get("module"), {})
@@ -133,7 +133,7 @@ class STTFactory(object):
 
     @staticmethod
     def create():
-        config = ConfigurationManager.get().get("stt", {})
+        config = Configuration.get().get("stt", {})
         module = config.get("module", "mycroft")
         clazz = STTFactory.CLASSES.get(module)
         return clazz()

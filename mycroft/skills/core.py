@@ -26,7 +26,7 @@ from os import listdir
 from os.path import join, abspath, dirname, splitext, basename, exists
 
 from mycroft.client.enclosure.api import EnclosureAPI
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration
 from mycroft.dialog import DialogLoader
 from mycroft.filesystem import FileSystemAccess
 from mycroft.messagebus.message import Message
@@ -210,7 +210,7 @@ class MycroftSkill(object):
         self._dir = dirname(abspath(sys.modules[self.__module__].__file__))
 
         self.bind(emitter)
-        self.config_core = ConfigurationManager.get()
+        self.config_core = Configuration.get()
         self.config = self.config_core.get(self.name)
         self.dialog_renderer = None
         self.vocab_dir = None

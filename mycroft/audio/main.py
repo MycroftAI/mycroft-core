@@ -21,7 +21,7 @@ from os import listdir
 from os.path import abspath, dirname, basename, isdir, join
 
 import mycroft.audio.speech as speech
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
@@ -149,7 +149,7 @@ def load_services_callback():
     global default
     global service
 
-    config = ConfigurationManager.get().get("Audio")
+    config = Configuration.get().get("Audio")
     service = load_services(config, ws)
     LOG.info(service)
     default_name = config.get('default-backend', '')
@@ -446,8 +446,8 @@ def main():
     global ws
     global config
     ws = WebsocketClient()
-    ConfigurationManager.init(ws)
-    config = ConfigurationManager.get()
+    Configuration.init(ws)
+    config = Configuration.get()
     speech.init(ws)
 
     # Setup control of pulse audio
