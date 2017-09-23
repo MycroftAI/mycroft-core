@@ -15,7 +15,6 @@
 import time
 
 from mycroft.util.signal import check_for_signal, create_signal
-import mycroft.configuration
 
 
 def is_speaking():

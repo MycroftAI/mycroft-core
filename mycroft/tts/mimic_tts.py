@@ -21,14 +21,14 @@ import os.path
 from os.path import exists
 
 from mycroft import MYCROFT_ROOT_PATH
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration
 from mycroft.tts import TTS, TTSValidator
 from mycroft.util.log import LOG
 from mycroft.util.download import download
 from mycroft.api import DeviceApi
 from threading import Thread
 
-config = ConfigurationManager.get().get("tts").get("mimic")
+config = Configuration.get().get("tts").get("mimic")
 
 BIN = config.get("path",
                  os.path.join(MYCROFT_ROOT_PATH, 'mimic', 'bin', 'mimic'))

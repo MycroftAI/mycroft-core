@@ -16,8 +16,7 @@ import time
 import re
 
 from threading import Lock
-
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration
 from mycroft.tts import TTSFactory
 from mycroft.util import create_signal, check_for_signal
 from mycroft.util.log import LOG
@@ -42,8 +41,8 @@ def handle_speak(event):
     """
         Handle "speak" message
     """
-    config = ConfigurationManager.get()
-    ConfigurationManager.init(ws)
+    config = Configuration.get()
+    Configuration.init(ws)
     global _last_stop_signal
 
     # Mild abuse of the signal system to allow other processes to detect
@@ -128,8 +127,8 @@ def init(websocket):
     global config
 
     ws = websocket
-    ConfigurationManager.init(ws)
-    config = ConfigurationManager.get()
+    Configuration.init(ws)
+    config = Configuration.get()
     ws.on('mycroft.stop', handle_stop)
     ws.on('mycroft.audio.speech.stop', handle_stop)
     ws.on('speak', handle_speak)

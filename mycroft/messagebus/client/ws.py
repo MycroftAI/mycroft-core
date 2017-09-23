@@ -19,7 +19,7 @@ from multiprocessing.pool import ThreadPool
 from pyee import EventEmitter
 from websocket import WebSocketApp
 
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util import validate_param
 from mycroft.util.log import LOG
@@ -28,7 +28,7 @@ from mycroft.util.log import LOG
 class WebsocketClient(object):
     def __init__(self, host=None, port=None, route=None, ssl=None):
 
-        config = ConfigurationManager.get().get("websocket")
+        config = Configuration.get().get("websocket")
         host = host or config.get("host")
         port = port or config.get("port")
         route = route or config.get("route")
