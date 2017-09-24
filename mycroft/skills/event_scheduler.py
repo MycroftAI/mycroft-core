@@ -81,10 +81,10 @@ class EventScheduler(Thread):
 
     def run(self):
         while self.isRunning:
-            # Fetch newly scheduled events
-            self.fetch_new_events()
             # Remove events
             self.remove_events()
+            # Fetch newly scheduled events
+            self.fetch_new_events()
             # Update events
             self.update_events()
 
