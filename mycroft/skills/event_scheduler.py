@@ -159,6 +159,20 @@ class EventScheduler(Thread):
         with open(self.schedule_file, 'w') as f:
             json.dump(self.events, f)
 
+    def clear_repeating(self):
+        """
+            Remove repeating events from events dict.
+        """
+        for e in self.events:
+            self.events[e] = [i for i in self.events[e] if i[1] is None]
+
+    def clear_empty(self):
+        """
+            Remove empty event entries from events dict
+        """
+        self.events = {k: self.events[k] for k in self.events
+                       if self.events[k] != []}
+
     def shutdown(self):
         """ Stop the running thread. """
         self.isRunning = False
@@ -168,5 +182,8 @@ class EventScheduler(Thread):
         self.emitter.remove_all_listeners('mycroft.scheduler.update_event')
         # Wait for thread to finish
         self.join()
+        # Prune event list in preparation for saving
+        self.clear_repeating()
+        self.clear_empty()
         # Store all pending scheduled events
         self.store()
