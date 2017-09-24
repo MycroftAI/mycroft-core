@@ -16,3 +16,10 @@ from config import Configuration
 ConfigurationManager = Configuration
 
 from config import Configuration, LocalConf, RemoteConf
+
+
+# Compatibility
+class ConfigurationManager(Configuration):
+    @staticmethod
+    def instance():
+        return Configuration.get()
