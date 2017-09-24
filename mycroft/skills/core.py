@@ -566,6 +566,18 @@ class MycroftSkill(object):
             LOG.error("Failed to stop skill: {}".format(self.name),
                       exc_info=True)
 
+    def _unique_name(self, name):
+        """
+            Return a name unique to this skill using the format
+            [skill_id]:[name].
+
+            Args:
+                name:   Name to use internally
+
+            returns: name unique to this skill
+        """
+        return str(self.skill_id) + ':' + name
+
     def _schedule_event(self, handler, when, data=None, name=None,
                         repeat=None):
         """
@@ -575,7 +587,8 @@ class MycroftSkill(object):
         data = data or {}
         if not name:
             name = self.name + handler.__name__
-        name = str(self.skill_id) + ':' + name
+        name = self._unique_name(name)
+
         self.add_event(name, handler, False)
         event_data = {}
         event_data['time'] = time.mktime(when.timetuple())
@@ -622,11 +635,10 @@ class MycroftSkill(object):
         """
         data = data or {}
         data = {
-            'event': name,
+            'event': self._unique_name(name),
             'data': data
         }
-        self.emitter.emit(Message('mycroft.schedule.update_event',
-                                  data=data))
+        self.emitter.emit(Message('mycroft.schedule.update_event', data=data))
 
     def cancel_event(self, name):
         """
@@ -636,9 +648,8 @@ class MycroftSkill(object):
             Args:
                 name (str):   Name of event
         """
-        data = {'event': name}
-        self.emitter.emit(Message('mycroft.scheduler.remove_event',
-                                  data=data))
+        data = {'event': self._unique_name(name)}
+        self.emitter.emit(Message('mycroft.scheduler.remove_event', data=data))
 
 
 class FallbackSkill(MycroftSkill):
