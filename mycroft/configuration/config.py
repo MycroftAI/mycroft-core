@@ -88,6 +88,7 @@ class LocalConf(dict):
     def __init__(self, path):
         super(LocalConf, self).__init__()
         if path:
+            self.path = path
             self.load_local(path)
 
     def load_local(self, path):
@@ -110,14 +111,18 @@ class LocalConf(dict):
         else:
             LOG.debug("Configuration '{}' not found".format(path))
 
-    def store(self, path):
+    def store(self, path=None):
         """
             Cache the received settings locally. The cache will be used if
             the remote is unreachable to load settings that are as close
             to the user's as possible
         """
+        path = path or self.path
         with open(path, 'w') as f:
             json.dump(self, f)
+
+    def merge(self, conf):
+        merge_dict(self, conf)
 
 
 class RemoteConf(LocalConf):
