@@ -15,7 +15,8 @@
 from config import Configuration
 ConfigurationManager = Configuration
 
-from config import Configuration, LocalConf, RemoteConf
+from config import Configuration, LocalConf, RemoteConf, \
+                   SYSTEM_CONFIG, USER_CONFIG
 
 
 # Compatibility

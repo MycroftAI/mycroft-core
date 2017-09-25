@@ -32,10 +32,12 @@ class TestConfiguration(TestCase):
         self.assertTrue(rc['test_config'])
         self.assertEquals(rc['location']['city'], 'Stockholm')
 
+    @mock.patch('json.dump')
     @mock.patch('mycroft.configuration.config.exists')
     @mock.patch('mycroft.configuration.config.isfile')
     @mock.patch('mycroft.configuration.config.load_commented_json')
-    def test_local(self, mock_json_loader, mock_isfile, mock_exists):
+    def test_local(self, mock_json_loader, mock_isfile, mock_exists,
+                   mock_json_dump):
         local_conf = {'answer': 42, 'falling_objects': ['flower pot', 'whale']}
         mock_exists.return_value = True
         mock_isfile.return_value = True
@@ -43,6 +45,15 @@ class TestConfiguration(TestCase):
         lc = mycroft.configuration.LocalConf('test')
         self.assertEquals(lc, local_conf)
 
+        # Test merge method
+        merge_conf = {'falling_objects': None, 'has_towel': True}
+        lc.merge(merge_conf)
+        self.assertEquals(lc['falling_objects'], None)
+        self.assertEquals(lc['has_towel'], True)
+
+        # test store
+        lc.store('test_conf.json')
+        self.assertEquals(mock_json_dump.call_args[0][0], lc)
         # exists but is not file
         mock_isfile.return_value = False
         lc = mycroft.configuration.LocalConf('test')

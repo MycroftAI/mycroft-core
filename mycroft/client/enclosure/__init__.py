@@ -28,7 +28,7 @@ from mycroft.client.enclosure.display_manager import \
 from mycroft.client.enclosure.eyes import EnclosureEyes
 from mycroft.client.enclosure.mouth import EnclosureMouth
 from mycroft.client.enclosure.weather import EnclosureWeather
-from mycroft.configuration import Configuration
+from mycroft.configuration import Configuration, LocalConf, USER_CONFIG
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util import play_wav, create_signal, connected, \
@@ -164,7 +164,10 @@ class EnclosureReader(Thread):
 
             LOG.info("Setting opt_in to: " + word)
             new_config = {'opt_in': enable}
-            Configuration.save(new_config)
+            user_config = localConf(USER_CONFIG)
+            user_config.merge(new_config)
+            user_config.store()
+
             self.ws.emit(Message("speak", {
                 'utterance': mycroft.dialog.get("learning " + word)}))
 
