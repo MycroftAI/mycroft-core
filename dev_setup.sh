@@ -27,8 +27,42 @@
 # exit on any error
 set -Ee
 
-if [ $(id -u) -eq 0 ]; then
+show_help() {
+        echo "dev_setup.sh: Mycroft development environment setup"
+        echo "Usage: dev_setup.sh [options]"
+        echo
+        echo "Options:"
+        echo "    -r, --allow-root  Allow to be run as root (e.g. sudo)"
+        echo "    -sm               Skip building mimic"
+        echo "    -h, --help        Show this message"
+        echo
+        echo "This will prepare your environment for running the mycroft-core"
+	echo "services. Normally this should be run as a normal user,"
+	echo "not as root/sudo."
+}
+
+opt_skipmimic=false
+opt_allowroot=false
+
+for var in "$@"
+do
+    if [[ ${var} == "-h" ]] || [[ ${var} == "--help" ]] ; then
+        show_help
+        exit 0
+    fi
+
+    if [[ ${var} == "-r" ]] || [[ ${var} == "--allow-root" ]] ; then
+        opt_allowroot=true
+    fi
+
+    if [[ ${var} == "-sm" ]] ; then
+        opt_skipmimic=true
+    fi
+done
+
+if [ $(id -u) -eq 0 ] && [ "${opt_allowroot}" != true ] ; then
   echo "This script should not be run as root or with sudo."
+  echo "To force, rerun with --allow-root"
   exit 1
 fi
 
@@ -77,7 +111,7 @@ fi
 
 # Check whether to build mimic (it takes a really long time!)
 build_mimic='y'
-if [[ "$1" == '-sm' ]] ; then
+if [[ ${opt_skipmimic} == true ]] ; then
   build_mimic='n'
 else
   # first, look for a build of mimic in the folder
