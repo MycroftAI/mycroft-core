@@ -33,11 +33,10 @@ function help() {
   echo "Services:"
   echo "  all                      runs core services: bus, audio, skills, voice"
   echo "  debug                    runs core services, then starts the CLI"
-  echo "  restart                  stops and restart core services"
   echo
   echo "Services:"
-  echo "  bus                      the messagebus service"
   echo "  audio                    the audio playback service"
+  echo "  bus                      the messagebus service"
   echo "  skills                   the skill service"
   echo "  voice                    voice capture service"
   echo "  wifi                     wifi setup service"
@@ -54,7 +53,7 @@ function help() {
   echo "  sdkdoc                   generate sdk documentation"
   echo
   echo "Examples:"
-  echo "  ${script}"
+  echo "  ${script} all"
   echo "  ${script} cli"
   echo "  ${script} unittest"
 
@@ -89,7 +88,6 @@ function launch-process() {
         echo "Initializing..."
         ${DIR}/scripts/prepare-msm.sh
         source ${VIRTUALENV_ROOT}/bin/activate
-        PYTHONPATH=${DIR}
         first_time=false
     fi
 
@@ -105,14 +103,20 @@ function launch-background() {
         echo "Initializing..."
         ${DIR}/scripts/prepare-msm.sh
         source ${VIRTUALENV_ROOT}/bin/activate
-        PYTHONPATH=${DIR}
         first_time=false
     fi
 
     name-to-script-path ${1}
 
+    # Check if already running
+    if [[ $( ps aux ) = *${_script}* ]] ; then
+        echo "Restarting: ${1}"
+        source stop-mycroft.sh ${1}
+    else
+        echo "Starting background service $1"
+    fi
+
     # Launch process in background, sending log to scripts/log/mycroft-*.log
-    echo "Starting background service $1"
     python ${_script} $_params >> ${scripts_dir}/logs/mycroft-${1}.log 2>&1 &
 }
 
@@ -121,16 +125,6 @@ shift
 _params=$@
 
 case ${_opt} in
-  "restart")
-    echo "Stopping all mycroft-core services"
-    source stop-mycroft.sh
-    echo "Restarting all mycroft-core services"
-    launch-background bus
-    launch-background skills
-    launch-background audio
-    launch-background voice
-    ;;
-
   "all")
     echo "Starting all mycroft-core services"
     launch-background bus
@@ -188,7 +182,6 @@ case ${_opt} in
 
   *)
     help
-    exit_code=0
     ;;
 esac
 
