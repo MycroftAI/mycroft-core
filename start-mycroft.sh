@@ -28,7 +28,7 @@ fi
 
 function help() {
   echo "${script}:  Mycroft command/service launcher"
-  echo "usage: ${script} [command]"
+  echo "usage: ${script} [command] [params]"
   echo
   echo "Services:"
   echo "  all                      runs core services: bus, audio, skills, voice"
@@ -76,7 +76,7 @@ function name-to-script-path() {
     "audioaccuracytest") _script=${DIR}/mycroft/audio-accuracy-test/audio_accuracy_test.py ;;
     "sdkdoc")          _script=${DIR}/doc/generate_sdk_docs.py ;;
     "enclosure")       _script=${DIR}/mycroft/client/enclosure/main.py ;;
-    
+
     *)
         echo "Error: Unknown name '${1}'"
         exit 1
@@ -94,7 +94,7 @@ function launch-process() {
     fi
 
     name-to-script-path ${1}
-    
+
     # Launch process in background, sending log to scripts/log/mycroft-*.log
     echo "Starting $1"
     python ${_script} $_params
@@ -110,7 +110,7 @@ function launch-background() {
     fi
 
     name-to-script-path ${1}
-    
+
     # Launch process in background, sending log to scripts/log/mycroft-*.log
     echo "Starting background service $1"
     python ${_script} $_params >> ${scripts_dir}/logs/mycroft-${1}.log 2>&1 &
@@ -130,7 +130,7 @@ case ${_opt} in
     launch-background audio
     launch-background voice
     ;;
-    
+
   "all")
     echo "Starting all mycroft-core services"
     launch-background bus
@@ -140,16 +140,16 @@ case ${_opt} in
     ;;
 
   "bus")
-    launch-background ${_opt} 
+    launch-background ${_opt}
     ;;
   "audio")
-    launch-background ${_opt} 
+    launch-background ${_opt}
     ;;
   "skills")
-    launch-background ${_opt} 
+    launch-background ${_opt}
     ;;
   "voice")
-    launch-background ${_opt} 
+    launch-background ${_opt}
     ;;
 
   "debug")
@@ -160,7 +160,7 @@ case ${_opt} in
     launch-background voice
     launch-process cli
     ;;
-  
+
   "cli")
     launch-process ${_opt}
     ;;
@@ -174,16 +174,16 @@ case ${_opt} in
     launch-process ${_opt}
     ;;
   "audiotest")
-    launch-process ${_opt} 
+    launch-process ${_opt}
     ;;
   "audioaccuracytest")
-    launch-process ${_opt} 
+    launch-process ${_opt}
     ;;
   "sdkdoc")
-    launch-process ${_opt} 
+    launch-process ${_opt}
     ;;
   "enclosure")
-    launch-process ${_opt} 
+    launch-process ${_opt}
     ;;
 
   *)
