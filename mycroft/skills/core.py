@@ -675,7 +675,9 @@ class FallbackSkill(MycroftSkill):
                         #  indicate completion
                         ws.emit(Message(
                             'mycroft.skill.handler.complete',
-                            data={'handler': get_handler_name(handler)}))
+                            data={'handler': "fallback",
+                                  "fallback_handler": get_handler_name(
+                                      handler)}))
                         return
                 except Exception as e:
                     LOG.info('Exception in fallback: ' + str(e))
