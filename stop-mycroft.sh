@@ -51,7 +51,7 @@ function end-process() {
     if process-running $1 ; then
         pid=$( ps aux | grep "[p]ython .*${1}/main.py" | awk '{print $2}' )
         kill ${pid}
-    
+
         c=1
         while [ $c -le 20 ]
         do
@@ -62,7 +62,7 @@ function end-process() {
                 c=999   # end loop
             fi
         done
-        
+
         if process-running $1 ; then
             kill -9 ${pid}
         fi
@@ -99,7 +99,6 @@ case ${OPT} in
 
   *)
     help
-    exit_code=0
     ;;
 esac
 
