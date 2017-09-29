@@ -28,6 +28,15 @@ def getLogger(name="MYCROFT"):
     return logging.getLogger(name)
 
 
+def _make_log_method(fn):
+    @classmethod
+    def method(cls, *args, **kwargs):
+        cls._log(fn, *args, **kwargs)
+
+    method.__func__.__doc__ = fn.__doc__
+    return method
+
+
 class LOG:
     """
     Custom logger class that acts like logging.Logger
@@ -42,6 +51,14 @@ class LOG:
     handler = None
     level = None
 
+    # Copy actual logging methods from logging.Logger
+    # Usage: LOG.debug(message)
+    debug = _make_log_method(logging.Logger.debug)
+    info = _make_log_method(logging.Logger.info)
+    warning = _make_log_method(logging.Logger.warning)
+    error = _make_log_method(logging.Logger.error)
+    exception = _make_log_method(logging.Logger.exception)
+
     @classmethod
     def init(cls):
         sys_config = '/etc/mycroft/mycroft.conf'
@@ -54,17 +71,6 @@ class LOG:
         cls.handler = logging.StreamHandler(sys.stdout)
         cls.handler.setFormatter(formatter)
         cls.create_logger('')  # Enables logging in external modules
-
-        def make_method(fn):
-            @classmethod
-            def method(cls, *args, **kwargs):
-                cls._log(fn, *args, **kwargs)
-            method.__func__.__doc__ = fn.__doc__
-            return method
-
-        # Copy actual logging methods from logging.Logger
-        for name in ['debug', 'info', 'warning', 'error', 'exception']:
-            setattr(cls, name, make_method(getattr(logging.Logger, name)))
 
     @classmethod
     def create_logger(cls, name):
