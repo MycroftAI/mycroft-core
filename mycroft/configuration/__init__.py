@@ -306,7 +306,7 @@ class ConfigurationManager(object):
             LOG.info("Saving config")
             loc_config = load_commented_json(location)
             with open(location, 'w') as f:
-                loc_config.update(config)
+                ConfigurationLoader.merge_conf(loc_config, config)
                 json.dump(loc_config, f)
         except Exception as e:
             LOG.error(e)
