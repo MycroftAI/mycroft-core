@@ -23,6 +23,10 @@ from mycroft.util.log import LOG
 
 
 class ChromecastService(AudioBackend):
+    """
+        Audio backend for playback on chromecast. Using the default media
+        playback controller included in pychromecast.
+    """
     def _connect(self, message):
         LOG.info('Trying to connect to chromecast')
         casts = pychromecast.get_chromecasts()
@@ -58,34 +62,43 @@ class ChromecastService(AudioBackend):
             self.emitter.emit(Message('ChromecastServiceConnect'))
 
     def supported_uris(self):
-        print "CHROMECAST FOUND: " + str(self.cast)
+        """ Return supported uris of chromecast. """
+        LOG.info("Chromecasts found: " + str(self.cast))
         if self.cast:
             return ['http', 'https']
         else:
             return []
 
     def clear_list(self):
+        """ Clear tracklist. """
         self.tracklist = []
-        pass
 
     def add_list(self, tracks):
+        """
+            Add list of tracks to chromecast playlist.
+
+            Args:
+                tracks (list): list media to add to playlist.
+        """
         self.tracklist = tracks
         pass
 
     def play(self):
+        """ Start playback. """
         self.cast.quit_app()
 
         track = self.tracklist[0]
-        print track, guess_type(track)
+        LOG.debug('track: {}, type: {}'.format(track, guess_type(track)))
         mime = guess_type(track)[0] or 'audio/mp3'
-        print mime
         self.cast.play_media(track, mime)
 
     def stop(self):
+        """ Stop playback and quit app. """
         self.cast.media_controller.stop()
         self.cast.quit_app()
 
     def pause(self):
+        """ Pause current playback. """
         if not self.cast.media_controller.is_paused:
             self.cast.media_controller.pause()
 
@@ -94,9 +107,11 @@ class ChromecastService(AudioBackend):
             self.cast.media_controller.play()
 
     def next(self):
+        """ Skip current track. (Not implemented) """
         pass
 
     def previous(self):
+        """ Return to previous track. (Not implemented) """
         pass
 
     def lower_volume(self):
@@ -108,6 +123,7 @@ class ChromecastService(AudioBackend):
         pass
 
     def track_info(self):
+        """ Return info about currently playing track. """
         info = {}
         ret = {}
         ret['name'] = info.get('name', '')
