@@ -183,7 +183,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         self.save_utterances = listener_config.get('record_utterances', False)
         self.save_wake_words = listener_config.get('record_wake_words') \
-            or self.upload_config['enable']
+            or self.upload_config['enable'] or self.config['opt_in']
         self.upload_lock = Lock()
         self.save_wake_words_dir = join(gettempdir(), 'mycroft_wake_words')
         self.filenames_to_upload = []
@@ -447,7 +447,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                     with open(filename, 'wb') as f:
                         f.write(audio.get_wav_data())
 
-                    if self.upload_config['enable']:
+                    if self.upload_config['enable'] or self.config['opt_in']:
                         t = Thread(target=self._upload_file, args=(filename,))
                         t.daemon = True
                         t.start()
