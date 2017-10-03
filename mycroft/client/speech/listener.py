@@ -28,6 +28,7 @@ from requests.exceptions import ConnectionError
 import mycroft.dialog
 from mycroft.client.speech.hotword_factory import HotWordFactory
 from mycroft.client.speech.mic import MutableMicrophone, ResponsiveRecognizer
+from mycroft.client.speech.pocketsphinx_audio_consumer import PocketsphinxAudioConsumer
 from mycroft.configuration import ConfigurationManager
 from mycroft.metrics import MetricsAggregator
 from mycroft.session import SessionManager
@@ -135,7 +136,22 @@ class AudioConsumer(Thread):
         if self._audio_length(audio) < self.MIN_AUDIO_SIZE:
             LOG.warning("Audio too short to be processed")
         else:
-            self.transcribe(audio)
+            if isinstance(self.stt, PocketsphinxAudioConsumer):
+                LOG.debug("test phrase decode/transcribe")
+                hyp = self.stt.transcribe(audio.frame_data)
+                # hyp = self.stt.wake_word_recognizer.transcribe(audio.frame_data)
+                if hyp:
+                    LOG.debug("listener.py process = hyp.hypstr = " + hyp.hypstr)
+                    payload = {
+                        'utterances': [hyp.hypstr.lower()],
+                        'lang': self.stt.lang,
+                        'session': SessionManager.get().session_id
+                    }
+                    self.emitter.emit("recognizer_loop:utterance", payload)
+                    self.metrics.attr('utterances', [hyp.hypstr.lower()])
+
+            else:
+                self.transcribe(audio)
 
     def transcribe(self, audio):
         text = None
@@ -206,9 +222,15 @@ class RecognizerLoop(EventEmitter):
                                             mute=self.mute_calls > 0)
         # FIXME - channels are not been used
         self.microphone.CHANNELS = self.config.get('channels')
-        self.wakeword_recognizer = self.create_wake_word_recognizer()
+
+        if self.config.get("producer", None) == "pocketsphinx":
+            self.wakeword_recognizer = PocketsphinxAudioConsumer(self.config, self.lang,  self)
+            self.wakeup_recognizer = self.create_wakeup_recognizer
+        else:
+            self.wakeword_recognizer = self.create_wake_word_recognizer()
+            self.wakeup_recognizer = self.create_wakeup_recognizer()
+
         # TODO - localization
-        self.wakeup_recognizer = self.create_wakeup_recognizer()
         self.responsive_recognizer = ResponsiveRecognizer(
             self.wakeword_recognizer)
         self.state = RecognizerLoopState()
@@ -242,14 +264,23 @@ class RecognizerLoop(EventEmitter):
         """
         self.state.running = True
         queue = Queue()
+
         self.producer = AudioProducer(self.state, queue, self.microphone,
                                       self.responsive_recognizer, self)
         self.producer.start()
-        self.consumer = AudioConsumer(self.state, queue, self,
-                                      STTFactory.create(),
-                                      self.wakeup_recognizer,
-                                      self.wakeword_recognizer)
+
+        if self.config.get("producer", None) == "pocketsphinx":
+            self.consumer = AudioConsumer(self.state, queue, self,
+                                          self.wakeword_recognizer,
+                                          self.wakeup_recognizer,
+                                          self.wakeword_recognizer)
+        else:
+            self.consumer = AudioConsumer(self.state, queue, self,
+                                          STTFactory.create(),
+                                          self.wakeup_recognizer,
+                                          self.wakeword_recognizer)
         self.consumer.start()
+
 
     def stop(self):
         self.state.running = False
