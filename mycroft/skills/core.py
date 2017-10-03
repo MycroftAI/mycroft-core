@@ -403,19 +403,62 @@ class MycroftSkill(object):
     def register_intent_file(self, intent_file, handler, need_self=False):
         """
             Register an Intent file with the intent service.
+            For example:
+
+            === food.order.intent ===
+            Order some {food}.
+            Order some {food} from {place}.
+            I'm hungry.
+            Grab some {food} from {place}.
+
+            Optionally, you can also use <register_entity_file>
+            to specify some examples of {food} and {place}
+
+            In addition, instead of writing out multiple variations
+            of the same sentence you can write:
+
+            === food.order.intent ===
+            (Order | Grab) some {food} (from {place} | ).
+            I'm hungry.
 
             Args:
                 intent_file: name of file that contains example queries
                              that should activate the intent
                 handler:     function to register with intent
-                need_self:   use for decorator. See register_intent
+                need_self:   use for decorator. See <register_intent>
         """
-        intent_name = str(self.skill_id) + ':' + intent_file
+        name = str(self.skill_id) + ':' + intent_file
         self.emitter.emit(Message("padatious:register_intent", {
             "file_name": join(self.vocab_dir, intent_file),
-            "intent_name": intent_name
+            "name": name
         }))
-        self.add_event(intent_name, handler, need_self)
+        self.add_event(name, handler, need_self)
+
+    def register_entity_file(self, entity_file):
+        """
+            Register an Entity file with the intent service.
+            And Entity file lists the exact values that an entity can hold.
+            For example:
+
+            === ask.day.intent ===
+            Is it {weekday}?
+
+            === weekday.entity ===
+            Monday
+            Tuesday
+            ...
+
+            Args:
+                entity_file: name of file that contains examples
+                             of an entity. Must end with .entity
+        """
+        if '.entity' not in entity_file:
+            raise ValueError('Invalid entity filename: ' + entity_file)
+        name = str(self.skill_id) + ':' + entity_file.replace('.entity', '')
+        self.emitter.emit(Message("padatious:register_entity", {
+            "file_name": join(self.vocab_dir, entity_file),
+            "name": name
+        }))
 
     def disable_intent(self, intent_name):
         """Disable a registered intent"""
