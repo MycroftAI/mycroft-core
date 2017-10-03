@@ -222,9 +222,9 @@ class MycroftSkillTest(unittest.TestCase):
             s.bind(self.emitter)
             s.initialize()
 
-    def check_register_intent_file(self, result_list):
-        for type in self.emitter.get_types():
-            self.assertEquals(type, 'padatious:register_intent')
+    def check_register_object_file(self, types_list, result_list):
+        self.assertEquals(sorted(self.emitter.get_types()),
+                          sorted(types_list))
         self.assertEquals(sorted(self.emitter.get_results()),
                           sorted(result_list))
         self.emitter.reset()
@@ -235,11 +235,25 @@ class MycroftSkillTest(unittest.TestCase):
         s.vocab_dir = join(dirname(__file__), 'intent_file')
         s.initialize()
 
-        expected = [{
-            'file_name': join(dirname(__file__), 'intent_file', 'test.intent'),
-            'intent_name': str(s.skill_id) + ':test.intent'}]
+        expected_types = [
+            'padatious:register_intent',
+            'padatious:register_entity'
+        ]
 
-        self.check_register_intent_file(expected)
+        expected_results = [
+            {
+                'file_name': join(dirname(__file__),
+                                  'intent_file', 'test.intent'),
+                'name': str(s.skill_id) + ':test.intent'
+            },
+            {
+                'file_name': join(dirname(__file__),
+                                  'intent_file', 'test_ent.entity'),
+                'name': str(s.skill_id) + ':test_ent'
+            }
+        ]
+
+        self.check_register_object_file(expected_types, expected_results)
 
     def check_register_decorators(self, result_list):
         self.assertEquals(sorted(self.emitter.get_results()),
@@ -263,7 +277,7 @@ class MycroftSkillTest(unittest.TestCase):
                     {
                      'file_name': join(dirname(__file__), 'intent_file',
                                        'test.intent'),
-                     'intent_name': str(s.skill_id) + ':test.intent'}]
+                     'name': str(s.skill_id) + ':test.intent'}]
 
         self.check_register_decorators(expected)
 
@@ -412,6 +426,7 @@ class TestSkill4(MycroftSkill):
     """ Test skill for padatious intent """
     def initialize(self):
         self.register_intent_file('test.intent', self.handler)
+        self.register_entity_file('test_ent.entity')
 
     def handler(self, message):
         pass
