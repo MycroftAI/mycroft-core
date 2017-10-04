@@ -105,6 +105,8 @@ class TranscribeSearch:
                 # filea.write(audio.get_flac_data())
 
             self.searching_file(globdate, "i like")
+        else:
+            LOG.info("Audio Save Permission Denied")
 
     def save_record(self, wav_name, audio):
         # TODO: use "with"

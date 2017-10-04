@@ -138,7 +138,7 @@ class AudioConsumer(Thread):
             LOG.warning("Audio too short to be processed")
         else:
             if isinstance(self.stt, PocketsphinxAudioConsumer):
-                LOG.debug("test phrase decode/transcribe")
+                # LOG.debug("test phrase decode/transcribe")
                 hyp = self.stt.transcribe(audio.frame_data)
                 # hyp = self.stt.wake_word_recognizer.transcribe(audio.frame_data)
                 if hyp:
@@ -183,7 +183,8 @@ class AudioConsumer(Thread):
             }
             self.emitter.emit("recognizer_loop:utterance", payload)
             self.metrics.attr('utterances', [text])
-            TranscribeSearch().write_transcribed_files(audio, text)
+
+            TranscribeSearch().write_transcribed_files(audio.frame_data, text)
 
     def __speak(self, utterance):
         payload = {
@@ -336,7 +337,7 @@ class RecognizerLoop(EventEmitter):
         self.start_async()
         while self.state.running:
             try:
-                time.sleep(1)
+                time.sleep(.25)
                 if self._config_hash != hash(
                         str(ConfigurationManager().get())):
                     LOG.debug('Config has changed, reloading...')
