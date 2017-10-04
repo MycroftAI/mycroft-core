@@ -347,6 +347,13 @@ class MycroftSkill(object):
                         handler(self, message)
                     elif len(getargspec(handler).args) == 1:
                         handler(self)
+                    elif len(getargspec(handler).args) == 0:
+                        # Zero may indicate multiple decorators, trying the
+                        # usual call signatures
+                        try:
+                            handler(self, message)
+                        except TypeError:
+                            handler(self)
                     else:
                         raise TypeError
                 else:
