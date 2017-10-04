@@ -117,9 +117,11 @@ class PocketsphinxAudioConsumer(Thread):
 
         model_lang_dir = join(BASEDIR, 'recognizer/model', str(self.lang))
         self.decoder = Decoder(self.create_decoder_config(model_lang_dir))
-        logger.debug("wake_word = " + self.wake_word)
+
         self.key_phrase = self.wake_word
+        logger.debug("wake_word = " + self.wake_word)
         self.decoder.set_keyphrase('wake_word', self.wake_word)
+
         jsgf = join(model_lang_dir, 'hello.jsgf')
         if exists(jsgf):
             self.decoder.set_jsgf_file('jsgf', jsgf)
@@ -135,6 +137,9 @@ class PocketsphinxAudioConsumer(Thread):
             if exists(lm):
                 logger.debug("lm = " + lm)
                 self.decoder.set_lm_file('lm', str(lm))
+
+        if listener_config.get('skip_wake_word'):
+            self.decoder.set_search('lm')
 
     def create_decoder_config(self, model_lang_dir):
         decoder_config = Decoder.default_config()
@@ -181,21 +186,21 @@ class PocketsphinxAudioConsumer(Thread):
             metrics.timer("mycroft.stt.local.time_s", time.time() - start)
         hyp = self.decoder.hyp()
         if hyp:
-            if self.wake_word in hyp.hypstr.lower():
+            if self.wake_word in hyp.hypstr.lower() or listener_config.get('skip_wake_word'):
                 logger.debug("transcribe get kw search = " + self.decoder.get_search())
                 self.decoder.set_search('lm')
             else:
                 self.decoder.set_keyphrase('wake_word', self.wake_word)
                 self.decoder.set_search('_default')
-            # logger.debug("transcribe search = " + self.decoder.get_search())
-            # logger.debug("transcribe hyp.hypstr = " + hyp.hypstr)
-            # logger.debug("transcribe success! decoder rtn = " + str(tstb))
-            # logger.debug("transcribe success, Byte_data = " + str(len(byte_data)))
-        # else:
-            # logger.debug("transcribe search = " + self.decoder.get_search())
-            # logger.debug("transcribe hyp = " + str(hyp))
-            # logger.debug("transcribe failed, decoder rtn = " + str(tstb))
-            # logger.debug("transcribe failed, Byte_data = " + str(len(byte_data)))
+            logger.debug("transcribe search = " + self.decoder.get_search())
+            logger.debug("transcribe hyp.hypstr = " + hyp.hypstr)
+            logger.debug("transcribe success! decoder rtn = " + str(tstb))
+            logger.debug("transcribe success, Byte_data = " + str(len(byte_data)))
+        else:
+            logger.debug("transcribe search = " + self.decoder.get_search())
+            logger.debug("transcribe hyp = " + str(hyp))
+            logger.debug("transcribe failed, decoder rtn = " + str(tstb))
+            logger.debug("transcribe failed, Byte_data = " + str(len(byte_data)))
         return hyp
 
     def found_wake_word(self, frame_data):
@@ -204,17 +209,6 @@ class PocketsphinxAudioConsumer(Thread):
             logger.debug("found_wake_word hyp.hypstr = " + hyp.hypstr)
 
         return hyp and self.wake_word in hyp.hypstr.lower()
-
-
-    def save_record(self, wav_name, audio):
-        # TODO: use "with"
-        waveFile = wave.open(wav_name, 'wb')
-        waveFile.setnchannels(1)
-        waveFile.setsampwidth(self.SAMPLE_WIDTH)
-        waveFile.setframerate(self.SAMPLE_RATE)
-        waveFile.writeframes(audio)
-        waveFile.close()
-
 
     def __speak(self, utterance):
         payload = {

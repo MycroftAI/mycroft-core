@@ -70,9 +70,11 @@ def handle_speak(event):
 def handle_complete_intent_failure(event):
     LOG.info("Failed to find intent.")
     # TODO: Localize
-    data = {'utterance':
+    listener_config = self.config.get('listener')
+    if not listener_config.get('skip_wake_word'):
+        data = {'utterance':
             "Sorry, I didn't catch that. Please rephrase your request."}
-    ws.emit(Message('speak', data))
+        ws.emit(Message('speak', data))
 
 
 def handle_sleep(event):
