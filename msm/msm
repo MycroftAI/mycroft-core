@@ -49,7 +49,7 @@ function help() {
 # These skills are automatically installed on all mycroft-core
 # installations.
 DEFAULT_SKILLS="skill-alarm skill-audio-record skill-configuration "\
-"skill-date-time skill-desktop-launcher skill-ip skill-joke "\
+"skill-date-time skill-desktop-launcher duckduckgo-skill skill-ip skill-joke "\
 "skill-hello-world skill-media skill-npr-news skill-naptime skill-pairing "\
 "skill-personal skill-playback-control skill-reminder skill-installer "\
 "skill-singing skill-speak skill-spelling skill-stop skill-stock "\
