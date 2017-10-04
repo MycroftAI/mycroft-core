@@ -27,9 +27,9 @@ from mycroft.util.log import LOG
 
 class ScheduledSkill(MycroftSkill):
     """
-    DEPRECATED!  Instead, use the MycroftSkill methods schedule_event(), 
+    DEPRECATED!  Instead, use the MycroftSkill methods schedule_event(),
     schedule_repeating_event(), update_event(), and cancel_event().
-    
+
     Abstract class which provides a repeatable notification behaviour at a
     specified time.
 
@@ -120,9 +120,9 @@ class ScheduledSkill(MycroftSkill):
 
 class ScheduledCRUDSkill(ScheduledSkill):
     """
-    DEPRECATED!  Instead, use the MycroftSkill methods schedule_event(), 
+    DEPRECATED!  Instead, use the MycroftSkill methods schedule_event(),
     schedule_repeating_event(), update_event(), and cancel_event().
-    
+
     Abstract CRUD class which provides a repeatable notification behaviour at
     a specified time.
 
