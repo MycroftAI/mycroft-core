@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from __future__ import print_function
 import argparse
 
 from speech_recognition import Recognizer
@@ -46,7 +47,15 @@ def main():
         help="Duration of recording in seconds (Default: 10)")
     args = parser.parse_args()
 
+    print(" ===========================================================")
+    print(" ==         STARTING TO RECORD, MAKE SOME NOISE!          ==")
+    print(" ===========================================================")
+
     record(args.filename, args.duration)
+
+    print(" ===========================================================")
+    print(" ==           DONE RECORDING, PLAYING BACK...             ==")
+    print(" ===========================================================")
     play_wav(args.filename)
 
 
