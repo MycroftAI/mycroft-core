@@ -75,7 +75,7 @@ class PadatiousService(FallbackSkill):
 
             self.finished_training_event.clear()
             LOG.info('Training...')
-            self.container.train(print_updates=False)
+            self.container.train()
             LOG.info('Training complete.')
             self.finished_training_event.set()
 
