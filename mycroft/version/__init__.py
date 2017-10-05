@@ -21,8 +21,8 @@ from mycroft.util.log import LOG
 
 # The following lines are replaced during the release process.
 # START_VERSION_BLOCK
-CORE_VERSION_MAJOR = 9
-CORE_VERSION_MINOR = 0
+CORE_VERSION_MAJOR = 0
+CORE_VERSION_MINOR = 9
 CORE_VERSION_BUILD = 0
 # END_VERSION_BLOCK
 
