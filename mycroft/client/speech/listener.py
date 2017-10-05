@@ -357,9 +357,9 @@ class RecognizerLoop(EventEmitter):
         """
             Reload configuration and restart consumer and producer
         """
-        os.system('/home/guy/github/mycroft/mycroft-core-mirror/start-mycroft.sh voice')
-
-
+        BASEDIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+        LOG.debug('BASEDIR = '+ BASEDIR)
+        os.system(BASEDIR + '/start-mycroft.sh voice')
         # self.stop()
         # # load config
         # self._load_config()
