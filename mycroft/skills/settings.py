@@ -36,7 +36,8 @@ from os.path import isfile, join
 from mycroft.api import DeviceApi
 from mycroft.util.log import LOG
 
-SKILLS_DIR = "/opt/mycroft/skills"
+SKILLS_DIR = "/home/guy/github/mycroft/mycroft-skills-mirror"
+# SKILLS_DIR = "/opt/mycroft/skills"
 
 
 # TODO: allow deleting skill when skill is deleted

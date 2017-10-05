@@ -51,8 +51,13 @@ def handle_no_internet():
 
 
 def handle_wakeword(event):
-    LOG.info("Wakeword Detected: " + event['utterance'])
+    listener_config = config.get('listener')
+    if not listener_config.get('skip_wake_word'):
+        LOG.info("Wakeword Detected: " + event['utterance'])
+    else:
+        LOG.info("Wakeword skipped: ")
     ws.emit(Message('recognizer_loop:wakeword', event))
+
 
 
 def handle_utterance(event):
@@ -70,13 +75,18 @@ def handle_speak(event):
 def handle_complete_intent_failure(event):
     LOG.info("Failed to find intent.")
     # TODO: Localize
-    data = {'utterance':
+    listener_config = config.get('listener')
+    if not listener_config.get('skip_wake_word'):
+        data = {'utterance':
             "Sorry, I didn't catch that. Please rephrase your request."}
-    ws.emit(Message('speak', data))
+        ws.emit(Message('speak', data))
 
 
 def handle_sleep(event):
     loop.sleep()
+
+def handle_reload(event):
+    loop.reload()
 
 
 def handle_wake_up(event):
@@ -142,9 +152,11 @@ def main():
     loop.on('recognizer_loop:wakeword', handle_wakeword)
     loop.on('recognizer_loop:record_end', handle_record_end)
     loop.on('recognizer_loop:no_internet', handle_no_internet)
+    loop.on('recognizer_loop:reload', handle_reload)
     ws.on('open', handle_open)
     ws.on('complete_intent_failure', handle_complete_intent_failure)
     ws.on('recognizer_loop:sleep', handle_sleep)
+    ws.on('recognizer_loop:reload', handle_reload)
     ws.on('recognizer_loop:wake_up', handle_wake_up)
     ws.on('mycroft.mic.mute', handle_mic_mute)
     ws.on('mycroft.mic.unmute', handle_mic_unmute)

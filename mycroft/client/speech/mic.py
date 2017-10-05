@@ -39,6 +39,7 @@ from mycroft.configuration import ConfigurationManager
 from mycroft.session import SessionManager
 from mycroft.util import (
     check_for_signal,
+    create_signal,
     get_ipc_directory,
     resolve_resource_file,
     play_wav
@@ -165,6 +166,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.config = ConfigurationManager.instance()
         listener_config = self.config.get('listener')
         self.upload_config = listener_config.get('wake_word_upload')
+        self.skip_wake_word = listener_config.get('skip_wake_word', False)
         self.wake_word_name = listener_config['wake_word']
         # The maximum audio in seconds to keep for transcribing a phrase
         # The wake word must fit in this time
@@ -487,7 +489,11 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         #       speech is detected, but there is no code to actually do that.
         self.adjust_for_ambient_noise(source, 1.0)
 
-        LOG.debug("Waiting for wake word...")
+        if self.skip_wake_word:
+            create_signal('startListening')
+        else:
+            LOG.debug("Waiting for wake word...")
+
         self._wait_until_wake_word(source, sec_per_buffer)
         if self._stop_signaled:
             return
