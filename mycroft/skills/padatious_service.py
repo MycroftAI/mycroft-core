@@ -25,7 +25,7 @@ from mycroft.skills.core import FallbackSkill
 from mycroft.util.log import LOG
 
 
-PADATIOUS_VERSION = '0.3.2'  # Also update in requirements.txt
+PADATIOUS_VERSION = '0.3.3'  # Also update in requirements.txt
 
 
 class PadatiousService(FallbackSkill):
@@ -90,10 +90,10 @@ class PadatiousService(FallbackSkill):
         self.wait_and_train()
 
     def register_intent(self, message):
-        self._register_object(message, 'intent', self.container.add_intent)
+        self._register_object(message, 'intent', self.container.load_intent)
 
     def register_entity(self, message):
-        self._register_object(message, 'entity', self.container.add_entity)
+        self._register_object(message, 'entity', self.container.load_entity)
 
     def handle_fallback(self, message):
         utt = message.data.get('utterance')
