@@ -28,8 +28,6 @@ psutil==5.2.1
 pep8==1.7.0
 multi_key_dict==2.0.3
 pocketsphinx==0.1.0
-wifi==0.3.8
-pyric==0.1.6
 inflection==0.3.1
 pytz==2017.2
 pillow==4.1.1
@@ -40,4 +38,4 @@ pulsectl==17.7.4
 aiml==0.8.6
 
 # Also update in mycroft/skills/padatious_service.py
-padatious==0.2.2
+padatious==0.3.2

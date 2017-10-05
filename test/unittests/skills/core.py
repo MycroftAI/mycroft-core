@@ -1,5 +1,18 @@
 # -*- coding: utf-8 -*-
-
+# Copyright 2017 Mycroft AI Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 import sys
 import unittest
 
@@ -13,8 +26,6 @@ from mycroft.messagebus.message import Message
 from mycroft.skills.core import load_regex_from_file, load_regex, \
     load_vocab_from_file, load_vocabulary, MycroftSkill, \
     load_skill, create_skill_descriptor, open_intent_envelope
-
-__author__ = 'eward'
 
 
 class MockEmitter(object):
@@ -222,9 +233,9 @@ class MycroftSkillTest(unittest.TestCase):
             s.bind(self.emitter)
             s.initialize()
 
-    def check_register_intent_file(self, result_list):
-        for type in self.emitter.get_types():
-            self.assertEquals(type, 'padatious:register_intent')
+    def check_register_object_file(self, types_list, result_list):
+        self.assertEquals(sorted(self.emitter.get_types()),
+                          sorted(types_list))
         self.assertEquals(sorted(self.emitter.get_results()),
                           sorted(result_list))
         self.emitter.reset()
@@ -235,11 +246,25 @@ class MycroftSkillTest(unittest.TestCase):
         s.vocab_dir = join(dirname(__file__), 'intent_file')
         s.initialize()
 
-        expected = [{
-            'file_name': join(dirname(__file__), 'intent_file', 'test.intent'),
-            'intent_name': str(s.skill_id) + ':test.intent'}]
+        expected_types = [
+            'padatious:register_intent',
+            'padatious:register_entity'
+        ]
 
-        self.check_register_intent_file(expected)
+        expected_results = [
+            {
+                'file_name': join(dirname(__file__),
+                                  'intent_file', 'test.intent'),
+                'name': str(s.skill_id) + ':test.intent'
+            },
+            {
+                'file_name': join(dirname(__file__),
+                                  'intent_file', 'test_ent.entity'),
+                'name': str(s.skill_id) + ':test_ent'
+            }
+        ]
+
+        self.check_register_object_file(expected_types, expected_results)
 
     def check_register_decorators(self, result_list):
         self.assertEquals(sorted(self.emitter.get_results()),
@@ -263,7 +288,7 @@ class MycroftSkillTest(unittest.TestCase):
                     {
                      'file_name': join(dirname(__file__), 'intent_file',
                                        'test.intent'),
-                     'intent_name': str(s.skill_id) + ':test.intent'}]
+                     'name': str(s.skill_id) + ':test.intent'}]
 
         self.check_register_decorators(expected)
 
@@ -412,6 +437,7 @@ class TestSkill4(MycroftSkill):
     """ Test skill for padatious intent """
     def initialize(self):
         self.register_intent_file('test.intent', self.handler)
+        self.register_entity_file('test_ent.entity')
 
     def handler(self, message):
         pass

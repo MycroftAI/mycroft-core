@@ -1,19 +1,17 @@
-# Copyright 2016 Mycroft AI, Inc.
+# Copyright 2017 Mycroft AI Inc.
 #
-# This file is part of Mycroft Core.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Mycroft Core is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
-# Mycroft Core is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
-# You should have received a copy of the GNU General Public License
-# along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 import imp
 import operator
 import sys
@@ -35,7 +33,6 @@ from mycroft.messagebus.message import Message
 from mycroft.skills.settings import SkillSettings
 from mycroft.util.log import LOG
 
-__author__ = 'seanfitz'
 
 MainModule = '__init__'
 
@@ -347,6 +344,13 @@ class MycroftSkill(object):
                         handler(self, message)
                     elif len(getargspec(handler).args) == 1:
                         handler(self)
+                    elif len(getargspec(handler).args) == 0:
+                        # Zero may indicate multiple decorators, trying the
+                        # usual call signatures
+                        try:
+                            handler(self, message)
+                        except TypeError:
+                            handler(self)
                     else:
                         raise TypeError
                 else:
@@ -403,19 +407,62 @@ class MycroftSkill(object):
     def register_intent_file(self, intent_file, handler, need_self=False):
         """
             Register an Intent file with the intent service.
+            For example:
+
+            === food.order.intent ===
+            Order some {food}.
+            Order some {food} from {place}.
+            I'm hungry.
+            Grab some {food} from {place}.
+
+            Optionally, you can also use <register_entity_file>
+            to specify some examples of {food} and {place}
+
+            In addition, instead of writing out multiple variations
+            of the same sentence you can write:
+
+            === food.order.intent ===
+            (Order | Grab) some {food} (from {place} | ).
+            I'm hungry.
 
             Args:
                 intent_file: name of file that contains example queries
                              that should activate the intent
                 handler:     function to register with intent
-                need_self:   use for decorator. See register_intent
+                need_self:   use for decorator. See <register_intent>
         """
-        intent_name = str(self.skill_id) + ':' + intent_file
+        name = str(self.skill_id) + ':' + intent_file
         self.emitter.emit(Message("padatious:register_intent", {
             "file_name": join(self.vocab_dir, intent_file),
-            "intent_name": intent_name
+            "name": name
         }))
-        self.add_event(intent_name, handler, need_self)
+        self.add_event(name, handler, need_self)
+
+    def register_entity_file(self, entity_file):
+        """
+            Register an Entity file with the intent service.
+            And Entity file lists the exact values that an entity can hold.
+            For example:
+
+            === ask.day.intent ===
+            Is it {weekday}?
+
+            === weekday.entity ===
+            Monday
+            Tuesday
+            ...
+
+            Args:
+                entity_file: name of file that contains examples
+                             of an entity. Must end with .entity
+        """
+        if '.entity' not in entity_file:
+            raise ValueError('Invalid entity filename: ' + entity_file)
+        name = str(self.skill_id) + ':' + entity_file.replace('.entity', '')
+        self.emitter.emit(Message("padatious:register_entity", {
+            "file_name": join(self.vocab_dir, entity_file),
+            "name": name
+        }))
 
     def disable_intent(self, intent_name):
         """Disable a registered intent"""
