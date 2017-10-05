@@ -152,6 +152,7 @@ def main():
     loop.on('recognizer_loop:wakeword', handle_wakeword)
     loop.on('recognizer_loop:record_end', handle_record_end)
     loop.on('recognizer_loop:no_internet', handle_no_internet)
+    loop.on('recognizer_loop:reload', handle_reload)
     ws.on('open', handle_open)
     ws.on('complete_intent_failure', handle_complete_intent_failure)
     ws.on('recognizer_loop:sleep', handle_sleep)

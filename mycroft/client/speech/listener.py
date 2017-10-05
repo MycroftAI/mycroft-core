@@ -17,6 +17,7 @@
 
 
 import time
+import os
 from Queue import Queue
 from threading import Thread
 
@@ -35,6 +36,9 @@ from mycroft.session import SessionManager
 from mycroft.stt import STTFactory
 from mycroft.util.log import LOG
 from mycroft.client.speech.transcribesearch import TranscribeSearch
+from mycroft.util import (
+    create_signal,
+    check_for_signal)
 
 
 class AudioProducer(Thread):
@@ -228,7 +232,8 @@ class RecognizerLoop(EventEmitter):
         # FIXME - channels are not been used
         self.microphone.CHANNELS = self.config.get('channels')
 
-        if self.config.get("producer", None) == "pocketsphinx":
+        if check_for_signal('UseLocalSTT',-1):
+        # if self.config.get("producer", None) == "pocketsphinx" or check_for_signal('UseLocalSTT'):
             self.wakeword_recognizer = PocketsphinxAudioConsumer(self.config, self.lang,  self)
             self.wakeup_recognizer = self.create_wakeup_recognizer
         else:
@@ -274,7 +279,8 @@ class RecognizerLoop(EventEmitter):
                                       self.responsive_recognizer, self)
         self.producer.start()
 
-        if self.config.get("producer", None) == "pocketsphinx":
+        # if self.config.get("producer", None) == "pocketsphinx" \
+        if check_for_signal('UseLocalSTT',-1):
             self.consumer = AudioConsumer(self.state, queue, self,
                                           self.wakeword_recognizer,
                                           self.wakeup_recognizer,
@@ -337,7 +343,7 @@ class RecognizerLoop(EventEmitter):
         self.start_async()
         while self.state.running:
             try:
-                time.sleep(.25)
+                time.sleep(1)
                 if self._config_hash != hash(
                         str(ConfigurationManager().get())):
                     LOG.debug('Config has changed, reloading...')
@@ -351,8 +357,11 @@ class RecognizerLoop(EventEmitter):
         """
             Reload configuration and restart consumer and producer
         """
-        self.stop()
-        # load config
-        self._load_config()
-        # restart
-        self.start_async()
+        os.system('/home/guy/github/mycroft/mycroft-core-mirror/start-mycroft.sh voice')
+
+
+        # self.stop()
+        # # load config
+        # self._load_config()
+        # # restart
+        # self.start_async()
