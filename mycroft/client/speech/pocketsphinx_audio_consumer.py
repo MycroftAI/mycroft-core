@@ -142,9 +142,23 @@ class PocketsphinxAudioConsumer(Thread):
                 self.decoder.set_lm_file('lm', str(lm))
 
         if check_for_signal('skip_wake_word',-1):
-        # if listener_config.get('skip_wake_word'):
             self.decoder.set_search('lm')
+        elif listener_config.get('skip_wake_word', True) \
+         and not check_for_signal('restartedFromSkill',10):
+            self.decoder.set_search('lm')
+            create_signal('skip_wake_word')
 
+            # if not check_for_signal('skip_wake_word',-1)\
+        # and not check_for_signal('skip_wake_word_skill',-1):   # signal set in skill
+        #     if listener_config.get('skip_wake_word', True):
+        #         check_for_signal('skip_wake_word', 0)  # remove signal before creating
+        #         create_signal('skip_wake_word')
+        #         self.decoder.set_search('lm')
+        # elif check_for_signal('skip_wake_word'):
+        #     check_for_signal('skip_wake_word', 0)  # remove signal before creating
+        #     create_signal('skip_wake_word')
+        #     self.decoder.set_search('lm')
+        #
     def create_decoder_config(self, model_lang_dir):
         decoder_config = Decoder.default_config()
         # hmm_dir = join(model_lang_dir, 'en-us-semi-full')
@@ -160,6 +174,7 @@ class PocketsphinxAudioConsumer(Thread):
         else:
             decoder_config.set_string('-dict',
                                       '/home/guy/github/mycroft/mycroft-core-mirror/mycroft/client/speech/recognizer/model/en-us/cmudict-en-us_original.dict')
+
         decoder_config.set_float('-samprate', self.SAMPLE_RATE)
         decoder_config.set_float('-kws_threshold', self.config.get('threshold', 1))
         decoder_config.set_string('-cmninit', '40,3,-1')

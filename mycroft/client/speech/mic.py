@@ -161,10 +161,28 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         listener_config = self.config.get('listener')
         self.upload_config = listener_config.get('wake_word_upload')
         # self.skip_wake_word = listener_config.get('skip_wake_word', False)
+        # if check_for_signal('skip_wake_word',-1) \
+        # or listener_config.get('skip_wake_word', True):
+        #     self.skip_wake_word = True
+        # else:
+        #     self.skip_wake_word = False
+
+
+        self.skip_wake_word = False
+
         if check_for_signal('skip_wake_word',-1):
             self.skip_wake_word = True
-        else:
-            self.skip_wake_word = False
+        elif listener_config.get('skip_wake_word', True) \
+         and not check_for_signal('restartedFromSkill',10):
+            self.skip_wake_word = True
+
+        # if not check_for_signal('skip_wake_word',-1)\
+        # and not check_for_signal('skip_wake_word_skill',-1):   # signal set in skill
+        #     if listener_config.get('skip_wake_word', True):
+        #         self.skip_wake_word = True
+        # elif check_for_signal('skip_wake_word'):
+        #     self.skip_wake_word = True
+
         self.wake_word_name = listener_config['wake_word']
         # The maximum audio in seconds to keep for transcribing a phrase
         # The wake word must fit in this time
@@ -501,7 +519,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         # If enabled, play a wave file with a short sound to audibly
         # indicate recording has begun.
-        if self.config.get('confirm_listening'):
+        if self.config.get('confirm_listening') and not check_for_signal('skip_wake_word',-1):
             file = resolve_resource_file(
                 self.config.get('sounds').get('start_listening'))
             if file:

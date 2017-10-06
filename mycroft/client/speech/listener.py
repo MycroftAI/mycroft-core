@@ -339,7 +339,7 @@ class RecognizerLoop(EventEmitter):
         self.start_async()
         while self.state.running:
             try:
-                time.sleep(1)
+                time.sleep(.1)
                 if self._config_hash != hash(
                         str(ConfigurationManager().get())):
                     LOG.debug('Config has changed, reloading...')
