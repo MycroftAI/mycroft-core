@@ -23,6 +23,9 @@ from mycroft.lock import Lock as PIDLock  # Create/Support PID locking file
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
+from mycroft.util import (
+    create_signal,
+    check_for_signal)
 
 ws = None
 lock = Lock()
@@ -47,8 +50,8 @@ def handle_no_internet():
 
 
 def handle_wakeword(event):
-    listener_config = config.get('listener')
-    if not listener_config.get('skip_wake_word'):
+    # listener_config = config.get('listener')
+    if not check_for_signal('skip_wake_word',-1):
         LOG.info("Wakeword Detected: " + event['utterance'])
     else:
         LOG.info("Wakeword skipped: ")
@@ -71,8 +74,8 @@ def handle_speak(event):
 def handle_complete_intent_failure(event):
     LOG.info("Failed to find intent.")
     # TODO: Localize
-    listener_config = config.get('listener')
-    if not listener_config.get('skip_wake_word'):
+    # listener_config = config.get('listener')
+    if not check_for_signal('skip_wake_word',-1):
         data = {'utterance':
             "Sorry, I didn't catch that. Please rephrase your request."}
         ws.emit(Message('speak', data))

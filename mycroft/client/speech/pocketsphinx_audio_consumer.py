@@ -40,6 +40,9 @@ from mycroft.metrics import MetricsAggregator
 from mycroft.util.log import getLogger
 
 from pocketsphinx import Decoder
+from mycroft.util import (
+    create_signal,
+    check_for_signal)
 
 # from mycroft.client.speech.transcribesearch import TranscribeSearch
 # import speech_recognition as sr
@@ -138,7 +141,8 @@ class PocketsphinxAudioConsumer(Thread):
                 logger.debug("lm = " + lm)
                 self.decoder.set_lm_file('lm', str(lm))
 
-        if listener_config.get('skip_wake_word'):
+        if check_for_signal('skip_wake_word',-1):
+        # if listener_config.get('skip_wake_word'):
             self.decoder.set_search('lm')
 
     def create_decoder_config(self, model_lang_dir):
@@ -186,7 +190,8 @@ class PocketsphinxAudioConsumer(Thread):
             metrics.timer("mycroft.stt.local.time_s", time.time() - start)
         hyp = self.decoder.hyp()
         if hyp:
-            if self.wake_word in hyp.hypstr.lower() or listener_config.get('skip_wake_word'):
+            if self.wake_word in hyp.hypstr.lower() or check_for_signal('skip_wake_word',-1):
+            # if self.wake_word in hyp.hypstr.lower() or listener_config.get('skip_wake_word'):
                 logger.debug("transcribe get kw search = " + self.decoder.get_search())
                 self.decoder.set_search('lm')
             else:
