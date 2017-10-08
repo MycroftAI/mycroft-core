@@ -13,9 +13,9 @@
 # limitations under the License.
 #
 import time
-from threading import Lock
-
 import re
+
+from threading import Lock
 
 from mycroft.configuration import ConfigurationManager
 from mycroft.tts import TTSFactory
@@ -114,7 +114,6 @@ def handle_stop(event):
     _last_stop_signal = time.time()
     tts.playback.clear_queue()
     tts.playback.clear_visimes()
-    stop_speaking()
 
 
 def init(websocket):
@@ -131,6 +130,7 @@ def init(websocket):
     ConfigurationManager.init(ws)
     config = ConfigurationManager.get()
     ws.on('mycroft.stop', handle_stop)
+    ws.on('mycroft.audio.speech.stop', handle_stop)
     ws.on('speak', handle_speak)
 
     tts = TTSFactory.create()
