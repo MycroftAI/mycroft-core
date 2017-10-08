@@ -250,8 +250,9 @@ function install() {
     fi
 
     echo "Installing from: ${repo}"
-    git clone "${repo}" >> /dev/null
-    if ! cd "${name}" ; then
+    temp_folder=`mktemp -d`
+    git clone "${repo}" ${temp_folder} >> /dev/null
+    if ! cd "${temp_folder}" ; then
       echo "ERROR: Unable to access directory ${name}!"
       return 102
     fi
@@ -260,7 +261,7 @@ function install() {
       owner=$( stat -c %U "${mycroft_skill_folder}/${name}" )
       group=$( stat -c %G "${mycroft_skill_folder}/${name}" )
       if [[ "${group}" != "mycroft" ]] || [[ "${owner}" != "mycroft" ]] ; then
-         if ! sudo chown -R mycroft:mycroft "${mycroft_skill_folder}/${name}" ; then
+         if ! sudo chown -R mycroft:mycroft "${tmp_folder}" ; then
            echo "ERROR: Unable to chown install directory ${name}!"
            return 123
          fi
@@ -293,7 +294,8 @@ function install() {
         fi
       fi
     fi
-
+    echo "moving ${temp_folder} to ${mycroft_skill_folder}/${name}"
+    mv ${temp_folder} ${mycroft_skill_folder}/${name}
     echo "Installed: ${name}"
     return 0
 }
