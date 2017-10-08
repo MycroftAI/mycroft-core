@@ -16,7 +16,8 @@ import time
 
 import psutil
 
-from mycroft.util.signal import check_for_signal
+from mycroft.util.signal import check_for_signal, create_signal
+import mycroft.configuration
 
 
 def is_speaking():
@@ -41,7 +42,6 @@ def wait_while_speaking():
 
 
 def _kill(names):
-    print psutil.pids()
     for name in names:
         for p in psutil.process_iter():
             try:
@@ -55,15 +55,14 @@ def _kill(names):
 def stop_speaking():
     # TODO: Less hacky approach to this once Audio Manager is implemented
     # Skills should only be able to stop speech they've initiated
-    config = mycroft.configuration.ConfigurationManager.instance()
+    config = mycroft.configuration.ConfigurationManager.get()
 
     create_signal('stoppingTTS')
 
     # Perform in while loop in case the utterance contained periods and was
     # split into multiple chunks by handle_speak()
     while check_for_signal("isSpeaking", -1):
-        _kill([config.get('tts').get('module')])
-        _kill(["aplay"])
+        _kill([config.get('tts').get('module'), 'aplay'])
         time.sleep(0.25)
 
     # This consumes the signal
