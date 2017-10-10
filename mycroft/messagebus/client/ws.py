@@ -1,19 +1,22 @@
-# Copyright 2017 Mycroft AI Inc.
+# Copyright 2016 Mycroft AI, Inc.
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
+# This file is part of Mycroft Core.
 #
-#    http://www.apache.org/licenses/LICENSE-2.0
+# Mycroft Core is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Mycroft Core is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
+# You should have received a copy of the GNU General Public License
+# along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 import json
 import time
+import ssl
 from multiprocessing.pool import ThreadPool
 
 from pyee import EventEmitter
@@ -24,6 +27,8 @@ from mycroft.messagebus.message import Message
 from mycroft.util import validate_param
 from mycroft.util.log import LOG
 
+__author__ = 'seanfitz', 'jdorleans'
+
 
 class WebsocketClient(object):
     def __init__(self, host=None, port=None, route=None, ssl=None):
@@ -33,6 +38,8 @@ class WebsocketClient(object):
         port = port or config.get("port")
         route = route or config.get("route")
         ssl = ssl or config.get("ssl")
+        self.cert = config.get("cert")
+        self.key = config.get("key")
         validate_param(host, "websocket.host")
         validate_param(port, "websocket.port")
         validate_param(route, "websocket.route")
@@ -51,7 +58,8 @@ class WebsocketClient(object):
     def create_client(self):
         return WebSocketApp(self.url,
                             on_open=self.on_open, on_close=self.on_close,
-                            on_error=self.on_error, on_message=self.on_message)
+                            on_error=self.on_error,
+                            on_message=self.on_message)
 
     def on_open(self, ws):
         LOG.info("Connected")
@@ -110,7 +118,9 @@ class WebsocketClient(object):
         self.emitter.remove_all_listeners(event_name)
 
     def run_forever(self):
-        self.client.run_forever()
+        self.client.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE,
+                   "check_hostname": False,
+                   "ssl_version": ssl.PROTOCOL_TLSv1})
 
     def close(self):
         self.client.close()
