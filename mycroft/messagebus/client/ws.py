@@ -38,8 +38,6 @@ class WebsocketClient(object):
         port = port or config.get("port")
         route = route or config.get("route")
         ssl = ssl or config.get("ssl")
-        self.cert = config.get("cert")
-        self.key = config.get("key")
         validate_param(host, "websocket.host")
         validate_param(port, "websocket.port")
         validate_param(route, "websocket.route")
