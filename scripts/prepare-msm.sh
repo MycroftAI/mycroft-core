@@ -18,7 +18,16 @@ mycroft_root_dir='/opt/mycroft'
 skills_dir="${mycroft_root_dir}"/skills
 # exit on any error
 set -Ee
-chmod +x msm/msm
+
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do
+  DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+ 
+chmod +x ${DIR}/../msm/msm
 
 # Determine which user is running this script
 setup_user=$USER
