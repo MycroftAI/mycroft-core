@@ -168,12 +168,17 @@ class PocketsphinxAudioConsumer(Thread):
         decoder_config.set_string('-hmm', hmm_dir)
         # decoder_config.set_string('-hmm', join(model_lang_dir, hmm_dir))
         # logger.debug("dict = " + model_lang_dir + '/' + self.lang + '.dict')
-        if config.get('enclosure', {}).get('platform') == "picroft":
-            decoder_config.set_string('-dict',
-                                      '/usr/local/lib/python2.7/site-packages/mycroft_core-0.8.20-py2.7.egg/mycroft/client/lspeech/model/en-us/cmudict-en-us_original.dict')
-        else:
-            decoder_config.set_string('-dict',
-                                      '/home/guy/github/mycroft/mycroft-core-mirror/mycroft/client/speech/recognizer/model/en-us/cmudict-en-us_original.dict')
+        # BASEDIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+        decoder_config.set_string('-dict',
+                                  BASEDIR + '/recognizer/model/en-us/cmudict-en-us_original.dict')
+        # if config.get('enclosure', {}).get('platform') == "picroft":
+        #     decoder_config.set_string('-dict',
+        #                               BASEDIR+'recognizer/model/en-us/cmudict-en-us_original.dict')
+        #     # decoder_config.set_string('-dict',
+        #     #                           '/usr/local/lib/python2.7/site-packages/mycroft_core-0.8.20-py2.7.egg/mycroft/client/speech/recognizer/model/en-us/cmudict-en-us_original.dict')
+        # else:
+        #     decoder_config.set_string('-dict',
+        #                               '/home/guy/github/mycroft/mycroft-core-mirror/mycroft/client/speech/recognizer/model/en-us/cmudict-en-us_original.dict')
 
         decoder_config.set_float('-samprate', self.SAMPLE_RATE)
         decoder_config.set_float('-kws_threshold', self.config.get('threshold', 1))
@@ -203,7 +208,11 @@ class PocketsphinxAudioConsumer(Thread):
         tstc = self.decoder.end_utt()
         if metrics:
             metrics.timer("mycroft.stt.local.time_s", time.time() - start)
+        # logger.debug("start time.time() = " + str(time.time()))
+        # logger.debug("transcribing start = " + str(time.time() - start))
         hyp = self.decoder.hyp()
+        # logger.debug("end time.time() = " + str(time.time()))
+        # logger.debug("transcribing end = " + str(time.time() - start))
         if hyp:
             if self.wake_word in hyp.hypstr.lower() or check_for_signal('skip_wake_word',-1):
             # if self.wake_word in hyp.hypstr.lower() or listener_config.get('skip_wake_word'):

@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 import time
-import os
+import pwd, os
 from Queue import Queue
 from threading import Thread
 
@@ -220,6 +220,7 @@ class RecognizerLoop(EventEmitter):
         self._config_hash = hash(str(config))
         self.lang = config.get('lang')
         self.config = config.get('listener')
+        self.enclosure_config = config.get('enclosure')
         rate = self.config.get('sample_rate')
         device_index = self.config.get('device_index')
 
@@ -353,9 +354,17 @@ class RecognizerLoop(EventEmitter):
         """
             Reload configuration and restart consumer and producer
         """
-        BASEDIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-        LOG.debug('BASEDIR = '+ BASEDIR)
-        os.system(BASEDIR + '/start-mycroft.sh voice')
+        LOG.debug('''self.enclosure_config.get('platform') =='''+self.enclosure_config.get('platform'))
+        platform = self.enclosure_config.get('platform')
+        if platform == "picroft" or platform == "mycroft_mark_1":
+            uid = pwd.getpwnam('root')[2]
+            LOG.debug('''uid ==''' + uid)
+            os.setuid(uid)
+            os.system('/etc/init.d/mycroft-speech-client stop;/etc/init.d/mycroft-speech-client start')
+        else:
+            BASEDIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+            LOG.debug('BASEDIR = '+ BASEDIR)
+            os.system(BASEDIR + '/start-mycroft.sh voice')
         # self.stop()
         # # load config
         # self._load_config()

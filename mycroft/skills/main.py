@@ -48,8 +48,8 @@ skills_config = ConfigurationManager.instance().get("skills")
 BLACKLISTED_SKILLS = skills_config.get("blacklisted_skills", [])
 PRIORITY_SKILLS = skills_config.get("priority_skills", [])
 
-SKILLS_DIR = "/home/guy/github/mycroft/mycroft-skills-mirror"
-# SKILLS_DIR = '/opt/mycroft/skills'
+# SKILLS_DIR = "/home/guy/github/mycroft/mycroft-skills-mirror"
+SKILLS_DIR = '/opt/mycroft/skills'
 
 installer_config = ConfigurationManager.instance().get("SkillInstallerSkill")
 MSM_BIN = installer_config.get("path", join(MYCROFT_ROOT_PATH, 'msm', 'msm'))
