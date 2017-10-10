@@ -71,7 +71,7 @@ class Api(object):
         data = self.get_data(response)
         if 200 <= response.status_code < 300:
             return data
-        elif response.status_code == 401\
+        elif response.status_code == 401 \
                 and not response.url.endswith("auth/token"):
             self.refresh_token()
             return self.send(self.old_params)
@@ -144,6 +144,15 @@ class DeviceApi(Api):
             "json": {"state": state,
                      "token": token,
                      "coreVersion": version.get("coreVersion"),
+                     "enclosureVersion": version.get("enclosureVersion")}
+        })
+
+    def update_version(self):
+        version = VersionManager.get()
+        return self.request({
+            "method": "PATCH",
+            "path": "/" + self.identity.uuid,
+            "json": {"coreVersion": version.get("coreVersion"),
                      "enclosureVersion": version.get("enclosureVersion")}
         })
 

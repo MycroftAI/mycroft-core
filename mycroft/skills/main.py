@@ -169,6 +169,10 @@ def check_connection():
                 'lang': "en-us"
             }
             ws.emit(Message("recognizer_loop:utterance", payload))
+        else:
+            from mycroft.api import DeviceApi
+            api = DeviceApi()
+            api.update_version()
     else:
         thread = Timer(1, check_connection)
         thread.daemon = True
