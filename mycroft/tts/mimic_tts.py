@@ -27,8 +27,6 @@ import mycroft.util
 from mycroft.util.download import download
 from mycroft.api import DeviceApi
 
-from mycroft.util.log import getLogger
-
 
 config = ConfigurationManager.get().get("tts").get("mimic")
 
@@ -61,9 +59,12 @@ class Mimic(TTS):
             Returns: path to binary
         """
         if voice in subscriber_voices and DeviceApi().is_subscriber:
+            LOG.info("Subscriber voice")
+            LOG.info(subscriber_voices[voice])
             if os.path.exists(subscriber_voices[voice]):
                 return subscriber_voices[voice]
             else:
+                LOG.info('Downloading voice')
                 self.download(voice)
                 self.voice = 'ap'
         elif not DeviceApi().is_subscriber:
@@ -75,6 +76,7 @@ class Mimic(TTS):
 
     def download(self, voice):
         def make_executable(dest):
+            LOG.info('Make executable')
             # make executable
             st = os.stat(dest)
             os.chmod(dest, st.st_mode | stat.S_IEXEC)
@@ -94,7 +96,7 @@ class Mimic(TTS):
 
     def get_tts(self, sentence, wav_file):
         if self.dl and self.dl.done:
-            if self.dl.status == 200:
+            if self.dl.status == 0:
                 self.init_args(self.dl.dest)
                 self.dl.join()
                 self.dl = None

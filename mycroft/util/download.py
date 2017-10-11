@@ -17,7 +17,7 @@ from threading import Thread
 import os
 import requests
 from os.path import exists
-
+import subprocess
 
 _running_downloads = {}
 
@@ -62,6 +62,7 @@ class Downloader(Thread):
         self._abort = False
 
         #  Start thread
+        self.daemon = True
         self.start()
 
     def run(self):
@@ -70,17 +71,14 @@ class Downloader(Thread):
         """
         r = requests.get(self.url, stream=True)
         tmp = _get_download_tmp(self.dest)
-        with open(tmp, 'w') as f:
-            for chunk in r.iter_content():
-                f.write(chunk)
-                if self._abort:
-                    break
 
-        self.status = r.status_code
-        if not self._abort and self.status == 200:
+        self.status = subprocess.call(['wget', '-c', self.url, '-O', tmp,
+                                       '--tries=20', '--read-timeout=5'])
+
+        if not self._abort and self.status == 0:
             self.finalize(tmp)
         else:
-            self.cleanup(self, tmp)
+            self.cleanup(tmp)
         self.done = True
         arg_hash = hash(self.url + self.dest)
 
