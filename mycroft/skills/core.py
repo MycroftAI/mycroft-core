@@ -254,7 +254,7 @@ class MycroftSkill(object):
         try:
             return self._settings
         except:
-            self._settings = SkillSettings(self._dir)
+            self._settings = SkillSettings(self._dir, self.name)
             return self._settings
 
     def bind(self, emitter):
