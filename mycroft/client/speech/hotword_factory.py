@@ -21,6 +21,9 @@ from os.path import dirname, exists, join, abspath
 from mycroft.configuration import ConfigurationManager
 from mycroft.util.log import LOG
 
+from mycroft.util import (
+    create_signal,
+    check_for_signal)
 
 RECOGNIZER_DIR = join(abspath(dirname(__file__)), "recognizer")
 
@@ -94,7 +97,14 @@ class PocketsphinxHotWord(HotWordEngine):
 
     def found_wake_word(self, frame_data):
         hyp = self.transcribe(frame_data)
-        return hyp and self.key_phrase in hyp.hypstr.lower()
+        if check_for_signal('skip_wake_word',-1):
+            if hyp:
+                return True
+            else:
+                return False
+        else:
+           return hyp and self.key_phrase in hyp.hypstr.lower()
+        #return hyp and self.key_phrase in hyp.hypstr.lower()
 
 
 class SnowboyHotWord(HotWordEngine):

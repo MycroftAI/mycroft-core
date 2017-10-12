@@ -75,7 +75,8 @@ class TranscribeSearch:
                     LOG.info("Transcribing Permission Granted: Text Input Saved Successfully")
 
                 filename = "/var/log/mycroft/ts_transcript_audio_segments/" + globdate + \
-                           "/" + globstamp + " " + text + " .wav"
+                           "/" + (globstamp + " " + text).decode("utf8") + " .wav"
+                           # "/" + str(hash(globstamp + " " + text)) + " .wav"
                 LOG.info(
                     "Transcribing Permission Granted: The Audio Recording of User's Input Saved in Full Format")
 

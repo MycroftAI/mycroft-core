@@ -60,6 +60,7 @@ class AudioProducer(Thread):
                 try:
                     audio = self.recognizer.listen(source, self.emitter)
                     self.queue.put(audio)
+                    LOG.debug("queue.put, self.queue.unfinished_tasks = " + str(self.queue.unfinished_tasks))
                 except IOError, ex:
                     # NOTE: Audio stack on raspi is slightly different, throws
                     # IOError every other listen, almost like it can't handle
@@ -103,6 +104,7 @@ class AudioConsumer(Thread):
 
     def read(self):
         audio = self.queue.get()
+        LOG.debug("queue.get, self.queue.unfinished_tasks = " + str(self.queue.unfinished_tasks))
 
         if audio is None:
             return
@@ -111,6 +113,9 @@ class AudioConsumer(Thread):
             self.wake_up(audio)
         else:
             self.process(audio)
+
+        self.queue.task_done()
+        LOG.debug("queue.task_done, self.queue.unfinished_tasks = " + str(self.queue.unfinished_tasks))
 
     # TODO: Localization
     def wake_up(self, audio):
@@ -134,27 +139,35 @@ class AudioConsumer(Thread):
         }
         self.emitter.emit("recognizer_loop:wakeword", payload)
 
+        LOG.debug("listener.py process = self._audio_length(audio) = " + str(self._audio_length(audio)))
+        LOG.debug("listener.py process = len(audio.frame_data) = " + str(len(audio.frame_data)))
+        # LOG.debug("listener.py process = hyp.hypstr = " + hyp.hypstr)
+
         if self._audio_length(audio) < self.MIN_AUDIO_SIZE:
             LOG.warning("Audio too short to be processed")
         else:
-            if isinstance(self.stt, PocketsphinxAudioConsumer):
+            if len(audio.frame_data) != 96258:
+                if isinstance(self.stt, PocketsphinxAudioConsumer):
                 # LOG.debug("test phrase decode/transcribe")
-                hyp = self.stt.transcribe(audio.frame_data)
-                # hyp = self.stt.wake_word_recognizer.transcribe(audio.frame_data)
-                if hyp:
-                    LOG.debug("listener.py process = hyp.hypstr = " + hyp.hypstr)
-                    payload = {
-                        'utterances': [hyp.hypstr.lower()],
-                        'lang': self.stt.lang,
-                        'session': SessionManager.get().session_id
-                    }
-                    self.emitter.emit("recognizer_loop:utterance", payload)
-                    self.metrics.attr('utterances', [hyp.hypstr.lower()])
+                    hyp = self.stt.transcribe(audio.frame_data)
+                    # hyp = self.stt.wake_word_recognizer.transcribe(audio.frame_data)
+                    if hyp:
+                        if hyp.hypstr > '':
+                            # LOG.debug("listener.py process = self._audio_length(audio) = " + str(self._audio_length(audio)))
+                            # LOG.debug("listener.py process = len(audio.frame_data) = " + str(len(audio.frame_data)))
+                            # LOG.debug("listener.py process = hyp.hypstr = " + hyp.hypstr)
+                            payload = {
+                                'utterances': [hyp.hypstr.lower()],
+                                'lang': self.stt.lang,
+                                'session': SessionManager.get().session_id
+                            }
+                            self.emitter.emit("recognizer_loop:utterance", payload)
+                            self.metrics.attr('utterances', [hyp.hypstr.lower()])
 
-                    TranscribeSearch().write_transcribed_files(audio.frame_data, hyp.hypstr)
+                            TranscribeSearch().write_transcribed_files(audio.frame_data, hyp.hypstr)
 
-            else:
-                self.transcribe(audio)
+                else:
+                    self.transcribe(audio)
 
     def transcribe(self, audio):
         text = None
@@ -174,7 +187,7 @@ class AudioConsumer(Thread):
         except Exception as e:
             LOG.error(e)
             LOG.error("Speech Recognition could not understand audio")
-        if text:
+        if text and text > '':
             # STT succeeded, send the transcribed speech on for processing
             payload = {
                 'utterances': [text],
@@ -220,6 +233,8 @@ class RecognizerLoop(EventEmitter):
         self._config_hash = hash(str(config))
         self.lang = config.get('lang')
         self.config = config.get('listener')
+        # mww = self.config.get('mww_multiple_wake_words')
+
         self.enclosure_config = config.get('enclosure')
         rate = self.config.get('sample_rate')
         device_index = self.config.get('device_index')
@@ -231,9 +246,10 @@ class RecognizerLoop(EventEmitter):
 
         if check_for_signal('UseLocalSTT',-1):
         # if self.config.get("producer", None) == "pocketsphinx" or check_for_signal('UseLocalSTT'):
-            self.wakeword_recognizer = PocketsphinxAudioConsumer(self.config, self.lang,  self)
+            self.wakeword_recognizer = PocketsphinxAudioConsumer(self.config, self.lang, self)
             self.wakeup_recognizer = self.create_wakeup_recognizer
         else:
+            # self.wakeword_recognizer = PocketsphinxAudioConsumer(self.config, self.lang,  self)
             self.wakeword_recognizer = self.create_wake_word_recognizer()
             self.wakeup_recognizer = self.create_wakeup_recognizer()
 
@@ -249,6 +265,14 @@ class RecognizerLoop(EventEmitter):
         # TODO remove this, only for server settings compatibility
         phonemes = self.config.get("phonemes")
         thresh = self.config.get("threshold")
+        
+        # if mww:
+        #     word = self.config.get('mww_keyphrases_file')
+        #     phonemes = self.config.get('mww_dictionary_file')
+        # else:
+        #     # wake_word = self.config.get('wake_word').lower()
+        #     # phonemes = self.config.get('phonemes')
+
         config = self.config_core.get("hotwords", {word: {}})
         if word not in config:
             config[word] = {}
@@ -354,17 +378,32 @@ class RecognizerLoop(EventEmitter):
         """
             Reload configuration and restart consumer and producer
         """
-        LOG.debug('''self.enclosure_config.get('platform') =='''+self.enclosure_config.get('platform'))
-        platform = self.enclosure_config.get('platform')
+        platform = str(self.enclosure_config.get('platform'))
+        LOG.debug('''self.enclosure_config.get('platform') ==''' + platform)
         if platform == "picroft" or platform == "mycroft_mark_1":
-            uid = pwd.getpwnam('root')[2]
-            LOG.debug('''uid ==''' + uid)
-            os.setuid(uid)
-            os.system('/etc/init.d/mycroft-speech-client stop;/etc/init.d/mycroft-speech-client start')
+            LOG.debug('''my/pi croft platform''')
+            try:
+                # uid = pwd.getpwnam('mycroft')[2]
+                # LOG.debug('''my/pi croft root uid ==''' + str(uid))
+                # os.setuid(uid)
+                LOG.debug(''' username = ''' + pwd.getpwuid(os.getuid()).pw_name)
+                os.system('/etc/init.d/mycroft-speech-client restart')
+            except Exception as e:
+                LOG.debug('''error == ''' + str(e))
         else:
+            LOG.debug('''laptop/desktop platform''')
             BASEDIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
             LOG.debug('BASEDIR = '+ BASEDIR)
-            os.system(BASEDIR + '/start-mycroft.sh voice')
+            try:
+                # uid = pwd.getpwnam('guy')[2]
+                # LOG.debug('''laptop root uid ==''' + str(uid))
+                # os.setuid(uid)
+                # os.system('/etc/init.d/mycroft-speech-client stop;/etc/init.d/mycroft-speech-client start')
+                LOG.debug(''' username = ''' + pwd.getpwuid(os.getuid()).pw_name)
+                os.system(BASEDIR + '/start-mycroft.sh voice')
+            except Exception as e:
+                LOG.debug('''error == ''' + str(e))
+
         # self.stop()
         # # load config
         # self._load_config()
