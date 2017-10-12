@@ -131,13 +131,13 @@ else
   # first, look for a build of mimic in the folder
   has_mimic=""
   if [[ -f ${TOP}/mimic/bin/mimic ]] ; then
-      has_mimic=$( ${TOP}/mimic/bin/mimic -lv | grep Voice )
+      has_mimic=$( ${TOP}/mimic/bin/mimic -lv | grep -q Voice )
   fi
 
   # in not, check the system path
   if [ "$has_mimic" = "" ] ; then
     if [ -x "$(command -v mimic)" ]; then
-      has_mimic="$( mimic -lv | grep Voice )"
+      has_mimic="$( mimic -lv | grep -q Voice )"
     fi
   fi
 
