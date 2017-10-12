@@ -150,7 +150,7 @@ class SkillSettings(dict):
         """ loads uuid
 
             Returns:
-                uuid (int): uuid of the previous settingsmeta
+                uuid (str): uuid of the previous settingsmeta
         """
         directory = self.config.get("skills")["directory"]
         directory = join(directory, self.name)
@@ -165,7 +165,7 @@ class SkillSettings(dict):
         """ saves uuid to path
 
             Args:
-                param1 (int): uuid of new seetingsmeta
+                param1 (str): uuid of new seetingsmeta
         """
         LOG.info("saving uuid {}".format(str(uuid)))
         directory = self.config.get("skills")["directory"]
@@ -207,7 +207,7 @@ class SkillSettings(dict):
             case of first load, then the create it and return True
 
             Args:
-                param1 (int): hash of metadata and uuid
+                param1 (int): hash of metadata and uuid of device
 
             Returns:
                 bool: True if hash is new False otherwise
