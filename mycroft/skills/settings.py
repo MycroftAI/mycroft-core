@@ -79,16 +79,16 @@ class SkillSettings(dict):
                 self._save_uuid(new_uuid)
                 self._save_hash(hashed_meta)
             else:  # if hash is old
-                should_exist_in_backend = False
-                settings = self._get_settings()
+                found_in_backend = False
+                settings = self._get_remote_settings()
                 # checks backend if th settings have been deleted
                 # through web ui
                 for skill in settings:
                     if skill["identifier"] == str(hashed_meta):
-                        should_exist_in_backend = True
+                        found_in_backend = True
                 # if it's been deleted from web ui
                 # resend the settingsmeta.json
-                if should_exist_in_backend is False:
+                if found_in_backend is False:
                     LOG.info("seems like it got deleted from home... " +
                              "sending settingsmeta.json for " +
                              "{}".format(self.name))
@@ -106,18 +106,15 @@ class SkillSettings(dict):
         return hash(str(self)) == self.loaded_hash
 
     def __getitem__(self, key):
-        """ Get key
-        """
+        """ Get key """
         return super(SkillSettings, self).__getitem__(key)
 
     def __setitem__(self, key, value):
-        """ Add/Update key.
-        """
+        """ Add/Update key. """
         return super(SkillSettings, self).__setitem__(key, value)
 
     def _load_settings_meta(self):
-        """ loads settings metadata from skills path
-        """
+        """ loads settings metadata from skills path """
         with open(self._meta_path) as f:
             data = json.load(f)
         return data
@@ -135,7 +132,7 @@ class SkillSettings(dict):
         try:
             settings_meta["identifier"] = str(hashed_meta)
             self._put_metadata(settings_meta)
-            settings = self._get_settings()
+            settings = self._get_remote_settings()
             skill_identity = str(hashed_meta)
             uuid = None
             # TODO: note uuid should be returned from the put request
@@ -234,7 +231,7 @@ class SkillSettings(dict):
         LOG.info("getting settings from home.mycroft.ai")
         try:
             # update settings
-            settings = self._get_settings()
+            settings = self._get_remote_settings()
             skill_identity = str(hashed_meta)
             for skill_setting in settings:
                 if skill_setting['identifier'] == skill_identity:
@@ -253,8 +250,7 @@ class SkillSettings(dict):
         Timer(60, self._poll_skill_settings, [hashed_meta]).start()
 
     def load_skill_settings(self):
-        """ If settings.json exist, open and read stored values into self
-        """
+        """ If settings.json exist, open and read stored values into self """
         if isfile(self._settings_path):
             with open(self._settings_path) as f:
                 try:
@@ -266,9 +262,8 @@ class SkillSettings(dict):
                     # metadata to be able to edit later.
                     LOG.error(e)
 
-    def _get_settings(self):
-        """ Get skill settings for this device from backend
-        """
+    def _get_remote_settings(self):
+        """ Get skill settings for this device from backend """
         return self.api.request({
             "method": "GET",
             "path": self._api_path
