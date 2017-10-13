@@ -190,11 +190,11 @@ class SkillManager(Thread):
             self.__msm_lock.release()
             self.msm_blocked = False
 
-    def download_skills(self, speak=True):
+    def download_skills(self, speak=False):
         """ Invoke MSM to install default skills and/or update installed skills
 
             Args:
-                speak (bool, optional): Speak the result? Defaults to True
+                speak (bool, optional): Speak the result? Defaults to False
         """
         # Don't invoke msm if already running
         if exists(MSM_BIN) and self.__msm_lock.acquire():
@@ -206,10 +206,14 @@ class SkillManager(Thread):
                                      stdout=subprocess.PIPE, shell=True)
                 (output, err) = p.communicate()
                 res = p.returncode
-                if res == 0 and speak:
-                    # self.ws.emit(Message("speak", {
-                    #     'utterance': mycroft.dialog.get("skills updated")}))
+                # Always set next update to an hour from now if successful
+                if res == 0:
                     self.next_download = time.time() + 60 * MINUTES
+
+                    if res == 0 and speak:
+                        self.ws.emit(Message("speak", {
+                            'utterance': mycroft.dialog.get("skills updated")})
+                            )
                     return True
                 elif not connected():
                     LOG.error('msm failed, network connection not available')
@@ -312,7 +316,7 @@ class SkillManager(Thread):
 
             # Update skills once an hour
             if time.time() >= self.next_download:
-                self.download_skills(False)
+                self.download_skills()
 
             # Look for recently changed skill(s) needing a reload
             if exists(SKILLS_DIR):
