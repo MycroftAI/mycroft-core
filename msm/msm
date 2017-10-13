@@ -46,17 +46,6 @@ function help() {
 }
 
 
-# These skills are automatically installed on all mycroft-core
-# installations.
-DEFAULT_SKILLS="skill-alarm skill-audio-record skill-configuration "\
-"skill-date-time skill-desktop-launcher duckduckgo-skill skill-ip skill-joke "\
-"skill-hello-world skill-media skill-npr-news skill-naptime skill-pairing "\
-"skill-personal skill-playback-control skill-reminder skill-installer "\
-"skill-singing skill-speak skill-spelling skill-stop skill-stock "\
-"skill-volume skill-weather skill-wiki "\
-"fallback-aiml skill-mark1-demo "
-
-
 # Determine the location of the Skill folder
 mycroft_skill_folder=${mycroft_skill_folder:-"/opt/mycroft/skills"}
 if [[ ! -d "${mycroft_skill_folder}" ]] ; then
@@ -106,6 +95,57 @@ function get_skill_list() {
     fi
   fi
 }
+
+# Communicate with mycroft-core to inform it of install status
+install_started="false"
+update_started="false"
+remove_started="false"
+function send_start_install () {
+    if [[ "${install_started}" == "false" ]] ; then
+        $( python -m mycroft.messagebus.send msm.installing )
+        install_started="true"
+    fi
+}
+function send_start_update () {
+    if [[ "${update_started}" == "false" ]] ; then
+        res=$( python -m mycroft.messagebus.send msm.updating )
+        update_started="true"
+    fi
+}
+function send_start_remove () {
+    if [[ "${remove_started}" == "false" ]] ; then
+        res=$( python -m mycroft.messagebus.send msm.removing )
+        remove_started="true"
+    fi
+}
+function send_install_success () {
+    res=$( python -m mycroft.messagebus.send msm.install.succeeded '{"skill": "${1}" }' )
+}
+function send_install_fail () {
+    res=$( python -m mycroft.messagebus.send msm.install.failed '{"skill": "${1}", "error" : ${2} }' )
+}
+function send_remove_success () {
+    res=$( python -m mycroft.messagebus.send msm.remove.succeeded '{"skill": "${1}" }' )
+}
+function send_remove_fail () {
+    res=$( python -m mycroft.messagebus.send msm.remove.failed '{"skill": "${1}", "error" : ${2} }' )
+}
+function send_end_install () {
+    if [[ "${install_started}" == "true" ]] ; then
+        res=$( python -m mycroft.messagebus.send msm.installed )
+    fi
+}
+function send_end_update () {
+    if [[ "${update_started}" == "true" ]] ; then
+        res=$( python -m mycroft.messagebus.send msm.updated )
+    fi
+}
+function send_end_remove () {
+    if [[ "${remove_started}" == "true" ]] ; then
+        res=$( python -m mycroft.messagebus.send msm.removed )
+    fi
+}
+
 
 function remove() {
   str=$*
@@ -161,13 +201,16 @@ function remove() {
 
      # Delete the skill folder
      echo -n "Removing '${name}'..."
+     send_start_remove
      rm -rf "${name}"
      if [[ -d "${mycroft_skill_folder}/${name}" ]] ; then
         # Failed to remove the skill directory
+        send_remove_fail "${name}" 249
         return 249
      else
         echo "done"
         echo "Removed: ${name}"
+        send_remove_success
         return 0
      fi
   else
@@ -250,9 +293,11 @@ function install() {
     fi
 
     echo "Installing from: ${repo}"
+    send_start_install
     git clone "${repo}" >> /dev/null
     if ! cd "${name}" ; then
       echo "ERROR: Unable to access directory ${name}!"
+      send_install_fail "${name}" 102
       return 102
     fi
     if [[ "${picroft_mk1}" == "true" ]] ; then
@@ -262,6 +307,7 @@ function install() {
       if [[ "${group}" != "mycroft" ]] || [[ "${owner}" != "mycroft" ]] ; then
          if ! sudo chown -R mycroft:mycroft "${mycroft_skill_folder}/${name}" ; then
            echo "ERROR: Unable to chown install directory ${name}!"
+           send_install_fail "${name}" 123
            return 123
          fi
       fi
@@ -272,6 +318,7 @@ function install() {
         if [[ "${VIRTUAL_ENV}" =~ .mycroft$ ]] ; then
           if ! pip install -r requirements.txt ; then
             echo "ERROR: Unable to install requirements for skill '${name}'"
+            send_install_fail "${name}" 121
             return 121
           fi
         else
@@ -279,22 +326,26 @@ function install() {
             if ! pip install -r requirements.txt ; then
               echo "ERROR: Unable to install requirements for skill '${name}'"
               deactivate mycroft
+              send_install_fail "${name}" 121
               return 121
             fi
           else
             echo "ERROR: Unable to activate 'mycroft' virtualenv, requirements not installed."
+            send_install_fail "${name}" 120
             return 120
           fi
         fi
       else
         if ! sudo pip install -r requirements.txt ; then
           echo "ERROR: Unable to install requirements for '${name}', it may not work"
+          send_install_fail "${name}" 121
           return 121
         fi
       fi
     fi
 
     echo "Installed: ${name}"
+    send_install_success "${name}"
     return 0
 }
 
@@ -341,6 +392,7 @@ function update() {
       then
         echo "Updating ${d}..."
         echo -n "  "
+        send_start_update
         git fetch
         git reset --hard origin/master
         rm -f *.pyc
@@ -353,6 +405,7 @@ function update() {
 
 OPT=$1
 shift
+
 
 case ${OPT} in
   "install")
@@ -375,6 +428,7 @@ case ${OPT} in
                fi
             fi
          done
+         send_end_install
       else
          # install requires a parameter, show help
          help
@@ -401,6 +455,7 @@ case ${OPT} in
                fi
             fi
          done
+         send_end_remove
       else
          # remove requires a parameter, show help
          help
@@ -426,6 +481,7 @@ case ${OPT} in
       fi
 
       update
+      send_end_update
       exit_code=$?
       ;;
   "default")
@@ -437,6 +493,18 @@ case ${OPT} in
          echo "${script}: error ${exit_code}"
          exit ${exit_code}
       fi
+
+      # These skills are automatically installed on all mycroft-core
+      # installations.
+      # TODO: Load from https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/DEFAULT_SKILLS
+      # TODO: Load from https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/DEFAULT_SKILLS.${platform}
+      DEFAULT_SKILLS="skill-alarm skill-audio-record skill-configuration "\
+        "skill-date-time skill-desktop-launcher duckduckgo-skill skill-ip skill-joke "\
+        "skill-hello-world skill-media skill-npr-news skill-naptime skill-pairing "\
+        "skill-personal skill-playback-control skill-reminder skill-installer "\
+        "skill-singing skill-speak skill-spelling skill-stop skill-stock "\
+        "skill-volume skill-weather skill-wiki "\
+        "fallback-aiml skill-mark1-demo "
 
       for name in ${DEFAULT_SKILLS}
       do
@@ -456,6 +524,7 @@ case ${OPT} in
 
       if [[ ${exit_code} -eq 0 ]] ; then
          update
+         send_end_update
          exit_code=$?
       fi
    ;;
