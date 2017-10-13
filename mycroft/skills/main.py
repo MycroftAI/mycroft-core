@@ -173,18 +173,18 @@ class SkillManager(Thread):
         # when locked, MSM is active or intentionally blocked
         self.__msm_lock = Lock()
 
-    def schedule_update_skills(self):
+    def schedule_update_skills(self, message=None):
         """ Schedule a skill update to take place directly. """
         # Update skills at next opportunity
         self.next_download = time.time() - 1
 
-    def block_msm(self):
+    def block_msm(self, message=None):
         """ Disallow start of msm. """
         if not self.msm_blocked:
             self.__msm_lock.acquire()
             self.msm_blocked = True
 
-    def restore_msm(self):
+    def restore_msm(self, message=None):
         """ Allow start of msm if not allowed. """
         if self.msm_blocked:
             self.__msm_lock.release()
