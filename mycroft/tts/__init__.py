@@ -155,12 +155,23 @@ class TTS(object):
 
     def begin_audio(self):
         """Helper function for child classes to call in execute()"""
+        # Create signals informing start of speech
         self.ws.emit(Message("recognizer_loop:audio_output_start"))
         create_signal("isSpeaking")
 
     def end_audio(self):
-        """Helper function for child classes to call in execute()"""
+        """
+            Helper function for child classes to call in execute().
+
+            Sends the recognizer_loop:audio_output_end message, indicating
+            that speaking is done for the moment. It also checks if cache
+            directory needs cleaning to free up disk space.
+        """
+
         self.ws.emit(Message("recognizer_loop:audio_output_end"))
+        # Clean the cache as needed
+        cache_dir = mycroft.util.get_cache_directory("tts")
+        mycroft.util.curate_cache(cache_dir, min_free_percent=100)
 
         # This check will clear the "signal"
         check_for_signal("isSpeaking")
@@ -236,10 +247,8 @@ class TTS(object):
                 key:        Hash key for the sentence
                 phonemes:   phoneme string to save
         """
-        # Clean out the cache as needed
-        cache_dir = mycroft.util.get_cache_directory("tts")
-        mycroft.util.curate_cache(cache_dir)
 
+        cache_dir = mycroft.util.get_cache_directory("tts")
         pho_file = os.path.join(cache_dir, key + ".pho")
         try:
             with open(pho_file, "w") as cachefile:
