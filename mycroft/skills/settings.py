@@ -69,10 +69,14 @@ class SkillSettings(dict):
                          "has changed for {}".format(self.name))
                 # TODO: once the delete api for device is created uncomment
                 # if self._uuid_exist():
-                #     LOG.info("a uuid exist for {}".format(self.name) +
-                #              "deleting old one")
-                #     old_uuid = self._load_uuid()
-                #     self._delete_metatdata(old_uuid)
+                #     try:
+                #         LOG.info("a uuid exist for {}".format(self.name) +
+                #                  " deleting old one")
+                #         old_uuid = self._load_uuid()
+                #         LOG.info(old_uuid+self.name)
+                #         self._delete_metatdata(old_uuid)
+                #     except Exception as e:
+                #         LOG.info(e)
                 LOG.info("sending settingsmeta.json for {}".format(self.name) +
                          "to home.mycroft.ai")
                 new_uuid = self._send_settings_meta(settings_meta, hashed_meta)
@@ -97,7 +101,9 @@ class SkillSettings(dict):
                     self._save_uuid(new_uuid)
                     self._save_hash(hashed_meta)
 
-            Timer(60, self._poll_skill_settings, [hashed_meta]).start()
+            t = Timer(60, self._poll_skill_settings, [hashed_meta])
+            t.daemon = True
+            t.start()
 
         self.load_skill_settings()
 
@@ -246,8 +252,10 @@ class SkillSettings(dict):
         except Exception as e:
             LOG.error(e)
 
-        # poll backend every 60 seconds for new settings
-        Timer(60, self._poll_skill_settings, [hashed_meta]).start()
+        # continues to poll settings every 60 seconds
+        t = Timer(60, self._poll_skill_settings, [hashed_meta])
+        t.daemon = True
+        t.start()
 
     def load_skill_settings(self):
         """ If settings.json exist, open and read stored values into self """
