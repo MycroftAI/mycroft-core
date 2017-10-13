@@ -20,6 +20,7 @@ from os.path import dirname, exists, join, abspath
 
 from mycroft.configuration import ConfigurationManager
 from mycroft.util.log import LOG
+from mycroft.client.speech.transcribesearch import TranscribeSearch
 
 from mycroft.util import (
     create_signal,
@@ -56,13 +57,31 @@ class PocketsphinxHotWord(HotWordEngine):
                 str(module) + " module does not match with "
                               "Hotword class pocketsphinx")
         # Hotword module params
-        self.phonemes = self.config.get("phonemes", "HH EY . M AY K R AO F T")
-        self.num_phonemes = len(self.phonemes.split())
+        self.mww = self.config.get("mww")
+        self.mww_no_skills = self.config.get("mww_no_skills")
+        if self.mww:
+            LOG.debug(" mww 1 = "+str(self.mww))
+            dict_name = self.config.get("phonemes", "")
+        else:
+            LOG.debug(" mww 2 = "+str(self.mww))
+            dict_name = self.create_dict(key_phrase, self.phonemes)
+            self.phonemes = self.config.get("phonemes", "HH EY . M AY K R AO F T")
+            self.num_phonemes = len(self.phonemes.split())
+
         self.threshold = self.config.get("threshold", 1e-90)
-        self.sample_rate = self.listener_config.get("sample_rate", 1600)
-        dict_name = self.create_dict(key_phrase, self.phonemes)
+        self.sample_rate = self.listener_config.get("sample_rate", 16000)
         config = self.create_config(dict_name, Decoder.default_config())
         self.decoder = Decoder(config)
+
+        if self.mww:
+            rc1 = self.decoder.set_kws('brands', str(key_phrase))
+            rc2 = self.decoder.set_search('brands')
+            LOG.debug(" str(key_phrase) 3 = "+str(key_phrase))
+            LOG.debug(" rc1 3 = "+str(rc1))
+            LOG.debug(" rc2 3 = "+str(rc2))
+            LOG.debug(" mww 3 = "+str(self.mww))
+
+
 
     def create_dict(self, key_phrase, phonemes):
         (fd, file_name) = tempfile.mkstemp()
@@ -77,13 +96,18 @@ class PocketsphinxHotWord(HotWordEngine):
         model_file = join(RECOGNIZER_DIR, 'model', self.lang, 'hmm')
         if not exists(model_file):
             LOG.error('PocketSphinx model not found at ' + str(model_file))
+
+        if not self.mww:
+            config.set_string('-keyphrase', self.key_phrase)
+            LOG.debug(" mww 4 = "+str(self.mww))
+
         config.set_string('-hmm', model_file)
-        config.set_string('-dict', dict_name)
-        config.set_string('-keyphrase', self.key_phrase)
+        config.set_string('-dict', str(dict_name))
         config.set_float('-kws_threshold', float(self.threshold))
         config.set_float('-samprate', self.sample_rate)
         config.set_int('-nfft', 2048)
-        config.set_string('-logfn', '/dev/null')
+        config.set_string('-logfn', '/var/log/mycroft/pocketsphinx.log')
+        # config.set_string('-logfn', '/dev/null')
         return config
 
     def transcribe(self, byte_data, metrics=None):
@@ -97,14 +121,15 @@ class PocketsphinxHotWord(HotWordEngine):
 
     def found_wake_word(self, frame_data):
         hyp = self.transcribe(frame_data)
-        if check_for_signal('skip_wake_word',-1):
+
+        if self.mww:
             if hyp:
-                return True
-            else:
-                return False
+            # if hyp and self.key_phrase in hyp.hypstr.lower():
+                if hyp.hypstr.lower() > '':
+                    TranscribeSearch().write_transcribed_files(frame_data, hyp.hypstr.lower())
+                return hyp;
         else:
-           return hyp and self.key_phrase in hyp.hypstr.lower()
-        #return hyp and self.key_phrase in hyp.hypstr.lower()
+            return hyp and self.key_phrase in hyp.hypstr.lower()
 
 
 class SnowboyHotWord(HotWordEngine):

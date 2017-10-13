@@ -522,6 +522,9 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         if self._stop_signaled:
             return
 
+        if self.wake_word_recognizer.mww_no_skills:
+            return
+
         LOG.debug("Recording...")
         emitter.emit("recognizer_loop:record_begin")
 
@@ -542,7 +545,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             filename = "/tmp/mycroft_utterance%s.wav" % stamp
             with open(filename, 'wb') as filea:
                 filea.write(audio_data.get_wav_data())
-            LOG.debug("Thinking...")
+        LOG.debug("Thinking...")
 
         return audio_data
 

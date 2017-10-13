@@ -77,8 +77,6 @@ class TranscribeSearch:
                 filename = "/var/log/mycroft/ts_transcript_audio_segments/" + globdate + \
                            "/" + (globstamp + " " + text).decode("utf8") + " .wav"
                            # "/" + str(hash(globstamp + " " + text)) + " .wav"
-                LOG.info(
-                    "Transcribing Permission Granted: The Audio Recording of User's Input Saved in Full Format")
 
             else:
                 LOG.warning("Transcribing Permission Denied")
@@ -88,6 +86,8 @@ class TranscribeSearch:
                             "TimeStamp Format")
 
             self.save_record(filename, audio)
+            LOG.info(
+                "Transcribing Permission Granted: Audio Recording, " + filename + " saved.")
             # with open(filename, 'w+') as filea:
             #     self.save_record(filename, audio)
                 # # sound = AudioSegment(byte_data)

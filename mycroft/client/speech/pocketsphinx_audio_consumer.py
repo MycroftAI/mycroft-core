@@ -164,10 +164,12 @@ class PocketsphinxAudioConsumer(Thread):
         decoder_config = Decoder.default_config()
         # hmm_dir = join(model_lang_dir, 'en-us-semi-full')
         # hmm_dir = join(model_lang_dir, 'cmusphinx-en-us-8khz-5.2')
+
         hmm_dir = join(model_lang_dir, 'cmusphinx-en-us-5.2')
         # hmm_dir = join(model_lang_dir, 'hmm')
         decoder_config.set_string('-hmm', hmm_dir)
         # decoder_config.set_string('-hmm', join(model_lang_dir, hmm_dir))
+
         # logger.debug("dict = " + model_lang_dir + '/' + self.lang + '.dict')
         # BASEDIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
         decoder_config.set_string('-dict', BASEDIR + '/recognizer/model/en-us/klat_only_corpus_words.dict')

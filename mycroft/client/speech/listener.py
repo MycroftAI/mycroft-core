@@ -44,7 +44,7 @@ class AudioProducer(Thread):
     mic for potential speech chunks and pushes them onto the queue.
     """
 
-    def __init__(self, state, queue, mic, recognizer, emitter):
+    def __init__(self, state, queue, mic, recognizer, emitter, mww, mww_no_skills):
         super(AudioProducer, self).__init__()
         self.daemon = True
         self.state = state
@@ -52,6 +52,8 @@ class AudioProducer(Thread):
         self.mic = mic
         self.recognizer = recognizer
         self.emitter = emitter
+        self.mww = mww
+        self.mww_no_skills = mww_no_skills
 
     def run(self):
         with self.mic as source:
@@ -59,8 +61,16 @@ class AudioProducer(Thread):
             while self.state.running:
                 try:
                     audio = self.recognizer.listen(source, self.emitter)
-                    self.queue.put(audio)
-                    LOG.debug("queue.put, self.queue.unfinished_tasks = " + str(self.queue.unfinished_tasks))
+
+                    # # process skill intent lookup...
+                    # self.queue.put(audio)
+                    # LOG.debug("queue.put, self.queue.unfinished_tasks = " + str(self.queue.unfinished_tasks))
+
+                    # mww - don't process skill intent lookup
+                    if not self.mww_no_skills:
+                        self.queue.put(audio)
+                        LOG.debug("queue.put, self.queue.unfinished_tasks = " + str(self.queue.unfinished_tasks))
+
                 except IOError, ex:
                     # NOTE: Audio stack on raspi is slightly different, throws
                     # IOError every other listen, almost like it can't handle
@@ -233,7 +243,8 @@ class RecognizerLoop(EventEmitter):
         self._config_hash = hash(str(config))
         self.lang = config.get('lang')
         self.config = config.get('listener')
-        # mww = self.config.get('mww_multiple_wake_words')
+        self.mww = self.config.get('mww_multiple_wake_words')
+        self.mww_no_skills = self.config.get('mww_multiple_wake_words_no_skills')
 
         self.enclosure_config = config.get('enclosure')
         rate = self.config.get('sample_rate')
@@ -244,7 +255,8 @@ class RecognizerLoop(EventEmitter):
         # FIXME - channels are not been used
         self.microphone.CHANNELS = self.config.get('channels')
 
-        if check_for_signal('UseLocalSTT',-1):
+        if check_for_signal('UseLocalSTT',-1) and not self.mww:
+        # if check_for_signal('UseLocalSTT',-1):
         # if self.config.get("producer", None) == "pocketsphinx" or check_for_signal('UseLocalSTT'):
             self.wakeword_recognizer = PocketsphinxAudioConsumer(self.config, self.lang, self)
             self.wakeup_recognizer = self.create_wakeup_recognizer
@@ -266,25 +278,34 @@ class RecognizerLoop(EventEmitter):
         phonemes = self.config.get("phonemes")
         thresh = self.config.get("threshold")
         
-        # if mww:
-        #     word = self.config.get('mww_keyphrases_file')
-        #     phonemes = self.config.get('mww_dictionary_file')
-        # else:
-        #     # wake_word = self.config.get('wake_word').lower()
-        #     # phonemes = self.config.get('phonemes')
+        if self.mww:
+            word = self.config.get('mww_keyphrases_file')
+            phonemes = self.config.get('mww_dictionary_file')
 
         config = self.config_core.get("hotwords", {word: {}})
         if word not in config:
             config[word] = {}
+            config[word]["module"] = "pocketsphinx"
         if phonemes:
             config[word]["phonemes"] = phonemes
         if thresh:
             config[word]["threshold"] = thresh
         if phonemes is None or thresh is None:
             config = None
+        if self.mww:
+            config[word]["mww"] = True
+            if self.mww_no_skills:
+                config[word]["mww_no_skills"] = True
+            else:
+                config[word]["mww_no_skills"] = False
+        else:
+            config[word]["mww"] = False
+
         return HotWordFactory.create_hotword(word, config, self.lang)
 
     def create_wakeup_recognizer(self):
+        if self.mww:
+            return None
         LOG.info("creating stand up word engine")
         word = self.config.get("stand_up_word", "wake up")
         return HotWordFactory.create_hotword(word, lang=self.lang)
@@ -297,11 +318,11 @@ class RecognizerLoop(EventEmitter):
         queue = Queue()
 
         self.producer = AudioProducer(self.state, queue, self.microphone,
-                                      self.responsive_recognizer, self)
+                                      self.responsive_recognizer, self, self.mww, self.mww_no_skills)
         self.producer.start()
 
         # if self.config.get("producer", None) == "pocketsphinx" \
-        if check_for_signal('UseLocalSTT',-1):
+        if check_for_signal('UseLocalSTT',-1) and not self.mww:
             self.consumer = AudioConsumer(self.state, queue, self,
                                           self.wakeword_recognizer,
                                           self.wakeup_recognizer,
@@ -365,13 +386,13 @@ class RecognizerLoop(EventEmitter):
         while self.state.running:
             try:
                 time.sleep(.1)
-                if self._config_hash != hash(
-                        str(ConfigurationManager().get())):
-                    LOG.debug('Config has changed, reloading...')
-                    self.reload()
+                # if self._config_hash != hash(
+                #         str(ConfigurationManager().get())):
+                #     LOG.debug('Config has changed, reloading...')
+                #     self.reload()
             except KeyboardInterrupt as e:
                 LOG.error(e)
-                self.stop()
+                # self.stop()
                 raise  # Re-raise KeyboardInterrupt
 
     def reload(self):
