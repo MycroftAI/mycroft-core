@@ -155,30 +155,36 @@ def connected(host="8.8.8.8", port=53, timeout=3):
             return False
 
 
-def curate_cache(dir, min_free_percent=5.0):
+def curate_cache(directory, min_free_percent=5.0, min_free_disk=50):
     """Clear out the directory if needed
 
     This assumes all the files in the directory can be deleted as freely
 
     Args:
-        dir (str): directory path that holds cached files
-        min_free_percent (float): percentage (0.0-100.0) of drive to keep free
+        directory (str): directory path that holds cached files
+        min_free_percent (float): percentage (0.0-100.0) of drive to keep free,
+                                  default is 5% if not specified.
+        min_free_disk (float): minimum allowed disk space in MB, default
+                               value is 50 MB if not specified.
     """
 
     # Simpleminded implementation -- keep a certain percentage of the
     # disk available.
     # TODO: Would be easy to add more options, like whitelisted files, etc.
-    space = psutil.disk_usage(dir)
+    space = psutil.disk_usage(directory)
 
+    # convert from MB to bytes
+    min_free_disk *= 1024 * 1024
     # space.percent = space.used/space.total*100.0
     percent_free = 100.0 - space.percent
-    if percent_free < min_free_percent:
+    if percent_free < min_free_percent and space.free < min_free_disk:
+        LOG.info('Low diskspace detected, cleaning cache')
         # calculate how many bytes we need to delete
         bytes_needed = (min_free_percent - percent_free) / 100.0 * space.total
         bytes_needed = int(bytes_needed + 1.0)
 
         # get all entries in the directory w/ stats
-        entries = (os.path.join(dir, fn) for fn in os.listdir(dir))
+        entries = (os.path.join(directory, fn) for fn in os.listdir(directory))
         entries = ((os.stat(path), path) for path in entries)
 
         # leave only regular files, insert modification date
