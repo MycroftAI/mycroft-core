@@ -53,7 +53,7 @@ class SkillSettings(dict):
         self._settings_path = join(directory, 'settings.json')
         self._meta_path = join(directory, 'settingsmeta.json')
         self._api_path = "/" + self._device_identity + "/skill"
-
+        self.is_alive = True
         self.loaded_hash = hash(str(self))
 
         # if settingsmeta.json exists
@@ -68,15 +68,15 @@ class SkillSettings(dict):
                 LOG.info("looks like settingsmeta.json" +
                          "has changed for {}".format(self.name))
                 # TODO: once the delete api for device is created uncomment
-                # if self._uuid_exist():
-                #     try:
-                #         LOG.info("a uuid exist for {}".format(self.name) +
-                #                  " deleting old one")
-                #         old_uuid = self._load_uuid()
-                #         LOG.info(old_uuid+self.name)
-                #         self._delete_metatdata(old_uuid)
-                #     except Exception as e:
-                #         LOG.info(e)
+                if self._uuid_exist():
+                    try:
+                        LOG.info("a uuid exist for {}".format(self.name) +
+                                 " deleting old one")
+                        old_uuid = self._load_uuid()
+                        LOG.info(old_uuid+self.name)
+                        self._delete_metatdata(old_uuid)
+                    except Exception as e:
+                        LOG.info(e)
                 LOG.info("sending settingsmeta.json for {}".format(self.name) +
                          "to home.mycroft.ai")
                 new_uuid = self._send_settings_meta(settings_meta, hashed_meta)
@@ -252,10 +252,11 @@ class SkillSettings(dict):
         except Exception as e:
             LOG.error(e)
 
-        # continues to poll settings every 60 seconds
-        t = Timer(60, self._poll_skill_settings, [hashed_meta])
-        t.daemon = True
-        t.start()
+        if self.is_alive:
+            # continues to poll settings every 60 seconds
+            t = Timer(60, self._poll_skill_settings, [hashed_meta])
+            t.daemon = True
+            t.start()
 
     def load_skill_settings(self):
         """ If settings.json exist, open and read stored values into self """

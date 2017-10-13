@@ -603,7 +603,7 @@ class MycroftSkill(object):
         """
         # Store settings
         self.settings.store()
-
+        self.settings.is_alive = False
         # removing events
         for e, f in self.events:
             self.emitter.remove(e, f)
