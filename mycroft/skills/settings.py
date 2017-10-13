@@ -65,7 +65,7 @@ class SkillSettings(dict):
             hashed_meta = hash(str(settings_meta)+str(self._device_identity))
             # check if hash is different from the saved hashed
             if self._is_new_hash(hashed_meta):
-                LOG.info("looks like settingsmeta.json" +
+                LOG.info("looks like settingsmeta.json " +
                          "has changed for {}".format(self.name))
                 # TODO: once the delete api for device is created uncomment
                 if self._uuid_exist():
@@ -73,12 +73,11 @@ class SkillSettings(dict):
                         LOG.info("a uuid exist for {}".format(self.name) +
                                  " deleting old one")
                         old_uuid = self._load_uuid()
-                        LOG.info(old_uuid+self.name)
                         self._delete_metatdata(old_uuid)
                     except Exception as e:
                         LOG.info(e)
                 LOG.info("sending settingsmeta.json for {}".format(self.name) +
-                         "to home.mycroft.ai")
+                         " to home.mycroft.ai")
                 new_uuid = self._send_settings_meta(settings_meta, hashed_meta)
                 self._save_uuid(new_uuid)
                 self._save_hash(hashed_meta)
@@ -273,10 +272,12 @@ class SkillSettings(dict):
 
     def _get_remote_settings(self):
         """ Get skill settings for this device from backend """
-        return self.api.request({
+        settings = self.api.request({
             "method": "GET",
             "path": self._api_path
         })
+        settings = [skills for skills in settings if skills is not None]
+        return settings
 
     def _put_metadata(self, settings_meta):
         """ PUT settingsmeta to backend to be configured in home.mycroft.ai.
@@ -296,7 +297,7 @@ class SkillSettings(dict):
         """
         return self.api.request({
             "method": "DELETE",
-            "path": "/skill/{}".format(uuid)
+            "path": self._api_path+"/{}".format(uuid)
         })
 
     def store(self, force=False):
