@@ -297,7 +297,7 @@ class SkillSettings(dict):
         """
         return self.api.request({
             "method": "DELETE",
-            "path": self._api_path+"/{}".format(uuid)
+            "path": self._api_path + "/{}".format(uuid)
         })
 
     def store(self, force=False):
