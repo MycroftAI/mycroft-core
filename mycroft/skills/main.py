@@ -172,6 +172,7 @@ class SkillManager(Thread):
 
         # when locked, MSM is active or intentionally blocked
         self.__msm_lock = Lock()
+        self.__ext_lock = Lock()
 
     def schedule_update_skills(self, message=None):
         """ Schedule a skill update to take place directly. """
@@ -180,15 +181,21 @@ class SkillManager(Thread):
 
     def block_msm(self, message=None):
         """ Disallow start of msm. """
-        if not self.msm_blocked:
-            self.__msm_lock.acquire()
-            self.msm_blocked = True
+
+        # Make sure the external locking of __msm_lock is done in correct order
+        with self.__ext_lock:
+            if not self.msm_blocked:
+                self.__msm_lock.acquire()
+                self.msm_blocked = True
 
     def restore_msm(self, message=None):
         """ Allow start of msm if not allowed. """
-        if self.msm_blocked:
-            self.__msm_lock.release()
-            self.msm_blocked = False
+
+        # Make sure the external locking of __msm_lock is done in correct order
+        with self.__ext_lock:
+            if self.msm_blocked:
+                self.__msm_lock.release()
+                self.msm_blocked = False
 
     def download_skills(self, speak=False):
         """ Invoke MSM to install default skills and/or update installed skills
@@ -283,10 +290,12 @@ class SkillManager(Thread):
             del skill["instance"]
 
         # (Re)load the skill from disk
-        skill["loaded"] = True
-        skill["instance"] = load_skill(create_skill_descriptor(skill["path"]),
-                                       self.ws, skill["id"],
-                                       BLACKLISTED_SKILLS)
+        with self.__msm_lock:  # Make sure msm isn't running
+            skill["loaded"] = True
+            desc = create_skill_descriptor(skill["path"])
+            skill["instance"] = load_skill(desc,
+                                           self.ws, skill["id"],
+                                           BLACKLISTED_SKILLS)
 
     def load_skill_list(self, skills_to_load):
         """ Load the specified list of skills from disk
