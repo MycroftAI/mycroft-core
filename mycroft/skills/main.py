@@ -141,7 +141,7 @@ def _get_last_modified_date(path):
 
 
 class SkillManager(Thread):
-    """ Load, update and manage instances of Skill on this system """
+    """ Load, update and manage instances of Skill on this system. """
 
     def __init__(self, ws):
         super(SkillManager, self).__init__()
@@ -174,15 +174,18 @@ class SkillManager(Thread):
         self.__msm_lock = Lock()
 
     def schedule_update_skills(self):
+        """ Schedule a skill update to take place directly. """
         # Update skills at next opportunity
         self.next_download = time.time() - 1
 
     def block_msm(self):
+        """ Disallow start of msm. """
         if not self.msm_blocked:
             self.__msm_lock.acquire()
             self.msm_blocked = True
 
     def restore_msm(self):
+        """ Allow start of msm if not allowed. """
         if self.msm_blocked:
             self.__msm_lock.release()
             self.msm_blocked = False
@@ -230,6 +233,10 @@ class SkillManager(Thread):
             LOG.error("Unable to invoke Mycroft Skill Manager: " + MSM_BIN)
 
     def _load_or_reload_skill(self, skill_folder):
+        """
+            Check if unloaded skill or changed skill needs reloading
+            and perform loading if necessary.
+        """
         if skill_folder not in self.loaded_skills:
             self.loaded_skills[skill_folder] = {
                 "id": hash(os.path.join(SKILLS_DIR, skill_folder))
@@ -304,7 +311,7 @@ class SkillManager(Thread):
         while not self._stop_event.is_set():
 
             # Update skills once an hour
-            if (time.time() >= self.next_download):
+            if time.time() >= self.next_download:
                 self.download_skills(False)
 
             # Look for recently changed skill(s) needing a reload
@@ -377,7 +384,7 @@ def main():
     global ws
 
     # Create PID file, prevent multiple instancesof this service
-    lock = mycroft.lock.Lock('skills')
+    mycroft.lock.Lock('skills')
 
     # Connect this Skill management process to the websocket
     ws = WebsocketClient()
