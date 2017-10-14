@@ -19,6 +19,8 @@ LOG = LOG("TranscribeSearch")
 
 text_permission = create_signal('transcribe_text_permission')
 audio_permission = create_signal('keep_audio_permission')
+# text_permission = check_for_signal('transcribe_text_permission',0)
+# audio_permission = check_for_signal('keep_audio_permission',0)
 
 
 class TranscribeSearch:
@@ -85,9 +87,9 @@ class TranscribeSearch:
                 LOG.info("Transcribing Permission Denied: The Audio Recording of User's Input Saved in "
                             "TimeStamp Format")
 
-            self.save_record(filename, audio)
             LOG.info(
                 "Transcribing Permission Granted: Audio Recording, " + filename + " saved.")
+            self.save_record(filename, audio)
             # with open(filename, 'w+') as filea:
             #     self.save_record(filename, audio)
                 # # sound = AudioSegment(byte_data)
