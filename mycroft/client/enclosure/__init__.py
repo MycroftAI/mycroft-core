@@ -238,23 +238,24 @@ class Enclosure(object):
         self.reader = EnclosureReader(self.serial, self.ws)
         self.writer = EnclosureWriter(self.serial, self.ws)
 
+        # Mark 1 auto-detection:
+        #
+        # Prepare to receive message when the Arduino responds to the
+        # following "system.version"
+        self.ws.on("enclosure.started", self.on_arduino_responded)
+        self.arduino_responded = False
         # Send a message to the Arduino across the serial line asking
         # for a reply with version info.
         self.writer.write("system.version")
-        # When the Arduino responds, it will generate this message
-        self.ws.on("enclosure.started", self.on_arduino_responded)
-
-        self.arduino_responded = False
-
-        # initiates the web sockets on display manager
-        # NOTE: this is a temporary place to initiate display manager sockets
-        initiate_display_manager_ws()
-
         # Start a 5 second timer.  If the serial port hasn't received
         # any acknowledgement of the "system.version" within those
         # 5 seconds, assume there is nothing on the other end (e.g.
         # we aren't running a Mark 1 with an Arduino)
         Timer(5, self.check_for_response).start()
+
+        # initiates the web sockets on display manager
+        # NOTE: this is a temporary place to initiate display manager sockets
+        initiate_display_manager_ws()
 
         # Notifications from mycroft-core
         self.ws.on("enclosure.notify.no_internet", self.on_no_internet)
