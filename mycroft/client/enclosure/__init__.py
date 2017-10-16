@@ -232,7 +232,7 @@ class Enclosure(object):
 
     def __init__(self):
         self.ws = WebsocketClient()
-        self.ws.open("open", self.on_ws_open)
+        self.ws.on("open", self.on_ws_open)
 
         ConfigurationManager.init(self.ws)
         self.config = ConfigurationManager.instance().get("enclosure")
