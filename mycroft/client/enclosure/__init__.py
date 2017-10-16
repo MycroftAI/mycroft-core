@@ -232,12 +232,19 @@ class Enclosure(object):
 
     def __init__(self):
         self.ws = WebsocketClient()
+        self.ws.open("open", self.on_ws_open)
+
         ConfigurationManager.init(self.ws)
         self.config = ConfigurationManager.instance().get("enclosure")
         self.__init_serial()
         self.reader = EnclosureReader(self.serial, self.ws)
         self.writer = EnclosureWriter(self.serial, self.ws)
 
+        # initiates the web sockets on display manager
+        # NOTE: this is a temporary place to initiate display manager sockets
+        initiate_display_manager_ws()
+
+    def on_ws_open(self, event=None):
         # Mark 1 auto-detection:
         #
         # Prepare to receive message when the Arduino responds to the
@@ -252,10 +259,6 @@ class Enclosure(object):
         # 5 seconds, assume there is nothing on the other end (e.g.
         # we aren't running a Mark 1 with an Arduino)
         Timer(5, self.check_for_response).start()
-
-        # initiates the web sockets on display manager
-        # NOTE: this is a temporary place to initiate display manager sockets
-        initiate_display_manager_ws()
 
         # Notifications from mycroft-core
         self.ws.on("enclosure.notify.no_internet", self.on_no_internet)
