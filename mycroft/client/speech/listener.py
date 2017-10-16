@@ -101,6 +101,9 @@ class AudioConsumer(Thread):
         except Empty:
             return
 
+        if audio is None:
+            return
+
         if self.state.sleeping:
             self.wake_up(audio)
         else:
