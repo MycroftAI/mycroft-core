@@ -148,7 +148,6 @@ class SkillManager(Thread):
         self._stop_event = Event()
         self._loaded_priority = Event()
         self.next_download = time.time() - 1    # download ASAP
-        self.last_modified_skill = 0
         self.loaded_skills = {}
         self.msm_blocked = False
         self.ws = ws
@@ -260,21 +259,18 @@ class SkillManager(Thread):
             return
 
         # getting the newest modified date of skill
-        last_mod = _get_last_modified_date(skill["path"])
-        skill["last_modified"] = last_mod
-        modified = skill.get("last_modified", 0)
+        modified = _get_last_modified_date(skill["path"])
+        last_mod = skill.get("last_modified", 0)
+
         # checking if skill is loaded and wasn't modified
-        if skill.get("loaded") and modified <= self.last_modified_skill:
+        if skill.get("loaded") and modified <= last_mod:
             return
 
         # check if skill was modified
-        elif (skill.get("instance") and modified >
-                self.last_modified_skill):
-
+        elif skill.get("instance") and modified > last_mod:
             # check if skill is allowed to reloaded
             if not skill["instance"].reload_skill:
                 return
-
             LOG.debug("Reloading Skill: " + skill_folder)
             # removing listeners and stopping threads
             skill["instance"].shutdown()
@@ -296,6 +292,7 @@ class SkillManager(Thread):
             skill["instance"] = load_skill(desc,
                                            self.ws, skill["id"],
                                            BLACKLISTED_SKILLS)
+            skill["last_modified"] = modified
 
     def load_skill_list(self, skills_to_load):
         """ Load the specified list of skills from disk
@@ -322,7 +319,6 @@ class SkillManager(Thread):
         # Scan the file folder that contains Skills.  If a Skill is updated,
         # unload the existing version from memory and reload from the disk.
         while not self._stop_event.is_set():
-
             # Update skills once an hour
             if time.time() >= self.next_download:
                 self.download_skills()
@@ -339,8 +335,6 @@ class SkillManager(Thread):
             # remember the date of the last modified skill
             modified_dates = map(lambda x: x.get("last_modified"),
                                  self.loaded_skills.values())
-            if len(modified_dates) > 0:
-                self.last_modified_skill = max(modified_dates)
 
             # Pause briefly before beginning next scan
             time.sleep(2)
