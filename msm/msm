@@ -499,12 +499,12 @@ case ${OPT} in
       # TODO: Load from https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/DEFAULT_SKILLS
       # TODO: Load from https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/DEFAULT_SKILLS.${platform}
       DEFAULT_SKILLS="skill-alarm skill-audio-record skill-configuration "\
-        "skill-date-time skill-desktop-launcher duckduckgo-skill skill-ip skill-joke "\
-        "skill-hello-world skill-media skill-npr-news skill-naptime skill-pairing "\
-        "skill-personal skill-playback-control skill-reminder skill-installer "\
-        "skill-singing skill-speak skill-spelling skill-stop skill-stock "\
-        "skill-volume skill-weather skill-wiki "\
-        "fallback-aiml skill-mark1-demo "
+"skill-date-time skill-desktop-launcher duckduckgo-skill skill-ip skill-joke "\
+"skill-hello-world skill-media skill-npr-news skill-naptime skill-pairing "\
+"skill-personal skill-playback-control skill-reminder skill-installer "\
+"skill-singing skill-speak skill-spelling skill-stop skill-stock "\
+"skill-volume skill-weather skill-wiki "\
+"fallback-aiml skill-mark1-demo "
 
       for name in ${DEFAULT_SKILLS}
       do
