@@ -20,6 +20,7 @@ from requests import HTTPError
 from mycroft.configuration import ConfigurationManager
 from mycroft.identity import IdentityManager
 from mycroft.version import VersionManager
+from mycroft.util import get_arch
 
 _paired_cache = False
 
@@ -191,10 +192,12 @@ class DeviceApi(Api):
         """
         return self.get_subscription().get('@type') != 'free'
 
-    def get_subscriber_voice_url(self, voice):
+    def get_subscriber_voice_url(self, voice=None):
         self.check_token()
-        return self.build_path(
-            {'path': '/' + self.identity.uuid + '/voices/' + voice})
+        archs = {'x86_64': 'x86_64', 'armv7l': 'arm'}
+        arch = archs[get_arch()]
+        path = '/' + self.identity.uuid + '/voice?arch=' + arch
+        return self.request({'path': path})['link']
 
     def find(self):
         """ Deprecated, see get_location() """
