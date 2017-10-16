@@ -393,12 +393,9 @@ def main():
     global ws
     # Create PID file, prevent multiple instancesof this service
     mycroft.lock.Lock('skills')
-    print "initing websocket"
     # Connect this Skill management process to the websocket
     ws = WebsocketClient()
-    print "connecting config"
     Configuration.init(ws)
-    print "ignoring logs"
     ignore_logs = Configuration.get("ignore_logs")
 
     # Listen for messages and echo them for logging
