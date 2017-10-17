@@ -97,7 +97,7 @@ class AudioConsumer(Thread):
 
     def read(self):
         try:
-            audio = self.queue.get(0.5)
+            audio = self.queue.get(timeout=0.5)
         except Empty:
             return
 
