@@ -346,33 +346,37 @@ def play(tracks, prefered_service):
                               the tracks.
     """
     global current
+    global service
     LOG.info('play')
     _stop()
     uri_type = tracks[0].split(':')[0]
     LOG.info('uri_type: ' + uri_type)
     # check if user requested a particular service
     if prefered_service and uri_type in prefered_service.supported_uris():
-        service = prefered_service
+        selected_service = prefered_service
     # check if default supports the uri
     elif default and uri_type in default.supported_uris():
         LOG.info("Using default backend")
         LOG.info(default.name)
-        service = default
+        selected_service = default
     else:  # Check if any other service can play the media
+        LOG.info("Searching the services")
         for s in service:
             LOG.info(str(s))
             if uri_type in s.supported_uris():
-                service = s
+                LOG.info("Service "+str(s)+" supports URI "+uri_type)
+                selected_service = s
                 break
         else:
+            LOG.info('No service found for uri_type: ' + uri_type)
             return
     LOG.info('Clear list')
-    service.clear_list()
+    selected_service.clear_list()
     LOG.info('Add tracks' + str(tracks))
-    service.add_list(tracks)
+    selected_service.add_list(tracks)
     LOG.info('Playing')
-    service.play()
-    current = service
+    selected_service.play()
+    current = selected_service
 
 
 def _play(message):
