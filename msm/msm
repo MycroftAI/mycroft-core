@@ -344,6 +344,14 @@ function install() {
       fi
     fi
 
+    if [[ -f "requirements.sh" ]]; then
+      echo "Setting up native environment..."
+      if ! bash requirements.sh; then
+        echo "Running requirements.sh failed!"
+        return 122
+      fi
+    fi
+
     echo "Installed: ${name}"
     send_install_success "${name}"
     return 0
