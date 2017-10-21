@@ -159,7 +159,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.config = ConfigurationManager.instance()
         listener_config = self.config.get('listener')
         self.upload_config = listener_config.get('wake_word_upload')
-        self.wake_word_name = listener_config['wake_word']
+        self.wake_word_name = wake_word_recognizer.key_phrase
         # The maximum audio in seconds to keep for transcribing a phrase
         # The wake word must fit in this time
         num_phonemes = wake_word_recognizer.num_phonemes
