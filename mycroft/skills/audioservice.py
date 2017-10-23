@@ -55,6 +55,20 @@ class AudioService():
         """
         self.info = message.data
 
+    def queue(self, tracks=[]):
+        """ Queue up a track to playing playlist.
+
+            Args:
+                tracks: track uri or list of track uri's
+        """
+        if isinstance(tracks, basestring):
+            tracks = [tracks]
+        elif not isinstance(tracks, list):
+            raise ValueError
+        tracks = [ensure_uri(t) for t in tracks]
+        self.emitter.emit(Message('mycroft.audio.service.queue',
+                                  data={'tracks': tracks}))
+
     def play(self, tracks=[], utterance=''):
         """ Start playback.
 

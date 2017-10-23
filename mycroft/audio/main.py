@@ -69,7 +69,7 @@ def get_services(services_folder):
         Returns:
             Sorted list of audio services.
     """
-    LOG.info("Loading skills from " + services_folder)
+    LOG.info("Loading services from " + services_folder)
     services = []
     possible_services = listdir(services_folder)
     for i in possible_services:
@@ -166,6 +166,7 @@ def load_services_callback():
     LOG.info('Default:' + str(default))
 
     ws.on('mycroft.audio.service.play', _play)
+    ws.on('mycroft.audio.service.queue', _queue)
     ws.on('mycroft.audio.service.pause', _pause)
     ws.on('mycroft.audio.service.resume', _resume)
     ws.on('mycroft.audio.service.stop', _stop)
@@ -379,6 +380,17 @@ def play(tracks, prefered_service):
     current = selected_service
 
 
+def _queue(message):
+    global current
+
+    if current:
+        LOG('Queuing Track')
+        tracks = message.data['tracks']
+        current.add_list(tracks)
+    else:
+        _play(message)
+
+
 def _play(message):
     """
         Handler for mycroft.audio.service.play. Starts playback of a
@@ -396,7 +408,7 @@ def _play(message):
     # Find if the user wants to use a specific backend
     for s in service:
         LOG.info(s.name)
-        if s.name in message.data['utterance']:
+        if 'utterance' in message.data and s.name in message.data['utterance']:
             prefered_service = s
             LOG.info(s.name + ' would be prefered')
             break
