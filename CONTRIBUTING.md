@@ -7,7 +7,7 @@ The following guidelines for contribution should be followed if you want to subm
 ## How to prepare
 
 * You need a [GitHub account](https://github.com/signup/free)
-* Submit an [issue ticket](https://help.github.com/articles/creating-an-issue/) for your issue if there is not one yet.
+* Submit an [issue ticket](https://github.com/MycroftAI/mycroft/issues) for your issue if there is not one yet.
 	* Describe the issue and include steps to reproduce if it's a bug.
 	* Ensure to mention the earliest version that you know is affected.
 * If you are able and want to fix this, fork the repository on GitHub
