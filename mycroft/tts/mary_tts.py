@@ -28,9 +28,11 @@ class MaryTTS(RemoteTTS):
         'OUTPUT_TYPE': 'AUDIO'
     }
 
-    def __init__(self, lang, voice, url):
-        super(MaryTTS, self).__init__(lang, voice, url, '/process',
+    def __init__(self, lang, config):
+        super(MaryTTS, self).__init__(lang, config,
                                       MaryTTSValidator(self))
+        if not self.api_path:
+            self.api_path = '/process'
 
     def build_request_params(self, sentence):
         params = self.PARAMS.copy()

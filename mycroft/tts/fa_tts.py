@@ -28,9 +28,10 @@ class FATTS(RemoteTTS):
         'output[type]': 'AUDIO'
     }
 
-    def __init__(self, lang, voice, url):
-        super(FATTS, self).__init__(lang, voice, url, '/say',
-                                    FATTSValidator(self))
+    def __init__(self, lang, config):
+        super(FATTS, self).__init__(lang, config, FATTSValidator(self))
+        if not self.api_path:
+            self.api_path = '/say'
 
     def build_request_params(self, sentence):
         params = self.PARAMS.copy()
