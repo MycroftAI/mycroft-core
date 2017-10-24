@@ -23,6 +23,7 @@ import pyaudio
 import time
 import datetime
 import os
+import multiprocessing
 
 import sys
 
@@ -52,7 +53,7 @@ __author__ = 'SoloVeniaASaludar'
 
 logger.debug('sys.path =' + str(sys.path))
 
-from pydub.audio_segment import AudioSegment
+# from pydub.audio_segment import AudioSegment
 
 BASEDIR = dirname(abspath(__file__))
 config = ConfigurationManager.get()
@@ -60,6 +61,7 @@ listener_config = config.get('listener')
 s = config.get('wake_word_ack_cmnd')
 
 
+# class PocketsphinxAudioConsumer(multiprocessing.Process):
 class PocketsphinxAudioConsumer(Thread):
 # class PocketsphinxAudioConsumer(object):
     """
@@ -81,6 +83,8 @@ class PocketsphinxAudioConsumer(Thread):
         self.config = config_listener
         self.lang = lang
         self.emitter = emitter
+        self.mww = self.config.get("mww")
+        self.mww_no_skills = self.config.get("mww_no_skills")
         # self.mww = mww
 
         # self.energy_threshold = 300  # minimum audio energy to consider for recording
@@ -128,8 +132,8 @@ class PocketsphinxAudioConsumer(Thread):
 
         jsgf = join(model_lang_dir, 'hello.jsgf')
         if exists(jsgf):
-            self.decoder.set_jsgf_file('jsgf', jsgf)
-            # self.decoder.set_search('grammar')
+            self.decoder.set_search('grammar')
+            self.decoder.set_jsgf_file('jsgf', str(jsgf))
         else:
             # lm = join(model_lang_dir, 'en-70k-0.1-pruned.lm')
             # lm = join(model_lang_dir, 'guy6i_like.lm')
@@ -206,16 +210,21 @@ class PocketsphinxAudioConsumer(Thread):
     def transcribe(self, byte_data, metrics=None):
         start = time.time()
         # self.decoder.s
+        logger.debug("Thinking...")
+        # logger.debug("start utt time.time() = " + str(time.time()))
         tsta = self.decoder.start_utt()
+        # logger.debug("1 start process_raw time.time() = " + str(time.time()))
         tstb = self.decoder.process_raw(byte_data, False, False)
+        # logger.debug("2 start end_utt time.time() = " + str(time.time()))
         tstc = self.decoder.end_utt()
         if metrics:
             metrics.timer("mycroft.stt.local.time_s", time.time() - start)
-        # logger.debug("start time.time() = " + str(time.time()))
         # logger.debug("transcribing start = " + str(time.time() - start))
         hyp = self.decoder.hyp()
-        # logger.debug("end time.time() = " + str(time.time()))
-        # logger.debug("transcribing end = " + str(time.time() - start))
+        # logger.debug("end hyp() time.time() = " + str(time.time()))
+        logger.debug("*******************************")
+        logger.debug("Local transcribing end: total time = " + str(time.time() - start))
+        logger.debug("*******************************")
         if hyp:
             if self.wake_word in hyp.hypstr.lower() or check_for_signal('skip_wake_word',-1):
             # if self.wake_word in hyp.hypstr.lower() or listener_config.get('skip_wake_word'):
@@ -224,8 +233,10 @@ class PocketsphinxAudioConsumer(Thread):
             else:
                 self.decoder.set_keyphrase('wake_word', self.wake_word)
                 self.decoder.set_search('_default')
-            logger.debug("transcribe search = " + self.decoder.get_search())
-            # logger.debug("transcribe hyp.hypstr = " + hyp.hypstr)
+            # logger.debug("transcribe search = " + self.decoder.get_search())
+            logger.debug("*******************************")
+            logger.debug("transcribe hyp.hypstr = " + hyp.hypstr)
+            logger.debug("*******************************")
             # logger.debug("transcribe success! decoder rtn = " + str(tstb))
             # logger.debug("transcribe success, Byte_data = " + str(len(byte_data)))
         # else:

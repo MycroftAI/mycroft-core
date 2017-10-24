@@ -1,0 +1,34 @@
+#JSGF V1.0;
+
+grammar brands;
+
+public <brands> = [
+amazon
+| apple
+| facebook
+| google
+| microsoft
+| walmart
+];
+
+public <brandutterance> = (i | we )
+[mostly | usually]
+[don't | do]
+( like | dislike)
+<brands.brands>;
+
+
+amazon
+apple
+dislike
+do
+don't
+facebook
+google
+i
+like
+microsoft
+mostly
+usually
+walmart
+we

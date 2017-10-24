@@ -16,6 +16,7 @@ import time
 import pwd, os
 from Queue import Queue
 from threading import Thread
+import multiprocessing
 
 import speech_recognition as sr
 from pyee import EventEmitter
@@ -37,6 +38,7 @@ from mycroft.util import (
     check_for_signal)
 
 
+# class AudioProducer(multiprocessing.Process):
 class AudioProducer(Thread):
     """
     AudioProducer
@@ -67,7 +69,8 @@ class AudioProducer(Thread):
                     # LOG.debug("queue.put, self.queue.unfinished_tasks = " + str(self.queue.unfinished_tasks))
 
                     # mww - don't process skill intent lookup
-                    if not self.mww_no_skills:
+                    # if not self.mww and not self.mww_no_skills:
+                    if audio:
                         self.queue.put(audio)
                         LOG.debug("queue.put, self.queue.unfinished_tasks = " + str(self.queue.unfinished_tasks))
 
@@ -87,6 +90,7 @@ class AudioProducer(Thread):
         self.recognizer.stop()
 
 
+# class AudioConsumer(multiprocessing.Process):
 class AudioConsumer(Thread):
     """
     AudioConsumer
@@ -107,10 +111,26 @@ class AudioConsumer(Thread):
         self.wakeup_recognizer = wakeup_recognizer
         self.wakeword_recognizer = wakeword_recognizer
         self.metrics = MetricsAggregator()
+        self.transcribe_jobs = []
 
     def run(self):
         while self.state.running:
             self.read()
+            LOG.debug("multiprocessing.active_children() = " + str(len(multiprocessing.active_children())))
+            if len(multiprocessing.active_children()) > 5:
+                for j in self.transcribe_jobs:
+                    LOG.debug("waiting for process to end, j.ident  = " + str(j.ident))
+                    j.join()
+                    self.transcribe_jobs.remove(j)
+                    LOG.debug("Process ended, j.ident = " + str(j.ident))
+                    if len(multiprocessing.active_children()) <= 2:
+                        break
+                LOG.debug("after joining, multiprocessing.active_children() = " + str(len(multiprocessing.active_children())))
+                LOG.debug("len(transcribe_jobs) = " + str(len(self.transcribe_jobs)))
+            for j in self.transcribe_jobs:
+                if not j.is_alive():
+                    self.transcribe_jobs.remove(j)
+
 
     def read(self):
         audio = self.queue.get()
@@ -122,7 +142,18 @@ class AudioConsumer(Thread):
         if self.state.sleeping:
             self.wake_up(audio)
         else:
-            self.process(audio)
+            if isinstance(self.stt, PocketsphinxAudioConsumer):
+
+                process = multiprocessing.Process(target=self.process,
+                                                  args=([audio]))
+
+                process.start()
+
+                self.transcribe_jobs.append(process)
+
+                LOG.debug("listener.py, read str(self.transcribe_jobs) = " + str(self.transcribe_jobs))
+            else:
+                self.process(audio)
 
         self.queue.task_done()
         LOG.debug("queue.task_done, self.queue.unfinished_tasks = " + str(self.queue.unfinished_tasks))
@@ -143,6 +174,10 @@ class AudioConsumer(Thread):
     # TODO: Localization
     def process(self, audio):
         SessionManager.touch()
+        # current_process = multiprocessing.current_process()
+        # self.transcribe_jobs.append(current_process.ident)
+        # LOG.debug("listener.py process current_process.ident = " + str(current_process.ident))
+        # LOG.debug("listener.py process self.transcribe_jobs = " + str(self.transcribe_jobs))
         payload = {
             'utterance': self.wakeword_recognizer.key_phrase,
             'session': SessionManager.get().session_id,
@@ -156,31 +191,39 @@ class AudioConsumer(Thread):
         if self._audio_length(audio) < self.MIN_AUDIO_SIZE:
             LOG.warning("Audio too short to be processed")
         else:
-            if len(audio.frame_data) != 96258:
-                if isinstance(self.stt, PocketsphinxAudioConsumer):
-                # LOG.debug("test phrase decode/transcribe")
-                    hyp = self.stt.transcribe(audio.frame_data)
-                    # hyp = self.stt.wake_word_recognizer.transcribe(audio.frame_data)
-                    if hyp:
-                        if hyp.hypstr > '':
-                            # LOG.debug("listener.py process = self._audio_length(audio) = " + str(self._audio_length(audio)))
-                            # LOG.debug("listener.py process = len(audio.frame_data) = " + str(len(audio.frame_data)))
-                            # LOG.debug("listener.py process = hyp.hypstr = " + hyp.hypstr)
-                            payload = {
-                                'utterances': [hyp.hypstr.lower()],
-                                'lang': self.stt.lang,
-                                'session': SessionManager.get().session_id
-                            }
-                            self.emitter.emit("recognizer_loop:utterance", payload)
-                            self.metrics.attr('utterances', [hyp.hypstr.lower()])
+            # if len(audio.frame_data) != 65538:  # 2 seconds (silence)
+            # if len(audio.frame_data) != 96258:  # 3 seconds silence
+            if isinstance(self.stt, PocketsphinxAudioConsumer):
+            # LOG.debug("test phrase decode/transcribe")
+                hyp = self.stt.transcribe(audio.frame_data)
+                # hyp = self.stt.wake_word_recognizer.transcribe(audio.frame_data)
+                if hyp:
+                    if hyp.hypstr > '':
+                        # LOG.debug("listener.py process = self._audio_length(audio) = " + str(self._audio_length(audio)))
+                        # LOG.debug("listener.py process = len(audio.frame_data) = " + str(len(audio.frame_data)))
+                        # LOG.debug("listener.py process = hyp.hypstr = " + hyp.hypstr)
+                        payload = {
+                            'utterances': [hyp.hypstr.lower()],
+                            'lang': self.stt.lang,
+                            'session': SessionManager.get().session_id
+                        }
+                        self.emitter.emit("recognizer_loop:utterance", payload)
+                        self.metrics.attr('utterances', [hyp.hypstr.lower()])
 
-                            TranscribeSearch().write_transcribed_files(audio.frame_data, hyp.hypstr)
+                        TranscribeSearch().write_transcribed_files(audio.frame_data, hyp.hypstr)
 
-                else:
-                    self.transcribe(audio)
+            else:
+                self.transcribe(audio)
+
+        # current_process = multiprocessing.current_process()
+        #
+        # if current_process.is_alive():
+        #      self.transcribe_jobs.remove(current_process)
+        #     LOG.debug("listener.py str(self.transcribe_jobs) = " + str(self.transcribe_jobs))
 
     def transcribe(self, audio):
         text = None
+        start = time.time()
         try:
             # Invoke the STT engine on the audio clip
             text = self.stt.execute(audio).lower().strip()
@@ -199,6 +242,9 @@ class AudioConsumer(Thread):
             LOG.error("Speech Recognition could not understand audio")
         if text and text > '':
             # STT succeeded, send the transcribed speech on for processing
+            LOG.debug("*******************************")
+            LOG.debug("Internet transcribing end: total time = " + str(time.time() - start))
+            LOG.debug("*******************************")
             payload = {
                 'utterances': [text],
                 'lang': self.stt.lang,

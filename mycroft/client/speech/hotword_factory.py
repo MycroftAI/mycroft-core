@@ -67,7 +67,8 @@ class PocketsphinxHotWord(HotWordEngine):
             dict_name = join(model_file,self.config.get("phonemes", ""))
         else:
             LOG.debug(" mww 2 = "+str(self.mww))
-            dict_name = self.create_dict(key_phrase, self.phonemes)
+            dict_name = self.create_dict(key_phrase, self.config.get("phonemes", "HH EY . M AY K R AO F T"))
+            # dict_name = self.create_dict(key_phrase, self.phonemes)
             self.phonemes = self.config.get("phonemes", "HH EY . M AY K R AO F T")
             self.num_phonemes = len(self.phonemes.split())
 
@@ -77,12 +78,9 @@ class PocketsphinxHotWord(HotWordEngine):
         self.decoder = Decoder(config)
 
         if self.mww:
-            LOG.debug(" str(join(model_file,key_phrase)) 3 = "+str(join(model_file,key_phrase)))
-            rc1 = self.decoder.set_kws('brands', str(join(model_file,key_phrase)))
-            rc2 = self.decoder.set_search('brands')
-            LOG.debug(" rc1 3 = "+str(rc1))
-            LOG.debug(" rc2 3 = "+str(rc2))
-            LOG.debug(" mww 3 = "+str(self.mww))
+            # LOG.debug(" str(join(model_file,key_phrase)) 3 = "+str(join(model_file,key_phrase)))
+            self.decoder.set_kws('brands', str(join(model_file,key_phrase)))
+            self.decoder.set_search('brands')
 
         self.accum_text = ''
         self.accum_audio = ''

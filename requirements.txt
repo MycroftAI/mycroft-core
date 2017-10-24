@@ -38,4 +38,4 @@ pulsectl==17.7.4
 aiml==0.8.6
 
 # Also update in mycroft/skills/padatious_service.py
-padatious==0.3.3
+# padatious==0.3.3

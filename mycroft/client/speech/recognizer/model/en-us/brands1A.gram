@@ -1,0 +1,119 @@
+#JSGF V1.0;
+
+grammar brands;
+
+public <brands> = (microsoft
+| google
+| apple
+| ford
+| facebook
+| walmart
+| kroger
+| costco
+| home depot
+| walgreen
+| target
+| safeway
+| best buy
+| mcdonalds
+// | publix
+| itunes
+| apple store
+// | macy's
+// | rite aid
+// | royal ahold
+| sears holdings
+// | tjx
+// | h e b grocery
+// | yum brands
+// | albertsons
+// | kohls
+| dollar general
+// | delhaize america
+// | meijer
+// | shoprite
+// | wakefern
+| ace hardware
+// | bj's wholesale club
+| whole foods [market]
+| subway
+| nordstrom
+| gap
+// | at&t wireless
+// | jc penney
+// | aldi
+// | bed bath & beyond
+// | supervalu
+| seven eleven
+// | 7 eleven
+| ross stores
+| verizon wireless
+| starbucks
+| family dollar stores
+// | bi lo
+// | l brands
+// | menard
+| trader joes
+// | wendys
+| burger king worldwide
+| dollar tree
+// | hy-vee
+| air force exchange
+| army
+// | dunkin doughnuts
+| health mart systems
+// | autozone
+| toys r us
+// | wegmans food market
+| o'reilly automotive
+// | dineequity
+| giant eagle
+// | sherwin-williams
+| dicks sporting goods
+| staples
+| office depot
+// | dillards
+| good neighbor pharmacy
+// | darden restaurants
+// | gamestop
+| petsmart
+// | qvc
+// | chick fil a
+// | winco foods
+| tractor supply
+| a and p
+| signet jewelers
+| foot locker
+| big lots
+| defense commissary agency
+| neiman marcus
+| jack in the box
+| burlington coat factory
+| save mart supermarkets
+| advance auto parts
+| michaels stores
+| true value co.
+| domino's pizza
+| chipotle [mexican] [grill]
+| sonic
+| stater brothers holdings
+| price chopper supermarkets
+| dell
+);
+
+/*
+// | cvs caremark
+// | lowes
+// | amazon.com
+// | belk
+// | panera bread company
+// | ikea north america services
+// | williams-sonoma
+// | ascena retail group
+// | hudsons bay
+// | alimentation couche tard
+// | a&p
+// | avb brandsource
+// | barnes and noble
+// | barnes & noble
+*/
