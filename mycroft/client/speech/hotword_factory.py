@@ -57,7 +57,7 @@ class PocketsphinxHotWord(HotWordEngine):
         self.num_phonemes = len(self.phonemes.split())
         self.threshold = self.config.get("threshold", 1e-90)
         self.sample_rate = self.listener_config.get("sample_rate", 1600)
-        dict_name = self.create_dict(key_phrase, self.phonemes)
+        dict_name = self.create_dict(self.key_phrase, self.phonemes)
         config = self.create_config(dict_name, Decoder.default_config())
         self.decoder = Decoder(config)
 
@@ -137,4 +137,10 @@ class HotWordFactory(object):
         module = config.get(hotword).get("module", "pocketsphinx")
         config = config.get(hotword, {"module": module})
         clazz = HotWordFactory.CLASSES.get(module)
-        return clazz(hotword, config, lang=lang)
+        try:
+            return clazz(hotword, config, lang=lang)
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:
+            LOG.exception('Could not create hotword. Falling back to default.')
+            return HotWordFactory.CLASSES['pocketsphinx']()

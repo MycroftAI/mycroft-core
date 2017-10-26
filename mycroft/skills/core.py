@@ -254,7 +254,7 @@ class MycroftSkill(object):
         try:
             return self._settings
         except:
-            self._settings = SkillSettings(self._dir)
+            self._settings = SkillSettings(self._dir, self.name)
             return self._settings
 
     def bind(self, emitter):
@@ -603,7 +603,7 @@ class MycroftSkill(object):
         """
         # Store settings
         self.settings.store()
-
+        self.settings.is_alive = False
         # removing events
         for e, f in self.events:
             self.emitter.remove(e, f)

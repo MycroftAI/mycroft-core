@@ -255,3 +255,8 @@ def stop_speaking():
     LOG.info("mycroft.utils.stop_speaking() is depreciated, use "
              "mycroft.audio.stop_speaking() instead.")
     mycroft.audio.stop_speaking()
+
+
+def get_arch():
+    """ Get architecture string of system. """
+    return os.uname()[4]

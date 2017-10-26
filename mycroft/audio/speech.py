@@ -19,7 +19,7 @@ from threading import Lock
 
 from mycroft.configuration import ConfigurationManager
 from mycroft.tts import TTSFactory
-from mycroft.util import create_signal, stop_speaking, check_for_signal
+from mycroft.util import create_signal, check_for_signal
 from mycroft.util.log import LOG
 
 ws = None
@@ -111,9 +111,10 @@ def handle_stop(event):
         handle stop message
     """
     global _last_stop_signal
-    _last_stop_signal = time.time()
-    tts.playback.clear_queue()
-    tts.playback.clear_visimes()
+    if check_for_signal("isSpeaking", -1):
+        _last_stop_signal = time.time()
+        tts.playback.clear_queue()
+        tts.playback.clear_visimes()
 
 
 def init(websocket):

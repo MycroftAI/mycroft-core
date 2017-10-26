@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 import time
-from Queue import Queue
+from Queue import Queue, Empty
 from threading import Thread
 
 import speech_recognition as sr
@@ -96,7 +96,10 @@ class AudioConsumer(Thread):
             self.read()
 
     def read(self):
-        audio = self.queue.get()
+        try:
+            audio = self.queue.get(timeout=0.5)
+        except Empty:
+            return
 
         if audio is None:
             return
