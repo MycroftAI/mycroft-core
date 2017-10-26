@@ -45,19 +45,36 @@ function help() {
   exit 1
 }
 
+# Determine the platform
+mycroft_platform="null"
+if [[ -r /etc/mycroft/mycroft.conf ]] ; then
+   mycroft_platform=$( jq -r '.enclosure.platform' /etc/mycroft/mycroft.conf )
+else
+   if [[ "$(hostname)" == "picroft" ]] ; then
+      mycroft_platform="picroft"
+   elif [[ "$(hostname)" =~ "mark_1" ]] ; then
+      mycroft_platform="mycroft_mark_1"
+   fi
+fi
 
-# Determine the location of the Skill folder
-mycroft_skill_folder=${mycroft_skill_folder:-"/opt/mycroft/skills"}
+# Get the location of the Skill folder
+mycroft_skill_folder="null"
+if [[ -r /etc/mycroft/mycroft.conf ]] ; then
+   mycroft_skill_folder=$( jq -r '.enclosure.skill_folder' /etc/mycroft/mycroft.conf )
+fi
+if [[ ${mycroft_skill_folder} == "null" ]] ; then
+   mycroft_skill_folder="/opt/mycroft/skills"
+fi
+
 if [[ ! -d "${mycroft_skill_folder}" ]] ; then
   echo "ERROR: Unable to find/access ${mycroft_skill_folder}!"
   exit 101
 fi
 
-
 # Determine if on picroft/mk1?
 picroft_mk1="false"
 vwrap="true"
-if [[ "$(hostname)" == "picroft" ]] || [[ "$(hostname)" =~ "mark_1" ]] && [[ -x /usr/local/bin/mycroft-wifi-setup-client ]] ; then
+if [[ "${mycroft_platform}" == "picroft" ]] || [[ "${mycroft_platform}" == "mycroft_mark_1" ]] ; then
   picroft_mk1="true"
 else
   if [[ -r /etc/bash_completion.d/virtualenvwrapper ]]; then
@@ -312,6 +329,8 @@ function install() {
          fi
       fi
     fi
+
+    # If the skill has a requirements.txt, pip install them
     if [[ -f "requirements.txt" ]]; then
       echo "  Installing requirements..."
       if [[ "${picroft_mk1}" == "false" ]]; then
@@ -344,10 +363,12 @@ function install() {
       fi
     fi
 
+    # If the skill has a requirements.sh, then run that using bash
     if [[ -f "requirements.sh" ]]; then
-      echo "Setting up native environment..."
+      echo "  Setting up native environment..."
       if ! bash requirements.sh; then
         echo "Running requirements.sh failed!"
+        send_install_fail "${name}" 122
         return 122
       fi
     fi
@@ -355,6 +376,34 @@ function install() {
     echo "Installed: ${name}"
     send_install_success "${name}"
     return 0
+}
+
+function install_from_url_list() {
+  exit_code=0
+  skill_list=$( curl -s "${*}" )
+  if [[ $? -gt 0 || $skill_list =~ ^404 ]] ; then
+    # This is fine, just  no list found
+    return 0
+  fi
+
+  # Tell 'for' to only break on newlines, not spaces.  The # comment lines
+  # inside the list can contain spaces in them.
+  IFS=$'\n'  
+  for name in ${skill_list}
+  do
+    if [[ ! $name =~ ^# ]] ; then  # ignore comment lines
+      install $name
+      rc=$?
+      if [[ ${rc} -gt 0 ]] ; then
+        if [[ ${rc} -gt ${exit_code} ]] ; then
+          # keep the highest exit code
+          exit_code=${rc}
+        fi
+      fi
+    fi
+  done
+
+  return ${exit_code}
 }
 
 function search() {
@@ -504,33 +553,19 @@ case ${OPT} in
 
       # These skills are automatically installed on all mycroft-core
       # installations.
-      # TODO: Load from https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/DEFAULT_SKILLS
-      # TODO: Load from https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/DEFAULT_SKILLS.${platform}
-      DEFAULT_SKILLS="skill-alarm skill-audio-record skill-configuration "\
-"skill-date-time skill-desktop-launcher duckduckgo-skill skill-ip skill-joke "\
-"skill-hello-world skill-media skill-npr-news skill-naptime skill-pairing "\
-"skill-personal skill-playback-control skill-reminder skill-installer "\
-"skill-singing skill-speak skill-spelling skill-stop skill-stock "\
-"skill-volume skill-weather skill-wiki "\
-"fallback-aiml skill-mark1-demo "
+      install_from_url_list "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/DEFAULT-SKILLS"
+      exit_code=$?
 
-      for name in ${DEFAULT_SKILLS}
-      do
-         install $name
-         rc=$?
-         if [[ ${rc} -gt 0 ]] ; then
-            if [[ ${rc} -gt ${exit_code} ]] ; then
-               exit_code=${rc}
-            fi
-         fi
-      done
-      if [[ ${exit_code} -eq 20 ]] ; then
-         # 20 is returned for skills already installed,
-         # which is OK here.
-         exit_code=0
+      # Grab any platform-specific skills
+      if [[ ${mycroft_platform} != 'null' ]] ; then
+        if [[ ${exit_code} -eq 0 || ${exit_code} -eq 20 ]] ; then
+            install_from_url_list "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/DEFAULT-SKILLS.${mycroft_platform}"
+            exit_code=$?
+        fi
       fi
 
-      if [[ ${exit_code} -eq 0 ]] ; then
+      # exit code 20 == skills already installed, which is OK here
+      if [[ ${exit_code} -eq 0 || ${exit_code} -eq 20 ]] ; then
          update
          send_end_update
          exit_code=$?
