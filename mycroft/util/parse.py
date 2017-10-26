@@ -1,26 +1,21 @@
 # -*- coding: iso-8859-15 -*-
+#
+# Copyright 2017 Mycroft AI Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
-
-
-# Copyright 2017 Mycroft AI, Inc.
-#
-# This file is part of Mycroft Core.
-#
-# Mycroft Core is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Mycroft Core is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
-# ==============================================================
 
 
 def extractnumber(text, lang="en-us"):
@@ -1026,7 +1021,7 @@ pt_numbers = {
     "dois": 2,
     "duas": 2,
     "tres": 3,
-    u"três": 3,
+    u"trï¿œs": 3,
     "quatro": 4,
     "cinco": 5,
     "seis": 6,
@@ -1070,7 +1065,7 @@ pt_numbers = {
     "novecentos": 900,
     "novecentas": 900,
     "mil": 1000,
-    u"milhão": 1000000}
+    u"milhï¿œo": 1000000}
 
 
 def isFractional_pt(input_str):
@@ -1086,20 +1081,20 @@ def isFractional_pt(input_str):
     if input_str.endswith('s', -1):
         input_str = input_str[:len(input_str) - 1]  # e.g. "fifths"
 
-    aFrac = ["meio", u"terço", "quarto", "quinto", "sexto",
-             "setimo", "oitavo", "nono", u"décimo"]
+    aFrac = ["meio", u"terï¿œo", "quarto", "quinto", "sexto",
+             "setimo", "oitavo", "nono", u"dï¿œcimo"]
 
     if input_str.lower() in aFrac:
         return 1.0 / (aFrac.index(input_str) + 2)
-    if input_str == u"vigésimo":
+    if input_str == u"vigï¿œsimo":
         return 1.0 / 20
-    if input_str == u"trigésimo":
+    if input_str == u"trigï¿œsimo":
         return 1.0 / 30
-    if input_str == u"centésimo":
+    if input_str == u"centï¿œsimo":
         return 1.0 / 100
-    if input_str == u"milésimo":
+    if input_str == u"milï¿œsimo":
         return 1.0 / 1000
-    if input_str == u"sétimo" or input_str == "septimo" or input_str == u"séptimo":
+    if input_str == u"sï¿œtimo" or input_str == "septimo" or input_str == u"sï¿œptimo":
         return 1.0 / 7
 
     return False
@@ -1202,7 +1197,7 @@ def extractnumber_pt(text):
                     result += afterAndVal
                     break
 
-        decimals = ["ponto", "virgula", u"vírgula", ".", ","]
+        decimals = ["ponto", "virgula", u"vï¿œrgula", ".", ","]
         if next_word in decimals:
             zeros = 0
             newWords = aWords[count + 2:]
@@ -1354,7 +1349,7 @@ def extract_datetime_pt(input_str, currentDate=None):
     def clean_string(str):
         # cleans the input string of unneeded punctuation and capitalization
         # among other things
-        symbols = [".", ",", ";", "?", "!", u"º", u"ª"]
+        symbols = [".", ",", ";", "?", "!", u"ï¿œ", u"ï¿œ"]
         noise_words = ["o", "os", "a", "as", "do", "da", "dos", "das", "de",
                        "ao", "aos"]
 
@@ -1363,23 +1358,23 @@ def extract_datetime_pt(input_str, currentDate=None):
         for word in noise_words:
             str = str.replace(" " + word + " ", " ")
         str = str.lower().replace(
-            u"á",
+            u"ï¿œ",
             "a").replace(
-            u"ç",
+            u"ï¿œ",
             "c").replace(
-            u"à",
+            u"ï¿œ",
             "a").replace(
-            u"ã",
+            u"ï¿œ",
             "a").replace(
-            u"ê",
+            u"ï¿œ",
             "e").replace(
-            u"é",
+            u"ï¿œ",
             "e").replace(
-            u"è",
+            u"ï¿œ",
             "e").replace(
-            u"ó",
+            u"ï¿œ",
             "o").replace(
-            u"ò",
+            u"ï¿œ",
             "o").replace(
             "-",
             " ").replace(
@@ -2145,17 +2140,17 @@ def pt_pruning(text, symbols=True, accents=True, agressive=True):
              "esta", "deste", "desta", "neste", "nesta", "nesse",
              "nessa", "foi", "que"]
     if symbols:
-        symbols = [".", ",", ";", ":", "!", "?", u"º", u"ª"]
+        symbols = [".", ",", ";", ":", "!", "?", u"ï¿œ", u"ï¿œ"]
         for symbol in symbols:
             text = text.replace(symbol, "")
         text = text.replace("-", " ").replace("_", " ")
     if accents:
-        accents = {"a": [u"á", u"à", u"ã", u"â"],
-                   "e": [u"é", u"è", u"ê"],
-                   "i": [u"í", u"ì"],
-                   "o": [u"ó", u"ò"],
-                   "u": [u"ù", u"ú"],
-                   "c": [u"ç", u"Ç"]}
+        accents = {"a": [u"ï¿œ", u"ï¿œ", u"ï¿œ", u"ï¿œ"],
+                   "e": [u"ï¿œ", u"ï¿œ", u"ï¿œ"],
+                   "i": [u"ï¿œ", u"ï¿œ"],
+                   "o": [u"ï¿œ", u"ï¿œ"],
+                   "u": [u"ï¿œ", u"ï¿œ"],
+                   "c": [u"ï¿œ", u"ï¿œ"]}
         for char in accents:
             for acc in accents[char]:
                 text = text.replace(acc, char)
@@ -2202,7 +2197,7 @@ es_numbers_xlat = {
     "una": 1,
     "dos": 2,
     "tres": 3,
-    u"trés": 3,
+    u"trï¿œs": 3,
     "cuatro": 4,
     "cinco": 5,
     "seis": 6,
@@ -2216,19 +2211,19 @@ es_numbers_xlat = {
     "catorce": 14,
     "quince": 15,
     "dieciseis": 16,
-    u"dieciséis": 16,
+    u"diecisï¿œis": 16,
     "diecisiete": 17,
     "dieciocho": 18,
     "diecinueve": 19,
     "veinte": 20,
     "veintiuno": 21,
-    u"veintidós": 22,
-    u"veintitrés": 23,
+    u"veintidï¿œs": 22,
+    u"veintitrï¿œs": 23,
     "veintidos": 22,
     "veintitres": 23,
     "veinticuatro": 24,
     "veinticinco": 25,
-    u"veintiséis": 26,
+    u"veintisï¿œis": 26,
     "veintiseis": 26,
     "veintisiete": 27,
     "veintiocho": 28,

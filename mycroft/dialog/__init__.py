@@ -1,29 +1,26 @@
-# Copyright 2016 Mycroft AI, Inc.
+# Copyright 2017 Mycroft AI Inc.
 #
-# This file is part of Mycroft Core.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Mycroft Core is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
-# Mycroft Core is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
-# You should have received a copy of the GNU General Public License
-# along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
-
-import pystache
-from io import open
-import os
 import random
-from mycroft.util import log, resolve_resource_file
+from io import open
 
-__author__ = 'seanfitz'
-logger = log.getLogger(__name__)
+import os
+import pystache
+
+from mycroft.util import resolve_resource_file
+from mycroft.util.log import LOG
+
 
 __doc__ = """
 
@@ -34,6 +31,7 @@ class MustacheDialogRenderer(object):
     """
     A dialog template renderer based on the mustache templating language.
     """
+
     def __init__(self):
         self.templates = {}
 
@@ -84,6 +82,7 @@ class DialogLoader(object):
     """
     Loads a collection of dialog files into a renderer implementation.
     """
+
     def __init__(self, renderer_factory=MustacheDialogRenderer):
         self.__renderer = renderer_factory()
 
@@ -98,7 +97,7 @@ class DialogLoader(object):
             a loaded instance of a dialog renderer
         """
         if not os.path.exists(dialog_dir) or not os.path.isdir(dialog_dir):
-            logger.warn("No dialog found: " + dialog_dir)
+            LOG.warning("No dialog found: " + dialog_dir)
             return self.__renderer
 
         for f in sorted(
@@ -127,13 +126,13 @@ def get(phrase, lang=None, context=None):
     """
 
     if not lang:
-        from mycroft.configuration import ConfigurationManager
-        lang = ConfigurationManager.instance().get("lang")
+        from mycroft.configuration import Configuration
+        lang = Configuration.get("lang")
 
-    filename = "text/"+lang.lower()+"/"+phrase+".dialog"
+    filename = "text/" + lang.lower() + "/" + phrase + ".dialog"
     template = resolve_resource_file(filename)
     if not template:
-        logger.debug("Resource file not found: " + filename)
+        LOG.debug("Resource file not found: " + filename)
         return phrase
 
     stache = MustacheDialogRenderer()

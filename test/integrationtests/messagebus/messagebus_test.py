@@ -1,15 +1,30 @@
+# Copyright 2017 Mycroft AI Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 """This is a unittest for the message buss
 
 It's important to note that this requires this test to run mycroft service
 to test the buss.  It is not expected that the service be already running
 when the tests are ran.
 """
+import time
 import unittest
-from mycroft.messagebus.message import Message
-from mycroft.messagebus.client.ws import WebsocketClient
 from subprocess import Popen, call
 from threading import Thread
-import time
+
+from mycroft.messagebus.client.ws import WebsocketClient
+from mycroft.messagebus.message import Message
 
 
 class TestMessagebusMethods(unittest.TestCase):

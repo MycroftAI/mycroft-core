@@ -1,35 +1,27 @@
-# Copyright 2016 Mycroft AI, Inc.
+# Copyright 2017 Mycroft AI Inc.
 #
-# This file is part of Mycroft Core.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Mycroft Core is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
-# Mycroft Core is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
-# You should have received a copy of the GNU General Public License
-# along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
-
-from adapt.engine import IntentDeterminationEngine
-
-from mycroft.messagebus.message import Message
-from mycroft.skills.core import open_intent_envelope
-from mycroft.util.log import getLogger
-from mycroft.util.parse import normalize
-from mycroft.configuration import ConfigurationManager
-
-from adapt.context import ContextManagerFrame
 import time
 
-__author__ = 'seanfitz'
+from adapt.context import ContextManagerFrame
+from adapt.engine import IntentDeterminationEngine
 
-logger = getLogger(__name__)
+from mycroft.configuration import Configuration
+from mycroft.messagebus.message import Message
+from mycroft.skills.core import open_intent_envelope
+from mycroft.util.log import LOG
+from mycroft.util.parse import normalize
 
 
 class ContextManager(object):
@@ -61,15 +53,21 @@ class ContextManager(object):
             metadata(object): dict, arbitrary metadata about the entity being
             added
         """
-        top_frame = self.frame_stack[0] if len(self.frame_stack) > 0 else None
-        if top_frame and top_frame[0].metadata_matches(metadata):
-            top_frame[0].merge_context(entity, metadata)
-        else:
-            frame = ContextManagerFrame(entities=[entity],
-                                        metadata=metadata.copy())
-            self.frame_stack.insert(0, (frame, time.time()))
+        try:
+            if len(self.frame_stack) > 0:
+                top_frame = self.frame_stack[0]
+            else:
+                top_frame = None
+            if top_frame and top_frame[0].metadata_matches(metadata):
+                top_frame[0].merge_context(entity, metadata)
+            else:
+                frame = ContextManagerFrame(entities=[entity],
+                                            metadata=metadata.copy())
+                self.frame_stack.insert(0, (frame, time.time()))
+        except (IndexError, KeyError):
+            pass
 
-    def get_context(self, max_frames=None, missing_entities=[]):
+    def get_context(self, max_frames=None, missing_entities=None):
         """
         Constructs a list of entities from the context.
 
@@ -81,6 +79,8 @@ class ContextManager(object):
         Returns:
             list: a list of entities
         """
+        missing_entities = missing_entities or []
+
         relevant_frames = [frame[0] for frame in self.frame_stack if
                            time.time() - frame[1] < self.timeout]
         if not max_frames or max_frames > len(relevant_frames):
@@ -93,7 +93,7 @@ class ContextManager(object):
                               relevant_frames[i].entities]
             for entity in frame_entities:
                 entity['confidence'] = entity.get('confidence', 1.0) \
-                                       / (2.0 + i)
+                    / (2.0 + i)
             context += frame_entities
 
         result = []
@@ -123,7 +123,7 @@ class ContextManager(object):
 
 class IntentService(object):
     def __init__(self, emitter):
-        self.config = ConfigurationManager.get().get('context', {})
+        self.config = Configuration.get().get('context', {})
         self.engine = IntentDeterminationEngine()
         self.context_keywords = self.config.get('keywords', ['Location'])
         self.context_max_frames = self.config.get('max_frames', 3)
@@ -232,7 +232,7 @@ class IntentService(object):
                 # TODO - Should Adapt handle this?
                 best_intent['utterance'] = utterance
             except StopIteration, e:
-                logger.exception(e)
+                LOG.exception(e)
                 continue
 
         if best_intent and best_intent.get('confidence', 0.0) > 0.0:
@@ -262,10 +262,9 @@ class IntentService(object):
                 start_concept, end_concept, alias_of=alias_of)
 
     def handle_register_intent(self, message):
-        print "registring " + str(message.data)
+        print "Registering: " + str(message.data)
         intent = open_intent_envelope(message)
         self.engine.register_intent_parser(intent)
-        print "Done"
 
     def handle_detach_intent(self, message):
         intent_name = message.data.get('intent_name')
@@ -281,17 +280,35 @@ class IntentService(object):
         self.engine.intent_parsers = new_parsers
 
     def handle_add_context(self, message):
+        """
+            Handles adding context from the message bus.
+            The data field must contain a context keyword and
+            may contain a word if a specific word should be injected
+            as a match for the provided context keyword.
+
+        """
         entity = {'confidence': 1.0}
         context = message.data.get('context')
         word = message.data.get('word') or ''
+        # if not a string type try creating a string from it
+        if not isinstance(word, basestring):
+            word = str(word)
         entity['data'] = [(word, context)]
         entity['match'] = word
         entity['key'] = word
         self.context_manager.inject_context(entity)
 
     def handle_remove_context(self, message):
+        """
+            Handles removing context from the message bus. The
+            data field must contain the 'context' to remove.
+        """
         context = message.data.get('context')
-        self.context_manager.remove_context(context)
+        if context:
+            self.context_manager.remove_context(context)
 
     def handle_clear_context(self, message):
+        """
+            Clears all keywords from context.
+        """
         self.context_manager.clear_context()

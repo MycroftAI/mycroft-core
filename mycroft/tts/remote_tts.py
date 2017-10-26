@@ -1,34 +1,24 @@
-# Copyright 2016 Mycroft AI, Inc.
+# Copyright 2017 Mycroft AI Inc.
 #
-# This file is part of Mycroft Core.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Mycroft Core is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
-# Mycroft Core is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
-# You should have received a copy of the GNU General Public License
-# along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
-
 import abc
-
 import re
 from requests_futures.sessions import FuturesSession
 
 from mycroft.tts import TTS
 from mycroft.util import remove_last_slash, play_wav
-from mycroft.util.log import getLogger
-from mycroft.messagebus.message import Message
-
-__author__ = 'jdorleans'
-
-LOGGER = getLogger(__name__)
+from mycroft.util.log import LOG
 
 
 class RemoteTTS(TTS):
@@ -54,7 +44,7 @@ class RemoteTTS(TTS):
                     self.begin_audio()
                     self.__play(req)
                 except Exception, e:
-                    LOGGER.error(e.message)
+                    LOG.error(e.message)
                 finally:
                     self.end_audio()
 
@@ -86,7 +76,7 @@ class RemoteTTS(TTS):
             self.__save(resp.content)
             play_wav(self.filename).communicate()
         else:
-            LOGGER.error(
+            LOG.error(
                 '%s Http Error: %s for url: %s' %
                 (resp.status_code, resp.reason, resp.url))
 

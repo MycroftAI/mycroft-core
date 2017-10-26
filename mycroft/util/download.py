@@ -1,7 +1,23 @@
+# Copyright 2017 Mycroft AI Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 from threading import Thread
-import requests
+
 import os
-from os.path import exists
+import requests
+from os.path import exists, dirname
+import subprocess
 
 _running_downloads = {}
 
@@ -35,7 +51,8 @@ class Downloader(Thread):
             complet_action: Function to run when download is complete.
                             `func(dest)`
     """
-    def __init__(self, url, dest, complete_action=None):
+
+    def __init__(self, url, dest, complete_action=None, header=None):
         super(Downloader, self).__init__()
         self.url = url
         self.dest = dest
@@ -43,27 +60,36 @@ class Downloader(Thread):
         self.status = None
         self.done = False
         self._abort = False
+        self.header = header
+
+        # Create directories as needed
+        if not exists(dirname(dest)):
+            os.makedirs(dirname(dest))
 
         #  Start thread
+        self.daemon = True
         self.start()
+
+    def perform_download(self, dest):
+
+        cmd = ['wget', '-c', self.url, '-O', dest,
+               '--tries=20', '--read-timeout=5']
+        if self.header:
+            cmd += ['--header={}'.format(self.header)]
+        return subprocess.call(cmd)
 
     def run(self):
         """
             Does the actual download.
         """
-        r = requests.get(self.url, stream=True)
         tmp = _get_download_tmp(self.dest)
-        with open(tmp, 'w') as f:
-            for chunk in r.iter_content():
-                f.write(chunk)
-                if self._abort:
-                    break
+        self.status = self.perform_download(tmp)
 
-        self.status = r.status_code
-        if not self._abort and self.status == 200:
+        print self.status
+        if not self._abort and self.status == 0:
             self.finalize(tmp)
         else:
-            self.cleanup(self, tmp)
+            self.cleanup(tmp)
         self.done = True
         arg_hash = hash(self.url + self.dest)
 
@@ -80,7 +106,7 @@ class Downloader(Thread):
         if self.complete_action:
             self.complete_action(self.dest)
 
-    def cleanup(tmp):
+    def cleanup(self, tmp):
         """
             Cleanup after download attempt
         """
@@ -96,9 +122,10 @@ class Downloader(Thread):
         self._abort = True
 
 
-def download(url, dest, complete_action=None):
+def download(url, dest, complete_action=None, header=None):
     global _running_downloads
     arg_hash = hash(url + dest)
     if arg_hash not in _running_downloads:
-        _running_downloads[arg_hash] = Downloader(url, dest, complete_action)
+        _running_downloads[arg_hash] = Downloader(url, dest, complete_action,
+                                                  header)
     return _running_downloads[arg_hash]

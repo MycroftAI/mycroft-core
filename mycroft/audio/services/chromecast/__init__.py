@@ -1,23 +1,33 @@
-from mycroft.messagebus.message import Message
-from mycroft.util.log import getLogger
-from mycroft.audio.services import AudioBackend
-from os.path import dirname, abspath, basename
-import sys
+# Copyright 2017 Mycroft AI Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 import time
 from mimetypes import guess_type
 
 import pychromecast
 
-logger = getLogger(abspath(__file__).split('/')[-2])
-__author__ = 'forslund'
+from mycroft.audio.services import AudioBackend
+from mycroft.messagebus.message import Message
+from mycroft.util.log import LOG
 
 
 class ChromecastService(AudioBackend):
     def _connect(self, message):
-        logger.info('Trying to connect to chromecast')
+        LOG.info('Trying to connect to chromecast')
         casts = pychromecast.get_chromecasts()
         if self.config is None or 'identifier' not in self.config:
-            logger.error("Chromecast identifier not found!")
+            LOG.error("Chromecast identifier not found!")
             return  # Can't connect since no id is specified
         else:
             identifier = self.config['identifier']
@@ -26,7 +36,7 @@ class ChromecastService(AudioBackend):
                 self.cast = c
                 break
         else:
-            logger.info('Couldn\'t find chromecast ' + identifier)
+            LOG.info('Couldn\'t find chromecast ' + identifier)
             self.connection_attempts += 1
             time.sleep(10)
             self.emitter.emit(Message('ChromecastServiceConnect'))
@@ -118,7 +128,7 @@ def autodetect(config, emitter):
     casts = pychromecast.get_chromecasts()
     ret = []
     for c in casts:
-        logger.info(c.name + " found.")
+        LOG.info(c.name + " found.")
         ret.append(ChromecastService(config, emitter, c.name.lower(), c))
 
     return ret

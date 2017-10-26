@@ -1,15 +1,25 @@
-from mycroft.tts import TTSFactory
-from mycroft.util import create_signal, stop_speaking, check_for_signal
-from mycroft.lock import Lock as PIDLock  # Create/Support PID locking file
-from mycroft.configuration import ConfigurationManager
-from mycroft.messagebus.message import Message
-from mycroft.util.log import getLogger
-
-from threading import Lock
+# Copyright 2017 Mycroft AI Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 import time
 import re
 
-logger = getLogger("Audio speech")
+from threading import Lock
+from mycroft.configuration import Configuration
+from mycroft.tts import TTSFactory
+from mycroft.util import create_signal, check_for_signal
+from mycroft.util.log import LOG
 
 ws = None
 config = None
@@ -31,13 +41,12 @@ def handle_speak(event):
     """
         Handle "speak" message
     """
-    config = ConfigurationManager.get()
-    ConfigurationManager.init(ws)
+    config = Configuration.get()
+    Configuration.init(ws)
     global _last_stop_signal
 
     # Mild abuse of the signal system to allow other processes to detect
     # when TTS is happening.  See mycroft.util.is_speaking()
-    create_signal("isSpeaking")
 
     utterance = event.data['utterance']
     if event.data.get('expect_response', False):
@@ -61,14 +70,11 @@ def handle_speak(event):
             except KeyboardInterrupt:
                 raise
             except:
-                logger.error('Error in mute_and_speak', exc_info=True)
+                LOG.error('Error in mute_and_speak', exc_info=True)
             if _last_stop_signal > start or check_for_signal('buttonPress'):
                 break
     else:
         mute_and_speak(utterance)
-
-    # This check will clear the "signal"
-    check_for_signal("isSpeaking")
 
 
 def mute_and_speak(utterance):
@@ -92,7 +98,7 @@ def mute_and_speak(utterance):
         tts.init(ws)
         tts_hash = hash(str(config.get('tts', '')))
 
-    logger.info("Speak: " + utterance)
+    LOG.info("Speak: " + utterance)
     try:
         tts.execute(utterance)
     finally:
@@ -104,10 +110,10 @@ def handle_stop(event):
         handle stop message
     """
     global _last_stop_signal
-    _last_stop_signal = time.time()
-    tts.playback.clear_queue()
-    tts.playback.clear_visimes()
-    stop_speaking()
+    if check_for_signal("isSpeaking", -1):
+        _last_stop_signal = time.time()
+        tts.playback.clear_queue()
+        tts.playback.clear_visimes()
 
 
 def init(websocket):
@@ -121,9 +127,10 @@ def init(websocket):
     global config
 
     ws = websocket
-    ConfigurationManager.init(ws)
-    config = ConfigurationManager.get()
+    Configuration.init(ws)
+    config = Configuration.get()
     ws.on('mycroft.stop', handle_stop)
+    ws.on('mycroft.audio.speech.stop', handle_stop)
     ws.on('speak', handle_speak)
 
     tts = TTSFactory.create()

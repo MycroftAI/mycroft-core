@@ -1,12 +1,26 @@
-from mycroft.messagebus.message import Message
-from mycroft.util.log import getLogger
-from mycroft.audio.services import AudioBackend
-from os.path import dirname, abspath, basename
+# Copyright 2017 Mycroft AI Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 import sys
 import time
 
-logger = getLogger(abspath(__file__).split('/')[-2])
-__author__ = 'forslund'
+from os.path import dirname, abspath
+
+from mycroft.audio.services import AudioBackend
+from mycroft.messagebus.message import Message
+from mycroft.util.log import LOG
+
 
 sys.path.append(abspath(dirname(__file__)))
 Mopidy = __import__('mopidypost').Mopidy
@@ -25,13 +39,13 @@ class MopidyService(AudioBackend):
             self.mopidy = Mopidy(url)
         except:
             if self.connection_attempts < 1:
-                logger.debug('Could not connect to server, will retry quietly')
+                LOG.debug('Could not connect to server, will retry quietly')
             self.connection_attempts += 1
             time.sleep(10)
             self.emitter.emit(Message('MopidyServiceConnect'))
             return
 
-        logger.info('Connected to mopidy server')
+        LOG.info('Connected to mopidy server')
 
     def __init__(self, config, emitter, name='mopidy'):
         self.connection_attempts = 0

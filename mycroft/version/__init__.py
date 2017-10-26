@@ -1,38 +1,34 @@
-# Copyright 2016 Mycroft AI, Inc.
+# Copyright 2017 Mycroft AI Inc.
 #
-# This file is part of Mycroft Core.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Mycroft Core is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
-# Mycroft Core is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
-# You should have received a copy of the GNU General Public License
-# along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
 import json
+
 from genericpath import exists, isfile
 
-from mycroft.util.log import getLogger
+from mycroft.util.log import LOG
 
-__author__ = 'augustnmonteiro'
 
 # The following lines are replaced during the release process.
 # START_VERSION_BLOCK
 CORE_VERSION_MAJOR = 0
-CORE_VERSION_MINOR = 8
-CORE_VERSION_BUILD = 20
+CORE_VERSION_MINOR = 9
+CORE_VERSION_BUILD = 2
 # END_VERSION_BLOCK
 
 CORE_VERSION_STR = (str(CORE_VERSION_MAJOR) + "." +
                     str(CORE_VERSION_MINOR) + "." +
                     str(CORE_VERSION_BUILD))
-LOG = getLogger(__name__)
 
 
 class VersionManager(object):
@@ -49,3 +45,27 @@ class VersionManager(object):
                 LOG.error("Failed to load version from '%s'"
                           % VersionManager.__location)
         return {"coreVersion": None, "enclosureVersion": None}
+
+
+def check_version(version_string):
+    """
+        Check if current version is equal or higher than the
+        version string provided to the function
+
+        Args:
+            version_string (string): version string ('Major.Minor.Build')
+    """
+    major, minor, build = version_string.split('.')
+    major = int(major)
+    minor = int(minor)
+    build = int(build)
+
+    if CORE_VERSION_MAJOR > major:
+        return True
+    elif CORE_VERSION_MAJOR == major and CORE_VERSION_MINOR > minor:
+        return True
+    elif major == CORE_VERSION_MAJOR and minor == CORE_VERSION_MINOR and \
+            CORE_VERSION_BUILD >= build:
+        return True
+    else:
+        return False

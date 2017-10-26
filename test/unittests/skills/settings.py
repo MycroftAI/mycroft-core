@@ -1,9 +1,24 @@
-from mycroft.skills.settings import SkillSettings
-
-from os.path import join, dirname, abspath
-from os import remove
+# Copyright 2017 Mycroft AI Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 import json
 import unittest
+
+from os import remove
+from os.path import join, dirname
+
+from mycroft.skills.settings import SkillSettings
 
 
 class SkillSettingsTest(unittest.TestCase):
@@ -14,16 +29,19 @@ class SkillSettingsTest(unittest.TestCase):
             pass
 
     def test_new(self):
-        s = SkillSettings(join(dirname(__file__), 'settings'))
+        s = SkillSettings(join(dirname(__file__), 'settings'),
+                          "test-skill-settings")
         self.assertEqual(len(s), 0)
 
     def test_add_value(self):
-        s = SkillSettings(join(dirname(__file__), 'settings'))
+        s = SkillSettings(join(dirname(__file__), 'settings'),
+                          "test-skill-settings")
         s['test_val'] = 1
         self.assertEqual(s['test_val'], 1)
 
     def test_store(self):
-        s = SkillSettings(join(dirname(__file__), 'settings'))
+        s = SkillSettings(join(dirname(__file__), 'settings'),
+                          "test-skill-settings")
         s['bool'] = True
         s['int'] = 42
         s['float'] = 4.2
@@ -31,49 +49,59 @@ class SkillSettingsTest(unittest.TestCase):
         s['list'] = ['batman', 2, True, 'superman']
         s.store()
 
-        s2 = SkillSettings(join(dirname(__file__), 'settings'))
+        s2 = SkillSettings(join(dirname(__file__), 'settings'),
+                           "test-skill-settings")
         for key in s:
             self.assertEqual(s[key], s2[key])
 
     def test_update_list(self):
-        s = SkillSettings(join(dirname(__file__), 'settings'))
+        s = SkillSettings(join(dirname(__file__), 'settings'),
+                          "test-skill-settings")
         s['l'] = ['a', 'b', 'c']
         s.store()
-        s2 = SkillSettings(join(dirname(__file__), 'settings'))
+        s2 = SkillSettings(join(dirname(__file__), 'settings'),
+                           "test-skill-settings")
         self.assertEqual(s['l'], s2['l'])
 
         # Update list
         s2['l'].append('d')
         s2.store()
-        s3 = SkillSettings(join(dirname(__file__), 'settings'))
+        s3 = SkillSettings(join(dirname(__file__), 'settings'),
+                           "test-skill-settings")
         self.assertEqual(s2['l'], s3['l'])
 
     def test_update_dict(self):
-        s = SkillSettings(join(dirname(__file__), 'settings'))
+        s = SkillSettings(join(dirname(__file__), 'settings'),
+                          "test-skill-settings")
         s['d'] = {'a': 1, 'b': 2}
         s.store()
-        s2 = SkillSettings(join(dirname(__file__), 'settings'))
+        s2 = SkillSettings(join(dirname(__file__), 'settings'),
+                           "test-skill-settings")
         self.assertEqual(s['d'], s2['d'])
 
         # Update dict
         s2['d']['c'] = 3
         s2.store()
-        s3 = SkillSettings(join(dirname(__file__), 'settings'))
+        s3 = SkillSettings(join(dirname(__file__), 'settings'),
+                           "test-skill-settings")
         self.assertEqual(s2['d'], s3['d'])
 
     def test_no_change(self):
-        s = SkillSettings(join(dirname(__file__), 'settings'))
+        s = SkillSettings(join(dirname(__file__), 'settings'),
+                          "test-skill-settings")
         s['d'] = {'a': 1, 'b': 2}
         s.store()
 
-        s2 = SkillSettings(join(dirname(__file__), 'settings'))
+        s2 = SkillSettings(join(dirname(__file__), 'settings'),
+                           "test-skill-settings")
         self.assertTrue(len(s) == len(s2))
 
     def test_load_existing(self):
         directory = join(dirname(__file__), 'settings', 'settings.json')
         with open(directory, 'w') as f:
             json.dump({"test": "1"}, f)
-        s = SkillSettings(join(dirname(__file__), 'settings'))
+        s = SkillSettings(join(dirname(__file__), 'settings'),
+                          "test-skill-settings")
         self.assertEqual(len(s), 1)
 
 

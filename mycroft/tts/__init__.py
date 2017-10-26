@@ -1,39 +1,34 @@
-# Copyright 2016 Mycroft AI, Inc.
+# Copyright 2017 Mycroft AI Inc.
 #
-# This file is part of Mycroft Core.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Mycroft Core is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
-# Mycroft Core is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
-# You should have received a copy of the GNU General Public License
-# along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
+import hashlib
 import random
-from abc import ABCMeta, abstractmethod
-from os.path import dirname, exists, isdir
-from threading import Thread
 from Queue import Queue, Empty
+from threading import Thread
 from time import time, sleep
+
 import os
 import os.path
-import hashlib
+from abc import ABCMeta, abstractmethod
+from os.path import dirname, exists, isdir
 
-from mycroft.client.enclosure.api import EnclosureAPI
-from mycroft.configuration import ConfigurationManager
-from mycroft.messagebus.message import Message
-from mycroft.util.log import getLogger
-from mycroft.util import play_wav, play_mp3, check_for_signal
 import mycroft.util
-
-__author__ = 'jdorleans'
-
-LOGGER = getLogger(__name__)
+from mycroft.client.enclosure.api import EnclosureAPI
+from mycroft.configuration import Configuration
+from mycroft.messagebus.message import Message
+from mycroft.util import play_wav, play_mp3, check_for_signal, create_signal
+from mycroft.util.log import LOG
 
 
 class PlaybackThread(Thread):
@@ -95,7 +90,7 @@ class PlaybackThread(Thread):
             except Empty:
                 pass
             except Exception, e:
-                LOGGER.exception(e)
+                LOG.exception(e)
                 if self._processing_queue:
                     self.tts.end_audio()
                     self._processing_queue = False
@@ -160,11 +155,26 @@ class TTS(object):
 
     def begin_audio(self):
         """Helper function for child classes to call in execute()"""
+        # Create signals informing start of speech
         self.ws.emit(Message("recognizer_loop:audio_output_start"))
+        create_signal("isSpeaking")
 
     def end_audio(self):
-        """Helper function for child classes to call in execute()"""
+        """
+            Helper function for child classes to call in execute().
+
+            Sends the recognizer_loop:audio_output_end message, indicating
+            that speaking is done for the moment. It also checks if cache
+            directory needs cleaning to free up disk space.
+        """
+
         self.ws.emit(Message("recognizer_loop:audio_output_end"))
+        # Clean the cache as needed
+        cache_dir = mycroft.util.get_cache_directory("tts")
+        mycroft.util.curate_cache(cache_dir, min_free_percent=100)
+
+        # This check will clear the "signal"
+        check_for_signal("isSpeaking")
 
     def init(self, ws):
         self.ws = ws
@@ -200,7 +210,7 @@ class TTS(object):
                                 key + '.' + self.type)
 
         if os.path.exists(wav_file):
-            LOGGER.debug("TTS cache hit")
+            LOG.debug("TTS cache hit")
             phonemes = self.load_phonemes(key)
         else:
             wav_file, phonemes = self.get_tts(sentence, wav_file)
@@ -237,16 +247,14 @@ class TTS(object):
                 key:        Hash key for the sentence
                 phonemes:   phoneme string to save
         """
-        # Clean out the cache as needed
-        cache_dir = mycroft.util.get_cache_directory("tts")
-        mycroft.util.curate_cache(cache_dir)
 
+        cache_dir = mycroft.util.get_cache_directory("tts")
         pho_file = os.path.join(cache_dir, key + ".pho")
         try:
             with open(pho_file, "w") as cachefile:
                 cachefile.write(phonemes)
         except:
-            LOGGER.debug("Failed to write .PHO to cache")
+            LOG.debug("Failed to write .PHO to cache")
             pass
 
     def load_phonemes(self, key):
@@ -257,14 +265,14 @@ class TTS(object):
                 Key:    Key identifying phoneme cache
         """
         pho_file = os.path.join(mycroft.util.get_cache_directory("tts"),
-                                key+".pho")
+                                key + ".pho")
         if os.path.exists(pho_file):
             try:
                 with open(pho_file, "r") as cachefile:
                     phonemes = cachefile.read().strip()
                 return phonemes
             except:
-                LOGGER.debug("Failed to read .PHO from cache")
+                LOG.debug("Failed to read .PHO from cache")
         return None
 
     def __del__(self):
@@ -348,7 +356,7 @@ class TTSFactory(object):
         """
 
         from mycroft.tts.remote_tts import RemoteTTS
-        config = ConfigurationManager.get().get('tts', {})
+        config = Configuration.get().get('tts', {})
         module = config.get('module', 'mimic')
         lang = config.get(module).get('lang')
         voice = config.get(module).get('voice')

@@ -1,41 +1,32 @@
-# Copyright 2016 Mycroft AI, Inc.
+# Copyright 2017 Mycroft AI Inc.
 #
-# This file is part of Mycroft Core.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Mycroft Core is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
-# Mycroft Core is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
-# You should have received a copy of the GNU General Public License
-# along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
+import re
 from abc import ABCMeta, abstractmethod
-
+from requests import post
 from speech_recognition import Recognizer
 
 from mycroft.api import STTApi
-from mycroft.configuration import ConfigurationManager
-from mycroft.util.log import getLogger
-
-import re
-
-from requests import post
-
-__author__ = "jdorleans"
-
-LOG = getLogger("STT")
+from mycroft.configuration import Configuration
+from mycroft.util.log import LOG
 
 
 class STT(object):
     __metaclass__ = ABCMeta
 
     def __init__(self):
-        config_core = ConfigurationManager.get()
+        config_core = Configuration.get()
         self.lang = str(self.init_language(config_core))
         config_stt = config_core.get("stt", {})
         self.config = config_stt.get(config_stt.get("module"), {})
@@ -86,7 +77,7 @@ class WITSTT(TokenSTT):
         super(WITSTT, self).__init__()
 
     def execute(self, audio, language=None):
-        LOG.warn("WITSTT language should be configured at wit.ai settings.")
+        LOG.warning("WITSTT language should be configured at wit.ai settings.")
         return self.recognizer.recognize_wit(audio, self.token)
 
 
@@ -107,7 +98,11 @@ class MycroftSTT(STT):
 
     def execute(self, audio, language=None):
         self.lang = language or self.lang
-        return self.api.stt(audio.get_flac_data(), self.lang, 1)[0]
+        try:
+            return self.api.stt(audio.get_flac_data(convert_rate=16000),
+                                self.lang, 1)[0]
+        except:
+            return self.api.stt(audio.get_flac_data(), self.lang, 1)[0]
 
 
 class KaldiSTT(STT):
@@ -138,7 +133,7 @@ class STTFactory(object):
 
     @staticmethod
     def create():
-        config = ConfigurationManager.get().get("stt", {})
+        config = Configuration.get().get("stt", {})
         module = config.get("module", "mycroft")
         clazz = STTFactory.CLASSES.get(module)
         return clazz()

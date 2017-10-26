@@ -1,21 +1,17 @@
-# Copyright 2016 Mycroft AI, Inc.
+# Copyright 2017 Mycroft AI Inc.
 #
-# This file is part of Mycroft Core.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Mycroft Core is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
-# Mycroft Core is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
-# You should have received a copy of the GNU General Public License
-# along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
-
 import subprocess
 import time
 from Queue import Queue
@@ -25,24 +21,20 @@ from threading import Thread, Timer
 import serial
 
 import mycroft.dialog
+from mycroft.api import has_been_paired
 from mycroft.client.enclosure.arduino import EnclosureArduino
+from mycroft.client.enclosure.display_manager import \
+    initiate_display_manager_ws
 from mycroft.client.enclosure.eyes import EnclosureEyes
 from mycroft.client.enclosure.mouth import EnclosureMouth
 from mycroft.client.enclosure.weather import EnclosureWeather
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration, LocalConf, USER_CONFIG
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util import play_wav, create_signal, connected, \
     wait_while_speaking
 from mycroft.util.audio_test import record
-from mycroft.util.log import getLogger
-from mycroft.client.enclosure.display_manager import \
-    initiate_display_manager_ws
-from mycroft.api import is_paired, has_been_paired
-
-__author__ = 'aatchison', 'jdorleans', 'iward'
-
-LOG = getLogger("EnclosureClient")
+from mycroft.util.log import LOG
 
 
 class EnclosureReader(Thread):
@@ -96,14 +88,12 @@ class EnclosureReader(Thread):
                 self.ws.emit(Message("mycroft.stop"))
 
         if "volume.up" in data:
-            self.ws.emit(
-                Message("VolumeSkill:IncreaseVolumeIntent",
-                        {'play_sound': True}))
+            self.ws.emit(Message("mycroft.volume.increase",
+                                 {'play_sound': True}))
 
         if "volume.down" in data:
-            self.ws.emit(
-                Message("VolumeSkill:DecreaseVolumeIntent",
-                        {'play_sound': True}))
+            self.ws.emit(Message("mycroft.volume.decrease",
+                                 {'play_sound': True}))
 
         if "system.test.begin" in data:
             self.ws.emit(Message('recognizer_loop:sleep'))
@@ -167,6 +157,19 @@ class EnclosureReader(Thread):
             self.ws.emit(Message("mycroft.disable.ssh"))
             self.ws.emit(Message("speak", {
                 'utterance': mycroft.dialog.get("ssh disabled")}))
+
+        if "unit.enable-learning" in data or "unit.disable-learning" in data:
+            enable = 'enable' in data
+            word = 'enabled' if enable else 'disabled'
+
+            LOG.info("Setting opt_in to: " + word)
+            new_config = {'opt_in': enable}
+            user_config = localConf(USER_CONFIG)
+            user_config.merge(new_config)
+            user_config.store()
+
+            self.ws.emit(Message("speak", {
+                'utterance': mycroft.dialog.get("learning " + word)}))
 
     def stop(self):
         self.alive = False
@@ -232,24 +235,29 @@ class Enclosure(object):
 
     def __init__(self):
         self.ws = WebsocketClient()
-        ConfigurationManager.init(self.ws)
-        self.config = ConfigurationManager.instance().get("enclosure")
+        self.ws.on("open", self.on_ws_open)
+
+        Configuration.init(self.ws)
+        self.config = Configuration.get("enclosure")
+
         self.__init_serial()
         self.reader = EnclosureReader(self.serial, self.ws)
         self.writer = EnclosureWriter(self.serial, self.ws)
-
-        # Send a message to the Arduino across the serial line asking
-        # for a reply with version info.
-        self.writer.write("system.version")
-        # When the Arduino responds, it will generate this message
-        self.ws.on("enclosure.started", self.on_arduino_responded)
-
-        self.arduino_responded = False
 
         # initiates the web sockets on display manager
         # NOTE: this is a temporary place to initiate display manager sockets
         initiate_display_manager_ws()
 
+    def on_ws_open(self, event=None):
+        # Mark 1 auto-detection:
+        #
+        # Prepare to receive message when the Arduino responds to the
+        # following "system.version"
+        self.ws.on("enclosure.started", self.on_arduino_responded)
+        self.arduino_responded = False
+        # Send a message to the Arduino across the serial line asking
+        # for a reply with version info.
+        self.writer.write("system.version")
         # Start a 5 second timer.  If the serial port hasn't received
         # any acknowledgement of the "system.version" within those
         # 5 seconds, assume there is nothing on the other end (e.g.
@@ -283,7 +291,7 @@ class Enclosure(object):
             # One last check to see if connection was established
             return
 
-        if time.time()-Enclosure._last_internet_notification < 30:
+        if time.time() - Enclosure._last_internet_notification < 30:
             # don't bother the user with multiple notifications with 30 secs
             return
 
@@ -362,6 +370,13 @@ class Enclosure(object):
             self.serial.close()
             self.ws.close()
 
+    def _handle_pairing_complete(self, Message):
+        """
+            Handler for 'mycroft.paired', unmutes the mic after the pairing is
+            complete.
+        """
+        self.ws.emit(Message("mycroft.mic.unmute"))
+
     def _do_net_check(self):
         # TODO: This should live in the derived Enclosure, e.g. Enclosure_Mark1
         LOG.info("Checking internet connection")
@@ -373,7 +388,7 @@ class Enclosure(object):
                                  " Either plug in a network cable or hold the "
                                  "button on top for two seconds, then select "
                                  "wifi from the menu"
-                    }))
+                }))
             else:
                 # Begin the unit startup process, this is the first time it
                 # is being run with factory defaults.
@@ -382,7 +397,10 @@ class Enclosure(object):
                 # TODO: Enclosure/localization
 
                 # Don't listen to mic during this out-of-box experience
-                self.ws.emit(Message("mycroft.mic.mute", None))
+                self.ws.emit(Message("mycroft.mic.mute"))
+                # Setup handler to unmute mic at the end of on boarding
+                # i.e. after pairing is complete
+                self.ws.once('mycroft.paired', self._handle_pairing_complete)
 
                 # Kick off wifi-setup automatically
                 self.ws.emit(Message("mycroft.wifi.start",

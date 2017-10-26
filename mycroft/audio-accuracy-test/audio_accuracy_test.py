@@ -1,19 +1,28 @@
-import os
+# Copyright 2017 Mycroft AI Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 import time
 import wave
 from glob import glob
-from os.path import dirname, join
 
+import os
 import pyee
+from os.path import dirname, join
 from speech_recognition import AudioSource
 
 from mycroft.client.speech.listener import RecognizerLoop
 from mycroft.client.speech.mic import ResponsiveRecognizer
-from mycroft.client.speech.mic import logger as speech_logger
-from mycroft.util.log import getLogger
-
-__author__ = 'wolfgange3311999'
-logger = getLogger('audio_test_runner')
 
 
 def to_percent(val):
@@ -79,7 +88,6 @@ class AudioTester(object):
             samp_rate, 'en-us')
         self.listener = ResponsiveRecognizer(self.ww_recognizer)
         print
-        speech_logger.setLevel(100)  # Disables logging to clean output
 
     def test_audio(self, file_name):
         source = FileMockMicrophone(file_name)

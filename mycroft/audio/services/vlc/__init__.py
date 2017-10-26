@@ -1,9 +1,21 @@
-from os.path import dirname, abspath, basename
-from mycroft.audio.services import AudioBackend
-from mycroft.util.log import getLogger
+# Copyright 2017 Mycroft AI Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 import vlc
 
-logger = getLogger(abspath(__file__).split('/')[-2])
+from mycroft.audio.services import AudioBackend
+from mycroft.util.log import LOG
 
 
 class VlcService(AudioBackend):
@@ -19,25 +31,25 @@ class VlcService(AudioBackend):
         self.normal_volume = None
 
     def supported_uris(self):
-        return ['file', 'http']
+        return ['file', 'http', 'https']
 
     def clear_list(self):
         empty = self.instance.media_list_new()
         self.list_player.set_media_list(empty)
 
     def add_list(self, tracks):
-        logger.info("Track list is " + str(tracks))
+        LOG.info("Track list is " + str(tracks))
         vlc_tracks = self.instance.media_list_new()
         for t in tracks:
             vlc_tracks.add_media(self.instance.media_new(t))
         self.list_player.set_media_list(vlc_tracks)
 
     def play(self):
-        logger.info('VLCService Play')
+        LOG.info('VLCService Play')
         self.list_player.play()
 
     def stop(self):
-        logger.info('VLCService Stop')
+        LOG.info('VLCService Stop')
         self.clear_list()
         self.list_player.stop()
 

@@ -1,16 +1,28 @@
+# Copyright 2017 Mycroft AI Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 import json
-import os
-from os.path import dirname, join, isdir
-import re
 from time import sleep
 
+import os
+import re
+from os.path import join, isdir
 from pyee import EventEmitter
 
-from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import create_skill_descriptor, load_skill
 
-__author__ = 'seanfitz'
 
 MainModule = '__init__'
 

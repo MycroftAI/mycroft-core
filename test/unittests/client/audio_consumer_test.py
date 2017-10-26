@@ -1,21 +1,17 @@
-# Copyright 2016 Mycroft AI, Inc.
+# Copyright 2017 Mycroft AI Inc.
 #
-# This file is part of Mycroft Core.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Mycroft Core is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
-# Mycroft Core is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
-# You should have received a copy of the GNU General Public License
-# along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
-
 import unittest
 from Queue import Queue
 
@@ -24,11 +20,7 @@ from os.path import dirname, join
 from speech_recognition import WavFile, AudioData
 
 from mycroft.client.speech.listener import AudioConsumer, RecognizerLoop
-from mycroft.client.speech.recognizer.pocketsphinx_recognizer \
-    import PocketsphinxRecognizer
 from mycroft.stt import MycroftSTT
-
-__author__ = 'seanfitz'
 
 
 class MockRecognizer(object):
@@ -55,13 +47,10 @@ class AudioConsumerTest(unittest.TestCase):
         self.loop = RecognizerLoop()
         self.queue = Queue()
         self.recognizer = MockRecognizer()
-
         self.consumer = AudioConsumer(
             self.loop.state, self.queue, self.loop, MycroftSTT(),
-            PocketsphinxRecognizer(self.loop.wakeup_recognizer.key_phrase,
-                                   self.loop.wakeup_recognizer.phonemes,
-                                   "1e-16"),
-            self.loop.mycroft_recognizer)
+            self.loop.wakeup_recognizer,
+            self.loop.wakeword_recognizer)
 
     def __create_sample_from_test_file(self, sample_name):
         root_dir = dirname(dirname(dirname(__file__)))

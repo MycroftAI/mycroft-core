@@ -1,31 +1,30 @@
-# Copyright 2017 Mycroft AI, Inc.
+# Copyright 2017 Mycroft AI Inc.
 #
-# This file is part of Mycroft Core.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Mycroft Core is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
-# Mycroft Core is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
-# You should have received a copy of the GNU General Public License
-# along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
 from copy import copy
 
 import requests
 from requests import HTTPError
 
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration
+from mycroft.configuration.config import DEFAULT_CONFIG, SYSTEM_CONFIG, \
+    USER_CONFIG, LocalConf
 from mycroft.identity import IdentityManager
 from mycroft.version import VersionManager
+from mycroft.util import get_arch
 
-__author__ = 'jdorleans'
-__paired_cache = False
+_paired_cache = False
 
 
 class Api(object):
@@ -33,7 +32,10 @@ class Api(object):
 
     def __init__(self, path):
         self.path = path
-        config = ConfigurationManager().get()
+        config = Configuration.get([LocalConf(DEFAULT_CONFIG),
+                                    LocalConf(SYSTEM_CONFIG),
+                                    LocalConf(USER_CONFIG)],
+                                   cache=False)
         config_server = config.get("server")
         self.url = config_server.get("url")
         self.version = config_server.get("version")
@@ -75,7 +77,7 @@ class Api(object):
         data = self.get_data(response)
         if 200 <= response.status_code < 300:
             return data
-        elif response.status_code == 401\
+        elif response.status_code == 401 \
                 and not response.url.endswith("auth/token"):
             self.refresh_token()
             return self.send(self.old_params)
@@ -151,6 +153,15 @@ class DeviceApi(Api):
                      "enclosureVersion": version.get("enclosureVersion")}
         })
 
+    def update_version(self):
+        version = VersionManager.get()
+        return self.request({
+            "method": "PATCH",
+            "path": "/" + self.identity.uuid,
+            "json": {"coreVersion": version.get("coreVersion"),
+                     "enclosureVersion": version.get("enclosureVersion")}
+        })
+
     def get(self):
         """ Retrieve all device information from the web backend """
         return self.request({
@@ -193,8 +204,14 @@ class DeviceApi(Api):
             status of subscription. True if device is connected to a paying
             subscriber.
         """
-        subscription_type = self.get_subscription().get('@type')
-        return subscription_type != 'free'
+        return self.get_subscription().get('@type') != 'free'
+
+    def get_subscriber_voice_url(self, voice=None):
+        self.check_token()
+        archs = {'x86_64': 'x86_64', 'armv7l': 'arm'}
+        arch = archs[get_arch()]
+        path = '/' + self.identity.uuid + '/voice?arch=' + arch
+        return self.request({'path': path})['link']
 
     def find(self):
         """ Deprecated, see get_location() """
@@ -259,8 +276,8 @@ def is_paired():
     Returns:
         bool: True if paired with backend
     """
-    global __paired_cache
-    if __paired_cache:
+    global _paired_cache
+    if _paired_cache:
         # NOTE: This assumes once paired, the unit remains paired.  So
         # un-pairing must restart the system (or clear this value).
         # The Mark 1 does perform a restart on RESET.
@@ -269,8 +286,8 @@ def is_paired():
     try:
         api = DeviceApi()
         device = api.get()
-        __paired_cache = api.identity.uuid is not None and \
+        _paired_cache = api.identity.uuid is not None and \
             api.identity.uuid != ""
-        return __paired_cache
+        return _paired_cache
     except:
         return False
