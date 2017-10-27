@@ -319,7 +319,7 @@ class Enclosure(object):
             LOG.info("Connected to: %s rate: %s timeout: %s" %
                      (self.port, self.rate, self.timeout))
         except:
-            LOG.error("Impossible to connect to serial port: " + self.port)
+            LOG.error("Impossible to connect to serial port: " + str(self.port))
             raise
 
     def __register_events(self):
