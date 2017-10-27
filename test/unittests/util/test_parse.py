@@ -466,7 +466,8 @@ class TestNormalize(unittest.TestCase):
         testExtract("como esta o tempo na sexta de manha",
                     "2017-06-30 08:00:00", "como tempo")
         # TODO: Fix this test and/or code
-        # testExtract(u"lembra me para ligar a m�e daqui a 8 semanas e 2 dias",
+        # testExtract(u"lembra me para ligar a m�e daqui " \
+        #             u"a 8 semanas e 2 dias",
         #            "2017-08-24 00:00:00", u"lembra ligar mae")
 
         testExtract("Toca black metal 2 dias a seguir a sexta",
