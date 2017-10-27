@@ -14,9 +14,8 @@
 #
 import time
 
-import psutil
-
-from mycroft.util.signal import check_for_signal
+from mycroft.util.signal import check_for_signal, create_signal
+import mycroft.configuration
 
 
 def is_speaking():
@@ -40,30 +39,20 @@ def wait_while_speaking():
         time.sleep(0.1)
 
 
-def _kill(names):
-    print psutil.pids()
-    for name in names:
-        for p in psutil.process_iter():
-            try:
-                if p.name() == name:
-                    p.kill()
-                    break
-            except:
-                pass
+def stop_speaking(ws=None):
+    from mycroft.messagebus.client.ws import WebsocketClient
+    from mycroft.messagebus.message import Message
 
-
-def stop_speaking():
+    if ws is None:
+        ws = WebsocketClient()
     # TODO: Less hacky approach to this once Audio Manager is implemented
     # Skills should only be able to stop speech they've initiated
-    config = mycroft.configuration.ConfigurationManager.instance()
 
     create_signal('stoppingTTS')
+    ws.emit(Message('mycroft.audio.speech.stop'))
 
-    # Perform in while loop in case the utterance contained periods and was
-    # split into multiple chunks by handle_speak()
+    # Block until stopped
     while check_for_signal("isSpeaking", -1):
-        _kill([config.get('tts').get('module')])
-        _kill(["aplay"])
         time.sleep(0.25)
 
     # This consumes the signal

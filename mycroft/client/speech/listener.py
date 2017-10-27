@@ -13,8 +13,7 @@
 # limitations under the License.
 #
 import time
-import pwd, os
-from Queue import Queue
+from Queue import Queue, Empty
 from threading import Thread
 import multiprocessing
 
@@ -38,7 +37,6 @@ from mycroft.util import (
     check_for_signal)
 
 
-# class AudioProducer(multiprocessing.Process):
 class AudioProducer(Thread):
     """
     AudioProducer
@@ -64,12 +62,6 @@ class AudioProducer(Thread):
                 try:
                     audio = self.recognizer.listen(source, self.emitter)
 
-                    # # process skill intent lookup...
-                    # self.queue.put(audio)
-                    # LOG.debug("queue.put, self.queue.unfinished_tasks = " + str(self.queue.unfinished_tasks))
-
-                    # mww - don't process skill intent lookup
-                    # if not self.mww and not self.mww_no_skills:
                     if audio:
                         self.queue.put(audio)
                         LOG.debug("queue.put, self.queue.unfinished_tasks = " + str(self.queue.unfinished_tasks))
@@ -90,7 +82,6 @@ class AudioProducer(Thread):
         self.recognizer.stop()
 
 
-# class AudioConsumer(multiprocessing.Process):
 class AudioConsumer(Thread):
     """
     AudioConsumer
@@ -133,8 +124,10 @@ class AudioConsumer(Thread):
 
 
     def read(self):
-        audio = self.queue.get()
-        LOG.debug("queue.get, self.queue.unfinished_tasks = " + str(self.queue.unfinished_tasks))
+        try:
+            audio = self.queue.get(timeout=0.5)
+        except Empty:
+            return
 
         if audio is None:
             return
@@ -174,19 +167,11 @@ class AudioConsumer(Thread):
     # TODO: Localization
     def process(self, audio):
         SessionManager.touch()
-        # current_process = multiprocessing.current_process()
-        # self.transcribe_jobs.append(current_process.ident)
-        # LOG.debug("listener.py process current_process.ident = " + str(current_process.ident))
-        # LOG.debug("listener.py process self.transcribe_jobs = " + str(self.transcribe_jobs))
         payload = {
             'utterance': self.wakeword_recognizer.key_phrase,
             'session': SessionManager.get().session_id,
         }
         self.emitter.emit("recognizer_loop:wakeword", payload)
-
-        LOG.debug("listener.py process = self._audio_length(audio) = " + str(self._audio_length(audio)))
-        LOG.debug("listener.py process = len(audio.frame_data) = " + str(len(audio.frame_data)))
-        # LOG.debug("listener.py process = hyp.hypstr = " + hyp.hypstr)
 
         if self._audio_length(audio) < self.MIN_AUDIO_SIZE:
             LOG.warning("Audio too short to be processed")
@@ -214,12 +199,6 @@ class AudioConsumer(Thread):
 
             else:
                 self.transcribe(audio)
-
-        # current_process = multiprocessing.current_process()
-        #
-        # if current_process.is_alive():
-        #      self.transcribe_jobs.remove(current_process)
-        #     LOG.debug("listener.py str(self.transcribe_jobs) = " + str(self.transcribe_jobs))
 
     def transcribe(self, audio):
         text = None
@@ -323,7 +302,7 @@ class RecognizerLoop(EventEmitter):
         # TODO remove this, only for server settings compatibility
         phonemes = self.config.get("phonemes")
         thresh = self.config.get("threshold")
-        
+
         if self.mww:
             word = self.config.get('mww_keyphrases_file')
             phonemes = self.config.get('mww_dictionary_file')
@@ -362,7 +341,6 @@ class RecognizerLoop(EventEmitter):
         """
         self.state.running = True
         queue = Queue()
-
         self.producer = AudioProducer(self.state, queue, self.microphone,
                                       self.responsive_recognizer, self, self.mww, self.mww_no_skills)
         self.producer.start()
@@ -379,7 +357,6 @@ class RecognizerLoop(EventEmitter):
                                           self.wakeup_recognizer,
                                           self.wakeword_recognizer)
         self.consumer.start()
-
 
     def stop(self):
         self.state.running = False

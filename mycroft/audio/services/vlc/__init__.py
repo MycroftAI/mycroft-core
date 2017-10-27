@@ -31,7 +31,7 @@ class VlcService(AudioBackend):
         self.normal_volume = None
 
     def supported_uris(self):
-        return ['file', 'http']
+        return ['file', 'http', 'https']
 
     def clear_list(self):
         empty = self.instance.media_list_new()

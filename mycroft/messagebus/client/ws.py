@@ -37,15 +37,16 @@ class WebsocketClient(object):
         validate_param(port, "websocket.port")
         validate_param(route, "websocket.route")
 
-        self.build_url(host, port, route, ssl)
+        self.url = WebsocketClient.build_url(host, port, route, ssl)
         self.emitter = EventEmitter()
         self.client = self.create_client()
         self.pool = ThreadPool(10)
         self.retry = 5
 
-    def build_url(self, host, port, route, ssl):
+    @staticmethod
+    def build_url(host, port, route, ssl):
         scheme = "wss" if ssl else "ws"
-        self.url = scheme + "://" + host + ":" + str(port) + route
+        return scheme + "://" + host + ":" + str(port) + route
 
     def create_client(self):
         return WebSocketApp(self.url,

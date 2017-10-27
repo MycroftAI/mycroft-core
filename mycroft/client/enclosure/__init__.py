@@ -232,24 +232,28 @@ class Enclosure(object):
 
     def __init__(self):
         self.ws = WebsocketClient()
+        self.ws.on("open", self.on_ws_open)
+
         ConfigurationManager.init(self.ws)
         self.config = ConfigurationManager.instance().get("enclosure")
         self.__init_serial()
         self.reader = EnclosureReader(self.serial, self.ws)
         self.writer = EnclosureWriter(self.serial, self.ws)
 
-        # Send a message to the Arduino across the serial line asking
-        # for a reply with version info.
-        self.writer.write("system.version")
-        # When the Arduino responds, it will generate this message
-        self.ws.on("enclosure.started", self.on_arduino_responded)
-
-        self.arduino_responded = False
-
         # initiates the web sockets on display manager
         # NOTE: this is a temporary place to initiate display manager sockets
         initiate_display_manager_ws()
 
+    def on_ws_open(self, event=None):
+        # Mark 1 auto-detection:
+        #
+        # Prepare to receive message when the Arduino responds to the
+        # following "system.version"
+        self.ws.on("enclosure.started", self.on_arduino_responded)
+        self.arduino_responded = False
+        # Send a message to the Arduino across the serial line asking
+        # for a reply with version info.
+        self.writer.write("system.version")
         # Start a 5 second timer.  If the serial port hasn't received
         # any acknowledgement of the "system.version" within those
         # 5 seconds, assume there is nothing on the other end (e.g.

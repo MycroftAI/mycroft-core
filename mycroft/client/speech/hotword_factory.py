@@ -111,8 +111,7 @@ class PocketsphinxHotWord(HotWordEngine):
         config.set_float('-kws_threshold', float(self.threshold))
         config.set_float('-samprate', self.sample_rate)
         config.set_int('-nfft', 2048)
-        config.set_string('-logfn', '/var/log/mycroft/pocketsphinx.log')
-        # config.set_string('-logfn', '/dev/null')
+        config.set_string('-logfn', '/dev/null')
         return config
 
     def transcribe(self, byte_data, metrics=None):
@@ -194,4 +193,10 @@ class HotWordFactory(object):
         module = config.get(hotword).get("module", "pocketsphinx")
         config = config.get(hotword, {"module": module})
         clazz = HotWordFactory.CLASSES.get(module)
-        return clazz(hotword, config, lang=lang)
+        try:
+            return clazz(hotword, config, lang=lang)
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:
+            LOG.exception('Could not create hotword. Falling back to default.')
+            return HotWordFactory.CLASSES['pocketsphinx']()

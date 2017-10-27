@@ -160,12 +160,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.config = ConfigurationManager.instance()
         listener_config = self.config.get('listener')
         self.upload_config = listener_config.get('wake_word_upload')
-        # self.skip_wake_word = listener_config.get('skip_wake_word', False)
-        # if check_for_signal('skip_wake_word',-1) \
-        # or listener_config.get('skip_wake_word', True):
-        #     self.skip_wake_word = True
-        # else:
-        #     self.skip_wake_word = False
 
 
         self.skip_wake_word = False
@@ -176,14 +170,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
          and not check_for_signal('restartedFromSkill',10):
             self.skip_wake_word = True
 
-        # if not check_for_signal('skip_wake_word',-1)\
-        # and not check_for_signal('skip_wake_word_skill',-1):   # signal set in skill
-        #     if listener_config.get('skip_wake_word', True):
-        #         self.skip_wake_word = True
-        # elif check_for_signal('skip_wake_word'):
-        #     self.skip_wake_word = True
-
-        self.wake_word_name = listener_config['wake_word']
+        self.wake_word_name = wake_word_recognizer.key_phrase
         # The maximum audio in seconds to keep for transcribing a phrase
         # The wake word must fit in this time
         num_phonemes = wake_word_recognizer.num_phonemes
@@ -451,11 +438,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 if self.skip_wake_word:
                     tmp = float(len(audio_data)) / (source.SAMPLE_RATE * source.SAMPLE_WIDTH)
                     LOG.debug('audio data length = ' + str(tmp))
-                #     # if float(len(audio_data)) / (source.SAMPLE_RATE * source.SAMPLE_WIDTH) >= 2:
-                #     # if len(audio_data) >= self.sec_to_bytes(2,source):
-                #         said_wake_word = True
-                # else:
-                #     said_wake_word = self.wake_word_recognizer.found_wake_word(audio_data)
                 said_wake_word = self.wake_word_recognizer.found_wake_word(audio_data)
                 # if a wake word is success full then record audio in temp
                 # file.
@@ -539,11 +521,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 play_wav(file)
 
         frame_data = self._record_phrase(source, sec_per_buffer)
-
-        # if len(frame_data) <= 65538: # 2 seconds
-        #     LOG.debug("utterance too short = " + str(len(frame_data)))
-        #     return
-
         audio_data = self._create_audio_data(frame_data, source)
         emitter.emit("recognizer_loop:record_end")
         if self.save_utterances:
@@ -552,6 +529,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             filename = "/tmp/mycroft_utterance%s.wav" % stamp
             with open(filename, 'wb') as filea:
                 filea.write(audio_data.get_wav_data())
+            LOG.debug("Thinking...")
 
         return audio_data
 
