@@ -238,7 +238,7 @@ class Enclosure(object):
         self.ws.on("open", self.on_ws_open)
 
         Configuration.init(self.ws)
-        self.config = Configuration.get("enclosure")
+        self.config = Configuration.get().get("enclosure")
 
         self.__init_serial()
         self.reader = EnclosureReader(self.serial, self.ws)
