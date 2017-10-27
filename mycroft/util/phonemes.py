@@ -1,6 +1,4 @@
-import nltk
-
-arpabet = nltk.corpus.cmudict.dict()
+import pronouncing
 
 
 def guess_phonemes(word):
@@ -28,7 +26,6 @@ def guess_phonemes(word):
                            'ght': ['T'], 'ph': ['F'], 'gn': ['N'],
                            'kn': ['N'], 'wh': ['W'],
                            'wr': ['R'], 'gg': ['G'], 'ff': ['F'],
-                           'tt': ['T'],
                            'oo': ['UW'], 'ua': ['W', 'AO'], 'ng': ['NG'],
                            'bb': ['B'],
                            'tch': ['CH'], 'rr': ['R'], 'dd': ['D'],
@@ -72,8 +69,8 @@ def get_phonemes(name):
         if total_phonemes[-1] == ".":
             total_phonemes = total_phonemes[:-1]
         phonemes = " ".join(total_phonemes)
-    elif name in arpabet.keys():
-        phonemes = " ".join(arpabet[name][0])
+    elif len(pronouncing.phones_for_word(name)):
+        phonemes = " ".join(pronouncing.phones_for_word(name)[0])
     else:
         guess = guess_phonemes(name)
         if guess is not None:
