@@ -238,13 +238,13 @@ def extract_datetime_en(str, currentDate=None):
 
     def date_found():
         return found or \
-               (
-                   datestr != "" or timeStr != "" or
-                   yearOffset != 0 or monthOffset != 0 or
-                   dayOffset is True or hrOffset != 0 or
-                   hrAbs != 0 or minOffset != 0 or
-                   minAbs != 0 or secOffset != 0
-               )
+            (
+                datestr != "" or timeStr != "" or
+                yearOffset != 0 or monthOffset != 0 or
+                dayOffset is True or hrOffset != 0 or
+                hrAbs != 0 or minOffset != 0 or
+                minAbs != 0 or secOffset != 0
+            )
 
     if str == "":
         return None
@@ -298,9 +298,11 @@ def extract_datetime_en(str, currentDate=None):
         elif word == "tomorrow" and not fromFlag:
             dayOffset = 1
             used += 1
-        elif (
-                            word == "day" and wordNext == "after" and wordNextNext == "tomorrow" and not fromFlag and not
-        wordPrev[0].isdigit()):
+        elif (word == "day" and
+                wordNext == "after" and
+                wordNextNext == "tomorrow" and
+                not fromFlag and
+                not wordPrev[0].isdigit()):
             dayOffset = 2
             used = 3
             if wordPrev == "the":
@@ -541,15 +543,15 @@ def extract_datetime_en(str, currentDate=None):
                         remainder = nextWord
                         used += 1
                     elif wordNext == "in" and wordNextNext == "the" and \
-                                    words[idx + 3] == "morning":
+                            words[idx + 3] == "morning":
                         reaminder = "am"
                         used += 3
                     elif wordNext == "in" and wordNextNext == "the" and \
-                                    words[idx + 3] == "afternoon":
+                            words[idx + 3] == "afternoon":
                         remainder = "pm"
                         used += 3
                     elif wordNext == "in" and wordNextNext == "the" and \
-                                    words[idx + 3] == "evening":
+                            words[idx + 3] == "evening":
                         remainder = "pm"
                         used += 3
                     elif wordNext == "in" and wordNextNext == "morning":
@@ -581,7 +583,7 @@ def extract_datetime_en(str, currentDate=None):
                             military = True
                             if strHH <= 12 and \
                                     (timeQualifier == "evening" or
-                                             timeQualifier == "afternoon"):
+                                     timeQualifier == "afternoon"):
                                 strHH += 12
             else:
                 # try to parse # s without colons
@@ -599,18 +601,18 @@ def extract_datetime_en(str, currentDate=None):
                     remainder = wordNext.replace(".", "").lstrip().rstrip()
 
                 if (
-                                        remainder == "pm" or
-                                        wordNext == "pm" or
-                                    remainder == "p.m." or
-                                wordNext == "p.m."):
+                        remainder == "pm" or
+                        wordNext == "pm" or
+                        remainder == "p.m." or
+                        wordNext == "p.m."):
                     strHH = strNum
                     remainder = "pm"
                     used = 1
                 elif (
-                                        remainder == "am" or
-                                        wordNext == "am" or
-                                    remainder == "a.m." or
-                                wordNext == "a.m."):
+                        remainder == "am" or
+                        wordNext == "am" or
+                        remainder == "a.m." or
+                        wordNext == "a.m."):
                     strHH = strNum
                     remainder = "am"
                     used = 1
@@ -624,11 +626,11 @@ def extract_datetime_en(str, currentDate=None):
                         remainder = "am"
                         used = 1
                     elif (
-                                    int(word) > 100 and
-                                (
-                                                wordPrev == "o" or
-                                                wordPrev == "oh"
-                                )):
+                            int(word) > 100 and
+                            (
+                                wordPrev == "o" or
+                                wordPrev == "oh"
+                            )):
                         # 0800 hours (pronounced oh-eight-hundred)
                         strHH = int(word) / 100
                         strMM = int(word) - strHH * 100
@@ -636,12 +638,12 @@ def extract_datetime_en(str, currentDate=None):
                         if wordNext == "hours":
                             used += 1
                     elif (
-                                        wordNext == "hours" and
-                                        word[0] != '0' and
-                                (
-                                                int(word) < 100 and
-                                                int(word) > 2400
-                                )):
+                            wordNext == "hours" and
+                            word[0] != '0' and
+                            (
+                                int(word) < 100 and
+                                int(word) > 2400
+                            )):
                         # ignores military time
                         # "in 3 hours"
                         hrOffset = int(word)
@@ -678,55 +680,42 @@ def extract_datetime_en(str, currentDate=None):
                         if wordNextNext == "hours":
                             used += 1
                     elif (
-                                        wordNext == "" or wordNext == "o'clock" or
-                                (
-                                                wordNext == "in" and
-                                            (
-                                                            wordNextNext == "the" or
-                                                            wordNextNext == timeQualifier
-                                            )
-                                )):
+                            wordNext == "" or wordNext == "o'clock" or
+                            (
+                                        wordNext == "in" and
+                                        (
+                                            wordNextNext == "the" or
+                                            wordNextNext == timeQualifier
+                                        )
+                            )):
                         strHH = word
                         strMM = 00
                         if wordNext == "o'clock":
                             used += 1
                         if wordNext == "in" or wordNextNext == "in":
                             used += (1 if wordNext == "in" else 2)
-                            if (
-                                            wordNextNext and
-                                                wordNextNext in timeQualifier or
-                                        (words[words.index(
-                                            wordNextNext) + 1] and
-                                                 words[words.index(
-                                                     wordNextNext) + 1] in timeQualifier)
-                                    # noqa
-                            ):
-                                if (
-                                                wordNextNext == "afternoon" or
-                                            (len(words) > words.index(
-                                                wordNextNext) + 1 and  # noqa
-                                                     words[words.index(
-                                                         wordNextNext) + 1] == "afternoon")
-                                        # noqa
-                                ):
+                            if (wordNextNext and
+                                wordNextNext in timeQualifier or
+                                (words[words.index(wordNextNext) + 1] and
+                                 words[words.index(wordNextNext) + 1] in
+                                 timeQualifier)):
+                                if (wordNextNext == "afternoon" or
+                                    (len(words) >
+                                     words.index(wordNextNext) + 1 and
+                                     words[words.index(
+                                         wordNextNext) + 1] == "afternoon")):
                                     remainder = "pm"
-                                if (
-                                                wordNextNext == "evening" or
-                                            (len(words) > (words.index(
-                                                wordNextNext) + 1) and  # noqa
-                                                     words[words.index(
-                                                         wordNextNext) + 1] == "evening")
-                                        # noqa
-                                ):
+                                if (wordNextNext == "evening" or
+                                    (len(words) >
+                                     (words.index(wordNextNext) + 1) and
+                                     words[words.index(
+                                         wordNextNext) + 1] == "evening")):
                                     remainder = "pm"
-                                if (
-                                                wordNextNext == "morning" or
-                                            (len(words) > words.index(
-                                                wordNextNext) + 1 and  # noqa
-                                                     words[words.index(
-                                                         wordNextNext) + 1] == "morning")
-                                        # noqa
-                                ):
+                                if (wordNextNext == "morning" or
+                                    (len(words) >
+                                     words.index(wordNextNext) + 1 and
+                                     words[words.index(
+                                         wordNextNext) + 1] == "morning")):
                                     remainder = "am"
                         if timeQualifier != "":
                             military = True
@@ -791,24 +780,17 @@ def extract_datetime_en(str, currentDate=None):
                                                       month=int(
                                                           temp.strftime(
                                                               "%m")),
-                                                      # noqa
                                                       day=int(temp.strftime(
-                                                          "%d")))  # noqa
+                                                          "%d")))
             else:
                 extractedDate = extractedDate.replace(
                     year=int(currentYear) + 1,
-                    month=int(
-                        temp.strftime("%m")),
-                    # noqa
-                    day=int(temp.strftime(
-                        "%d")))  # noqa
+                    month=int(temp.strftime("%m")),
+                    day=int(temp.strftime("%d")))
         else:
             extractedDate = extractedDate.replace(
                 year=int(temp.strftime("%Y")),
-                # noqa
-                month=int(
-                    temp.strftime("%m")),
-                # noqa
+                month=int(temp.strftime("%m")),
                 day=int(temp.strftime("%d")))
 
     if timeStr != "":
@@ -838,7 +820,7 @@ def extract_datetime_en(str, currentDate=None):
         extractedDate = extractedDate + relativedelta(seconds=secOffset)
     for idx, word in enumerate(words):
         if words[idx] == "and" and words[idx - 1] == "" and words[
-                    idx + 1] == "":
+                idx + 1] == "":
             words[idx] = ""
 
     resultStr = " ".join(words)
@@ -1094,7 +1076,8 @@ def isFractional_pt(input_str):
         return 1.0 / 100
     if input_str == u"mil�simo":
         return 1.0 / 1000
-    if input_str == u"s�timo" or input_str == "septimo" or input_str == u"s�ptimo":
+    if (input_str == u"s�timo" or input_str == "septimo" or
+            input_str == u"s�ptimo"):
         return 1.0 / 7
 
     return False
@@ -1400,13 +1383,13 @@ def extract_datetime_pt(input_str, currentDate=None):
 
     def date_found():
         return found or \
-               (
-                   datestr != "" or timeStr != "" or
-                   yearOffset != 0 or monthOffset != 0 or
-                   dayOffset is True or hrOffset != 0 or
-                   hrAbs != 0 or minOffset != 0 or
-                   minAbs != 0 or secOffset != 0
-               )
+            (
+                datestr != "" or timeStr != "" or
+                yearOffset != 0 or monthOffset != 0 or
+                dayOffset is True or hrOffset != 0 or
+                hrAbs != 0 or minOffset != 0 or
+                minAbs != 0 or secOffset != 0
+            )
 
     if input_str == "":
         return None
@@ -1476,8 +1459,8 @@ def extract_datetime_pt(input_str, currentDate=None):
             dayOffset -= 1
             used += 1
         # "before yesterday" and "before before yesterday"
-        elif (word == "anteontem" or (word == "ante" and wordNext == "ontem")) \
-                and not fromFlag:
+        elif (word == "anteontem" or
+              (word == "ante" and wordNext == "ontem")) and not fromFlag:
             dayOffset -= 2
             used += 1
             if wordNext == "ontem":
@@ -1505,8 +1488,9 @@ def extract_datetime_pt(input_str, currentDate=None):
                     dayOffset += int(wordPrev)
                     start -= 1
                     used += 1
-            elif wordPrev and wordPrev[0].isdigit() and wordNext not in months \
-                    and wordNext not in monthsShort:
+            elif (wordPrev and wordPrev[0].isdigit() and
+                    wordNext not in months and
+                    wordNext not in monthsShort):
                 dayOffset += int(wordPrev)
                 start -= 1
                 used += 2
@@ -1697,7 +1681,7 @@ def extract_datetime_pt(input_str, currentDate=None):
         if word in froms and wordNext in validFollowups:
 
             if not (wordNext == "amanha" and wordNext == "ontem") and not (
-                                word == "depois" or word == "antes" or word == "em"):
+                    word == "depois" or word == "antes" or word == "em"):
                 used = 2
                 fromFlag = True
             if wordNext == "amanha" and word != "depois":
@@ -1708,7 +1692,8 @@ def extract_datetime_pt(input_str, currentDate=None):
                 dayOffset -= 2
             elif wordNext == "ante" and wordNextNext == "ontem":
                 dayOffset -= 2
-            elif wordNext == "ante" and wordNext == "ante" and wordNextNextNext == "ontem":
+            elif (wordNext == "ante" and wordNext == "ante" and
+                  wordNextNextNext == "ontem"):
                 dayOffset -= 3
             elif wordNext in days:
                 d = days.index(wordNext)
@@ -1895,7 +1880,7 @@ def extract_datetime_pt(input_str, currentDate=None):
                             military = True
                             if strHH <= 12 and \
                                     (timeQualifier == "manha" or
-                                             timeQualifier == "tarde"):
+                                     timeQualifier == "tarde"):
                                 strHH += 12
 
             else:
@@ -1914,39 +1899,40 @@ def extract_datetime_pt(input_str, currentDate=None):
                     remainder = wordNext.replace(".", "").lstrip().rstrip()
 
                 if (
-                                        remainder == "pm" or
-                                        wordNext == "pm" or
-                                    remainder == "p.m." or
-                                wordNext == "p.m."):
+                        remainder == "pm" or
+                        wordNext == "pm" or
+                        remainder == "p.m." or
+                        wordNext == "p.m."):
                     strHH = strNum
                     remainder = "pm"
                     used = 1
                 elif (
-                                        remainder == "am" or
-                                        wordNext == "am" or
-                                    remainder == "a.m." or
-                                wordNext == "a.m."):
+                        remainder == "am" or
+                        wordNext == "am" or
+                        remainder == "a.m." or
+                        wordNext == "a.m."):
                     strHH = strNum
                     remainder = "am"
                     used = 1
                 else:
-                    if wordNext == "pm" or wordNext == "p.m." or wordNext == \
-                            "tarde":
+                    if (wordNext == "pm" or
+                            wordNext == "p.m." or
+                            wordNext == "tarde"):
                         strHH = strNum
                         remainder = "pm"
                         used = 1
-                    elif wordNext == "am" or wordNext == "a.m." or wordNext == \
-                            "manha":
+                    elif (wordNext == "am" or
+                          wordNext == "a.m." or
+                          wordNext == "manha"):
                         strHH = strNum
                         remainder = "am"
                         used = 1
-                    elif (
-                                    int(word) > 100 and
-                                (
-                                                    wordPrev == "o" or
-                                                    wordPrev == "oh" or
-                                                wordPrev == "zero"
-                                )):
+                    elif (int(word) > 100 and
+                            (
+                                wordPrev == "o" or
+                                wordPrev == "oh" or
+                                wordPrev == "zero"
+                            )):
                         # 0800 hours (pronounced oh-eight-hundred)
                         strHH = int(word) / 100
                         strMM = int(word) - strHH * 100
@@ -1954,12 +1940,12 @@ def extract_datetime_pt(input_str, currentDate=None):
                         if wordNext == "hora":
                             used += 1
                     elif (
-                                        wordNext == "hora" and
-                                        word[0] != '0' and
-                                (
-                                                int(word) < 100 and
-                                                int(word) > 2400
-                                )):
+                            wordNext == "hora" and
+                            word[0] != '0' and
+                            (
+                                int(word) < 100 and
+                                int(word) > 2400
+                            )):
                         # ignores military time
                         # "in 3 hours"
                         hrOffset = int(word)
@@ -1990,7 +1976,7 @@ def extract_datetime_pt(input_str, currentDate=None):
                             used += 1
 
                     elif wordNext == "" or (
-                                    wordNext == "em" and wordNextNext == "ponto"):
+                            wordNext == "em" and wordNextNext == "ponto"):
                         strHH = word
                         strMM = 00
                         if wordNext == "em" and wordNextNext == "ponto":
@@ -2020,8 +2006,10 @@ def extract_datetime_pt(input_str, currentDate=None):
 
             strHH = int(strHH) if strHH else 0
             strMM = int(strMM) if strMM else 0
-            strHH = strHH + 12 if remainder == "pm" and 0 < strHH < 12 else strHH
-            strHH = strHH - 12 if remainder == "am" and 0 < strHH >= 12 else strHH
+            strHH = strHH + 12 if (remainder == "pm" and
+                                   0 < strHH < 12) else strHH
+            strHH = strHH - 12 if (remainder == "am" and
+                                   0 < strHH >= 12) else strHH
             if strHH > 24 or strMM > 59:
                 isTime = False
                 used = 0
@@ -2080,24 +2068,17 @@ def extract_datetime_pt(input_str, currentDate=None):
                                                       month=int(
                                                           temp.strftime(
                                                               "%m")),
-                                                      # noqa
                                                       day=int(temp.strftime(
-                                                          "%d")))  # noqa
+                                                          "%d")))
             else:
                 extractedDate = extractedDate.replace(
                     year=int(currentYear) + 1,
-                    month=int(
-                        temp.strftime("%m")),
-                    # noqa
-                    day=int(temp.strftime(
-                        "%d")))  # noqa
+                    month=int(temp.strftime("%m")),
+                    day=int(temp.strftime("%d")))
         else:
             extractedDate = extractedDate.replace(
                 year=int(temp.strftime("%Y")),
-                # noqa
-                month=int(
-                    temp.strftime("%m")),
-                # noqa
+                month=int(temp.strftime("%m")),
                 day=int(temp.strftime("%d")))
 
     if timeStr != "":
