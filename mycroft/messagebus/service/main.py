@@ -22,7 +22,7 @@ from mycroft.messagebus.service.ws import WebsocketEventHandler
 from mycroft.util import validate_param
 from mycroft.util.log import LOG
 from mycroft.messagebus.service.self_signed import create_self_signed_cert
-from os.path import dirname
+from os.path import dirname, join
 
 __author__ = 'seanfitz', 'jdorleans'
 
@@ -65,11 +65,11 @@ def main():
         self_sign = config.get("cert_auto_gen")
         if self_sign and (not key or not cert):
             LOG.error("ssl keys dont exist, creating self signed")
-            dir = dirname(__file__) + "/certs"
+            cert_dir = join(dirname(__file__) , "certs")
             name = "secure_websocket"
-            create_self_signed_cert(dir, name)
-            cert = dir + "/" + name + ".crt"
-            key = dir + "/" + name + ".key"
+            create_self_signed_cert(cert_dir, name)
+            cert = join(cert_dir , name + ".crt")
+            key = join(cert_dir , name + ".key")
             LOG.info("key created at: " + key)
             LOG.info("crt created at: " + cert)
             # TODO update and save config with new keys
