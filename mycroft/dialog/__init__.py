@@ -127,7 +127,7 @@ def get(phrase, lang=None, context=None):
 
     if not lang:
         from mycroft.configuration import Configuration
-        lang = Configuration.get("lang")
+        lang = Configuration.get().get("lang")
 
     filename = "text/" + lang.lower() + "/" + phrase + ".dialog"
     template = resolve_resource_file(filename)
