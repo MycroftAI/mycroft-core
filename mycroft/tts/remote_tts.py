@@ -43,7 +43,7 @@ class RemoteTTS(TTS):
                 try:
                     self.begin_audio()
                     self.__play(req)
-                except Exception, e:
+                except Exception as e:
                     LOG.error(e.message)
                 finally:
                     self.end_audio()
