@@ -66,7 +66,6 @@ class EnclosureReader(Thread):
                 data = self.serial.readline()[:-2]
                 if data:
                     self.process(data)
-                    LOG.info("Reading: " + data)
             except Exception as e:
                 LOG.error("Reading error: {0}".format(e))
 
@@ -205,7 +204,6 @@ class EnclosureWriter(Thread):
             try:
                 cmd = self.commands.get()
                 self.serial.write(cmd + '\n')
-                LOG.info("Writing: " + cmd)
                 self.commands.task_done()
             except Exception as e:
                 LOG.error("Writing error: {0}".format(e))
