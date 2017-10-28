@@ -16,6 +16,7 @@ import inflection
 import re
 import json
 from os.path import exists, isfile, join, dirname, expanduser
+from requests import HTTPError
 
 from mycroft.util.json_helper import load_commented_json
 from mycroft.util.log import LOG
@@ -148,6 +149,11 @@ class RemoteConf(LocalConf):
             for key in config:
                 self.__setitem__(key, config[key])
             self.store(cache)
+
+        except HTTPError as e:
+            LOG.error("HTTPError fetching remote configuration: %s" %
+                      e.response.status_code)
+            self.load_local(cache)
 
         except Exception as e:
             LOG.error("Failed to fetch remote configuration: %s" % repr(e),
