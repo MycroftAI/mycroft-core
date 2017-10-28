@@ -23,6 +23,8 @@ from requests import HTTPError
 from mycroft.util.json_helper import load_commented_json
 from mycroft.util.log import LOG
 
+from future.utils import iteritems
+
 
 def merge_dict(base, delta):
     """
@@ -33,7 +35,7 @@ def merge_dict(base, delta):
             delta: Dictionary to merge into base
     """
 
-    for k, dv in delta.iteritems():
+    for k, dv in iteritems(delta):
         bv = base.get(k)
         if isinstance(dv, dict) and isinstance(bv, dict):
             merge_dict(bv, dv)
@@ -52,7 +54,7 @@ def translate_remote(config, setting):
     """
     IGNORED_SETTINGS = ["uuid", "@type", "active", "user", "device"]
 
-    for k, v in setting.iteritems():
+    for k, v in iteritems(setting):
         if k not in IGNORED_SETTINGS:
             # Translate the CamelCase values stored remotely into the
             # Python-style names used within mycroft-core.
@@ -108,7 +110,7 @@ class LocalConf(dict):
                     self.__setitem__(key, config[key])
 
                 LOG.debug("Configuration {} loaded".format(path))
-            except Exception, e:
+            except Exception as e:
                 LOG.error("Error loading configuration '{}'".format(path))
                 LOG.error(repr(e))
         else:

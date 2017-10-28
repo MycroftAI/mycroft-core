@@ -43,7 +43,7 @@ def get_ipc_directory(domain=None):
     return ensure_directory_exists(dir, domain)
 
 
-def ensure_directory_exists(dir, domain=None):
+def ensure_directory_exists(directory, domain=None):
     """ Create a directory and give access rights to all
 
     Args:
@@ -54,20 +54,20 @@ def ensure_directory_exists(dir, domain=None):
         str: a path to the directory
     """
     if domain:
-        dir = os.path.join(dir, domain)
-    dir = os.path.normpath(dir)
+        directory = os.path.join(directory, domain)
+    directory = os.path.normpath(directory)
 
-    if not os.path.isdir(dir):
+    if not os.path.isdir(directory):
         try:
             save = os.umask(0)
-            os.makedirs(dir, 0777)  # give everyone rights to r/w here
+            os.makedirs(directory, 0o777)  # give everyone rights to r/w here
         except OSError:
-            LOG.warning("Failed to create: " + dir)
+            LOG.warning("Failed to create: " + directory)
             pass
         finally:
             os.umask(save)
 
-    return dir
+    return directory
 
 
 def create_file(filename):

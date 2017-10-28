@@ -235,7 +235,7 @@ class IntentService(object):
             except StopIteration:
                 # don't show error in log
                 continue
-            except e:
+            except Exception as e:
                 LOG.exception(e)
                 continue
 
@@ -266,7 +266,6 @@ class IntentService(object):
                 start_concept, end_concept, alias_of=alias_of)
 
     def handle_register_intent(self, message):
-        print "Registering: " + str(message.data)
         intent = open_intent_envelope(message)
         self.engine.register_intent_parser(intent)
 
