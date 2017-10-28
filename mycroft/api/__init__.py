@@ -204,7 +204,11 @@ class DeviceApi(Api):
             status of subscription. True if device is connected to a paying
             subscriber.
         """
-        return self.get_subscription().get('@type') != 'free'
+        try:
+            return self.get_subscription().get('@type') != 'free'
+        except:
+            # If can't retrieve, assume not paired and not a subscriber yet
+            return False
 
     def get_subscriber_voice_url(self, voice=None):
         self.check_token()
