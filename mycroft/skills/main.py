@@ -166,6 +166,7 @@ class SkillManager(Thread):
         self.next_download = time.time() - 1    # download ASAP
         self.loaded_skills = {}
         self.msm_blocked = False
+        self.download_attempts = 0
         self.ws = ws
 
         # Conversation management
@@ -343,7 +344,9 @@ class SkillManager(Thread):
         while not self._stop_event.is_set():
             # Update skills once an hour
             if time.time() >= self.next_download:
-                self.download_skills(first_run())
+                should_speak = first_run() and self.download_attempts == 0
+                self.download_skills(should_speak)
+                self.download_attempts += 1
 
             # Look for recently changed skill(s) needing a reload
             if exists(SKILLS_DIR):
