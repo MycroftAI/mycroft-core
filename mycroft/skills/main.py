@@ -364,7 +364,7 @@ class SkillManager(Thread):
             # Pause briefly before beginning next scan
             time.sleep(2)
 
-            if not self._loaded_once.is_set():
+            if not self._loaded_once.is_set() and len(self.loaded_skills) > 0:
                 self._loaded_once.set()
 
         # Do a clean shutdown of all skills
