@@ -52,6 +52,16 @@ MSM_BIN = installer_config.get("path", join(MYCROFT_ROOT_PATH, 'msm', 'msm'))
 MINUTES = 60  # number of seconds in a minute (syntatic sugar)
 
 
+def first_run():
+    """
+        Stupid check to see if this is the first run, i.e. no skills installed
+        yet.
+
+        Returns:    True if no skills are installed
+    """
+    return os.listdir(SKILLS_DIR) == []
+
+
 def connect():
     global ws
     ws.run_forever()
@@ -85,7 +95,10 @@ def _starting_up():
 
     # Wait until skills have been loaded once before starting to check
     # network connection
-    skill_manager.wait_loaded_priority()
+    if first_run():
+        skill_manager.wait_loaded_once()
+    else:
+        skill_manager.wait_loaded_priority()
     check_connection()
 
 
@@ -149,6 +162,7 @@ class SkillManager(Thread):
         super(SkillManager, self).__init__()
         self._stop_event = Event()
         self._loaded_priority = Event()
+        self._loaded_once = Event()
         self.next_download = time.time() - 1    # download ASAP
         self.loaded_skills = {}
         self.msm_blocked = False
@@ -209,6 +223,11 @@ class SkillManager(Thread):
             try:
                 # Invoke the MSM script to do the hard work.
                 LOG.debug("==== Invoking Mycroft Skill Manager: " + MSM_BIN)
+                if speak:
+                    self.ws.emit(Message("speak", {'utterance':
+                                 mycroft.dialog.get("installing default skills"
+                                                    )}))
+
                 p = subprocess.Popen(MSM_BIN + " default",
                                      stderr=subprocess.STDOUT,
                                      stdout=subprocess.PIPE, shell=True)
@@ -324,7 +343,7 @@ class SkillManager(Thread):
         while not self._stop_event.is_set():
             # Update skills once an hour
             if time.time() >= self.next_download:
-                self.download_skills()
+                self.download_skills(first_run())
 
             # Look for recently changed skill(s) needing a reload
             if exists(SKILLS_DIR):
@@ -342,12 +361,20 @@ class SkillManager(Thread):
             # Pause briefly before beginning next scan
             time.sleep(2)
 
+            if not self._loaded_once.is_set():
+                self._loaded_once.set()
+
         # Do a clean shutdown of all skills
         for skill in self.loaded_skills:
             try:
                 self.loaded_skills[skill]['instance'].shutdown()
             except BaseException:
                 pass
+
+    def wait_loaded_once(self):
+        """ Block until all priority skills have loaded """
+        while not self._loaded_once.is_set():
+            time.sleep(1)
 
     def wait_loaded_priority(self):
         """ Block until all priority skills have loaded """
