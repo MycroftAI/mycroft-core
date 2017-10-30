@@ -15,6 +15,7 @@
 import time
 from Queue import Queue, Empty
 from threading import Thread
+import pwd, os
 import multiprocessing
 
 import speech_recognition as sr
@@ -62,9 +63,17 @@ class AudioProducer(Thread):
                 try:
                     audio = self.recognizer.listen(source, self.emitter)
 
-                    if audio:
+                    LOG.debug("listener.py run = len(audio.frame_data) = " + str(len(audio.frame_data)))
+                    if len(audio.frame_data) != 65538:  # 2 seconds (silence)
+                        # if audio:
                         self.queue.put(audio)
                         LOG.debug("queue.put, self.queue.unfinished_tasks = " + str(self.queue.unfinished_tasks))
+                        # if self.queue.unfinished_tasks < 10:
+                        #     self.queue.put(audio)
+                        #     LOG.debug("queue.put, self.queue.unfinished_tasks = " + str(self.queue.unfinished_tasks))
+                        # else:
+                        #     while self.queue.unfinished_tasks > 0:
+                        #         time.sleep(2)
 
                 except IOError, ex:
                     # NOTE: Audio stack on raspi is slightly different, throws
@@ -107,7 +116,7 @@ class AudioConsumer(Thread):
     def run(self):
         while self.state.running:
             self.read()
-            LOG.debug("multiprocessing.active_children() = " + str(len(multiprocessing.active_children())))
+            # LOG.debug("multiprocessing.active_children() = " + str(len(multiprocessing.active_children())))
             if len(multiprocessing.active_children()) > 5:
                 for j in self.transcribe_jobs:
                     LOG.debug("waiting for process to end, j.ident  = " + str(j.ident))
@@ -176,6 +185,7 @@ class AudioConsumer(Thread):
         if self._audio_length(audio) < self.MIN_AUDIO_SIZE:
             LOG.warning("Audio too short to be processed")
         else:
+            # LOG.debug("listener.py process = len(audio.frame_data) = " + str(len(audio.frame_data)))
             # if len(audio.frame_data) != 65538:  # 2 seconds (silence)
             # if len(audio.frame_data) != 96258:  # 3 seconds silence
             if isinstance(self.stt, PocketsphinxAudioConsumer):
@@ -422,7 +432,7 @@ class RecognizerLoop(EventEmitter):
         """
             Reload configuration and restart consumer and producer
         """
-        platform = str(self.enclosure_config.get('platform'))
+        platform = str(self.enclosure_config.get('platform','laptop/desktop platform'))
         LOG.debug('''self.enclosure_config.get('platform') ==''' + platform)
         if platform == "picroft" or platform == "mycroft_mark_1":
             LOG.debug('''my/pi croft platform''')
