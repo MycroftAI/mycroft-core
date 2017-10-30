@@ -124,7 +124,7 @@ def _get_last_modified_date(path):
         Returns:    time of last change
     """
     last_date = 0
-    root_dir, subdirs, files = os.walk(path).next()
+    root_dir, subdirs, files = next(os.walk(path))
     # get subdirs and remove hidden ones
     subdirs = [s for s in subdirs if not s.startswith('.')]
     for subdir in subdirs:

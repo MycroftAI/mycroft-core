@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 import time
-
+from builtins import range
 from adapt.context import ContextManagerFrame
 from adapt.engine import IntentDeterminationEngine
 
@@ -89,7 +89,7 @@ class ContextManager(object):
 
         missing_entities = list(missing_entities)
         context = []
-        for i in xrange(max_frames):
+        for i in range(max_frames):
             frame_entities = [entity.copy() for entity in
                               relevant_frames[i].entities]
             for entity in frame_entities:
@@ -247,7 +247,6 @@ class IntentService(object):
             # update active skills
             skill_id = int(best_intent['intent_type'].split(":")[0])
             self.add_active_skill(skill_id)
-
         else:
             self.emitter.emit(Message("intent_failure", {
                 "utterance": utterances[0],
