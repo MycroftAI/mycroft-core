@@ -51,12 +51,11 @@ def handle_no_internet():
 
 def handle_wakeword(event):
     # listener_config = config.get('listener')
-    if not check_for_signal('skip_wake_word',-1):
+    if not check_for_signal('skip_wake_word', -1):
         LOG.info("Wakeword Detected: " + event['utterance'])
     else:
         LOG.info("Wakeword skipped: ")
     ws.emit(Message('recognizer_loop:wakeword', event))
-
 
 
 def handle_utterance(event):
@@ -75,14 +74,17 @@ def handle_complete_intent_failure(event):
     LOG.info("Failed to find intent.")
     # TODO: Localize
     # listener_config = config.get('listener')
-    if not check_for_signal('skip_wake_word',-1):
-        data = {'utterance':
-            "Sorry, I didn't catch that. Please rephrase your request."}
+    if not check_for_signal('skip_wake_word', -1):
+        data = {
+            'utterance':
+            "Sorry, I didn't catch that. " +
+            "Please rephrase your request."}
         ws.emit(Message('speak', data))
 
 
 def handle_sleep(event):
     loop.sleep()
+
 
 def handle_reload(event):
     loop.reload()

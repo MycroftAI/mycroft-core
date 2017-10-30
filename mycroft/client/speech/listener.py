@@ -15,7 +15,8 @@
 import time
 from Queue import Queue, Empty
 from threading import Thread
-import pwd, os
+import pwd
+import os
 import multiprocessing
 
 import speech_recognition as sr
@@ -27,7 +28,8 @@ import mycroft.dialog
 from mycroft.client.speech.hotword_factory import HotWordFactory
 from mycroft.client.speech.mic import MutableMicrophone, ResponsiveRecognizer
 from mycroft.configuration import Configuration
-from mycroft.client.speech.pocketsphinx_audio_consumer import PocketsphinxAudioConsumer
+from mycroft.client.speech.pocketsphinx_audio_consumer \
+    import PocketsphinxAudioConsumer
 from mycroft.metrics import MetricsAggregator
 from mycroft.session import SessionManager
 from mycroft.stt import STTFactory
@@ -45,7 +47,8 @@ class AudioProducer(Thread):
     mic for potential speech chunks and pushes them onto the queue.
     """
 
-    def __init__(self, state, queue, mic, recognizer, emitter, mww, mww_no_skills):
+    def __init__(self, state, queue, mic, recognizer,
+                 emitter, mww, mww_no_skills):
         super(AudioProducer, self).__init__()
         self.daemon = True
         self.state = state
@@ -63,14 +66,18 @@ class AudioProducer(Thread):
                 try:
                     audio = self.recognizer.listen(source, self.emitter)
 
-                    LOG.debug("listener.py run = len(audio.frame_data) = " + str(len(audio.frame_data)))
+                    LOG.debug("listener.py run = len(audio.frame_data) = " +
+                              str(len(audio.frame_data)))
                     if len(audio.frame_data) != 65538:  # 2 seconds (silence)
                         # if audio:
                         self.queue.put(audio)
-                        LOG.debug("queue.put, self.queue.unfinished_tasks = " + str(self.queue.unfinished_tasks))
+                        LOG.debug("queue.put, self.queue.unfinished_tasks = " +
+                                  str(self.queue.unfinished_tasks))
                         # if self.queue.unfinished_tasks < 10:
                         #     self.queue.put(audio)
-                        #     LOG.debug("queue.put, self.queue.unfinished_tasks = " + str(self.queue.unfinished_tasks))
+                        #     LOG.debug("queue.put" +
+                        #           ", self.queue.unfinished_tasks = " +
+                        #           str(self.queue.unfinished_tasks))
                         # else:
                         #     while self.queue.unfinished_tasks > 0:
                         #         time.sleep(2)
@@ -116,21 +123,23 @@ class AudioConsumer(Thread):
     def run(self):
         while self.state.running:
             self.read()
-            # LOG.debug("multiprocessing.active_children() = " + str(len(multiprocessing.active_children())))
             if len(multiprocessing.active_children()) > 5:
                 for j in self.transcribe_jobs:
-                    LOG.debug("waiting for process to end, j.ident  = " + str(j.ident))
+                    LOG.debug("waiting for process to end, j.ident  = " +
+                              str(j.ident))
                     j.join()
                     self.transcribe_jobs.remove(j)
                     LOG.debug("Process ended, j.ident = " + str(j.ident))
                     if len(multiprocessing.active_children()) <= 2:
                         break
-                LOG.debug("after joining, multiprocessing.active_children() = " + str(len(multiprocessing.active_children())))
-                LOG.debug("len(transcribe_jobs) = " + str(len(self.transcribe_jobs)))
+                LOG.debug("after joining, " +
+                          "multiprocessing.active_children() = " +
+                          str(len(multiprocessing.active_children())))
+                LOG.debug("len(transcribe_jobs) = " +
+                          str(len(self.transcribe_jobs)))
             for j in self.transcribe_jobs:
                 if not j.is_alive():
                     self.transcribe_jobs.remove(j)
-
 
     def read(self):
         try:
@@ -153,12 +162,14 @@ class AudioConsumer(Thread):
 
                 self.transcribe_jobs.append(process)
 
-                LOG.debug("listener.py, read str(self.transcribe_jobs) = " + str(self.transcribe_jobs))
+                LOG.debug("listener.py, read str(self.transcribe_jobs) = " +
+                          str(self.transcribe_jobs))
             else:
                 self.process(audio)
 
         self.queue.task_done()
-        LOG.debug("queue.task_done, self.queue.unfinished_tasks = " + str(self.queue.unfinished_tasks))
+        LOG.debug("queue.task_done, self.queue.unfinished_tasks = " +
+                  str(self.queue.unfinished_tasks))
 
     # TODO: Localization
     def wake_up(self, audio):
@@ -185,18 +196,17 @@ class AudioConsumer(Thread):
         if self._audio_length(audio) < self.MIN_AUDIO_SIZE:
             LOG.warning("Audio too short to be processed")
         else:
-            # LOG.debug("listener.py process = len(audio.frame_data) = " + str(len(audio.frame_data)))
+            # LOG.debug("listener.py process = len(audio.frame_data) = " +
+            #           str(len(audio.frame_data)))
             # if len(audio.frame_data) != 65538:  # 2 seconds (silence)
             # if len(audio.frame_data) != 96258:  # 3 seconds silence
             if isinstance(self.stt, PocketsphinxAudioConsumer):
-            # LOG.debug("test phrase decode/transcribe")
+                # LOG.debug("test phrase decode/transcribe")
                 hyp = self.stt.transcribe(audio.frame_data)
-                # hyp = self.stt.wake_word_recognizer.transcribe(audio.frame_data)
+                # hyp = self.stt.wake_word_recognizer.transcribe(
+                # audio.frame_data)
                 if hyp:
                     if hyp.hypstr > '':
-                        # LOG.debug("listener.py process = self._audio_length(audio) = " + str(self._audio_length(audio)))
-                        # LOG.debug("listener.py process = len(audio.frame_data) = " + str(len(audio.frame_data)))
-                        # LOG.debug("listener.py process = hyp.hypstr = " + hyp.hypstr)
                         payload = {
                             'utterances': [hyp.hypstr.lower()],
                             'lang': self.stt.lang,
@@ -205,7 +215,10 @@ class AudioConsumer(Thread):
                         self.emitter.emit("recognizer_loop:utterance", payload)
                         self.metrics.attr('utterances', [hyp.hypstr.lower()])
 
-                        TranscribeSearch().write_transcribed_files(audio.frame_data, hyp.hypstr)
+                        TranscribeSearch()\
+                            .write_transcribed_files(
+                            audio.frame_data, hyp.hypstr
+                        )
 
             else:
                 self.transcribe(audio)
@@ -232,7 +245,8 @@ class AudioConsumer(Thread):
         if text and text > '':
             # STT succeeded, send the transcribed speech on for processing
             LOG.debug("*******************************")
-            LOG.debug("Internet transcribing end: total time = " + str(time.time() - start))
+            LOG.debug("Internet transcribing end: total time = " +
+                      str(time.time() - start))
             LOG.debug("*******************************")
             payload = {
                 'utterances': [text],
@@ -279,7 +293,8 @@ class RecognizerLoop(EventEmitter):
         self.lang = config.get('lang')
         self.config = config.get('listener')
         self.mww = self.config.get('mww_multiple_wake_words')
-        self.mww_no_skills = self.config.get('mww_multiple_wake_words_no_skills')
+        self.mww_no_skills = self.config.get(
+            'mww_multiple_wake_words_no_skills')
 
         self.enclosure_config = config.get('enclosure')
         rate = self.config.get('sample_rate')
@@ -290,13 +305,11 @@ class RecognizerLoop(EventEmitter):
         # FIXME - channels are not been used
         self.microphone.CHANNELS = self.config.get('channels')
 
-        if check_for_signal('UseLocalSTT',-1) and not self.mww:
-        # if check_for_signal('UseLocalSTT',-1):
-        # if self.config.get("producer", None) == "pocketsphinx" or check_for_signal('UseLocalSTT'):
-            self.wakeword_recognizer = PocketsphinxAudioConsumer(self.config, self.lang, self)
+        if check_for_signal('UseLocalSTT', -1) and not self.mww:
+            self.wakeword_recognizer = PocketsphinxAudioConsumer(
+                self.config, self.lang, self)
             self.wakeup_recognizer = self.create_wakeup_recognizer
         else:
-            # self.wakeword_recognizer = PocketsphinxAudioConsumer(self.config, self.lang,  self)
             self.wakeword_recognizer = self.create_wake_word_recognizer()
             self.wakeup_recognizer = self.create_wakeup_recognizer()
 
@@ -352,11 +365,12 @@ class RecognizerLoop(EventEmitter):
         self.state.running = True
         queue = Queue()
         self.producer = AudioProducer(self.state, queue, self.microphone,
-                                      self.responsive_recognizer, self, self.mww, self.mww_no_skills)
+                                      self.responsive_recognizer,
+                                      self, self.mww, self.mww_no_skills)
         self.producer.start()
 
         # if self.config.get("producer", None) == "pocketsphinx" \
-        if check_for_signal('UseLocalSTT',-1) and not self.mww:
+        if check_for_signal('UseLocalSTT', -1) and not self.mww:
             self.consumer = AudioConsumer(self.state, queue, self,
                                           self.wakeword_recognizer,
                                           self.wakeup_recognizer,
@@ -432,7 +446,8 @@ class RecognizerLoop(EventEmitter):
         """
             Reload configuration and restart consumer and producer
         """
-        platform = str(self.enclosure_config.get('platform','laptop/desktop platform'))
+        platform = str(self.enclosure_config.get(
+            'platform', 'laptop/desktop platform'))
         LOG.debug('''self.enclosure_config.get('platform') ==''' + platform)
         if platform == "picroft" or platform == "mycroft_mark_1":
             LOG.debug('''my/pi croft platform''')
@@ -440,20 +455,26 @@ class RecognizerLoop(EventEmitter):
                 # uid = pwd.getpwnam('mycroft')[2]
                 # LOG.debug('''my/pi croft root uid ==''' + str(uid))
                 # os.setuid(uid)
-                LOG.debug(''' username = ''' + pwd.getpwuid(os.getuid()).pw_name)
+                LOG.debug(''' username = ''' +
+                          pwd.getpwuid(os.getuid()).pw_name)
                 os.system('/etc/init.d/mycroft-speech-client restart')
             except Exception as e:
                 LOG.debug('''error == ''' + str(e))
         else:
             LOG.debug('''laptop/desktop platform''')
-            BASEDIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-            LOG.debug('BASEDIR = '+ BASEDIR)
+            BASEDIR = os.path.abspath(
+                os.path.join(os.path.dirname(__file__),
+                             '..', '..', '..')
+            )
+            LOG.debug('BASEDIR = ' + BASEDIR)
             try:
                 # uid = pwd.getpwnam('guy')[2]
                 # LOG.debug('''laptop root uid ==''' + str(uid))
                 # os.setuid(uid)
-                # os.system('/etc/init.d/mycroft-speech-client stop;/etc/init.d/mycroft-speech-client start')
-                LOG.debug(''' username = ''' + pwd.getpwuid(os.getuid()).pw_name)
+                # os.system('/etc/init.d/mycroft-speech-client stop;
+                #   /etc/init.d/mycroft-speech-client start')
+                LOG.debug(''' username = ''' +
+                          pwd.getpwuid(os.getuid()).pw_name)
                 os.system(BASEDIR + '/start-mycroft.sh voice')
             except Exception as e:
                 LOG.debug('''error == ''' + str(e))

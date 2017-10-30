@@ -63,7 +63,6 @@ s = config.get('wake_word_ack_cmnd')
 
 # class PocketsphinxAudioConsumer(multiprocessing.Process):
 class PocketsphinxAudioConsumer(Thread):
-# class PocketsphinxAudioConsumer(object):
     """
     PocketsphinxAudioConsumer
     Reads audio and produces utterances
@@ -74,7 +73,6 @@ class PocketsphinxAudioConsumer(Thread):
     MIN_AUDIO_SIZE = 0.5
 
     def __init__(self, config_listener, lang, emitter):
-    # def __init__(self, queue, config_listener, lang, state, wakeup_recognizer, wakeword_recognizer, emitter):
         super(PocketsphinxAudioConsumer, self).__init__()
         # self.SAMPLE_RATE = 44100
         self.SAMPLE_RATE = 16000
@@ -85,18 +83,6 @@ class PocketsphinxAudioConsumer(Thread):
         self.emitter = emitter
         self.mww = self.config.get("mww")
         self.mww_no_skills = self.config.get("mww_no_skills")
-        # self.mww = mww
-
-        # self.energy_threshold = 300  # minimum audio energy to consider for recording
-        # self.dynamic_energy_threshold = True
-        # self.dynamic_energy_adjustment_damping = 0.15
-        # self.dynamic_energy_ratio = 1.5
-        # self.pause_threshold = 0.8  # seconds of non-speaking audio before a phrase is considered complete
-        # self.phrase_threshold = 0.3  # minimum seconds of speaking audio before we consider the speaking audio a phrase - values below this are ignored (for filtering out clicks and pops)
-        # self.non_speaking_duration = 0.5  # seconds of non-speaking audio to keep on both sides of the recording
-        # self.multiplier = listener_config.get('multiplier')
-        # self.energy_ratio = listener_config.get('energy_ratio')
-        # self.mic_level_file = os.path.join(get_ipc_directory(), "mic_level")
 
         self.audio = pyaudio.PyAudio()
 
@@ -146,49 +132,29 @@ class PocketsphinxAudioConsumer(Thread):
                 logger.debug("lm = " + lm)
                 self.decoder.set_lm_file('lm', str(lm))
 
-        if check_for_signal('skip_wake_word',-1):
+        if check_for_signal('skip_wake_word', -1):
             self.decoder.set_search('lm')
-        elif listener_config.get('skip_wake_word', True) \
-         and not check_for_signal('restartedFromSkill',10):
+        elif listener_config.get('skip_wake_word', True) and \
+                not check_for_signal('restartedFromSkill', 10):
             self.decoder.set_search('lm')
             create_signal('skip_wake_word')
 
-            # if not check_for_signal('skip_wake_word',-1)\
-        # and not check_for_signal('skip_wake_word_skill',-1):   # signal set in skill
-        #     if listener_config.get('skip_wake_word', True):
-        #         check_for_signal('skip_wake_word', 0)  # remove signal before creating
-        #         create_signal('skip_wake_word')
-        #         self.decoder.set_search('lm')
-        # elif check_for_signal('skip_wake_word'):
-        #     check_for_signal('skip_wake_word', 0)  # remove signal before creating
-        #     create_signal('skip_wake_word')
-        #     self.decoder.set_search('lm')
-        #
     def create_decoder_config(self, model_lang_dir):
         decoder_config = Decoder.default_config()
         # hmm_dir = join(model_lang_dir, 'en-us-semi-full')
         # hmm_dir = join(model_lang_dir, 'cmusphinx-en-us-8khz-5.2')
 
         hmm_dir = join(model_lang_dir, 'cmusphinx-en-us-5.2')
-        # hmm_dir = join(model_lang_dir, 'hmm')
         decoder_config.set_string('-hmm', hmm_dir)
-        # decoder_config.set_string('-hmm', join(model_lang_dir, hmm_dir))
-
-        # logger.debug("dict = " + model_lang_dir + '/' + self.lang + '.dict')
-        # BASEDIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-        decoder_config.set_string('-dict', BASEDIR + '/recognizer/model/en-us/klat_only_corpus_words.dict')
-        # decoder_config.set_string('-dict', BASEDIR + '/recognizer/model/en-us/cmudict-en-us_original.dict')
-        # if config.get('enclosure', {}).get('platform') == "picroft":
-        #     decoder_config.set_string('-dict',
-        #                               BASEDIR+'recognizer/model/en-us/cmudict-en-us_original.dict')
-        #     # decoder_config.set_string('-dict',
-        #     #                           '/usr/local/lib/python2.7/site-packages/mycroft_core-0.8.20-py2.7.egg/mycroft/client/speech/recognizer/model/en-us/cmudict-en-us_original.dict')
-        # else:
-        #     decoder_config.set_string('-dict',
-        #                               '/home/guy/github/mycroft/mycroft-core-mirror/mycroft/client/speech/recognizer/model/en-us/cmudict-en-us_original.dict')
+        decoder_config.set_string('-dict',
+                                  BASEDIR +
+                                  '/recognizer/model/en-us/'
+                                  'klat_only_corpus_words.dict'
+                                  )
 
         decoder_config.set_float('-samprate', self.SAMPLE_RATE)
-        decoder_config.set_float('-kws_threshold', self.config.get('threshold', 1))
+        decoder_config.set_float('-kws_threshold',
+                                 self.config.get('threshold', 1))
         decoder_config.set_string('-cmninit', '40,3,-1')
         decoder_config.set_string('-logfn', '/tmp/pocketsphinx.log')
         decoder_config.set_string('-keyphrase', self.wake_word)
@@ -206,7 +172,6 @@ class PocketsphinxAudioConsumer(Thread):
                 return device_index
         return None
 
-
     def transcribe(self, byte_data, metrics=None):
         start = time.time()
         # self.decoder.s
@@ -223,12 +188,12 @@ class PocketsphinxAudioConsumer(Thread):
         hyp = self.decoder.hyp()
         # logger.debug("end hyp() time.time() = " + str(time.time()))
         logger.debug("*******************************")
-        logger.debug("Local transcribing end: total time = " + str(time.time() - start))
+        logger.debug("Local transcribing end: total time = " +
+                     str(time.time() - start))
         logger.debug("*******************************")
         if hyp:
-            if self.wake_word in hyp.hypstr.lower() or check_for_signal('skip_wake_word',-1):
-            # if self.wake_word in hyp.hypstr.lower() or listener_config.get('skip_wake_word'):
-            #     logger.debug("transcribe get kw search = " + self.decoder.get_search())
+            if self.wake_word in hyp.hypstr.lower() \
+              or check_for_signal('skip_wake_word', -1):
                 self.decoder.set_search('lm')
             else:
                 self.decoder.set_keyphrase('wake_word', self.wake_word)
@@ -237,13 +202,6 @@ class PocketsphinxAudioConsumer(Thread):
             logger.debug("*******************************")
             logger.debug("transcribe hyp.hypstr = " + hyp.hypstr)
             logger.debug("*******************************")
-            # logger.debug("transcribe success! decoder rtn = " + str(tstb))
-            # logger.debug("transcribe success, Byte_data = " + str(len(byte_data)))
-        # else:
-        #     logger.debug("transcribe search = " + self.decoder.get_search())
-        #     logger.debug("transcribe hyp = " + str(hyp))
-        #     logger.debug("transcribe failed, decoder rtn = " + str(tstb))
-        #     logger.debug("transcribe failed, Byte_data = " + str(len(byte_data)))
         return hyp
 
     def found_wake_word(self, frame_data):
@@ -251,7 +209,7 @@ class PocketsphinxAudioConsumer(Thread):
         if hyp and self.wake_word in hyp.hypstr.lower():
             logger.debug("found_wake_word hyp.hypstr = " + hyp.hypstr)
 
-        if check_for_signal('skip_wake_word',-1):
+        if check_for_signal('skip_wake_word', -1):
             if hyp:
                 if hyp.hypstr > '':
                     return True

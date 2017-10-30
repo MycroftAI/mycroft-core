@@ -63,13 +63,20 @@ class PocketsphinxHotWord(HotWordEngine):
         LOG.debug(" model_file 1 = " + str(model_file))
         if self.mww:
             LOG.debug(" mww 1 = "+str(self.mww))
-            LOG.debug(" join(model_file,self.config.get('phonemes', '')) = "+join(model_file,self.config.get("phonemes", "")))
-            dict_name = join(model_file,self.config.get("phonemes", ""))
+            LOG.debug(" join(model_file,self.config.get('phonemes', '')) = " +
+                      join(model_file, self.config.get("phonemes", "")))
+            dict_name = join(model_file, self.config.get("phonemes", ""))
         else:
             LOG.debug(" mww 2 = "+str(self.mww))
-            dict_name = self.create_dict(key_phrase, self.config.get("phonemes", "HH EY . M AY K R AO F T"))
+            dict_name = self.create_dict(
+                key_phrase,
+                self.config.get("phonemes", "HH EY . M AY K R AO F T")
+            )
             # dict_name = self.create_dict(key_phrase, self.phonemes)
-            self.phonemes = self.config.get("phonemes", "HH EY . M AY K R AO F T")
+            self.phonemes = self.config.get(
+                "phonemes",
+                "HH EY . M AY K R AO F T"
+            )
             self.num_phonemes = len(self.phonemes.split())
 
         self.threshold = self.config.get("threshold", 1e-90)
@@ -78,15 +85,12 @@ class PocketsphinxHotWord(HotWordEngine):
         self.decoder = Decoder(config)
 
         if self.mww:
-            # LOG.debug(" str(join(model_file,key_phrase)) 3 = "+str(join(model_file,key_phrase)))
-            self.decoder.set_kws('brands', str(join(model_file,key_phrase)))
+            self.decoder.set_kws('brands', str(join(model_file, key_phrase)))
             self.decoder.set_search('brands')
 
         self.accum_text = ''
         self.accum_audio = ''
         self.transcribe_start = time.time()
-
-
 
     def create_dict(self, key_phrase, phonemes):
         (fd, file_name) = tempfile.mkstemp()
@@ -128,27 +132,30 @@ class PocketsphinxHotWord(HotWordEngine):
 
         if self.mww:
             if hyp:
-            # if hyp and self.key_phrase in hyp.hypstr.lower():
                 if hyp.hypstr.lower() > '':
 
                     if time.time() - self.transcribe_start > 2:
-                        LOG.debug("time.time() - self.transcribe_start = "+str(time.time() - self.transcribe_start))
+                        LOG.debug(
+                            "time.time() - self.transcribe_start = " +
+                            str(time.time() - self.transcribe_start))
                         LOG.debug("accum_text 1 = "+self.accum_text)
-                        TranscribeSearch().write_transcribed_files(self.accum_audio, self.accum_text)
-                        # LOG.debug("hyp.hypstr.lower() = "+hyp.hypstr.lower())
-                        # TranscribeSearch().write_transcribed_files(frame_data, hyp.hypstr.lower())
+                        TranscribeSearch()\
+                            .write_transcribed_files(
+                            self.accum_audio, self.accum_text
+                        )
                         self.accum_text = hyp.hypstr.lower()
                         self.accum_audio = frame_data
                         self.transcribe_start = time.time()
                     else:
-                        LOG.debug("2 time.time() - self.transcribe_start = "+str(time.time() - self.transcribe_start))
+                        LOG.debug(
+                            "2 time.time() - self.transcribe_start = " +
+                            str(time.time() - self.transcribe_start))
                         self.accum_text += hyp.hypstr.lower()
                         self.accum_audio += frame_data
                         self.transcribe_start = time.time()
                         LOG.debug("accum_text 2 = "+self.accum_text)
 
-
-                return hyp;
+                return hyp
         else:
             return hyp and self.key_phrase in hyp.hypstr.lower()
 

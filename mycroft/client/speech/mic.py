@@ -161,13 +161,12 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         listener_config = self.config.get('listener')
         self.upload_config = listener_config.get('wake_word_upload')
 
-
         self.skip_wake_word = False
 
-        if check_for_signal('skip_wake_word',-1):
+        if check_for_signal('skip_wake_word', -1):
             self.skip_wake_word = True
-        elif listener_config.get('skip_wake_word', True) \
-         and not check_for_signal('restartedFromSkill',10):
+        elif listener_config.get('skip_wake_word', True) and \
+                not check_for_signal('restartedFromSkill', 10):
             self.skip_wake_word = True
 
         self.wake_word_name = wake_word_recognizer.key_phrase
@@ -436,9 +435,11 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                     if test_size < len(byte_data) else byte_data
                 audio_data = chopped + silence
                 if self.skip_wake_word:
-                    tmp = float(len(audio_data)) / (source.SAMPLE_RATE * source.SAMPLE_WIDTH)
+                    tmp = float(len(audio_data)) / \
+                          (source.SAMPLE_RATE * source.SAMPLE_WIDTH)
                     LOG.debug('audio data length = ' + str(tmp))
-                said_wake_word = self.wake_word_recognizer.found_wake_word(audio_data)
+                said_wake_word = \
+                    self.wake_word_recognizer.found_wake_word(audio_data)
                 # if a wake word is success full then record audio in temp
                 # file.
                 if self.save_wake_words and said_wake_word:
@@ -512,9 +513,9 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         # If enabled, play a wave file with a short sound to audibly
         # indicate recording has begun.
-        if self.config.get('confirm_listening') \
-                and (not self.skip_wake_word\
-                    or check_for_signal('WaitingToConfirm',10)):
+        if (self.config.get('confirm_listening') and
+                (not self.skip_wake_word or
+                 check_for_signal('WaitingToConfirm', 10))):
             file = resolve_resource_file(
                 self.config.get('sounds').get('start_listening'))
             if file:

@@ -76,7 +76,7 @@ def resolve_resource_file(res_name):
     return None  # Resource cannot be resolved
 
 
-def play_wav(uri, async = False):
+def play_wav(uri, async=False):
     config = mycroft.configuration.Configuration.get()
     play_cmd = config.get("play_wav_cmdline")
     play_wav_cmd = str(play_cmd).split(" ")

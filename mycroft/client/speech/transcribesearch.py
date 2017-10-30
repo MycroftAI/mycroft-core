@@ -27,19 +27,20 @@ class TranscribeSearch:
     """
     Name: TranscribeSearch
     Purpose: Scans over the transcription file, analyzing it for desired
-             outcomes. Imports data to the new, more precise text file, containing
+             outcomes. Imports data to the new,
+             more precise text file, containing
              the lines needed.
     """
-
 
     def searching_file(self, date_looking, text_looking):
 
         search_globdate = date_looking
-        text_location = "/var/log/mycroft/ts_transcripts/" + search_globdate + ".txt"
+        text_location = "/var/log/mycroft/ts_transcripts/" + \
+                        search_globdate + ".txt"
 
         with open(text_location, 'r+') as s:
             with open("/var/log/mycroft/ts_selected_transcripts/" +
-                              search_globdate + ".txt", 'a+') as out:
+                      search_globdate + ".txt", 'a+') as out:
                 lines = s.readlines()
 
                 tot = len(lines)
@@ -47,7 +48,8 @@ class TranscribeSearch:
 
                 if line.find('i like') != -1:
                     out.write(line)
-                    LOG.info("Search: Occasion of '" + text_looking + "' is found")
+                    LOG.info("Search: Occasion of '" + text_looking +
+                             "' is found")
                     LOG.debug("Success: " + line + " is imported")
 
                     # brandsFound = set(brandsList).intersection(line)
@@ -62,50 +64,44 @@ class TranscribeSearch:
         if check_for_signal('keep_audio_permission', -1):
             # if trans_values.audio_permission:
             try:
-                os.makedirs("/var/log/mycroft/ts_transcript_audio_segments/" + globdate)
+                os.makedirs("/var/log/mycroft/"
+                            "ts_transcript_audio_segments/" + globdate)
             except OSError:
-                if not os.path.isdir("/var/log/mycroft/ts_transcript_audio_segments/" + globdate):
+                if not os.path.isdir("/var/log/mycroft/"
+                                     "ts_transcript_audio_segments/" +
+                                     globdate
+                                     ):
                     raise
 
             LOG.info("Audio Save Permission Granted")
 
             if check_for_signal('transcribe_text_permission', -1):
                 # if trans_values.text_permission:
-                filename1 = "/var/log/mycroft/ts_transcripts/" + globdate + ".txt"
+                filename1 = "/var/log/mycroft/ts_transcripts/" + \
+                            globdate + ".txt"
                 with open(filename1, 'a+') as filea:
                     filea.write(globstamp + " " + text + "\n")
-                    LOG.info("Transcribing Permission Granted: Text Input Saved Successfully")
+                    LOG.info("Transcribing Permission Granted: "
+                             "Text Input Saved Successfully")
 
-                filename = "/var/log/mycroft/ts_transcript_audio_segments/" + globdate + \
-                           "/" + (globstamp + " " + text).decode("utf8") + " .wav"
-                           # "/" + str(hash(globstamp + " " + text)) + " .wav"
+                filename = "/var/log/mycroft/ts_transcript_audio_segments/" + \
+                           globdate + \
+                           "/" + (globstamp + " " + text).decode("utf8") + \
+                           " .wav"
 
             else:
                 LOG.warning("Transcribing Permission Denied")
-                filename = "/var/log/mycroft/ts_transcript_audio_segments/" + globdate + \
+                filename = "/var/log/mycroft/ts_transcript_audio_segments/" + \
+                           globdate + \
                            "/" + globstamp + " no_transcription_available.wav"
-                LOG.info("Transcribing Permission Denied: The Audio Recording of User's Input Saved in "
-                            "TimeStamp Format")
+                LOG.info("Transcribing Permission Denied: "
+                         "The Audio Recording of User's Input Saved in "
+                         "TimeStamp Format")
 
             LOG.info(
-                "Transcribing Permission Granted: Audio Recording, " + filename + " saved.")
+                "Transcribing Permission Granted: Audio Recording, " +
+                filename + " saved.")
             self.save_record(filename, audio)
-            # with open(filename, 'w+') as filea:
-            #     self.save_record(filename, audio)
-                # # sound = AudioSegment(byte_data)
-                # sound = AudioSegment.from_file(filename, format="wav")
-                # # sound = pydub.AudioSegment.from_file(filename, format="wav")
-                #
-                # start_trim = self.detect_leading_silence(sound)
-                # end_trim = self.detect_leading_silence(sound.reverse())
-                #
-                # duration = len(sound)
-                # trimmed_sound = sound[start_trim:duration - end_trim]
-                #
-                # self.save_record(filename, trimmed_sound.raw_data)
-
-                # filea.write(byte_data)
-                # filea.write(audio.get_flac_data())
 
             self.searching_file(globdate, "i like")
         else:
@@ -121,4 +117,3 @@ class TranscribeSearch:
         # waveFile.setframerate(self.SAMPLE_RATE)
         waveFile.writeframes(audio)
         waveFile.close()
-
