@@ -41,12 +41,12 @@ ws = None
 event_scheduler = None
 skill_manager = None
 
-skills_config = Configuration.get("skills")
+skills_config = Configuration.get().get("skills")
 BLACKLISTED_SKILLS = skills_config.get("blacklisted_skills", [])
 PRIORITY_SKILLS = skills_config.get("priority_skills", [])
 SKILLS_DIR = '/opt/mycroft/skills'
 
-installer_config = Configuration.get("SkillInstallerSkill")
+installer_config = Configuration.get().get("SkillInstallerSkill")
 MSM_BIN = installer_config.get("path", join(MYCROFT_ROOT_PATH, 'msm', 'msm'))
 
 MINUTES = 60  # number of seconds in a minute (syntatic sugar)
@@ -219,24 +219,25 @@ class SkillManager(Thread):
                     self.next_download = time.time() + 60 * MINUTES
 
                     if res == 0 and speak:
-                        self.ws.emit(Message("speak", {
-                            'utterance': mycroft.dialog.get("skills updated")})
-                            )
+                        self.ws.emit(Message("speak", {'utterance':
+                                     mycroft.dialog.get("skills updated")}))
                     return True
                 elif not connected():
                     LOG.error('msm failed, network connection not available')
-                    self.ws.emit(Message("speak", {
-                        'utterance':
-                            mycroft.dialog.get("no network connection")}))
+                    if speak:
+                        self.ws.emit(Message("speak", {
+                            'utterance': mycroft.dialog.get(
+                                "not connected to the internet")}))
                     self.next_download = time.time() + 5 * MINUTES
                     return False
                 elif res != 0:
                     LOG.error(
                         'msm failed with error {}: {}'.format(
                             res, output))
-                    self.ws.emit(Message("speak", {
-                        'utterance': mycroft.dialog.get(
-                            "sorry I couldn't install default skills")}))
+                    if speak:
+                        self.ws.emit(Message("speak", {
+                            'utterance': mycroft.dialog.get(
+                                "sorry I couldn't install default skills")}))
                     self.next_download = time.time() + 5 * MINUTES
                     return False
             finally:
@@ -396,7 +397,7 @@ def main():
     # Connect this Skill management process to the websocket
     ws = WebsocketClient()
     Configuration.init(ws)
-    ignore_logs = Configuration.get("ignore_logs")
+    ignore_logs = Configuration.get().get("ignore_logs")
 
     # Listen for messages and echo them for logging
     def _echo(message):

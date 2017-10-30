@@ -125,7 +125,7 @@ class IntentService(object):
     def __init__(self, emitter):
         self.config = Configuration.get().get('context', {})
         self.engine = IntentDeterminationEngine()
-        self.context_keywords = self.config.get('keywords', ['Location'])
+        self.context_keywords = self.config.get('keywords', [])
         self.context_max_frames = self.config.get('max_frames', 3)
         self.context_timeout = self.config.get('timeout', 2)
         self.context_greedy = self.config.get('greedy', False)

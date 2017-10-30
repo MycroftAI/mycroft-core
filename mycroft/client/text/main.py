@@ -51,7 +51,7 @@ auto_scroll = True
 
 mergedLog = []
 filteredLog = []
-default_log_filters = ["mouth.viseme"]
+default_log_filters = ["mouth.viseme", "mouth.display", "mouth.icon"]
 log_filters = list(default_log_filters)
 log_files = []
 find_str = None
@@ -691,7 +691,7 @@ def handle_cmd(cmd):
             log_filters = list(default_log_filters)
         else:
             # extract last word(s)
-            param = get_cmd_param(cmd)
+            param = _get_cmd_param(cmd)
 
             if "remove" in cmd and param in log_filters:
                 log_filters.remove(param)
