@@ -388,10 +388,10 @@ class MycroftSkill(object):
             Args:
                 name: Name Intent
         """
-        for e, f in self.events:
-            if name in e:
-                self.events.remove((e, f))
-                self.emitter.remove(e, f)
+        for _name, _handler in self.events:
+            if name == _name:
+                self.events.remove((_name, _handler))
+                self.emitter.remove(_name, _handler)
 
     def register_intent(self, intent_parser, handler, need_self=False):
         """
