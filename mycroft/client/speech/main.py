@@ -154,7 +154,7 @@ def main():
 
     try:
         loop.run()
-    except KeyboardInterrupt, e:
+    except KeyboardInterrupt as e:
         LOG.exception(e)
         sys.exit()
 
