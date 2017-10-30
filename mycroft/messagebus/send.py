@@ -19,38 +19,65 @@ from mycroft.messagebus.message import Message
 from mycroft.configuration import ConfigurationManager
 from websocket import create_connection
 
-# Parse the command line
-if len(sys.argv) == 2:
-    messageToSend = sys.argv[1]
-    dataToSend = {}
-elif len(sys.argv) == 3:
-    messageToSend = sys.argv[1]
-    try:
-        dataToSend = json.loads(sys.argv[2])
-    except BaseException:
-        print "Second argument must be a JSON string"
+
+def main():
+    """
+        Main function, will run if executed from command line.
+
+        Sends parameters from commandline.
+
+        Param 1:    message string
+        Param 2:    data (json string)
+    """
+    # Parse the command line
+    if len(sys.argv) == 2:
+        messageToSend = sys.argv[1]
+        dataToSend = {}
+    elif len(sys.argv) == 3:
+        messageToSend = sys.argv[1]
+        try:
+            dataToSend = json.loads(sys.argv[2])
+        except BaseException:
+            print "Second argument must be a JSON string"
+            print "Ex: python -m mycroft.messagebus.send speak " \
+                "'{\"utterance\" : \"hello\"}'"
+            exit()
+    else:
+        print "Command line interface to the mycroft-core messagebus."
+        print "Usage: python -m mycroft.messagebus.send message"
+        print "       python -m mycroft.messagebus.send message JSON-string\n"
+        print "Examples: python -m mycroft.messagebus.send mycroft.wifi.start"
         print "Ex: python -m mycroft.messagebus.send speak " \
             "'{\"utterance\" : \"hello\"}'"
         exit()
-else:
-    print "Command line interface to the mycroft-core messagebus."
-    print "Usage:    python -m mycroft.messagebus.send message"
-    print "          python -m mycroft.messagebus.send message JSON-string\n"
-    print "Examples: python -m mycroft.messagebus.send mycroft.wifi.start"
-    print "Ex: python -m mycroft.messagebus.send speak " \
-        "'{\"utterance\" : \"hello\"}'"
-    exit()
+
+    send(messageToSend, dataToSend)
 
 
-# Calculate the standard Mycroft messagebus websocket address
-config = ConfigurationManager.get().get("websocket")
-url = WebsocketClient.build_url(config.get("host"),
-                                config.get("port"),
-                                config.get("route"),
-                                config.get("ssl"))
+def send(messageToSend, dataToSend=None):
+    """
+        Send a single message over the websocket.
 
-# Send the provided message/data
-ws = create_connection(url)
-packet = Message(messageToSend, dataToSend).serialize()
-ws.send(packet)
-ws.close()
+        Args:
+            messageToSend (str):    Message to send
+            dataToSend (dict):      data structure to go along with the
+                                    message, defaults to empty dict.
+    """
+    dataToSend = dataToSend or {}
+
+    # Calculate the standard Mycroft messagebus websocket address
+    config = ConfigurationManager.get().get("websocket")
+    url = WebsocketClient.build_url(config.get("host"),
+                                    config.get("port"),
+                                    config.get("route"),
+                                    config.get("ssl"))
+
+    # Send the provided message/data
+    ws = create_connection(url)
+    packet = Message(messageToSend, dataToSend).serialize()
+    ws.send(packet)
+    ws.close()
+
+
+if __name__ == '__main__':
+    main()

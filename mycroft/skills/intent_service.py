@@ -17,7 +17,7 @@ import time
 from adapt.context import ContextManagerFrame
 from adapt.engine import IntentDeterminationEngine
 
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import open_intent_envelope
 from mycroft.util.log import LOG
@@ -123,7 +123,7 @@ class ContextManager(object):
 
 class IntentService(object):
     def __init__(self, emitter):
-        self.config = ConfigurationManager.get().get('context', {})
+        self.config = Configuration.get().get('context', {})
         self.engine = IntentDeterminationEngine()
         self.context_keywords = self.config.get('keywords', ['Location'])
         self.context_max_frames = self.config.get('max_frames', 3)

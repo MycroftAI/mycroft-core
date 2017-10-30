@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+SOURCE="${BASH_SOURCE[0]}"
+
 script=${0}
 script=${script##*/}
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"

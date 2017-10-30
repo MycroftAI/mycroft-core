@@ -17,11 +17,11 @@ import unittest
 import mock
 
 import mycroft.stt
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration
 
 
 class TestSTT(unittest.TestCase):
-    @mock.patch.object(ConfigurationManager, 'get')
+    @mock.patch.object(Configuration, 'get')
     def test_factory(self, mock_get):
         mycroft.stt.STTApi = mock.MagicMock()
 
@@ -56,7 +56,7 @@ class TestSTT(unittest.TestCase):
         stt = mycroft.stt.STTFactory.create()
         self.assertEquals(type(stt), mycroft.stt.WITSTT)
 
-    @mock.patch.object(ConfigurationManager, 'get')
+    @mock.patch.object(Configuration, 'get')
     def test_stt(self, mock_get):
         mycroft.stt.STTApi = mock.MagicMock()
         config = {'stt': {
@@ -84,7 +84,7 @@ class TestSTT(unittest.TestCase):
         stt = TestSTT()
         self.assertEqual(stt.lang, 'sv')
 
-    @mock.patch.object(ConfigurationManager, 'get')
+    @mock.patch.object(Configuration, 'get')
     def test_mycroft_stt(self, mock_get):
         mycroft.stt.STTApi = mock.MagicMock()
         config = {'stt': {
@@ -100,7 +100,7 @@ class TestSTT(unittest.TestCase):
         stt.execute(audio, 'en-us')
         self.assertTrue(mycroft.stt.STTApi.called)
 
-    @mock.patch.object(ConfigurationManager, 'get')
+    @mock.patch.object(Configuration, 'get')
     def test_google_stt(self, mock_get):
         mycroft.stt.Recognizer = mock.MagicMock
         config = {'stt': {
@@ -116,7 +116,7 @@ class TestSTT(unittest.TestCase):
         stt.execute(audio)
         self.assertTrue(stt.recognizer.recognize_google.called)
 
-    @mock.patch.object(ConfigurationManager, 'get')
+    @mock.patch.object(Configuration, 'get')
     def test_ibm_stt(self, mock_get):
         mycroft.stt.Recognizer = mock.MagicMock
         config = {'stt': {
@@ -132,7 +132,7 @@ class TestSTT(unittest.TestCase):
         stt.execute(audio)
         self.assertTrue(stt.recognizer.recognize_ibm.called)
 
-    @mock.patch.object(ConfigurationManager, 'get')
+    @mock.patch.object(Configuration, 'get')
     def test_wit_stt(self, mock_get):
         mycroft.stt.Recognizer = mock.MagicMock
         config = {'stt': {
@@ -149,7 +149,7 @@ class TestSTT(unittest.TestCase):
         self.assertTrue(stt.recognizer.recognize_wit.called)
 
     @mock.patch('mycroft.stt.post')
-    @mock.patch.object(ConfigurationManager, 'get')
+    @mock.patch.object(Configuration, 'get')
     def test_kaldi_stt(self, mock_get, mock_post):
         mycroft.stt.Recognizer = mock.MagicMock
         config = {'stt': {

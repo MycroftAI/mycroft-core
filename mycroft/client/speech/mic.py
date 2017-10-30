@@ -31,7 +31,7 @@ from speech_recognition import (
     AudioData
 )
 
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration
 from mycroft.session import SessionManager
 from mycroft.util import (
     check_for_signal,
@@ -157,7 +157,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
     def __init__(self, wake_word_recognizer):
 
-        self.config = ConfigurationManager.instance()
+        self.config = Configuration.get()
         listener_config = self.config.get('listener')
         self.upload_config = listener_config.get('wake_word_upload')
 

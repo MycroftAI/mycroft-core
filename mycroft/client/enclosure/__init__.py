@@ -28,7 +28,7 @@ from mycroft.client.enclosure.display_manager import \
 from mycroft.client.enclosure.eyes import EnclosureEyes
 from mycroft.client.enclosure.mouth import EnclosureMouth
 from mycroft.client.enclosure.weather import EnclosureWeather
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration, LocalConf, USER_CONFIG
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util import play_wav, create_signal, connected, \
@@ -164,7 +164,10 @@ class EnclosureReader(Thread):
 
             LOG.info("Setting opt_in to: " + word)
             new_config = {'opt_in': enable}
-            ConfigurationManager.save(new_config)
+            user_config = localConf(USER_CONFIG)
+            user_config.merge(new_config)
+            user_config.store()
+
             self.ws.emit(Message("speak", {
                 'utterance': mycroft.dialog.get("learning " + word)}))
 
@@ -234,8 +237,9 @@ class Enclosure(object):
         self.ws = WebsocketClient()
         self.ws.on("open", self.on_ws_open)
 
-        ConfigurationManager.init(self.ws)
-        self.config = ConfigurationManager.instance().get("enclosure")
+        Configuration.init(self.ws)
+        self.config = Configuration.get().get("enclosure")
+
         self.__init_serial()
         self.reader = EnclosureReader(self.serial, self.ws)
         self.writer = EnclosureWriter(self.serial, self.ws)
@@ -315,7 +319,7 @@ class Enclosure(object):
             LOG.info("Connected to: %s rate: %s timeout: %s" %
                      (self.port, self.rate, self.timeout))
         except:
-            LOG.error("Impossible to connect to serial port: " + self.port)
+            LOG.error("Impossible to connect to serial port: "+str(self.port))
             raise
 
     def __register_events(self):

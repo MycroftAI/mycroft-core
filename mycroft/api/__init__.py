@@ -17,9 +17,12 @@ from copy import copy
 import requests
 from requests import HTTPError
 
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration
+from mycroft.configuration.config import DEFAULT_CONFIG, SYSTEM_CONFIG, \
+    USER_CONFIG, LocalConf
 from mycroft.identity import IdentityManager
 from mycroft.version import VersionManager
+from mycroft.util import get_arch
 
 _paired_cache = False
 
@@ -29,7 +32,10 @@ class Api(object):
 
     def __init__(self, path):
         self.path = path
-        config = ConfigurationManager.get()
+        config = Configuration.get([LocalConf(DEFAULT_CONFIG),
+                                    LocalConf(SYSTEM_CONFIG),
+                                    LocalConf(USER_CONFIG)],
+                                   cache=False)
         config_server = config.get("server")
         self.url = config_server.get("url")
         self.version = config_server.get("version")
@@ -198,8 +204,14 @@ class DeviceApi(Api):
             status of subscription. True if device is connected to a paying
             subscriber.
         """
-        subscription_type = self.get_subscription().get('@type')
-        return subscription_type != 'free'
+        return self.get_subscription().get('@type') != 'free'
+
+    def get_subscriber_voice_url(self, voice=None):
+        self.check_token()
+        archs = {'x86_64': 'x86_64', 'armv7l': 'arm'}
+        arch = archs[get_arch()]
+        path = '/' + self.identity.uuid + '/voice?arch=' + arch
+        return self.request({'path': path})['link']
 
     def find(self):
         """ Deprecated, see get_location() """

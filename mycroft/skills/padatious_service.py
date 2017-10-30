@@ -19,19 +19,19 @@ from time import time as get_time, sleep
 from os.path import expanduser, isfile
 from pkg_resources import get_distribution
 
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import FallbackSkill
 from mycroft.util.log import LOG
 
 
-PADATIOUS_VERSION = '0.3.4'  # Also update in requirements.txt
+PADATIOUS_VERSION = '0.3.6'  # Also update in requirements.txt
 
 
 class PadatiousService(FallbackSkill):
     def __init__(self, emitter):
         FallbackSkill.__init__(self)
-        self.config = ConfigurationManager.get()['padatious']
+        self.config = Configuration.get()['padatious']
         intent_cache = expanduser(self.config['intent_cache'])
 
         try:

@@ -25,7 +25,7 @@ from os.path import dirname, exists, isdir
 
 import mycroft.util
 from mycroft.client.enclosure.api import EnclosureAPI
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util import play_wav, play_mp3, check_for_signal, create_signal
 from mycroft.util.log import LOG
@@ -155,12 +155,23 @@ class TTS(object):
 
     def begin_audio(self):
         """Helper function for child classes to call in execute()"""
+        # Create signals informing start of speech
         self.ws.emit(Message("recognizer_loop:audio_output_start"))
         create_signal("isSpeaking")
 
     def end_audio(self):
-        """Helper function for child classes to call in execute()"""
+        """
+            Helper function for child classes to call in execute().
+
+            Sends the recognizer_loop:audio_output_end message, indicating
+            that speaking is done for the moment. It also checks if cache
+            directory needs cleaning to free up disk space.
+        """
+
         self.ws.emit(Message("recognizer_loop:audio_output_end"))
+        # Clean the cache as needed
+        cache_dir = mycroft.util.get_cache_directory("tts")
+        mycroft.util.curate_cache(cache_dir, min_free_percent=100)
 
         # This check will clear the "signal"
         check_for_signal("isSpeaking")
@@ -236,10 +247,8 @@ class TTS(object):
                 key:        Hash key for the sentence
                 phonemes:   phoneme string to save
         """
-        # Clean out the cache as needed
-        cache_dir = mycroft.util.get_cache_directory("tts")
-        mycroft.util.curate_cache(cache_dir)
 
+        cache_dir = mycroft.util.get_cache_directory("tts")
         pho_file = os.path.join(cache_dir, key + ".pho")
         try:
             with open(pho_file, "w") as cachefile:
@@ -347,7 +356,7 @@ class TTSFactory(object):
         """
 
         from mycroft.tts.remote_tts import RemoteTTS
-        config = ConfigurationManager.get().get('tts', {})
+        config = Configuration.get().get('tts', {})
         module = config.get('module', 'mimic')
         lang = config.get(module).get('lang')
         voice = config.get(module).get('voice')

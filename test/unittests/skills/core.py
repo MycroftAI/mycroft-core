@@ -21,7 +21,7 @@ from adapt.intent import IntentBuilder
 from os.path import join, dirname, abspath
 from re import error
 
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import load_regex_from_file, load_regex, \
     load_vocab_from_file, load_vocabulary, MycroftSkill, \
@@ -349,7 +349,7 @@ class MycroftSkillTest(unittest.TestCase):
         expected = [{'context': 'Donatello'}]
         check_remove_context(expected)
 
-    @mock.patch.object(ConfigurationManager, 'get')
+    @mock.patch.object(Configuration, 'get')
     def test_skill_location(self, mock_config_get):
         test_config = {
             "location": {
@@ -385,7 +385,7 @@ class MycroftSkillTest(unittest.TestCase):
         self.assertEqual(s.location_timezone,
                          test_config['location']['timezone']['code'])
 
-    @mock.patch.object(ConfigurationManager, 'get')
+    @mock.patch.object(Configuration, 'get')
     def test_skill_location(self, mock_config_get):
         test_config = {}
         mock_config_get.return_value = test_config

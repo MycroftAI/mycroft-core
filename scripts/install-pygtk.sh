@@ -41,7 +41,7 @@ then
     (   cd $CACHE
         curl 'https://www.cairographics.org/releases/py2cairo-1.10.0.tar.bz2' > "py2cairo.tar.bz2"
         tar -xvf py2cairo.tar.bz2
-        (   cd py2cairo*
+        (   cd py2cairo-*
             autoreconf -ivf
             ./configure --prefix=$VIRTUAL_ENV --disable-dependency-tracking
             make -j${CORES}
@@ -63,7 +63,7 @@ then
     (   cd $CACHE
         curl 'http://ftp.gnome.org/pub/GNOME/sources/pygobject/2.28/pygobject-2.28.6.tar.bz2' > 'pygobject.tar.bz2'
         tar -xvf pygobject.tar.bz2
-        (   cd pygobject*
+        (   cd pygobject-*
             ./configure --prefix=$VIRTUAL_ENV --disable-introspection
             make -j${CORES}
             make install

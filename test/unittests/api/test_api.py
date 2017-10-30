@@ -44,7 +44,7 @@ def create_response(status, json=None, url='', data=''):
 
 class TestApi(unittest.TestCase):
     def setUp(self):
-        patcher = mock.patch('mycroft.configuration.ConfigurationManager.get',
+        patcher = mock.patch('mycroft.configuration.Configuration.get',
                              return_value=CONFIG)
         self.mock_config_get = patcher.start()
         self.addCleanup(patcher.stop)

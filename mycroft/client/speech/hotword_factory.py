@@ -18,7 +18,7 @@ import time
 import os
 from os.path import dirname, exists, join, abspath
 
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration
 from mycroft.util.log import LOG
 from mycroft.client.speech.transcribesearch import TranscribeSearch
 
@@ -36,10 +36,10 @@ class HotWordEngine(object):
         # rough estimate 1 phoneme per 2 chars
         self.num_phonemes = len(key_phrase) / 2 + 1
         if config is None:
-            config = ConfigurationManager.get().get("hot_words", {})
+            config = Configuration.get().get("hot_words", {})
             config = config.get(self.key_phrase, {})
         self.config = config
-        self.listener_config = ConfigurationManager.get().get("listener", {})
+        self.listener_config = Configuration.get().get("listener", {})
 
     def found_wake_word(self, frame_data):
         return False
@@ -189,7 +189,7 @@ class HotWordFactory(object):
     def create_hotword(hotword="hey mycroft", config=None, lang="en-us"):
         LOG.info("creating " + hotword)
         if not config:
-            config = ConfigurationManager.get().get("hotwords", {})
+            config = Configuration.get().get("hotwords", {})
         module = config.get(hotword).get("module", "pocketsphinx")
         config = config.get(hotword, {"module": module})
         clazz = HotWordFactory.CLASSES.get(module)

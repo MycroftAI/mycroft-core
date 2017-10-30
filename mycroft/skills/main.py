@@ -25,7 +25,7 @@ import mycroft.dialog
 import mycroft.lock
 from mycroft import MYCROFT_ROOT_PATH
 from mycroft.api import is_paired
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import load_skill, create_skill_descriptor, \
@@ -41,12 +41,14 @@ ws = None
 event_scheduler = None
 skill_manager = None
 
-skills_config = ConfigurationManager.instance().get("skills")
+skills_config = Configuration.get("skills")
 BLACKLISTED_SKILLS = skills_config.get("blacklisted_skills", [])
 PRIORITY_SKILLS = skills_config.get("priority_skills", [])
 SKILLS_DIR = '/opt/mycroft/skills'
-MSM_BIN = ConfigurationManager.instance().get("SkillInstallerSkill").get(
-    "path", join(MYCROFT_ROOT_PATH, 'msm', 'msm'))
+
+installer_config = Configuration.get("SkillInstallerSkill")
+MSM_BIN = installer_config.get("path", join(MYCROFT_ROOT_PATH, 'msm', 'msm'))
+
 MINUTES = 60  # number of seconds in a minute (syntatic sugar)
 
 
@@ -389,15 +391,12 @@ class SkillManager(Thread):
 
 def main():
     global ws
-
     # Create PID file, prevent multiple instancesof this service
     mycroft.lock.Lock('skills')
-
     # Connect this Skill management process to the websocket
     ws = WebsocketClient()
-    ConfigurationManager.init(ws)
-
-    ignore_logs = ConfigurationManager.instance().get("ignore_logs")
+    Configuration.init(ws)
+    ignore_logs = Configuration.get("ignore_logs")
 
     # Listen for messages and echo them for logging
     def _echo(message):

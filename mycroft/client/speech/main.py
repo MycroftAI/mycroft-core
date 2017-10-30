@@ -17,7 +17,7 @@ from threading import Thread, Lock
 
 from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.client.speech.listener import RecognizerLoop
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration
 from mycroft.identity import IdentityManager
 from mycroft.lock import Lock as PIDLock  # Create/Support PID locking file
 from mycroft.messagebus.client.ws import WebsocketClient
@@ -31,7 +31,7 @@ ws = None
 lock = Lock()
 loop = None
 
-config = ConfigurationManager.get()
+config = Configuration.get()
 
 
 def handle_record_begin():
@@ -142,8 +142,8 @@ def main():
     global config
     lock = PIDLock("voice")
     ws = WebsocketClient()
-    config = ConfigurationManager.get()
-    ConfigurationManager.init(ws)
+    config = Configuration.get()
+    Configuration.init(ws)
     loop = RecognizerLoop()
     loop.on('recognizer_loop:utterance', handle_utterance)
     loop.on('speak', handle_speak)
