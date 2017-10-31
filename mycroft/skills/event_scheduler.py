@@ -25,6 +25,14 @@ from mycroft.util.log import LOG
 
 class EventScheduler(Thread):
     def __init__(self, emitter, schedule_file='/opt/mycroft/schedule.json'):
+        """
+            Create an event scheduler thread. Will send messages at a
+            predetermined time to the registered targets.
+
+            Args:
+                emitter:        event emitter to use to send messages
+                schedule_file:  File to store pending events to on shutdown
+        """
         super(EventScheduler, self).__init__()
         self.events = {}
         self.emitter = emitter
@@ -102,6 +110,9 @@ class EventScheduler(Thread):
             time.sleep(0.5)
 
     def check_state(self):
+        """
+            Check if an event should be triggered.
+        """
         # Remove events
         self.remove_events()
         # Fetch newly scheduled events
