@@ -77,3 +77,24 @@ class TestEventScheduler(unittest.TestCase):
         # Make sure the dump method wasn't called with test-repeat
         self.assertEquals(mock_dump.call_args[0][0],
                           {'test': [(900000000000, None, {})]})
+
+    @mock.patch('threading.Thread')
+    @mock.patch('json.load')
+    @mock.patch('json.dump')
+    @mock.patch('mycroft.skills.event_scheduler.open')
+    def test_send_event(self, mock_open, mock_dump, mock_load, mock_thread):
+        """
+            Test save functionality.
+        """
+        mock_load.return_value = ''
+        mock_open.return_value = mock.MagicMock(spec=file)
+        emitter = mock.MagicMock()
+        es = EventScheduler(emitter)
+
+        # 0 should be in the future for a long time
+        es.schedule_event('test', time.time(), None)
+
+        es.check_state()
+        self.assertEquals(emitter.emit.call_args[0][0].type, 'test')
+        self.assertEquals(emitter.emit.call_args[0][0].data, {})
+        es.shutdown()
