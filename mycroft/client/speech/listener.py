@@ -144,6 +144,8 @@ class AudioConsumer(Thread):
     def read(self):
         try:
             audio = self.queue.get(timeout=0.5)
+            LOG.debug("queue.get, self.queue.unfinished_tasks = " +
+                      str(self.queue.unfinished_tasks))
         except Empty:
             return
 
