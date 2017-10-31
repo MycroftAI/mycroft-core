@@ -1,4 +1,4 @@
-# How to contribute
+# How to contribute (mycroft guy-dev edition)
 
 So you want to contribute to Mycroft?
 This should be as easy as possible for you but there are a few things to consider when contributing.

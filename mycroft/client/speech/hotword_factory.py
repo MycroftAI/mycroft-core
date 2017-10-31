@@ -20,7 +20,11 @@ from os.path import dirname, exists, join, abspath
 
 from mycroft.configuration import Configuration
 from mycroft.util.log import LOG
+from mycroft.client.speech.transcribesearch import TranscribeSearch
 
+from mycroft.util import (
+    create_signal,
+    check_for_signal)
 
 RECOGNIZER_DIR = join(abspath(dirname(__file__)), "recognizer")
 
@@ -53,13 +57,40 @@ class PocketsphinxHotWord(HotWordEngine):
                 str(module) + " module does not match with "
                               "Hotword class pocketsphinx")
         # Hotword module params
-        self.phonemes = self.config.get("phonemes", "HH EY . M AY K R AO F T")
-        self.num_phonemes = len(self.phonemes.split())
+        self.mww = self.config.get("mww")
+        self.mww_no_skills = self.config.get("mww_no_skills")
+        model_file = join(RECOGNIZER_DIR, 'model', self.lang)
+        LOG.debug(" model_file 1 = " + str(model_file))
+        if self.mww:
+            LOG.debug(" mww 1 = "+str(self.mww))
+            LOG.debug(" join(model_file,self.config.get('phonemes', '')) = " +
+                      join(model_file, self.config.get("phonemes", "")))
+            dict_name = join(model_file, self.config.get("phonemes", ""))
+        else:
+            LOG.debug(" mww 2 = "+str(self.mww))
+            dict_name = self.create_dict(
+                key_phrase,
+                self.config.get("phonemes", "HH EY . M AY K R AO F T")
+            )
+            # dict_name = self.create_dict(key_phrase, self.phonemes)
+            self.phonemes = self.config.get(
+                "phonemes",
+                "HH EY . M AY K R AO F T"
+            )
+            self.num_phonemes = len(self.phonemes.split())
+
         self.threshold = self.config.get("threshold", 1e-90)
-        self.sample_rate = self.listener_config.get("sample_rate", 1600)
-        dict_name = self.create_dict(self.key_phrase, self.phonemes)
+        self.sample_rate = self.listener_config.get("sample_rate", 16000)
         config = self.create_config(dict_name, Decoder.default_config())
         self.decoder = Decoder(config)
+
+        if self.mww:
+            self.decoder.set_kws('brands', str(join(model_file, key_phrase)))
+            self.decoder.set_search('brands')
+
+        self.accum_text = ''
+        self.accum_audio = ''
+        self.transcribe_start = time.time()
 
     def create_dict(self, key_phrase, phonemes):
         (fd, file_name) = tempfile.mkstemp()
@@ -74,9 +105,13 @@ class PocketsphinxHotWord(HotWordEngine):
         model_file = join(RECOGNIZER_DIR, 'model', self.lang, 'hmm')
         if not exists(model_file):
             LOG.error('PocketSphinx model not found at ' + str(model_file))
+
+        if not self.mww:
+            config.set_string('-keyphrase', self.key_phrase)
+            LOG.debug(" mww 4 = "+str(self.mww))
+
         config.set_string('-hmm', model_file)
-        config.set_string('-dict', dict_name)
-        config.set_string('-keyphrase', self.key_phrase)
+        config.set_string('-dict', str(dict_name))
         config.set_float('-kws_threshold', float(self.threshold))
         config.set_float('-samprate', self.sample_rate)
         config.set_int('-nfft', 2048)
@@ -94,7 +129,35 @@ class PocketsphinxHotWord(HotWordEngine):
 
     def found_wake_word(self, frame_data):
         hyp = self.transcribe(frame_data)
-        return hyp and self.key_phrase in hyp.hypstr.lower()
+
+        if self.mww:
+            if hyp:
+                if hyp.hypstr.lower() > '':
+
+                    if time.time() - self.transcribe_start > 2:
+                        LOG.debug(
+                            "time.time() - self.transcribe_start = " +
+                            str(time.time() - self.transcribe_start))
+                        LOG.debug("accum_text 1 = "+self.accum_text)
+                        TranscribeSearch()\
+                            .write_transcribed_files(
+                            self.accum_audio, self.accum_text
+                        )
+                        self.accum_text = hyp.hypstr.lower()
+                        self.accum_audio = frame_data
+                        self.transcribe_start = time.time()
+                    else:
+                        LOG.debug(
+                            "2 time.time() - self.transcribe_start = " +
+                            str(time.time() - self.transcribe_start))
+                        self.accum_text += hyp.hypstr.lower()
+                        self.accum_audio += frame_data
+                        self.transcribe_start = time.time()
+                        LOG.debug("accum_text 2 = "+self.accum_text)
+
+                return hyp
+        else:
+            return hyp and self.key_phrase in hyp.hypstr.lower()
 
 
 class SnowboyHotWord(HotWordEngine):

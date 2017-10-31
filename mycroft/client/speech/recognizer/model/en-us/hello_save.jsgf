@@ -1,0 +1,10 @@
+#JSGF V1.0;
+
+grammar hello;
+import <brands1A.jsgf>;
+
+public <brandutterance> = [silenz] [i | we ]
+[mostly | usually]
+[don't | do]
+[like | dislike]
+<brands.brands> [silenz];

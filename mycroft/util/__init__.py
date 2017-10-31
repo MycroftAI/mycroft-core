@@ -76,14 +76,17 @@ def resolve_resource_file(res_name):
     return None  # Resource cannot be resolved
 
 
-def play_wav(uri):
+def play_wav(uri, async=False):
     config = mycroft.configuration.Configuration.get()
     play_cmd = config.get("play_wav_cmdline")
     play_wav_cmd = str(play_cmd).split(" ")
     for index, cmd in enumerate(play_wav_cmd):
         if cmd == "%1":
             play_wav_cmd[index] = (get_http(uri))
-    return subprocess.Popen(play_wav_cmd)
+    if async:
+        return subprocess.call(play_wav_cmd)
+    else:
+        return subprocess.Popen(play_wav_cmd)
 
 
 def play_mp3(uri):
