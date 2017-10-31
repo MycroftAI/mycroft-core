@@ -1,12 +1,12 @@
+"""
+    Test cases regarding the event scheduler.
+"""
+
 import unittest
 import mock
 import time
 
 from mycroft.skills.event_scheduler import EventScheduler
-
-"""
-    Test cases regarding the event scheduler.
-"""
 
 
 class TestEventScheduler(unittest.TestCase):
