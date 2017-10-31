@@ -711,8 +711,9 @@ class MycroftSkill(object):
             Args:
                 name (str):   Name of event
         """
-        data = {'event': self._unique_name(name)}
-        self.remove_event(name)
+        unique_name = self._unique_name(name)
+        data = {'event': unique_name}
+        self.remove_event(unique_name)
         self.emitter.emit(Message('mycroft.scheduler.remove_event', data=data))
 
 
