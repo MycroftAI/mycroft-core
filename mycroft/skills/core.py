@@ -381,6 +381,18 @@ class MycroftSkill(object):
             self.emitter.on(name, wrapper)
             self.events.append((name, wrapper))
 
+    def remove_event(self, name):
+        """
+            Removes an event from emitter and events list
+
+            Args:
+                name: Name Intent
+        """
+        for _name, _handler in self.events:
+            if name == _name:
+                self.events.remove((_name, _handler))
+                self.emitter.remove(_name, _handler)
+
     def register_intent(self, intent_parser, handler, need_self=False):
         """
             Register an Intent with the intent service.
@@ -699,7 +711,9 @@ class MycroftSkill(object):
             Args:
                 name (str):   Name of event
         """
-        data = {'event': self._unique_name(name)}
+        unique_name = self._unique_name(name)
+        data = {'event': unique_name}
+        self.remove_event(unique_name)
         self.emitter.emit(Message('mycroft.scheduler.remove_event', data=data))
 
 
