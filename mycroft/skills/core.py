@@ -16,6 +16,7 @@ import imp
 import operator
 import sys
 import time
+import datetime
 from functools import wraps
 from inspect import getargspec
 
@@ -386,7 +387,7 @@ class MycroftSkill(object):
             Removes an event from emitter and events list
 
             Args:
-                name: Name Intent
+                name: Name of Intent or Scheduler Event
         """
         for _name, _handler in self.events:
             if name == _name:
@@ -715,6 +716,39 @@ class MycroftSkill(object):
         data = {'event': unique_name}
         self.remove_event(unique_name)
         self.emitter.emit(Message('mycroft.scheduler.remove_event', data=data))
+
+    def get_event_status(self, name):
+        """
+            Get event data and return the amount of time left
+
+            Args:
+                name (str): Name of event
+
+            Return:
+                (datetime, int) (tuple): datetime and time left in epoch time
+        """
+        event_name = self._unique_name(name)
+        data = {'name': event_name}
+
+        # this is needed because message.data could return None
+        # and that would make the while loop infinite
+        self.event_status = "None"
+
+        def callback(message):
+            event_time = int(message.data[0][0])
+            current_time = int(time.time())
+            time_left_in_seconds = event_time - current_time
+            date = datetime.datetime.now() + time_left
+            self.event_status = (date, time_left_in_seconds)
+
+        emitter_name = 'mycroft.event_status.callback.{}'.format(event_name)
+
+        self.emitter.once(emitter_name, callback)
+        self.emitter.emit(Message('mycroft.scheduler.get_event', data=data))
+
+        while True:
+            if self.event_status != "None":
+                return self.event_status
 
 
 class FallbackSkill(MycroftSkill):

@@ -42,6 +42,8 @@ class EventScheduler(Thread):
                         self.remove_event_handler)
         self.emitter.on('mycroft.scheduler.update_event',
                         self.update_event_handler)
+        self.emitter.on('mycroft.scheduler.get_event',
+                        self.get_event_handler)
         self.start()
 
     def load(self):
@@ -165,6 +167,15 @@ class EventScheduler(Thread):
         event = message.data.get('event')
         data = message.data.get('data')
         self.update_event(event, data)
+
+    def get_event_handler(self, message):
+        """ Messagebus interface to get_event method. """
+        event_name = message.data.get("name")
+        event = None
+        if event_name in self.events:
+            event = self.events[event_name]
+        emitter_name = 'mycroft.event_status.callback.{}'.format(event_name)
+        self.emitter.emit(Message(emitter_name, data=event))
 
     def store(self):
         """
