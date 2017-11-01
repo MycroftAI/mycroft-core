@@ -29,9 +29,10 @@ PADATIOUS_VERSION = '0.3.6'  # Also update in requirements.txt
 
 
 class PadatiousService(FallbackSkill):
-    def __init__(self, emitter):
+    def __init__(self, emitter, service):
         FallbackSkill.__init__(self)
         self.config = Configuration.get()['padatious']
+        self.service = service
         intent_cache = expanduser(self.config['intent_cache'])
 
         try:
@@ -109,6 +110,8 @@ class PadatiousService(FallbackSkill):
             return False
 
         data.matches['utterance'] = utt
+
+        self.service.add_active_skill(int(data.name.split(':')[0]))
 
         self.emitter.emit(Message(data.name, data=data.matches))
         return True
