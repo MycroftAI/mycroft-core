@@ -725,30 +725,31 @@ class MycroftSkill(object):
                 name (str): Name of event
 
             Return:
-                (datetime, int) (tuple): datetime and time left in epoch time
+                time_left (int): the time left in seconds
         """
         event_name = self._unique_name(name)
         data = {'name': event_name}
 
-        # this is needed because message.data could return None
-        # and that would make the while loop infinite
-        self.event_status = "None"
+        # making event_status an object so it's refrence can be changed
+        event_status = [None]
 
-        def callback(message):
+        def callback(message, event_status):
             event_time = int(message.data[0][0])
             current_time = int(time.time())
             time_left_in_seconds = event_time - current_time
-            date = datetime.datetime.now() + time_left
-            self.event_status = (date, time_left_in_seconds)
+            event_status[0] = time_left_in_seconds
 
         emitter_name = 'mycroft.event_status.callback.{}'.format(event_name)
-
-        self.emitter.once(emitter_name, callback)
+        self.emitter.once(emitter_name,
+                          lambda message: callback(message, event_status))
         self.emitter.emit(Message('mycroft.scheduler.get_event', data=data))
 
-        while True:
-            if self.event_status != "None":
-                return self.event_status
+        start_wait = time.time()
+        while event_status[0] is None and time.time() - start_wait < 3.0:
+            time.sleep(0.1)
+        if time.time() - start_wait > 3.0:
+            raise Exception("Event Status Messagebus Timeout")
+        return event_status[0]
 
 
 class FallbackSkill(MycroftSkill):

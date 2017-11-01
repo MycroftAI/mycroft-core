@@ -169,7 +169,10 @@ class EventScheduler(Thread):
         self.update_event(event, data)
 
     def get_event_handler(self, message):
-        """ Messagebus interface to get_event method. """
+        """
+            Messagebus interface to get_event.
+            Emits another event sending event status
+        """
         event_name = message.data.get("name")
         event = None
         if event_name in self.events:
