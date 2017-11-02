@@ -74,8 +74,8 @@ def _starting_up():
     # Create the Intent manager, which converts utterances to intents
     # This is the heart of the voice invoked skill system
 
-    PadatiousService(ws)
-    IntentService(ws)
+    service = IntentService(ws)
+    PadatiousService(ws, service)
     event_scheduler = EventScheduler(ws)
 
     # Create a thread that monitors the loaded skills, looking for updates
