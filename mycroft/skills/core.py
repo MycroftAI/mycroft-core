@@ -689,7 +689,7 @@ class MycroftSkill(object):
         data = data or {}
         self._schedule_event(handler, when, data, name, frequency)
 
-    def update_event(self, name, data=None):
+    def update_scheduled_event(self, name, data=None):
         """
             Change data of event.
 
@@ -703,7 +703,7 @@ class MycroftSkill(object):
         }
         self.emitter.emit(Message('mycroft.schedule.update_event', data=data))
 
-    def cancel_event(self, name):
+    def cancel_scheduled__event(self, name):
         """
             Cancel a pending event. The event will no longer be scheduled
             to be executed
@@ -716,9 +716,9 @@ class MycroftSkill(object):
         self.remove_event(unique_name)
         self.emitter.emit(Message('mycroft.scheduler.remove_event', data=data))
 
-    def get_event_status(self, name):
+    def get_scheduled_event_status(self, name):
         """
-            Get event data and return the amount of time left
+            Get scheduled event data and return the amount of time left
 
             Args:
                 name (str): Name of event
@@ -733,10 +733,14 @@ class MycroftSkill(object):
         event_status = [None]
 
         def callback(message, event_status):
-            event_time = int(message.data[0][0])
-            current_time = int(time.time())
-            time_left_in_seconds = event_time - current_time
-            event_status[0] = time_left_in_seconds
+            LOG.info("skill-timer {}".format(message.data))
+            if message.data is None:
+                event_status[0] = False
+            else:
+                event_time = int(message.data[0][0])
+                current_time = int(time.time())
+                time_left_in_seconds = event_time - current_time
+                event_status[0] = time_left_in_seconds
 
         emitter_name = 'mycroft.event_status.callback.{}'.format(event_name)
         self.emitter.once(emitter_name,
@@ -746,6 +750,8 @@ class MycroftSkill(object):
         start_wait = time.time()
         while event_status[0] is None and time.time() - start_wait < 3.0:
             time.sleep(0.1)
+        if event_status[0] is False:
+            raise Exception("Scheduled Event not found for {}".format(name))
         if time.time() - start_wait > 3.0:
             raise Exception("Event Status Messagebus Timeout")
         return event_status[0]
