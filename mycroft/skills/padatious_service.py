@@ -25,7 +25,7 @@ from mycroft.skills.core import FallbackSkill
 from mycroft.util.log import LOG
 
 
-PADATIOUS_VERSION = '0.3.6'  # Also update in requirements.txt
+PADATIOUS_VERSION = '0.3.7'  # Also update in requirements.txt
 
 
 class PadatiousService(FallbackSkill):
