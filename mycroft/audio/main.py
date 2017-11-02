@@ -462,13 +462,13 @@ def main():
             message = json.dumps(_message)
         except (KeyboardInterrupt, SystemExit):
             raise
-        except Exception:
-            pass
+        except Exception as e:
+            LOG.exception(e)
         LOG.debug(message)
 
     LOG.info("Staring Audio Services")
     ws.on('message', echo)
-    audio_service = AudioService(ws)
+    AudioService(ws)  # Connect audio service instance to message bus
     try:
         ws.run_forever()
     except KeyboardInterrupt as exc:
