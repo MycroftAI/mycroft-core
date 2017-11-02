@@ -29,5 +29,4 @@ pulsectl==17.7.4
 # dev setup tools
 pep8==1.7.0
 # Also update in mycroft/skills/padatious_service.py
-padatious==0.3.6
-
+padatious==0.3.7
