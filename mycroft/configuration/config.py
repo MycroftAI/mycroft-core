@@ -1,3 +1,4 @@
+
 # Copyright 2017 Mycroft AI Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,9 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import inflection
+
 import re
 import json
+import inflection
 from os.path import exists, isfile, join, dirname, expanduser
 from requests import HTTPError
 
