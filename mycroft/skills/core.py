@@ -703,7 +703,7 @@ class MycroftSkill(object):
         }
         self.emitter.emit(Message('mycroft.schedule.update_event', data=data))
 
-    def cancel_scheduled__event(self, name):
+    def cancel_scheduled_event(self, name):
         """
             Cancel a pending event. The event will no longer be scheduled
             to be executed
@@ -731,27 +731,23 @@ class MycroftSkill(object):
 
         # making event_status an object so it's refrence can be changed
         event_status = [None]
+        finished_callback = [False]
 
-        def callback(message, event_status):
-            LOG.info("skill-timer {}".format(message.data))
-            if message.data is None:
-                event_status[0] = False
-            else:
+        def callback(message):
+            if message.data is not None:
                 event_time = int(message.data[0][0])
                 current_time = int(time.time())
                 time_left_in_seconds = event_time - current_time
                 event_status[0] = time_left_in_seconds
+            finished_callback[0] = True
 
         emitter_name = 'mycroft.event_status.callback.{}'.format(event_name)
-        self.emitter.once(emitter_name,
-                          lambda message: callback(message, event_status))
+        self.emitter.once(emitter_name, callback)
         self.emitter.emit(Message('mycroft.scheduler.get_event', data=data))
 
         start_wait = time.time()
-        while event_status[0] is None and time.time() - start_wait < 3.0:
+        while finished_callback[0] is False and time.time() - start_wait < 3.0:
             time.sleep(0.1)
-        if event_status[0] is False:
-            raise Exception("Scheduled Event not found for {}".format(name))
         if time.time() - start_wait > 3.0:
             raise Exception("Event Status Messagebus Timeout")
         return event_status[0]
