@@ -381,6 +381,18 @@ class MycroftSkill(object):
             self.emitter.on(name, wrapper)
             self.events.append((name, wrapper))
 
+    def remove_event(self, name):
+        """
+            Removes an event from emitter and events list
+
+            Args:
+                name: Name of Intent or Scheduler Event
+        """
+        for _name, _handler in self.events:
+            if name == _name:
+                self.events.remove((_name, _handler))
+                self.emitter.remove(_name, _handler)
+
     def register_intent(self, intent_parser, handler, need_self=False):
         """
             Register an Intent with the intent service.
@@ -677,7 +689,7 @@ class MycroftSkill(object):
         data = data or {}
         self._schedule_event(handler, when, data, name, frequency)
 
-    def update_event(self, name, data=None):
+    def update_scheduled_event(self, name, data=None):
         """
             Change data of event.
 
@@ -691,7 +703,7 @@ class MycroftSkill(object):
         }
         self.emitter.emit(Message('mycroft.schedule.update_event', data=data))
 
-    def cancel_event(self, name):
+    def cancel_scheduled_event(self, name):
         """
             Cancel a pending event. The event will no longer be scheduled
             to be executed
@@ -699,8 +711,46 @@ class MycroftSkill(object):
             Args:
                 name (str):   Name of event
         """
-        data = {'event': self._unique_name(name)}
+        unique_name = self._unique_name(name)
+        data = {'event': unique_name}
+        self.remove_event(unique_name)
         self.emitter.emit(Message('mycroft.scheduler.remove_event', data=data))
+
+    def get_scheduled_event_status(self, name):
+        """
+            Get scheduled event data and return the amount of time left
+
+            Args:
+                name (str): Name of event
+
+            Return:
+                time_left (int): the time left in seconds
+        """
+        event_name = self._unique_name(name)
+        data = {'name': event_name}
+
+        # making event_status an object so it's refrence can be changed
+        event_status = [None]
+        finished_callback = [False]
+
+        def callback(message):
+            if message.data is not None:
+                event_time = int(message.data[0][0])
+                current_time = int(time.time())
+                time_left_in_seconds = event_time - current_time
+                event_status[0] = time_left_in_seconds
+            finished_callback[0] = True
+
+        emitter_name = 'mycroft.event_status.callback.{}'.format(event_name)
+        self.emitter.once(emitter_name, callback)
+        self.emitter.emit(Message('mycroft.scheduler.get_event', data=data))
+
+        start_wait = time.time()
+        while finished_callback[0] is False and time.time() - start_wait < 3.0:
+            time.sleep(0.1)
+        if time.time() - start_wait > 3.0:
+            raise Exception("Event Status Messagebus Timeout")
+        return event_status[0]
 
 
 class FallbackSkill(MycroftSkill):
