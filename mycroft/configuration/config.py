@@ -248,4 +248,4 @@ class Configuration(object):
         """
         config = message.data.get("config", {})
         merge_dict(Configuration.__patch, config)
-        Connection.load_config_stack(cache=True)
+        Configuration.load_config_stack(cache=True)
