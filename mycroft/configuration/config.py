@@ -203,6 +203,11 @@ class Configuration(object):
             configs = [LocalConf(DEFAULT_CONFIG), RemoteConf(),
                        LocalConf(SYSTEM_CONFIG), LocalConf(USER_CONFIG),
                        Configuration.__patch]
+        else:
+            # Handle strings in stack
+            for index, item in enumerate(configs):
+                if isinstance(item, basestring):
+                    configs[index] = LocalConf(item)
 
         # Merge all configs into one
         base = {}
