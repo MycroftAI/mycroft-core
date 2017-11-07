@@ -14,6 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+RED='\033[0;31m'
+NOCOLOR='\033[0m'
+GREEN='\033[0;32m'
+
+
 script=${0}
 script=${script##*/}
 
@@ -610,9 +615,9 @@ case ${OPT} in
       while read -r submod
       do
           if [[ -d "$mycroft_skill_folder/$submod" ]] ; then
-              echo "$submod [installed]"
+              printf "$submod ${RED}[${GREEN}installed${RED}]${NOCOLOR}\n\r"
           else
-              echo "$submod"
+              printf "$submod\n\r"
           fi
       done <<< "$submodules"
       exit_code=$?
