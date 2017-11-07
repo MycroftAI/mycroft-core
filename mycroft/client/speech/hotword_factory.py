@@ -144,6 +144,10 @@ class PreciseHotword(HotWordEngine):
         except OSError:
             pass
 
+        exe_file = expanduser('~/.mycroft/precise/' + self.exe_name)
+        if isfile(exe_file):
+            return exe_file
+
         import platform
         import stat
 
@@ -152,7 +156,7 @@ class PreciseHotword(HotWordEngine):
             Popen('echo "' + cmd + '" > /dev/ttyAMA0', shell=True)
 
         arch = platform.machine()
-        exe_file = expanduser('~/.mycroft/precise/' + self.exe_name)
+
         url = self.url_base + 'dist/' + arch + '/' + self.exe_name
 
         snd_msg('mouth.text=Updating Listener...')
