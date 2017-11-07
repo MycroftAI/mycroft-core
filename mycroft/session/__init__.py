@@ -19,8 +19,6 @@ from uuid import uuid4
 from mycroft.configuration import Configuration
 from mycroft.util.log import LOG
 
-config = Configuration.get().get('session')
-
 
 class Session(object):
     """
@@ -66,6 +64,8 @@ class SessionManager(object):
 
         :return: An active session
         """
+        config = Configuration.get().get('session')
+
         with SessionManager.__lock:
             if (not SessionManager.__current_session or
                     SessionManager.__current_session.expired()):
