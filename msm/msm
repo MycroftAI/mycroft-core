@@ -528,7 +528,8 @@ function print_info() {
             if [[ $stat == *"200"* ]] ; then
                 readme="$(curl -s $readmeUrl)"
             else
-                exit 404
+                echo "Didn't find any information to display."
+                exit 0
             fi
         fi
     fi
