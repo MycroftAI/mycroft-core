@@ -29,6 +29,8 @@ function help() {
   echo "  list                     list all mycroft-skills"
   echo "  update                   update all installed skills"
   echo "  search <name>            search mycroft-skills for match for <name>"
+  echo "  info <name>              shows information about the skill matching <name>"
+  echo "  info <repo>              shows information about the skill in the specified repo"
   echo
   echo "Params:"
   echo "  <repo>   full URL to a Github repo"
