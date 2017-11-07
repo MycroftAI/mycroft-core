@@ -72,6 +72,10 @@ class AudioService():
                                   data={'tracks': tracks,
                                         'utterance': utterance}))
 
+    def stop(self):
+        """ Stop the track. """
+        self.emitter.emit(Message('mycroft.audio.service.stop'))
+
     def next(self):
         """ Change to next track. """
         self.emitter.emit(Message('mycroft.audio.service.next'))
