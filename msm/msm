@@ -526,7 +526,16 @@ case ${OPT} in
           echo "${script}: error ${exit_code}"
           exit ${exit_code}
       fi
-      echo "${LIST_CACHE}" | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g' | sort
+
+      submodules=$(echo "${LIST_CACHE}" | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g' | sort)
+      while read -r submod
+      do
+          if [[ -d "$mycroft_skill_folder/$submod" ]] ; then
+              echo "$submod [installed]"
+          else
+              echo "$submod"
+          fi
+      done <<< "$submodules"
       exit_code=$?
       ;;
   "update")
