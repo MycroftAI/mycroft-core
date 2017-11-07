@@ -506,7 +506,12 @@ function print_info() {
         fi
     fi
     
-    local baseUrl=$(echo "${repo}/master/" | sed -e 's/github.com/raw.githubusercontent.com/g')
+    local baseUrl=$(echo "${repo}" | sed -e 's/github.com/raw.githubusercontent.com/g' | sed -e 's/\.git$//g')/master
+    ### debugging output:
+    # echo git line is: "$git_line"
+    # echo repo line is: "$repo_line"
+    # echo repo is: "$repo"
+    # echo base url is "$baseUrl"
     local readmeUrl="$baseUrl/readme.md"
     local stat="$(curl -I -s $readmeUrl | sed -n '1p')"
     local readme=""
@@ -687,6 +692,7 @@ case ${OPT} in
       rc=$?
       if [[ ${rc} -gt 0 ]] ; then
           if [[ ${rc} -gt ${exit_code} ]] ; then
+              echo "${script}: error ${exit_code}"
               exit_code=${rc}
           fi
       fi
