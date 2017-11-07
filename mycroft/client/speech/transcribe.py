@@ -10,8 +10,10 @@ import os
 
 __author__ = "reginaneon"
 
-text_permission = create_signal('transcribe_text_permission')
-audio_permission = create_signal('keep_audio_permission')
+text_permission = check_for_signal('transcribe_text_permission', 0) # starting default is off
+audio_permission = check_for_signal('keep_audio_permission', 0)
+# text_permission = create_signal('transcribe_text_permission')
+# audio_permission = create_signal('keep_audio_permission')
 
 
 class Transcribe:
