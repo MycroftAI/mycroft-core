@@ -160,13 +160,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         listener_config = self.config.get('listener')
         self.upload_config = listener_config.get('wake_word_upload')
         self.wake_word_name = wake_word_recognizer.key_phrase
-        # The maximum audio in seconds to keep for transcribing a phrase
-        # The wake word must fit in this time
-        num_phonemes = wake_word_recognizer.num_phonemes
-        len_phoneme = listener_config.get('phoneme_duration', 120) / 1000.0
-        self.TEST_WW_SEC = int(num_phonemes * len_phoneme)
-        self.SAVED_WW_SEC = (10 if self.upload_config['enable']
-                             else self.TEST_WW_SEC)
 
         speech_recognition.Recognizer.__init__(self)
         self.wake_word_recognizer = wake_word_recognizer
@@ -183,6 +176,13 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.filenames_to_upload = []
         self.mic_level_file = os.path.join(get_ipc_directory(), "mic_level")
         self._stop_signaled = False
+
+        # The maximum audio in seconds to keep for transcribing a phrase
+        # The wake word must fit in this time
+        num_phonemes = wake_word_recognizer.num_phonemes
+        len_phoneme = listener_config.get('phoneme_duration', 0.2)
+        self.TEST_WW_SEC = num_phonemes * len_phoneme
+        self.SAVED_WW_SEC = 10 if self.save_wake_words else self.TEST_WW_SEC
 
     @staticmethod
     def record_sound_chunk(source):
@@ -283,7 +283,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
     @staticmethod
     def sec_to_bytes(sec, source):
-        return sec * source.SAMPLE_RATE * source.SAMPLE_WIDTH
+        return int(sec * source.SAMPLE_RATE * source.SAMPLE_WIDTH)
 
     def _skip_wake_word(self):
         # Check if told programatically to skip the wake word, like
