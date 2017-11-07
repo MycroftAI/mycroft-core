@@ -1,3 +1,4 @@
+
 # Copyright 2017 Mycroft AI Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,9 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import inflection
+
 import re
 import json
+import inflection
 from os.path import exists, isfile, join, dirname, expanduser
 from requests import HTTPError
 
@@ -201,6 +203,11 @@ class Configuration(object):
             configs = [LocalConf(DEFAULT_CONFIG), RemoteConf(),
                        LocalConf(SYSTEM_CONFIG), LocalConf(USER_CONFIG),
                        Configuration.__patch]
+        else:
+            # Handle strings in stack
+            for index, item in enumerate(configs):
+                if isinstance(item, basestring):
+                    configs[index] = LocalConf(item)
 
         # Merge all configs into one
         base = {}
@@ -246,4 +253,4 @@ class Configuration(object):
         """
         config = message.data.get("config", {})
         merge_dict(Configuration.__patch, config)
-        Connection.load_config_stack(cache=True)
+        Configuration.load_config_stack(cache=True)
