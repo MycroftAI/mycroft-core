@@ -10,6 +10,7 @@ tornado==4.2.1
 websocket-client==0.32.0
 adapt-parser==0.3.0
 futures==3.0.3
+future==0.16.0
 requests-futures==0.9.5
 parsedatetime==1.5
 pyyaml==3.11
