@@ -10,7 +10,8 @@ import os
 
 __author__ = "reginaneon"
 
-text_permission = check_for_signal('transcribe_text_permission', 0) # starting default is off
+text_permission = check_for_signal(
+    'transcribe_text_permission', 0) # starting default is off
 audio_permission = check_for_signal('keep_audio_permission', 0)
 # text_permission = create_signal('transcribe_text_permission')
 # audio_permission = create_signal('keep_audio_permission')
@@ -53,17 +54,19 @@ class Transcribe:
                 os.makedirs("/var/log/mycroft/ts_transcript_audio_segments/"
                             + globdate)
             except OSError:
-                if not os.path.isdir("/var/log/mycroft/ts_transcript_audio_segments/"
+                if not os.path.isdir("/var/log/mycroft/"
+                                     "ts_transcript_audio_segments/"
                                              + globdate):
                     raise
 
-            filename = "/var/log/mycroft/ts_transcript_audio_segments/" + globdate + \
+            filename = "/var/log/mycroft/ts_transcript_audio_segments/" +\
+                       globdate + \
                        "/" + (globstamp + " " + text).decode("utf8") + " .wav"
 
             self.save_record(filename, audio)
             LOG.info(
-                "Transcribing Permission Granted: The Audio Recording of User's Input Saved in Full Format")
-
+                "Transcribing Permission Granted: The Audio Recording of "
+                "User's Input Saved in Full Format")
 
         else:
             LOG.info("Audio Save Permission Denied")
@@ -76,4 +79,3 @@ class Transcribe:
         waveFile.setframerate(16000)
         waveFile.writeframes(audio)
         waveFile.close()
-
