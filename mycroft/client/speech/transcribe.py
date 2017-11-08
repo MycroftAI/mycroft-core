@@ -1,7 +1,6 @@
 from mycroft.util.log import LOG
 import wave
 from mycroft.util.signal import (
-    create_signal,
     check_for_signal
 )
 import datetime
