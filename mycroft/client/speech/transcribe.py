@@ -23,7 +23,7 @@ class Transcribe:
     Imports data to the new, more precise text file, containing
              the lines needed.
     """
-
+    @classmethod
     def write_transcribed_files(self, audio, text):
         # save the audio before it is sent off:
         globstamp = str(datetime.datetime.now())
@@ -49,10 +49,6 @@ class Transcribe:
                 LOG.info("Transcribing Permission Granted: "
                          "Text Input Saved Successfully")
 
-            LOG.info(
-                "Transcribing Permission Granted: "
-                "The Audio Recording of User's Input Saved in Full Format")
-
         else:
             LOG.warning("Transcribing Permission Denied")
 
@@ -72,19 +68,16 @@ class Transcribe:
                        globdate + \
                        "/" + (globstamp + " " + text).decode("utf8") + " .wav"
 
-            self.save_record(filename, audio)
+            waveFile = wave.open(filename, 'wb')
+            waveFile.setnchannels(1)
+            waveFile.setsampwidth(2)
+            waveFile.setframerate(16000)
+            waveFile.writeframes(audio)
+            waveFile.close()
+
             LOG.info(
                 "Transcribing Permission Granted: The Audio Recording of "
                 "User's Input Saved in Full Format")
 
         else:
             LOG.info("Audio Save Permission Denied")
-
-    def save_record(self, wav_name, audio):
-        # TODO: use "with"
-        waveFile = wave.open(wav_name, 'wb')
-        waveFile.setnchannels(1)
-        waveFile.setsampwidth(2)
-        waveFile.setframerate(16000)
-        waveFile.writeframes(audio)
-        waveFile.close()
