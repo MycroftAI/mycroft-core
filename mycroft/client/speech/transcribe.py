@@ -35,6 +35,15 @@ class Transcribe:
             # if trans_values.text_permission:
             filename1 = "/var/log/mycroft/ts_transcripts/" + \
                         globdate + ".txt"
+
+            try:
+                os.makedirs("/var/log/mycroft/"
+                            "ts_transcripts/")
+            except OSError:
+                if not os.path.isdir("/var/log/mycroft/"
+                                     "ts_transcripts/"):
+                    raise
+
             with open(filename1, 'a+') as filea:
                 filea.write(globstamp + " " + text + "\n")
                 LOG.info("Transcribing Permission Granted: "
