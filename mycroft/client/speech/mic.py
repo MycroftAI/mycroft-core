@@ -32,6 +32,7 @@ from speech_recognition import (
 )
 
 from mycroft.configuration import Configuration
+from mycroft.identity import IdentityManager
 from mycroft.session import SessionManager
 from mycroft.util import (
     check_for_signal,
@@ -430,19 +431,22 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 # file.
                 if self.save_wake_words and said_wake_word:
                     audio = self._create_audio_data(byte_data, source)
-                    stamp = str(int(1000 * get_time()))
-                    uid = SessionManager.get().session_id
+
                     if not isdir(self.save_wake_words_dir):
                         mkdir(self.save_wake_words_dir)
-
                     dr = self.save_wake_words_dir
+
                     ww = self.wake_word_name.replace(' ', '-')
-                    filename = join(dr, ww + '.' + stamp + '.' + uid + '.wav')
-                    with open(filename, 'wb') as f:
+                    stamp = str(int(1000 * get_time()))
+                    sid = SessionManager.get().session_id
+                    uid = IdentityManager.get().uuid
+
+                    fn = join(dr, '.'.join([ww, stamp, sid, uid]) + '.wav')
+                    with open(fn, 'wb') as f:
                         f.write(audio.get_wav_data())
 
                     if self.upload_config['enable'] or self.config['opt_in']:
-                        t = Thread(target=self._upload_file, args=(filename,))
+                        t = Thread(target=self._upload_file, args=(fn,))
                         t.daemon = True
                         t.start()
 
