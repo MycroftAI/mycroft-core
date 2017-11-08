@@ -11,7 +11,7 @@ import os
 __author__ = "reginaneon"
 
 text_permission = check_for_signal(
-    'transcribe_text_permission', 0) # starting default is off
+    'transcribe_text_permission', 0)  # starting default is off
 audio_permission = check_for_signal('keep_audio_permission', 0)
 # text_permission = create_signal('transcribe_text_permission')
 # audio_permission = create_signal('keep_audio_permission')
@@ -51,12 +51,13 @@ class Transcribe:
         if check_for_signal('keep_audio_permission', -1):
             LOG.info("Audio Save Permission Granted")
             try:
-                os.makedirs("/var/log/mycroft/ts_transcript_audio_segments/"
-                            + globdate)
+                os.makedirs("/var/log/mycroft/"
+                            "ts_transcript_audio_segments/" +
+                            globdate)
             except OSError:
                 if not os.path.isdir("/var/log/mycroft/"
-                                     "ts_transcript_audio_segments/"
-                                             + globdate):
+                                     "ts_transcript_audio_segments/" +
+                                     globdate):
                     raise
 
             filename = "/var/log/mycroft/ts_transcript_audio_segments/" +\
