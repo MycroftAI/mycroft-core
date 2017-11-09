@@ -21,7 +21,7 @@
     Usage Example:
         from mycroft.skill.settings import SkillSettings
 
-        s = SkillSettings('./settings.json')
+        s = SkillSettings('./settings.json', 'ImportantSettings')
         s['meaning of life'] = 42
         s['flower pot sayings'] = 'Not again...'
         s.store()
@@ -44,7 +44,8 @@ class SkillSettings(dict):
         also syncs to the backend for skill settings
 
         Args:
-            settings_file (str): Path to storage file
+            directory (str): Path to storage directory
+            name (str):      user readable name associated with the settings
     """
 
     def __init__(self, directory, name):
@@ -66,7 +67,7 @@ class SkillSettings(dict):
         if isfile(self._meta_path):
             LOG.info("settingsmeta.json exist for {}".format(self.name))
             settings_meta = self._load_settings_meta()
-            hashed_meta = hash(str(settings_meta)+str(self._device_identity))
+            hashed_meta = hash(str(settings_meta) + str(self._device_identity))
             # check if hash is different from the saved hashed
             if self._is_new_hash(hashed_meta):
                 LOG.info("looks like settingsmeta.json " +
@@ -121,20 +122,21 @@ class SkillSettings(dict):
         return super(SkillSettings, self).__setitem__(key, value)
 
     def _load_settings_meta(self):
-        """ loads settings metadata from skills path """
+        """ Loads settings metadata from skills path. """
         with open(self._meta_path) as f:
             data = json.load(f)
         return data
 
     def _send_settings_meta(self, settings_meta, hashed_meta):
-        """ send settingsmeta.json to the backend
+        """ Send settingsmeta.json to the backend.
 
             Args:
-                param1 (dict): dictionary of the current settings meta data
-                param1 (int): hashed settings meta data
+                settings_meta (dict): dictionary of the current settings meta
+                                      data
+                hased_meta (int): hash value for settings meta data
 
             Returns:
-                uuid (str): a unique id for the setting meta data
+                str: uuid, a unique id for the setting meta data
         """
         try:
             settings_meta["identifier"] = str(hashed_meta)
@@ -151,10 +153,10 @@ class SkillSettings(dict):
             LOG.error(e)
 
     def _load_uuid(self):
-        """ loads uuid
+        """ Loads uuid
 
             Returns:
-                uuid (str): uuid of the previous settingsmeta
+                str: uuid of the previous settingsmeta
         """
         directory = self.config.get("skills")["directory"]
         directory = join(directory, self.name)
@@ -166,10 +168,10 @@ class SkillSettings(dict):
         return uuid
 
     def _save_uuid(self, uuid):
-        """ saves uuid to path
+        """ Saves uuid to the settings directory.
 
             Args:
-                param1 (str): uuid of new seetingsmeta
+                str: uuid, unique id of new settingsmeta
         """
         LOG.info("saving uuid {}".format(str(uuid)))
         directory = self.config.get("skills")["directory"]
@@ -180,10 +182,10 @@ class SkillSettings(dict):
             f.write(str(uuid))
 
     def _save_hash(self, hashed_meta):
-        """ saves hashed_meta to path
+        """ Saves hashed_meta to settings directory.
 
             Args:
-                param1 (int): hashed of new seetingsmeta
+                hashed_meta (int): hash of new settingsmeta
         """
         LOG.info("saving hash {}".format(str(hashed_meta)))
         directory = self.config.get("skills")["directory"]
@@ -194,7 +196,7 @@ class SkillSettings(dict):
             f.write(str(hashed_meta))
 
     def _uuid_exist(self):
-        """ checks if there is a uuid file
+        """ Checks if there is an uuid file.
 
             Returns:
                 bool: True if uuid file exist False otherwise
@@ -211,10 +213,10 @@ class SkillSettings(dict):
             case of first load, then the create it and return True
 
             Args:
-                param1 (int): hash of metadata and uuid of device
+                hashed_meta (int): hash of metadata and uuid of device
 
             Returns:
-                bool: True if hash is new False otherwise
+                bool: True if hash is new, otherwise False
         """
         directory = self.config.get("skills")["directory"]
         directory = join(directory, self.name)
@@ -232,8 +234,7 @@ class SkillSettings(dict):
             TODO: implement as websocket
 
             Args:
-                param1 (int): the hashed identifier
-
+                hashed_meta (int): the hashed identifier
         """
         LOG.info("getting settings from home.mycroft.ai")
         try:
@@ -273,7 +274,11 @@ class SkillSettings(dict):
                     LOG.error(e)
 
     def _get_remote_settings(self):
-        """ Get skill settings for this device from backend """
+        """ Get skill settings for this device from backend.
+
+            Returns:
+                dict: dictionary with settings collected from the web backend.
+        """
         settings = self.api.request({
             "method": "GET",
             "path": self._api_path
@@ -283,7 +288,11 @@ class SkillSettings(dict):
 
     def _put_metadata(self, settings_meta):
         """ PUT settingsmeta to backend to be configured in home.mycroft.ai.
-            used in plcae of POST and PATCH
+            used in place of POST and PATCH.
+
+            Args:
+                settings_meta (dict): dictionary of the current settings meta
+                                      data
         """
         return self.api.request({
             "method": "PUT",
@@ -295,7 +304,7 @@ class SkillSettings(dict):
         """ Deletes the current skill metadata
 
             Args:
-                param1 (str): unique id of the skill
+                uuid (str): unique id of the skill
         """
         return self.api.request({
             "method": "DELETE",
