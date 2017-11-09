@@ -278,7 +278,7 @@ elif [ "${change_to}" = "stable" ]; then
         if [ "${current_pkg}" = "${unstable_pkg}" ]; then
             # Need to remove the package to make sure upgrade happens due to
             # difference in stable/unstable to package numbering schemes
-            invoke_apt remove
+            invoke_apt autoremove
 
             change_build "${stable_pkg}"
         else
