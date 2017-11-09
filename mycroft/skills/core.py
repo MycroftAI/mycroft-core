@@ -110,6 +110,8 @@ def load_skill(skill_descriptor, emitter, skill_id, BLACKLISTED_SKILLS=None):
             skill_descriptor: descriptor of skill to load
             emitter:          messagebus emitter
             skill_id:         id number for skill
+        Returns:
+            MycroftSkill: the loaded skill or None on failure
     """
     BLACKLISTED_SKILLS = BLACKLISTED_SKILLS or []
     try:
@@ -131,6 +133,16 @@ def load_skill(skill_descriptor, emitter, skill_id, BLACKLISTED_SKILLS=None):
             skill.initialize()
             skill._register_decorated()
             LOG.info("Loaded " + skill_descriptor["name"])
+
+            # The very first time a skill is run, speak the intro
+            first_run = skill.settings.get("__mycroft_skill_firstrun", True)
+            if first_run:
+                LOG.info("First run of "+skill_descriptor["name"])
+                skill.settings["__mycroft_skill_firstrun"] = False
+                skill.settings.store()
+                intro = skill.get_intro_message()
+                if intro:
+                    skill.speak(intro)
             return skill
         else:
             LOG.warning(
@@ -198,6 +210,9 @@ def intent_file_handler(intent_file):
     return real_decorator
 
 
+#######################################################################
+# MycroftSkill base class
+#######################################################################
 class MycroftSkill(object):
     """
     Abstract base class which provides common behaviour and parameters to all
@@ -283,6 +298,16 @@ class MycroftSkill(object):
         """
         LOG.debug("No initialize function implemented")
 
+    def get_intro_message(self):
+        """
+        Get a message to speak on first load of the skill.  Useful
+        for post-install setup instructions.
+
+        Returns:
+            str: message that will be spoken to the user
+        """
+        return None
+
     def converse(self, utterances, lang="en-us"):
         """
             Handle conversation. This method can be used to override the normal
@@ -310,7 +335,7 @@ class MycroftSkill(object):
 
     def _register_decorated(self):
         """
-        Register all intent handlers that has been decorated with an intent.
+        Register all intent handlers that have been decorated with an intent.
         """
         global _intent_list, _intent_file_list
         for intent_parser, handler in _intent_list:
@@ -637,7 +662,8 @@ class MycroftSkill(object):
             Args:
                 name:   Name to use internally
 
-            returns: name unique to this skill
+            Returns:
+                str: name unique to this skill
         """
         return str(self.skill_id) + ':' + name
 
@@ -724,7 +750,7 @@ class MycroftSkill(object):
                 name (str): Name of event
 
             Return:
-                time_left (int): the time left in seconds
+                int: the time left in seconds
         """
         event_name = self._unique_name(name)
         data = {'name': event_name}
@@ -753,6 +779,9 @@ class MycroftSkill(object):
         return event_status[0]
 
 
+#######################################################################
+# FallbackSkill base class
+#######################################################################
 class FallbackSkill(MycroftSkill):
     """
         FallbackSkill is used to declare a fallback to be called when
