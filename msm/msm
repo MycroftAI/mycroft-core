@@ -126,7 +126,7 @@ update_started="false"
 remove_started="false"
 function send_start_install () {
     if [[ "${install_started}" == "false" ]] ; then
-        $( python -m mycroft.messagebus.send msm.installing )
+        python -m mycroft.messagebus.send msm.installing
         install_started="true"
     fi
 }
