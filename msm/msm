@@ -339,7 +339,7 @@ function install() {
 
     # If the skill has a requirements.txt, pip install them
     run_pip "${name}"
-    rc = $?
+    rc=$?
     if [[ ${rc} -gt 0 ]] ; then
        return ${rc}
     fi
