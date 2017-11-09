@@ -132,41 +132,41 @@ function send_start_install () {
 }
 function send_start_update () {
     if [[ "${update_started}" == "false" ]] ; then
-        res=$( python -m mycroft.messagebus.send msm.updating )
+        python -m mycroft.messagebus.send msm.updating
         update_started="true"
     fi
 }
 function send_start_remove () {
     if [[ "${remove_started}" == "false" ]] ; then
-        res=$( python -m mycroft.messagebus.send msm.removing )
+        python -m mycroft.messagebus.send msm.removing
         remove_started="true"
     fi
 }
 function send_install_success () {
-    res=$( python -m mycroft.messagebus.send msm.install.succeeded '{"skill": "${1}" }' )
+    python -m mycroft.messagebus.send msm.install.succeeded '{"skill": "${1}" }'
 }
 function send_install_fail () {
-    res=$( python -m mycroft.messagebus.send msm.install.failed '{"skill": "${1}", "error" : ${2} }' )
+    python -m mycroft.messagebus.send msm.install.failed '{"skill": "${1}", "error" : ${2} }'
 }
 function send_remove_success () {
-    res=$( python -m mycroft.messagebus.send msm.remove.succeeded '{"skill": "${1}" }' )
+    python -m mycroft.messagebus.send msm.remove.succeeded '{"skill": "${1}" }'
 }
 function send_remove_fail () {
-    res=$( python -m mycroft.messagebus.send msm.remove.failed '{"skill": "${1}", "error" : ${2} }' )
+    python -m mycroft.messagebus.send msm.remove.failed '{"skill": "${1}", "error" : ${2} }'
 }
 function send_end_install () {
     if [[ "${install_started}" == "true" ]] ; then
-        res=$( python -m mycroft.messagebus.send msm.installed )
+        python -m mycroft.messagebus.send msm.installed
     fi
 }
 function send_end_update () {
     if [[ "${update_started}" == "true" ]] ; then
-        res=$( python -m mycroft.messagebus.send msm.updated )
+        python -m mycroft.messagebus.send msm.updated
     fi
 }
 function send_end_remove () {
     if [[ "${remove_started}" == "true" ]] ; then
-        res=$( python -m mycroft.messagebus.send msm.removed )
+        python -m mycroft.messagebus.send msm.removed
     fi
 }
 
