@@ -195,10 +195,7 @@ class PreciseHotword(HotWordEngine):
                 self.cooldown -= 1
                 self.has_found = False
                 continue
-            if float(line) > 0.5:
-                self.has_found = True
-            else:
-                self.has_found = False
+            self.has_found = float(line) > 0.5
 
     def update(self, chunk):
         self.proc.stdin.write(chunk)
