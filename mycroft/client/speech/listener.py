@@ -314,8 +314,16 @@ class RecognizerLoop(EventEmitter):
                 raise  # Re-raise KeyboardInterrupt
 
     def reload(self):
+        self.stop()
+        # load config
+        self._load_config()
+        # restart
+        self.start_async()
+
+
+    def restart(self):
         """
-            Reload configuration and restart consumer and producer
+            Restart speech/voice client
         """
         platform = str(self.enclosure_config.get(
             'platform', 'laptop/desktop platform'))
@@ -349,8 +357,3 @@ class RecognizerLoop(EventEmitter):
                 os.system(BASEDIR + '/start-mycroft.sh voice')
             except Exception as e:
                 LOG.debug('''error == ''' + str(e))
-        # self.stop()
-        # # load config
-        # self._load_config()
-        # # restart
-        # self.start_async()
