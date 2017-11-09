@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 """
-    SkillSettings is a simple extension of the python dict which enables 
+    SkillSettings is a simple extension of the python dict which enables
     local storage of settings.  Additionally it can interact with a backend
     system to provide a GUI interface, described by meta-data described in
     an optional 'settingsmeta.json' file.
@@ -25,9 +25,9 @@
         s['meaning of life'] = 42
         s['flower pot sayings'] = 'Not again...'
         s.store()
-        
+
     Metadata format:
-    TODO...see https://docs.google.com/document/d/17cToFjYx5NwtGTeX0sVpXdCICGhDzht-yZVyT26yQDQ/edit#
+        TODO: see https://goo.gl/MY3i1S
 """
 
 import json
