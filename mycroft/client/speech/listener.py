@@ -136,9 +136,9 @@ class AudioConsumer(Thread):
         if self._audio_length(audio) < self.MIN_AUDIO_SIZE:
             LOG.warning("Audio too short to be processed")
         else:
-            # if len(audio.frame_data) != 65538:  # 2 seconds (silence)
-            # if len(audio.frame_data) != 96258:  # 3 seconds silence
-            self.transcribe(audio)
+            if len(audio.frame_data) != 65538 and \
+                    len(audio.frame_data) != 96258:  # 3 seconds silence
+                self.transcribe(audio)
 
     def transcribe(self, audio):
         text = None
@@ -316,8 +316,16 @@ class RecognizerLoop(EventEmitter):
                 raise  # Re-raise KeyboardInterrupt
 
     def reload(self):
+        self.stop()
+        # load config
+        self._load_config()
+        # restart
+        self.start_async()
+
+
+    def restart(self):
         """
-            Reload configuration and restart consumer and producer
+            Restart the speech/voice client
         """
         platform = str(self.enclosure_config.get(
             'platform', 'laptop/desktop platform'))
@@ -351,8 +359,3 @@ class RecognizerLoop(EventEmitter):
                 os.system(BASEDIR + '/start-mycroft.sh voice')
             except Exception as e:
                 LOG.debug('''error == ''' + str(e))
-        # self.stop()
-        # # load config
-        # self._load_config()
-        # # restart
-        # self.start_async()
