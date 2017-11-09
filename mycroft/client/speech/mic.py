@@ -284,7 +284,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
     @staticmethod
     def sec_to_bytes(sec, source):
-        return int(sec * source.SAMPLE_RATE * source.SAMPLE_WIDTH)
+        return int(sec * source.SAMPLE_RATE) * source.SAMPLE_WIDTH
 
     def _skip_wake_word(self):
         # Check if told programatically to skip the wake word, like
