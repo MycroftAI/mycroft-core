@@ -420,6 +420,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 byte_data = byte_data[len(chunk):] + chunk
 
             buffers_since_check += 1.0
+            self.wake_word_recognizer.update(chunk)
             if buffers_since_check > buffers_per_check:
                 buffers_since_check -= buffers_per_check
                 chopped = byte_data[-test_size:] \
@@ -436,12 +437,15 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                         mkdir(self.save_wake_words_dir)
                     dr = self.save_wake_words_dir
 
+                    ww_module = self.wake_word_recognizer.__class__.__name__
+
                     ww = self.wake_word_name.replace(' ', '-')
+                    md = str(abs(hash(ww_module)))
                     stamp = str(int(1000 * get_time()))
                     sid = SessionManager.get().session_id
                     uid = IdentityManager.get().uuid
 
-                    fn = join(dr, '.'.join([ww, stamp, sid, uid]) + '.wav')
+                    fn = join(dr, '.'.join([ww, md, stamp, sid, uid]) + '.wav')
                     with open(fn, 'wb') as f:
                         f.write(audio.get_wav_data())
 
