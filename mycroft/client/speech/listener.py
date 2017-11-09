@@ -136,6 +136,8 @@ class AudioConsumer(Thread):
         if self._audio_length(audio) < self.MIN_AUDIO_SIZE:
             LOG.warning("Audio too short to be processed")
         else:
+            # if len(audio.frame_data) != 65538:  # 2 seconds (silence)
+            # if len(audio.frame_data) != 96258:  # 3 seconds silence
             self.transcribe(audio)
 
     def transcribe(self, audio):
