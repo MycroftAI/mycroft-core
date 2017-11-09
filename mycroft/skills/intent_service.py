@@ -231,7 +231,10 @@ class IntentService(object):
                     context_manager=self.context_manager))
                 # TODO - Should Adapt handle this?
                 best_intent['utterance'] = utterance
-            except StopIteration, e:
+            except StopIteration:
+                # don't show error in log
+                continue
+            except e:
                 LOG.exception(e)
                 continue
 

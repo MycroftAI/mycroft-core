@@ -13,16 +13,21 @@
 # limitations under the License.
 #
 """
-    This module provides the SkillSettings dictionary, which is a simple
-    extension of the python dict to enable storing.
+    SkillSettings is a simple extension of the python dict which enables 
+    local storage of settings.  Additionally it can interact with a backend
+    system to provide a GUI interface, described by meta-data described in
+    an optional 'settingsmeta.json' file.
 
-    Example:
+    Usage Example:
         from mycroft.skill.settings import SkillSettings
 
         s = SkillSettings('./settings.json')
         s['meaning of life'] = 42
         s['flower pot sayings'] = 'Not again...'
         s.store()
+        
+    Metadata format:
+    TODO...see https://docs.google.com/document/d/17cToFjYx5NwtGTeX0sVpXdCICGhDzht-yZVyT26yQDQ/edit#
 """
 
 import json
@@ -35,9 +40,8 @@ from mycroft.configuration import ConfigurationManager
 
 
 class SkillSettings(dict):
-    """ SkillSettings creates a dictionary that can easily be stored
-        to file, serialized as json. It also syncs to the backend for
-        skill settings
+    """ A dictionary that can easily be save to a file, serialized as json. It
+        also syncs to the backend for skill settings
 
         Args:
             settings_file (str): Path to storage file
@@ -84,13 +88,11 @@ class SkillSettings(dict):
             else:  # if hash is old
                 found_in_backend = False
                 settings = self._get_remote_settings()
-                # checks backend if th settings have been deleted
-                # through web ui
+                # checks backend if the settings have been deleted via webUI
                 for skill in settings:
                     if skill["identifier"] == str(hashed_meta):
                         found_in_backend = True
-                # if it's been deleted from web ui
-                # resend the settingsmeta.json
+                # if it's been deleted from webUI resend
                 if found_in_backend is False:
                     LOG.info("seems like it got deleted from home... " +
                              "sending settingsmeta.json for " +
