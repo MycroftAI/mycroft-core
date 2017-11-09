@@ -27,7 +27,8 @@ function help() {
   echo "usage: ${script} [service]"
   echo
   echo "Service:"
-  echo "  (none)    ends core services: bus, audio, skills, voice"
+  echo "  all       ends core services: bus, audio, skills, voice"
+  echo "  (none)    same as \"all\""
   echo "  bus       stop the Mycroft messagebus service"
   echo "  audio     stop the audio playback service"
   echo "  skills    stop the skill service"
@@ -77,6 +78,8 @@ OPT=$1
 shift
 
 case ${OPT} in
+  "all")
+    ;&
   "")
     echo "Stopping all mycroft-core services"
     end-process service
@@ -84,7 +87,6 @@ case ${OPT} in
     end-process audio
     end-process speech
     ;;
-
   "bus")
     end-process service
     ;;
