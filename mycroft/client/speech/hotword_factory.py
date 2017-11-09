@@ -111,8 +111,10 @@ class PreciseHotword(HotWordEngine):
     def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
         super(PreciseHotword, self).__init__(key_phrase, config, lang)
         self.update_freq = 24  # in hours
-        self.url_base = ('https://raw.githubusercontent.com/'
-                         'MycroftAI/precise-data/')
+
+        precise_config = Configuration.get()['precise']
+        self.dist_url = precise_config['dist_url']
+        self.models_url = precise_config['models_url']
         self.exe_name = 'precise-stream'
 
         ww = Configuration.get()['listener']['wake_word']
@@ -157,7 +159,7 @@ class PreciseHotword(HotWordEngine):
 
         arch = platform.machine()
 
-        url = self.url_base + 'dist/' + arch + '/' + self.exe_name
+        url = self.dist_url + arch + '/' + self.exe_name
 
         snd_msg('mouth.text=Updating Listener...')
         self.download(url, exe_file)
@@ -182,7 +184,7 @@ class PreciseHotword(HotWordEngine):
             if get_time() - stat.st_mtime < self.update_freq * 60 * 60:
                 return
         name = name.replace(' ', '%20')
-        url = self.url_base + 'models/' + name
+        url = self.models_url + name
         self.download(url, file_name)
         self.download(url + '.params', file_name + '.params')
 
