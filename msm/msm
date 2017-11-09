@@ -338,6 +338,30 @@ function install() {
     fi
 
     # If the skill has a requirements.txt, pip install them
+    run_pip "${name}"
+    rc = $?
+    if [[ ${rc} -gt 0 ]] ; then
+       return ${rc}
+    fi
+
+    # If the skill has a requirements.sh, then run that using bash
+    if [[ -f "requirements.sh" ]]; then
+      echo "  Setting up native environment..."
+      if ! bash requirements.sh; then
+        echo "Running requirements.sh failed!"
+        send_install_fail "${name}" 122
+        return 122
+      fi
+    fi
+
+    echo "Installed: ${name}"
+    send_install_success "${name}"
+    return 0
+}
+
+function run_pip() {
+    # NOTE: Must be in the skill directory already...
+    name=$*
     if [[ -f "requirements.txt" ]]; then
       echo "  Installing requirements..."
       if [[ "${picroft_mk1}" == "false" ]]; then
@@ -370,19 +394,7 @@ function install() {
       fi
     fi
 
-    # If the skill has a requirements.sh, then run that using bash
-    if [[ -f "requirements.sh" ]]; then
-      echo "  Setting up native environment..."
-      if ! bash requirements.sh; then
-        echo "Running requirements.sh failed!"
-        send_install_fail "${name}" 122
-        return 122
-      fi
-    fi
-
-    echo "Installed: ${name}"
-    send_install_success "${name}"
-    return 0
+    return 0  # no problem encountered
 }
 
 function install_from_url_list() {
@@ -395,7 +407,7 @@ function install_from_url_list() {
 
   # Tell 'for' to only break on newlines, not spaces.  The # comment lines
   # inside the list can contain spaces in them.
-  IFS=$'\n'  
+  IFS=$'\n'
   for name in ${skill_list}
   do
     if [[ ! $name =~ ^# ]] ; then  # ignore comment lines
@@ -463,8 +475,24 @@ function update() {
       else
         echo "Ignoring ${d}, skill has been modified."
       fi
+
+      # TODO: Remove this for 18.02
+      # HACK: Re-run PIP, because Mycroft-core removed some of its required,
+      #       which broke previously-installed packages on a Picroft/Mark1
+      #       that was satisfied by packages that previously came along with
+      #       mycroft-core.
+      if [ ! -f /tmp/mycroft_has_re-PIPed ] ; then
+         run_pip "${d}"
+         echo "Re-running PIP on requirements.txt"
+      fi
     fi
   done
+
+  # TODO: Remove this for 18.02
+  # HACK: Only do the re-PIP once per boot
+  if [ ! -f /tmp/mycroft_has_re-PIPed ] ; then
+     echo "1" > /tmp/mycroft_has_re-PIPed
+  fi
 }
 
 function print_info() {
@@ -510,7 +538,7 @@ function print_info() {
             repo=$(echo "${LIST_CACHE}" | sed -n $repo_line'{p;q;}' | sed 's/[[:space:]]//g' | sed 's/[[:space:]]//g' | sed 's/url=//g')
         fi
     fi
-    
+
     local baseUrl=$(echo "${repo}" | sed -e 's/github.com/raw.githubusercontent.com/g' | sed -e 's/\.git$//g')/master
     ### debugging output:
     # echo git line is: "$git_line"
@@ -541,7 +569,6 @@ function print_info() {
 
     echo "$readme"
     exit 0
-    
 }
 
 OPT=$1
