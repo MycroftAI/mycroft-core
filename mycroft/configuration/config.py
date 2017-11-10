@@ -23,7 +23,9 @@ from requests import HTTPError
 from mycroft.util.json_helper import load_commented_json
 from mycroft.util.log import LOG
 
+# Python 2+3 compatibility
 from future.utils import iteritems
+from past.builtins import basestring
 
 
 def merge_dict(base, delta):

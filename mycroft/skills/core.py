@@ -35,6 +35,8 @@ from mycroft.metrics import report_metric
 from mycroft.skills.settings import SkillSettings
 from mycroft.util.log import LOG
 
+# python 2+3 compatibility
+from past.builtins import basestring
 
 MainModule = '__init__'
 

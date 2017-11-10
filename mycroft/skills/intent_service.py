@@ -22,6 +22,8 @@ from mycroft.messagebus.message import Message
 from mycroft.skills.core import open_intent_envelope
 from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
+# python 2+3 compatibility
+from past.builtins import basestring
 
 
 class ContextManager(object):
