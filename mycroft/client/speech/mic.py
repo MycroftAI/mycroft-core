@@ -160,12 +160,15 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.config = Configuration.get()
         listener_config = self.config.get('listener')
         self.upload_config = listener_config.get('wake_word_upload')
-        self.skip_wake_word = False
+        self.skip_wake_words = False
         if check_for_signal('skip_wake_word', -1):
-            self.skip_wake_word = True
-        elif listener_config.get('skip_wake_word', True) and \
-                not check_for_signal('restartedFromSkill', 10):
-            self.skip_wake_word = True
+            self.skip_wake_words = True
+            LOG.debug("skip_wake_words signal found 1")
+        elif listener_config.get('skip_wake_words', False) and \
+                not check_for_signal('restartedFromSkill', 15):
+            self.skip_wake_words = True
+            LOG.debug("config skip_wake_words and not restartedFromSkill found 1")
+        LOG.debug("self.skip_wake_words = " + str(self.skip_wake_words))
         self.wake_word_name = wake_word_recognizer.key_phrase
         # The maximum audio in seconds to keep for transcribing a phrase
         # The wake word must fit in this time
@@ -488,7 +491,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         #       speech is detected, but there is no code to actually do that.
         self.adjust_for_ambient_noise(source, 1.0)
 
-        if self.skip_wake_word:
+        if self.skip_wake_words:
             create_signal('startListening')
             LOG.debug("Skipping wake word... waiting...")
         else:
@@ -503,7 +506,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         # If enabled, play a wave file with a short sound to audibly
         # indicate recording has begun.
         if (self.config.get('confirm_listening') and
-                (not self.skip_wake_word or
+                (not self.skip_wake_words or
                  check_for_signal('WaitingToConfirm', 10))):
             file = resolve_resource_file(
                 self.config.get('sounds').get('start_listening'))
