@@ -167,7 +167,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         elif listener_config.get('skip_wake_words', False) and \
                 not check_for_signal('restartedFromSkill', 15):
             self.skip_wake_words = True
-            LOG.debug("config skip_wake_words and not restartedFromSkill found 1")
+            LOG.debug("config skip_wake_words and"
+                      " not restartedFromSkill found 1")
         LOG.debug("self.skip_wake_words = " + str(self.skip_wake_words))
         self.wake_word_name = wake_word_recognizer.key_phrase
         # The maximum audio in seconds to keep for transcribing a phrase

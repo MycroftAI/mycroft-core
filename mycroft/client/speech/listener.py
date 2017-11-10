@@ -322,7 +322,6 @@ class RecognizerLoop(EventEmitter):
         # restart
         self.start_async()
 
-
     def restart(self):
         """
             Restart the speech/voice client
