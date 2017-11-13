@@ -136,9 +136,11 @@ class AudioConsumer(Thread):
         if self._audio_length(audio) < self.MIN_AUDIO_SIZE:
             LOG.warning("Audio too short to be processed")
         else:
-            if len(audio.frame_data) != 65538 and \
-                    len(audio.frame_data) != 96258:  # 3 seconds silence
-                self.transcribe(audio)
+            # skip transcribing silence
+            # 3 seconds silence,
+            # matches RECORDING_TIMEOUT_WITH_SILENCE in mic.py
+            # if len(audio.frame_data) != 96258:
+            self.transcribe(audio)
 
     def transcribe(self, audio):
         text = None
