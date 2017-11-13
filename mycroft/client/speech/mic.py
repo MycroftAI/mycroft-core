@@ -15,6 +15,7 @@
 import audioop
 import collections
 import datetime
+from hashlib import md5
 import shutil
 from tempfile import gettempdir
 from threading import Thread, Lock
@@ -30,9 +31,10 @@ from speech_recognition import (
     AudioSource,
     AudioData
 )
+from requests import HTTPError
 
+from mycroft.api import DeviceApi
 from mycroft.configuration import Configuration
-from mycroft.identity import IdentityManager
 from mycroft.session import SessionManager
 from mycroft.util import (
     check_for_signal,
@@ -184,6 +186,11 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         len_phoneme = listener_config.get('phoneme_duration', 120) / 1000.0
         self.TEST_WW_SEC = num_phonemes * len_phoneme
         self.SAVED_WW_SEC = 10 if self.save_wake_words else self.TEST_WW_SEC
+
+        try:
+            self.account_id = DeviceApi().get()['user']['uuid']
+        except (HTTPError, AttributeError):
+            self.account_id = '0'
 
     @staticmethod
     def record_sound_chunk(source):
@@ -440,12 +447,12 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                     ww_module = self.wake_word_recognizer.__class__.__name__
 
                     ww = self.wake_word_name.replace(' ', '-')
-                    md = str(abs(hash(ww_module)))
+                    md = md5(ww_module).hexdigest()
                     stamp = str(int(1000 * get_time()))
                     sid = SessionManager.get().session_id
-                    uid = IdentityManager.get().uuid
+                    aid = self.account_id
 
-                    fn = join(dr, '.'.join([ww, md, stamp, sid, uid]) + '.wav')
+                    fn = join(dr, '.'.join([ww, md, stamp, sid, aid]) + '.wav')
                     with open(fn, 'wb') as f:
                         f.write(audio.get_wav_data())
 
