@@ -15,6 +15,9 @@
 import time
 from Queue import Queue, Empty
 from threading import Thread
+import pwd
+import os
+import multiprocessing
 
 import speech_recognition as sr
 from pyee import EventEmitter
@@ -29,6 +32,9 @@ from mycroft.metrics import MetricsAggregator
 from mycroft.session import SessionManager
 from mycroft.stt import STTFactory
 from mycroft.util.log import LOG
+from mycroft.client.speech.pocketsphinx_audio_consumer \
+    import PocketsphinxAudioConsumer
+from mycroft.util import (check_for_signal)
 
 
 class AudioProducer(Thread):
@@ -53,7 +59,8 @@ class AudioProducer(Thread):
             while self.state.running:
                 try:
                     audio = self.recognizer.listen(source, self.emitter)
-                    self.queue.put(audio)
+                    if len(audio.frame_data) != 65538:  # 2 seconds (silence)
+                        self.queue.put(audio)
                 except IOError, ex:
                     # NOTE: Audio stack on raspi is slightly different, throws
                     # IOError every other listen, almost like it can't handle
@@ -79,6 +86,9 @@ class AudioConsumer(Thread):
     # In seconds, the minimum audio size to be sent to remote STT
     MIN_AUDIO_SIZE = 0.5
 
+    MAX_LOCAL_TRANSCRIBE_PROCESSES = 8
+    MIN_LOCAL_TRANSCRIBE_PROCESSES = 2
+
     def __init__(self, state, queue, emitter, stt,
                  wakeup_recognizer, wakeword_recognizer):
         super(AudioConsumer, self).__init__()
@@ -90,10 +100,29 @@ class AudioConsumer(Thread):
         self.wakeup_recognizer = wakeup_recognizer
         self.wakeword_recognizer = wakeword_recognizer
         self.metrics = MetricsAggregator()
+        self.transcribe_jobs = []
 
     def run(self):
         while self.state.running:
             self.read()
+            if isinstance(self.stt, PocketsphinxAudioConsumer):
+                if len(multiprocessing.active_children()) > self.MAX_LOCAL_TRANSCRIBE_PROCESSES:
+                    for j in self.transcribe_jobs:
+                        LOG.debug("waiting for process to end, j.ident  = " +
+                                  str(j.ident))
+                        j.join()
+                        self.transcribe_jobs.remove(j)
+                        LOG.debug("Process ended, j.ident = " + str(j.ident))
+                        if len(multiprocessing.active_children()) <= self.MIN_LOCAL_TRANSCRIBE_PROCESSES:
+                            break
+                    LOG.debug("after joining, " +
+                              "multiprocessing.active_children() = " +
+                              str(len(multiprocessing.active_children())))
+                    LOG.debug("len(transcribe_jobs) = " +
+                              str(len(self.transcribe_jobs)))
+                for j in self.transcribe_jobs:
+                    if not j.is_alive():
+                        self.transcribe_jobs.remove(j)
 
     def read(self):
         try:
@@ -107,7 +136,19 @@ class AudioConsumer(Thread):
         if self.state.sleeping:
             self.wake_up(audio)
         else:
-            self.process(audio)
+            if isinstance(self.stt, PocketsphinxAudioConsumer):
+
+                process = multiprocessing.Process(target=self.process,
+                                                  args=([audio]))
+
+                process.start()
+
+                self.transcribe_jobs.append(process)
+
+                LOG.debug("listener.py, read str(self.transcribe_jobs) = " +
+                          str(self.transcribe_jobs))
+            else:
+                self.process(audio)
 
     # TODO: Localization
     def wake_up(self, audio):
@@ -134,7 +175,25 @@ class AudioConsumer(Thread):
         if self._audio_length(audio) < self.MIN_AUDIO_SIZE:
             LOG.warning("Audio too short to be processed")
         else:
-            self.transcribe(audio)
+            if len(audio.frame_data) != 65538:  # 2 seconds (silence)
+            # if len(audio.frame_data) != 96258:  # 3 seconds silence
+                if isinstance(self.stt, PocketsphinxAudioConsumer):
+                    # LOG.debug("test phrase decode/transcribe")
+                    hyp = self.stt.transcribe(audio.frame_data)
+                    # hyp = self.stt.wake_word_recognizer.transcribe(
+                    # audio.frame_data)
+                    if hyp:
+                        if hyp.hypstr > '':
+                            payload = {
+                                'utterances': [hyp.hypstr.lower()],
+                                'lang': self.stt.lang,
+                                'session': SessionManager.get().session_id
+                            }
+                            self.emitter.emit("recognizer_loop:utterance", payload)
+                            self.metrics.attr('utterances', [hyp.hypstr.lower()])
+
+                else:
+                    self.transcribe(audio)
 
     def transcribe(self, audio):
         text = None
@@ -200,12 +259,20 @@ class RecognizerLoop(EventEmitter):
         self.config = config.get('listener')
         rate = self.config.get('sample_rate')
         device_index = self.config.get('device_index')
+        self.enclosure_config = config.get('enclosure')
 
         self.microphone = MutableMicrophone(device_index, rate,
                                             mute=self.mute_calls > 0)
         # FIXME - channels are not been used
         self.microphone.CHANNELS = self.config.get('channels')
-        self.wakeword_recognizer = self.create_wake_word_recognizer()
+
+        if check_for_signal('UseLocalSTT', -1):
+            self.wakeword_recognizer = PocketsphinxAudioConsumer(
+                self.config, self.lang, self)
+        else:
+            self.wakeword_recognizer = self.create_wake_word_recognizer()
+
+        self.wakeup_recognizer = self.create_wakeup_recognizer()
         # TODO - localization
         self.wakeup_recognizer = self.create_wakeup_recognizer()
         self.responsive_recognizer = ResponsiveRecognizer(
@@ -244,10 +311,16 @@ class RecognizerLoop(EventEmitter):
         self.producer = AudioProducer(self.state, queue, self.microphone,
                                       self.responsive_recognizer, self)
         self.producer.start()
-        self.consumer = AudioConsumer(self.state, queue, self,
-                                      STTFactory.create(),
-                                      self.wakeup_recognizer,
-                                      self.wakeword_recognizer)
+        if check_for_signal('UseLocalSTT', -1):
+            self.consumer = AudioConsumer(self.state, queue, self,
+                                          self.wakeword_recognizer,
+                                          self.wakeup_recognizer,
+                                          self.wakeword_recognizer)
+        else:
+            self.consumer = AudioConsumer(self.state, queue, self,
+                                          STTFactory.create(),
+                                          self.wakeup_recognizer,
+                                          self.wakeword_recognizer)
         self.consumer.start()
 
     def stop(self):
@@ -319,3 +392,41 @@ class RecognizerLoop(EventEmitter):
         self._load_config()
         # restart
         self.start_async()
+
+    def restart(self):
+        """
+            ReStart the speech/voice client
+        """
+        platform = str(self.enclosure_config.get(
+            'platform', 'laptop/desktop platform'))
+        LOG.debug('''self.enclosure_config.get('platform') ==''' + platform)
+        if platform == "picroft" or platform == "mycroft_mark_1":
+            LOG.debug('''my/pi croft platform''')
+            try:
+                # uid = pwd.getpwnam('mycroft')[2]
+                # LOG.debug('''my/pi croft root uid ==''' + str(uid))
+                # os.setuid(uid)
+                LOG.debug(''' username = ''' +
+                          pwd.getpwuid(os.getuid()).pw_name)
+                os.system('/etc/init.d/mycroft-speech-client restart')
+            except Exception as e:
+                LOG.debug('''error == ''' + str(e))
+        else:
+            LOG.debug('''laptop/desktop platform''')
+            BASEDIR = os.path.abspath(
+                os.path.join(os.path.dirname(__file__),
+                             '..', '..', '..')
+            )
+            LOG.debug('BASEDIR = ' + BASEDIR)
+            try:
+                # uid = pwd.getpwnam('guy')[2]
+                # LOG.debug('''laptop root uid ==''' + str(uid))
+                # os.setuid(uid)
+                # os.system('/etc/init.d/mycroft-speech-client stop;
+                #   /etc/init.d/mycroft-speech-client start')
+                LOG.debug(''' username = ''' +
+                          pwd.getpwuid(os.getuid()).pw_name)
+                os.system(BASEDIR + '/start-mycroft.sh voice')
+            except Exception as e:
+                LOG.debug('''error == ''' + str(e))
+
