@@ -204,10 +204,7 @@ class PocketsphinxAudioConsumer(Thread):
             logger.debug("found_wake_word hyp.hypstr = " + hyp.hypstr)
 
         if check_for_signal('skip_wake_word', -1):
-            if hyp.hypstr > '':
-                return True
-            else:
-                return False
+            return bool(hyp.hypstr > '')
         else:
             return hyp and self.wake_word in hyp.hypstr.lower()
 
