@@ -505,9 +505,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         if self._stop_signaled:
             return
 
-        if self.wake_word_recognizer.mww_no_skills:
-            return
-
         LOG.debug("Recording...")
         emitter.emit("recognizer_loop:record_begin")
 

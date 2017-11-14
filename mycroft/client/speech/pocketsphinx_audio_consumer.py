@@ -72,8 +72,6 @@ class PocketsphinxAudioConsumer(Thread):
         self.config = config_listener
         self.lang = lang
         self.emitter = emitter
-        self.mww = self.config.get("mww", False)
-        self.mww_no_skills = self.config.get("mww_no_skills", False)
 
         self.audio = pyaudio.PyAudio()
 
