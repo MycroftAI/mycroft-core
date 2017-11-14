@@ -116,7 +116,7 @@ class PocketsphinxAudioConsumer(Thread):
         else:
             # lm = join(model_lang_dir, 'en-70k-0.1-pruned.lm')
             # lm = join(model_lang_dir, 'guy6i_like.lm')
-            lm = join(model_lang_dir, 'guy6l_like.lm')
+            lm = join(model_lang_dir, 'local_stt_example_language_model.lm')
             # lm = join(model_lang_dir, 'guy6h_like.lm')
             # lm = join(model_lang_dir, 'en-70k-0.2-pruned.lm')
             # lm = join(model_lang_dir, self.lang + '.lm')
@@ -143,15 +143,15 @@ class PocketsphinxAudioConsumer(Thread):
         decoder_config.set_string('-dict',
                                   BASEDIR +
                                   '/recognizer/model/en-us/'
-                                  'klat_only_corpus_words.dict'
+                                  'cmudict-en-us.dict'
                                   )
 
         decoder_config.set_float('-samprate', self.SAMPLE_RATE)
         decoder_config.set_float('-kws_threshold',
                                  self.config.get('threshold', 1))
         decoder_config.set_string('-cmninit', '40,3,-1')
-        # decoder_config.set_string('-logfn', '/dev/null')
-        decoder_config.set_string('-logfn', '/var/log/mycroft/pocketsphinx.log')
+        decoder_config.set_string('-logfn', '/dev/null')
+        # decoder_config.set_string('-logfn', '/var/log/mycroft/pocketsphinx.log')
         decoder_config.set_string('-keyphrase', self.wake_word)
         return decoder_config
 
