@@ -147,7 +147,6 @@ class PocketsphinxAudioConsumer(Thread):
                                  self.config.get('threshold', 1))
         decoder_config.set_string('-cmninit', '40,3,-1')
         decoder_config.set_string('-logfn', '/dev/null')
-        # decoder_config.set_string('-logfn', '/var/log/mycroft/pocketsphinx.log')
         decoder_config.set_string('-keyphrase', self.wake_word)
         return decoder_config
 
@@ -187,8 +186,8 @@ class PocketsphinxAudioConsumer(Thread):
             logger.debug("Local transcribing end: total time = " +
                          str(time.time() - start))
             logger.debug("*******************************")
-            if self.wake_word in hyp.hypstr.lower() \
-              or check_for_signal('skip_wake_word', -1):
+            if self.wake_word in hyp.hypstr.lower() or \
+                    check_for_signal('skip_wake_word', -1):
                 self.decoder.set_search('lm')
             else:
                 self.decoder.set_keyphrase('wake_word', self.wake_word)

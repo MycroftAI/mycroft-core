@@ -106,14 +106,16 @@ class AudioConsumer(Thread):
         while self.state.running:
             self.read()
             if isinstance(self.stt, PocketsphinxAudioConsumer):
-                if len(multiprocessing.active_children()) > self.MAX_LOCAL_TRANSCRIBE_PROCESSES:
+                if len(multiprocessing.active_children()) \
+                        > self.MAX_LOCAL_TRANSCRIBE_PROCESSES:
                     for j in self.transcribe_jobs:
                         LOG.debug("waiting for process to end, j.ident  = " +
                                   str(j.ident))
                         j.join()
                         self.transcribe_jobs.remove(j)
                         LOG.debug("Process ended, j.ident = " + str(j.ident))
-                        if len(multiprocessing.active_children()) <= self.MIN_LOCAL_TRANSCRIBE_PROCESSES:
+                        if len(multiprocessing.active_children()) \
+                                <= self.MIN_LOCAL_TRANSCRIBE_PROCESSES:
                             break
                     LOG.debug("after joining, " +
                               "multiprocessing.active_children() = " +
@@ -176,7 +178,7 @@ class AudioConsumer(Thread):
             LOG.warning("Audio too short to be processed")
         else:
             if len(audio.frame_data) != 65538:  # 2 seconds (silence)
-            # if len(audio.frame_data) != 96258:  # 3 seconds silence
+                # if len(audio.frame_data) != 96258:  # 3 seconds silence
                 if isinstance(self.stt, PocketsphinxAudioConsumer):
                     # LOG.debug("test phrase decode/transcribe")
                     hyp = self.stt.transcribe(audio.frame_data)
@@ -189,8 +191,10 @@ class AudioConsumer(Thread):
                                 'lang': self.stt.lang,
                                 'session': SessionManager.get().session_id
                             }
-                            self.emitter.emit("recognizer_loop:utterance", payload)
-                            self.metrics.attr('utterances', [hyp.hypstr.lower()])
+                            self.emitter.emit("recognizer_loop:utterance",
+                                              payload)
+                            self.metrics.attr('utterances',
+                                              [hyp.hypstr.lower()])
 
                 else:
                     self.transcribe(audio)
@@ -429,4 +433,3 @@ class RecognizerLoop(EventEmitter):
                 os.system(BASEDIR + '/start-mycroft.sh voice')
             except Exception as e:
                 LOG.debug('''error == ''' + str(e))
-

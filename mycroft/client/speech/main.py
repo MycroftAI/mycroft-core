@@ -116,6 +116,7 @@ def handle_stop(event):
     """
     loop.force_unmute()
 
+
 def handle_restart(event):
     loop.restart()
 
