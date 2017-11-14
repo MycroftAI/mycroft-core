@@ -167,11 +167,11 @@ class PocketsphinxAudioConsumer(Thread):
         # self.decoder.s
         # logger.debug("Thinking...")
         # logger.debug("start utt time.time() = " + str(time.time()))
-        tsta = self.decoder.start_utt()
+        self.decoder.start_utt()
         # logger.debug("1 start process_raw time.time() = " + str(time.time()))
-        tstb = self.decoder.process_raw(byte_data, False, False)
+        self.decoder.process_raw(byte_data, False, False)
         # logger.debug("2 start end_utt time.time() = " + str(time.time()))
-        tstc = self.decoder.end_utt()
+        self.decoder.end_utt()
         if metrics:
             metrics.timer("mycroft.stt.local.time_s", time.time() - start)
         # logger.debug("transcribing start = " + str(time.time() - start))
@@ -204,11 +204,8 @@ class PocketsphinxAudioConsumer(Thread):
             logger.debug("found_wake_word hyp.hypstr = " + hyp.hypstr)
 
         if check_for_signal('skip_wake_word', -1):
-            if hyp:
-                if hyp.hypstr > '':
-                    return True
-                else:
-                    return False
+            if hyp.hypstr > '':
+                return True
             else:
                 return False
         else:
