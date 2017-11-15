@@ -122,13 +122,31 @@ class KaldiSTT(STT):
             return None
 
 
+class PocketSphinxSTT(BasicSTT):
+    def __init__(self, lang="en-us", config=None):
+        super(PocketSphinxSTT, self).__init__("pocketsphinx")
+        from mycroft.stt.pocketsphinx_stt import PS_Recognizer
+        self.recognizer = PS_Recognizer(self.lang)
+
+    def execute(self, audio, language=None):
+        language = language or self.lang
+        if language != self.lang:
+            LOG.info("Changing decoder language")
+            from mycroft.stt.pocketsphinx_stt import PS_Recognizer
+            self.lang = language
+            self.recognizer = PS_Recognizer(self.lang)
+
+        return self.recognizer.recognize(audio)
+
+
 class STTFactory(object):
     CLASSES = {
         "mycroft": MycroftSTT,
         "google": GoogleSTT,
         "wit": WITSTT,
         "ibm": IBMSTT,
-        "kaldi": KaldiSTT
+        "kaldi": KaldiSTT,
+        "pocketsphinx": PocketSphinxSTT
     }
 
     @staticmethod

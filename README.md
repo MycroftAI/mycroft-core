@@ -8,7 +8,8 @@ Privacy enhanced mycroft
 - do not try to load remote configuration
 - disable pairing check
 - pocketsphinx default stt
-
+- es-es language model included
+- en-us language model included
 
 
 
