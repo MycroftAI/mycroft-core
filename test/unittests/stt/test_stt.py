@@ -29,14 +29,14 @@ class TestSTT(unittest.TestCase):
                  'module': 'mycroft',
                  'wit': {'credential': {'token': 'FOOBAR'}},
                  'google': {'credential': {'token': 'FOOBAR'}},
-            'bing': {'credential': {'token': 'FOOBAR'}},
-            'ibm': {'credential': {'username': 'FOO',
-                                   "password": "BAR"}},
-            'houndify': {'credential': {'username': 'FOO',
+                 'bing': {'credential': {'token': 'FOOBAR'}},
+                 'ibm': {'credential': {'username': 'FOO',
                                         "password": "BAR"}},
+                 'houndify': {'credential': {'username': 'FOO',
+                                             "password": "BAR"}},
                  'kaldi': {'uri': 'https://test.com'},
                  'mycroft': {'uri': 'https://test.com'}
-            },
+                },
             'lang': 'en-US'
         }
         mock_get.return_value = config
