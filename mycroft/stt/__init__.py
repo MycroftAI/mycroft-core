@@ -122,13 +122,35 @@ class KaldiSTT(STT):
             return None
 
 
+class BingSTT(TokenSTT):
+    def __init__(self, lang="en-us", config=None):
+        super(BingSTT, self).__init__("bing")
+
+    def execute(self, audio, language=None):
+        self.lang = language or self.lang
+        return self.recognizer.recognize_bing(audio, self.token,
+                                              self.lang)
+
+
+class HoundifySTT(BasicSTT):
+    def __init__(self, lang="en-us", config=None):
+        super(HoundifySTT, self).__init__("houndify")
+
+    def execute(self, audio, language=None):
+        self.lang = language or self.lang
+        return self.recognizer.recognize_houndify(audio, self.username,
+                                                  self.password, self.lang)
+
+
 class STTFactory(object):
     CLASSES = {
         "mycroft": MycroftSTT,
         "google": GoogleSTT,
         "wit": WITSTT,
         "ibm": IBMSTT,
-        "kaldi": KaldiSTT
+        "kaldi": KaldiSTT,
+        "bing": BingSTT,
+        "houndify": HoundifySTT
     }
 
     @staticmethod
