@@ -124,12 +124,12 @@ class TestSTT(unittest.TestCase):
     def test_ibm_stt(self, mock_get):
         mycroft.stt.Recognizer = mock.MagicMock
         config = {'stt': {
-            'module': 'ibm',
-            'ibm': {'credential': {'username': 'FOO',
-                                   "password": 'BAR'}},
-        },
-            "lang": "en-US"
-        }
+                  'module': 'ibm',
+                  'ibm': {'credential': {'username': 'FOO',
+                                         "password": 'BAR'}},
+                  },
+                  "lang": "en-US"
+                  }
         mock_get.return_value = config
 
         audio = mock.MagicMock()
