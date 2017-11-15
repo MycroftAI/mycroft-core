@@ -123,8 +123,8 @@ class KaldiSTT(STT):
 
 
 class BingSTT(TokenSTT):
-    def __init__(self, lang="en-us", config=None):
-        super(BingSTT, self).__init__("bing")
+    def __init__(self):
+        super(BingSTT, self).__init__()
 
     def execute(self, audio, language=None):
         self.lang = language or self.lang
@@ -133,8 +133,8 @@ class BingSTT(TokenSTT):
 
 
 class HoundifySTT(BasicSTT):
-    def __init__(self, lang="en-us", config=None):
-        super(HoundifySTT, self).__init__("houndify")
+    def __init__(self):
+        super(HoundifySTT, self).__init__()
 
     def execute(self, audio, language=None):
         self.lang = language or self.lang
