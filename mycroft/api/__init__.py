@@ -267,8 +267,9 @@ def has_been_paired():
     """
     # This forces a load from the identity file in case the pairing state
     # has recently changed
-    id = IdentityManager.load()
-    return id.uuid is not None and id.uuid != ""
+    #id = IdentityManager.load()
+    #return id.uuid is not None and id.uuid != ""
+    return True
 
 
 def is_paired():
@@ -280,18 +281,19 @@ def is_paired():
     Returns:
         bool: True if paired with backend
     """
-    global _paired_cache
-    if _paired_cache:
+    #global _paired_cache
+    #if _paired_cache:
         # NOTE: This assumes once paired, the unit remains paired.  So
         # un-pairing must restart the system (or clear this value).
         # The Mark 1 does perform a restart on RESET.
-        return True
+    #    return True
 
-    try:
-        api = DeviceApi()
-        device = api.get()
-        _paired_cache = api.identity.uuid is not None and \
-            api.identity.uuid != ""
-        return _paired_cache
-    except:
-        return False
+    #try:
+    #    api = DeviceApi()
+    #    device = api.get()
+    #    _paired_cache = api.identity.uuid is not None and \
+    #        api.identity.uuid != ""
+    #    return _paired_cache
+    #except:
+    #    return False
+    return True

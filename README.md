@@ -1,3 +1,17 @@
+Privacy enhanced mycroft
+
+# features
+
+- blacklist pairing skill
+- blacklist configuration skill
+- disable server updates in config
+- do not try to load remote configuration
+- disable pairing check
+- pocketsphinx default stt
+
+
+
+
 Mycroft [![Build Status](https://travis-ci.org/MycroftAI/mycroft-core.svg?branch=master)](https://travis-ci.org/MycroftAI/mycroft-core) [![Coverage Status](https://coveralls.io/repos/github/MycroftAI/mycroft-core/badge.svg?branch=dev)](https://coveralls.io/github/MycroftAI/mycroft-core?branch=dev)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
 ==========

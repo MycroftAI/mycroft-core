@@ -199,8 +199,9 @@ class Configuration(object):
 
             Returns: merged dict of all configuration files
         """
+        # privacy enhance, comment out remote
         if not configs:
-            configs = [LocalConf(DEFAULT_CONFIG), RemoteConf(),
+            configs = [LocalConf(DEFAULT_CONFIG), #RemoteConf(),
                        LocalConf(SYSTEM_CONFIG), LocalConf(USER_CONFIG),
                        Configuration.__patch]
         else:
