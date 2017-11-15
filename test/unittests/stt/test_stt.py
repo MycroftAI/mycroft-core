@@ -189,7 +189,7 @@ class TestSTT(unittest.TestCase):
         audio = mock.MagicMock()
         stt = mycroft.stt.BingSTT()
         stt.execute(audio)
-        self.assertTrue(stt.recognizer.recognize_wit.called)
+        self.assertTrue(stt.recognizer.recognize_bing.called)
 
     @mock.patch.object(Configuration, 'get')
     def test_houndify_stt(self, mock_get):
@@ -206,4 +206,4 @@ class TestSTT(unittest.TestCase):
         audio = mock.MagicMock()
         stt = mycroft.stt.IBMSTT()
         stt.execute(audio)
-        self.assertTrue(stt.recognizer.recognize_ibm.called)
+        self.assertTrue(stt.recognizer.recognize_houndify.called)
