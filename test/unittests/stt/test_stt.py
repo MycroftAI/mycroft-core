@@ -120,7 +120,7 @@ class TestSTT(unittest.TestCase):
     def test_ibm_stt(self, mock_get):
         mycroft.stt.Recognizer = mock.MagicMock
         config = {'stt': {
-                 'module': 'ibm',
+            'module': 'ibm',
             'ibm': {'credential': {'username': 'FOO',
                                    "password": 'BAR'}},
         },
