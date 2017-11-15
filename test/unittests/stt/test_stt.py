@@ -121,7 +121,8 @@ class TestSTT(unittest.TestCase):
         mycroft.stt.Recognizer = mock.MagicMock
         config = {'stt': {
                  'module': 'ibm',
-                 'ibm': {'credential': {'token': 'FOOBAR'}},
+            'ibm': {'credential': {'username': 'FOO',
+                                   "password": 'BAR'}},
             },
             "lang": "en-US"
         }
@@ -169,3 +170,36 @@ class TestSTT(unittest.TestCase):
         audio = mock.MagicMock()
         stt = mycroft.stt.KaldiSTT()
         self.assertEquals(stt.execute(audio), 'text')
+
+    @mock.patch.object(Configuration, 'get')
+    def test_bing_stt(self, mock_get):
+        mycroft.stt.Recognizer = mock.MagicMock
+        config = {'stt': {
+            'module': 'bing',
+            'bing': {'credential': {'token': 'FOOBAR'}},
+        },
+            "lang": "en-US"
+        }
+        mock_get.return_value = config
+
+        audio = mock.MagicMock()
+        stt = mycroft.stt.BingSTT()
+        stt.execute(audio)
+        self.assertTrue(stt.recognizer.recognize_wit.called)
+
+    @mock.patch.object(Configuration, 'get')
+    def test_houndify_stt(self, mock_get):
+        mycroft.stt.Recognizer = mock.MagicMock
+        config = {'stt': {
+            'module': 'houndify',
+            'houndify': {'credential': {'username': 'FOO',
+                                        "password": 'BAR'}},
+        },
+            "lang": "en-US"
+        }
+        mock_get.return_value = config
+
+        audio = mock.MagicMock()
+        stt = mycroft.stt.IBMSTT()
+        stt.execute(audio)
+        self.assertTrue(stt.recognizer.recognize_ibm.called)
