@@ -123,7 +123,7 @@ class TestSTT(unittest.TestCase):
                  'module': 'ibm',
             'ibm': {'credential': {'username': 'FOO',
                                    "password": 'BAR'}},
-            },
+        },
             "lang": "en-US"
         }
         mock_get.return_value = config
