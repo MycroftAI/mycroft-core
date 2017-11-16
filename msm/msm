@@ -87,18 +87,23 @@ fi
 # Determine if on picroft/mk1?
 picroft_mk1="false"
 vwrap="true"
+use_virtualenvwrapper="$(get_config_value '.enclosure.use_virtualenvwrapper' 'true')"
 if [[ "${mycroft_platform}" == "picroft" ]] || [[ "${mycroft_platform}" == "mycroft_mark_1" ]] ; then
   picroft_mk1="true"
 else
-  if [[ -r /etc/bash_completion.d/virtualenvwrapper ]]; then
-    source /etc/bash_completion.d/virtualenvwrapper
-   elif [[ -r /usr/bin/virtualenvwrapper.sh ]]; then
-    source /usr/bin/virtualenvwrapper.sh
-  else
-    if locate virtualenvwrapper ; then
-      if ! source $(locate virtualenvwrapper) ; then
-        echo "WARNING: Unable to locate virtualenvwrapper.sh, not able to install skills!"
-        vwrap="false"
+  if [[ ${use_virtualenvwrapper} == "true" ]] ; then
+    if [[ -r /etc/bash_completion.d/virtualenvwrapper ]]; then
+      source /etc/bash_completion.d/virtualenvwrapper
+     elif [[ -r /usr/bin/virtualenvwrapper.sh ]]; then
+      source /usr/bin/virtualenvwrapper.sh
+     elif [[ -r /usr/bin/virtualenvwrapper ]]; then
+      source /usr/bin/virtualenvwrapper
+    else
+      if locate virtualenvwrapper ; then
+        if ! source $(locate virtualenvwrapper) ; then
+          echo "WARNING: Unable to locate virtualenvwrapper.sh, not able to install skills!"
+          vwrap="false"
+        fi
       fi
     fi
   fi
