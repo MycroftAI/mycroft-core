@@ -68,8 +68,8 @@ class KeySTT(STT):
 
     def __init__(self):
         super(KeySTT, self).__init__()
-        self.id = str(self.credential.get("id"))
-        self.key = str(self.credential.get("key"))
+        self.id = str(self.credential.get("client_id"))
+        self.key = str(self.credential.get("client_key"))
 
 
 class GoogleSTT(TokenSTT):

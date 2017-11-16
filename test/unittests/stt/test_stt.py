@@ -32,8 +32,8 @@ class TestSTT(unittest.TestCase):
                  'bing': {'credential': {'token': 'FOOBAR'}},
                  'ibm': {'credential': {'username': 'FOO',
                                         "password": "BAR"}},
-                 'houndify': {'credential': {'username': 'FOO',
-                                             "password": "BAR"}},
+                 'houndify': {'credential': {'client_id': 'FOO',
+                                             "client_key": "BAR"}},
                  'kaldi': {'uri': 'https://test.com'},
                  'mycroft': {'uri': 'https://test.com'}
                 },
@@ -196,7 +196,8 @@ class TestSTT(unittest.TestCase):
         mycroft.stt.Recognizer = mock.MagicMock
         config = {'stt': {
             'module': 'houndify',
-            'houndify': {'credential': {'id': 'FOO', "key": 'BAR'}},
+            'houndify': {'credential': {'client_id': 'FOO',
+                                        "client_key": "BAR"}}
         },
             "lang": "en-US"
         }
