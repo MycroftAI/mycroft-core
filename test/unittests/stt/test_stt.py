@@ -204,6 +204,6 @@ class TestSTT(unittest.TestCase):
         mock_get.return_value = config
 
         audio = mock.MagicMock()
-        stt = mycroft.stt.IBMSTT()
+        stt = mycroft.stt.HoundifySTT()
         stt.execute(audio)
         self.assertTrue(stt.recognizer.recognize_houndify.called)
