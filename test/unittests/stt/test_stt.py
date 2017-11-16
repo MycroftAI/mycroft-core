@@ -196,8 +196,7 @@ class TestSTT(unittest.TestCase):
         mycroft.stt.Recognizer = mock.MagicMock
         config = {'stt': {
             'module': 'houndify',
-            'houndify': {'credential': {'username': 'FOO',
-                                        "password": 'BAR'}},
+            'houndify': {'credential': {'id': 'FOO', "key": 'BAR'}},
         },
             "lang": "en-US"
         }
