@@ -55,7 +55,7 @@ class AudioService():
         """
         self.info = message.data
 
-    def play(self, tracks=[], utterance=''):
+    def play(self, tracks=None, utterance=''):
         """ Start playback.
 
             Args:
@@ -63,6 +63,7 @@ class AudioService():
                 utterance: forward utterance for further processing by the
                            audio service.
         """
+        tracks = tracks or []
         if isinstance(tracks, basestring):
             tracks = [tracks]
         elif not isinstance(tracks, list):
