@@ -58,8 +58,8 @@ class MycroftSkillTest(unittest.TestCase):
     def setUp(self):
         self.emitter.reset()
 
-    def check_vocab_from_file(self, filename, vocab_type=None, result_list=None
-                              ):
+    def check_vocab_from_file(self, filename, vocab_type=None,
+                              result_list=None):
         result_list = result_list or []
         load_vocab_from_file(join(self.vocab_path, filename), vocab_type,
                              self.emitter)
