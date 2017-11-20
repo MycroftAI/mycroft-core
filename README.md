@@ -77,7 +77,7 @@ Put a relevant key inside the quotes and mycroft-core should begin to use the ke
 ## API Key Services
 These are the keys currently used in Mycroft Core:
 
-- [STT API, Google STT](http://www.chromium.org/developers/how-tos/api-keys)
+- [STT API, Google STT, Google Cloud Speech](http://www.chromium.org/developers/how-tos/api-keys)
 - [Weather Skill API, OpenWeatherMap](http://openweathermap.org/api)
 - [Wolfram-Alpha Skill](http://products.wolframalpha.com/api/)
 
