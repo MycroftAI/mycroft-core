@@ -178,7 +178,7 @@ class EnclosureAPI:
                          4 = neutral shape for no sound
                          5 = shape for sounds like 'f' or 'v'
                          6 = shape for sounds like 'oy' or 'ao'
-            time_until(int): (optional) For timing, time.time() when this
+            time_until (float): (optional) For timing, time.time() when this
                          shape expires, or 0 for display regardles of time
         """
         self.ws.emit(Message("enclosure.mouth.viseme", {'code': code}))
