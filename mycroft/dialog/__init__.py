@@ -76,7 +76,7 @@ class MustacheDialogRenderer(object):
             index %= len(template_functions)
         line = template_functions[index]
         for k, v in context.items():
-            line = line.replace('{{' + k + '}}', v)
+            line = line.replace('{{' + k + '}}', str(v))
         return line
 
 
