@@ -6,8 +6,10 @@ Privacy enhanced mycroft
 - blacklist configuration skill
 - disable server updates in config
 - do not try to load remote configuration
-- disable pairing check and mycroft API
+- disable pairing check
+- disable mycroft API
 - disable ww upload
+- privacy compromising options removed from config
 - pocketsphinx default stt
 - es-es language model included
 - en-us language model included

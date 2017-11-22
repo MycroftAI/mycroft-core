@@ -95,6 +95,8 @@ class MycroftSTT(STT):
     def __init__(self):
         super(MycroftSTT, self).__init__()
         self.api = STTApi()
+        # disabled
+        raise NotImplementedError
 
     def execute(self, audio, language=None):
         self.lang = language or self.lang
