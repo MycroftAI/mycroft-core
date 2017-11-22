@@ -8,6 +8,7 @@ Privacy enhanced mycroft
 - do not try to load remote configuration
 - disable pairing check
 - disable mycroft API
+- disable mycroft STT
 - disable ww upload
 - privacy compromising options removed from config
 - pocketsphinx default stt
