@@ -104,16 +104,19 @@ class MetricsAggregator(object):
 
 
 class MetricsPublisher(object):
-    def __init__(self, url=config.get("url"), enabled=config.get("metrics")):
-        self.url = url
-        self.enabled = enabled
+    def __init__(self, url="nop", enabled=False):
+        # def __init__(self, url=config.get("url"), enabled=config.get("metrics")):
+        # self.url = url
+        # self.enabled = enabled
+        self.enabled = False
 
     def publish(self, events):
-        if 'session_id' not in events:
-            session_id = SessionManager.get().session_id
-            events['session_id'] = session_id
-        if self.enabled:
-            requests.post(
-                self.url,
-                headers={'Content-Type': 'application/json'},
-                data=json.dumps(events), verify=False)
+        # if 'session_id' not in events:
+        #    session_id = SessionManager.get().session_id
+        #    events['session_id'] = session_id
+        # if self.enabled:
+        #    requests.post(
+        #        self.url,
+        #        headers={'Content-Type': 'application/json'},
+        #        data=json.dumps(events), verify=False)
+        return

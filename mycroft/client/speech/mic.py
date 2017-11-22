@@ -173,8 +173,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         # check the config for the flag to save wake words.
 
         self.save_utterances = listener_config.get('record_utterances', False)
-        self.save_wake_words = listener_config.get('record_wake_words') \
-            or self.upload_config['enable'] or self.config['opt_in']
+        self.save_wake_words = listener_config.get('record_wake_words')  # \
+        # or self.upload_config['enable'] or self.config['opt_in']
         self.upload_lock = Lock()
         self.save_wake_words_dir = join(gettempdir(), 'mycroft_wake_words')
         self.filenames_to_upload = []
