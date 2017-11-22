@@ -42,7 +42,7 @@ class ContextManager(object):
         self.frame_stack = [(f, t) for (f, t) in self.frame_stack
                             if context_id in f.entities[0].get('data', [])]
 
-    def inject_context(self, entity, metadata={}):
+    def inject_context(self, entity, metadata=None):
         """
         Args:
             entity(object):
@@ -53,6 +53,7 @@ class ContextManager(object):
             metadata(object): dict, arbitrary metadata about the entity being
             added
         """
+        metadata = metadata or {}
         try:
             if len(self.frame_stack) > 0:
                 top_frame = self.frame_stack[0]
