@@ -10,6 +10,7 @@ Privacy enhanced mycroft
 - disable mycroft STT
 - disable ww upload
 - disable identity manager
+- disable mycroft ai remote skill settings
 - privacy compromising options removed from config (server, opt in, ww upload, mycroft stt)
 - pocketsphinx default stt
 - es-es language model included

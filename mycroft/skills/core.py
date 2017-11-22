@@ -113,7 +113,8 @@ def load_skill(skill_descriptor, emitter, skill_id, BLACKLISTED_SKILLS=None):
         Returns:
             MycroftSkill: the loaded skill or None on failure
     """
-    BLACKLISTED_SKILLS = BLACKLISTED_SKILLS or []
+    BLACKLISTED_SKILLS = BLACKLISTED_SKILLS or ["skill-configuration",
+                                                "skill-pairing"]
     try:
         LOG.info("ATTEMPTING TO LOAD SKILL: " + skill_descriptor["name"] +
                  " with ID " + str(skill_id))
