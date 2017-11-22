@@ -29,11 +29,11 @@ class TestSTT(unittest.TestCase):
                  'module': 'mycroft',
                  'wit': {'credential': {'token': 'FOOBAR'}},
                  'google': {'credential': {'token': 'FOOBAR'}},
-                 'google_cloud': {
-                   'credential': {
-                     'json': {}
-                   }
-                 },
+            'google_cloud': {
+                'credential': {
+                    'json': {}
+                }
+            },
                  'ibm': {'credential': {'token': 'FOOBAR'}},
                  'kaldi': {'uri': 'https://test.com'},
                  'mycroft': {'uri': 'https://test.com'}
@@ -129,13 +129,13 @@ class TestSTT(unittest.TestCase):
     def test_google_cloud_stt(self, mock_get):
         mycroft.stt.Recognizer = mock.MagicMock
         config = {'stt': {
-                 'module': 'google_cloud',
-                 'google_cloud': {
-                   'credential': {
-                     'json': {}
-                   }
-                 },
+            'module': 'google_cloud',
+            'google_cloud': {
+                'credential': {
+                    'json': {}
+                }
             },
+        },
             "lang": "en-US"
         }
         mock_get.return_value = config

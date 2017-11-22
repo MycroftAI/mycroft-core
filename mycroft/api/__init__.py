@@ -181,11 +181,12 @@ class DeviceApi(Api):
         return None
 
     def send_email(self, title, body, sender):
-        return self.request({
-            "method": "PUT",
-            "path": "/" + self.identity.uuid + "/message",
-            "json": {"title": title, "body": body, "sender": sender}
-        })
+        # return self.request({
+        #    "method": "PUT",
+        #    "path": "/" + self.identity.uuid + "/message",
+        #    "json": {"title": title, "body": body, "sender": sender}
+        # })
+        return None
 
     def get(self):
         """ Retrieve all device information from the web backend """

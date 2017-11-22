@@ -36,7 +36,6 @@ try:
 except ImportError:
     pulsectl = None
 
-
 MAINMODULE = '__init__'
 sys.path.append(abspath(dirname(__file__)))
 
@@ -150,6 +149,7 @@ class AudioService(object):
         Handles playback of audio and selecting proper backend for the uri
         to be played.
     """
+
     def __init__(self, ws):
         """
             Args:
@@ -367,7 +367,8 @@ class AudioService(object):
             for s in self.service:
                 LOG.info(str(s))
                 if uri_type in s.supported_uris():
-                    LOG.info("Service " + str(s) + " supports URI " + uri_type)
+                    LOG.info(
+                        "Service " + str(s) + " supports URI " + uri_type)
                     selected_service = s
                     break
             else:
@@ -407,7 +408,7 @@ class AudioService(object):
         for s in self.service:
             LOG.info(s.name)
             if ('utterance' in message.data and
-                    s.name in message.data['utterance']):
+                        s.name in message.data['utterance']):
                 prefered_service = s
                 LOG.info(s.name + ' would be prefered')
                 break

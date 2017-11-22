@@ -112,7 +112,7 @@ class PlaybackThread(Thread):
                 return True
             if self.enclosure:
                 # Include time stamp to assist with animation timing
-                self.enclosure.mouth_viseme(code, start+duration)
+                self.enclosure.mouth_viseme(code, start + duration)
             delta = time() - start
             if delta < duration:
                 sleep(duration - delta)

@@ -30,12 +30,12 @@ import curses                                               # nopep8
 import curses.ascii                                         # nopep8
 import textwrap                                             # nopep8
 import json                                                 # nopep8
-import mycroft.version                                      # nopep8
+import mycroft.version  # nopep8
 from threading import Thread, Lock                          # nopep8
 from mycroft.messagebus.client.ws import WebsocketClient    # nopep8
 from mycroft.messagebus.message import Message              # nopep8
 from mycroft.util import get_ipc_directory                  # nopep8
-from mycroft.util.log import LOG                            # nopep8
+from mycroft.util.log import LOG  # nopep8
 
 ws = None
 mutex = Lock()
@@ -67,8 +67,8 @@ meter_cur = -1
 meter_thresh = -1
 
 screen_mode = 0   # 0 = main, 1 = help, others in future?
-FULL_REDRAW_FREQUENCY = 10    # seconds between full redraws
-last_full_redraw = time.time()-FULL_REDRAW_FREQUENCY  # last full-redraw time
+FULL_REDRAW_FREQUENCY = 10  # seconds between full redraws
+last_full_redraw = time.time() - FULL_REDRAW_FREQUENCY  # last full-redraw time
 screen_lock = Lock()
 
 # Curses color codes (reassigned at runtime)
@@ -354,9 +354,9 @@ def init_screen():
 def page_log(page_up):
     global log_line_offset
     if page_up:
-        log_line_offset -= size_log_area/2
+        log_line_offset -= size_log_area / 2
     else:
-        log_line_offset += size_log_area/2
+        log_line_offset += size_log_area / 2
     if log_line_offset > len(filteredLog):
         log_line_offset = len(filteredLog) - 10
     if log_line_offset < 0:
@@ -488,9 +488,9 @@ def _do_drawing(scr):
         scr.addstr(0, 0, "Log Output:" + " " * (curses.COLS - 31) +
                    str(start) + "-" + str(end) + " of " + str(cLogs),
                    CLR_HEADING)
-    ver = " mycroft-core "+mycroft.version.CORE_VERSION_STR+" ==="
-    scr.addstr(1, 0, "=" * (curses.COLS-1-len(ver)), CLR_HEADING)
-    scr.addstr(1, curses.COLS-1-len(ver), ver, CLR_HEADING)
+    ver = " mycroft-core " + mycroft.version.CORE_VERSION_STR + " ==="
+    scr.addstr(1, 0, "=" * (curses.COLS - 1 - len(ver)), CLR_HEADING)
+    scr.addstr(1, curses.COLS - 1 - len(ver), ver, CLR_HEADING)
 
     y = 2
     len_line = 0
