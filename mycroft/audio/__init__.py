@@ -33,7 +33,7 @@ def wait_while_speaking():
     briefly to ensure that any preceeding request to speak has time to
     begin.
     """
-    time.sleep(0.1)  # Wait briefly in for any queued speech to begin
+    time.sleep(0.3)  # Wait briefly in for any queued speech to begin
     while is_speaking():
         time.sleep(0.1)
 
