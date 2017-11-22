@@ -14,6 +14,7 @@
 #
 import json
 import time
+import ssl
 from multiprocessing.pool import ThreadPool
 
 from pyee import EventEmitter
@@ -51,7 +52,8 @@ class WebsocketClient(object):
     def create_client(self):
         return WebSocketApp(self.url,
                             on_open=self.on_open, on_close=self.on_close,
-                            on_error=self.on_error, on_message=self.on_message)
+                            on_error=self.on_error,
+                            on_message=self.on_message)
 
     def on_open(self, ws):
         LOG.info("Connected")
@@ -110,7 +112,9 @@ class WebsocketClient(object):
         self.emitter.remove_all_listeners(event_name)
 
     def run_forever(self):
-        self.client.run_forever()
+        self.client.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE,
+                   "check_hostname": False,
+                   "ssl_version": ssl.PROTOCOL_TLSv1})
 
     def close(self):
         self.client.close()

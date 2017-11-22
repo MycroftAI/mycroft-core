@@ -18,6 +18,9 @@ from mycroft.configuration import Configuration
 from mycroft.lock import Lock  # creates/supports PID locking file
 from mycroft.messagebus.service.ws import WebsocketEventHandler
 from mycroft.util import validate_param
+from mycroft.util.log import LOG
+from mycroft.messagebus.service.self_signed import create_self_signed_cert
+from os.path import dirname, join
 
 
 settings = {
@@ -41,6 +44,8 @@ def main():
     host = config.get("host")
     port = config.get("port")
     route = config.get("route")
+    ssl = config.get("ssl", False)
+
     validate_param(host, "websocket.host")
     validate_param(port, "websocket.port")
     validate_param(route, "websocket.route")
@@ -49,7 +54,35 @@ def main():
         (route, WebsocketEventHandler)
     ]
     application = web.Application(routes, **settings)
-    application.listen(port, host)
+
+    ssl_options = None
+    if ssl:
+        cert = config.get("cert")
+        key = config.get("key")
+        self_sign = config.get("cert_auto_gen")
+        if self_sign and (not key or not cert):
+            LOG.error("ssl keys dont exist, creating self signed")
+            cert_dir = join(dirname(__file__) , "certs")
+            name = "secure_websocket"
+            create_self_signed_cert(cert_dir, name)
+            cert = join(cert_dir , name + ".crt")
+            key = join(cert_dir , name + ".key")
+            LOG.info("key created at: " + key)
+            LOG.info("crt created at: " + cert)
+            # TODO update and save config with new keys
+            config["cert_file"] = cert
+            config["key_file"] = key
+        if key and cert:
+            LOG.info("using ssl key at " + key)
+            LOG.info("using ssl certificate at " + cert)
+            ssl_options = {"certfile": cert, "keyfile": key}
+
+    if ssl_options:
+        LOG.info("wss connection started")
+        application.listen(port, host, ssl_options=ssl_options)
+    else:
+        LOG.info("ws connection started")
+        application.listen(port, host)
     ioloop.IOLoop.instance().start()
 
 
