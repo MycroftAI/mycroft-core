@@ -246,7 +246,9 @@ class SkillSettings(dict):
                     sections = skill_setting['skillMetadata']['sections']
                     for section in sections:
                         for field in section["fields"]:
-                            self.__setitem__(field["name"], field["value"])
+                            if "name" in field:  # no name for 'label' fields
+                                self.__setitem__(field["name"],
+                                                 field["value"])
 
             # store value if settings has changed from backend
             self.store()
