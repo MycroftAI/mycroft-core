@@ -16,7 +16,6 @@ import random
 from io import open
 
 import os
-import pystache
 
 from mycroft.util import resolve_resource_file
 from mycroft.util.log import LOG
@@ -75,7 +74,10 @@ class MustacheDialogRenderer(object):
             index = random.randrange(len(template_functions))
         else:
             index %= len(template_functions)
-        return pystache.render(template_functions[index], context)
+        line = template_functions[index]
+        for k, v in context.items():
+            line = line.replace('{{' + str(k) + '}}', str(v))
+        return line
 
 
 class DialogLoader(object):

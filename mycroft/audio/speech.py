@@ -21,7 +21,7 @@ from mycroft.tts import TTSFactory
 from mycroft.util import create_signal, check_for_signal
 from mycroft.util.log import LOG
 
-ws = None
+ws = None  # TODO:18.02 - Rename to "messagebus"
 config = None
 tts = None
 tts_hash = None
@@ -30,9 +30,9 @@ lock = Lock()
 _last_stop_signal = 0
 
 
-def _trigger_expect_response(message):
+def _start_listener(message):
     """
-        Makes mycroft start listening on 'recognizer_loop:audio_output_end'
+        Force Mycroft to start listening (as if 'Hey Mycroft' was spoken)
     """
     create_signal('startListening')
 
@@ -50,7 +50,9 @@ def handle_speak(event):
 
     utterance = event.data['utterance']
     if event.data.get('expect_response', False):
-        ws.once('recognizer_loop:audio_output_end', _trigger_expect_response)
+        # When expect_response is requested, the listener will be restarted
+        # at the end of the next bit of spoken audio.
+        ws.once('recognizer_loop:audio_output_end', _start_listener)
 
     # This is a bit of a hack for Picroft.  The analog audio on a Pi blocks
     # for 30 seconds fairly often, so we don't want to break on periods
@@ -132,6 +134,7 @@ def init(websocket):
     ws.on('mycroft.stop', handle_stop)
     ws.on('mycroft.audio.speech.stop', handle_stop)
     ws.on('speak', handle_speak)
+    ws.on('mycroft.mic.listen', _start_listener)
 
     tts = TTSFactory.create()
     tts.init(ws)

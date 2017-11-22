@@ -931,8 +931,7 @@ def normalize_en(text, remove_articles):
                        "there're", "there's", "they'd", "they'll", "they're",
                        "they've", "wasn't", "we'd", "we'll", "we're", "we've",
                        "weren't", "what'd", "what'll", "what're", "what's",
-                       "whats",
-                       # technically incorrect but some STT does this
+                       "whats",  # technically incorrect but some STT outputs
                        "what've", "when's", "when'd", "where'd", "where's",
                        "where've", "who'd", "who'd've", "who'll", "who're",
                        "who's", "who've", "why'd", "why're", "why's", "won't",

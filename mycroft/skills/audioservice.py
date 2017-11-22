@@ -55,7 +55,22 @@ class AudioService():
         """
         self.info = message.data
 
-    def play(self, tracks=[], utterance=''):
+    def queue(self, tracks=None):
+        """ Queue up a track to playing playlist.
+
+            Args:
+                tracks: track uri or list of track uri's
+        """
+        tracks = tracks or []
+        if isinstance(tracks, basestring):
+            tracks = [tracks]
+        elif not isinstance(tracks, list):
+            raise ValueError
+        tracks = [ensure_uri(t) for t in tracks]
+        self.emitter.emit(Message('mycroft.audio.service.queue',
+                                  data={'tracks': tracks}))
+
+    def play(self, tracks=None, utterance=''):
         """ Start playback.
 
             Args:
@@ -63,6 +78,7 @@ class AudioService():
                 utterance: forward utterance for further processing by the
                            audio service.
         """
+        tracks = tracks or []
         if isinstance(tracks, basestring):
             tracks = [tracks]
         elif not isinstance(tracks, list):
