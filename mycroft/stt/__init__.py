@@ -124,7 +124,7 @@ class KaldiSTT(STT):
 
 class PocketSphinxSTT(BasicSTT):
     def __init__(self, lang="en-us", config=None):
-        super(PocketSphinxSTT, self).__init__("pocketsphinx")
+        super(PocketSphinxSTT, self).__init__()
         from mycroft.stt.pocketsphinx_stt import PS_Recognizer
         self.recognizer = PS_Recognizer(self.lang)
 

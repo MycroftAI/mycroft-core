@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from copy import copy
+# from copy import copy
 
-import requests
-from requests import HTTPError
+# import requests
+# from requests import HTTPError
 
-from mycroft.configuration import Configuration
-from mycroft.configuration.config import DEFAULT_CONFIG, SYSTEM_CONFIG, \
-    USER_CONFIG, LocalConf
-from mycroft.identity import IdentityManager
-from mycroft.version import VersionManager
-from mycroft.util import get_arch
+# from mycroft.configuration import Configuration
+# from mycroft.configuration.config import DEFAULT_CONFIG, SYSTEM_CONFIG, \
+#    USER_CONFIG, LocalConf
+# from mycroft.identity import IdentityManager
+# from mycroft.version import VersionManager
+# from mycroft.util import get_arch
 
 _paired_cache = False
 
@@ -32,102 +32,117 @@ class Api(object):
 
     def __init__(self, path):
         self.path = path
-        config = Configuration.get([LocalConf(DEFAULT_CONFIG),
-                                    LocalConf(SYSTEM_CONFIG),
-                                    LocalConf(USER_CONFIG)],
-                                   cache=False)
-        config_server = config.get("server")
-        self.url = config_server.get("url")
-        self.version = config_server.get("version")
-        self.identity = IdentityManager.get()
+        # config = Configuration.get([LocalConf(DEFAULT_CONFIG),
+        #                            LocalConf(SYSTEM_CONFIG),
+        #                            LocalConf(USER_CONFIG)],
+        #                           cache=False)
+        # config_server = config.get("server")
+        # self.url = config_server.get("url")
+        # self.version = config_server.get("version")
+        #self.identity = IdentityManager.get()
 
     def request(self, params):
-        self.check_token()
-        self.build_path(params)
-        self.old_params = copy(params)
-        return self.send(params)
+        # self.check_token()
+        # self.build_path(params)
+        # self.old_params = copy(params)
+        # return self.send(params)
+        return None
 
     def check_token(self):
-        if self.identity.refresh and self.identity.is_expired():
-            self.identity = IdentityManager.load()
-            if self.identity.is_expired():
-                self.refresh_token()
+        # if self.identity.refresh and self.identity.is_expired():
+        #    self.identity = IdentityManager.load()
+        #    if self.identity.is_expired():
+        #        self.refresh_token()
+        return None
 
     def refresh_token(self):
-        data = self.send({
-            "path": "auth/token",
-            "headers": {
-                "Authorization": "Bearer " + self.identity.refresh
-            }
-        })
-        IdentityManager.save(data)
+        # data = self.send({
+        #    "path": "auth/token",
+        #    "headers": {
+        #        "Authorization": "Bearer " + self.identity.refresh
+        #    }
+        # })
+        # IdentityManager.save(data)
+        return None
 
     def send(self, params):
-        method = params.get("method", "GET")
-        headers = self.build_headers(params)
-        data = self.build_data(params)
-        json = self.build_json(params)
-        query = self.build_query(params)
-        url = self.build_url(params)
-        response = requests.request(method, url, headers=headers, params=query,
-                                    data=data, json=json, timeout=(3.05, 15))
-        return self.get_response(response)
+        # method = params.get("method", "GET")
+        # headers = self.build_headers(params)
+        # data = self.build_data(params)
+        # json = self.build_json(params)
+        # query = self.build_query(params)
+        # url = self.build_url(params)
+        # response = requests.request(method, url, headers=headers,
+        # params=query,
+        #                            data=data, json=json, timeout=(3.05, 15))
+        # return self.get_response(response)
+        return None
 
     def get_response(self, response):
-        data = self.get_data(response)
-        if 200 <= response.status_code < 300:
-            return data
-        elif response.status_code == 401 \
-                and not response.url.endswith("auth/token"):
-            self.refresh_token()
-            return self.send(self.old_params)
-        raise HTTPError(data, response=response)
+        # data = self.get_data(response)
+        # if 200 <= response.status_code < 300:
+        #    return data
+        # elif response.status_code == 401 \
+        #        and not response.url.endswith("auth/token"):
+        #    self.refresh_token()
+        #    return self.send(self.old_params)
+        #raise HTTPError(data, response=response)
+        return None
 
     def get_data(self, response):
-        try:
-            return response.json()
-        except:
-            return response.text
+        # try:
+        #    return response.json()
+        # except:
+        #    return response.text
+        return None
 
     def build_headers(self, params):
-        headers = params.get("headers", {})
-        self.add_content_type(headers)
-        self.add_authorization(headers)
-        params["headers"] = headers
-        return headers
+        # headers = params.get("headers", {})
+        # self.add_content_type(headers)
+        # self.add_authorization(headers)
+        # params["headers"] = headers
+        #return headers
+        return None
 
     def add_content_type(self, headers):
-        if not headers.__contains__("Content-Type"):
-            headers["Content-Type"] = "application/json"
+        # if not headers.__contains__("Content-Type"):
+        #    headers["Content-Type"] = "application/json"
+        return None
 
     def add_authorization(self, headers):
-        if not headers.__contains__("Authorization"):
-            headers["Authorization"] = "Bearer " + self.identity.access
+        # if not headers.__contains__("Authorization"):
+        #    headers["Authorization"] = "Bearer " + self.identity.access
+        return None
 
     def build_data(self, params):
-        return params.get("data")
+        #return params.get("data")
+        return None
 
     def build_json(self, params):
-        json = params.get("json")
-        if json and params["headers"]["Content-Type"] == "application/json":
-            for k, v in json.iteritems():
-                if v == "":
-                    json[k] = None
-            params["json"] = json
-        return json
+        # json = params.get("json")
+        # if json and params["headers"]["Content-Type"] == "application/json":
+        #    for k, v in json.iteritems():
+        #        if v == "":
+        #            json[k] = None
+        #    params["json"] = json
+        #return json
+        return None
 
     def build_query(self, params):
-        return params.get("query")
+        #return params.get("query")
+        return None
 
     def build_path(self, params):
-        path = params.get("path", "")
-        params["path"] = self.path + path
-        return params["path"]
+        # path = params.get("path", "")
+        # params["path"] = self.path + path
+        #return params["path"]
+        return None
 
     def build_url(self, params):
-        path = params.get("path", "")
-        version = params.get("version", self.version)
-        return self.url + "/" + version + "/" + path
+        # path = params.get("path", "")
+        # version = params.get("version", self.version)
+        #return self.url + "/" + version + "/" + path
+        return None
 
 
 class DeviceApi(Api):
@@ -137,36 +152,40 @@ class DeviceApi(Api):
         super(DeviceApi, self).__init__("device")
 
     def get_code(self, state):
-        IdentityManager.update()
-        return self.request({
-            "path": "/code?state=" + state
-        })
+        # IdentityManager.update()
+        # return self.request({
+        #    "path": "/code?state=" + state
+        #})
+        return None
 
     def activate(self, state, token):
-        version = VersionManager.get()
-        return self.request({
-            "method": "POST",
-            "path": "/activate",
-            "json": {"state": state,
-                     "token": token,
-                     "coreVersion": version.get("coreVersion"),
-                     "enclosureVersion": version.get("enclosureVersion")}
-        })
+        # version = VersionManager.get()
+        # return self.request({
+        #    "method": "POST",
+        #    "path": "/activate",
+        #    "json": {"state": state,
+        #             "token": token,
+        #             "coreVersion": version.get("coreVersion"),
+        #             "enclosureVersion": version.get("enclosureVersion")}
+        #})
+        return None
 
     def update_version(self):
-        version = VersionManager.get()
-        return self.request({
-            "method": "PATCH",
-            "path": "/" + self.identity.uuid,
-            "json": {"coreVersion": version.get("coreVersion"),
-                     "enclosureVersion": version.get("enclosureVersion")}
-        })
+        # version = VersionManager.get()
+        # return self.request({
+        #    "method": "PATCH",
+        #    "path": "/" + self.identity.uuid,
+        #    "json": {"coreVersion": version.get("coreVersion"),
+        #             "enclosureVersion": version.get("enclosureVersion")}
+        #})
+        return None
 
     def get(self):
         """ Retrieve all device information from the web backend """
-        return self.request({
-            "path": "/" + self.identity.uuid
-        })
+        # return self.request({
+        #    "path": "/" + self.identity.uuid
+        #})
+        return None
 
     def get_settings(self):
         """ Retrieve device settings information from the web backend
@@ -174,9 +193,10 @@ class DeviceApi(Api):
         Returns:
             str: JSON string with user configuration information.
         """
-        return self.request({
-            "path": "/" + self.identity.uuid + "/setting"
-        })
+        # return self.request({
+        #    "path": "/" + self.identity.uuid + "/setting"
+        #})
+        return "{}"
 
     def get_location(self):
         """ Retrieve device location information from the web backend
@@ -184,9 +204,10 @@ class DeviceApi(Api):
         Returns:
             str: JSON string with user location.
         """
-        return self.request({
-            "path": "/" + self.identity.uuid + "/location"
-        })
+        # return self.request({
+        #    "path": "/" + self.identity.uuid + "/location"
+        #})
+        return "{}"
 
     def get_subscription(self):
         """
@@ -195,8 +216,9 @@ class DeviceApi(Api):
 
             Returns: dictionary with subscription information
         """
-        return self.request({
-            'path': '/' + self.identity.uuid + '/subscription'})
+        # return self.request({
+        #    'path': '/' + self.identity.uuid + '/subscription'})
+        return {}
 
     @property
     def is_subscriber(self):
@@ -204,18 +226,20 @@ class DeviceApi(Api):
             status of subscription. True if device is connected to a paying
             subscriber.
         """
-        try:
-            return self.get_subscription().get('@type') != 'free'
-        except:
+        # try:
+        #    return self.get_subscription().get('@type') != 'free'
+        #except:
             # If can't retrieve, assume not paired and not a subscriber yet
-            return False
+        #    return False
+        return False
 
     def get_subscriber_voice_url(self, voice=None):
-        self.check_token()
-        archs = {'x86_64': 'x86_64', 'armv7l': 'arm'}
-        arch = archs[get_arch()]
-        path = '/' + self.identity.uuid + '/voice?arch=' + arch
-        return self.request({'path': path})['link']
+        # self.check_token()
+        # archs = {'x86_64': 'x86_64', 'armv7l': 'arm'}
+        # arch = archs[get_arch()]
+        # path = '/' + self.identity.uuid + '/voice?arch=' + arch
+        #return self.request({'path': path})['link']
+        return ""
 
     def find(self):
         """ Deprecated, see get_location() """
@@ -251,12 +275,13 @@ class STTApi(Api):
             str: JSON structure with transcription results
         """
 
-        return self.request({
-            "method": "POST",
-            "headers": {"Content-Type": "audio/x-flac"},
-            "query": {"lang": language, "limit": limit},
-            "data": audio
-        })
+        # return self.request({
+        #    "method": "POST",
+        #    "headers": {"Content-Type": "audio/x-flac"},
+        #    "query": {"lang": language, "limit": limit},
+        #    "data": audio
+        #})
+        raise NotImplementedError
 
 
 def has_been_paired():

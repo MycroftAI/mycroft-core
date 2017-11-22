@@ -141,7 +141,7 @@ class MimicValidator(TTSValidator):
         try:
             subprocess.call([BIN, '--version'])
         except:
-            LOG.info("Failed to find mimic at: " + BIN)
+            LOG.info("Failed to find mimic at: " + str(BIN))
             raise Exception(
                 'Mimic was not found. Run install-mimic.sh to install it.')
 
