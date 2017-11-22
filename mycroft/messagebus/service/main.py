@@ -57,9 +57,11 @@ def main():
 
     ssl_options = None
     if ssl:
-        cert = config.get("cert")
-        key = config.get("key")
-        self_sign = config.get("cert_auto_gen")
+        cert = config.get("cert", join(dirname(__file__), "certs",
+                                       "secure_websocket.crt"))
+        key = config.get("key", join(dirname(__file__), "certs",
+                                     "secure_websocket.key"))
+        self_sign = config.get("cert_auto_gen", True)
         if self_sign and (not key or not cert):
             LOG.error("ssl keys dont exist, creating self signed")
             cert_dir = join(dirname(__file__) , "certs")
