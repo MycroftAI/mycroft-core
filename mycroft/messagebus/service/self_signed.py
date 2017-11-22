@@ -1,7 +1,7 @@
 from OpenSSL import crypto
 from socket import gethostname
 from os.path import exists, join
-from os import mkdir
+from os import makedirs
 import random
 
 
@@ -37,7 +37,7 @@ def create_self_signed_cert(cert_dir, name="mycroft"):
         cert.set_pubkey(k)
         cert.sign(k, 'sha1')
         if not exists(cert_dir):
-            mkdir(cert_dir)
+            makedirs(cert_dir)
         open(cert_path, "wt").write(
             crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
         open(join(cert_dir, KEY_FILE), "wt").write(
