@@ -4,17 +4,17 @@ Privacy enhanced mycroft
 
 - blacklist pairing skill
 - blacklist configuration skill
-- disable server updates in config
-- do not try to load remote configuration
+- disable remote configuration
 - disable pairing check
 - disable mycroft API
 - disable mycroft STT
 - disable ww upload
-- privacy compromising options removed from config
+- disable identity manager
+- privacy compromising options removed from config (server, opt in, ww upload, mycroft stt)
 - pocketsphinx default stt
 - es-es language model included
 - en-us language model included
-
+- secure websocket by default
 
 
 Mycroft [![Build Status](https://travis-ci.org/MycroftAI/mycroft-core.svg?branch=master)](https://travis-ci.org/MycroftAI/mycroft-core) [![Coverage Status](https://coveralls.io/repos/github/MycroftAI/mycroft-core/badge.svg?branch=dev)](https://coveralls.io/github/MycroftAI/mycroft-core?branch=dev)

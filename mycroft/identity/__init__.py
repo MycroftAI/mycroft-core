@@ -20,44 +20,56 @@ from mycroft.filesystem import FileSystemAccess
 
 class DeviceIdentity(object):
     def __init__(self, **kwargs):
-        self.uuid = kwargs.get("uuid", "")
-        self.access = kwargs.get("access", "")
-        self.refresh = kwargs.get("refresh", "")
-        self.expires_at = kwargs.get("expires_at", 0)
+        self.uuid = "private"
+        self.access = "always"
+        self.refresh = "maybe"
+        self.expires_at = 0
+        # self.uuid = kwargs.get("uuid", "")
+        # self.access = kwargs.get("access", "")
+        # self.refresh = kwargs.get("refresh", "")
+        # self.expires_at = kwargs.get("expires_at", 0)
 
     def is_expired(self):
-        return self.refresh and self.expires_at <= time.time()
+        # return self.refresh and self.expires_at <= time.time()
+        return False
 
 
 class IdentityManager(object):
-    __identity = None
+    __identity = "private"
+
+    #__identity = None
 
     @staticmethod
     def load():
-        try:
-            with FileSystemAccess('identity').open('identity2.json', 'r') as f:
-                IdentityManager.__identity = DeviceIdentity(**json.load(f))
-        except:
-            IdentityManager.__identity = DeviceIdentity()
-        return IdentityManager.__identity
+        #    try:
+        #        with FileSystemAccess('identity').open('identity2.json',
+        # 'r') as f:
+        #            IdentityManager.__identity = DeviceIdentity(**json.load(f))
+        #    except:
+        #        IdentityManager.__identity = DeviceIdentity()
+        #    return IdentityManager.__identity
+        return "private"
 
     @staticmethod
     def save(login=None):
-        if login:
-            IdentityManager.update(login)
-        with FileSystemAccess('identity').open('identity2.json', 'w') as f:
-            json.dump(IdentityManager.__identity.__dict__, f)
+        # if login:
+        #    IdentityManager.update(login)
+        # with FileSystemAccess('identity').open('identity2.json', 'w') as f:
+        #    json.dump(IdentityManager.__identity.__dict__, f)
+        return
 
     @staticmethod
     def update(login={}):
-        expiration = login.get("expiration", 0)
-        IdentityManager.__identity.uuid = login.get("uuid", "")
-        IdentityManager.__identity.access = login.get("accessToken", "")
-        IdentityManager.__identity.refresh = login.get("refreshToken", "")
-        IdentityManager.__identity.expires_at = time.time() + expiration
+        # expiration = login.get("expiration", 0)
+        # IdentityManager.__identity.uuid = login.get("uuid", "")
+        # IdentityManager.__identity.access = login.get("accessToken", "")
+        # IdentityManager.__identity.refresh = login.get("refreshToken", "")
+        # IdentityManager.__identity.expires_at = time.time() + expiration
+        return
 
     @staticmethod
     def get():
-        if not IdentityManager.__identity:
-            IdentityManager.load()
-        return IdentityManager.__identity
+        # if not IdentityManager.__identity:
+        #    IdentityManager.load()
+        # return IdentityManager.__identity
+        return "private"
