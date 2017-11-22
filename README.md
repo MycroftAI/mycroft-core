@@ -7,6 +7,7 @@ Privacy enhanced mycroft
 - disable server updates in config
 - do not try to load remote configuration
 - disable pairing check and mycroft API
+- disable ww upload
 - pocketsphinx default stt
 - es-es language model included
 - en-us language model included
