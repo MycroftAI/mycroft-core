@@ -169,6 +169,13 @@ class DeviceApi(Api):
             "json": {"title": title, "body": body, "sender": sender}
         })
 
+    def report_metric(self, name, data):
+        return self.request({
+            "method": "POST",
+            "path": "/" + self.identity.uuid + "/metric/" + name,
+            "json": data
+        })
+
     def get(self):
         """ Retrieve all device information from the web backend """
         return self.request({
