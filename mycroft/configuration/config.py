@@ -22,6 +22,7 @@ from requests import HTTPError
 
 from mycroft.util.json_helper import load_commented_json
 from mycroft.util.log import LOG
+from mycroft.filesystem import FileSystemAccess
 
 
 def merge_dict(base, delta):
@@ -135,7 +136,8 @@ class RemoteConf(LocalConf):
     def __init__(self, cache=None):
         super(RemoteConf, self).__init__(None)
 
-        cache = cache or '/opt/mycroft/web_config_cache.json'
+        if not cache:
+            cache = join(FileSystemAccess('cache').path, 'web_config_cache.json')
 
         try:
             # Here to avoid cyclic import
