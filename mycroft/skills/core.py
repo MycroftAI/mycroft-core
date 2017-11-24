@@ -25,11 +25,13 @@ from adapt.intent import Intent, IntentBuilder
 from os import listdir
 from os.path import join, abspath, dirname, splitext, basename, exists
 
+from mycroft.api import DeviceApi
 from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
 from mycroft.dialog import DialogLoader
 from mycroft.filesystem import FileSystemAccess
 from mycroft.messagebus.message import Message
+from mycroft.metrics import report_metric
 from mycroft.skills.settings import SkillSettings
 from mycroft.util.log import LOG
 
@@ -229,6 +231,7 @@ class MycroftSkill(object):
         self.config = self.config_core.get(self.name)
         self.dialog_renderer = None
         self.vocab_dir = None
+        self.root_dir = None
         self.file_system = FileSystemAccess(join('skills', self.name))
         self.registered_intents = []
         self.log = LOG.create_logger(self.name)
@@ -323,6 +326,27 @@ class MycroftSkill(object):
             Returns:    True if an utterance was handled, otherwise False
         """
         return False
+
+    def report_metric(self, name, data):
+        """
+        Report a skill metric to the Mycroft servers
+
+        Args:
+            name (str): Name of metric
+            data (dict): JSON dictionary to report. Must be valid JSON
+        """
+        report_metric(basename(self.root_dir) + '/' + name, data)
+
+    def send_email(self, title, body):
+        """
+        Send an email to the registered user's email
+
+        Args:
+            title (str): Title of email
+            body  (str): HTML body of email. This supports
+                         simple HTML like bold and italics
+        """
+        DeviceApi().send_email(title, body, basename(self.root_dir))
 
     def make_active(self):
         """
@@ -599,6 +623,7 @@ class MycroftSkill(object):
         self.init_dialog(root_directory)
         self.load_vocab_files(join(root_directory, 'vocab', self.lang))
         regex_path = join(root_directory, 'regex', self.lang)
+        self.root_dir = root_directory
         if exists(regex_path):
             self.load_regex_files(regex_path)
 

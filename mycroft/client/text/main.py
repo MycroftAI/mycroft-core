@@ -30,18 +30,19 @@ import curses                                               # nopep8
 import curses.ascii                                         # nopep8
 import textwrap                                             # nopep8
 import json                                                 # nopep8
+import mycroft.version                                      # nopep8
 from threading import Thread, Lock                          # nopep8
 from mycroft.messagebus.client.ws import WebsocketClient    # nopep8
 from mycroft.messagebus.message import Message              # nopep8
 from mycroft.util import get_ipc_directory                  # nopep8
-from mycroft.util.log import LOG                      # nopep8
+from mycroft.util.log import LOG                            # nopep8
 
 ws = None
 mutex = Lock()
 
 utterances = []
 chat = []   # chat history, oldest at the lowest index
-line = "What time is it"
+line = ""
 bSimple = '--simple' in sys.argv
 scr = None
 log_line_offset = 0  # num lines back in logs to show
@@ -56,6 +57,7 @@ log_filters = list(default_log_filters)
 log_files = []
 find_str = None
 cy_chat_area = 7  # default chat history height (in lines)
+size_log_area = 0  # max number of visible log lines, calculated during draw
 
 
 # Values used to display the audio meter
@@ -65,7 +67,9 @@ meter_cur = -1
 meter_thresh = -1
 
 screen_mode = 0   # 0 = main, 1 = help, others in future?
-last_redraw = 0   # time when last full-redraw happened
+FULL_REDRAW_FREQUENCY = 10    # seconds between full redraws
+last_full_redraw = time.time()-FULL_REDRAW_FREQUENCY  # last full-redraw time
+screen_lock = Lock()
 
 # Curses color codes (reassigned at runtime)
 CLR_HEADING = 0
@@ -350,9 +354,9 @@ def init_screen():
 def page_log(page_up):
     global log_line_offset
     if page_up:
-        log_line_offset -= 10
+        log_line_offset -= size_log_area/2
     else:
-        log_line_offset += 10
+        log_line_offset += size_log_area/2
     if log_line_offset > len(filteredLog):
         log_line_offset = len(filteredLog) - 10
     if log_line_offset < 0:
@@ -360,7 +364,7 @@ def page_log(page_up):
     draw_screen()
 
 
-def draw_meter(height):
+def _do_meter(height):
     if not show_meter or meter_cur == -1:
         return
 
@@ -425,11 +429,8 @@ def draw_meter(height):
 
 
 def draw_screen():
+    global screen_lock
     global scr
-    global log_line_offset
-    global longest_visible_line
-    global last_redraw
-    global auto_scroll
 
     if not scr:
         return
@@ -437,16 +438,32 @@ def draw_screen():
     if not screen_mode == 0:
         return
 
-    if time.time() - last_redraw > 5:   # every 5 seconds
+    # Use a lock to prevent screen corruption when drawing
+    # from multiple threads
+    with screen_lock:
+        _do_drawing(scr)
+
+
+def _do_drawing(scr):
+    global log_line_offset
+    global longest_visible_line
+    global last_full_redraw
+    global auto_scroll
+    global size_log_area
+
+    if time.time() - last_full_redraw > FULL_REDRAW_FREQUENCY:
+        # Do a full-screen redraw periodically to clear and
+        # noise from non-curses text that get output to the
+        # screen (e.g. modules that do a 'print')
         scr.clear()
-        last_redraw = time.time()
+        last_full_redraw = time.time()
     else:
         scr.erase()
 
     # Display log output at the top
     cLogs = len(filteredLog) + 1  # +1 for the '--end--'
-    cLogLinesToShow = curses.LINES - (cy_chat_area + 5)  # 5 = headers+input
-    start = clamp(cLogs - cLogLinesToShow, 0, cLogs - 1) - log_line_offset
+    size_log_area = curses.LINES - (cy_chat_area + 5)
+    start = clamp(cLogs - size_log_area, 0, cLogs - 1) - log_line_offset
     end = cLogs - log_line_offset
     if start < 0:
         end -= start
@@ -471,7 +488,10 @@ def draw_screen():
         scr.addstr(0, 0, "Log Output:" + " " * (curses.COLS - 31) +
                    str(start) + "-" + str(end) + " of " + str(cLogs),
                    CLR_HEADING)
-    scr.addstr(1, 0,  "=" * (curses.COLS - 1), CLR_HEADING)
+    ver = " mycroft-core "+mycroft.version.CORE_VERSION_STR+" ==="
+    scr.addstr(1, 0, "=" * (curses.COLS-1-len(ver)), CLR_HEADING)
+    scr.addstr(1, curses.COLS-1-len(ver), ver, CLR_HEADING)
+
     y = 2
     len_line = 0
     for i in range(start, end):
@@ -585,7 +605,7 @@ def draw_screen():
                    CLR_HEADING)
         scr.addstr(curses.LINES - 1, 0, ">", CLR_HEADING)
 
-    draw_meter(cy_chat_area + 2)
+    _do_meter(cy_chat_area + 2)
     scr.addstr(curses.LINES - 1, 2, l, CLR_INPUT)
     scr.refresh()
 

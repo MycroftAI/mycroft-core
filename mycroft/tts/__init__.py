@@ -111,7 +111,8 @@ class PlaybackThread(Thread):
                 self._clear_visimes = False
                 return True
             if self.enclosure:
-                self.enclosure.mouth_viseme(code)
+                # Include time stamp to assist with animation timing
+                self.enclosure.mouth_viseme(code, start+duration)
             delta = time() - start
             if delta < duration:
                 sleep(duration - delta)
