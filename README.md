@@ -120,7 +120,7 @@ If  you are behind a proxy which requires authentication, add the following envi
 ```bash
 $ export http_proxy=http://user:password@proxy_hostname.com:proxy_port
 $ export https_port=http://user:password@proxy_hostname.com:proxy_port
-$  export no_proxy="localhost,127.0.0.1,localaddress,.localdomain.com,0.0.0.0,::1"
+$ export no_proxy="localhost,127.0.0.1,localaddress,.localdomain.com,0.0.0.0,::1"
 ```
 
 # Getting Involved
