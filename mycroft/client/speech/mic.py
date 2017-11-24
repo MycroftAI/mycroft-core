@@ -31,7 +31,7 @@ from speech_recognition import (
     AudioSource,
     AudioData
 )
-from requests import HTTPError
+import requests
 
 from mycroft.api import DeviceApi
 from mycroft.configuration import Configuration
@@ -189,7 +189,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         try:
             self.account_id = DeviceApi().get()['user']['uuid']
-        except (HTTPError, AttributeError):
+        except (requests.HTTPError, requests.ConnectionError, AttributeError):
             self.account_id = '0'
 
     @staticmethod
