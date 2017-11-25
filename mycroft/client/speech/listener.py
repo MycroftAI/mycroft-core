@@ -29,6 +29,7 @@ from mycroft.metrics import MetricsAggregator
 from mycroft.session import SessionManager
 from mycroft.stt import STTFactory
 from mycroft.util.log import LOG
+from mycroft.client.speech.transcribe import Transcribe
 
 
 class AudioProducer(Thread):
@@ -163,6 +164,7 @@ class AudioConsumer(Thread):
             }
             self.emitter.emit("recognizer_loop:utterance", payload)
             self.metrics.attr('utterances', [text])
+            Transcribe.write_transcribed_files(audio.frame_data, text)
 
     def __speak(self, utterance):
         payload = {
