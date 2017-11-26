@@ -383,7 +383,9 @@ class TTSFactory(object):
     from mycroft.tts.mary_tts import MaryTTS
     from mycroft.tts.mimic_tts import Mimic
     from mycroft.tts.spdsay_tts import SpdSay
+    from mycroft.tts.bing_tts import BingTTS
     from mycroft.tts.ibm_tts import WatsonTTS
+
     CLASSES = {
         "mimic": Mimic,
         "google": GoogleTTS,
@@ -391,7 +393,8 @@ class TTSFactory(object):
         "fatts": FATTS,
         "espeak": ESpeak,
         "spdsay": SpdSay,
-        "watson": WatsonTTS
+        "watson": WatsonTTS,
+        "bing": BingTTS
     }
 
     @staticmethod
