@@ -340,10 +340,14 @@ class TTSValidator(object):
         self.tts = tts
 
     def validate(self):
+        self.validate_dependencies()
         self.validate_instance()
         self.validate_filename()
         self.validate_lang()
         self.validate_connection()
+
+    def validate_dependencies(self):
+        pass
 
     def validate_instance(self):
         clazz = self.get_tts_class()
