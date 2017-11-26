@@ -172,7 +172,11 @@ class PreciseHotword(HotWordEngine):
     @staticmethod
     def download(url, filename):
         import shutil
-        from urllib2 import urlopen
+        # python 2/3 compatibility
+        try:
+            from urllib.request import urlopen
+        except:
+            from urllib2 import urlopen
         LOG.info('Downloading: ' + url)
         req = urlopen(url)
         with open(filename, 'wb') as fp:

@@ -455,7 +455,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                     ww_module = self.wake_word_recognizer.__class__.__name__
 
                     ww = self.wake_word_name.replace(' ', '-')
-                    md = md5(ww_module).hexdigest()
+                    md = md5(ww_module.encode('utf-8')).hexdigest()
                     stamp = str(int(1000 * get_time()))
                     sid = SessionManager.get().session_id
                     aid = self.account_id
