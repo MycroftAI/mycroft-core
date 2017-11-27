@@ -558,26 +558,31 @@ class MycroftSkill(object):
             text = f.read().replace('{{', '{').replace('}}', '}')
             return text.format(**data or {}).split('\n')
 
-    def add_event(self, name, handler, need_self=False, once=False):
+    def add_event(self, name, handler, need_self=False,
+                  handler_info=None, once=False):
         """
             Create event handler for executing intent
 
             Args:
-                name:       IntentParser name
-                handler:    method to call
-                need_self:  optional parameter, when called from a decorated
-                            intent handler the function will need the self
-                            variable passed as well.
-                once:       optional parameter, Event handler will be removed
-                            after it has been run once.
+                name:           IntentParser name
+                handler:        method to call
+                need_self:      optional parameter, when called from a
+                                decorated intent handler the function will
+                                need the self variable passed as well.
+                once:           optional parameter, Event handler will be
+                                removed after it has been run once.
+                handler_info:   base message when reporting skill event handler
+                                status on messagebus.
         """
 
         def wrapper(message):
+            data = {'name': get_handler_name(handler)}
             try:
                 # Indicate that the skill handler is starting
-                handler_name = get_handler_name(handler)
-                self.emitter.emit(Message("mycroft.skill.handler.start",
-                                          data={'handler': handler_name}))
+                if handler_info:
+                    # Indicate that the skill handler is starting if requested
+                    msg_type = handler_info + '.start'
+                    self.emitter.emit(Message(msg_type, data))
 
                 stopwatch = Stopwatch()
                 with stopwatch:
@@ -611,12 +616,6 @@ class MycroftSkill(object):
                             raise TypeError
                     self.settings.store()  # Store settings if they've changed
 
-                # Send timing metrics
-                context = message.context
-                if context and 'ident' in context:
-                    report_timing(context['ident'], 'skill_handler', stopwatch,
-                                  {'handler': handler.__name__})
-
             except Exception as e:
                 # Convert "MyFancySkill" to "My Fancy Skill" for speaking
                 handler_name = re.sub("([a-z])([A-Z])", "\g<1> \g<2>",
@@ -624,18 +623,24 @@ class MycroftSkill(object):
                 # TODO: Localize
                 self.speak("An error occurred while processing a request in " +
                            handler_name)
-                LOG.error(
-                    "An error occurred while processing a request in " +
-                    self.name, exc_info=True)
-                # indicate completion with exception
-                self.emitter.emit(Message('mycroft.skill.handler.complete',
-                                          data={'handler': handler_name,
-                                                'exception': e.message}))
-            # Indicate that the skill handler has completed
-            self.emitter.emit(Message('mycroft.skill.handler.complete',
-                                      data={'handler': handler_name}))
-            if once:
-                self.remove_event(name)
+                LOG.error("An error occurred while processing a request in " +
+                          self.name, exc_info=True)
+                # append exception information in message
+                data['exception'] = e.message
+            finally:
+                if once:
+                    self.remove_event(name)
+
+                # Indicate that the skill handler has completed
+                if handler_info:
+                    msg_type = handler_info + '.complete'
+                    self.emitter.emit(Message(msg_type, data))
+
+                # Send timing metrics
+                context = message.context
+                if context and 'ident' in context:
+                    report_timing(context['ident'], 'skill_handler', stopwatch,
+                                  {'handler': handler.__name__})
 
         if handler:
             if once:
@@ -688,7 +693,8 @@ class MycroftSkill(object):
         munge_intent_parser(intent_parser, name, self.skill_id)
         self.emitter.emit(Message("register_intent", intent_parser.__dict__))
         self.registered_intents.append((name, intent_parser))
-        self.add_event(intent_parser.name, handler, need_self)
+        self.add_event(intent_parser.name, handler, need_self,
+                       'mycroft.skill.handler')
 
     def register_intent_file(self, intent_file, handler, need_self=False):
         """
@@ -722,7 +728,7 @@ class MycroftSkill(object):
             "file_name": join(self.vocab_dir, intent_file),
             "name": name
         }))
-        self.add_event(name, handler, need_self)
+        self.add_event(name, handler, need_self, 'mycroft.skill.handler')
 
     def register_entity_file(self, entity_file):
         """
