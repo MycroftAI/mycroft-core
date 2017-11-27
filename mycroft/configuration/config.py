@@ -137,7 +137,8 @@ class RemoteConf(LocalConf):
         super(RemoteConf, self).__init__(None)
 
         if not cache:
-            cache = join(FileSystemAccess('cache').path, 'web_config_cache.json')
+            cache = join(FileSystemAccess('cache').path,
+                         'web_config_cache.json')
 
         try:
             # Here to avoid cyclic import
