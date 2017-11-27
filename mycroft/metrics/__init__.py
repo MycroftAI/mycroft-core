@@ -16,14 +16,21 @@ import json
 import threading
 import time
 
-import requests
-
-from mycroft.configuration import Configuration
-from mycroft.session import SessionManager
 from mycroft.util.log import LOG
 from mycroft.util.setup_base import get_version
 
-config = Configuration.get().get('server')
+
+def report_metric(name, data):
+    """
+    Report a general metric to the Mycroft servers
+
+    Args:
+        name (str): Name of metric
+        data (dict): JSON dictionary to report. Must be valid JSON
+    """
+    #if Configuration().get()['opt_in']:
+    #    DeviceApi().report_metric(name, data)
+    pass
 
 
 class Stopwatch(object):
@@ -104,10 +111,10 @@ class MetricsAggregator(object):
 
 
 class MetricsPublisher(object):
-    def __init__(self, url="nop", enabled=False):
-        # def __init__(self, url=config.get("url"), enabled=config.get("metrics")):
-        # self.url = url
-        # self.enabled = enabled
+    def __init__(self, url=None, enabled=False):
+        #conf = Configuration().get()['server']
+        #self.url = url or conf['url']
+        #self.enabled = enabled or conf['metrics']
         self.enabled = False
 
     def publish(self, events):

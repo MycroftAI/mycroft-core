@@ -59,12 +59,13 @@ class IdentityManager(object):
         return
 
     @staticmethod
-    def update(login={}):
-        # expiration = login.get("expiration", 0)
-        # IdentityManager.__identity.uuid = login.get("uuid", "")
-        # IdentityManager.__identity.access = login.get("accessToken", "")
-        # IdentityManager.__identity.refresh = login.get("refreshToken", "")
-        # IdentityManager.__identity.expires_at = time.time() + expiration
+    def update(login=None):
+        #login = login or {}
+        #expiration = login.get("expiration", 0)
+        #IdentityManager.__identity.uuid = login.get("uuid", "")
+        #IdentityManager.__identity.access = login.get("accessToken", "")
+        #IdentityManager.__identity.refresh = login.get("refreshToken", "")
+        #IdentityManager.__identity.expires_at = time.time() + expiration
         return
 
     @staticmethod

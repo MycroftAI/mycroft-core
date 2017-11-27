@@ -31,11 +31,9 @@ from speech_recognition import (
     AudioSource,
     AudioData
 )
-from requests import HTTPError
+import requests
 
-from mycroft.api import DeviceApi
 from mycroft.configuration import Configuration
-from mycroft.session import SessionManager
 from mycroft.util import (
     check_for_signal,
     get_ipc_directory,
@@ -192,8 +190,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         try:
             self.account_id = "1337" #DeviceApi().get()['user']['uuid']
-        except (HTTPError, AttributeError):
-            self.account_id = '0'
+        except (requests.HTTPError, requests.ConnectionError, AttributeError):
+            self.account_id = "0"
 
     @staticmethod
     def record_sound_chunk(source):

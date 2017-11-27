@@ -27,12 +27,13 @@ class Message(object):
             destination or domain.
     """
 
-    def __init__(self, type, data={}, context=None):
+    def __init__(self, type, data=None, context=None):
         """Used to construct a message object
 
         Message objects will be used to send information back and fourth
         bettween processes of mycroft service, voice, skill and cli
         """
+        data = data or {}
         self.type = type
         self.data = data
         self.context = context
@@ -71,7 +72,7 @@ class Message(object):
         obj = json.loads(value)
         return Message(obj.get('type'), obj.get('data'), obj.get('context'))
 
-    def reply(self, type, data, context={}):
+    def reply(self, type, data, context=None):
         """This is used to construct a reply message for a give message
 
         This will take the same parameters as a message object but use
@@ -91,6 +92,7 @@ class Message(object):
         Returns:
             Message: Message object to be used on the reply to the message
         """
+        context = context or {}
 
         new_context = self.context if self.context else {}
         for key in context:
@@ -101,7 +103,7 @@ class Message(object):
             context['target'] = context['client_name']
         return Message(type, data, context=new_context)
 
-    def publish(self, type, data, context={}):
+    def publish(self, type, data, context=None):
         """
 
         Copy the original context and add passed in context.  Delete
@@ -116,6 +118,7 @@ class Message(object):
         Returns:
             Message: Message object to publish
         """
+        context = context or {}
         new_context = self.context.copy() if self.context else {}
         for key in context:
             new_context[key] = context[key]

@@ -50,7 +50,7 @@ class MustacheDialogRenderer(object):
 
                 self.templates[template_name].append(template_text)
 
-    def render(self, template_name, context={}, index=None):
+    def render(self, template_name, context=None, index=None):
         """
         Given a template name, pick a template and render it using the context
 
@@ -67,6 +67,7 @@ class MustacheDialogRenderer(object):
             NotImplementedError: if no template can be found identified by
                 template_name
         """
+        context = context or {}
         if template_name not in self.templates:
             raise NotImplementedError("Template not found: %s" % template_name)
         template_functions = self.templates.get(template_name)
@@ -75,8 +76,7 @@ class MustacheDialogRenderer(object):
         else:
             index %= len(template_functions)
         line = template_functions[index]
-        for k, v in context.items():
-            line = line.replace('{{' + str(k) + '}}', str(v))
+        line = line.replace('{{', '{').replace('}}', '}').format(**context)
         return line
 
 

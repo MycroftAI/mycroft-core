@@ -181,7 +181,8 @@ class EnclosureAPI:
             time_until (float): (optional) For timing, time.time() when this
                          shape expires, or 0 for display regardles of time
         """
-        self.ws.emit(Message("enclosure.mouth.viseme", {'code': code}))
+        self.ws.emit(Message("enclosure.mouth.viseme", {'code': code,
+                                                        'until': time_until}))
 
     def mouth_text(self, text=""):
         """Display text (scrolling as needed)
