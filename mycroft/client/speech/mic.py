@@ -191,7 +191,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.SAVED_WW_SEC = 10 if self.save_wake_words else self.TEST_WW_SEC
 
         try:
-            self.account_id = DeviceApi().get()['user']['uuid']
+            self.account_id = "1337" #DeviceApi().get()['user']['uuid']
         except (HTTPError, AttributeError):
             self.account_id = '0'
 
