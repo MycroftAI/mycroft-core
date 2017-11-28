@@ -16,6 +16,7 @@ import random
 from io import open
 
 import os
+import re
 
 from mycroft.util import resolve_resource_file
 from mycroft.util.log import LOG
@@ -48,6 +49,13 @@ class MustacheDialogRenderer(object):
                 if template_name not in self.templates:
                     self.templates[template_name] = []
 
+                # convert to standard python format string syntax. From
+                # double (or more) '{' followed by any number of whitespace
+                # followed by actual key followed by any number of whitespace
+                # followed by double (or more) '}'
+                template_text = re.sub('\{\{+\s*(.*?)\s*\}\}+', r'{\1}',
+                                       template_text)
+
                 self.templates[template_name].append(template_text)
 
     def render(self, template_name, context=None, index=None):
@@ -76,7 +84,7 @@ class MustacheDialogRenderer(object):
         else:
             index %= len(template_functions)
         line = template_functions[index]
-        line = line.replace('{{', '{').replace('}}', '}').format(**context)
+        line = line.format(**context)
         return line
 
 
