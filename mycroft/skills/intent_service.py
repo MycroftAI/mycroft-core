@@ -13,7 +13,6 @@
 # limitations under the License.
 #
 import time
-from builtins import range
 from adapt.context import ContextManagerFrame
 from adapt.engine import IntentDeterminationEngine
 
@@ -24,6 +23,7 @@ from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
 # python 2+3 compatibility
 from past.builtins import basestring
+from future.builtins import range
 
 
 class ContextManager(object):

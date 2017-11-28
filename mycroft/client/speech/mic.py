@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import sys
 import audioop
 import collections
 import datetime
@@ -136,10 +135,7 @@ class MutableMicrophone(Microphone):
 
 
 def get_silence(num_bytes):
-    if sys.version_info[0] < 3:
-        return '\0' * num_bytes
-    else:
-        return bytes(num_bytes)
+    return b'\0' * num_bytes
 
 
 class ResponsiveRecognizer(speech_recognition.Recognizer):
