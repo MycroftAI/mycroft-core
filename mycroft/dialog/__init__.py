@@ -12,23 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import os
 import random
 from io import open
-
-import os
 
 from mycroft.util import resolve_resource_file
 from mycroft.util.log import LOG
 
 
-__doc__ = """
-
-"""
-
-
 class MustacheDialogRenderer(object):
     """
-    A dialog template renderer based on the mustache templating language.
+    A dialog template renderer based on the {{mustache}} templating language.
+    
+    The {{mustache}} language is a simple scheme that supports simple,
+    position-independent templating.  We use this same basic concept, but only
+    implement the variable replacement mechanism -- no HTML quoting with triple
+    brackets, sections, etc.
+
+    A difference between this and typical mustache mechanism is output
+    randomization. Only a single line is ever returned.  If the template file
+    contains multiple lines, one is randomly selected (unless a specific one
+    is requested).
+
+    This also supports translations.  The language code is used to select the
+    appropriate folder (e.g. 'en-en' or 'es-mx').
     """
 
     def __init__(self):
@@ -52,7 +59,7 @@ class MustacheDialogRenderer(object):
 
     def render(self, template_name, context=None, index=None):
         """
-        Given a template name, pick a template and render it using the context
+        Given a template name, pick one entry and render it using the context
 
         Args:
             template_name (str): the name of a template group.
@@ -142,3 +149,42 @@ def get(phrase, lang=None, context=None):
     if not context:
         context = {}
     return stache.render("template", context)
+
+
+def get_all(phrase, lang=None, context=None):
+    """
+    Looks up a resource file for the given phrase.  If no file
+    is found, the requested phrase is returned as the string.
+    This will use the default language for translations.
+
+    Args:
+        phrase (str): resource phrase to retrieve/translate
+        lang (str): the language to use
+        context (dict): values to be inserted into the string
+
+    Returns:
+        [str]: Array of all the versions of the phrase
+    """
+    if not lang:
+        from mycroft.configuration import Configuration
+        lang = Configuration.get().get("lang")
+
+    filename = "text/" + lang.lower() + "/" + phrase + ".dialog"
+    template = resolve_resource_file(filename)
+    if template:
+        stache = MustacheDialogRenderer()
+        stache.load_template_file(phrase, template)
+        if phrase in stache.templates:
+            if not context:
+                context = {}
+
+            # Render all templates...
+            result = []
+            for i in range(0, len(stache.templates[phrase])):
+                result.append(stache.render("template", context, i))
+            return result
+
+    # Use the given phrase as the template content.  Useful for
+    # short phrase or single-words that can be enhanced and
+    # translated later.  No rendering happens, though.
+    return [phrase.replace('.',' ')]

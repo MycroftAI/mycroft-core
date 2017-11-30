@@ -17,6 +17,7 @@ import time
 from adapt.context import ContextManagerFrame
 from adapt.engine import IntentDeterminationEngine
 
+import mycroft.dialog
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import open_intent_envelope
@@ -207,6 +208,14 @@ class IntentService(object):
             lang = "en-us"
 
         utterances = message.data.get('utterances', '')
+        
+        # check if the user aborted the utterance, e.g.
+        # "Hey Mycroft, can you play...aw heck...nevermind"
+        neverminds = mycroft.dialog.get_all("nevermind", lang)
+        for nevermind in neverminds:
+            for utterance in utterances:
+                if utterance.endswith(nevermind)
+                    return
 
         # check for conversation time-out
         self.active_skills = [skill for skill in self.active_skills
