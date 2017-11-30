@@ -37,6 +37,11 @@ from mycroft.messagebus.message import Message              # nopep8
 from mycroft.util import get_ipc_directory                  # nopep8
 from mycroft.util.log import LOG                            # nopep8
 
+import locale                                               # nopep8
+# Curses uses LC_ALL to determine how to display chars set it to system
+# default
+locale.setlocale(locale.LC_ALL, '.'.join(locale.getdefaultlocale()))
+
 ws = None
 mutex = Lock()
 
@@ -99,9 +104,15 @@ def clamp(n, smallest, largest):
     return max(smallest, min(n, largest))
 
 
-def stripNonAscii(text):
-    """ Remove junk characters that might be in the file """
-    return ''.join([i if ord(i) < 128 else ' ' for i in text])
+def handleNonAscii(text):
+    """
+        If default locale supports UTF-8 reencode the string otherwise
+        remove the offending characters.
+    """
+    if locale.getdefaultlocale()[1] == 'UTF-8':
+        return text.encode('utf-8')
+    else:
+        return ''.join([i if ord(i) < 128 else ' ' for i in text])
 
 
 ##############################################################################
@@ -612,7 +623,7 @@ def _do_drawing(scr):
             clr = CLR_CHAT_RESP
         else:
             clr = CLR_CHAT_QUERY
-        scr.addstr(y, 1, stripNonAscii(txt), clr)
+        scr.addstr(y, 1, handleNonAscii(txt), clr)
         y += 1
 
     # Command line at the bottom
