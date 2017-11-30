@@ -42,6 +42,7 @@ ws = None
 event_scheduler = None
 skill_manager = None
 
+DEBUG = Configuration.get().get("debug", False)
 skills_config = Configuration.get().get("skills")
 BLACKLISTED_SKILLS = skills_config.get("blacklisted_skills", [])
 PRIORITY_SKILLS = skills_config.get("priority_skills", [])
@@ -279,15 +280,16 @@ class SkillManager(Thread):
             # removing listeners and stopping threads
             skill["instance"].shutdown()
 
-            gc.collect()  # Collect garbage to remove false references
-            # Remove two local references that are known
-            refs = sys.getrefcount(skill["instance"]) - 2
-            if refs > 0:
-                LOG.warning(
-                    "After shutdown of {} there are still "
-                    "{} references remaining. The skill "
-                    "won't be cleaned from memory."
-                    .format(skill['instance'].name, refs))
+            if DEBUG:
+                gc.collect()  # Collect garbage to remove false references
+                # Remove two local references that are known
+                refs = sys.getrefcount(skill["instance"]) - 2
+                if refs > 0:
+                    LOG.warning(
+                        "After shutdown of {} there are still "
+                        "{} references remaining. The skill "
+                        "won't be cleaned from memory."
+                        .format(skill['instance'].name, refs))
             del skill["instance"]
 
         # (Re)load the skill from disk
