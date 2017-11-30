@@ -17,6 +17,7 @@ import subprocess
 import sys
 import time
 from threading import Timer, Thread, Event, Lock
+import gc
 
 import os
 from os.path import exists, join
@@ -278,6 +279,7 @@ class SkillManager(Thread):
             # removing listeners and stopping threads
             skill["instance"].shutdown()
 
+            gc.collect()  # Collect garbage to remove false references
             # Remove two local references that are known
             refs = sys.getrefcount(skill["instance"]) - 2
             if refs > 0:
