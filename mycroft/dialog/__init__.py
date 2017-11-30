@@ -23,7 +23,7 @@ from mycroft.util.log import LOG
 class MustacheDialogRenderer(object):
     """
     A dialog template renderer based on the {{mustache}} templating language.
-    
+
     The {{mustache}} language is a simple scheme that supports simple,
     position-independent templating.  We use this same basic concept, but only
     implement the variable replacement mechanism -- no HTML quoting with triple

@@ -214,7 +214,7 @@ class IntentService(object):
         neverminds = mycroft.dialog.get_all("nevermind", lang)
         for nevermind in neverminds:
             for utterance in utterances:
-                if utterance.endswith(nevermind)
+                if utterance.endswith(nevermind):
                     return
 
         # check for conversation time-out
