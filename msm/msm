@@ -143,16 +143,16 @@ function send_start_remove () {
     fi
 }
 function send_install_success () {
-    python -m mycroft.messagebus.send msm.install.succeeded '{"skill": "${1}" }'
+    python -m mycroft.messagebus.send msm.install.succeeded "{\"skill\": \"${1}\" }"
 }
 function send_install_fail () {
-    python -m mycroft.messagebus.send msm.install.failed '{"skill": "${1}", "error" : ${2} }'
+    python -m mycroft.messagebus.send msm.install.failed "{\"skill\": \"${1}\", \"error\" : ${2} }"
 }
 function send_remove_success () {
-    python -m mycroft.messagebus.send msm.remove.succeeded '{"skill": "${1}" }'
+    python -m mycroft.messagebus.send msm.remove.succeeded "{\"skill\": \"${1}\" }"
 }
 function send_remove_fail () {
-    python -m mycroft.messagebus.send msm.remove.failed '{"skill": "${1}", "error" : ${2} }'
+    python -m mycroft.messagebus.send msm.remove.failed "{\"skill\": \"${1}\", \"error\" : ${2} }"
 }
 function send_end_install () {
     if [[ "${install_started}" == "true" ]] ; then
