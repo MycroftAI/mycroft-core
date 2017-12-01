@@ -332,10 +332,10 @@ class MycroftSkill(object):
         Report a skill metric to the Mycroft servers
 
         Args:
-            name (str): Name of metric
+            name (str): Name of metric. Must use only letters and hyphens
             data (dict): JSON dictionary to report. Must be valid JSON
         """
-        report_metric(basename(self.root_dir) + '/' + name, data)
+        report_metric(basename(self.root_dir) + ':' + name, data)
 
     def send_email(self, title, body):
         """
