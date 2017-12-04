@@ -30,7 +30,7 @@ def report_metric(name, data):
     Report a general metric to the Mycroft servers
 
     Args:
-        name (str): Name of metric
+        name (str): Name of metric. Must use only letters and hyphens
         data (dict): JSON dictionary to report. Must be valid JSON
     """
     if Configuration().get()['opt_in']:
