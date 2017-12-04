@@ -388,8 +388,8 @@ class SkillManager(Thread):
                         "skill_id": skill_id, "result": result}))
                     return
                 except BaseException:
-                    LOG.error(
-                        "Converse method malformed for skill " + str(skill_id))
+                    LOG.exception(
+                        "Error in converse method for skill " + str(skill_id))
         self.ws.emit(Message("skill.converse.response",
                              {"skill_id": 0, "result": False}))
 

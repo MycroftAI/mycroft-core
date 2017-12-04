@@ -62,6 +62,10 @@ def handle_utterance(event):
     ws.emit(Message('recognizer_loop:utterance', event))
 
 
+def handle_unknown():
+    ws.emit(Message('mycroft.speech.recognition.unknown'))
+
+
 def handle_speak(event):
     """
         Forward speak message to message bus.
@@ -139,6 +143,7 @@ def main():
     Configuration.init(ws)
     loop = RecognizerLoop()
     loop.on('recognizer_loop:utterance', handle_utterance)
+    loop.on('recognizer_loop:speech.recognition.unknown', handle_unknown)
     loop.on('speak', handle_speak)
     loop.on('recognizer_loop:record_begin', handle_record_begin)
     loop.on('recognizer_loop:awoken', handle_awoken)

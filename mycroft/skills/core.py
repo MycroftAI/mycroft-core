@@ -23,7 +23,8 @@ import abc
 import re
 from adapt.intent import Intent, IntentBuilder
 from os import listdir
-from os.path import join, abspath, dirname, splitext, basename, exists
+from os.path import join, abspath, dirname, splitext, basename, exists, isfile
+from threading import Event
 
 from mycroft.api import DeviceApi
 from mycroft.client.enclosure.api import EnclosureAPI
@@ -33,6 +34,7 @@ from mycroft.filesystem import FileSystemAccess
 from mycroft.messagebus.message import Message
 from mycroft.metrics import report_metric
 from mycroft.skills.settings import SkillSettings
+from mycroft.util import resolve_resource_file
 from mycroft.util.log import LOG
 
 
@@ -319,12 +321,108 @@ class MycroftSkill(object):
             indicate that the utterance has been handled.
 
             Args:
-                utterances: The utterances from the user
+                utterances (list): The utterances from the user
                 lang:       language the utterance is in
 
             Returns:    True if an utterance was handled, otherwise False
         """
         return False
+
+    def __get_response(self):
+        """
+        Grab a reponse from the user
+        Returns:
+            str: STT transcription
+        """
+        event = Event()
+
+        def converse(utterances, lang="en-us"):
+            converse.response = utterances[0] if utterances else None
+            event.set()
+            return True
+
+        self.make_active()
+        converse.response = None
+        default_converse = self.converse
+        self.converse = converse
+        event.wait(20)
+        self.converse = default_converse
+        return converse.response
+
+    def get_response(self, dialog='', data=None, text='', validator=None,
+                     on_fail=None, num_retries=-1):
+        """
+        Ask and return a response from the user for the given dialog. Examples:
+        color = self.get_response(dialog='ask.favorite.color')
+
+        Args:
+            dialog (str): Intro dialog file to read to the user
+            data (dict): Data used to render the dialog
+            text (str): Intro text instead of dialog file
+            validator (any): Function with following signature
+                def validator(utterance):
+                    return is_valid(utterance)
+            on_fail (any): Dialog file to read on invalid input,
+                or a function to call that returns utterance
+                def on_fail(utterance):
+                    return self.dialog_renderer.render('my.dialog')
+            num_retries (int): Number of times to keep asking user for input
+                Note, the user can still stop talking or say "cancel" at any
+                time to stop. -1 for infinite
+        Returns:
+            any: None or transcription user's reply
+        """
+        data = data or {}
+        validator = validator or bool
+
+        def get_intro():
+            if dialog:
+                return self.dialog_renderer.render(dialog, data)
+            else:
+                return text
+
+        if not get_intro() and not text:
+            raise ValueError('Please specify an intro message')
+
+        def on_fail_default(utterance):
+            fail_data = data.copy()
+            fail_data['utterance'] = utterance
+            if on_fail:
+                return self.dialog_renderer.render(on_fail, fail_data)
+            else:
+                return get_intro()
+
+        cancel_voc = 'text/' + self.lang + '/cancel.voc'
+        with open(resolve_resource_file(cancel_voc)) as f:
+            cancel_words = list(filter(bool, f.read().split('\n')))
+
+        def is_cancel(utterance):
+            return max(w in utterance for w in cancel_words)
+
+        on_fail_fn = on_fail if callable(on_fail) else on_fail_default
+
+        self.speak(get_intro(), expect_response=True)
+        num_fails = 0
+        while True:
+            response = self.__get_response()
+
+            if response is None:
+                num_none_fails = 1 if num_retries < 0 else num_retries
+                if num_fails >= num_none_fails:
+                    return None
+            else:
+                if validator(response):
+                    return response
+
+                if is_cancel(response):
+                    return None
+
+            num_fails += 1
+            if 0 < num_retries < num_fails:
+                return None
+
+            line = on_fail_fn(response)
+            self.speak(line, expect_response=True)
 
     def report_metric(self, name, data):
         """
@@ -910,8 +1008,8 @@ class FallbackSkill(MycroftSkill):
                                   "fallback_handler": get_handler_name(
                                       handler)}))
                         return
-                except Exception as e:
-                    LOG.info('Exception in fallback: ' + str(e))
+                except Exception:
+                    LOG.exception('Exception in fallback.')
             ws.emit(Message('complete_intent_failure'))
             LOG.warning('No fallback could handle intent.')
             #  indicate completion with exception
@@ -942,7 +1040,12 @@ class FallbackSkill(MycroftSkill):
             register a fallback with the list of fallback handlers
             and with the list of handlers registered by this instance
         """
-        self.instance_fallback_handlers.append(handler)
+        def wrapper(*args, **kwargs):
+            if handler(*args, **kwargs):
+                self.make_active()
+                return True
+            return False
+        self.instance_fallback_handlers.append(wrapper)
         self._register_fallback(handler, priority)
 
     @classmethod
