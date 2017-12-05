@@ -295,9 +295,8 @@ class MycroftSkill(object):
 
     def initialize(self):
         """
-        Initialization function, run after fully constructed
-
-        Usually used to create intents rules and register them.
+        Invoked after the skill is fully constructed and registered with the
+        system.  Use to perform any final setup needed for the skill.
         """
         pass
 
@@ -459,11 +458,9 @@ class MycroftSkill(object):
         elif type(intent_parser) != Intent:
             raise ValueError('intent_parser is not an Intent')
 
-        if not intent_parser.name:
-            # Default to the handler's function name if None or ""
-            intent_parser.name = handler.__name__
+        # Default to the handler's function name if none given
+        name = intent_parser.name or handler.__name__
 
-        name = intent_parser.name
         intent_parser.name = str(self.skill_id) + ':' + intent_parser.name
         self.emitter.emit(Message("register_intent", intent_parser.__dict__))
         self.registered_intents.append((name, intent_parser))
