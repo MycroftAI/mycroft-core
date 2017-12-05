@@ -114,7 +114,7 @@ class AudioConsumer(Thread):
         if self.wakeup_recognizer.found_wake_word(audio.frame_data):
             SessionManager.touch()
             self.state.sleeping = False
-            self.__speak(mycroft.dialog.get("i am awake", self.stt.lang))
+            self.emitter.emit('recognizer_loop:awoken')
             self.metrics.increment("mycroft.wakeup")
 
     @staticmethod

@@ -46,6 +46,12 @@ def handle_no_internet():
     ws.emit(Message('enclosure.notify.no_internet'))
 
 
+def handle_awoken():
+    """ Forward mycroft.awoken to the messagebus. """
+    LOG.info("Listener is now Awake: ")
+    ws.emit(Message('mycroft.awoken'))
+
+
 def handle_wakeword(event):
     LOG.info("Wakeword Detected: " + event['utterance'])
     ws.emit(Message('recognizer_loop:wakeword', event))
@@ -135,6 +141,7 @@ def main():
     loop.on('recognizer_loop:utterance', handle_utterance)
     loop.on('speak', handle_speak)
     loop.on('recognizer_loop:record_begin', handle_record_begin)
+    loop.on('recognizer_loop:awoken', handle_awoken)
     loop.on('recognizer_loop:wakeword', handle_wakeword)
     loop.on('recognizer_loop:record_end', handle_record_end)
     loop.on('recognizer_loop:no_internet', handle_no_internet)
