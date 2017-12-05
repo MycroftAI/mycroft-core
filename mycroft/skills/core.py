@@ -295,11 +295,11 @@ class MycroftSkill(object):
 
     def initialize(self):
         """
-        Initialization function to be implemented by all Skills.
+        Initialization function, run after fully constructed
 
         Usually used to create intents rules and register them.
         """
-        LOG.debug("No initialize function implemented")
+        pass
 
     def get_intro_message(self):
         """
@@ -458,6 +458,10 @@ class MycroftSkill(object):
             intent_parser = intent_parser.build()
         elif type(intent_parser) != Intent:
             raise ValueError('intent_parser is not an Intent')
+
+        if not intent_parser.name:
+            # Default to the handler's function name if None or ""
+            intent_parser.name = handler.__name__
 
         name = intent_parser.name
         intent_parser.name = str(self.skill_id) + ':' + intent_parser.name
