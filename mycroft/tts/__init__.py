@@ -158,7 +158,6 @@ class TTS(object):
         """Helper function for child classes to call in execute()"""
         # Create signals informing start of speech
         self.ws.emit(Message("recognizer_loop:audio_output_start"))
-        create_signal("isSpeaking")
 
     def end_audio(self):
         """
@@ -206,6 +205,7 @@ class TTS(object):
             Args:
                 sentence:   Sentence to be spoken
         """
+        create_signal("isSpeaking")
         key = str(hashlib.md5(sentence.encode('utf-8', 'ignore')).hexdigest())
         wav_file = os.path.join(mycroft.util.get_cache_directory("tts"),
                                 key + '.' + self.type)
