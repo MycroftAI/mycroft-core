@@ -15,6 +15,7 @@
 import audioop
 import collections
 import datetime
+from hashlib import md5
 import shutil
 from tempfile import gettempdir
 from threading import Thread, Lock
@@ -30,7 +31,9 @@ from speech_recognition import (
     AudioSource,
     AudioData
 )
+import requests
 
+from mycroft.api import DeviceApi
 from mycroft.configuration import Configuration
 from mycroft.session import SessionManager
 from mycroft.util import (
@@ -170,13 +173,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             self.skip_wake_word = True
 
         self.wake_word_name = wake_word_recognizer.key_phrase
-        # The maximum audio in seconds to keep for transcribing a phrase
-        # The wake word must fit in this time
-        num_phonemes = wake_word_recognizer.num_phonemes
-        len_phoneme = listener_config.get('phoneme_duration', 120) / 1000.0
-        self.TEST_WW_SEC = int(num_phonemes * len_phoneme)
-        self.SAVED_WW_SEC = (10 if self.upload_config['enable']
-                             else self.TEST_WW_SEC)
 
         speech_recognition.Recognizer.__init__(self)
         self.wake_word_recognizer = wake_word_recognizer
@@ -193,6 +189,18 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.filenames_to_upload = []
         self.mic_level_file = os.path.join(get_ipc_directory(), "mic_level")
         self._stop_signaled = False
+
+        # The maximum audio in seconds to keep for transcribing a phrase
+        # The wake word must fit in this time
+        num_phonemes = wake_word_recognizer.num_phonemes
+        len_phoneme = listener_config.get('phoneme_duration', 120) / 1000.0
+        self.TEST_WW_SEC = num_phonemes * len_phoneme
+        self.SAVED_WW_SEC = 10 if self.save_wake_words else self.TEST_WW_SEC
+
+        try:
+            self.account_id = DeviceApi().get()['user']['uuid']
+        except (requests.HTTPError, requests.ConnectionError, AttributeError):
+            self.account_id = '0'
 
     @staticmethod
     def record_sound_chunk(source):
@@ -293,7 +301,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
     @staticmethod
     def sec_to_bytes(sec, source):
-        return sec * source.SAMPLE_RATE * source.SAMPLE_WIDTH
+        return int(sec * source.SAMPLE_RATE) * source.SAMPLE_WIDTH
 
     def _skip_wake_word(self):
         # Check if told programatically to skip the wake word, like
@@ -429,6 +437,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 byte_data = byte_data[len(chunk):] + chunk
 
             buffers_since_check += 1.0
+            self.wake_word_recognizer.update(chunk)
             if buffers_since_check > buffers_per_check:
                 buffers_since_check -= buffers_per_check
                 chopped = byte_data[-test_size:] \
@@ -444,19 +453,25 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 # file.
                 if self.save_wake_words and said_wake_word:
                     audio = self._create_audio_data(byte_data, source)
-                    stamp = str(int(1000 * get_time()))
-                    uid = SessionManager.get().session_id
+
                     if not isdir(self.save_wake_words_dir):
                         mkdir(self.save_wake_words_dir)
-
                     dr = self.save_wake_words_dir
+
+                    ww_module = self.wake_word_recognizer.__class__.__name__
+
                     ww = self.wake_word_name.replace(' ', '-')
-                    filename = join(dr, ww + '.' + stamp + '.' + uid + '.wav')
-                    with open(filename, 'wb') as f:
+                    md = md5(ww_module).hexdigest()
+                    stamp = str(int(1000 * get_time()))
+                    sid = SessionManager.get().session_id
+                    aid = self.account_id
+
+                    fn = join(dr, '.'.join([ww, md, stamp, sid, aid]) + '.wav')
+                    with open(fn, 'wb') as f:
                         f.write(audio.get_wav_data())
 
                     if self.upload_config['enable'] or self.config['opt_in']:
-                        t = Thread(target=self._upload_file, args=(filename,))
+                        t = Thread(target=self._upload_file, args=(fn,))
                         t.daemon = True
                         t.start()
 

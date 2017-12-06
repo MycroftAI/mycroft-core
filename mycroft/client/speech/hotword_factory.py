@@ -16,9 +16,16 @@ import tempfile
 import time
 
 import os
-from os.path import dirname, exists, join, abspath
+from os.path import dirname, exists, join, abspath, expanduser, isdir, isfile
+
+from os import mkdir
+from time import time as get_time
 
 from mycroft.configuration import Configuration
+from subprocess import Popen, PIPE, call
+from threading import Thread
+
+from mycroft.util import resolve_resource_file
 from mycroft.util.log import LOG
 
 
@@ -27,7 +34,6 @@ RECOGNIZER_DIR = join(abspath(dirname(__file__)), "recognizer")
 
 class HotWordEngine(object):
     def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
-        self.lang = str(lang).lower()
         self.key_phrase = str(key_phrase).lower()
         # rough estimate 1 phoneme per 2 chars
         self.num_phonemes = len(key_phrase) / 2 + 1
@@ -36,9 +42,13 @@ class HotWordEngine(object):
             config = config.get(self.key_phrase, {})
         self.config = config
         self.listener_config = Configuration.get().get("listener", {})
+        self.lang = str(self.config.get("lang", lang)).lower()
 
     def found_wake_word(self, frame_data):
         return False
+
+    def update(self, chunk):
+        pass
 
 
 class PocketsphinxHotWord(HotWordEngine):
@@ -97,6 +107,107 @@ class PocketsphinxHotWord(HotWordEngine):
         return hyp and self.key_phrase in hyp.hypstr.lower()
 
 
+class PreciseHotword(HotWordEngine):
+    def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
+        super(PreciseHotword, self).__init__(key_phrase, config, lang)
+        self.update_freq = 24  # in hours
+
+        precise_config = Configuration.get()['precise']
+        self.dist_url = precise_config['dist_url']
+        self.models_url = precise_config['models_url']
+        self.exe_name = 'precise-stream'
+
+        ww = Configuration.get()['listener']['wake_word']
+        model_name = ww.replace(' ', '-') + '.pb'
+        model_folder = expanduser('~/.mycroft/precise')
+        if not isdir(model_folder):
+            mkdir(model_folder)
+        model_path = join(model_folder, model_name)
+
+        exe_file = self.find_download_exe()
+        LOG.info('Found precise executable: ' + exe_file)
+        self.update_model(model_name, model_path)
+
+        args = [exe_file, model_path, '1024']
+        self.proc = Popen(args, stdin=PIPE, stdout=PIPE)
+        self.has_found = False
+        self.cooldown = 20
+        t = Thread(target=self.check_stdout)
+        t.daemon = True
+        t.start()
+
+    def find_download_exe(self):
+        exe_file = resolve_resource_file(self.exe_name)
+        if exe_file:
+            return exe_file
+        try:
+            if call(self.exe_name + ' < /dev/null', shell=True) == 0:
+                return self.exe_name
+        except OSError:
+            pass
+
+        exe_file = expanduser('~/.mycroft/precise/' + self.exe_name)
+        if isfile(exe_file):
+            return exe_file
+
+        import platform
+        import stat
+
+        def snd_msg(cmd):
+            """Send message to faceplate"""
+            Popen('echo "' + cmd + '" > /dev/ttyAMA0', shell=True)
+
+        arch = platform.machine()
+
+        url = self.dist_url + arch + '/' + self.exe_name
+
+        snd_msg('mouth.text=Updating Listener...')
+        self.download(url, exe_file)
+        snd_msg('mouth.reset')
+
+        os.chmod(exe_file, os.stat(exe_file).st_mode | stat.S_IEXEC)
+        Popen('echo "mouth.reset" > /dev/ttyAMA0', shell=True)
+        return exe_file
+
+    @staticmethod
+    def download(url, filename):
+        import shutil
+        from urllib2 import urlopen
+        LOG.info('Downloading: ' + url)
+        req = urlopen(url)
+        with open(filename, 'wb') as fp:
+            shutil.copyfileobj(req, fp)
+
+    def update_model(self, name, file_name):
+        if isfile(file_name):
+            stat = os.stat(file_name)
+            if get_time() - stat.st_mtime < self.update_freq * 60 * 60:
+                return
+        name = name.replace(' ', '%20')
+        url = self.models_url + name
+        self.download(url, file_name)
+        self.download(url + '.params', file_name + '.params')
+
+    def check_stdout(self):
+        while True:
+            line = self.proc.stdout.readline()
+            if self.cooldown > 0:
+                self.cooldown -= 1
+                self.has_found = False
+                continue
+            self.has_found = float(line) > 0.5
+
+    def update(self, chunk):
+        self.proc.stdin.write(chunk)
+        self.proc.stdin.flush()
+
+    def found_wake_word(self, frame_data):
+        if self.has_found and self.cooldown == 0:
+            self.cooldown = 20
+            return True
+        return False
+
+
 class SnowboyHotWord(HotWordEngine):
     def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
         super(SnowboyHotWord, self).__init__(key_phrase, config, lang)
@@ -126,6 +237,7 @@ class SnowboyHotWord(HotWordEngine):
 class HotWordFactory(object):
     CLASSES = {
         "pocketsphinx": PocketsphinxHotWord,
+        "precise": PreciseHotword,
         "snowboy": SnowboyHotWord
     }
 

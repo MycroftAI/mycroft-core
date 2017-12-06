@@ -80,4 +80,7 @@ def send(messageToSend, dataToSend=None):
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except IOError:
+        print('Could not connect to websocket, no message sent')

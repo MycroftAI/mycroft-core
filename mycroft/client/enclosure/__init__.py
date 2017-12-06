@@ -163,7 +163,7 @@ class EnclosureReader(Thread):
 
             LOG.info("Setting opt_in to: " + word)
             new_config = {'opt_in': enable}
-            user_config = localConf(USER_CONFIG)
+            user_config = LocalConf(USER_CONFIG)
             user_config.merge(new_config)
             user_config.store()
 

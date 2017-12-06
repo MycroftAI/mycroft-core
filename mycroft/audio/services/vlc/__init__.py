@@ -24,6 +24,8 @@ class VlcService(AudioBackend):
         self.list_player = self.instance.media_list_player_new()
         self.player = self.instance.media_player_new()
         self.list_player.set_media_player(self.player)
+        self.track_list = self.instance.media_list_new()
+        self.list_player.set_media_list(self.track_list)
 
         self.config = config
         self.emitter = emitter
@@ -34,15 +36,13 @@ class VlcService(AudioBackend):
         return ['file', 'http', 'https']
 
     def clear_list(self):
-        empty = self.instance.media_list_new()
-        self.list_player.set_media_list(empty)
+        self.track_list = self.instance.media_list_new()
+        self.list_player.set_media_list(self.track_list)
 
     def add_list(self, tracks):
         LOG.info("Track list is " + str(tracks))
-        vlc_tracks = self.instance.media_list_new()
         for t in tracks:
-            vlc_tracks.add_media(self.instance.media_new(t))
-        self.list_player.set_media_list(vlc_tracks)
+            self.track_list.add_media(self.instance.media_new(t))
 
     def play(self):
         LOG.info('VLCService Play')

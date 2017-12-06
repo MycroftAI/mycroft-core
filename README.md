@@ -5,12 +5,23 @@ Mycroft [![Build Status](https://travis-ci.org/MycroftAI/mycroft-core.svg?branch
 Mycroft is a hackable open source voice assistant.
 
 # Table of Contents
-* [Getting Started](#getting-started)
-* [Running Mycroft](#running-mycroft)
-* [Using Mycroft](#using-mycroft)
-* [Behind the Scenes](#behind-the-scenes)
-* [Getting Involved](#getting-involved)
-* [Links](#links)
+
+- [Table of Contents](#table-of-contents)
+- [Getting Started](#getting-started)
+- [Running Mycroft](#running-mycroft)
+- [Using Mycroft](#using-mycroft)
+  * [*Home* Device and Account Manager](#home-device-and-account-manager)
+  * [Skills](#skills)
+- [Behind the scenes](#behind-the-scenes)
+  * [Pairing Information](#pairing-information)
+  * [Configuration](#configuration)
+  * [Using Mycroft Without Home](#using-mycroft-without-home)
+  * [API Key Services](#api-key-services)
+  * [Using Mycroft behind a proxy](#using-mycroft-behind-a-proxy)
+    + [Using Mycroft behind a proxy without authentication](#using-mycroft-behind-a-proxy-without-authentication)
+    + [Using Mycroft behind an authenticated proxy](#using-mycroft-behind-an-authenticated-proxy)
+- [Getting Involved](#getting-involved)
+- [Links](#links)
 
 # Getting Started
 
@@ -27,6 +38,7 @@ This script sets up dependencies and a [virtualenv][about-virtualenv].  If runni
 NOTE: The default branch for this repository is 'dev', which should be considered a work-in-progress. If you want to clone a more stable version, switch over to the 'master' branch.
 
 # Running Mycroft
+
 Mycroft provides `start-mycroft.sh` to perform common tasks. This script uses a virtualenv created by `dev_setup.sh`.  Assuming you installed mycroft-core in your home directory run:
 - `cd ~/mycroft-core`
 - `./start-mycroft.sh debug`
@@ -64,7 +76,8 @@ Mycroft configuration consists of 4 possible locations:
 
 When the configuration loader starts, it looks in these locations in this order, and loads ALL configurations. Keys that exist in multiple configuration files will be overridden by the last file to contain the value. This process results in a minimal amount being written for a specific device and user, without modifying default distribution files.
 
-## Using Mycroft Without Home.
+## Using Mycroft Without Home
+
 If you do not wish to use the Mycroft Home service, you may insert your own API keys into the configuration files listed below in <b>configuration</b>.
 
 The place to insert the API key looks like the following:
@@ -75,11 +88,40 @@ The place to insert the API key looks like the following:
 Put a relevant key inside the quotes and mycroft-core should begin to use the key immediately.
 
 ## API Key Services
+
 These are the keys currently used in Mycroft Core:
 
-- [STT API, Google STT](http://www.chromium.org/developers/how-tos/api-keys)
+- [STT API, Google STT, Google Cloud Speech](http://www.chromium.org/developers/how-tos/api-keys)
 - [Weather Skill API, OpenWeatherMap](http://openweathermap.org/api)
 - [Wolfram-Alpha Skill](http://products.wolframalpha.com/api/)
+
+## Using Mycroft behind a proxy
+
+Many schools, universities and workplaces run a `proxy` on their network. If you need to type in a username and password to access the external internet, then you are likely behind a `proxy`.
+
+If you plan to use Mycroft behind a proxy, then you will need to do an additional configuration step.
+
+_NOTE: In order to complete this step, you will need to know the `hostname` and `port` for the proxy server. Your network administrator will be able to provide these details. Your network administrator may want information on what type of traffic Mycroft will be using. We use `https` traffic on port `443`, primarily for accessing ReST-based APIs._
+
+### Using Mycroft behind a proxy without authentication
+
+If you are using Mycroft behind a proxy without authentication, add the following environment variables, changing the `proxy_hostname.com` and `proxy_port` for the values for your network. These commands are executed from the Linux command line interface (CLI).
+
+```bash
+$ export http_proxy=http://proxy_hostname.com:proxy_port
+$ export https_port=http://proxy_hostname.com:proxy_port
+$ export no_proxy="localhost,127.0.0.1,localaddress,.localdomain.com,0.0.0.0,::1"
+```
+
+### Using Mycroft behind an authenticated proxy
+
+If  you are behind a proxy which requires authentication, add the following environment variables, changing the `proxy_hostname.com` and `proxy_port` for the values for your network. These commands are executed from the Linux command line interface (CLI).
+
+```bash
+$ export http_proxy=http://user:password@proxy_hostname.com:proxy_port
+$ export https_port=http://user:password@proxy_hostname.com:proxy_port
+$ export no_proxy="localhost,127.0.0.1,localaddress,.localdomain.com,0.0.0.0,::1"
+```
 
 # Getting Involved
 

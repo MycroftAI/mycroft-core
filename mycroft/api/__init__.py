@@ -19,7 +19,7 @@ from requests import HTTPError
 
 from mycroft.configuration import Configuration
 from mycroft.configuration.config import DEFAULT_CONFIG, SYSTEM_CONFIG, \
-    USER_CONFIG, LocalConf
+    USER_CONFIG
 from mycroft.identity import IdentityManager
 from mycroft.version import VersionManager
 from mycroft.util import get_arch
@@ -32,9 +32,9 @@ class Api(object):
 
     def __init__(self, path):
         self.path = path
-        config = Configuration.get([LocalConf(DEFAULT_CONFIG),
-                                    LocalConf(SYSTEM_CONFIG),
-                                    LocalConf(USER_CONFIG)],
+        config = Configuration.get([DEFAULT_CONFIG,
+                                    SYSTEM_CONFIG,
+                                    USER_CONFIG],
                                    cache=False)
         config_server = config.get("server")
         self.url = config_server.get("url")
@@ -160,6 +160,20 @@ class DeviceApi(Api):
             "path": "/" + self.identity.uuid,
             "json": {"coreVersion": version.get("coreVersion"),
                      "enclosureVersion": version.get("enclosureVersion")}
+        })
+
+    def send_email(self, title, body, sender):
+        return self.request({
+            "method": "PUT",
+            "path": "/" + self.identity.uuid + "/message",
+            "json": {"title": title, "body": body, "sender": sender}
+        })
+
+    def report_metric(self, name, data):
+        return self.request({
+            "method": "POST",
+            "path": "/" + self.identity.uuid + "/metric/" + name,
+            "json": data
         })
 
     def get(self):

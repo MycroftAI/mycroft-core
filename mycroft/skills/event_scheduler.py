@@ -25,6 +25,14 @@ from mycroft.util.log import LOG
 
 class EventScheduler(Thread):
     def __init__(self, emitter, schedule_file='/opt/mycroft/schedule.json'):
+        """
+            Create an event scheduler thread. Will send messages at a
+            predetermined time to the registered targets.
+
+            Args:
+                emitter:        event emitter to use to send messages
+                schedule_file:  File to store pending events to on shutdown
+        """
         super(EventScheduler, self).__init__()
         self.events = {}
         self.emitter = emitter
@@ -51,11 +59,12 @@ class EventScheduler(Thread):
             Load json data with active events from json file.
         """
         if isfile(self.schedule_file):
+            json_data = {}
             with open(self.schedule_file) as f:
                 try:
                     json_data = json.load(f)
                 except Exception as e:
-                    LOG.error(e)
+                    LOG.error(e.message)
             current_time = time.time()
             for key in json_data:
                 event_list = json_data[key]
@@ -97,30 +106,36 @@ class EventScheduler(Thread):
 
     def run(self):
         while self.isRunning:
-            # Remove events
-            self.remove_events()
-            # Fetch newly scheduled events
-            self.fetch_new_events()
-            # Update events
-            self.update_events()
-
-            # Check all events
-            for event in self.events:
-                current_time = time.time()
-                e = self.events[event]
-                # Get scheduled times that has passed
-                passed = [(t, r, d) for (t, r, d) in e if t <= current_time]
-                # and remaining times that we're still waiting for
-                remaining = [(t, r, d) for t, r, d in e if t > current_time]
-                # Trigger registered methods
-                for sched_time, repeat, data in passed:
-                    self.emitter.emit(Message(event, data))
-                    # if this is a repeated event add a new trigger time
-                    if repeat:
-                        remaining.append((sched_time + repeat, repeat, data))
-                # update list of events
-                self.events[event] = remaining
+            self.check_state()
             time.sleep(0.5)
+
+    def check_state(self):
+        """
+            Check if an event should be triggered.
+        """
+        # Remove events
+        self.remove_events()
+        # Fetch newly scheduled events
+        self.fetch_new_events()
+        # Update events
+        self.update_events()
+
+        # Check all events
+        for event in self.events:
+            current_time = time.time()
+            e = self.events[event]
+            # Get scheduled times that has passed
+            passed = [(t, r, d) for (t, r, d) in e if t <= current_time]
+            # and remaining times that we're still waiting for
+            remaining = [(t, r, d) for t, r, d in e if t > current_time]
+            # Trigger registered methods
+            for sched_time, repeat, data in passed:
+                self.emitter.emit(Message(event, data))
+                # if this is a repeated event add a new trigger time
+                if repeat:
+                    remaining.append((sched_time + repeat, repeat, data))
+            # update list of events
+            self.events[event] = remaining
 
     def schedule_event(self, event, sched_time, repeat=None, data=None):
         """ Send event to thread using thread safe queue. """
