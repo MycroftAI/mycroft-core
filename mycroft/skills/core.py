@@ -400,6 +400,8 @@ class MycroftSkill(object):
                         except TypeError:
                             handler(self)
                     else:
+                        LOG.error("Unexpected argument count:" +
+                                  str(len(getargspec(handler).args)))
                         raise TypeError
                 else:
                     if len(getargspec(handler).args) == 2:
@@ -407,13 +409,17 @@ class MycroftSkill(object):
                     elif len(getargspec(handler).args) == 1:
                         handler()
                     else:
+                        LOG.error("Unexpected argument count:" +
+                                  str(len(getargspec(handler).args)))
                         raise TypeError
                 self.settings.store()  # Store settings if they've changed
             except Exception as e:
+                # Convert "MyFancySkill" to "My Fancy Skill" for speaking
+                name = re.sub("([a-z])([A-Z])","\g<1> \g<2>", self.name)
                 # TODO: Localize
                 self.speak(
                     "An error occurred while processing a request in " +
-                    self.name)
+                    name)
                 LOG.error(
                     "An error occurred while processing a request in " +
                     self.name, exc_info=True)
@@ -460,8 +466,7 @@ class MycroftSkill(object):
 
         # Default to the handler's function name if none given
         name = intent_parser.name or handler.__name__
-
-        intent_parser.name = str(self.skill_id) + ':' + intent_parser.name
+        intent_parser.name = str(self.skill_id) + ':' + name
         self.emitter.emit(Message("register_intent", intent_parser.__dict__))
         self.registered_intents.append((name, intent_parser))
         self.add_event(intent_parser.name, handler, need_self)
