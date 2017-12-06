@@ -56,7 +56,11 @@ class EnclosureMouth:
     def viseme(self, event=None):
         if event and event.data:
             code = event.data.get("code")
-            if code:
+            time_until = event.data.get("until")
+            # Skip the viseme if the time has expired.  This helps when a
+            # system glitch overloads the bus and throws off the timing of
+            # the animation timing.
+            if code and (not time_until or time.time() < time_until):
                 self.writer.write("mouth.viseme=" + code)
 
     def text(self, event=None):

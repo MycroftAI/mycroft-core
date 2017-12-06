@@ -49,7 +49,8 @@ class IdentityManager(object):
             json.dump(IdentityManager.__identity.__dict__, f)
 
     @staticmethod
-    def update(login={}):
+    def update(login=None):
+        login = login or {}
         expiration = login.get("expiration", 0)
         IdentityManager.__identity.uuid = login.get("uuid", "")
         IdentityManager.__identity.access = login.get("accessToken", "")

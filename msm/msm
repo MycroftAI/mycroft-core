@@ -14,6 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+RED='\033[0;31m'
+NOCOLOR='\033[0m'
+GREEN='\033[0;32m'
+
+
 script=${0}
 script=${script##*/}
 
@@ -29,6 +34,8 @@ function help() {
   echo "  list                     list all mycroft-skills"
   echo "  update                   update all installed skills"
   echo "  search <name>            search mycroft-skills for match for <name>"
+  echo "  info <name>              shows information about the skill matching <name>"
+  echo "  info <repo>              shows information about the skill in the specified repo"
   echo
   echo "Params:"
   echo "  <repo>   full URL to a Github repo"
@@ -119,47 +126,47 @@ update_started="false"
 remove_started="false"
 function send_start_install () {
     if [[ "${install_started}" == "false" ]] ; then
-        $( python -m mycroft.messagebus.send msm.installing )
+        python -m mycroft.messagebus.send msm.installing
         install_started="true"
     fi
 }
 function send_start_update () {
     if [[ "${update_started}" == "false" ]] ; then
-        res=$( python -m mycroft.messagebus.send msm.updating )
+        python -m mycroft.messagebus.send msm.updating
         update_started="true"
     fi
 }
 function send_start_remove () {
     if [[ "${remove_started}" == "false" ]] ; then
-        res=$( python -m mycroft.messagebus.send msm.removing )
+        python -m mycroft.messagebus.send msm.removing
         remove_started="true"
     fi
 }
 function send_install_success () {
-    res=$( python -m mycroft.messagebus.send msm.install.succeeded '{"skill": "${1}" }' )
+    python -m mycroft.messagebus.send msm.install.succeeded '{"skill": "${1}" }'
 }
 function send_install_fail () {
-    res=$( python -m mycroft.messagebus.send msm.install.failed '{"skill": "${1}", "error" : ${2} }' )
+    python -m mycroft.messagebus.send msm.install.failed '{"skill": "${1}", "error" : ${2} }'
 }
 function send_remove_success () {
-    res=$( python -m mycroft.messagebus.send msm.remove.succeeded '{"skill": "${1}" }' )
+    python -m mycroft.messagebus.send msm.remove.succeeded '{"skill": "${1}" }'
 }
 function send_remove_fail () {
-    res=$( python -m mycroft.messagebus.send msm.remove.failed '{"skill": "${1}", "error" : ${2} }' )
+    python -m mycroft.messagebus.send msm.remove.failed '{"skill": "${1}", "error" : ${2} }'
 }
 function send_end_install () {
     if [[ "${install_started}" == "true" ]] ; then
-        res=$( python -m mycroft.messagebus.send msm.installed )
+        python -m mycroft.messagebus.send msm.installed
     fi
 }
 function send_end_update () {
     if [[ "${update_started}" == "true" ]] ; then
-        res=$( python -m mycroft.messagebus.send msm.updated )
+        python -m mycroft.messagebus.send msm.updated
     fi
 }
 function send_end_remove () {
     if [[ "${remove_started}" == "true" ]] ; then
-        res=$( python -m mycroft.messagebus.send msm.removed )
+        python -m mycroft.messagebus.send msm.removed
     fi
 }
 
@@ -331,6 +338,30 @@ function install() {
     fi
 
     # If the skill has a requirements.txt, pip install them
+    run_pip "${name}"
+    rc=$?
+    if [[ ${rc} -gt 0 ]] ; then
+       return ${rc}
+    fi
+
+    # If the skill has a requirements.sh, then run that using bash
+    if [[ -f "requirements.sh" ]]; then
+      echo "  Setting up native environment..."
+      if ! bash requirements.sh; then
+        echo "Running requirements.sh failed!"
+        send_install_fail "${name}" 122
+        return 122
+      fi
+    fi
+
+    echo "Installed: ${name}"
+    send_install_success "${name}"
+    return 0
+}
+
+function run_pip() {
+    # NOTE: Must be in the skill directory already...
+    name=$*
     if [[ -f "requirements.txt" ]]; then
       echo "  Installing requirements..."
       if [[ "${picroft_mk1}" == "false" ]]; then
@@ -363,19 +394,7 @@ function install() {
       fi
     fi
 
-    # If the skill has a requirements.sh, then run that using bash
-    if [[ -f "requirements.sh" ]]; then
-      echo "  Setting up native environment..."
-      if ! bash requirements.sh; then
-        echo "Running requirements.sh failed!"
-        send_install_fail "${name}" 122
-        return 122
-      fi
-    fi
-
-    echo "Installed: ${name}"
-    send_install_success "${name}"
-    return 0
+    return 0  # no problem encountered
 }
 
 function install_from_url_list() {
@@ -388,7 +407,7 @@ function install_from_url_list() {
 
   # Tell 'for' to only break on newlines, not spaces.  The # comment lines
   # inside the list can contain spaces in them.
-  IFS=$'\n'  
+  IFS=$'\n'
   for name in ${skill_list}
   do
     if [[ ! $name =~ ^# ]] ; then  # ignore comment lines
@@ -456,8 +475,100 @@ function update() {
       else
         echo "Ignoring ${d}, skill has been modified."
       fi
+
+      # TODO: Remove this for 18.02
+      # HACK: Re-run PIP, because Mycroft-core removed some of its required,
+      #       which broke previously-installed packages on a Picroft/Mark1
+      #       that was satisfied by packages that previously came along with
+      #       mycroft-core.
+      if [ ! -f /tmp/mycroft_has_re-PIPed ] ; then
+         run_pip "${d}"
+         echo "Re-running PIP on requirements.txt"
+      fi
     fi
   done
+
+  # TODO: Remove this for 18.02
+  # HACK: Only do the re-PIP once per boot
+  if [ ! -f /tmp/mycroft_has_re-PIPed ] ; then
+     echo "1" > /tmp/mycroft_has_re-PIPed
+  fi
+}
+
+function print_info() {
+    str=$*
+    if [[ "${str}" == "git@"* || "${str}" == "https://"* || "${str}" == "http://"* ]]; then
+        # Repo was given
+        repo="${str}"
+    else
+        # Search for the given word(s) as the submodule
+        skills=$(echo "${LIST_CACHE}" | grep -n 'submodule' | sed 's/[[:space:]]//g' | sed 's/\[submodule"//g' | sed 's/"\]//g')
+
+        # Test for exact name match
+        exact_match=$(echo "$skills" | grep -i ".*:${str}$")
+        if [[ ! -z "${exact_match}" ]]; then
+            # Found a perfect match!
+            skill=${exact_match}
+        else
+            # Test for match of all supplied words/subwords
+            skill=$(echo "$skills")  # start with all skills
+            for s in ${str}
+            do
+                # whittle list down with each word in the search string
+                skill=$(echo "$skill" | grep -i ".*:.*${s}.*")
+            done
+        fi
+
+        git_line=$(echo "$skill" | sed 's/\:.*//')
+
+        if [[ "${skill}" ==  *$'\n'* ]]; then
+            # The str matches multiple skill repos, don't install
+            # due to ambiguity.
+            echo "Multiple matches for '${str}', be more specfic."
+            echo "------------------------------------------------------------"
+            echo "$skill" | sed 's/.*://g' | sort
+            echo "------------------------------------------------------------"
+            return 201
+        else
+            if [[ -z "${git_line}" ]]; then
+                echo "'${str}' skill was not found"
+            return 202
+            fi
+            repo_line=$(($git_line + 2))
+            repo=$(echo "${LIST_CACHE}" | sed -n $repo_line'{p;q;}' | sed 's/[[:space:]]//g' | sed 's/[[:space:]]//g' | sed 's/url=//g')
+        fi
+    fi
+
+    local baseUrl=$(echo "${repo}" | sed -e 's/github.com/raw.githubusercontent.com/g' | sed -e 's/\.git$//g')/master
+    ### debugging output:
+    # echo git line is: "$git_line"
+    # echo repo line is: "$repo_line"
+    # echo repo is: "$repo"
+    # echo base url is "$baseUrl"
+    local readmeUrl="$baseUrl/readme.md"
+    local stat="$(curl -I -s $readmeUrl | sed -n '1p')"
+    local readme=""
+    if [[ $stat == *"200"* ]] ; then
+        readme="$(curl -s $readmeUrl)"
+    else
+        readmeUrl="$baseUrl/Readme.md"
+        stat=$(curl -I -s ${readmeUrl} | sed -n '1p')
+        if [[ $stat == *"200"* ]] ; then
+            readme="$(curl -s $readmeUrl)"
+        else
+            readmeUrl="$baseUrl/README.md"
+            stat=$(curl -I -s ${readmeUrl} | sed -n '1p')
+            if [[ $stat == *"200"* ]] ; then
+                readme="$(curl -s $readmeUrl)"
+            else
+                echo "Didn't find any information to display."
+                exit 0
+            fi
+        fi
+    fi
+
+    echo "$readme"
+    exit 0
 }
 
 OPT=$1
@@ -526,7 +637,16 @@ case ${OPT} in
           echo "${script}: error ${exit_code}"
           exit ${exit_code}
       fi
-      echo "${LIST_CACHE}" | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g' | sort
+
+      submodules=$(echo "${LIST_CACHE}" | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g' | sort)
+      while read -r submod
+      do
+          if [[ -d "$mycroft_skill_folder/$submod" ]] ; then
+              printf "$submod ${RED}[${GREEN}installed${RED}]${NOCOLOR}\n\r"
+          else
+              printf "$submod\n\r"
+          fi
+      done <<< "$submodules"
       exit_code=$?
       ;;
   "update")
@@ -593,6 +713,23 @@ case ${OPT} in
          help
          exit_code=1
       fi
+      ;;
+  "info")
+      get_skill_list
+      exit_code=$?
+      if [[ ${exit_code} -gt 0 ]] ; then
+          echo "${script}: error ${exit_code}"
+          exit ${exit_code}
+      fi
+      print_info $1
+      rc=$?
+      if [[ ${rc} -gt 0 ]] ; then
+          if [[ ${rc} -gt ${exit_code} ]] ; then
+              echo "${script}: error ${exit_code}"
+              exit_code=${rc}
+          fi
+      fi
+      exit_code=0
       ;;
   *)
       help

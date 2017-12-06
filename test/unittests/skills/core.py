@@ -58,20 +58,25 @@ class MycroftSkillTest(unittest.TestCase):
     def setUp(self):
         self.emitter.reset()
 
-    def check_vocab_from_file(self, filename, vocab_type=None, result_list=[]):
+    def check_vocab_from_file(self, filename, vocab_type=None,
+                              result_list=None):
+        result_list = result_list or []
         load_vocab_from_file(join(self.vocab_path, filename), vocab_type,
                              self.emitter)
         self.check_emitter(result_list)
 
-    def check_regex_from_file(self, filename, result_list=[]):
+    def check_regex_from_file(self, filename, result_list=None):
+        result_list = result_list or []
         load_regex_from_file(join(self.regex_path, filename), self.emitter)
         self.check_emitter(result_list)
 
-    def check_vocab(self, path, result_list=[]):
+    def check_vocab(self, path, result_list=None):
+        result_list = result_list or []
         load_vocabulary(path, self.emitter)
         self.check_emitter(result_list)
 
-    def check_regex(self, path, result_list=[]):
+    def check_regex(self, path, result_list=None):
+        result_list = result_list or []
         load_regex(path, self.emitter)
         self.check_emitter(result_list)
 

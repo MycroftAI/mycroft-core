@@ -26,6 +26,21 @@ current_pkg=$(cat /etc/apt/sources.list.d/repo.mycroft.ai.list)
 stable_pkg="deb http://repo.mycroft.ai/repos/apt/debian debian main"
 unstable_pkg="deb http://repo.mycroft.ai/repos/apt/debian debian-unstable main"
 
+mark_1_package_list="mycroft-mark-1 mycroft-core mycroft-wifi-setup"
+picroft_package_list="mycroft-picroft mycroft-core mycroft-wifi-setup"
+
+# Determine the platform
+mycroft_platform="null"
+if [[ -r /etc/mycroft/mycroft.conf ]] ; then
+   mycroft_platform=$( jq -r '.enclosure.platform' /etc/mycroft/mycroft.conf )
+else
+   if [[ "$(hostname)" == "picroft" ]] ; then
+      mycroft_platform="picroft"
+   elif [[ "$(hostname)" =~ "mark_1" ]] ; then
+      mycroft_platform="mycroft_mark_1"
+   fi
+fi
+
 
 function service_ctl {
     service=${1}
@@ -33,29 +48,142 @@ function service_ctl {
     sudo /etc/init.d/${service} ${action}
 }
 
-#Changes init scripts back to the original versions
-function original_init {
+function stop_mycroft {
+    service_ctl mycroft-audio stop
     service_ctl mycroft-skills stop
     service_ctl mycroft-speech-client stop
+    service_ctl mycroft-enclosure-client stop
+    service_ctl mycroft-wifi-setup-client stop
     service_ctl mycroft-messagebus stop
-    sudo sh -c 'cat /etc/init.d/mycroft-skills.original > /etc/init.d/mycroft-skills'
-    sudo sh -c 'cat /etc/init.d/mycroft-messagebus.original > /etc/init.d/mycroft-messagebus'
-    sudo sh -c 'cat /etc/init.d/mycroft-speech-client.original > /etc/init.d/mycroft-speech-client'
-    sudo rm /etc/init.d/*.original
-    sudo chown -Rvf mycroft:mycroft /var/log/mycroft*
-    sudo chown -Rvf mycroft:mycroft /tmp/mycroft/*
-    sudo chown -Rvf mycroft:mycroft /var/run/mycroft*
-    sudo systemctl daemon-reload
-    service_ctl mycroft-messagebus start
+}
+
+function restart_mycroft {
+    stop_mycroft
+
+    service_ctl mycroft-audio start
     service_ctl mycroft-skills start
     service_ctl mycroft-speech-client start
+    service_ctl mycroft-enclosure-client start
+    service_ctl mycroft-wifi-setup-client start
+    service_ctl mycroft-messagebus start
+}
+
+#Changes init scripts back to the original versions
+function restore_init_scripts {
+    if [ -f /etc/init.d/mycroft-skills.original ]; then
+
+        # stop running Mycroft services
+        stop_mycroft
+
+        # swap back to original service scripts
+        sudo sh -c 'cat /etc/init.d/mycroft-audio.original > /etc/init.d/mycroft-audio'
+        sudo sh -c 'cat /etc/init.d/mycroft-enclosure-client.original > /etc/init.d/mycroft-enclosure-client'
+        sudo sh -c 'cat /etc/init.d/mycroft-messagebus.original > /etc/init.d/mycroft-messagebus'
+        sudo sh -c 'cat /etc/init.d/mycroft-skills.original > /etc/init.d/mycroft-skills'
+        sudo sh -c 'cat /etc/init.d/mycroft-speech-client.original > /etc/init.d/mycroft-speech-client'
+        sudo sh -c 'cat /etc/init.d/mycroft-wifi-setup-client.original > /etc/init.d/mycroft-wifi-setup-client'
+        sudo rm /etc/init.d/*.original
+        sudo chown -Rvf mycroft:mycroft /var/log/mycroft*
+        sudo chown -Rvf mycroft:mycroft /tmp/mycroft/*
+        sudo chown -Rvf mycroft:mycroft /var/run/mycroft*
+
+        # reload daemon scripts
+        sudo systemctl daemon-reload
+
+        # restart services
+        restart_mycroft
+    fi
+}
+
+function github_init_scripts {
+    if [ ! -f /etc/init.d/mycroft-skills.original ]; then
+
+        stop_mycroft
+
+        # save original scripts
+        sudo sh -c 'cat /etc/init.d/mycroft-audio > /etc/init.d/mycroft-audio.original'
+        sudo sh -c 'cat /etc/init.d/mycroft-enclosure-client > /etc/init.d/mycroft-enclosure-client.original'
+        sudo sh -c 'cat /etc/init.d/mycroft-messagebus > /etc/init.d/mycroft-messagebus.original'
+        sudo sh -c 'cat /etc/init.d/mycroft-skills > /etc/init.d/mycroft-skills.original'
+        sudo sh -c 'cat /etc/init.d/mycroft-speech-client > /etc/init.d/mycroft-speech-client.original'
+        sudo sh -c 'cat /etc/init.d/mycroft-wifi-setup-client > /etc/init.d/mycroft-wifi-setup-client.original'
+
+        # switch to point a github install and run as the current user
+# TODO Verify all of these
+        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'${path}'/start.sh audio"_g' /etc/init.d/mycroft-audio
+        sudo sed -i 's_.*RUNAS=.*_RUNAS='${user}'_g' /etc/init.d/mycroft-audio
+        sudo sed -i 's_stop() {_stop() {\nPID=$(ps ax | grep mycroft/audio/ | awk '"'NR==1{print \$1; exit}'"')\necho "${PID}" > "$PIDFILE"_g' /etc/init.d/mycroft-audio
+
+        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'${path}'/start.sh enclosure-client"_g' /etc/init.d/mycroft-enclosure-client
+        sudo sed -i 's_.*RUNAS=.*_RUNAS='${user}'_g' /etc/init.d/mycroft-enclosure-client
+        sudo sed -i 's_stop() {_stop() {\nPID=$(ps ax | grep mycroft/enclosure-client/ | awk '"'NR==1{print \$1; exit}'"')\necho "${PID}" > "$PIDFILE"_g' /etc/init.d/mycroft-enclosure-client
+
+        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'${path}'/start.sh service"_g' /etc/init.d/mycroft-messagebus
+        sudo sed -i 's_.*RUNAS=.*_RUNAS='${user}'_g' /etc/init.d/mycroft-messagebus
+        sudo sed -i 's_stop() {_stop() {\nPID=$(ps ax | grep mycroft/messagebus/ | awk '"'NR==1{print \$1; exit}'"')\necho "${PID}" > "$PIDFILE"_g' /etc/init.d/mycroft-messagebus
+
+        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'${path}'/start.sh skills"_g' /etc/init.d/mycroft-skills
+        sudo sed -i 's_.*RUNAS=.*_RUNAS='${user}'_g' /etc/init.d/mycroft-skills
+        sudo sed -i 's_stop() {_stop() {\nPID=$(ps ax | grep mycroft/skills/ | awk '"'NR==1{print \$1; exit}'"')\necho "${PID}" > "$PIDFILE"_g' /etc/init.d/mycroft-skills
+
+        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'${path}'/start.sh voice"_g' /etc/init.d/mycroft-speech-client
+        sudo sed -i 's_.*RUNAS=.*_RUNAS='${user}'_g' /etc/init.d/mycroft-speech-client
+        sudo sed -i 's_stop() {_stop() {\nPID=$(ps ax | grep mycroft/client/ | awk '"'NR==1{print \$1; exit}'"')\necho "${PID}" > "$PIDFILE"_g' /etc/init.d/mycroft-speech-client
+
+#        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'${path}'/start.sh voice"_g' /etc/init.d/mycroft-wifi-setup-client
+#        sudo sed -i 's_.*RUNAS=.*_RUNAS='${user}'_g' /etc/init.d/mycroft-wifi-setup-client
+#        sudo sed -i 's_stop() {_stop() {\nPID=$(ps ax | grep mycroft/client/ | awk '"'NR==1{print \$1; exit}'"')\necho "${PID}" > "$PIDFILE"_g' /etc/init.d/mycroft-wifi-setup-client
+
+        # soft link the current user to the mycroft user's identity file
+        sudo ln -s /home/mycroft/.mycroft/identity/identity2.json /home/${user}/.mycroft/identity/identity2.json
+
+        sudo chown -Rvf ${user}:${user} /var/log/mycroft*
+        sudo chown -Rvf ${user}:${user} /var/run/mycroft*
+        sudo chown -Rvf ${user}:${user} /tmp/mycroft/*
+
+        # reload daemon scripts
+        sudo systemctl daemon-reload
+
+        restart_mycroft
+
+        echo "Running code in: "
+    fi
+}
+
+function invoke_apt {
+    if [ ${mycroft_platform} == "mycroft_mark_1" ] ; then
+        echo "${1}ing the mycroft-mark-1 metapackage..."
+        sudo apt-get ${1} mycroft-mark-1 -y
+    elif [ ${mycroft_platform} == "picroft" ] ; then
+        echo "${1}ing the mycroft-picroft metapackage..."
+        sudo apt-get ${1} mycroft-picroft -y
+    else
+        # for unknown, just update the generic package
+        echo "${1}ing the generic mycroft-core package..."
+        sudo apt-get ${1} mycroft-core -y
+    fi
+}
+
+function remove_all {
+    if [ ${mycroft_platform} == "mycroft_mark_1" ] ; then
+        echo "Removing the mycroft mark-1 packages..."
+        sudo apt-get remove ${mark_1_package_list} -y
+    elif [ ${mycroft_platform} == "picroft" ] ; then
+        echo "Removing the picroft packages..."
+        sudo apt-get remove ${picroft_package_list} -y
+    else
+        # for unknown, just update the generic package
+        echo "Removing the generic mycroft-core package..."
+        sudo apt-get remove mycroft-core -y
+    fi
 }
 
 function change_build {
     build=${1}
     sudo sh -c 'echo '"${build}"' > /etc/apt/sources.list.d/repo.mycroft.ai.list'
     sudo apt-get update
-    sudo apt-get install mycroft-core -y
+
+    invoke_apt install
 }
 
 function stable_to_unstable_server {
@@ -94,8 +222,7 @@ function stable_to_unstable_server {
         echo "NOTE:  This seems to be your first time switching to unstable. You will need to go to home-test.mycroft.ai to pair on unstable."
     fi
 
-    service mycroft-skills restart
-    service mycroft-speech-client restart
+    restart_mycroft
     echo "Set to use the home-test.mycroft.ai server!"
 }
 
@@ -112,7 +239,7 @@ function unstable_to_stable_server {
     fi
 
     # point api to production server
-    echo "Changing mycroft.conf to point to test server api.mycroft.ai"
+    echo "Changing mycroft.conf to point to production server api.mycroft.ai"
     if [ -f ${conf_path}mycroft.conf ]; then
        echo '{"server": {"url":"https://api-test.mycroft.ai", "version":"v1", "update":true, "metrics":false }}' $(cat ${conf_path}mycroft.conf) | jq -s add > ${conf_path}mycroft.conf.unstable
     else
@@ -124,7 +251,7 @@ function unstable_to_stable_server {
        echo "ERROR:  Could not find mycroft.conf.stable, was it deleted?, an easy fix would be to copy mycroft.conf.unstable to mycroft.conf but remove the server field"
     fi
 
-    # saving identity2.json into unstbale state, then copying identity2.json.stable to identity2.json
+    # saving identity2.json into unstable state, then copying identity2.json.stable to identity2.json
     echo "Pointing identity2.json to unstable and saving to identity2.json.unstable"
     if [ -f ${identity_path}identity2.json ]; then
         mv ${identity_path}identity2.json ${identity_path}identity2.json.unstable
@@ -135,14 +262,14 @@ function unstable_to_stable_server {
         echo "Can not find identity2.json.stable, was it deleted? You may need to repair at home.mycroft.ai"
     fi
 
-    service mycroft-skills restart
-    service mycroft-speech-client restart
+    restart_mycroft
     echo "Set to use the home.mycroft.ai server!"
 }
 
-# make sure user is running as sudo first
-if [ "${change_to}" = "unstable" ]; then
 
+
+if [ "${change_to}" = "unstable" ]; then
+    # make sure user is running as sudo first
     if [ "$EUID" -ne 0 ] ; then
         echo "Please run with sudo"
         exit
@@ -151,15 +278,13 @@ if [ "${change_to}" = "unstable" ]; then
     echo "Switching to unstable build..."
     if [ "${current_pkg}" = "${stable_pkg}" ]; then
         change_build "${unstable_pkg}"
-        stable_to_unstable_server
     else
         echo "already on unstable"
     fi
-    if [ -f /etc/init.d/mycroft-messagebus.original ]; then
-        original_init
-    fi
-elif [ "${change_to}" = "stable" ]; then
 
+    restore_init_scripts
+elif [ "${change_to}" = "stable" ]; then
+    # make sure user is running as sudo first
     if [ "$EUID" -ne 0 ] ; then
         echo "Please run with sudo"
         exit
@@ -167,78 +292,57 @@ elif [ "${change_to}" = "stable" ]; then
 
         echo "Switching to stable build..."
         if [ "${current_pkg}" = "${unstable_pkg}" ]; then
-                sudo apt-get remove mycroft-core -y
-                change_build "${stable_pkg}"
+            # Need to remove the package to make sure upgrade happens due to
+            # difference in stable/unstable to package numbering schemes
+            remove_all
+
+            change_build "${stable_pkg}"
         else
             echo "already on stable"
         fi
-        if [ -f /etc/init.d/mycroft-skills.original ]; then
-                original_init
-        fi
-elif [ "${change_to}" = "github" ]; then
 
+        restore_init_scripts
+elif [ "${change_to}" = "github" ]; then
+    # make sure user is running as sudo first
     if [ "$EUID" -ne 0 ] ; then
         echo "Please run with sudo"
         exit
     fi
 
     echo "Switching to github..."
+    if [! -d ${path} ]; then
+        mkdir --parents "${path}"
+        cd "${path}"
+        cd ..
+        git clone https://github.com/MycroftAI/mycroft-core.git "${path}"
+    fi
+
     if [ -d ${path} ]; then
         if  [ -f /usr/local/bin/mimic ]; then
-            echo "file exists"
+            echo "Mimic file exists"
             sed -i "s_.*'${TOP}/scripts/install-mimic.sh'.*_#'${TOP}/scripts/install-mimic.sh'_g" ${path}/dev_setup.sh
         else
             echo "file doesn't exist"
             sed -i "s_.*#'${TOP}/scripts/install-mimic.sh'.*_'${TOP}/scripts/install-mimic.sh'_g" ${path}/dev_setup.sh
         fi
 
-        ${path}/build_host_setup_debian.sh
+        # Build the dev environment
         ${path}/dev_setup.sh
 
-        service_ctl mycroft-skills stop
-        service_ctl mycroft-speech-client stop
-        service_ctl mycroft-messagebus stop
-
-        if [ ! -f /etc/init.d/mycroft-skills.original ]; then
-            sudo sh -c 'cat /etc/init.d/mycroft-skills > /etc/init.d/mycroft-skills.original'
-            sudo sh -c 'cat /etc/init.d/mycroft-messagebus > /etc/init.d/mycroft-messagebus.original'
-            sudo sh -c 'cat /etc/init.d/mycroft-speech-client > /etc/init.d/mycroft-speech-client.original'
-        fi
-
-        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'${path}'/start.sh skills"_g' /etc/init.d/mycroft-skills
-        sudo sed -i 's_.*RUNAS=.*_RUNAS='${user}'_g' /etc/init.d/mycroft-skills
-        sudo sed -i 's_stop() {_stop() {\nPID=$(ps ax | grep mycroft/skills/ | awk '"'NR==1{print \$1; exit}'"')\necho "${PID}" > "$PIDFILE"_g' /etc/init.d/mycroft-skills
-
-        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'${path}'/start.sh service"_g' /etc/init.d/mycroft-messagebus
-        sudo sed -i 's_.*RUNAS=.*_RUNAS='${user}'_g' /etc/init.d/mycroft-messagebus
-        sudo sed -i 's_stop() {_stop() {\nPID=$(ps ax | grep mycroft/messagebus/ | awk '"'NR==1{print \$1; exit}'"')\necho "${PID}" > "$PIDFILE"_g' /etc/init.d/mycroft-messagebus
-
-        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'${path}'/start.sh voice"_g' /etc/init.d/mycroft-speech-client
-        sudo sed -i 's_.*RUNAS=.*_RUNAS='${user}'_g' /etc/init.d/mycroft-speech-client
-        sudo sed -i 's_stop() {_stop() {\nPID=$(ps ax | grep mycroft/client/ | awk '"'NR==1{print \$1; exit}'"')\necho "${PID}" > "$PIDFILE"_g' /etc/init.d/mycroft-speech-client
-
-        sudo ln -s /home/mycroft/.mycroft/identity/identity2.json /home/${user}/.mycroft/identity/identity2.json
-
-        sudo chown -Rvf ${user}:${user} /var/log/mycroft*
-        sudo chown -Rvf ${user}:${user} /var/run/mycroft*
-        sudo chown -Rvf ${user}:${user} /tmp/mycroft/*
-
-        sudo systemctl daemon-reload
-
-        service_ctl mycroft-messagebus start
-        service_ctl mycroft-speech-client start
-        service_ctl mycroft-skills start
+        # Switch init scripts to start the github version
+        github_init_scripts
     else
         echo "repository does not exist"
     fi
-#   sudo reboot
 elif [ "${change_to}" = "home" ]; then
+    # make sure user is running as sudo first
     if [ "$EUID" -ne 0 ] ; then
         echo "Please run with sudo"
         exit
     fi
     unstable_to_stable_server
 elif [ "${change_to}" = "home-test" ]; then
+    # make sure user is running as sudo first
     if [ "$EUID" -ne 0 ] ; then
         echo "Please run with sudo"
         exit
