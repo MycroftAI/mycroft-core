@@ -415,7 +415,7 @@ class MycroftSkill(object):
                 self.settings.store()  # Store settings if they've changed
             except Exception as e:
                 # Convert "MyFancySkill" to "My Fancy Skill" for speaking
-                name = re.sub("([a-z])([A-Z])","\g<1> \g<2>", self.name)
+                name = re.sub("([a-z])([A-Z])", "\g<1> \g<2>", self.name)
                 # TODO: Localize
                 self.speak(
                     "An error occurred while processing a request in " +
