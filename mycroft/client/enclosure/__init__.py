@@ -128,7 +128,7 @@ class EnclosureReader(Thread):
             subprocess.call('systemctl reboot -i', shell=True)
 
         if "unit.setwifi" in data:
-            self.ws.emit(Message("mycroft.wifi.start"))
+            self.ws.emit(Message("mycroft.wifi.start", {'lang': self.lang}))
 
         if "unit.factory-reset" in data:
             self.ws.emit(Message("enclosure.eyes.spin"))
@@ -236,7 +236,10 @@ class Enclosure(object):
         self.ws.on("open", self.on_ws_open)
 
         Configuration.init(self.ws)
-        self.config = Configuration.get().get("enclosure")
+
+        global_config = Configuration.get()
+        self.lang = global_config['lang']
+        self.config = global_config.get("enclosure")
 
         self.__init_serial()
         self.reader = EnclosureReader(self.serial, self.ws)
@@ -305,7 +308,7 @@ class Enclosure(object):
                              "wifi from the menu"}))
         else:
             # enter wifi-setup mode automatically
-            self.ws.emit(Message("mycroft.wifi.start"))
+            self.ws.emit(Message('mycroft.wifi.start', {'lang': self.lang}))
 
     def __init_serial(self):
         try:
@@ -400,14 +403,10 @@ class Enclosure(object):
                 # i.e. after pairing is complete
                 self.ws.once('mycroft.paired', self._handle_pairing_complete)
 
+                self.speak(mycroft.dialog.get('mycroft.intro'))
                 # Kick off wifi-setup automatically
-                self.ws.emit(Message("mycroft.wifi.start",
-                                     {'msg': "Hello I am Mycroft, your new "
-                                      "assistant.  To assist you I need to be "
-                                      "connected to the internet.  You can "
-                                      "either plug me in with a network cable,"
-                                      " or use wifi.  To setup wifi ",
-                                      'allow_timeout': False}))
+                data = {'allow_timeout': False, 'lang': self.lang}
+                self.ws.emit(Message('mycroft.wifi.start', data))
 
     def _hack_check_for_duplicates(self):
         # TEMPORARY HACK:  Look for multiple instance of the
