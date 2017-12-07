@@ -368,6 +368,37 @@ class MycroftSkill(object):
         _intent_list = []
         _intent_file_list = []
 
+    def translate(self, text, data=None):
+        """
+        Translate a short string using dialog/<lang>/<text>.dialog
+        This can be used for short phrases and words like "meters" or "hours"
+        """
+        return self.dialog_renderer.render(text, data or {})
+
+    def translate_template(self, template_name, data=None):
+        """
+        Read a list of strings from dialog/<lang>/<teamplate>.template
+        This can be used for large blocks of text with parameters
+        that need to be localized
+        """
+        return self.__translate_file(template_name + '.template', data)
+
+    def translate_list(self, list_name, data=None):
+        """
+        Read a list of strings from dialog/<lang>/<list>.list
+        These values should be position dependent items, consistent
+        across languages. For example, there could be a "colors".list
+        which lists a set of all colors in a consistent order across
+        all languages
+        """
+        return self.__translate_file(list_name + '.list', data)
+
+    def __translate_file(self, name, data):
+        """Load and render lines from dialog/<lang>/<name>"""
+        with open(join(self.root_dir, 'dialog', self.lang, name)) as f:
+            text = f.read().replace('{{', '').replace('}}', '')
+            return text.format(**data or {}).split('\n')
+
     def add_event(self, name, handler, need_self=False):
         """
             Create event handler for executing intent
