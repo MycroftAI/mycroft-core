@@ -207,7 +207,7 @@ class SkillSettings(dict):
             for j, field in enumerate(section['fields']):
                 if 'name' in field:
                     if field["name"] in self:
-                        sections[i]['fields'][j]["value"] = self['name']
+                        sections[i]['fields'][j]['value'] = str(self[field['name']])
         meta['skillMetadata']['sections'] = sections
         return meta
 
