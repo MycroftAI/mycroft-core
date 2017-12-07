@@ -88,7 +88,7 @@ class SkillSettings(dict):
             if self._is_new_hash(hashed_meta):
                 # first look at all other devices on user account to see
                 # if the settings exist. if it does then sync with this device
-                if skill_settings is not None:
+                if skill_settings:
                     # is_synced flags that this settings is loaded from
                     # another device. If a skill settings doesn't have
                     # is_synced, then the skill is created from that device
