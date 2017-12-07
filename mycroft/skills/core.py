@@ -331,9 +331,10 @@ class MycroftSkill(object):
 
     def __get_response(self):
         """
-        Grab a reponse from the user
+        Helper to get a reponse from the user
+
         Returns:
-            str: STT transcription
+            str: user's response or None on a timeout
         """
         event = Event()
 
@@ -342,48 +343,49 @@ class MycroftSkill(object):
             event.set()
             return True
 
+        # install a temporary conversation handler
         self.make_active()
         converse.response = None
         default_converse = self.converse
         self.converse = converse
-        event.wait(20)
+        event.wait(10)  # after 10 seconds, timeout
         self.converse = default_converse
         return converse.response
 
-    def get_response(self, dialog='', data=None, text='', validator=None,
-                     on_fail=None, num_retries=-1):
+    def get_response(self, dialog='', data=None, announcement='',
+                     validator=None, on_fail=None, num_retries=-1):
         """
-        Ask and return a response from the user for the given dialog. Examples:
-        color = self.get_response(dialog='ask.favorite.color')
+        Prompt user and wait for response
+
+        The given dialog or announcement will be spoken, the immediately
+        listen and return user response.  The response can optionally be
+        validated.
+
+        Example:
+            color = self.get_response('ask.favorite.color')
 
         Args:
-            dialog (str): Intro dialog file to read to the user
+            dialog (str): Announcement dialog to read to the user
             data (dict): Data used to render the dialog
-            text (str): Intro text instead of dialog file
+            announcement (str): Literal string (overrides dialog)
             validator (any): Function with following signature
                 def validator(utterance):
-                    return is_valid(utterance)
-            on_fail (any): Dialog file to read on invalid input,
-                or a function to call that returns utterance
+                    return utterance != "red"
+            on_fail (any): Dialog or function returning literal string
+                           to speak on invalid input.  For example:
                 def on_fail(utterance):
-                    return self.dialog_renderer.render('my.dialog')
-            num_retries (int): Number of times to keep asking user for input
-                Note, the user can still stop talking or say "cancel" at any
-                time to stop. -1 for infinite
+                    return "nobody likes the color red, pick another"
+            num_retries (int): Times to ask user for input, -1 for infinite
+                NOTE: User can not respond and timeout or say "cancel" to stop
+
         Returns:
-            any: None or transcription user's reply
+            str: User's reply or None if timed out or canceled
         """
         data = data or {}
-        validator = validator or bool
 
-        def get_intro():
-            if dialog:
-                return self.dialog_renderer.render(dialog, data)
-            else:
-                return text
-
-        if not get_intro() and not text:
-            raise ValueError('Please specify an intro message')
+        announcement = announcement or self.dialog_renderer.render(dialog, data)
+        if not announcement:
+            raise ValueError('announcement or dialog message required')
 
         def on_fail_default(utterance):
             fail_data = data.copy()
@@ -391,23 +393,30 @@ class MycroftSkill(object):
             if on_fail:
                 return self.dialog_renderer.render(on_fail, fail_data)
             else:
-                return get_intro()
+                return announcement
 
+        # TODO: Load with something like mycroft.dialog.get_all()
         cancel_voc = 'text/' + self.lang + '/cancel.voc'
         with open(resolve_resource_file(cancel_voc)) as f:
             cancel_words = list(filter(bool, f.read().split('\n')))
 
         def is_cancel(utterance):
-            return max(w in utterance for w in cancel_words)
+            return utterance in cancel_words
 
+        def on_valid_default(utterance):
+            # accept anything except 'cancel'
+            return not is_cancel(utterance)
+
+        validator = validator or on_valid_default
         on_fail_fn = on_fail if callable(on_fail) else on_fail_default
 
-        self.speak(get_intro(), expect_response=True)
+        self.speak(announcement, expect_response=True)
         num_fails = 0
         while True:
             response = self.__get_response()
 
             if response is None:
+                # if nothing said, prompt one more time
                 num_none_fails = 1 if num_retries < 0 else num_retries
                 if num_fails >= num_none_fails:
                     return None
@@ -415,6 +424,7 @@ class MycroftSkill(object):
                 if validator(response):
                     return response
 
+                # catch user saying 'cancel'
                 if is_cancel(response):
                     return None
 
