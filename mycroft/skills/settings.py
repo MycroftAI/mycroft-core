@@ -289,7 +289,7 @@ class SkillSettings(dict):
             return False if current_hash == str(hashed_meta) else True
         return True
 
-    def update(self):
+    def update_remote(self):
         """ update settings state from server """
         skills_settings = None
         if self.get('is_synced'):
