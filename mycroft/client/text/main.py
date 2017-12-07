@@ -50,6 +50,10 @@ log_line_lr_scroll = 0  # amount to scroll left/right for long lines
 longest_visible_line = 0  # for HOME key
 auto_scroll = True
 
+# for debugging odd terminals
+last_key = ""
+show_last_key = False
+
 mergedLog = []
 filteredLog = []
 default_log_filters = ["mouth.viseme", "mouth.display", "mouth.icon"]
@@ -68,7 +72,7 @@ meter_thresh = -1
 
 screen_mode = 0   # 0 = main, 1 = help, others in future?
 FULL_REDRAW_FREQUENCY = 10    # seconds between full redraws
-last_full_redraw = time.time()-FULL_REDRAW_FREQUENCY  # last full-redraw time
+last_full_redraw = time.time()-(FULL_REDRAW_FREQUENCY-1)  # seed for 1s redraw
 screen_lock = Lock()
 
 # Curses color codes (reassigned at runtime)
@@ -109,6 +113,7 @@ config_file = os.path.join(os.path.expanduser("~"), ".mycroft_cli.conf")
 def load_settings():
     global log_filters
     global cy_chat_area
+    global show_last_key
 
     try:
         with open(config_file, 'r') as f:
@@ -117,6 +122,8 @@ def load_settings():
             log_filters = config["filters"]
         if "cy_chat_area" in config:
             cy_chat_area = config["cy_chat_area"]
+        if "show_last_key" in config:
+            show_last_key = config["show_last_key"]
     except:
         pass
 
@@ -125,6 +132,7 @@ def save_settings():
     config = {}
     config["filters"] = log_filters
     config["cy_chat_area"] = cy_chat_area
+    config["show_last_key"] = show_last_key
     with open(config_file, 'w') as f:
         json.dump(config, f)
 
@@ -215,7 +223,7 @@ class MicMonitorThread(Thread):
                     self.st_results = st_results
                     draw_screen()
             finally:
-                time.sleep(0.1)
+                time.sleep(0.2)
 
     def read_file_from(self, bytefrom):
         global meter_cur
@@ -247,6 +255,7 @@ def add_log_message(message):
     global filteredLog
     global mergedLog
     global log_line_offset
+    global screen_lock
 
     message = "@" + message       # the first byte is a code
     filteredLog.append(message)
@@ -254,8 +263,10 @@ def add_log_message(message):
 
     if log_line_offset != 0:
         log_line_offset = 0  # scroll so the user can see the message
-    scr.erase()
-    scr.refresh()
+    if scr:
+        with screen_lock:
+            scr.erase()
+            scr.refresh()
 
 
 def rebuild_filtered_log():
@@ -351,12 +362,17 @@ def init_screen():
         CLR_METER = curses.color_pair(4)
 
 
-def page_log(page_up):
+def scroll_log(up, num_lines=None):
     global log_line_offset
-    if page_up:
-        log_line_offset -= size_log_area/2
+
+    # default to a half-page
+    if not num_lines:
+        num_lines = size_log_area/2
+
+    if up:
+        log_line_offset -= num_lines
     else:
-        log_line_offset += size_log_area/2
+        log_line_offset += num_lines
     if log_line_offset > len(filteredLog):
         log_line_offset = len(filteredLog) - 10
     if log_line_offset < 0:
@@ -599,8 +615,11 @@ def _do_drawing(scr):
         scr.addstr(curses.LINES - 1, 0, ":", CLR_CMDLINE)
         l = line[1:]
     else:
+        prompt = "Input (':' for command, Ctrl+C to quit)"
+        if show_last_key:
+            prompt += " === keycode: "+last_key
         scr.addstr(curses.LINES - 2, 0,
-                   make_titlebar("Input (':' for command, Ctrl+C to quit)",
+                   make_titlebar(prompt,
                                  curses.COLS - 1),
                    CLR_HEADING)
         scr.addstr(curses.LINES - 1, 0, ">", CLR_HEADING)
@@ -627,8 +646,8 @@ def show_help():
                CLR_CMDLINE)
     scr.addstr(1, 0,  "=" * (curses.COLS - 1),
                CLR_CMDLINE)
-    scr.addstr(2, 0,  "Up / Down         scroll thru query history")
-    scr.addstr(3, 0,  "PgUp / PgDn       scroll thru log history")
+    scr.addstr(2, 0,  "Ctrl+N / Ctrl+P   scroll thru query history")
+    scr.addstr(3, 0,  "Up/Down/PgUp/PgDn scroll thru log history")
     scr.addstr(4, 0,  "Left / Right      scroll long log lines left/right")
     scr.addstr(5, 0,  "Home              scroll to start of long log lines")
     scr.addstr(6, 0,  "End               scroll to end of long log lines")
@@ -645,6 +664,7 @@ def show_help():
     scr.addstr(17, 0,  ":filter (show|list)     display current filters")
     scr.addstr(18, 0,  ":history (# lines)      set number of history lines")
     scr.addstr(19, 0,  ":find 'str'             show logs containing 'str'")
+    scr.addstr(20, 0,  ":keycode (show|hide)    display keyboard codes")
 
     scr.addstr(curses.LINES - 1, 0,  center(23) + "Press any key to return",
                CLR_HEADING)
@@ -685,6 +705,7 @@ def handle_cmd(cmd):
     global mergedLog
     global cy_chat_area
     global find_str
+    global show_last_key
 
     if "show" in cmd and "log" in cmd:
         pass
@@ -692,6 +713,12 @@ def handle_cmd(cmd):
         show_help()
     elif "exit" in cmd or "quit" in cmd:
         return 1
+    elif "keycode" in cmd:
+        # debugging keyboard
+        if "hide" in cmd or "off" in cmd:
+            show_last_key = False
+        elif "show" in cmd or "on" in cmd:
+            show_last_key = True
     elif "meter" in cmd:
         # microphone level meter
         if "hide" in cmd or "off" in cmd:
@@ -728,8 +755,6 @@ def handle_cmd(cmd):
         cy_chat_area = lines
 
     # TODO: More commands
-    # elif "find" in cmd:
-    #    ... search logs for given string
     return 0  # do nothing upon return
 
 
@@ -740,6 +765,7 @@ def gui_main(stdscr):
     global log_line_lr_scroll
     global longest_visible_line
     global find_str
+    global last_key
 
     scr = stdscr
     init_screen()
@@ -750,8 +776,6 @@ def gui_main(stdscr):
     event_thread = Thread(target=connect)
     event_thread.setDaemon(True)
     event_thread.start()
-
-    add_log_message("  v--- OLDEST ---v")
 
     history = []
     hist_idx = -1  # index, from the bottom
@@ -784,6 +808,9 @@ def gui_main(stdscr):
                     c = curses.KEY_END
                 else:
                     c = c2
+                last_key = str(c)+",ESC+"+str(c1)+"+"+str(c2)
+            else:
+                last_key = str(c)
 
             if c == curses.KEY_ENTER or c == 10 or c == 13:
                 # ENTER sends the typed line to be processed by Mycroft
@@ -803,14 +830,14 @@ def gui_main(stdscr):
                                      'lang': 'en-us'}))
                 hist_idx = -1
                 line = ""
-            elif c == curses.KEY_UP:
+            elif c == 16:  # Ctrl+P (Previous)
                 # Move up the history stack
                 hist_idx = clamp(hist_idx + 1, -1, len(history) - 1)
                 if hist_idx >= 0:
                     line = history[len(history) - hist_idx - 1]
                 else:
                     line = ""
-            elif c == curses.KEY_DOWN:
+            elif c == 14:  # Ctrl+N (Next)
                 # Move down the history stack
                 hist_idx = clamp(hist_idx - 1, -1, len(history) - 1)
                 if hist_idx >= 0:
@@ -831,13 +858,16 @@ def gui_main(stdscr):
             elif c == curses.KEY_END:
                 # END scrolls log lines all the way to the end
                 log_line_lr_scroll = 0
-            elif c == curses.KEY_NPAGE or c == 555:  # Ctrl+PgUp
-                # PgUp to go up a page in the logs
-                page_log(True)
-                draw_screen()
-            elif c == curses.KEY_PPAGE or c == 550:  # Ctrl+PgUp
+            elif c == curses.KEY_UP:
+                scroll_log(False, 1)
+            elif c == curses.KEY_DOWN:
+                scroll_log(True, 1)
+            elif c == curses.KEY_NPAGE:  # aka PgDn
                 # PgDn to go down a page in the logs
-                page_log(False)
+                scroll_log(True)
+            elif c == curses.KEY_PPAGE:  # aka PgUp
+                # PgUp to go up a page in the logs
+                scroll_log(False)
             elif c == curses.KEY_RESIZE:
                 # Generated by Curses when window/screen has been resized
                 y, x = scr.getmaxyx()
@@ -849,9 +879,9 @@ def gui_main(stdscr):
             elif c == curses.KEY_BACKSPACE or c == 127:
                 # Backspace to erase a character in the utterance
                 line = line[:-1]
-            elif c == 6:  # Ctrl+F
+            elif c == 6:  # Ctrl+F (Find)
                 line = ":find "
-            elif c == 24:  # Ctrl+X
+            elif c == 24:  # Ctrl+X (Exit)
                 if find_str:
                     # End the find session
                     find_str = None
@@ -901,6 +931,8 @@ def simple_cli():
         event_thread.exit()
         sys.exit()
 
+
+add_log_message("  v--- OLDEST ---v")
 
 # Find the correct log path relative to this script
 scriptPath = os.path.dirname(os.path.realpath(__file__))
