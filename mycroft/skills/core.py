@@ -23,7 +23,7 @@ import abc
 import re
 from adapt.intent import Intent, IntentBuilder
 from os import listdir
-from os.path import join, abspath, dirname, splitext, basename, exists, isfile
+from os.path import join, abspath, dirname, splitext, basename, exists
 from threading import Event
 
 from mycroft.api import DeviceApi
