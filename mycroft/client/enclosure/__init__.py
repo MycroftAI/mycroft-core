@@ -52,12 +52,13 @@ class EnclosureReader(Thread):
     Note: A command is identified by a line break
     """
 
-    def __init__(self, serial, ws):
+    def __init__(self, serial, ws, lang=None):
         super(EnclosureReader, self).__init__(target=self.read)
         self.alive = True
         self.daemon = True
         self.serial = serial
         self.ws = ws
+        self.lang = lang or 'en-us'
         self.start()
 
     def read(self):
@@ -242,7 +243,7 @@ class Enclosure(object):
         self.config = global_config.get("enclosure")
 
         self.__init_serial()
-        self.reader = EnclosureReader(self.serial, self.ws)
+        self.reader = EnclosureReader(self.serial, self.ws, self.lang)
         self.writer = EnclosureWriter(self.serial, self.ws)
 
         # initiates the web sockets on display manager
