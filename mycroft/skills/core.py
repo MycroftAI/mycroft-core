@@ -405,11 +405,11 @@ class MycroftSkill(object):
         def is_cancel(utterance):
             return utterance in cancel_words
 
-        def on_valid_default(utterance):
+        def validator_default(utterance):
             # accept anything except 'cancel'
             return not is_cancel(utterance)
 
-        validator = validator or on_valid_default
+        validator = validator or validator_default
         on_fail_fn = on_fail if callable(on_fail) else on_fail_default
 
         self.speak(get_announcement(), expect_response=True)
