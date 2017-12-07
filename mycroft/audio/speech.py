@@ -72,7 +72,7 @@ def handle_speak(event):
                     mute_and_speak(chunk)
                 except KeyboardInterrupt:
                     raise
-                except:
+                except Exception:
                     LOG.error('Error in mute_and_speak', exc_info=True)
                 if (_last_stop_signal > start or
                         check_for_signal('buttonPress')):
