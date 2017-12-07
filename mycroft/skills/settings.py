@@ -187,6 +187,18 @@ class SkillSettings(dict):
         with open(uuid_file, 'w') as f:
             f.write(str(uuid))
 
+    def _uuid_exist(self):
+        """ Checks if there is an uuid file.
+
+            Returns:
+                bool: True if uuid file exist False otherwise
+        """
+        directory = self.config.get("skills")["directory"]
+        directory = join(directory, self.name)
+        directory = expanduser(directory)
+        uuid_file = join(directory, 'uuid')
+        return isfile(uuid_file)
+
     def _migrate_settings(self, settings_meta):
         """ upload the new settings meta with values currently in settings """
         meta = settings_meta.copy()
@@ -211,9 +223,8 @@ class SkillSettings(dict):
                  " to home.mycroft.ai")
         meta = self._migrate_settings(settings_meta)
         meta['identifier'] = str(hashed_meta)
-        LOG.info(meta)
-        new_uuid = self._send_settings_meta(meta)
-        self._save_uuid(new_uuid)
+        response = self._send_settings_meta(meta)
+        self._save_uuid(response['uuid'])
         self._save_hash(hashed_meta)
 
     def _delete_old_meta(self):
@@ -226,18 +237,6 @@ class SkillSettings(dict):
                 self._delete_metatdata(old_uuid)
             except Exception as e:
                 LOG.info(e)
-
-    def _uuid_exist(self):
-        """ Checks if there is an uuid file.
-
-            Returns:
-                bool: True if uuid file exist False otherwise
-        """
-        directory = self.config.get("skills")["directory"]
-        directory = join(directory, self.name)
-        directory = expanduser(directory)
-        uuid_file = join(directory, 'uuid')
-        return isfile(uuid_file)
 
     def hash(self, str):
         """ md5 hasher for consistency across cpu architectures """
