@@ -347,7 +347,7 @@ class MycroftSkill(object):
         converse.response = None
         default_converse = self.converse
         self.converse = converse
-        event.wait(10)  # after 10 seconds, timeout
+        event.wait(15)  # 10 for listener, 5 for SST, then timeout
         self.converse = default_converse
         return converse.response
 
@@ -382,8 +382,10 @@ class MycroftSkill(object):
         """
         data = data or {}
 
-        announcement = announcement or self.dialog_renderer.render(dialog, data)
-        if not announcement:
+        def get_announcement():
+            return announcement or self.dialog_renderer.render(dialog, data)
+
+        if not get_announcement():
             raise ValueError('announcement or dialog message required')
 
         def on_fail_default(utterance):
@@ -392,7 +394,7 @@ class MycroftSkill(object):
             if on_fail:
                 return self.dialog_renderer.render(on_fail, fail_data)
             else:
-                return announcement
+                return get_announcement()
 
         # TODO: Load with something like mycroft.dialog.get_all()
         cancel_voc = 'text/' + self.lang + '/cancel.voc'
@@ -409,7 +411,7 @@ class MycroftSkill(object):
         validator = validator or on_valid_default
         on_fail_fn = on_fail if callable(on_fail) else on_fail_default
 
-        self.speak(announcement, expect_response=True)
+        self.speak(get_announcement(), expect_response=True)
         num_fails = 0
         while True:
             response = self.__get_response()
