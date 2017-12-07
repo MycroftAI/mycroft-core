@@ -31,8 +31,10 @@
 """
 
 import json
+import subprocess
+import hashlib
 from threading import Timer
-from os.path import isfile, join, expanduser
+from os.path import isfile, join, expanduser, basename
 
 from mycroft.api import DeviceApi
 from mycroft.util.log import LOG
@@ -54,6 +56,7 @@ class SkillSettings(dict):
         self._device_identity = self.api.identity.uuid
         self.config = ConfigurationManager.get()
         self.name = name
+        self.directory = directory
         # set file paths
         self._settings_path = join(directory, 'settings.json')
         self._meta_path = join(directory, 'settingsmeta.json')
@@ -67,41 +70,36 @@ class SkillSettings(dict):
         if isfile(self._meta_path):
             LOG.info("settingsmeta.json exist for {}".format(self.name))
             settings_meta = self._load_settings_meta()
-            hashed_meta = hash(str(settings_meta) + str(self._device_identity))
-            # check if hash is different from the saved hashed
+            hashed_meta = self._get_meta_hash(str(settings_meta))
+            skill_settings = self._get_skill_by_identifier(hashed_meta)
+            # if hash is new then there is a diff version of settingsmeta
             if self._is_new_hash(hashed_meta):
-                LOG.info("looks like settingsmeta.json " +
-                         "has changed for {}".format(self.name))
-                # TODO: once the delete api for device is created uncomment
-                if self._uuid_exist():
-                    try:
-                        LOG.info("a uuid exist for {}".format(self.name) +
-                                 " deleting old one")
-                        old_uuid = self._load_uuid()
-                        self._delete_metatdata(old_uuid)
-                    except Exception as e:
-                        LOG.info(e)
-                LOG.info("sending settingsmeta.json for {}".format(self.name) +
-                         " to home.mycroft.ai")
-                new_uuid = self._send_settings_meta(settings_meta, hashed_meta)
-                self._save_uuid(new_uuid)
-                self._save_hash(hashed_meta)
-            else:  # if hash is old
-                found_in_backend = False
-                settings = self._get_remote_settings()
-                # checks backend if the settings have been deleted via webUI
-                for skill in settings:
-                    if skill["identifier"] == str(hashed_meta):
-                        found_in_backend = True
-                # if it's been deleted from webUI resend
-                if found_in_backend is False:
-                    LOG.info("seems like it got deleted from home... " +
-                             "sending settingsmeta.json for " +
-                             "{}".format(self.name))
-                    new_uuid = self._send_settings_meta(
-                        settings_meta, hashed_meta)
-                    self._save_uuid(new_uuid)
-                    self._save_hash(hashed_meta)
+                # first look at all other devices on user account to see
+                # if the settings exist. if it does then sync with this device
+                if skill_settings is not None:
+                    # is_synced flags the that this settings is loaded from
+                    # another device if a skill settings doesn't have
+                    # is_synced, then the skill is created from that device
+                    self.__setitem__('is_synced', True)
+                    self.save_skill_settings(skill_settings)
+                else:  # upload skill settings if other devices do not have it
+                    uuid = self._load_uuid()
+                    if uuid is not None:
+                        self._delete_metadata(uuid)
+                    self._upload_meta(settings_meta, hashed_meta)
+            else:  # hash is not new
+                if skill_settings is not None:
+                    self.__setitem__('is_synced', True)
+                    self.save_skill_settings(skill_settings)
+                else:
+                    settings = self.get_remote_device_settings(hashed_meta)
+                    if settings is None:
+                        LOG.info("seems like it got deleted from home... "
+                                 "sending settingsmeta.json for "
+                                 "{}".format(self.name))
+                        self._upload_meta(settings_meta, hashed_meta)
+                    else:
+                        self.save_skill_settings(settings)
 
             t = Timer(60, self._poll_skill_settings, [hashed_meta])
             t.daemon = True
@@ -127,30 +125,37 @@ class SkillSettings(dict):
             data = json.load(f)
         return data
 
-    def _send_settings_meta(self, settings_meta, hashed_meta):
+    def _send_settings_meta(self, settings_meta):
         """ Send settingsmeta.json to the backend.
 
             Args:
                 settings_meta (dict): dictionary of the current settings meta
-                                      data
-                hased_meta (int): hash value for settings meta data
 
             Returns:
                 str: uuid, a unique id for the setting meta data
         """
         try:
-            settings_meta["identifier"] = str(hashed_meta)
-            self._put_metadata(settings_meta)
-            settings = self._get_remote_settings()
-            skill_identity = str(hashed_meta)
-            uuid = None
-            # TODO: note uuid should be returned from the put request
-            for skill_setting in settings:
-                if skill_setting['identifier'] == skill_identity:
-                    uuid = skill_setting["uuid"]
+            uuid = self._put_metadata(settings_meta)
             return uuid
         except Exception as e:
             LOG.error(e)
+            return None
+
+    def save_skill_settings(self, skill_settings):
+        """ takes skill object and save onto self
+
+            Args:
+                settings (dict): skill
+        """
+        if self._is_new_hash(skill_settings['identifier']):
+            self._save_uuid(skill_settings['uuid'])
+            self._save_hash(skill_settings['identifier'])
+        sections = skill_settings['skillMetadata']['sections']
+        for section in sections:
+            for field in section["fields"]:
+                if "name" in field:  # no name for 'label' fields
+                    self.__setitem__(field["name"], field["value"])
+        self.store()
 
     def _load_uuid(self):
         """ Loads uuid
@@ -162,6 +167,7 @@ class SkillSettings(dict):
         directory = join(directory, self.name)
         directory = expanduser(directory)
         uuid_file = join(directory, 'uuid')
+        uuid = None
         if isfile(uuid_file):
             with open(uuid_file, 'r') as f:
                 uuid = f.read()
@@ -181,6 +187,75 @@ class SkillSettings(dict):
         with open(uuid_file, 'w') as f:
             f.write(str(uuid))
 
+    def _migrate_settings(self, settings_meta):
+        """ upload the new settings meta with values currently in settings """
+        meta = settings_meta.copy()
+        sections = meta['skillMetadata']['sections']
+        for i, section in enumerate(sections):
+            for j, field in enumerate(section['fields']):
+                if 'name' in field:
+                    if field["name"] in self:
+                        sections[i]['fields'][j]["value"] = \
+                            self.__getitem__(field["name"])
+        meta['skillMetadata']['sections'] = sections
+        return meta
+
+    def _upload_meta(self, settings_meta, hashed_meta):
+        """ uploads the new meta data to settings with settings migration
+
+            Args:
+                settings_meta (dict): settingsmeta.json
+                hashed_meta (str): {skill-folder}-settinsmeta.json
+        """
+        LOG.info("sending settingsmeta.json for {}".format(self.name) +
+                 " to home.mycroft.ai")
+        meta = self._migrate_settings(settings_meta)
+        meta['identifier'] = str(hashed_meta)
+        LOG.info(meta)
+        new_uuid = self._send_settings_meta(meta)
+        self._save_uuid(new_uuid)
+        self._save_hash(hashed_meta)
+
+    def _delete_old_meta(self):
+        """" Deletes the old meta data """
+        if self._uuid_exist():
+            try:
+                LOG.info("a uuid exist for {}".format(self.name) +
+                         " deleting old one")
+                old_uuid = self._load_uuid()
+                self._delete_metatdata(old_uuid)
+            except Exception as e:
+                LOG.info(e)
+
+    def _uuid_exist(self):
+        """ Checks if there is an uuid file.
+
+            Returns:
+                bool: True if uuid file exist False otherwise
+        """
+        directory = self.config.get("skills")["directory"]
+        directory = join(directory, self.name)
+        directory = expanduser(directory)
+        uuid_file = join(directory, 'uuid')
+        return isfile(uuid_file)
+
+    def hash(self, str):
+        """ md5 hasher for consistency across cpu architectures """
+        return hashlib.md5(str).hexdigest()
+
+    def _get_meta_hash(self, settings_meta):
+        """ Get's the hash of skill
+
+            Args:
+                settings_meta (str): stringified settingsmeta
+
+            Returns:
+                _hash (str): hashed to identify skills
+        """
+        return "{}-{}".format(
+                        basename(self.directory),
+                        self.hash(str(settings_meta)))
+
     def _save_hash(self, hashed_meta):
         """ Saves hashed_meta to settings directory.
 
@@ -194,18 +269,6 @@ class SkillSettings(dict):
         hash_file = join(directory, 'hash')
         with open(hash_file, 'w') as f:
             f.write(str(hashed_meta))
-
-    def _uuid_exist(self):
-        """ Checks if there is an uuid file.
-
-            Returns:
-                bool: True if uuid file exist False otherwise
-        """
-        directory = self.config.get("skills")["directory"]
-        directory = join(directory, self.name)
-        directory = expanduser(directory)
-        uuid_file = join(directory, 'uuid')
-        return isfile(uuid_file)
 
     def _is_new_hash(self, hashed_meta):
         """ checks if the stored hash is the same as current.
@@ -236,25 +299,25 @@ class SkillSettings(dict):
             Args:
                 hashed_meta (int): the hashed identifier
         """
-        LOG.info("getting settings from home.mycroft.ai")
         try:
-            # update settings
-            settings = self._get_remote_settings()
-            skill_identity = str(hashed_meta)
-            for skill_setting in settings:
-                if skill_setting['identifier'] == skill_identity:
-                    sections = skill_setting['skillMetadata']['sections']
-                    for section in sections:
-                        for field in section["fields"]:
-                            if "name" in field:  # no name for 'label' fields
-                                self.__setitem__(field["name"],
-                                                 field["value"])
-
-            # store value if settings has changed from backend
-            self.store()
-
+            if self.__getitem__('is_synced'):
+                LOG.info(
+                    "syncing settings from other devices "
+                    "from home.mycroft.ai for {}".format(self.name))
+                skills_settings = self._get_skill_by_identifier(hashed_meta)
+                if skills_settings is None:
+                    raise
         except Exception as e:
-            LOG.error(e)
+            LOG.info("syncing settings from "
+                     "home.mycroft.ai for {}".format(self.name))
+            skills_settings = self.get_remote_device_settings(hashed_meta)
+
+        if skills_settings is not None:
+            self.save_skill_settings(skills_settings)
+            self.store()
+        else:
+            settings_meta = self._load_settings_meta()
+            self._upload_meta(settings_meta, hashed_meta)
 
         if self.is_alive:
             # continues to poll settings every 60 seconds
@@ -275,8 +338,26 @@ class SkillSettings(dict):
                     # metadata to be able to edit later.
                     LOG.error(e)
 
+    def get_remote_device_settings(self, identifier):
+        """ Get skill settings for this device associated
+            with the identifier
+
+            Args:
+                identifier (str): a hashed_meta
+
+            Returns:
+                skill_settings (dict or None): returns a dict if matches
+        """
+        settings = self._get_remote_settings()
+        # this loads the settings into memory for use in self.store
+        for skill_settings in settings:
+            if skill_settings['identifier'] == identifier:
+                self._remote_settings = skill_settings
+                return skill_settings
+        return None
+
     def _get_remote_settings(self):
-        """ Get skill settings for this device from backend.
+        """ Get all skill settings for this device from backend.
 
             Returns:
                 dict: dictionary with settings collected from the web backend.
@@ -287,6 +368,26 @@ class SkillSettings(dict):
         })
         settings = [skills for skills in settings if skills is not None]
         return settings
+
+    def _get_skill_by_identifier(self, identifier):
+        """ Retrieves user skill by identifier (hashed_meta)
+
+        Args:
+            indentifier (str): identifier for this skill
+
+        Returns:
+            settings (dict or None): returns the settings if true else None
+        """
+        path = \
+            "/" + self._device_identity + "/userSkill?identifier=" + identifier
+        user_skill = self.api.request({
+            "method": "GET",
+            "path": path
+        })
+        if len(user_skill) == 0:
+            return None
+        else:
+            return user_skill[0]
 
     def _put_metadata(self, settings_meta):
         """ PUT settingsmeta to backend to be configured in home.mycroft.ai.
@@ -302,16 +403,23 @@ class SkillSettings(dict):
             "json": settings_meta
         })
 
-    def _delete_metatdata(self, uuid):
+    def _delete_metadata(self, uuid):
         """ Deletes the current skill metadata
 
             Args:
                 uuid (str): unique id of the skill
         """
-        return self.api.request({
-            "method": "DELETE",
-            "path": self._api_path + "/{}".format(uuid)
-        })
+        try:
+            LOG.info("deleting metadata")
+            self.api.request({
+                "method": "DELETE",
+                "path": self._api_path + "/{}".format(uuid)
+            })
+        except Exception as e:
+            LOG.error(e)
+            LOG.info(
+                "cannot delete metadata because this"
+                "device is not original uploader of skill")
 
     def store(self, force=False):
         """ Store dictionary to file if a change has occured.
