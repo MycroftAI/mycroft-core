@@ -18,6 +18,18 @@
     system to provide a GUI interface, described by meta-data described in
     an optional 'settingsmeta.json' file.
 
+    As it stands today, if you have multiple devices with the same skill
+    installed, they will share the same settings if the settings is can be
+    configurable on the web (anything sent by settingsmeta.json). If a skill
+    modify a setting on the client that can be configured in the web, the web
+    will update with the settings modified from the skill. Currently ONLY
+    the creator of the skill can modify the the web settings from the skill
+    it self. The creator is defined as the device that is the first one to
+    upload the settingsmeta.json to the web ui. This is temporary until
+    some mechanism are put into place in the backend to allow any device to
+    modify the settings configurable from the web.
+
+
     Usage Example:
         from mycroft.skill.settings import SkillSettings
 
@@ -463,6 +475,6 @@ class SkillSettings(dict):
             hashed_meta = self._get_meta_hash(settings_meta)
             uuid = self._load_uuid()
             if uuid is not None:
-                LOG.info("deleting meata data for {}".format(self.name))
+                LOG.info("deleting meta data for {}".format(self.name))
                 self._delete_metadata(uuid)
             self._upload_meta(settings_meta, hashed_meta)
