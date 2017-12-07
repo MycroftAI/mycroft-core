@@ -220,7 +220,7 @@ class SkillSettings(dict):
                 hashed_meta (str): {skill-folder}-settinsmeta.json
         """
         LOG.info("sending settingsmeta.json for {}".format(self.name) +
-                 " to home.mycroft.ai")
+                 " to servers")
         meta = self._migrate_settings(settings_meta)
         meta['identifier'] = str(hashed_meta)
         response = self._send_settings_meta(meta)
@@ -302,13 +302,13 @@ class SkillSettings(dict):
             if self.__getitem__('is_synced'):
                 LOG.info(
                     "syncing settings from other devices "
-                    "from home.mycroft.ai for {}".format(self.name))
+                    "from server for {}".format(self.name))
                 skills_settings = self._get_skill_by_identifier(hashed_meta)
                 if skills_settings is None:
                     raise
         except Exception as e:
             LOG.info("syncing settings from "
-                     "home.mycroft.ai for {}".format(self.name))
+                     "server for {}".format(self.name))
             skills_settings = self.get_remote_device_settings(hashed_meta)
 
         if skills_settings is not None:
@@ -389,7 +389,7 @@ class SkillSettings(dict):
             return user_skill[0]
 
     def _put_metadata(self, settings_meta):
-        """ PUT settingsmeta to backend to be configured in home.mycroft.ai.
+        """ PUT settingsmeta to backend to be configured in server.
             used in place of POST and PATCH.
 
             Args:
