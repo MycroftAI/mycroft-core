@@ -71,7 +71,7 @@ class SkillSettings(dict):
             LOG.info("settingsmeta.json exist for {}".format(self.name))
             settings_meta = self._load_settings_meta()
             hashed_meta = self._get_meta_hash(str(settings_meta))
-            skill_settings = self._get_skill_by_identifier(hashed_meta)
+            skill_settings = self._request_other_settings(hashed_meta)
             # if hash is new then there is a diff version of settingsmeta
             if self._is_new_hash(hashed_meta):
                 # first look at all other devices on user account to see
@@ -80,7 +80,7 @@ class SkillSettings(dict):
                     # is_synced flags that this settings is loaded from
                     # another device. If a skill settings doesn't have
                     # is_synced, then the skill is created from that device
-                    self.__setitem__('is_synced', True)
+                    self['is_synced'] = True
                     self.save_skill_settings(skill_settings)
                 else:  # upload skill settings if other devices do not have it
                     uuid = self._load_uuid()
@@ -89,10 +89,10 @@ class SkillSettings(dict):
                     self._upload_meta(settings_meta, hashed_meta)
             else:  # hash is not new
                 if skill_settings is not None:
-                    self.__setitem__('is_synced', True)
+                    self['is_synced'] = True
                     self.save_skill_settings(skill_settings)
                 else:
-                    settings = self.get_remote_device_settings(hashed_meta)
+                    settings = self._request_my_settings(hashed_meta)
                     if settings is None:
                         LOG.info("seems like it got deleted from home... "
                                  "sending settingsmeta.json for "
@@ -154,7 +154,7 @@ class SkillSettings(dict):
         for section in sections:
             for field in section["fields"]:
                 if "name" in field:  # no name for 'label' fields
-                    self.__setitem__(field["name"], field["value"])
+                    self[field['name']] = field['value']
         self.store()
 
     def _load_uuid(self):
@@ -207,8 +207,7 @@ class SkillSettings(dict):
             for j, field in enumerate(section['fields']):
                 if 'name' in field:
                     if field["name"] in self:
-                        sections[i]['fields'][j]["value"] = \
-                            str(self.__getitem__(field["name"]))
+                        sections[i]['fields'][j]["value"] = self['name']
         meta['skillMetadata']['sections'] = sections
         return meta
 
@@ -290,6 +289,18 @@ class SkillSettings(dict):
             return False if current_hash == str(hashed_meta) else True
         return True
 
+    def update(self):
+        """ update settings state from server """
+        skills_settings = None
+        if self.get('is_synced'):
+            skills_settings = self._request_other_settings(hashed_meta)
+        if not skills_settings:
+            skills_settings = self._request_my_settings(hashed_meta)
+
+        if skills_settings is not None:
+            self.save_skill_settings(skills_settings)
+            self.store()
+
     def _poll_skill_settings(self, hashed_meta):
         """ If identifier exists for this skill poll to backend to
             request settings and store it if it changes
@@ -298,18 +309,11 @@ class SkillSettings(dict):
             Args:
                 hashed_meta (int): the hashed identifier
         """
-        try:
-            if self.__getitem__('is_synced'):
-                LOG.info(
-                    "syncing settings from other devices "
-                    "from server for {}".format(self.name))
-                skills_settings = self._get_skill_by_identifier(hashed_meta)
-                if skills_settings is None:
-                    raise
-        except Exception as e:
-            LOG.info("syncing settings from "
-                     "server for {}".format(self.name))
-            skills_settings = self.get_remote_device_settings(hashed_meta)
+        skills_settings = None
+        if self.get('is_synced'):
+            skills_settings = self._request_other_settings(hashed_meta)
+        if not skills_settings:
+            skills_settings = self._request_my_settings(hashed_meta)
 
         if skills_settings is not None:
             self.save_skill_settings(skills_settings)
@@ -331,13 +335,13 @@ class SkillSettings(dict):
                 try:
                     json_data = json.load(f)
                     for key in json_data:
-                        self.__setitem__(key, json_data[key])
+                        self[key] = json_data[key]
                 except Exception as e:
                     # TODO: Show error on webUI.  Dev will have to fix
                     # metadata to be able to edit later.
                     LOG.error(e)
 
-    def get_remote_device_settings(self, identifier):
+    def _request_my_settings(self, identifier):
         """ Get skill settings for this device associated
             with the identifier
 
@@ -347,7 +351,9 @@ class SkillSettings(dict):
             Returns:
                 skill_settings (dict or None): returns a dict if matches
         """
-        settings = self._get_remote_settings()
+        LOG.info("getting skill settings from "
+                 "server for {}".format(self.name))
+        settings = self._request_settings()
         # this loads the settings into memory for use in self.store
         for skill_settings in settings:
             if skill_settings['identifier'] == identifier:
@@ -355,7 +361,7 @@ class SkillSettings(dict):
                 return skill_settings
         return None
 
-    def _get_remote_settings(self):
+    def _request_settings(self):
         """ Get all skill settings for this device from server.
 
             Returns:
@@ -368,8 +374,8 @@ class SkillSettings(dict):
         settings = [skills for skills in settings if skills is not None]
         return settings
 
-    def _get_skill_by_identifier(self, identifier):
-        """ Retrieves user skill by identifier (hashed_meta)
+    def _request_other_settings(self, identifier):
+        """ Retrieves user skill from other devices by identifier (hashed_meta)
 
         Args:
             indentifier (str): identifier for this skill
@@ -377,6 +383,10 @@ class SkillSettings(dict):
         Returns:
             settings (dict or None): returns the settings if true else None
         """
+        LOG.info(
+            "syncing settings with other devices "
+            "from server for {}".format(self.name))
+
         path = \
             "/" + self._device_identity + "/userSkill?identifier=" + identifier
         user_skill = self.api.request({
@@ -430,7 +440,7 @@ class SkillSettings(dict):
                     if 'name' in field:
                         if field["name"] in self:
                             remote_val = sections[i]['fields'][j]["value"]
-                            self_val = self.__getitem__(field["name"])
+                            self_val = self.get(field['name'])
                             if str(remote_val) != str(self_val):
                                 changed = True
         return changed
