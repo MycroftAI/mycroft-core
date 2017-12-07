@@ -208,7 +208,7 @@ class SkillSettings(dict):
                 if 'name' in field:
                     if field["name"] in self:
                         sections[i]['fields'][j]["value"] = \
-                            self.__getitem__(field["name"])
+                            str(self.__getitem__(field["name"]))
         meta['skillMetadata']['sections'] = sections
         return meta
 
@@ -420,13 +420,38 @@ class SkillSettings(dict):
                 "cannot delete metadata because this"
                 "device is not original uploader of skill")
 
+    @property
+    def _should_upload_from_change(self):
+        changed = False
+        if hasattr(self, '_remote_settings'):
+            sections = self._remote_settings['skillMetadata']['sections']
+            for i, section in enumerate(sections):
+                for j, field in enumerate(section['fields']):
+                    if 'name' in field:
+                        if field["name"] in self:
+                            remote_val = sections[i]['fields'][j]["value"]
+                            self_val = self.__getitem__(field["name"])
+                            if str(remote_val) != str(self_val):
+                                changed = True
+        return changed
+
     def store(self, force=False):
         """ Store dictionary to file if a change has occured.
 
             Args:
                 force:  Force write despite no change
         """
+
         if force or not self._is_stored:
             with open(self._settings_path, 'w') as f:
                 json.dump(self, f)
             self.loaded_hash = hash(str(self))
+
+        if self._should_upload_from_change:
+            settings_meta = self._load_settings_meta()
+            hashed_meta = self._get_meta_hash(settings_meta)
+            uuid = self._load_uuid()
+            if uuid is not None:
+                LOG.info("deleting meata data for {}".format(self.name))
+                self._delete_metadata(uuid)
+            self._upload_meta(settings_meta, hashed_meta)
