@@ -77,8 +77,8 @@ class SkillSettings(dict):
                 # first look at all other devices on user account to see
                 # if the settings exist. if it does then sync with this device
                 if skill_settings is not None:
-                    # is_synced flags the that this settings is loaded from
-                    # another device if a skill settings doesn't have
+                    # is_synced flags that this settings is loaded from
+                    # another device. If a skill settings doesn't have
                     # is_synced, then the skill is created from that device
                     self.__setitem__('is_synced', True)
                     self.save_skill_settings(skill_settings)
@@ -126,7 +126,7 @@ class SkillSettings(dict):
         return data
 
     def _send_settings_meta(self, settings_meta):
-        """ Send settingsmeta.json to the backend.
+        """ Send settingsmeta.json to the server.
 
             Args:
                 settings_meta (dict): dictionary of the current settings meta
@@ -174,7 +174,7 @@ class SkillSettings(dict):
         return uuid
 
     def _save_uuid(self, uuid):
-        """ Saves uuid to the settings directory.
+        """ Saves uuid.
 
             Args:
                 str: uuid, unique id of new settingsmeta
@@ -356,10 +356,10 @@ class SkillSettings(dict):
         return None
 
     def _get_remote_settings(self):
-        """ Get all skill settings for this device from backend.
+        """ Get all skill settings for this device from server.
 
             Returns:
-                dict: dictionary with settings collected from the web backend.
+                dict: dictionary with settings collected from the server.
         """
         settings = self.api.request({
             "method": "GET",
