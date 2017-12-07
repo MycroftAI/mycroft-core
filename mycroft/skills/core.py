@@ -370,26 +370,58 @@ class MycroftSkill(object):
 
     def translate(self, text, data=None):
         """
-        Translate a short string using dialog/<lang>/<text>.dialog
-        This can be used for short phrases and words like "meters" or "hours"
+        Load a translatable single string resource
+
+        The string is loaded from a file in the skill's dialog subdirectory
+          'dialog/<lang>/<text>.dialog'
+        The string is randomly chosen from the file and rendered, replacing
+        mustache placeholders with values found in the data dictionary.
+
+        Args:
+            text (str): The base filename  (no extension needed)
+            data (dict, optional): a JSON dictionary
+
+        Returns:
+            str: A randomly chosen string from the file
         """
         return self.dialog_renderer.render(text, data or {})
 
     def translate_template(self, template_name, data=None):
         """
-        Read a list of strings from dialog/<lang>/<teamplate>.template
-        This can be used for large blocks of text with parameters
-        that need to be localized
+        Load a translatable template
+
+        The strings are loaded from a template file in the skill's dialog
+        subdirectory.
+          'dialog/<lang>/<template_name>.template'
+        The strings are loaded and rendered, replacing mustache placeholders
+        with values found in the data dictionary.
+
+        Args:
+            template_name (str): The base filename (no extension needed)
+            data (dict, optional): a JSON dictionary
+
+        Returns:
+            list of str: The loaded template file
         """
         return self.__translate_file(template_name + '.template', data)
 
     def translate_list(self, list_name, data=None):
         """
-        Read a list of strings from dialog/<lang>/<list>.list
-        These values should be position dependent items, consistent
-        across languages. For example, there could be a "colors".list
-        which lists a set of all colors in a consistent order across
-        all languages
+        Load a list of translatable string resources
+
+        The strings are loaded from a list file in the skill's dialog
+        subdirectory.
+          'dialog/<lang>/<list_name>.list'
+        The strings are loaded and rendered, replacing mustache placeholders
+        with values found in the data dictionary.
+
+        Args:
+            list_name (str): The base filename (no extension needed)
+            data (dict, optional): a JSON dictionary
+
+        Returns:
+            list of str: The loaded list of strings with items in consistent
+                         positions regardless of the language.
         """
         return self.__translate_file(list_name + '.list', data)
 
@@ -624,10 +656,10 @@ class MycroftSkill(object):
             Speak a sentence.
 
             Args:
-                utterance:          sentence mycroft should speak
-                expect_response:    set to True if Mycroft should expect a
-                                    response from the user and start listening
-                                    for response.
+                utterance (str):        sentence mycroft should speak
+                expect_response (bool): set to True if Mycroft should listen
+                                        for a response immediately after
+                                        speaking the utterance.
         """
         # registers the skill as being active
         self.enclosure.register(self.name)
@@ -637,14 +669,14 @@ class MycroftSkill(object):
 
     def speak_dialog(self, key, data=None, expect_response=False):
         """
-            Speak sentance based of dialog file.
+            Speak a random sentence from a dialog file.
 
             Args
-                key: dialog file key (filname without extension)
-                data: information to populate sentence with
-                expect_response:    set to True if Mycroft should expect a
-                                    response from the user and start listening
-                                    for response.
+                key (str): dialog file key (filename without extension)
+                data (dict): information used to populate sentence
+                expect_response (bool): set to True if Mycroft should listen
+                                        for a response immediately after
+                                        speaking the utterance.
         """
         data = data or {}
         self.speak(self.dialog_renderer.render(key, data), expect_response)
