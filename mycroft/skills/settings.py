@@ -200,7 +200,7 @@ class SkillSettings(dict):
         return isfile(uuid_file)
 
     def _migrate_settings(self, settings_meta):
-        """ upload the new settings meta with values currently in settings """
+        """ sync settings.json and settingsmeta.json in memory """
         meta = settings_meta.copy()
         sections = meta['skillMetadata']['sections']
         for i, section in enumerate(sections):
