@@ -96,6 +96,7 @@ class SkillSettings(dict):
         # this block of code is a control flow for
         # different scenarios that may arises with settingsmeta
         if isfile(self._meta_path):
+            self._user_identity = self.api.get()['user']['uuid']
             LOG.info("settingsmeta.json exist for {}".format(self.name))
             settings_meta = self._load_settings_meta()
             hashed_meta = self._get_meta_hash(str(settings_meta))
@@ -105,10 +106,10 @@ class SkillSettings(dict):
                 # first look at all other devices on user account to see
                 # if the settings exist. if it does then sync with this device
                 if skill_settings:
-                    # is_synced flags that this settings is loaded from
+                    # not_owner flags that this settings is loaded from
                     # another device. If a skill settings doesn't have
-                    # is_synced, then the skill is created from that device
-                    self['is_synced'] = True
+                    # not_owner, then the skill is created from that device
+                    self['not_owner'] = True
                     self.save_skill_settings(skill_settings)
                 else:  # upload skill settings if other devices do not have it
                     uuid = self._load_uuid()
@@ -117,7 +118,7 @@ class SkillSettings(dict):
                     self._upload_meta(settings_meta, hashed_meta)
             else:  # hash is not new
                 if skill_settings is not None:
-                    self['is_synced'] = True
+                    self['not_owner'] = True
                     self.save_skill_settings(skill_settings)
                 else:
                     settings = self._request_my_settings(hashed_meta)
@@ -240,7 +241,7 @@ class SkillSettings(dict):
                 if 'name' in field:
                     if field["name"] in self:
                         sections[i]['fields'][j]['value'] = \
-                            str(self[field['name']])
+                            str(self.__getitem__(field['name']))
         meta['skillMetadata']['sections'] = sections
         return meta
 
@@ -284,9 +285,8 @@ class SkillSettings(dict):
             Returns:
                 _hash (str): hashed to identify skills
         """
-        return "{}-{}".format(
-                        basename(self.directory),
-                        self.hash(str(settings_meta)))
+        _hash = self.hash(str(settings_meta) + str(self._user_identity))
+        return "{}-{}".format(basename(self.directory), _hash)
 
     def _save_hash(self, hashed_meta):
         """ Saves hashed_meta to settings directory.
@@ -330,7 +330,7 @@ class SkillSettings(dict):
         if settings_meta is None:
             return
         hashed_meta = self._get_meta_hash(settings_meta)
-        if self.get('is_synced'):
+        if self.get('not_owner'):
             skills_settings = self._request_other_settings(hashed_meta)
         if not skills_settings:
             skills_settings = self._request_my_settings(hashed_meta)
@@ -348,7 +348,7 @@ class SkillSettings(dict):
                 hashed_meta (int): the hashed identifier
         """
         skills_settings = None
-        if self.get('is_synced'):
+        if self.get('not_owner'):
             skills_settings = self._request_other_settings(hashed_meta)
         if not skills_settings:
             skills_settings = self._request_my_settings(hashed_meta)
@@ -481,6 +481,8 @@ class SkillSettings(dict):
                             self_val = self.get(field['name'])
                             if str(remote_val) != str(self_val):
                                 changed = True
+        if self.get('not_owner'):
+            changed = False
         return changed
 
     def store(self, force=False):
