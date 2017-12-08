@@ -82,7 +82,6 @@ class SkillSettings(dict):
         super(SkillSettings, self).__init__()
         self.api = DeviceApi()
         self._device_identity = self.api.identity.uuid
-        self._user_identity = self.api.get()['user']['uuid']
         self.config = ConfigurationManager.get()
         self.name = name
         self.directory = directory
@@ -97,6 +96,7 @@ class SkillSettings(dict):
         # this block of code is a control flow for
         # different scenarios that may arises with settingsmeta
         if isfile(self._meta_path):
+            self._user_identity = self.api.get()['user']['uuid']
             LOG.info("settingsmeta.json exist for {}".format(self.name))
             settings_meta = self._load_settings_meta()
             hashed_meta = self._get_meta_hash(str(settings_meta))
