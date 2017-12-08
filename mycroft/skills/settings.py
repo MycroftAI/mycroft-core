@@ -257,7 +257,8 @@ class SkillSettings(dict):
         meta = self._migrate_settings(settings_meta)
         meta['identifier'] = str(hashed_meta)
         response = self._send_settings_meta(meta)
-        self._save_uuid(response['uuid'])
+        if response:
+            self._save_uuid(response['uuid'])
         self._save_hash(hashed_meta)
 
     def _delete_old_meta(self):
