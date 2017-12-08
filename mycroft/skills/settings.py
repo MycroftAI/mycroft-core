@@ -149,9 +149,13 @@ class SkillSettings(dict):
 
     def _load_settings_meta(self):
         """ Loads settings metadata from skills path. """
-        with open(self._meta_path) as f:
-            data = json.load(f)
-        return data
+        if isfile(self._meta_path):
+            with open(self._meta_path) as f:
+                data = json.load(f)
+            return data
+        else:
+            LOG.info("settingemeta.json does not exist")
+            return None
 
     def _send_settings_meta(self, settings_meta):
         """ Send settingsmeta.json to the server.
@@ -322,6 +326,10 @@ class SkillSettings(dict):
     def update_remote(self):
         """ update settings state from server """
         skills_settings = None
+        settings_meta = self._load_settings_meta()
+        if settings_meta is None:
+            return
+        hashed_meta = self._get_meta_hash(settings_meta)
         if self.get('is_synced'):
             skills_settings = self._request_other_settings(hashed_meta)
         if not skills_settings:
