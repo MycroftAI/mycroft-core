@@ -259,6 +259,8 @@ class SkillSettings(dict):
         response = self._send_settings_meta(meta)
         if response:
             self._save_uuid(response['uuid'])
+            if 'not_owner' in self:
+                del self['not_owner']
         self._save_hash(hashed_meta)
 
     def _delete_old_meta(self):
@@ -338,6 +340,9 @@ class SkillSettings(dict):
         if skills_settings is not None:
             self.save_skill_settings(skills_settings)
             self.store()
+        else:
+            settings_meta = self._load_settings_meta()
+            self._upload_meta(settings_meta, hashed_meta)
 
     def _poll_skill_settings(self, hashed_meta):
         """ If identifier exists for this skill poll to backend to
@@ -347,18 +352,10 @@ class SkillSettings(dict):
             Args:
                 hashed_meta (int): the hashed identifier
         """
-        skills_settings = None
-        if self.get('not_owner'):
-            skills_settings = self._request_other_settings(hashed_meta)
-        if not skills_settings:
-            skills_settings = self._request_my_settings(hashed_meta)
-
-        if skills_settings is not None:
-            self.save_skill_settings(skills_settings)
-            self.store()
-        else:
-            settings_meta = self._load_settings_meta()
-            self._upload_meta(settings_meta, hashed_meta)
+        try:
+            self.update_remote()
+        except Exception as e:
+            LOG.error(e)
 
         if self.is_alive:
             # continues to poll settings every 60 seconds
