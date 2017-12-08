@@ -321,6 +321,8 @@ class SkillSettings(dict):
     def update_remote(self):
         """ update settings state from server """
         skills_settings = None
+        settings_meta = self._load_settings_meta()
+        hashed_meta = self._get_meta_hash(settings_meta)
         if self.get('is_synced'):
             skills_settings = self._request_other_settings(hashed_meta)
         if not skills_settings:
