@@ -90,7 +90,9 @@ class SkillSettings(dict):
         self.is_alive = True
         self.loaded_hash = hash(str(self))
         self._complete_intialization = False
-
+        self._device_identity = None
+        self._api_path = None
+        self._user_identity = None
         # if settingsmeta.json exists
         # this block of code is a control flow for
         # different scenarios that may arises with settingsmeta
