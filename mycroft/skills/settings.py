@@ -95,44 +95,47 @@ class SkillSettings(dict):
         # if settingsmeta.json exists
         # this block of code is a control flow for
         # different scenarios that may arises with settingsmeta
-        if isfile(self._meta_path):
-            self._user_identity = self.api.get()['user']['uuid']
-            LOG.info("settingsmeta.json exist for {}".format(self.name))
-            settings_meta = self._load_settings_meta()
-            hashed_meta = self._get_meta_hash(str(settings_meta))
-            skill_settings = self._request_other_settings(hashed_meta)
-            # if hash is new then there is a diff version of settingsmeta
-            if self._is_new_hash(hashed_meta):
-                # first look at all other devices on user account to see
-                # if the settings exist. if it does then sync with this device
-                if skill_settings:
-                    # not_owner flags that this settings is loaded from
-                    # another device. If a skill settings doesn't have
-                    # not_owner, then the skill is created from that device
-                    self['not_owner'] = True
-                    self.save_skill_settings(skill_settings)
-                else:  # upload skill settings if other devices do not have it
-                    uuid = self._load_uuid()
-                    if uuid is not None:
-                        self._delete_metadata(uuid)
-                    self._upload_meta(settings_meta, hashed_meta)
-            else:  # hash is not new
-                if skill_settings is not None:
-                    self['not_owner'] = True
-                    self.save_skill_settings(skill_settings)
-                else:
-                    settings = self._request_my_settings(hashed_meta)
-                    if settings is None:
-                        LOG.info("seems like it got deleted from home... "
-                                 "sending settingsmeta.json for "
-                                 "{}".format(self.name))
+        try:
+            if isfile(self._meta_path):
+                self._user_identity = self.api.get()['user']['uuid']
+                LOG.info("settingsmeta.json exist for {}".format(self.name))
+                settings_meta = self._load_settings_meta()
+                hashed_meta = self._get_meta_hash(str(settings_meta))
+                skill_settings = self._request_other_settings(hashed_meta)
+                # if hash is new then there is a diff version of settingsmeta
+                if self._is_new_hash(hashed_meta):
+                    # first look at all other devices on user account to see
+                    # if the settings exist. if it does then sync with device
+                    if skill_settings:
+                        # not_owner flags that this settings is loaded from
+                        # another device. If a skill settings doesn't have
+                        # not_owner, then the skill is created from that device
+                        self['not_owner'] = True
+                        self.save_skill_settings(skill_settings)
+                    else:  # upload skill settings if
+                        uuid = self._load_uuid()
+                        if uuid is not None:
+                            self._delete_metadata(uuid)
                         self._upload_meta(settings_meta, hashed_meta)
+                else:  # hash is not new
+                    if skill_settings is not None:
+                        self['not_owner'] = True
+                        self.save_skill_settings(skill_settings)
                     else:
-                        self.save_skill_settings(settings)
+                        settings = self._request_my_settings(hashed_meta)
+                        if settings is None:
+                            LOG.info("seems like it got deleted from home... "
+                                     "sending settingsmeta.json for "
+                                     "{}".format(self.name))
+                            self._upload_meta(settings_meta, hashed_meta)
+                        else:
+                            self.save_skill_settings(settings)
 
-            t = Timer(60, self._poll_skill_settings, [hashed_meta])
-            t.daemon = True
-            t.start()
+                t = Timer(60, self._poll_skill_settings, [hashed_meta])
+                t.daemon = True
+                t.start()
+        except Exception as e:
+            LOG.warning(str(e))
 
         self.load_skill_settings()
 
