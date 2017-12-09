@@ -81,63 +81,65 @@ class SkillSettings(dict):
     def __init__(self, directory, name):
         super(SkillSettings, self).__init__()
         self.api = DeviceApi()
-        self._device_identity = self.api.identity.uuid
         self.config = ConfigurationManager.get()
         self.name = name
         self.directory = directory
         # set file paths
         self._settings_path = join(directory, 'settings.json')
         self._meta_path = join(directory, 'settingsmeta.json')
-        self._api_path = "/" + self._device_identity + "/skill"
         self.is_alive = True
         self.loaded_hash = hash(str(self))
+        self._complete_intialization = False
 
         # if settingsmeta.json exists
         # this block of code is a control flow for
         # different scenarios that may arises with settingsmeta
-        try:
-            if isfile(self._meta_path):
-                self._user_identity = self.api.get()['user']['uuid']
-                LOG.info("settingsmeta.json exist for {}".format(self.name))
-                settings_meta = self._load_settings_meta()
-                hashed_meta = self._get_meta_hash(str(settings_meta))
-                skill_settings = self._request_other_settings(hashed_meta)
-                # if hash is new then there is a diff version of settingsmeta
-                if self._is_new_hash(hashed_meta):
-                    # first look at all other devices on user account to see
-                    # if the settings exist. if it does then sync with device
-                    if skill_settings:
-                        # not_owner flags that this settings is loaded from
-                        # another device. If a skill settings doesn't have
-                        # not_owner, then the skill is created from that device
-                        self['not_owner'] = True
-                        self.save_skill_settings(skill_settings)
-                    else:  # upload skill settings if
-                        uuid = self._load_uuid()
-                        if uuid is not None:
-                            self._delete_metadata(uuid)
-                        self._upload_meta(settings_meta, hashed_meta)
-                else:  # hash is not new
-                    if skill_settings is not None:
-                        self['not_owner'] = True
-                        self.save_skill_settings(skill_settings)
-                    else:
-                        settings = self._request_my_settings(hashed_meta)
-                        if settings is None:
-                            LOG.info("seems like it got deleted from home... "
-                                     "sending settingsmeta.json for "
-                                     "{}".format(self.name))
-                            self._upload_meta(settings_meta, hashed_meta)
-                        else:
-                            self.save_skill_settings(settings)
-
-                t = Timer(60, self._poll_skill_settings, [hashed_meta])
-                t.daemon = True
-                t.start()
-        except Exception as e:
-            LOG.warning(str(e))
-
+        if isfile(self._meta_path):
+            self._poll_skill_settings()
         self.load_skill_settings()
+
+    # TODO: break this up into two classes
+    def initiatlize_remote_settings(self):
+        """ initializes the remote settings to the server """
+        # if settingsmeta.json exists
+        # this block of code is a control flow for
+        # different scenarios that may arises with settingsmeta
+        self._device_identity = self.api.identity.uuid
+        self._api_path = "/" + self._device_identity + "/skill"
+        self._user_identity = self.api.get()['user']['uuid']
+        LOG.info("settingsmeta.json exist for {}".format(self.name))
+        settings_meta = self._load_settings_meta()
+        hashed_meta = self._get_meta_hash(str(settings_meta))
+        skill_settings = self._request_other_settings(hashed_meta)
+        # if hash is new then there is a diff version of settingsmeta
+        if self._is_new_hash(hashed_meta):
+            # first look at all other devices on user account to see
+            # if the settings exist. if it does then sync with device
+            if skill_settings:
+                # not_owner flags that this settings is loaded from
+                # another device. If a skill settings doesn't have
+                # not_owner, then the skill is created from that device
+                self['not_owner'] = True
+                self.save_skill_settings(skill_settings)
+            else:  # upload skill settings if
+                uuid = self._load_uuid()
+                if uuid is not None:
+                    self._delete_metadata(uuid)
+                self._upload_meta(settings_meta, hashed_meta)
+        else:  # hash is not new
+            if skill_settings is not None:
+                self['not_owner'] = True
+                self.save_skill_settings(skill_settings)
+            else:
+                settings = self._request_my_settings(hashed_meta)
+                if settings is None:
+                    LOG.info("seems like it got deleted from home... "
+                             "sending settingsmeta.json for "
+                             "{}".format(self.name))
+                    self._upload_meta(settings_meta, hashed_meta)
+                else:
+                    self.save_skill_settings(settings)
+        self._complete_intialization = True
 
     @property
     def _is_stored(self):
@@ -347,7 +349,7 @@ class SkillSettings(dict):
             settings_meta = self._load_settings_meta()
             self._upload_meta(settings_meta, hashed_meta)
 
-    def _poll_skill_settings(self, hashed_meta):
+    def _poll_skill_settings(self):
         """ If identifier exists for this skill poll to backend to
             request settings and store it if it changes
             TODO: implement as websocket
@@ -356,13 +358,18 @@ class SkillSettings(dict):
                 hashed_meta (int): the hashed identifier
         """
         try:
-            self.update_remote()
+            if not self._complete_intialization:
+                self.initiatlize_remote_settings()
+            else:
+                self.update_remote()
         except Exception as e:
             LOG.error(e)
+            LOG.exception("")
 
+        # this is used in core so do not delete!
         if self.is_alive:
             # continues to poll settings every 60 seconds
-            t = Timer(60, self._poll_skill_settings, [hashed_meta])
+            t = Timer(60, self._poll_skill_settings)
             t.daemon = True
             t.start()
 
