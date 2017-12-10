@@ -23,6 +23,7 @@ from mycroft.lock import Lock as PIDLock  # Create/Support PID locking file
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
+from mycroft.util import check_for_signal
 
 ws = None
 lock = Lock()
@@ -76,9 +77,12 @@ def handle_speak(event):
 def handle_complete_intent_failure(event):
     LOG.info("Failed to find intent.")
     # TODO: Localize
-    data = {'utterance':
-            "Sorry, I didn't catch that. Please rephrase your request."}
-    ws.emit(Message('speak', data))
+    if not check_for_signal('skip_wake_word', -1):
+        data = {
+            'utterance':
+            "Sorry, I didn't catch that. " +
+            "Please rephrase your request."}
+        ws.emit(Message('speak', data))
 
 
 def handle_sleep(event):
@@ -123,6 +127,10 @@ def handle_stop(event):
     loop.force_unmute()
 
 
+def handle_restart(event):
+    loop.restart()
+
+
 def handle_open():
     # TODO: Move this into the Enclosure (not speech client)
     # Reset the UI to indicate ready for speech processing
@@ -150,6 +158,7 @@ def main():
     loop.on('recognizer_loop:wakeword', handle_wakeword)
     loop.on('recognizer_loop:record_end', handle_record_end)
     loop.on('recognizer_loop:no_internet', handle_no_internet)
+    loop.on('recognizer_loop:restart', handle_restart)
     ws.on('open', handle_open)
     ws.on('complete_intent_failure', handle_complete_intent_failure)
     ws.on('recognizer_loop:sleep', handle_sleep)
@@ -160,6 +169,7 @@ def main():
     ws.on('recognizer_loop:audio_output_start', handle_audio_start)
     ws.on('recognizer_loop:audio_output_end', handle_audio_end)
     ws.on('mycroft.stop', handle_stop)
+    ws.on('recognizer_loop:restart', handle_restart)
     event_thread = Thread(target=connect)
     event_thread.setDaemon(True)
     event_thread.start()

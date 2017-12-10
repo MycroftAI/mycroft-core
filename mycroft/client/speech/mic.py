@@ -38,6 +38,7 @@ from mycroft.configuration import Configuration
 from mycroft.session import SessionManager
 from mycroft.util import (
     check_for_signal,
+    create_signal,
     get_ipc_directory,
     resolve_resource_file,
     play_wav
@@ -152,7 +153,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
     # The maximum time it will continue to record silence
     # when not enough noise has been detected
-    RECORDING_TIMEOUT_WITH_SILENCE = 3.0
+    RECORDING_TIMEOUT_WITH_SILENCE = 2.0
 
     # Time between pocketsphinx checks for the wake word
     SEC_BETWEEN_WW_CHECKS = 0.2
@@ -162,6 +163,15 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.config = Configuration.get()
         listener_config = self.config.get('listener')
         self.upload_config = listener_config.get('wake_word_upload')
+
+        self.skip_wake_word = False
+
+        if check_for_signal('skip_wake_word', -1):
+            self.skip_wake_word = True
+        elif listener_config.get('skip_wake_word', True) and \
+                not check_for_signal('restartedFromSkill', 10):
+            self.skip_wake_word = True
+
         self.wake_word_name = wake_word_recognizer.key_phrase
 
         speech_recognition.Recognizer.__init__(self)
@@ -433,6 +443,10 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 chopped = byte_data[-test_size:] \
                     if test_size < len(byte_data) else byte_data
                 audio_data = chopped + silence
+                if self.skip_wake_word:
+                    tmp = float(len(audio_data)) / \
+                          (source.SAMPLE_RATE * source.SAMPLE_WIDTH)
+                    LOG.debug('audio data length = ' + str(tmp))
                 said_wake_word = \
                     self.wake_word_recognizer.found_wake_word(audio_data)
                 # if a wake word is success full then record audio in temp
@@ -496,7 +510,12 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         #       speech is detected, but there is no code to actually do that.
         self.adjust_for_ambient_noise(source, 1.0)
 
-        LOG.debug("Waiting for wake word...")
+        if self.skip_wake_word:
+            create_signal('startListening')
+            LOG.debug("Skipping wake word... waiting...")
+        else:
+            LOG.debug("Waiting for wake word...")
+
         self._wait_until_wake_word(source, sec_per_buffer)
         if self._stop_signaled:
             return
@@ -506,7 +525,9 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         # If enabled, play a wave file with a short sound to audibly
         # indicate recording has begun.
-        if self.config.get('confirm_listening'):
+        if (self.config.get('confirm_listening') and
+                (not self.skip_wake_word or
+                 check_for_signal('WaitingToConfirm', 10))):
             file = resolve_resource_file(
                 self.config.get('sounds').get('start_listening'))
             if file:
