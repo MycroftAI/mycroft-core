@@ -268,6 +268,7 @@ def add_log_message(message):
             scr.erase()
             scr.refresh()
 
+
 def clear_log():
     global filteredLog
     global mergedLog
