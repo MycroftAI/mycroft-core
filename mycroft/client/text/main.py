@@ -13,14 +13,14 @@
 # limitations under the License.
 #
 import sys
-from io import BytesIO
+import io
 
 # NOTE: If this script has errors, the following two lines might need to
 # be commented out for them to be displayed (depending on the type of
 # error).  But normally we want this to prevent extra messages from the
 # messagebus setup from appearing during startup.
-sys.stdout = BytesIO()  # capture any output
-sys.stderr = BytesIO()  # capture any output
+sys.stdout = io.BytesIO()  # capture any output
+sys.stderr = io.BytesIO()  # capture any output
 
 # All of the nopep8 comments below are to avoid E402 errors
 import os                                                   # nopep8
@@ -127,7 +127,7 @@ def load_settings():
     global show_last_key
 
     try:
-        with open(config_file, 'r') as f:
+        with io.open(config_file, 'r') as f:
             config = json.load(f)
         if "filters" in config:
             log_filters = config["filters"]
@@ -144,7 +144,7 @@ def save_settings():
     config["filters"] = log_filters
     config["cy_chat_area"] = cy_chat_area
     config["show_last_key"] = show_last_key
-    with open(config_file, 'w') as f:
+    with io.open(config_file, 'w') as f:
         json.dump(config, f)
 
 
@@ -180,7 +180,7 @@ class LogMonitorThread(Thread):
         global mergedLog
         global log_line_offset
 
-        with open(self.filename, 'rb') as fh:
+        with io.open(self.filename, 'rb') as fh:
             fh.seek(bytefrom)
             while True:
                 line = str(fh.readline())
@@ -240,7 +240,7 @@ class MicMonitorThread(Thread):
         global meter_cur
         global meter_thresh
 
-        with open(self.filename, 'r') as fh:
+        with io.open(self.filename, 'rb') as fh:
             fh.seek(bytefrom)
             while True:
                 line = fh.readline()
