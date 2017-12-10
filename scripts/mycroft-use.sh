@@ -310,7 +310,7 @@ elif [ "${change_to}" = "github" ]; then
     fi
 
     echo "Switching to github..."
-    if [! -d ${path} ]; then
+    if [ ! -d ${path} ]; then
         mkdir --parents "${path}"
         cd "${path}"
         cd ..
