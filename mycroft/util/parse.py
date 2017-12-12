@@ -2125,12 +2125,12 @@ def pt_pruning(text, symbols=True, accents=True, agressive=True):
             text = text.replace(symbol, "")
         text = text.replace("-", " ").replace("_", " ")
     if accents:
-        accents = {"a": [u"ï¿½", u"ï¿½", u"ï¿½", u"ï¿½"],
-                   "e": [u"ï¿½", u"ï¿½", u"ï¿½"],
-                   "i": [u"ï¿½", u"ï¿½"],
-                   "o": [u"ï¿½", u"ï¿½"],
-                   "u": [u"ï¿½", u"ï¿½"],
-                   "c": [u"ï¿½", u"ï¿½"]}
+        accents = {"a": [u"á", u"à", u"ã", u"â"],
+                   "e": [u"ê", u"è", u"é"],
+                   "i": [u"í", u"ì"],
+                   "o": [u"ò", u"ó"],
+                   "u": [u"ú", u"ù"],
+                   "c": [u"ç"]}
         for char in accents:
             for acc in accents[char]:
                 text = text.replace(acc, char)
