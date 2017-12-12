@@ -379,8 +379,8 @@ def extract_datetime_en(str, currentDate=None):
                 m = monthsShort.index(word)
             used += 1
             datestr = months[m]
-            if wordPrev[0].isdigit() or \
-                    (wordPrev == "of" and wordPrevPrev[0].isdigit()):
+            if wordPrev and (wordPrev[0].isdigit() or
+                             (wordPrev == "of" and wordPrevPrev[0].isdigit())):
                 if wordPrev == "of" and wordPrevPrev[0].isdigit():
                     datestr += " " + words[idx - 2]
                     used += 1
@@ -541,6 +541,9 @@ def extract_datetime_en(str, currentDate=None):
                     nextWord = wordNext.replace(".", "")
                     if nextWord == "am" or nextWord == "pm":
                         remainder = nextWord
+                        used += 1
+                    elif nextWord == "tonight":
+                        remainder = "pm"
                         used += 1
                     elif wordNext == "in" and wordNextNext == "the" and \
                             words[idx + 3] == "morning":
