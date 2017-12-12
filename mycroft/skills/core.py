@@ -63,16 +63,16 @@ def load_vocab_from_file(path, vocab_type, emitter):
         the intent handler.
 
         Args:
-            path:       path to vocabulary file (*.voc)
-            vocab_type: keyword name
-            emitter:    emitter to access the message bus
+            path:           path to vocabulary file (*.voc)
+            vocab_type:     keyword name
+            emitter:        emitter to access the message bus
+            skill_id(str):  skill id
     """
     if path.endswith('.voc'):
         with open(path, 'r') as voc_file:
             for line in voc_file.readlines():
                 parts = line.strip().split("|")
                 entity = parts[0]
-
                 emitter.emit(Message("register_vocab", {
                     'start': entity, 'end': vocab_type
                 }))
@@ -99,12 +99,30 @@ def load_regex_from_file(path, emitter):
                     Message("register_vocab", {'regex': line.strip()}))
 
 
-def load_vocabulary(basedir, emitter):
-    for vocab_type in listdir(basedir):
-        if vocab_type.endswith(".voc"):
+def load_vocabulary(basedir, emitter, skill_id):
+    for vocab_file in listdir(basedir):
+        if vocab_file.endswith(".voc"):
+            vocab_type = str(skill_id) + ':' + splitext(vocab_file)[0]
             load_vocab_from_file(
-                join(basedir, vocab_type), splitext(vocab_type)[0], emitter)
+                join(basedir, vocab_file), vocab_type, emitter)
 
+
+def unmunge_message(message, skill_id):
+    for key in message.data:
+        new_key = key.replace(str(skill_id) + ':', '')
+        message.data[new_key] = message.data.pop(key)
+    return message
+
+def munge_intent_parser(intent_parser, name, skill_id):
+    skill_id = str(skill_id)
+    intent_parser.name = skill_id + ':' + name
+    reqs = []
+    for i in intent_parser.requires:
+        kw = (skill_id + ':' + i[0], skill_id + ':' + i[0])
+        reqs.append(kw)
+
+    intent_parser.requires = reqs
+        
 
 def load_regex(basedir, emitter):
     for regex_type in listdir(basedir):
@@ -620,14 +638,16 @@ class MycroftSkill(object):
                     if need_self:
                         # When registring from decorator self is required
                         if len(getargspec(handler).args) == 2:
-                            handler(self, message)
+                            handler(self, unmunge_message(message,
+                                                          self.skill_id))
                         elif len(getargspec(handler).args) == 1:
-                            handler(self)
+                            handler(unmunge_message(message, self.skill_id))
                         elif len(getargspec(handler).args) == 0:
                             # Zero may indicate multiple decorators, trying the
                             # usual call signatures
                             try:
-                                handler(self, message)
+                                handler(self, unmunge_message(message,
+                                                              self.skill_id))
                             except TypeError:
                                 handler(self)
                         else:
@@ -636,7 +656,7 @@ class MycroftSkill(object):
                             raise TypeError
                     else:
                         if len(getargspec(handler).args) == 2:
-                            handler(message)
+                            handler(unmunge_message(message, self.skill_id))
                         elif len(getargspec(handler).args) == 1:
                             handler()
                         else:
@@ -704,7 +724,7 @@ class MycroftSkill(object):
 
         # Default to the handler's function name if none given
         name = intent_parser.name or handler.__name__
-        intent_parser.name = str(self.skill_id) + ':' + name
+        munge_intent_parser(intent_parser, name, self.skill_id)
         self.emitter.emit(Message("register_intent", intent_parser.__dict__))
         self.registered_intents.append((name, intent_parser))
         self.add_event(intent_parser.name, handler, need_self)
@@ -800,6 +820,7 @@ class MycroftSkill(object):
             raise ValueError('context should be a string')
         if not isinstance(word, basestring):
             raise ValueError('word should be a string')
+        context = to_letters(self.skill_id) + context
         self.emitter.emit(Message('add_context',
                                   {'context': context, 'word': word}))
 
@@ -878,12 +899,12 @@ class MycroftSkill(object):
     def load_vocab_files(self, vocab_dir):
         self.vocab_dir = vocab_dir
         if exists(vocab_dir):
-            load_vocabulary(vocab_dir, self.emitter)
+            load_vocabulary(vocab_dir, self.emitter, self.skill_id)
         else:
             LOG.debug('No vocab loaded, ' + vocab_dir + ' does not exist')
 
     def load_regex_files(self, regex_dir):
-        load_regex(regex_dir, self.emitter)
+        load_regex(regex_dir, self.emitter, self.skill_id)
 
     def __handle_stop(self, event):
         """
