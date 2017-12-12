@@ -93,12 +93,14 @@ class SkillSettings(dict):
         self._device_identity = None
         self._api_path = None
         self._user_identity = None
-        # if settingsmeta.json exists
-        # this block of code is a control flow for
-        # different scenarios that may arises with settingsmeta
+
+        # if settingsmeta exist
         if isfile(self._meta_path):
             self._poll_skill_settings()
         self.load_skill_settings()
+        # this saves the state of settings.json
+        # for use in load_disk_settings
+        self._disk_settings = self.copy()
 
     # TODO: break this up into two classes
     def initiatlize_remote_settings(self):
@@ -153,7 +155,7 @@ class SkillSettings(dict):
 
     def __setitem__(self, key, value):
         """ Add/Update key. """
-        return super(SkillSettings, self).__setitem__(key, value)
+        return super(SkillSettings, self).__setitem__(key, value)        
 
     def _load_settings_meta(self):
         """ Loads settings metadata from skills path. """
@@ -164,6 +166,16 @@ class SkillSettings(dict):
         else:
             LOG.info("settingemeta.json does not exist")
             return None
+
+    def _load_disk_settings(self):
+        """ This is used to load the disk settings onto self
+            when skills try to instantiate settings
+            in __init__, it can erase the settings saved
+            on disk (settings.json). So this prevents that
+        """
+        if self._disk_settings:
+            for key, value in self._disk_settings.items():
+                self[key] = value
 
     def _send_settings_meta(self, settings_meta):
         """ Send settingsmeta.json to the server.
@@ -381,6 +393,7 @@ class SkillSettings(dict):
             with open(self._settings_path) as f:
                 try:
                     json_data = json.load(f)
+                    LOG.info(self.name+"testingload"+str(json_data))
                     for key in json_data:
                         self[key] = json_data[key]
                 except Exception as e:
