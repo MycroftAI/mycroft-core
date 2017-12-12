@@ -538,7 +538,7 @@ class MycroftSkill(object):
     def __translate_file(self, name, data):
         """Load and render lines from dialog/<lang>/<name>"""
         with open(join(self.root_dir, 'dialog', self.lang, name)) as f:
-            text = f.read().replace('{{', '').replace('}}', '')
+            text = f.read().replace('{{', '{').replace('}}', '}')
             return text.format(**data or {}).split('\n')
 
     def add_event(self, name, handler, need_self=False):
