@@ -440,7 +440,7 @@ class Enclosure(object):
         if needs_reboot:
             LOG.info("Hack reboot...")
             self.reader.process("unit.reboot")
-            ws.emit(Message("enclosure.eyes.spin"))
-            ws.emit(Message("enclosure.mouth.reset"))
+            self.ws.emit(Message("enclosure.eyes.spin"))
+            self.ws.emit(Message("enclosure.mouth.reset"))
         # END HACK
         # TODO: Remove this hack ASAP
