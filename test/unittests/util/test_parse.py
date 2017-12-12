@@ -330,9 +330,10 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(
             normalize("e outro teste", lang="pt", remove_articles=True),
             "outro teste")
-        self.assertEqual(normalize(u"isto é o teste extra", lang="pt",
-                                  remove_articles=False),
-                        u"isto e o teste extra")
+        self.assertEqual(normalize(u"isto é o teste extra",
+                                   lang="pt",
+                                   remove_articles=False), u"isto e o teste"
+                                                           u" extra")
 
     def test_extractnumber_pt(self):
         self.assertEqual(extractnumber("isto e o primeiro teste", lang="pt"),
@@ -463,10 +464,9 @@ class TestNormalize(unittest.TestCase):
                     "2017-06-27 22:45:00", u"lembra")
         testExtract("como esta o tempo na sexta de manha",
                     "2017-06-30 08:00:00", "como tempo")
-        testExtract(u"lembra me para ligar a mãe daqui " \
-                     u"a 8 semanas e 2 dias",
+        testExtract(u"lembra me para ligar a mãe daqui "
+                    u"a 8 semanas e 2 dias",
                     "2017-08-24 00:00:00", u"lembra ligar mae")
-
         testExtract("Toca black metal 2 dias a seguir a sexta",
                     "2017-07-02 00:00:00", "toca black metal")
         testExtract("Toca satanic black metal 2 dias para esta sexta",
@@ -478,7 +478,7 @@ class TestNormalize(unittest.TestCase):
         testExtract("na segunda, compra queijo",
                     "2017-07-03 00:00:00", "compra queijo")
         testExtract(u"Toca os parabéns daqui a 5 anos",
-                   "2022-06-27 00:00:00", "toca parabens")
+                    "2022-06-27 00:00:00", "toca parabens")
         testExtract(u"manda Skype a Mãe ás 12:45 pm próxima quinta",
                     "2017-06-29 12:45:00", "manda skype mae")
         testExtract(u"como está o tempo esta sexta?",
@@ -490,11 +490,11 @@ class TestNormalize(unittest.TestCase):
         testExtract(u"como está o tempo esta sexta a meia noite?",
                     "2017-06-30 00:00:00", "como tempo")
         testExtract(u"como está o tempo esta sexta ao meio dia?",
-                   "2017-06-30 12:00:00", "como tempo")
+                    "2017-06-30 12:00:00", "como tempo")
         testExtract(u"como está o tempo esta sexta ao fim da tarde?",
-                   "2017-06-30 19:00:00", "como tempo")
+                    "2017-06-30 19:00:00", "como tempo")
         testExtract(u"como está o tempo esta sexta ao meio da manha?",
-                   "2017-06-30 10:00:00", "como tempo")
+                    "2017-06-30 10:00:00", "como tempo")
         testExtract("lembra me para ligar a mae no dia 3 de agosto",
                     "2017-08-03 00:00:00", "lembra ligar mae")
 
@@ -509,9 +509,9 @@ class TestNormalize(unittest.TestCase):
         testExtract("como esta o tempo 1 dia a seguir a amanha",
                     "2017-06-29 00:00:00", "como tempo")
         testExtract(u"como esta o tempo ás 0700 horas",
-                   "2017-06-27 07:00:00", "como tempo")
+                    "2017-06-27 07:00:00", "como tempo")
         testExtract(u"como esta o tempo amanha ás 7 em ponto",
-                   "2017-06-28 07:00:00", "como tempo")
+                    "2017-06-28 07:00:00", "como tempo")
         testExtract(u"como esta o tempo amanha pelas 2 da tarde",
                     "2017-06-28 14:00:00", "como tempo")
         testExtract(u"como esta o tempo amanha pelas 2",
@@ -527,7 +527,7 @@ class TestNormalize(unittest.TestCase):
         testExtract("marca consulta para 2 semanas e 6 dias depois de Sabado",
                     "2017-07-21 00:00:00", "marca consulta")
         testExtract(u"começa a festa ás 8 em ponto da noite de quinta",
-                   "2017-06-29 20:00:00", "comeca festa")
+                    "2017-06-29 20:00:00", "comeca festa")
 
     def test_gender_pt(self):
         self.assertEqual(get_gender("vaca", lang="pt"),
