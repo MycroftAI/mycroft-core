@@ -1062,21 +1062,21 @@ def isFractional_pt(input_str):
     if input_str.endswith('s', -1):
         input_str = input_str[:len(input_str) - 1]  # e.g. "fifths"
 
-    aFrac = ["meio", u"terï¿½o", "quarto", "quinto", "sexto",
-             "setimo", "oitavo", "nono", u"dï¿½cimo"]
+    aFrac = ["meio", u"terço", "quarto", "quinto", "sexto",
+             "setimo", "oitavo", "nono", u"décimo"]
 
     if input_str.lower() in aFrac:
         return 1.0 / (aFrac.index(input_str) + 2)
-    if input_str == u"vigï¿½simo":
+    if input_str == u"vigésimo":
         return 1.0 / 20
-    if input_str == u"trigï¿½simo":
+    if input_str == u"trigésimo":
         return 1.0 / 30
-    if input_str == u"centï¿½simo":
+    if input_str == u"centésimo":
         return 1.0 / 100
-    if input_str == u"milï¿½simo":
+    if input_str == u"milésimo":
         return 1.0 / 1000
-    if (input_str == u"sï¿½timo" or input_str == "septimo" or
-            input_str == u"sï¿½ptimo"):
+    if (input_str == u"sétimo" or input_str == "septimo" or
+            input_str == u"séptimo"):
         return 1.0 / 7
 
     return False
