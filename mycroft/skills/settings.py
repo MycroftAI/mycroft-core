@@ -155,7 +155,7 @@ class SkillSettings(dict):
 
     def __setitem__(self, key, value):
         """ Add/Update key. """
-        return super(SkillSettings, self).__setitem__(key, value)        
+        return super(SkillSettings, self).__setitem__(key, value)
 
     def _load_settings_meta(self):
         """ Loads settings metadata from skills path. """
