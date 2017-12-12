@@ -135,6 +135,10 @@ class TestNormalize(unittest.TestCase):
                     "2021-07-01 00:00:00", "remind me to wake up")
         testExtract("What is the weather 3 days after tomorrow?",
                     "2017-07-01 00:00:00", "what is weather")
+        testExtract("december 3",
+                    "2017-12-03 00:00:00", "")
+        testExtract("lets meet at 8:00 tonight",
+                    "2017-06-27 20:00:00", "lets meet")
 
     def test_spaces(self):
         self.assertEqual(normalize("  this   is  a    test"),
