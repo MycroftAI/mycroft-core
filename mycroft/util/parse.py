@@ -1340,23 +1340,23 @@ def extract_datetime_pt(input_str, currentDate=None):
         for word in noise_words:
             str = str.replace(" " + word + " ", " ")
         str = str.lower().replace(
-            u"ï¿½",
+            u"á",
             "a").replace(
-            u"ï¿½",
+            u"ç",
             "c").replace(
-            u"ï¿½",
+            u"à",
             "a").replace(
-            u"ï¿½",
+            u"ã",
             "a").replace(
-            u"ï¿½",
+            u"é",
             "e").replace(
-            u"ï¿½",
+            u"è",
             "e").replace(
-            u"ï¿½",
+            u"ê",
             "e").replace(
-            u"ï¿½",
+            u"ó",
             "o").replace(
-            u"ï¿½",
+            u"ò",
             "o").replace(
             "-",
             " ").replace(
