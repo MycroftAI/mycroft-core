@@ -25,7 +25,7 @@ def guess_phonemes(word):
                            'ie': ['IY'], 'ei': ['IY'], 'ea': ['IY'],
                            'ght': ['T'], 'ph': ['F'], 'gn': ['N'],
                            'kn': ['N'], 'wh': ['W'],
-                           'wr': ['R'], 'gg': ['G'], 'ff': ['F'],
+                           'gg': ['G'], 'ff': ['F'],
                            'oo': ['UW'], 'ua': ['W', 'AO'], 'ng': ['NG'],
                            'bb': ['B'],
                            'tch': ['CH'], 'rr': ['R'], 'dd': ['D'],
