@@ -269,6 +269,14 @@ def add_log_message(message):
             scr.refresh()
 
 
+def clear_log():
+    global filteredLog
+    global mergedLog
+
+    mergedLog = []
+    filteredLog = []
+
+
 def rebuild_filtered_log():
     global filteredLog
     global mergedLog
@@ -665,6 +673,7 @@ def show_help():
     scr.addstr(18, 0,  ":history (# lines)      set number of history lines")
     scr.addstr(19, 0,  ":find 'str'             show logs containing 'str'")
     scr.addstr(20, 0,  ":keycode (show|hide)    display keyboard codes")
+    scr.addstr(21, 0,  ":clear log              flush the logs")
 
     scr.addstr(curses.LINES - 1, 0,  center(23) + "Press any key to return",
                CLR_HEADING)
@@ -713,6 +722,8 @@ def handle_cmd(cmd):
         show_help()
     elif "exit" in cmd or "quit" in cmd:
         return 1
+    elif "clear" in cmd and "log" in cmd:
+        clear_log()
     elif "keycode" in cmd:
         # debugging keyboard
         if "hide" in cmd or "off" in cmd:
@@ -830,14 +841,14 @@ def gui_main(stdscr):
                                      'lang': 'en-us'}))
                 hist_idx = -1
                 line = ""
-            elif c == 16:  # Ctrl+P (Previous)
+            elif c == 16 or c == 545:  # Ctrl+P or Ctrl+Left (Previous)
                 # Move up the history stack
                 hist_idx = clamp(hist_idx + 1, -1, len(history) - 1)
                 if hist_idx >= 0:
                     line = history[len(history) - hist_idx - 1]
                 else:
                     line = ""
-            elif c == 14:  # Ctrl+N (Next)
+            elif c == 14 or c == 560:  # Ctrl+N or Ctrl+Right (Next)
                 # Move down the history stack
                 hist_idx = clamp(hist_idx - 1, -1, len(history) - 1)
                 if hist_idx >= 0:
