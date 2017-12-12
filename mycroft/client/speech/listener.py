@@ -114,7 +114,7 @@ class AudioConsumer(Thread):
         if self.wakeup_recognizer.found_wake_word(audio.frame_data):
             SessionManager.touch()
             self.state.sleeping = False
-            self.__speak(mycroft.dialog.get("i am awake", self.stt.lang))
+            self.emitter.emit('recognizer_loop:awoken')
             self.metrics.increment("mycroft.wakeup")
 
     @staticmethod
@@ -152,6 +152,7 @@ class AudioConsumer(Thread):
                 text = "pair my device"  # phrase to start the pairing process
                 LOG.warning("Access Denied at mycroft.ai")
         except Exception as e:
+            self.emitter.emit('recognizer_loop:speech.recognition.unknown')
             LOG.error(e)
             LOG.error("Speech Recognition could not understand audio")
         if text:

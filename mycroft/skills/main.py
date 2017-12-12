@@ -17,6 +17,7 @@ import subprocess
 import sys
 import time
 from threading import Timer, Thread, Event, Lock
+import gc
 
 import os
 from os.path import exists, join
@@ -41,6 +42,7 @@ ws = None
 event_scheduler = None
 skill_manager = None
 
+DEBUG = Configuration.get().get("debug", False)
 skills_config = Configuration.get().get("skills")
 BLACKLISTED_SKILLS = skills_config.get("blacklisted_skills", [])
 PRIORITY_SKILLS = skills_config.get("priority_skills", [])
@@ -278,14 +280,16 @@ class SkillManager(Thread):
             # removing listeners and stopping threads
             skill["instance"].shutdown()
 
-            # Remove two local references that are known
-            refs = sys.getrefcount(skill["instance"]) - 2
-            if refs > 0:
-                LOG.warning(
-                    "After shutdown of {} there are still "
-                    "{} references remaining. The skill "
-                    "won't be cleaned from memory."
-                    .format(skill['instance'].name, refs))
+            if DEBUG:
+                gc.collect()  # Collect garbage to remove false references
+                # Remove two local references that are known
+                refs = sys.getrefcount(skill["instance"]) - 2
+                if refs > 0:
+                    LOG.warning(
+                        "After shutdown of {} there are still "
+                        "{} references remaining. The skill "
+                        "won't be cleaned from memory."
+                        .format(skill['instance'].name, refs))
             del skill["instance"]
 
         # (Re)load the skill from disk
@@ -384,8 +388,8 @@ class SkillManager(Thread):
                         "skill_id": skill_id, "result": result}))
                     return
                 except BaseException:
-                    LOG.error(
-                        "Converse method malformed for skill " + str(skill_id))
+                    LOG.exception(
+                        "Error in converse method for skill " + str(skill_id))
         self.ws.emit(Message("skill.converse.response",
                              {"skill_id": 0, "result": False}))
 
