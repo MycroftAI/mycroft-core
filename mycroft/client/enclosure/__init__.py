@@ -34,6 +34,11 @@ from mycroft.util.audio_test import record
 from mycroft.util.log import LOG
 from queue import Queue
 
+from mycroft.client.enclosure.arduino import EnclosureArduino
+from mycroft.client.enclosure.eyes import EnclosureEyes
+from mycroft.client.enclosure.mouth import EnclosureMouth
+from mycroft.client.enclosure.weather import EnclosureWeather
+
 
 class EnclosureReader(Thread):
     """
@@ -280,14 +285,10 @@ class Mark1Enclosure(Enclosure):
         initiate_display_manager_ws()
 
     def on_arduino_responded(self, event=None):
-        from mycroft.client.enclosure.arduino import EnclosureArduino
-        from mycroft.client.enclosure.eyes import EnclosureEyes
-        from mycroft.client.enclosure.mouth import EnclosureMouth
-        from mycroft.client.enclosure.weather import EnclosureWeather
-        self.eyes = EnclosureEyes(self.ws, self.writer)
-        self.mouth = EnclosureMouth(self.ws, self.writer)
-        self.system = EnclosureArduino(self.ws, self.writer)
-        self.weather = EnclosureWeather(self.ws, self.writer)
+        self.eyes = EnclosureEyes(self.writer)
+        self.mouth = EnclosureMouth(self.writer)
+        self.system = EnclosureArduino(self.writer)
+        self.weather = EnclosureWeather(self.writer)
         self.__register_events()
         self.__reset()
         self.arduino_responded = True
@@ -325,6 +326,118 @@ class Mark1Enclosure(Enclosure):
             # enter wifi-setup mode automatically
             self.ws.emit(Message('system.wifi.setup', {'lang': self.lang}))
 
+    def system_reset(self, message=None):
+        self.system.reset()
+
+    def system_mute(self, message=None):
+        self.system.mute()
+
+    def system_unmute(self, message=None):
+        self.system.unmute()
+
+    def system_blink(self, message=None):
+        times = 1
+        if message and message.data:
+            times = message.data.get("times", times)
+        self.system.blink(times)
+
+    def eyes_on(self, message=None):
+        self.eyes.on()
+
+    def eyes_off(self, message=None):
+        self.eyes.off()
+
+    def eyes_blink(self, message=None):
+        side = "b"
+        if message and message.data:
+            side = message.data.get("side", side)
+        self.eyes.blink(side)
+
+    def eyes_narrow(self, message=None):
+        self.eyes.narrow()
+
+    def eyes_look(self, message=None):
+        if message and message.data:
+            side = message.data.get("side", "")
+            self.eyes.look(side)
+
+    def eyes_color(self, message=None):
+        r, g, b = 255, 255, 255
+        if message and message.data:
+            r = int(message.data.get("r", r))
+            g = int(message.data.get("g", g))
+            b = int(message.data.get("b", b))
+        color = (r * 65536) + (g * 256) + b
+        self.eyes.color(color)
+
+    def eyes_brightness(self, message=None):
+        level = 30
+        if message and message.data:
+            level = message.data.get("level", level)
+        self.eyes.brightness(level)
+
+    def eyes_volume(self, message=None):
+        volume = 4
+        if message and message.data:
+            volume = message.data.get("volume", volume)
+        self.eyes.volume(volume)
+
+    def eyes_reset(self, message=None):
+        self.eyes.reset()
+
+    def eyes_spin(self, message=None):
+        self.eyes.spin()
+
+    def eyes_timed_spin(self, message=None):
+        length = 5000
+        if message and message.data:
+            length = message.data.get("length", length)
+        self.eyes.timed_spin(length)
+
+    def mouth_reset(self, message=None):
+        self.mouth.reset()
+
+    def mouth_talk(self, message=None):
+        self.mouth.talk()
+
+    def mouth_think(self, message=None):
+        self.mouth.think()
+
+    def mouth_listen(self, message=None):
+        self.mouth.listen()
+
+    def mouth_smile(self, message=None):
+        self.mouth.smile()
+
+    def mouth_viseme(self, message=None):
+        if message and message.data:
+            code = message.data.get("code")
+            time_until = message.data.get("until")
+            self.mouth.viseme(code, time_until)
+
+    def mouth_text(self, message=None):
+        text = ""
+        if message and message.data:
+            text = message.data.get("text", text)
+        self.mouth.text(text)
+
+    def mouth_display(self, message=None):
+        code = ""
+        xOffset = ""
+        yOffset = ""
+        clearPrevious = ""
+        if message and message.data:
+            code = message.data.get("img_code", code)
+            xOffset = message.data.get("xOffset", xOffset)
+            yOffset = message.data.get("yOffset", yOffset)
+            clearPrevious = message.data.get("clearPrev", clearPrevious)
+        self.mouth.display(code, xOffset, yOffset, clearPrevious)
+
+    def weather_display(self, message=None):
+        img_code = message.data.get("img_code", None)
+        temp = message.data.get("temp", None)
+        self.weather.display(img_code, temp)
+
     def __init_serial(self):
         try:
             self.port = self.config.get("port")
@@ -335,7 +448,7 @@ class Mark1Enclosure(Enclosure):
             LOG.info("Connected to: %s rate: %s timeout: %s" %
                      (self.port, self.rate, self.timeout))
         except:
-            LOG.error("Impossible to _connect to serial port: "+str(self.port))
+            LOG.error("Impossible to connect to serial port: "+str(self.port))
             raise
 
     def __register_events(self):
@@ -395,7 +508,6 @@ class Mark1Enclosure(Enclosure):
         self.ws.emit(Message("mycroft.mic.unmute"))
 
     def _do_net_check(self):
-        # TODO: This should live in the derived Enclosure, e.g. Enclosure_Mark1
         LOG.info("Checking internet connection")
         if not connected():  # and self.conn_monitor is None:
             if has_been_paired():
@@ -408,7 +520,6 @@ class Mark1Enclosure(Enclosure):
                 # Begin the unit startup process, this is the first time it
                 # is being run with factory defaults.
 
-                # TODO: This logic should be in Enclosure_Mark1
                 # TODO: Enclosure/localization
 
                 # Don't listen to mic during this out-of-box experience

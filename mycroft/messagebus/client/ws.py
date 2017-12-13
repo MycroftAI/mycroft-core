@@ -61,7 +61,7 @@ class WebsocketClient(object):
         LOG.info("Connected")
         self.connected_event.set()
         self.emitter.emit("open")
-        # Restore reconnect timer to 5 seconds on sucessful _connect
+        # Restore reconnect timer to 5 seconds on sucessful connect
         self.retry = 5
 
     def on_close(self, ws):

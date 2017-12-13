@@ -12,31 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from mycroft.enclosure import Enclosure
 
-
-class EnclosureArduino(Enclosure):
+class EnclosureArduino(object):
     """
     Listens to enclosure commands for Mycroft's Arduino.
 
     Performs the associated command on Arduino by writing on the Serial port.
     """
 
-    def __init__(self, ws, writer):
-        super(EnclosureArduino, self).__init__(ws, "arduino")
+    def __init__(self, writer):
         self.writer = writer
 
-    def system_reset(self, message=None):
+    def reset(self):
         self.writer.write("system.reset")
 
-    def system_mute(self, message=None):
+    def mute(self):
         self.writer.write("system.mute")
 
-    def system_unmute(self, message=None):
+    def unmute(self):
         self.writer.write("system.unmute")
 
-    def system_blink(self, message=None):
-        times = 1
-        if message and message.data:
-            times = message.data.get("times", times)
+    def blink(self, times=1):
         self.writer.write("system.blink=" + str(times))

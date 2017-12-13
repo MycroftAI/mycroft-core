@@ -12,18 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from mycroft.enclosure import Enclosure
 
-
-class EnclosureEyes(Enclosure):
+class EnclosureEyes(object):
     """
     Listens to enclosure commands for Mycroft's Eyes.
 
     Performs the associated command on Arduino by writing on the Serial port.
     """
 
-    def __init__(self, ws, writer):
-        super(EnclosureEyes, self).__init__(ws, "eyes")
+    def __init__(self, writer):
         self.writer = writer
         self.__init_events()
 
@@ -42,33 +39,22 @@ class EnclosureEyes(Enclosure):
         self.ws.on('enclosure.eyes.setpixel', self.set_pixel)
         self.ws.on('enclosure.eyes.fill', self.fill)
 
-    def eyes_on(self, message=None):
+    def on(self):
         self.writer.write("eyes.on")
 
-    def eyes_off(self, message=None):
+    def off(self):
         self.writer.write("eyes.off")
 
-    def eyes_blink(self, message=None):
-        side = "b"
-        if message and message.data:
-            side = message.data.get("side", side)
+    def blink(self, side = "b"):
         self.writer.write("eyes.blink=" + side)
 
-    def eyes_narrow(self, message=None):
+    def narrow(self):
         self.writer.write("eyes.narrow")
 
-    def eyes_look(self, message=None):
-        if message and message.data:
-            side = message.data.get("side", "")
-            self.writer.write("eyes.look=" + side)
+    def look(self, side=""):
+        self.writer.write("eyes.look=" + side)
 
-    def eyes_color(self, message=None):
-        r, g, b = 255, 255, 255
-        if message and message.data:
-            r = int(message.data.get("r", r))
-            g = int(message.data.get("g", g))
-            b = int(message.data.get("b", b))
-        color = (r * 65536) + (g * 256) + b
+    def color(self, color=(255 * 65536) + (255 * 256) + 255):
         self.writer.write("eyes.color=" + str(color))
 
     def set_pixel(self, event=None):
@@ -89,26 +75,20 @@ class EnclosureEyes(Enclosure):
             amount = int(round(23.0 * percent / 100.0))
         self.writer.write("eyes.fill=" + str(amount))
 
-    def eyes_brightness(self, message=None):
+    def brightness(self, message=None):
         level = 30
         if message and message.data:
             level = message.data.get("level", level)
         self.writer.write("eyes.level=" + str(level))
 
-    def eyes_volume(self, message=None):
-        volume = 4
-        if message and message.data:
-            volume = message.data.get("volume", volume)
+    def volume(self, volume=4):
         self.writer.write("eyes.volume=" + str(volume))
 
-    def eyes_reset(self, message=None):
+    def reset(self):
         self.writer.write("eyes.reset")
 
-    def eyes_spin(self, message=None):
+    def spin(self):
         self.writer.write("eyes.spin")
 
-    def eyes_timed_spin(self, message=None):
-        length = 5000
-        if message and message.data:
-            length = message.data.get("length", length)
+    def timed_spin(self, length=5000):
         self.writer.write("eyes.spin=" + str(length))

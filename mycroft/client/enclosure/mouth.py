@@ -13,63 +13,45 @@
 # limitations under the License.
 #
 import time
-from mycroft.enclosure import Enclosure
 
 
-class EnclosureMouth(Enclosure):
+class EnclosureMouth(object):
     """
     Listens to enclosure commands for Mycroft's Mouth.
 
     Performs the associated command on Arduino by writing on the Serial port.
     """
 
-    def __init__(self, ws, writer):
-        super(EnclosureMouth, self).__init__(ws, "mouth")
+    def __init__(self, writer):
         self.writer = writer
         self.is_timer_on = False
 
-    def mouth_reset(self, message=None):
+    def reset(self):
         self.writer.write("mouth.reset")
 
-    def mouth_talk(self, message=None):
+    def talk(self):
         self.writer.write("mouth.talk")
 
-    def mouth_think(self, message=None):
+    def think(self):
         self.writer.write("mouth.think")
 
-    def mouth_listen(self, message=None):
+    def listen(self):
         self.writer.write("mouth.listen")
 
-    def mouth_smile(self, message=None):
+    def smile(self):
         self.writer.write("mouth.smile")
 
-    def mouth_viseme(self, message=None):
-        if message and message.data:
-            code = message.data.get("code")
-            time_until = message.data.get("until")
-            # Skip the viseme if the time has expired.  This helps when a
-            # system glitch overloads the bus and throws off the timing of
-            # the animation timing.
-            if code and (not time_until or time.time() < time_until):
-                self.writer.write("mouth.viseme=" + code)
+    def viseme(self, code, time_until):
+        # Skip the viseme if the time has expired.  This helps when a
+        # system glitch overloads the bus and throws off the timing of
+        # the animation timing.
+        if code and (not time_until or time.time() < time_until):
+            self.writer.write("mouth.viseme=" + code)
 
-    def mouth_text(self, message=None):
-        text = ""
-        if message and message.data:
-            text = message.data.get("text", text)
+    def text(self, text=""):
         self.writer.write("mouth.text=" + text)
 
-    def mouth_display(self, message=None):
-        code = ""
-        xOffset = ""
-        yOffset = ""
-        clearPrevious = ""
-        if message and message.data:
-            code = message.data.get("img_code", code)
-            xOffset = int(message.data.get("xOffset", xOffset))
-            yOffset = int(message.data.get("yOffset", yOffset))
-            clearPrevious = message.data.get("clearPrev", clearPrevious)
-
+    def display(self, code="", xOffset="", yOffset="", clearPrevious=""):
         clearPrevious = int(str(clearPrevious) == "True")
         clearPrevious = "cP=" + str(clearPrevious) + ","
         x_offset = "x=" + str(xOffset) + ","
