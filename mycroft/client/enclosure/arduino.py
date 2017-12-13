@@ -26,17 +26,17 @@ class EnclosureArduino(Enclosure):
         super(EnclosureArduino, self).__init__(ws, "arduino")
         self.writer = writer
 
-    def system_reset(self, event=None):
+    def system_reset(self, message=None):
         self.writer.write("system.reset")
 
-    def system_mute(self, event=None):
+    def system_mute(self, message=None):
         self.writer.write("system.mute")
 
-    def system_unmute(self, event=None):
+    def system_unmute(self, message=None):
         self.writer.write("system.unmute")
 
-    def system_blink(self, event=None):
+    def system_blink(self, message=None):
         times = 1
-        if event and event.data:
-            times = event.data.get("times", times)
+        if message and message.data:
+            times = message.data.get("times", times)
         self.writer.write("system.blink=" + str(times))

@@ -25,10 +25,10 @@ class EnclosureWeather(Enclosure):
         super(EnclosureWeather, self).__init__(ws, "weather")
         self.writer = writer
 
-    def weather_display(self, event=None):
-        if event and event.data:
+    def weather_display(self, message=None):
+        if message and message.data:
             # Convert img_code to icon
-            img_code = event.data.get("img_code", None)
+            img_code = message.data.get("img_code", None)
             icon = None
             if img_code == 0:
                 # sunny
@@ -55,7 +55,7 @@ class EnclosureWeather(Enclosure):
                 # wind/mist
                 icon = "IIABIBIBIJIJJGJAGA"
 
-            temp = event.data.get("temp", None)
+            temp = message.data.get("temp", None)
             if icon is not None and temp is not None:
                 icon = "x=2," + icon
                 msg = "weather.display=" + str(temp) + "," + str(icon)

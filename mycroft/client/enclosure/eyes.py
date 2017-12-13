@@ -42,32 +42,32 @@ class EnclosureEyes(Enclosure):
         self.ws.on('enclosure.eyes.setpixel', self.set_pixel)
         self.ws.on('enclosure.eyes.fill', self.fill)
 
-    def eyes_on(self, event=None):
+    def eyes_on(self, message=None):
         self.writer.write("eyes.on")
 
-    def eyes_off(self, event=None):
+    def eyes_off(self, message=None):
         self.writer.write("eyes.off")
 
-    def eyes_blink(self, event=None):
+    def eyes_blink(self, message=None):
         side = "b"
-        if event and event.data:
-            side = event.data.get("side", side)
+        if message and message.data:
+            side = message.data.get("side", side)
         self.writer.write("eyes.blink=" + side)
 
-    def eyes_narrow(self, event=None):
+    def eyes_narrow(self, message=None):
         self.writer.write("eyes.narrow")
 
-    def eyes_look(self, event=None):
-        if event and event.data:
-            side = event.data.get("side", "")
+    def eyes_look(self, message=None):
+        if message and message.data:
+            side = message.data.get("side", "")
             self.writer.write("eyes.look=" + side)
 
-    def eyes_color(self, event=None):
+    def eyes_color(self, message=None):
         r, g, b = 255, 255, 255
-        if event and event.data:
-            r = int(event.data.get("r", r))
-            g = int(event.data.get("g", g))
-            b = int(event.data.get("b", b))
+        if message and message.data:
+            r = int(message.data.get("r", r))
+            g = int(message.data.get("g", g))
+            b = int(message.data.get("b", b))
         color = (r * 65536) + (g * 256) + b
         self.writer.write("eyes.color=" + str(color))
 
@@ -89,10 +89,10 @@ class EnclosureEyes(Enclosure):
             amount = int(round(23.0 * percent / 100.0))
         self.writer.write("eyes.fill=" + str(amount))
 
-    def eyes_brightness(self, event=None):
+    def eyes_brightness(self, message=None):
         level = 30
-        if event and event.data:
-            level = event.data.get("level", level)
+        if message and message.data:
+            level = message.data.get("level", level)
         self.writer.write("eyes.level=" + str(level))
 
     def eyes_volume(self, event=None):
@@ -101,14 +101,14 @@ class EnclosureEyes(Enclosure):
             volume = event.data.get("volume", volume)
         self.writer.write("eyes.volume=" + str(volume))
 
-    def eyes_reset(self, event=None):
+    def eyes_reset(self, message=None):
         self.writer.write("eyes.reset")
 
-    def eyes_spin(self, event=None):
+    def eyes_spin(self, message=None):
         self.writer.write("eyes.spin")
 
-    def eyes_timed_spin(self, event=None):
+    def eyes_timed_spin(self, message=None):
         length = 5000
-        if event and event.data:
-            length = event.data.get("length", length)
+        if message and message.data:
+            length = message.data.get("length", length)
         self.writer.write("eyes.spin=" + str(length))

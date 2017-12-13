@@ -28,47 +28,47 @@ class EnclosureMouth(Enclosure):
         self.writer = writer
         self.is_timer_on = False
 
-    def mouth_reset(self, event=None):
+    def mouth_reset(self, message=None):
         self.writer.write("mouth.reset")
 
-    def mouth_talk(self, event=None):
+    def mouth_talk(self, message=None):
         self.writer.write("mouth.talk")
 
-    def mouth_think(self, event=None):
+    def mouth_think(self, message=None):
         self.writer.write("mouth.think")
 
-    def mouth_listen(self, event=None):
+    def mouth_listen(self, message=None):
         self.writer.write("mouth.listen")
 
-    def mouth_smile(self, event=None):
+    def mouth_smile(self, message=None):
         self.writer.write("mouth.smile")
 
-    def mouth_viseme(self, event=None):
-        if event and event.data:
-            code = event.data.get("code")
-            time_until = event.data.get("until")
+    def mouth_viseme(self, message=None):
+        if message and message.data:
+            code = message.data.get("code")
+            time_until = message.data.get("until")
             # Skip the viseme if the time has expired.  This helps when a
             # system glitch overloads the bus and throws off the timing of
             # the animation timing.
             if code and (not time_until or time.time() < time_until):
                 self.writer.write("mouth.viseme=" + code)
 
-    def mouth_text(self, event=None):
+    def mouth_text(self, message=None):
         text = ""
-        if event and event.data:
-            text = event.data.get("text", text)
+        if message and message.data:
+            text = message.data.get("text", text)
         self.writer.write("mouth.text=" + text)
 
-    def mouth_display(self, event=None):
+    def mouth_display(self, message=None):
         code = ""
         xOffset = ""
         yOffset = ""
         clearPrevious = ""
-        if event and event.data:
-            code = event.data.get("img_code", code)
-            xOffset = int(event.data.get("xOffset", xOffset))
-            yOffset = int(event.data.get("yOffset", yOffset))
-            clearPrevious = event.data.get("clearPrev", clearPrevious)
+        if message and message.data:
+            code = message.data.get("img_code", code)
+            xOffset = int(message.data.get("xOffset", xOffset))
+            yOffset = int(message.data.get("yOffset", yOffset))
+            clearPrevious = message.data.get("clearPrev", clearPrevious)
 
         clearPrevious = int(str(clearPrevious) == "True")
         clearPrevious = "cP=" + str(clearPrevious) + ","

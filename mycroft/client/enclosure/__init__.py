@@ -50,7 +50,7 @@ class Enclosure(object):
     def __init__(self, ws=None, name=""):
         if ws is None:
             self.ws = WebsocketClient()
-            self.event_thread = Thread(target=self.connect)
+            self.event_thread = Thread(target=self._connect)
             self.event_thread.setDaemon(True)
             self.event_thread.start()
         else:
@@ -140,7 +140,7 @@ class Enclosure(object):
         self.ws.remove('recognizer_loop:audio_output_start', self.talk_start)
         self.ws.remove("enclosure.notify.no_internet", self.on_no_internet)
 
-    def on_no_internet(self, message):
+    def on_no_internet(self, message=None):
         pass
 
     def on_ws_open(self):
@@ -154,82 +154,82 @@ class Enclosure(object):
         while True:
             time.sleep(1)
 
-    def record_begin(self, message):
+    def record_begin(self, message=None):
         ''' listening started '''
         pass
 
-    def record_end(self, message):
+    def record_end(self, message=None):
         ''' listening ended '''
         pass
 
-    def talk_start(self, message):
+    def talk_start(self, message=None):
         ''' speaking started '''
         pass
 
-    def handle_awake(self, message):
+    def handle_awake(self, message=None):
         ''' handle wakeup animation '''
         pass
 
-    def handle_sleep(self, message):
+    def handle_sleep(self, message=None):
         ''' handle naptime animation '''
         # NOTE naptime skill animation should be handled here
         pass
 
-    def handle_speak(self, message):
+    def handle_speak(self, message=None):
         ''' handle speak messages, intended for enclosures that disregard
         visemes '''
         pass
 
-    def connect(self):
+    def _connect(self):
         # Once the websocket has connected, just watch it for speak events
         self.ws.run_forever()
 
-    def reset(self, message):
+    def reset(self, message=None):
         """The enclosure should restore itself to a started state.
         Typically this would be represented by the eyes being 'open'
         and the mouth reset to its default (smile or blank).
         """
         pass
 
-    def system_reset(self, message):
+    def system_reset(self, message=None):
         """The enclosure hardware should reset any CPUs, etc."""
         pass
 
-    def system_mute(self, message):
+    def system_mute(self, message=None):
         """Mute (turn off) the system speaker."""
         pass
 
-    def system_unmute(self, message):
+    def system_unmute(self, message=None):
         """Unmute (turn on) the system speaker."""
         pass
 
-    def system_blink(self, message):
+    def system_blink(self, message=None):
         """The 'eyes' should blink the given number of times.
         Args:
             times (int): number of times to blink
         """
-        times = message.data.get("times")
+        pass
 
-    def eyes_on(self, message):
+    def eyes_on(self, message=None):
         """Illuminate or show the eyes."""
         pass
 
-    def eyes_off(self, message):
+    def eyes_off(self, message=None):
         """Turn off or hide the eyes."""
         pass
 
-    def eyes_blink(self, message):
+    def eyes_blink(self, message=None):
         """Make the eyes blink
         Args:
             side (str): 'r', 'l', or 'b' for 'right', 'left' or 'both'
         """
-        side = message.data.get("side")
+        pass
 
-    def eyes_narrow(self, message):
+    def eyes_narrow(self, message=None):
         """Make the eyes look narrow, like a squint"""
         pass
 
-    def eyes_look(self, message):
+    def eyes_look(self, message=None):
         """Make the eyes look to the given side
         Args:
             side (str): 'r' for right
@@ -238,65 +238,63 @@ class Enclosure(object):
                         'd' for down
                         'c' for crossed
         """
-        side = message.data.get("side")
+        pass
 
-    def eyes_color(self, message):
+    def eyes_color(self, message=None):
         """Change the eye color to the given RGB color
         Args:
             r (int): 0-255, red value
             g (int): 0-255, green value
             b (int): 0-255, blue value
         """
-        r = message.data.get("r")
-        g = message.data.get("g")
-        b = message.data.get("b")
+        pass
 
-    def eyes_brightness(self, message):
+    def eyes_brightness(self, message=None):
         """Set the brightness of the eyes in the display.
         Args:
             level (int): 1-30, bigger numbers being brighter
         """
-        level = message.data.get("brightness", 30)
+        pass
 
-    def eyes_reset(self, message):
+    def eyes_reset(self, message=None):
         """Restore the eyes to their default (ready) state."""
         pass
 
-    def eyes_timed_spin(self, message):
+    def eyes_timed_spin(self, message=None):
         """Make the eyes 'roll' for the given time.
         Args:
             length (int): duration in milliseconds of roll, None = forever
         """
-        length = message.data.get("length")
+        pass
 
-    def eyes_volume(self, message):
+    def eyes_volume(self, message=None):
         """Indicate the volume using the eyes
         Args:
             volume (int): 0 to 11
         """
-        volume = message.data.get("volume")
+        pass
 
-    def mouth_reset(self, message):
+    def mouth_reset(self, message=None):
         """Restore the mouth display to normal (blank)"""
         pass
 
-    def mouth_talk(self, message):
+    def mouth_talk(self, message=None):
         """Show a generic 'talking' animation for non-synched speech"""
         pass
 
-    def mouth_think(self, message):
+    def mouth_think(self, message=None):
         """Show a 'thinking' image or animation"""
         pass
 
-    def mouth_listen(self, message):
+    def mouth_listen(self, message=None):
         """Show a 'thinking' image or animation"""
         pass
 
-    def mouth_smile(self, message):
+    def mouth_smile(self, message=None):
         """Show a 'smile' image or animation"""
         pass
 
-    def mouth_viseme(self, message):
+    def mouth_viseme(self, message=None):
         """Display a viseme mouth shape for synched speech
         Args:
             code (int):  0 = shape for sounds like 'y' or 'aa'
@@ -307,16 +305,16 @@ class Enclosure(object):
                          5 = shape for sounds like 'f' or 'v'
                          6 = shape for sounds like 'oy' or 'ao'
         """
-        code = message.data.get("code")
+        pass
 
-    def mouth_text(self, message):
+    def mouth_text(self, message=None):
         """Display text (scrolling as needed)
         Args:
             text (str): text string to display
         """
-        text = message.data.get("text")
+        pass
 
-    def mouth_display(self, message):
+    def mouth_display(self, message=None):
         """Display images on faceplate. Currently supports images up to 16x8,
            or half the face. You can use the 'x' parameter to cover the other
            half of the faceplate.
@@ -329,12 +327,9 @@ class Enclosure(object):
                             Useful if you'd like to display muliple images
                             on the faceplate at once.
         """
-        img_code = message.data.get("img_code", "")
-        x = message.data.get("x", 0)
-        y = message.data.get("y", 0)
-        refresh = message.data.get("refresh", True)
+        pass
 
-    def weather_display(self, message):
+    def weather_display(self, message=None):
         """Show a the temperature and a weather icon
 
         Args:
@@ -349,14 +344,13 @@ class Enclosure(object):
                          7 = wind/mist
             temp (int): the temperature (either C or F, not indicated)
         """
-        img_code = message.data.get("img_code")
-        temp = message.data.get("temp")
+        pass
 
-    def activate_mouth_events(self, message):
+    def activate_mouth_events(self, message=None):
         """Enable movement of the mouth with speech"""
         pass
 
-    def deactivate_mouth_events(self, message):
+    def deactivate_mouth_events(self, message=None):
         """Disable movement of the mouth with speech"""
         pass
 
@@ -661,7 +655,7 @@ class Mark1Enclosure(Enclosure):
             LOG.info("Connected to: %s rate: %s timeout: %s" %
                      (self.port, self.rate, self.timeout))
         except:
-            LOG.error("Impossible to connect to serial port: "+str(self.port))
+            LOG.error("Impossible to _connect to serial port: "+str(self.port))
             raise
 
     def __register_events(self):
