@@ -117,15 +117,23 @@ class EnclosureReader(Thread):
             subprocess.call('speaker-test -P 10 -l 0 -s 1', shell=True)
 
         if "unit.shutdown" in data:
+            # Eyes to soft gray on shutdown
+            self.ws.emit(Message("enclosure.eyes.color",
+                                 {'r': 70, 'g': 65, 'b': 69}))
             self.ws.emit(
                 Message("enclosure.eyes.timedspin",
                         {'length': 12000}))
             self.ws.emit(Message("enclosure.mouth.reset"))
+            time.sleep(0.5)  # give the system time to pass the message
             subprocess.call('systemctl poweroff -i', shell=True)
 
         if "unit.reboot" in data:
+            # Eyes to soft gray on reboot
+            self.ws.emit(Message("enclosure.eyes.color",
+                                 {'r': 70, 'g': 65, 'b': 69}))
             self.ws.emit(Message("enclosure.eyes.spin"))
             self.ws.emit(Message("enclosure.mouth.reset"))
+            time.sleep(0.5)  # give the system time to pass the message
             subprocess.call('systemctl reboot -i', shell=True)
 
         if "unit.setwifi" in data:
@@ -285,6 +293,9 @@ class Enclosure(object):
             # receive the "speak".  This was sometimes happening too
             # quickly and the user wasn't notified what to do.
             Timer(5, self._do_net_check).start()
+        else:
+            # Indicate we are checking for updates from the internet now...
+            self.writer.write("mouth.text=< < < UPDATING < < < ")
 
         Timer(60, self._hack_check_for_duplicates).start()
 
@@ -408,6 +419,9 @@ class Enclosure(object):
                 # Kick off wifi-setup automatically
                 data = {'allow_timeout': False, 'lang': self.lang}
                 self.ws.emit(Message('mycroft.wifi.start', data))
+        else:
+            # Indicate we are checking for updates from the internet now...
+            self.writer.write("mouth.text=< < < UPDATING < < < ")
 
     def _hack_check_for_duplicates(self):
         # TEMPORARY HACK:  Look for multiple instance of the
