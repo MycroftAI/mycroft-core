@@ -80,6 +80,12 @@ class SkillSettings(dict):
 
     def __init__(self, directory, name):
         super(SkillSettings, self).__init__()
+        # when skills try to instantiate settings
+        # in __init__, it can erase the settings saved
+        # on disk (settings.json). So this prevents that
+        # This is set to true in core.py after skill init
+        self.allow_overwrite = False
+
         self.api = DeviceApi()
         self.config = ConfigurationManager.get()
         self.name = name
@@ -98,9 +104,6 @@ class SkillSettings(dict):
         if isfile(self._meta_path):
             self._poll_skill_settings()
         self.load_skill_settings()
-        # this saves the state of settings.json
-        # for use in load_disk_settings
-        self._disk_settings = self.copy()
 
     # TODO: break this up into two classes
     def initiatlize_remote_settings(self):
@@ -155,7 +158,8 @@ class SkillSettings(dict):
 
     def __setitem__(self, key, value):
         """ Add/Update key. """
-        return super(SkillSettings, self).__setitem__(key, value)
+        if self.allow_overwrite or key not in self:
+            return super(SkillSettings, self).__setitem__(key, value)
 
     def _load_settings_meta(self):
         """ Loads settings metadata from skills path. """
@@ -166,16 +170,6 @@ class SkillSettings(dict):
         else:
             LOG.info("settingemeta.json does not exist")
             return None
-
-    def _load_disk_settings(self):
-        """ This is used to load the disk settings onto self
-            when skills try to instantiate settings
-            in __init__, it can erase the settings saved
-            on disk (settings.json). So this prevents that
-        """
-        if self._disk_settings:
-            for key, value in self._disk_settings.items():
-                self[key] = value
 
     def _send_settings_meta(self, settings_meta):
         """ Send settingsmeta.json to the server.
