@@ -146,21 +146,35 @@ class DeviceApi(Api):
 
     def activate(self, state, token):
         version = VersionManager.get()
+        platform = "unknown"
+        platform_build = ""
+        if "enclosure" in config:
+            platform = config.get("enclosure").get("platform", "unknown")
+            platform_build = config.get("enclosure").get("platform_build", "")
         return self.request({
             "method": "POST",
             "path": "/activate",
             "json": {"state": state,
                      "token": token,
                      "coreVersion": version.get("coreVersion"),
+                     "platform": platform,
+                     "platform_build": platform_build,
                      "enclosureVersion": version.get("enclosureVersion")}
         })
 
     def update_version(self):
         version = VersionManager.get()
+        platform = "unknown"
+        platform_build = ""
+        if "enclosure" in config:
+            platform = config.get("enclosure").get("platform", "unknown")
+            platform_build = config.get("enclosure").get("platform_build", "")
         return self.request({
             "method": "PATCH",
             "path": "/" + self.identity.uuid,
             "json": {"coreVersion": version.get("coreVersion"),
+                     "platform": platform,
+                     "platform_build": platform_build,
                      "enclosureVersion": version.get("enclosureVersion")}
         })
 
