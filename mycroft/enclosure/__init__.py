@@ -12,24 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import subprocess
 import time
-from Queue import Queue
-from alsaaudio import Mixer
-from threading import Thread, Timer
-
-import serial
-
-import mycroft.dialog
-from mycroft.api import has_been_paired
-from mycroft.client.enclosure.display_manager import \
-    initiate_display_manager_ws
-from mycroft.configuration import Configuration, LocalConf, USER_CONFIG
+from threading import Thread
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
-from mycroft.util import play_wav, create_signal, connected, \
-    wait_while_speaking
-from mycroft.util.audio_test import record
 from mycroft.util.log import LOG
 
 
@@ -352,5 +338,3 @@ class Enclosure(object):
     def deactivate_mouth_events(self, message=None):
         """Disable movement of the mouth with speech"""
         pass
-
-
