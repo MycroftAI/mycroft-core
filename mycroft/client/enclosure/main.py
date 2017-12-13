@@ -13,18 +13,12 @@
 # limitations under the License.
 #
 import sys
-from mycroft.configuration.config import Configuration
+
+from mycroft.client.enclosure import Mark1Enclosure
 
 
 def main():
-    config = Configuration.get().get("enclosure", {})
-    platform = config.get("platform", "linux").lower()
-    if platform == "mark_1":
-        from mycroft.client.enclosure import Mark1Enclosure
-        enclosure = Mark1Enclosure()
-    else:
-        from mycroft.enclosure import Enclosure
-        enclosure = Enclosure()
+    enclosure = Mark1Enclosure()
     try:
         enclosure.run()
     except Exception as e:

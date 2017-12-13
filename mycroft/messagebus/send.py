@@ -83,4 +83,4 @@ if __name__ == '__main__':
     try:
         main()
     except IOError:
-        print('Could not connect to websocket, no message sent')
+        print('Could not _connect to websocket, no message sent')

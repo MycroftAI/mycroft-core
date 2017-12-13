@@ -29,7 +29,7 @@ Mopidy = __import__('mopidypost').Mopidy
 class MopidyService(AudioBackend):
     def _connect(self, message):
         """
-            Callback method to connect to mopidy if server is not available
+            Callback method to _connect to mopidy if server is not available
             at startup.
         """
         url = 'http://localhost:6680'
@@ -39,7 +39,7 @@ class MopidyService(AudioBackend):
             self.mopidy = Mopidy(url)
         except:
             if self.connection_attempts < 1:
-                LOG.debug('Could not connect to server, will retry quietly')
+                LOG.debug('Could not _connect to server, will retry quietly')
             self.connection_attempts += 1
             time.sleep(10)
             self.emitter.emit(Message('MopidyServiceConnect'))
