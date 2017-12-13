@@ -101,16 +101,19 @@ class SkillSettings(dict):
         self.load_skill_settings()
 
     # TODO: break this up into two classes
-    def initiatlize_remote_settings(self):
+    def initialize_remote_settings(self):
         """ initializes the remote settings to the server """
-        # if settingsmeta.json exists
+        # if settingsmeta.json exists (and is valid)
         # this block of code is a control flow for
         # different scenarios that may arises with settingsmeta
+        settings_meta = self._load_settings_meta()
+        if not settings_meta:
+            return
+
         self._device_identity = self.api.identity.uuid
         self._api_path = "/" + self._device_identity + "/skill"
         self._user_identity = self.api.get()['user']['uuid']
         LOG.info("settingsmeta.json exist for {}".format(self.name))
-        settings_meta = self._load_settings_meta()
         hashed_meta = self._get_meta_hash(str(settings_meta))
         skill_settings = self._request_other_settings(hashed_meta)
         # if hash is new then there is a diff version of settingsmeta
@@ -158,9 +161,14 @@ class SkillSettings(dict):
     def _load_settings_meta(self):
         """ Loads settings metadata from skills path. """
         if isfile(self._meta_path):
-            with open(self._meta_path) as f:
-                data = json.load(f)
-            return data
+            try:
+                with open(self._meta_path) as f:
+                    data = json.load(f)
+                return data
+            except Exception as e:
+                LOG.error("Failed to load setting file: "+self._meta_path)
+                LOG.error(repr(e))
+                return None
         else:
             LOG.info("settingemeta.json does not exist")
             return None
@@ -361,7 +369,9 @@ class SkillSettings(dict):
         """
         try:
             if not self._complete_intialization:
-                self.initiatlize_remote_settings()
+                self.initialize_remote_settings()
+                if not self._complete_intialization:
+                    return  # unable to do remote sync
             else:
                 self.update_remote()
         except Exception as e:
