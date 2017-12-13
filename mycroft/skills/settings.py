@@ -80,6 +80,12 @@ class SkillSettings(dict):
 
     def __init__(self, directory, name):
         super(SkillSettings, self).__init__()
+        # when skills try to instantiate settings
+        # in __init__, it can erase the settings saved
+        # on disk (settings.json). So this prevents that
+        # This is set to true in core.py after skill init
+        self.allow_overwrite = False
+
         self.api = DeviceApi()
         self.config = ConfigurationManager.get()
         self.name = name
@@ -93,9 +99,8 @@ class SkillSettings(dict):
         self._device_identity = None
         self._api_path = None
         self._user_identity = None
-        # if settingsmeta.json exists
-        # this block of code is a control flow for
-        # different scenarios that may arises with settingsmeta
+
+        # if settingsmeta exist
         if isfile(self._meta_path):
             self._poll_skill_settings()
         self.load_skill_settings()
@@ -156,7 +161,8 @@ class SkillSettings(dict):
 
     def __setitem__(self, key, value):
         """ Add/Update key. """
-        return super(SkillSettings, self).__setitem__(key, value)
+        if self.allow_overwrite or key not in self:
+            return super(SkillSettings, self).__setitem__(key, value)
 
     def _load_settings_meta(self):
         """ Loads settings metadata from skills path. """
