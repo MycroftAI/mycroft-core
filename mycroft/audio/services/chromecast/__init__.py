@@ -28,11 +28,11 @@ class ChromecastService(AudioBackend):
         playback controller included in pychromecast.
     """
     def _connect(self, message):
-        LOG.info('Trying to _connect to chromecast')
+        LOG.info('Trying to connect to chromecast')
         casts = pychromecast.get_chromecasts()
         if self.config is None or 'identifier' not in self.config:
             LOG.error("Chromecast identifier not found!")
-            return  # Can't _connect since no id is specified
+            return  # Can't connect since no id is specified
         else:
             identifier = self.config['identifier']
         for c in casts:
