@@ -19,13 +19,13 @@ from mycroft.messagebus.message import Message
 
 
 '''
-API for the functions that affect the Mark I device.
+API for the functions that affect the device running Mycroft.
 NOTE: current state management is poorly implemented,
 will be changed in the future.
 '''
 
 
-class EnclosureAPI:
+class EnclosureAPI(object):
     """
     This API is intended to be used to interface with the hardware
     that is running Mycroft.  It exposes all possible commands which

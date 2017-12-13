@@ -11,9 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from mycroft.client.enclosure import Enclosure
 
 
-class EnclosureWeather:
+class EnclosureWeather(Enclosure):
     """
     Listens for Enclosure API commands to display indicators of the weather.
 
@@ -21,14 +22,10 @@ class EnclosureWeather:
     """
 
     def __init__(self, ws, writer):
-        self.ws = ws
+        super(EnclosureWeather, self).__init__(ws, "weather")
         self.writer = writer
-        self.__init_events()
 
-    def __init_events(self):
-        self.ws.on('enclosure.weather.display', self.display)
-
-    def display(self, event=None):
+    def weather_display(self, event=None):
         if event and event.data:
             # Convert img_code to icon
             img_code = event.data.get("img_code", None)

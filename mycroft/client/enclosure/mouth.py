@@ -13,9 +13,10 @@
 # limitations under the License.
 #
 import time
+from mycroft.client.enclosure import Enclosure
 
 
-class EnclosureMouth:
+class EnclosureMouth(Enclosure):
     """
     Listens to enclosure commands for Mycroft's Mouth.
 
@@ -23,37 +24,26 @@ class EnclosureMouth:
     """
 
     def __init__(self, ws, writer):
-        self.ws = ws
+        super(EnclosureMouth, self).__init__(ws, "mouth")
         self.writer = writer
         self.is_timer_on = False
-        self.__init_events()
 
-    def __init_events(self):
-        self.ws.on('enclosure.mouth.reset', self.reset)
-        self.ws.on('enclosure.mouth.talk', self.talk)
-        self.ws.on('enclosure.mouth.think', self.think)
-        self.ws.on('enclosure.mouth.listen', self.listen)
-        self.ws.on('enclosure.mouth.smile', self.smile)
-        self.ws.on('enclosure.mouth.viseme', self.viseme)
-        self.ws.on('enclosure.mouth.text', self.text)
-        self.ws.on('enclosure.mouth.display', self.display)
-
-    def reset(self, event=None):
+    def mouth_reset(self, event=None):
         self.writer.write("mouth.reset")
 
-    def talk(self, event=None):
+    def mouth_talk(self, event=None):
         self.writer.write("mouth.talk")
 
-    def think(self, event=None):
+    def mouth_think(self, event=None):
         self.writer.write("mouth.think")
 
-    def listen(self, event=None):
+    def mouth_listen(self, event=None):
         self.writer.write("mouth.listen")
 
-    def smile(self, event=None):
+    def mouth_smile(self, event=None):
         self.writer.write("mouth.smile")
 
-    def viseme(self, event=None):
+    def mouth_viseme(self, event=None):
         if event and event.data:
             code = event.data.get("code")
             time_until = event.data.get("until")
@@ -63,13 +53,13 @@ class EnclosureMouth:
             if code and (not time_until or time.time() < time_until):
                 self.writer.write("mouth.viseme=" + code)
 
-    def text(self, event=None):
+    def mouth_text(self, event=None):
         text = ""
         if event and event.data:
             text = event.data.get("text", text)
         self.writer.write("mouth.text=" + text)
 
-    def display(self, event=None):
+    def mouth_display(self, event=None):
         code = ""
         xOffset = ""
         yOffset = ""
