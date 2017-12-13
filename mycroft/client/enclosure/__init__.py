@@ -460,20 +460,26 @@ class Mark1Enclosure(Enclosure):
                    self.__reset)
         self.__register_mouth_events()
 
+    def activate_mouth_events(self, message=None):
+        self.__register_mouth_events(message)
+
+    def deactivate_mouth_events(self, message=None):
+        self.__remove_mouth_events(message)
+
     def __register_mouth_events(self, event=None):
-        self.ws.on('recognizer_loop:record_begin', self.mouth.mouth_listen)
-        self.ws.on('recognizer_loop:record_end', self.mouth.mouth_reset)
-        self.ws.on('recognizer_loop:audio_output_start', self.mouth.mouth_talk)
-        self.ws.on('recognizer_loop:audio_output_end', self.mouth.mouth_reset)
+        self.ws.on('recognizer_loop:record_begin', self.mouth_listen)
+        self.ws.on('recognizer_loop:record_end', self.mouth_reset)
+        self.ws.on('recognizer_loop:audio_output_start', self.mouth_talk)
+        self.ws.on('recognizer_loop:audio_output_end', self.mouth_reset)
 
     def __remove_mouth_events(self, event=None):
         self.ws.remove('recognizer_loop:record_begin',
-                       self.mouth.mouth_listen)
-        self.ws.remove('recognizer_loop:record_end', self.mouth.mouth_reset)
+                       self.mouth_listen)
+        self.ws.remove('recognizer_loop:record_end', self.mouth_reset)
         self.ws.remove('recognizer_loop:audio_output_start',
-                       self.mouth.mouth_talk)
+                       self.mouth_talk)
         self.ws.remove('recognizer_loop:audio_output_end',
-                       self.mouth.mouth_reset)
+                       self.mouth_reset)
 
     def __reset(self, event=None):
         # Reset both the mouth and the eye elements to indicate the unit is
