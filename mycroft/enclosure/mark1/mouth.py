@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 import time
-from mycroft.client.enclosure import Enclosure
+from mycroft.enclosure import Enclosure
 
 
 class EnclosureMouth(Enclosure):

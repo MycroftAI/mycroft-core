@@ -20,10 +20,10 @@ def main():
     config = Configuration.get().get("enclosure", {})
     platform = config.get("platform", "linux").lower()
     if platform == "mark_1":
-        from mycroft.client.enclosure import Mark1Enclosure
+        from mycroft.enclosure import Mark1Enclosure
         enclosure = Mark1Enclosure()
     else:
-        from mycroft.client.enclosure import Enclosure
+        from mycroft.enclosure import Enclosure
         enclosure = Enclosure()
     try:
         enclosure.run()

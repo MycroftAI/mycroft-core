@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from mycroft.client.enclosure import Enclosure
+from mycroft.enclosure import Enclosure
 
 
 class EnclosureArduino(Enclosure):

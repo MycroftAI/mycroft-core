@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from mycroft.client.enclosure import Enclosure
+from mycroft.enclosure import Enclosure
 
 
 class EnclosureEyes(Enclosure):
@@ -95,10 +95,10 @@ class EnclosureEyes(Enclosure):
             level = message.data.get("level", level)
         self.writer.write("eyes.level=" + str(level))
 
-    def eyes_volume(self, event=None):
+    def eyes_volume(self, message=None):
         volume = 4
-        if event and event.data:
-            volume = event.data.get("volume", volume)
+        if message and message.data:
+            volume = message.data.get("volume", volume)
         self.writer.write("eyes.volume=" + str(volume))
 
     def eyes_reset(self, message=None):
