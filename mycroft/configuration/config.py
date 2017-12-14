@@ -138,34 +138,8 @@ class RemoteConf(LocalConf):
     """
     def __init__(self, cache=None):
         super(RemoteConf, self).__init__(None)
-
         cache = cache or '/opt/mycroft/web_config_cache.json'
-
-        try:
-            # Here to avoid cyclic import
-            from mycroft.api import DeviceApi
-            api = DeviceApi()
-            setting = api.get_settings()
-            location = api.get_location()
-            if location:
-                setting["location"] = location
-            # Remove server specific entries
-            config = {}
-            translate_remote(config, setting)
-            for key in config:
-                self.__setitem__(key, config[key])
-            self.store(cache)
-
-        except HTTPError as e:
-            LOG.error("HTTPError fetching remote configuration: %s" %
-                      e.response.status_code)
-            self.load_local(cache)
-
-        except Exception as e:
-            LOG.error("Failed to fetch remote configuration: %s" % repr(e),
-                      exc_info=True)
-            self.load_local(cache)
-
+        # no remote
 
 DEFAULT_CONFIG = join(dirname(__file__), 'mycroft.conf')
 SYSTEM_CONFIG = '/etc/mycroft/mycroft.conf'
