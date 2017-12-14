@@ -45,7 +45,7 @@ class EnclosureEyes(object):
     def off(self):
         self.writer.write("eyes.off")
 
-    def blink(self, side = "b"):
+    def blink(self, side="b"):
         self.writer.write("eyes.blink=" + side)
 
     def narrow(self):
