@@ -28,7 +28,7 @@ def fuzzy_match(x, against):
     """
     return SequenceMatcher(None, x, against).ratio()
 
-    
+
 def extractnumber(text, lang="en-us"):
     """Takes in a string and extracts a number.
     Args:
@@ -1073,21 +1073,21 @@ def isFractional_pt(input_str):
     if input_str.endswith('s', -1):
         input_str = input_str[:len(input_str) - 1]  # e.g. "fifths"
 
-    aFrac = ["meio", u"terço", "quarto", "quinto", "sexto",
-             "setimo", "oitavo", "nono", u"décimo"]
+    aFrac = ["meio", u"terï¿½o", "quarto", "quinto", "sexto",
+             "setimo", "oitavo", "nono", u"dï¿½cimo"]
 
     if input_str.lower() in aFrac:
         return 1.0 / (aFrac.index(input_str) + 2)
-    if input_str == u"vigésimo":
+    if input_str == u"vigï¿½simo":
         return 1.0 / 20
-    if input_str == u"trigésimo":
+    if input_str == u"trigï¿½simo":
         return 1.0 / 30
-    if input_str == u"centésimo":
+    if input_str == u"centï¿½simo":
         return 1.0 / 100
-    if input_str == u"milésimo":
+    if input_str == u"milï¿½simo":
         return 1.0 / 1000
-    if (input_str == u"sétimo" or input_str == "septimo" or
-            input_str == u"séptimo"):
+    if (input_str == u"sï¿½timo" or input_str == "septimo" or
+            input_str == u"sï¿½ptimo"):
         return 1.0 / 7
 
     return False
@@ -1351,23 +1351,23 @@ def extract_datetime_pt(input_str, currentDate=None):
         for word in noise_words:
             str = str.replace(" " + word + " ", " ")
         str = str.lower().replace(
-            u"á",
+            u"ï¿½",
             "a").replace(
-            u"ç",
+            u"ï¿½",
             "c").replace(
-            u"à",
+            u"ï¿½",
             "a").replace(
-            u"ã",
+            u"ï¿½",
             "a").replace(
-            u"é",
+            u"ï¿½",
             "e").replace(
-            u"è",
+            u"ï¿½",
             "e").replace(
-            u"ê",
+            u"ï¿½",
             "e").replace(
-            u"ó",
+            u"ï¿½",
             "o").replace(
-            u"ò",
+            u"ï¿½",
             "o").replace(
             "-",
             " ").replace(
@@ -2136,12 +2136,12 @@ def pt_pruning(text, symbols=True, accents=True, agressive=True):
             text = text.replace(symbol, "")
         text = text.replace("-", " ").replace("_", " ")
     if accents:
-        accents = {"a": [u"á", u"à", u"ã", u"â"],
-                   "e": [u"ê", u"è", u"é"],
-                   "i": [u"í", u"ì"],
-                   "o": [u"ò", u"ó"],
-                   "u": [u"ú", u"ù"],
-                   "c": [u"ç"]}
+        accents = {"a": [u"ï¿½", u"ï¿½", u"ï¿½", u"ï¿½"],
+                   "e": [u"ï¿½", u"ï¿½", u"ï¿½"],
+                   "i": [u"ï¿½", u"ï¿½"],
+                   "o": [u"ï¿½", u"ï¿½"],
+                   "u": [u"ï¿½", u"ï¿½"],
+                   "c": [u"ï¿½"]}
         for char in accents:
             for acc in accents[char]:
                 text = text.replace(acc, char)

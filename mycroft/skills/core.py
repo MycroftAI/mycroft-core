@@ -16,6 +16,7 @@ import imp
 import operator
 import sys
 import time
+import csv
 from functools import wraps
 from inspect import getargspec
 
@@ -497,6 +498,43 @@ class MycroftSkill(object):
         """
         return self.dialog_renderer.render(text, data or {})
 
+    def translate_namedvalues(self, name, delim=None):
+        """
+        Load translation dict containing names and values.
+
+        This loads a simple CSV from the 'dialog' folders.
+        The name is the first list item, the value is the
+        second.  Lines prefixed with # or // get ignored
+
+        Args:
+            name (str): name of the .value file, no extension needed
+            delim (char): delimiter character used, default is ','
+
+        Returns:
+            dict: name and value dictionary, or [] if load fails
+        """
+
+        delim = delim or ','
+        result = {}
+        if not name.endswith(".value"):
+            name += ".value"
+
+        try:
+            with open(join(self.root_dir, 'dialog', self.lang, name)) as f:
+                reader = csv.reader(f, delimiter=delim)
+                for row in reader:
+                    # skip blank or comment lines
+                    if not row or row[0].startswith("#"):
+                        continue
+                    if len(row) != 2:
+                        continue
+
+                    result[row[0]] = row[1]
+
+            return result
+        except:
+            return {}
+            
     def translate_template(self, template_name, data=None):
         """
         Load a translatable template
@@ -851,6 +889,8 @@ class MycroftSkill(object):
             self.emitter.remove(e, f)
         self.events = None  # Remove reference to wrappers
 
+        # TODO: Should this remove vocabulary and dialog files pulled in by load_data_files()?
+        
         self.emitter.emit(
             Message("detach_skill", {"skill_id": str(self.skill_id) + ":"}))
         try:
