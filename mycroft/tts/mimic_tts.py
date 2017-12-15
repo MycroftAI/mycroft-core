@@ -56,22 +56,32 @@ def download_subscriber_voices(selected_voice):
     # First download the selected voice if needed
     voice_file = SUBSCRIBER_VOICES.get(selected_voice)
     if voice_file is not None and not exists(voice_file):
-        LOG.info('voice foesn\'t exist, downloading')
-        dl = download(DeviceApi().get_subscriber_voice_url(selected_voice),
-                      voice_file, make_executable)
-        # Wait for completion
-        while not dl.done:
-            sleep(1)
+        LOG.info('voice doesn\'t exist, downloading')
+        url = DeviceApi().get_subscriber_voice_url(selected_voice)
+        # Check we got an url
+        if url:
+            dl = download(url, voice_file, make_executable)
+            # Wait for completion
+            while not dl.done:
+                sleep(1)
+        else:
+            LOG.debug('{} is not available for this architecture'
+                      .format(selected_voice))
 
     # Download the rest of the subsciber voices as needed
     for voice in SUBSCRIBER_VOICES:
         voice_file = SUBSCRIBER_VOICES[voice]
         if not exists(voice_file):
-            dl = download(DeviceApi().get_subscriber_voice_url(voice),
-                          voice_file, make_executable)
-            # Wait for completion
-            while not dl.done:
-                sleep(1)
+            url = DeviceApi().get_subscriber_voice_url(voice)
+            # Check we got an url
+            if url:
+                dl = download(url, voice_file, make_executable)
+                # Wait for completion
+                while not dl.done:
+                    sleep(1)
+            else:
+                LOG.debug('{} is not available for this architecture'
+                          .format(voice))
 
 
 class Mimic(TTS):

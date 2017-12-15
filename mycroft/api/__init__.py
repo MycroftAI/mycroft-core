@@ -229,9 +229,10 @@ class DeviceApi(Api):
     def get_subscriber_voice_url(self, voice=None):
         self.check_token()
         archs = {'x86_64': 'x86_64', 'armv7l': 'arm'}
-        arch = archs[get_arch()]
-        path = '/' + self.identity.uuid + '/voice?arch=' + arch
-        return self.request({'path': path})['link']
+        arch = archs.get(get_arch())
+        if arch:
+            path = '/' + self.identity.uuid + '/voice?arch=' + arch
+            return self.request({'path': path})['link']
 
     def find(self):
         """ Deprecated, see get_location() """
