@@ -810,9 +810,9 @@ def gui_main(stdscr):
                 elif c1 == 79 and c2 == 118:
                     c = curses.KEY_RIGHT
                 elif c1 == 79 and c2 == 121:
-                    c = curses.KEY_NPAGE  # aka PgUp
+                    c = curses.KEY_PPAGE  # aka PgUp
                 elif c1 == 79 and c2 == 115:
-                    c = curses.KEY_PPAGE  # aka PgDn
+                    c = curses.KEY_NPAGE  # aka PgDn
                 elif c1 == 79 and c2 == 119:
                     c = curses.KEY_HOME
                 elif c1 == 79 and c2 == 113:
