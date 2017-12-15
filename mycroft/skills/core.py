@@ -532,7 +532,7 @@ class MycroftSkill(object):
                     result[row[0]] = row[1]
 
             return result
-        except:
+        except Exception:
             return {}
 
     def translate_template(self, template_name, data=None):
