@@ -1,4 +1,3 @@
-
 # Copyright 2017 Mycroft AI Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -112,7 +111,7 @@ class LocalConf(dict):
                 LOG.error("Error loading configuration '{}'".format(path))
                 LOG.error(repr(e))
         else:
-            LOG.debug("Configuration '{}' not found".format(path))
+            LOG.debug("Optional configuration '{}' skipped".format(path))
 
     def store(self, path=None):
         """
