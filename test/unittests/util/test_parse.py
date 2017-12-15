@@ -21,7 +21,16 @@ from mycroft.util.parse import get_gender
 from mycroft.util.parse import extract_datetime
 from mycroft.util.parse import extractnumber
 from mycroft.util.parse import normalize
+from mycroft.util.parse import fuzzy_match
 
+class TestFuzzyMatch(unittest.TestCase):
+    def test_matches(self):
+        self.assertTrue(fuzzy_match("you and me", "you and me") >= 1.0)
+        self.assertTrue(fuzzy_match("you and me", "you") < 0.5)
+        self.assertTrue(fuzzy_match("You", "you") > 0.5)
+        self.assertTrue(fuzzy_match("you and me", "you") ==
+                        fuzzy_match("you", "you and me"))
+        self.assertTrue(fuzzy_match("you and me", "he or they") < 0.1)
 
 class TestNormalize(unittest.TestCase):
     def test_articles(self):
