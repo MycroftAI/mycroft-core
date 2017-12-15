@@ -16,17 +16,6 @@
 #
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
-from difflib import SequenceMatcher
-
-
-def fuzzy_match(x, against):
-    """Perform a 'fuzzy' comparison between two strings.
-
-    Returns:
-        float: match percentage -- 1.0 for perfect match,
-               down to 0.0 for no match at all.
-    """
-    return SequenceMatcher(None, x, against).ratio()
 
 
 def extractnumber(text, lang="en-us"):
@@ -1013,7 +1002,7 @@ pt_numbers = {
     "dois": 2,
     "duas": 2,
     "tres": 3,
-    u"tr�s": 3,
+    u"trï¿½s": 3,
     "quatro": 4,
     "cinco": 5,
     "seis": 6,
@@ -1057,7 +1046,7 @@ pt_numbers = {
     "novecentos": 900,
     "novecentas": 900,
     "mil": 1000,
-    u"milh�o": 1000000}
+    u"milhï¿½o": 1000000}
 
 
 def isFractional_pt(input_str):
@@ -1073,21 +1062,21 @@ def isFractional_pt(input_str):
     if input_str.endswith('s', -1):
         input_str = input_str[:len(input_str) - 1]  # e.g. "fifths"
 
-    aFrac = ["meio", u"ter�o", "quarto", "quinto", "sexto",
-             "setimo", "oitavo", "nono", u"d�cimo"]
+    aFrac = ["meio", u"terço", "quarto", "quinto", "sexto",
+             "setimo", "oitavo", "nono", u"décimo"]
 
     if input_str.lower() in aFrac:
         return 1.0 / (aFrac.index(input_str) + 2)
-    if input_str == u"vig�simo":
+    if input_str == u"vigésimo":
         return 1.0 / 20
-    if input_str == u"trig�simo":
+    if input_str == u"trigésimo":
         return 1.0 / 30
-    if input_str == u"cent�simo":
+    if input_str == u"centésimo":
         return 1.0 / 100
-    if input_str == u"mil�simo":
+    if input_str == u"milésimo":
         return 1.0 / 1000
-    if (input_str == u"s�timo" or input_str == "septimo" or
-            input_str == u"s�ptimo"):
+    if (input_str == u"sétimo" or input_str == "septimo" or
+            input_str == u"séptimo"):
         return 1.0 / 7
 
     return False
@@ -1190,7 +1179,7 @@ def extractnumber_pt(text):
                     result += afterAndVal
                     break
 
-        decimals = ["ponto", "virgula", u"v�rgula", ".", ","]
+        decimals = ["ponto", "virgula", u"vï¿½rgula", ".", ","]
         if next_word in decimals:
             zeros = 0
             newWords = aWords[count + 2:]
@@ -1342,7 +1331,7 @@ def extract_datetime_pt(input_str, currentDate=None):
     def clean_string(str):
         # cleans the input string of unneeded punctuation and capitalization
         # among other things
-        symbols = [".", ",", ";", "?", "!", u"�", u"�"]
+        symbols = [".", ",", ";", "?", "!", u"ï¿½", u"ï¿½"]
         noise_words = ["o", "os", "a", "as", "do", "da", "dos", "das", "de",
                        "ao", "aos"]
 
@@ -1351,23 +1340,23 @@ def extract_datetime_pt(input_str, currentDate=None):
         for word in noise_words:
             str = str.replace(" " + word + " ", " ")
         str = str.lower().replace(
-            u"�",
+            u"á",
             "a").replace(
-            u"�",
+            u"ç",
             "c").replace(
-            u"�",
+            u"à",
             "a").replace(
-            u"�",
+            u"ã",
             "a").replace(
-            u"�",
+            u"é",
             "e").replace(
-            u"�",
+            u"è",
             "e").replace(
-            u"�",
+            u"ê",
             "e").replace(
-            u"�",
+            u"ó",
             "o").replace(
-            u"�",
+            u"ò",
             "o").replace(
             "-",
             " ").replace(
@@ -2131,17 +2120,17 @@ def pt_pruning(text, symbols=True, accents=True, agressive=True):
              "esta", "deste", "desta", "neste", "nesta", "nesse",
              "nessa", "foi", "que"]
     if symbols:
-        symbols = [".", ",", ";", ":", "!", "?", u"�", u"�"]
+        symbols = [".", ",", ";", ":", "!", "?", u"ï¿½", u"ï¿½"]
         for symbol in symbols:
             text = text.replace(symbol, "")
         text = text.replace("-", " ").replace("_", " ")
     if accents:
-        accents = {"a": [u"�", u"�", u"�", u"�"],
-                   "e": [u"�", u"�", u"�"],
-                   "i": [u"�", u"�"],
-                   "o": [u"�", u"�"],
-                   "u": [u"�", u"�"],
-                   "c": [u"�"]}
+        accents = {"a": [u"á", u"à", u"ã", u"â"],
+                   "e": [u"ê", u"è", u"é"],
+                   "i": [u"í", u"ì"],
+                   "o": [u"ò", u"ó"],
+                   "u": [u"ú", u"ù"],
+                   "c": [u"ç"]}
         for char in accents:
             for acc in accents[char]:
                 text = text.replace(acc, char)
@@ -2188,7 +2177,7 @@ es_numbers_xlat = {
     "una": 1,
     "dos": 2,
     "tres": 3,
-    u"tr�s": 3,
+    u"trï¿½s": 3,
     "cuatro": 4,
     "cinco": 5,
     "seis": 6,
@@ -2202,19 +2191,19 @@ es_numbers_xlat = {
     "catorce": 14,
     "quince": 15,
     "dieciseis": 16,
-    u"diecis�is": 16,
+    u"diecisï¿½is": 16,
     "diecisiete": 17,
     "dieciocho": 18,
     "diecinueve": 19,
     "veinte": 20,
     "veintiuno": 21,
-    u"veintid�s": 22,
-    u"veintitr�s": 23,
+    u"veintidï¿½s": 22,
+    u"veintitrï¿½s": 23,
     "veintidos": 22,
     "veintitres": 23,
     "veinticuatro": 24,
     "veinticinco": 25,
-    u"veintis�is": 26,
+    u"veintisï¿½is": 26,
     "veintiseis": 26,
     "veintisiete": 27,
     "veintiocho": 28,
