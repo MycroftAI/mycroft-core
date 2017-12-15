@@ -31,7 +31,7 @@ class TestFuzzyMatch(unittest.TestCase):
         self.assertTrue(fuzzy_match("You", "you") > 0.5)
         self.assertTrue(fuzzy_match("you and me", "you") ==
                         fuzzy_match("you", "you and me"))
-        self.assertTrue(fuzzy_match("you and me", "he or they") < 0.1)
+        self.assertTrue(fuzzy_match("you and me", "he or they") < 0.2)
 
 
 class TestNormalize(unittest.TestCase):
