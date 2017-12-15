@@ -16,6 +16,16 @@
 #
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
+from difflib import SequenceMatcher
+
+
+def fuzzy_match(x, against):
+    """Perform a 'fuzzy' comparison between two strings.
+    Returns:
+        float: match percentage -- 1.0 for perfect match,
+               down to 0.0 for no match at all.
+    """
+    return SequenceMatcher(None, x, against).ratio()
 
 
 def extractnumber(text, lang="en-us"):
