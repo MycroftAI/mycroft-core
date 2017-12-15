@@ -534,7 +534,7 @@ class MycroftSkill(object):
             return result
         except:
             return {}
-            
+
     def translate_template(self, template_name, data=None):
         """
         Load a translatable template
