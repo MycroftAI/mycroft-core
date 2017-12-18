@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+# Backport python 3 print function
+from __future__ import print_function
+
 import sys
 import json
 from mycroft.messagebus.client.ws import WebsocketClient
@@ -38,17 +41,17 @@ def main():
         try:
             dataToSend = json.loads(sys.argv[2])
         except BaseException:
-            print "Second argument must be a JSON string"
-            print "Ex: python -m mycroft.messagebus.send speak " \
-                "'{\"utterance\" : \"hello\"}'"
+            print("Second argument must be a JSON string")
+            print("Ex: python -m mycroft.messagebus.send speak "
+                  "'{\"utterance\" : \"hello\"}'")
             exit()
     else:
-        print "Command line interface to the mycroft-core messagebus."
-        print "Usage: python -m mycroft.messagebus.send message"
-        print "       python -m mycroft.messagebus.send message JSON-string\n"
-        print "Examples: python -m mycroft.messagebus.send mycroft.wifi.start"
-        print "Ex: python -m mycroft.messagebus.send speak " \
-            "'{\"utterance\" : \"hello\"}'"
+        print("Command line interface to the mycroft-core messagebus.")
+        print("Usage: python -m mycroft.messagebus.send message")
+        print("       python -m mycroft.messagebus.send message JSON-string\n")
+        print("Examples: python -m mycroft.messagebus.send mycroft.wifi.start")
+        print("Ex: python -m mycroft.messagebus.send speak "
+              "'{\"utterance\" : \"hello\"}'")
         exit()
 
     send(messageToSend, dataToSend)

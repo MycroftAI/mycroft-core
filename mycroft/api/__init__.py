@@ -23,6 +23,8 @@ from mycroft.configuration.config import DEFAULT_CONFIG, SYSTEM_CONFIG, \
 from mycroft.identity import IdentityManager
 from mycroft.version import VersionManager
 from mycroft.util import get_arch
+# python 2/3 compatibility
+from future.utils import iteritems
 
 _paired_cache = False
 
@@ -110,7 +112,7 @@ class Api(object):
     def build_json(self, params):
         json = params.get("json")
         if json and params["headers"]["Content-Type"] == "application/json":
-            for k, v in json.iteritems():
+            for k, v in iteritems(json):
                 if v == "":
                     json[k] = None
             params["json"] = json

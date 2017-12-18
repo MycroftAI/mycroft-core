@@ -13,7 +13,6 @@
 # limitations under the License.
 #
 import time
-
 from adapt.context import ContextManagerFrame
 from adapt.engine import IntentDeterminationEngine
 
@@ -22,6 +21,9 @@ from mycroft.messagebus.message import Message
 from mycroft.skills.core import open_intent_envelope
 from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
+# python 2+3 compatibility
+from past.builtins import basestring
+from future.builtins import range
 
 
 class ContextManager(object):
@@ -89,7 +91,7 @@ class ContextManager(object):
 
         missing_entities = list(missing_entities)
         context = []
-        for i in xrange(max_frames):
+        for i in range(max_frames):
             frame_entities = [entity.copy() for entity in
                               relevant_frames[i].entities]
             for entity in frame_entities:
@@ -245,7 +247,7 @@ class IntentService(object):
             except StopIteration:
                 # don't show error in log
                 continue
-            except e:
+            except Exception as e:
                 LOG.exception(e)
                 continue
 
@@ -257,7 +259,6 @@ class IntentService(object):
             # update active skills
             skill_id = int(best_intent['intent_type'].split(":")[0])
             self.add_active_skill(skill_id)
-
         else:
             self.emitter.emit(Message("intent_failure", {
                 "utterance": utterances[0],
@@ -276,7 +277,6 @@ class IntentService(object):
                 start_concept, end_concept, alias_of=alias_of)
 
     def handle_register_intent(self, message):
-        print "Registering: " + str(message.data)
         intent = open_intent_envelope(message)
         self.engine.register_intent_parser(intent)
 
