@@ -40,6 +40,7 @@ def report_metric(name, data):
 class Stopwatch(object):
     def __init__(self):
         self.timestamp = None
+        self.time = None
 
     def start(self):
         self.timestamp = time.time()
@@ -53,8 +54,21 @@ class Stopwatch(object):
     def stop(self):
         cur_time = time.time()
         start_time = self.timestamp
-        self.timestamp = None
-        return cur_time - start_time
+        self.time = cur_time - start_time
+        return self.time
+
+    def __enter__(self):
+        self.start()
+
+    def __exit__(self, tpe, value, tb):
+        self.stop()
+
+    def __str__(self):
+        cur_time = time.time()
+        if self.timestamp:
+            return str(self.time or cur_time - self.timestamp)
+        else:
+            return 'Not started'
 
 
 class MetricsAggregator(object):
