@@ -145,7 +145,7 @@ def save_settings():
     config["cy_chat_area"] = cy_chat_area
     config["show_last_key"] = show_last_key
     with io.open(config_file, 'w') as f:
-        json.dump(config, f)
+        f.write(unicode(json.dumps(config, ensure_ascii=False)))
 
 
 ##############################################################################
@@ -180,10 +180,10 @@ class LogMonitorThread(Thread):
         global mergedLog
         global log_line_offset
 
-        with io.open(self.filename, 'rb') as fh:
+        with io.open(self.filename) as fh:
             fh.seek(bytefrom)
             while True:
-                line = str(fh.readline())
+                line = fh.readline()
                 if line == "":
                     break
 
@@ -240,7 +240,7 @@ class MicMonitorThread(Thread):
         global meter_cur
         global meter_thresh
 
-        with io.open(self.filename, 'rb') as fh:
+        with io.open(self.filename, 'r') as fh:
             fh.seek(bytefrom)
             while True:
                 line = fh.readline()
@@ -567,7 +567,7 @@ def _do_drawing(scr):
                 log = "~~" + log[start:end] + "~~"  # ..middle..
         if len_line > longest_visible_line:
             longest_visible_line = len_line
-        scr.addstr(y, 0, log, clr)
+        scr.addstr(y, 0, handleNonAscii(log), clr)
         y += 1
 
     # Log legend in the lower-right
