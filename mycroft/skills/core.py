@@ -134,6 +134,7 @@ def load_skill(skill_descriptor, emitter, skill_id, BLACKLISTED_SKILLS=None):
             # v2 skills framework
             skill = skill_module.create_skill()
             skill.settings.allow_overwrite = True
+            skill.settings.load_skill_settings_from_file()
             skill.bind(emitter)
             skill.skill_id = skill_id
             skill.load_data_files(dirname(skill_descriptor['info'][1]))
