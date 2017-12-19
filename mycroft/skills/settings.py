@@ -103,7 +103,6 @@ class SkillSettings(dict):
         # if settingsmeta exist
         if isfile(self._meta_path):
             self._poll_skill_settings()
-        self.load_skill_settings()
 
     # TODO: break this up into two classes
     def initialize_remote_settings(self):
@@ -256,6 +255,7 @@ class SkillSettings(dict):
     def _migrate_settings(self, settings_meta):
         """ sync settings.json and settingsmeta.json in memory """
         meta = settings_meta.copy()
+        self.load_skill_settings_from_file()
         sections = meta['skillMetadata']['sections']
         for i, section in enumerate(sections):
             for j, field in enumerate(section['fields']):
@@ -391,7 +391,7 @@ class SkillSettings(dict):
             t.daemon = True
             t.start()
 
-    def load_skill_settings(self):
+    def load_skill_settings_from_file(self):
         """ If settings.json exist, open and read stored values into self """
         if isfile(self._settings_path):
             with open(self._settings_path) as f:
