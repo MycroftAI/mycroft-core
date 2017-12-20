@@ -33,8 +33,12 @@ def report_metric(name, data):
         name (str): Name of metric. Must use only letters and hyphens
         data (dict): JSON dictionary to report. Must be valid JSON
     """
-    if Configuration().get()['opt_in']:
-        DeviceApi().report_metric(name, data)
+    try:
+        if Configuration().get()['opt_in']:
+            DeviceApi().report_metric(name, data)
+    except (requests.HTTPError, requests.exceptions.ConnectionError) as e:
+        LOG.error('Metric couldn\'t be uploaded, due to a network error ({})'
+                  .format(e))
 
 
 class Stopwatch(object):
