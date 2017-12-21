@@ -19,6 +19,7 @@ import time
 import csv
 from functools import wraps
 from inspect import getargspec
+import inspect
 
 import abc
 import re
@@ -41,6 +42,19 @@ from mycroft.util.log import LOG
 from past.builtins import basestring
 
 MainModule = '__init__'
+
+
+def dig_for_message():
+    """
+        Dig Through the stack for message.
+    """
+    stack = inspect.stack()
+    # Limit search to 10 frames back
+    stack = stack if len(stack) < 10 else stack[:10]
+    local_vars = [frame[0].f_locals for frame in stack]
+    for l in local_vars:
+        if 'message' in l and isinstance(l['message'], Message):
+            return l['message']
 
 
 def load_vocab_from_file(path, vocab_type, emitter):
@@ -830,7 +844,11 @@ class MycroftSkill(object):
         self.enclosure.register(self.name)
         data = {'utterance': utterance,
                 'expect_response': expect_response}
-        self.emitter.emit(Message("speak", data))
+        message = dig_for_message()
+        if message:
+            self.emitter.emit(message.reply("speak", data))
+        else:
+            self.emitter.emit(Message("speak", data))
 
     def speak_dialog(self, key, data=None, expect_response=False):
         """
