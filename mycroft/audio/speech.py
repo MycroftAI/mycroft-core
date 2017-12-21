@@ -75,7 +75,7 @@ def handle_speak(event):
                               utterance)
             for chunk in chunks:
                 try:
-                    mute_and_speak(chunk)
+                    mute_and_speak(chunk, ident)
                 except KeyboardInterrupt:
                     raise
                 except Exception:
@@ -84,7 +84,7 @@ def handle_speak(event):
                         check_for_signal('buttonPress')):
                     break
         else:
-            mute_and_speak(utterance)
+            mute_and_speak(utterance, ident)
 
         stopwatch.stop()
     report_metric('timing',
@@ -95,12 +95,13 @@ def handle_speak(event):
                    'time': stopwatch.time})
 
 
-def mute_and_speak(utterance):
+def mute_and_speak(utterance, ident):
     """
         Mute mic and start speaking the utterance using selected tts backend.
 
         Args:
-            utterance: The sentence to be spoken
+            utterance:  The sentence to be spoken
+            ident:      Ident tying the utterance to the source query
     """
     global tts_hash
 
@@ -116,7 +117,7 @@ def mute_and_speak(utterance):
         tts_hash = hash(str(config.get('tts', '')))
 
     LOG.info("Speak: " + utterance)
-    tts.execute(utterance)
+    tts.execute(utterance, ident)
 
 
 def handle_stop(event):

@@ -21,7 +21,7 @@ class ESpeak(TTS):
     def __init__(self, lang, voice):
         super(ESpeak, self).__init__(lang, voice, ESpeakValidator(self))
 
-    def execute(self, sentence):
+    def execute(self, sentence, ident=None):
         self.begin_audio()
         subprocess.call(
             ['espeak', '-v', self.lang + '+' + self.voice, sentence])
