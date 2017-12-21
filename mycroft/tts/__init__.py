@@ -28,11 +28,28 @@ from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util import play_wav, play_mp3, check_for_signal, create_signal
 from mycroft.util.log import LOG
+from mycroft.metrics import report_metric, Stopwatch
 import sys
 if sys.version_info[0] < 3:
     from Queue import Queue, Empty
 else:
     from queue import Queue, Empty
+
+
+def send_playback_metric(stopwatch, ident):
+    """
+        Send playback metrics in a background thread
+    """
+    def do_send(stopwatch, ident):
+        report_metric('timing',
+                      {'id': ident,
+                       'system': 'speech_playback',
+                       'start_time': stopwatch.timestamp,
+                       'time': stopwatch.time})
+
+    t = Thread(target=do_send, args=(stopwatch, ident))
+    t.daemon = True
+    t.start()
 
 
 class PlaybackThread(Thread):
@@ -69,23 +86,26 @@ class PlaybackThread(Thread):
         """
         while not self._terminated:
             try:
-                snd_type, data, visimes = self.queue.get(timeout=2)
+                snd_type, data, visimes, ident = self.queue.get(timeout=2)
                 self.blink(0.5)
                 if not self._processing_queue:
                     self._processing_queue = True
                     self.tts.begin_audio()
 
-                if snd_type == 'wav':
-                    self.p = play_wav(data)
-                elif snd_type == 'mp3':
-                    self.p = play_mp3(data)
+                stopwatch = Stopwatch()
+                with stopwatch:
+                    if snd_type == 'wav':
+                        self.p = play_wav(data)
+                    elif snd_type == 'mp3':
+                        self.p = play_mp3(data)
 
-                if visimes:
-                    if self.show_visimes(visimes):
-                        self.clear_queue()
-                else:
-                    self.p.communicate()
-                self.p.wait()
+                    if visimes:
+                        if self.show_visimes(visimes):
+                            self.clear_queue()
+                    else:
+                        self.p.communicate()
+                    self.p.wait()
+                send_playback_metric(stopwatch, ident)
 
                 if self.queue.empty():
                     self.tts.end_audio()
@@ -199,7 +219,7 @@ class TTS(object):
         """
         pass
 
-    def execute(self, sentence):
+    def execute(self, sentence, ident=None):
         """
             Convert sentence to speech.
 
@@ -208,6 +228,7 @@ class TTS(object):
 
             Args:
                 sentence:   Sentence to be spoken
+                ident:      Id reference to current interaction
         """
         create_signal("isSpeaking")
         key = str(hashlib.md5(sentence.encode('utf-8', 'ignore')).hexdigest())
@@ -222,7 +243,7 @@ class TTS(object):
             if phonemes:
                 self.save_phonemes(key, phonemes)
 
-        self.queue.put((self.type, wav_file, self.visime(phonemes)))
+        self.queue.put((self.type, wav_file, self.visime(phonemes), ident))
 
     def visime(self, phonemes):
         """
