@@ -248,6 +248,21 @@ class DeviceApi(Api):
         # TODO: Eliminate ASAP, for backwards compatibility only
         return self.get_location()
 
+    def get_oauth_token(self, dev_cred):
+        """
+            Get Oauth token for dev_credential dev_cred.
+
+            Argument:
+                dev_cred:   development credentials identifier
+
+            Returns:
+                json string containing token and additional information
+        """
+        return self.request({
+            "method": "GET",
+            "path": "/" + self.identity.uuid + "/token/" + str(dev_cred)
+        })
+
 
 class STTApi(Api):
     """ Web API wrapper for performing Speech to Text (STT) """
