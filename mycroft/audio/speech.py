@@ -46,6 +46,12 @@ def handle_speak(event):
     Configuration.init(ws)
     global _last_stop_signal
 
+    # Get conversation ID
+    if event.context and 'ident' in event.context:
+        ident = event.context['ident']
+    else:
+        ident = 'unknown'
+
     with lock:
         stopwatch = Stopwatch()
         stopwatch.start()
@@ -82,7 +88,7 @@ def handle_speak(event):
 
         stopwatch.stop()
     report_metric('timing',
-                  {'id': 'unknown',
+                  {'id': ident,
                    'system': 'speech',
                    'utterance': utterance,
                    'start_time': stopwatch.timestamp,
