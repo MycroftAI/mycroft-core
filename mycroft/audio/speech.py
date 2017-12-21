@@ -20,6 +20,7 @@ from mycroft.configuration import Configuration
 from mycroft.tts import TTSFactory
 from mycroft.util import create_signal, check_for_signal
 from mycroft.util.log import LOG
+from mycroft.metrics import report_metric, Stopwatch
 
 ws = None  # TODO:18.02 - Rename to "messagebus"
 config = None
@@ -46,6 +47,8 @@ def handle_speak(event):
     global _last_stop_signal
 
     with lock:
+        stopwatch = Stopwatch()
+        stopwatch.start()
         utterance = event.data['utterance']
         if event.data.get('expect_response', False):
             # When expect_response is requested, the listener will be restarted
@@ -76,6 +79,14 @@ def handle_speak(event):
                     break
         else:
             mute_and_speak(utterance)
+
+        stopwatch.stop()
+    report_metric('timing',
+                  {'id': 'unknown',
+                   'system': 'speech',
+                   'utterance': utterance,
+                   'start_time': stopwatch.timestamp,
+                   'time': stopwatch.time})
 
 
 def mute_and_speak(utterance):

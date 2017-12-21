@@ -21,6 +21,7 @@ from mycroft.messagebus.message import Message
 from mycroft.skills.core import open_intent_envelope
 from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
+from mycroft.metrics import report_metric, Stopwatch
 # python 2+3 compatibility
 from past.builtins import basestring
 from future.builtins import range
@@ -128,6 +129,10 @@ class IntentService(object):
     def __init__(self, emitter):
         self.config = Configuration.get().get('context', {})
         self.engine = IntentDeterminationEngine()
+
+        # Dictionary for translating a skill id to a name
+        self.skill_names = {}
+        # Context related intializations
         self.context_keywords = self.config.get('keywords', [])
         self.context_max_frames = self.config.get('max_frames', 3)
         self.context_timeout = self.config.get('timeout', 2)
@@ -148,12 +153,32 @@ class IntentService(object):
                         self.handle_converse_response)
         self.emitter.on('mycroft.speech.recognition.unknown',
                         self.reset_converse)
+        self.emitter.on('mycroft.skills.loaded', self.update_skill_name_dict)
 
         def add_active_skill_handler(message):
             self.add_active_skill(message.data['skill_id'])
         self.emitter.on('active_skill_request', add_active_skill_handler)
         self.active_skills = []  # [skill_id , timestamp]
         self.converse_timeout = 5  # minutes to prune active_skills
+
+    def update_skill_name_dict(self, message):
+        """
+            Messagebus handler, updates dictionary of if to skill name
+            conversions.
+        """
+        self.skill_names[message.data['id']] = message.data['name']
+
+    def get_skill_name(self, skill_id):
+        """
+            Get skill name from skill ID.
+
+            Args
+                skill_id: a skill id as encoded in Intent handlers.
+
+            Returns: (str) Skill name or the skill id if the skill
+                     wasn't found in the dict.
+        """
+        return self.skill_names.get(int(skill_id), skill_id)
 
     def reset_converse(self, message):
         """Let skills know there was a problem with speech recognition"""
@@ -214,12 +239,75 @@ class IntentService(object):
             elif context_entity['data'][0][1] in self.context_keywords:
                 self.context_manager.inject_context(context_entity)
 
+    def send_metrics(self, intent, context, stopwatch):
+        """
+            Send timing metrics to the backend.
+        """
+        LOG.debug('Sending metric')
+        ident = context['ident'] if context else None
+        if intent:
+            # Recreate skill name from skill id
+            parts = intent.get('intent_type', '').split(':')
+            intent_type = self.get_skill_name(parts[0])
+            if len(parts) > 1:
+                intent_type = ':'.join([intent_type] + parts[1:])
+
+            report_metric('timing',
+                          {'id': ident,
+                           'system': 'intent_service',
+                           'intent_type': intent_type,
+                           'start_time': stopwatch.timestamp,
+                           'time': stopwatch.time})
+        else:
+            report_metric('timing',
+                          {'id': ident,
+                           'intent_type': 'intent_failure',
+                           'system': 'intent_service',
+                           'start_time': stopwatch.timestamp,
+                           'time': stopwatch.time})
+
     def handle_utterance(self, message):
-        # Get language of the utterance
-        lang = message.data.get('lang', "en-us")
+        """
+            Messagebus handler for the recognizer_loop:utterance message
+        """
+        try:
+            # Get language of the utterance
+            lang = message.data.get('lang', "en-us")
+            utterances = message.data.get('utterances', '')
 
-        utterances = message.data.get('utterances', '')
+            stopwatch = Stopwatch()
+            with stopwatch:
+                # Parse the sentence
+                intent = self.parse_utterances(utterances, lang)
 
+            if intent:
+                # Send the message on to the intent handler
+                reply = message.reply(intent.get('intent_type'), intent)
+            else:
+                # or if no match send sentence to fallback system
+                reply = message.reply('intent_failure',
+                                      {'utterance': utterances[0],
+                                       'lang': lang})
+            self.emitter.emit(reply)
+            self.send_metrics(intent, message.context, stopwatch)
+        except Exception as e:
+            LOG.exception(e)
+
+    def parse_utterances(self, utterances, lang):
+        """
+            Parse the utteracne using adapt. The process has two stages
+
+            Stage 1: Converse, check if a recently invoked skill wants to
+                     handle the utterance and override normal adapt handling.
+
+            Stage 2: Parse the sentence with adapt to find a matching intent.
+
+            Args:
+                utterances (list):  list of utterances
+                lang (string):      4 letter ISO language code
+
+            Returns: Intent structure, or None if no match was found.
+        """
         # check for conversation time-out
         self.active_skills = [skill for skill in self.active_skills
                               if time.time() - skill[
@@ -253,17 +341,10 @@ class IntentService(object):
 
         if best_intent and best_intent.get('confidence', 0.0) > 0.0:
             self.update_context(best_intent)
-            reply = message.reply(
-                best_intent.get('intent_type'), best_intent)
-            self.emitter.emit(reply)
             # update active skills
             skill_id = int(best_intent['intent_type'].split(":")[0])
             self.add_active_skill(skill_id)
-        else:
-            self.emitter.emit(Message("intent_failure", {
-                "utterance": utterances[0],
-                "lang": lang
-            }))
+            return best_intent
 
     def handle_register_vocab(self, message):
         start_concept = message.data.get('start')
