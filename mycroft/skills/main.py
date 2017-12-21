@@ -300,6 +300,10 @@ class SkillManager(Thread):
                                            self.ws, skill["id"],
                                            BLACKLISTED_SKILLS)
             skill["last_modified"] = modified
+            if skill and skill['instance']:
+                ws.emit(Message('mycroft.skills.loaded',
+                                {'id': skill['id'],
+                                 'name': skill['instance'].name}))
 
     def load_skill_list(self, skills_to_load):
         """ Load the specified list of skills from disk
