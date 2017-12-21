@@ -46,7 +46,7 @@ function help() {
   echo
   echo "Tools:"
   echo "  cli                      the Command Line Interface"
-  echo "  unittest                 run mycroft-core unit tests"
+  echo "  unittest                 run mycroft-core unit tests (requires nose2)"
   echo
   echo "Utils:"
   echo "  skill_container <skill>  container for running a single skill"
@@ -73,7 +73,6 @@ function name-to-script-path() {
     "wifi")            _script=${DIR}/mycroft/client/wifisetup/main.py ;;
     "skill_container") _script=${DIR}/mycroft/skills/container.py ;;
     "audiotest")       _script=${DIR}/mycroft/util/audio_test.py ;;
-    "unittest")        _script=${DIR}/test/unittests/main.py ;;
     "audioaccuracytest") _script=${DIR}/mycroft/audio-accuracy-test/audio_accuracy_test.py ;;
     "sdkdoc")          _script=${DIR}/doc/generate_sdk_docs.py ;;
     "enclosure")       _script=${DIR}/mycroft/client/enclosure/main.py ;;
@@ -167,7 +166,8 @@ case ${_opt} in
     launch-process ${_opt}
     ;;
   "unittest")
-    launch-process ${_opt}
+    nose2 -t ./ -s test/unittests/ --with-coverage \
+        --config=test/unittests/unittest.cfg
     ;;
   "audiotest")
     launch-process ${_opt}
