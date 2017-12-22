@@ -34,6 +34,9 @@ class Api(object):
 
     def __init__(self, path):
         self.path = path
+
+        # Load the config, skipping the REMOTE_CONFIG since we are
+        # getting the info needed to get to it!
         config = Configuration.get([DEFAULT_CONFIG,
                                     SYSTEM_CONFIG,
                                     USER_CONFIG],
@@ -148,9 +151,15 @@ class DeviceApi(Api):
         version = VersionManager.get()
         platform = "unknown"
         platform_build = ""
+
+        # load just the local configs to get platform info
+        config = Configuration.get([SYSTEM_CONFIG,
+                                    USER_CONFIG],
+                                   cache=False)
         if "enclosure" in config:
             platform = config.get("enclosure").get("platform", "unknown")
             platform_build = config.get("enclosure").get("platform_build", "")
+
         return self.request({
             "method": "POST",
             "path": "/activate",
@@ -166,9 +175,15 @@ class DeviceApi(Api):
         version = VersionManager.get()
         platform = "unknown"
         platform_build = ""
+
+        # load just the local configs to get platform info
+        config = Configuration.get([SYSTEM_CONFIG,
+                                    USER_CONFIG],
+                                   cache=False)
         if "enclosure" in config:
             platform = config.get("enclosure").get("platform", "unknown")
             platform_build = config.get("enclosure").get("platform_build", "")
+
         return self.request({
             "method": "PATCH",
             "path": "/" + self.identity.uuid,
