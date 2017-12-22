@@ -400,12 +400,10 @@ class Enclosure(object):
         if not connected():  # and self.conn_monitor is None:
             if has_been_paired():
                 # TODO: Enclosure/localization
-                self.ws.emit(Message("speak", {
-                    'utterance': "This unit is not connected to the Internet."
-                                 " Either plug in a network cable or hold the "
-                                 "button on top for two seconds, then select "
-                                 "wifi from the menu"
-                }))
+                self.speak("This unit is not connected to the Internet. "
+                           "Either plug in a network cable or hold the "
+                           "button on top for two seconds, then select "
+                           "wifi from the menu")
             else:
                 # Begin the unit startup process, this is the first time it
                 # is being run with factory defaults.
@@ -420,6 +418,9 @@ class Enclosure(object):
                 self.ws.once('mycroft.paired', self._handle_pairing_complete)
 
                 self.speak(mycroft.dialog.get('mycroft.intro'))
+                wait_while_speaking()
+                time.sleep(2)  # a pause sounds better than just jumping in
+
                 # Kick off wifi-setup automatically
                 data = {'allow_timeout': False, 'lang': self.lang}
                 self.ws.emit(Message('mycroft.wifi.start', data))
