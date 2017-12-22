@@ -103,7 +103,6 @@ LIST_CACHE=''
 
 function get_skill_list() {
   if ! [[ ${LIST_CACHE} ]] ; then
-    echo "1" >> ~/count.txt
     if hash curl ; then
       # retrieve using curl
       LIST_CACHE=$( curl -s "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules" )
