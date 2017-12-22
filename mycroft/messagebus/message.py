@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 import json
+from mycroft.util.parse import normalize
 
 
 class Message(object):
@@ -132,15 +133,15 @@ class Message(object):
         """
         For intents get the portion not consumed by Adapt.
 
-        For example: if they say 'Turn on the family room light'
-        and there are entity matches for "turn on" and "light",
-        then it will leave behind "the family room".
+        For example: if they say 'Turn on the family room light' and there are
+        entity matches for "turn on" and "light", then it will leave behind
+        " the family room " which is then normalized to "family room".
 
         Returns:
             str: Leftover words or None if not an utterance.
         """
-        utt = message.data.get("utterance", None)
-        if utt and "__tags__" in message.data:
-            for token in message.data["__tags__"]:
+        utt = self.data.get("utterance", None)
+        if utt and "__tags__" in self.data:
+            for token in self.data["__tags__"]:
                 utt = utt.replace(token["key"], "")
-        return utt
+        return normalize(utt)
