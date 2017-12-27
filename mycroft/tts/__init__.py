@@ -28,7 +28,7 @@ from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util import play_wav, play_mp3, check_for_signal, create_signal
 from mycroft.util.log import LOG
-from mycroft.metrics import report_metric, Stopwatch
+from mycroft.metrics import report_timing, Stopwatch
 import sys
 if sys.version_info[0] < 3:
     from Queue import Queue, Empty
@@ -41,11 +41,7 @@ def send_playback_metric(stopwatch, ident):
         Send playback metrics in a background thread
     """
     def do_send(stopwatch, ident):
-        report_metric('timing',
-                      {'id': ident,
-                       'system': 'speech_playback',
-                       'start_time': stopwatch.timestamp,
-                       'time': stopwatch.time})
+        report_timing(ident, 'speech_playback', stopwatch)
 
     t = Thread(target=do_send, args=(stopwatch, ident))
     t.daemon = True

@@ -24,7 +24,7 @@ import mycroft.dialog
 from mycroft.client.speech.hotword_factory import HotWordFactory
 from mycroft.client.speech.mic import MutableMicrophone, ResponsiveRecognizer
 from mycroft.configuration import Configuration
-from mycroft.metrics import MetricsAggregator, Stopwatch, report_metric
+from mycroft.metrics import MetricsAggregator, Stopwatch, report_timing
 from mycroft.session import SessionManager
 from mycroft.stt import STTFactory
 from mycroft.util.log import LOG
@@ -152,11 +152,8 @@ class AudioConsumer(Thread):
                 self.emitter.emit("recognizer_loop:utterance", payload)
                 self.metrics.attr('utterances', [transcription])
                 # Report timing metrics
-                report_metric('timing', {'id': ident,
-                                         'system': 'stt',
-                                         'transcription': transcription,
-                                         'start_time': stopwatch.timestamp,
-                                         'time': stopwatch.time})
+                report_timing(ident, 'stt', stopwatch,
+                              {'transcription': transcription})
 
     def transcribe(self, audio):
         text = None

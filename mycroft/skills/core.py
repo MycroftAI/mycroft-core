@@ -34,7 +34,7 @@ from mycroft.configuration import Configuration
 from mycroft.dialog import DialogLoader
 from mycroft.filesystem import FileSystemAccess
 from mycroft.messagebus.message import Message
-from mycroft.metrics import report_metric, Stopwatch
+from mycroft.metrics import report_metric, report_timing, Stopwatch
 from mycroft.skills.settings import SkillSettings
 from mycroft.util import resolve_resource_file
 from mycroft.util.log import LOG
@@ -648,12 +648,8 @@ class MycroftSkill(object):
                 # Send timing metrics
                 context = message.context
                 if context and 'ident' in context:
-                    report_metric('timing',
-                                  {'id': context['ident'],
-                                   'system': 'skill_handler',
-                                   'handler': handler.__name__,
-                                   'start_time': stopwatch.timestamp,
-                                   'time': stopwatch.time})
+                    report_timing(context['ident'], 'skill_handler', stopwatch,
+                                  {'handler': handler.__name__})
 
             except Exception as e:
                 # Convert "MyFancySkill" to "My Fancy Skill" for speaking
@@ -1111,12 +1107,8 @@ class FallbackSkill(MycroftSkill):
             # Send timing metric
             if message.context and message.context['ident']:
                 ident = message.context['ident']
-                report_metric('timing',
-                              {'id': ident,
-                               'handler': handler_name,
-                               'system': 'fallback_handler',
-                               'start_time': stopwatch.timestamp,
-                               'time': stopwatch.time})
+                report_timing(ident, 'fallback_handler', stopwatch,
+                              {'handler': handler_name})
         return handler
 
     @classmethod
