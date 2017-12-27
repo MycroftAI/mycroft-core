@@ -23,6 +23,7 @@ from mycroft.configuration import Configuration
 from mycroft.session import SessionManager
 from mycroft.util.log import LOG
 from mycroft.util.setup_base import get_version
+from copy import copy
 
 
 def report_metric(name, data):
@@ -39,6 +40,25 @@ def report_metric(name, data):
     except (requests.HTTPError, requests.exceptions.ConnectionError) as e:
         LOG.error('Metric couldn\'t be uploaded, due to a network error ({})'
                   .format(e))
+
+
+def report_timing(ident, system, timing, additional_data=None):
+    """
+        Create standardized message for reporting timing.
+
+        ident (str):            identifier of user interaction
+        system (str):           system the that's generated the report
+        timing (stopwatch):     Stopwatch object with recorded timing
+        additional_data (dict): dictionary with related data
+    """
+    additional_data = additional_data or {}
+    report = copy(additional_data)
+    report['id'] = ident
+    report['system'] = system
+    report['start_time'] = timing.timestamp
+    report['time'] = timing.time
+
+    report_metric('timing', report)
 
 
 class Stopwatch(object):

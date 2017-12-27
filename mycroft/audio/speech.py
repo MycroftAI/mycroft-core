@@ -20,7 +20,7 @@ from mycroft.configuration import Configuration
 from mycroft.tts import TTSFactory
 from mycroft.util import create_signal, check_for_signal
 from mycroft.util.log import LOG
-from mycroft.metrics import report_metric, Stopwatch
+from mycroft.metrics import report_timing, Stopwatch
 
 ws = None  # TODO:18.02 - Rename to "messagebus"
 config = None
@@ -87,12 +87,7 @@ def handle_speak(event):
             mute_and_speak(utterance, ident)
 
         stopwatch.stop()
-    report_metric('timing',
-                  {'id': ident,
-                   'system': 'speech',
-                   'utterance': utterance,
-                   'start_time': stopwatch.timestamp,
-                   'time': stopwatch.time})
+    report_timing(ident, 'speech', stopwatch, {'utterance': utterance})
 
 
 def mute_and_speak(utterance, ident):

@@ -21,7 +21,7 @@ from mycroft.messagebus.message import Message
 from mycroft.skills.core import open_intent_envelope
 from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
-from mycroft.metrics import report_metric, Stopwatch
+from mycroft.metrics import report_timing, Stopwatch
 # python 2+3 compatibility
 from past.builtins import basestring
 from future.builtins import range
@@ -251,20 +251,11 @@ class IntentService(object):
             intent_type = self.get_skill_name(parts[0])
             if len(parts) > 1:
                 intent_type = ':'.join([intent_type] + parts[1:])
-
-            report_metric('timing',
-                          {'id': ident,
-                           'system': 'intent_service',
-                           'intent_type': intent_type,
-                           'start_time': stopwatch.timestamp,
-                           'time': stopwatch.time})
+            report_timing(ident, 'intent_service', stopwatch,
+                          {'intent_type': intent_type})
         else:
-            report_metric('timing',
-                          {'id': ident,
-                           'intent_type': 'intent_failure',
-                           'system': 'intent_service',
-                           'start_time': stopwatch.timestamp,
-                           'time': stopwatch.time})
+            report_timing(ident, 'intent_service', stopwatch,
+                          {'intent_type': 'intent_failure'})
 
     def handle_utterance(self, message):
         """
