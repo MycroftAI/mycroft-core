@@ -2408,7 +2408,7 @@ it_numbers_xlat = {
     "seicento": 600,
     "settecento": 700,
     "ottocento": 800,
-    "novenovecento": 900,
+    "novecento": 900,
     "primo": 1,
     "secondo": 2,
     "terzo": 3
@@ -2422,11 +2422,13 @@ def get_gender_it(word, raw_string=""):
             previous = words[idx - 1]
             gender = get_gender_it(previous)
             break
-        
+
     if not gender:
         if word[-1] == "a" or word[-1] == "e": 
             gender = "f"
-        if word[-1] == "o" or word[-1] == "n" or word[-1] == "l" or word[-1] == "i":
+        if word[-1] == "o" or word[-1] == "n":
             gender = "m"
-            
+        if word[-1] == "l" or word[-1] == "i":
+            gender = "m"
+
     return gender
