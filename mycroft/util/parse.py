@@ -2424,7 +2424,7 @@ def get_gender_it(word, raw_string=""):
             break
 
     if not gender:
-        if word[-1] == "a" or word[-1] == "e": 
+        if word[-1] == "a" or word[-1] == "e":
             gender = "f"
         if word[-1] == "o" or word[-1] == "n":
             gender = "m"
