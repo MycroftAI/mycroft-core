@@ -336,16 +336,16 @@ class TestNormalize(unittest.TestCase):
 
     # Pt-pt
     def test_articles_pt(self):
-        self.assertEqual(normalize(u"isto é o teste",
+        self.assertEqual(normalize(u"isto Ã© o teste",
                                    lang="pt", remove_articles=True),
                          u"isto teste")
         self.assertEqual(
-            normalize(u"isto é a frase", lang="pt", remove_articles=True),
+            normalize(u"isto Ã© a frase", lang="pt", remove_articles=True),
             u"isto frase")
         self.assertEqual(
             normalize("e outro teste", lang="pt", remove_articles=True),
             "outro teste")
-        self.assertEqual(normalize(u"isto é o teste extra",
+        self.assertEqual(normalize(u"isto Ã© o teste extra",
                                    lang="pt",
                                    remove_articles=False), u"isto e o teste"
                                                            u" extra")
@@ -356,11 +356,11 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extractnumber("isto e o 2 teste", lang="pt"), 2)
         self.assertEqual(extractnumber("isto e o segundo teste", lang="pt"),
                          2)
-        self.assertEqual(extractnumber(u"isto e um terço de teste",
+        self.assertEqual(extractnumber(u"isto e um terÃ§o de teste",
                                        lang="pt"), 1.0 / 3.0)
         self.assertEqual(extractnumber("isto e o teste numero quatro",
                                        lang="pt"), 4)
-        self.assertEqual(extractnumber(u"um terço de chavena", lang="pt"),
+        self.assertEqual(extractnumber(u"um terÃ§o de chavena", lang="pt"),
                          1.0 / 3.0)
         self.assertEqual(extractnumber("3 canecos", lang="pt"), 3)
         self.assertEqual(extractnumber("1/3 canecos", lang="pt"), 1.0 / 3.0)
@@ -375,7 +375,7 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(
             extractnumber("tres quartos de chocolate", lang="pt"),
             3.0 / 4.0)
-        self.assertEqual(extractnumber(u"trï¿½s quarto de chocolate",
+        self.assertEqual(extractnumber(u"trÃ¯Â¿Â½s quarto de chocolate",
                                        lang="pt"), 3.0 / 4.0)
         self.assertEqual(extractnumber("sete ponto cinco", lang="pt"), 7.5)
         self.assertEqual(extractnumber("sete ponto 5", lang="pt"), 7.5)
@@ -420,9 +420,9 @@ class TestNormalize(unittest.TestCase):
                          "isto e 1 teste")
 
     def test_numbers_pt(self):
-        self.assertEqual(normalize(u"isto e o um dois trï¿½s teste", lang="pt"),
+        self.assertEqual(normalize(u"isto e o um dois trÃªs teste", lang="pt"),
                          u"isto 1 2 3 teste")
-        self.assertEqual(normalize(u"ï¿½ a sete oito nove  test", lang="pt"),
+        self.assertEqual(normalize(u"Ã¯Â¿Â½ a sete oito nove  test", lang="pt"),
                          u"7 8 9 test")
         self.assertEqual(
             normalize("teste zero dez onze doze treze", lang="pt"),
@@ -459,9 +459,9 @@ class TestNormalize(unittest.TestCase):
             self.assertEqual(res[0], expected_date)
             self.assertEqual(res[1], expected_leftover)
 
-        testExtract(u"que dia ï¿½ hoje",
+        testExtract(u"que dia Ã¯Â¿Â½ hoje",
                     "2017-06-27 00:00:00", u"dia")
-        testExtract(u"que dia ï¿½ amanha",
+        testExtract(u"que dia Ã¯Â¿Â½ amanha",
                     "2017-06-28 00:00:00", u"dia")
         testExtract(u"que dia foi ontem",
                     "2017-06-26 00:00:00", u"dia")
@@ -475,11 +475,11 @@ class TestNormalize(unittest.TestCase):
                     "2017-07-02 00:00:00", "marca jantar")
         testExtract("como esta o tempo para o dia depois de amanha?",
                     "2017-06-29 00:00:00", "como tempo")
-        testExtract(u"lembra me ás 10:45 pm",
+        testExtract(u"lembra me Ã¡s 10:45 pm",
                     "2017-06-27 22:45:00", u"lembra")
         testExtract("como esta o tempo na sexta de manha",
                     "2017-06-30 08:00:00", "como tempo")
-        testExtract(u"lembra me para ligar a mãe daqui "
+        testExtract(u"lembra me para ligar a mÃ£e daqui "
                     u"a 8 semanas e 2 dias",
                     "2017-08-24 00:00:00", u"lembra ligar mae")
         testExtract("Toca black metal 2 dias a seguir a sexta",
@@ -488,32 +488,32 @@ class TestNormalize(unittest.TestCase):
                     "2017-07-02 00:00:00", "toca satanic black metal")
         testExtract("Toca super black metal 2 dias a partir desta sexta",
                     "2017-07-02 00:00:00", "toca super black metal")
-        testExtract(u"Começa a invasão ás 3:45 pm de quinta feira",
+        testExtract(u"ComeÃ§a a invasÃ£o Ã¡s 3:45 pm de quinta feira",
                     "2017-06-29 15:45:00", "comeca invasao")
         testExtract("na segunda, compra queijo",
                     "2017-07-03 00:00:00", "compra queijo")
-        testExtract(u"Toca os parabéns daqui a 5 anos",
+        testExtract(u"Toca os parabÃ©ns daqui a 5 anos",
                     "2022-06-27 00:00:00", "toca parabens")
-        testExtract(u"manda Skype a Mãe ás 12:45 pm próxima quinta",
+        testExtract(u"manda Skype a MÃ£e Ã¡s 12:45 pm prÃ³xima quinta",
                     "2017-06-29 12:45:00", "manda skype mae")
-        testExtract(u"como está o tempo esta sexta?",
+        testExtract(u"como estÃ¡ o tempo esta sexta?",
                     "2017-06-30 00:00:00", "como tempo")
-        testExtract(u"como está o tempo esta sexta de tarde?",
+        testExtract(u"como estÃ¡ o tempo esta sexta de tarde?",
                     "2017-06-30 15:00:00", "como tempo")
-        testExtract(u"como está o tempo esta sexta as tantas da manha?",
+        testExtract(u"como estÃ¡ o tempo esta sexta as tantas da manha?",
                     "2017-06-30 04:00:00", "como tempo")
-        testExtract(u"como está o tempo esta sexta a meia noite?",
+        testExtract(u"como estÃ¡ o tempo esta sexta a meia noite?",
                     "2017-06-30 00:00:00", "como tempo")
-        testExtract(u"como está o tempo esta sexta ao meio dia?",
+        testExtract(u"como estÃ¡ o tempo esta sexta ao meio dia?",
                     "2017-06-30 12:00:00", "como tempo")
-        testExtract(u"como está o tempo esta sexta ao fim da tarde?",
+        testExtract(u"como estÃ¡ o tempo esta sexta ao fim da tarde?",
                     "2017-06-30 19:00:00", "como tempo")
-        testExtract(u"como está o tempo esta sexta ao meio da manha?",
+        testExtract(u"como estÃ¡ o tempo esta sexta ao meio da manha?",
                     "2017-06-30 10:00:00", "como tempo")
         testExtract("lembra me para ligar a mae no dia 3 de agosto",
                     "2017-08-03 00:00:00", "lembra ligar mae")
 
-        testExtract(u"compra facas no 13ï¿½ dia de maio",
+        testExtract(u"compra facas no 13Ã¯Â¿Â½ dia de maio",
                     "2018-05-13 00:00:00", "compra facas")
         testExtract(u"gasta dinheiro no maio dia 13",
                     "2018-05-13 00:00:00", "gasta dinheiro")
@@ -523,9 +523,9 @@ class TestNormalize(unittest.TestCase):
                     "2018-05-13 00:00:00", "bebe cerveja")
         testExtract("como esta o tempo 1 dia a seguir a amanha",
                     "2017-06-29 00:00:00", "como tempo")
-        testExtract(u"como esta o tempo ás 0700 horas",
+        testExtract(u"como esta o tempo Ã¡s 0700 horas",
                     "2017-06-27 07:00:00", "como tempo")
-        testExtract(u"como esta o tempo amanha ás 7 em ponto",
+        testExtract(u"como esta o tempo amanha Ã¡s 7 em ponto",
                     "2017-06-28 07:00:00", "como tempo")
         testExtract(u"como esta o tempo amanha pelas 2 da tarde",
                     "2017-06-28 14:00:00", "como tempo")
@@ -541,7 +541,7 @@ class TestNormalize(unittest.TestCase):
                     "2017-07-02 00:00:00", "dorme")
         testExtract("marca consulta para 2 semanas e 6 dias depois de Sabado",
                     "2017-07-21 00:00:00", "marca consulta")
-        testExtract(u"começa a festa ás 8 em ponto da noite de quinta",
+        testExtract(u"comeÃ§a a festa Ã¡s 8 em ponto da noite de quinta",
                     "2017-06-29 20:00:00", "comeca festa")
 
     def test_gender_pt(self):
@@ -583,12 +583,13 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(normalize("esto es cuatro cinco seis prueba",
                                    lang="es"),
                          "esto es 4 5 6 prueba")
-        self.assertEqual(normalize(u"siete mï¿½s ocho mï¿½s nueve", lang="es"),
-                         u"7 mï¿½s 8 mï¿½s 9")
+        self.assertEqual(normalize(u"siete mÃ©s ocho mÃ©s nueve",
+                                   lang="es"),
+                         u"7 mÃ©s 8 mÃ©s 9")
         self.assertEqual(normalize("diez once doce trece catorce quince",
                                    lang="es"),
                          "10 11 12 13 14 15")
-        self.assertEqual(normalize(u"diecisï¿½is diecisiete", lang="es"),
+        self.assertEqual(normalize(u"diecisÃ©is diecisiete", lang="es"),
                          "16 17")
         self.assertEqual(normalize(u"dieciocho diecinueve", lang="es"),
                          "18 19")
@@ -600,16 +601,16 @@ class TestNormalize(unittest.TestCase):
                          "100 caballos")
         self.assertEqual(normalize(u"ciento once caballos", lang="es"),
                          "111 caballos")
-        self.assertEqual(normalize(u"habï¿½a cuatrocientas una vacas",
+        self.assertEqual(normalize(u"habÃ­a cuatrocientas una vacas",
                                    lang="es"),
-                         u"habï¿½a 401 vacas")
+                         u"habÃ­a 401 vacas")
         self.assertEqual(normalize(u"dos mil", lang="es"),
                          "2000")
         self.assertEqual(normalize(u"dos mil trescientas cuarenta y cinco",
                                    lang="es"),
                          "2345")
         self.assertEqual(normalize(
-            u"ciento veintitrï¿½s mil cuatrocientas cincuenta y seis",
+            u"ciento veintitrÃ©s mil cuatrocientas cincuenta y seis",
             lang="es"),
             "123456")
         self.assertEqual(normalize(
