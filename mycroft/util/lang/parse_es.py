@@ -14,13 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from datetime import datetime, timedelta
-from dateutil.relativedelta import relativedelta
-from mycroft.util.lang.parse_common import *
 """
     Parse functions for spanish (es)
     TODO: numbers greater than 999999
 """
+
 
 # Undefined articles ["un", "una", "unos", "unas"] can not be supressed,
 # in Spanish, "un caballo" means "a horse" or "one horse".
@@ -32,7 +30,7 @@ es_numbers_xlat = {
     "una": 1,
     "dos": 2,
     "tres": 3,
-    u"trï¿½s": 3,
+    u"trés": 3,
     "cuatro": 4,
     "cinco": 5,
     "seis": 6,
@@ -114,7 +112,7 @@ def es_parse(words, i):
             v1, i1 = r1
             r2 = es_cte(i1, "y")
             if r2:
-                v2, i2 = r2
+                i2 = r2[1]
                 r3 = es_number_word(i2, 1, 9)
                 if r3:
                     v3, i3 = r3
@@ -153,7 +151,7 @@ def es_parse(words, i):
             v1, i1 = r1
             r2 = es_cte(i1, "mil")
             if r2:
-                v2, i2 = r2
+                i2 = r2[1]
                 r3 = es_number_1_999(i2)
                 if r3:
                     v3, i3 = r3

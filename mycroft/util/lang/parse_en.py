@@ -14,9 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from datetime import datetime, timedelta
+from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from mycroft.util.lang.parse_common import *
+from mycroft.util.lang.parse_common import is_numeric, look_for_fractions
 
 
 def extractnumber_en(text):
@@ -31,7 +31,7 @@ def extractnumber_en(text):
     """
     aWords = text.split()
     aWords = [word for word in aWords if word not in ["the", "a", "an"]]
-    andPass = False
+    and_pass = False
     valPreAnd = False
     val = False
     count = 0
@@ -86,7 +86,7 @@ def extractnumber_en(text):
             #   and is_numeric(aPieces[1])):
             if look_for_fractions(aPieces):
                 val = float(aPieces[0]) / float(aPieces[1])
-            elif andPass:
+            elif and_pass:
                 # added to value, quit here
                 val = valPreAnd
                 break
@@ -96,17 +96,17 @@ def extractnumber_en(text):
 
         aWords[count] = ""
 
-        if (andPass):
+        if and_pass:
             aWords[count - 1] = ''  # remove "and"
             val += valPreAnd
         elif count + 1 < len(aWords) and aWords[count + 1] == 'and':
-            andPass = True
+            and_pass = True
             valPreAnd = val
             val = False
             count += 2
             continue
         elif count + 2 < len(aWords) and aWords[count + 2] == 'and':
-            andPass = True
+            and_pass = True
             valPreAnd = val
             val = False
             count += 3
@@ -118,7 +118,7 @@ def extractnumber_en(text):
     if not val:
         return False
 
-    # Return the $str with the number related words removed
+    # Return the string with the number related words removed
     # (now empty strings, so strlen == 0)
     aWords = [word for word in aWords if len(word) > 0]
     text = ' '.join(aWords)
@@ -126,21 +126,23 @@ def extractnumber_en(text):
     return val
 
 
-def extract_datetime_en(str, currentDate=None):
-    def clean_string(str):
-        # cleans the input string of unneeded punctuation and capitalization
-        # among other things
-        str = str.lower().replace('?', '').replace('.', '').replace(',', '') \
+def extract_datetime_en(string, currentDate=None):
+    def clean_string(s):
+        """
+            cleans the input string of unneeded punctuation and capitalization
+            among other things.
+        """
+        s = s.lower().replace('?', '').replace('.', '').replace(',', '') \
             .replace(' the ', ' ').replace(' a ', ' ').replace(' an ', ' ')
-        wordList = str.split()
+        wordList = s.split()
         for idx, word in enumerate(wordList):
             word = word.replace("'s", "")
 
             ordinals = ["rd", "st", "nd", "th"]
             if word[0].isdigit():
-                for ord in ordinals:
-                    if ord in word:
-                        word = word.replace(ord, "")
+                for ordinal in ordinals:
+                    if ordinal in word:
+                        word = word.replace(ordinal, "")
             wordList[idx] = word
 
         return wordList
@@ -155,7 +157,7 @@ def extract_datetime_en(str, currentDate=None):
                 minAbs != 0 or secOffset != 0
             )
 
-    if str == "":
+    if string == "":
         return None
     if currentDate is None:
         currentDate = datetime.now()
@@ -183,7 +185,7 @@ def extract_datetime_en(str, currentDate=None):
     monthsShort = ['jan', 'feb', 'mar', 'apr', 'may', 'june', 'july', 'aug',
                    'sept', 'oct', 'nov', 'dec']
 
-    words = clean_string(str)
+    words = clean_string(string)
 
     for idx, word in enumerate(words):
         if word == "":
@@ -355,7 +357,7 @@ def extract_datetime_en(str, currentDate=None):
             for i in range(0, used):
                 words[i + start] = ""
 
-            if (start - 1 >= 0 and words[start - 1] in markers):
+            if start - 1 >= 0 and words[start - 1] in markers:
                 words[start - 1] = ""
             found = True
             daySpecified = True
@@ -456,7 +458,7 @@ def extract_datetime_en(str, currentDate=None):
                         used += 1
                     elif wordNext == "in" and wordNextNext == "the" and \
                             words[idx + 3] == "morning":
-                        reaminder = "am"
+                        remainder = "am"
                         used += 3
                     elif wordNext == "in" and wordNextNext == "the" and \
                             words[idx + 3] == "afternoon":
@@ -531,7 +533,7 @@ def extract_datetime_en(str, currentDate=None):
                 else:
                     if wordNext == "pm" or wordNext == "p.m.":
                         strHH = strNum
-                        reaminder = "pm"
+                        remainder = "pm"
                         used = 1
                     elif wordNext == "am" or wordNext == "a.m.":
                         strHH = strNum
@@ -745,7 +747,7 @@ def isFractional_en(input_str):
     This function takes the given text and checks if it is a fraction.
 
     Args:
-        text (str): the string to check if fractional
+        input_str (str): the string to check if fractional
     Returns:
         (bool) or (float): False if not a fraction, otherwise the fraction
 

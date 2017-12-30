@@ -14,15 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from datetime import datetime, timedelta
-from dateutil.relativedelta import relativedelta
-from mycroft.util.lang.parse_common import *
 """
     Parse functions for Portuguese (PT-PT)
 
     TODO: numbers greater than 999999
     TODO: date time pt
 """
+
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+from mycroft.util.lang.parse_common import is_numeric, look_for_fractions
+
 
 # Undefined articles ["um", "uma", "uns", "umas"] can not be supressed,
 # in PT, "um cavalo" means "a horse" or "one horse".
@@ -200,7 +202,7 @@ def extractnumber_pt(text):
                             zeros += 1
                         else:
                             break
-                for i in range(0, zeros):
+                for _ in range(0, zeros):
                     afterAndVal = afterAndVal / 10.0
                 result += afterAndVal
                 break
@@ -274,7 +276,7 @@ def pt_number_parse(words, i):
             v1, i1 = r1
             r2 = pt_cte(i1, "e")
             if r2:
-                v2, i2 = r2
+                i2 = r2[1]
                 r3 = pt_number_word(i2, 1, 9)
                 if r3:
                     v3, i3 = r3
@@ -313,7 +315,7 @@ def pt_number_parse(words, i):
             v1, i1 = r1
             r2 = pt_cte(i1, "mil")
             if r2:
-                v2, i2 = r2
+                i2 = r2[1]
                 r3 = pt_number_1_999(i2)
                 if r3:
                     v3, i3 = r3
@@ -366,7 +368,7 @@ def normalize_pt(text, remove_articles):
 
 
 def extract_datetime_pt(input_str, currentDate=None):
-    def clean_string(str):
+    def clean_string(s):
         # cleans the input string of unneeded punctuation and capitalization
         # among other things
         symbols = [".", ",", ";", "?", "!", u"º", u"ª"]
@@ -374,10 +376,10 @@ def extract_datetime_pt(input_str, currentDate=None):
                        "ao", "aos"]
 
         for word in symbols:
-            str = str.replace(word, "")
+            s = s.replace(word, "")
         for word in noise_words:
-            str = str.replace(" " + word + " ", " ")
-        str = str.lower().replace(
+            s = s.replace(" " + word + " ", " ")
+        s = s.lower().replace(
             u"á",
             "a").replace(
             u"ç",
@@ -408,15 +410,15 @@ def extract_datetime_pt(input_str, currentDate=None):
                     "em": ["do", "da", "dos", "das", "de"]}
         for syn in synonims:
             for word in synonims[syn]:
-                str = str.replace(" " + word + " ", " " + syn + " ")
+                s = s.replace(" " + word + " ", " " + syn + " ")
         # relevant plurals, cant just extract all s in pt
         wordlist = ["manhas", "noites", "tardes", "dias", "semanas", "anos",
                     "minutos", "segundos", "nas", "nos", "proximas",
                     "seguintes", "horas"]
-        for idx, word in enumerate(wordlist):
-            str = str.replace(word, word.rstrip('s'))
-        str = str.replace("meses", "mes").replace("anteriores", "anterior")
-        return str
+        for _, word in enumerate(wordlist):
+            s = s.replace(word, word.rstrip('s'))
+        s = s.replace("meses", "mes").replace("anteriores", "anterior")
+        return s
 
     def date_found():
         return found or \
@@ -472,7 +474,6 @@ def extract_datetime_pt(input_str, currentDate=None):
     for idx, word in enumerate(words):
         if word == "":
             continue
-        wordPrevPrevPrev = words[idx - 3] if idx > 2 else ""
         wordPrevPrev = words[idx - 2] if idx > 1 else ""
         wordPrev = words[idx - 1] if idx > 0 else ""
         wordNext = words[idx + 1] if idx + 1 < len(words) else ""
@@ -773,7 +774,7 @@ def extract_datetime_pt(input_str, currentDate=None):
             for i in range(0, used):
                 words[i + start] = ""
 
-            if (start - 1 >= 0 and words[start - 1] in lists):
+            if start - 1 >= 0 and words[start - 1] in lists:
                 words[start - 1] = ""
             found = True
             daySpecified = True
