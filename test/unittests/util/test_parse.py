@@ -375,7 +375,7 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(
             extractnumber("tres quartos de chocolate", lang="pt"),
             3.0 / 4.0)
-        self.assertEqual(extractnumber(u"trï¿½s quarto de chocolate",
+        self.assertEqual(extractnumber(u"três quarto de chocolate",
                                        lang="pt"), 3.0 / 4.0)
         self.assertEqual(extractnumber("sete ponto cinco", lang="pt"), 7.5)
         self.assertEqual(extractnumber("sete ponto 5", lang="pt"), 7.5)
@@ -420,9 +420,9 @@ class TestNormalize(unittest.TestCase):
                          "isto e 1 teste")
 
     def test_numbers_pt(self):
-        self.assertEqual(normalize(u"isto e o um dois trï¿½s teste", lang="pt"),
+        self.assertEqual(normalize(u"isto e o um dois três teste", lang="pt"),
                          u"isto 1 2 3 teste")
-        self.assertEqual(normalize(u"ï¿½ a sete oito nove  test", lang="pt"),
+        self.assertEqual(normalize(u"ê a sete oito nove  test", lang="pt"),
                          u"7 8 9 test")
         self.assertEqual(
             normalize("teste zero dez onze doze treze", lang="pt"),
@@ -459,9 +459,9 @@ class TestNormalize(unittest.TestCase):
             self.assertEqual(res[0], expected_date)
             self.assertEqual(res[1], expected_leftover)
 
-        testExtract(u"que dia ï¿½ hoje",
+        testExtract(u"que dia é hoje",
                     "2017-06-27 00:00:00", u"dia")
-        testExtract(u"que dia ï¿½ amanha",
+        testExtract(u"que dia é amanha",
                     "2017-06-28 00:00:00", u"dia")
         testExtract(u"que dia foi ontem",
                     "2017-06-26 00:00:00", u"dia")
@@ -513,7 +513,7 @@ class TestNormalize(unittest.TestCase):
         testExtract("lembra me para ligar a mae no dia 3 de agosto",
                     "2017-08-03 00:00:00", "lembra ligar mae")
 
-        testExtract(u"compra facas no 13ï¿½ dia de maio",
+        testExtract(u"compra facas no 13º dia de maio",
                     "2018-05-13 00:00:00", "compra facas")
         testExtract(u"gasta dinheiro no maio dia 13",
                     "2018-05-13 00:00:00", "gasta dinheiro")
@@ -588,7 +588,7 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(normalize("diez once doce trece catorce quince",
                                    lang="es"),
                          "10 11 12 13 14 15")
-        self.assertEqual(normalize(u"diecisï¿½is diecisiete", lang="es"),
+        self.assertEqual(normalize(u"dieciséis diecisiete", lang="es"),
                          "16 17")
         self.assertEqual(normalize(u"dieciocho diecinueve", lang="es"),
                          "18 19")
@@ -609,7 +609,7 @@ class TestNormalize(unittest.TestCase):
                                    lang="es"),
                          "2345")
         self.assertEqual(normalize(
-            u"ciento veintitrï¿½s mil cuatrocientas cincuenta y seis",
+            u"ciento veintitrés mil cuatrocientas cincuenta y seis",
             lang="es"),
             "123456")
         self.assertEqual(normalize(
