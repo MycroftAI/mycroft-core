@@ -1,5 +1,3 @@
-# -*- coding: iso-8859-15 -*-
-#
 # Copyright 2017 Mycroft AI Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,52 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-FRACTION_STRING_EN = {
-    2: 'half',
-    3: 'third',
-    4: 'forth',
-    5: 'fifth',
-    6: 'sixth',
-    7: 'seventh',
-    8: 'eigth',
-    9: 'ninth',
-    10: 'tenth',
-    11: 'eleventh',
-    12: 'twelveth',
-    13: 'thirteenth',
-    14: 'fourteenth',
-    15: 'fifteenth',
-    16: 'sixteenth',
-    17: 'seventeenth',
-    18: 'eighteenth',
-    19: 'nineteenth',
-    20: 'twentyith'
-}
 
-FRACTION_STRING_PT = {
-    2: 'meio',
-    3: u'terço',
-    4: 'quarto',
-    5: 'quinto',
-    6: 'sexto',
-    7: u'sétimo',
-    8: 'oitavo',
-    9: 'nono',
-    10: u'décimo',
-    11: 'onze avos',
-    12: 'doze avos',
-    13: 'treze avos',
-    14: 'catorze avos',
-    15: 'quinze avos',
-    16: 'dezasseis avos',
-    17: 'dezassete avos',
-    18: 'dezoito avos',
-    19: 'dezanove avos',
-    20: u'vigésimo',
-    30: u'trigésimo',
-    100: u'centésimo',
-    1000: u'milésimo'
-}
+from mycroft.util.lang.format_en import *
+from mycroft.util.lang.format_es import *
+from mycroft.util.lang.format_pt import *
 
 
 def nice_number(number, lang="en-us", speech=True, denominators=None):
@@ -93,55 +49,6 @@ def nice_number(number, lang="en-us", speech=True, denominators=None):
         return nice_number_pt(result)
     # TODO: Normalization for other languages
     return str(number)
-
-
-def nice_number_en(result):
-    """ English conversion for nice_number """
-    whole, num, den = result
-    if num == 0:
-        return str(whole)
-    den_str = FRACTION_STRING_EN[den]
-    if whole == 0:
-        if num == 1:
-            return_string = 'a {}'.format(den_str)
-        else:
-            return_string = '{} {}'.format(num, den_str)
-    elif num == 1:
-        return_string = '{} and a {}'.format(whole, den_str)
-    else:
-        return_string = '{} and {} {}'.format(whole, num, den_str)
-    if num > 1:
-        return_string += 's'
-    return return_string
-
-
-def nice_number_pt(result):
-    """ Portuguese conversion for nice_number """
-    whole, num, den = result
-    if num == 0:
-        return str(whole)
-    # denominador
-    den_str = FRACTION_STRING_PT[den]
-    # fracções
-    if whole == 0:
-        if num == 1:
-            # um décimo
-            return_string = 'um {}'.format(den_str)
-        else:
-            # três meio
-            return_string = '{} {}'.format(num, den_str)
-    # inteiros >10
-    elif num == 1:
-        # trinta e um
-        return_string = '{} e {}'.format(whole, den_str)
-    # inteiros >10 com fracções
-    else:
-        # vinte e 3 décimo
-        return_string = '{} e {} {}'.format(whole, num, den_str)
-    # plural
-    if num > 1:
-        return_string += 's'
-    return return_string
 
 
 def convert_number(number, denominators):
