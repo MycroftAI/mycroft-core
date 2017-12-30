@@ -14,7 +14,6 @@
 #
 
 from mycroft.util.lang.format_en import *
-from mycroft.util.lang.format_es import *
 from mycroft.util.lang.format_pt import *
 
 
