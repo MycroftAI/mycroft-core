@@ -112,6 +112,9 @@ class SkillSettings(dict):
 
         self.load_skill_settings()
 
+    def load_skill_settings_from_file(self):
+        self.load_skill_settings()
+
     @property
     def _is_stored(self):
         return hash(str(self)) == self.loaded_hash
