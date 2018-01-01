@@ -206,8 +206,11 @@ class SkillManager(Thread):
             Args:
                 speak (bool, optional): Speak the result? Defaults to False
         """
+        if not AUTO_UPDATE:
+            return
+
         # Don't invoke msm if already running
-        if exists(MSM_BIN) and self.__msm_lock.acquire() and AUTO_UPDATE:
+        if exists(MSM_BIN) and self.__msm_lock.acquire():
             try:
                 # Invoke the MSM script to do the hard work.
                 LOG.debug("==== Invoking Mycroft Skill Manager: " + MSM_BIN)
