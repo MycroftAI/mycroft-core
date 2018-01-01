@@ -13,10 +13,11 @@
 # limitations under the License.
 #
 import time
-
 from os.path import abspath
 
 from mycroft.messagebus.message import Message
+# Python 2+3 compatibility
+from past.builtins import basestring
 
 
 def ensure_uri(s):

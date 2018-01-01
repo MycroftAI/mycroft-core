@@ -101,16 +101,16 @@ examples=$(echo "$examples" | sed -e 's/^/ * "/' | sed -e 's/$/"/')
 
 mkdir -p "$skill_dir"
 
-echo """# $capital_desc #
+echo """## $capital_desc
 $short_desc
 
-## Description ##
+## Description
 $long_desc
 
-## Examples ##
+## Examples
 $examples
 
-## Credits ##
+## Credits
 $author
 """ > "$skill_dir/README.md"
 

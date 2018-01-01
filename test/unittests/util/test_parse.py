@@ -21,6 +21,17 @@ from mycroft.util.parse import get_gender
 from mycroft.util.parse import extract_datetime
 from mycroft.util.parse import extractnumber
 from mycroft.util.parse import normalize
+from mycroft.util.parse import fuzzy_match
+
+
+class TestFuzzyMatch(unittest.TestCase):
+    def test_matches(self):
+        self.assertTrue(fuzzy_match("you and me", "you and me") >= 1.0)
+        self.assertTrue(fuzzy_match("you and me", "you") < 0.5)
+        self.assertTrue(fuzzy_match("You", "you") > 0.5)
+        self.assertTrue(fuzzy_match("you and me", "you") ==
+                        fuzzy_match("you", "you and me"))
+        self.assertTrue(fuzzy_match("you and me", "he or they") < 0.2)
 
 
 class TestNormalize(unittest.TestCase):
@@ -135,6 +146,10 @@ class TestNormalize(unittest.TestCase):
                     "2021-07-01 00:00:00", "remind me to wake up")
         testExtract("What is the weather 3 days after tomorrow?",
                     "2017-07-01 00:00:00", "what is weather")
+        testExtract("december 3",
+                    "2017-12-03 00:00:00", "")
+        testExtract("lets meet at 8:00 tonight",
+                    "2017-06-27 20:00:00", "lets meet")
 
     def test_spaces(self):
         self.assertEqual(normalize("  this   is  a    test"),
@@ -321,19 +336,19 @@ class TestNormalize(unittest.TestCase):
 
     # Pt-pt
     def test_articles_pt(self):
-        self.assertEqual(normalize(u"isto ï¿½ o teste",
+        self.assertEqual(normalize(u"isto é o teste",
                                    lang="pt", remove_articles=True),
                          u"isto teste")
         self.assertEqual(
-            normalize(u"isto ï¿½ a frase", lang="pt", remove_articles=True),
+            normalize(u"isto é a frase", lang="pt", remove_articles=True),
             u"isto frase")
         self.assertEqual(
             normalize("e outro teste", lang="pt", remove_articles=True),
             "outro teste")
-        # TODO: Fix this test and/or code
-        # self.assertEqual(normalize(u"isto ï¿½ o teste extra", lang="pt",
-        #                           remove_articles=False),
-        #                 u"isto e o teste extra")
+        self.assertEqual(normalize(u"isto é o teste extra",
+                                   lang="pt",
+                                   remove_articles=False), u"isto e o teste"
+                                                           u" extra")
 
     def test_extractnumber_pt(self):
         self.assertEqual(extractnumber("isto e o primeiro teste", lang="pt"),
@@ -341,11 +356,11 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extractnumber("isto e o 2 teste", lang="pt"), 2)
         self.assertEqual(extractnumber("isto e o segundo teste", lang="pt"),
                          2)
-        self.assertEqual(extractnumber(u"isto e um terï¿½o de teste",
+        self.assertEqual(extractnumber(u"isto e um terço de teste",
                                        lang="pt"), 1.0 / 3.0)
         self.assertEqual(extractnumber("isto e o teste numero quatro",
                                        lang="pt"), 4)
-        self.assertEqual(extractnumber(u"um terï¿½o de chavena", lang="pt"),
+        self.assertEqual(extractnumber(u"um terço de chavena", lang="pt"),
                          1.0 / 3.0)
         self.assertEqual(extractnumber("3 canecos", lang="pt"), 3)
         self.assertEqual(extractnumber("1/3 canecos", lang="pt"), 1.0 / 3.0)
@@ -460,54 +475,41 @@ class TestNormalize(unittest.TestCase):
                     "2017-07-02 00:00:00", "marca jantar")
         testExtract("como esta o tempo para o dia depois de amanha?",
                     "2017-06-29 00:00:00", "como tempo")
-        # TODO: Fix this test and/or code
-        # testExtract(u"lembra me ï¿½s 10:45 pm",
-        #            "2017-06-27 22:45:00", u"lembra")
+        testExtract(u"lembra me ás 10:45 pm",
+                    "2017-06-27 22:45:00", u"lembra")
         testExtract("como esta o tempo na sexta de manha",
                     "2017-06-30 08:00:00", "como tempo")
-        # TODO: Fix this test and/or code
-        # testExtract(u"lembra me para ligar a mï¿½e daqui " \
-        #             u"a 8 semanas e 2 dias",
-        #            "2017-08-24 00:00:00", u"lembra ligar mae")
-
+        testExtract(u"lembra me para ligar a mãe daqui "
+                    u"a 8 semanas e 2 dias",
+                    "2017-08-24 00:00:00", u"lembra ligar mae")
         testExtract("Toca black metal 2 dias a seguir a sexta",
                     "2017-07-02 00:00:00", "toca black metal")
         testExtract("Toca satanic black metal 2 dias para esta sexta",
                     "2017-07-02 00:00:00", "toca satanic black metal")
         testExtract("Toca super black metal 2 dias a partir desta sexta",
                     "2017-07-02 00:00:00", "toca super black metal")
-        # TODO: Fix this test and/or code
-        # testExtract(u"Comeï¿½a a invasï¿½o ï¿½s 3:45 pm de quinta feira",
-        #            "2017-06-29 15:45:00", "comeca invasao")
+        testExtract(u"Começa a invasão ás 3:45 pm de quinta feira",
+                    "2017-06-29 15:45:00", "comeca invasao")
         testExtract("na segunda, compra queijo",
                     "2017-07-03 00:00:00", "compra queijo")
-        # TODO: Fix this test and/or code
-        # testExtract(u"Toca os parabï¿½ns daqui a 5 anos",
-        #            "2022-06-27 00:00:00", "toca parabens")
-        # TODO: Fix this test and/or code
-        # testExtract(u"manda Skype a Mï¿½e ï¿½s 12:45 pm prï¿½xima quinta",
-        #            "2017-06-29 12:45:00", "manda skype mae")
-        # TODO: Fix this test and/or code
-        # testExtract(u"como estï¿½ o tempo esta sexta?",
-        #            "2017-06-30 00:00:00", "como tempo")
-        # TODO: Fix this test and/or code
-        # testExtract(u"como estï¿½ o tempo esta sexta de tarde?",
-        #            "2017-06-30 15:00:00", "como tempo")
-        # TODO: Fix this test and/or code
-        # testExtract(u"como estï¿½ o tempo esta sexta as tantas da manha?",
-        #            "2017-06-30 04:00:00", "como tempo")
-        # TODO: Fix this test and/or code
-        # testExtract(u"como estï¿½ o tempo esta sexta a meia noite?",
-        #            "2017-06-30 00:00:00", "como tempo")
-        # TODO: Fix this test and/or code
-        # testExtract(u"como estï¿½ o tempo esta sexta ao meio dia?",
-        #            "2017-06-30 12:00:00", "como tempo")
-        # TODO: Fix this test and/or code
-        # testExtract(u"como estï¿½ o tempo esta sexta ao fim da tarde?",
-        #            "2017-06-30 19:00:00", "como tempo")
-        # TODO: Fix this test and/or code
-        # testExtract(u"como estï¿½ o tempo esta sexta ao meio da manha?",
-        #            "2017-06-30 10:00:00", "como tempo")
+        testExtract(u"Toca os parabéns daqui a 5 anos",
+                    "2022-06-27 00:00:00", "toca parabens")
+        testExtract(u"manda Skype a Mãe ás 12:45 pm próxima quinta",
+                    "2017-06-29 12:45:00", "manda skype mae")
+        testExtract(u"como está o tempo esta sexta?",
+                    "2017-06-30 00:00:00", "como tempo")
+        testExtract(u"como está o tempo esta sexta de tarde?",
+                    "2017-06-30 15:00:00", "como tempo")
+        testExtract(u"como está o tempo esta sexta as tantas da manha?",
+                    "2017-06-30 04:00:00", "como tempo")
+        testExtract(u"como está o tempo esta sexta a meia noite?",
+                    "2017-06-30 00:00:00", "como tempo")
+        testExtract(u"como está o tempo esta sexta ao meio dia?",
+                    "2017-06-30 12:00:00", "como tempo")
+        testExtract(u"como está o tempo esta sexta ao fim da tarde?",
+                    "2017-06-30 19:00:00", "como tempo")
+        testExtract(u"como está o tempo esta sexta ao meio da manha?",
+                    "2017-06-30 10:00:00", "como tempo")
         testExtract("lembra me para ligar a mae no dia 3 de agosto",
                     "2017-08-03 00:00:00", "lembra ligar mae")
 
@@ -521,12 +523,10 @@ class TestNormalize(unittest.TestCase):
                     "2018-05-13 00:00:00", "bebe cerveja")
         testExtract("como esta o tempo 1 dia a seguir a amanha",
                     "2017-06-29 00:00:00", "como tempo")
-        # TODO: Fix this test and/or code
-        # testExtract(u"como esta o tempo ï¿½s 0700 horas",
-        #            "2017-06-27 07:00:00", "como tempo")
-        # TODO: Fix this test and/or code
-        # testExtract(u"como esta o tempo amanha ï¿½s 7 em ponto",
-        #            "2017-06-28 07:00:00", "como tempo")
+        testExtract(u"como esta o tempo ás 0700 horas",
+                    "2017-06-27 07:00:00", "como tempo")
+        testExtract(u"como esta o tempo amanha ás 7 em ponto",
+                    "2017-06-28 07:00:00", "como tempo")
         testExtract(u"como esta o tempo amanha pelas 2 da tarde",
                     "2017-06-28 14:00:00", "como tempo")
         testExtract(u"como esta o tempo amanha pelas 2",
@@ -541,9 +541,8 @@ class TestNormalize(unittest.TestCase):
                     "2017-07-02 00:00:00", "dorme")
         testExtract("marca consulta para 2 semanas e 6 dias depois de Sabado",
                     "2017-07-21 00:00:00", "marca consulta")
-        # TODO: Fix this test and/or code
-        # testExtract(u"comeï¿½a a festa ï¿½s 8 em ponto da noite de quinta",
-        #            "2017-06-29 20:00:00", "comeca festa")
+        testExtract(u"começa a festa ás 8 em ponto da noite de quinta",
+                    "2017-06-29 20:00:00", "comeca festa")
 
     def test_gender_pt(self):
         self.assertEqual(get_gender("vaca", lang="pt"),

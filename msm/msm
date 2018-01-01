@@ -103,7 +103,6 @@ LIST_CACHE=''
 
 function get_skill_list() {
   if ! [[ ${LIST_CACHE} ]] ; then
-    echo "1" >> ~/count.txt
     if hash curl ; then
       # retrieve using curl
       LIST_CACHE=$( curl -s "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules" )
@@ -638,15 +637,25 @@ case ${OPT} in
           exit ${exit_code}
       fi
 
-      submodules=$(echo "${LIST_CACHE}" | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g' | sort)
-      while read -r submod
-      do
-          if [[ -d "$mycroft_skill_folder/$submod" ]] ; then
-              printf "$submod ${RED}[${GREEN}installed${RED}]${NOCOLOR}\n\r"
+      # Get name and path
+      submods=($(echo "${LIST_CACHE}" | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g'))
+      paths=($(echo "${LIST_CACHE}" | grep 'path =' | sed 's/\path = //g'| sed 's/"\]//g'))
+      # Determine which have been installed
+      results=()
+      for ((i=0;i<${#submods[@]};++i)); do
+          if [[ -d "$mycroft_skill_folder/${paths[i]}" ]] ; then
+              results+=("${submods[i]} ${RED}[${GREEN}installed${RED}]${NOCOLOR}\n\r")
           else
-              printf "$submod\n\r"
+              results+=("${submods[i]}\n\r")
           fi
-      done <<< "$submodules"
+      done
+      # Sort the result alphabetically
+      readarray -t sorted < <(for a in "${results[@]}"; do echo "$a"; done | sort)
+      # Print the output
+      for ((i=0;i<${#sorted[@]};++i)); do
+        printf "${sorted[i]}"
+      done
+
       exit_code=$?
       ;;
   "update")

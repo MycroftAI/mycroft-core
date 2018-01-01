@@ -16,6 +16,16 @@
 #
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
+from difflib import SequenceMatcher
+
+
+def fuzzy_match(x, against):
+    """Perform a 'fuzzy' comparison between two strings.
+    Returns:
+        float: match percentage -- 1.0 for perfect match,
+               down to 0.0 for no match at all.
+    """
+    return SequenceMatcher(None, x, against).ratio()
 
 
 def extractnumber(text, lang="en-us"):
@@ -379,8 +389,8 @@ def extract_datetime_en(str, currentDate=None):
                 m = monthsShort.index(word)
             used += 1
             datestr = months[m]
-            if wordPrev[0].isdigit() or \
-                    (wordPrev == "of" and wordPrevPrev[0].isdigit()):
+            if wordPrev and (wordPrev[0].isdigit() or
+                             (wordPrev == "of" and wordPrevPrev[0].isdigit())):
                 if wordPrev == "of" and wordPrevPrev[0].isdigit():
                     datestr += " " + words[idx - 2]
                     used += 1
@@ -541,6 +551,9 @@ def extract_datetime_en(str, currentDate=None):
                     nextWord = wordNext.replace(".", "")
                     if nextWord == "am" or nextWord == "pm":
                         remainder = nextWord
+                        used += 1
+                    elif nextWord == "tonight":
+                        remainder = "pm"
                         used += 1
                     elif wordNext == "in" and wordNextNext == "the" and \
                             words[idx + 3] == "morning":
@@ -1062,21 +1075,21 @@ def isFractional_pt(input_str):
     if input_str.endswith('s', -1):
         input_str = input_str[:len(input_str) - 1]  # e.g. "fifths"
 
-    aFrac = ["meio", u"terï¿½o", "quarto", "quinto", "sexto",
-             "setimo", "oitavo", "nono", u"dï¿½cimo"]
+    aFrac = ["meio", u"terço", "quarto", "quinto", "sexto",
+             "setimo", "oitavo", "nono", u"décimo"]
 
     if input_str.lower() in aFrac:
         return 1.0 / (aFrac.index(input_str) + 2)
-    if input_str == u"vigï¿½simo":
+    if input_str == u"vigésimo":
         return 1.0 / 20
-    if input_str == u"trigï¿½simo":
+    if input_str == u"trigésimo":
         return 1.0 / 30
-    if input_str == u"centï¿½simo":
+    if input_str == u"centésimo":
         return 1.0 / 100
-    if input_str == u"milï¿½simo":
+    if input_str == u"milésimo":
         return 1.0 / 1000
-    if (input_str == u"sï¿½timo" or input_str == "septimo" or
-            input_str == u"sï¿½ptimo"):
+    if (input_str == u"sétimo" or input_str == "septimo" or
+            input_str == u"séptimo"):
         return 1.0 / 7
 
     return False
@@ -1340,23 +1353,23 @@ def extract_datetime_pt(input_str, currentDate=None):
         for word in noise_words:
             str = str.replace(" " + word + " ", " ")
         str = str.lower().replace(
-            u"ï¿½",
+            u"á",
             "a").replace(
-            u"ï¿½",
+            u"ç",
             "c").replace(
-            u"ï¿½",
+            u"à",
             "a").replace(
-            u"ï¿½",
+            u"ã",
             "a").replace(
-            u"ï¿½",
+            u"é",
             "e").replace(
-            u"ï¿½",
+            u"è",
             "e").replace(
-            u"ï¿½",
+            u"ê",
             "e").replace(
-            u"ï¿½",
+            u"ó",
             "o").replace(
-            u"ï¿½",
+            u"ò",
             "o").replace(
             "-",
             " ").replace(
@@ -2125,12 +2138,12 @@ def pt_pruning(text, symbols=True, accents=True, agressive=True):
             text = text.replace(symbol, "")
         text = text.replace("-", " ").replace("_", " ")
     if accents:
-        accents = {"a": [u"ï¿½", u"ï¿½", u"ï¿½", u"ï¿½"],
-                   "e": [u"ï¿½", u"ï¿½", u"ï¿½"],
-                   "i": [u"ï¿½", u"ï¿½"],
-                   "o": [u"ï¿½", u"ï¿½"],
-                   "u": [u"ï¿½", u"ï¿½"],
-                   "c": [u"ï¿½", u"ï¿½"]}
+        accents = {"a": [u"á", u"à", u"ã", u"â"],
+                   "e": [u"ê", u"è", u"é"],
+                   "i": [u"í", u"ì"],
+                   "o": [u"ò", u"ó"],
+                   "u": [u"ú", u"ù"],
+                   "c": [u"ç"]}
         for char in accents:
             for acc in accents[char]:
                 text = text.replace(acc, char)

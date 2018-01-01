@@ -212,6 +212,21 @@ class TestApi(unittest.TestCase):
 
     @mock.patch('mycroft.api.IdentityManager.get')
     @mock.patch('mycroft.api.requests.request')
+    def test_device_get_oauth_token(self, mock_request, mock_identity_get):
+        mock_request.return_value = create_response(200, {})
+        mock_identity = mock.MagicMock()
+        mock_identity.is_expired.return_value = False
+        mock_identity.uuid = '1234'
+        mock_identity_get.return_value = mock_identity
+        device = mycroft.api.DeviceApi()
+        device.get_oauth_token(1)
+        url = mock_request.call_args[0][1]
+
+        self.assertEquals(
+            url, 'https://api-test.mycroft.ai/v1/device/1234/token/1')
+
+    @mock.patch('mycroft.api.IdentityManager.get')
+    @mock.patch('mycroft.api.requests.request')
     def test_device_get_location(self, mock_request, mock_identity_get):
         mock_request.return_value = create_response(200, {})
         mock_identity = mock.MagicMock()

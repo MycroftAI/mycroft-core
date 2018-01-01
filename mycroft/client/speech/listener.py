@@ -13,9 +13,8 @@
 # limitations under the License.
 #
 import time
-from Queue import Queue, Empty
 from threading import Thread
-
+import sys
 import speech_recognition as sr
 from pyee import EventEmitter
 from requests import HTTPError
@@ -29,6 +28,10 @@ from mycroft.metrics import MetricsAggregator
 from mycroft.session import SessionManager
 from mycroft.stt import STTFactory
 from mycroft.util.log import LOG
+if sys.version_info[0] < 3:
+    from Queue import Queue, Empty
+else:
+    from queue import Queue, Empty
 
 
 class AudioProducer(Thread):
@@ -54,13 +57,13 @@ class AudioProducer(Thread):
                 try:
                     audio = self.recognizer.listen(source, self.emitter)
                     self.queue.put(audio)
-                except IOError, ex:
+                except IOError as e:
                     # NOTE: Audio stack on raspi is slightly different, throws
                     # IOError every other listen, almost like it can't handle
                     # buffering audio between listen loops.
                     # The internet was not helpful.
                     # http://stackoverflow.com/questions/10733903/pyaudio-input-overflowed
-                    self.emitter.emit("recognizer_loop:ioerror", ex)
+                    self.emitter.emit("recognizer_loop:ioerror", e)
 
     def stop(self):
         """

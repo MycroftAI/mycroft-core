@@ -85,7 +85,6 @@ class Downloader(Thread):
         tmp = _get_download_tmp(self.dest)
         self.status = self.perform_download(tmp)
 
-        print self.status
         if not self._abort and self.status == 0:
             self.finalize(tmp)
         else:

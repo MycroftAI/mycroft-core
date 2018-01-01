@@ -16,6 +16,7 @@ import imp
 import operator
 import sys
 import time
+import csv
 from functools import wraps
 from inspect import getargspec
 
@@ -37,6 +38,8 @@ from mycroft.skills.settings import SkillSettings
 from mycroft.util import resolve_resource_file
 from mycroft.util.log import LOG
 
+# python 2+3 compatibility
+from past.builtins import basestring
 
 MainModule = '__init__'
 
@@ -131,6 +134,8 @@ def load_skill(skill_descriptor, emitter, skill_id, BLACKLISTED_SKILLS=None):
                 callable(skill_module.create_skill)):
             # v2 skills framework
             skill = skill_module.create_skill()
+            skill.settings.allow_overwrite = True
+            skill.settings.load_skill_settings_from_file()
             skill.bind(emitter)
             skill.skill_id = skill_id
             skill.load_data_files(dirname(skill_descriptor['info'][1]))
@@ -497,6 +502,43 @@ class MycroftSkill(object):
         """
         return self.dialog_renderer.render(text, data or {})
 
+    def translate_namedvalues(self, name, delim=None):
+        """
+        Load translation dict containing names and values.
+
+        This loads a simple CSV from the 'dialog' folders.
+        The name is the first list item, the value is the
+        second.  Lines prefixed with # or // get ignored
+
+        Args:
+            name (str): name of the .value file, no extension needed
+            delim (char): delimiter character used, default is ','
+
+        Returns:
+            dict: name and value dictionary, or [] if load fails
+        """
+
+        delim = delim or ','
+        result = {}
+        if not name.endswith(".value"):
+            name += ".value"
+
+        try:
+            with open(join(self.root_dir, 'dialog', self.lang, name)) as f:
+                reader = csv.reader(f, delimiter=delim)
+                for row in reader:
+                    # skip blank or comment lines
+                    if not row or row[0].startswith("#"):
+                        continue
+                    if len(row) != 2:
+                        continue
+
+                    result[row[0]] = row[1]
+
+            return result
+        except Exception:
+            return {}
+
     def translate_template(self, template_name, data=None):
         """
         Load a translatable template
@@ -539,7 +581,7 @@ class MycroftSkill(object):
     def __translate_file(self, name, data):
         """Load and render lines from dialog/<lang>/<name>"""
         with open(join(self.root_dir, 'dialog', self.lang, name)) as f:
-            text = f.read().replace('{{', '').replace('}}', '')
+            text = f.read().replace('{{', '{').replace('}}', '}')
             return text.format(**data or {}).split('\n')
 
     def add_event(self, name, handler, need_self=False):

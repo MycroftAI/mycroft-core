@@ -55,24 +55,33 @@ def download_subscriber_voices(selected_voice):
 
     # First download the selected voice if needed
     voice_file = SUBSCRIBER_VOICES.get(selected_voice)
-    print voice_file
     if voice_file is not None and not exists(voice_file):
-        print 'voice foesn\'t exist, downloading'
-        dl = download(DeviceApi().get_subscriber_voice_url(selected_voice),
-                      voice_file, make_executable)
-        # Wait for completion
-        while not dl.done:
-            sleep(1)
+        LOG.info('voice doesn\'t exist, downloading')
+        url = DeviceApi().get_subscriber_voice_url(selected_voice)
+        # Check we got an url
+        if url:
+            dl = download(url, voice_file, make_executable)
+            # Wait for completion
+            while not dl.done:
+                sleep(1)
+        else:
+            LOG.debug('{} is not available for this architecture'
+                      .format(selected_voice))
 
     # Download the rest of the subsciber voices as needed
     for voice in SUBSCRIBER_VOICES:
         voice_file = SUBSCRIBER_VOICES[voice]
         if not exists(voice_file):
-            dl = download(DeviceApi().get_subscriber_voice_url(voice),
-                          voice_file, make_executable)
-            # Wait for completion
-            while not dl.done:
-                sleep(1)
+            url = DeviceApi().get_subscriber_voice_url(voice)
+            # Check we got an url
+            if url:
+                dl = download(url, voice_file, make_executable)
+                # Wait for completion
+                while not dl.done:
+                    sleep(1)
+            else:
+                LOG.debug('{} is not available for this architecture'
+                          .format(voice))
 
 
 class Mimic(TTS):
@@ -120,12 +129,13 @@ class Mimic(TTS):
     def visime(self, output):
         visimes = []
         start = time()
-        pairs = output.split(" ")
+        pairs = str(output).split(" ")
         for pair in pairs:
             pho_dur = pair.split(":")  # phoneme:duration
             if len(pho_dur) == 2:
                 visimes.append((VISIMES.get(pho_dur[0], '4'),
                                 float(pho_dur[1])))
+        print(visimes)
         return visimes
 
 

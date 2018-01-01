@@ -13,14 +13,14 @@
 # limitations under the License.
 #
 import sys
-from cStringIO import StringIO
+from io import BytesIO
 
 # NOTE: If this script has errors, the following two lines might need to
 # be commented out for them to be displayed (depending on the type of
 # error).  But normally we want this to prevent extra messages from the
 # messagebus setup from appearing during startup.
-sys.stdout = StringIO()  # capture any output
-sys.stderr = StringIO()  # capture any output
+sys.stdout = BytesIO()  # capture any output
+sys.stderr = BytesIO()  # capture any output
 
 # All of the nopep8 comments below are to avoid E402 errors
 import os                                                   # nopep8
@@ -172,7 +172,7 @@ class LogMonitorThread(Thread):
         with open(self.filename, 'rb') as fh:
             fh.seek(bytefrom)
             while True:
-                line = fh.readline()
+                line = str(fh.readline())
                 if line == "":
                     break
 
@@ -191,7 +191,7 @@ class LogMonitorThread(Thread):
                     mergedLog.append(self.logid + line.strip())
                 else:
                     if bSimple:
-                        print line.strip()
+                        print(line.strip())
                     else:
                         filteredLog.append(self.logid + line.strip())
                         mergedLog.append(self.logid + line.strip())
@@ -229,7 +229,7 @@ class MicMonitorThread(Thread):
         global meter_cur
         global meter_thresh
 
-        with open(self.filename, 'rb') as fh:
+        with open(self.filename, 'r') as fh:
             fh.seek(bytefrom)
             while True:
                 line = fh.readline()
@@ -239,8 +239,8 @@ class MicMonitorThread(Thread):
                 # Just adjust meter settings
                 # Ex:Energy:  cur=4 thresh=1.5
                 parts = line.split("=")
-                meter_thresh = float(parts[len(parts) - 1])
-                meter_cur = float(parts[len(parts) - 2].split(" ")[0])
+                meter_thresh = float(parts[-1])
+                meter_cur = float(parts[-2].split(" ")[0])
 
 
 def start_mic_monitor(filename):
@@ -561,17 +561,17 @@ def _do_drawing(scr):
 
     # Log legend in the lower-right
     y_log_legend = curses.LINES - (3 + cy_chat_area)
-    scr.addstr(y_log_legend, curses.COLS / 2 + 2,
-               make_titlebar("Log Output Legend", curses.COLS / 2 - 2),
+    scr.addstr(y_log_legend, curses.COLS // 2 + 2,
+               make_titlebar("Log Output Legend", curses.COLS // 2 - 2),
                CLR_HEADING)
-    scr.addstr(y_log_legend + 1, curses.COLS / 2 + 2,
+    scr.addstr(y_log_legend + 1, curses.COLS // 2 + 2,
                "DEBUG output",
                CLR_LOG_DEBUG)
-    scr.addstr(y_log_legend + 2, curses.COLS / 2 + 2,
+    scr.addstr(y_log_legend + 2, curses.COLS // 2 + 2,
                os.path.basename(log_files[0]) + ", other",
                CLR_LOG1)
     if len(log_files) > 1:
-        scr.addstr(y_log_legend + 3, curses.COLS / 2 + 2,
+        scr.addstr(y_log_legend + 3, curses.COLS // 2 + 2,
                    os.path.basename(log_files[1]), CLR_LOG2)
 
     # Meter
@@ -582,7 +582,7 @@ def _do_drawing(scr):
 
     # History log in the middle
     y_chat_history = curses.LINES - (3 + cy_chat_area)
-    chat_width = curses.COLS / 2 - 2
+    chat_width = curses.COLS // 2 - 2
     chat_out = []
     scr.addstr(y_chat_history, 0, make_titlebar("History", chat_width),
                CLR_HEADING)
@@ -688,7 +688,7 @@ def show_help():
 def center(str_len):
     # generate number of characters needed to center a string
     # of the given length
-    return " " * ((curses.COLS - str_len) / 2)
+    return " " * ((curses.COLS - str_len) // 2)
 
 
 ##############################################################################
@@ -810,9 +810,9 @@ def gui_main(stdscr):
                 elif c1 == 79 and c2 == 118:
                     c = curses.KEY_RIGHT
                 elif c1 == 79 and c2 == 121:
-                    c = curses.KEY_NPAGE  # aka PgUp
+                    c = curses.KEY_PPAGE  # aka PgUp
                 elif c1 == 79 and c2 == 115:
-                    c = curses.KEY_PPAGE  # aka PgDn
+                    c = curses.KEY_NPAGE  # aka PgDn
                 elif c1 == 79 and c2 == 119:
                     c = curses.KEY_HOME
                 elif c1 == 79 and c2 == 113:
@@ -857,10 +857,10 @@ def gui_main(stdscr):
                     line = ""
             elif c == curses.KEY_LEFT:
                 # scroll long log lines left
-                log_line_lr_scroll += curses.COLS / 4
+                log_line_lr_scroll += curses.COLS // 4
             elif c == curses.KEY_RIGHT:
                 # scroll long log lines right
-                log_line_lr_scroll -= curses.COLS / 4
+                log_line_lr_scroll -= curses.COLS // 4
                 if log_line_lr_scroll < 0:
                     log_line_lr_scroll = 0
             elif c == curses.KEY_HOME:
@@ -906,10 +906,10 @@ def gui_main(stdscr):
             # else:
             #    line += str(c)
 
-    except KeyboardInterrupt, e:
+    except KeyboardInterrupt as e:
         # User hit Ctrl+C to quit
         pass
-    except KeyboardInterrupt, e:
+    except KeyboardInterrupt as e:
         LOG.exception(e)
     finally:
         scr.erase()
@@ -934,10 +934,10 @@ def simple_cli():
             ws.emit(
                 Message("recognizer_loop:utterance",
                         {'utterances': [line.strip()]}))
-    except KeyboardInterrupt, e:
+    except KeyboardInterrupt as e:
         # User hit Ctrl+C to quit
         print("")
-    except KeyboardInterrupt, e:
+    except KeyboardInterrupt as e:
         LOG.exception(e)
         event_thread.exit()
         sys.exit()
@@ -971,7 +971,6 @@ def main():
         curses.wrapper(gui_main)
         curses.endwin()
         save_settings()
-
 
 if __name__ == "__main__":
     main()

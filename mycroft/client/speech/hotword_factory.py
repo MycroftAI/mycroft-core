@@ -15,6 +15,7 @@
 import tempfile
 import time
 
+import sys
 import os
 from os.path import dirname, exists, join, abspath, expanduser, isdir, isfile
 
@@ -172,7 +173,12 @@ class PreciseHotword(HotWordEngine):
     @staticmethod
     def download(url, filename):
         import shutil
-        from urllib2 import urlopen
+
+        # python 2/3 compatibility
+        if sys.version_info[0] >= 3:
+            from urllib.request import urlopen
+        else:
+            from urllib2 import urlopen
         LOG.info('Downloading: ' + url)
         req = urlopen(url)
         with open(filename, 'wb') as fp:

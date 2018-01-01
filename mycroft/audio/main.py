@@ -472,8 +472,8 @@ def main():
     AudioService(ws)  # Connect audio service instance to message bus
     try:
         ws.run_forever()
-    except KeyboardInterrupt as exc:
-        LOG.exception(exc)
+    except KeyboardInterrupt as e:
+        LOG.exception(e)
         speech.shutdown()
         sys.exit()
 
