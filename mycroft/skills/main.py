@@ -326,13 +326,13 @@ class SkillManager(Thread):
         # unload the existing version from memory and reload from the disk.
         while not self._stop_event.is_set():
 
+            # check if skill updates are enabled
+            update = Configuration.get().get("skills", {}).get(
+                "auto_update", True)
+
             # Update skills once an hour
-            if time.time() >= self.next_download:
-                # check if auto update is enabled
-                update = Configuration.get().get("skills", {}).get(
-                    "auto_update", True)
-                if update:
-                    self.download_skills()
+            if time.time() >= self.next_download and update:
+                self.download_skills()
 
             # Look for recently changed skill(s) needing a reload
             if exists(SKILLS_DIR):
