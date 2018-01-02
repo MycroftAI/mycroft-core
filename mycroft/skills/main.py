@@ -47,7 +47,6 @@ skills_config = Configuration.get().get("skills")
 BLACKLISTED_SKILLS = skills_config.get("blacklisted_skills", [])
 PRIORITY_SKILLS = skills_config.get("priority_skills", [])
 SKILLS_DIR = '/opt/mycroft/skills'
-AUTO_UPDATE = skills_config.get("auto_update", True)
 installer_config = Configuration.get().get("SkillInstallerSkill")
 MSM_BIN = installer_config.get("path", join(MYCROFT_ROOT_PATH, 'msm', 'msm'))
 
@@ -206,9 +205,6 @@ class SkillManager(Thread):
             Args:
                 speak (bool, optional): Speak the result? Defaults to False
         """
-        if not AUTO_UPDATE:
-            return
-
         # Don't invoke msm if already running
         if exists(MSM_BIN) and self.__msm_lock.acquire():
             try:
@@ -329,9 +325,14 @@ class SkillManager(Thread):
         # Scan the file folder that contains Skills.  If a Skill is updated,
         # unload the existing version from memory and reload from the disk.
         while not self._stop_event.is_set():
+
             # Update skills once an hour
             if time.time() >= self.next_download:
-                self.download_skills()
+                # check if auto update is enabled
+                update = Configuration.get().get("skills", {}).get(
+                    "auto_update", True)
+                if update:
+                    self.download_skills()
 
             # Look for recently changed skill(s) needing a reload
             if exists(SKILLS_DIR):
