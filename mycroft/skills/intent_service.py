@@ -269,9 +269,18 @@ class IntentService(object):
             stopwatch = Stopwatch()
             with stopwatch:
                 # Parse the sentence
-                intent = self.parse_utterances(utterances, lang)
+                converse = self.parse_converse(utterances, lang)
+                if not converse:
+                    # no skill wants to handle utterance
+                    intent = self.parse_utterances(utterances, lang)
 
-            if intent:
+            if converse:
+                # Report that converse handled the intent and return
+                ident = message.context['ident'] if message.context else None
+                report_timing(ident, 'intent_service', stopwatch,
+                              {'intent_type': 'converse'})
+                return
+            elif intent:
                 # Send the message on to the intent handler
                 reply = message.reply(intent.get('intent_type'), intent)
             else:
@@ -284,21 +293,14 @@ class IntentService(object):
         except Exception as e:
             LOG.exception(e)
 
-    def parse_utterances(self, utterances, lang):
+    def parse_converse(self, utterances, lang):
         """
-            Parse the utteracne using adapt. The process has two stages
+            Converse, check if a recently invoked skill wants to
+            handle the utterance and override normal adapt handling.
 
-            Stage 1: Converse, check if a recently invoked skill wants to
-                     handle the utterance and override normal adapt handling.
-
-            Stage 2: Parse the sentence with adapt to find a matching intent.
-
-            Args:
-                utterances (list):  list of utterances
-                lang (string):      4 letter ISO language code
-
-            Returns: Intent structure, or None if no match was found.
+            Returns: True if converse handled the utterance, else False.
         """
+
         # check for conversation time-out
         self.active_skills = [skill for skill in self.active_skills
                               if time.time() - skill[
@@ -310,9 +312,19 @@ class IntentService(object):
                 # update timestamp, or there will be a timeout where
                 # intent stops conversing whether its being used or not
                 self.add_active_skill(skill[0])
-                return
+                return True
+        return False
 
-        # no skill wants to handle utterance
+    def parse_utterances(self, utterances, lang):
+        """
+            Parse the utteracne using adapt  to find a matching intent.
+
+            Args:
+                utterances (list):  list of utterances
+                lang (string):      4 letter ISO language code
+
+            Returns: Intent structure, or None if no match was found.
+        """
         best_intent = None
         for utterance in utterances:
             try:
