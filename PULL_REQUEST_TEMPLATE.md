@@ -1,6 +1,8 @@
-* Description of what the PR does, such as fixes # {issue number}
+## Description
+(Description of what the PR does, such as fixes # {issue number})
 
-* Description of how to validate or test this PR
+## How to test
+(Description of how to validate or test this PR)
 
-* Whether you have signed a CLA (Contributor Licensing Agreement)
-
+## Contributor license agreement signed?
+CLA [ ] (Whether you have signed a [CLA - Contributor Licensing Agreement](https://mycroft.ai/cla/)
