@@ -47,6 +47,7 @@ skills_config = Configuration.get().get("skills")
 BLACKLISTED_SKILLS = skills_config.get("blacklisted_skills", [])
 PRIORITY_SKILLS = skills_config.get("priority_skills", [])
 SKILLS_DIR = '/opt/mycroft/skills'
+
 installer_config = Configuration.get().get("SkillInstallerSkill")
 MSM_BIN = installer_config.get("path", join(MYCROFT_ROOT_PATH, 'msm', 'msm'))
 
@@ -327,10 +328,10 @@ class SkillManager(Thread):
         while not self._stop_event.is_set():
 
             # check if skill updates are enabled
-            update = Configuration.get().get("skills", {}).get(
-                "auto_update", True)
+            update = Configuration.get().get("skills", {}).get("auto_update",
+                                                               True)
 
-            # Update skills once an hour
+            # Update skills once an hour if update is enabled
             if time.time() >= self.next_download and update:
                 self.download_skills()
 
