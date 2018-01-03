@@ -17,16 +17,19 @@ import random
 from threading import Thread
 from time import time, sleep
 
+import re
 import os
 import os.path
 from abc import ABCMeta, abstractmethod
-from os.path import dirname, exists, isdir
+from os.path import dirname, exists, isdir, join
 
 import mycroft.util
 from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
-from mycroft.util import play_wav, play_mp3, check_for_signal, create_signal
+from mycroft.util import (
+    play_wav, play_mp3, check_for_signal, create_signal, resolve_resource_file
+)
 from mycroft.util.log import LOG
 import sys
 if sys.version_info[0] < 3:
@@ -145,18 +148,35 @@ class TTS(object):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, lang, voice, validator):
+    def __init__(self, lang, voice, validator, phonetic_spelling=True):
         super(TTS, self).__init__()
         self.lang = lang or 'en-us'
         self.voice = voice
         self.filename = '/tmp/tts.wav'
         self.validator = validator
+        self.phonetic_spelling = phonetic_spelling
         self.enclosure = None
         random.seed()
         self.queue = Queue()
         self.playback = PlaybackThread(self.queue)
         self.playback.start()
         self.clear_cache()
+        self.spellings = self.load_spellings()
+
+    def load_spellings(self):
+        """Load phonetic spellings of words as dictionary"""
+        path = join('text', self.lang, 'phonetic_spellings.txt')
+        spellings_file = resolve_resource_file(path)
+        if not spellings_file:
+            return {}
+        try:
+            with open(spellings_file) as f:
+                lines = filter(bool, f.read().split('\n'))
+            lines = [i.split(':') for i in lines]
+            return {key.strip(): value.strip() for key, value in lines}
+        except ValueError:
+            LOG.exception('Failed to load phonetic spellings.')
+            return {}
 
     def begin_audio(self):
         """Helper function for child classes to call in execute()"""
@@ -210,6 +230,11 @@ class TTS(object):
                 sentence:   Sentence to be spoken
         """
         create_signal("isSpeaking")
+        if self.phonetic_spelling:
+            for word in re.findall(r"[\w']+", sentence):
+                if word in self.spellings:
+                    sentence = sentence.replace(word, self.spellings[word])
+
         key = str(hashlib.md5(sentence.encode('utf-8', 'ignore')).hexdigest())
         wav_file = os.path.join(mycroft.util.get_cache_directory("tts"),
                                 key + '.' + self.type)
