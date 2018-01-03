@@ -49,8 +49,13 @@ class WatsonTTSValidator(TTSValidator):
         pass
 
     def validate_connection(self):
-        # TODO
-        pass
+        config = Configuration.get().get("tts", {}).get("watson", {})
+        user = config.get("user") or config.get("username")
+        password = config.get("password")
+        if user and password:
+            return
+        else:
+            raise ValueError('user and/or password for IBM tts is not defined')
 
     def get_tts_class(self):
         return WatsonTTS
