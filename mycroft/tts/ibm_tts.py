@@ -16,6 +16,7 @@
 from mycroft.tts import TTSValidator
 from mycroft.tts.remote_tts import RemoteTTS
 from mycroft.configuration import Configuration
+from requests.auth import HTTPBasicAuth
 
 
 class WatsonTTS(RemoteTTS):
@@ -27,9 +28,9 @@ class WatsonTTS(RemoteTTS):
                                         WatsonTTSValidator(self))
         self.type = "wav"
         self.config = Configuration.get().get("tts", {}).get("watson", {})
-        user = self.config.get("user")
+        user = self.config.get("user") or self.config.get("username")
         password = self.config.get("password")
-        self.auth = (user, password)
+        self.auth = HTTPBasicAuth(user, password)
 
     def build_request_params(self, sentence):
         params = self.PARAMS.copy()
@@ -48,8 +49,13 @@ class WatsonTTSValidator(TTSValidator):
         pass
 
     def validate_connection(self):
-        # TODO
-        pass
+        config = Configuration.get().get("tts", {}).get("watson", {})
+        user = config.get("user") or config.get("username")
+        password = config.get("password")
+        if user and password:
+            return
+        else:
+            raise ValueError('user and/or password for IBM tts is not defined')
 
     def get_tts_class(self):
         return WatsonTTS

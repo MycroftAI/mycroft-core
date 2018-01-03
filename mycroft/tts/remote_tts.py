@@ -32,6 +32,7 @@ class RemoteTTS(TTS):
     def __init__(self, lang, voice, url, api_path, validator):
         super(RemoteTTS, self).__init__(lang, voice, validator)
         self.api_path = api_path
+        self.auth = None
         self.url = remove_last_slash(url)
         self.session = FuturesSession()
 
@@ -64,7 +65,7 @@ class RemoteTTS(TTS):
     def __request(self, p):
         return self.session.get(
             self.url + self.api_path, params=self.build_request_params(p),
-            timeout=10, verify=False)
+            timeout=10, verify=False, auth=self.auth)
 
     @abc.abstractmethod
     def build_request_params(self, sentence):
