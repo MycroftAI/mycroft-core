@@ -326,8 +326,13 @@ class SkillManager(Thread):
         # Scan the file folder that contains Skills.  If a Skill is updated,
         # unload the existing version from memory and reload from the disk.
         while not self._stop_event.is_set():
-            # Update skills once an hour
-            if time.time() >= self.next_download:
+
+            # check if skill updates are enabled
+            update = Configuration.get().get("skills", {}).get("auto_update",
+                                                               True)
+
+            # Update skills once an hour if update is enabled
+            if time.time() >= self.next_download and update:
                 self.download_skills()
 
             # Look for recently changed skill(s) needing a reload
