@@ -118,12 +118,7 @@ class PreciseHotword(HotWordEngine):
         self.models_url = precise_config['models_url']
         self.exe_name = 'precise-stream'
 
-        ww = Configuration.get()['listener']['wake_word']
-        model_name = ww.replace(' ', '-') + '.pb'
-        model_folder = expanduser('~/.mycroft/precise')
-        if not isdir(model_folder):
-            mkdir(model_folder)
-        model_path = join(model_folder, model_name)
+        model_name, model_path = self.get_model_info()
 
         exe_file = self.find_download_exe()
         LOG.info('Found precise executable: ' + exe_file)
@@ -136,6 +131,15 @@ class PreciseHotword(HotWordEngine):
         t = Thread(target=self.check_stdout)
         t.daemon = True
         t.start()
+
+    def get_model_info(self):
+        ww = Configuration.get()['listener']['wake_word']
+        model_name = ww.replace(' ', '-') + '.pb'
+        model_folder = expanduser('~/.mycroft/precise')
+        if not isdir(model_folder):
+            mkdir(model_folder)
+        model_path = join(model_folder, model_name)
+        return model_name, model_path
 
     def find_download_exe(self):
         exe_file = resolve_resource_file(self.exe_name)
