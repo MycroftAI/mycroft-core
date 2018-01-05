@@ -20,6 +20,8 @@ from pyee import EventEmitter
 from requests import HTTPError
 from requests.exceptions import ConnectionError
 
+import pwd
+import os
 import mycroft.dialog
 from mycroft.client.speech.hotword_factory import HotWordFactory
 from mycroft.client.speech.mic import MutableMicrophone, ResponsiveRecognizer
@@ -204,6 +206,7 @@ class RecognizerLoop(EventEmitter):
         self.config = config.get('listener')
         rate = self.config.get('sample_rate')
         device_index = self.config.get('device_index')
+        self.enclosure_config = config.get('enclosure')
 
         self.microphone = MutableMicrophone(device_index, rate,
                                             mute=self.mute_calls > 0)
@@ -316,11 +319,46 @@ class RecognizerLoop(EventEmitter):
                 raise  # Re-raise KeyboardInterrupt
 
     def reload(self):
-        """
-            Reload configuration and restart consumer and producer
-        """
         self.stop()
         # load config
         self._load_config()
         # restart
         self.start_async()
+
+
+    def restart(self):
+        """
+            Restart speech/voice client
+        """
+        platform = str(self.enclosure_config.get(
+            'platform', 'laptop/desktop platform'))
+        LOG.debug('''self.enclosure_config.get('platform') ==''' + platform)
+        if platform == "picroft" or platform == "mycroft_mark_1":
+            LOG.debug('''my/pi croft platform''')
+            try:
+                # uid = pwd.getpwnam('mycroft')[2]
+                # LOG.debug('''my/pi croft root uid ==''' + str(uid))
+                # os.setuid(uid)
+                LOG.debug(''' username = ''' +
+                          pwd.getpwuid(os.getuid()).pw_name)
+                os.system('/etc/init.d/mycroft-speech-client restart')
+            except Exception as e:
+                LOG.debug('''error == ''' + str(e))
+        else:
+            LOG.debug('''laptop/desktop platform''')
+            BASEDIR = os.path.abspath(
+                os.path.join(os.path.dirname(__file__),
+                             '..', '..', '..')
+            )
+            LOG.debug('BASEDIR = ' + BASEDIR)
+            try:
+                # uid = pwd.getpwnam('guy')[2]
+                # LOG.debug('''laptop root uid ==''' + str(uid))
+                # os.setuid(uid)
+                # os.system('/etc/init.d/mycroft-speech-client stop;
+                #   /etc/init.d/mycroft-speech-client start')
+                LOG.debug(''' username = ''' +
+                          pwd.getpwuid(os.getuid()).pw_name)
+                os.system(BASEDIR + '/start-mycroft.sh voice')
+            except Exception as e:
+                LOG.debug('''error == ''' + str(e))
