@@ -38,6 +38,7 @@ from mycroft.api import DeviceApi
 from mycroft.configuration import Configuration
 from mycroft.session import SessionManager
 from mycroft.util import (
+    create_signal,
     check_for_signal,
     get_ipc_directory,
     resolve_resource_file,
@@ -167,6 +168,16 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.config = Configuration.get()
         listener_config = self.config.get('listener')
         self.upload_config = listener_config.get('wake_word_upload')
+        self.skip_wake_words = False
+        if check_for_signal('skip_wake_word', -1):
+            self.skip_wake_words = True
+            LOG.debug("skip_wake_words signal found 1")
+        elif listener_config.get('skip_wake_words', False) and \
+                not check_for_signal('restartedFromSkill', 15):
+            self.skip_wake_words = True
+            LOG.debug("config skip_wake_words and"
+                      " not restartedFromSkill found 1")
+        LOG.debug("self.skip_wake_words = " + str(self.skip_wake_words))
         self.wake_word_name = wake_word_recognizer.key_phrase
 
         speech_recognition.Recognizer.__init__(self)
@@ -507,7 +518,11 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         #       speech is detected, but there is no code to actually do that.
         self.adjust_for_ambient_noise(source, 1.0)
 
-        LOG.debug("Waiting for wake word...")
+        if self.skip_wake_words:
+            create_signal('startListening')
+            LOG.debug("Skipping wake word... waiting...")
+        else:
+            LOG.debug("Waiting for wake word...")
         self._wait_until_wake_word(source, sec_per_buffer)
         if self._stop_signaled:
             return
@@ -517,7 +532,9 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         # If enabled, play a wave file with a short sound to audibly
         # indicate recording has begun.
-        if self.config.get('confirm_listening'):
+        if (self.config.get('confirm_listening') and
+                (not self.skip_wake_words or
+                 check_for_signal('WaitingToConfirm', 10))):
             file = resolve_resource_file(
                 self.config.get('sounds').get('start_listening'))
             if file:

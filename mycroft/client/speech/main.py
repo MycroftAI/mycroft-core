@@ -23,6 +23,8 @@ from mycroft.lock import Lock as PIDLock  # Create/Support PID locking file
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
+from mycroft.util import (
+    check_for_signal)
 
 ws = None
 lock = Lock()
@@ -53,7 +55,10 @@ def handle_awoken():
 
 
 def handle_wakeword(event):
-    LOG.info("Wakeword Detected: " + event['utterance'])
+    if not check_for_signal('skip_wake_word', -1):
+        LOG.info("Wakeword Detected: " + event['utterance'])
+    else:
+        LOG.info("Wakeword skipped: ")
     ws.emit(Message('recognizer_loop:wakeword', event))
 
 
@@ -76,9 +81,12 @@ def handle_speak(event):
 def handle_complete_intent_failure(event):
     LOG.info("Failed to find intent.")
     # TODO: Localize
-    data = {'utterance':
-            "Sorry, I didn't catch that. Please rephrase your request."}
-    ws.emit(Message('speak', data))
+    if not check_for_signal('skip_wake_word', -1):
+        data = {
+            'utterance':
+            "Sorry, I didn't catch that. "
+            "Please rephrase your request."}
+        ws.emit(Message('speak', data))
 
 
 def handle_sleep(event):
@@ -95,6 +103,14 @@ def handle_mic_mute(event):
 
 def handle_mic_unmute(event):
     loop.unmute()
+
+
+def handle_restart(event):
+    loop.restart()
+
+
+def handle_reload(event):
+    loop.reload()
 
 
 def handle_paired(event):
@@ -150,10 +166,14 @@ def main():
     loop.on('recognizer_loop:wakeword', handle_wakeword)
     loop.on('recognizer_loop:record_end', handle_record_end)
     loop.on('recognizer_loop:no_internet', handle_no_internet)
+    loop.on('recognizer_loop:restart', handle_restart)
+    loop.on('recognizer_loop:reload', handle_reload)
     ws.on('open', handle_open)
     ws.on('complete_intent_failure', handle_complete_intent_failure)
     ws.on('recognizer_loop:sleep', handle_sleep)
     ws.on('recognizer_loop:wake_up', handle_wake_up)
+    ws.on('recognizer_loop:restart', handle_restart)
+    ws.on('recognizer_loop:reload', handle_reload)
     ws.on('mycroft.mic.mute', handle_mic_mute)
     ws.on('mycroft.mic.unmute', handle_mic_unmute)
     ws.on("mycroft.paired", handle_paired)
