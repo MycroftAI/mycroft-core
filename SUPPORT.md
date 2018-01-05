@@ -9,7 +9,7 @@ Feel free to post questions, bugs, and requests for assistance in the relevant F
 
 ## Chat
 
-Mycroft staff are regularly available in our [Chat](https://community.mycroft.ai) platform. 
+Mycroft staff are regularly available in our [Chat](https://chat.mycroft.ai) platform. 
 There are specific rooms available for different projects and products. 
 
 ## Contact
