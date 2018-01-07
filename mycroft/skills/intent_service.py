@@ -196,6 +196,15 @@ class IntentService(object):
         """
         return self.skill_names.get(skill_id, skill_id)
 
+    def handle_skill_shutdown(self, message):
+        name = message.data.get("name")
+        id = message.data.get("id")
+        self.skills_map[id] = name
+
+    def handle_skill_load(self, message):
+        id = message.data.get("id")
+        self.skills_map.pop(id)
+
     def handle_skill_manifest(self, message):
         self.bus.emit(Message("skill.manifest.response", self.skills_map))
 
