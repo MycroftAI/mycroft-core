@@ -61,6 +61,27 @@ FRACTION_STRING_PT = {
     1000: u'milésimo'
 }
 
+FRACTION_STRING_IT = {
+    2: 'mezz',
+    3: 'terz',
+    4: 'quart',
+    5: 'quint',
+    6: 'sest',
+    7: 'settim',
+    8: 'ottav',
+    9: 'non',
+    10: 'decim',
+    11: 'undicesim',
+    12: 'dodicesim',
+    13: 'tredicesim',
+    14: 'quattordicesim',
+    15: 'quindicesim',
+    16: 'sedicesim',
+    17: 'diciassettesim',
+    18: 'diciottesim',
+    19: 'diciannovesim',
+    20: 'ventesim'
+}
 
 def nice_number(number, lang="en-us", speech=True, denominators=None):
     """Format a float to human readable functions
@@ -91,6 +112,8 @@ def nice_number(number, lang="en-us", speech=True, denominators=None):
         return nice_number_en(result)
     elif lang_lower.startswith("pt"):
         return nice_number_pt(result)
+    elif lang_lower.startswith("it"):
+        return nice_number_it(result)
     # TODO: Normalization for other languages
     return str(number)
 
@@ -141,6 +164,39 @@ def nice_number_pt(result):
     # plural
     if num > 1:
         return_string += 's'
+    return return_string
+
+
+def nice_number_it(result):
+    """ Italian conversion for nice_number """
+    whole, num, den = result
+    if num == 0:
+        return str(whole)
+    # denominatore
+    den_str = FRACTION_STRING_IT[den]
+    # frazione
+    if whole == 0:
+        if num == 1:
+            # un decimo
+            return_string = 'un {}'.format(den_str)
+        else:
+            # tre mezzi
+            return_string = '{} {}'.format(num, den_str)
+    # interi  >10
+    elif num == 1:
+        # trenta e un
+        return_string = '{} e un {}'.format(whole, den_str)
+    # interi >10 con frazioni
+    else:
+        # venti e 3 decimi
+        return_string = '{} e {} {}'.format(whole, num, den_str)
+
+    # plurali
+    if num > 1:
+        return_string += 'i'
+    else:
+        return_string += 'o'
+
     return return_string
 
 
