@@ -147,7 +147,7 @@ class IntentService(object):
         self.engine = IntentDeterminationEngine()
 
         # Dictionary for translating a skill id to a name
-        self.skill_names = {}
+        self.skills_names = {}
         # Context related intializations
         self.context_keywords = self.config.get('keywords', [])
         self.context_max_frames = self.config.get('max_frames', 3)
@@ -160,6 +160,9 @@ class IntentService(object):
         self.bus.on('recognizer_loop:utterance', self.handle_utterance)
         self.bus.on('detach_intent', self.handle_detach_intent)
         self.bus.on('detach_skill', self.handle_detach_skill)
+        self.bus.on("mycroft.skills.manifest", self.handle_skill_manifest)
+        self.bus.on("mycroft.intent.get", self.handle_intent_get)
+
         # Context related handlers
         self.bus.on('add_context', self.handle_add_context)
         self.bus.on('remove_context', self.handle_remove_context)
@@ -192,6 +195,19 @@ class IntentService(object):
             (str) Skill name or the skill id if the skill wasn't found
         """
         return self.skill_names.get(skill_id, skill_id)
+
+    def handle_skill_manifest(self, message):
+        self.bus.emit(Message("skill.manifest.response", self.skills_map))
+
+    def handle_intent_manifest(self, message):
+        self.bus.emit(Message("intent.manifest.response", self.intent_map))
+
+    def handle_intent_get(self, message):
+        utterance = message.data.get("utterance", "")
+        lang = message.data.get("lang", "en-us")
+        intent = self._adapt_intent_match([utterance], lang)
+        self.bus.emit(Message("intent.response", {"utterance": utterance,
+                                                      "intent_data": intent}))
 
     def reset_converse(self, message):
         """Let skills know there was a problem with speech recognition"""
@@ -416,6 +432,8 @@ class IntentService(object):
             p for p in self.engine.intent_parsers if
             not p.name.startswith(skill_id)]
         self.engine.intent_parsers = new_parsers
+        self.skills_map.pop(skill_id)
+
 
     def handle_add_context(self, message):
         """ Add context
