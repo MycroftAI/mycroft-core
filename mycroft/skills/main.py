@@ -37,7 +37,6 @@ from mycroft.skills.padatious_service import PadatiousService
 from mycroft.util import connected
 from mycroft.util.log import LOG
 
-
 ws = None
 event_scheduler = None
 skill_manager = None
@@ -151,7 +150,7 @@ class SkillManager(Thread):
         super(SkillManager, self).__init__()
         self._stop_event = Event()
         self._loaded_priority = Event()
-        self.next_download = time.time() - 1    # download ASAP
+        self.next_download = time.time() - 1  # download ASAP
         self.loaded_skills = {}
         self.msm_blocked = False
         self.ws = ws
@@ -222,7 +221,8 @@ class SkillManager(Thread):
 
                     if res == 0 and speak:
                         self.ws.emit(Message("speak", {'utterance':
-                                     mycroft.dialog.get("skills updated")}))
+                                                           mycroft.dialog.get(
+                                                               "skills updated")}))
                     return True
                 elif not connected():
                     LOG.error('msm failed, network connection not available')
@@ -289,7 +289,7 @@ class SkillManager(Thread):
                         "After shutdown of {} there are still "
                         "{} references remaining. The skill "
                         "won't be cleaned from memory."
-                        .format(skill['instance'].name, refs))
+                            .format(skill['instance'].name, refs))
             del skill["instance"]
 
         # (Re)load the skill from disk
@@ -304,6 +304,12 @@ class SkillManager(Thread):
                 ws.emit(Message('mycroft.skills.loaded',
                                 {'id': skill['id'],
                                  'name': skill['instance'].name}))
+
+            self.ws.emit(Message("skill.loaded",
+                                 {'folder': skill_folder,
+                                  "id": skill["id"],
+                                  "name": skill["instance"].name,
+                                  "modified": modified}))
 
     def load_skill_list(self, skills_to_load):
         """ Load the specified list of skills from disk
