@@ -398,7 +398,6 @@ class SkillSettings(dict):
             with open(self._settings_path) as f:
                 try:
                     json_data = json.load(f)
-                    LOG.info(self.name+str(json_data))
                     for key in json_data:
                         self[key] = json_data[key]
                 except Exception as e:
