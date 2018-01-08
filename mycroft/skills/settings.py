@@ -110,6 +110,7 @@ class SkillSettings(dict):
         # if settingsmeta.json exists (and is valid)
         # this block of code is a control flow for
         # different scenarios that may arises with settingsmeta
+        self.load_skill_settings_from_file()  # loads existing settings.json
         settings_meta = self._load_settings_meta()
         if not settings_meta:
             return
@@ -397,6 +398,7 @@ class SkillSettings(dict):
             with open(self._settings_path) as f:
                 try:
                     json_data = json.load(f)
+                    LOG.info(self.name+str(json_data))
                     for key in json_data:
                         self[key] = json_data[key]
                 except Exception as e:
