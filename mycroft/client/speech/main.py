@@ -23,6 +23,7 @@ from mycroft.lock import Lock as PIDLock  # Create/Support PID locking file
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
+import random
 
 ws = None
 lock = Lock()
@@ -76,8 +77,9 @@ def handle_speak(event):
 def handle_complete_intent_failure(event):
     LOG.info("Failed to find intent.")
     # TODO: Localize
-    data = {'utterance':
-            "Sorry, I didn't catch that. Please rephrase your request."}
+    utterances = ["Sorry, I didn't catch that.", "Sorry, I don't understand.", "Huhm, can you repeat that?", "Can you repeat that?", "I don't understand.", "Huh, I don't understand.", "Huh, can you repeat that?", "Please repeat that.", "Sorry, repeat that, please.", "What did you say?", "Sorry, what did you say?", "I'm not sure I understood you.", "Can you say that a different way?", "You might have to say that a different way.", "Can you please say that another way?", "Please rephrase your request."]
+    utterance = random.choice(utterances)
+    data = {'utterance': utterance}
     ws.emit(Message('speak', data))
 
 
