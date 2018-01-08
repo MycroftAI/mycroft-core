@@ -159,7 +159,7 @@ def load_skill(skill_descriptor, emitter, skill_id, BLACKLISTED_SKILLS=None):
             # The very first time a skill is run, speak the intro
             first_run = skill.settings.get("__mycroft_skill_firstrun", True)
             if first_run:
-                LOG.info("First run of " + skill_descriptor["name"])
+                LOG.info("First run of "+skill_descriptor["name"])
                 skill.settings["__mycroft_skill_firstrun"] = False
                 skill.settings.store()
                 intro = skill.get_intro_message()
@@ -1017,8 +1017,7 @@ class MycroftSkill(object):
         unique_name = self._unique_name(name)
         data = {'event': unique_name}
         self.remove_event(unique_name)
-        self.emitter.emit(
-            Message('mycroft.scheduler.remove_event', data=data))
+        self.emitter.emit(Message('mycroft.scheduler.remove_event', data=data))
 
     def get_scheduled_event_status(self, name):
         """
@@ -1050,8 +1049,7 @@ class MycroftSkill(object):
         self.emitter.emit(Message('mycroft.scheduler.get_event', data=data))
 
         start_wait = time.time()
-        while finished_callback[0] is False and time.time() - start_wait < \
-                3.0:
+        while finished_callback[0] is False and time.time() - start_wait < 3.0:
             time.sleep(0.1)
         if time.time() - start_wait > 3.0:
             raise Exception("Event Status Messagebus Timeout")
@@ -1137,13 +1135,11 @@ class FallbackSkill(MycroftSkill):
             register a fallback with the list of fallback handlers
             and with the list of handlers registered by this instance
         """
-
         def wrapper(*args, **kwargs):
             if handler(*args, **kwargs):
                 self.make_active()
                 return True
             return False
-
         self.instance_fallback_handlers.append(wrapper)
         self._register_fallback(handler, priority)
 
