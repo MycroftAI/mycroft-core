@@ -305,9 +305,9 @@ class SkillManager(Thread):
             if skill["instance"] is not None:
                 self.ws.emit(Message("mycroft.skills.loaded",
                                      {'folder': skill_folder,
-                                        "id": skill["id"],
-                                        "name": skill["instance"].name,
-                                        "modified": modified}))
+                                      "id": skill["id"],
+                                      "name": skill["instance"].name,
+                                      "modified": modified}))
             else:
                 self.ws.emit(Message("mycroft.skills.loading_failure",
                                      {'folder': skill_folder,
