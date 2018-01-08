@@ -220,9 +220,11 @@ class SkillManager(Thread):
                     self.next_download = time.time() + 60 * MINUTES
 
                     if res == 0 and speak:
-                        self.ws.emit(Message("speak", {'utterance':
-                                                           mycroft.dialog.get(
-                                                               "skills updated")}))
+                        self.ws.emit(
+                            Message("speak",
+                                    {'utterance':
+                                     mycroft.dialog.get("skills updated")
+                                     }))
                     return True
                 elif not connected():
                     LOG.error('msm failed, network connection not available')
@@ -288,8 +290,8 @@ class SkillManager(Thread):
                     LOG.warning(
                         "After shutdown of {} there are still "
                         "{} references remaining. The skill "
-                        "won't be cleaned from memory."
-                            .format(skill['instance'].name, refs))
+                        "won't be cleaned from memory.".format(
+                            skill['instance'].name, refs))
             del skill["instance"]
 
         # (Re)load the skill from disk
