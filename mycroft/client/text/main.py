@@ -13,14 +13,14 @@
 # limitations under the License.
 #
 import sys
-from io import BytesIO
+import io
 
 # NOTE: If this script has errors, the following two lines might need to
 # be commented out for them to be displayed (depending on the type of
 # error).  But normally we want this to prevent extra messages from the
 # messagebus setup from appearing during startup.
-sys.stdout = BytesIO()  # capture any output
-sys.stderr = BytesIO()  # capture any output
+sys.stdout = io.BytesIO()  # capture any output
+sys.stderr = io.BytesIO()  # capture any output
 
 # All of the nopep8 comments below are to avoid E402 errors
 import os                                                   # nopep8
@@ -36,6 +36,11 @@ from mycroft.messagebus.client.ws import WebsocketClient    # nopep8
 from mycroft.messagebus.message import Message              # nopep8
 from mycroft.util import get_ipc_directory                  # nopep8
 from mycroft.util.log import LOG                            # nopep8
+
+import locale                                               # nopep8
+# Curses uses LC_ALL to determine how to display chars set it to system
+# default
+locale.setlocale(locale.LC_ALL, '.'.join(locale.getdefaultlocale()))
 
 ws = None
 mutex = Lock()
@@ -99,9 +104,15 @@ def clamp(n, smallest, largest):
     return max(smallest, min(n, largest))
 
 
-def stripNonAscii(text):
-    """ Remove junk characters that might be in the file """
-    return ''.join([i if ord(i) < 128 else ' ' for i in text])
+def handleNonAscii(text):
+    """
+        If default locale supports UTF-8 reencode the string otherwise
+        remove the offending characters.
+    """
+    if locale.getdefaultlocale()[1] == 'UTF-8':
+        return text.encode('utf-8')
+    else:
+        return ''.join([i if ord(i) < 128 else ' ' for i in text])
 
 
 ##############################################################################
@@ -116,7 +127,7 @@ def load_settings():
     global show_last_key
 
     try:
-        with open(config_file, 'r') as f:
+        with io.open(config_file, 'r') as f:
             config = json.load(f)
         if "filters" in config:
             log_filters = config["filters"]
@@ -133,8 +144,8 @@ def save_settings():
     config["filters"] = log_filters
     config["cy_chat_area"] = cy_chat_area
     config["show_last_key"] = show_last_key
-    with open(config_file, 'w') as f:
-        json.dump(config, f)
+    with io.open(config_file, 'w') as f:
+        f.write(unicode(json.dumps(config, ensure_ascii=False)))
 
 
 ##############################################################################
@@ -169,10 +180,10 @@ class LogMonitorThread(Thread):
         global mergedLog
         global log_line_offset
 
-        with open(self.filename, 'rb') as fh:
+        with io.open(self.filename) as fh:
             fh.seek(bytefrom)
             while True:
-                line = str(fh.readline())
+                line = fh.readline()
                 if line == "":
                     break
 
@@ -229,7 +240,7 @@ class MicMonitorThread(Thread):
         global meter_cur
         global meter_thresh
 
-        with open(self.filename, 'r') as fh:
+        with io.open(self.filename, 'r') as fh:
             fh.seek(bytefrom)
             while True:
                 line = fh.readline()
@@ -556,7 +567,7 @@ def _do_drawing(scr):
                 log = "~~" + log[start:end] + "~~"  # ..middle..
         if len_line > longest_visible_line:
             longest_visible_line = len_line
-        scr.addstr(y, 0, log, clr)
+        scr.addstr(y, 0, handleNonAscii(log), clr)
         y += 1
 
     # Log legend in the lower-right
@@ -612,7 +623,7 @@ def _do_drawing(scr):
             clr = CLR_CHAT_RESP
         else:
             clr = CLR_CHAT_QUERY
-        scr.addstr(y, 1, stripNonAscii(txt), clr)
+        scr.addstr(y, 1, handleNonAscii(txt), clr)
         y += 1
 
     # Command line at the bottom

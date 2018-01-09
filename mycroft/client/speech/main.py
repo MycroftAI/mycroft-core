@@ -59,7 +59,11 @@ def handle_wakeword(event):
 
 def handle_utterance(event):
     LOG.info("Utterance: " + str(event['utterances']))
-    ws.emit(Message('recognizer_loop:utterance', event))
+    context = {'client_name': 'mycroft_listener'}
+    if 'ident' in event:
+        ident = event.pop('ident')
+        context['ident'] = ident
+    ws.emit(Message('recognizer_loop:utterance', event, context))
 
 
 def handle_unknown():

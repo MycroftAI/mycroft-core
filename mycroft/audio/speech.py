@@ -20,6 +20,7 @@ from mycroft.configuration import Configuration
 from mycroft.tts import TTSFactory
 from mycroft.util import create_signal, check_for_signal
 from mycroft.util.log import LOG
+from mycroft.metrics import report_timing, Stopwatch
 
 ws = None  # TODO:18.02 - Rename to "messagebus"
 config = None
@@ -45,7 +46,15 @@ def handle_speak(event):
     Configuration.init(ws)
     global _last_stop_signal
 
+    # Get conversation ID
+    if event.context and 'ident' in event.context:
+        ident = event.context['ident']
+    else:
+        ident = 'unknown'
+
     with lock:
+        stopwatch = Stopwatch()
+        stopwatch.start()
         utterance = event.data['utterance']
         if event.data.get('expect_response', False):
             # When expect_response is requested, the listener will be restarted
@@ -66,7 +75,7 @@ def handle_speak(event):
                               utterance)
             for chunk in chunks:
                 try:
-                    mute_and_speak(chunk)
+                    mute_and_speak(chunk, ident)
                 except KeyboardInterrupt:
                     raise
                 except Exception:
@@ -75,15 +84,19 @@ def handle_speak(event):
                         check_for_signal('buttonPress')):
                     break
         else:
-            mute_and_speak(utterance)
+            mute_and_speak(utterance, ident)
+
+        stopwatch.stop()
+    report_timing(ident, 'speech', stopwatch, {'utterance': utterance})
 
 
-def mute_and_speak(utterance):
+def mute_and_speak(utterance, ident):
     """
         Mute mic and start speaking the utterance using selected tts backend.
 
         Args:
-            utterance: The sentence to be spoken
+            utterance:  The sentence to be spoken
+            ident:      Ident tying the utterance to the source query
     """
     global tts_hash
 
@@ -99,7 +112,7 @@ def mute_and_speak(utterance):
         tts_hash = hash(str(config.get('tts', '')))
 
     LOG.info("Speak: " + utterance)
-    tts.execute(utterance)
+    tts.execute(utterance, ident)
 
 
 def handle_stop(event):

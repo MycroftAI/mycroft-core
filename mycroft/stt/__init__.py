@@ -72,6 +72,15 @@ class BasicSTT(STT):
         self.password = str(self.credential.get("password"))
 
 
+class KeySTT(STT):
+    __metaclass__ = ABCMeta
+
+    def __init__(self):
+        super(KeySTT, self).__init__()
+        self.id = str(self.credential.get("client_id"))
+        self.key = str(self.credential.get("client_key"))
+
+
 class GoogleSTT(TokenSTT):
     def __init__(self):
         super(GoogleSTT, self).__init__()
@@ -142,6 +151,25 @@ class KaldiSTT(STT):
             return None
 
 
+class BingSTT(TokenSTT):
+    def __init__(self):
+        super(BingSTT, self).__init__()
+
+    def execute(self, audio, language=None):
+        self.lang = language or self.lang
+        return self.recognizer.recognize_bing(audio, self.token,
+                                              self.lang)
+
+
+class HoundifySTT(KeySTT):
+    def __init__(self):
+        super(HoundifySTT, self).__init__()
+
+    def execute(self, audio, language=None):
+        self.lang = language or self.lang
+        return self.recognizer.recognize_houndify(audio, self.id, self.key)
+
+
 class STTFactory(object):
     CLASSES = {
         "mycroft": MycroftSTT,
@@ -149,7 +177,9 @@ class STTFactory(object):
         "google_cloud": GoogleCloudSTT,
         "wit": WITSTT,
         "ibm": IBMSTT,
-        "kaldi": KaldiSTT
+        "kaldi": KaldiSTT,
+        "bing": BingSTT,
+        "houndify": HoundifySTT
     }
 
     @staticmethod

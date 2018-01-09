@@ -32,6 +32,7 @@ from speech_recognition import (
     AudioData
 )
 import requests
+from subprocess import check_output
 
 from mycroft.api import DeviceApi
 from mycroft.configuration import Configuration
@@ -385,6 +386,12 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         avg_energy = 0.0
         energy_avg_samples = int(5 / sec_per_buffer)  # avg over last 5 secs
 
+        ww_module = self.wake_word_recognizer.__class__.__name__
+        if ww_module == 'PreciseHotword':
+            _, model_path = self.wake_word_recognizer.get_model_info()
+            model_hash = check_output(['md5sum', model_path]).split()[0]
+        else:
+            model_hash = '0'
         counter = 0
 
         while not said_wake_word and not self._stop_signaled:
@@ -448,15 +455,15 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                         mkdir(self.save_wake_words_dir)
                     dr = self.save_wake_words_dir
 
-                    ww_module = self.wake_word_recognizer.__class__.__name__
-
-                    ww = self.wake_word_name.replace(' ', '-')
-                    md = md5(ww_module.encode('utf-8')).hexdigest()
-                    stamp = str(int(1000 * get_time()))
-                    sid = SessionManager.get().session_id
-                    aid = self.account_id
-
-                    fn = join(dr, '.'.join([ww, md, stamp, sid, aid]) + '.wav')
+                    components = [
+                        self.wake_word_name.replace(' ', '-'),
+                        md5(ww_module.encode('utf-8')).hexdigest(),
+                        str(int(1000 * get_time())),
+                        SessionManager.get().session_id,
+                        self.account_id,
+                        model_hash
+                    ]
+                    fn = join(dr, '.'.join(components) + '.wav')
                     with open(fn, 'wb') as f:
                         f.write(audio.get_wav_data())
 
