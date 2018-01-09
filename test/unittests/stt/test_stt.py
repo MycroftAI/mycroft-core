@@ -29,6 +29,9 @@ class TestSTT(unittest.TestCase):
                  'module': 'mycroft',
                  'wit': {'credential': {'token': 'FOOBAR'}},
                  'google': {'credential': {'token': 'FOOBAR'}},
+                 'bing': {'credential': {'token': 'FOOBAR'}},
+                 'houndify': {'credential': {'client_id': 'FOO',
+                                             "client_key": "BAR"}},
                  'google_cloud': {
                    'credential': {
                      'json': {}
@@ -37,7 +40,7 @@ class TestSTT(unittest.TestCase):
                  'ibm': {'credential': {'token': 'FOOBAR'}},
                  'kaldi': {'uri': 'https://test.com'},
                  'mycroft': {'uri': 'https://test.com'}
-            },
+                },
             'lang': 'en-US'
         }
         mock_get.return_value = config
@@ -149,11 +152,12 @@ class TestSTT(unittest.TestCase):
     def test_ibm_stt(self, mock_get):
         mycroft.stt.Recognizer = mock.MagicMock
         config = {'stt': {
-                 'module': 'ibm',
-                 'ibm': {'credential': {'token': 'FOOBAR'}},
-            },
-            "lang": "en-US"
-        }
+                  'module': 'ibm',
+                  'ibm': {'credential': {'username': 'FOO',
+                                         "password": 'BAR'}},
+                  },
+                  "lang": "en-US"
+                  }
         mock_get.return_value = config
 
         audio = mock.MagicMock()
@@ -198,3 +202,36 @@ class TestSTT(unittest.TestCase):
         audio = mock.MagicMock()
         stt = mycroft.stt.KaldiSTT()
         self.assertEquals(stt.execute(audio), 'text')
+
+    @mock.patch.object(Configuration, 'get')
+    def test_bing_stt(self, mock_get):
+        mycroft.stt.Recognizer = mock.MagicMock
+        config = {'stt': {
+            'module': 'bing',
+            'bing': {'credential': {'token': 'FOOBAR'}},
+        },
+            "lang": "en-US"
+        }
+        mock_get.return_value = config
+
+        audio = mock.MagicMock()
+        stt = mycroft.stt.BingSTT()
+        stt.execute(audio)
+        self.assertTrue(stt.recognizer.recognize_bing.called)
+
+    @mock.patch.object(Configuration, 'get')
+    def test_houndify_stt(self, mock_get):
+        mycroft.stt.Recognizer = mock.MagicMock
+        config = {'stt': {
+            'module': 'houndify',
+            'houndify': {'credential': {'client_id': 'FOO',
+                                        "client_key": "BAR"}}
+        },
+            "lang": "en-US"
+        }
+        mock_get.return_value = config
+
+        audio = mock.MagicMock()
+        stt = mycroft.stt.HoundifySTT()
+        stt.execute(audio)
+        self.assertTrue(stt.recognizer.recognize_houndify.called)
