@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 import re
+import json
 from abc import ABCMeta, abstractmethod
 from requests import post
 from speech_recognition import Recognizer
@@ -54,6 +55,14 @@ class TokenSTT(STT):
         self.token = str(self.credential.get("token"))
 
 
+class GoogleJsonSTT(STT):
+    __metaclass__ = ABCMeta
+
+    def __init__(self):
+        super(GoogleJsonSTT, self).__init__()
+        self.json_credentials = json.dumps(self.credential.get("json"))
+
+
 class BasicSTT(STT):
     __metaclass__ = ABCMeta
 
@@ -79,6 +88,17 @@ class GoogleSTT(TokenSTT):
     def execute(self, audio, language=None):
         self.lang = language or self.lang
         return self.recognizer.recognize_google(audio, self.token, self.lang)
+
+
+class GoogleCloudSTT(GoogleJsonSTT):
+    def __init__(self):
+        super(GoogleCloudSTT, self).__init__()
+
+    def execute(self, audio, language=None):
+        self.lang = language or self.lang
+        return self.recognizer.recognize_google_cloud(audio,
+                                                      self.json_credentials,
+                                                      self.lang)
 
 
 class WITSTT(TokenSTT):
@@ -154,6 +174,7 @@ class STTFactory(object):
     CLASSES = {
         "mycroft": MycroftSTT,
         "google": GoogleSTT,
+        "google_cloud": GoogleCloudSTT,
         "wit": WITSTT,
         "ibm": IBMSTT,
         "kaldi": KaldiSTT,

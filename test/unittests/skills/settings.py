@@ -42,6 +42,8 @@ class SkillSettingsTest(unittest.TestCase):
     def test_store(self):
         s = SkillSettings(join(dirname(__file__), 'settings'),
                           "test-skill-settings")
+        s.allow_overwrite = True
+        s.load_skill_settings_from_file()
         s['bool'] = True
         s['int'] = 42
         s['float'] = 4.2
@@ -51,16 +53,22 @@ class SkillSettingsTest(unittest.TestCase):
 
         s2 = SkillSettings(join(dirname(__file__), 'settings'),
                            "test-skill-settings")
+        s2.allow_overwrite = True
+        s2.load_skill_settings_from_file()
         for key in s:
             self.assertEqual(s[key], s2[key])
 
     def test_update_list(self):
         s = SkillSettings(join(dirname(__file__), 'settings'),
                           "test-skill-settings")
+        s.allow_overwrite = True
+        s.load_skill_settings_from_file()
         s['l'] = ['a', 'b', 'c']
         s.store()
         s2 = SkillSettings(join(dirname(__file__), 'settings'),
                            "test-skill-settings")
+        s2.allow_overwrite = True
+        s2.load_skill_settings_from_file()
         self.assertEqual(s['l'], s2['l'])
 
         # Update list
@@ -68,15 +76,20 @@ class SkillSettingsTest(unittest.TestCase):
         s2.store()
         s3 = SkillSettings(join(dirname(__file__), 'settings'),
                            "test-skill-settings")
+        s3.allow_overwrite = True
+        s3.load_skill_settings_from_file()
         self.assertEqual(s2['l'], s3['l'])
 
     def test_update_dict(self):
         s = SkillSettings(join(dirname(__file__), 'settings'),
                           "test-skill-settings")
+        s.allow_overwrite = True
         s['d'] = {'a': 1, 'b': 2}
         s.store()
         s2 = SkillSettings(join(dirname(__file__), 'settings'),
                            "test-skill-settings")
+        s2.allow_overwrite = True
+        s2.load_skill_settings_from_file()
         self.assertEqual(s['d'], s2['d'])
 
         # Update dict
@@ -84,16 +97,21 @@ class SkillSettingsTest(unittest.TestCase):
         s2.store()
         s3 = SkillSettings(join(dirname(__file__), 'settings'),
                            "test-skill-settings")
+        s3.allow_overwrite = True
+        s3.load_skill_settings_from_file()
         self.assertEqual(s2['d'], s3['d'])
 
     def test_no_change(self):
         s = SkillSettings(join(dirname(__file__), 'settings'),
                           "test-skill-settings")
+        s.allow_overwrite = True
         s['d'] = {'a': 1, 'b': 2}
         s.store()
 
         s2 = SkillSettings(join(dirname(__file__), 'settings'),
                            "test-skill-settings")
+        s2.allow_overwrite = True
+        s2.load_skill_settings_from_file()
         self.assertTrue(len(s) == len(s2))
 
     def test_load_existing(self):
@@ -102,6 +120,8 @@ class SkillSettingsTest(unittest.TestCase):
             json.dump({"test": "1"}, f)
         s = SkillSettings(join(dirname(__file__), 'settings'),
                           "test-skill-settings")
+        s.allow_overwrite = True
+        s.load_skill_settings_from_file()
         self.assertEqual(len(s), 1)
 
 

@@ -15,6 +15,7 @@
 import audioop
 import collections
 import datetime
+from hashlib import md5
 import shutil
 from tempfile import gettempdir
 from threading import Thread, Lock
@@ -30,9 +31,11 @@ from speech_recognition import (
     AudioSource,
     AudioData
 )
+import requests
+from subprocess import check_output
 
+from mycroft.api import DeviceApi
 from mycroft.configuration import Configuration
-from mycroft.identity import IdentityManager
 from mycroft.session import SessionManager
 from mycroft.util import (
     check_for_signal,
@@ -132,6 +135,10 @@ class MutableMicrophone(Microphone):
         return self.muted
 
 
+def get_silence(num_bytes):
+    return b'\0' * num_bytes
+
+
 class ResponsiveRecognizer(speech_recognition.Recognizer):
     # Padding of silence when feeding to pocketsphinx
     SILENCE_SEC = 0.01
@@ -184,6 +191,11 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         len_phoneme = listener_config.get('phoneme_duration', 120) / 1000.0
         self.TEST_WW_SEC = num_phonemes * len_phoneme
         self.SAVED_WW_SEC = 10 if self.save_wake_words else self.TEST_WW_SEC
+
+        try:
+            self.account_id = DeviceApi().get()['user']['uuid']
+        except (requests.HTTPError, requests.ConnectionError, AttributeError):
+            self.account_id = '0'
 
     @staticmethod
     def record_sound_chunk(source):
@@ -239,7 +251,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                                     sec_per_buffer)
 
         # bytearray to store audio in
-        byte_data = '\0' * source.SAMPLE_WIDTH
+        byte_data = get_silence(source.SAMPLE_WIDTH)
 
         phrase_complete = False
         while num_chunks < max_chunks and not phrase_complete:
@@ -352,7 +364,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         num_silent_bytes = int(self.SILENCE_SEC * source.SAMPLE_RATE *
                                source.SAMPLE_WIDTH)
 
-        silence = '\0' * num_silent_bytes
+        silence = get_silence(num_silent_bytes)
 
         # bytearray to store audio in
         byte_data = silence
@@ -374,6 +386,12 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         avg_energy = 0.0
         energy_avg_samples = int(5 / sec_per_buffer)  # avg over last 5 secs
 
+        ww_module = self.wake_word_recognizer.__class__.__name__
+        if ww_module == 'PreciseHotword':
+            _, model_path = self.wake_word_recognizer.get_model_info()
+            model_hash = check_output(['md5sum', model_path]).split()[0]
+        else:
+            model_hash = '0'
         counter = 0
 
         while not said_wake_word and not self._stop_signaled:
@@ -437,15 +455,15 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                         mkdir(self.save_wake_words_dir)
                     dr = self.save_wake_words_dir
 
-                    ww_module = self.wake_word_recognizer.__class__.__name__
-
-                    ww = self.wake_word_name.replace(' ', '-')
-                    md = str(abs(hash(ww_module)))
-                    stamp = str(int(1000 * get_time()))
-                    sid = SessionManager.get().session_id
-                    uid = IdentityManager.get().uuid
-
-                    fn = join(dr, '.'.join([ww, md, stamp, sid, uid]) + '.wav')
+                    components = [
+                        self.wake_word_name.replace(' ', '-'),
+                        md5(ww_module.encode('utf-8')).hexdigest(),
+                        str(int(1000 * get_time())),
+                        SessionManager.get().session_id,
+                        self.account_id,
+                        model_hash
+                    ]
+                    fn = join(dr, '.'.join(components) + '.wav')
                     with open(fn, 'wb') as f:
                         f.write(audio.get_wav_data())
 

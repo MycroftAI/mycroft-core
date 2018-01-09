@@ -17,6 +17,7 @@ import subprocess
 import sys
 import time
 from threading import Timer, Thread, Event, Lock
+import gc
 
 import os
 from os.path import exists, join
@@ -41,6 +42,7 @@ ws = None
 event_scheduler = None
 skill_manager = None
 
+DEBUG = Configuration.get().get("debug", False)
 skills_config = Configuration.get().get("skills")
 BLACKLISTED_SKILLS = skills_config.get("blacklisted_skills", [])
 PRIORITY_SKILLS = skills_config.get("priority_skills", [])
@@ -124,7 +126,7 @@ def _get_last_modified_date(path):
         Returns:    time of last change
     """
     last_date = 0
-    root_dir, subdirs, files = os.walk(path).next()
+    root_dir, subdirs, files = next(os.walk(path))
     # get subdirs and remove hidden ones
     subdirs = [s for s in subdirs if not s.startswith('.')]
     for subdir in subdirs:
@@ -278,14 +280,16 @@ class SkillManager(Thread):
             # removing listeners and stopping threads
             skill["instance"].shutdown()
 
-            # Remove two local references that are known
-            refs = sys.getrefcount(skill["instance"]) - 2
-            if refs > 0:
-                LOG.warning(
-                    "After shutdown of {} there are still "
-                    "{} references remaining. The skill "
-                    "won't be cleaned from memory."
-                    .format(skill['instance'].name, refs))
+            if DEBUG:
+                gc.collect()  # Collect garbage to remove false references
+                # Remove two local references that are known
+                refs = sys.getrefcount(skill["instance"]) - 2
+                if refs > 0:
+                    LOG.warning(
+                        "After shutdown of {} there are still "
+                        "{} references remaining. The skill "
+                        "won't be cleaned from memory."
+                        .format(skill['instance'].name, refs))
             del skill["instance"]
 
         # (Re)load the skill from disk
@@ -296,6 +300,10 @@ class SkillManager(Thread):
                                            self.ws, skill["id"],
                                            BLACKLISTED_SKILLS)
             skill["last_modified"] = modified
+            if skill and skill['instance']:
+                ws.emit(Message('mycroft.skills.loaded',
+                                {'id': skill['id'],
+                                 'name': skill['instance'].name}))
 
     def load_skill_list(self, skills_to_load):
         """ Load the specified list of skills from disk
@@ -322,8 +330,13 @@ class SkillManager(Thread):
         # Scan the file folder that contains Skills.  If a Skill is updated,
         # unload the existing version from memory and reload from the disk.
         while not self._stop_event.is_set():
-            # Update skills once an hour
-            if time.time() >= self.next_download:
+
+            # check if skill updates are enabled
+            update = Configuration.get().get("skills", {}).get("auto_update",
+                                                               True)
+
+            # Update skills once an hour if update is enabled
+            if time.time() >= self.next_download and update:
                 self.download_skills()
 
             # Look for recently changed skill(s) needing a reload
@@ -384,8 +397,8 @@ class SkillManager(Thread):
                         "skill_id": skill_id, "result": result}))
                     return
                 except BaseException:
-                    LOG.error(
-                        "Converse method malformed for skill " + str(skill_id))
+                    LOG.exception(
+                        "Error in converse method for skill " + str(skill_id))
         self.ws.emit(Message("skill.converse.response",
                              {"skill_id": 0, "result": False}))
 

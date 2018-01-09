@@ -25,7 +25,6 @@ _base_dict = {'jsonrpc': '2.0', 'id': 1, 'params': {}}
 
 class Mopidy(object):
     def __init__(self, url):
-        print "MOPIDY URL: " + url
         self.is_playing = False
         self.url = url + MOPIDY_API
         self.volume = None
@@ -41,7 +40,6 @@ class Mopidy(object):
         return r.json()['result'][1]['artists']
 
     def get_playlists(self, filter=None):
-        print "GETTING PLAYLISTS"
         d = copy(_base_dict)
         d['method'] = 'core.playlists.as_list'
         r = requests.post(self.url, data=json.dumps(d))
@@ -72,7 +70,6 @@ class Mopidy(object):
         d = copy(_base_dict)
         d['method'] = 'core.library.browse'
         d['params'] = {'uri': uri}
-        print "BROWSE"
         r = requests.post(self.url, data=json.dumps(d))
         if 'result' in r.json():
             return r.json()['result']
@@ -118,7 +115,6 @@ class Mopidy(object):
             r = requests.post(self.url, data=json.dumps(d))
 
     def stop(self):
-        print self.is_playing
         if self.is_playing:
             d = copy(_base_dict)
             d['method'] = 'core.playback.stop'
@@ -165,7 +161,6 @@ class Mopidy(object):
         d['params'] = {'uri': uri}
         r = requests.post(self.url, data=json.dumps(d))
         if 'result' in r.json():
-            print r.json()
             return [e['uri'] for e in r.json()['result']]
         else:
             return None
@@ -192,9 +187,7 @@ class Mopidy(object):
         return {e['name']: e for e in p if e['type'] == 'directory'}
 
     def get_local_playlists(self):
-        print "GETTING PLAYLISTS"
         p = self.get_playlists('m3u')
-        print "RETURNING PLAYLISTS"
         return {e['name']: e for e in p}
 
     def get_spotify_playlists(self):
@@ -203,9 +196,7 @@ class Mopidy(object):
 
     def get_gmusic_albums(self):
         p = self.browse('gmusic:album')
-        print p
         p = {e['name']: e for e in p if e['type'] == 'directory'}
-        print p
         return {e.split(' - ')[1]: p[e] for e in p}
 
     def get_gmusic_artists(self):

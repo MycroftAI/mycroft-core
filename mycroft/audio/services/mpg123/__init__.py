@@ -43,7 +43,7 @@ class Mpg123Service(AudioBackend):
         self.tracks = []
 
     def add_list(self, tracks):
-        self.tracks = tracks
+        self.tracks += tracks
         LOG.info("Track list is " + str(tracks))
 
     def _play(self, message=None):

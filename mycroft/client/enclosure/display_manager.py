@@ -36,7 +36,7 @@ def _write_data(dictionary):
 
     if permission == "w+" and os.path.isdir(managerIPCDir) is False:
         os.makedirs(managerIPCDir)
-        os.chmod(managerIPCDir, 0777)
+        os.chmod(managerIPCDir, 0o777)
 
     try:
         with open(path, permission) as dispFile:
@@ -56,7 +56,7 @@ def _write_data(dictionary):
             dispFile.write(json.dumps(data))
             dispFile.truncate()
 
-        os.chmod(path, 0777)
+        os.chmod(path, 0o777)
 
     except Exception as e:
         LOG.error(e)

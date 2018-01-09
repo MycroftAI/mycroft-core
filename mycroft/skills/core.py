@@ -16,25 +16,45 @@ import imp
 import operator
 import sys
 import time
+import csv
 from functools import wraps
 from inspect import getargspec
+import inspect
 
 import abc
 import re
 from adapt.intent import Intent, IntentBuilder
 from os import listdir
 from os.path import join, abspath, dirname, splitext, basename, exists
+from threading import Event
 
+from mycroft.api import DeviceApi
 from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
 from mycroft.dialog import DialogLoader
 from mycroft.filesystem import FileSystemAccess
 from mycroft.messagebus.message import Message
+from mycroft.metrics import report_metric, report_timing, Stopwatch
 from mycroft.skills.settings import SkillSettings
+from mycroft.util import resolve_resource_file
 from mycroft.util.log import LOG
-
+# python 2+3 compatibility
+from past.builtins import basestring
 
 MainModule = '__init__'
+
+
+def dig_for_message():
+    """
+        Dig Through the stack for message.
+    """
+    stack = inspect.stack()
+    # Limit search to 10 frames back
+    stack = stack if len(stack) < 10 else stack[:10]
+    local_vars = [frame[0].f_locals for frame in stack]
+    for l in local_vars:
+        if 'message' in l and isinstance(l['message'], Message):
+            return l['message']
 
 
 def load_vocab_from_file(path, vocab_type, emitter):
@@ -126,6 +146,8 @@ def load_skill(skill_descriptor, emitter, skill_id, BLACKLISTED_SKILLS=None):
                 callable(skill_module.create_skill)):
             # v2 skills framework
             skill = skill_module.create_skill()
+            skill.settings.allow_overwrite = True
+            skill.settings.load_skill_settings_from_file()
             skill.bind(emitter)
             skill.skill_id = skill_id
             skill.load_data_files(dirname(skill_descriptor['info'][1]))
@@ -229,6 +251,7 @@ class MycroftSkill(object):
         self.config = self.config_core.get(self.name)
         self.dialog_renderer = None
         self.vocab_dir = None
+        self.root_dir = None
         self.file_system = FileSystemAccess(join('skills', self.name))
         self.registered_intents = []
         self.log = LOG.create_logger(self.name)
@@ -292,11 +315,10 @@ class MycroftSkill(object):
 
     def initialize(self):
         """
-        Initialization function to be implemented by all Skills.
-
-        Usually used to create intents rules and register them.
+        Invoked after the skill is fully constructed and registered with the
+        system.  Use to perform any final setup needed for the skill.
         """
-        LOG.debug("No initialize function implemented")
+        pass
 
     def get_intro_message(self):
         """
@@ -317,12 +339,141 @@ class MycroftSkill(object):
             indicate that the utterance has been handled.
 
             Args:
-                utterances: The utterances from the user
+                utterances (list): The utterances from the user
                 lang:       language the utterance is in
 
             Returns:    True if an utterance was handled, otherwise False
         """
         return False
+
+    def __get_response(self):
+        """
+        Helper to get a reponse from the user
+
+        Returns:
+            str: user's response or None on a timeout
+        """
+        event = Event()
+
+        def converse(utterances, lang="en-us"):
+            converse.response = utterances[0] if utterances else None
+            event.set()
+            return True
+
+        # install a temporary conversation handler
+        self.make_active()
+        converse.response = None
+        default_converse = self.converse
+        self.converse = converse
+        event.wait(15)  # 10 for listener, 5 for SST, then timeout
+        self.converse = default_converse
+        return converse.response
+
+    def get_response(self, dialog='', data=None, announcement='',
+                     validator=None, on_fail=None, num_retries=-1):
+        """
+        Prompt user and wait for response
+
+        The given dialog or announcement will be spoken, the immediately
+        listen and return user response.  The response can optionally be
+        validated.
+
+        Example:
+            color = self.get_response('ask.favorite.color')
+
+        Args:
+            dialog (str): Announcement dialog to read to the user
+            data (dict): Data used to render the dialog
+            announcement (str): Literal string (overrides dialog)
+            validator (any): Function with following signature
+                def validator(utterance):
+                    return utterance != "red"
+            on_fail (any): Dialog or function returning literal string
+                           to speak on invalid input.  For example:
+                def on_fail(utterance):
+                    return "nobody likes the color red, pick another"
+            num_retries (int): Times to ask user for input, -1 for infinite
+                NOTE: User can not respond and timeout or say "cancel" to stop
+
+        Returns:
+            str: User's reply or None if timed out or canceled
+        """
+        data = data or {}
+
+        def get_announcement():
+            return announcement or self.dialog_renderer.render(dialog, data)
+
+        if not get_announcement():
+            raise ValueError('announcement or dialog message required')
+
+        def on_fail_default(utterance):
+            fail_data = data.copy()
+            fail_data['utterance'] = utterance
+            if on_fail:
+                return self.dialog_renderer.render(on_fail, fail_data)
+            else:
+                return get_announcement()
+
+        # TODO: Load with something like mycroft.dialog.get_all()
+        cancel_voc = 'text/' + self.lang + '/cancel.voc'
+        with open(resolve_resource_file(cancel_voc)) as f:
+            cancel_words = list(filter(bool, f.read().split('\n')))
+
+        def is_cancel(utterance):
+            return utterance in cancel_words
+
+        def validator_default(utterance):
+            # accept anything except 'cancel'
+            return not is_cancel(utterance)
+
+        validator = validator or validator_default
+        on_fail_fn = on_fail if callable(on_fail) else on_fail_default
+
+        self.speak(get_announcement(), expect_response=True)
+        num_fails = 0
+        while True:
+            response = self.__get_response()
+
+            if response is None:
+                # if nothing said, prompt one more time
+                num_none_fails = 1 if num_retries < 0 else num_retries
+                if num_fails >= num_none_fails:
+                    return None
+            else:
+                if validator(response):
+                    return response
+
+                # catch user saying 'cancel'
+                if is_cancel(response):
+                    return None
+
+            num_fails += 1
+            if 0 < num_retries < num_fails:
+                return None
+
+            line = on_fail_fn(response)
+            self.speak(line, expect_response=True)
+
+    def report_metric(self, name, data):
+        """
+        Report a skill metric to the Mycroft servers
+
+        Args:
+            name (str): Name of metric. Must use only letters and hyphens
+            data (dict): JSON dictionary to report. Must be valid JSON
+        """
+        report_metric(basename(self.root_dir) + ':' + name, data)
+
+    def send_email(self, title, body):
+        """
+        Send an email to the registered user's email
+
+        Args:
+            title (str): Title of email
+            body  (str): HTML body of email. This supports
+                         simple HTML like bold and italics
+        """
+        DeviceApi().send_email(title, body, basename(self.root_dir))
 
     def make_active(self):
         """
@@ -345,6 +496,106 @@ class MycroftSkill(object):
         _intent_list = []
         _intent_file_list = []
 
+    def translate(self, text, data=None):
+        """
+        Load a translatable single string resource
+
+        The string is loaded from a file in the skill's dialog subdirectory
+          'dialog/<lang>/<text>.dialog'
+        The string is randomly chosen from the file and rendered, replacing
+        mustache placeholders with values found in the data dictionary.
+
+        Args:
+            text (str): The base filename  (no extension needed)
+            data (dict, optional): a JSON dictionary
+
+        Returns:
+            str: A randomly chosen string from the file
+        """
+        return self.dialog_renderer.render(text, data or {})
+
+    def translate_namedvalues(self, name, delim=None):
+        """
+        Load translation dict containing names and values.
+
+        This loads a simple CSV from the 'dialog' folders.
+        The name is the first list item, the value is the
+        second.  Lines prefixed with # or // get ignored
+
+        Args:
+            name (str): name of the .value file, no extension needed
+            delim (char): delimiter character used, default is ','
+
+        Returns:
+            dict: name and value dictionary, or [] if load fails
+        """
+
+        delim = delim or ','
+        result = {}
+        if not name.endswith(".value"):
+            name += ".value"
+
+        try:
+            with open(join(self.root_dir, 'dialog', self.lang, name)) as f:
+                reader = csv.reader(f, delimiter=delim)
+                for row in reader:
+                    # skip blank or comment lines
+                    if not row or row[0].startswith("#"):
+                        continue
+                    if len(row) != 2:
+                        continue
+
+                    result[row[0]] = row[1]
+
+            return result
+        except Exception:
+            return {}
+
+    def translate_template(self, template_name, data=None):
+        """
+        Load a translatable template
+
+        The strings are loaded from a template file in the skill's dialog
+        subdirectory.
+          'dialog/<lang>/<template_name>.template'
+        The strings are loaded and rendered, replacing mustache placeholders
+        with values found in the data dictionary.
+
+        Args:
+            template_name (str): The base filename (no extension needed)
+            data (dict, optional): a JSON dictionary
+
+        Returns:
+            list of str: The loaded template file
+        """
+        return self.__translate_file(template_name + '.template', data)
+
+    def translate_list(self, list_name, data=None):
+        """
+        Load a list of translatable string resources
+
+        The strings are loaded from a list file in the skill's dialog
+        subdirectory.
+          'dialog/<lang>/<list_name>.list'
+        The strings are loaded and rendered, replacing mustache placeholders
+        with values found in the data dictionary.
+
+        Args:
+            list_name (str): The base filename (no extension needed)
+            data (dict, optional): a JSON dictionary
+
+        Returns:
+            list of str: The loaded list of strings with items in consistent
+                         positions regardless of the language.
+        """
+        return self.__translate_file(list_name + '.list', data)
+
+    def __translate_file(self, name, data):
+        """Load and render lines from dialog/<lang>/<name>"""
+        with open(join(self.root_dir, 'dialog', self.lang, name)) as f:
+            text = f.read().replace('{{', '{').replace('}}', '}')
+            return text.format(**data or {}).split('\n')
+
     def add_event(self, name, handler, need_self=False):
         """
             Create event handler for executing intent
@@ -363,34 +614,50 @@ class MycroftSkill(object):
                 name = get_handler_name(handler)
                 self.emitter.emit(Message("mycroft.skill.handler.start",
                                           data={'handler': name}))
-                if need_self:
-                    # When registring from decorator self is required
-                    if len(getargspec(handler).args) == 2:
-                        handler(self, message)
-                    elif len(getargspec(handler).args) == 1:
-                        handler(self)
-                    elif len(getargspec(handler).args) == 0:
-                        # Zero may indicate multiple decorators, trying the
-                        # usual call signatures
-                        try:
+
+                stopwatch = Stopwatch()
+                with stopwatch:
+                    if need_self:
+                        # When registring from decorator self is required
+                        if len(getargspec(handler).args) == 2:
                             handler(self, message)
-                        except TypeError:
+                        elif len(getargspec(handler).args) == 1:
                             handler(self)
+                        elif len(getargspec(handler).args) == 0:
+                            # Zero may indicate multiple decorators, trying the
+                            # usual call signatures
+                            try:
+                                handler(self, message)
+                            except TypeError:
+                                handler(self)
+                        else:
+                            LOG.error("Unexpected argument count:" +
+                                      str(len(getargspec(handler).args)))
+                            raise TypeError
                     else:
-                        raise TypeError
-                else:
-                    if len(getargspec(handler).args) == 2:
-                        handler(message)
-                    elif len(getargspec(handler).args) == 1:
-                        handler()
-                    else:
-                        raise TypeError
-                self.settings.store()  # Store settings if they've changed
+                        if len(getargspec(handler).args) == 2:
+                            handler(message)
+                        elif len(getargspec(handler).args) == 1:
+                            handler()
+                        else:
+                            LOG.error("Unexpected argument count:" +
+                                      str(len(getargspec(handler).args)))
+                            raise TypeError
+                    self.settings.store()  # Store settings if they've changed
+
+                # Send timing metrics
+                context = message.context
+                if context and 'ident' in context:
+                    report_timing(context['ident'], 'skill_handler', stopwatch,
+                                  {'handler': handler.__name__})
+
             except Exception as e:
+                # Convert "MyFancySkill" to "My Fancy Skill" for speaking
+                name = re.sub("([a-z])([A-Z])", "\g<1> \g<2>", self.name)
                 # TODO: Localize
                 self.speak(
                     "An error occurred while processing a request in " +
-                    self.name)
+                    name)
                 LOG.error(
                     "An error occurred while processing a request in " +
                     self.name, exc_info=True)
@@ -435,8 +702,9 @@ class MycroftSkill(object):
         elif type(intent_parser) != Intent:
             raise ValueError('intent_parser is not an Intent')
 
-        name = intent_parser.name
-        intent_parser.name = str(self.skill_id) + ':' + intent_parser.name
+        # Default to the handler's function name if none given
+        name = intent_parser.name or handler.__name__
+        intent_parser.name = str(self.skill_id) + ':' + name
         self.emitter.emit(Message("register_intent", intent_parser.__dict__))
         self.registered_intents.append((name, intent_parser))
         self.add_event(intent_parser.name, handler, need_self)
@@ -563,27 +831,31 @@ class MycroftSkill(object):
             Speak a sentence.
 
             Args:
-                utterance:          sentence mycroft should speak
-                expect_response:    set to True if Mycroft should expect a
-                                    response from the user and start listening
-                                    for response.
+                utterance (str):        sentence mycroft should speak
+                expect_response (bool): set to True if Mycroft should listen
+                                        for a response immediately after
+                                        speaking the utterance.
         """
         # registers the skill as being active
         self.enclosure.register(self.name)
         data = {'utterance': utterance,
                 'expect_response': expect_response}
-        self.emitter.emit(Message("speak", data))
+        message = dig_for_message()
+        if message:
+            self.emitter.emit(message.reply("speak", data))
+        else:
+            self.emitter.emit(Message("speak", data))
 
     def speak_dialog(self, key, data=None, expect_response=False):
         """
-            Speak sentance based of dialog file.
+            Speak a random sentence from a dialog file.
 
             Args
-                key: dialog file key (filname without extension)
-                data: information to populate sentence with
-                expect_response:    set to True if Mycroft should expect a
-                                    response from the user and start listening
-                                    for response.
+                key (str): dialog file key (filename without extension)
+                data (dict): information used to populate sentence
+                expect_response (bool): set to True if Mycroft should listen
+                                        for a response immediately after
+                                        speaking the utterance.
         """
         data = data or {}
         self.speak(self.dialog_renderer.render(key, data), expect_response)
@@ -599,6 +871,7 @@ class MycroftSkill(object):
         self.init_dialog(root_directory)
         self.load_vocab_files(join(root_directory, 'vocab', self.lang))
         regex_path = join(root_directory, 'regex', self.lang)
+        self.root_dir = root_directory
         if exists(regex_path):
             self.load_regex_files(regex_path)
 
@@ -805,27 +1078,37 @@ class FallbackSkill(MycroftSkill):
             # indicate fallback handling start
             ws.emit(Message("mycroft.skill.handler.start",
                             data={'handler': "fallback"}))
-            for _, handler in sorted(cls.fallback_handlers.items(),
-                                     key=operator.itemgetter(0)):
-                try:
-                    if handler(message):
-                        #  indicate completion
-                        ws.emit(Message(
-                            'mycroft.skill.handler.complete',
-                            data={'handler': "fallback",
-                                  "fallback_handler": get_handler_name(
-                                      handler)}))
-                        return
-                except Exception as e:
-                    LOG.info('Exception in fallback: ' + str(e))
-            ws.emit(Message('complete_intent_failure'))
-            LOG.warning('No fallback could handle intent.')
-            #  indicate completion with exception
-            ws.emit(Message('mycroft.skill.handler.complete',
-                            data={'handler': "fallback",
-                                  'exception':
-                                      "No fallback could handle intent."}))
 
+            stopwatch = Stopwatch()
+            handler_name = None
+            with stopwatch:
+                for _, handler in sorted(cls.fallback_handlers.items(),
+                                         key=operator.itemgetter(0)):
+                    try:
+                        if handler(message):
+                            #  indicate completion
+                            handler_name = get_handler_name(handler)
+                            ws.emit(Message(
+                                'mycroft.skill.handler.complete',
+                                data={'handler': "fallback",
+                                      "fallback_handler": handler_name}))
+                            break
+                    except Exception:
+                        LOG.exception('Exception in fallback.')
+                else:  # No fallback could handle the utterance
+                    ws.emit(Message('complete_intent_failure'))
+                    warning = "No fallback could handle intent."
+                    LOG.warning(warning)
+                    #  indicate completion with exception
+                    ws.emit(Message('mycroft.skill.handler.complete',
+                                    data={'handler': "fallback",
+                                          'exception': warning}))
+
+            # Send timing metric
+            if message.context and message.context['ident']:
+                ident = message.context['ident']
+                report_timing(ident, 'fallback_handler', stopwatch,
+                              {'handler': handler_name})
         return handler
 
     @classmethod
@@ -848,7 +1131,12 @@ class FallbackSkill(MycroftSkill):
             register a fallback with the list of fallback handlers
             and with the list of handlers registered by this instance
         """
-        self.instance_fallback_handlers.append(handler)
+        def wrapper(*args, **kwargs):
+            if handler(*args, **kwargs):
+                self.make_active()
+                return True
+            return False
+        self.instance_fallback_handlers.append(wrapper)
         self._register_fallback(handler, priority)
 
     @classmethod

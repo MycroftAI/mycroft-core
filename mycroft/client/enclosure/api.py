@@ -168,7 +168,7 @@ class EnclosureAPI:
         self.ws.emit(Message("enclosure.mouth.smile"))
         DisplayManager.set_active(self.name)
 
-    def mouth_viseme(self, code):
+    def mouth_viseme(self, code, time_until=0):
         """Display a viseme mouth shape for synched speech
         Args:
             code (int):  0 = shape for sounds like 'y' or 'aa'
@@ -178,8 +178,11 @@ class EnclosureAPI:
                          4 = neutral shape for no sound
                          5 = shape for sounds like 'f' or 'v'
                          6 = shape for sounds like 'oy' or 'ao'
+            time_until (float): (optional) For timing, time.time() when this
+                         shape expires, or 0 for display regardles of time
         """
-        self.ws.emit(Message("enclosure.mouth.viseme", {'code': code}))
+        self.ws.emit(Message("enclosure.mouth.viseme", {'code': code,
+                                                        'until': time_until}))
 
     def mouth_text(self, text=""):
         """Display text (scrolling as needed)

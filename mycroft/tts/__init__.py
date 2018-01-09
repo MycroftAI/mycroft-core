@@ -14,21 +14,41 @@
 #
 import hashlib
 import random
-from Queue import Queue, Empty
 from threading import Thread
 from time import time, sleep
 
+import re
 import os
 import os.path
 from abc import ABCMeta, abstractmethod
-from os.path import dirname, exists, isdir
+from os.path import dirname, exists, isdir, join
 
 import mycroft.util
 from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
-from mycroft.util import play_wav, play_mp3, check_for_signal, create_signal
+from mycroft.util import (
+    play_wav, play_mp3, check_for_signal, create_signal, resolve_resource_file
+)
 from mycroft.util.log import LOG
+from mycroft.metrics import report_timing, Stopwatch
+import sys
+if sys.version_info[0] < 3:
+    from Queue import Queue, Empty
+else:
+    from queue import Queue, Empty
+
+
+def send_playback_metric(stopwatch, ident):
+    """
+        Send playback metrics in a background thread
+    """
+    def do_send(stopwatch, ident):
+        report_timing(ident, 'speech_playback', stopwatch)
+
+    t = Thread(target=do_send, args=(stopwatch, ident))
+    t.daemon = True
+    t.start()
 
 
 class PlaybackThread(Thread):
@@ -65,23 +85,26 @@ class PlaybackThread(Thread):
         """
         while not self._terminated:
             try:
-                snd_type, data, visimes = self.queue.get(timeout=2)
+                snd_type, data, visimes, ident = self.queue.get(timeout=2)
                 self.blink(0.5)
                 if not self._processing_queue:
                     self._processing_queue = True
                     self.tts.begin_audio()
 
-                if snd_type == 'wav':
-                    self.p = play_wav(data)
-                elif snd_type == 'mp3':
-                    self.p = play_mp3(data)
+                stopwatch = Stopwatch()
+                with stopwatch:
+                    if snd_type == 'wav':
+                        self.p = play_wav(data)
+                    elif snd_type == 'mp3':
+                        self.p = play_mp3(data)
 
-                if visimes:
-                    if self.show_visimes(visimes):
-                        self.clear_queue()
-                else:
-                    self.p.communicate()
-                self.p.wait()
+                    if visimes:
+                        if self.show_visimes(visimes):
+                            self.clear_queue()
+                    else:
+                        self.p.communicate()
+                    self.p.wait()
+                send_playback_metric(stopwatch, ident)
 
                 if self.queue.empty():
                     self.tts.end_audio()
@@ -89,7 +112,7 @@ class PlaybackThread(Thread):
                 self.blink(0.2)
             except Empty:
                 pass
-            except Exception, e:
+            except Exception as e:
                 LOG.exception(e)
                 if self._processing_queue:
                     self.tts.end_audio()
@@ -111,7 +134,8 @@ class PlaybackThread(Thread):
                 self._clear_visimes = False
                 return True
             if self.enclosure:
-                self.enclosure.mouth_viseme(code)
+                # Include time stamp to assist with animation timing
+                self.enclosure.mouth_viseme(code, start+duration)
             delta = time() - start
             if delta < duration:
                 sleep(duration - delta)
@@ -140,24 +164,40 @@ class TTS(object):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, lang, voice, validator):
+    def __init__(self, lang, voice, validator, phonetic_spelling=True):
         super(TTS, self).__init__()
         self.lang = lang or 'en-us'
         self.voice = voice
         self.filename = '/tmp/tts.wav'
         self.validator = validator
+        self.phonetic_spelling = phonetic_spelling
         self.enclosure = None
         random.seed()
         self.queue = Queue()
         self.playback = PlaybackThread(self.queue)
         self.playback.start()
         self.clear_cache()
+        self.spellings = self.load_spellings()
+
+    def load_spellings(self):
+        """Load phonetic spellings of words as dictionary"""
+        path = join('text', self.lang, 'phonetic_spellings.txt')
+        spellings_file = resolve_resource_file(path)
+        if not spellings_file:
+            return {}
+        try:
+            with open(spellings_file) as f:
+                lines = filter(bool, f.read().split('\n'))
+            lines = [i.split(':') for i in lines]
+            return {key.strip(): value.strip() for key, value in lines}
+        except ValueError:
+            LOG.exception('Failed to load phonetic spellings.')
+            return {}
 
     def begin_audio(self):
         """Helper function for child classes to call in execute()"""
         # Create signals informing start of speech
         self.ws.emit(Message("recognizer_loop:audio_output_start"))
-        create_signal("isSpeaking")
 
     def end_audio(self):
         """
@@ -195,7 +235,7 @@ class TTS(object):
         """
         pass
 
-    def execute(self, sentence):
+    def execute(self, sentence, ident=None):
         """
             Convert sentence to speech.
 
@@ -204,7 +244,14 @@ class TTS(object):
 
             Args:
                 sentence:   Sentence to be spoken
+                ident:      Id reference to current interaction
         """
+        create_signal("isSpeaking")
+        if self.phonetic_spelling:
+            for word in re.findall(r"[\w']+", sentence):
+                if word in self.spellings:
+                    sentence = sentence.replace(word, self.spellings[word])
+
         key = str(hashlib.md5(sentence.encode('utf-8', 'ignore')).hexdigest())
         wav_file = os.path.join(mycroft.util.get_cache_directory("tts"),
                                 key + '.' + self.type)
@@ -217,7 +264,7 @@ class TTS(object):
             if phonemes:
                 self.save_phonemes(key, phonemes)
 
-        self.queue.put((self.type, wav_file, self.visime(phonemes)))
+        self.queue.put((self.type, wav_file, self.visime(phonemes), ident))
 
     def visime(self, phonemes):
         """
@@ -332,14 +379,15 @@ class TTSFactory(object):
     from mycroft.tts.mary_tts import MaryTTS
     from mycroft.tts.mimic_tts import Mimic
     from mycroft.tts.spdsay_tts import SpdSay
-
+    from mycroft.tts.ibm_tts import WatsonTTS
     CLASSES = {
         "mimic": Mimic,
         "google": GoogleTTS,
         "marytts": MaryTTS,
         "fatts": FATTS,
         "espeak": ESpeak,
-        "spdsay": SpdSay
+        "spdsay": SpdSay,
+        "watson": WatsonTTS
     }
 
     @staticmethod

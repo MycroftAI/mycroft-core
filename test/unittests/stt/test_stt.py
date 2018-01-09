@@ -30,10 +30,14 @@ class TestSTT(unittest.TestCase):
                  'wit': {'credential': {'token': 'FOOBAR'}},
                  'google': {'credential': {'token': 'FOOBAR'}},
                  'bing': {'credential': {'token': 'FOOBAR'}},
-                 'ibm': {'credential': {'username': 'FOO',
-                                        "password": "BAR"}},
                  'houndify': {'credential': {'client_id': 'FOO',
                                              "client_key": "BAR"}},
+                 'google_cloud': {
+                   'credential': {
+                     'json': {}
+                   }
+                 },
+                 'ibm': {'credential': {'token': 'FOOBAR'}},
                  'kaldi': {'uri': 'https://test.com'},
                  'mycroft': {'uri': 'https://test.com'}
                 },
@@ -47,6 +51,10 @@ class TestSTT(unittest.TestCase):
         config['stt']['module'] = 'google'
         stt = mycroft.stt.STTFactory.create()
         self.assertEquals(type(stt), mycroft.stt.GoogleSTT)
+
+        config['stt']['module'] = 'google_cloud'
+        stt = mycroft.stt.STTFactory.create()
+        self.assertEquals(type(stt), mycroft.stt.GoogleCloudSTT)
 
         config['stt']['module'] = 'ibm'
         stt = mycroft.stt.STTFactory.create()
@@ -119,6 +127,26 @@ class TestSTT(unittest.TestCase):
         stt = mycroft.stt.GoogleSTT()
         stt.execute(audio)
         self.assertTrue(stt.recognizer.recognize_google.called)
+
+    @mock.patch.object(Configuration, 'get')
+    def test_google_cloud_stt(self, mock_get):
+        mycroft.stt.Recognizer = mock.MagicMock
+        config = {'stt': {
+                 'module': 'google_cloud',
+                 'google_cloud': {
+                   'credential': {
+                     'json': {}
+                   }
+                 },
+            },
+            "lang": "en-US"
+        }
+        mock_get.return_value = config
+
+        audio = mock.MagicMock()
+        stt = mycroft.stt.GoogleCloudSTT()
+        stt.execute(audio)
+        self.assertTrue(stt.recognizer.recognize_google_cloud.called)
 
     @mock.patch.object(Configuration, 'get')
     def test_ibm_stt(self, mock_get):

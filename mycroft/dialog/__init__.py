@@ -16,7 +16,7 @@ import random
 from io import open
 
 import os
-import pystache
+import re
 
 from mycroft.util import resolve_resource_file
 from mycroft.util.log import LOG
@@ -49,9 +49,16 @@ class MustacheDialogRenderer(object):
                 if template_name not in self.templates:
                     self.templates[template_name] = []
 
+                # convert to standard python format string syntax. From
+                # double (or more) '{' followed by any number of whitespace
+                # followed by actual key followed by any number of whitespace
+                # followed by double (or more) '}'
+                template_text = re.sub('\{\{+\s*(.*?)\s*\}\}+', r'{\1}',
+                                       template_text)
+
                 self.templates[template_name].append(template_text)
 
-    def render(self, template_name, context={}, index=None):
+    def render(self, template_name, context=None, index=None):
         """
         Given a template name, pick a template and render it using the context
 
@@ -68,6 +75,7 @@ class MustacheDialogRenderer(object):
             NotImplementedError: if no template can be found identified by
                 template_name
         """
+        context = context or {}
         if template_name not in self.templates:
             raise NotImplementedError("Template not found: %s" % template_name)
         template_functions = self.templates.get(template_name)
@@ -75,7 +83,9 @@ class MustacheDialogRenderer(object):
             index = random.randrange(len(template_functions))
         else:
             index %= len(template_functions)
-        return pystache.render(template_functions[index], context)
+        line = template_functions[index]
+        line = line.format(**context)
+        return line
 
 
 class DialogLoader(object):

@@ -26,6 +26,8 @@ current_pkg=$(cat /etc/apt/sources.list.d/repo.mycroft.ai.list)
 stable_pkg="deb http://repo.mycroft.ai/repos/apt/debian debian main"
 unstable_pkg="deb http://repo.mycroft.ai/repos/apt/debian debian-unstable main"
 
+mark_1_package_list="mycroft-mark-1 mycroft-core mycroft-wifi-setup"
+picroft_package_list="mycroft-picroft mycroft-core mycroft-wifi-setup"
 
 # Determine the platform
 mycroft_platform="null"
@@ -162,6 +164,20 @@ function invoke_apt {
     fi
 }
 
+function remove_all {
+    if [ ${mycroft_platform} == "mycroft_mark_1" ] ; then
+        echo "Removing the mycroft mark-1 packages..."
+        sudo apt-get remove ${mark_1_package_list} -y
+    elif [ ${mycroft_platform} == "picroft" ] ; then
+        echo "Removing the picroft packages..."
+        sudo apt-get remove ${picroft_package_list} -y
+    else
+        # for unknown, just update the generic package
+        echo "Removing the generic mycroft-core package..."
+        sudo apt-get remove mycroft-core -y
+    fi
+}
+
 function change_build {
     build=${1}
     sudo sh -c 'echo '"${build}"' > /etc/apt/sources.list.d/repo.mycroft.ai.list'
@@ -278,7 +294,7 @@ elif [ "${change_to}" = "stable" ]; then
         if [ "${current_pkg}" = "${unstable_pkg}" ]; then
             # Need to remove the package to make sure upgrade happens due to
             # difference in stable/unstable to package numbering schemes
-            invoke_apt autoremove
+            remove_all
 
             change_build "${stable_pkg}"
         else
@@ -294,7 +310,7 @@ elif [ "${change_to}" = "github" ]; then
     fi
 
     echo "Switching to github..."
-    if [! -d ${path} ]; then
+    if [ ! -d ${path} ]; then
         mkdir --parents "${path}"
         cd "${path}"
         cd ..

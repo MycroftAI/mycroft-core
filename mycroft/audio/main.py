@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""
+    Mycroft audio service.
+
+    This handles playback of audio and speech
+"""
 import imp
 import json
 import sys
@@ -28,22 +33,12 @@ from mycroft.util.log import LOG
 
 try:
     import pulsectl
-except:
+except ImportError:
     pulsectl = None
 
 
-MainModule = '__init__'
+MAINMODULE = '__init__'
 sys.path.append(abspath(dirname(__file__)))
-
-ws = None
-
-default = None
-service = []
-current = None
-config = None
-pulse = None
-pulse_quiet = None
-pulse_restore = None
 
 
 def create_service_descriptor(service_folder):
@@ -55,7 +50,7 @@ def create_service_descriptor(service_folder):
         Returns:
             Dict with import information
     """
-    info = imp.find_module(MainModule, [service_folder])
+    info = imp.find_module(MAINMODULE, [service_folder])
     return {"name": basename(service_folder), "info": info}
 
 
@@ -69,29 +64,33 @@ def get_services(services_folder):
         Returns:
             Sorted list of audio services.
     """
-    LOG.info("Loading skills from " + services_folder)
+    LOG.info("Loading services from " + services_folder)
     services = []
     possible_services = listdir(services_folder)
     for i in possible_services:
         location = join(services_folder, i)
         if (isdir(location) and
-                not MainModule + ".py" in listdir(location)):
+                not MAINMODULE + ".py" in listdir(location)):
             for j in listdir(location):
                 name = join(location, j)
                 if (not isdir(name) or
-                        not MainModule + ".py" in listdir(name)):
+                        not MAINMODULE + ".py" in listdir(name)):
                     continue
                 try:
                     services.append(create_service_descriptor(name))
-                except:
+                except (KeyboardInterrupt, SystemExit):
+                    raise
+                except Exception:
                     LOG.error('Failed to create service from ' + name,
                               exc_info=True)
         if (not isdir(location) or
-                not MainModule + ".py" in listdir(location)):
+                not MAINMODULE + ".py" in listdir(location)):
             continue
         try:
             services.append(create_service_descriptor(location))
-        except:
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except Exception:
             LOG.error('Failed to create service from ' + name,
                       exc_info=True)
     return sorted(services, key=lambda p: p.get('name'))
@@ -116,9 +115,11 @@ def load_services(config, ws, path=None):
     for descriptor in service_directories:
         LOG.info('Loading ' + descriptor['name'])
         try:
-            service_module = imp.load_module(descriptor["name"] + MainModule,
+            service_module = imp.load_module(descriptor["name"] + MAINMODULE,
                                              *descriptor["info"])
-        except:
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except Exception:
             LOG.error('Failed to import module ' + descriptor['name'],
                       exc_info=True)
         if (hasattr(service_module, 'autodetect') and
@@ -126,353 +127,351 @@ def load_services(config, ws, path=None):
             try:
                 s = service_module.autodetect(config, ws)
                 service += s
-            except:
+            except (KeyboardInterrupt, SystemExit):
+                raise
+            except Exception:
                 LOG.error('Failed to autodetect...',
                           exc_info=True)
-        if (hasattr(service_module, 'load_service')):
+        if hasattr(service_module, 'load_service'):
             try:
                 s = service_module.load_service(config, ws)
                 service += s
-            except:
+            except (KeyboardInterrupt, SystemExit):
+                raise
+            except Exception:
                 LOG.error('Failed to load service...',
                           exc_info=True)
 
     return service
 
 
-def load_services_callback():
+class AudioService(object):
+    """ Audio Service class.
+        Handles playback of audio and selecting proper backend for the uri
+        to be played.
     """
-        Main callback function for loading services. Sets up the globals
-        service and default and registers the event handlers for the subsystem.
-    """
-    global ws
-    global default
-    global service
+    def __init__(self, ws):
+        """
+            Args:
+                ws: Websocket instance to use
+        """
+        self.ws = ws
+        self.config = Configuration.get().get("Audio")
 
-    config = Configuration.get().get("Audio")
-    service = load_services(config, ws)
-    LOG.info(service)
-    default_name = config.get('default-backend', '')
-    LOG.info('Finding default backend...')
-    for s in service:
-        LOG.info('checking ' + s.name)
-        if s.name == default_name:
-            default = s
-            LOG.info('Found ' + default.name)
-            break
-    else:
-        default = None
-        LOG.info('no default found')
-    LOG.info('Default:' + str(default))
+        self.default = None
+        self.service = []
+        self.current = None
+        self.volume_is_low = False
+        self.pulse = None
+        self.pulse_quiet = None
+        self.pulse_restore = None
 
-    ws.on('mycroft.audio.service.play', _play)
-    ws.on('mycroft.audio.service.pause', _pause)
-    ws.on('mycroft.audio.service.resume', _resume)
-    ws.on('mycroft.audio.service.stop', _stop)
-    ws.on('mycroft.audio.service.next', _next)
-    ws.on('mycroft.audio.service.prev', _prev)
-    ws.on('mycroft.audio.service.track_info', _track_info)
-    ws.on('recognizer_loop:audio_output_start', _lower_volume)
-    ws.on('recognizer_loop:record_begin', _lower_volume)
-    ws.on('recognizer_loop:audio_output_end', _restore_volume)
-    ws.on('recognizer_loop:record_end', _restore_volume)
-    ws.on('mycroft.stop', _stop)
+        self.muted_sinks = []
+        # Setup control of pulse audio
+        self.setup_pulseaudio_handlers(self.config.get('pulseaudio'))
+        ws.once('open', self.load_services_callback)
 
+    def load_services_callback(self):
+        """
+            Main callback function for loading services. Sets up the globals
+            service and default and registers the event handlers for the
+            subsystem.
+        """
 
-def _pause(message=None):
-    """
-        Handler for mycroft.audio.service.pause. Pauses the current audio
-        service.
-
-        Args:
-            message: message bus message, not used but required
-    """
-    global current
-    if current:
-        current.pause()
-
-
-def _resume(message=None):
-    """
-        Handler for mycroft.audio.service.resume.
-
-        Args:
-            message: message bus message, not used but required
-    """
-    global current
-    if current:
-        current.resume()
-
-
-def _next(message=None):
-    """
-        Handler for mycroft.audio.service.next. Skips current track and
-        starts playing the next.
-
-        Args:
-            message: message bus message, not used but required
-    """
-    global current
-    if current:
-        current.next()
-
-
-def _prev(message=None):
-    """
-        Handler for mycroft.audio.service.prev. Starts playing the previous
-        track.
-
-        Args:
-            message: message bus message, not used but required
-    """
-    global current
-    if current:
-        current.prev()
-
-
-def _stop(message=None):
-    """
-        Handler for mycroft.stop. Stops any playing service.
-
-        Args:
-            message: message bus message, not used but required
-    """
-    global current
-    LOG.info('stopping all playing services')
-    if current:
-        current.stop()
-        current = None
-    LOG.info('Stopped')
-
-
-def _lower_volume(message):
-    """
-        Is triggered when mycroft starts to speak and reduces the volume.
-
-        Args:
-            message: message bus message, not used but required
-    """
-    global current
-    global volume_is_low
-    LOG.info('lowering volume')
-    if current:
-        current.lower_volume()
-        volume_is_low = True
-    try:
-        if pulse_quiet:
-            pulse_quiet()
-    except Exception as e:
-        LOG.error(e)
-
-
-muted_sinks = []
-
-
-def pulse_mute():
-    """
-        Mute all pulse audio input sinks except for the one named
-        'mycroft-voice'.
-    """
-    global muted_sinks
-    for sink in pulse.sink_input_list():
-        if sink.name != 'mycroft-voice':
-            pulse.sink_input_mute(sink.index, 1)
-            muted_sinks.append(sink.index)
-
-
-def pulse_unmute():
-    """
-        Unmute all pulse audio input sinks.
-    """
-    global muted_sinks
-    for sink in pulse.sink_input_list():
-        if sink.index in muted_sinks:
-            pulse.sink_input_mute(sink.index, 0)
-    muted_sinks = []
-
-
-def pulse_lower_volume():
-    """
-        Lower volume of all pulse audio input sinks except the one named
-        'mycroft-voice'.
-    """
-    for sink in pulse.sink_input_list():
-        if sink.name != 'mycroft-voice':
-            v = sink.volume
-            v.value_flat *= 0.3
-            pulse.volume_set(sink, v)
-
-
-def pulse_restore_volume():
-    """
-        Restore volume of all pulse audio input sinks except the one named
-        'mycroft-voice'.
-    """
-    for sink in pulse.sink_input_list():
-        if sink.name != 'mycroft-voice':
-            v = sink.volume
-            v.value_flat /= 0.3
-            pulse.volume_set(sink, v)
-
-
-def _restore_volume(message):
-    """
-        Is triggered when mycroft is done speaking and restores the volume
-
-        Args:
-            message: message bus message, not used but required
-    """
-    global current
-    global volume_is_low
-    LOG.info('maybe restoring volume')
-    if current:
-        volume_is_low = False
-        time.sleep(2)
-        if not volume_is_low:
-            LOG.info('restoring volume')
-            current.restore_volume()
-    if pulse_restore:
-        pulse_restore()
-
-
-def play(tracks, prefered_service):
-    """
-        play starts playing the audio on the prefered service if it supports
-        the uri. If not the next best backend is found.
-
-        Args:
-            tracks: list of tracks to play.
-            prefered_service: indecates the service the user prefer to play
-                              the tracks.
-    """
-    global current
-    global service
-    LOG.info('play')
-    _stop()
-    uri_type = tracks[0].split(':')[0]
-    LOG.info('uri_type: ' + uri_type)
-    # check if user requested a particular service
-    if prefered_service and uri_type in prefered_service.supported_uris():
-        selected_service = prefered_service
-    # check if default supports the uri
-    elif default and uri_type in default.supported_uris():
-        LOG.info("Using default backend")
-        LOG.info(default.name)
-        selected_service = default
-    else:  # Check if any other service can play the media
-        LOG.info("Searching the services")
-        for s in service:
-            LOG.info(str(s))
-            if uri_type in s.supported_uris():
-                LOG.info("Service "+str(s)+" supports URI "+uri_type)
-                selected_service = s
+        self.service = load_services(self.config, self.ws)
+        LOG.info(self.service)
+        default_name = self.config.get('default-backend', '')
+        LOG.info('Finding default backend...')
+        for s in self.service:
+            LOG.info('checking ' + s.name)
+            if s.name == default_name:
+                self.default = s
+                LOG.info('Found ' + self.default.name)
                 break
         else:
-            LOG.info('No service found for uri_type: ' + uri_type)
-            return
-    LOG.info('Clear list')
-    selected_service.clear_list()
-    LOG.info('Add tracks' + str(tracks))
-    selected_service.add_list(tracks)
-    LOG.info('Playing')
-    selected_service.play()
-    current = selected_service
+            self.default = None
+            LOG.info('no default found')
+        LOG.info('Default:' + str(self.default))
 
+        self.ws.on('mycroft.audio.service.play', self._play)
+        self.ws.on('mycroft.audio.service.queue', self._queue)
+        self.ws.on('mycroft.audio.service.pause', self._pause)
+        self.ws.on('mycroft.audio.service.resume', self._resume)
+        self.ws.on('mycroft.audio.service.stop', self._stop)
+        self.ws.on('mycroft.audio.service.next', self._next)
+        self.ws.on('mycroft.audio.service.prev', self._prev)
+        self.ws.on('mycroft.audio.service.track_info', self._track_info)
+        self.ws.on('recognizer_loop:audio_output_start', self._lower_volume)
+        self.ws.on('recognizer_loop:record_begin', self._lower_volume)
+        self.ws.on('recognizer_loop:audio_output_end', self._restore_volume)
+        self.ws.on('recognizer_loop:record_end', self._restore_volume)
+        self.ws.on('mycroft.stop', self._stop)
 
-def _play(message):
-    """
-        Handler for mycroft.audio.service.play. Starts playback of a
-        tracklist. Also  determines if the user requested a special service.
+    def _pause(self, message=None):
+        """
+            Handler for mycroft.audio.service.pause. Pauses the current audio
+            service.
 
-        Args:
-            message: message bus message, not used but required
-    """
-    global service
-    LOG.info('mycroft.audio.service.play')
-    LOG.info(message.data['tracks'])
+            Args:
+                message: message bus message, not used but required
+        """
+        if self.current:
+            self.current.pause()
 
-    tracks = message.data['tracks']
+    def _resume(self, message=None):
+        """
+            Handler for mycroft.audio.service.resume.
 
-    # Find if the user wants to use a specific backend
-    for s in service:
-        LOG.info(s.name)
-        if s.name in message.data['utterance']:
-            prefered_service = s
-            LOG.info(s.name + ' would be prefered')
-            break
-    else:
-        prefered_service = None
-    play(tracks, prefered_service)
+            Args:
+                message: message bus message, not used but required
+        """
+        if self.current:
+            self.current.resume()
 
+    def _next(self, message=None):
+        """
+            Handler for mycroft.audio.service.next. Skips current track and
+            starts playing the next.
 
-def _track_info(message):
-    """
-        Returns track info on the message bus.
+            Args:
+                message: message bus message, not used but required
+        """
+        if self.current:
+            self.current.next()
 
-        Args:
-            message: message bus message, not used but required
-    """
-    global current
-    if current:
-        track_info = current.track_info()
-    else:
-        track_info = {}
-    ws.emit(Message('mycroft.audio.service.track_info_reply',
-                    data=track_info))
+    def _prev(self, message=None):
+        """
+            Handler for mycroft.audio.service.prev. Starts playing the previous
+            track.
 
+            Args:
+                message: message bus message, not used but required
+        """
+        if self.current:
+            self.current.prev()
 
-def setup_pulseaudio_handlers(pulse_choice=None):
-    """
-        Select functions for handling lower volume/restore of
-        pulse audio input sinks.
+    def _stop(self, message=None):
+        """
+            Handler for mycroft.stop. Stops any playing service.
 
-        Args:
-            pulse_choice: method selection, can be eithe 'mute' or 'lower'
-    """
-    global pulse, pulse_quiet, pulse_restore
+            Args:
+                message: message bus message, not used but required
+        """
+        LOG.info('stopping all playing services')
+        if self.current:
+            self.current.stop()
+            self.current = None
+        LOG.info('Stopped')
 
-    if pulsectl and pulse_choice is not None:
-        pulse = pulsectl.Pulse('Mycroft-audio-service')
-        if pulse_choice == 'mute':
-            pulse_quiet = pulse_mute
-            pulse_restore = pulse_unmute
-        elif pulse_choice == 'lower':
-            pulse_quiet = pulse_lower_volume
-            pulse_restore = pulse_restore_volume
+    def _lower_volume(self, message=None):
+        """
+            Is triggered when mycroft starts to speak and reduces the volume.
 
+            Args:
+                message: message bus message, not used but required
+        """
+        LOG.info('lowering volume')
+        if self.current:
+            self.current.lower_volume()
+            self.volume_is_low = True
+        try:
+            if self.pulse_quiet:
+                self.pulse_quiet()
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except Exception as exc:
+            LOG.error(exc)
 
-def connect():
-    global ws
-    ws.run_forever()
+    def pulse_mute(self):
+        """
+            Mute all pulse audio input sinks except for the one named
+            'mycroft-voice'.
+        """
+        for sink in self.pulse.sink_input_list():
+            if sink.name != 'mycroft-voice':
+                self.pulse.sink_input_mute(sink.index, 1)
+                self.muted_sinks.append(sink.index)
+
+    def pulse_unmute(self):
+        """
+            Unmute all pulse audio input sinks.
+        """
+        for sink in self.pulse.sink_input_list():
+            if sink.index in self.muted_sinks:
+                self.pulse.sink_input_mute(sink.index, 0)
+        self.muted_sinks = []
+
+    def pulse_lower_volume(self):
+        """
+            Lower volume of all pulse audio input sinks except the one named
+            'mycroft-voice'.
+        """
+        for sink in self.pulse.sink_input_list():
+            if sink.name != 'mycroft-voice':
+                volume = sink.volume
+                volume.value_flat *= 0.3
+                self.pulse.volume_set(sink, volume)
+
+    def pulse_restore_volume(self):
+        """
+            Restore volume of all pulse audio input sinks except the one named
+            'mycroft-voice'.
+        """
+        for sink in self.pulse.sink_input_list():
+            if sink.name != 'mycroft-voice':
+                volume = sink.volume
+                volume.value_flat /= 0.3
+                self.pulse.volume_set(sink, volume)
+
+    def _restore_volume(self, message):
+        """
+            Is triggered when mycroft is done speaking and restores the volume
+
+            Args:
+                message: message bus message, not used but required
+        """
+        LOG.info('maybe restoring volume')
+        if self.current:
+            self.volume_is_low = False
+            time.sleep(2)
+            if not self.volume_is_low:
+                LOG.info('restoring volume')
+                self.current.restore_volume()
+        if self.pulse_restore:
+            self.pulse_restore()
+
+    def play(self, tracks, prefered_service):
+        """
+            play starts playing the audio on the prefered service if it
+            supports the uri. If not the next best backend is found.
+
+            Args:
+                tracks: list of tracks to play.
+                prefered_service: indecates the service the user prefer to play
+                                  the tracks.
+        """
+        LOG.info('play')
+        self._stop()
+        uri_type = tracks[0].split(':')[0]
+        LOG.info('uri_type: ' + uri_type)
+        # check if user requested a particular service
+        if prefered_service and uri_type in prefered_service.supported_uris():
+            selected_service = prefered_service
+        # check if default supports the uri
+        elif self.default and uri_type in self.default.supported_uris():
+            LOG.info("Using default backend")
+            LOG.info(self.default.name)
+            selected_service = self.default
+        else:  # Check if any other service can play the media
+            LOG.info("Searching the services")
+            for s in self.service:
+                LOG.info(str(s))
+                if uri_type in s.supported_uris():
+                    LOG.info("Service " + str(s) + " supports URI " + uri_type)
+                    selected_service = s
+                    break
+            else:
+                LOG.info('No service found for uri_type: ' + uri_type)
+                return
+        LOG.info('Clear list')
+        selected_service.clear_list()
+        LOG.info('Add tracks' + str(tracks))
+        selected_service.add_list(tracks)
+        LOG.info('Playing')
+        selected_service.play()
+        self.current = selected_service
+
+    def _queue(self, message):
+        if self.current:
+            LOG('Queuing Track')
+            tracks = message.data['tracks']
+            self.current.add_list(tracks)
+        else:
+            self._play(message)
+
+    def _play(self, message):
+        """
+            Handler for mycroft.audio.service.play. Starts playback of a
+            tracklist. Also  determines if the user requested a special
+            service.
+
+            Args:
+                message: message bus message, not used but required
+        """
+        LOG.info('mycroft.audio.service.play')
+        LOG.info(message.data['tracks'])
+
+        tracks = message.data['tracks']
+
+        # Find if the user wants to use a specific backend
+        for s in self.service:
+            LOG.info(s.name)
+            if ('utterance' in message.data and
+                    s.name in message.data['utterance']):
+                prefered_service = s
+                LOG.info(s.name + ' would be prefered')
+                break
+        else:
+            prefered_service = None
+        self.play(tracks, prefered_service)
+
+    def _track_info(self, message):
+        """
+            Returns track info on the message bus.
+
+            Args:
+                message: message bus message, not used but required
+        """
+        if self.current:
+            track_info = self.current.track_info()
+        else:
+            track_info = {}
+        self.ws.emit(Message('mycroft.audio.service.track_info_reply',
+                             data=track_info))
+
+    def setup_pulseaudio_handlers(self, pulse_choice=None):
+        """
+            Select functions for handling lower volume/restore of
+            pulse audio input sinks.
+
+            Args:
+                pulse_choice: method selection, can be eithe 'mute' or 'lower'
+        """
+        if pulsectl and pulse_choice:
+            self.pulse = pulsectl.Pulse('Mycroft-audio-service')
+            if pulse_choice == 'mute':
+                self.pulse_quiet = self.pulse_mute
+                self.pulse_restore = self.pulse_unmute
+            elif pulse_choice == 'lower':
+                self.pulse_quiet = self.pulse_lower_volume
+                self.pulse_restore = self.pulse_restore_volume
 
 
 def main():
-    global ws
-    global config
+    """ Main function. Run when file is invoked. """
     ws = WebsocketClient()
     Configuration.init(ws)
-    config = Configuration.get()
     speech.init(ws)
 
-    # Setup control of pulse audio
-    setup_pulseaudio_handlers(config.get('Audio').get('pulseaudio'))
-
     def echo(message):
+        """ Echo message bus messages. """
         try:
             _message = json.loads(message)
             if 'mycroft.audio.service' not in _message.get('type'):
                 return
             message = json.dumps(_message)
-        except:
-            pass
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except Exception as e:
+            LOG.exception(e)
         LOG.debug(message)
 
     LOG.info("Staring Audio Services")
     ws.on('message', echo)
-    ws.once('open', load_services_callback)
+    AudioService(ws)  # Connect audio service instance to message bus
     try:
         ws.run_forever()
-    except KeyboardInterrupt, e:
+    except KeyboardInterrupt as e:
         LOG.exception(e)
         speech.shutdown()
         sys.exit()
