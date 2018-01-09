@@ -14,11 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-mycroft_root_dir='/opt/mycroft'
-skills_dir="${mycroft_root_dir}"/skills
-# exit on any error
-set -Ee
-
 SOURCE="${BASH_SOURCE[0]}"
 while [ -h "$SOURCE" ]; do
   DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
@@ -26,7 +21,36 @@ while [ -h "$SOURCE" ]; do
   [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
 done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
- 
+SYSTEM_CONFIG="$DIR/mycroft/configuration/mycroft.conf"
+
+function get_config_value() {
+  key="$1"
+  default="$2"
+  value="null"
+  for file in ~/.mycroft/mycroft.conf /etc/mycroft/mycroft.conf $SYSTEM_CONFIG;   do
+    if [[ -r $file ]] ; then
+        # remove comments in config for jq to work
+        # assume they may be preceded by whitespace, but nothing else
+        parsed="$( sed 's:^\s*//.*$::g' $file )"
+        echo "$parsed" >> "$DIR/mycroft/configuration/sys.conf"
+        value=$( jq -r "$key" "$DIR/mycroft/configuration/sys.conf" )
+        if [[ "${value}" != "null" ]] ;  then
+            rm -rf $DIR/mycroft/configuration/sys.conf
+            echo "$value"
+            return
+        fi
+    fi
+  done
+  echo "$default"
+}
+
+
+mycroft_root_dir='/opt/mycroft'
+skills_dir="$(get_config_value '.skills.directory' '/opt/mycroft/skills')"
+
+# exit on any error
+set -Ee
+
 chmod +x ${DIR}/../msm/msm
 
 # Determine which user is running this script

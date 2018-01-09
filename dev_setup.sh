@@ -84,6 +84,49 @@ found_exe() {
     hash "$1" 2>/dev/null
 }
 
+SOURCE="${BASH_SOURCE[0]}"
+DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+SYSTEM_CONFIG="$DIR/mycroft/configuration/mycroft.conf"
+
+function get_config_value() {
+  key="$1"
+  default="$2"
+  value="null"
+  for file in ~/.mycroft/mycroft.conf /etc/mycroft/mycroft.conf $SYSTEM_CONFIG;   do
+    if [[ -r $file ]] ; then
+        # remove comments in config for jq to work
+        # assume they may be preceded by whitespace, but nothing else
+        parsed="$( sed 's:^\s*//.*$::g' $file )"
+        echo "$parsed" >> "$DIR/mycroft/configuration/sys.conf"
+        value=$( jq -r "$key" "$DIR/mycroft/configuration/sys.conf" )
+        if [[ "${value}" != "null" ]] ;  then
+            rm -rf $DIR/mycroft/configuration/sys.conf
+            echo "$value"
+            return
+        fi
+    fi
+  done
+  echo "$default"
+}
+
+# Determine the platform
+mycroft_platform="$(get_config_value '.enclosure.platform' 'null')"
+if [[ "${mycroft_platform}" == "null" ]] ; then
+   if [[ "$(hostname)" == "picroft" ]] ; then
+      mycroft_platform="picroft"
+   elif [[ "$(hostname)" =~ "mark_1" ]] ; then
+      mycroft_platform="mycroft_mark_1"
+   fi
+fi
+
+mycroft_skill_folder="$(get_config_value '.skills.directory' '/opt/mycroft/skills')"
+if [[ ! -d "${mycroft_skill_folder}" ]] ; then
+  echo "ERROR: Unable to find/access ${mycroft_skill_folder}!"
+  exit 101
+fi
+
+use_virtualenvwrapper="$(get_config_value '.enclosure.use_virtualenvwrapper' 'true')"
+
 install_deps() {
     echo "Installing packages..."
     if found_exe sudo; then
@@ -117,10 +160,12 @@ git config commit.template .gitmessage
 
 TOP=$(cd $(dirname $0) && pwd -L)
 
-if [ -z "$WORKON_HOME" ]; then
-    VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${HOME}/.virtualenvs/mycroft"}
-else
-    VIRTUALENV_ROOT="$WORKON_HOME/mycroft"
+if [[ ${use_virtualenvwrapper} == "true" ]] ; then
+    if [ -z "$WORKON_HOME" ]; then
+        VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${HOME}/.virtualenvs/mycroft"}
+    else
+        VIRTUALENV_ROOT="$WORKON_HOME/mycroft"
+    fi
 fi
 
 # Check whether to build mimic (it takes a really long time!)
@@ -147,32 +192,37 @@ else
   fi
 fi
 
-# create virtualenv, consistent with virtualenv-wrapper conventions
-if [ ! -d "${VIRTUALENV_ROOT}" ]; then
-   mkdir -p $(dirname "${VIRTUALENV_ROOT}")
-  virtualenv -p python2.7 "${VIRTUALENV_ROOT}"
-fi
-source "${VIRTUALENV_ROOT}/bin/activate"
 cd "${TOP}"
-easy_install pip==7.1.2 # force version of pip
-pip install --upgrade virtualenv
+if [[ ${use_virtualenvwrapper} == "true" ]] ; then
+# create virtualenv, consistent with virtualenv-wrapper conventions
+    if [ ! -d "${VIRTUALENV_ROOT}" ]; then
+       mkdir -p $(dirname "${VIRTUALENV_ROOT}")
+      virtualenv -p python2.7 "${VIRTUALENV_ROOT}"
+    fi
+    source "${VIRTUALENV_ROOT}/bin/activate"
+    cd "${TOP}"
+    easy_install pip==7.1.2 # force version of pip
+    pip install --upgrade virtualenv
 
-# Add mycroft-core to the virtualenv path
-# (This is equivalent to typing 'add2virtualenv $TOP', except
-# you can't invoke that shell function from inside a script)
-VENV_PATH_FILE="${VIRTUALENV_ROOT}/lib/python2.7/site-packages/_virtualenv_path_extensions.pth"
-if [ ! -f "$VENV_PATH_FILE" ] ; then
-    echo "import sys; sys.__plen = len(sys.path)" > "$VENV_PATH_FILE" || return 1
-    echo "import sys; new=sys.path[sys.__plen:]; del sys.path[sys.__plen:]; p=getattr(sys,'__egginsert',0); sys.path[p:p]=new; sys.__egginsert = p+len(new)" >> "$VENV_PATH_FILE" || return 1
+    # Add mycroft-core to the virtualenv path
+    # (This is equivalent to typing 'add2virtualenv $TOP', except
+    # you can't invoke that shell function from inside a script)
+    VENV_PATH_FILE="${VIRTUALENV_ROOT}/lib/python2.7/site-packages/_virtualenv_path_extensions.pth"
+    if [ ! -f "$VENV_PATH_FILE" ] ; then
+        echo "import sys; sys.__plen = len(sys.path)" > "$VENV_PATH_FILE" || return 1
+        echo "import sys; new=sys.path[sys.__plen:]; del sys.path[sys.__plen:]; p=getattr(sys,'__egginsert',0); sys.path[p:p]=new; sys.__egginsert = p+len(new)" >> "$VENV_PATH_FILE" || return 1
+    fi
+
+    if ! grep -q "mycroft-core" $VENV_PATH_FILE; then
+       echo "Adding mycroft-core to virtualenv path"
+       sed -i.tmp '1 a\
+    '"$TOP"'
+    ' "${VENV_PATH_FILE}"
+    fi
+else
+    # no venv, use any pip version
+    easy_install pip
 fi
-
-if ! grep -q "mycroft-core" $VENV_PATH_FILE; then
-   echo "Adding mycroft-core to virtualenv path"
-   sed -i.tmp '1 a\
-'"$TOP"'
-' "${VENV_PATH_FILE}"
-fi
-
 # install requirements (except pocketsphinx)
 # removing the pip2 explicit usage here for consistency with the above use.
 
