@@ -25,7 +25,7 @@ class BingTTS(TTS):
         self.config = Configuration.get().get("tts", {}).get("bing", {})
         api = self.config.get("api_key")
         self.bing = Translator(api)
-        self.gender = self.config.get("gender", "male")
+        self.gender = self.config.get("gender", "Male")
         self.format = self.config.get("format", "riff-16khz-16bit-mono-pcm")
 
     def get_tts(self, sentence, wav_file):
