@@ -15,6 +15,7 @@
 
 from mycroft.util.lang.format_en import *
 from mycroft.util.lang.format_pt import *
+from mycroft.util.lang.format_it import *
 
 
 def nice_number(number, lang="en-us", speech=True, denominators=None):
@@ -46,6 +47,8 @@ def nice_number(number, lang="en-us", speech=True, denominators=None):
         return nice_number_en(result)
     elif lang_lower.startswith("pt"):
         return nice_number_pt(result)
+    elif lang_lower.startswith("it"):
+        return nice_number_it(result)
     # TODO: Normalization for other languages
     return str(number)
 
