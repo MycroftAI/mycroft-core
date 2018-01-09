@@ -119,11 +119,6 @@ if [[ "${mycroft_platform}" == "null" ]] ; then
    fi
 fi
 
-mycroft_skill_folder="$(get_config_value '.skills.directory' '/opt/mycroft/skills')"
-if [[ ! -d "${mycroft_skill_folder}" ]] ; then
-  echo "ERROR: Unable to find/access ${mycroft_skill_folder}!"
-  exit 101
-fi
 
 use_virtualenvwrapper="$(get_config_value '.enclosure.use_virtualenvwrapper' 'true')"
 
