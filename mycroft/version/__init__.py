@@ -34,6 +34,7 @@ CORE_VERSION_STR = ("Jarbas Core" + "." +
                     str(FORK_VERSION_MAJOR) + "." +
                     str(FORK_VERSION_MINOR) + "." +
                     str(FORK_VERSION_BUILD) + "." +
+
                     str(CORE_VERSION_MAJOR) + "." +
                     str(CORE_VERSION_MINOR) + "." +
                     str(CORE_VERSION_BUILD))
@@ -52,7 +53,7 @@ class VersionManager(object):
             except:
                 LOG.error("Failed to load version from '%s'"
                           % VersionManager.__location)
-        return {"coreVersion": None, "enclosureVersion": None}
+        return {"coreVersion": CORE_VERSION_STR, "enclosureVersion": None}
 
 
 def check_version(version_string):
@@ -63,7 +64,7 @@ def check_version(version_string):
         Args:
             version_string (string): version string ('Major.Minor.Build')
     """
-    major, minor, build = version_string.split('.')
+    major, minor, build = version_string.split('.')[3:]
     major = int(major)
     minor = int(minor)
     build = int(build)

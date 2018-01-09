@@ -2,6 +2,7 @@ Privacy enhanced mycroft
 
 # features
 
+- metrics and timings are logged but not sent to the backend
 - blacklist pairing skill
 - blacklist configuration skill
 - disable remote configuration

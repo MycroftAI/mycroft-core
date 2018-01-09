@@ -35,9 +35,7 @@ class DeviceIdentity(object):
 
 
 class IdentityManager(object):
-    __identity = "private"
-
-    #__identity = None
+    __identity = None
 
     @staticmethod
     def load():
@@ -48,7 +46,7 @@ class IdentityManager(object):
         #    except:
         #        IdentityManager.__identity = DeviceIdentity()
         #    return IdentityManager.__identity
-        return "private"
+        return IdentityManager.__identity
 
     @staticmethod
     def save(login=None):

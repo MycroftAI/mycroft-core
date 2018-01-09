@@ -243,7 +243,7 @@ class IntentService(object):
         """
             Send timing metrics to the backend.
         """
-        LOG.debug('Sending metric')
+        LOG.debug('NOT Sending metric')
         ident = context['ident'] if context else None
         if intent:
             # Recreate skill name from skill id

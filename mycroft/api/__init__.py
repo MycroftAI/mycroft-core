@@ -20,8 +20,8 @@
 # from mycroft.configuration import Configuration
 # from mycroft.configuration.config import DEFAULT_CONFIG, SYSTEM_CONFIG, \
 #    USER_CONFIG, LocalConf
-# from mycroft.identity import IdentityManager
-# from mycroft.version import VersionManager
+from mycroft.identity import IdentityManager
+from mycroft.version import VersionManager
 # from mycroft.util import get_arch
 
 _paired_cache = False
@@ -41,8 +41,8 @@ class Api(object):
         #                           cache=False)
         #config_server = config.get("server")
         self.url = "bigbrother.com"
-        self.version = "0.evil"
-        self.identity = "666"
+        self.version = VersionManager.get()
+        self.identity = IdentityManager().get()
 
     def request(self, params):
         # self.check_token()

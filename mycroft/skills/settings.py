@@ -114,7 +114,8 @@ class SkillSettings(dict):
         settings_meta = self._load_settings_meta()
         if not settings_meta:
             return
-
+        # Privacy enhance, no backend
+        return
         self._device_identity = self.api.identity.uuid
         self._api_path = "/" + self._device_identity + "/skill"
         self._user_identity = self.api.get()['user']['uuid']
@@ -189,7 +190,9 @@ class SkillSettings(dict):
                 str: uuid, a unique id for the setting meta data
         """
         try:
-            uuid = self._put_metadata(settings_meta)
+            # lol nop
+            #uuid = self._put_metadata(settings_meta)
+            uuid = None
             return uuid
         except Exception as e:
             LOG.error(e)
@@ -217,7 +220,8 @@ class SkillSettings(dict):
             Returns:
                 str: uuid of the previous settingsmeta
         """
-        directory = self.config.get("skills")["directory"]
+        directory = self.config.get("skills", {}).get("directory",
+                                                  "/opt/mycroft/skills")
         directory = join(directory, self.name)
         directory = expanduser(directory)
         uuid_file = join(directory, 'uuid')
@@ -234,7 +238,8 @@ class SkillSettings(dict):
                 str: uuid, unique id of new settingsmeta
         """
         LOG.info("saving uuid {}".format(str(uuid)))
-        directory = self.config.get("skills")["directory"]
+        directory = self.config.get("skills", {}).get("directory",
+                                                  "/opt/mycroft/skills")
         directory = join(directory, self.name)
         directory = expanduser(directory)
         uuid_file = join(directory, 'uuid')
@@ -247,7 +252,8 @@ class SkillSettings(dict):
             Returns:
                 bool: True if uuid file exist False otherwise
         """
-        directory = self.config.get("skills")["directory"]
+        directory = self.config.get("skills", {}).get("directory",
+                                                  "/opt/mycroft/skills")
         directory = join(directory, self.name)
         directory = expanduser(directory)
         uuid_file = join(directory, 'uuid')
@@ -274,8 +280,10 @@ class SkillSettings(dict):
                 settings_meta (dict): settingsmeta.json
                 hashed_meta (str): {skill-folder}-settinsmeta.json
         """
-        LOG.info("sending settingsmeta.json for {}".format(self.name) +
+        LOG.info("NOT sending settingsmeta.json for {}".format(self.name) +
                  " to servers")
+        return
+
         meta = self._migrate_settings(settings_meta)
         meta['identifier'] = str(hashed_meta)
         response = self._send_settings_meta(meta)
@@ -292,7 +300,7 @@ class SkillSettings(dict):
                 LOG.info("a uuid exist for {}".format(self.name) +
                          " deleting old one")
                 old_uuid = self._load_uuid()
-                self._delete_metatdata(old_uuid)
+                self._delete_metadata(old_uuid)
             except Exception as e:
                 LOG.info(e)
 
@@ -319,7 +327,8 @@ class SkillSettings(dict):
                 hashed_meta (int): hash of new settingsmeta
         """
         LOG.info("saving hash {}".format(str(hashed_meta)))
-        directory = self.config.get("skills")["directory"]
+        directory = self.config.get("skills", {}).get("directory",
+                                                  "/opt/mycroft/skills")
         directory = join(directory, self.name)
         directory = expanduser(directory)
         hash_file = join(directory, 'hash')
@@ -337,7 +346,8 @@ class SkillSettings(dict):
             Returns:
                 bool: True if hash is new, otherwise False
         """
-        directory = self.config.get("skills")["directory"]
+        directory = self.config.get("skills", {}).get("directory",
+                                                  "/opt/mycroft/skills")
         directory = join(directory, self.name)
         directory = expanduser(directory)
         hash_file = join(directory, 'hash')
@@ -374,13 +384,14 @@ class SkillSettings(dict):
             Args:
                 hashed_meta (int): the hashed identifier
         """
+        # NOT IN THIS FORK
         try:
             if not self._complete_intialization:
                 self.initialize_remote_settings()
                 if not self._complete_intialization:
                     return  # unable to do remote sync
-            else:
-                self.update_remote()
+            #else:
+            #    self.update_remote()
         except Exception as e:
             LOG.error(e)
             LOG.exception("")
@@ -390,7 +401,7 @@ class SkillSettings(dict):
             # continues to poll settings every 60 seconds
             t = Timer(60, self._poll_skill_settings)
             t.daemon = True
-            t.start()
+            #t.start()
 
     def load_skill_settings_from_file(self):
         """ If settings.json exist, open and read stored values into self """
@@ -415,8 +426,9 @@ class SkillSettings(dict):
             Returns:
                 skill_settings (dict or None): returns a dict if matches
         """
-        LOG.info("getting skill settings from "
+        LOG.info("NOT getting skill settings from "
                  "server for {}".format(self.name))
+        return
         settings = self._request_settings()
         # this loads the settings into memory for use in self.store
         for skill_settings in settings:
@@ -431,11 +443,12 @@ class SkillSettings(dict):
             Returns:
                 dict: dictionary with settings collected from the server.
         """
-        settings = self.api.request({
-            "method": "GET",
-            "path": self._api_path
-        })
-        settings = [skills for skills in settings if skills is not None]
+        #settings = self.api.request({
+        #    "method": "GET",
+        #    "path": self._api_path
+        #})
+        #settings = [skills for skills in settings if skills is not None]
+        settings = []
         return settings
 
     def _request_other_settings(self, identifier):
@@ -448,9 +461,9 @@ class SkillSettings(dict):
             settings (dict or None): returns the settings if true else None
         """
         LOG.info(
-            "syncing settings with other devices "
+            "NOT syncing settings with other devices "
             "from server for {}".format(self.name))
-
+        return
         path = \
             "/" + self._device_identity + "/userSkill?identifier=" + identifier
         user_skill = self.api.request({
@@ -497,6 +510,8 @@ class SkillSettings(dict):
     @property
     def _should_upload_from_change(self):
         changed = False
+        # NOT IN THIS FORK
+        return False
         if hasattr(self, '_remote_settings'):
             sections = self._remote_settings['skillMetadata']['sections']
             for i, section in enumerate(sections):

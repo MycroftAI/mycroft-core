@@ -35,7 +35,7 @@ def report_metric(name, data):
     #except (requests.HTTPError, requests.exceptions.ConnectionError) as e:
     #    LOG.error('Metric couldn\'t be uploaded, due to a network error ({})'
     #              .format(e))
-    pass
+    LOG.debug("Supressed metric report: " + str(name) + str(data))
 
 
 def report_timing(ident, system, timing, additional_data=None):
@@ -55,6 +55,7 @@ def report_timing(ident, system, timing, additional_data=None):
     report['time'] = timing.time
 
     #report_metric('timing', report)
+    LOG.debug("Supressed timing report: " + str(report))
 
 
 class Stopwatch(object):
@@ -168,6 +169,7 @@ class MetricsPublisher(object):
         #conf = Configuration().get()['server']
         #self.url = url or conf['url']
         #self.enabled = enabled or conf['metrics']
+        self.url = url
         self.enabled = False
 
     def publish(self, events):
