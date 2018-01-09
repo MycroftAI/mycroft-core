@@ -19,7 +19,7 @@ import unittest
 from mycroft.util.format import nice_number
 
 
-numbers_fixture = {
+NUMBERS_FIXTURE_EN = {
     1.435634: '1.436',
     2: '2',
     5.0: '5',
@@ -50,9 +50,9 @@ numbers_fixture = {
 }
 
 
-class TestNieceNumberFormat(unittest.TestCase):
+class TestNiceNumberFormat(unittest.TestCase):
     def test_convert_float_to_nice_number(self):
-        for number, number_str in numbers_fixture.items():
+        for number, number_str in NUMBERS_FIXTURE_EN.items():
             self.assertEqual(nice_number(number), number_str,
                              'should format {} as {} and not {}'.format(
                                  number, number_str, nice_number(number)))

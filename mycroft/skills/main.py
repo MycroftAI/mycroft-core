@@ -300,6 +300,10 @@ class SkillManager(Thread):
                                            self.ws, skill["id"],
                                            BLACKLISTED_SKILLS)
             skill["last_modified"] = modified
+            if skill and skill['instance']:
+                ws.emit(Message('mycroft.skills.loaded',
+                                {'id': skill['id'],
+                                 'name': skill['instance'].name}))
 
     def load_skill_list(self, skills_to_load):
         """ Load the specified list of skills from disk
@@ -326,8 +330,13 @@ class SkillManager(Thread):
         # Scan the file folder that contains Skills.  If a Skill is updated,
         # unload the existing version from memory and reload from the disk.
         while not self._stop_event.is_set():
-            # Update skills once an hour
-            if time.time() >= self.next_download:
+
+            # check if skill updates are enabled
+            update = Configuration.get().get("skills", {}).get("auto_update",
+                                                               True)
+
+            # Update skills once an hour if update is enabled
+            if time.time() >= self.next_download and update:
                 self.download_skills()
 
             # Look for recently changed skill(s) needing a reload

@@ -24,7 +24,7 @@ import mycroft.dialog
 from mycroft.client.speech.hotword_factory import HotWordFactory
 from mycroft.client.speech.mic import MutableMicrophone, ResponsiveRecognizer
 from mycroft.configuration import Configuration
-from mycroft.metrics import MetricsAggregator
+from mycroft.metrics import MetricsAggregator, Stopwatch, report_timing
 from mycroft.session import SessionManager
 from mycroft.stt import STTFactory
 from mycroft.util.log import LOG
@@ -137,7 +137,25 @@ class AudioConsumer(Thread):
         if self._audio_length(audio) < self.MIN_AUDIO_SIZE:
             LOG.warning("Audio too short to be processed")
         else:
-            self.transcribe(audio)
+            stopwatch = Stopwatch()
+            with stopwatch:
+                transcription = self.transcribe(audio)
+            if transcription:
+                ident = str(stopwatch.timestamp) + str(hash(transcription))
+                # STT succeeded, send the transcribed speech on for processing
+                payload = {
+                    'utterances': [transcription],
+                    'lang': self.stt.lang,
+                    'session': SessionManager.get().session_id,
+                    'ident': ident
+                }
+                self.emitter.emit("recognizer_loop:utterance", payload)
+                self.metrics.attr('utterances', [transcription])
+            else:
+                ident = str(stopwatch.timestamp)
+            # Report timing metrics
+            report_timing(ident, 'stt', stopwatch,
+                          {'transcription': transcription})
 
     def transcribe(self, audio):
         text = None
@@ -158,15 +176,7 @@ class AudioConsumer(Thread):
             self.emitter.emit('recognizer_loop:speech.recognition.unknown')
             LOG.error(e)
             LOG.error("Speech Recognition could not understand audio")
-        if text:
-            # STT succeeded, send the transcribed speech on for processing
-            payload = {
-                'utterances': [text],
-                'lang': self.stt.lang,
-                'session': SessionManager.get().session_id
-            }
-            self.emitter.emit("recognizer_loop:utterance", payload)
-            self.metrics.attr('utterances', [text])
+        return text
 
     def __speak(self, utterance):
         payload = {

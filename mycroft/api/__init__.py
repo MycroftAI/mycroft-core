@@ -32,14 +32,17 @@ class Api(object):
 
     def __init__(self, path):
         self.path = path
-        # config = Configuration.get([LocalConf(DEFAULT_CONFIG),
-        #                            LocalConf(SYSTEM_CONFIG),
-        #                            LocalConf(USER_CONFIG)],
+
+        # Load the config, skipping the REMOTE_CONFIG since we are
+        # getting the info needed to get to it!
+        #config = Configuration.get([DEFAULT_CONFIG,
+        #                            SYSTEM_CONFIG,
+        #                            USER_CONFIG],
         #                           cache=False)
-        # config_server = config.get("server")
-        # self.url = config_server.get("url")
-        # self.version = config_server.get("version")
-        #self.identity = IdentityManager.get()
+        #config_server = config.get("server")
+        self.url = "bigbrother.com"
+        self.version = "0.evil"
+        self.identity = "666"
 
     def request(self, params):
         # self.check_token()
@@ -159,23 +162,49 @@ class DeviceApi(Api):
         return None
 
     def activate(self, state, token):
-        # version = VersionManager.get()
-        # return self.request({
+        #version = VersionManager.get()
+        #platform = "unknown"
+        #platform_build = ""
+
+        # load just the local configs to get platform info
+        #config = Configuration.get([SYSTEM_CONFIG,
+        #                            USER_CONFIG],
+        #                           cache=False)
+        #if "enclosure" in config:
+        #    platform = config.get("enclosure").get("platform", "unknown")
+        #    platform_build = config.get("enclosure").get("platform_build", "")
+
+        #return self.request({
         #    "method": "POST",
         #    "path": "/activate",
         #    "json": {"state": state,
         #             "token": token,
         #             "coreVersion": version.get("coreVersion"),
+        #             "platform": platform,
+        #             "platform_build": platform_build,
         #             "enclosureVersion": version.get("enclosureVersion")}
         #})
         return None
 
     def update_version(self):
-        # version = VersionManager.get()
-        # return self.request({
+        #version = VersionManager.get()
+        #platform = "unknown"
+        #platform_build = ""
+
+        # load just the local configs to get platform info
+        #config = Configuration.get([SYSTEM_CONFIG,
+        #                            USER_CONFIG],
+        #                           cache=False)
+        #if "enclosure" in config:
+        #    platform = config.get("enclosure").get("platform", "unknown")
+        #    platform_build = config.get("enclosure").get("platform_build", "")
+
+        #return self.request({
         #    "method": "PATCH",
         #    "path": "/" + self.identity.uuid,
         #    "json": {"coreVersion": version.get("coreVersion"),
+        #             "platform": platform,
+        #             "platform_build": platform_build,
         #             "enclosureVersion": version.get("enclosureVersion")}
         #})
         return None
