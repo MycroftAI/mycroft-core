@@ -49,6 +49,13 @@ def handle_speak(event):
     Configuration.init(bus)
     global _last_stop_signal
 
+    # if the message is targeted and audio is not the target don't
+    # don't synthezise speech
+    if (event.context and 'destination' in event.context and
+            event.context['destination'] and
+            'audio' not in event.context['destination']):
+        return
+
     # Get conversation ID
     if event.context and 'ident' in event.context:
         ident = event.context['ident']
