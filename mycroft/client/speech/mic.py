@@ -61,7 +61,18 @@ class MutableStream(object):
     def unmute(self):
         self.muted = False
 
-    def read(self, size):
+    def read(self, size, of_exc=False):
+        """
+            Read data from stream.
+
+            Arguments:
+                size (int): Number of bytes to read
+                of_exc (bool): flag determining if the audio producer thread
+                               should throw IOError at overflows.
+
+            Returns:
+                Data read from device
+        """
         frames = collections.deque()
         remaining = size
         while remaining > 0:
@@ -69,7 +80,8 @@ class MutableStream(object):
             if to_read == 0:
                 sleep(.01)
                 continue
-            result = self.wrapped_stream.read(to_read)
+            result = self.wrapped_stream.read(to_read,
+                                              exception_on_overflow=of_exc)
             frames.append(result)
             remaining -= to_read
 
@@ -169,6 +181,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.upload_config = listener_config.get('wake_word_upload')
         self.wake_word_name = wake_word_recognizer.key_phrase
 
+        self.overflow_exc = listener_config.get('overflow_exception', False)
+
         speech_recognition.Recognizer.__init__(self)
         self.wake_word_recognizer = wake_word_recognizer
         self.audio = pyaudio.PyAudio()
@@ -197,9 +211,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         except (requests.HTTPError, requests.ConnectionError, AttributeError):
             self.account_id = '0'
 
-    @staticmethod
-    def record_sound_chunk(source):
-        return source.stream.read(source.CHUNK)
+    def record_sound_chunk(self, source):
+        return source.stream.read(source.CHUNK, self.overflow_exc)
 
     @staticmethod
     def calc_energy(sound_chunk, sample_width):
