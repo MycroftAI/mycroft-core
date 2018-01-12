@@ -128,7 +128,8 @@ class MycroftSTT(STT):
     def execute(self, audio, language=None):
         self.lang = language or self.lang
         try:
-            return self.api.stt(audio.get_flac_data(convert_rate=16000),
+            return self.api.stt(audio.get_flac_data(convert_rate=
+                                                    6000),
                                 self.lang, 1)[0]
         except:
             return self.api.stt(audio.get_flac_data(), self.lang, 1)[0]
@@ -171,6 +172,7 @@ class HoundifySTT(KeySTT):
 
 
 class STTFactory(object):
+    from mycroft.stt.deepspeech import DeepSpeechSTT
     CLASSES = {
         "mycroft": MycroftSTT,
         "google": GoogleSTT,
@@ -179,7 +181,8 @@ class STTFactory(object):
         "ibm": IBMSTT,
         "kaldi": KaldiSTT,
         "bing": BingSTT,
-        "houndify": HoundifySTT
+        "houndify": HoundifySTT,
+        "deepSpeech": DeepSpeechSTT
     }
 
     @staticmethod
