@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division, print_function
+from __future__ import absolute_import, division
 
 from mycroft.stt import STT
 from mycroft.util.log import LOG
@@ -19,7 +19,7 @@ class DeepSpeechSTT(STT):
                       "deepspeech")
 
         # These constants control the beam search decoder
-
+        print self.config
         # Beam width used in the CTC decoder when building candidate transcriptions
         self.BEAM_WIDTH = self.config.get("beam_width", 500)
 
