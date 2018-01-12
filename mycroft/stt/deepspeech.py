@@ -97,4 +97,4 @@ class DeepSpeechSTT(STT):
 
     def execute(self, audio, language=None):
         self.lang = language or self.lang
-        return self.ds.stt(audio, 16000)
+        return self.ds.stt(audio.get_wav_data(), 16000)
