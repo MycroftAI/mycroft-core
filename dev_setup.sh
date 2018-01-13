@@ -94,6 +94,21 @@ install_deps() {
         $SUDO apt-get install -y git python python-dev python-setuptools python-virtualenv python-gobject-dev virtualenvwrapper libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev s3cmd portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config automake libjpeg-dev libfann-dev build-essential jq
     elif found_exe pacman; then
         $SUDO pacman -S --needed git python2 python2-pip python2-setuptools python2-virtualenv python2-gobject python-virtualenvwrapper libtool libffi openssl autoconf bison swig glib2 s3cmd portaudio mpg123 screen flac curl pkg-config icu automake libjpeg-turbo base-devel jq
+        if found_exe yaourt; then
+            yaourt -S --needed libfann
+        elif found_exe pacaur; then
+            pacaur -S --needed libfann
+        else
+            if found_exe tput; then
+                         green="$(tput setaf 2)"
+                         blue="$(tput setaf 4)"
+                         reset="$(tput sgr0)"
+            fi
+            echo
+            echo "${green}Could not find AUR Helper"
+            echo "${green}Make sure to manually install:${blue}libfann"
+            echo $reset
+        fi
     elif found_exe dnf; then
         $SUDO dnf install -y git python python-devel python-pip python-setuptools python-virtualenv pygobject2-devel python-virtualenvwrapper libtool libffi-devel openssl-devel autoconf bison swig glib2-devel s3cmd portaudio-devel mpg123 mpg123-plugins-pulseaudio screen curl pkgconfig libicu-devel automake libjpeg-turbo-devel fann-devel gcc-c++ redhat-rpm-config jq
     else
