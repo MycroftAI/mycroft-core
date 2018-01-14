@@ -48,7 +48,7 @@ def extractnumber(text, lang="en-us"):
     elif lang_lower.startswith("pt"):
         return extractnumber_pt(text)
     elif lang_lower.startswith("it"):
-        return extractnumber_pt(text)
+        return extractnumber_it(text)
 
     # TODO: Normalization for other languages
     return text
@@ -131,7 +131,7 @@ def normalize(text, lang="en-us", remove_articles=True):
     elif lang_lower.startswith("pt"):
         return normalize_pt(text, remove_articles)
     elif lang_lower.startswith("it"):
-        return normalize_pt(text, remove_articles)
+        return normalize_it(text, remove_articles)
     # TODO: Normalization for other languages
     return text
 
