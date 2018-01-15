@@ -1316,9 +1316,12 @@ def gui_main(stdscr):
                         break
                 else:
                     # Treat this as an utterance
+                    ident = str(time.time()) + str(hash(line.strip()))
                     bus.emit(Message("recognizer_loop:utterance",
                                      {'utterances': [line.strip()],
-                                      'lang': config.get('lang', 'en-us')}))
+                                      'lang': config.get('lang', 'en-us')},
+                                     {'ident': ident, 'target': None}))
+
                 hist_idx = -1
                 line = ""
             elif code == 16 or code == 545:  # Ctrl+P or Ctrl+Left (Previous)
