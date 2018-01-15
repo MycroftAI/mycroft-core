@@ -36,8 +36,11 @@ extensions = [
 ]
 
 # Assuming package name is the same as the module name
-with open(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'requirements.txt')) as f:
-    autodoc_mock_imports = map(str.strip, re.findall(r'^\s*[a-zA-Z_]*', f.read().lower().replace('-', '_'), flags=re.MULTILINE))
+with open(os.path.join(os.path.dirname(os.path.dirname(
+        os.path.realpath(__file__))), 'requirements.txt')) as f:
+    autodoc_mock_imports = map(str.strip, re.findall(r'^\s*[a-zA-Z_]*',
+                               f.read().lower().replace('-', '_'),
+                               flags=re.MULTILINE))
 
 # Dependencies with different module names
 autodoc_mock_imports += [
@@ -109,5 +112,3 @@ texinfo_documents = [
 
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
-
-
