@@ -44,7 +44,7 @@ class LOG:
         >>> LOG.debug('My message: %s', debug_str)
         13:12:43.673 - :<module>:1 - DEBUG - My message: hi
         >>> LOG('custom_name').debug('Another message')
-        13:13:10.462 - custom_name - DEBUG - Another message 
+        13:13:10.462 - custom_name - DEBUG - Another message
     """
 
     _custom_name = None
