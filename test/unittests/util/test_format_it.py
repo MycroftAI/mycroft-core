@@ -49,6 +49,7 @@ NUMBERS_FIXTURE_IT = {
     0.05: 'un ventesimo'
 }
 
+
 class TestNiceNumberFormat(unittest.TestCase):
     def test_convert_float_to_nice_number_it(self):
         for number, number_str in NUMBERS_FIXTURE_IT.items():
