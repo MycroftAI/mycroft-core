@@ -25,8 +25,6 @@
 """
 
 
-from datetime import datetime
-from dateutil.relativedelta import relativedelta
 from mycroft.util.lang.parse_common import is_numeric, look_for_fractions
 
 
@@ -159,7 +157,7 @@ def extractnumber_it(text):
                 result = 1
             result = result * isFractional_it(word)
             # "un terzo" is 1/3 but "il terzo" is 3
-            if aWords[count -1] == "il":
+            if aWords[count - 1] == "il":
                 result = 1.0 // isFractional_it(word)
 
             count += 1
@@ -177,9 +175,9 @@ def extractnumber_it(text):
             if result is None:
                 result = 0
             # handle fractions
-            #if next_word != "avos":
+            # if next_word != "avos":
             result += val
-            #else:
+            # else:
             #    result = float(result) / float(val)
 
         if next_word is None:
@@ -207,7 +205,7 @@ def extractnumber_it(text):
                             zeros += 1
                         else:
                             break
-                for i in range(0, zeros):
+                for _ in range(0, zeros):
                     afterAndVal = afterAndVal / 10.0
                 result += afterAndVal
                 break
@@ -311,7 +309,7 @@ def get_gender_it(word, raw_string=""):
         if word[-1] == "a" or word[-1] == "e":
             gender = "f"
         if word[-1] == "o" or word[-1] == "n" \
-            or word[-1] == "l" or word[-1] == "i":
+                or word[-1] == "l" or word[-1] == "i":
             gender = "m"
 
     return gender
