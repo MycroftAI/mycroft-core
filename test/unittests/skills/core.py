@@ -447,7 +447,7 @@ class MycroftSkillTest(unittest.TestCase):
         s.bind(emitter)
         s.schedule_event(s.handler, datetime.now(), name='sched_handler1')
         # Check that the handler was registered with the emitter
-        self.assertEqual(emitter.on.call_args[0][0], '0:sched_handler1')
+        self.assertEqual(emitter.once.call_args[0][0], '0:sched_handler1')
         self.assertTrue('0:sched_handler1' in zip(*s.events)[0])
 
     @mock.patch.object(Configuration, 'get')
@@ -468,15 +468,40 @@ class MycroftSkillTest(unittest.TestCase):
         self.assertEqual(emitter.remove.call_args[0][0], '0:sched_handler1')
         self.assertTrue('0:sched_handler1' not in zip(*s.events)[0])
 
+    @mock.patch.object(Configuration, 'get')
+    def test_run_scheduled_event(self, mock_config_get):
+        test_config = {
+            'skills': {
+            }
+        }
+        mock_config_get.return_value = test_config
+        emitter = mock.MagicMock()
+        s = TestSkill1()
+        with mock.patch.object(s, '_settings',
+                               create=True, value=mock.MagicMock()):
+            s.bind(emitter)
+            s.schedule_event(s.handler, datetime.now(), name='sched_handler1')
+            # Check that the handler was registered with the emitter
+            emitter.once.call_args[0][1](Message('message'))
+            # Check that the handler was run
+            self.assertTrue(s.handler_run)
+            # Check that the handler was removed from the list of registred
+            # handler
+            self.assertTrue('0:sched_handler1' not in zip(*s.events)[0])
+
 
 class TestSkill1(MycroftSkill):
+    def __init__(self):
+        super(TestSkill1, self).__init__()
+        self.handler_run = False
+
     """ Test skill for normal intent builder syntax """
     def initialize(self):
         i = IntentBuilder('a').require('Keyword').build()
         self.register_intent(i, self.handler)
 
     def handler(self, message):
-        pass
+        self.handler_run = True
 
     def stop(self):
         pass

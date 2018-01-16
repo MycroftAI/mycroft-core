@@ -596,24 +596,26 @@ class MycroftSkill(object):
             text = f.read().replace('{{', '{').replace('}}', '}')
             return text.format(**data or {}).split('\n')
 
-    def add_event(self, name, handler, need_self=False):
+    def add_event(self, name, handler, need_self=False, once=False):
         """
             Create event handler for executing intent
 
             Args:
                 name:       IntentParser name
                 handler:    method to call
-                need_self:     optional parameter, when called from a decorated
-                               intent handler the function will need the self
-                               variable passed as well.
+                need_self:  optional parameter, when called from a decorated
+                            intent handler the function will need the self
+                            variable passed as well.
+                once:       optional parameter, Event handler will be removed
+                            after it has been run once.
         """
 
         def wrapper(message):
             try:
                 # Indicate that the skill handler is starting
-                name = get_handler_name(handler)
+                handler_name = get_handler_name(handler)
                 self.emitter.emit(Message("mycroft.skill.handler.start",
-                                          data={'handler': name}))
+                                          data={'handler': handler_name}))
 
                 stopwatch = Stopwatch()
                 with stopwatch:
@@ -653,24 +655,29 @@ class MycroftSkill(object):
 
             except Exception as e:
                 # Convert "MyFancySkill" to "My Fancy Skill" for speaking
-                name = re.sub("([a-z])([A-Z])", "\g<1> \g<2>", self.name)
+                handler_name = re.sub("([a-z])([A-Z])", "\g<1> \g<2>",
+                                      self.name)
                 # TODO: Localize
-                self.speak(
-                    "An error occurred while processing a request in " +
-                    name)
+                self.speak("An error occurred while processing a request in " +
+                           handler_name)
                 LOG.error(
                     "An error occurred while processing a request in " +
                     self.name, exc_info=True)
                 # indicate completion with exception
                 self.emitter.emit(Message('mycroft.skill.handler.complete',
-                                          data={'handler': name,
+                                          data={'handler': handler_name,
                                                 'exception': e.message}))
             # Indicate that the skill handler has completed
             self.emitter.emit(Message('mycroft.skill.handler.complete',
-                                      data={'handler': name}))
+                                      data={'handler': handler_name}))
+            if once:
+                self.remove_event(name)
 
         if handler:
-            self.emitter.on(name, wrapper)
+            if once:
+                self.emitter.once(name, wrapper)
+            else:
+                self.emitter.on(name, wrapper)
             self.events.append((name, wrapper))
 
     def remove_event(self, name):
@@ -682,8 +689,15 @@ class MycroftSkill(object):
         """
         for _name, _handler in self.events:
             if name == _name:
-                self.events.remove((_name, _handler))
-                self.emitter.remove(_name, _handler)
+                try:
+                    self.events.remove((_name, _handler))
+                except ValueError:
+                    pass
+                try:
+                    self.emitter.remove(_name, _handler)
+                except ValueError:
+                    LOG.debug('{} is not registered in the emitter'.format(
+                              _name))
 
     def register_intent(self, intent_parser, handler, need_self=False):
         """
@@ -946,12 +960,12 @@ class MycroftSkill(object):
             Underlying method for schedle_event and schedule_repeating_event.
             Takes scheduling information and sends it of on the message bus.
         """
-        data = data or {}
         if not name:
             name = self.name + handler.__name__
         name = self._unique_name(name)
 
-        self.add_event(name, handler, False)
+        data = data or {}
+        self.add_event(name, handler, once=not repeat)
         event_data = {}
         event_data['time'] = time.mktime(when.timetuple())
         event_data['event'] = name
