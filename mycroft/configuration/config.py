@@ -51,7 +51,7 @@ def is_remote_list(values):
     for v in values:
         if not isinstance(v, dict):
             return False
-        if not "@type" in v.keys():
+        if "@type" not in v.keys():
             return False
     return True
 
