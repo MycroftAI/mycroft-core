@@ -6,19 +6,7 @@ from timeit import default_timer as timer
 from os.path import exists, join, dirname
 from mycroft.util.download import download
 import tarfile
-import os
 from time import sleep
-
-
-def untar(file_path, dest, remove=False):
-    if not exists(file_path):
-        raise AssertionError("file does not exist")
-    if not file_path.endswith(".tar.gz") or file_path.endswith(".tar.bz2"):
-        raise AssertionError("invalid file format")
-    with tarfile.open(file_path) as tar:
-        tar.extractall(dest)
-    if remove:
-        os.remove(file_path)
 
 
 class DeepSpeechSTT(STT):
