@@ -56,8 +56,6 @@ class DeepSpeechSTT(STT):
             LOG.info("Downloading model")
             self.download()
             while not self.downloaded:
-                if self.dl.done:
-                    raise RuntimeError("Download failed")
                 sleep(1)
 
             if self.is_ready(True):
@@ -115,7 +113,7 @@ class DeepSpeechSTT(STT):
         file_path = join(target_folder, DeepSpeechSTT.URL.split("/")[-1])
         if not exists(file_path):
             raise AssertionError("file does not exist")
-        if not file_path.endswith(".tar.gz") or file_path.endswith(
+        if not file_path.endswith(".tar.gz") or not file_path.endswith(
                 ".tar.bz2"):
             raise AssertionError("invalid file format")
         with tarfile.open(file_path) as tar:
