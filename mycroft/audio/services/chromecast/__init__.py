@@ -47,6 +47,7 @@ class ChromecastService(AudioBackend):
             return
 
     def __init__(self, config, emitter, name='chromecast', cast=None):
+        super(ChromecastService, self).__init__(config, emitter)
         self.connection_attempts = 0
         self.emitter = emitter
         self.config = config
@@ -88,6 +89,9 @@ class ChromecastService(AudioBackend):
         self.cast.quit_app()
 
         track = self.tracklist[0]
+        # Report start of playback to audioservice
+        if self._track_start_callback:
+            self._track_start_callback(track)
         LOG.debug('track: {}, type: {}'.format(track, guess_type(track)))
         mime = guess_type(track)[0] or 'audio/mp3'
         self.cast.play_media(track, mime)

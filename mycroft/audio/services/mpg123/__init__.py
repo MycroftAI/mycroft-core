@@ -27,6 +27,7 @@ class Mpg123Service(AudioBackend):
     """
 
     def __init__(self, config, emitter, name='mpg123'):
+        super(Mpg123Service, self).__init__(config, emitter)
         self.config = config
         self.process = None
         self.emitter = emitter
@@ -54,6 +55,9 @@ class Mpg123Service(AudioBackend):
         LOG.info('Mpg123Service._play')
         self._is_playing = True
         track = self.tracks[self.index]
+        # Indicate to audio service which track is being played
+        if self._track_start_callback:
+            self._track_start_callback(track)
 
         # Replace file:// uri's with normal paths
         track = track.replace('file://', '')
@@ -67,8 +71,8 @@ class Mpg123Service(AudioBackend):
             self.process.terminate()
             self.process = None
             self._is_playing = False
-
             return
+
         self.index += 1
         # if there are more tracks available play next
         if self.index < len(self.tracks):

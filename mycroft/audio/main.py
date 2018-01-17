@@ -180,6 +180,11 @@ class AudioService(object):
 
         self.service = load_services(self.config, self.ws)
         LOG.info(self.service)
+        # Register end of track callback
+        for s in self.service:
+            s.set_track_start_callback(self.track_start)
+
+        # Find default backend
         default_name = self.config.get('default-backend', '')
         LOG.info('Finding default backend...')
         for s in self.service:
@@ -206,6 +211,14 @@ class AudioService(object):
         self.ws.on('recognizer_loop:audio_output_end', self._restore_volume)
         self.ws.on('recognizer_loop:record_end', self._restore_volume)
         self.ws.on('mycroft.stop', self._stop)
+
+    def track_start(self, track):
+        """
+            Callback method called from the services to indicate start of
+            playback of a track.
+        """
+        self.ws.emit(Message('mycroft.audio.playing_track',
+                             data={'track': track}))
 
     def _pause(self, message=None):
         """
