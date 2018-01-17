@@ -10,10 +10,11 @@ from time import sleep
 
 
 class DeepSpeechSTT(STT):
-    URL = "https://github.com/mozilla/DeepSpeech/releases/download/v0.1.0/deepspeech-0.1.0-models.tar.gz"  # nopep8
+    URL = "https://github.com/mozilla/DeepSpeech/releases/download/v0.1.0/" \
+          "deepspeech-0.1.0-models.tar.gz"
 
     def __init__(self):
-        super(STT, self).__init__()
+        super(DeepSpeechSTT, self).__init__()
         try:
             from deepspeech.model import Model
             self.Model = Model
@@ -119,7 +120,7 @@ class DeepSpeechSTT(STT):
             raise AssertionError("invalid file format")
         with tarfile.open(file_path) as tar:
             tar.extractall(target_folder)
-        #os.remove(file_path)
+        # os.remove(file_path)
 
         LOG.info("model ready")
         self.downloaded = True
