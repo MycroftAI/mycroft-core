@@ -144,14 +144,13 @@ class EnclosureReader(Thread):
             self.ws.emit(Message("system.wifi.setup", {'lang': self.lang}))
 
         if "unit.factory-reset" in data:
-            self.ws.emit(Message("enclosure.eyes.spin"))
+            self.ws.emit(Message("speak", {
+                'utterance': mycroft.dialog.get("reset to factory defaults")}))
             subprocess.call(
                 'rm ~/.mycroft/identity/identity2.json',
                 shell=True)
             self.ws.emit(Message("system.wifi.reset"))
             self.ws.emit(Message("system.ssh.disable"))
-            self.ws.emit(Message("speak", {
-                'utterance': mycroft.dialog.get("reset to factory defaults")}))
             wait_while_speaking()
             self.ws.emit(Message("enclosure.mouth.reset"))
             self.ws.emit(Message("enclosure.eyes.spin"))
@@ -298,9 +297,6 @@ class Enclosure(object):
             # receive the "speak".  This was sometimes happening too
             # quickly and the user wasn't notified what to do.
             Timer(5, self._do_net_check).start()
-        else:
-            # Indicate we are checking for updates from the internet now...
-            self.writer.write("mouth.text=< < < UPDATING < < < ")
 
         Timer(60, self._hack_check_for_duplicates).start()
 
@@ -425,9 +421,6 @@ class Enclosure(object):
                 # Kick off wifi-setup automatically
                 data = {'allow_timeout': False, 'lang': self.lang}
                 self.ws.emit(Message('system.wifi.setup', data))
-        else:
-            # Indicate we are checking for updates from the internet now...
-            self.writer.write("mouth.text=< < < UPDATING < < < ")
 
     def _hack_check_for_duplicates(self):
         # TEMPORARY HACK:  Look for multiple instance of the

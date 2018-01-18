@@ -105,10 +105,13 @@ def check_connection():
     if connected():
         enclosure = EnclosureAPI(ws)
 
+        if is_paired():
+            # Skip the sync message when unpaired because the prompt to go to
+            # home.mycrof.ai will be displayed by the pairing skill
+            enclosure.mouth_text(mycroft.dialog.get("message_synching.clock"))
         # Force a sync of the local clock with the internet
-        enclosure.mouth_text(mycroft.dialog.get("message_synching.clock"))
         ws.emit(Message("system.ntp.sync"))
-        time.sleep(10)   # TODO: Generate/listen for a message response...
+        time.sleep(15)   # TODO: Generate/listen for a message response...
 
         # Check if the time skewed significantly.  If so, reboot
         skew = abs((monotonic.monotonic() - start_ticks) -
@@ -124,10 +127,10 @@ def check_connection():
             # provide visual indicators of the reboot
             enclosure.mouth_text(mycroft.dialog.get("message_rebooting"))
             enclosure.eyes_color(70, 65, 69)  # soft gray
-            enclosure.eyes_timed_spin(None)
+            enclosure.eyes_spin()
 
             # give the system time to finish processing enclosure messages
-            time.sleep(0.5)
+            time.sleep(1.0)
 
             # reboot
             ws.emit(Message("system.reboot"))
@@ -143,6 +146,11 @@ def check_connection():
             }
             ws.emit(Message("recognizer_loop:utterance", payload))
         else:
+            if is_paired():
+                # Skip the  message when unpaired because the prompt to go
+                # to home.mycrof.ai will be displayed by the pairing skill
+                enclosure.mouth_text(mycroft.dialog.get("message_updating"))
+
             from mycroft.api import DeviceApi
             api = DeviceApi()
             api.update_version()
