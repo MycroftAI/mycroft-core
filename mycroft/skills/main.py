@@ -113,7 +113,7 @@ def check_connection():
         # Check if the time skewed significantly.  If so, reboot
         skew = abs((monotonic.monotonic() - start_ticks) -
                    (time.time() - start_clock))
-        if (skew > 60*60):
+        if skew > 60*60:
             # Time moved by over an hour in the NTP sync. Force a reboot to
             # prevent weird things from occcurring due to the 'time warp'.
             #
