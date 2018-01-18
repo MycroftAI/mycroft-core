@@ -21,7 +21,7 @@ import io
 # But if there is a bug in this .py file, the Python error messages
 # are also consumed.  To debug, invoke the CLI with "--debug" as a
 # parameter.
-if not "--debug" in sys.argv:
+if "--debug" not in sys.argv:
     sys.stdout = io.BytesIO()  # capture any output
     sys.stderr = io.BytesIO()  # capture any output
 
@@ -690,7 +690,7 @@ def show_help():
     scr.addstr(3, 0,  "Up/Down/PgUp/PgDn        scroll thru log history")
     scr.addstr(4, 0,  "Ctrl+T / Ctrl+PgUp       scroll to top (oldest)")
     scr.addstr(5, 0,  "Ctrl+B / Ctrl+PgDn       scroll to bottom (newest)")
-    scr.addstr(6, 0,  "Left / Right             scroll long log lines left/right")
+    scr.addstr(6, 0,  "Left / Right             scroll long lines left/right")
     scr.addstr(7, 0,  "Home                     scroll to start of long lines")
     scr.addstr(8, 0,  "End                      scroll to end of long lines")
 
