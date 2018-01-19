@@ -291,9 +291,9 @@ class SkillManager(Thread):
                         "won't be cleaned from memory."
                         .format(skill['instance'].name, refs))
             del skill["instance"]
-        self.ws.emit(Message("mycroft.skills.shutdown",
-                             {'folder': skill_folder,
-                              "id": skill["id"]}))
+            self.ws.emit(Message("mycroft.skills.shutdown",
+                                 {'folder': skill_folder,
+                                  "id": skill["id"]}))
 
 
         # (Re)load the skill from disk
