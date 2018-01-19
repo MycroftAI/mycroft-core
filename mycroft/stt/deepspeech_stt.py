@@ -35,9 +35,14 @@ class DeepSpeechSTT(STT):
         self.N_FEATURES = self.config.get("n_features", 26)
         self.N_CONTEXT = self.config.get("n_context", 9)
 
-        self.model = self.config.get("model", join(dirname(__file__),
-                                                   "deepspeech",
-                                                   "output_graph.pb"))
+        self.model = self.config.get("model", "deepspeech_0.1.0")
+        if self.model == "deepspeech_0.1.0":
+            self.model = join(dirname(__file__), "deepspeech",
+                              "output_graph.pb")
+            auto_dl = True
+        else:
+            auto_dl = False
+
         self.lm = self.config.get("lm", join(dirname(__file__),
                                              "deepspeech",
                                              "lm.binary"))
@@ -49,8 +54,8 @@ class DeepSpeechSTT(STT):
                                                  "trie"))
         self.downloaded = False
         self.dl = None
-        auto_dl = self.config.get("auto_download", False)
-        if self.is_ready(not auto_dl):
+
+        if self.model_downloaded():
             self.load_model()
         elif auto_dl:
             LOG.info("Downloading model")
@@ -58,8 +63,12 @@ class DeepSpeechSTT(STT):
             while not self.downloaded:
                 sleep(1)
 
-            if self.is_ready(True):
-                self.load_model()
+            if not self.model_downloaded():
+                raise AssertionError(self.model + " does not exist"
+                                     ", download a pre-trained model with \n "
+                                     "wget -O -" + DeepSpeechSTT.URL + "| "
+                                     "tar xvfz -")
+            self.load_model()
 
     def load_model(self):
         LOG.info('Loading model from file %s' % (self.model))
@@ -80,26 +89,9 @@ class DeepSpeechSTT(STT):
         lm_load_end = timer() - lm_load_start
         LOG.debug('Loaded language model in %0.3fs.' % (lm_load_end))
 
-    def is_ready(self, is_critical=False):
-        try:
-            if not exists(self.model):
-                raise AssertionError(
-                    self.model + " does not exist, download a "
-                                 "pre-trained model with \n wget -O -" +
-                    DeepSpeechSTT.URL + "| tar xvfz -")
-            if not exists(self.lm):
-                raise AssertionError("language model does not exist")
-
-            if not exists(self.alphabet):
-                raise AssertionError(
-                    "alphabet configuration file does not exist")
-
-            if not exists(self.trie):
-                raise AssertionError("language model trie does not exist")
-        except Exception as e:
-            LOG.error(e)
-            if is_critical:
-                raise
+    def model_downloaded(self):
+        if not exists(self.model) or not exists(self.lm) or not \
+                exists(self.alphabet) or not exists(self.trie):
             return False
         return True
 
