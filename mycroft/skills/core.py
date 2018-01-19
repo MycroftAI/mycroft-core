@@ -926,10 +926,6 @@ class MycroftSkill(object):
         except:
             LOG.error("Failed to stop skill: {}".format(self.name),
                       exc_info=True)
-        self.emitter.emit(Message("skill.shutdown",
-                                  {'folder': self._dir.split("/")[-1],
-                                   "id": self.skill_id,
-                                   "name": self.name}))
 
     def _unique_name(self, name):
         """
