@@ -182,7 +182,8 @@ def _get_last_modified_date(path):
 
     # check files of interest in the skill root directory
     files = [f for f in files
-             if not f.endswith('.pyc') and f != 'settings.json']
+             if not f.endswith('.pyc') and f != 'settings.json' and
+             not f.startswith('.')]
     for f in files:
         last_date = max(last_date, os.path.getmtime(os.path.join(path, f)))
     return last_date
