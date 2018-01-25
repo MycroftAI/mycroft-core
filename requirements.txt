@@ -26,6 +26,7 @@ pychromecast==0.7.7
 python-vlc==1.1.2
 pulsectl==17.7.4
 google-api-python-client==1.6.4
+monotonic
 
 # dev setup tools
 pep8==1.7.0

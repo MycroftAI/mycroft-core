@@ -128,6 +128,11 @@ class EnclosureAPI:
         """Restore the eyes to their default (ready) state."""
         self.ws.emit(Message("enclosure.eyes.reset"))
 
+    def eyes_spin(self):
+        """Make the eyes 'roll'
+        """
+        self.ws.emit(Message("enclosure.eyes.spin"))
+
     def eyes_timed_spin(self, length):
         """Make the eyes 'roll' for the given time.
         Args:

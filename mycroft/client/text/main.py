@@ -12,32 +12,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from __future__ import print_function
 import sys
 import io
 
-# NOTE: If this script has errors, the following two lines might need to
-# be commented out for them to be displayed (depending on the type of
-# error).  But normally we want this to prevent extra messages from the
-# messagebus setup from appearing during startup.
-sys.stdout = io.BytesIO()  # capture any output
-sys.stderr = io.BytesIO()  # capture any output
 
-# All of the nopep8 comments below are to avoid E402 errors
-import os                                                   # nopep8
-import os.path                                              # nopep8
-import time                                                 # nopep8
-import curses                                               # nopep8
-import curses.ascii                                         # nopep8
-import textwrap                                             # nopep8
-import json                                                 # nopep8
-import mycroft.version                                      # nopep8
-from threading import Thread, Lock                          # nopep8
-from mycroft.messagebus.client.ws import WebsocketClient    # nopep8
-from mycroft.messagebus.message import Message              # nopep8
-from mycroft.util import get_ipc_directory                  # nopep8
-from mycroft.util.log import LOG                            # nopep8
+def custom_except_hook(exctype, value, traceback):           # noqa
+    print(sys.stdout.getvalue(), file=sys.__stdout__)        # noqa
+    print(sys.stderr.getvalue(), file=sys.__stderr__)        # noqa
+    sys.stdout, sys.stderr = sys.__stdout__, sys.__stderr__  # noqa
+    sys.__excepthook__(exctype, value, traceback)            # noqa
 
-import locale                                               # nopep8
+
+sys.excepthook = custom_except_hook  # noqa
+
+# capture any output
+sys.stdout = io.BytesIO()  # noqa
+sys.stderr = io.BytesIO()  # noqa
+
+import os
+import os.path
+import time
+import curses
+import curses.ascii
+import textwrap
+import json
+import mycroft.version
+from threading import Thread, Lock
+from mycroft.messagebus.client.ws import WebsocketClient
+from mycroft.messagebus.message import Message
+from mycroft.util import get_ipc_directory
+from mycroft.util.log import LOG
+
+import locale
 # Curses uses LC_ALL to determine how to display chars set it to system
 # default
 locale.setlocale(locale.LC_ALL, '.'.join(locale.getdefaultlocale()))
@@ -59,6 +66,7 @@ auto_scroll = True
 last_key = ""
 show_last_key = False
 
+max_log_lines = 5000
 mergedLog = []
 filteredLog = []
 default_log_filters = ["mouth.viseme", "mouth.display", "mouth.icon"]
@@ -125,6 +133,7 @@ def load_settings():
     global log_filters
     global cy_chat_area
     global show_last_key
+    global max_log_lines
 
     try:
         with io.open(config_file, 'r') as f:
@@ -135,6 +144,8 @@ def load_settings():
             cy_chat_area = config["cy_chat_area"]
         if "show_last_key" in config:
             show_last_key = config["show_last_key"]
+        if "max_log_lines" in config:
+            max_log_lines = config["max_log_lines"]
     except:
         pass
 
@@ -144,6 +155,7 @@ def save_settings():
     config["filters"] = log_filters
     config["cy_chat_area"] = cy_chat_area
     config["show_last_key"] = show_last_key
+    config["max_log_lines"] = max_log_lines
     with io.open(config_file, 'w') as f:
         f.write(unicode(json.dumps(config, ensure_ascii=False)))
 
@@ -208,6 +220,18 @@ class LogMonitorThread(Thread):
                         mergedLog.append(self.logid + line.strip())
                         if not auto_scroll:
                             log_line_offset += 1
+
+        # Limit log to  max_log_lines
+        if len(mergedLog) >= max_log_lines:
+            cToDel = len(mergedLog) - max_log_lines
+            if len(filteredLog) == len(mergedLog):
+                del filteredLog[:cToDel]
+            del mergedLog[:cToDel]
+            log_line_offset -= cToDel
+            if log_line_offset < 0:
+                log_line_offset = 0
+            if len(filteredLog) != len(mergedLog):
+                rebuild_filtered_log()
 
 
 def start_log_monitor(filename):
@@ -286,6 +310,7 @@ def clear_log():
 
     mergedLog = []
     filteredLog = []
+    log_line_offset = 0
 
 
 def rebuild_filtered_log():
@@ -665,11 +690,13 @@ def show_help():
                CLR_CMDLINE)
     scr.addstr(1, 0,  "=" * (curses.COLS - 1),
                CLR_CMDLINE)
-    scr.addstr(2, 0,  "Ctrl+N / Ctrl+P   scroll thru query history")
-    scr.addstr(3, 0,  "Up/Down/PgUp/PgDn scroll thru log history")
-    scr.addstr(4, 0,  "Left / Right      scroll long log lines left/right")
-    scr.addstr(5, 0,  "Home              scroll to start of long log lines")
-    scr.addstr(6, 0,  "End               scroll to end of long log lines")
+    scr.addstr(2, 0,  "Ctrl+N / Ctrl+P          scroll thru query history")
+    scr.addstr(3, 0,  "Up/Down/PgUp/PgDn        scroll thru log history")
+    scr.addstr(4, 0,  "Ctrl+T / Ctrl+PgUp       scroll to top (oldest)")
+    scr.addstr(5, 0,  "Ctrl+B / Ctrl+PgDn       scroll to bottom (newest)")
+    scr.addstr(6, 0,  "Left / Right             scroll long lines left/right")
+    scr.addstr(7, 0,  "Home                     scroll to start of long lines")
+    scr.addstr(8, 0,  "End                      scroll to end of long lines")
 
     scr.addstr(10, 0,  "Commands (type ':' to enter command mode)",
                CLR_CMDLINE)
@@ -722,7 +749,6 @@ def _get_cmd_param(cmd):
 def handle_cmd(cmd):
     global show_meter
     global log_filters
-    global mergedLog
     global cy_chat_area
     global find_str
     global show_last_key
@@ -890,6 +916,10 @@ def gui_main(stdscr):
             elif c == curses.KEY_PPAGE:  # aka PgUp
                 # PgUp to go up a page in the logs
                 scroll_log(False)
+            elif c == 2 or c == 550:  # Ctrl+B or Ctrl+PgDn
+                scroll_log(True, max_log_lines)
+            elif c == 20 or c == 555:  # Ctrl+T or Ctrl+PgUp
+                scroll_log(False, max_log_lines)
             elif c == curses.KEY_RESIZE:
                 # Generated by Curses when window/screen has been resized
                 y, x = scr.getmaxyx()
@@ -953,8 +983,6 @@ def simple_cli():
         event_thread.exit()
         sys.exit()
 
-
-add_log_message("  v--- OLDEST ---v")
 
 # Find the correct log path relative to this script
 scriptPath = os.path.dirname(os.path.realpath(__file__))

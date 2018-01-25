@@ -45,6 +45,17 @@ def merge_dict(base, delta):
             base[k] = dv
 
 
+def is_remote_list(values):
+    ''' check if this list corresponds to a backend formatted collection of
+    dictionaries '''
+    for v in values:
+        if not isinstance(v, dict):
+            return False
+        if "@type" not in v.keys():
+            return False
+    return True
+
+
 def translate_remote(config, setting):
     """
         Translate config names from server to equivalents usable
@@ -65,9 +76,12 @@ def translate_remote(config, setting):
                 config[key] = config.get(key, {})
                 translate_remote(config[key], v)
             elif isinstance(v, list):
-                if key not in config:
-                    config[key] = {}
-                translate_list(config[key], v)
+                if is_remote_list(v):
+                    if key not in config:
+                        config[key] = {}
+                    translate_list(config[key], v)
+                else:
+                    config[key] = v
             else:
                 config[key] = v
 

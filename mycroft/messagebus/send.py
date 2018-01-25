@@ -49,7 +49,7 @@ def main():
         print("Command line interface to the mycroft-core messagebus.")
         print("Usage: python -m mycroft.messagebus.send message")
         print("       python -m mycroft.messagebus.send message JSON-string\n")
-        print("Examples: python -m mycroft.messagebus.send mycroft.wifi.start")
+        print("Examples: python -m mycroft.messagebus.send system.wifi.setup")
         print("Ex: python -m mycroft.messagebus.send speak "
               "'{\"utterance\" : \"hello\"}'")
         exit()
