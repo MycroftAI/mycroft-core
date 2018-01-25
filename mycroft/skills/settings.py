@@ -99,10 +99,19 @@ class SkillSettings(dict):
         self._device_identity = None
         self._api_path = None
         self._user_identity = None
+        self.changed_callback = None
 
         # if settingsmeta exist
         if isfile(self._meta_path):
             self._poll_skill_settings()
+
+    def set_changed_callback(self, callback):
+        """
+            Set callback to perform when server settings have changed.
+
+            callback: function/method to call when settings have changed
+        """
+        self.changed_callback = callback
 
     # TODO: break this up into two classes
     def initialize_remote_settings(self):
@@ -380,7 +389,12 @@ class SkillSettings(dict):
                 if not self._complete_intialization:
                     return  # unable to do remote sync
             else:
+                original = hash(str(self))
                 self.update_remote()
+                # Call callback for updated settings
+                if self.changed_callback and hash(str(self)) != original:
+                    self.changed_callback()
+
         except Exception as e:
             LOG.error(e)
             LOG.exception("")
