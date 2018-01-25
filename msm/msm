@@ -336,13 +336,6 @@ function install() {
       fi
     fi
 
-    # If the skill has a requirements.txt, pip install them
-    run_pip "${name}"
-    rc=$?
-    if [[ ${rc} -gt 0 ]] ; then
-       return ${rc}
-    fi
-
     # If the skill has a requirements.sh, then run that using bash
     if [[ -f "requirements.sh" ]]; then
       echo "  Setting up native environment..."
@@ -351,6 +344,13 @@ function install() {
         send_install_fail "${name}" 122
         return 122
       fi
+    fi
+
+    # If the skill has a requirements.txt, pip install them
+    run_pip "${name}"
+    rc=$?
+    if [[ ${rc} -gt 0 ]] ; then
+       return ${rc}
     fi
 
     echo "Installed: ${name}"
