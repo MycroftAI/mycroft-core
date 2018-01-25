@@ -171,6 +171,8 @@ class HoundifySTT(KeySTT):
 
 
 class STTFactory(object):
+    from mycroft.stt.deepspeech_stt import DeepSpeechSTT
+
     CLASSES = {
         "mycroft": MycroftSTT,
         "google": GoogleSTT,
@@ -179,7 +181,8 @@ class STTFactory(object):
         "ibm": IBMSTT,
         "kaldi": KaldiSTT,
         "bing": BingSTT,
-        "houndify": HoundifySTT
+        "houndify": HoundifySTT,
+        "deepspeech": DeepSpeechSTT
     }
 
     @staticmethod
