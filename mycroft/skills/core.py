@@ -746,6 +746,8 @@ class MycroftSkill(object):
 
     def disable_intent(self, intent_name):
         """Disable a registered intent"""
+        if ":" not in intent_name:
+                intent_name = str(self.skill_id) + ":" + intent_name
         for (name, intent) in self.registered_intents:
             if name == intent_name:
                 LOG.debug('Disabling intent ' + intent_name)
@@ -756,6 +758,8 @@ class MycroftSkill(object):
 
     def enable_intent(self, intent_name):
         """Reenable a registered intent"""
+        if ":" not in intent_name:
+                intent_name = str(self.skill_id) + ":" + intent_name
         for (name, intent) in self.registered_intents:
             if name == intent_name:
                 self.registered_intents.remove((name, intent))
