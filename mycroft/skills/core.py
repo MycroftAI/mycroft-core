@@ -737,66 +737,39 @@ class MycroftSkill(object):
         }))
 
     def handle_enable_intent(self, message):
-        """
-        Listener to enable a registered intent if it belongs to this skill
-        """
         intent_name = message.data["intent_name"]
-        for (name, intent) in self.registered_intents:
-            if name == intent_name:
-                return self.enable_intent(intent_name)
+        self.enable_intent(intent_name)
 
     def handle_disable_intent(self, message):
-        """
-        Listener to disable a registered intent if it belongs to this skill
-        """
         intent_name = message.data["intent_name"]
-        for (name, intent) in self.registered_intents:
-            if name == intent_name:
-                return self.disable_intent(intent_name)
+        self.disable_intent(intent_name)
 
     def disable_intent(self, intent_name):
-        """
-        Disable a registered intent if it belongs to this skill
-
-        Args:
-                intent_name: name of the intent to be disabled
-
-        Returns:
-                bool: True if disabled, False if it wasn't registered
-        """
-        names = [intent_tuple[0] for intent_tuple in self.registered_intents]
-        if intent_name in names:
-            LOG.debug('Disabling intent ' + intent_name)
-            name = str(self.skill_id) + ':' + intent_name
-            self.emitter.emit(
-                Message("detach_intent", {"intent_name": name}))
-            return True
-        LOG.error('Could not disable ' + intent_name +
-                  ', it hasn\'t been registered.')
-        return False
+        """Disable a registered intent"""
+        if ":" not in intent_name:
+                intent_name = str(self.skill_id) + ":" + intent_name
+        for (name, intent) in self.registered_intents:
+            if name == intent_name:
+                LOG.debug('Disabling intent ' + intent_name)
+                name = str(self.skill_id) + ':' + intent_name
+                self.emitter.emit(
+                    Message("detach_intent", {"intent_name": name}))
+                break
 
     def enable_intent(self, intent_name):
-        """
-        (Re)Enable a registered intentif it belongs to this skill
-
-        Args:
-                intent_name: name of the intent to be enabled
-
-        Returns:
-                bool: True if enabled, False if it wasn't registered
-        """
-        names = [intent[0] for intent in self.registered_intents]
-        intents = [intent[1] for intent in self.registered_intents]
-        if intent_name in names:
-            intent = intents[names.index( intent_name)]
-            self.registered_intents.remove((intent_name, intent))
-            intent.name = intent_name
-            self.register_intent(intent, None)
-            LOG.debug('Enabling intent ' + intent_name)
-            return True
-        LOG.error('Could not enable ' + intent_name + ', it hasn\'t been '
-                                                      'registered.')
-        return False
+        """Reenable a registered intent"""
+        if ":" not in intent_name:
+                intent_name = str(self.skill_id) + ":" + intent_name
+        for (name, intent) in self.registered_intents:
+            if name == intent_name:
+                self.registered_intents.remove((name, intent))
+                intent.name = name
+                self.register_intent(intent, None)
+                LOG.debug('Enabling intent ' + intent_name)
+                break
+        else:
+            LOG.error('Could not enable ' + intent_name +
+                      ', it hasn\'t been registered.')
 
     def set_context(self, context, word=''):
         """
