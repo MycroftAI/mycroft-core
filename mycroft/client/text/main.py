@@ -12,35 +12,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from __future__ import print_function
 import sys
 import io
 
-# NOTE: The following two lines prevent extra messages from the
-# messagebus setup from appearing during startup and while the
-# CLI is running (dirtying the screen).  This is normally good.
-# But if there is a bug in this .py file, the Python error messages
-# are also consumed.  To debug, invoke the CLI with "--debug" as a
-# parameter.
-if "--debug" not in sys.argv:
-    sys.stdout = io.BytesIO()  # capture any output
-    sys.stderr = io.BytesIO()  # capture any output
 
-# All of the nopep8 comments below are to avoid E402 errors
-import os                                                   # nopep8
-import os.path                                              # nopep8
-import time                                                 # nopep8
-import curses                                               # nopep8
-import curses.ascii                                         # nopep8
-import textwrap                                             # nopep8
-import json                                                 # nopep8
-import mycroft.version                                      # nopep8
-from threading import Thread, Lock                          # nopep8
-from mycroft.messagebus.client.ws import WebsocketClient    # nopep8
-from mycroft.messagebus.message import Message              # nopep8
-from mycroft.util import get_ipc_directory                  # nopep8
-from mycroft.util.log import LOG                            # nopep8
+def custom_except_hook(exctype, value, traceback):           # noqa
+    print(sys.stdout.getvalue(), file=sys.__stdout__)        # noqa
+    print(sys.stderr.getvalue(), file=sys.__stderr__)        # noqa
+    sys.stdout, sys.stderr = sys.__stdout__, sys.__stderr__  # noqa
+    sys.__excepthook__(exctype, value, traceback)            # noqa
 
-import locale                                               # nopep8
+
+sys.excepthook = custom_except_hook  # noqa
+
+# capture any output
+sys.stdout = io.BytesIO()  # noqa
+sys.stderr = io.BytesIO()  # noqa
+
+import os
+import os.path
+import time
+import curses
+import curses.ascii
+import textwrap
+import json
+import mycroft.version
+from threading import Thread, Lock
+from mycroft.messagebus.client.ws import WebsocketClient
+from mycroft.messagebus.message import Message
+from mycroft.util import get_ipc_directory
+from mycroft.util.log import LOG
+
+import locale
 # Curses uses LC_ALL to determine how to display chars set it to system
 # default
 locale.setlocale(locale.LC_ALL, '.'.join(locale.getdefaultlocale()))
