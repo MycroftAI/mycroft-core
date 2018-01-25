@@ -19,6 +19,7 @@ from difflib import SequenceMatcher
 from mycroft.util.lang.parse_en import *
 from mycroft.util.lang.parse_pt import *
 from mycroft.util.lang.parse_es import *
+from mycroft.util.lang.parse_it import *
 from mycroft.util.lang.parse_common import *
 
 
@@ -46,6 +47,8 @@ def extractnumber(text, lang="en-us"):
         return extractnumber_en(text)
     elif lang_lower.startswith("pt"):
         return extractnumber_pt(text)
+    elif lang_lower.startswith("it"):
+        return extractnumber_it(text)
 
     # TODO: Normalization for other languages
     return text
@@ -127,6 +130,8 @@ def normalize(text, lang="en-us", remove_articles=True):
         return normalize_es(text, remove_articles)
     elif lang_lower.startswith("pt"):
         return normalize_pt(text, remove_articles)
+    elif lang_lower.startswith("it"):
+        return normalize_it(text, remove_articles)
     # TODO: Normalization for other languages
     return text
 
@@ -139,4 +144,7 @@ def get_gender(word, input_string="", lang="en-us"):
     if "pt" in lang or "es" in lang:
         # spanish follows same rules
         return get_gender_pt(word, input_string)
+    elif "it" in lang:
+        return get_gender_it(word, input_string)
+
     return False
