@@ -447,8 +447,8 @@ def extract_datetime_it(string, currentDate=None):
         wordPrev = words[idx - 1] if idx > 0 else ""
         wordNext = words[idx + 1] if idx + 1 < len(words) else ""
         wordNextNext = words[idx + 2] if idx + 2 < len(words) else ""
-        wordNextNextNext = words[idx + 3] if idx + 3 < len(words) else ""
-
+        # wordNextNextNext = words[idx + 3] if idx + 3 < len(words) else ""
+        # possono esistere casi dove servano tre parole di profondità ?
         start = idx
         used = 0
         # save timequalifier for later
@@ -464,12 +464,12 @@ def extract_datetime_it(string, currentDate=None):
         elif word == "ieri" and not fromFlag:
             dayOffset -= 1
             used += 1
-        elif (word == "dopodomani" and not fromFlag):  # after tomorrow
+        elif word == "dopodomani" and not fromFlag:  # after tomorrow
             dayOffset += 2
             used += 1
-        elif (word == "dopo" and
+        elif word == "dopo" and
                 wordNext == "domani" and
-                not fromFlag):
+                not fromFlag:
             dayOffset += 1
             used += 2
         elif word == "giorno":
@@ -624,7 +624,7 @@ def extract_datetime_it(string, currentDate=None):
     secOffset = 0
     hrAbs = 0
     minAbs = 0
-    military = False
+    # military = False
 
     for idx, word in enumerate(words):
         if word == "":
@@ -634,7 +634,8 @@ def extract_datetime_it(string, currentDate=None):
         wordPrev = words[idx - 1] if idx > 0 else ""
         wordNext = words[idx + 1] if idx + 1 < len(words) else ""
         wordNextNext = words[idx + 2] if idx + 2 < len(words) else ""
-        wordNextNextNext = words[idx + 3] if idx + 3 < len(words) else ""
+        # wordNextNextNext = words[idx + 3] if idx + 3 < len(words) else ""
+        # TODO verfica se esistono casi dove serva profindita 3 x analisi
         # parse noon, midnight, morning, afternoon, evening
         used = 0
         if word == "mezzogiorno":
@@ -871,7 +872,7 @@ def extract_datetime_it(string, currentDate=None):
                         used += 1
                         if wordNextNext == "ora":
                             used += 1
-                    elif (wordNext == "in" and wordNextNext == "punto"):
+                    elif wordNext == "in" and wordNextNext == "punto":
                         strHH = word
                         strMM = 00
                         used += 2
