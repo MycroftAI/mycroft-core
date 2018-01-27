@@ -467,8 +467,7 @@ def extract_datetime_it(string, currentDate=None):
         elif word == "dopodomani" and not fromFlag:  # after tomorrow
             dayOffset += 2
             used += 1
-        elif word == "dopo" and
-                wordNext == "domani" and
+        elif word == "dopo" and wordNext == "domani" and \
                 not fromFlag:
             dayOffset += 1
             used += 2
