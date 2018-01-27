@@ -476,7 +476,7 @@ def extract_datetime_it(string, currentDate=None):
                 dayOffset += int(wordPrev)
                 start -= 1
                 used = 2
-                if (wordNext == "dopo" and wordNextNext == "domani"):
+                if wordNext == "dopo" and wordNextNext == "domani":
                     dayOffset += 1
                     used += 2
         elif word == "settimana" and not fromFlag:
@@ -623,7 +623,6 @@ def extract_datetime_it(string, currentDate=None):
     secOffset = 0
     hrAbs = 0
     minAbs = 0
-    # military = False
 
     for idx, word in enumerate(words):
         if word == "":
@@ -786,7 +785,6 @@ def extract_datetime_it(string, currentDate=None):
                         # 0800 hours (pronounced oh-eight-hundred)
                         strHH = int(word) / 100
                         strMM = int(word) - strHH * 100
-                        military = True
                         if wordNext == "ora":
                             used += 1
 
@@ -861,13 +859,11 @@ def extract_datetime_it(string, currentDate=None):
                     elif int(word) > 100:
                         strHH = int(word) / 100
                         strMM = int(word) - strHH * 100
-                        military = True
                         if wordNext == "ora":
                             used += 1
                     elif wordNext and wordNext[0].isdigit():
                         strHH = word
                         strMM = wordNext
-                        military = True
                         used += 1
                         if wordNextNext == "ora":
                             used += 1
@@ -875,8 +871,7 @@ def extract_datetime_it(string, currentDate=None):
                         strHH = word
                         strMM = 00
                         used += 2
-                        if timeQualifier != "":
-                            military = True
+
                     else:
                         isTime = False
 
