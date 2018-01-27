@@ -730,7 +730,6 @@ def extract_datetime_it(string, currentDate=None):
                         used += 2
                     else:
                         if timeQualifier != "":
-                            military = True
                             if strHH <= 12 and \
                                     (timeQualifier == "sera" or
                                      timeQualifier == "pomeriggio"):
