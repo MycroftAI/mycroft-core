@@ -105,6 +105,8 @@ def extract_datetime(text, anchorDate=None, lang="en-us"):
         return extract_datetime_en(text, anchorDate)
     elif lang_lower.startswith("pt"):
         return extract_datetime_pt(text, anchorDate)
+    elif lang_lower.startswith("it"):
+        return extract_datetime_it(text, anchorDate)
 
     return text
 # ==============================================================
