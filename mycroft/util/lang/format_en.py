@@ -157,40 +157,40 @@ def nice_time_en(dt, speech=True, use_24hour=False, use_ampm=False):
     """
     if use_24hour:
         # e.g. "03:01" or "14:22"
-        str = dt.strftime("%H:%M")
+        string = dt.strftime("%H:%M")
     else:
         if use_ampm:
             # e.g. "3:01 AM" or "2:22 PM"
-            str = dt.strftime("%I:%M %p")
+            string = dt.strftime("%I:%M %p")
         else:
             # e.g. "3:01" or "2:22"
-            str = dt.strftime("%I:%M")
-        if str[0] == '0':
-            str = str[1:]  # strip leading zeros
+            string = dt.strftime("%I:%M")
+        if string[0] == '0':
+            string = string[1:]  # strip leading zeros
 
     if not speech:
-        return str
+        return string
 
     # Generate a speakable version of the time
     if use_24hour:
         speak = ""
 
         # Either "0 8 hundred" or "13 hundred"
-        if str[0] == '0':
-            speak += pronounce_number_en(int(str[0])) + " "
-            speak += pronounce_number_en(int(str[1]))
+        if string[0] == '0':
+            speak += pronounce_number_en(int(string[0])) + " "
+            speak += pronounce_number_en(int(string[1]))
         else:
-            speak = pronounce_number_en(int(str[0:2]))
+            speak = pronounce_number_en(int(string[0:2]))
 
         speak += " "
-        if str[3:5] == '00':
+        if string[3:5] == '00':
             speak += "hundred"
         else:
-            if str[3] == '0':
+            if string[3] == '0':
                 speak += pronounce_number_en(0) + " "
-                speak += pronounce_number_en(int(str[4]))
+                speak += pronounce_number_en(int(string[4]))
             else:
-                speak += pronounce_number_en(int(str[3:5]))
+                speak += pronounce_number_en(int(string[3:5]))
         return speak
     else:
         if dt.hour == 0 and dt.minute == 0:

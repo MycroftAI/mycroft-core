@@ -143,7 +143,7 @@ class TestPronounceNumber(unittest.TestCase):
 class TestNiceDateFormat(unittest.TestCase):
     def test_convert_times(self):
         dt = datetime.datetime(2017, 1, 31,
-                               13, 22, 03)
+                               13, 22, 3)
 
         # Verify defaults haven't changed
         self.assertEqual(nice_time(dt),
@@ -168,7 +168,7 @@ class TestNiceDateFormat(unittest.TestCase):
                          "thirteen twenty two")
 
         dt = datetime.datetime(2017, 1, 31,
-                               13, 00, 03)
+                               13, 0, 3)
         self.assertEqual(nice_time(dt),
                          "one o'clock")
         self.assertEqual(nice_time(dt, use_ampm=True),
@@ -188,7 +188,7 @@ class TestNiceDateFormat(unittest.TestCase):
                          "thirteen hundred")
 
         dt = datetime.datetime(2017, 1, 31,
-                               13, 02, 03)
+                               13, 2, 3)
         self.assertEqual(nice_time(dt),
                          "one oh two")
         self.assertEqual(nice_time(dt, use_ampm=True),
@@ -208,7 +208,7 @@ class TestNiceDateFormat(unittest.TestCase):
                          "thirteen zero two")
 
         dt = datetime.datetime(2017, 1, 31,
-                               00, 02, 03)
+                               0, 2, 3)
         self.assertEqual(nice_time(dt),
                          "twelve oh two")
         self.assertEqual(nice_time(dt, use_ampm=True),

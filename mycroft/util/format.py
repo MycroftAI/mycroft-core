@@ -50,6 +50,8 @@ def nice_number(number, lang="en-us", speech=True, denominators=None):
         return nice_number_en(result)
     elif lang_lower.startswith("pt"):
         return nice_number_pt(result)
+    elif lang_lower.startswith("it"):
+        return nice_number_it(result)
 
     # Default to the raw number for unsupported languages,
     # hopefully the STT engine will pronounce understandably.
