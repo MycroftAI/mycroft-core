@@ -723,6 +723,45 @@ def show_help():
     draw_screen()
 
 
+def show_skills(skills):
+    """
+        Show list of loaded skills in as many column as necessary
+
+        TODO: Handle multiscreen
+    """
+    global scr
+    global screen_mode
+
+    if not scr:
+        return
+
+    screen_mode = 1  # showing help (prevents overwrite by log updates)
+    scr.erase()
+    scr.addstr(0, 0,  center(25) + "Loaded skills", CLR_CMDLINE)
+    scr.addstr(1, 1,  "=" * (curses.COLS - 2), CLR_CMDLINE)
+    row = 2
+    column = 0
+    col_width = 0
+    for skill in sorted(skills):
+        scr.addstr(row, column,  "  {}".format(skill))
+        row += 1
+        col_width = max(col_width, len(skill))
+        if row == 21:
+            # Reached bottom of screen, start at top and move output to a
+            # New column
+            row = 2
+            column += col_width + 2
+            col_width = 0
+            if column > curses.COLS - 20:
+                # End of screen
+                break
+
+    scr.addstr(curses.LINES - 1, 0,  center(23) + "Press any key to return",
+               CLR_HEADING)
+
+    scr.refresh()
+
+
 def center(str_len):
     # generate number of characters needed to center a string
     # of the given length
@@ -748,6 +787,7 @@ def _get_cmd_param(cmd):
 
 def handle_cmd(cmd):
     global show_meter
+    global screen_mode
     global log_filters
     global cy_chat_area
     global find_str
@@ -801,7 +841,22 @@ def handle_cmd(cmd):
         if lines < 1:
             lines = 1
         cy_chat_area = lines
+    elif "skills" in cmd:
+        # List loaded skill
+        def handler(message):
+            """
+                Show screen listing available skills.
+            """
+            if message and 'skills' in message.data:
+                show_skills(message.data['skills'])
 
+        ws.once('mycroft.skills.list', handler)
+        ws.emit(Message('skillmanager.list'))
+
+        # Here due to trouble restoring screen  when run from different thread
+        c = scr.getch()  # blocks
+        screen_mode = 0  # back to main screen
+        draw_screen()
     # TODO: More commands
     return 0  # do nothing upon return
 
