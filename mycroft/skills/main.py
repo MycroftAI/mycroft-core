@@ -295,7 +295,6 @@ class SkillManager(Thread):
                                  {'folder': skill_folder,
                                   "id": skill["id"]}))
 
-
         # (Re)load the skill from disk
         with self.__msm_lock:  # Make sure msm isn't running
             skill["loaded"] = True
