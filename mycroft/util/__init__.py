@@ -21,7 +21,7 @@ from stat import S_ISREG, ST_MTIME, ST_MODE, ST_SIZE
 
 import mycroft.audio
 import mycroft.configuration
-from mycroft.util.format import nice_number, convert_number
+from mycroft.util.format import nice_number
 # Officially exported methods from this file:
 # play_wav, play_mp3, get_cache_directory,
 # resolve_resource_file, wait_while_speaking
