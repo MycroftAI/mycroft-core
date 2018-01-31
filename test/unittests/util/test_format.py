@@ -15,8 +15,11 @@
 # limitations under the License.
 #
 import unittest
+import datetime
 
 from mycroft.util.format import nice_number
+from mycroft.util.format import nice_time
+from mycroft.util.format import pronounce_number
 
 
 NUMBERS_FIXTURE_EN = {
@@ -81,6 +84,148 @@ class TestNiceNumberFormat(unittest.TestCase):
         self.assertEqual(nice_number(5.5, lang="es-us"), '5.5',
                          'should format 5.5 as 5.5 not {}'.format(
                              nice_number(5.5, lang="es-us")))
+
+
+# def pronounce_number(number, lang="en-us", places=2):
+class TestPronounceNumber(unittest.TestCase):
+    def test_convert_int(self):
+        self.assertEqual(pronounce_number(0), "zero")
+        self.assertEqual(pronounce_number(1), "one")
+        self.assertEqual(pronounce_number(10), "ten")
+        self.assertEqual(pronounce_number(15), "fifteen")
+        self.assertEqual(pronounce_number(20), "twenty")
+        self.assertEqual(pronounce_number(27), "twenty seven")
+        self.assertEqual(pronounce_number(30), "thirty")
+        self.assertEqual(pronounce_number(33), "thirty three")
+
+    def test_convert_negative_int(self):
+        self.assertEqual(pronounce_number(-1), "negative one")
+        self.assertEqual(pronounce_number(-10), "negative ten")
+        self.assertEqual(pronounce_number(-15), "negative fifteen")
+        self.assertEqual(pronounce_number(-20), "negative twenty")
+        self.assertEqual(pronounce_number(-27), "negative twenty seven")
+        self.assertEqual(pronounce_number(-30), "negative thirty")
+        self.assertEqual(pronounce_number(-33), "negative thirty three")
+
+    def test_convert_decimals(self):
+        self.assertEqual(pronounce_number(1.234),
+                         "one point two three")
+        self.assertEqual(pronounce_number(21.234),
+                         "twenty one point two three")
+        self.assertEqual(pronounce_number(21.234, places=1),
+                         "twenty one point two")
+        self.assertEqual(pronounce_number(21.234, places=0),
+                         "twenty one")
+        self.assertEqual(pronounce_number(21.234, places=3),
+                         "twenty one point two three four")
+        self.assertEqual(pronounce_number(21.234, places=4),
+                         "twenty one point two three four")
+        self.assertEqual(pronounce_number(21.234, places=5),
+                         "twenty one point two three four")
+        self.assertEqual(pronounce_number(-1.234),
+                         "negative one point two three")
+        self.assertEqual(pronounce_number(-21.234),
+                         "negative twenty one point two three")
+        self.assertEqual(pronounce_number(-21.234, places=1),
+                         "negative twenty one point two")
+        self.assertEqual(pronounce_number(-21.234, places=0),
+                         "negative twenty one")
+        self.assertEqual(pronounce_number(-21.234, places=3),
+                         "negative twenty one point two three four")
+        self.assertEqual(pronounce_number(-21.234, places=4),
+                         "negative twenty one point two three four")
+        self.assertEqual(pronounce_number(-21.234, places=5),
+                         "negative twenty one point two three four")
+
+
+# def nice_time(dt, lang="en-us", speech=True, use_24hour=False,
+#              use_ampm=False):
+class TestNiceDateFormat(unittest.TestCase):
+    def test_convert_times(self):
+        dt = datetime.datetime(2017, 1, 31,
+                               13, 22, 3)
+
+        # Verify defaults haven't changed
+        self.assertEqual(nice_time(dt),
+                         nice_time(dt, "en-us", True, False, False))
+
+        self.assertEqual(nice_time(dt),
+                         "one twenty two")
+        self.assertEqual(nice_time(dt, use_ampm=True),
+                         "one twenty two PM")
+        self.assertEqual(nice_time(dt, speech=False),
+                         "1:22")
+        self.assertEqual(nice_time(dt, speech=False, use_ampm=True),
+                         "1:22 PM")
+        self.assertEqual(nice_time(dt, speech=False, use_24hour=True),
+                         "13:22")
+        self.assertEqual(nice_time(dt, speech=False, use_24hour=True,
+                                   use_ampm=True),
+                         "13:22")
+        self.assertEqual(nice_time(dt, use_24hour=True, use_ampm=True),
+                         "thirteen twenty two")
+        self.assertEqual(nice_time(dt, use_24hour=True, use_ampm=False),
+                         "thirteen twenty two")
+
+        dt = datetime.datetime(2017, 1, 31,
+                               13, 0, 3)
+        self.assertEqual(nice_time(dt),
+                         "one o'clock")
+        self.assertEqual(nice_time(dt, use_ampm=True),
+                         "one PM")
+        self.assertEqual(nice_time(dt, speech=False),
+                         "1:00")
+        self.assertEqual(nice_time(dt, speech=False, use_ampm=True),
+                         "1:00 PM")
+        self.assertEqual(nice_time(dt, speech=False, use_24hour=True),
+                         "13:00")
+        self.assertEqual(nice_time(dt, speech=False, use_24hour=True,
+                                   use_ampm=True),
+                         "13:00")
+        self.assertEqual(nice_time(dt, use_24hour=True, use_ampm=True),
+                         "thirteen hundred")
+        self.assertEqual(nice_time(dt, use_24hour=True, use_ampm=False),
+                         "thirteen hundred")
+
+        dt = datetime.datetime(2017, 1, 31,
+                               13, 2, 3)
+        self.assertEqual(nice_time(dt),
+                         "one oh two")
+        self.assertEqual(nice_time(dt, use_ampm=True),
+                         "one oh two PM")
+        self.assertEqual(nice_time(dt, speech=False),
+                         "1:02")
+        self.assertEqual(nice_time(dt, speech=False, use_ampm=True),
+                         "1:02 PM")
+        self.assertEqual(nice_time(dt, speech=False, use_24hour=True),
+                         "13:02")
+        self.assertEqual(nice_time(dt, speech=False, use_24hour=True,
+                                   use_ampm=True),
+                         "13:02")
+        self.assertEqual(nice_time(dt, use_24hour=True, use_ampm=True),
+                         "thirteen zero two")
+        self.assertEqual(nice_time(dt, use_24hour=True, use_ampm=False),
+                         "thirteen zero two")
+
+        dt = datetime.datetime(2017, 1, 31,
+                               0, 2, 3)
+        self.assertEqual(nice_time(dt),
+                         "twelve oh two")
+        self.assertEqual(nice_time(dt, use_ampm=True),
+                         "twelve oh two AM")
+        self.assertEqual(nice_time(dt, speech=False),
+                         "12:02")
+        self.assertEqual(nice_time(dt, speech=False, use_ampm=True),
+                         "12:02 AM")
+        self.assertEqual(nice_time(dt, speech=False, use_24hour=True),
+                         "00:02")
+        self.assertEqual(nice_time(dt, speech=False, use_24hour=True,
+                                   use_ampm=True),
+                         "00:02")
+        self.assertEqual(nice_time(dt, use_24hour=True, use_ampm=True),
+                         "zero zero zero two")
+        self.assertEqual(nice_time(dt, use_24hour=True, use_ampm=False),
+                         "zero zero zero two")
 
 
 if __name__ == "__main__":
