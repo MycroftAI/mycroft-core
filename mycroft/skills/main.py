@@ -337,7 +337,7 @@ class SkillManager(Thread):
                         .format(skill['instance'].name, refs))
             del skill["instance"]
             self.ws.emit(Message("mycroft.skills.shutdown",
-                                 {'folder': skill_folder,
+                                 {"folder": skill_folder,
                                   "id": skill["id"]}))
 
         # (Re)load the skill from disk
@@ -348,16 +348,16 @@ class SkillManager(Thread):
                                            self.ws, skill["id"],
                                            BLACKLISTED_SKILLS)
             skill["last_modified"] = modified
-            if skill["instance"] is not None:
-                self.ws.emit(Message("mycroft.skills.loaded",
+            if skill['instance'] is not None:
+                self.ws.emit(Message('mycroft.skills.loaded',
                                      {'folder': skill_folder,
-                                      "id": skill["id"],
-                                      "name": skill["instance"].name,
-                                      "modified": modified}))
+                                      'id': skill['id'],
+                                      'name': skill['instance'].name,
+                                      'modified': modified}))
             else:
-                self.ws.emit(Message("mycroft.skills.loading_failure",
+                self.ws.emit(Message('mycroft.skills.loading_failure',
                                      {'folder': skill_folder,
-                                      "id": skill["id"]}))
+                                      'id': skill['id']}))
 
     def load_skill_list(self, skills_to_load):
         """ Load the specified list of skills from disk
