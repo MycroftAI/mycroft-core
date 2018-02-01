@@ -209,6 +209,7 @@ class SkillManager(Thread):
 
         # Update upon request
         ws.on('skillmanager.update', self.schedule_update_skills)
+        ws.on('skillmanager.list', self.send_skill_list)
 
         # Register handlers for external MSM signals
         ws.on('msm.updating', self.block_msm)
@@ -416,6 +417,16 @@ class SkillManager(Thread):
                 self.loaded_skills[skill]['instance'].shutdown()
             except BaseException:
                 pass
+
+    def send_skill_list(self, message=None):
+        """
+            Send list of loaded skills.
+        """
+        try:
+            self.ws.emit(Message('mycroft.skills.list',
+                                 data={'skills': self.loaded_skills.keys()}))
+        except Exception as e:
+            LOG.exception(e)
 
     def wait_loaded_priority(self):
         """ Block until all priority skills have loaded """
