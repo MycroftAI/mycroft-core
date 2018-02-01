@@ -471,6 +471,7 @@ function update() {
         git fetch
         git reset --hard origin/master
         rm -f *.pyc
+        run_pip "${d}"
       else
         echo "Ignoring ${d}, skill has been modified."
       fi
