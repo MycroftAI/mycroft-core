@@ -319,7 +319,7 @@ class SkillSettings(dict):
                 _hash (str): hashed to identify skills
         """
         _hash = self.hash(str(settings_meta) + str(self._user_identity))
-        return "{}-{}".format(basename(self.directory), _hash)
+        return "{}--{}".format(basename(self.directory), _hash)
 
     def _save_hash(self, hashed_meta):
         """ Saves hashed_meta to settings directory.
