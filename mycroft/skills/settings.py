@@ -216,7 +216,7 @@ class SkillSettings(dict):
         sections = skill_settings['skillMetadata']['sections']
         for section in sections:
             for field in section["fields"]:
-                if "name" in field:  # no name for 'label' fields
+                if "name" in field and "value" in field:
                     self[field['name']] = field['value']
         self.store()
 
