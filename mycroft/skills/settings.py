@@ -516,7 +516,10 @@ class SkillSettings(dict):
             for i, section in enumerate(sections):
                 for j, field in enumerate(section['fields']):
                     if 'name' in field:
-                        if field["name"] in self:
+                        # Ensure that the field exists in settings and that
+                        # it has a value to compare
+                        if (field["name"] in self and
+                                'value' in sections[i]['fields'][j]):
                             remote_val = sections[i]['fields'][j]["value"]
                             self_val = self.get(field['name'])
                             if str(remote_val) != str(self_val):
