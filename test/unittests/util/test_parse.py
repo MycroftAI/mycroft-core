@@ -22,6 +22,7 @@ from mycroft.util.parse import extract_datetime
 from mycroft.util.parse import extractnumber
 from mycroft.util.parse import normalize
 from mycroft.util.parse import fuzzy_match
+from mycroft.util.parse import match_one
 
 
 class TestFuzzyMatch(unittest.TestCase):
@@ -32,6 +33,18 @@ class TestFuzzyMatch(unittest.TestCase):
         self.assertTrue(fuzzy_match("you and me", "you") ==
                         fuzzy_match("you", "you and me"))
         self.assertTrue(fuzzy_match("you and me", "he or they") < 0.2)
+
+    def test_match_one(self):
+        # test list of choices
+        choices = ['frank', 'kate', 'harry', 'henry']
+        self.assertEqual(match_one('frank', choices)[0], 'frank')
+        self.assertEqual(match_one('fran', choices)[0], 'frank')
+        self.assertEqual(match_one('enry', choices)[0], 'henry')
+        self.assertEqual(match_one('katt', choices)[0], 'kate')
+        # test dictionary of choices
+        choices = {'frank': 1, 'kate': 2, 'harry': 3, 'henry': 4}
+        self.assertEqual(match_one('frank', choices)[0], 1)
+        self.assertEqual(match_one('enry', choices)[0], 4)
 
 
 class TestNormalize(unittest.TestCase):

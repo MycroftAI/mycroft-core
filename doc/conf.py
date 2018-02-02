@@ -19,7 +19,7 @@
 # Mycroft documentation build configuration file
 #
 import sys
-
+import re
 import os
 
 
@@ -28,20 +28,29 @@ sys.path.insert(0, os.path.abspath('../'))
 # General Configuration
 
 extensions = [
-	'sphinx.ext.autodoc',
+    'sphinx.ext.autodoc',
     'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
     'sphinx.ext.napoleon'
 ]
 
-autodoc_mock_imports = [
-	'speech_recognition',
-	'pyaudio',
-	'pyalsaaudio',
-	'pocketsphinx',
-	'padatious',
-	'alsaaudio'
+# Assuming package name is the same as the module name
+with open(os.path.join(os.path.dirname(os.path.dirname(
+        os.path.realpath(__file__))), 'requirements.txt')) as f:
+    autodoc_mock_imports = map(str.strip, re.findall(r'^\s*[a-zA-Z_]*',
+                               f.read().lower().replace('-', '_'),
+                               flags=re.MULTILINE))
+
+# Dependencies with different module names
+autodoc_mock_imports += [
+    'adapt',
+    'alsaaudio',
+    'dateutil',
+    'past',
+    'serial',
+    'websocket',
+    'speech_recognition'
 ]
 
 templates_path = ['_templates']
@@ -103,5 +112,3 @@ texinfo_documents = [
 
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
-
-

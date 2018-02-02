@@ -19,6 +19,7 @@ from difflib import SequenceMatcher
 from mycroft.util.lang.parse_en import *
 from mycroft.util.lang.parse_pt import *
 from mycroft.util.lang.parse_es import *
+from mycroft.util.lang.parse_it import *
 from mycroft.util.lang.parse_common import *
 
 
@@ -29,6 +30,35 @@ def fuzzy_match(x, against):
                down to 0.0 for no match at all.
     """
     return SequenceMatcher(None, x, against).ratio()
+
+
+def match_one(query, choices):
+    """
+        Find best match from a list or dictionary given an input
+
+        Arguments:
+            query:   string to test
+            choices: list or dictionary of choices
+
+        Returns: tuple with best match, score
+    """
+    if isinstance(choices, dict):
+        _choices = choices.keys()
+    elif isinstance(choices, list):
+        _choices = choices
+    else:
+        raise ValueError('a list or dict of choices must be provided')
+
+    best = (_choices[0], fuzzy_match(query, _choices[0]))
+    for c in _choices[1:]:
+        score = fuzzy_match(query, c)
+        if score > best[1]:
+            best = (c, score)
+
+    if isinstance(choices, dict):
+        return (choices[best[0]], best[1])
+    else:
+        return best
 
 
 def extractnumber(text, lang="en-us"):
@@ -46,6 +76,8 @@ def extractnumber(text, lang="en-us"):
         return extractnumber_en(text)
     elif lang_lower.startswith("pt"):
         return extractnumber_pt(text)
+    elif lang_lower.startswith("it"):
+        return extractnumber_it(text)
 
     # TODO: Normalization for other languages
     return text
@@ -102,6 +134,8 @@ def extract_datetime(text, anchorDate=None, lang="en-us"):
         return extract_datetime_en(text, anchorDate)
     elif lang_lower.startswith("pt"):
         return extract_datetime_pt(text, anchorDate)
+    elif lang_lower.startswith("it"):
+        return extract_datetime_it(text, anchorDate)
 
     return text
 # ==============================================================
@@ -127,6 +161,8 @@ def normalize(text, lang="en-us", remove_articles=True):
         return normalize_es(text, remove_articles)
     elif lang_lower.startswith("pt"):
         return normalize_pt(text, remove_articles)
+    elif lang_lower.startswith("it"):
+        return normalize_it(text, remove_articles)
     # TODO: Normalization for other languages
     return text
 
@@ -139,4 +175,7 @@ def get_gender(word, input_string="", lang="en-us"):
     if "pt" in lang or "es" in lang:
         # spanish follows same rules
         return get_gender_pt(word, input_string)
+    elif "it" in lang:
+        return get_gender_it(word, input_string)
+
     return False

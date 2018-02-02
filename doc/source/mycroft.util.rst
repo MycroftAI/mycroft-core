@@ -1,9 +1,9 @@
 mycroft.util package
 ====================
 
-getLogger
----------
-.. autofunction:: mycroft.util.getLogger
+LOG
+---
+.. autofunction:: mycroft.util.LOG
 
 wait_while_speaking
 -------------------
