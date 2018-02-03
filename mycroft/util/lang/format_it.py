@@ -82,6 +82,7 @@ def nice_number_it(mixed):
     Return:
         (str): spoken version of the number
     """
+
     whole, num, den = mixed
     if num == 0:
         return str(whole)
