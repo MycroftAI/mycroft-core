@@ -78,6 +78,9 @@ def nice_time(dt, lang="en-us", speech=True, use_24hour=False,
     lang_lower = str(lang).lower()
     if lang_lower.startswith("en"):
         return nice_time_en(dt, speech, use_24hour, use_ampm)
+    elif lang_lower.startswith("it"):
+        return nice_time_it(dt, speech, use_24hour, use_ampm)
+
     # TODO: Other languages
     return str(dt)
 
@@ -96,6 +99,8 @@ def pronounce_number(number, lang="en-us", places=2):
     lang_lower = str(lang).lower()
     if lang_lower.startswith("en"):
         return pronounce_number_en(number, places=places)
+    elif lang_lower.startswith("it"):
+        return pronounce_number_it(number, places=places)
 
     # Default to just returning the numeric value
     return str(number)
