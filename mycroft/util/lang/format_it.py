@@ -142,7 +142,7 @@ def pronounce_number_it(num, places=2):
         result += NUM_STRING_IT[tens]
         if ones > 0:
             if ones == 1 or ones == 8:
-                result = result[:-1]  #  ventuno  ventotto
+                result = result[:-1]  # ventuno  ventotto
             result += NUM_STRING_IT[ones]
 
     else:
@@ -200,7 +200,7 @@ def nice_time_it(dt, speech=True, use_24hour=False, use_ampm=False):
         elif string[0] == '0':
             speak += pronounce_number_it(int(string[0])) + " "
             if int(string[1]) == 1:
-                speak += "una"  #  TODO: valutare forma "l'una"
+                speak += "una"  # TODO: valutare forma "l'una"
             else:
                 speak += pronounce_number_it(int(string[1]))
         else:
@@ -229,7 +229,7 @@ def nice_time_it(dt, speech=True, use_24hour=False, use_ampm=False):
             speak = "mezzanotte"
         elif dt.hour == 1 or dt.hour == 13:
             speak = "una"
-        elif dt.hour > 13:  #  era minore
+        elif dt.hour > 13:  # era minore
             speak = pronounce_number_it(dt.hour-12)
         else:
             speak = pronounce_number_it(dt.hour-12)
