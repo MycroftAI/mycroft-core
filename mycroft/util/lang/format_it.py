@@ -71,7 +71,7 @@ FRACTION_STRING_IT = {
 
 
 def nice_number_it(mixed):
-     """
+    """
     Helper for for nice_number adapted to italian
     adapted to italian fron en version
 
