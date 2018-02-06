@@ -22,10 +22,36 @@ DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 scripts_dir="$DIR/scripts"
 mkdir -p $scripts_dir/logs
 
-if [ -z "$WORKON_HOME" ]; then
-    VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${HOME}/.virtualenvs/mycroft"}
-else
-    VIRTUALENV_ROOT="$WORKON_HOME/mycroft"
+SYSTEM_CONFIG="$DIR/mycroft/configuration/mycroft.conf"
+
+function get_config_value() {
+  key="$1"
+  default="$2"
+  value="null"
+  for file in ~/.mycroft/mycroft.conf /etc/mycroft/mycroft.conf $SYSTEM_CONFIG;   do
+    if [[ -r $file ]] ; then
+        # remove comments in config for jq to work
+        # assume they may be preceded by whitespace, but nothing else
+        parsed="$( sed 's:^\s*//.*$::g' $file )"
+        echo "$parsed" >> "$DIR/mycroft/configuration/sys.conf"
+        value=$( jq -r "$key" "$DIR/mycroft/configuration/sys.conf" )
+        if [[ "${value}" != "null" ]] ;  then
+            rm -rf $DIR/mycroft/configuration/sys.conf
+            echo "$value"
+            return
+        fi
+    fi
+  done
+  echo "$default"
+}
+
+use_virtualenvwrapper="$(get_config_value '.enclosure.use_virtualenvwrapper' 'true')"
+if [[ ${use_virtualenvwrapper} == "true" ]] ; then
+    if [ -z "$WORKON_HOME" ]; then
+        VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${HOME}/.virtualenvs/mycroft"}
+    else
+        VIRTUALENV_ROOT="$WORKON_HOME/mycroft"
+    fi
 fi
 
 function help() {
@@ -88,7 +114,9 @@ function launch-process() {
     if ($first_time) ; then
         echo "Initializing..."
         ${DIR}/scripts/prepare-msm.sh
-        source ${VIRTUALENV_ROOT}/bin/activate
+        if [[ ${use_virtualenvwrapper} == "true" ]] ; then
+            source ${VIRTUALENV_ROOT}/bin/activate
+        fi
         first_time=false
     fi
 
@@ -103,7 +131,9 @@ function launch-background() {
     if ($first_time) ; then
         echo "Initializing..."
         ${DIR}/scripts/prepare-msm.sh
-        source ${VIRTUALENV_ROOT}/bin/activate
+        if [[ ${use_virtualenvwrapper} == "true" ]] ; then
+            source ${VIRTUALENV_ROOT}/bin/activate
+        fi
         first_time=false
     fi
 
