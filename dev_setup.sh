@@ -117,10 +117,11 @@ git config commit.template .gitmessage
 
 TOP=$(cd $(dirname $0) && pwd -L)
 
+MYCROFT_VENV=${MYCROFT_VENV:-"mycroft"}
 if [ -z "$WORKON_HOME" ]; then
-    VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${HOME}/.virtualenvs/mycroft"}
+    VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${HOME}/.virtualenvs/$MYCROFT_VENV"}
 else
-    VIRTUALENV_ROOT="$WORKON_HOME/mycroft"
+    VIRTUALENV_ROOT="$WORKON_HOME/$MYCROFT_VENV"
 fi
 
 # Check whether to build mimic (it takes a really long time!)
@@ -147,10 +148,12 @@ else
   fi
 fi
 
+# get correct python directory
+PYTHON=`python -c "import sys;print('python{}.{}'.format(sys.version_info[0], sys.version_info[1]))"`
 # create virtualenv, consistent with virtualenv-wrapper conventions
 if [ ! -d "${VIRTUALENV_ROOT}" ]; then
    mkdir -p $(dirname "${VIRTUALENV_ROOT}")
-  virtualenv -p python2.7 "${VIRTUALENV_ROOT}"
+  virtualenv -p python3 "${VIRTUALENV_ROOT}"
 fi
 source "${VIRTUALENV_ROOT}/bin/activate"
 cd "${TOP}"
@@ -160,7 +163,7 @@ pip install --upgrade virtualenv
 # Add mycroft-core to the virtualenv path
 # (This is equivalent to typing 'add2virtualenv $TOP', except
 # you can't invoke that shell function from inside a script)
-VENV_PATH_FILE="${VIRTUALENV_ROOT}/lib/python2.7/site-packages/_virtualenv_path_extensions.pth"
+VENV_PATH_FILE="${VIRTUALENV_ROOT}/lib/$PYTHON/site-packages/_virtualenv_path_extensions.pth"
 if [ ! -f "$VENV_PATH_FILE" ] ; then
     echo "import sys; sys.__plen = len(sys.path)" > "$VENV_PATH_FILE" || return 1
     echo "import sys; new=sys.path[sys.__plen:]; del sys.path[sys.__plen:]; p=getattr(sys,'__egginsert',0); sys.path[p:p]=new; sys.__egginsert = p+len(new)" >> "$VENV_PATH_FILE" || return 1
