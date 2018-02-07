@@ -92,7 +92,7 @@ class SkillSettings(dict):
         # set file paths
         self._settings_path = join(directory, 'settings.json')
         self._meta_path = join(directory, 'settingsmeta.json')
-        self.loaded_hash = hash(str(self))
+        self.loaded_hash = hash(frozenset(self.items()))
         self._complete_intialization = False
         self._device_identity = None
         self._api_path = None
@@ -176,7 +176,7 @@ class SkillSettings(dict):
 
     @property
     def _is_stored(self):
-        return hash(str(self)) == self.loaded_hash
+        return hash(bytes(str(self), 'utf-8')) == self.loaded_hash
 
     def __getitem__(self, key):
         """ Get key """
@@ -308,9 +308,9 @@ class SkillSettings(dict):
                 del self['not_owner']
         self._save_hash(hashed_meta)
 
-    def hash(self, str):
+    def hash(self, string):
         """ md5 hasher for consistency across cpu architectures """
-        return hashlib.md5(str).hexdigest()
+        return hashlib.md5(bytes(string, 'utf-8')).hexdigest()
 
     def _get_meta_hash(self, settings_meta):
         """ Get's the hash of skill
@@ -547,7 +547,7 @@ class SkillSettings(dict):
         if force or not self._is_stored:
             with open(self._settings_path, 'w') as f:
                 json.dump(self, f)
-            self.loaded_hash = hash(str(self))
+            self.loaded_hash = hash(bytes(str((self)), 'utf-8'))
 
         if self._should_upload_from_change:
             settings_meta = self._load_settings_meta()
