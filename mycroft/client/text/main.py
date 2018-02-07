@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 from __future__ import print_function
+from builtins import str
 import sys
 import io
 
@@ -27,8 +28,12 @@ def custom_except_hook(exctype, value, traceback):           # noqa
 sys.excepthook = custom_except_hook  # noqa
 
 # capture any output
-sys.stdout = io.BytesIO()  # noqa
-sys.stderr = io.BytesIO()  # noqa
+if sys.version_info[0] < 3:  # noqa
+    sys.stdout = io.BytesIO()  # noqa
+    sys.stderr = io.BytesIO()  # noqa
+else:  # noqa
+    sys.stdout = io.StringIO()  # noqa
+    sys.stderr = io.StringIO()  # noqa
 
 import os
 import os.path
@@ -157,7 +162,7 @@ def save_settings():
     config["show_last_key"] = show_last_key
     config["max_log_lines"] = max_log_lines
     with io.open(config_file, 'w') as f:
-        f.write(unicode(json.dumps(config, ensure_ascii=False)))
+        f.write(str(json.dumps(config, ensure_ascii=False)))
 
 
 ##############################################################################
