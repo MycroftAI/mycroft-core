@@ -461,7 +461,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                         str(int(1000 * get_time())),
                         SessionManager.get().session_id,
                         self.account_id,
-                        model_hash
+                        str(model_hash)
                     ]
                     fn = join(dr, '.'.join(components) + '.wav')
                     with open(fn, 'wb') as f:
