@@ -22,10 +22,11 @@ DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 scripts_dir="$DIR/scripts"
 mkdir -p $scripts_dir/logs
 
+MYCROFT_VENV=${MYCROFT_VENV:-"mycroft"}
 if [ -z "$WORKON_HOME" ]; then
-    VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${HOME}/.virtualenvs/mycroft"}
+    VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${HOME}/.virtualenvs/$MYCROFT_VENV"}
 else
-    VIRTUALENV_ROOT="$WORKON_HOME/mycroft"
+    VIRTUALENV_ROOT="$WORKON_HOME/$MYCROFT_VENV"
 fi
 
 function help() {
