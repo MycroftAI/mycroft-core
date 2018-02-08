@@ -202,7 +202,7 @@ def nice_time_en(dt, speech=True, use_24hour=False, use_ampm=False):
         if dt.hour == 0:
             speak = pronounce_number_en(12)
         elif dt.hour < 13:
-            speak = pronounce_number_en(dt.hour-12)
+            speak = pronounce_number_en(dt.hour)
         else:
             speak = pronounce_number_en(dt.hour-12)
 

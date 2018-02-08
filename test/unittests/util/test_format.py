@@ -227,6 +227,26 @@ class TestNiceDateFormat(unittest.TestCase):
         self.assertEqual(nice_time(dt, use_24hour=True, use_ampm=False),
                          "zero zero zero two")
 
+        dt = datetime.datetime(2018, 2, 8,
+                               1, 2, 33)
+        self.assertEqual(nice_time(dt),
+                         "one oh two")
+        self.assertEqual(nice_time(dt, use_ampm=True),
+                         "one oh two AM")
+        self.assertEqual(nice_time(dt, speech=False),
+                         "1:02")
+        self.assertEqual(nice_time(dt, speech=False, use_ampm=True),
+                         "1:02 AM")
+        self.assertEqual(nice_time(dt, speech=False, use_24hour=True),
+                         "01:02")
+        self.assertEqual(nice_time(dt, speech=False, use_24hour=True,
+                                   use_ampm=True),
+                         "01:02")
+        self.assertEqual(nice_time(dt, use_24hour=True, use_ampm=True),
+                         "zero one zero two")
+        self.assertEqual(nice_time(dt, use_24hour=True, use_ampm=False),
+                         "zero one zero two")
+
 
 if __name__ == "__main__":
     unittest.main()
