@@ -21,8 +21,6 @@ from mycroft.util.parse import get_gender
 from mycroft.util.parse import extract_datetime
 from mycroft.util.parse import extractnumber
 from mycroft.util.parse import normalize
-from mycroft.util.parse import fuzzy_match
-from mycroft.util.parse import match_one
 
 
 class TestNormalize_fr(unittest.TestCase):

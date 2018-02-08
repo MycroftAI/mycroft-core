@@ -100,15 +100,15 @@ def number_parse_fr(words, i):
             return s, i + 1
         return None
 
-    def number_word_fr(i, min, max):
-        # Check if words[i] is a number in numbers_fr between min and max.
+    def number_word_fr(i, mi, ma):
+        # Check if words[i] is a number in numbers_fr between mi and ma.
         # If it is return tuple with number, index of next word.
         # If it is not return None.
         if i < len(words):
             val = numbers_fr.get(words[i])
             # Numbers [1-16,20,30,40,50,60,70,80,90,100,1000]
             if val is not None:
-                if val >= min and val <= max:
+                if val >= mi and val <= ma:
                     return val, i + 1
                 else:
                     return None
@@ -258,7 +258,6 @@ def extractnumber_fr(text):
         val = None
         word = aWords[count]
         wordNext = None
-        wordNextNext = None
         if count < (len(aWords) - 1):
             wordNext = aWords[count + 1]
 
@@ -538,7 +537,7 @@ def extract_datetime_fr(string, currentDate=None):
                     tmpOffset -= 7
                     used += 1
                 elif tmpOffset < 0:
-                        tmpOffset += 7
+                    tmpOffset += 7
                 dayOffset += tmpOffset
         if used > 0:
             if start - 1 > 0 and words[start - 1] in ["ce", "cette"]:
