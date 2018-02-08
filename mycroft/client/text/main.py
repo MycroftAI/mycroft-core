@@ -409,7 +409,7 @@ def scroll_log(up, num_lines=None):
 
     # default to a half-page
     if not num_lines:
-        num_lines = size_log_area/2
+        num_lines = size_log_area // 2
 
     if up:
         log_line_offset -= num_lines
