@@ -175,7 +175,7 @@ class TestNormalize(unittest.TestCase):
 
     def test_extractdatetime_it(self):
         def extractWithFormat(text):
-            date = datetime(2018, 01, 13, 00, 00)
+            date = datetime(2018, 1, 13, 0, 0)
             [extractedDate, leftover] = extract_datetime(text, date,
                                                          lang="it")
             extractedDate = extractedDate.strftime("%Y-%m-%d %H:%M:%S")

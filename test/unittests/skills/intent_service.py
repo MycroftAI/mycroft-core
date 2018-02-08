@@ -46,7 +46,6 @@ class ContextManagerTest(unittest.TestCase):
         entity = {'confidence': 1.0}
         context = 'TestContext'
         word = 'TestWord'
-        print "Adding " + context
         entity['data'] = [(word, context)]
         entity['match'] = word
         entity['key'] = word
@@ -59,7 +58,6 @@ class ContextManagerTest(unittest.TestCase):
         entity = {'confidence': 1.0}
         context = 'TestContext'
         word = 'TestWord'
-        print "Adding " + context
         entity['data'] = [(word, context)]
         entity['match'] = word
         entity['key'] = word

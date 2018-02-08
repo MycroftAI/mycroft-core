@@ -43,7 +43,7 @@ def match_one(query, choices):
         Returns: tuple with best match, score
     """
     if isinstance(choices, dict):
-        _choices = choices.keys()
+        _choices = list(choices.keys())
     elif isinstance(choices, list):
         _choices = choices
     else:
