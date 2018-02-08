@@ -42,7 +42,9 @@ from mycroft.skills.skill_data import (load_vocabulary, load_regex, to_letters,
 from mycroft.util import resolve_resource_file
 from mycroft.util.log import LOG
 # python 2+3 compatibility
-from past.builtins import basestring
+import sys
+if sys.version_info[0] >= 3:
+    basestring = str
 
 MainModule = '__init__'
 
