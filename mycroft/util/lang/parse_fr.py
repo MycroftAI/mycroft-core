@@ -138,7 +138,7 @@ def number_parse_fr(words, i):
                         val = val1 + val2
                     else:
                         return None
-                    if val and val >= min and val <= max:
+                    if val and val >= mi and val <= ma:
                         return val, i + 1
 
         return None
