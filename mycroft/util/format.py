@@ -16,6 +16,7 @@
 from mycroft.util.lang.format_en import *
 from mycroft.util.lang.format_pt import *
 from mycroft.util.lang.format_it import *
+from mycroft.util.lang.format_fr import *
 
 
 def nice_number(number, lang="en-us", speech=True, denominators=None):
@@ -52,6 +53,8 @@ def nice_number(number, lang="en-us", speech=True, denominators=None):
         return nice_number_pt(result)
     elif lang_lower.startswith("it"):
         return nice_number_it(result)
+    elif lang_lower.startswith("fr"):
+        return nice_number_fr(result)
 
     # Default to the raw number for unsupported languages,
     # hopefully the STT engine will pronounce understandably.
@@ -80,6 +83,8 @@ def nice_time(dt, lang="en-us", speech=True, use_24hour=False,
         return nice_time_en(dt, speech, use_24hour, use_ampm)
     elif lang_lower.startswith("it"):
         return nice_time_it(dt, speech, use_24hour, use_ampm)
+    elif lang_lower.startswith("fr"):
+        return nice_time_fr(dt, speech, use_24hour, use_ampm)
 
     # TODO: Other languages
     return str(dt)
@@ -101,6 +106,8 @@ def pronounce_number(number, lang="en-us", places=2):
         return pronounce_number_en(number, places=places)
     elif lang_lower.startswith("it"):
         return pronounce_number_it(number, places=places)
+    elif lang_lower.startswith("fr"):
+        return pronounce_number_fr(number, places=places)
 
     # Default to just returning the numeric value
     return str(number)
