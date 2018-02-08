@@ -20,11 +20,7 @@ from os.path import isfile
 
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
-import sys
-if sys.version_info[0] < 3:
-    from Queue import Queue
-else:
-    from queue import Queue
+from queue import Queue
 
 
 class EventScheduler(Thread):

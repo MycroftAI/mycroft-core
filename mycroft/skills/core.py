@@ -38,10 +38,7 @@ from mycroft.metrics import report_metric, report_timing, Stopwatch
 from mycroft.skills.settings import SkillSettings
 from mycroft.util import resolve_resource_file
 from mycroft.util.log import LOG
-# python 2+3 compatibility
 import sys
-if sys.version_info[0] >= 3:
-    basestring = str
 
 MainModule = '__init__'
 
@@ -798,9 +795,9 @@ class MycroftSkill(object):
                 context:    Keyword
                 word:       word connected to keyword
         """
-        if not isinstance(context, basestring):
+        if not isinstance(context, str):
             raise ValueError('context should be a string')
-        if not isinstance(word, basestring):
+        if not isinstance(word, str):
             raise ValueError('word should be a string')
         self.emitter.emit(Message('add_context',
                                   {'context': context, 'word': word}))
@@ -809,7 +806,7 @@ class MycroftSkill(object):
         """
             remove_context removes a keyword from from the context manager.
         """
-        if not isinstance(context, basestring):
+        if not isinstance(context, str):
             raise ValueError('context should be a string')
         self.emitter.emit(Message('remove_context', {'context': context}))
 

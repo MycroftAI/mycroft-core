@@ -22,9 +22,6 @@ from mycroft.skills.core import open_intent_envelope
 from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
 from mycroft.metrics import report_timing, Stopwatch
-# python 2+3 compatibility
-from past.builtins import basestring
-from future.builtins import range
 
 
 class ContextManager(object):
@@ -389,7 +386,7 @@ class IntentService(object):
         context = message.data.get('context')
         word = message.data.get('word') or ''
         # if not a string type try creating a string from it
-        if not isinstance(word, basestring):
+        if not isinstance(word, str):
             word = str(word)
         entity['data'] = [(word, context)]
         entity['match'] = word
