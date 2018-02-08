@@ -26,7 +26,7 @@ class TestFileLoad(unittest.TestCase):
         root_dir = dirname(__file__)
         # Load normal JSON file
         plainfile = join(root_dir, 'plain.json')
-        with open(plainfile, 'rw') as f:
+        with open(plainfile, 'r') as f:
             data_from_plain = json.load(f)
 
         # Load commented JSON file

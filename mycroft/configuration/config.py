@@ -24,8 +24,10 @@ from mycroft.util.json_helper import load_commented_json
 from mycroft.util.log import LOG
 
 # Python 2+3 compatibility
+import sys
 from future.utils import iteritems
-from past.builtins import basestring
+if sys.version_info[0] >= 3:
+    basestring = str
 
 
 def merge_dict(base, delta):

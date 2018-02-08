@@ -27,6 +27,9 @@ from mycroft.skills.core import load_regex_from_file, load_regex, \
     load_vocab_from_file, load_vocabulary, MycroftSkill, \
     load_skill, create_skill_descriptor, open_intent_envelope
 
+if sys.version_info[0] >= 3:
+    basestring = str
+
 
 class MockEmitter(object):
     def __init__(self):
@@ -83,8 +86,9 @@ class MycroftSkillTest(unittest.TestCase):
     def check_emitter(self, result_list):
         for type in self.emitter.get_types():
             self.assertEquals(type, 'register_vocab')
-        self.assertEquals(sorted(self.emitter.get_results()),
-                          sorted(result_list))
+        self.assertEquals(sorted(self.emitter.get_results(),
+                                 key=lambda d: sorted(d.items())),
+                          sorted(result_list, key=lambda d: sorted(d.items())))
         self.emitter.reset()
 
     def test_load_regex_from_file_single(self):
@@ -100,17 +104,12 @@ class MycroftSkillTest(unittest.TestCase):
         self.check_regex_from_file('invalid/none.rx')
 
     def test_load_regex_from_file_invalid(self):
-        try:
+        with self.assertRaises(error):
             self.check_regex_from_file('invalid/invalid.rx')
-        except error as e:
-            self.assertEquals(e.__str__(),
-                              'unexpected end of regular expression')
 
     def test_load_regex_from_file_does_not_exist(self):
-        try:
+        with self.assertRaises(IOError):
             self.check_regex_from_file('does_not_exist.rx')
-        except IOError as e:
-            self.assertEquals(e.strerror, 'No such file or directory')
 
     def test_load_regex_full(self):
         self.check_regex(join(self.regex_path, 'valid'),
@@ -241,8 +240,9 @@ class MycroftSkillTest(unittest.TestCase):
     def check_register_object_file(self, types_list, result_list):
         self.assertEquals(sorted(self.emitter.get_types()),
                           sorted(types_list))
-        self.assertEquals(sorted(self.emitter.get_results()),
-                          sorted(result_list))
+        self.assertEquals(sorted(self.emitter.get_results(),
+                                 key=lambda d: sorted(d.items())),
+                          sorted(result_list, key=lambda d: sorted(d.items())))
         self.emitter.reset()
 
     def test_register_intent_file(self):
@@ -272,8 +272,9 @@ class MycroftSkillTest(unittest.TestCase):
         self.check_register_object_file(expected_types, expected_results)
 
     def check_register_decorators(self, result_list):
-        self.assertEquals(sorted(self.emitter.get_results()),
-                          sorted(result_list))
+        self.assertEquals(sorted(self.emitter.get_results(),
+                                 key=lambda d: sorted(d.items())),
+                          sorted(result_list, key=lambda d: sorted(d.items())))
         self.emitter.reset()
 
     def test_register_decorators(self):
