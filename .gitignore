@@ -20,6 +20,7 @@ scripts/*.screen
 doc/_build/
 .installed
 .mypy_cache
+.venv/
 
 # Created by unit tests
 test/unittests/skills/test_skill/settings.json
