@@ -32,11 +32,7 @@ from mycroft.util import (
 )
 from mycroft.util.log import LOG
 from mycroft.metrics import report_timing, Stopwatch
-import sys
-if sys.version_info[0] < 3:
-    from Queue import Queue, Empty
-else:
-    from queue import Queue, Empty
+from queue import Queue, Empty
 
 
 def send_playback_metric(stopwatch, ident):

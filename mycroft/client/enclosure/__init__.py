@@ -35,10 +35,7 @@ from mycroft.util import play_wav, create_signal, connected, \
     wait_while_speaking
 from mycroft.util.audio_test import record
 from mycroft.util.log import LOG
-if sys.version_info[0] < 3:
-    from Queue import Queue
-else:
-    from queue import Queue
+from queue import Queue
 
 
 class EnclosureReader(Thread):

@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from __future__ import print_function
-from builtins import str
 import sys
 import io
 
@@ -27,13 +25,8 @@ def custom_except_hook(exctype, value, traceback):           # noqa
 
 sys.excepthook = custom_except_hook  # noqa
 
-# capture any output
-if sys.version_info[0] < 3:  # noqa
-    sys.stdout = io.BytesIO()  # noqa
-    sys.stderr = io.BytesIO()  # noqa
-else:  # noqa
-    sys.stdout = io.StringIO()  # noqa
-    sys.stderr = io.StringIO()  # noqa
+sys.stdout = io.StringIO()  # noqa
+sys.stderr = io.StringIO()  # noqa
 
 import os
 import os.path
