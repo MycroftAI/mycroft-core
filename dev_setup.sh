@@ -91,7 +91,7 @@ install_deps() {
     fi
 
     if found_exe apt-get; then
-        $SUDO apt-get install -y git python python-dev python-setuptools python-virtualenv python-gobject-dev virtualenvwrapper libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev s3cmd portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config automake libjpeg-dev libfann-dev build-essential jq
+        $SUDO apt-get install -y git python python-dev python-setuptools python-venv python-gobject-dev libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev s3cmd portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config automake libjpeg-dev libfann-dev build-essential jq
     elif found_exe pacman; then
         $SUDO pacman -S --needed git python2 python2-pip python2-setuptools python2-virtualenv python2-gobject python-virtualenvwrapper libtool libffi openssl autoconf bison swig glib2 s3cmd portaudio mpg123 screen flac curl pkg-config icu automake libjpeg-turbo base-devel jq
     elif found_exe dnf; then
@@ -109,20 +109,18 @@ install_deps() {
     fi
 }
 
-install_deps
+TOP=$(cd $(dirname $0) && pwd -L)
+VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${TOP}/.venv"}
+
+install_venv() {
+    python3 -m venv .venv/
+    curl https://bootstrap.pypa.io/get-pip.py | .venv/bin/python
+}
+#install_deps
 
 # Configure to use the standard commit template for
 # this repo only.
 git config commit.template .gitmessage
-
-TOP=$(cd $(dirname $0) && pwd -L)
-
-MYCROFT_VENV=${MYCROFT_VENV:-"mycroft"}
-if [ -z "$WORKON_HOME" ]; then
-    VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${HOME}/.virtualenvs/$MYCROFT_VENV"}
-else
-    VIRTUALENV_ROOT="$WORKON_HOME/$MYCROFT_VENV"
-fi
 
 # Check whether to build mimic (it takes a really long time!)
 build_mimic='y'
@@ -148,17 +146,15 @@ else
   fi
 fi
 
-# get correct python directory
-PYTHON=`python -c "import sys;print('python{}.{}'.format(sys.version_info[0], sys.version_info[1]))"`
-# create virtualenv, consistent with virtualenv-wrapper conventions
 if [ ! -d "${VIRTUALENV_ROOT}" ]; then
-   mkdir -p $(dirname "${VIRTUALENV_ROOT}")
-  virtualenv -p python3 "${VIRTUALENV_ROOT}"
+  install_venv
 fi
+
+# Start the virtual environment
 source "${VIRTUALENV_ROOT}/bin/activate"
 cd "${TOP}"
-easy_install pip==7.1.2 # force version of pip
-pip install --upgrade virtualenv
+
+PYTHON=`python -c "import sys;print('python{}.{}'.format(sys.version_info[0], sys.version_info[1]))"`
 
 # Add mycroft-core to the virtualenv path
 # (This is equivalent to typing 'add2virtualenv $TOP', except
@@ -176,9 +172,7 @@ if ! grep -q "mycroft-core" $VENV_PATH_FILE; then
 ' "${VENV_PATH_FILE}"
 fi
 
-# install requirements (except pocketsphinx)
-# removing the pip2 explicit usage here for consistency with the above use.
-
+# install required python modules
 if ! pip install -r requirements.txt; then
     echo "Warning: Failed to install all requirements. Continue? y/N"
     read -n1 continue
@@ -209,11 +203,9 @@ else
   echo "Skipping mimic build."
 fi
 
-# install pygtk for desktop_launcher skill
-"${TOP}/scripts/install-pygtk.sh" " ${CORES}"
-
 # set permissions for common scripts
 chmod +x start-mycroft.sh
 chmod +x stop-mycroft.sh
 
+#Store a fingerprint of setup
 md5sum requirements.txt dev_setup.sh > .installed
