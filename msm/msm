@@ -18,6 +18,10 @@ RED='\033[0;31m'
 NOCOLOR='\033[0m'
 GREEN='\033[0;32m'
 
+# Set virtualenv for git clone install of mycroft
+TOP=$(cd $(dirname $0) && pwd -L)/..
+VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${TOP}/.venv"}
+ACTIVATE=$VIRTUALENV_ROOT/bin/activate
 
 script=${0}
 script=${script##*/}
@@ -83,19 +87,6 @@ picroft_mk1="false"
 vwrap="true"
 if [[ "${mycroft_platform}" == "picroft" ]] || [[ "${mycroft_platform}" == "mycroft_mark_1" ]] ; then
   picroft_mk1="true"
-else
-  if [[ -r /etc/bash_completion.d/virtualenvwrapper ]]; then
-    source /etc/bash_completion.d/virtualenvwrapper
-   elif [[ -r /usr/bin/virtualenvwrapper.sh ]]; then
-    source /usr/bin/virtualenvwrapper.sh
-  else
-    if locate virtualenvwrapper ; then
-      if ! source $(locate virtualenvwrapper) ; then
-        echo "WARNING: Unable to locate virtualenvwrapper.sh, not able to install skills!"
-        vwrap="false"
-      fi
-    fi
-  fi
 fi
 
 # Cache to only retrieve list once per MSM invocation
@@ -364,14 +355,14 @@ function run_pip() {
     if [[ -f "requirements.txt" ]]; then
       echo "  Installing requirements..."
       if [[ "${picroft_mk1}" == "false" ]]; then
-        if [[ "${VIRTUAL_ENV}" =~ .mycroft$ ]] ; then
+        if [[ "${VIRTUAL_ENV}" =~ .mycroft-core/.venv$ ]] ; then
           if ! pip install -r requirements.txt ; then
             echo "ERROR: Unable to install requirements for skill '${name}'"
             send_install_fail "${name}" 121
             return 121
           fi
         else
-          if workon mycroft ; then
+          if source "${ACTIVATE}" ; then
             if ! pip install -r requirements.txt ; then
               echo "ERROR: Unable to install requirements for skill '${name}'"
               deactivate mycroft
