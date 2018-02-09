@@ -99,10 +99,19 @@ class SkillSettings(dict):
         self._device_identity = None
         self._api_path = None
         self._user_identity = None
+        self.changed_callback = None
 
         # if settingsmeta exist
         if isfile(self._meta_path):
             self._poll_skill_settings()
+
+    def set_changed_callback(self, callback):
+        """
+            Set callback to perform when server settings have changed.
+
+            callback: function/method to call when settings have changed
+        """
+        self.changed_callback = callback
 
     # TODO: break this up into two classes
     def initialize_remote_settings(self):
@@ -210,7 +219,7 @@ class SkillSettings(dict):
         sections = skill_settings['skillMetadata']['sections']
         for section in sections:
             for field in section["fields"]:
-                if "name" in field:  # no name for 'label' fields
+                if "name" in field and "value" in field:
                     self[field['name']] = field['value']
         self.store()
 
@@ -318,7 +327,7 @@ class SkillSettings(dict):
                 _hash (str): hashed to identify skills
         """
         _hash = self.hash(str(settings_meta) + str(self._user_identity))
-        return "{}-{}".format(basename(self.directory), _hash)
+        return "{}--{}".format(basename(self.directory), _hash)
 
     def _save_hash(self, hashed_meta):
         """ Saves hashed_meta to settings directory.
@@ -385,13 +394,19 @@ class SkillSettings(dict):
                 hashed_meta (int): the hashed identifier
         """
         # NOT IN THIS FORK
+        return
         try:
             if not self._complete_intialization:
                 self.initialize_remote_settings()
                 if not self._complete_intialization:
                     return  # unable to do remote sync
-            #else:
-            #    self.update_remote()
+            else:
+                original = hash(str(self))
+                self.update_remote()
+                # Call callback for updated settings
+                if self.changed_callback and hash(str(self)) != original:
+                    self.changed_callback()
+
         except Exception as e:
             LOG.error(e)
             LOG.exception("")
@@ -517,7 +532,10 @@ class SkillSettings(dict):
             for i, section in enumerate(sections):
                 for j, field in enumerate(section['fields']):
                     if 'name' in field:
-                        if field["name"] in self:
+                        # Ensure that the field exists in settings and that
+                        # it has a value to compare
+                        if (field["name"] in self and
+                                'value' in sections[i]['fields'][j]):
                             remote_val = sections[i]['fields'][j]["value"]
                             self_val = self.get(field['name'])
                             if str(remote_val) != str(self_val):

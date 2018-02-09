@@ -72,6 +72,15 @@ class BasicSTT(STT):
         self.password = str(self.credential.get("password"))
 
 
+class KeySTT(STT):
+    __metaclass__ = ABCMeta
+
+    def __init__(self):
+        super(KeySTT, self).__init__()
+        self.id = str(self.credential.get("client_id"))
+        self.key = str(self.credential.get("client_key"))
+
+
 class GoogleSTT(TokenSTT):
     def __init__(self):
         super(GoogleSTT, self).__init__()
@@ -127,6 +136,22 @@ class MycroftSTT(STT):
             return self.api.stt(audio.get_flac_data(), self.lang, 1)[0]
 
 
+class DeepSpeechServerSTT(STT):
+    """
+        STT interface for the deepspeech-server:
+        https://github.com/MainRo/deepspeech-server
+    """
+    def __init__(self):
+        super(DeepSpeechServerSTT, self).__init__()
+
+    def execute(self, audio, language=None):
+        language = language or self.lang
+        if not language.startswith("en"):
+            raise ValueError("Deepspeech is currently english only")
+        response = post(self.config.get("uri"), data=audio.get_wav_data())
+        return response.text
+
+
 class KaldiSTT(STT):
     def __init__(self):
         super(KaldiSTT, self).__init__()
@@ -161,6 +186,25 @@ class PocketSphinxSTT(BasicSTT):
         return self.recognizer.recognize(audio)
 
 
+class BingSTT(TokenSTT):
+    def __init__(self):
+        super(BingSTT, self).__init__()
+
+    def execute(self, audio, language=None):
+        self.lang = language or self.lang
+        return self.recognizer.recognize_bing(audio, self.token,
+                                              self.lang)
+
+
+class HoundifySTT(KeySTT):
+    def __init__(self):
+        super(HoundifySTT, self).__init__()
+
+    def execute(self, audio, language=None):
+        self.lang = language or self.lang
+        return self.recognizer.recognize_houndify(audio, self.id, self.key)
+
+
 class STTFactory(object):
     CLASSES = {
         "mycroft": MycroftSTT,
@@ -169,6 +213,9 @@ class STTFactory(object):
         "wit": WITSTT,
         "ibm": IBMSTT,
         "kaldi": KaldiSTT,
+        "bing": BingSTT,
+        "houndify": HoundifySTT,
+        "deepspeech_server": DeepSpeechServerSTT,
         "pocketsphinx": PocketSphinxSTT
     }
 

@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 import vlc
+import time
 
 from mycroft.audio.services import AudioBackend
 from mycroft.util.log import LOG
@@ -20,17 +21,24 @@ from mycroft.util.log import LOG
 
 class VlcService(AudioBackend):
     def __init__(self, config, emitter=None, name='vlc'):
+        super(VlcService, self).__init__(config, emitter)
         self.instance = vlc.Instance()
         self.list_player = self.instance.media_list_player_new()
         self.player = self.instance.media_player_new()
         self.list_player.set_media_player(self.player)
         self.track_list = self.instance.media_list_new()
         self.list_player.set_media_list(self.track_list)
-
+        self.vlc_events = self.player.event_manager()
+        self.vlc_events.event_attach(vlc.EventType.MediaPlayerPlaying,
+                                     self.track_start, 1)
         self.config = config
         self.emitter = emitter
         self.name = name
         self.normal_volume = None
+
+    def track_start(self, data, other):
+        if self._track_start_callback:
+            self._track_start_callback(self.track_info()['name'])
 
     def supported_uris(self):
         return ['file', 'http', 'https']

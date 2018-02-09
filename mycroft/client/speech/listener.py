@@ -155,7 +155,8 @@ class AudioConsumer(Thread):
                 ident = str(stopwatch.timestamp)
             # Report timing metrics
             report_timing(ident, 'stt', stopwatch,
-                          {'transcription': transcription})
+                          {'transcription': transcription,
+                           'stt': self.stt.__class__.__name__})
 
     def transcribe(self, audio):
         text = None

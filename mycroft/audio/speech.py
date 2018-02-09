@@ -87,7 +87,8 @@ def handle_speak(event):
             mute_and_speak(utterance, ident)
 
         stopwatch.stop()
-    report_timing(ident, 'speech', stopwatch, {'utterance': utterance})
+    report_timing(ident, 'speech', stopwatch, {'utterance': utterance,
+                                               'tts': tts.__class__.__name__})
 
 
 def mute_and_speak(utterance, ident):

@@ -25,9 +25,8 @@ class AudioBackend():
     """
     __metaclass__ = ABCMeta
 
-    @abstractmethod
     def __init__(self, config, emitter):
-        pass
+        self._track_start_callback = None
 
     @abstractmethod
     def supported_uris(self):
@@ -66,6 +65,13 @@ class AudioBackend():
             Stop playback.
         """
         pass
+
+    def set_track_start_callback(self, callback_func):
+        """
+            Register callback on track start, should be called as each track
+            in a playlist is started.
+        """
+        self._track_start_callback = callback_func
 
     def pause(self):
         """
