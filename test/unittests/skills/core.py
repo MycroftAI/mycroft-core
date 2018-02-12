@@ -33,9 +33,6 @@ from mycroft.configuration.config import LocalConf, DEFAULT_CONFIG
 
 BASE_CONF = LocalConf(DEFAULT_CONFIG)
 
-if sys.version_info[0] >= 3:
-    basestring = str
-
 
 class MockEmitter(object):
     def __init__(self):

@@ -20,11 +20,7 @@ from speech_recognition import WavFile, AudioData
 
 from mycroft.client.speech.listener import AudioConsumer, RecognizerLoop
 from mycroft.stt import MycroftSTT
-import sys
-if sys.version_info[0] < 3:
-    from Queue import Queue
-else:
-    from queue import Queue
+from queue import Queue
 
 
 class MockRecognizer(object):
