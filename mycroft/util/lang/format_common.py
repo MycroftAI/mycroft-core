@@ -40,7 +40,7 @@ def convert_to_mixed_fraction(number, denominators):
 
     for denominator in denominators:
         numerator = abs(frac_number) * denominator
-        if (abs(numerator - round(numerator)) < 0.01):  # 0.01 accuracy
+        if abs(numerator - round(numerator)) < 0.01:  # 0.01 accuracy
             break
     else:
         return None

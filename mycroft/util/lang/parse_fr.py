@@ -796,7 +796,6 @@ def extract_datetime_fr(string, currentDate=None):
                 # try to parse time without colons
                 # 5 hours, 10 minutes etc.
                 length = len(word)
-                strNum = ""
                 ampm = ""
                 if (
                         word.isdigit() and
