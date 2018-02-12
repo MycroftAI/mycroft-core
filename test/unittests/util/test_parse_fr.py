@@ -81,6 +81,8 @@ class TestNormalize_fr(unittest.TestCase):
                                        lang="fr-fr"), 0.01)
         self.assertEqual(extractnumber("un millième",
                                        lang="fr-fr"), 0.001)
+        self.assertEqual(extractnumber("un 20e",
+                                       lang="fr-fr"), 1.0 / 20.0)
 
     def test_extractdatetime_fr(self):
         def extractWithFormat_fr(text):
@@ -276,14 +278,18 @@ class TestNormalize_fr(unittest.TestCase):
                        "2017-06-27 00:45:00", "arrête four")
         testExtract_fr("mange la pizza dans une heure",
                        "2017-06-27 01:00:00", "mange pizza")
+        testExtract_fr("bois la bière dans 2h23",
+                       "2017-06-27 02:23:00", "bois bière")
         testExtract_fr("faire les plantations le 3ème jour de mars",
                        "2018-03-03 00:00:00", "faire plantations")
         testExtract_fr("récolter dans 10 mois",
                        "2018-04-27 00:00:00", "récolter")
         testExtract_fr("point 6a: dans 10 mois",
                        "2018-04-27 06:00:00", "point")
-        testExtract_fr("l'après-midi démissionner à 16:59",
+        testExtract_fr("l'après-midi démissionner à 4:59",
                        "2017-06-27 16:59:00", "démissionner")
+        testExtract_fr("cette nuit dormir",
+                       "2017-06-27 02:00:00", "dormir")
         testExtract_fr("ranger son bureau à 1700 heures",
                        "2017-06-27 17:00:00", "ranger son bureau")
 
@@ -349,6 +355,30 @@ class TestNormalize_fr(unittest.TestCase):
                          "joli 0 sur 20")
         self.assertEqual(normalize("je veux du quatre-quart", lang="fr-fr"),
                          "je veux quatre-quart")
+        self.assertEqual(normalize("pour la neuf centième fois", lang="fr-fr"),
+                         "pour 900e fois")
+        self.assertEqual(normalize("pour la première fois", lang="fr-fr"),
+                         "pour 1er fois")
+        self.assertEqual(normalize("le neuf cents quatre-vingt-dix"
+                                   " millième épisode", lang="fr-fr"),
+                         "990000e épisode")
+        self.assertEqual(normalize("la septième clé", lang="fr-fr"),
+                         "7e clé")
+        self.assertEqual(normalize("la neuvième porte", lang="fr-fr"),
+                         "9e porte")
+        self.assertEqual(normalize("le cinquième jour", lang="fr-fr"),
+                         "5e jour")
+        self.assertEqual(normalize("le trois-cents-soixante-cinquième jour",
+                                   lang="fr-fr"),
+                         "365e jour")
+        self.assertEqual(normalize("la 1ère fois", lang="fr-fr"),
+                         "1er fois")
+        self.assertEqual(normalize("le centième centime", lang="fr-fr"),
+                         "100e centime")
+        self.assertEqual(normalize("le millième millésime", lang="fr-fr"),
+                         "1000e millésime")
+        self.assertEqual(normalize("le trentième anniversaire", lang="fr-fr"),
+                         "30e anniversaire")
 
     def test_gender_fr(self):
         self.assertEqual(get_gender("personne", lang="fr-fr"),

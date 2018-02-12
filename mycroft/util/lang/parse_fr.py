@@ -17,11 +17,9 @@
 """ Parse functions for french (fr)
 
     Todo:
-        * extractnumber_fr: ordinal numbers ("le cinquième")
+        * extractnumber_fr: ordinal numbers ("cinquième")
         * extractnumber_fr: numbers greater than 999 999 ("cinq millions")
         * extract_datetime_fr: "quatrième lundi de janvier"
-        * extract_datetime_fr: "5 heures moins le quart"
-        * extract_datetime_fr: "troisième lundi de juillet"
         * get_gender_fr
 """
 
@@ -37,10 +35,7 @@ numbers_fr = {
     "zéro": 0,
     "un": 1,
     "une": 1,
-    "premier": 1,
-    "première": 1,
     "deux": 2,
-    "second": 2,
     "trois": 3,
     "quatre": 4,
     "cinq": 5,
@@ -79,9 +74,11 @@ numbers_fr = {
     "milliard": 1000000000,
     "milliards": 1000000000}
 
+ordinals_fr = ("er", "re", "ère", "nd", "nde" "ième", "ème", "e")
+
 
 def number_parse_fr(words, i):
-    """
+    """ Parses a list of words to find a number
     Takes in a list of words (strings without whitespace) and
     extracts a number that starts at the given index.
     Args:
@@ -112,33 +109,58 @@ def number_parse_fr(words, i):
                     return val, i + 1
                 else:
                     return None
-            # The number may be hyphenated (numbers [17-99])
+            # The number may be hyphenated (numbers [17-999])
             splitWord = words[i].split('-')
             if len(splitWord) > 1:
                 val1 = numbers_fr.get(splitWord[0])
                 if val1:
-                    i1 = 1
+                    i1 = 0
                     val2 = 0
-
-                    # For [81-99], e.g. "quatre-vingt-deux"
-                    if splitWord[0] == "quatre" and splitWord[1] == "vingt":
-                        val1 = 80
+                    val3 = 0
+                    if val1 < 10 and splitWord[1] == "cents":
+                        val1 = val1 * 100
                         i1 = 2
 
-                    # For [21,31,41,51,61,71]
-                    if splitWord[i1] == "et" and len(splitWord) > i1:
-                        val2 = numbers_fr.get(splitWord[i1 + 1])
-                    # For [77-79],[97-99] e.g. "soixante-dix-sept"
-                    elif splitWord[i1] == "dix" and len(splitWord) > i1:
-                        val2 = 10 + numbers_fr.get(splitWord[i1 + 1])
-                    else:
-                        val2 = numbers_fr.get(splitWord[i1])
+                    # For [81-99], e.g. "quatre-vingt-deux"
+                    if len(splitWord) > i1 and splitWord[0] == "quatre" and \
+                            splitWord[1] == "vingt":
+                        val1 = 80
+                        i1 += 2
 
-                    if val2:
-                        val = val1 + val2
-                    else:
-                        return None
-                    if val and val >= mi and val <= ma:
+                    # We still found a number
+                    if i1 == 0:
+                        i1 = 1
+
+                    if len(splitWord) > i1:
+                        # For [21,31,41,51,61,71]
+                        if len(splitWord) > i1 + 1 and splitWord[i1] == "et":
+                            val2 = numbers_fr.get(splitWord[i1 + 1])
+                            if val2 is not None:
+                                i1 += 2
+                        # For [77-79],[97-99] e.g. "soixante-dix-sept"
+                        elif splitWord[i1] == "dix" and \
+                                len(splitWord) > i1 + 1:
+                            val2 = numbers_fr.get(splitWord[i1 + 1])
+                            if val2 is not None:
+                                val2 += 10
+                                i1 += 2
+                        else:
+                            val2 = numbers_fr.get(splitWord[i1])
+                            if val2 is not None:
+                                i1 += 1
+                                if len(splitWord) > i1:
+                                    val3 = numbers_fr.get(splitWord[i1])
+                                    if val3 is not None:
+                                        i1 += 1
+
+                        if val2:
+                            if val3:
+                                val = val1 + val2 + val3
+                            else:
+                                val = val1 + val2
+                        else:
+                            return None
+                    if i1 == len(splitWord) and val and ma >= val >= mi:
                         return val, i + 1
 
         return None
@@ -176,38 +198,50 @@ def number_parse_fr(words, i):
         # If it is not return None.
 
         # Is it 100 ?
-        result1 = number_word_fr(i, 100, 100)
+        result = number_word_fr(i, 100, 100)
 
         # Is it [200,300,400,500,600,700,800,900]?
-        if not result1:
+        if not result:
             resultH1 = number_word_fr(i, 2, 9)
             if resultH1:
                 valH1, iH1 = resultH1
                 resultH2 = number_word_fr(iH1, 100, 100)
                 if resultH2:
                     iH2 = resultH2[1]
-                    result1 = valH1 * 100, iH2
+                    result = valH1 * 100, iH2
 
-        if result1:
-            val1, i1 = result1
+        if result:
+            val1, i1 = result
             result2 = number_1_99_fr(i1)
             if result2:
                 val2, i2 = result2
                 return val1 + val2, i2
             else:
-                return result1
+                return result
+
+        # Is it hyphenated? [101-999]
+        result = number_word_fr(i, 101, 999)
+        if result:
+            return result
 
         # [1-99]
-        result1 = number_1_99_fr(i)
-        if result1:
-            return result1
+        result = number_1_99_fr(i)
+        if result:
+            return result
 
         return None
 
-    def number_fr(i):
-        # Check if words[i] is a number between 1 and 999,999.
-        # If it is return tuple with number, index of next word.
-        # If it is not return None.
+    def number_1_999999_fr(i):
+        """ Find a number in a list of words
+        Checks if words[i] is a number between 1 and 999,999.
+
+        Args:
+            i (int): the index in words where to look for the number
+        Returns:
+            tuple with number, index of next word after the number.
+
+            Returns None if no number was found.
+        """
 
         # check for zero
         result1 = number_word_fr(i, 0, 0)
@@ -237,7 +271,102 @@ def number_parse_fr(words, i):
             return result1
         return None
 
-    return number_fr(i)
+    return number_1_999999_fr(i)
+
+
+def getOrdinal_fr(word):
+    """ Get the ordinal number
+    Takes in a word (string without whitespace) and
+    extracts the ordinal number.
+    Args:
+        word (string): the word to extract the number from
+    Returns:
+        number (int)
+
+        Returns None if no ordinal number was found.
+    """
+    if word:
+        for ordinal in ordinals_fr:
+            if word[0].isdigit() and ordinal in word:
+                result = word.replace(ordinal, "")
+                if result.isdigit():
+                    return int(result)
+
+    return None
+
+
+def number_ordinal_fr(words, i):
+    """ Find an ordinal number in a list of words
+    Takes in a list of words (strings without whitespace) and
+    extracts an ordinal number that starts at the given index.
+    Args:
+        words (array): the list to extract a number from
+        i (int): the index in words where to look for the ordinal number
+    Returns:
+        tuple with ordinal number (str),
+        index of next word after the number (int).
+
+        Returns None if no ordinal number was found.
+    """
+    val1 = None
+    strOrd = ""
+    # it's already a digit, normalize to "1er" or "5e"
+    val1 = getOrdinal_fr(words[i])
+    if val1 is not None:
+        if val1 == 1:
+            strOrd = "1er"
+        else:
+            strOrd = str(val1) + "e"
+        return strOrd, i + 1
+
+    # if it's a big number the beginning should be detected as a number
+    result = number_parse_fr(words, i)
+    if result:
+        val1, i = result
+    else:
+        val1 = 0
+
+    if i < len(words):
+        word = words[i]
+        if word in ["premier", "première"]:
+            strOrd = "1er"
+        elif word == "second":
+            strOrd = "2e"
+        elif word.endswith("ième"):
+            val2 = None
+            word = word[:-5]
+            # centième
+            if word == "cent":
+                if val1:
+                    strOrd = str(val1 * 100) + "e"
+                else:
+                    strOrd = "100e"
+            # millième
+            elif word == "mill":
+                if val1:
+                    strOrd = str(val1 * 1000) + "e"
+                else:
+                    strOrd = "1000e"
+            else:
+                # "cinquième", "trente-cinquième"
+                if word.endswith("cinqu"):
+                    word = word[:-1]
+                # "neuvième", "dix-neuvième"
+                elif word.endswith("neuv"):
+                    word = word[:-1] + "f"
+                result = number_parse_fr([word], 0)
+                if not result:
+                    # "trentième", "douzième"
+                    word = word + "e"
+                    result = number_parse_fr([word], 0)
+                if result:
+                    val2, i = result
+                if val2 is not None:
+                    strOrd = str(val1 + val2) + "e"
+        if strOrd:
+            return strOrd, i + 1
+
+    return None
 
 
 def extractnumber_fr(text):
@@ -247,8 +376,8 @@ def extractnumber_fr(text):
     Returns:
         (str): The number extracted or the original text.
     """
-    # normalize text, remove articles
-    text = normalize_fr(text, True)
+    # normalize text, keep articles for ordinals versus fractionals
+    text = normalize_fr(text, False)
     # split words by whitespace
     aWords = text.split()
     count = 0
@@ -257,10 +386,16 @@ def extractnumber_fr(text):
     while count < len(aWords):
         val = None
         word = aWords[count]
-        wordNext = None
+        wordNext = ""
+        wordPrev = ""
         if count < (len(aWords) - 1):
             wordNext = aWords[count + 1]
+        if count > 0:
+            wordPrev = aWords[count - 1]
 
+        if word in articles_fr:
+            count += 1
+            continue
         if word in ["et", "plus", "+"]:
             count += 1
             add = True
@@ -272,6 +407,9 @@ def extractnumber_fr(text):
             count += 1
         elif is_numeric(word):
             val = float(word)
+            count += 1
+        elif wordPrev in articles_fr and getOrdinal_fr(word):
+            val = getOrdinal_fr(word)
             count += 1
         # is current word the denominator of a fraction?
         elif isFractional_fr(word):
@@ -327,7 +465,7 @@ def extractnumber_fr(text):
 
     # if result == False:
     if not result:
-        return text
+        return normalize_fr(text, True)
 
     return result
 
@@ -352,21 +490,10 @@ def extract_datetime_fr(string, currentDate=None):
         return found or \
             (
                 datestr != "" or
-                yearOffset != 0 or monthOffset != 0 or
-                dayOffset is True or hrOffset != 0 or
-                hrAbs != 0 or minOffset != 0 or
-                minAbs != 0 or secOffset != 0
+                yearOffset != 0 or monthOffset != 0 or dayOffset or
+                (isTime and (hrAbs != 0 or minAbs != 0)) or
+                hrOffset != 0 or minOffset != 0 or secOffset != 0
             )
-
-    def is_ordinal(word):
-        if word:
-            ordinals = ["er", "ère", "ème", "e", "nd", "nde"]
-            for ordinal in ordinals:
-                if word[0].isdigit() and ordinal in word:
-                    word = word.replace(ordinal, "")
-                    return int(word)
-
-        return None
 
     if string == "":
         return None
@@ -386,9 +513,10 @@ def extract_datetime_fr(string, currentDate=None):
     hasYear = False
     timeQualifier = ""
 
-    timeQualifiersList = ["matin", "après-midi", "soir"]
-    markers = ["à", "dès", "autour", "vers", "environs", "dans",
-               "ce", "cette", "après"]
+    timeQualifiersList = ["matin", "après-midi", "soir", "nuit"]
+    words_in = ["dans", "après"]
+    markers = ["à", "dès", "autour", "vers", "environs", "ce", "cette"] + \
+        words_in
     days = ["lundi", "mardi", "mercredi",
             "jeudi", "vendredi", "samedi", "dimanche"]
     months = ["janvier", "février", "mars", "avril", "mai", "juin",
@@ -417,6 +545,10 @@ def extract_datetime_fr(string, currentDate=None):
         # save timequalifier for later
         if word in timeQualifiersList:
             timeQualifier = word
+            used = 1
+            if wordPrev in ["ce", "cet", "cette"]:
+                used = 2
+                start -= 1
         # parse aujourd'hui, demain, après-demain
         elif word == "aujourd'hui" and not fromFlag:
             dayOffset = 0
@@ -434,8 +566,8 @@ def extract_datetime_fr(string, currentDate=None):
                 start -= 1
                 used = 2
             # "3e jour"
-            elif is_ordinal(wordPrev) is not None:
-                dayOffset += is_ordinal(wordPrev) - 1
+            elif getOrdinal_fr(wordPrev) is not None:
+                dayOffset += getOrdinal_fr(wordPrev) - 1
                 start -= 1
                 used = 2
         elif word in ["semaine", "semaines"] and not fromFlag:
@@ -558,6 +690,8 @@ def extract_datetime_fr(string, currentDate=None):
     secOffset = 0
     hrAbs = 0
     minAbs = 0
+    ampm = ""
+    isTime = False
 
     for idx, word in enumerate(words):
         if word == "":
@@ -567,28 +701,18 @@ def extract_datetime_fr(string, currentDate=None):
         wordPrev = words[idx - 1] if idx > 0 else ""
         wordNext = words[idx + 1] if idx + 1 < len(words) else ""
         wordNextNext = words[idx + 2] if idx + 2 < len(words) else ""
-        # parse midi, minuit, matin, après-midi, soir
         used = 0
-        if word == "midi":
-            hrAbs = 12
-            used += 1
-        elif word == "minuit":
-            hrAbs = 0
-            used += 1
-        elif word == "matin":
-            if hrAbs == 0:
-                hrAbs = 8
-            used += 1
-        elif word == "après-midi":
-            if hrAbs == 0:
-                hrAbs = 15
-            used += 1
-        elif word in ["soir", "soirée"]:
-            if hrAbs == 0:
-                hrAbs = 19
-            used += 1
+        start = idx
+
         # parse midi et quart, minuit et demi, midi 10, minuit moins 20
         if word in ["midi", "minuit"]:
+            isTime = True
+            if word == "midi":
+                hrAbs = 12
+                used += 1
+            elif word == "minuit":
+                hrAbs = 0
+                used += 1
             if wordNext.isdigit():
                 minAbs = int(wordNext)
                 used += 1
@@ -617,31 +741,29 @@ def extract_datetime_fr(string, currentDate=None):
         # parse une demi-heure, un quart d'heure
         elif word == "demi-heure" or word == "heure" and \
                 (wordPrevPrev in markers or wordPrevPrevPrev in markers):
+            used = 1
+            isTime = True
             if word == "demi-heure":
                 minOffset = 30
             elif wordPrev == "quart":
                 minOffset = 15
+                used += 1
+                start -= 1
             elif wordPrev == "quarts" and wordPrevPrev.isdigit():
                 minOffset = int(wordPrevPrev) * 15
-                words[idx - 2] = ""
-            # else:
-            #    hrOffset = 1
-            if wordPrevPrevPrev in markers:
-                words[idx - 3] = ""
-            words[idx - 2] = ""
-            words[idx - 1] = ""
-            used += 1
-            hrAbs = -1
-            minAbs = -1
+                used += 1
+                start -= 1
+            if wordPrev.isdigit() or wordPrevPrev.isdigit():
+                start -= 1
+                used += 1
         # parse 5:00 du matin, 12:00, etc
-        elif word[0].isdigit() and is_ordinal(word) is None:
+        elif word[0].isdigit() and getOrdinal_fr(word) is None:
             isTime = True
-            strHH = ""
-            strMM = ""
-            remainder = ""
-            if ":" in word or "h" in word:
+            if ":" in word or "h" in word or "min" in word:
                 # parse hours on short format
                 # "3:00 du matin", "4h14", "3h15min"
+                strHH = ""
+                strMM = ""
                 stage = 0
                 length = len(word)
                 for i in range(length):
@@ -649,7 +771,7 @@ def extract_datetime_fr(string, currentDate=None):
                         if word[i].isdigit():
                             strHH += word[i]
                             used = 1
-                        elif word[i] in [":", "h"]:
+                        elif word[i] in [":", "h", "m"]:
                             stage = 1
                         else:
                             stage = 2
@@ -664,101 +786,77 @@ def extract_datetime_fr(string, currentDate=None):
                                 i += 1
                     elif stage == 2:
                         break
-                if remainder == "":
-                    if wordNext == "matin":
-                        remainder = "am"
-                        used += 1
-                    elif wordNext == "après-midi":
-                        remainder = "pm"
-                        used += 1
-                    elif wordNext == "soir":
-                        remainder = "pm"
-                        used += 1
-                    elif wordNext == "ce" and wordNextNext == "matin":
-                        remainder = "am"
-                        used = 2
-                    elif wordNext in ["cet", "cette"] and \
-                            wordNextNext == "après-midi":
-                        remainder = "pm"
-                        used = 2
-                    elif wordNext == "ce" and wordNextNext == "soir":
-                        remainder = "pm"
-                        used = 2
-                    elif wordNext == "cette" and wordNextNext == "nuit":
-                        if int(strHH) > 8:
-                            remainder = "pm"
-                        else:
-                            remainder = "am"
-                        used += 2
+                if wordPrev in words_in:
+                    hrOffset = int(strHH) if strHH else 0
+                    minOffset = int(strMM) if strMM else 0
+                else:
+                    hrAbs = int(strHH) if strHH else 0
+                    minAbs = int(strMM) if strMM else 0
             else:
                 # try to parse time without colons
                 # 5 hours, 10 minutes etc.
                 length = len(word)
                 strNum = ""
-                remainder = ""
-                for i in range(length):
-                    if word[i].isdigit():
-                        strNum += word[i]
-
+                ampm = ""
                 if (
+                        word.isdigit() and
                         wordNext in ["heures", "heure"] and word != "0" and
                         (
                             int(word) < 100 or
                             int(word) > 2400
                         )):
                     # "dans 3 heures", "à 3 heures"
-                    if wordPrev in ["dans", "après"]:
+                    if wordPrev in words_in:
                         hrOffset = int(word)
-                        isTime = False
                     else:
-                        strHH = strNum
+                        hrAbs = int(word)
                     used = 2
                     idxHr = idx + 2
                     # "dans 1 heure 40", "à 1 heure 40"
                     if idxHr < len(words):
                         # "3 heures 45"
                         if words[idxHr].isdigit():
-                            if wordPrev in ["dans", "après"]:
+                            if wordPrev in words_in:
                                 minOffset = int(words[idxHr])
                             else:
-                                strMM = int(words[idxHr])
+                                minAbs = int(words[idxHr])
                             used += 1
                             idxHr += 1
                         # "3 heures et quart", "4 heures et demi"
                         elif words[idxHr] == "et" and idxHr + 1 < len(words):
                             if words[idxHr + 1] == "quart":
-                                if wordPrev in ["dans", "après"]:
+                                if wordPrev in words_in:
                                     minOffset = 15
                                 else:
-                                    strMM = 15
+                                    minAbs = 15
                                 used += 2
                                 idxHr += 2
                             elif words[idxHr + 1] == "demi":
-                                if wordPrev in ["dans", "après"]:
+                                if wordPrev in words_in:
                                     minOffset = 30
                                 else:
-                                    strMM = 30
+                                    minAbs = 30
                                 used += 2
                                 idxHr += 2
                         # "5 heures moins 20", "6 heures moins le quart"
                         elif words[idxHr] == "moins" and \
                                 idxHr + 1 < len(words):
                             if words[idxHr + 1].isdigit():
-                                if wordPrev in ["dans", "après"]:
+                                if wordPrev in words_in:
                                     hrOffset -= 1
                                     minOffset = 60 - int(words[idxHr + 1])
                                 else:
-                                    strHH = int(strHH) - 1
-                                    strMM = 60 - int(words[idxHr + 1])
+                                    hrAbs = hrAbs - 1
+                                    minAbs = 60 - int(words[idxHr + 1])
                                 used += 2
                                 idxHr += 2
                             elif words[idxHr + 1] == "quart":
-                                if wordPrev in ["dans", "après"]:
+                                if wordPrev in words_in:
                                     hrOffset -= 1
                                     minOffset = 45
                                 else:
-                                    strHH = int(strHH) - 1
-                                    strMM = 45
+                                    hrAbs = hrAbs - 1
+                                    minAbs = 45
                                 used += 2
                                 idxHr += 2
                         # remove word minutes if present
@@ -766,59 +864,66 @@ def extract_datetime_fr(string, currentDate=None):
                                 words[idxHr] in ["minutes", "minute"]:
                             used += 1
                             idxHr += 1
-                        # handle am/pm
-                        if idxHr < len(words) and \
-                                words[idxHr] in timeQualifiersList:
-                            if words[idxHr] == "matin":
-                                remainder = "am"
-                            else:
-                                remainder = "pm"
-                            used += 1
                 elif wordNext == "minutes":
                     # "dans 10 minutes"
-                    if wordPrev in ["dans", "après"]:
+                    if wordPrev in words_in:
                         minOffset = int(word)
-                        isTime = False
                     else:
-                        strMM = int(word)
+                        minAbs = int(word)
                     used = 2
-                    hrAbs = -1
-                    minAbs = -1
                 elif wordNext == "secondes":
                     # "dans 5 secondes"
                     secOffset = int(word)
-                    isTime = False
                     used = 2
-                    hrAbs = -1
-                    minAbs = -1
                 elif int(word) > 100:
                     # format militaire
-                    strHH = int(word) / 100
-                    strMM = int(word) - strHH * 100
+                    hrAbs = int(word) / 100
+                    minAbs = int(word) - hrAbs * 100
                     used = 1
                     if wordNext == "heures":
                         used += 1
 
-            strHH = int(strHH) if strHH else 0
-            strMM = int(strMM) if strMM else 0
-            strHH = strHH + 12 if remainder == "pm" and strHH < 12 else strHH
-            strHH = strHH - 12 if remainder == "am" and strHH >= 12 else strHH
-            if strHH > 24 or strMM > 59:
+            # handle am/pm
+            if timeQualifier:
+                if timeQualifier == "matin":
+                    ampm = "am"
+                elif timeQualifier == "après-midi":
+                    ampm = "pm"
+                elif timeQualifier == "soir":
+                    ampm = "pm"
+                elif timeQualifier == "nuit":
+                    if hrAbs > 8:
+                        ampm = "pm"
+                    else:
+                        ampm = "am"
+            hrAbs = hrAbs + 12 if ampm == "pm" and hrAbs < 12 else hrAbs
+            hrAbs = hrAbs - 12 if ampm == "am" and hrAbs >= 12 else hrAbs
+            if hrAbs > 24 or minAbs > 59:
                 isTime = False
                 used = 0
-            if isTime:
-                hrAbs = strHH * 1
-                minAbs = strMM * 1
-                # used += 1
+            elif wordPrev in words_in:
+                isTime = False
+            else:
+                isTime = True
+
+        elif hrAbs == 0 and timeQualifier:
+            if timeQualifier == "matin":
+                hrAbs = 8
+            elif timeQualifier == "après-midi":
+                hrAbs = 15
+            elif timeQualifier == "soir":
+                hrAbs = 19
+            elif timeQualifier == "nuit":
+                hrAbs = 2
+            isTime = True
+
         if used > 0:
             # removed parsed words from the sentence
-            for i in range(used):
-                words[idx + i] = ""
+            for i in range(0, used):
+                words[i + start] = ""
 
-            if idx > 0 and wordPrev in markers:
-                words[idx - 1] = ""
-            if idx > 1 and wordPrevPrev in markers:
-                words[idx - 2] = ""
+            if start - 1 >= 0 and words[start - 1] in markers:
+                words[start - 1] = ""
 
             idx += used - 1
             found = True
@@ -831,7 +936,6 @@ def extract_datetime_fr(string, currentDate=None):
         dayOffset = 0
 
     # perform date manipulation
-
     extractedDate = dateNow
     extractedDate = extractedDate.replace(microsecond=0,
                                           second=0,
@@ -909,6 +1013,8 @@ def isFractional_fr(input_str):
 
     if input_str in aFrac:
         return 1.0 / (aFrac.index(input_str) + 1)
+    if getOrdinal_fr(input_str):
+        return 1.0 / getOrdinal_fr(input_str)
     if input_str == "trentième":
         return 1.0 / 30
     if input_str == "centième":
@@ -936,6 +1042,13 @@ def normalize_fr(text, remove_articles):
         if words[i] in ["?", "!", ";", "…"]:
             i += 1
             continue
+        # Normalize ordinal numbers
+        if i > 0 and words[i - 1] in articles_fr:
+            result = number_ordinal_fr(words, i)
+            if result is not None:
+                val, i = result
+                normalized += " " + str(val)
+                continue
         # Convert numbers into digits
         result = number_parse_fr(words, i)
         if result is not None:

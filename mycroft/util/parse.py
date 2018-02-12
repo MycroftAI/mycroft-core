@@ -20,7 +20,11 @@ from mycroft.util.lang.parse_en import *
 from mycroft.util.lang.parse_pt import *
 from mycroft.util.lang.parse_es import *
 from mycroft.util.lang.parse_it import *
-from mycroft.util.lang.parse_fr import *
+
+from mycroft.util.lang.parse_fr import extractnumber_fr
+from mycroft.util.lang.parse_fr import extract_datetime_fr
+from mycroft.util.lang.parse_fr import normalize_fr
+
 from mycroft.util.lang.parse_common import *
 
 
