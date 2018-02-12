@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+from mycroft.util.lang.format_common import convert_to_mixed_fraction
 
 FRACTION_STRING_PT = {
     2: 'meio',
@@ -42,9 +43,23 @@ FRACTION_STRING_PT = {
 }
 
 
-def nice_number_pt(result):
+def nice_number_pt(number, speech, denominators):
     """ Portuguese conversion for nice_number """
+
+    result = convert_to_mixed_fraction(number, denominators)
+    if not result:
+        # Give up, just represent as a 3 decimal number
+        return str(round(number, 3))
+
     whole, num, den = result
+
+    if not speech:
+        if num == 0:
+            # TODO: Number grouping?  E.g. "1,000,000"
+            return str(whole)
+        else:
+            return '{} {}/{}'.format(whole, num, den)
+
     if num == 0:
         return str(whole)
     # denominador

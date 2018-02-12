@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+from mycroft.util.lang.format_common import convert_to_mixed_fraction
 
 NUM_STRING_IT = {
     0: 'zero',
@@ -70,7 +71,7 @@ FRACTION_STRING_IT = {
 }
 
 
-def nice_number_it(mixed):
+def nice_number_it(number, speech, denominators):
     """
     Helper for for nice_number adapted to italian
     adapted to italian fron en version
@@ -78,12 +79,27 @@ def nice_number_it(mixed):
     Convert (1 1 3) to spoken value like "1 e un terzo"
 
     Args:
-        mixed (int,int,int): the mixed number; whole, numerator, denominator
-    Return:
-        (str): spoken version of the number
+        number (int or float): the float to format
+        speech (bool): format for speech (True) or display (False)
+        denominators (iter of ints): denominators to use, default [1 .. 20]
+    Returns:
+        (str): The formatted string.
     """
 
-    whole, num, den = mixed
+    result = convert_to_mixed_fraction(number, denominators)
+    if not result:
+        # Give up, just represent as a 3 decimal number
+        return str(round(number, 3))
+
+    whole, num, den = result
+
+    if not speech:
+        if num == 0:
+            # TODO: Number grouping?  E.g. "1,000,000"
+            return str(whole)
+        else:
+            return '{} {}/{}'.format(whole, num, den)
+
     if num == 0:
         return str(whole)
     # denominatore

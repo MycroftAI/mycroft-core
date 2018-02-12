@@ -23,10 +23,13 @@ from mycroft.util.format import pronounce_number
 
 
 NUMBERS_FIXTURE_FR = {
-    1.435634: '1.436',
+    1.435634: '1,436',
     2: '2',
     5.0: '5',
-    0.027: '0.027',
+    0.027: '0,027',
+    1234567890: '1234567890',
+    12345.67890: '12345,679',
+    0.027: '0,027',
     0.5: 'un demi',
     1.333: '1 et 1 tiers',
     2.666: '2 et 2 tiers',
@@ -65,24 +68,37 @@ class TestNiceNumberFormat_fr(unittest.TestCase):
         self.assertEqual(nice_number(5.5, lang="fr-fr",
                                      denominators=[1, 2, 3]),
                          '5 et demi',
-                         'should format 5.5 as 5 and a half not {}'.format(
+                         'should format 5.5 as 5 et demi not {}'.format(
                              nice_number(5.5, lang="fr-fr",
                                          denominators=[1, 2, 3])))
-        self.assertEqual(nice_number(2.333, denominators=[1, 2]),
-                         '2.333',
-                         'should format 2.333 as 2.333 not {}'.format(
+        self.assertEqual(nice_number(2.333, lang="fr-fr",
+                                     denominators=[1, 2]),
+                         '2,333',
+                         'should format 2.333 as 2,333 not {}'.format(
                              nice_number(2.333, lang="fr-fr",
                                          denominators=[1, 2])))
 
     def test_no_speech_fr(self):
-        self.assertEqual(nice_number(6.777, speech=False),
+        self.assertEqual(nice_number(6.777, lang="fr-fr", speech=False),
                          '6 7/9',
                          'should format 6.777 as 6 7/9 not {}'.format(
                              nice_number(6.777, lang="fr-fr", speech=False)))
-        self.assertEqual(nice_number(6.0, speech=False),
+        self.assertEqual(nice_number(6.0, lang="fr-fr", speech=False),
                          '6',
                          'should format 6.0 as 6 not {}'.format(
                              nice_number(6.0, lang="fr-fr", speech=False)))
+        self.assertEqual(nice_number(1234567890, lang="fr-fr", speech=False),
+                         '1 234 567 890',
+                         'should format 1234567890 as'
+                         '1 234 567 890 not {}'.format(
+                             nice_number(1234567890, lang="fr-fr",
+                                         speech=False)))
+        self.assertEqual(nice_number(12345.6789, lang="fr-fr", speech=False),
+                         '12 345,679',
+                         'should format 12345.6789 as'
+                         '12 345,679 not {}'.format(
+                             nice_number(12345.6789, lang="fr-fr",
+                                         speech=False)))
 
 
 # def pronounce_number(number, lang="en-us", places=2):

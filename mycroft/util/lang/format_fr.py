@@ -16,9 +16,9 @@
 #
 """ Format functions for french (fr)
 
-    Todo:
-        * nice_number should leave number formatting to nice_number_fr
 """
+
+from mycroft.util.lang.format_common import convert_to_mixed_fraction
 
 NUM_STRING_FR = {
     0: 'zéro',
@@ -71,48 +71,73 @@ FRACTION_STRING_FR = {
 }
 
 
-def nice_number_fr(result):
+def nice_number_fr(number, speech, denominators):
     """
     Helper for nice_number
 
     Convert (1 1/3) to spoken value like "1 et 1 tiers"
 
     Args:
-        mixed (int,int,int): the mixed number; whole, numerator, denominator
-    Return:
-        (str): spoken version of the number
+        number (int or float): the float to format
+        speech (bool): format for speech (True) or display (False)
+        denominators (iter of ints): denominators to use, default [1 .. 20]
+    Returns:
+        (str): The formatted string.
     """
-    whole, num, den = result
-    if num == 0:
-        # if the number is an integer, nothing to do
-        return str(whole)
-    den_str = FRACTION_STRING_FR[den]
-    # if it is not an integer
-    if whole == 0:
-        # if there is no whole number
-        if num == 1:
-            # if numerator is 1, return "un demi", for example
-            return_string = 'un {}'.format(den_str)
-        else:
-            # else return "quatre tiers", for example
-            return_string = '{} {}'.format(num, den_str)
-    elif num == 1:
-        # if there is a whole number and numerator is 1
-        if den == 2:
-            # if denominator is 2, return "1 et demi", for example
-            return_string = '{} et {}'.format(whole, den_str)
-        else:
-            # else return "1 et 1 tiers", for example
-            return_string = '{} et 1 {}'.format(whole, den_str)
-    else:
-        # else return "2 et 3 quart", for example
-        return_string = '{} et {} {}'.format(whole, num, den_str)
-    if num > 1 and den != 3:
-        # if the numerator is greater than 1 and the denominator
-        # is not 3 ("tiers"), add an s for plural
-        return_string += 's'
+    strNumber = ""
+    whole = 0
+    num = 0
+    den = 0
 
-    return return_string
+    result = convert_to_mixed_fraction(number, denominators)
+
+    if not result:
+        # Give up, just represent as a 3 decimal number
+        whole = round(number, 3)
+    else:
+        whole, num, den = result
+
+    if not speech:
+        if num == 0:
+            strNumber = '{:,}'.format(whole)
+            strNumber = strNumber.replace(",", " ")
+            strNumber = strNumber.replace(".", ",")
+            return strNumber
+        else:
+            return '{} {}/{}'.format(whole, num, den)
+    else:
+        if num == 0:
+            # if the number is not a fraction, nothing to do
+            strNumber = str(whole)
+            strNumber = strNumber.replace(".", ",")
+            return strNumber
+        den_str = FRACTION_STRING_FR[den]
+        # if it is not an integer
+        if whole == 0:
+            # if there is no whole number
+            if num == 1:
+                # if numerator is 1, return "un demi", for example
+                strNumber = 'un {}'.format(den_str)
+            else:
+                # else return "quatre tiers", for example
+                strNumber = '{} {}'.format(num, den_str)
+        elif num == 1:
+            # if there is a whole number and numerator is 1
+            if den == 2:
+                # if denominator is 2, return "1 et demi", for example
+                strNumber = '{} et {}'.format(whole, den_str)
+            else:
+                # else return "1 et 1 tiers", for example
+                strNumber = '{} et 1 {}'.format(whole, den_str)
+        else:
+            # else return "2 et 3 quart", for example
+            strNumber = '{} et {} {}'.format(whole, num, den_str)
+        if num > 1 and den != 3:
+            # if the numerator is greater than 1 and the denominator
+            # is not 3 ("tiers"), add an s for plural
+            strNumber += 's'
+
+    return strNumber
 
 
 def pronounce_number_fr(num, places=2):
