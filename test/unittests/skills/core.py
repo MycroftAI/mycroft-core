@@ -27,9 +27,6 @@ from mycroft.skills.core import load_regex_from_file, load_regex, \
     load_vocab_from_file, load_vocabulary, MycroftSkill, \
     load_skill, create_skill_descriptor, open_intent_envelope
 
-if sys.version_info[0] >= 3:
-    basestring = str
-
 
 class MockEmitter(object):
     def __init__(self):
