@@ -147,8 +147,8 @@ class AudioService(object):
         self.pulse = None
         self.pulse_quiet = None
         self.pulse_restore = None
-
-        self.muted_sinks = []
+        self.volume_lock = Lock()
+        self.modified_sinks = []
         # Setup control of pulse audio
         self.setup_pulseaudio_handlers(self.config.get('pulseaudio'))
         bus.once('open', self.load_services_callback)
@@ -266,15 +266,16 @@ class AudioService(object):
             Args:
                 message: message bus message, not used but required
         """
-        if self.current:
-            LOG.debug('lowering volume')
-            self.current.lower_volume()
+        with self.volume_lock:
             self.volume_is_low = True
-        try:
-            if self.pulse_quiet:
-                self.pulse_quiet()
-        except Exception as exc:
-            LOG.error(exc)
+            if self.current and not self.pulse_quiet:
+                LOG.debug('lowering volume')
+                self.current.lower_volume()
+            try:
+                if self.pulse_quiet:
+                    self.pulse_quiet()
+            except Exception as exc:
+                LOG.error(exc)
 
     def pulse_mute(self):
         """
@@ -293,7 +294,7 @@ class AudioService(object):
         for sink in self.pulse.sink_input_list():
             if sink.index in self.muted_sinks:
                 self.pulse.sink_input_mute(sink.index, 0)
-        self.muted_sinks = []
+        self.modified_sinks = []
 
     def pulse_lower_volume(self):
         """
@@ -302,6 +303,8 @@ class AudioService(object):
         """
         for sink in self.pulse.sink_input_list():
             if sink.name != 'mycroft-voice':
+                self.modified_sinks.append((sink,
+                                            sink.volume.value_flat))
                 volume = sink.volume
                 volume.value_flat *= 0.3
                 self.pulse.volume_set(sink, volume)
@@ -311,27 +314,28 @@ class AudioService(object):
             Restore volume of all pulse audio input sinks except the one named
             'mycroft-voice'.
         """
-        for sink in self.pulse.sink_input_list():
-            if sink.name != 'mycroft-voice':
-                volume = sink.volume
-                volume.value_flat /= 0.3
-                self.pulse.volume_set(sink, volume)
+        for (sink, vol) in self.modified_sinks:
+            volume = sink.volume
+            volume.value_flat = vol
+            self.pulse.sink_input_volume_set(sink.index, volume)
+        self.modified_sinks = []
 
-    def _restore_volume(self, message):
+    def _restore_volume(self, message=None):
         """
             Is triggered when mycroft is done speaking and restores the volume
 
             Args:
                 message: message bus message, not used but required
         """
-        if self.current:
-            LOG.debug('restoring volume')
-            self.volume_is_low = False
-            time.sleep(2)
-            if not self.volume_is_low:
-                self.current.restore_volume()
-        if self.pulse_restore:
-            self.pulse_restore()
+        with self.volume_lock:
+            LOG.info('maybe restoring volume')
+            if self.current and not self.pulse_restore:
+                self.volume_is_low = False
+                if not self.volume_is_low:
+                    LOG.debug('restoring volume')
+                    self.current.restore_volume()
+            if self.pulse_restore:
+                self.pulse_restore()
 
     def play(self, tracks, prefered_service, repeat=False):
         """
@@ -444,18 +448,53 @@ class AudioService(object):
                 LOG.error('shutdown of ' + s.name + ' failed: ' + repr(e))
 
         # remove listeners
-        self.bus.remove('mycroft.audio.service.play', self._play)
-        self.bus.remove('mycroft.audio.service.queue', self._queue)
-        self.bus.remove('mycroft.audio.service.pause', self._pause)
-        self.bus.remove('mycroft.audio.service.resume', self._resume)
-        self.bus.remove('mycroft.audio.service.stop', self._stop)
-        self.bus.remove('mycroft.audio.service.next', self._next)
-        self.bus.remove('mycroft.audio.service.prev', self._prev)
-        self.bus.remove('mycroft.audio.service.track_info', self._track_info)
-        self.bus.remove('recognizer_loop:audio_output_start',
-                        self._lower_volume)
-        self.bus.remove('recognizer_loop:record_begin', self._lower_volume)
-        self.bus.remove('recognizer_loop:audio_output_end',
-                        self._restore_volume)
-        self.bus.remove('recognizer_loop:record_end', self._restore_volume)
-        self.bus.remove('mycroft.stop', self._stop)
+        self.ws.remove('mycroft.audio.service.play', self._play)
+        self.ws.remove('mycroft.audio.service.queue', self._queue)
+        self.ws.remove('mycroft.audio.service.pause', self._pause)
+        self.ws.remove('mycroft.audio.service.resume', self._resume)
+        self.ws.remove('mycroft.audio.service.stop', self._stop)
+        self.ws.remove('mycroft.audio.service.next', self._next)
+        self.ws.remove('mycroft.audio.service.prev', self._prev)
+        self.ws.remove('mycroft.audio.service.track_info', self._track_info)
+        self.ws.remove('recognizer_loop:audio_output_start',
+                       self._lower_volume)
+        self.ws.remove('recognizer_loop:record_begin', self._lower_volume)
+        self.ws.remove('recognizer_loop:audio_output_end',
+                       self._restore_volume)
+        self.ws.remove('recognizer_loop:record_end', self._restore_volume)
+        self.ws.remove('mycroft.stop', self._stop)
+
+
+def main():
+    """ Main function. Run when file is invoked. """
+    ws = WebsocketClient()
+    Configuration.init(ws)
+    speech.init(ws)
+
+    def echo(message):
+        """ Echo message bus messages. """
+        try:
+            _message = json.loads(message)
+            if 'mycroft.audio.service' not in _message.get('type'):
+                return
+            message = json.dumps(_message)
+        except Exception as e:
+            LOG.exception(e)
+        LOG.debug(message)
+
+    LOG.info("Staring Audio Services")
+    ws.on('message', echo)
+    audio = AudioService(ws)  # Connect audio service instance to message bus
+    try:
+        ws.run_forever()
+    except KeyboardInterrupt as e:
+        LOG.exception(e)
+    finally:
+        speech.shutdown()
+        audio._restore_volume()
+        audio.shutdown()
+        sys.exit()
+
+
+if __name__ == "__main__":
+    main()
