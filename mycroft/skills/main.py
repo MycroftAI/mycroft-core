@@ -167,7 +167,7 @@ def _get_last_modified_date(path):
 
         Args:
             path:   skill directory to check
-            
+
         Returns:
             int: time of last change
     """
