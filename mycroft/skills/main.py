@@ -165,9 +165,11 @@ def _get_last_modified_date(path):
         Get last modified date excluding compiled python files, hidden
         directories and the settings.json file.
 
-        Arg:
+        Args:
             path:   skill directory to check
-        Returns:    time of last change
+            
+        Returns:
+            int: time of last change
     """
     last_date = 0
     root_dir, subdirs, files = next(os.walk(path))

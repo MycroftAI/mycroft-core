@@ -22,6 +22,23 @@ from mycroft.util import get_ipc_directory
 from mycroft.util.log import LOG
 
 
+# The DisplayManager provides "state" for the visual representation associated
+# with this Mycroft instance.  The current states are:
+#   ActiveSkill - The skill that last interacted with the display via the
+#                  Enclosure API.
+#
+# Currently, a wakeword sets the ActiveSkill to "wakeword", which will auto
+# clear after 10 seconds.
+#
+# A skill is set to Active when it matches an intent, outputs audio, or
+# changes the display via the EnclosureAPI()
+#
+# A skill is automatically cleared from Active two seconds after audio
+# output is spoken, or 2 seconds after resetting the disply.
+#
+# So it is common to have "" as the active skill.
+
+
 def _write_data(dictionary):
     """Writes the parama as JSON to the
         IPC dir (/tmp/mycroft/ipc/managers)

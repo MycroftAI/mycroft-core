@@ -207,7 +207,7 @@ class EnclosureAPI:
             y (int): y offset for image
             refresh (bool): specify whether to clear the faceplate before
                             displaying the new image or not.
-                            Useful if you'd like to display muliple images
+                            Useful if you'd like to display multiple images
                             on the faceplate at once.
         """
         DisplayManager.set_active(self.name)
