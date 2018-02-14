@@ -14,6 +14,7 @@
 #
 import json
 import time
+import monotonic
 from multiprocessing.pool import ThreadPool
 
 from pyee import EventEmitter
@@ -88,6 +89,36 @@ class WebsocketClient(object):
             self.client.send(message.serialize())
         else:
             self.client.send(json.dumps(message.__dict__))
+
+    def wait_for_response(self, message, reply_type=None, timeout=None):
+        """Send a message and wait for a response.
+
+        Args:
+            message (Message): message to send
+            reply_type (str): the message type of the reply. Defaults to
+                              "<original message type>.response".
+            timeout: wait timeout before returning
+        Returns:
+            The recieved message or None if the response timed out
+        """
+        response = []
+
+        def handler(message):
+            """Receive response data."""
+            response.append(message)
+
+        # Setup response handler
+        self.once(reply_type or message.type + '.response', handler)
+        # Send request
+        self.emit(message)
+        # Wait for response
+        start_time = monotonic.monotonic()
+        while len(response) == 0:
+            time.sleep(0.2)
+            if monotonic.monotonic() - start_time > (timeout or 3.0):
+                self.remove(reply_type, handler)
+                return None
+        return response[0]
 
     def on(self, event_name, func):
         self.emitter.on(event_name, func)
