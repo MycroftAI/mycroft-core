@@ -23,9 +23,10 @@ from re import error
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
-from mycroft.skills.core import load_regex_from_file, load_regex, \
-    load_vocab_from_file, load_vocabulary, MycroftSkill, \
-    load_skill, create_skill_descriptor, open_intent_envelope
+from mycroft.skills.skill_data import load_regex_from_file, load_regex, \
+    load_vocab_from_file, load_vocabulary
+from mycroft.skills.core import MycroftSkill, load_skill, \
+    create_skill_descriptor, open_intent_envelope
 
 
 class MockEmitter(object):
@@ -67,17 +68,17 @@ class MycroftSkillTest(unittest.TestCase):
 
     def check_regex_from_file(self, filename, result_list=None):
         result_list = result_list or []
-        load_regex_from_file(join(self.regex_path, filename), self.emitter)
+        load_regex_from_file(join(self.regex_path, filename), self.emitter, 0)
         self.check_emitter(result_list)
 
     def check_vocab(self, path, result_list=None):
         result_list = result_list or []
-        load_vocabulary(path, self.emitter)
+        load_vocabulary(path, self.emitter, 0)
         self.check_emitter(result_list)
 
     def check_regex(self, path, result_list=None):
         result_list = result_list or []
-        load_regex(path, self.emitter)
+        load_regex(path, self.emitter, 0)
         self.check_emitter(result_list)
 
     def check_emitter(self, result_list):
@@ -89,12 +90,12 @@ class MycroftSkillTest(unittest.TestCase):
 
     def test_load_regex_from_file_single(self):
         self.check_regex_from_file('valid/single.rx',
-                                   [{'regex': '(?P<SingleTest>.*)'}])
+                                   [{'regex': '(?P<ASingleTest>.*)'}])
 
     def test_load_regex_from_file_multiple(self):
         self.check_regex_from_file('valid/multiple.rx',
-                                   [{'regex': '(?P<MultipleTest1>.*)'},
-                                    {'regex': '(?P<MultipleTest2>.*)'}])
+                                   [{'regex': '(?P<AMultipleTest1>.*)'},
+                                    {'regex': '(?P<AMultipleTest2>.*)'}])
 
     def test_load_regex_from_file_none(self):
         self.check_regex_from_file('invalid/none.rx')
@@ -114,9 +115,9 @@ class MycroftSkillTest(unittest.TestCase):
 
     def test_load_regex_full(self):
         self.check_regex(join(self.regex_path, 'valid'),
-                         [{'regex': '(?P<MultipleTest1>.*)'},
-                          {'regex': '(?P<MultipleTest2>.*)'},
-                          {'regex': '(?P<SingleTest>.*)'}])
+                         [{'regex': '(?P<AMultipleTest1>.*)'},
+                          {'regex': '(?P<AMultipleTest2>.*)'},
+                          {'regex': '(?P<ASingleTest>.*)'}])
 
     def test_load_regex_empty(self):
         self.check_regex(join(dirname(__file__),
@@ -164,17 +165,17 @@ class MycroftSkillTest(unittest.TestCase):
 
     def test_load_vocab_full(self):
         self.check_vocab(join(self.vocab_path, 'valid'),
-                         [{'start': 'test', 'end': 'single'},
-                          {'start': 'water', 'end': 'singlealias'},
-                          {'start': 'watering', 'end': 'singlealias',
+                         [{'start': 'test', 'end': 'Asingle'},
+                          {'start': 'water', 'end': 'Asinglealias'},
+                          {'start': 'watering', 'end': 'Asinglealias',
                            'alias_of': 'water'},
-                          {'start': 'animal', 'end': 'multiple'},
-                          {'start': 'animals', 'end': 'multiple'},
-                          {'start': 'chair', 'end': 'multiplealias'},
-                          {'start': 'chairs', 'end': 'multiplealias',
+                          {'start': 'animal', 'end': 'Amultiple'},
+                          {'start': 'animals', 'end': 'Amultiple'},
+                          {'start': 'chair', 'end': 'Amultiplealias'},
+                          {'start': 'chairs', 'end': 'Amultiplealias',
                            'alias_of': 'chair'},
-                          {'start': 'table', 'end': 'multiplealias'},
-                          {'start': 'tables', 'end': 'multiplealias',
+                          {'start': 'table', 'end': 'Amultiplealias'},
+                          {'start': 'tables', 'end': 'Amultiplealias',
                            'alias_of': 'table'}])
 
     def test_load_vocab_empty(self):
@@ -218,7 +219,7 @@ class MycroftSkillTest(unittest.TestCase):
         expected = [{'at_least_one': [],
                      'name': '0:a',
                      'optional': [],
-                     'requires': [('Keyword', 'Keyword')]}]
+                     'requires': [('AKeyword', 'AKeyword')]}]
         self.check_register_intent(expected)
 
         # Test register IntentBuilder object
@@ -228,7 +229,7 @@ class MycroftSkillTest(unittest.TestCase):
         expected = [{'at_least_one': [],
                      'name': '0:a',
                      'optional': [],
-                     'requires': [('Keyword', 'Keyword')]}]
+                     'requires': [('AKeyword', 'AKeyword')]}]
 
         self.check_register_intent(expected)
 
@@ -289,7 +290,7 @@ class MycroftSkillTest(unittest.TestCase):
         expected = [{'at_least_one': [],
                      'name': '0:a',
                      'optional': [],
-                     'requires': [('Keyword', 'Keyword')]},
+                     'requires': [('AKeyword', 'AKeyword')]},
                     {
                      'file_name': join(dirname(__file__), 'intent_file',
                                        'test.intent'),
@@ -319,17 +320,17 @@ class MycroftSkillTest(unittest.TestCase):
         s.bind(self.emitter)
         # No context content
         s.set_context('TurtlePower')
-        expected = [{'context': 'TurtlePower', 'word': ''}]
+        expected = [{'context': 'ATurtlePower', 'word': ''}]
         check_set_context(expected)
 
         # context with content
         s.set_context('Technodrome', 'Shredder')
-        expected = [{'context': 'Technodrome', 'word': 'Shredder'}]
+        expected = [{'context': 'ATechnodrome', 'word': 'Shredder'}]
         check_set_context(expected)
 
         # UTF-8 context
         s.set_context(u'Smörgåsbord€15')
-        expected = [{'context': u'Smörgåsbord€15', 'word': ''}]
+        expected = [{'context': u'ASmörgåsbord€15', 'word': ''}]
         check_set_context(expected)
 
         self.emitter.reset()
