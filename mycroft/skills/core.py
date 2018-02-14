@@ -24,8 +24,7 @@ import inspect
 import abc
 import re
 from adapt.intent import Intent, IntentBuilder
-from os import listdir
-from os.path import join, abspath, dirname, splitext, basename, exists
+from os.path import join, abspath, dirname, basename, exists
 from threading import Event
 
 from mycroft.api import DeviceApi
@@ -36,6 +35,8 @@ from mycroft.filesystem import FileSystemAccess
 from mycroft.messagebus.message import Message
 from mycroft.metrics import report_metric, report_timing, Stopwatch
 from mycroft.skills.settings import SkillSettings
+from mycroft.skills.skill_data import (load_vocabulary, load_regex, to_letters,
+                                       munge_intent_parser)
 from mycroft.util import resolve_resource_file
 from mycroft.util.log import LOG
 # python 2+3 compatibility
@@ -57,78 +58,20 @@ def dig_for_message():
             return l['message']
 
 
-def load_vocab_from_file(path, vocab_type, emitter):
-    """
-        Load mycroft vocabulary from file. and send it on the message bus for
-        the intent handler.
-
-        Args:
-            path:           path to vocabulary file (*.voc)
-            vocab_type:     keyword name
-            emitter:        emitter to access the message bus
-            skill_id(str):  skill id
-    """
-    if path.endswith('.voc'):
-        with open(path, 'r') as voc_file:
-            for line in voc_file.readlines():
-                parts = line.strip().split("|")
-                entity = parts[0]
-                emitter.emit(Message("register_vocab", {
-                    'start': entity, 'end': vocab_type
-                }))
-                for alias in parts[1:]:
-                    emitter.emit(Message("register_vocab", {
-                        'start': alias, 'end': vocab_type, 'alias_of': entity
-                    }))
-
-
-def load_regex_from_file(path, emitter):
-    """
-        Load regex from file and send it on the message bus for
-        the intent handler.
-
-        Args:
-            path:       path to vocabulary file (*.voc)
-            emitter:    emitter to access the message bus
-    """
-    if path.endswith('.rx'):
-        with open(path, 'r') as reg_file:
-            for line in reg_file.readlines():
-                re.compile(line.strip())
-                emitter.emit(
-                    Message("register_vocab", {'regex': line.strip()}))
-
-
-def load_vocabulary(basedir, emitter, skill_id):
-    for vocab_file in listdir(basedir):
-        if vocab_file.endswith(".voc"):
-            vocab_type = str(skill_id) + ':' + splitext(vocab_file)[0]
-            load_vocab_from_file(
-                join(basedir, vocab_file), vocab_type, emitter)
-
-
 def unmunge_message(message, skill_id):
+    """Restore message keywords by removing the Letterified skill ID.
+
+    Args:
+        message (Message): Intent result message
+        skill_id (int): skill identifier
+
+    Returns:
+        Message without clear keywords
+    """
     for key in message.data:
-        new_key = key.replace(str(skill_id) + ':', '')
+        new_key = key.replace(to_letters(skill_id), '')
         message.data[new_key] = message.data.pop(key)
     return message
-
-def munge_intent_parser(intent_parser, name, skill_id):
-    skill_id = str(skill_id)
-    intent_parser.name = skill_id + ':' + name
-    reqs = []
-    for i in intent_parser.requires:
-        kw = (skill_id + ':' + i[0], skill_id + ':' + i[0])
-        reqs.append(kw)
-
-    intent_parser.requires = reqs
-        
-
-def load_regex(basedir, emitter):
-    for regex_type in listdir(basedir):
-        if regex_type.endswith(".rx"):
-            load_regex_from_file(
-                join(basedir, regex_type), emitter)
 
 
 def open_intent_envelope(message):
