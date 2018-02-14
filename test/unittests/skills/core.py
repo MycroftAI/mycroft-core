@@ -20,6 +20,7 @@ import mock
 from adapt.intent import IntentBuilder
 from os.path import join, dirname, abspath
 from re import error
+from datetime import datetime
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
@@ -399,15 +400,108 @@ class MycroftSkillTest(unittest.TestCase):
         self.assertEqual(s.location_pretty, None)
         self.assertEqual(s.location_timezone, None)
 
+    @mock.patch.object(Configuration, 'get')
+    def test_add_event(self, mock_config_get):
+        test_config = {
+            'skills': {
+            }
+        }
+        mock_config_get.return_value = test_config
+        emitter = mock.MagicMock()
+        s = TestSkill1()
+        s.bind(emitter)
+        s.add_event('handler1', s.handler)
+        # Check that the handler was registered with the emitter
+        self.assertEqual(emitter.on.call_args[0][0], 'handler1')
+        # Check that the handler was stored in the skill
+        self.assertTrue('handler1' in zip(*s.events)[0])
+
+    @mock.patch.object(Configuration, 'get')
+    def test_remove_event(self, mock_config_get):
+        test_config = {
+            'skills': {
+            }
+        }
+        mock_config_get.return_value = test_config
+        emitter = mock.MagicMock()
+        s = TestSkill1()
+        s.bind(emitter)
+        s.add_event('handler1', s.handler)
+        self.assertTrue('handler1' in zip(*s.events)[0])
+        # Remove event handler
+        s.remove_event('handler1')
+        # make sure it's not in the event list anymore
+        self.assertTrue('handler1' not in zip(*s.events)[0])
+        # Check that the handler was registered with the emitter
+        self.assertEqual(emitter.remove.call_args[0][0], 'handler1')
+
+    @mock.patch.object(Configuration, 'get')
+    def test_add_scheduled_event(self, mock_config_get):
+        test_config = {
+            'skills': {
+            }
+        }
+        mock_config_get.return_value = test_config
+        emitter = mock.MagicMock()
+        s = TestSkill1()
+        s.bind(emitter)
+        s.schedule_event(s.handler, datetime.now(), name='sched_handler1')
+        # Check that the handler was registered with the emitter
+        self.assertEqual(emitter.once.call_args[0][0], '0:sched_handler1')
+        self.assertTrue('0:sched_handler1' in zip(*s.events)[0])
+
+    @mock.patch.object(Configuration, 'get')
+    def test_remove_scheduled_event(self, mock_config_get):
+        test_config = {
+            'skills': {
+            }
+        }
+        mock_config_get.return_value = test_config
+        emitter = mock.MagicMock()
+        s = TestSkill1()
+        s.bind(emitter)
+        s.schedule_event(s.handler, datetime.now(), name='sched_handler1')
+        # Check that the handler was registered with the emitter
+        self.assertTrue('0:sched_handler1' in zip(*s.events)[0])
+        s.cancel_scheduled_event('sched_handler1')
+        # Check that the handler was removed
+        self.assertEqual(emitter.remove.call_args[0][0], '0:sched_handler1')
+        self.assertTrue('0:sched_handler1' not in zip(*s.events)[0])
+
+    @mock.patch.object(Configuration, 'get')
+    def test_run_scheduled_event(self, mock_config_get):
+        test_config = {
+            'skills': {
+            }
+        }
+        mock_config_get.return_value = test_config
+        emitter = mock.MagicMock()
+        s = TestSkill1()
+        with mock.patch.object(s, '_settings',
+                               create=True, value=mock.MagicMock()):
+            s.bind(emitter)
+            s.schedule_event(s.handler, datetime.now(), name='sched_handler1')
+            # Check that the handler was registered with the emitter
+            emitter.once.call_args[0][1](Message('message'))
+            # Check that the handler was run
+            self.assertTrue(s.handler_run)
+            # Check that the handler was removed from the list of registred
+            # handler
+            self.assertTrue('0:sched_handler1' not in zip(*s.events)[0])
+
 
 class TestSkill1(MycroftSkill):
+    def __init__(self):
+        super(TestSkill1, self).__init__()
+        self.handler_run = False
+
     """ Test skill for normal intent builder syntax """
     def initialize(self):
         i = IntentBuilder('a').require('Keyword').build()
         self.register_intent(i, self.handler)
 
     def handler(self, message):
-        pass
+        self.handler_run = True
 
     def stop(self):
         pass
