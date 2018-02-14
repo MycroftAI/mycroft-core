@@ -18,6 +18,7 @@ import time
 from os import listdir
 from os.path import abspath, dirname, basename, isdir, join
 from threading import Lock
+import subprocess
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
@@ -320,6 +321,18 @@ class AudioService(object):
             self.pulse.sink_input_volume_set(sink.index, volume)
         self.modified_sinks = []
 
+    def pulse_duck(self):
+        LOG.info('DUCKING!')
+        self.duck_proc = subprocess.Popen(['paplay',
+                                           '--property=media.role=phone',
+                                           '/dev/zero', '--raw'])
+
+    def pulse_unduck(self):
+        LOG.info('UNDUCKING!')
+        if self.duck_proc:
+            self.duck_proc.kill()
+            self.duck_proc = None
+
     def _restore_volume(self, message=None):
         """
             Is triggered when mycroft is done speaking and restores the volume
@@ -438,6 +451,10 @@ class AudioService(object):
             elif pulse_choice == 'lower':
                 self.pulse_quiet = self.pulse_lower_volume
                 self.pulse_restore = self.pulse_restore_volume
+            elif pulse_choice == 'duck':
+                self.dock_process = None
+                self.pulse_quiet = self.pulse_duck
+                self.pulse_restore = self.pulse_unduck
 
     def shutdown(self):
         for s in self.service:

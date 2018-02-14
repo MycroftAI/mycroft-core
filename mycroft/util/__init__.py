@@ -22,7 +22,7 @@ from threading import Thread
 from time import sleep
 
 import json
-import os.path
+import os, os.path
 import psutil
 from stat import S_ISREG, ST_MTIME, ST_MODE, ST_SIZE
 import requests
@@ -91,31 +91,37 @@ def resolve_resource_file(res_name):
 def play_wav(uri):
     config = mycroft.configuration.Configuration.get()
     play_cmd = config.get("play_wav_cmdline")
+    env = os.environ.copy()
+    env['PULSE_PROP'] = 'media.role=phone'
     play_wav_cmd = str(play_cmd).split(" ")
     for index, cmd in enumerate(play_wav_cmd):
         if cmd == "%1":
             play_wav_cmd[index] = (get_http(uri))
-    return subprocess.Popen(play_wav_cmd)
+    return subprocess.Popen(play_wav_cmd, env=env)
 
 
 def play_mp3(uri):
     config = mycroft.configuration.Configuration.get()
+    env = os.environ.copy()
+    env['PULSE_PROP'] = 'media.role=music'
     play_cmd = config.get("play_mp3_cmdline")
     play_mp3_cmd = str(play_cmd).split(" ")
     for index, cmd in enumerate(play_mp3_cmd):
         if cmd == "%1":
             play_mp3_cmd[index] = (get_http(uri))
-    return subprocess.Popen(play_mp3_cmd)
+    return subprocess.Popen(play_mp3_cmd, env=env)
 
 
 def play_ogg(uri):
     config = mycroft.configuration.Configuration.get()
+    env = os.environ.copy()
+    env['PULSE_PROP'] = 'media.role=music'
     play_cmd = config.get("play_ogg_cmdline")
     play_ogg_cmd = str(play_cmd).split(" ")
     for index, cmd in enumerate(play_ogg_cmd):
         if cmd == "%1":
             play_ogg_cmd[index] = (get_http(uri))
-    return subprocess.Popen(play_ogg_cmd)
+    return subprocess.Popen(play_ogg_cmd, env=env)
 
 
 def record(file_path, duration, rate, channels):
