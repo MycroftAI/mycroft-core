@@ -101,7 +101,7 @@ def load_services(config, ws, path=None):
         Search though the service directory and load any services.
 
         Args:
-            config: configuration dicrt for the audio backends.
+            config: configuration dict for the audio backends.
             ws: websocket object for communication.
 
         Returns:

@@ -20,6 +20,7 @@ from mycroft.util.lang.parse_en import *
 from mycroft.util.lang.parse_pt import *
 from mycroft.util.lang.parse_es import *
 from mycroft.util.lang.parse_it import *
+from mycroft.util.lang.parse_sv import *
 
 from mycroft.util.lang.parse_fr import extractnumber_fr
 from mycroft.util.lang.parse_fr import extract_datetime_fr
@@ -85,7 +86,9 @@ def extractnumber(text, lang="en-us"):
         return extractnumber_it(text)
     elif lang_lower.startswith("fr"):
         return extractnumber_fr(text)
-    # TODO: Normalization for other languages
+    elif lang_lower.startswith("sv"):
+        return extractnumber_sv(text)
+    # TODO: extractnumber for other languages
     return text
 
 
@@ -144,7 +147,9 @@ def extract_datetime(text, anchorDate=None, lang="en-us"):
         return extract_datetime_it(text, anchorDate)
     elif lang_lower.startswith("fr"):
         return extract_datetime_fr(text, anchorDate)
-
+    elif lang_lower.startswith("sv"):
+        return extract_datetime_sv(text, anchorDate) 
+    # TODO: extract_datetime for other languages
     return text
 # ==============================================================
 
@@ -173,6 +178,8 @@ def normalize(text, lang="en-us", remove_articles=True):
         return normalize_it(text, remove_articles)
     elif lang_lower.startswith("fr"):
         return normalize_fr(text, remove_articles)
+    elif lang_lower.startswith("sv"):
+        return normalize_sv(text, remove_articles)
     # TODO: Normalization for other languages
     return text
 

@@ -12,6 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
+""" DisplayManager
+
+This module provides basic "state" for the visual representation associated
+with this Mycroft instance.  The current states are:
+   ActiveSkill - The skill that last interacted with the display via the
+                 Enclosure API.
+
+Currently, a wakeword sets the ActiveSkill to "wakeword", which will auto
+clear after 10 seconds.
+
+A skill is set to Active when it matches an intent, outputs audio, or
+changes the display via the EnclosureAPI()
+
+A skill is automatically cleared from Active two seconds after audio
+output is spoken, or 2 seconds after resetting the display.
+
+So it is common to have '' as the active skill.
+"""
+
 import json
 from threading import Thread, Timer
 
@@ -23,10 +43,10 @@ from mycroft.util.log import LOG
 
 
 def _write_data(dictionary):
-    """Writes the parama as JSON to the
-        IPC dir (/tmp/mycroft/ipc/managers)
-        args:
-            dict: dictionary
+    """ Writes the dictionary of state data to the IPC directory.
+
+    Args:
+        dictionary (dict): information to place in the 'disp_info' file
     """
 
     managerIPCDir = os.path.join(get_ipc_directory(), "managers")
@@ -66,8 +86,9 @@ def _write_data(dictionary):
 
 
 def _read_data():
-    """ Reads the file in (/tmp/mycroft/ipc/managers/disp_info)
-        and returns the the data as python dict
+    """ Writes the dictionary of state data from the IPC directory.
+    Returns:
+        dict: loaded state information
     """
     managerIPCDir = os.path.join(get_ipc_directory(), "managers")
 
@@ -94,14 +115,16 @@ def _read_data():
 
 def set_active(skill_name):
     """ Sets skill name as active in the display Manager
-        args:
-            string: skill_name
+    Args:
+        string: skill_name
     """
     _write_data({"active_skill": skill_name})
 
 
 def get_active():
-    """ Get active skill in the display manager
+    """ Get the currenlty active skill from the display manager
+    Returns:
+        string: The active skill's name
     """
     data = _read_data()
     active_skill = ""
@@ -113,15 +136,13 @@ def get_active():
 
 
 def remove_active():
-    """ Remove the active skill in the skill manager
-    """
+    """ Clears the active skill """
     LOG.debug("Removing active skill...")
     _write_data({"active_skill": ""})
 
 
 def initiate_display_manager_ws():
-    """ Initiates the web sockets on the display_manager
-    """
+    """ Initiates the web sockets on the display_manager """
     LOG.info("Initiating display manager websocket")
 
     # Should remove needs to be an object so it can be referenced in functions

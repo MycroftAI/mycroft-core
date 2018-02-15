@@ -16,6 +16,7 @@
 from mycroft.util.lang.format_en import *
 from mycroft.util.lang.format_pt import *
 from mycroft.util.lang.format_it import *
+from mycroft.util.lang.format_sv import *
 
 from mycroft.util.lang.format_fr import nice_number_fr
 from mycroft.util.lang.format_fr import nice_time_fr
@@ -45,6 +46,8 @@ def nice_number(number, lang="en-us", speech=True, denominators=None):
         return nice_number_it(number, speech, denominators)
     elif lang_lower.startswith("fr"):
         return nice_number_fr(number, speech, denominators)
+    elif lang_lower.startswith("sv"):
+        return nice_number_sv(number)
 
     # Default to the raw number for unsupported languages,
     # hopefully the STT engine will pronounce understandably.
