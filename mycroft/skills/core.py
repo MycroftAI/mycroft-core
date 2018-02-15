@@ -17,9 +17,10 @@ import operator
 import sys
 import time
 import csv
+import inspect
 from functools import wraps
 from inspect import getargspec
-import inspect
+from datetime import datetime, timedelta
 
 import abc
 import re
@@ -961,12 +962,16 @@ class MycroftSkill(object):
 
             Args:
                 handler:                method to be called
-                when (datetime):        time for calling the handler
+                when (datetime):        time for calling the handler or None
+                                        to initially trigger <frequency>
+                                        seconds from now
                 frequency (float/int):  time in seconds between calls
                 data (dict, optional):  data to send along to the handler
                 name (str, optional):   friendly name parameter
         """
         data = data or {}
+        if not when:
+            when = datetime.now() + timedelta(seconds=frequency)
         self._schedule_event(handler, when, data, name, frequency)
 
     def update_scheduled_event(self, name, data=None):
