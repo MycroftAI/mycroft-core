@@ -95,11 +95,11 @@ class WebsocketClient(object):
 
         Args:
             message (Message): message to send
-            reply_type (str): the message type of the reply. Defaults to
-                              "<original message type>.response".
-            timeout: wait timeout before returning
+            reply_type (str): the message type of the expected reply.
+                              Defaults to "<message.type>.response".
+            timeout: seconds to wait before timeout, defaults to 3
         Returns:
-            The recieved message or None if the response timed out
+            The received message or None if the response timed out
         """
         response = []
 
