@@ -73,10 +73,10 @@ FRACTION_STRING_EN = {
 
 
 def nice_number_en(number, speech, denominators):
-    """
-    Helper for for nice_number
+    """ English helper for nice_number
 
-    Convert (1 1 3) to spoken value like "1 and 1 third"
+    This function formats a float to human understandable functions. Like
+    4.5 becomes "4 and a half" for speech and "4 1/2" for text
 
     Args:
         number (int or float): the float to format

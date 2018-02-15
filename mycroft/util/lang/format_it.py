@@ -72,11 +72,10 @@ FRACTION_STRING_IT = {
 
 
 def nice_number_it(number, speech, denominators):
-    """
-    Helper for for nice_number adapted to italian
-    adapted to italian fron en version
+    """ Italian helper for nice_number
 
-    Convert (1 1 3) to spoken value like "1 e un terzo"
+    This function formats a float to human understandable functions. Like
+    4.5 becomes "4 e un mezz" for speech and "4 1/2" for text
 
     Args:
         number (int or float): the float to format

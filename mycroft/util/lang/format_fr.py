@@ -72,10 +72,10 @@ FRACTION_STRING_FR = {
 
 
 def nice_number_fr(number, speech, denominators):
-    """
-    Helper for nice_number
+    """ French helper for nice_number
 
-    Convert (1 1/3) to spoken value like "1 et 1 tiers"
+    This function formats a float to human understandable functions. Like
+    4.5 becomes "4 et demi" for speech and "4 1/2" for text
 
     Args:
         number (int or float): the float to format
