@@ -61,10 +61,9 @@ MINUTES = 60  # number of seconds in a minute (syntatic sugar)
 
 
 def direct_update_needed():
-    """
-        Direct update is needed if the .msm file doesn't exist, if it's
-        older than 12 hour, as configured or if some of the skills installed
-        by default is missing.
+    """Determine need for an update
+    Direct update is needed if the .msm file doesn't exist, if it's older than
+    12 hours (or as configured) or if any of the default skills are missing.
     """
     dot_msm = join(SKILLS_DIR, '.msm')
     hours = skills_config.get('startup_update_required_time', 12)
