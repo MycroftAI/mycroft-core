@@ -60,6 +60,30 @@ MSM_BIN = installer_config.get("path", join(MYCROFT_ROOT_PATH, 'msm', 'msm'))
 MINUTES = 60  # number of seconds in a minute (syntatic sugar)
 
 
+def direct_update_needed():
+    """Determine need for an update
+    Direct update is needed if the .msm file doesn't exist, if it's older than
+    12 hours (or as configured) or if any of the default skills are missing.
+    """
+    dot_msm = join(SKILLS_DIR, '.msm')
+    hours = skills_config.get('startup_update_required_time', 12)
+    LOG.info('TIME LIMIT {}'.format(hours))
+    # if .msm file is missing or older than 1 hour update skills
+    if (not exists(dot_msm) or
+            os.path.getmtime(dot_msm) < time.time() - 60 * MINUTES * hours):
+        return True
+    else:  # verify that all default skills are installed
+        with open(dot_msm) as f:
+            default_skills = [line.strip() for line in f if line != '']
+        skills = os.listdir(SKILLS_DIR)
+        LOG.info(default_skills)
+        for d in default_skills:
+            if d not in skills:
+                LOG.info('{} has been removed, direct update needed'.format(d))
+                return True
+    return False
+
+
 def connect():
     global ws
     ws.run_forever()
@@ -135,6 +159,9 @@ def check_connection():
             # reboot
             ws.emit(Message("system.reboot"))
             return
+        else:
+            ws.emit(Message("enclosure.mouth.reset"))
+            time.sleep(0.5)
 
         ws.emit(Message('mycroft.internet.connected'))
         # check for pairing, if not automatically start pairing
@@ -146,11 +173,6 @@ def check_connection():
             }
             ws.emit(Message("recognizer_loop:utterance", payload))
         else:
-            if is_paired():
-                # Skip the  message when unpaired because the prompt to go
-                # to home.mycrof.ai will be displayed by the pairing skill
-                enclosure.mouth_text(mycroft.dialog.get("message_updating"))
-
             from mycroft.api import DeviceApi
             api = DeviceApi()
             api.update_version()
@@ -198,10 +220,14 @@ class SkillManager(Thread):
         super(SkillManager, self).__init__()
         self._stop_event = Event()
         self._loaded_priority = Event()
-        self.next_download = time.time() - 1    # download ASAP
+
         self.loaded_skills = {}
         self.msm_blocked = False
         self.ws = ws
+        self.enclosure = EnclosureAPI(ws)
+
+        # Schedule install/update of default skill
+        self.next_download = None
 
         # Conversation management
         ws.on('skill.converse.request', self.handle_converse_request)
@@ -210,7 +236,7 @@ class SkillManager(Thread):
         ws.on('mycroft.internet.connected', self.schedule_update_skills)
 
         # Update upon request
-        ws.on('skillmanager.update', self.schedule_update_skills)
+        ws.on('skillmanager.update', self.schedule_now)
         ws.on('skillmanager.list', self.send_skill_list)
 
         # Register handlers for external MSM signals
@@ -227,7 +253,20 @@ class SkillManager(Thread):
 
     def schedule_update_skills(self, message=None):
         """ Schedule a skill update to take place directly. """
-        # Update skills at next opportunity
+        if direct_update_needed():
+            # Update skills at next opportunity
+            LOG.info('Skills will be updated directly')
+            self.schedule_now()
+            # Skip the  message when unpaired because the prompt to go
+            # to home.mycrof.ai will be displayed by the pairing skill
+            if not is_paired():
+                self.enclosure.mouth_text(
+                    mycroft.dialog.get("message_updating"))
+        else:
+            LOG.info('Skills will be updated at a later time')
+            self.next_download = time.time() + 60 * MINUTES
+
+    def schedule_now(self, message=None):
         self.next_download = time.time() - 1
 
     def block_msm(self, message=None):
@@ -394,11 +433,13 @@ class SkillManager(Thread):
                                                                True)
 
             # Update skills once an hour if update is enabled
-            if time.time() >= self.next_download and update:
+            if (self.next_download and time.time() >= self.next_download and
+                    update):
                 self.download_skills()
 
             # Look for recently changed skill(s) needing a reload
-            if exists(SKILLS_DIR):
+            if (exists(SKILLS_DIR) and
+                    (self.next_download or not update)):
                 # checking skills dir and getting all skills there
                 list = filter(lambda x: os.path.isdir(
                     os.path.join(SKILLS_DIR, x)), os.listdir(SKILLS_DIR))

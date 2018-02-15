@@ -843,20 +843,14 @@ def handle_cmd(cmd):
         cy_chat_area = lines
     elif "skills" in cmd:
         # List loaded skill
-        def handler(message):
-            """
-                Show screen listing available skills.
-            """
-            if message and 'skills' in message.data:
-                show_skills(message.data['skills'])
+        message = ws.wait_for_response(
+            Message('skillmanager.list'), reply_type='mycroft.skills.list')
 
-        ws.once('mycroft.skills.list', handler)
-        ws.emit(Message('skillmanager.list'))
-
-        # Here due to trouble restoring screen  when run from different thread
-        c = scr.getch()  # blocks
-        screen_mode = 0  # back to main screen
-        draw_screen()
+        if message and 'skills' in message.data:
+            show_skills(message.data['skills'])
+            c = scr.getch()  # blocks
+            screen_mode = 0  # back to main screen
+            draw_screen()
     # TODO: More commands
     return 0  # do nothing upon return
 

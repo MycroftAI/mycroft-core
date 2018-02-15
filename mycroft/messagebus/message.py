@@ -105,6 +105,22 @@ class Message(object):
             context['target'] = context['client_name']
         return Message(type, data, context=new_context)
 
+    def response(self, data=None, context=None):
+        """Construct a response message for the message
+
+        Constructs a reply with the data and appends the expected
+        ".response" to the message
+
+        Args:
+            data (dict): message data
+            context (dict): message context
+        Returns
+            (Message) message with the type modified to match default response
+        """
+        response_message = self.reply(self.type, data or {}, context)
+        response_message.type += '.response'
+        return response_message
+
     def publish(self, type, data, context=None):
         """
         Copy the original context and add passed in context.  Delete
