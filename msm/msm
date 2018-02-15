@@ -417,8 +417,8 @@ function install_from_url_list() {
           # keep the highest exit code
           exit_code=${rc}
         fi
-        echo ${name} >> ${mycroft_skill_folder}/.msm
       fi
+      echo ${name} >> ${mycroft_skill_folder}/.msm
     fi
   done
 
