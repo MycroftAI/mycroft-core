@@ -664,6 +664,8 @@ class MycroftSkill(object):
                 except (ValueError, KeyError):
                     LOG.debug('{} is not registered in the emitter'.format(
                               _name))
+                removed = True
+        return removed
 
     def register_intent(self, intent_parser, handler, need_self=False):
         """
