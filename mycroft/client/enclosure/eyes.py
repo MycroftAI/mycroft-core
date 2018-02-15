@@ -37,6 +37,8 @@ class EnclosureEyes:
         self.ws.on('enclosure.eyes.spin', self.spin)
         self.ws.on('enclosure.eyes.timedspin', self.timed_spin)
         self.ws.on('enclosure.eyes.reset', self.reset)
+        self.ws.on('enclosure.eyes.setpixel', self.set_pixel)
+        self.ws.on('enclosure.eyes.fill', self.fill)
 
     def on(self, event=None):
         self.writer.write("eyes.on")
@@ -66,6 +68,24 @@ class EnclosureEyes:
             b = int(event.data.get("b", b))
         color = (r * 65536) + (g * 256) + b
         self.writer.write("eyes.color=" + str(color))
+
+    def set_pixel(self, event=None):
+        idx = 0
+        r, g, b = 255, 255, 255
+        if event and event.data:
+            idx = int(event.data.get("idx", idx))
+            r = int(event.data.get("r", r))
+            g = int(event.data.get("g", g))
+            b = int(event.data.get("b", b))
+        color = (r * 65536) + (g * 256) + b
+        self.writer.write("eyes.set=" + str(idx) + "," + str(color))
+
+    def fill(self, event=None):
+        amount = 0
+        if event and event.data:
+            percent = int(event.data.get("percentage", 0))
+            amount = int(round(23.0 * percent / 100.0))
+        self.writer.write("eyes.fill=" + str(amount))
 
     def brightness(self, event=None):
         level = 30
