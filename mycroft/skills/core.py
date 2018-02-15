@@ -661,7 +661,7 @@ class MycroftSkill(object):
                     pass
                 try:
                     self.emitter.remove(_name, _handler)
-                except ValueError:
+                except (ValueError, KeyError):
                     LOG.debug('{} is not registered in the emitter'.format(
                               _name))
 
