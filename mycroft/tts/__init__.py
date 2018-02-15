@@ -274,7 +274,7 @@ class TTS(object):
         # return text with supported ssml tags only
         return utterance.replace("  ", " ")
 
-    def validate_and_execute(self, sentence):
+    def validate_and_execute(self, sentence, ident=None):
         """
             validate ssml, execute text to speech
 
@@ -282,7 +282,7 @@ class TTS(object):
                 sentence(str): Sentence to execute
         """
         sentence = self.validate_ssml(sentence)
-        self.execute(sentence)
+        self.execute(sentence, ident)
 
     def execute(self, sentence, ident=None):
         """
