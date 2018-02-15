@@ -1,16 +1,42 @@
+# Copyright 2017 Mycroft AI Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 import json
 import time
-from Queue import Queue
 from threading import Thread
 
 from os.path import isfile
 
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
+import sys
+if sys.version_info[0] < 3:
+    from Queue import Queue
+else:
+    from queue import Queue
 
 
 class EventScheduler(Thread):
     def __init__(self, emitter, schedule_file='/opt/mycroft/schedule.json'):
+        """
+            Create an event scheduler thread. Will send messages at a
+            predetermined time to the registered targets.
+
+            Args:
+                emitter:        event emitter to use to send messages
+                schedule_file:  File to store pending events to on shutdown
+        """
         super(EventScheduler, self).__init__()
         self.events = {}
         self.emitter = emitter
@@ -28,6 +54,8 @@ class EventScheduler(Thread):
                         self.remove_event_handler)
         self.emitter.on('mycroft.scheduler.update_event',
                         self.update_event_handler)
+        self.emitter.on('mycroft.scheduler.get_event',
+                        self.get_event_handler)
         self.start()
 
     def load(self):
@@ -35,11 +63,12 @@ class EventScheduler(Thread):
             Load json data with active events from json file.
         """
         if isfile(self.schedule_file):
+            json_data = {}
             with open(self.schedule_file) as f:
                 try:
                     json_data = json.load(f)
                 except Exception as e:
-                    LOG.error(e)
+                    LOG.error(e.message)
             current_time = time.time()
             for key in json_data:
                 event_list = json_data[key]
@@ -81,30 +110,36 @@ class EventScheduler(Thread):
 
     def run(self):
         while self.isRunning:
-            # Fetch newly scheduled events
-            self.fetch_new_events()
-            # Remove events
-            self.remove_events()
-            # Update events
-            self.update_events()
-
-            # Check all events
-            for event in self.events:
-                current_time = time.time()
-                e = self.events[event]
-                # Get scheduled times that has passed
-                passed = [(t, r, d) for (t, r, d) in e if t <= current_time]
-                # and remaining times that we're still waiting for
-                remaining = [(t, r, d) for t, r, d in e if t > current_time]
-                # Trigger registered methods
-                for sched_time, repeat, data in passed:
-                    self.emitter.emit(Message(event, data))
-                    # if this is a repeated event add a new trigger time
-                    if repeat:
-                        remaining.append((sched_time + repeat, repeat, data))
-                # update list of events
-                self.events[event] = remaining
+            self.check_state()
             time.sleep(0.5)
+
+    def check_state(self):
+        """
+            Check if an event should be triggered.
+        """
+        # Remove events
+        self.remove_events()
+        # Fetch newly scheduled events
+        self.fetch_new_events()
+        # Update events
+        self.update_events()
+
+        # Check all events
+        for event in self.events:
+            current_time = time.time()
+            e = self.events[event]
+            # Get scheduled times that has passed
+            passed = [(t, r, d) for (t, r, d) in e if t <= current_time]
+            # and remaining times that we're still waiting for
+            remaining = [(t, r, d) for t, r, d in e if t > current_time]
+            # Trigger registered methods
+            for sched_time, repeat, data in passed:
+                self.emitter.emit(Message(event, data))
+                # if this is a repeated event add a new trigger time
+                if repeat:
+                    remaining.append((sched_time + repeat, repeat, data))
+            # update list of events
+            self.events[event] = remaining
 
     def schedule_event(self, event, sched_time, repeat=None, data=None):
         """ Send event to thread using thread safe queue. """
@@ -152,12 +187,38 @@ class EventScheduler(Thread):
         data = message.data.get('data')
         self.update_event(event, data)
 
+    def get_event_handler(self, message):
+        """
+            Messagebus interface to get_event.
+            Emits another event sending event status
+        """
+        event_name = message.data.get("name")
+        event = None
+        if event_name in self.events:
+            event = self.events[event_name]
+        emitter_name = 'mycroft.event_status.callback.{}'.format(event_name)
+        self.emitter.emit(Message(emitter_name, data=event))
+
     def store(self):
         """
             Write current schedule to disk.
         """
         with open(self.schedule_file, 'w') as f:
             json.dump(self.events, f)
+
+    def clear_repeating(self):
+        """
+            Remove repeating events from events dict.
+        """
+        for e in self.events:
+            self.events[e] = [i for i in self.events[e] if i[1] is None]
+
+    def clear_empty(self):
+        """
+            Remove empty event entries from events dict
+        """
+        self.events = {k: self.events[k] for k in self.events
+                       if self.events[k] != []}
 
     def shutdown(self):
         """ Stop the running thread. """
@@ -168,5 +229,8 @@ class EventScheduler(Thread):
         self.emitter.remove_all_listeners('mycroft.scheduler.update_event')
         # Wait for thread to finish
         self.join()
+        # Prune event list in preparation for saving
+        self.clear_repeating()
+        self.clear_empty()
         # Store all pending scheduled events
         self.store()

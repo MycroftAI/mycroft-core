@@ -14,6 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+RED='\033[0;31m'
+NOCOLOR='\033[0m'
+GREEN='\033[0;32m'
+
+
 script=${0}
 script=${script##*/}
 
@@ -29,6 +34,8 @@ function help() {
   echo "  list                     list all mycroft-skills"
   echo "  update                   update all installed skills"
   echo "  search <name>            search mycroft-skills for match for <name>"
+  echo "  info <name>              shows information about the skill matching <name>"
+  echo "  info <repo>              shows information about the skill in the specified repo"
   echo
   echo "Params:"
   echo "  <repo>   full URL to a Github repo"
@@ -45,34 +52,42 @@ function help() {
   exit 1
 }
 
+# Determine the platform
+mycroft_platform="null"
+if [[ -r /etc/mycroft/mycroft.conf ]] ; then
+   mycroft_platform=$( jq -r '.enclosure.platform' /etc/mycroft/mycroft.conf )
+else
+   if [[ "$(hostname)" == "picroft" ]] ; then
+      mycroft_platform="picroft"
+   elif [[ "$(hostname)" =~ "mark_1" ]] ; then
+      mycroft_platform="mycroft_mark_1"
+   fi
+fi
 
-# These skills are automatically installed on all mycroft-core
-# installations.
-DEFAULT_SKILLS="skill-alarm skill-audio-record skill-configuration "\
-"skill-date-time skill-desktop-launcher skill-ip skill-joke "\
-"skill-hello-world skill-media skill-npr-news skill-naptime skill-pairing "\
-"skill-personal skill-playback-control skill-reminder skill-installer "\
-"skill-singing skill-speak skill-spelling skill-stop skill-stock "\
-"skill-volume skill-weather skill-wiki "\
-"fallback-aiml skill-mark1-demo "
+# Get the location of the Skill folder
+mycroft_skill_folder="null"
+if [[ -r /etc/mycroft/mycroft.conf ]] ; then
+   mycroft_skill_folder=$( jq -r '.enclosure.skill_folder' /etc/mycroft/mycroft.conf )
+fi
+if [[ ${mycroft_skill_folder} == "null" ]] ; then
+   mycroft_skill_folder="/opt/mycroft/skills"
+fi
 
-
-# Determine the location of the Skill folder
-mycroft_skill_folder=${mycroft_skill_folder:-"/opt/mycroft/skills"}
 if [[ ! -d "${mycroft_skill_folder}" ]] ; then
   echo "ERROR: Unable to find/access ${mycroft_skill_folder}!"
   exit 101
 fi
 
-
 # Determine if on picroft/mk1?
 picroft_mk1="false"
 vwrap="true"
-if [[ "$(hostname)" == "picroft" ]] || [[ "$(hostname)" =~ "mark_1" ]] && [[ -x /usr/local/bin/mycroft-wifi-setup-client ]] ; then
+if [[ "${mycroft_platform}" == "picroft" ]] || [[ "${mycroft_platform}" == "mycroft_mark_1" ]] ; then
   picroft_mk1="true"
 else
   if [[ -r /etc/bash_completion.d/virtualenvwrapper ]]; then
     source /etc/bash_completion.d/virtualenvwrapper
+   elif [[ -r /usr/bin/virtualenvwrapper.sh ]]; then
+    source /usr/bin/virtualenvwrapper.sh
   else
     if locate virtualenvwrapper ; then
       if ! source $(locate virtualenvwrapper) ; then
@@ -88,7 +103,6 @@ LIST_CACHE=''
 
 function get_skill_list() {
   if ! [[ ${LIST_CACHE} ]] ; then
-    echo "1" >> ~/count.txt
     if hash curl ; then
       # retrieve using curl
       LIST_CACHE=$( curl -s "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules" )
@@ -104,6 +118,57 @@ function get_skill_list() {
     fi
   fi
 }
+
+# Communicate with mycroft-core to inform it of install status
+install_started="false"
+update_started="false"
+remove_started="false"
+function send_start_install () {
+    if [[ "${install_started}" == "false" ]] ; then
+        python -m mycroft.messagebus.send msm.installing
+        install_started="true"
+    fi
+}
+function send_start_update () {
+    if [[ "${update_started}" == "false" ]] ; then
+        python -m mycroft.messagebus.send msm.updating
+        update_started="true"
+    fi
+}
+function send_start_remove () {
+    if [[ "${remove_started}" == "false" ]] ; then
+        python -m mycroft.messagebus.send msm.removing
+        remove_started="true"
+    fi
+}
+function send_install_success () {
+    python -m mycroft.messagebus.send msm.install.succeeded "{\"skill\": \"${1}\" }"
+}
+function send_install_fail () {
+    python -m mycroft.messagebus.send msm.install.failed "{\"skill\": \"${1}\", \"error\" : ${2} }"
+}
+function send_remove_success () {
+    python -m mycroft.messagebus.send msm.remove.succeeded "{\"skill\": \"${1}\" }"
+}
+function send_remove_fail () {
+    python -m mycroft.messagebus.send msm.remove.failed "{\"skill\": \"${1}\", \"error\" : ${2} }"
+}
+function send_end_install () {
+    if [[ "${install_started}" == "true" ]] ; then
+        python -m mycroft.messagebus.send msm.installed
+    fi
+}
+function send_end_update () {
+    if [[ "${update_started}" == "true" ]] ; then
+        python -m mycroft.messagebus.send msm.updated
+    fi
+}
+function send_end_remove () {
+    if [[ "${remove_started}" == "true" ]] ; then
+        python -m mycroft.messagebus.send msm.removed
+    fi
+}
+
 
 function remove() {
   str=$*
@@ -159,13 +224,16 @@ function remove() {
 
      # Delete the skill folder
      echo -n "Removing '${name}'..."
+     send_start_remove
      rm -rf "${name}"
      if [[ -d "${mycroft_skill_folder}/${name}" ]] ; then
         # Failed to remove the skill directory
+        send_remove_fail "${name}" 249
         return 249
      else
         echo "done"
         echo "Removed: ${name}"
+        send_remove_success
         return 0
      fi
   else
@@ -248,9 +316,11 @@ function install() {
     fi
 
     echo "Installing from: ${repo}"
+    send_start_install
     git clone "${repo}" >> /dev/null
     if ! cd "${name}" ; then
       echo "ERROR: Unable to access directory ${name}!"
+      send_install_fail "${name}" 102
       return 102
     fi
     if [[ "${picroft_mk1}" == "true" ]] ; then
@@ -260,16 +330,44 @@ function install() {
       if [[ "${group}" != "mycroft" ]] || [[ "${owner}" != "mycroft" ]] ; then
          if ! sudo chown -R mycroft:mycroft "${mycroft_skill_folder}/${name}" ; then
            echo "ERROR: Unable to chown install directory ${name}!"
+           send_install_fail "${name}" 123
            return 123
          fi
       fi
     fi
+
+    # If the skill has a requirements.sh, then run that using bash
+    if [[ -f "requirements.sh" ]]; then
+      echo "  Setting up native environment..."
+      if ! bash requirements.sh; then
+        echo "Running requirements.sh failed!"
+        send_install_fail "${name}" 122
+        return 122
+      fi
+    fi
+
+    # If the skill has a requirements.txt, pip install them
+    run_pip "${name}"
+    rc=$?
+    if [[ ${rc} -gt 0 ]] ; then
+       return ${rc}
+    fi
+
+    echo "Installed: ${name}"
+    send_install_success "${name}"
+    return 0
+}
+
+function run_pip() {
+    # NOTE: Must be in the skill directory already...
+    name=$*
     if [[ -f "requirements.txt" ]]; then
       echo "  Installing requirements..."
       if [[ "${picroft_mk1}" == "false" ]]; then
         if [[ "${VIRTUAL_ENV}" =~ .mycroft$ ]] ; then
           if ! pip install -r requirements.txt ; then
             echo "ERROR: Unable to install requirements for skill '${name}'"
+            send_install_fail "${name}" 121
             return 121
           fi
         else
@@ -277,23 +375,54 @@ function install() {
             if ! pip install -r requirements.txt ; then
               echo "ERROR: Unable to install requirements for skill '${name}'"
               deactivate mycroft
+              send_install_fail "${name}" 121
               return 121
             fi
           else
             echo "ERROR: Unable to activate 'mycroft' virtualenv, requirements not installed."
+            send_install_fail "${name}" 120
             return 120
           fi
         fi
       else
         if ! sudo pip install -r requirements.txt ; then
           echo "ERROR: Unable to install requirements for '${name}', it may not work"
+          send_install_fail "${name}" 121
           return 121
         fi
       fi
     fi
 
-    echo "Installed: ${name}"
+    return 0  # no problem encountered
+}
+
+function install_from_url_list() {
+  exit_code=0
+  skill_list=$( curl -s "${*}" )
+  if [[ $? -gt 0 || $skill_list =~ ^404 ]] ; then
+    # This is fine, just  no list found
     return 0
+  fi
+
+  # Tell 'for' to only break on newlines, not spaces.  The # comment lines
+  # inside the list can contain spaces in them.
+  IFS=$'\n'
+  for name in ${skill_list}
+  do
+    if [[ ! $name =~ ^# ]] ; then  # ignore comment lines
+      install $name
+      rc=$?
+      if [[ ${rc} -gt 0 ]] ; then
+        if [[ ${rc} -gt ${exit_code} ]] ; then
+          # keep the highest exit code
+          exit_code=${rc}
+        fi
+        echo ${name} >> ${mycroft_skill_folder}/.msm
+      fi
+    fi
+  done
+
+  return ${exit_code}
 }
 
 function search() {
@@ -339,18 +468,113 @@ function update() {
       then
         echo "Updating ${d}..."
         echo -n "  "
+        send_start_update
         git fetch
         git reset --hard origin/master
         rm -f *.pyc
+        run_pip "${d}"
       else
         echo "Ignoring ${d}, skill has been modified."
       fi
+
+      # TODO: Remove this for 18.02
+      # HACK: Re-run PIP, because Mycroft-core removed some of its required,
+      #       which broke previously-installed packages on a Picroft/Mark1
+      #       that was satisfied by packages that previously came along with
+      #       mycroft-core.
+      if [ ! -f /tmp/mycroft_has_re-PIPed ] ; then
+         run_pip "${d}"
+         echo "Re-running PIP on requirements.txt"
+      fi
     fi
   done
+
+  # TODO: Remove this for 18.02
+  # HACK: Only do the re-PIP once per boot
+  if [ ! -f /tmp/mycroft_has_re-PIPed ] ; then
+     echo "1" > /tmp/mycroft_has_re-PIPed
+  fi
+}
+
+function print_info() {
+    str=$*
+    if [[ "${str}" == "git@"* || "${str}" == "https://"* || "${str}" == "http://"* ]]; then
+        # Repo was given
+        repo="${str}"
+    else
+        # Search for the given word(s) as the submodule
+        skills=$(echo "${LIST_CACHE}" | grep -n 'submodule' | sed 's/[[:space:]]//g' | sed 's/\[submodule"//g' | sed 's/"\]//g')
+
+        # Test for exact name match
+        exact_match=$(echo "$skills" | grep -i ".*:${str}$")
+        if [[ ! -z "${exact_match}" ]]; then
+            # Found a perfect match!
+            skill=${exact_match}
+        else
+            # Test for match of all supplied words/subwords
+            skill=$(echo "$skills")  # start with all skills
+            for s in ${str}
+            do
+                # whittle list down with each word in the search string
+                skill=$(echo "$skill" | grep -i ".*:.*${s}.*")
+            done
+        fi
+
+        git_line=$(echo "$skill" | sed 's/\:.*//')
+
+        if [[ "${skill}" ==  *$'\n'* ]]; then
+            # The str matches multiple skill repos, don't install
+            # due to ambiguity.
+            echo "Multiple matches for '${str}', be more specfic."
+            echo "------------------------------------------------------------"
+            echo "$skill" | sed 's/.*://g' | sort
+            echo "------------------------------------------------------------"
+            return 201
+        else
+            if [[ -z "${git_line}" ]]; then
+                echo "'${str}' skill was not found"
+            return 202
+            fi
+            repo_line=$(($git_line + 2))
+            repo=$(echo "${LIST_CACHE}" | sed -n $repo_line'{p;q;}' | sed 's/[[:space:]]//g' | sed 's/[[:space:]]//g' | sed 's/url=//g')
+        fi
+    fi
+
+    local baseUrl=$(echo "${repo}" | sed -e 's/github.com/raw.githubusercontent.com/g' | sed -e 's/\.git$//g')/master
+    ### debugging output:
+    # echo git line is: "$git_line"
+    # echo repo line is: "$repo_line"
+    # echo repo is: "$repo"
+    # echo base url is "$baseUrl"
+    local readmeUrl="$baseUrl/readme.md"
+    local stat="$(curl -I -s $readmeUrl | sed -n '1p')"
+    local readme=""
+    if [[ $stat == *"200"* ]] ; then
+        readme="$(curl -s $readmeUrl)"
+    else
+        readmeUrl="$baseUrl/Readme.md"
+        stat=$(curl -I -s ${readmeUrl} | sed -n '1p')
+        if [[ $stat == *"200"* ]] ; then
+            readme="$(curl -s $readmeUrl)"
+        else
+            readmeUrl="$baseUrl/README.md"
+            stat=$(curl -I -s ${readmeUrl} | sed -n '1p')
+            if [[ $stat == *"200"* ]] ; then
+                readme="$(curl -s $readmeUrl)"
+            else
+                echo "Didn't find any information to display."
+                exit 0
+            fi
+        fi
+    fi
+
+    echo "$readme"
+    exit 0
 }
 
 OPT=$1
 shift
+
 
 case ${OPT} in
   "install")
@@ -373,6 +597,7 @@ case ${OPT} in
                fi
             fi
          done
+         send_end_install
       else
          # install requires a parameter, show help
          help
@@ -399,6 +624,7 @@ case ${OPT} in
                fi
             fi
          done
+         send_end_remove
       else
          # remove requires a parameter, show help
          help
@@ -412,7 +638,26 @@ case ${OPT} in
           echo "${script}: error ${exit_code}"
           exit ${exit_code}
       fi
-      echo "${LIST_CACHE}" | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g' | sort
+
+      # Get name and path
+      submods=($(echo "${LIST_CACHE}" | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g'))
+      paths=($(echo "${LIST_CACHE}" | grep 'path =' | sed 's/\path = //g'| sed 's/"\]//g'))
+      # Determine which have been installed
+      results=()
+      for ((i=0;i<${#submods[@]};++i)); do
+          if [[ -d "$mycroft_skill_folder/${paths[i]}" ]] ; then
+              results+=("${submods[i]} ${RED}[${GREEN}installed${RED}]${NOCOLOR}\n\r")
+          else
+              results+=("${submods[i]}\n\r")
+          fi
+      done
+      # Sort the result alphabetically
+      readarray -t sorted < <(for a in "${results[@]}"; do echo "$a"; done | sort)
+      # Print the output
+      for ((i=0;i<${#sorted[@]};++i)); do
+        printf "${sorted[i]}"
+      done
+
       exit_code=$?
       ;;
   "update")
@@ -424,6 +669,7 @@ case ${OPT} in
       fi
 
       update
+      send_end_update
       exit_code=$?
       ;;
   "default")
@@ -436,24 +682,25 @@ case ${OPT} in
          exit ${exit_code}
       fi
 
-      for name in ${DEFAULT_SKILLS}
-      do
-         install $name
-         rc=$?
-         if [[ ${rc} -gt 0 ]] ; then
-            if [[ ${rc} -gt ${exit_code} ]] ; then
-               exit_code=${rc}
-            fi
-         fi
-      done
-      if [[ ${exit_code} -eq 20 ]] ; then
-         # 20 is returned for skills already installed,
-         # which is OK here.
-         exit_code=0
+      # Create .msm file to provide timestamp for last msm default
+      printf "" > ${mycroft_skill_folder}/.msm
+      # These skills are automatically installed on all mycroft-core
+      # installations.
+      install_from_url_list "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/DEFAULT-SKILLS"
+      exit_code=$?
+
+      # Grab any platform-specific skills
+      if [[ ${mycroft_platform} != 'null' ]] ; then
+        if [[ ${exit_code} -eq 0 || ${exit_code} -eq 20 ]] ; then
+            install_from_url_list "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/DEFAULT-SKILLS.${mycroft_platform}"
+            exit_code=$?
+        fi
       fi
 
-      if [[ ${exit_code} -eq 0 ]] ; then
+      # exit code 20 == skills already installed, which is OK here
+      if [[ ${exit_code} -eq 0 || ${exit_code} -eq 20 ]] ; then
          update
+         send_end_update
          exit_code=$?
       fi
    ;;
@@ -479,6 +726,23 @@ case ${OPT} in
          help
          exit_code=1
       fi
+      ;;
+  "info")
+      get_skill_list
+      exit_code=$?
+      if [[ ${exit_code} -gt 0 ]] ; then
+          echo "${script}: error ${exit_code}"
+          exit ${exit_code}
+      fi
+      print_info $1
+      rc=$?
+      if [[ ${rc} -gt 0 ]] ; then
+          if [[ ${rc} -gt ${exit_code} ]] ; then
+              echo "${script}: error ${exit_code}"
+              exit_code=${rc}
+          fi
+      fi
+      exit_code=0
       ;;
   *)
       help

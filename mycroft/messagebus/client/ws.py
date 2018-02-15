@@ -1,38 +1,35 @@
-# Copyright 2016 Mycroft AI, Inc.
+# Copyright 2017 Mycroft AI Inc.
 #
-# This file is part of Mycroft Core.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Mycroft Core is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
-# Mycroft Core is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
-# You should have received a copy of the GNU General Public License
-# along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 import json
 import time
+import monotonic
 from multiprocessing.pool import ThreadPool
 
 from pyee import EventEmitter
 from websocket import WebSocketApp
 
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util import validate_param
 from mycroft.util.log import LOG
-
-__author__ = 'seanfitz', 'jdorleans'
 
 
 class WebsocketClient(object):
     def __init__(self, host=None, port=None, route=None, ssl=None):
 
-        config = ConfigurationManager.get().get("websocket")
+        config = Configuration.get().get("websocket")
         host = host or config.get("host")
         port = port or config.get("port")
         route = route or config.get("route")
@@ -41,15 +38,16 @@ class WebsocketClient(object):
         validate_param(port, "websocket.port")
         validate_param(route, "websocket.route")
 
-        self.build_url(host, port, route, ssl)
+        self.url = WebsocketClient.build_url(host, port, route, ssl)
         self.emitter = EventEmitter()
         self.client = self.create_client()
         self.pool = ThreadPool(10)
         self.retry = 5
 
-    def build_url(self, host, port, route, ssl):
+    @staticmethod
+    def build_url(host, port, route, ssl):
         scheme = "wss" if ssl else "ws"
-        self.url = scheme + "://" + host + ":" + str(port) + route
+        return scheme + "://" + host + ":" + str(port) + route
 
     def create_client(self):
         return WebSocketApp(self.url,
@@ -69,7 +67,7 @@ class WebsocketClient(object):
         try:
             self.emitter.emit('error', error)
             self.client.close()
-        except Exception, e:
+        except Exception as e:
             LOG.error(repr(e))
         LOG.warning("WS Client will reconnect in %d seconds." % self.retry)
         time.sleep(self.retry)
@@ -91,6 +89,36 @@ class WebsocketClient(object):
             self.client.send(message.serialize())
         else:
             self.client.send(json.dumps(message.__dict__))
+
+    def wait_for_response(self, message, reply_type=None, timeout=None):
+        """Send a message and wait for a response.
+
+        Args:
+            message (Message): message to send
+            reply_type (str): the message type of the expected reply.
+                              Defaults to "<message.type>.response".
+            timeout: seconds to wait before timeout, defaults to 3
+        Returns:
+            The received message or None if the response timed out
+        """
+        response = []
+
+        def handler(message):
+            """Receive response data."""
+            response.append(message)
+
+        # Setup response handler
+        self.once(reply_type or message.type + '.response', handler)
+        # Send request
+        self.emit(message)
+        # Wait for response
+        start_time = monotonic.monotonic()
+        while len(response) == 0:
+            time.sleep(0.2)
+            if monotonic.monotonic() - start_time > (timeout or 3.0):
+                self.remove(reply_type, handler)
+                return None
+        return response[0]
 
     def on(self, event_name, func):
         self.emitter.on(event_name, func)

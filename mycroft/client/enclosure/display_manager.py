@@ -1,20 +1,17 @@
-
-# Copyright 2017 Mycroft AI, Inc.
+# Copyright 2017 Mycroft AI Inc.
 #
-# This file is part of Mycroft Core.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Mycroft Core is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
-# Mycroft Core is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
-# You should have received a copy of the GNU General Public License
-# along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 import json
 from threading import Thread, Timer
 
@@ -23,8 +20,6 @@ import os
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.util import get_ipc_directory
 from mycroft.util.log import LOG
-
-__author__ = 'connorpenrod', 'michaelnguyen'
 
 
 def _write_data(dictionary):
@@ -41,7 +36,7 @@ def _write_data(dictionary):
 
     if permission == "w+" and os.path.isdir(managerIPCDir) is False:
         os.makedirs(managerIPCDir)
-        os.chmod(managerIPCDir, 0777)
+        os.chmod(managerIPCDir, 0o777)
 
     try:
         with open(path, permission) as dispFile:
@@ -61,7 +56,7 @@ def _write_data(dictionary):
             dispFile.write(json.dumps(data))
             dispFile.truncate()
 
-        os.chmod(path, 0777)
+        os.chmod(path, 0o777)
 
     except Exception as e:
         LOG.error(e)
@@ -103,7 +98,6 @@ def set_active(skill_name):
             string: skill_name
     """
     _write_data({"active_skill": skill_name})
-    LOG.debug("Setting active skill to " + skill_name)
 
 
 def get_active():
@@ -128,7 +122,7 @@ def remove_active():
 def initiate_display_manager_ws():
     """ Initiates the web sockets on the display_manager
     """
-    LOG.info("Initiating dispaly manager websocket")
+    LOG.info("Initiating display manager websocket")
 
     # Should remove needs to be an object so it can be referenced in functions
     # [https://stackoverflow.com/questions/986006/how-do-i-pass-a-variable-by-reference]

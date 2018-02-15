@@ -1,30 +1,31 @@
-# Copyright 2017 Mycroft AI, Inc.
+# Copyright 2017 Mycroft AI Inc.
 #
-# This file is part of Mycroft Core.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Mycroft Core is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
-# Mycroft Core is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
-# You should have received a copy of the GNU General Public License
-# along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
 from copy import copy
 
 import requests
 from requests import HTTPError
 
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration
+from mycroft.configuration.config import DEFAULT_CONFIG, SYSTEM_CONFIG, \
+    USER_CONFIG
 from mycroft.identity import IdentityManager
 from mycroft.version import VersionManager
+from mycroft.util import get_arch
+# python 2/3 compatibility
+from future.utils import iteritems
 
-__author__ = 'jdorleans'
 _paired_cache = False
 
 
@@ -33,7 +34,13 @@ class Api(object):
 
     def __init__(self, path):
         self.path = path
-        config = ConfigurationManager.get()
+
+        # Load the config, skipping the REMOTE_CONFIG since we are
+        # getting the info needed to get to it!
+        config = Configuration.get([DEFAULT_CONFIG,
+                                    SYSTEM_CONFIG,
+                                    USER_CONFIG],
+                                   cache=False)
         config_server = config.get("server")
         self.url = config_server.get("url")
         self.version = config_server.get("version")
@@ -75,7 +82,7 @@ class Api(object):
         data = self.get_data(response)
         if 200 <= response.status_code < 300:
             return data
-        elif response.status_code == 401\
+        elif response.status_code == 401 \
                 and not response.url.endswith("auth/token"):
             self.refresh_token()
             return self.send(self.old_params)
@@ -108,7 +115,7 @@ class Api(object):
     def build_json(self, params):
         json = params.get("json")
         if json and params["headers"]["Content-Type"] == "application/json":
-            for k, v in json.iteritems():
+            for k, v in iteritems(json):
                 if v == "":
                     json[k] = None
             params["json"] = json
@@ -142,13 +149,62 @@ class DeviceApi(Api):
 
     def activate(self, state, token):
         version = VersionManager.get()
+        platform = "unknown"
+        platform_build = ""
+
+        # load just the local configs to get platform info
+        config = Configuration.get([SYSTEM_CONFIG,
+                                    USER_CONFIG],
+                                   cache=False)
+        if "enclosure" in config:
+            platform = config.get("enclosure").get("platform", "unknown")
+            platform_build = config.get("enclosure").get("platform_build", "")
+
         return self.request({
             "method": "POST",
             "path": "/activate",
             "json": {"state": state,
                      "token": token,
                      "coreVersion": version.get("coreVersion"),
+                     "platform": platform,
+                     "platform_build": platform_build,
                      "enclosureVersion": version.get("enclosureVersion")}
+        })
+
+    def update_version(self):
+        version = VersionManager.get()
+        platform = "unknown"
+        platform_build = ""
+
+        # load just the local configs to get platform info
+        config = Configuration.get([SYSTEM_CONFIG,
+                                    USER_CONFIG],
+                                   cache=False)
+        if "enclosure" in config:
+            platform = config.get("enclosure").get("platform", "unknown")
+            platform_build = config.get("enclosure").get("platform_build", "")
+
+        return self.request({
+            "method": "PATCH",
+            "path": "/" + self.identity.uuid,
+            "json": {"coreVersion": version.get("coreVersion"),
+                     "platform": platform,
+                     "platform_build": platform_build,
+                     "enclosureVersion": version.get("enclosureVersion")}
+        })
+
+    def send_email(self, title, body, sender):
+        return self.request({
+            "method": "PUT",
+            "path": "/" + self.identity.uuid + "/message",
+            "json": {"title": title, "body": body, "sender": sender}
+        })
+
+    def report_metric(self, name, data):
+        return self.request({
+            "method": "POST",
+            "path": "/" + self.identity.uuid + "/metric/" + name,
+            "json": data
         })
 
     def get(self):
@@ -193,8 +249,19 @@ class DeviceApi(Api):
             status of subscription. True if device is connected to a paying
             subscriber.
         """
-        subscription_type = self.get_subscription().get('@type')
-        return subscription_type != 'free'
+        try:
+            return self.get_subscription().get('@type') != 'free'
+        except:
+            # If can't retrieve, assume not paired and not a subscriber yet
+            return False
+
+    def get_subscriber_voice_url(self, voice=None):
+        self.check_token()
+        archs = {'x86_64': 'x86_64', 'armv7l': 'arm', 'aarch64': 'arm'}
+        arch = archs.get(get_arch())
+        if arch:
+            path = '/' + self.identity.uuid + '/voice?arch=' + arch
+            return self.request({'path': path})['link']
 
     def find(self):
         """ Deprecated, see get_location() """
@@ -210,6 +277,21 @@ class DeviceApi(Api):
         """ Deprecated, see get_location() """
         # TODO: Eliminate ASAP, for backwards compatibility only
         return self.get_location()
+
+    def get_oauth_token(self, dev_cred):
+        """
+            Get Oauth token for dev_credential dev_cred.
+
+            Argument:
+                dev_cred:   development credentials identifier
+
+            Returns:
+                json string containing token and additional information
+        """
+        return self.request({
+            "method": "GET",
+            "path": "/" + self.identity.uuid + "/token/" + str(dev_cred)
+        })
 
 
 class STTApi(Api):

@@ -14,7 +14,7 @@ install:
 # command to run tests
 script:
  - pep8 mycroft test
- - nose2 -t ./ -s test/unittests/ --with-coverage --config=test/unittests/unittest.cfg
+ - ./start-mycroft.sh unittest
 env:
  - IS_TRAVIS=true
 

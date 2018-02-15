@@ -1,0 +1,5 @@
+pycodestyle:
+    max-line-length: 80
+
+scanner:
+    diff_only: True

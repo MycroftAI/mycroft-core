@@ -1,11 +1,23 @@
+# Copyright 2017 Mycroft AI Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 import subprocess
 from time import sleep
 
 from mycroft.audio.services import AudioBackend
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
-
-__author__ = 'forslund'
 
 
 class Mpg123Service(AudioBackend):
@@ -15,6 +27,7 @@ class Mpg123Service(AudioBackend):
     """
 
     def __init__(self, config, emitter, name='mpg123'):
+        super(Mpg123Service, self).__init__(config, emitter)
         self.config = config
         self.process = None
         self.emitter = emitter
@@ -31,7 +44,7 @@ class Mpg123Service(AudioBackend):
         self.tracks = []
 
     def add_list(self, tracks):
-        self.tracks = tracks
+        self.tracks += tracks
         LOG.info("Track list is " + str(tracks))
 
     def _play(self, message=None):
@@ -42,6 +55,9 @@ class Mpg123Service(AudioBackend):
         LOG.info('Mpg123Service._play')
         self._is_playing = True
         track = self.tracks[self.index]
+        # Indicate to audio service which track is being played
+        if self._track_start_callback:
+            self._track_start_callback(track)
 
         # Replace file:// uri's with normal paths
         track = track.replace('file://', '')
@@ -55,8 +71,8 @@ class Mpg123Service(AudioBackend):
             self.process.terminate()
             self.process = None
             self._is_playing = False
-
             return
+
         self.index += 1
         # if there are more tracks available play next
         if self.index < len(self.tracks):

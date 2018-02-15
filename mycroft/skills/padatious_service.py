@@ -1,19 +1,17 @@
-# Copyright 2017 Mycroft AI, Inc.
+# Copyright 2017 Mycroft AI Inc.
 #
-# This file is part of Mycroft Core.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Mycroft Core is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
-# Mycroft Core is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
-# You should have received a copy of the GNU General Public License
-# along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 from subprocess import call
 from threading import Event
 from time import time as get_time, sleep
@@ -21,22 +19,20 @@ from time import time as get_time, sleep
 from os.path import expanduser, isfile
 from pkg_resources import get_distribution
 
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import FallbackSkill
 from mycroft.util.log import LOG
-from mycroft.util.parse import normalize
-
-__author__ = 'matthewscholefield'
 
 
-PADATIOUS_VERSION = '0.2.2'  # Also update in requirements.txt
+PADATIOUS_VERSION = '0.3.7'  # Also update in requirements.txt
 
 
 class PadatiousService(FallbackSkill):
-    def __init__(self, emitter):
+    def __init__(self, emitter, service):
         FallbackSkill.__init__(self)
-        self.config = ConfigurationManager.get()['padatious']
+        self.config = Configuration.get()['padatious']
+        self.service = service
         intent_cache = expanduser(self.config['intent_cache'])
 
         try:
@@ -50,7 +46,6 @@ class PadatiousService(FallbackSkill):
                 pass
             return
         ver = get_distribution('padatious').version
-        LOG.warning('VERSION: ' + ver)
         if ver != PADATIOUS_VERSION:
             LOG.warning('Using Padatious v' + ver + '. Please re-run ' +
                         'dev_setup.sh to install ' + PADATIOUS_VERSION)
@@ -59,6 +54,7 @@ class PadatiousService(FallbackSkill):
 
         self.emitter = emitter
         self.emitter.on('padatious:register_intent', self.register_intent)
+        self.emitter.on('padatious:register_entity', self.register_entity)
         self.register_fallback(self.handle_fallback, 5)
         self.finished_training_event = Event()
 
@@ -76,28 +72,33 @@ class PadatiousService(FallbackSkill):
 
             self.finished_training_event.clear()
             LOG.info('Training...')
-            self.container.train(print_updates=False)
+            self.container.train()
             LOG.info('Training complete.')
             self.finished_training_event.set()
 
-    def register_intent(self, message):
-        LOG.debug('Registering Padatious intent: ' +
-                  message.data['intent_name'])
-
+    def _register_object(self, message, object_name, register_func):
         file_name = message.data['file_name']
-        intent_name = message.data['intent_name']
+        name = message.data['name']
+
+        LOG.debug('Registering Padatious ' + object_name + ': ' + name)
+
         if not isfile(file_name):
+            LOG.warning('Could not find file ' + file_name)
             return
 
-        self.container.load_file(intent_name, file_name)
+        register_func(name, file_name)
         self.train_time = get_time() + self.train_delay
         self.wait_and_train()
+
+    def register_intent(self, message):
+        self._register_object(message, 'intent', self.container.load_intent)
+
+    def register_entity(self, message):
+        self._register_object(message, 'entity', self.container.load_entity)
 
     def handle_fallback(self, message):
         utt = message.data.get('utterance')
         LOG.debug("Padatious fallback attempt: " + utt)
-
-        utt = normalize(utt, message.data.get('lang', 'en-us'))
 
         if not self.finished_training_event.is_set():
             LOG.debug('Waiting for training to finish...')
@@ -107,6 +108,10 @@ class PadatiousService(FallbackSkill):
 
         if data.conf < 0.5:
             return False
+
+        data.matches['utterance'] = utt
+
+        self.service.add_active_skill(int(data.name.split(':')[0]))
 
         self.emitter.emit(Message(data.name, data=data.matches))
         return True

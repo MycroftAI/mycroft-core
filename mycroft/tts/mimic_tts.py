@@ -1,60 +1,130 @@
-# Copyright 2016 Mycroft AI, Inc.
+# Copyright 2017 Mycroft AI Inc.
 #
-# This file is part of Mycroft Core.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Mycroft Core is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
-# Mycroft Core is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
-# You should have received a copy of the GNU General Public License
-# along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
 import subprocess
-from time import time
+from time import time, sleep
 
+import os
+import stat
 import os.path
+from os.path import exists
 
 from mycroft import MYCROFT_ROOT_PATH
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration
 from mycroft.tts import TTS, TTSValidator
 from mycroft.util.log import LOG
+from mycroft.util.download import download
+from mycroft.api import DeviceApi
+from threading import Thread
 
-__author__ = 'jdorleans', 'spenrod'
+config = Configuration.get().get("tts").get("mimic")
 
-config = ConfigurationManager.get().get("tts").get("mimic")
+BIN = config.get("path",
+                 os.path.join(MYCROFT_ROOT_PATH, 'mimic', 'bin', 'mimic'))
 
-BIN = config.get("path", os.path.join(MYCROFT_ROOT_PATH, 'mimic', 'bin',
-                                      'mimic'))
 if not os.path.isfile(BIN):
     # Search for mimic on the path
     import distutils.spawn
     BIN = distutils.spawn.find_executable("mimic")
 
+SUBSCRIBER_VOICES = {'trinity': '/opt/mycroft/voices/mimic_tn'}
+
+
+def download_subscriber_voices(selected_voice):
+    """
+        Function to download all premium voices, starting with
+        the currently selected if applicable
+    """
+    def make_executable(dest):
+        """ Call back function to make the downloaded file executable. """
+        LOG.info('Make executable')
+        # make executable
+        st = os.stat(dest)
+        os.chmod(dest, st.st_mode | stat.S_IEXEC)
+
+    # First download the selected voice if needed
+    voice_file = SUBSCRIBER_VOICES.get(selected_voice)
+    if voice_file is not None and not exists(voice_file):
+        LOG.info('voice doesn\'t exist, downloading')
+        url = DeviceApi().get_subscriber_voice_url(selected_voice)
+        # Check we got an url
+        if url:
+            dl = download(url, voice_file, make_executable)
+            # Wait for completion
+            while not dl.done:
+                sleep(1)
+        else:
+            LOG.debug('{} is not available for this architecture'
+                      .format(selected_voice))
+
+    # Download the rest of the subsciber voices as needed
+    for voice in SUBSCRIBER_VOICES:
+        voice_file = SUBSCRIBER_VOICES[voice]
+        if not exists(voice_file):
+            url = DeviceApi().get_subscriber_voice_url(voice)
+            # Check we got an url
+            if url:
+                dl = download(url, voice_file, make_executable)
+                # Wait for completion
+                while not dl.done:
+                    sleep(1)
+            else:
+                LOG.debug('{} is not available for this architecture'
+                          .format(voice))
+
 
 class Mimic(TTS):
     def __init__(self, lang, config):
         super(Mimic, self).__init__(lang, config, MimicValidator(self))
-        self.init_args()
+        self.dl = None
         self.clear_cache()
         self.type = 'wav'
         self.extra_tags = ["voice", "emphasis", "audio", "sub", "ssml"]
-
-    def init_args(self):
-        self.args = [BIN, '-voice', self.voice, '-psdur']
         if self.ssml_support:
             self.args += ['-ssml']
+        # Download subscriber voices if needed
+        self.is_subscriber = DeviceApi().is_subscriber
+        if self.is_subscriber:
+            t = Thread(target=download_subscriber_voices, args=[self.voice])
+            t.daemon = True
+            t.start()
+
+    @property
+    def args(self):
+        """ Build mimic arguments. """
+        if (self.voice in SUBSCRIBER_VOICES and
+                exists(SUBSCRIBER_VOICES[self.voice]) and self.is_subscriber):
+            # Use subscriber voice
+            mimic_bin = SUBSCRIBER_VOICES[self.voice]
+            voice = self.voice
+        elif self.voice in SUBSCRIBER_VOICES:
+            # Premium voice but bin doesn't exist, use ap while downloading
+            mimic_bin = BIN
+            voice = 'ap'
+        else:
+            # Normal case use normal binary and selected voice
+            mimic_bin = BIN
+            voice = self.voice
+
+        args = [mimic_bin, '-voice', voice, '-psdur']
         stretch = config.get('duration_stretch', None)
         if stretch:
-            self.args += ['--setf', 'duration_stretch=' + stretch]
+            args += ['--setf', 'duration_stretch=' + stretch]
+        return args
 
     def get_tts(self, sentence, wav_file):
-        # Generate WAV and phonemes
+        #  Generate WAV and phonemes
         phonemes = subprocess.check_output(self.args + ['-o', wav_file,
                                                         '-t', sentence])
         return wav_file, phonemes
@@ -62,12 +132,13 @@ class Mimic(TTS):
     def visime(self, output):
         visimes = []
         start = time()
-        pairs = output.split(" ")
+        pairs = str(output).split(" ")
         for pair in pairs:
             pho_dur = pair.split(":")  # phoneme:duration
             if len(pho_dur) == 2:
                 visimes.append((VISIMES.get(pho_dur[0], '4'),
                                 float(pho_dur[1])))
+        print(visimes)
         return visimes
 
 

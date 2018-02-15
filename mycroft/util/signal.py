@@ -1,3 +1,17 @@
+# Copyright 2017 Mycroft AI Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 import tempfile
 import time
 
@@ -21,7 +35,7 @@ def get_ipc_directory(domain=None):
     Returns:
         str: a path to the IPC directory
     """
-    config = mycroft.configuration.ConfigurationManager.instance()
+    config = mycroft.configuration.Configuration.get()
     dir = config.get("ipc_path")
     if not dir:
         # If not defined, use /tmp/mycroft/ipc
@@ -29,7 +43,7 @@ def get_ipc_directory(domain=None):
     return ensure_directory_exists(dir, domain)
 
 
-def ensure_directory_exists(dir, domain=None):
+def ensure_directory_exists(directory, domain=None):
     """ Create a directory and give access rights to all
 
     Args:
@@ -40,20 +54,20 @@ def ensure_directory_exists(dir, domain=None):
         str: a path to the directory
     """
     if domain:
-        dir = os.path.join(dir, domain)
-    dir = os.path.normpath(dir)
+        directory = os.path.join(directory, domain)
+    directory = os.path.normpath(directory)
 
-    if not os.path.isdir(dir):
+    if not os.path.isdir(directory):
         try:
             save = os.umask(0)
-            os.makedirs(dir, 0777)  # give everyone rights to r/w here
+            os.makedirs(directory, 0o777)  # give everyone rights to r/w here
         except OSError:
-            LOG.warning("Failed to create: " + dir)
+            LOG.warning("Failed to create: " + directory)
             pass
         finally:
             os.umask(save)
 
-    return dir
+    return directory
 
 
 def create_file(filename):

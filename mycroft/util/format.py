@@ -1,44 +1,22 @@
+# Copyright 2017 Mycroft AI Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
-# -*- coding: iso-8859-15 -*-
-
-# Copyright 2017 Mycroft AI, Inc.
-#
-# This file is part of Mycroft Core.
-#
-# Mycroft Core is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Mycroft Core is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
-FRACTION_STRING_EN = {
-    2: 'half',
-    3: 'third',
-    4: 'forth',
-    5: 'fifth',
-    6: 'sixth',
-    7: 'seventh',
-    8: 'eigth',
-    9: 'ninth',
-    10: 'tenth',
-    11: 'eleventh',
-    12: 'twelveth',
-    13: 'thirteenth',
-    14: 'fourteenth',
-    15: 'fifteenth',
-    16: 'sixteenth',
-    17: 'seventeenth',
-    18: 'eighteenth',
-    19: 'nineteenth',
-    20: 'twentyith'
-}
+from mycroft.util.lang.format_en import *
+from mycroft.util.lang.format_pt import *
+from mycroft.util.lang.format_it import *
+from mycroft.util.lang.format_sv import *
 
 
 def nice_number(number, lang="en-us", speech=True, denominators=None):
@@ -47,57 +25,107 @@ def nice_number(number, lang="en-us", speech=True, denominators=None):
     This function formats a float to human understandable functions. Like
     4.5 becomes 4 and a half for speech and 4 1/2 for text
     Args:
-        number (str): the float to format
-        lang (str): the code for the language text is in
-        speech (bool): to return speech representation or text representation
+        number (int or float): the float to format
+        lang (str): code for the language to use
+        speech (bool): format for speech (True) or display (False)
         denominators (iter of ints): denominators to use, default [1 .. 20]
     Returns:
         (str): The formatted string.
     """
-    result = convert_number(number, denominators)
+    result = _convert_to_mixed_fraction(number, denominators)
     if not result:
+        # Give up, just represent as a 3 decimal number
         return str(round(number, 3))
 
     if not speech:
         whole, num, den = result
         if num == 0:
+            # TODO: Number grouping?  E.g. "1,000,000"
             return str(whole)
         else:
             return '{} {}/{}'.format(whole, num, den)
 
+    # Convert to spoken representation in appropriate language
     lang_lower = str(lang).lower()
     if lang_lower.startswith("en"):
         return nice_number_en(result)
+    elif lang_lower.startswith("pt"):
+        return nice_number_pt(result)
+    elif lang_lower.startswith("it"):
+        return nice_number_it(result)
+    elif lang_lower.startswith("sv"):
+        return nice_number_sv(result)
 
-    # TODO: Normalization for other languages
+    # Default to the raw number for unsupported languages,
+    # hopefully the STT engine will pronounce understandably.
     return str(number)
 
 
-def nice_number_en(result):
-    """ English conversion for nice_number """
-    whole, num, den = result
-    if num == 0:
-        return str(whole)
-    den_str = FRACTION_STRING_EN[den]
-    if whole == 0:
-        if num == 1:
-            return_string = 'a {}'.format(den_str)
-        else:
-            return_string = '{} {}'.format(num, den_str)
-    elif num == 1:
-        return_string = '{} and a {}'.format(whole, den_str)
-    else:
-        return_string = '{} and {} {}'.format(whole, num, den_str)
-    if num > 1:
-        return_string += 's'
-    return return_string
+def nice_time(dt, lang="en-us", speech=True, use_24hour=False,
+              use_ampm=False):
+    """
+    Format a time to a comfortable human format
+
+    For example, generate 'five thirty' for speech or '5:30' for
+    text display.
+
+    Args:
+        dt (datetime): date to format (assumes already in local timezone)
+        lang (str): code for the language to use
+        speech (bool): format for speech (default/True) or display (False)=Fal
+        use_24hour (bool): output in 24-hour/military or 12-hour format
+        use_ampm (bool): include the am/pm for 12-hour format
+    Returns:
+        (str): The formatted time string
+    """
+    lang_lower = str(lang).lower()
+    if lang_lower.startswith("en"):
+        return nice_time_en(dt, speech, use_24hour, use_ampm)
+    elif lang_lower.startswith("it"):
+        return nice_time_it(dt, speech, use_24hour, use_ampm)
+
+    # TODO: Other languages
+    return str(dt)
 
 
-def convert_number(number, denominators):
-    """ Convert floats to mixed fractions """
+def pronounce_number(number, lang="en-us", places=2):
+    """
+    Convert a number to it's spoken equivalent
+
+    For example, '5' would be 'five'
+
+    Args:
+        number: the number to pronounce
+    Returns:
+        (str): The pronounced number
+    """
+    lang_lower = str(lang).lower()
+    if lang_lower.startswith("en"):
+        return pronounce_number_en(number, places=places)
+    elif lang_lower.startswith("it"):
+        return pronounce_number_it(number, places=places)
+
+    # Default to just returning the numeric value
+    return str(number)
+
+
+def _convert_to_mixed_fraction(number, denominators):
+    """
+    Convert floats to components of a mixed fraction representation
+
+    Returns the closest fractional representation using the
+    provided denominators.  For example, 4.500002 would become
+    the whole number 4, the numerator 1 and the denominator 2
+
+    Args:
+        number (float): number for convert
+        denominators (iter of ints): denominators to use, default [1 .. 20]
+    Returns:
+        whole, numerator, denominator (int): Integers of the mixed fraction
+    """
     int_number = int(number)
     if int_number == number:
-        return int_number, 0, 1
+        return int_number, 0, 1  # whole number, no fraction
 
     frac_number = abs(number - int_number)
     if not denominators:
@@ -105,7 +133,7 @@ def convert_number(number, denominators):
 
     for denominator in denominators:
         numerator = abs(frac_number) * denominator
-        if (abs(numerator - round(numerator)) < 0.01):
+        if (abs(numerator - round(numerator)) < 0.01):  # 0.01 accuracy
             break
     else:
         return None

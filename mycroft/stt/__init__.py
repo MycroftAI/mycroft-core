@@ -1,36 +1,33 @@
-# Copyright 2016 Mycroft AI, Inc.
+# Copyright 2017 Mycroft AI Inc.
 #
-# This file is part of Mycroft Core.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Mycroft Core is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
-# Mycroft Core is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
-# You should have received a copy of the GNU General Public License
-# along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
 import re
+import json
 from abc import ABCMeta, abstractmethod
 from requests import post
 from speech_recognition import Recognizer
 
 from mycroft.api import STTApi
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration
 from mycroft.util.log import LOG
-
-__author__ = "jdorleans"
 
 
 class STT(object):
     __metaclass__ = ABCMeta
 
     def __init__(self):
-        config_core = ConfigurationManager.get()
+        config_core = Configuration.get()
         self.lang = str(self.init_language(config_core))
         config_stt = config_core.get("stt", {})
         self.config = config_stt.get(config_stt.get("module"), {})
@@ -58,6 +55,14 @@ class TokenSTT(STT):
         self.token = str(self.credential.get("token"))
 
 
+class GoogleJsonSTT(STT):
+    __metaclass__ = ABCMeta
+
+    def __init__(self):
+        super(GoogleJsonSTT, self).__init__()
+        self.json_credentials = json.dumps(self.credential.get("json"))
+
+
 class BasicSTT(STT):
     __metaclass__ = ABCMeta
 
@@ -67,6 +72,15 @@ class BasicSTT(STT):
         self.password = str(self.credential.get("password"))
 
 
+class KeySTT(STT):
+    __metaclass__ = ABCMeta
+
+    def __init__(self):
+        super(KeySTT, self).__init__()
+        self.id = str(self.credential.get("client_id"))
+        self.key = str(self.credential.get("client_key"))
+
+
 class GoogleSTT(TokenSTT):
     def __init__(self):
         super(GoogleSTT, self).__init__()
@@ -74,6 +88,17 @@ class GoogleSTT(TokenSTT):
     def execute(self, audio, language=None):
         self.lang = language or self.lang
         return self.recognizer.recognize_google(audio, self.token, self.lang)
+
+
+class GoogleCloudSTT(GoogleJsonSTT):
+    def __init__(self):
+        super(GoogleCloudSTT, self).__init__()
+
+    def execute(self, audio, language=None):
+        self.lang = language or self.lang
+        return self.recognizer.recognize_google_cloud(audio,
+                                                      self.json_credentials,
+                                                      self.lang)
 
 
 class WITSTT(TokenSTT):
@@ -109,6 +134,22 @@ class MycroftSTT(STT):
             return self.api.stt(audio.get_flac_data(), self.lang, 1)[0]
 
 
+class DeepSpeechServerSTT(STT):
+    """
+        STT interface for the deepspeech-server:
+        https://github.com/MainRo/deepspeech-server
+    """
+    def __init__(self):
+        super(DeepSpeechServerSTT, self).__init__()
+
+    def execute(self, audio, language=None):
+        language = language or self.lang
+        if not language.startswith("en"):
+            raise ValueError("Deepspeech is currently english only")
+        response = post(self.config.get("uri"), data=audio.get_wav_data())
+        return response.text
+
+
 class KaldiSTT(STT):
     def __init__(self):
         super(KaldiSTT, self).__init__()
@@ -126,18 +167,41 @@ class KaldiSTT(STT):
             return None
 
 
+class BingSTT(TokenSTT):
+    def __init__(self):
+        super(BingSTT, self).__init__()
+
+    def execute(self, audio, language=None):
+        self.lang = language or self.lang
+        return self.recognizer.recognize_bing(audio, self.token,
+                                              self.lang)
+
+
+class HoundifySTT(KeySTT):
+    def __init__(self):
+        super(HoundifySTT, self).__init__()
+
+    def execute(self, audio, language=None):
+        self.lang = language or self.lang
+        return self.recognizer.recognize_houndify(audio, self.id, self.key)
+
+
 class STTFactory(object):
     CLASSES = {
         "mycroft": MycroftSTT,
         "google": GoogleSTT,
+        "google_cloud": GoogleCloudSTT,
         "wit": WITSTT,
         "ibm": IBMSTT,
-        "kaldi": KaldiSTT
+        "kaldi": KaldiSTT,
+        "bing": BingSTT,
+        "houndify": HoundifySTT,
+        "deepspeech_server": DeepSpeechServerSTT
     }
 
     @staticmethod
     def create():
-        config = ConfigurationManager.get().get("stt", {})
+        config = Configuration.get().get("stt", {})
         module = config.get("module", "mycroft")
         clazz = STTFactory.CLASSES.get(module)
         return clazz()

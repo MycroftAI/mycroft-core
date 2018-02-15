@@ -1,27 +1,23 @@
-# Copyright 2016 Mycroft AI, Inc.
+# Copyright 2017 Mycroft AI Inc.
 #
-# This file is part of Mycroft Core.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Mycroft Core is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
-# Mycroft Core is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
-# You should have received a copy of the GNU General Public License
-# along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
-
 import sys
 from threading import Thread, Lock
 
 from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.client.speech.listener import RecognizerLoop
-from mycroft.configuration import ConfigurationManager
+from mycroft.configuration import Configuration
 from mycroft.identity import IdentityManager
 from mycroft.lock import Lock as PIDLock  # Create/Support PID locking file
 from mycroft.messagebus.client.ws import WebsocketClient
@@ -32,7 +28,7 @@ ws = None
 lock = Lock()
 loop = None
 
-config = ConfigurationManager.get()
+config = Configuration.get()
 
 
 def handle_record_begin():
@@ -50,6 +46,12 @@ def handle_no_internet():
     ws.emit(Message('enclosure.notify.no_internet'))
 
 
+def handle_awoken():
+    """ Forward mycroft.awoken to the messagebus. """
+    LOG.info("Listener is now Awake: ")
+    ws.emit(Message('mycroft.awoken'))
+
+
 def handle_wakeword(event):
     LOG.info("Wakeword Detected: " + event['utterance'])
     ws.emit(Message('recognizer_loop:wakeword', event))
@@ -57,7 +59,15 @@ def handle_wakeword(event):
 
 def handle_utterance(event):
     LOG.info("Utterance: " + str(event['utterances']))
-    ws.emit(Message('recognizer_loop:utterance', event))
+    context = {'client_name': 'mycroft_listener'}
+    if 'ident' in event:
+        ident = event.pop('ident')
+        context['ident'] = ident
+    ws.emit(Message('recognizer_loop:utterance', event, context))
+
+
+def handle_unknown():
+    ws.emit(Message('mycroft.speech.recognition.unknown'))
 
 
 def handle_speak(event):
@@ -133,12 +143,14 @@ def main():
     global config
     lock = PIDLock("voice")
     ws = WebsocketClient()
-    config = ConfigurationManager.get()
-    ConfigurationManager.init(ws)
+    config = Configuration.get()
+    Configuration.init(ws)
     loop = RecognizerLoop()
     loop.on('recognizer_loop:utterance', handle_utterance)
+    loop.on('recognizer_loop:speech.recognition.unknown', handle_unknown)
     loop.on('speak', handle_speak)
     loop.on('recognizer_loop:record_begin', handle_record_begin)
+    loop.on('recognizer_loop:awoken', handle_awoken)
     loop.on('recognizer_loop:wakeword', handle_wakeword)
     loop.on('recognizer_loop:record_end', handle_record_end)
     loop.on('recognizer_loop:no_internet', handle_no_internet)
@@ -158,7 +170,7 @@ def main():
 
     try:
         loop.run()
-    except KeyboardInterrupt, e:
+    except KeyboardInterrupt as e:
         LOG.exception(e)
         sys.exit()
 

@@ -1,16 +1,53 @@
-
-# -*- coding: iso-8859-15 -*-
-
+# -*- coding: utf-8 -*-
+#
+# Copyright 2017 Mycroft AI Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 import unittest
 from datetime import datetime
 
+from mycroft.util.parse import get_gender
 from mycroft.util.parse import extract_datetime
 from mycroft.util.parse import extractnumber
 from mycroft.util.parse import normalize
+from mycroft.util.parse import fuzzy_match
+from mycroft.util.parse import match_one
+
+
+class TestFuzzyMatch(unittest.TestCase):
+    def test_matches(self):
+        self.assertTrue(fuzzy_match("you and me", "you and me") >= 1.0)
+        self.assertTrue(fuzzy_match("you and me", "you") < 0.5)
+        self.assertTrue(fuzzy_match("You", "you") > 0.5)
+        self.assertTrue(fuzzy_match("you and me", "you") ==
+                        fuzzy_match("you", "you and me"))
+        self.assertTrue(fuzzy_match("you and me", "he or they") < 0.2)
+
+    def test_match_one(self):
+        # test list of choices
+        choices = ['frank', 'kate', 'harry', 'henry']
+        self.assertEqual(match_one('frank', choices)[0], 'frank')
+        self.assertEqual(match_one('fran', choices)[0], 'frank')
+        self.assertEqual(match_one('enry', choices)[0], 'henry')
+        self.assertEqual(match_one('katt', choices)[0], 'kate')
+        # test dictionary of choices
+        choices = {'frank': 1, 'kate': 2, 'harry': 3, 'henry': 4}
+        self.assertEqual(match_one('frank', choices)[0], 1)
+        self.assertEqual(match_one('enry', choices)[0], 4)
 
 
 class TestNormalize(unittest.TestCase):
-
     def test_articles(self):
         self.assertEqual(normalize("this is a test", remove_articles=True),
                          "this is test")
@@ -26,26 +63,25 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extractnumber("this is the first test"), 1)
         self.assertEqual(extractnumber("this is 2 test"), 2)
         self.assertEqual(extractnumber("this is second test"), 2)
-        self.assertEqual(extractnumber("this is the third test"), 1.0/3.0)
+        self.assertEqual(extractnumber("this is the third test"), 1.0 / 3.0)
         self.assertEqual(extractnumber("this is test number 4"), 4)
-        self.assertEqual(extractnumber("one third of a cup"), 1.0/3.0)
+        self.assertEqual(extractnumber("one third of a cup"), 1.0 / 3.0)
         self.assertEqual(extractnumber("three cups"), 3)
-        self.assertEqual(extractnumber("1/3 cups"), 1.0/3.0)
+        self.assertEqual(extractnumber("1/3 cups"), 1.0 / 3.0)
         self.assertEqual(extractnumber("quarter cup"), 0.25)
         self.assertEqual(extractnumber("1/4 cup"), 0.25)
         self.assertEqual(extractnumber("one fourth cup"), 0.25)
-        self.assertEqual(extractnumber("2/3 cups"), 2.0/3.0)
-        self.assertEqual(extractnumber("3/4 cups"), 3.0/4.0)
+        self.assertEqual(extractnumber("2/3 cups"), 2.0 / 3.0)
+        self.assertEqual(extractnumber("3/4 cups"), 3.0 / 4.0)
         self.assertEqual(extractnumber("1 and 3/4 cups"), 1.75)
         self.assertEqual(extractnumber("1 cup and a half"), 1.5)
         self.assertEqual(extractnumber("one cup and a half"), 1.5)
         self.assertEqual(extractnumber("one and a half cups"), 1.5)
         self.assertEqual(extractnumber("one and one half cups"), 1.5)
-        self.assertEqual(extractnumber("three quarter cups"), 3.0/4.0)
-        self.assertEqual(extractnumber("three quarters cups"), 3.0/4.0)
+        self.assertEqual(extractnumber("three quarter cups"), 3.0 / 4.0)
+        self.assertEqual(extractnumber("three quarters cups"), 3.0 / 4.0)
 
     def test_extractdatetime_en(self):
-
         def extractWithFormat(text):
             date = datetime(2017, 06, 27, 00, 00)
             [extractedDate, leftover] = extract_datetime(text, date)
@@ -123,6 +159,10 @@ class TestNormalize(unittest.TestCase):
                     "2021-07-01 00:00:00", "remind me to wake up")
         testExtract("What is the weather 3 days after tomorrow?",
                     "2017-07-01 00:00:00", "what is weather")
+        testExtract("december 3",
+                    "2017-12-03 00:00:00", "")
+        testExtract("lets meet at 8:00 tonight",
+                    "2017-06-27 20:00:00", "lets meet")
 
     def test_spaces(self):
         self.assertEqual(normalize("  this   is  a    test"),
@@ -303,61 +343,9 @@ class TestNormalize(unittest.TestCase):
 
         self.assertEqual(normalize("whats 8 + 4"), "what is 8 + 4")
 
-    #
-    # Spanish
-    #
-    def test_articles_es(self):
-        self.assertEqual(normalize("esta es la prueba", lang="es",
-                                   remove_articles=True),
-                         "esta es prueba")
-        self.assertEqual(normalize("y otra prueba", lang="es",
-                                   remove_articles=True),
-                         "y otra prueba")
-
-    def test_numbers_es(self):
-        self.assertEqual(normalize("esto es un uno una", lang="es"),
-                         "esto es 1 1 1")
-        self.assertEqual(normalize("esto es dos tres prueba", lang="es"),
-                         "esto es 2 3 prueba")
-        self.assertEqual(normalize("esto es cuatro cinco seis prueba",
-                                   lang="es"),
-                         "esto es 4 5 6 prueba")
-        self.assertEqual(normalize("siete más ocho más nueve", lang="es"),
-                         "7 más 8 más 9")
-        self.assertEqual(normalize("diez once doce trece catorce quince",
-                                   lang="es"),
-                         "10 11 12 13 14 15")
-        self.assertEqual(normalize(u"dieciséis diecisiete", lang="es"),
-                         "16 17")
-        self.assertEqual(normalize(u"dieciocho diecinueve", lang="es"),
-                         "18 19")
-        self.assertEqual(normalize(u"veinte treinta cuarenta", lang="es"),
-                         "20 30 40")
-        self.assertEqual(normalize(u"treinta y dos caballos", lang="es"),
-                         "32 caballos")
-        self.assertEqual(normalize(u"cien caballos", lang="es"),
-                         "100 caballos")
-        self.assertEqual(normalize(u"ciento once caballos", lang="es"),
-                         "111 caballos")
-        self.assertEqual(normalize(u"había cuatrocientas una vacas",
-                                   lang="es"),
-                         u"había 401 vacas")
-        self.assertEqual(normalize(u"dos mil", lang="es"),
-                         "2000")
-        self.assertEqual(normalize(u"dos mil trescientas cuarenta y cinco",
-                         lang="es"),
-                         "2345")
-        self.assertEqual(normalize(
-                u"ciento veintitrés mil cuatrocientas cincuenta y seis",
-                lang="es"),
-            "123456")
-        self.assertEqual(normalize(
-                 u"quinientas veinticinco mil", lang="es"),
-             "525000")
-        self.assertEqual(normalize(
-                u"novecientos noventa y nueve mil novecientos noventa y nueve",
-                lang="es"),
-              "999999")
+    def test_gender(self):
+        self.assertEqual(get_gender("person"),
+                         False)
 
 
 if __name__ == "__main__":

@@ -1,20 +1,17 @@
-# Copyright 2016 Mycroft AI, Inc.
+# Copyright 2017 Mycroft AI Inc.
 #
-# This file is part of Mycroft Core.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Mycroft Core is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
-# Mycroft Core is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
-# You should have received a copy of the GNU General Public License
-# along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
 import socket
 import subprocess
 
@@ -24,15 +21,13 @@ from stat import S_ISREG, ST_MTIME, ST_MODE, ST_SIZE
 
 import mycroft.audio
 import mycroft.configuration
-from mycroft.util.format import nice_number, convert_number
+from mycroft.util.format import nice_number
 # Officially exported methods from this file:
 # play_wav, play_mp3, get_cache_directory,
 # resolve_resource_file, wait_while_speaking
 from mycroft.util.log import LOG
 from mycroft.util.parse import extract_datetime, extractnumber, normalize
 from mycroft.util.signal import *
-
-__author__ = 'jdorleans'
 
 
 def resolve_resource_file(res_name):
@@ -82,7 +77,7 @@ def resolve_resource_file(res_name):
 
 
 def play_wav(uri):
-    config = mycroft.configuration.ConfigurationManager.instance()
+    config = mycroft.configuration.Configuration.get()
     play_cmd = config.get("play_wav_cmdline")
     play_wav_cmd = str(play_cmd).split(" ")
     for index, cmd in enumerate(play_wav_cmd):
@@ -92,7 +87,7 @@ def play_wav(uri):
 
 
 def play_mp3(uri):
-    config = mycroft.configuration.ConfigurationManager.instance()
+    config = mycroft.configuration.Configuration.get()
     play_cmd = config.get("play_mp3_cmdline")
     play_mp3_cmd = str(play_cmd).split(" ")
     for index, cmd in enumerate(play_mp3_cmd):
@@ -160,30 +155,36 @@ def connected(host="8.8.8.8", port=53, timeout=3):
             return False
 
 
-def curate_cache(dir, min_free_percent=5.0):
+def curate_cache(directory, min_free_percent=5.0, min_free_disk=50):
     """Clear out the directory if needed
 
     This assumes all the files in the directory can be deleted as freely
 
     Args:
-        dir (str): directory path that holds cached files
-        min_free_percent (float): percentage (0.0-100.0) of drive to keep free
+        directory (str): directory path that holds cached files
+        min_free_percent (float): percentage (0.0-100.0) of drive to keep free,
+                                  default is 5% if not specified.
+        min_free_disk (float): minimum allowed disk space in MB, default
+                               value is 50 MB if not specified.
     """
 
     # Simpleminded implementation -- keep a certain percentage of the
     # disk available.
     # TODO: Would be easy to add more options, like whitelisted files, etc.
-    space = psutil.disk_usage(dir)
+    space = psutil.disk_usage(directory)
 
+    # convert from MB to bytes
+    min_free_disk *= 1024 * 1024
     # space.percent = space.used/space.total*100.0
     percent_free = 100.0 - space.percent
-    if percent_free < min_free_percent:
+    if percent_free < min_free_percent and space.free < min_free_disk:
+        LOG.info('Low diskspace detected, cleaning cache')
         # calculate how many bytes we need to delete
         bytes_needed = (min_free_percent - percent_free) / 100.0 * space.total
         bytes_needed = int(bytes_needed + 1.0)
 
         # get all entries in the directory w/ stats
-        entries = (os.path.join(dir, fn) for fn in os.listdir(dir))
+        entries = (os.path.join(directory, fn) for fn in os.listdir(directory))
         entries = ((os.stat(path), path) for path in entries)
 
         # leave only regular files, insert modification date
@@ -218,7 +219,7 @@ def get_cache_directory(domain=None):
     Return:
         str: a path to the directory where you can cache data
     """
-    config = mycroft.configuration.ConfigurationManager.instance()
+    config = mycroft.configuration.Configuration.get()
     dir = config.get("cache_path")
     if not dir:
         # If not defined, use /tmp/mycroft/cache
@@ -260,3 +261,8 @@ def stop_speaking():
     LOG.info("mycroft.utils.stop_speaking() is depreciated, use "
              "mycroft.audio.stop_speaking() instead.")
     mycroft.audio.stop_speaking()
+
+
+def get_arch():
+    """ Get architecture string of system. """
+    return os.uname()[4]

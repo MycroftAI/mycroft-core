@@ -19,3 +19,8 @@ mycroft/audio-accuracy-test/data/*
 scripts/*.screen
 doc/_build/
 .installed
+.mypy_cache
+
+# Created by unit tests
+test/unittests/skills/test_skill/settings.json
+test_conf.json

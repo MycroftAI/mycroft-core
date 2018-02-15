@@ -1,30 +1,33 @@
-# Copyright 2017 Mycroft AI, Inc.
+# Copyright 2017 Mycroft AI Inc.
 #
-# This file is part of Mycroft Core.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Mycroft Core is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
-# Mycroft Core is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
-# You should have received a copy of the GNU General Public License
-# along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
 import tempfile
 import time
 
+import sys
 import os
-from os.path import dirname, exists, join, abspath
+from os.path import dirname, exists, join, abspath, expanduser, isdir, isfile
 
-from mycroft.configuration import ConfigurationManager
+from os import mkdir
+from time import time as get_time
+
+from mycroft.configuration import Configuration
+from subprocess import Popen, PIPE, call
+from threading import Thread
+
+from mycroft.util import resolve_resource_file
 from mycroft.util.log import LOG
-
-__author__ = 'seanfitz, jdorleans, jarbas'
 
 
 RECOGNIZER_DIR = join(abspath(dirname(__file__)), "recognizer")
@@ -32,18 +35,21 @@ RECOGNIZER_DIR = join(abspath(dirname(__file__)), "recognizer")
 
 class HotWordEngine(object):
     def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
-        self.lang = str(lang).lower()
         self.key_phrase = str(key_phrase).lower()
         # rough estimate 1 phoneme per 2 chars
         self.num_phonemes = len(key_phrase) / 2 + 1
         if config is None:
-            config = ConfigurationManager.get().get("hot_words", {})
+            config = Configuration.get().get("hot_words", {})
             config = config.get(self.key_phrase, {})
         self.config = config
-        self.listener_config = ConfigurationManager.get().get("listener", {})
+        self.listener_config = Configuration.get().get("listener", {})
+        self.lang = str(self.config.get("lang", lang)).lower()
 
     def found_wake_word(self, frame_data):
         return False
+
+    def update(self, chunk):
+        pass
 
 
 class PocketsphinxHotWord(HotWordEngine):
@@ -62,7 +68,7 @@ class PocketsphinxHotWord(HotWordEngine):
         self.num_phonemes = len(self.phonemes.split())
         self.threshold = self.config.get("threshold", 1e-90)
         self.sample_rate = self.listener_config.get("sample_rate", 1600)
-        dict_name = self.create_dict(key_phrase, self.phonemes)
+        dict_name = self.create_dict(self.key_phrase, self.phonemes)
         config = self.create_config(dict_name, Decoder.default_config())
         self.decoder = Decoder(config)
 
@@ -102,6 +108,116 @@ class PocketsphinxHotWord(HotWordEngine):
         return hyp and self.key_phrase in hyp.hypstr.lower()
 
 
+class PreciseHotword(HotWordEngine):
+    def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
+        super(PreciseHotword, self).__init__(key_phrase, config, lang)
+        self.update_freq = 24  # in hours
+
+        precise_config = Configuration.get()['precise']
+        self.dist_url = precise_config['dist_url']
+        self.models_url = precise_config['models_url']
+        self.exe_name = 'precise-stream'
+
+        model_name, model_path = self.get_model_info()
+
+        exe_file = self.find_download_exe()
+        LOG.info('Found precise executable: ' + exe_file)
+        self.update_model(model_name, model_path)
+
+        args = [exe_file, model_path, '1024']
+        self.proc = Popen(args, stdin=PIPE, stdout=PIPE)
+        self.has_found = False
+        self.cooldown = 20
+        t = Thread(target=self.check_stdout)
+        t.daemon = True
+        t.start()
+
+    def get_model_info(self):
+        ww = Configuration.get()['listener']['wake_word']
+        model_name = ww.replace(' ', '-') + '.pb'
+        model_folder = expanduser('~/.mycroft/precise')
+        if not isdir(model_folder):
+            mkdir(model_folder)
+        model_path = join(model_folder, model_name)
+        return model_name, model_path
+
+    def find_download_exe(self):
+        exe_file = resolve_resource_file(self.exe_name)
+        if exe_file:
+            return exe_file
+        try:
+            if call(self.exe_name + ' < /dev/null', shell=True) == 0:
+                return self.exe_name
+        except OSError:
+            pass
+
+        exe_file = expanduser('~/.mycroft/precise/' + self.exe_name)
+        if isfile(exe_file):
+            return exe_file
+
+        import platform
+        import stat
+
+        def snd_msg(cmd):
+            """Send message to faceplate"""
+            Popen('echo "' + cmd + '" > /dev/ttyAMA0', shell=True)
+
+        arch = platform.machine()
+
+        url = self.dist_url + arch + '/' + self.exe_name
+
+        snd_msg('mouth.text=Updating Listener...')
+        self.download(url, exe_file)
+        snd_msg('mouth.reset')
+
+        os.chmod(exe_file, os.stat(exe_file).st_mode | stat.S_IEXEC)
+        Popen('echo "mouth.reset" > /dev/ttyAMA0', shell=True)
+        return exe_file
+
+    @staticmethod
+    def download(url, filename):
+        import shutil
+
+        # python 2/3 compatibility
+        if sys.version_info[0] >= 3:
+            from urllib.request import urlopen
+        else:
+            from urllib2 import urlopen
+        LOG.info('Downloading: ' + url)
+        req = urlopen(url)
+        with open(filename, 'wb') as fp:
+            shutil.copyfileobj(req, fp)
+
+    def update_model(self, name, file_name):
+        if isfile(file_name):
+            stat = os.stat(file_name)
+            if get_time() - stat.st_mtime < self.update_freq * 60 * 60:
+                return
+        name = name.replace(' ', '%20')
+        url = self.models_url + name
+        self.download(url, file_name)
+        self.download(url + '.params', file_name + '.params')
+
+    def check_stdout(self):
+        while True:
+            line = self.proc.stdout.readline()
+            if self.cooldown > 0:
+                self.cooldown -= 1
+                self.has_found = False
+                continue
+            self.has_found = float(line) > 0.5
+
+    def update(self, chunk):
+        self.proc.stdin.write(chunk)
+        self.proc.stdin.flush()
+
+    def found_wake_word(self, frame_data):
+        if self.has_found and self.cooldown == 0:
+            self.cooldown = 20
+            return True
+        return False
+
+
 class SnowboyHotWord(HotWordEngine):
     def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
         super(SnowboyHotWord, self).__init__(key_phrase, config, lang)
@@ -131,6 +247,7 @@ class SnowboyHotWord(HotWordEngine):
 class HotWordFactory(object):
     CLASSES = {
         "pocketsphinx": PocketsphinxHotWord,
+        "precise": PreciseHotword,
         "snowboy": SnowboyHotWord
     }
 
@@ -138,8 +255,14 @@ class HotWordFactory(object):
     def create_hotword(hotword="hey mycroft", config=None, lang="en-us"):
         LOG.info("creating " + hotword)
         if not config:
-            config = ConfigurationManager.get().get("hotwords", {})
+            config = Configuration.get().get("hotwords", {})
         module = config.get(hotword).get("module", "pocketsphinx")
         config = config.get(hotword, {"module": module})
         clazz = HotWordFactory.CLASSES.get(module)
-        return clazz(hotword, config, lang=lang)
+        try:
+            return clazz(hotword, config, lang=lang)
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:
+            LOG.exception('Could not create hotword. Falling back to default.')
+            return HotWordFactory.CLASSES['pocketsphinx']()

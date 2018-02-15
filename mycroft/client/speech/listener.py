@@ -1,25 +1,20 @@
-# Copyright 2016 Mycroft AI, Inc.
+# Copyright 2017 Mycroft AI Inc.
 #
-# This file is part of Mycroft Core.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Mycroft Core is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
-# Mycroft Core is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
-# You should have received a copy of the GNU General Public License
-# along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
-
 import time
-from Queue import Queue
 from threading import Thread
-
+import sys
 import speech_recognition as sr
 from pyee import EventEmitter
 from requests import HTTPError
@@ -28,11 +23,15 @@ from requests.exceptions import ConnectionError
 import mycroft.dialog
 from mycroft.client.speech.hotword_factory import HotWordFactory
 from mycroft.client.speech.mic import MutableMicrophone, ResponsiveRecognizer
-from mycroft.configuration import ConfigurationManager
-from mycroft.metrics import MetricsAggregator
+from mycroft.configuration import Configuration
+from mycroft.metrics import MetricsAggregator, Stopwatch, report_timing
 from mycroft.session import SessionManager
 from mycroft.stt import STTFactory
 from mycroft.util.log import LOG
+if sys.version_info[0] < 3:
+    from Queue import Queue, Empty
+else:
+    from queue import Queue, Empty
 
 
 class AudioProducer(Thread):
@@ -58,13 +57,13 @@ class AudioProducer(Thread):
                 try:
                     audio = self.recognizer.listen(source, self.emitter)
                     self.queue.put(audio)
-                except IOError, ex:
+                except IOError as e:
                     # NOTE: Audio stack on raspi is slightly different, throws
                     # IOError every other listen, almost like it can't handle
                     # buffering audio between listen loops.
                     # The internet was not helpful.
                     # http://stackoverflow.com/questions/10733903/pyaudio-input-overflowed
-                    self.emitter.emit("recognizer_loop:ioerror", ex)
+                    self.emitter.emit("recognizer_loop:ioerror", e)
 
     def stop(self):
         """
@@ -100,7 +99,10 @@ class AudioConsumer(Thread):
             self.read()
 
     def read(self):
-        audio = self.queue.get()
+        try:
+            audio = self.queue.get(timeout=0.5)
+        except Empty:
+            return
 
         if audio is None:
             return
@@ -115,7 +117,7 @@ class AudioConsumer(Thread):
         if self.wakeup_recognizer.found_wake_word(audio.frame_data):
             SessionManager.touch()
             self.state.sleeping = False
-            self.__speak(mycroft.dialog.get("i am awake", self.stt.lang))
+            self.emitter.emit('recognizer_loop:awoken')
             self.metrics.increment("mycroft.wakeup")
 
     @staticmethod
@@ -135,7 +137,26 @@ class AudioConsumer(Thread):
         if self._audio_length(audio) < self.MIN_AUDIO_SIZE:
             LOG.warning("Audio too short to be processed")
         else:
-            self.transcribe(audio)
+            stopwatch = Stopwatch()
+            with stopwatch:
+                transcription = self.transcribe(audio)
+            if transcription:
+                ident = str(stopwatch.timestamp) + str(hash(transcription))
+                # STT succeeded, send the transcribed speech on for processing
+                payload = {
+                    'utterances': [transcription],
+                    'lang': self.stt.lang,
+                    'session': SessionManager.get().session_id,
+                    'ident': ident
+                }
+                self.emitter.emit("recognizer_loop:utterance", payload)
+                self.metrics.attr('utterances', [transcription])
+            else:
+                ident = str(stopwatch.timestamp)
+            # Report timing metrics
+            report_timing(ident, 'stt', stopwatch,
+                          {'transcription': transcription,
+                           'stt': self.stt.__class__.__name__})
 
     def transcribe(self, audio):
         text = None
@@ -153,17 +174,10 @@ class AudioConsumer(Thread):
                 text = "pair my device"  # phrase to start the pairing process
                 LOG.warning("Access Denied at mycroft.ai")
         except Exception as e:
+            self.emitter.emit('recognizer_loop:speech.recognition.unknown')
             LOG.error(e)
             LOG.error("Speech Recognition could not understand audio")
-        if text:
-            # STT succeeded, send the transcribed speech on for processing
-            payload = {
-                'utterances': [text],
-                'lang': self.stt.lang,
-                'session': SessionManager.get().session_id
-            }
-            self.emitter.emit("recognizer_loop:utterance", payload)
-            self.metrics.attr('utterances', [text])
+        return text
 
     def __speak(self, utterance):
         payload = {
@@ -194,7 +208,7 @@ class RecognizerLoop(EventEmitter):
         """
             Load configuration parameters from configuration
         """
-        config = ConfigurationManager.get()
+        config = Configuration.get()
         self.config_core = config
         self._config_hash = hash(str(config))
         self.lang = config.get('lang')
@@ -221,6 +235,9 @@ class RecognizerLoop(EventEmitter):
         phonemes = self.config.get("phonemes")
         thresh = self.config.get("threshold")
         config = self.config_core.get("hotwords", {word: {}})
+
+        if word not in config:
+            config[word] = {'module': 'pocketsphinx'}
         if phonemes:
             config[word]["phonemes"] = phonemes
         if thresh:
@@ -301,7 +318,7 @@ class RecognizerLoop(EventEmitter):
             try:
                 time.sleep(1)
                 if self._config_hash != hash(
-                        str(ConfigurationManager().get())):
+                        str(Configuration().get())):
                     LOG.debug('Config has changed, reloading...')
                     self.reload()
             except KeyboardInterrupt as e:
