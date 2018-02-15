@@ -69,9 +69,11 @@ def unmunge_message(message, skill_id):
     Returns:
         Message without clear keywords
     """
-    for key in message.data:
-        new_key = key.replace(to_letters(skill_id), '')
-        message.data[new_key] = message.data.pop(key)
+    if isinstance(message, Message) and isinstance(message.data, dict):
+        for key in message.data:
+            new_key = key.replace(to_letters(skill_id), '')
+            message.data[new_key] = message.data.pop(key)
+
     return message
 
 
