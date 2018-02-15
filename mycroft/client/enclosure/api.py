@@ -171,7 +171,7 @@ class EnclosureAPI:
             volume (int): 0 to 11
         """
         if volume < 0 or volume > 11:
-            raise ValueError('volume ({}) must be between 0-100'.
+            raise ValueError('volume ({}) must be between 0-11'.
                              format(str(volume)))
         self.ws.emit(Message("enclosure.eyes.volume", {'volume': volume}))
 
