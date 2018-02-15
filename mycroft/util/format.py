@@ -18,6 +18,10 @@ from mycroft.util.lang.format_pt import *
 from mycroft.util.lang.format_it import *
 from mycroft.util.lang.format_sv import *
 
+from mycroft.util.lang.format_fr import nice_number_fr
+from mycroft.util.lang.format_fr import nice_time_fr
+from mycroft.util.lang.format_fr import pronounce_number_fr
+
 
 def nice_number(number, lang="en-us", speech=True, denominators=None):
     """Format a float to human readable functions
@@ -32,29 +36,18 @@ def nice_number(number, lang="en-us", speech=True, denominators=None):
     Returns:
         (str): The formatted string.
     """
-    result = _convert_to_mixed_fraction(number, denominators)
-    if not result:
-        # Give up, just represent as a 3 decimal number
-        return str(round(number, 3))
-
-    if not speech:
-        whole, num, den = result
-        if num == 0:
-            # TODO: Number grouping?  E.g. "1,000,000"
-            return str(whole)
-        else:
-            return '{} {}/{}'.format(whole, num, den)
-
     # Convert to spoken representation in appropriate language
     lang_lower = str(lang).lower()
     if lang_lower.startswith("en"):
-        return nice_number_en(result)
+        return nice_number_en(number, speech, denominators)
     elif lang_lower.startswith("pt"):
-        return nice_number_pt(result)
+        return nice_number_pt(number, speech, denominators)
     elif lang_lower.startswith("it"):
-        return nice_number_it(result)
+        return nice_number_it(number, speech, denominators)
+    elif lang_lower.startswith("fr"):
+        return nice_number_fr(number, speech, denominators)
     elif lang_lower.startswith("sv"):
-        return nice_number_sv(result)
+        return nice_number_sv(number, speech, denominators)
 
     # Default to the raw number for unsupported languages,
     # hopefully the STT engine will pronounce understandably.
@@ -83,6 +76,8 @@ def nice_time(dt, lang="en-us", speech=True, use_24hour=False,
         return nice_time_en(dt, speech, use_24hour, use_ampm)
     elif lang_lower.startswith("it"):
         return nice_time_it(dt, speech, use_24hour, use_ampm)
+    elif lang_lower.startswith("fr"):
+        return nice_time_fr(dt, speech, use_24hour, use_ampm)
 
     # TODO: Other languages
     return str(dt)
@@ -104,38 +99,8 @@ def pronounce_number(number, lang="en-us", places=2):
         return pronounce_number_en(number, places=places)
     elif lang_lower.startswith("it"):
         return pronounce_number_it(number, places=places)
+    elif lang_lower.startswith("fr"):
+        return pronounce_number_fr(number, places=places)
 
     # Default to just returning the numeric value
     return str(number)
-
-
-def _convert_to_mixed_fraction(number, denominators):
-    """
-    Convert floats to components of a mixed fraction representation
-
-    Returns the closest fractional representation using the
-    provided denominators.  For example, 4.500002 would become
-    the whole number 4, the numerator 1 and the denominator 2
-
-    Args:
-        number (float): number for convert
-        denominators (iter of ints): denominators to use, default [1 .. 20]
-    Returns:
-        whole, numerator, denominator (int): Integers of the mixed fraction
-    """
-    int_number = int(number)
-    if int_number == number:
-        return int_number, 0, 1  # whole number, no fraction
-
-    frac_number = abs(number - int_number)
-    if not denominators:
-        denominators = range(1, 21)
-
-    for denominator in denominators:
-        numerator = abs(frac_number) * denominator
-        if (abs(numerator - round(numerator)) < 0.01):  # 0.01 accuracy
-            break
-    else:
-        return None
-
-    return int_number, int(round(numerator)), denominator
