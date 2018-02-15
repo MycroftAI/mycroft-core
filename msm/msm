@@ -418,7 +418,7 @@ function install_from_url_list() {
           exit_code=${rc}
         fi
       fi
-      echo ${name} >> ${mycroft_skill_folder}/.msm
+      echo ${name} >> ${mycroft_skill_folder}/.msm.tmp
     fi
   done
 
@@ -683,7 +683,8 @@ case ${OPT} in
       fi
 
       # Create .msm file to provide timestamp for last msm default
-      printf "" > ${mycroft_skill_folder}/.msm
+      rm ${mycroft_skill_folder}/.msm
+      printf "" > ${mycroft_skill_folder}/.msm.tmp
       # These skills are automatically installed on all mycroft-core
       # installations.
       install_from_url_list "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/DEFAULT-SKILLS"
@@ -703,6 +704,7 @@ case ${OPT} in
          send_end_update
          exit_code=$?
       fi
+      mv ${mycroft_skill_folder}/.msm.tmp ${mycroft_skill_folder}/.msm
    ;;
   "search")
       if [[ $# -gt 0 ]] ; then
