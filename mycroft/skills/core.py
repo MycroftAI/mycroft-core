@@ -24,8 +24,7 @@ import inspect
 import abc
 import re
 from adapt.intent import Intent, IntentBuilder
-from os import listdir
-from os.path import join, abspath, dirname, splitext, basename, exists
+from os.path import join, abspath, dirname, basename, exists
 from threading import Event
 
 from mycroft.api import DeviceApi
@@ -36,6 +35,8 @@ from mycroft.filesystem import FileSystemAccess
 from mycroft.messagebus.message import Message
 from mycroft.metrics import report_metric, report_timing, Stopwatch
 from mycroft.skills.settings import SkillSettings
+from mycroft.skills.skill_data import (load_vocabulary, load_regex, to_letters,
+                                       munge_intent_parser)
 from mycroft.util import resolve_resource_file
 from mycroft.util.log import LOG
 # python 2+3 compatibility
@@ -57,60 +58,20 @@ def dig_for_message():
             return l['message']
 
 
-def load_vocab_from_file(path, vocab_type, emitter):
+def unmunge_message(message, skill_id):
+    """Restore message keywords by removing the Letterified skill ID.
+
+    Args:
+        message (Message): Intent result message
+        skill_id (int): skill identifier
+
+    Returns:
+        Message without clear keywords
     """
-        Load mycroft vocabulary from file. and send it on the message bus for
-        the intent handler.
-
-        Args:
-            path:       path to vocabulary file (*.voc)
-            vocab_type: keyword name
-            emitter:    emitter to access the message bus
-    """
-    if path.endswith('.voc'):
-        with open(path, 'r') as voc_file:
-            for line in voc_file.readlines():
-                parts = line.strip().split("|")
-                entity = parts[0]
-
-                emitter.emit(Message("register_vocab", {
-                    'start': entity, 'end': vocab_type
-                }))
-                for alias in parts[1:]:
-                    emitter.emit(Message("register_vocab", {
-                        'start': alias, 'end': vocab_type, 'alias_of': entity
-                    }))
-
-
-def load_regex_from_file(path, emitter):
-    """
-        Load regex from file and send it on the message bus for
-        the intent handler.
-
-        Args:
-            path:       path to vocabulary file (*.voc)
-            emitter:    emitter to access the message bus
-    """
-    if path.endswith('.rx'):
-        with open(path, 'r') as reg_file:
-            for line in reg_file.readlines():
-                re.compile(line.strip())
-                emitter.emit(
-                    Message("register_vocab", {'regex': line.strip()}))
-
-
-def load_vocabulary(basedir, emitter):
-    for vocab_type in listdir(basedir):
-        if vocab_type.endswith(".voc"):
-            load_vocab_from_file(
-                join(basedir, vocab_type), splitext(vocab_type)[0], emitter)
-
-
-def load_regex(basedir, emitter):
-    for regex_type in listdir(basedir):
-        if regex_type.endswith(".rx"):
-            load_regex_from_file(
-                join(basedir, regex_type), emitter)
+    for key in message.data:
+        new_key = key.replace(to_letters(skill_id), '')
+        message.data[new_key] = message.data.pop(key)
+    return message
 
 
 def open_intent_envelope(message):
@@ -622,14 +583,16 @@ class MycroftSkill(object):
                     if need_self:
                         # When registring from decorator self is required
                         if len(getargspec(handler).args) == 2:
-                            handler(self, message)
+                            handler(self, unmunge_message(message,
+                                                          self.skill_id))
                         elif len(getargspec(handler).args) == 1:
-                            handler(self)
+                            handler(unmunge_message(message, self.skill_id))
                         elif len(getargspec(handler).args) == 0:
                             # Zero may indicate multiple decorators, trying the
                             # usual call signatures
                             try:
-                                handler(self, message)
+                                handler(self, unmunge_message(message,
+                                                              self.skill_id))
                             except TypeError:
                                 handler(self)
                         else:
@@ -638,7 +601,7 @@ class MycroftSkill(object):
                             raise TypeError
                     else:
                         if len(getargspec(handler).args) == 2:
-                            handler(message)
+                            handler(unmunge_message(message, self.skill_id))
                         elif len(getargspec(handler).args) == 1:
                             handler()
                         else:
@@ -718,7 +681,7 @@ class MycroftSkill(object):
 
         # Default to the handler's function name if none given
         name = intent_parser.name or handler.__name__
-        intent_parser.name = str(self.skill_id) + ':' + name
+        munge_intent_parser(intent_parser, name, self.skill_id)
         self.emitter.emit(Message("register_intent", intent_parser.__dict__))
         self.registered_intents.append((name, intent_parser))
         self.add_event(intent_parser.name, handler, need_self)
@@ -814,6 +777,7 @@ class MycroftSkill(object):
             raise ValueError('context should be a string')
         if not isinstance(word, basestring):
             raise ValueError('word should be a string')
+        context = to_letters(self.skill_id) + context
         self.emitter.emit(Message('add_context',
                                   {'context': context, 'word': word}))
 
@@ -892,12 +856,12 @@ class MycroftSkill(object):
     def load_vocab_files(self, vocab_dir):
         self.vocab_dir = vocab_dir
         if exists(vocab_dir):
-            load_vocabulary(vocab_dir, self.emitter)
+            load_vocabulary(vocab_dir, self.emitter, self.skill_id)
         else:
             LOG.debug('No vocab loaded, ' + vocab_dir + ' does not exist')
 
     def load_regex_files(self, regex_dir):
-        load_regex(regex_dir, self.emitter)
+        load_regex(regex_dir, self.emitter, self.skill_id)
 
     def __handle_stop(self, event):
         """
