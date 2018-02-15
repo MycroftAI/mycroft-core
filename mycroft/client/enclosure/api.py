@@ -117,6 +117,29 @@ class EnclosureAPI:
         self.ws.emit(Message("enclosure.eyes.color",
                              {'r': r, 'g': g, 'b': b}))
 
+    def eyes_setpixel(self, idx, r=255, g=255, b=255):
+        """Set individual pixels of the Mark 1 neopixel eyes
+        Args:
+            neopixel_idx (int): 0-11 for the right eye, 12-23 for the left
+            r (int): The red value to apply
+            g (int): The green value to apply
+            b (int): The blue value to apply
+        """
+        if idx < 0 or idx > 23:
+            return
+        self.ws.emit(Message("enclosure.eyes.setpixel",
+                             {'idx': idx, 'r': r, 'g': g, 'b': b}))
+
+    def eyes_fill(self, percentage):
+        """Use the eyes as a type of progress meter
+        Args:
+            amount (int): 0-49 fills the right eye, 50-100 also covers left
+        """
+        if percentage < 0 or percentage > 100:
+            return
+        self.ws.emit(Message("enclosure.eyes.fill",
+                             {'percentage': percentage}))
+
     def eyes_brightness(self, level=30):
         """Set the brightness of the eyes in the display.
         Args:
@@ -146,6 +169,8 @@ class EnclosureAPI:
         Args:
             volume (int): 0 to 11
         """
+        if volume < 0 or volume > 11:
+            return
         self.ws.emit(Message("enclosure.eyes.volume", {'volume': volume}))
 
     def mouth_reset(self):
