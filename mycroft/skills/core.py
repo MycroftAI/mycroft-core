@@ -594,7 +594,7 @@ class MycroftSkill(object):
                             handler(self, unmunge_message(message,
                                                           self.skill_id))
                         elif len(getargspec(handler).args) == 1:
-                            handler(unmunge_message(message, self.skill_id))
+                            handler(self)
                         elif len(getargspec(handler).args) == 0:
                             # Zero may indicate multiple decorators, trying the
                             # usual call signatures
