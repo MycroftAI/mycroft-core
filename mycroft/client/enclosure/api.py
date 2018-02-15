@@ -120,13 +120,13 @@ class EnclosureAPI:
     def eyes_setpixel(self, idx, r=255, g=255, b=255):
         """Set individual pixels of the Mark 1 neopixel eyes
         Args:
-            neopixel_idx (int): 0-11 for the right eye, 12-23 for the left
+            idx (int): 0-11 for the right eye, 12-23 for the left
             r (int): The red value to apply
             g (int): The green value to apply
             b (int): The blue value to apply
         """
         if idx < 0 or idx > 23:
-            return
+            raise ValueError('idx ({}) must be between 0-23'.format(str(idx)))
         self.ws.emit(Message("enclosure.eyes.setpixel",
                              {'idx': idx, 'r': r, 'g': g, 'b': b}))
 
@@ -136,7 +136,8 @@ class EnclosureAPI:
             amount (int): 0-49 fills the right eye, 50-100 also covers left
         """
         if percentage < 0 or percentage > 100:
-            return
+            raise ValueError('percentage ({}) must be between 0-100'.
+                             format(str(percentage)))
         self.ws.emit(Message("enclosure.eyes.fill",
                              {'percentage': percentage}))
 
@@ -170,7 +171,8 @@ class EnclosureAPI:
             volume (int): 0 to 11
         """
         if volume < 0 or volume > 11:
-            return
+            raise ValueError('volume ({}) must be between 0-100'.
+                             format(str(volume)))
         self.ws.emit(Message("enclosure.eyes.volume", {'volume': volume}))
 
     def mouth_reset(self):

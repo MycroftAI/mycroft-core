@@ -84,7 +84,7 @@ class EnclosureEyes:
         amount = 0
         if event and event.data:
             percent = int(event.data.get("percentage", 0))
-            amount = round(23.0 * percent / 100.0)
+            amount = int(round(23.0 * percent / 100.0))
         self.writer.write("eyes.fill=" + str(amount))
 
     def brightness(self, event=None):
