@@ -12,18 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import json
-from threading import Thread, Timer
-
-import os
-
-from mycroft.messagebus.client.ws import WebsocketClient
-from mycroft.util import get_ipc_directory
-from mycroft.util.log import LOG
 
 """ DisplayManager
 
-This module  provides basic "state" for the visual representation associated
+This module provides basic "state" for the visual representation associated
 with this Mycroft instance.  The current states are:
    ActiveSkill - The skill that last interacted with the display via the
                  Enclosure API.
@@ -35,10 +27,19 @@ A skill is set to Active when it matches an intent, outputs audio, or
 changes the display via the EnclosureAPI()
 
 A skill is automatically cleared from Active two seconds after audio
-output is spoken, or 2 seconds after resetting the disply.
+output is spoken, or 2 seconds after resetting the display.
 
 So it is common to have '' as the active skill.
 """
+
+import json
+from threading import Thread, Timer
+
+import os
+
+from mycroft.messagebus.client.ws import WebsocketClient
+from mycroft.util import get_ipc_directory
+from mycroft.util.log import LOG
 
 
 def _write_data(dictionary):
