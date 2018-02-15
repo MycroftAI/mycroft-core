@@ -1,3 +1,18 @@
+# Copyright 2018 Mycroft AI Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
 """Module containing methods needed to load skill
 data such as dialogs, intents and regular expressions.
 """
@@ -10,15 +25,14 @@ from mycroft.messagebus.message import Message
 
 
 def load_vocab_from_file(path, vocab_type, emitter):
-    """
-        Load mycroft vocabulary from file. and send it on the message bus for
-        the intent handler.
+    """Load Mycroft vocabulary from file
+    The vocab is sent to the intent handler using the message bus
 
-        Args:
-            path:           path to vocabulary file (*.voc)
-            vocab_type:     keyword name
-            emitter:        emitter to access the message bus
-            skill_id(str):  skill id
+    Args:
+        path:           path to vocabulary file (*.voc)
+        vocab_type:     keyword name
+        emitter:        emitter to access the message bus
+        skill_id(str):  skill id
     """
     if path.endswith('.voc'):
         with open(path, 'r') as voc_file:
@@ -35,13 +49,12 @@ def load_vocab_from_file(path, vocab_type, emitter):
 
 
 def load_regex_from_file(path, emitter, skill_id):
-    """
-        Load regex from file and send it on the message bus for
-        the intent handler.
+    """Load regex from file
+    The regex is sent to the intent handler using the message bus
 
-        Args:
-            path:       path to vocabulary file (*.voc)
-            emitter:    emitter to access the message bus
+    Args:
+        path:       path to vocabulary file (*.voc)
+        emitter:    emitter to access the message bus
     """
     if path.endswith('.rx'):
         with open(path, 'r') as reg_file:
@@ -75,7 +88,7 @@ def load_regex(basedir, emitter, skill_id):
         basedir (str): path of directory to load from
         emitter (messagebus emitter): websocket used to send the vocab to
                                       the intent service
-        skill_id: (int) skill identifier
+        skill_id (int): skill identifier
     """
     for regex_type in listdir(basedir):
         if regex_type.endswith(".rx"):
@@ -113,10 +126,10 @@ def munge_regex(regex, skill_id):
 
 
 def munge_intent_parser(intent_parser, name, skill_id):
-    """Rename the intent keywords to make them skill exclusive and gives the
-    intent parser an exclusive name.
-    The format of the intent parser name is <skill_id>:<name>.
-    The format of the keywords is <Skill id as letters><Intent name>.
+    """Rename intent keywords to make them skill exclusive
+    This gives the intent parser an exclusive name in the
+    format <skill_id>:<name>.  The keywords are given unique
+    names in the format <Skill id as letters><Intent name>.
 
     Args:
         intent_parser: (IntentParser) object to update
