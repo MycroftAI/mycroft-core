@@ -205,6 +205,12 @@ class MycroftSkillTest(unittest.TestCase):
         self.assertEquals(s.skill_id, 847)
         self.assertEquals(s.name, 'LoadTestSkill')
 
+    def check_detach_intent(self):
+        self.assertTrue(len(self.emitter.get_types()) > 0)
+        for msg_type in self.emitter.get_types():
+            self.assertEquals(msg_type, 'detach_intent')
+        self.emitter.reset()
+
     def check_register_intent(self, result_list):
         for type in self.emitter.get_types():
             self.assertEquals(type, 'register_intent')
@@ -239,6 +245,24 @@ class MycroftSkillTest(unittest.TestCase):
             s = TestSkill3()
             s.bind(self.emitter)
             s.initialize()
+
+    def test_enable_disable_intent(self):
+        """Test disable/enable intent."""
+        # Setup basic test
+        s = TestSkill1()
+        s.bind(self.emitter)
+        s.initialize()
+        expected = [{'at_least_one': [],
+                     'name': '0:a',
+                     'optional': [],
+                     'requires': [('AKeyword', 'AKeyword')]}]
+        self.check_register_intent(expected)
+
+        # Test disable/enable cycle
+        s.disable_intent('a')
+        self.check_detach_intent()
+        s.enable_intent('a')
+        self.check_register_intent(expected)
 
     def check_register_object_file(self, types_list, result_list):
         self.assertEquals(sorted(self.emitter.get_types()),
