@@ -525,7 +525,7 @@ function print_info() {
         if [[ "${skill}" ==  *$'\n'* ]]; then
             # The str matches multiple skill repos, don't install
             # due to ambiguity.
-            echo "Multiple matches for '${str}', be more specfic."
+            echo "Multiple matches for '${str}', be more specific."
             echo "------------------------------------------------------------"
             echo "$skill" | sed 's/.*://g' | sort
             echo "------------------------------------------------------------"
