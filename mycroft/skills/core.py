@@ -775,9 +775,9 @@ class MycroftSkill(object):
                 self.register_intent(intent, None)
                 LOG.debug('Enabling intent ' + intent_name)
                 break
-            else:
-                LOG.error('Could not enable ' + intent_name +
-                          ', it hasn\'t been registered.')
+        else:
+            LOG.error('Could not enable ' + intent_name +
+                      ', it hasn\'t been registered.')
 
     def set_context(self, context, word=''):
         """
