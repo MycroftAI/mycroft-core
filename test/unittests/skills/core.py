@@ -218,6 +218,13 @@ class MycroftSkillTest(unittest.TestCase):
                           sorted(result_list))
         self.emitter.reset()
 
+    def check_register_vocabulary(self, result_list):
+        for type in self.emitter.get_types():
+            self.assertEquals(type, 'register_vocab')
+        self.assertEquals(sorted(self.emitter.get_results()),
+                          sorted(result_list))
+        self.emitter.reset()
+
     def test_register_intent(self):
         # Test register Intent object
         s = TestSkill1()
@@ -263,6 +270,23 @@ class MycroftSkillTest(unittest.TestCase):
         self.check_detach_intent()
         s.enable_intent('a')
         self.check_register_intent(expected)
+
+    def test_register_vocab(self):
+        """Test disable/enable intent."""
+        # Setup basic test
+        s = TestSkill1()
+        s.bind(self.emitter)
+        s.initialize()
+
+        # Normal vocaubulary
+        self.emitter.reset()
+        expected = [{'start': 'hello', 'end': 'AHelloKeyword'}]
+        s.register_vocabulary('hello', 'HelloKeyword')
+        self.check_register_vocabulary(expected)
+        # Regex
+        s.register_regex('weird (?P<Weird>.+) stuff')
+        expected = [{'regex': 'weird (?P<AWeird>.+) stuff'}]
+        self.check_register_vocabulary(expected)
 
     def check_register_object_file(self, types_list, result_list):
         self.assertEquals(sorted(self.emitter.get_types()),
