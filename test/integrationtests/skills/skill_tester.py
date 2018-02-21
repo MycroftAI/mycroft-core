@@ -12,46 +12,65 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
 import Queue
 import json
 import time
 
 import os
 import re
+import ast
 from os.path import join, isdir
 from pyee import EventEmitter
 
 from mycroft.messagebus.message import Message
-from mycroft.skills.core import create_skill_descriptor, load_skill
+from mycroft.skills.core import create_skill_descriptor, load_skill, MycroftSkill
 
 MainModule = '__init__'
 
+DEFAULT_EVALUAITON_TIMEOUT = 30
+
 
 def get_skills(skills_folder):
-    skills = []
-    possible_skills = os.listdir(skills_folder)
-    for i in possible_skills:
-        location = join(skills_folder, i)
-        if (isdir(location) and
-                not MainModule + ".py" in os.listdir(location)):
-            for j in os.listdir(location):
-                name = join(location, j)
-                if (not isdir(name) or
-                        not MainModule + ".py" in os.listdir(name)):
-                    continue
-                skills.append(create_skill_descriptor(name))
-        if (not isdir(location) or
-                not MainModule + ".py" in os.listdir(location)):
-            continue
+    """
+        Find skills in the skill folder or sub folders.
+        Recursive traversal into subfolders stop when a __init__.py file
+        is discovered
 
-        skills.append(create_skill_descriptor(location))
+        Args:
+            skills_folder:  Folder to start a search for skills __init__.py files
+    """
+
+    skills = []
+
+    def _get_skill_descriptor(skills_folder):
+        if not isdir(skills_folder):
+            return
+        if MainModule + ".py" in os.listdir(skills_folder):
+            skills.append(create_skill_descriptor(skills_folder))
+            return
+
+        possible_skills = os.listdir(skills_folder)
+        for i in possible_skills:
+            _get_skill_descriptor(join(skills_folder, i))
+
+    _get_skill_descriptor(skills_folder)
+
     skills = sorted(skills, key=lambda p: p.get('name'))
     return skills
 
 
 def load_skills(emitter, skills_root):
+    """
+        Load all skills and set up emitter
+
+        Args:
+            emitter: The emmitter to use
+            skills_root: Directory of the skills __init__.py
+
+    """
     skill_list = []
-    skill_id = 0
+    skill_id = 1211234556  # Use a skill id similar to the full Mycroft
     for skill in get_skills(skills_root):
         skill_list.append(load_skill(skill, emitter, skill_id))
         skill_id += 1
@@ -64,7 +83,13 @@ def unload_skills(skills):
         s.shutdown()
 
 
-class RegistrationOnlyEmitter(object):
+class InterceptEmitter(object):
+    """
+        This class intercepts and allows emitting events between the skill_tester and
+        the skill being tested.
+        When a test is running emitted communication is intercepted for analysis
+    """
+
     def __init__(self):
         self.emitter = EventEmitter()
         self.q = None
@@ -88,9 +113,14 @@ class RegistrationOnlyEmitter(object):
 
 
 class MockSkillsLoader(object):
+    """
+        Load a skill and set up emitter
+
+    """
+
     def __init__(self, skills_root):
         self.skills_root = skills_root
-        self.emitter = RegistrationOnlyEmitter()
+        self.emitter = InterceptEmitter()
         from mycroft.skills.intent_service import IntentService
         self.ih = IntentService(self.emitter)
         self.skills = None
@@ -105,6 +135,12 @@ class MockSkillsLoader(object):
 
 
 class SkillTest(object):
+    """
+        This class is instantiated for each skill being tested. It holds the data
+        needed for the test, and contains the methods doing the test
+
+    """
+
     def __init__(self, skill, test_case_file, emitter):
         self.skill = skill
         self.test_case_file = test_case_file
@@ -114,7 +150,15 @@ class SkillTest(object):
         self.returned_intent = False
 
     def run(self, loader):
-        s = filter(lambda s: s and s._dir == self.skill, loader.skills)[0]
+        """
+            Run a test for a skill. The skill, test_case_file and emitter is
+            already set up in the __init__ method
+
+            Args:
+                loader:  A list of loaded skills
+        """
+        s = [s for s in loader.skills if s and s._dir == self.skill][0]
+#        s = filter(lambda s: s and s._dir == self.skill, loader.skills)[0]
         print('Test case file: ' + self.test_case_file)
         test_case = json.load(open(self.test_case_file, 'r'))
         print "Test case: " + str(test_case)
@@ -127,29 +171,43 @@ class SkillTest(object):
         q = Queue.Queue()
         s.emitter.q = q
 
-        event = {'utterances': [test_case.get('utterance')]}
+        # Set up context before calling intent
+        # This option makes it possible to better isolate (reduce dependance) between test_cases
+        cxt = test_case.get('remove_context', None)
+        if cxt:
+            if isinstance(cxt, list):
+                for x in cxt:
+                    MycroftSkill.remove_context(s, x)
+            else:
+                MycroftSkill.remove_context(s, cxt)
+
+        cxt = test_case.get('set_context', None)
+        if cxt:
+            for key, value in cxt.iteritems():
+                MycroftSkill.set_context(s, key, value)
 
         # Emit an utterance, just like the STT engine does.  This sends the
         # provided text to the skill engine for intent matching and it then
         # invokes the skill.
-        # TODO: Pass something to intent, that tells that this is a test run. The skill intent can then avoid side effects
         self.emitter.emit(
             'recognizer_loop:utterance',
-            Message('recognizer_loop:utterance', event))
+            Message('recognizer_loop:utterance',
+                    {'utterances': [test_case.get('utterance', None)]}))
 
-        # Wait up to 30 seconds for the test_case to complete (
-        # TODO: add optional timeout parameter to test_case
-        timeout = time.time() + 30
+        # Wait up to X seconds for the test_case to complete
+        timeout = time.time() + int(test_case.get('evaluation_timeout', None)) \
+            if test_case.get('evaluation_timeout', None) and isinstance(test_case['evaluation_timeout'], int) \
+            else time.time() + DEFAULT_EVALUAITON_TIMEOUT
         while not evaluation_rule.all_succeeded():
             try:
                 event = q.get(timeout=1)
+                evaluation_rule.evaluate(event.data)
             except Queue.Empty:
                 pass
-            evaluation_rule.evaluate(event.data)
             if time.time() > timeout:
                 break
 
-        # TODO: Check that all intents are checked (what about context)
+        # TODO: Check that all intents are tested
 
         # Stop emmiter from sending on queue
         s.emitter.q = None
@@ -157,6 +215,7 @@ class SkillTest(object):
         # remove the skill which is not responding
         self.emitter.remove_all_listeners('speak')
 
+        # Report test result if failed
         if not evaluation_rule.all_succeeded():
             print "Evaluation failed"
             print "Rule status: " + str(evaluation_rule.rule)
@@ -164,10 +223,27 @@ class SkillTest(object):
 
 
 # TODO: Add command line utility to test an event against a test_case, allow for debugging tests
+
 class EvaluationRule(object):
+    """
+        This class initially convert the test_case json file to internal rule format, which is
+        stored throughout the testcase run. All Messages on the event bus can be evaluated against the
+        rules (test_case)
+
+        This approach makes it easier to add new tests, since Message and rule traversal is already
+        set up for the internal rule format.
+        The test writer can use the internal rule format directly in the test_case
+        using the assert keyword, which allows for more powerfull/individual
+        test cases than the standard dictionaly
+    """
+
     def __init__(self, test_case):
-        # Convert test case to internal rule format
-        # TODO: Add support for expected response, and others
+        """
+            Convert test_case read from file to internal rule format
+
+            Args:
+                test_case:  The loaded test case
+        """
         self.rule = []
 
         _x = ['and']
@@ -181,13 +257,39 @@ class EvaluationRule(object):
         if _x != ['and']:
             self.rule.append(_x)
 
+        if test_case.get('expected_response', None):
+            self.rule.append(['match', 'utterance', str(test_case['expected_response'])])
+
+        if test_case.get('changed_context', None):
+            ctx = test_case['changed_context']
+            if isinstance(ctx, list):
+                for c in ctx:
+                    self.rule.append(['equal', 'context', str(c)])
+            else:
+                self.rule.append(['equal', 'context', ctx])
+
         if test_case.get('assert', None):
-            for _x in eval(test_case['assert']):
+            for _x in ast.literal_eval(test_case['assert']):
                 self.rule.append(_x)
 
         print "Rule created " + str(self.rule)
 
-    def get_field_value(self, rule, msg):
+    def evaluate(self, msg):
+        """
+            Main entry for evaluating a message against the rules.
+            The rules are prepared in the __init__
+            This method is usually called several times with different
+            messages using the same rule set. Each call contributing
+            to fulfilling all the rules
+
+            Args:
+                msg:  The message event to evaluate
+        """
+        print "Evaluating message: " + str(msg)
+        for r in self.rule:
+            self._partial_evaluate(r, msg)
+
+    def _get_field_value(self, rule, msg):
         if isinstance(rule, list):
             value = msg.get(rule[0], None)
             if len(rule) > 1 and value:
@@ -200,36 +302,42 @@ class EvaluationRule(object):
 
         return value
 
-    def evaluate(self, msg):
-        print "Evaluating message: " + str(msg)
-        for r in self.rule:
-            self.partial_evaluate(r, msg)
+    def _partial_evaluate(self, rule, msg):
+        """
+            Evaluate the message against a part of the rules (recursive over rules)
 
-    def partial_evaluate(self, rule, msg):
+            Args:
+                rule:  A rule or a part of the rules to be broken down further
+                msg:   The message event being evaluated
+
+            Returns:
+                 Bool: True if a partial evaluation succeeded
+        """
+
         if rule[0] == 'equal':
-            if self.get_field_value(rule[1], msg) != rule[2]:
+            if self._get_field_value(rule[1], msg) != rule[2]:
                 return False
 
         if rule[0] == 'notEqual':
-            if self.get_field_value(rule[1], msg) == rule[2]:
+            if self._get_field_value(rule[1], msg) == rule[2]:
                 return False
 
         if rule[0] == 'endsWith':
-            if not (self.get_field_value(rule[1], msg) and self.get_field_value(rule[1], msg).endswith(rule[2])):
+            if not (self._get_field_value(rule[1], msg) and self._get_field_value(rule[1], msg).endswith(rule[2])):
                 return False
 
         if rule[0] == 'match':
-            if not (self.get_field_value(rule[1], msg) and re.match(rule[2], self.get_field_value(rule[1], msg))):
+            if not (self._get_field_value(rule[1], msg) and re.match(rule[2], self._get_field_value(rule[1], msg))):
                 return False
 
         if rule[0] == 'and':
             for i in rule[1:]:
-                if not self.partial_evaluate(i, msg):
+                if not self._partial_evaluate(i, msg):
                     return False
 
         if rule[0] == 'or':
             for i in rule[1:]:
-                if self.partial_evaluate(i, msg):
+                if self._partial_evaluate(i, msg):
                     rule.append('succeeded')
                     return True
             return False
@@ -238,4 +346,11 @@ class EvaluationRule(object):
         return True
 
     def all_succeeded(self):
-        return len(filter(lambda x: x[-1] != 'succeeded', self.rule)) == 0
+        """
+            Test if all rules succeeded
+
+            Returns:
+                bool: True is all rules succeeded
+        """
+#        return len(filter(lambda x: x[-1] != 'succeeded', self.rule)) == 0
+        return len([x for x in self.rule if x[-1] != 'succeeded']) == 0
