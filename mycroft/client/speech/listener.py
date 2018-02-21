@@ -175,7 +175,10 @@ class AudioConsumer(Thread):
                 LOG.warning("Access Denied at mycroft.ai")
         except Exception as e:
             self.emitter.emit('recognizer_loop:speech.recognition.unknown')
-            LOG.error(e)
+            if isinstance(e, IndexError):
+                LOG.info('no words were transcribed')
+            else:
+                LOG.error(e)
             LOG.error("Speech Recognition could not understand audio")
         return text
 
