@@ -131,33 +131,45 @@ def munge_intent_parser(intent_parser, name, skill_id):
     format <skill_id>:<name>.  The keywords are given unique
     names in the format <Skill id as letters><Intent name>.
 
+    The function will not munge instances that's already been
+    munged
+
     Args:
         intent_parser: (IntentParser) object to update
         name: (str) Skill name
         skill_id: (int) skill identifier
     """
     # Munge parser name
-    intent_parser.name = str(skill_id) + ':' + name
+    if str(skill_id) + ':' not in name:
+        intent_parser.name = str(skill_id) + ':' + name
+    else:
+        intent_parser.name = name
 
     # Munge keywords
     skill_id = to_letters(skill_id)
     # Munge required keyword
     reqs = []
     for i in intent_parser.requires:
-        kw = (skill_id + i[0], skill_id + i[0])
-        reqs.append(kw)
+        if skill_id not in i[0]:
+            kw = (skill_id + i[0], skill_id + i[0])
+            reqs.append(kw)
+        else:
+            reqs.append(i)
     intent_parser.requires = reqs
 
     # Munge optional keywords
     opts = []
     for i in intent_parser.optional:
-        kw = (skill_id + i[0], skill_id + i[0])
-        opts.append(kw)
+        if skill_id not in i[0]:
+            kw = (skill_id + i[0], skill_id + i[0])
+            opts.append(kw)
+        else:
+            opts.append(i)
     intent_parser.optional = opts
 
     # Munge at_least_one keywords
     at_least_one = []
     for i in intent_parser.at_least_one:
-        element = [skill_id + e for e in i]
+        element = [skill_id + e.replace(skill_id, '') for e in i]
         at_least_one.append(tuple(element))
     intent_parser.at_least_one = at_least_one

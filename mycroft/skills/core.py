@@ -37,7 +37,7 @@ from mycroft.messagebus.message import Message
 from mycroft.metrics import report_metric, report_timing, Stopwatch
 from mycroft.skills.settings import SkillSettings
 from mycroft.skills.skill_data import (load_vocabulary, load_regex, to_letters,
-                                       munge_intent_parser)
+                                       munge_regex, munge_intent_parser)
 from mycroft.util import resolve_resource_file
 from mycroft.util.log import LOG
 # python 2+3 compatibility
@@ -70,9 +70,11 @@ def unmunge_message(message, skill_id):
         Message without clear keywords
     """
     if isinstance(message, Message) and isinstance(message.data, dict):
+        skill_id = to_letters(skill_id)
         for key in message.data:
-            new_key = key.replace(to_letters(skill_id), '')
-            message.data[new_key] = message.data.pop(key)
+            if key[:len(skill_id)] == skill_id:
+                new_key = key[len(skill_id):]
+                message.data[new_key] = message.data.pop(key)
 
     return message
 
@@ -775,9 +777,9 @@ class MycroftSkill(object):
                 self.register_intent(intent, None)
                 LOG.debug('Enabling intent ' + intent_name)
                 break
-            else:
-                LOG.error('Could not enable ' + intent_name +
-                          ', it hasn\'t been registered.')
+        else:
+            LOG.error('Could not enable ' + intent_name +
+                      ', it hasn\'t been registered.')
 
     def set_context(self, context, word=''):
         """
@@ -811,12 +813,17 @@ class MycroftSkill(object):
                 entity_type:    Intent handler entity to tie the word to
         """
         self.emitter.emit(Message('register_vocab', {
-            'start': entity, 'end': entity_type
+            'start': entity, 'end': to_letters(self.skill_id) + entity_type
         }))
 
     def register_regex(self, regex_str):
-        re.compile(regex_str)  # validate regex
-        self.emitter.emit(Message('register_vocab', {'regex': regex_str}))
+        """ Register a new regex.
+            Args:
+                regex_str: Regex string
+        """
+        regex = munge_regex(regex_str, self.skill_id)
+        re.compile(regex)  # validate regex
+        self.emitter.emit(Message('register_vocab', {'regex': regex}))
 
     def speak(self, utterance, expect_response=False):
         """
