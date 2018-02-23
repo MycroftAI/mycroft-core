@@ -177,6 +177,25 @@ class IntentService(object):
         """
         return self.skill_names.get(int(skill_id), skill_id)
 
+    def get_intent(self, utterance, lang="en-us"):
+        best_intent = None
+        for utterance in utterances:
+            try:
+                # normalize() changes "it's a boy" to "it is boy", etc.
+                best_intent = next(self.engine.determine_intent(
+                    normalize(utterance, lang), 100,
+                    include_tags=True,
+                    context_manager=self.context_manager))
+                # TODO - Should Adapt handle this?
+                best_intent['utterance'] = utterance
+            except StopIteration:
+                # don't show error in log
+                continue
+            except Exception as e:
+                LOG.exception(e)
+                continue
+
+
     def reset_converse(self, message):
         """Let skills know there was a problem with speech recognition"""
         lang = message.data.get('lang', "en-us")
@@ -340,23 +359,7 @@ class IntentService(object):
         Returns:
             Intent structure, or None if no match was found.
         """
-        best_intent = None
-        for utterance in utterances:
-            try:
-                # normalize() changes "it's a boy" to "it is boy", etc.
-                best_intent = next(self.engine.determine_intent(
-                    normalize(utterance, lang), 100,
-                    include_tags=True,
-                    context_manager=self.context_manager))
-                # TODO - Should Adapt handle this?
-                best_intent['utterance'] = utterance
-            except StopIteration:
-                # don't show error in log
-                continue
-            except Exception as e:
-                LOG.exception(e)
-                continue
-
+        best_intent = self.get_intent(utterances, lang)
         if best_intent and best_intent.get('confidence', 0.0) > 0.0:
             self.update_context(best_intent)
             # update active skills
