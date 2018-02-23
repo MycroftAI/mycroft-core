@@ -154,6 +154,8 @@ def load_settings():
             show_last_key = config["show_last_key"]
         if "max_log_lines" in config:
             max_log_lines = config["max_log_lines"]
+        if "show_meter" in config:
+            show_meter = config["show_meter"]
     except:
         pass
 
@@ -164,6 +166,7 @@ def save_settings():
     config["cy_chat_area"] = cy_chat_area
     config["show_last_key"] = show_last_key
     config["max_log_lines"] = max_log_lines
+    config["show_meter"] = show_meter
     with io.open(config_file, 'w') as f:
         f.write(unicode(json.dumps(config, ensure_ascii=False)))
 
@@ -235,9 +238,6 @@ class LogMonitorThread(Thread):
             if len(filteredLog) == len(mergedLog):
                 del filteredLog[:cToDel]
             del mergedLog[:cToDel]
-            log_line_offset -= cToDel
-            if log_line_offset < 0:
-                log_line_offset = 0
             if len(filteredLog) != len(mergedLog):
                 rebuild_filtered_log()
 
@@ -611,9 +611,10 @@ def _do_drawing(scr):
     scr.addstr(y_log_legend + 1, curses.COLS // 2 + 2,
                "DEBUG output",
                CLR_LOG_DEBUG)
-    scr.addstr(y_log_legend + 2, curses.COLS // 2 + 2,
-               os.path.basename(log_files[0]) + ", other",
-               CLR_LOG1)
+    if len(log_files) > 0:
+        scr.addstr(y_log_legend + 2, curses.COLS // 2 + 2,
+                   os.path.basename(log_files[0]) + ", other",
+                   CLR_LOG1)
     if len(log_files) > 1:
         scr.addstr(y_log_legend + 3, curses.COLS // 2 + 2,
                    os.path.basename(log_files[1]), CLR_LOG2)
@@ -993,6 +994,9 @@ def gui_main(stdscr):
                 line = line[:-1]
             elif c == 6:  # Ctrl+F (Find)
                 line = ":find "
+            elif c == 18:  # Ctrl+R (Redraw)
+                scr.erase()
+                scr.refresh()
             elif c == 24:  # Ctrl+X (Exit)
                 if find_str:
                     # End the find session
