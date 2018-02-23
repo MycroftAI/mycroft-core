@@ -47,7 +47,15 @@ from mycroft.util.log import LOG
 import locale
 # Curses uses LC_ALL to determine how to display chars set it to system
 # default
-locale.setlocale(locale.LC_ALL, '.'.join(locale.getdefaultlocale()))
+try:
+    default_locale = '.'.join((locale.getdefaultlocale()[0], 'UTF-8'))
+    locale.setlocale(locale.LC_ALL, default_locale)
+except (locale.Error, ValueError):
+    print('Locale not supported, please try starting the command and '
+          'setting LANG="en_US.UTF-8"\n\n'
+          '\tExample: LANG="en_US.UTF-8" ./start-mycroft.sh cli\n',
+          file=sys.__stderr__)
+    sys.exit(1)
 
 ws = None
 mutex = Lock()
