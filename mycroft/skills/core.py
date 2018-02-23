@@ -29,6 +29,7 @@ from os.path import join, abspath, dirname, basename, exists
 from threading import Event
 
 from mycroft.api import DeviceApi
+from mycroft.audio import wait_while_speaking
 from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
 from mycroft.dialog import DialogLoader
@@ -396,6 +397,7 @@ class MycroftSkill(object):
         on_fail_fn = on_fail if callable(on_fail) else on_fail_default
 
         self.speak(get_announcement(), expect_response=True)
+        wait_while_speaking()
         num_fails = 0
         while True:
             response = self.__get_response()
