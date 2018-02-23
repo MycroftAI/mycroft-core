@@ -840,6 +840,9 @@ def handle_cmd(cmd):
         lines = int(_get_cmd_param(cmd))
         if lines < 1:
             lines = 1
+        max_chat_area = curses.LINES - 7
+        if lines > max_chat_area:
+            lines = max_chat_area
         cy_chat_area = lines
     elif "skills" in cmd:
         # List loaded skill
