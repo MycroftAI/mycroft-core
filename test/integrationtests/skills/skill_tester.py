@@ -24,7 +24,8 @@ from os.path import join, isdir
 from pyee import EventEmitter
 
 from mycroft.messagebus.message import Message
-from mycroft.skills.core import create_skill_descriptor, load_skill, MycroftSkill
+from mycroft.skills.core import create_skill_descriptor, load_skill, \
+    MycroftSkill
 
 MainModule = '__init__'
 
@@ -38,7 +39,8 @@ def get_skills(skills_folder):
         is discovered
 
         Args:
-            skills_folder:  Folder to start a search for skills __init__.py files
+            skills_folder:  Folder to start a search for skills __init__.py
+                            files
     """
 
     skills = []
@@ -85,8 +87,8 @@ def unload_skills(skills):
 
 class InterceptEmitter(object):
     """
-        This class intercepts and allows emitting events between the skill_tester and
-        the skill being tested.
+        This class intercepts and allows emitting events between the
+        skill_tester and the skill being tested.
         When a test is running emitted communication is intercepted for analysis
     """
 
@@ -136,8 +138,8 @@ class MockSkillsLoader(object):
 
 class SkillTest(object):
     """
-        This class is instantiated for each skill being tested. It holds the data
-        needed for the test, and contains the methods doing the test
+        This class is instantiated for each skill being tested. It holds the
+        data needed for the test, and contains the methods doing the test
 
     """
 
@@ -172,7 +174,8 @@ class SkillTest(object):
         s.emitter.q = q
 
         # Set up context before calling intent
-        # This option makes it possible to better isolate (reduce dependance) between test_cases
+        # This option makes it possible to better isolate (reduce dependance)
+        # between test_cases
         cxt = test_case.get('remove_context', None)
         if cxt:
             if isinstance(cxt, list):
@@ -196,7 +199,8 @@ class SkillTest(object):
 
         # Wait up to X seconds for the test_case to complete
         timeout = time.time() + int(test_case.get('evaluation_timeout', None)) \
-            if test_case.get('evaluation_timeout', None) and isinstance(test_case['evaluation_timeout'], int) \
+            if test_case.get('evaluation_timeout', None) and \
+               isinstance(test_case['evaluation_timeout'], int) \
             else time.time() + DEFAULT_EVALUAITON_TIMEOUT
         while not evaluation_rule.all_succeeded():
             try:
@@ -222,19 +226,20 @@ class SkillTest(object):
             assert False
 
 
-# TODO: Add command line utility to test an event against a test_case, allow for debugging tests
+# TODO: Add command line utility to test an event against a test_case, allow
+# for debugging tests
 
 class EvaluationRule(object):
     """
-        This class initially convert the test_case json file to internal rule format, which is
-        stored throughout the testcase run. All Messages on the event bus can be evaluated against the
-        rules (test_case)
+        This class initially convert the test_case json file to internal rule
+        format, which is stored throughout the testcase run. All Messages on
+        the event bus can be evaluated against the rules (test_case)
 
-        This approach makes it easier to add new tests, since Message and rule traversal is already
-        set up for the internal rule format.
-        The test writer can use the internal rule format directly in the test_case
-        using the assert keyword, which allows for more powerfull/individual
-        test cases than the standard dictionaly
+        This approach makes it easier to add new tests, since Message and rule
+        traversal is already set up for the internal rule format.
+        The test writer can use the internal rule format directly in the
+        test_case using the assert keyword, which allows for more
+        powerfull/individual test cases than the standard dictionaly
     """
 
     def __init__(self, test_case):
@@ -248,7 +253,8 @@ class EvaluationRule(object):
 
         _x = ['and']
         if test_case.get('utterance', None):
-            _x.append(['endsWith', 'intent_type', str(test_case['intent_type'])])
+            _x.append(['endsWith', 'intent_type',
+                       str(test_case['intent_type'])])
 
         if test_case.get('intent', None):
             for item in test_case['intent'].items():
@@ -258,7 +264,8 @@ class EvaluationRule(object):
             self.rule.append(_x)
 
         if test_case.get('expected_response', None):
-            self.rule.append(['match', 'utterance', str(test_case['expected_response'])])
+            self.rule.append(['match', 'utterance',
+                              str(test_case['expected_response'])])
 
         if test_case.get('changed_context', None):
             ctx = test_case['changed_context']
@@ -304,7 +311,8 @@ class EvaluationRule(object):
 
     def _partial_evaluate(self, rule, msg):
         """
-            Evaluate the message against a part of the rules (recursive over rules)
+            Evaluate the message against a part of the rules (recursive over
+            rules)
 
             Args:
                 rule:  A rule or a part of the rules to be broken down further
@@ -323,11 +331,13 @@ class EvaluationRule(object):
                 return False
 
         if rule[0] == 'endsWith':
-            if not (self._get_field_value(rule[1], msg) and self._get_field_value(rule[1], msg).endswith(rule[2])):
+            if not (self._get_field_value(rule[1], msg) and
+                    self._get_field_value(rule[1], msg).endswith(rule[2])):
                 return False
 
         if rule[0] == 'match':
-            if not (self._get_field_value(rule[1], msg) and re.match(rule[2], self._get_field_value(rule[1], msg))):
+            if not (self._get_field_value(rule[1], msg) and
+                    re.match(rule[2], self._get_field_value(rule[1], msg))):
                 return False
 
         if rule[0] == 'and':
@@ -350,7 +360,7 @@ class EvaluationRule(object):
             Test if all rules succeeded
 
             Returns:
-                bool: True is all rules succeeded
+                bool: True if all rules succeeded
         """
 #        return len(filter(lambda x: x[-1] != 'succeeded', self.rule)) == 0
         return len([x for x in self.rule if x[-1] != 'succeeded']) == 0

@@ -13,7 +13,6 @@
 # limitations under the License.
 #
 import glob
-import sys
 import unittest
 
 import os
@@ -22,6 +21,7 @@ from test.integrationtests.skills.skill_tester import MockSkillsLoader
 from test.integrationtests.skills.skill_tester import SkillTest
 
 HOME_DIR = os.path.dirname(os.path.abspath(__file__))
+
 
 def discover_tests():
     """
@@ -54,6 +54,7 @@ class IntentTestSequenceMeta(type):
         def gen_test(a, b):
             def test(self):
                 SkillTest(a, b, self.emitter).run(self.loader)
+
             return test
 
         tests = discover_tests()
@@ -80,17 +81,17 @@ class IntentTestSequence(unittest.TestCase):
 
     """
     __metaclass__ = IntentTestSequenceMeta
+    loader = None
 
     @classmethod
-    def setUpClass(self):
-        self.loader = MockSkillsLoader(HOME_DIR)
-        self.emitter = self.loader.load_skills()
+    def setUpClass(cls):
+        cls.loader = MockSkillsLoader(HOME_DIR)
+        cls.emitter = cls.loader.load_skills()
 
     @classmethod
-    def tearDownClass(self):
-        self.loader.unload_skills()
+    def tearDownClass(cls):
+        cls.loader.unload_skills()
 
 
 if __name__ == '__main__':
-
     unittest.main()
