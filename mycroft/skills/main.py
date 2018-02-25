@@ -132,9 +132,13 @@ def check_connection():
             # Skip the sync message when unpaired because the prompt to go to
             # home.mycrof.ai will be displayed by the pairing skill
             enclosure.mouth_text(mycroft.dialog.get("message_synching.clock"))
+
         # Force a sync of the local clock with the internet
-        ws.emit(Message("system.ntp.sync"))
-        time.sleep(15)   # TODO: Generate/listen for a message response...
+        config = Configuration.get()
+        platform = config['enclosure'].get("platform", "unknown")
+        if platform in ['mycroft_mark_1', 'picroft']:
+            ws.emit(Message("system.ntp.sync"))
+            time.sleep(15)   # TODO: Generate/listen for a message response...
 
         # Check if the time skewed significantly.  If so, reboot
         skew = abs((monotonic.monotonic() - start_ticks) -
