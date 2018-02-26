@@ -307,7 +307,10 @@ class SkillSettings(dict):
 
     def hash(self, str):
         """ md5 hasher for consistency across cpu architectures """
-        return hashlib.md5(str).hexdigest()
+        if type(str) == bytes:
+            return hashlib.md5(str).hexdigest()
+        else:
+            return hashlib.md5(str.encode('utf8')).hexdigest()
 
     def _get_meta_hash(self, settings_meta):
         """ Get's the hash of skill
