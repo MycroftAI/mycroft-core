@@ -144,7 +144,8 @@ class PreciseHotword(HotWordEngine):
 
     def find_download_exe(self):
         try:
-            if call(['command', '-v', self.exe_name], stdout=PIPE) == 0:
+            if call('command -v ' + self.exe_name,
+                    shell=True, stdout=PIPE) == 0:
                 return self.exe_name
         except OSError:
             pass
