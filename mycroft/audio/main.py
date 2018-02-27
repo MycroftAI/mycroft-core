@@ -122,6 +122,8 @@ def load_services(config, ws, path=None):
         except Exception:
             LOG.error('Failed to import module ' + descriptor['name'],
                       exc_info=True)
+            continue
+
         if (hasattr(service_module, 'autodetect') and
                 callable(service_module.autodetect)):
             try:
