@@ -64,7 +64,7 @@ import hashlib
 from threading import Timer
 from os.path import isfile, join, expanduser, basename
 
-from mycroft.api import DeviceApi
+from mycroft.api import DeviceApi, is_paired
 from mycroft.util.log import LOG
 from mycroft.configuration import ConfigurationManager
 
@@ -122,6 +122,9 @@ class SkillSettings(dict):
         self.load_skill_settings_from_file()  # loads existing settings.json
         settings_meta = self._load_settings_meta()
         if not settings_meta:
+            return
+
+        if not is_paired():
             return
 
         self._device_identity = self.api.identity.uuid
@@ -384,7 +387,9 @@ class SkillSettings(dict):
                 hashed_meta (int): the hashed identifier
         """
         try:
-            if not self._complete_intialization:
+            if not is_paired():
+                pass
+            elif not self._complete_intialization:
                 self.initialize_remote_settings()
                 if not self._complete_intialization:
                     return  # unable to do remote sync
@@ -394,7 +399,6 @@ class SkillSettings(dict):
                 # Call callback for updated settings
                 if self.changed_callback and hash(str(self)) != original:
                     self.changed_callback()
-
         except Exception as e:
             LOG.error(e)
             LOG.exception("")
