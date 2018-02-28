@@ -383,21 +383,22 @@ class SkillSettings(dict):
             Args:
                 hashed_meta (int): the hashed identifier
         """
+        original = hash(str(self))
         try:
             if not self._complete_intialization:
                 self.initialize_remote_settings()
                 if not self._complete_intialization:
                     return  # unable to do remote sync
             else:
-                original = hash(str(self))
                 self.update_remote()
-                # Call callback for updated settings
-                if self.changed_callback and hash(str(self)) != original:
-                    self.changed_callback()
 
         except Exception as e:
             LOG.error(e)
             LOG.exception("")
+        finally:
+            # Call callback for updated settings
+            if self.changed_callback and hash(str(self)) != original:
+                self.changed_callback()
 
         # this is used in core so do not delete!
         if self.is_alive:
