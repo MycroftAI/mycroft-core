@@ -52,11 +52,25 @@ function help() {
   exit 1
 }
 
+function get_config_value() {
+  key="$1"
+  default="$2"
+  value="null"
+  for file in ~/.mycroft/mycroft.conf /etc/mycroft/mycroft.conf ; do
+    if [[ -r ~/.mycroft/mycroft.conf ]] ; then
+        value=$( jq -r "$key" "$file" )
+        if [[ "${value}" != "null" ]] ;  then
+            echo "$value"
+            return
+        fi
+    fi
+  done
+  echo "$default"
+}
+
 # Determine the platform
-mycroft_platform="null"
-if [[ -r /etc/mycroft/mycroft.conf ]] ; then
-   mycroft_platform=$( jq -r '.enclosure.platform' /etc/mycroft/mycroft.conf )
-else
+mycroft_platform="$(get_config_value '.enclosure.platform' 'null')"
+if [[ "${mycroft_platform}" == "null" ]] ; then
    if [[ "$(hostname)" == "picroft" ]] ; then
       mycroft_platform="picroft"
    elif [[ "$(hostname)" =~ "mark_1" ]] ; then
@@ -64,15 +78,7 @@ else
    fi
 fi
 
-# Get the location of the Skill folder
-mycroft_skill_folder="null"
-if [[ -r /etc/mycroft/mycroft.conf ]] ; then
-   mycroft_skill_folder=$( jq -r '.enclosure.skill_folder' /etc/mycroft/mycroft.conf )
-fi
-if [[ ${mycroft_skill_folder} == "null" ]] ; then
-   mycroft_skill_folder="/opt/mycroft/skills"
-fi
-
+mycroft_skill_folder="$(get_config_value '.enclosure.skill_folder' '/opt/mycroft/skills')"
 if [[ ! -d "${mycroft_skill_folder}" ]] ; then
   echo "ERROR: Unable to find/access ${mycroft_skill_folder}!"
   exit 101
@@ -81,18 +87,23 @@ fi
 # Determine if on picroft/mk1?
 picroft_mk1="false"
 vwrap="true"
+use_virtualenvwrapper="$(get_config_value '.enclosure.use_virtualenvwrapper' 'true')"
 if [[ "${mycroft_platform}" == "picroft" ]] || [[ "${mycroft_platform}" == "mycroft_mark_1" ]] ; then
   picroft_mk1="true"
 else
-  if [[ -r /etc/bash_completion.d/virtualenvwrapper ]]; then
-    source /etc/bash_completion.d/virtualenvwrapper
-   elif [[ -r /usr/bin/virtualenvwrapper.sh ]]; then
-    source /usr/bin/virtualenvwrapper.sh
-  else
-    if locate virtualenvwrapper ; then
-      if ! source $(locate virtualenvwrapper) ; then
-        echo "WARNING: Unable to locate virtualenvwrapper.sh, not able to install skills!"
-        vwrap="false"
+  if [[ ${use_virtualenvwrapper} == "true" ]] ; then
+    if [[ -r /etc/bash_completion.d/virtualenvwrapper ]]; then
+      source /etc/bash_completion.d/virtualenvwrapper
+     elif [[ -r /usr/bin/virtualenvwrapper.sh ]]; then
+      source /usr/bin/virtualenvwrapper.sh
+     elif [[ -r /usr/bin/virtualenvwrapper ]]; then
+      source /usr/bin/virtualenvwrapper
+    else
+      if locate virtualenvwrapper ; then
+        if ! source $(locate virtualenvwrapper) ; then
+          echo "WARNING: Unable to locate virtualenvwrapper.sh, not able to install skills!"
+          vwrap="false"
+        fi
       fi
     fi
   fi
