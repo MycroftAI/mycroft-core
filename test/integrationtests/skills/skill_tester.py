@@ -12,17 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""The module execute a test of one skill intent.
 
+Using a mocked message bus this module is responsible for sending utterences
+and testing that the intent is called.
+
+The module runner can test:
+    That the expected intent in the skill is activated
+    That the expected parameters are extracted from the utterance
+    That Mycroft contexts are set or removed
+    That the skill speak the intended answer
+    The content of any message exchanged between the skill and the mycroft core
+
+To set up a test the test runner can
+    Send an utterance, as the user would normally speak
+    Set up and remove context
+    Set up a custom timeout for the test runner, to allow for skills that runs
+    for a very long time
+
+"""
 import Queue
 import json
 import time
-
 import os
 import re
 import ast
 from os.path import join, isdir
 from pyee import EventEmitter
-
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import create_skill_descriptor, load_skill, \
     MycroftSkill
@@ -33,14 +49,17 @@ DEFAULT_EVALUAITON_TIMEOUT = 30
 
 
 def get_skills(skills_folder):
-    """
-        Find skills in the skill folder or sub folders.
+    """Find skills in the skill folder or sub folders.
+
         Recursive traversal into subfolders stop when a __init__.py file
         is discovered
 
         Args:
             skills_folder:  Folder to start a search for skills __init__.py
                             files
+
+        Returns:
+            list: the skills
     """
 
     skills = []
@@ -63,12 +82,14 @@ def get_skills(skills_folder):
 
 
 def load_skills(emitter, skills_root):
-    """
-        Load all skills and set up emitter
+    """Load all skills and set up emitter
 
         Args:
             emitter: The emmitter to use
             skills_root: Directory of the skills __init__.py
+
+        Returns:
+            list: a list of loaded skills
 
     """
     skill_list = []
@@ -115,9 +136,7 @@ class InterceptEmitter(object):
 
 
 class MockSkillsLoader(object):
-    """
-        Load a skill and set up emitter
-
+    """Load a skill and set up emitter
     """
 
     def __init__(self, skills_root):
@@ -143,13 +162,14 @@ class SkillTest(object):
 
     """
 
-    def __init__(self, skill, test_case_file, emitter):
+    def __init__(self, skill, test_case_file, emitter, test_status=None):
         self.skill = skill
         self.test_case_file = test_case_file
         self.emitter = emitter
         self.dict = dict
         self.output_file = None
         self.returned_intent = False
+        self.test_status = test_status
 
     def run(self, loader):
         """
@@ -160,10 +180,18 @@ class SkillTest(object):
                 loader:  A list of loaded skills
         """
         s = [s for s in loader.skills if s and s._dir == self.skill][0]
-#        s = filter(lambda s: s and s._dir == self.skill, loader.skills)[0]
-        print('Test case file: ' + self.test_case_file)
+        print 'Test case file: ' + self.test_case_file
         test_case = json.load(open(self.test_case_file, 'r'))
         print "Test case: " + str(test_case)
+
+        # If we keep track of test status for the entire skill, then
+        # get all intents from the skill, and mark current intent
+        # tested
+        if self.test_status:
+            self.test_status.append_intent(s)
+            if 'intent_type' in test_case:
+                self.test_status.set_tested(test_case['intent_type'])
+
         evaluation_rule = EvaluationRule(test_case)
 
         # Set up queue for emitted events. Because
@@ -211,8 +239,6 @@ class SkillTest(object):
             if time.time() > timeout:
                 break
 
-        # TODO: Check that all intents are tested
-
         # Stop emmiter from sending on queue
         s.emitter.q = None
 
@@ -223,11 +249,10 @@ class SkillTest(object):
         if not evaluation_rule.all_succeeded():
             print "Evaluation failed"
             print "Rule status: " + str(evaluation_rule.rule)
-            assert False
+            return False
 
+        return True
 
-# TODO: Add command line utility to test an event against a test_case, allow
-# for debugging tests
 
 class EvaluationRule(object):
     """
@@ -282,8 +307,8 @@ class EvaluationRule(object):
         print "Rule created " + str(self.rule)
 
     def evaluate(self, msg):
-        """
-            Main entry for evaluating a message against the rules.
+        """Main entry for evaluating a message against the rules.
+
             The rules are prepared in the __init__
             This method is usually called several times with different
             messages using the same rule set. Each call contributing
@@ -292,7 +317,8 @@ class EvaluationRule(object):
             Args:
                 msg:  The message event to evaluate
         """
-        print "Evaluating message: " + str(msg)
+
+        print "\nEvaluating message: " + str(msg)
         for r in self.rule:
             self._partial_evaluate(r, msg)
 
@@ -310,9 +336,9 @@ class EvaluationRule(object):
         return value
 
     def _partial_evaluate(self, rule, msg):
-        """
-            Evaluate the message against a part of the rules (recursive over
-            rules)
+        """Evaluate the message against a part of the rules
+
+        Recursive over rules
 
             Args:
                 rule:  A rule or a part of the rules to be broken down further
@@ -356,11 +382,10 @@ class EvaluationRule(object):
         return True
 
     def all_succeeded(self):
-        """
-            Test if all rules succeeded
+        """Test if all rules succeeded
 
             Returns:
                 bool: True if all rules succeeded
         """
-#        return len(filter(lambda x: x[-1] != 'succeeded', self.rule)) == 0
+
         return len([x for x in self.rule if x[-1] != 'succeeded']) == 0

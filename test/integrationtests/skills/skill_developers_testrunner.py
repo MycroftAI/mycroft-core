@@ -12,11 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""Find test files starting from the directory where this file resides.
+
+The skill_developers_testrunner.py is intended to be copied to the
+skill developers own directory, where the skills __init__.py file
+resides. Running the python unit test in this module from that file
+location, will test the skill developers test the same way as
+discover_test.py, but running only the skill developers test.
+It is executed as a unit test.
+
+"""
+
 import glob
 import unittest
-
 import os
-
 from test.integrationtests.skills.skill_tester import MockSkillsLoader
 from test.integrationtests.skills.skill_tester import SkillTest
 
@@ -24,16 +33,14 @@ HOME_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def discover_tests():
-    """
-    Find test files starting from the directory where this file resides.
-    The skill_developers_testrunner.py is intended to be copied to the
-    skill developers own directory, where the skills __init__.py file
-    resides. Running the python unit test in this module from that file
-    location, will test the skill developers test the same way as
-    discover_test.py, but running only the skill developers test
+    """Find skills whith test files
 
-    :return: the test case files found
+    For all skills with test files, starten from current directory,
+    find the test files in subdirectory test/intent.
+
+    :return: skills and corresponding test case files found
     """
+
     tests = {}
 
     skills = [HOME_DIR]
@@ -53,8 +60,8 @@ class IntentTestSequenceMeta(type):
     def __new__(mcs, name, bases, d):
         def gen_test(a, b):
             def test(self):
-                SkillTest(a, b, self.emitter).run(self.loader)
-
+                if not SkillTest(a, b, self.emitter).run(self.loader):
+                    assert False
             return test
 
         tests = discover_tests()
@@ -71,14 +78,7 @@ class IntentTestSequenceMeta(type):
 
 
 class IntentTestSequence(unittest.TestCase):
-    """
-        This is the TestCase class that pythons unit tester can run.
-        The skill_developers_testrunner.py is intended to be copied to the
-        skill developers own directory, where the skills __init__.py file
-        resides. Running the python unit test in this module from that file
-        location, will test the skill developers test the same way as
-        discover_test.py, but running only the skill developers test
-
+    """This is the TestCase class that pythons unit tester can execute.
     """
     __metaclass__ = IntentTestSequenceMeta
     loader = None

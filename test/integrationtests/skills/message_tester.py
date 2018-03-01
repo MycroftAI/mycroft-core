@@ -14,8 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""
+    This message tester lets a user input a Message event and a json test
+    case, and allows the evaluation of the Message event based on the
+    test case
 
-from Tkinter import *
+    It is supposed to be run in the Mycroft virtualenv, and python-tk
+    must be installed (on Ubuntu: apt-get install python-tk)
+"""
+
+from Tkinter import Label, Button, Tk, NORMAL, END, DISABLED
 import ScrolledText
 import skill_tester
 import ast
@@ -34,15 +42,6 @@ EXAMPLE_TEST_CASE = '{ \n\
 
 
 class MessageTester:
-    """
-        This message tester lets a user input a Message event and a json test
-        case, and allows the evaluation of the Message event based on the
-        test case
-
-        It is supposed to be run in the Mycroft virtualenv, and python-tk
-        must be installed (on Ubuntu: apt-get install python-tk)
-    """
-
     def __init__(self, root):
         root.title("Message tester")
         Label(root, text="Enter message event below", bg="light green").pack()
@@ -62,7 +61,7 @@ class MessageTester:
         self.result_field.pack()
         self.result_field.config(state=DISABLED)
         self.button = Button(root, text="Evaluate", fg="red",
-                             command=self.clicked)
+                             command=self._clicked)
         self.button.pack()
 
         self.event_field.delete('1.0', END)
@@ -70,7 +69,7 @@ class MessageTester:
         self.test_case_field.delete('1.0', END)
         self.test_case_field.insert('insert', EXAMPLE_TEST_CASE)
 
-    def clicked(self):
+    def _clicked(self):
         event = self.event_field.get('1.0', END)
         test_case = self.test_case_field.get('1.0', END)
 
