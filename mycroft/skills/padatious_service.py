@@ -55,26 +55,32 @@ class PadatiousService(FallbackSkill):
         self.emitter = emitter
         self.emitter.on('padatious:register_intent', self.register_intent)
         self.emitter.on('padatious:register_entity', self.register_entity)
+        self.emitter.on('mycroft.skills.initialized', self.train)
         self.register_fallback(self.handle_fallback, 5)
         self.finished_training_event = Event()
+        self.finished_initial_train = False
 
         self.train_delay = self.config['train_delay']
         self.train_time = get_time() + self.train_delay
-        self.wait_and_train()
+
+    def train(self, message=None):
+        self.finished_training_event.clear()
+        LOG.info('Training...')
+        self.container.train()
+        LOG.info('Training complete.')
+        self.finished_training_event.set()
+        self.finished_initial_train = True
 
     def wait_and_train(self):
+        if not self.finished_initial_train:
+            return
         sleep(self.train_delay)
         if self.train_time < 0.0:
             return
 
         if self.train_time <= get_time() + 0.01:
             self.train_time = -1.0
-
-            self.finished_training_event.clear()
-            LOG.info('Training...')
-            self.container.train()
-            LOG.info('Training complete.')
-            self.finished_training_event.set()
+            self.train()
 
     def _register_object(self, message, object_name, register_func):
         file_name = message.data['file_name']

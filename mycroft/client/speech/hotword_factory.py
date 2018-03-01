@@ -273,8 +273,6 @@ class HotWordFactory(object):
         clazz = HotWordFactory.CLASSES.get(module)
         try:
             return clazz(hotword, config, lang=lang)
-        except (KeyboardInterrupt, SystemExit):
-            raise
-        except:
+        except Exception:
             LOG.exception('Could not create hotword. Falling back to default.')
             return HotWordFactory.CLASSES['pocketsphinx']()

@@ -27,9 +27,7 @@ VERSION_INFO = """
 
 
 class TestVersion(unittest.TestCase):
-    @mock.patch('mycroft.version.CORE_VERSION_MAJOR', 0)
-    @mock.patch('mycroft.version.CORE_VERSION_MINOR', 8)
-    @mock.patch('mycroft.version.CORE_VERSION_BUILD', 20)
+    @mock.patch('mycroft.version.CORE_VERSION_TUPLE', (0, 8, 20))
     def test_get_version(self):
         """
             Tests for mycroft.version.get_version()

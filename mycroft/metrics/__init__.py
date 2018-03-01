@@ -18,7 +18,7 @@ import time
 
 import requests
 
-from mycroft.api import DeviceApi
+from mycroft.api import DeviceApi, is_paired
 from mycroft.configuration import Configuration
 from mycroft.session import SessionManager
 from mycroft.util.log import LOG
@@ -35,7 +35,7 @@ def report_metric(name, data):
         data (dict): JSON dictionary to report. Must be valid JSON
     """
     try:
-        if Configuration().get()['opt_in']:
+        if is_paired() and Configuration().get()['opt_in']:
             DeviceApi().report_metric(name, data)
     except (requests.HTTPError, requests.exceptions.ConnectionError) as e:
         LOG.error('Metric couldn\'t be uploaded, due to a network error ({})'

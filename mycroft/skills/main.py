@@ -39,7 +39,6 @@ from mycroft.skills.padatious_service import PadatiousService
 from mycroft.util import connected, wait_while_speaking
 from mycroft.util.log import LOG
 
-
 ws = None
 event_scheduler = None
 skill_manager = None
@@ -133,14 +132,18 @@ def check_connection():
             # Skip the sync message when unpaired because the prompt to go to
             # home.mycrof.ai will be displayed by the pairing skill
             enclosure.mouth_text(mycroft.dialog.get("message_synching.clock"))
+
         # Force a sync of the local clock with the internet
-        ws.emit(Message("system.ntp.sync"))
-        time.sleep(15)   # TODO: Generate/listen for a message response...
+        config = Configuration.get()
+        platform = config['enclosure'].get("platform", "unknown")
+        if platform in ['mycroft_mark_1', 'picroft']:
+            ws.emit(Message("system.ntp.sync"))
+            time.sleep(15)   # TODO: Generate/listen for a message response...
 
         # Check if the time skewed significantly.  If so, reboot
         skew = abs((monotonic.monotonic() - start_ticks) -
                    (time.time() - start_clock))
-        if skew > 60*60:
+        if skew > 60 * 60:
             # Time moved by over an hour in the NTP sync. Force a reboot to
             # prevent weird things from occcurring due to the 'time warp'.
             #
@@ -338,6 +341,8 @@ class SkillManager(Thread):
         """
             Check if unloaded skill or changed skill needs reloading
             and perform loading if necessary.
+
+            Returns True if the skill was loaded/reloaded
         """
         if skill_folder not in self.loaded_skills:
             self.loaded_skills[skill_folder] = {
@@ -348,7 +353,7 @@ class SkillManager(Thread):
 
         # check if folder is a skill (must have __init__.py)
         if not MainModule + ".py" in os.listdir(skill["path"]):
-            return
+            return False
 
         # getting the newest modified date of skill
         modified = _get_last_modified_date(skill["path"])
@@ -356,13 +361,13 @@ class SkillManager(Thread):
 
         # checking if skill is loaded and hasn't been modified on disk
         if skill.get("loaded") and modified <= last_mod:
-            return  # Nothing to do!
+            return False  # Nothing to do!
 
         # check if skill was modified
         elif skill.get("instance") and modified > last_mod:
             # check if skill has been blocked from reloading
             if not skill["instance"].reload_skill:
-                return
+                return False
 
             LOG.debug("Reloading Skill: " + skill_folder)
             # removing listeners and stopping threads
@@ -397,10 +402,12 @@ class SkillManager(Thread):
                                       'id': skill['id'],
                                       'name': skill['instance'].name,
                                       'modified': modified}))
+                return True
             else:
                 self.ws.emit(Message('mycroft.skills.loading_failure',
                                      {'folder': skill_folder,
                                       'id': skill['id']}))
+        return False
 
     def load_skill_list(self, skills_to_load):
         """ Load the specified list of skills from disk
@@ -424,6 +431,8 @@ class SkillManager(Thread):
         self.load_skill_list(PRIORITY_SKILLS)
         self._loaded_priority.set()
 
+        has_loaded = False
+
         # Scan the file folder that contains Skills.  If a Skill is updated,
         # unload the existing version from memory and reload from the disk.
         while not self._stop_event.is_set():
@@ -444,8 +453,15 @@ class SkillManager(Thread):
                 list = filter(lambda x: os.path.isdir(
                     os.path.join(SKILLS_DIR, x)), os.listdir(SKILLS_DIR))
 
+                still_loading = False
                 for skill_folder in list:
-                    self._load_or_reload_skill(skill_folder)
+                    still_loading = (
+                            self._load_or_reload_skill(skill_folder) or
+                            still_loading
+                    )
+                if not has_loaded and not still_loading:
+                    has_loaded = True
+                    self.ws.emit(Message('mycroft.skills.initialized'))
 
             # remember the date of the last modified skill
             modified_dates = map(lambda x: x.get("last_modified"),
