@@ -50,7 +50,8 @@ class IntentTestSequenceMeta(type):
     def __new__(mcs, name, bases, d):
         def gen_test(a, b):
             def test(self):
-                SkillTest(a, b, self.emitter).run(self.loader)
+                if not SkillTest(a, b, self.emitter).run(self.loader):
+                    assert False
             return test
 
         tests = discover_tests()
