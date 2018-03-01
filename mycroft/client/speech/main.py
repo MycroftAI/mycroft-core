@@ -15,6 +15,7 @@
 import sys
 from threading import Thread, Lock
 
+from mycroft import dialog
 from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.client.speech.listener import RecognizerLoop
 from mycroft.configuration import Configuration
@@ -79,9 +80,7 @@ def handle_speak(event):
 
 def handle_complete_intent_failure(event):
     LOG.info("Failed to find intent.")
-    # TODO: Localize
-    data = {'utterance':
-            "Sorry, I didn't catch that. Please rephrase your request."}
+    data = {'utterance': dialog.get('not.loaded')}
     ws.emit(Message('speak', data))
 
 
