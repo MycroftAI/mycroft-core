@@ -27,15 +27,21 @@ Mycroft is a hackable open source voice assistant.
 
 First, get the code on your system!  The simplest method is via git ([git installation instructions](https://gist.github.com/derhuerst/1b15ff4652a867391f03)):
 - `cd ~/`
-- `git clone https://github.com/MycroftAI/mycroft-core.git`
+- `git clone --depth=1 https://github.com/MycroftAI/mycroft-core.git`
 - `cd mycroft-core`
 - `bash dev_setup.sh`
+
 
 This script sets up dependencies and a [virtualenv][about-virtualenv].  If running in an environment besides Ubuntu/Debian, Arch or Fedora you may need to manually install packages as instructed by dev_setup.sh.
 
 [about-virtualenv]:https://virtualenv.pypa.io/en/stable/
 
 NOTE: The default branch for this repository is 'dev', which should be considered a work-in-progress. If you want to clone a more stable version, switch over to the 'master' branch.
+NOTE: If you are willing to contribute to this project, clone the entire repository by 
+- `git clone  https://github.com/MycroftAI/mycroft-core.git`
+ instead of 
+- `git clone --depth=1 https://github.com/MycroftAI/mycroft-core.git`
+which is said above.
 
 # Running Mycroft
 
