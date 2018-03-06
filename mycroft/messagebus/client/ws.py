@@ -123,7 +123,14 @@ class WebsocketClient(object):
         while len(response) == 0:
             time.sleep(0.2)
             if monotonic.monotonic() - start_time > (timeout or 3.0):
-                self.remove(reply_type, handler)
+                try:
+                    self.remove(reply_type, handler)
+                except (ValueError, KeyError):
+                    # ValueError occurs on pyee 1.0.1 removing handlers
+                    # registered with once.
+                    # KeyError may theoretically occur if the event occurs as
+                    # the handler is removbed
+                    pass
                 return None
         return response[0]
 
