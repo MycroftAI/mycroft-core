@@ -913,7 +913,7 @@ class MycroftSkill(object):
         # removing events
         for e, f in self.events:
             self.emitter.remove(e, f)
-        self.events = None  # Remove reference to wrappers
+        self.events = []  # Remove reference to wrappers
 
         self.emitter.emit(
             Message("detach_skill", {"skill_id": str(self.skill_id) + ":"}))
