@@ -371,7 +371,11 @@ class SkillManager(Thread):
 
             LOG.debug("Reloading Skill: " + skill_folder)
             # removing listeners and stopping threads
-            skill["instance"].shutdown()
+            try:
+                skill["instance"].shutdown()
+            except Exception:
+                LOG.exception("An error occured while shutting down {}"
+                              .format(skill["instance"].name))
 
             if DEBUG:
                 gc.collect()  # Collect garbage to remove false references
