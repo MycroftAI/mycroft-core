@@ -580,6 +580,7 @@ class MycroftSkill(object):
 
         def wrapper(message):
             skill_data = {'name': get_handler_name(handler)}
+            stopwatch = Stopwatch()
             try:
                 message = unmunge_message(message, self.skill_id)
                 # Indicate that the skill handler is starting
@@ -588,7 +589,6 @@ class MycroftSkill(object):
                     msg_type = handler_info + '.start'
                     self.emitter.emit(Message(msg_type, skill_data))
 
-                stopwatch = Stopwatch()
                 with stopwatch:
                     is_bound = bool(getattr(handler, 'im_self', None))
                     num_args = len(getargspec(handler).args) - is_bound
