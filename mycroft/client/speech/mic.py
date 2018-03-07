@@ -208,7 +208,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         try:
             self.account_id = DeviceApi().get()['user']['uuid']
-        except (requests.HTTPError, requests.ConnectionError, AttributeError):
+        except (requests.RequestException, AttributeError):
             self.account_id = '0'
 
     def record_sound_chunk(self, source):
