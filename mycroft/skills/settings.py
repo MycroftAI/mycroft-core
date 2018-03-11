@@ -398,8 +398,7 @@ class SkillSettings(dict):
                 self.update_remote()
 
         except Exception as e:
-            LOG.error(e)
-            LOG.exception("")
+            LOG.error('Failed to fetch skill settings:\n{}'.format(e))
         finally:
             # Call callback for updated settings
             if self.changed_callback and hash(str(self)) != original:
