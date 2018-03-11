@@ -300,15 +300,16 @@ class MycroftSkill(object):
 
     def converse(self, utterances, lang="en-us"):
         """
-            Handle conversation. This method can be used to override the normal
-            intent handler after the skill has been invoked once.
+            Handle conversation. This method can be used to override the
+            normal intent handler during the 5 minutes after the skill has
+            been invoked.
 
-            To enable this override thise converse method and return True to
+            To enable this override this converse method and return True to
             indicate that the utterance has been handled.
 
             Args:
                 utterances (list): The utterances from the user
-                lang:       language the utterance is in
+                lang       (str): language the utterance is in
 
             Returns:    True if an utterance was handled, otherwise False
         """
