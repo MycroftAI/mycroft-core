@@ -776,24 +776,27 @@ class MycroftSkill(object):
         return False
 
     def enable_intent(self, intent_name):
-        """(Re)Enable a registered intentif it belongs to this skill
+        """
+        (Re)Enable a registered intentif it belongs to this skill
+
         Args:
-                intent_name:nameof the intent to be enabled
+                intent_name: name of the intent to be enabled
 
         Returns:
                 bool: True if enabled, False if it wasn't registered
         """
         names = [intent[0] for intent in self.registered_intents]
         intents = [intent[1] for intent in self.registered_intents]
-            if intent_name in names:
+        if intent_name in names:
             intent = intents[names.index( intent_name)]
-                self.registered_intents.remove((intent_name, intent))
-                intent.name = intent_name
-                self.register_intent(intent, None)
-                LOG.debug('Enabling intent ' + intent_name)
-                return True
-                LOG.error('Could not enable ' + intent_name +
-                          ', it hasn\'t been registered.')return False
+            self.registered_intents.remove((intent_name, intent))
+            intent.name = intent_name
+            self.register_intent(intent, None)
+            LOG.debug('Enabling intent ' + intent_name)
+            return True
+        LOG.error('Could not enable ' + intent_name + ', it hasn\'t been '
+                                                      'registered.')
+        return False
 
     def set_context(self, context, word=''):
         """
