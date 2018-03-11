@@ -261,6 +261,7 @@ class MycroftSkill(object):
         if emitter:
             self.emitter = emitter
             self.enclosure = EnclosureAPI(emitter, self.name)
+            self.add_event("converse.deactivate", self.on_deactivate)
             self.__register_stop()
 
     def __register_stop(self):
@@ -290,6 +291,12 @@ class MycroftSkill(object):
             str: message that will be spoken to the user
         """
         return None
+
+    def on_deactivate(self, message):
+        """
+        Invoked when the skill is removed from active skill list
+        """
+        pass
 
     def converse(self, utterances, lang="en-us"):
         """
