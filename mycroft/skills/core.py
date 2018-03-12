@@ -261,7 +261,7 @@ class MycroftSkill(object):
         if emitter:
             self.emitter = emitter
             self.enclosure = EnclosureAPI(emitter, self.name)
-            self.add_event("converse.deactivate", self.on_deactivate)
+            self.add_event("converse.deactivate", self._deactivate_skill)
             self.__register_stop()
 
     def __register_stop(self):
@@ -292,7 +292,12 @@ class MycroftSkill(object):
         """
         return None
 
-    def on_deactivate(self, message):
+    def _deactivate_skill(self, message):
+        skill_id = message.data.get("skill_id")
+        if skill_id == self.skill_id:
+            self.on_deactivate()
+
+    def on_deactivate(self):
         """
         Invoked when the skill is removed from active skill list
         """
