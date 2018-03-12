@@ -28,17 +28,19 @@ import ScrolledText
 import skill_tester
 import ast
 
-EXAMPLE_EVENT = "{'expect_response': False, \
-                'utterance': u'Recording audio for 600 seconds'}"
+EXAMPLE_EVENT = '''{
+  'expect_response': False, 
+  'utterance': u'Recording audio for 600 seconds'
+}'''
 
-EXAMPLE_TEST_CASE = '{ \n\
-  "utterance": "record", \n\
-  "intent_type": "AudioRecordSkillIntent", \n\
-  "intent": { \n\
-    "AudioRecordSkillKeyword": "record" \n\
-  }, \n\
-  "expected_response": ".*(recording|audio)" \n\
-}'
+EXAMPLE_TEST_CASE = '''{ 
+  "utterance": "record", 
+  "intent_type": "AudioRecordSkillIntent", 
+  "intent": { 
+    "AudioRecordSkillKeyword": "record" 
+  }, 
+  "expected_response": ".*(recording|audio)" 
+}'''
 
 
 class MessageTester:
