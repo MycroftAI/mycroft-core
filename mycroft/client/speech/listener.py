@@ -17,7 +17,7 @@ from threading import Thread
 import sys
 import speech_recognition as sr
 from pyee import EventEmitter
-from requests import HTTPError
+from requests import RequestException
 from requests.exceptions import ConnectionError
 
 import mycroft.dialog
@@ -169,13 +169,16 @@ class AudioConsumer(Thread):
         except ConnectionError as e:
             LOG.error("Connection Error: {0}".format(e))
             self.emitter.emit("recognizer_loop:no_internet")
-        except HTTPError as e:
+        except RequestException as e:
             if e.response.status_code == 401:
                 text = "pair my device"  # phrase to start the pairing process
                 LOG.warning("Access Denied at mycroft.ai")
         except Exception as e:
             self.emitter.emit('recognizer_loop:speech.recognition.unknown')
-            LOG.error(e)
+            if isinstance(e, IndexError):
+                LOG.info('no words were transcribed')
+            else:
+                LOG.error(e)
             LOG.error("Speech Recognition could not understand audio")
         return text
 

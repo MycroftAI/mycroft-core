@@ -18,7 +18,6 @@ import sys
 import time
 import csv
 import inspect
-from functools import wraps
 from inspect import getargspec
 from datetime import datetime, timedelta
 
@@ -28,6 +27,7 @@ from adapt.intent import Intent, IntentBuilder
 from os.path import join, abspath, dirname, basename, exists
 from threading import Event
 
+from mycroft import dialog
 from mycroft.api import DeviceApi
 from mycroft.audio import wait_while_speaking
 from mycroft.client.enclosure.api import EnclosureAPI
@@ -126,7 +126,7 @@ def load_skill(skill_descriptor, emitter, skill_id, BLACKLISTED_SKILLS=None):
             # The very first time a skill is run, speak the intro
             first_run = skill.settings.get("__mycroft_skill_firstrun", True)
             if first_run:
-                LOG.info("First run of "+skill_descriptor["name"])
+                LOG.info("First run of " + skill_descriptor["name"])
                 skill.settings["__mycroft_skill_firstrun"] = False
                 skill.settings.store()
                 intro = skill.get_intro_message()
@@ -166,21 +166,16 @@ def get_handler_name(handler):
     return name
 
 
-# Lists used when adding skill handlers using decorators
-_intent_list = []
-_intent_file_list = []
-
-
 def intent_handler(intent_parser):
     """ Decorator for adding a method as an intent handler. """
 
     def real_decorator(func):
-        @wraps(func)
-        def handler_method(*args, **kwargs):
-            return func(*args, **kwargs)
-
-        _intent_list.append((intent_parser, func))
-        return handler_method
+        # Store the intent_parser inside the function
+        # This will be used later to call register_intent
+        if not hasattr(func, 'intents'):
+            func.intents = []
+        func.intents.append(intent_parser)
+        return func
 
     return real_decorator
 
@@ -189,12 +184,12 @@ def intent_file_handler(intent_file):
     """ Decorator for adding a method as an intent file handler. """
 
     def real_decorator(func):
-        @wraps(func)
-        def handler_method(*args, **kwargs):
-            return func(*args, **kwargs)
-
-        _intent_file_list.append((intent_file, func))
-        return handler_method
+        # Store the intent_file inside the function
+        # This will be used later to call register_intent_file
+        if not hasattr(func, 'intent_files'):
+            func.intent_files = []
+        func.intent_files.append(intent_file)
+        return func
 
     return real_decorator
 
@@ -273,7 +268,7 @@ class MycroftSkill(object):
         self.stop_time = time.time()
         self.stop_threshold = self.config_core.get("skills").get(
             'stop_threshold')
-        self.add_event('mycroft.stop', self.__handle_stop, False)
+        self.add_event('mycroft.stop', self.__handle_stop)
 
     def detach(self):
         for (name, intent) in self.registered_intents:
@@ -455,14 +450,20 @@ class MycroftSkill(object):
     def _register_decorated(self):
         """
         Register all intent handlers that have been decorated with an intent.
+
+        Looks for all functions that have been marked by a decorator
+        and read the intent data from them
         """
-        global _intent_list, _intent_file_list
-        for intent_parser, handler in _intent_list:
-            self.register_intent(intent_parser, handler, need_self=True)
-        for intent_file, handler in _intent_file_list:
-            self.register_intent_file(intent_file, handler, need_self=True)
-        _intent_list = []
-        _intent_file_list = []
+        for attr_name in dir(self):
+            method = getattr(self, attr_name)
+
+            if hasattr(method, 'intents'):
+                for intent in getattr(method, 'intents'):
+                    self.register_intent(intent, method)
+
+            if hasattr(method, 'intent_files'):
+                for intent_file in getattr(method, 'intent_files'):
+                    self.register_intent_file(intent_file, method)
 
     def translate(self, text, data=None):
         """
@@ -564,75 +565,48 @@ class MycroftSkill(object):
             text = f.read().replace('{{', '{').replace('}}', '}')
             return text.format(**data or {}).split('\n')
 
-    def add_event(self, name, handler, need_self=False,
-                  handler_info=None, once=False):
+    def add_event(self, name, handler, handler_info=None, once=False):
         """
             Create event handler for executing intent
 
             Args:
                 name:           IntentParser name
                 handler:        method to call
-                need_self:      optional parameter, when called from a
-                                decorated intent handler the function will
-                                need the self variable passed as well.
-                once:           optional parameter, Event handler will be
-                                removed after it has been run once.
                 handler_info:   base message when reporting skill event handler
                                 status on messagebus.
+                once:           optional parameter, Event handler will be
+                                removed after it has been run once.
         """
 
         def wrapper(message):
-            data = {'name': get_handler_name(handler)}
+            skill_data = {'name': get_handler_name(handler)}
+            stopwatch = Stopwatch()
             try:
+                message = unmunge_message(message, self.skill_id)
                 # Indicate that the skill handler is starting
                 if handler_info:
                     # Indicate that the skill handler is starting if requested
                     msg_type = handler_info + '.start'
-                    self.emitter.emit(Message(msg_type, data))
+                    self.emitter.emit(Message(msg_type, skill_data))
 
-                stopwatch = Stopwatch()
                 with stopwatch:
-                    if need_self:
-                        # When registring from decorator self is required
-                        if len(getargspec(handler).args) == 2:
-                            handler(self, unmunge_message(message,
-                                                          self.skill_id))
-                        elif len(getargspec(handler).args) == 1:
-                            handler(self)
-                        elif len(getargspec(handler).args) == 0:
-                            # Zero may indicate multiple decorators, trying the
-                            # usual call signatures
-                            try:
-                                handler(self, unmunge_message(message,
-                                                              self.skill_id))
-                            except TypeError:
-                                handler(self)
-                        else:
-                            LOG.error("Unexpected argument count:" +
-                                      str(len(getargspec(handler).args)))
-                            raise TypeError
+                    is_bound = bool(getattr(handler, 'im_self', None))
+                    num_args = len(getargspec(handler).args) - is_bound
+                    if num_args == 0:
+                        handler()
                     else:
-                        if len(getargspec(handler).args) == 2:
-                            handler(unmunge_message(message, self.skill_id))
-                        elif len(getargspec(handler).args) == 1:
-                            handler()
-                        else:
-                            LOG.error("Unexpected argument count:" +
-                                      str(len(getargspec(handler).args)))
-                            raise TypeError
+                        handler(message)
                     self.settings.store()  # Store settings if they've changed
 
             except Exception as e:
                 # Convert "MyFancySkill" to "My Fancy Skill" for speaking
-                handler_name = re.sub("([a-z])([A-Z])", "\g<1> \g<2>",
-                                      self.name)
-                # TODO: Localize
-                self.speak("An error occurred while processing a request in " +
-                           handler_name)
-                LOG.error("An error occurred while processing a request in " +
-                          self.name, exc_info=True)
+                handler_name = re.sub(r"([a-z])([A-Z])", r"\1 \2", self.name)
+                msg_data = {'skill': handler_name}
+                msg = dialog.get('skill.error', self.lang, msg_data)
+                self.speak(msg)
+                LOG.exception(msg)
                 # append exception information in message
-                data['exception'] = e.message
+                skill_data['exception'] = e.message
             finally:
                 if once:
                     self.remove_event(name)
@@ -640,7 +614,7 @@ class MycroftSkill(object):
                 # Indicate that the skill handler has completed
                 if handler_info:
                     msg_type = handler_info + '.complete'
-                    self.emitter.emit(Message(msg_type, data))
+                    self.emitter.emit(Message(msg_type, skill_data))
 
                 # Send timing metrics
                 context = message.context
@@ -679,7 +653,7 @@ class MycroftSkill(object):
                 removed = True
         return removed
 
-    def register_intent(self, intent_parser, handler, need_self=False):
+    def register_intent(self, intent_parser, handler):
         """
             Register an Intent with the intent service.
 
@@ -687,9 +661,6 @@ class MycroftSkill(object):
                 intent_parser: Intent or IntentBuilder object to parse
                                utterance for the handler.
                 handler:       function to register with intent
-                need_self:     optional parameter, when called from a decorated
-                               intent handler the function will need the self
-                               variable passed as well.
         """
         if type(intent_parser) == IntentBuilder:
             intent_parser = intent_parser.build()
@@ -701,10 +672,9 @@ class MycroftSkill(object):
         munge_intent_parser(intent_parser, name, self.skill_id)
         self.emitter.emit(Message("register_intent", intent_parser.__dict__))
         self.registered_intents.append((name, intent_parser))
-        self.add_event(intent_parser.name, handler, need_self,
-                       'mycroft.skill.handler')
+        self.add_event(intent_parser.name, handler, 'mycroft.skill.handler')
 
-    def register_intent_file(self, intent_file, handler, need_self=False):
+    def register_intent_file(self, intent_file, handler):
         """
             Register an Intent file with the intent service.
             For example:
@@ -729,14 +699,13 @@ class MycroftSkill(object):
                 intent_file: name of file that contains example queries
                              that should activate the intent
                 handler:     function to register with intent
-                need_self:   use for decorator. See <register_intent>
         """
         name = str(self.skill_id) + ':' + intent_file
         self.emitter.emit(Message("padatious:register_intent", {
             "file_name": join(self.vocab_dir, intent_file),
             "name": name
         }))
-        self.add_event(name, handler, need_self, 'mycroft.skill.handler')
+        self.add_event(name, handler, 'mycroft.skill.handler')
 
     def register_entity_file(self, entity_file):
         """
@@ -918,7 +887,7 @@ class MycroftSkill(object):
         # removing events
         for e, f in self.events:
             self.emitter.remove(e, f)
-        self.events = None  # Remove reference to wrappers
+        self.events = []  # Remove reference to wrappers
 
         self.emitter.emit(
             Message("detach_skill", {"skill_id": str(self.skill_id) + ":"}))
@@ -1115,6 +1084,7 @@ class FallbackSkill(MycroftSkill):
                 ident = message.context['ident']
                 report_timing(ident, 'fallback_handler', stopwatch,
                               {'handler': handler_name})
+
         return handler
 
     @classmethod
@@ -1137,11 +1107,13 @@ class FallbackSkill(MycroftSkill):
             register a fallback with the list of fallback handlers
             and with the list of handlers registered by this instance
         """
+
         def wrapper(*args, **kwargs):
             if handler(*args, **kwargs):
                 self.make_active()
                 return True
             return False
+
         self.instance_fallback_handlers.append(wrapper)
         self._register_fallback(handler, priority)
 

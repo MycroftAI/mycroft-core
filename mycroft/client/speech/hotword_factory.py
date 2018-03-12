@@ -16,17 +16,18 @@ import tempfile
 import time
 
 import sys
+from tempfile import NamedTemporaryFile
+
 import os
 from os.path import dirname, exists, join, abspath, expanduser, isdir, isfile
 
-from os import mkdir
+from os import mkdir, getcwd, chdir
 from time import time as get_time
 
 from mycroft.configuration import Configuration
 from subprocess import Popen, PIPE, call
 from threading import Thread
 
-from mycroft.util import resolve_resource_file
 from mycroft.util.log import LOG
 
 
@@ -142,16 +143,18 @@ class PreciseHotword(HotWordEngine):
         return model_name, model_path
 
     def find_download_exe(self):
-        exe_file = resolve_resource_file(self.exe_name)
-        if exe_file:
-            return exe_file
         try:
-            if call(self.exe_name + ' < /dev/null', shell=True) == 0:
+            if call('command -v ' + self.exe_name,
+                    shell=True, stdout=PIPE) == 0:
                 return self.exe_name
         except OSError:
             pass
 
-        exe_file = expanduser('~/.mycroft/precise/' + self.exe_name)
+        precise_folder = expanduser('~/.mycroft/precise')
+        if isfile(join(precise_folder, 'precise-stream')):
+            os.remove(join(precise_folder, 'precise-stream'))
+
+        exe_file = join(precise_folder, 'precise-stream', 'precise-stream')
         if isfile(exe_file):
             return exe_file
 
@@ -164,14 +167,22 @@ class PreciseHotword(HotWordEngine):
 
         arch = platform.machine()
 
-        url = self.dist_url + arch + '/' + self.exe_name
+        url = self.dist_url + arch + '/precise-stream.tar.gz'
+        tar_file = NamedTemporaryFile().name + '.tar.gz'
 
         snd_msg('mouth.text=Updating Listener...')
-        self.download(url, exe_file)
-        snd_msg('mouth.reset')
+        cur_dir = getcwd()
+        chdir(precise_folder)
+        try:
+            self.download(url, tar_file)
+            call(['tar', '-xzvf', tar_file])
+        finally:
+            chdir(cur_dir)
+            snd_msg('mouth.reset')
 
+        if not isfile(exe_file):
+            raise RuntimeError('Could not extract file: ' + exe_file)
         os.chmod(exe_file, os.stat(exe_file).st_mode | stat.S_IEXEC)
-        Popen('echo "mouth.reset" > /dev/ttyAMA0', shell=True)
         return exe_file
 
     @staticmethod
@@ -187,6 +198,7 @@ class PreciseHotword(HotWordEngine):
         req = urlopen(url)
         with open(filename, 'wb') as fp:
             shutil.copyfileobj(req, fp)
+        LOG.info('Download complete.')
 
     def update_model(self, name, file_name):
         if isfile(file_name):
@@ -261,8 +273,6 @@ class HotWordFactory(object):
         clazz = HotWordFactory.CLASSES.get(module)
         try:
             return clazz(hotword, config, lang=lang)
-        except (KeyboardInterrupt, SystemExit):
-            raise
-        except:
+        except Exception:
             LOG.exception('Could not create hotword. Falling back to default.')
             return HotWordFactory.CLASSES['pocketsphinx']()

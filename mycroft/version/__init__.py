@@ -21,14 +21,15 @@ from mycroft.util.log import LOG
 
 # The following lines are replaced during the release process.
 # START_VERSION_BLOCK
-CORE_VERSION_MAJOR = 0
-CORE_VERSION_MINOR = 9
-CORE_VERSION_BUILD = 17
+CORE_VERSION_MAJOR = 18
+CORE_VERSION_MINOR = 2
+CORE_VERSION_BUILD = 0
 # END_VERSION_BLOCK
 
-CORE_VERSION_STR = (str(CORE_VERSION_MAJOR) + "." +
-                    str(CORE_VERSION_MINOR) + "." +
-                    str(CORE_VERSION_BUILD))
+CORE_VERSION_TUPLE = (CORE_VERSION_MAJOR,
+                      CORE_VERSION_MINOR,
+                      CORE_VERSION_BUILD)
+CORE_VERSION_STR = '.'.join(map(str, CORE_VERSION_TUPLE))
 
 
 class VersionManager(object):
@@ -55,17 +56,5 @@ def check_version(version_string):
         Args:
             version_string (string): version string ('Major.Minor.Build')
     """
-    major, minor, build = version_string.split('.')
-    major = int(major)
-    minor = int(minor)
-    build = int(build)
-
-    if CORE_VERSION_MAJOR > major:
-        return True
-    elif CORE_VERSION_MAJOR == major and CORE_VERSION_MINOR > minor:
-        return True
-    elif major == CORE_VERSION_MAJOR and minor == CORE_VERSION_MINOR and \
-            CORE_VERSION_BUILD >= build:
-        return True
-    else:
-        return False
+    version_tuple = tuple(map(int, version_string.split('.')))
+    return CORE_VERSION_TUPLE >= version_tuple
