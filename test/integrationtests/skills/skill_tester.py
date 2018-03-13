@@ -367,6 +367,10 @@ class EvaluationRule(object):
                     self._get_field_value(rule[1], msg).endswith(rule[2])):
                 return False
 
+        if rule[0] == 'exists':
+            if not self._get_field_value(rule[1], msg):
+                return False
+
         if rule[0] == 'match':
             if not (self._get_field_value(rule[1], msg) and
                     re.match(rule[2], self._get_field_value(rule[1], msg))):
