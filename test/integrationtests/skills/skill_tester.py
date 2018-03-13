@@ -277,7 +277,7 @@ class EvaluationRule(object):
         self.rule = []
 
         _x = ['and']
-        if test_case.get('utterance', None):
+        if 'utterance' in test_case and 'intent_type' in test_case:
             _x.append(['endsWith', 'intent_type',
                        str(test_case['intent_type'])])
 
