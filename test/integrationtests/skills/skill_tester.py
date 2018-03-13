@@ -41,7 +41,7 @@ from os.path import join, isdir
 from pyee import EventEmitter
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import create_skill_descriptor, load_skill, \
-    MycroftSkill
+    MycroftSkill, FallbackSkill
 
 MainModule = '__init__'
 
@@ -143,12 +143,18 @@ class MockSkillsLoader(object):
         self.skills_root = skills_root
         self.emitter = InterceptEmitter()
         from mycroft.skills.intent_service import IntentService
+        from mycroft.skills.padatious_service import PadatiousService
         self.ih = IntentService(self.emitter)
+        self.ps = PadatiousService(self.emitter, self.ih)
         self.skills = None
+        self.emitter.on(
+            'intent_failure',
+            FallbackSkill.make_intent_failure_handler(self.emitter))
 
     def load_skills(self):
         self.skills = load_skills(self.emitter, self.skills_root)
         self.skills = [s for s in self.skills if s]
+        self.ps.train()
         return self.emitter.emitter  # kick out the underlying emitter
 
     def unload_skills(self):
