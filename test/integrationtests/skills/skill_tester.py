@@ -108,9 +108,9 @@ def unload_skills(skills):
 
 class InterceptEmitter(object):
     """
-        This class intercepts and allows emitting events between the
-        skill_tester and the skill being tested.
-        When a test is running emitted communication is intercepted for analysis
+    This class intercepts and allows emitting events between the
+    skill_tester and the skill being tested.
+    When a test is running emitted communication is intercepted for analysis
     """
 
     def __init__(self):
@@ -232,9 +232,9 @@ class SkillTest(object):
                     {'utterances': [test_case.get('utterance', None)]}))
 
         # Wait up to X seconds for the test_case to complete
-        timeout = time.time() + int(test_case.get('evaluation_timeout', None)) \
+        timeout = time.time() + int(test_case.get('evaluation_timeout')) \
             if test_case.get('evaluation_timeout', None) and \
-               isinstance(test_case['evaluation_timeout'], int) \
+            isinstance(test_case['evaluation_timeout'], int) \
             else time.time() + DEFAULT_EVALUAITON_TIMEOUT
         while not evaluation_rule.all_succeeded():
             try:

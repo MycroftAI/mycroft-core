@@ -93,11 +93,12 @@ class IntentTestSequenceMeta(type):
                     succeeded = False
                     for test_case in tests[skill]:
                         if SkillTest(skill, test_case, self.emitter,
-                                         test_status=skill_test_status).\
+                                     test_status=skill_test_status). \
                                 run(self.loader):
                             succeeded = True
 
-                    untested = [i for i in skill_test_status.intent_list.items()
+                    untested = [i
+                                for i in skill_test_status.intent_list.items()
                                 if not all(i)]
                     for intent_status in untested:
                         print "No test found for intent: " + intent_status[0]

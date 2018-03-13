@@ -29,17 +29,17 @@ import skill_tester
 import ast
 
 EXAMPLE_EVENT = '''{
-  'expect_response': False, 
+  'expect_response': False,
   'utterance': u'Recording audio for 600 seconds'
 }'''
 
-EXAMPLE_TEST_CASE = '''{ 
-  "utterance": "record", 
-  "intent_type": "AudioRecordSkillIntent", 
-  "intent": { 
-    "AudioRecordSkillKeyword": "record" 
-  }, 
-  "expected_response": ".*(recording|audio)" 
+EXAMPLE_TEST_CASE = '''{
+  "utterance": "record",
+  "intent_type": "AudioRecordSkillIntent",
+  "intent": {
+    "AudioRecordSkillKeyword": "record"
+  },
+  "expected_response": ".*(recording|audio)"
 }'''
 
 
