@@ -532,7 +532,7 @@ function update() {
   cd "${mycroft_skill_folder}"
   
   send_start_update & 
-  pids="$!"
+  pids=("$!")
 
   # Loop through all of the current Skill folders
   for d in $(find "${mycroft_skill_folder}" -mindepth 1 -maxdepth 1 -type d |grep -v '.git'$ ); do
@@ -540,13 +540,10 @@ function update() {
     git_dir=$(git -C "$d" rev-parse --git-dir 2>&1)
     if [ "$git_dir" = ".git" ]; then
       update_skill "$d" &
-      pids="$pids $!"
+      pids+=("$!")
     fi
   done
-
-  for pid in $pids; do
-    wait $pid
-  done
+  wait $pids
 
   # TODO: Remove this for 18.02
   # HACK: Only do the re-PIP once per boot
