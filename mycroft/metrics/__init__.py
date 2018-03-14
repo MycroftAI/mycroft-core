@@ -37,7 +37,7 @@ def report_metric(name, data):
     try:
         if is_paired() and Configuration().get()['opt_in']:
             DeviceApi().report_metric(name, data)
-    except (requests.HTTPError, requests.exceptions.ConnectionError) as e:
+    except requests.RequestException as e:
         LOG.error('Metric couldn\'t be uploaded, due to a network error ({})'
                   .format(e))
 

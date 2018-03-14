@@ -27,6 +27,7 @@ from adapt.intent import Intent, IntentBuilder
 from os.path import join, abspath, dirname, basename, exists
 from threading import Event
 
+from mycroft import dialog
 from mycroft.api import DeviceApi
 from mycroft.audio import wait_while_speaking
 from mycroft.client.enclosure.api import EnclosureAPI
@@ -267,7 +268,7 @@ class MycroftSkill(object):
         self.stop_time = time.time()
         self.stop_threshold = self.config_core.get("skills").get(
             'stop_threshold')
-        self.add_event('mycroft.stop', self.__handle_stop, False)
+        self.add_event('mycroft.stop', self.__handle_stop)
 
     def detach(self):
         for (name, intent) in self.registered_intents:
@@ -564,74 +565,48 @@ class MycroftSkill(object):
             text = f.read().replace('{{', '{').replace('}}', '}')
             return text.format(**data or {}).split('\n')
 
-    def add_event(self, name, handler, need_self=False,
-                  handler_info=None, once=False):
+    def add_event(self, name, handler, handler_info=None, once=False):
         """
             Create event handler for executing intent
 
             Args:
                 name:           IntentParser name
                 handler:        method to call
-                need_self:      optional parameter, pass if giving a local
-                                function or lambda (not defined in the class)
-                once:           optional parameter, Event handler will be
-                                removed after it has been run once.
                 handler_info:   base message when reporting skill event handler
                                 status on messagebus.
+                once:           optional parameter, Event handler will be
+                                removed after it has been run once.
         """
 
         def wrapper(message):
-            data = {'name': get_handler_name(handler)}
+            skill_data = {'name': get_handler_name(handler)}
+            stopwatch = Stopwatch()
             try:
+                message = unmunge_message(message, self.skill_id)
                 # Indicate that the skill handler is starting
                 if handler_info:
                     # Indicate that the skill handler is starting if requested
                     msg_type = handler_info + '.start'
-                    self.emitter.emit(Message(msg_type, data))
+                    self.emitter.emit(Message(msg_type, skill_data))
 
-                stopwatch = Stopwatch()
                 with stopwatch:
-                    if need_self:
-                        # When registring from decorator self is required
-                        if len(getargspec(handler).args) == 2:
-                            handler(self, unmunge_message(message,
-                                                          self.skill_id))
-                        elif len(getargspec(handler).args) == 1:
-                            handler(self)
-                        elif len(getargspec(handler).args) == 0:
-                            # Zero may indicate multiple decorators, trying the
-                            # usual call signatures
-                            try:
-                                handler(self, unmunge_message(message,
-                                                              self.skill_id))
-                            except TypeError:
-                                handler(self)
-                        else:
-                            LOG.error("Unexpected argument count:" +
-                                      str(len(getargspec(handler).args)))
-                            raise TypeError
+                    is_bound = bool(getattr(handler, 'im_self', None))
+                    num_args = len(getargspec(handler).args) - is_bound
+                    if num_args == 0:
+                        handler()
                     else:
-                        if len(getargspec(handler).args) == 2:
-                            handler(unmunge_message(message, self.skill_id))
-                        elif len(getargspec(handler).args) == 1:
-                            handler()
-                        else:
-                            LOG.error("Unexpected argument count:" +
-                                      str(len(getargspec(handler).args)))
-                            raise TypeError
+                        handler(message)
                     self.settings.store()  # Store settings if they've changed
 
             except Exception as e:
                 # Convert "MyFancySkill" to "My Fancy Skill" for speaking
-                handler_name = re.sub("([a-z])([A-Z])", "\g<1> \g<2>",
-                                      self.name)
-                # TODO: Localize
-                self.speak("An error occurred while processing a request in " +
-                           handler_name)
-                LOG.error("An error occurred while processing a request in " +
-                          self.name, exc_info=True)
+                handler_name = re.sub(r"([a-z])([A-Z])", r"\1 \2", self.name)
+                msg_data = {'skill': handler_name}
+                msg = dialog.get('skill.error', self.lang, msg_data)
+                self.speak(msg)
+                LOG.exception(msg)
                 # append exception information in message
-                data['exception'] = e.message
+                skill_data['exception'] = e.message
             finally:
                 if once:
                     self.remove_event(name)
@@ -639,7 +614,7 @@ class MycroftSkill(object):
                 # Indicate that the skill handler has completed
                 if handler_info:
                     msg_type = handler_info + '.complete'
-                    self.emitter.emit(Message(msg_type, data))
+                    self.emitter.emit(Message(msg_type, skill_data))
 
                 # Send timing metrics
                 context = message.context
@@ -697,8 +672,7 @@ class MycroftSkill(object):
         munge_intent_parser(intent_parser, name, self.skill_id)
         self.emitter.emit(Message("register_intent", intent_parser.__dict__))
         self.registered_intents.append((name, intent_parser))
-        self.add_event(intent_parser.name, handler, False,
-                       'mycroft.skill.handler')
+        self.add_event(intent_parser.name, handler, 'mycroft.skill.handler')
 
     def register_intent_file(self, intent_file, handler):
         """
@@ -731,7 +705,7 @@ class MycroftSkill(object):
             "file_name": join(self.vocab_dir, intent_file),
             "name": name
         }))
-        self.add_event(name, handler, False, 'mycroft.skill.handler')
+        self.add_event(name, handler, 'mycroft.skill.handler')
 
     def register_entity_file(self, entity_file):
         """
@@ -913,7 +887,7 @@ class MycroftSkill(object):
         # removing events
         for e, f in self.events:
             self.emitter.remove(e, f)
-        self.events = None  # Remove reference to wrappers
+        self.events = []  # Remove reference to wrappers
 
         self.emitter.emit(
             Message("detach_skill", {"skill_id": str(self.skill_id) + ":"}))

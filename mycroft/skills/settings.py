@@ -398,8 +398,7 @@ class SkillSettings(dict):
                 self.update_remote()
 
         except Exception as e:
-            LOG.error(e)
-            LOG.exception("")
+            LOG.error('Failed to fetch skill settings:\n{}'.format(e))
         finally:
             # Call callback for updated settings
             if self.changed_callback and hash(str(self)) != original:
@@ -407,8 +406,8 @@ class SkillSettings(dict):
 
         # this is used in core so do not delete!
         if self.is_alive:
-            # continues to poll settings every 60 seconds
-            t = Timer(60, self._poll_skill_settings)
+            # continues to poll settings every 5 minutes
+            t = Timer(300, self._poll_skill_settings)
             t.daemon = True
             t.start()
 

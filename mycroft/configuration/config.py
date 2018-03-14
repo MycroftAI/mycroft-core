@@ -175,7 +175,7 @@ class RemoteConf(LocalConf):
             self.store(cache)
 
         except HTTPError as e:
-            LOG.error("HTTPError fetching remote configuration: %s" %
+            LOG.error("RequestException fetching remote configuration: %s" %
                       e.response.status_code)
             self.load_local(cache)
 
