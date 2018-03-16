@@ -198,7 +198,7 @@ class SkillTest(object):
             if 'intent_type' in test_case:
                 self.test_status.set_tested(test_case['intent_type'])
 
-        evaluation_rule = EvaluationRule(test_case)
+        evaluation_rule = EvaluationRule(test_case, s)
 
         # Set up queue for emitted events. Because
         # the evaluation method expects events to be received in convoy,
@@ -273,7 +273,7 @@ class EvaluationRule(object):
         powerfull/individual test cases than the standard dictionaly
     """
 
-    def __init__(self, test_case):
+    def __init__(self, test_case, skill):
         """
             Convert test_case read from file to internal rule format
 
@@ -297,6 +297,17 @@ class EvaluationRule(object):
         if test_case.get('expected_response', None):
             self.rule.append(['match', 'utterance',
                               str(test_case['expected_response'])])
+
+        if test_case.get('expected_dialog', None):
+            # Make sure expected dialog file is used
+            dialog = test_case['expected_dialog']
+            # Extract dialog texts from skill
+            dialogs = skill.dialog_renderer.templates[dilog]
+            # Allow custom fields to be anything
+            d = [re.sub('\{.*?\}', '.*', t) for t in dialogs]
+            # Create rule allowing any of the sentences for that dialog
+            rules = [['match', 'utterance', r] for r in d]
+            self.rule.append(['or'] + rules)
 
         if test_case.get('changed_context', None):
             ctx = test_case['changed_context']
