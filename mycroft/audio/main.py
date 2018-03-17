@@ -449,6 +449,31 @@ class AudioService(object):
                 self.pulse_quiet = self.pulse_lower_volume
                 self.pulse_restore = self.pulse_restore_volume
 
+    def shutdown(self):
+        for s in self.service:
+            try:
+                LOG.info('shutting down ' + s.name)
+                s.shutdown()
+            except Exception as e:
+                LOG.error('shutdown of ' + s.name + ' failed: ' + str(e))
+
+        # remove listeners
+        self.ws.remove('mycroft.audio.service.play', self._play)
+        self.ws.remove('mycroft.audio.service.queue', self._queue)
+        self.ws.remove('mycroft.audio.service.pause', self._pause)
+        self.ws.remove('mycroft.audio.service.resume', self._resume)
+        self.ws.remove('mycroft.audio.service.stop', self._stop)
+        self.ws.remove('mycroft.audio.service.next', self._next)
+        self.ws.remove('mycroft.audio.service.prev', self._prev)
+        self.ws.remove('mycroft.audio.service.track_info', self._track_info)
+        self.ws.remove('recognizer_loop:audio_output_start',
+                       self._lower_volume)
+        self.ws.remove('recognizer_loop:record_begin', self._lower_volume)
+        self.ws.remove('recognizer_loop:audio_output_end',
+                       self._restore_volume)
+        self.ws.remove('recognizer_loop:record_end', self._restore_volume)
+        self.ws.remove('mycroft.stop', self._stop)
+
 
 def main():
     """ Main function. Run when file is invoked. """
@@ -469,12 +494,13 @@ def main():
 
     LOG.info("Staring Audio Services")
     ws.on('message', echo)
-    AudioService(ws)  # Connect audio service instance to message bus
+    audio = AudioService(ws)  # Connect audio service instance to message bus
     try:
         ws.run_forever()
     except KeyboardInterrupt as e:
         LOG.exception(e)
         speech.shutdown()
+        audio.shutdown()
         sys.exit()
 
 
