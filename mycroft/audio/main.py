@@ -253,7 +253,7 @@ class AudioService(object):
                 message: message bus message, not used but required
         """
         if self.current:
-            self.current.prev()
+            self.current.previous()
 
     def _stop(self, message=None):
         """
