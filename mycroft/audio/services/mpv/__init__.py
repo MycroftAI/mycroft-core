@@ -26,7 +26,7 @@ class MPVService(AudioBackend):
     def __init__(self, config, emitter=None, name='mpv'):
         super(MPVService, self).__init__(config, emitter)
         self.player = MPV(ytdl=True)
-        self.player._set_property('video', 'no')
+        self.player['video'] = 'no'
         self.name = name
         self.tracks = []
         self.index = 0
@@ -58,11 +58,11 @@ class MPVService(AudioBackend):
 
     def pause(self):
         LOG.info('MpvService Pause')
-        self.player._set_property("pause", True)
+        self.player["pause"] = True
 
     def resume(self):
         LOG.info('MpvService Resume')
-        self.player._set_property("pause", False)
+        self.player["pause"] = False
 
     def next(self):
         LOG.info('MpvService Next')
@@ -85,7 +85,7 @@ class MPVService(AudioBackend):
         pass
 
     def track_info(self):
-        ret = {"track": self.player._get_property("media-title")}
+        ret = {"track": self.player["media-title"]}
         return ret
 
     def shutdown(self):
