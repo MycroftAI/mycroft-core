@@ -54,7 +54,7 @@ class MPVService(AudioBackend):
     def stop(self):
         LOG.info('MpvService Stop')
         self.clear_list()
-        self.player.command("stop")
+        self.player.stop()
 
     def pause(self):
         LOG.info('MpvService Pause')
