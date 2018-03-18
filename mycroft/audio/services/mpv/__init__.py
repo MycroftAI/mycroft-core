@@ -14,7 +14,12 @@
 #
 from mycroft.audio.services import AudioBackend
 from mycroft.util.log import LOG
-from mycroft.audio.services.mpv.mpv_lib import MPV
+try:
+    from mpv import MPV
+except ImportError:
+    LOG.error("install mpv with "
+              "pip install git+https://github.com/JarbasAl/python-mpv/")
+    raise
 
 
 class MPVService(AudioBackend):
