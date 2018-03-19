@@ -322,15 +322,19 @@ class AudioService(object):
         self.modified_sinks = []
 
     def pulse_duck(self):
-        LOG.info('DUCKING!')
-        self.duck_proc = subprocess.Popen(['paplay',
-                                           '--property=media.role=phone',
-                                           '/dev/zero', '--raw'])
+        """ Trigger pulse audio ducking. """
+        # Create a dummy stream to lower volume
+        if not self.duck_proc:
+            self.duck_proc = subprocess.Popen(['paplay',
+                                               '--property=media.role=phone',
+                                               '/dev/zero', '--raw'])
 
     def pulse_unduck(self):
-        LOG.info('UNDUCKING!')
+        """ Release ducking. """
+        # remove the dummy stream to restore volume
         if self.duck_proc:
             self.duck_proc.kill()
+            self.duck_proc.communicate()
             self.duck_proc = None
 
     def _restore_volume(self, message=None):
