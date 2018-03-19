@@ -35,6 +35,7 @@ class VlcService(AudioBackend):
         self.emitter = emitter
         self.name = name
         self.normal_volume = None
+        self.low_volume = self.config.get('low_volume', 30)
 
     def track_start(self, data, other):
         if self._track_start_callback:
@@ -78,9 +79,9 @@ class VlcService(AudioBackend):
         self.list_player.previous()
 
     def lower_volume(self):
-        if self.normal_volume is None:
+        if self.normal_volume is None and self.player.is_playing():
             self.normal_volume = self.player.audio_get_volume()
-            self.player.audio_set_volume(self.normal_volume / 5)
+            self.player.audio_set_volume(self.low_volume)
 
     def restore_volume(self):
         if self.normal_volume:
