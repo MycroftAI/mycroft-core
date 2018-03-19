@@ -115,6 +115,7 @@ class Mpg123Service(AudioBackend):
 def load_service(base_config, emitter):
     backends = base_config.get('backends', [])
     services = [(b, backends[b]) for b in backends
-                if backends[b]['type'] == 'mpg123']
+                if backends[b]['type'] == 'mpg123' and
+                backends[b].get('active', True)]
     instances = [Mpg123Service(s[1], emitter, s[0]) for s in services]
     return instances

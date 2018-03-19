@@ -115,6 +115,7 @@ class MopidyService(AudioBackend):
 def load_service(base_config, emitter):
     backends = base_config.get('backends', [])
     services = [(b, backends[b]) for b in backends
-                if backends[b]['type'] == 'mopidy']
+                if backends[b]['type'] == 'mopidy' and
+                backends[b].get('active', True)]
     instances = [MopidyService(s[1], emitter, s[0]) for s in services]
     return instances
