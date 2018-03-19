@@ -50,6 +50,8 @@ class MPVService(AudioBackend):
         if len(self.tracks):
             self.player.stop()
             self.player.play(self.tracks[self.index])
+            self.player.wait_for_playback()
+            self.next()
 
     def stop(self):
         LOG.info('MpvService Stop')
