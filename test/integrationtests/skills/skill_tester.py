@@ -154,7 +154,7 @@ class MockSkillsLoader(object):
     def load_skills(self):
         self.skills = load_skills(self.emitter, self.skills_root)
         self.skills = [s for s in self.skills if s]
-        self.ps.train()
+        self.ps.train(Message('', data=dict(single_thread=True)))
         return self.emitter.emitter  # kick out the underlying emitter
 
     def unload_skills(self):
