@@ -13,7 +13,6 @@
 # limitations under the License.
 #
 import vlc
-import time
 
 from mycroft.audio.services import AudioBackend
 from mycroft.util.log import LOG
@@ -45,7 +44,9 @@ class VlcService(AudioBackend):
         return ['file', 'http', 'https']
 
     def clear_list(self):
+        # Create a new media list
         self.track_list = self.instance.media_list_new()
+        # Set list as current track list
         self.list_player.set_media_list(self.track_list)
 
     def add_list(self, tracks):
@@ -54,10 +55,12 @@ class VlcService(AudioBackend):
             self.track_list.add_media(self.instance.media_new(t))
 
     def play(self):
+        """ Play playlist using vlc. """
         LOG.info('VLCService Play')
         self.list_player.play()
 
     def stop(self):
+        """ Stop vlc playback. """
         LOG.info('VLCService Stop')
         if self.player.is_playing():
             self.clear_list()
@@ -67,28 +70,39 @@ class VlcService(AudioBackend):
             return False
 
     def pause(self):
+        """ Pause vlc playback. """
         self.player.set_pause(1)
 
     def resume(self):
+        """ Resume paused playback. """
         self.player.set_pause(0)
 
     def next(self):
+        """ Skip to next track in playlist. """
         self.list_player.next()
 
     def previous(self):
+        """ Skip to previous track in playlist. """
         self.list_player.previous()
 
     def lower_volume(self):
+        """ Lower volume (will be called when mycroft is listening
+        or speaking.
+        """
+        # Lower volume if playing and volume isn't already lowered
         if self.normal_volume is None and self.player.is_playing():
             self.normal_volume = self.player.audio_get_volume()
             self.player.audio_set_volume(self.low_volume)
 
     def restore_volume(self):
+        """ Restore volume to previous level. """
+        # if vlc has been lowered restore the volume
         if self.normal_volume:
             self.player.audio_set_volume(self.normal_volume)
             self.normal_volume = None
 
     def track_info(self):
+        """ Extract info of current track. """
         ret = {}
         meta = vlc.Meta
         t = self.player.get_media()
