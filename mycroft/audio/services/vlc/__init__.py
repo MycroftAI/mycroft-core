@@ -63,6 +63,8 @@ class VlcService(AudioBackend):
         """ Stop vlc playback. """
         LOG.info('VLCService Stop')
         if self.player.is_playing():
+            # Restore volume if lowered
+            self.restore_volume()
             self.clear_list()
             self.list_player.stop()
             return True
