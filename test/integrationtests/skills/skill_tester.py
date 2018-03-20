@@ -190,6 +190,13 @@ class SkillTest(object):
             Args:
                 loader:  A list of loaded skills
         """
+        handled = []
+
+        def handle_complete(message):
+            handled.append(True)
+
+        self.emitter.on('mycroft.skill.handler.complete', handle_complete)
+
         s = [s for s in loader.skills if s and s._dir == self.skill][0]
         print 'Test case file: ' + self.test_case_file
         test_case = json.load(open(self.test_case_file, 'r'))
@@ -242,6 +249,10 @@ class SkillTest(object):
             isinstance(test_case['evaluation_timeout'], int) \
             else time.time() + DEFAULT_EVALUAITON_TIMEOUT
         while not evaluation_rule.all_succeeded():
+            if handled:
+                timeout = min(timeout, time.time() + 5)
+                handled = []
+
             try:
                 event = q.get(timeout=1)
                 evaluation_rule.evaluate(event.data)
@@ -255,7 +266,7 @@ class SkillTest(object):
 
         # remove the skill which is not responding
         self.emitter.remove_all_listeners('speak')
-
+        self.emitter.remove_all_listeners('mycroft.skill.handler.complete')
         # Report test result if failed
         if not evaluation_rule.all_succeeded():
             print "Evaluation failed"
