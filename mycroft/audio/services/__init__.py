@@ -123,4 +123,4 @@ class AudioBackend():
 
     def shutdown(self):
         """ perform clean shutdown """
-        pass
+        self.stop()
