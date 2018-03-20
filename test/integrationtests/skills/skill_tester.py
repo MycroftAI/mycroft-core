@@ -151,6 +151,11 @@ class MockSkillsLoader(object):
             'intent_failure',
             FallbackSkill.make_intent_failure_handler(self.emitter))
 
+        def make_response(_):
+            data = dict(result=False)
+            self.emitter.emit(Message('skill.converse.response', data))
+        self.emitter.on('skill.converse.request', make_response)
+
     def load_skills(self):
         self.skills = load_skills(self.emitter, self.skills_root)
         self.skills = [s for s in self.skills if s]
