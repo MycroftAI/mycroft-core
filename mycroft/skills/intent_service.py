@@ -126,6 +126,7 @@ class ContextManager(object):
 class IntentService(object):
     def __init__(self, emitter):
         self.config = Configuration.get().get('context', {})
+        self.config_core = Configuration.get()
         self.engine = IntentDeterminationEngine()
 
         # Dictionary for translating a skill id to a name
@@ -241,6 +242,9 @@ class IntentService(object):
 
         NOTE: This only applies to those with Opt In.
         """
+        if not self.config_core.get('opt_in'):
+            return
+
         LOG.debug('Sending metric')
         ident = context['ident'] if context else None
         if intent:
