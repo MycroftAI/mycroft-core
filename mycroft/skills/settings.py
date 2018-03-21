@@ -297,17 +297,6 @@ class SkillSettings(dict):
                 del self['not_owner']
         self._save_hash(hashed_meta)
 
-    def _delete_old_meta(self):
-        """" Deletes the old meta data """
-        if self._uuid_exist():
-            try:
-                LOG.debug("a uuid exist for {}".format(self.name) +
-                          " deleting old one")
-                old_uuid = self._load_uuid()
-                self._delete_metatdata(old_uuid)
-            except Exception as e:
-                LOG.error(e)
-
     def hash(self, str):
         """ md5 hasher for consistency across cpu architectures """
         return hashlib.md5(str).hexdigest()
