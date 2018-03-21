@@ -190,12 +190,6 @@ class SkillTest(object):
             Args:
                 loader:  A list of loaded skills
         """
-        handled = []
-
-        def handle_complete(message):
-            handled.append(True)
-
-        self.emitter.on('mycroft.skill.handler.complete', handle_complete)
 
         s = [s for s in loader.skills if s and s._dir == self.skill][0]
         print 'Test case file: ' + self.test_case_file
@@ -249,13 +243,11 @@ class SkillTest(object):
             isinstance(test_case['evaluation_timeout'], int) \
             else time.time() + DEFAULT_EVALUAITON_TIMEOUT
         while not evaluation_rule.all_succeeded():
-            if handled:
-                timeout = min(timeout, time.time() + 5)
-                handled = []
-
             try:
                 event = q.get(timeout=1)
                 evaluation_rule.evaluate(event.data)
+                if event.type == 'mycroft.skill.handler.complete':
+                    break
             except Queue.Empty:
                 pass
             if time.time() > timeout:
