@@ -297,7 +297,7 @@ class DeviceApi(Api):
 class STTApi(Api):
     """ Web API wrapper for performing Speech to Text (STT) """
 
-    def __init__(self, path="stt"):
+    def __init__(self, path):
         super(STTApi, self).__init__(path)
 
     def stt(self, audio, language, limit):

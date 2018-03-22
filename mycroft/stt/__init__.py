@@ -123,7 +123,7 @@ class IBMSTT(BasicSTT):
 class MycroftSTT(STT):
     def __init__(self):
         super(MycroftSTT, self).__init__()
-        self.api = STTApi()
+        self.api = STTApi("stt")
 
     def execute(self, audio, language=None):
         self.lang = language or self.lang
@@ -146,7 +146,6 @@ class MycroftDeepSpeechSTT(STT):
             raise ValueError("Deepspeech is currently english only")
         try:
             response = self.api.stt(audio.get_wav_data(), self.lang, 1)
-            LOG.info(response)
             return response
         except:
             LOG.error("error with Mycroft DeepSpeech STT request")
