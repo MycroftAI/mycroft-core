@@ -96,6 +96,7 @@ class VlcService(AudioBackend):
 def load_service(base_config, emitter):
     backends = base_config.get('backends', [])
     services = [(b, backends[b]) for b in backends
-                if backends[b]['type'] == 'vlc']
+                if backends[b]['type'] == 'vlc' and
+                backends[b].get('active', True)]
     instances = [VlcService(s[1], emitter, s[0]) for s in services]
     return instances
