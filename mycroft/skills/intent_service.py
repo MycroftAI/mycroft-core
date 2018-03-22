@@ -241,7 +241,7 @@ class IntentService(object):
 
         NOTE: This only applies to those with Opt In.
         """
-        LOG.debug('Sending metric')
+        LOG.debug('Sending metric if opt_in is enabled')
         ident = context['ident'] if context else None
         if intent:
             # Recreate skill name from skill id
