@@ -36,7 +36,7 @@ def ensure_uri(s):
         return s
 
 
-class AudioService():
+class AudioService(object):
     """
         AudioService object for interacting with the audio subsystem
 
