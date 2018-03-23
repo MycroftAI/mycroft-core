@@ -91,8 +91,10 @@ class VlcService(AudioBackend):
         """ Lower volume (will be called when mycroft is listening
         or speaking.
         """
-        # Lower volume if playing and volume isn't already lowered
-        if self.normal_volume is None and self.player.is_playing():
+        # Lower volume if playing, volume isn't already lowered
+        # and ducking is enabled
+        if (self.normal_volume is None and self.player.is_playing() and
+                self.config.get('duck', False)):
             self.normal_volume = self.player.audio_get_volume()
             self.player.audio_set_volume(self.low_volume)
 
