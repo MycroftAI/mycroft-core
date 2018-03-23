@@ -50,13 +50,13 @@ class VlcService(AudioBackend):
         self.list_player.set_media_list(self.track_list)
 
     def add_list(self, tracks):
-        LOG.info("Track list is " + str(tracks))
+        LOG.debug("Track list is " + str(tracks))
         for t in tracks:
             self.track_list.add_media(self.instance.media_new(t))
 
     def play(self):
         """ Play playlist using vlc. """
-        LOG.info('VLCService Play')
+        LOG.debug('VLCService Play')
         self.list_player.play()
 
     def stop(self):
