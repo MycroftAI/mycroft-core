@@ -97,6 +97,7 @@ class MPVService(AudioBackend):
 def load_service(base_config, emitter):
     backends = base_config.get('backends', [])
     services = [(b, backends[b]) for b in backends
-                if backends[b]['type'] == 'mpv']
+                if backends[b]['type'] == 'mpv' and
+                backends[b].get("active", True)]
     instances = [MPVService(s[1], emitter, s[0]) for s in services]
     return instances
