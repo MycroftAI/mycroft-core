@@ -19,7 +19,6 @@ pillow==4.1.1
 python-dateutil==2.6.0
 pychromecast==0.7.7
 python-vlc==1.1.2
-pulsectl==17.7.4
 google-api-python-client==1.6.4
 fasteners==0.14.1
 

@@ -92,7 +92,7 @@ def play_wav(uri):
     config = mycroft.configuration.Configuration.get()
     play_cmd = config.get("play_wav_cmdline")
     env = os.environ.copy()
-    if config.get('Audio', {}).get('pulseaudio') == 'duck':
+    if config.get('Audio', {}).get('pulseaudio', False):
         env['PULSE_PROP'] = 'media.role=phone'
 
     play_wav_cmd = str(play_cmd).split(" ")
@@ -105,7 +105,7 @@ def play_wav(uri):
 def play_mp3(uri):
     config = mycroft.configuration.Configuration.get()
     env = os.environ.copy()
-    if config.get('Audio', {}).get('pulseaudio') == 'duck':
+    if config.get('Audio', {}).get('pulseaudio', False):
         env['PULSE_PROP'] = 'media.role=music'
 
     play_cmd = config.get("play_mp3_cmdline")

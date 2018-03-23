@@ -24,10 +24,6 @@ from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
 
-try:
-    import pulsectl
-except ImportError:
-    pulsectl = None
 
 MAINMODULE = '__init__'
 sys.path.append(abspath(dirname(__file__)))
@@ -145,13 +141,12 @@ class AudioService(object):
         self.service = []
         self.current = None
         self.volume_is_low = False
-        self.pulse = None
-        self.pulse_quiet = None
-        self.pulse_restore = None
         self.volume_lock = Lock()
-        self.modified_sinks = []
+
         # Setup control of pulse audio
-        self.setup_pulseaudio_handlers(self.config.get('pulseaudio'))
+        self.pulse_proc = None
+        self.pulse_ducking = self.config.get('pulseaudio', False)
+
         bus.once('open', self.load_services_callback)
 
     def load_services_callback(self):
@@ -269,73 +264,16 @@ class AudioService(object):
         """
         with self.volume_lock:
             self.volume_is_low = True
-            if self.current and not self.pulse_quiet:
+            # if a backend is playing and ducking isn't provided by pulse
+            if self.current and not self.pulse_ducking:
                 LOG.debug('lowering volume')
                 self.current.lower_volume()
             try:
-                if self.pulse_quiet:
-                    self.pulse_quiet()
+                if self.pulse_ducking:
+                    LOG.info('!!!!!!!!!!!!! DUCKING!')
+                    self.pulse_duck()
             except Exception as exc:
                 LOG.error(exc)
-
-    def pulse_mute(self):
-        """
-            Mute all pulse audio input sinks except for the one named
-            'mycroft-voice'.
-        """
-        for sink in self.pulse.sink_input_list():
-            if sink.name != 'mycroft-voice':
-                self.pulse.sink_input_mute(sink.index, 1)
-                self.muted_sinks.append(sink.index)
-
-    def pulse_unmute(self):
-        """
-            Unmute all pulse audio input sinks.
-        """
-        for sink in self.pulse.sink_input_list():
-            if sink.index in self.muted_sinks:
-                self.pulse.sink_input_mute(sink.index, 0)
-        self.modified_sinks = []
-
-    def pulse_lower_volume(self):
-        """
-            Lower volume of all pulse audio input sinks except the one named
-            'mycroft-voice'.
-        """
-        for sink in self.pulse.sink_input_list():
-            if sink.name != 'mycroft-voice':
-                self.modified_sinks.append((sink,
-                                            sink.volume.value_flat))
-                volume = sink.volume
-                volume.value_flat *= 0.3
-                self.pulse.volume_set(sink, volume)
-
-    def pulse_restore_volume(self):
-        """
-            Restore volume of all pulse audio input sinks except the one named
-            'mycroft-voice'.
-        """
-        for (sink, vol) in self.modified_sinks:
-            volume = sink.volume
-            volume.value_flat = vol
-            self.pulse.sink_input_volume_set(sink.index, volume)
-        self.modified_sinks = []
-
-    def pulse_duck(self):
-        """ Trigger pulse audio ducking. """
-        # Create a dummy stream to lower volume
-        if not self.duck_proc:
-            self.duck_proc = subprocess.Popen(['paplay',
-                                               '--property=media.role=phone',
-                                               '/dev/zero', '--raw'])
-
-    def pulse_unduck(self):
-        """ Release ducking. """
-        # remove the dummy stream to restore volume
-        if self.duck_proc:
-            self.duck_proc.kill()
-            self.duck_proc.communicate()
-            self.duck_proc = None
 
     def _restore_volume(self, message=None):
         """
@@ -345,14 +283,29 @@ class AudioService(object):
                 message: message bus message, not used but required
         """
         with self.volume_lock:
-            LOG.info('maybe restoring volume')
-            if self.current and not self.pulse_restore:
+            # if an audio backend is active and has been lowered
+            if self.current and self.volume_is_low:
                 self.volume_is_low = False
-                if not self.volume_is_low:
-                    LOG.debug('restoring volume')
-                    self.current.restore_volume()
-            if self.pulse_restore:
-                self.pulse_restore()
+                LOG.debug('restoring volume')
+                self.current.restore_volume()
+            if self.pulse_ducking:
+                self.pulse_unduck()
+
+    def pulse_duck(self):
+        """ Trigger pulse audio ducking. """
+        # Create a dummy stream to lower volume
+        if not self.pulse_proc:
+            self.pulse_proc = subprocess.Popen(['paplay',
+                                                '--property=media.role=phone',
+                                                '/dev/zero', '--raw'])
+
+    def pulse_unduck(self):
+        """ Release ducking. """
+        # remove the dummy stream to restore volume
+        if self.pulse_proc:
+            self.pulse_proc.kill()
+            self.pulse_proc.communicate()
+            self.pulse_proc = None
 
     def play(self, tracks, prefered_service, repeat=False):
         """
@@ -438,27 +391,6 @@ class AudioService(object):
             track_info = {}
         self.bus.emit(Message('mycroft.audio.service.track_info_reply',
                               data=track_info))
-
-    def setup_pulseaudio_handlers(self, pulse_choice=None):
-        """
-            Select functions for handling lower volume/restore of
-            pulse audio input sinks.
-
-            Args:
-                pulse_choice: method selection, can be eithe 'mute' or 'lower'
-        """
-        if pulsectl and pulse_choice:
-            self.pulse = pulsectl.Pulse('Mycroft-audio-service')
-            if pulse_choice == 'mute':
-                self.pulse_quiet = self.pulse_mute
-                self.pulse_restore = self.pulse_unmute
-            elif pulse_choice == 'lower':
-                self.pulse_quiet = self.pulse_lower_volume
-                self.pulse_restore = self.pulse_restore_volume
-            elif pulse_choice == 'duck':
-                self.dock_process = None
-                self.pulse_quiet = self.pulse_duck
-                self.pulse_restore = self.pulse_unduck
 
     def shutdown(self):
         for s in self.service:
