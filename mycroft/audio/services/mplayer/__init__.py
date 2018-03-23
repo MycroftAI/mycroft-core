@@ -119,6 +119,7 @@ class MPlayerService(AudioBackend):
 def load_service(base_config, emitter):
     backends = base_config.get('backends', [])
     services = [(b, backends[b]) for b in backends
-                if backends[b]['type'] == 'mplayer']
+                if backends[b]['type'] == 'mplayer' and
+                backends[b].get("active", True)]
     instances = [MPlayerService(s[1], emitter, s[0]) for s in services]
     return instances
