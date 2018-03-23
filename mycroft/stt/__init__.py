@@ -145,12 +145,7 @@ class MycroftDeepSpeechSTT(STT):
         language = language or self.lang
         if not language.startswith("en"):
             raise ValueError("Deepspeech is currently english only")
-        try:
-            response = self.api.stt(audio.get_wav_data(), self.lang, 1)
-            return response
-        except exceptions.RequestException as e:
-            LOG.error(e)
-            LOG.error("error with Mycroft DeepSpeech STT request")
+        return self.api.stt(audio.get_wav_data(), self.lang, 1)
 
 
 class DeepSpeechServerSTT(STT):
