@@ -72,8 +72,8 @@ def direct_update_needed():
                                                        True)
     if update:
         # if .msm file is missing or older than 1 hour update skills
-        if (not exists(dot_msm) or
-                os.path.getmtime(dot_msm) < time.time() - 60 * MINUTES * hours):
+        if (not exists(dot_msm) or os.path.getmtime(dot_msm) <
+                time.time() - 60 * MINUTES * hours):
             return True
         else:  # verify that all default skills are installed
             with open(dot_msm) as f:
@@ -82,7 +82,8 @@ def direct_update_needed():
             LOG.info(default_skills)
             for d in default_skills:
                 if d not in skills:
-                    LOG.info('{} has been removed, direct update needed'.format(d))
+                    LOG.info('{} has been removed, direct update needed'
+                             .format(d))
                     return True
     return False
 
