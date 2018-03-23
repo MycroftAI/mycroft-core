@@ -14,8 +14,9 @@
 #
 import re
 import json
+import requests
 from abc import ABCMeta, abstractmethod
-from requests import post
+from requests import post, exceptions
 from speech_recognition import Recognizer
 
 from mycroft.api import STTApi
@@ -147,7 +148,8 @@ class MycroftDeepSpeechSTT(STT):
         try:
             response = self.api.stt(audio.get_wav_data(), self.lang, 1)
             return response
-        except:
+        except exceptions.RequestException as e:
+            LOG.error(e)
             LOG.error("error with Mycroft DeepSpeech STT request")
 
 
