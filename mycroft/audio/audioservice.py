@@ -416,6 +416,7 @@ class AudioService(object):
                        self._restore_volume)
         self.ws.remove('recognizer_loop:record_end', self._restore_volume)
         self.ws.remove('mycroft.stop', self._stop)
+        self._restore_volume()
 
 
 def main():
@@ -444,7 +445,6 @@ def main():
         LOG.exception(e)
     finally:
         speech.shutdown()
-        audio._restore_volume()
         audio.shutdown()
         sys.exit()
 
