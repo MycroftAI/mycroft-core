@@ -112,8 +112,9 @@ def load_services(config, ws, path=None):
         try:
             service_module = imp.load_module(descriptor["name"] + MAINMODULE,
                                              *descriptor["info"])
-        except Exception:
-            LOG.error('Failed to import module ' + descriptor['name'])
+        except Exception as e:
+            LOG.error('Failed to import module ' + descriptor['name'] + '\n' +
+                      repr(e))
             continue
 
         if (hasattr(service_module, 'autodetect') and
@@ -121,14 +122,14 @@ def load_services(config, ws, path=None):
             try:
                 s = service_module.autodetect(config, ws)
                 service += s
-            except Exception:
-                LOG.error('Failed to autodetect...')
+            except Exception as e:
+                LOG.error('Failed to autodetect. ' + repr(e))
         if hasattr(service_module, 'load_service'):
             try:
                 s = service_module.load_service(config, ws)
                 service += s
-            except Exception:
-                LOG.error('Failed to load service...')
+            except Exception as e:
+                LOG.error('Failed to load service. ' + repr(e))
 
     return service
 
@@ -435,7 +436,7 @@ class AudioService(object):
                 LOG.info('shutting down ' + s.name)
                 s.shutdown()
             except Exception as e:
-                LOG.error('shutdown of ' + s.name + ' failed: ' + str(e))
+                LOG.error('shutdown of ' + s.name + ' failed: ' + repr(e))
 
         # remove listeners
         self.ws.remove('mycroft.audio.service.play', self._play)
