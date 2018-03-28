@@ -788,7 +788,7 @@ class MycroftSkill(object):
         names = [intent[0] for intent in self.registered_intents]
         intents = [intent[1] for intent in self.registered_intents]
         if intent_name in names:
-            intent = intents[names.index( intent_name)]
+            intent = intents[names.index(intent_name)]
             self.registered_intents.remove((intent_name, intent))
             intent.name = intent_name
             self.register_intent(intent, None)
