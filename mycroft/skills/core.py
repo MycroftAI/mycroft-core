@@ -219,6 +219,7 @@ class MycroftSkill(object):
         self.log = LOG.create_logger(self.name)
         self.reload_skill = True  # allow reloading
         self.events = []
+        self.scheduled_repeats = []
         self.skill_id = 0
 
     @property
@@ -885,6 +886,7 @@ class MycroftSkill(object):
         self.settings.store()
         self.settings.is_alive = False
         # removing events
+        self.cancel_all_repeating_events()
         for e, f in self.events:
             self.emitter.remove(e, f)
         self.events = []  # Remove reference to wrappers
@@ -957,10 +959,16 @@ class MycroftSkill(object):
                 data (dict, optional):  data to send along to the handler
                 name (str, optional):   friendly name parameter
         """
-        data = data or {}
-        if not when:
-            when = datetime.now() + timedelta(seconds=frequency)
-        self._schedule_event(handler, when, data, name, frequency)
+        # Do not schedule if this event is already scheduled by the skill
+        if name not in self.scheduled_repeats:
+            data = data or {}
+            if not when:
+                when = datetime.now() + timedelta(seconds=frequency)
+            self._schedule_event(handler, when, data, name, frequency)
+            self.scheduled_repeats.append(name)
+        else:
+            LOG.debug('The event is already scheduled, cancel previous '
+                      'event if this scheduling should replace the last.')
 
     def update_scheduled_event(self, name, data=None):
         """
@@ -986,6 +994,8 @@ class MycroftSkill(object):
         """
         unique_name = self._unique_name(name)
         data = {'event': unique_name}
+        if name in self.scheduled_repeats:
+            self.scheduled_repeats.remove(name)
         if self.remove_event(unique_name):
             self.emitter.emit(Message('mycroft.scheduler.remove_event',
                                       data=data))
@@ -1025,6 +1035,11 @@ class MycroftSkill(object):
         if time.time() - start_wait > 3.0:
             raise Exception("Event Status Messagebus Timeout")
         return event_status[0]
+
+    def cancel_all_repeating_events(self):
+        """ Cancel any repeating events started by the skill. """
+        for e in self.scheduled_repeats:
+            self.cancel_scheduled_event(e)
 
 
 #######################################################################
