@@ -746,17 +746,10 @@ case ${OPT} in
 
       # Grab any platform-specific skills
       if [[ ${mycroft_platform} != 'null' ]] ; then
-        if [[ ${exit_code} -eq 0 || ${exit_code} -eq 20 ]] ; then
-            install_from_url_list "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/DEFAULT-SKILLS.${mycroft_platform}"
-            exit_code=$?
-        fi
+         install_from_url_list "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/DEFAULT-SKILLS.${mycroft_platform}" || exit_code=$?
       fi
 
-      # exit code 20 == skills already installed, which is OK here
-      if [[ ${exit_code} -eq 0 || ${exit_code} -eq 20 ]] ; then
-         update
-         exit_code=$?
-      fi
+      update || exit_code=$?
       mv ${mycroft_skill_folder}/.msm.tmp ${mycroft_skill_folder}/.msm
    ;;
   "search")
@@ -810,3 +803,4 @@ if [[ ${exit_code} -gt 0 ]] ; then
    echo "${script}: error ${exit_code}"
 fi
 exit ${exit_code}
+
