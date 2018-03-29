@@ -17,6 +17,7 @@ import time
 import monotonic
 from multiprocessing.pool import ThreadPool
 
+from threading import Event
 from pyee import EventEmitter
 from websocket import WebSocketApp
 
@@ -43,6 +44,8 @@ class WebsocketClient(object):
         self.client = self.create_client()
         self.pool = ThreadPool(10)
         self.retry = 5
+        self.connected_event = Event()
+        self.started_running = False
 
     @staticmethod
     def build_url(host, port, route, ssl):
@@ -59,6 +62,7 @@ class WebsocketClient(object):
         self.emitter.emit("open")
         # Restore reconnect timer to 5 seconds on sucessful connect
         self.retry = 5
+        self.connected_event.set()
 
     def on_close(self, ws):
         self.emitter.emit("close")
@@ -82,9 +86,12 @@ class WebsocketClient(object):
             self.emitter.emit, (parsed_message.type, parsed_message))
 
     def emit(self, message):
-        if (not self.client or not self.client.sock or
-                not self.client.sock.connected):
-            return
+        if not self.connected_event.wait(10):
+            if not self.started_running:
+                raise ValueError('You must execute run_forever() '
+                                 'before emitting messages')
+            self.connected_event.wait()
+
         if hasattr(message, 'serialize'):
             self.client.send(message.serialize())
         else:
@@ -141,10 +148,12 @@ class WebsocketClient(object):
         self.emitter.remove_all_listeners(event_name)
 
     def run_forever(self):
+        self.started_running = True
         self.client.run_forever()
 
     def close(self):
         self.client.close()
+        self.connected_event.clear()
 
 
 def echo():
