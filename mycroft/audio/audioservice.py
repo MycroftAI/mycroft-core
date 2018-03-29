@@ -270,7 +270,6 @@ class AudioService(object):
                 self.current.lower_volume()
             try:
                 if self.pulse_ducking:
-                    LOG.info('!!!!!!!!!!!!! DUCKING!')
                     self.pulse_duck()
             except Exception as exc:
                 LOG.error(exc)

@@ -22,7 +22,8 @@ from threading import Thread
 from time import sleep
 
 import json
-import os, os.path
+import os
+import os.path
 import psutil
 from stat import S_ISREG, ST_MTIME, ST_MODE, ST_SIZE
 import requests
