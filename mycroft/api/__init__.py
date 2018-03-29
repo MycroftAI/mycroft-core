@@ -15,18 +15,26 @@
 from copy import copy
 
 import requests
-from requests import HTTPError
+from requests import HTTPError, RequestException
 
 from mycroft.configuration import Configuration
 from mycroft.configuration.config import DEFAULT_CONFIG, SYSTEM_CONFIG, \
     USER_CONFIG
 from mycroft.identity import IdentityManager
 from mycroft.version import VersionManager
-from mycroft.util import get_arch
+from mycroft.util import get_arch, connected, LOG
 # python 2/3 compatibility
 from future.utils import iteritems
 
 _paired_cache = False
+
+
+class BackendDown(RequestException):
+    pass
+
+
+class InternetDown(RequestException):
+    pass
 
 
 class Api(object):
@@ -332,7 +340,7 @@ def has_been_paired():
     return id.uuid is not None and id.uuid != ""
 
 
-def is_paired():
+def is_paired(ignore_errors=True):
     """ Determine if this device is actively paired with a web backend
 
     Determines if the installation of Mycroft has been paired by the user
@@ -354,5 +362,13 @@ def is_paired():
         _paired_cache = api.identity.uuid is not None and \
             api.identity.uuid != ""
         return _paired_cache
-    except:
+    except HTTPError as e:
+        if e.response.status_code == 401:
+            return False
+    except Exception as e:
+        LOG.warning('Could not get device infO: ' + repr(e))
+    if ignore_errors:
         return False
+    if connected():
+        raise BackendDown
+    raise InternetDown
