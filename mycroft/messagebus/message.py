@@ -156,8 +156,8 @@ class Message(object):
         Returns:
             str: Leftover words or None if not an utterance.
         """
-        utt = self.data.get("utterance", None)
+        utt = normalize(self.data.get("utterance", ""))
         if utt and "__tags__" in self.data:
             for token in self.data["__tags__"]:
-                utt = utt.replace(token["key"], "")
+                utt = utt.replace(token.get("key", ""), "")
         return normalize(utt)

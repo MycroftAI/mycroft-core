@@ -120,3 +120,7 @@ class AudioBackend():
         ret['artist'] = ''
         ret['album'] = ''
         return ret
+
+    def shutdown(self):
+        """ perform clean shutdown """
+        self.stop()

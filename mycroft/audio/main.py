@@ -103,7 +103,6 @@ def load_services(config, ws, path=None):
         Returns:
             List of started services.
     """
-    LOG.info("Loading services")
     if path is None:
         path = dirname(abspath(__file__)) + '/services/'
     service_directories = get_services(path)
@@ -113,9 +112,9 @@ def load_services(config, ws, path=None):
         try:
             service_module = imp.load_module(descriptor["name"] + MAINMODULE,
                                              *descriptor["info"])
-        except Exception:
-            LOG.error('Failed to import module ' + descriptor['name'],
-                      exc_info=True)
+        except Exception as e:
+            LOG.error('Failed to import module ' + descriptor['name'] + '\n' +
+                      repr(e))
             continue
 
         if (hasattr(service_module, 'autodetect') and
@@ -123,16 +122,14 @@ def load_services(config, ws, path=None):
             try:
                 s = service_module.autodetect(config, ws)
                 service += s
-            except Exception:
-                LOG.error('Failed to autodetect...',
-                          exc_info=True)
+            except Exception as e:
+                LOG.error('Failed to autodetect. ' + repr(e))
         if hasattr(service_module, 'load_service'):
             try:
                 s = service_module.load_service(config, ws)
                 service += s
-            except Exception:
-                LOG.error('Failed to load service...',
-                          exc_info=True)
+            except Exception as e:
+                LOG.error('Failed to load service. ' + repr(e))
 
     return service
 
@@ -171,7 +168,6 @@ class AudioService(object):
         """
 
         self.service = load_services(self.config, self.ws)
-        LOG.info(self.service)
         # Register end of track callback
         for s in self.service:
             s.set_track_start_callback(self.track_start)
@@ -180,7 +176,6 @@ class AudioService(object):
         default_name = self.config.get('default-backend', '')
         LOG.info('Finding default backend...')
         for s in self.service:
-            LOG.info('checking ' + s.name)
             if s.name == default_name:
                 self.default = s
                 LOG.info('Found ' + self.default.name)
@@ -188,8 +183,8 @@ class AudioService(object):
         else:
             self.default = None
             LOG.info('no default found')
-        LOG.info('Default:' + str(self.default))
 
+        # Setup event handlers
         self.ws.on('mycroft.audio.service.play', self._play)
         self.ws.on('mycroft.audio.service.queue', self._queue)
         self.ws.on('mycroft.audio.service.pause', self._pause)
@@ -253,7 +248,7 @@ class AudioService(object):
                 message: message bus message, not used but required
         """
         if self.current:
-            self.current.prev()
+            self.current.previous()
 
     def _stop(self, message=None):
         """
@@ -262,11 +257,10 @@ class AudioService(object):
             Args:
                 message: message bus message, not used but required
         """
-        LOG.info('stopping all playing services')
+        LOG.debug('stopping all playing services')
         if self.current:
             self.current.stop()
             self.current = None
-        LOG.info('Stopped')
 
     def _lower_volume(self, message=None):
         """
@@ -275,8 +269,8 @@ class AudioService(object):
             Args:
                 message: message bus message, not used but required
         """
-        LOG.info('lowering volume')
         if self.current:
+            LOG.debug('lowering volume')
             self.current.lower_volume()
             self.volume_is_low = True
         try:
@@ -333,12 +327,11 @@ class AudioService(object):
             Args:
                 message: message bus message, not used but required
         """
-        LOG.info('maybe restoring volume')
         if self.current:
+            LOG.debug('restoring volume')
             self.volume_is_low = False
             time.sleep(2)
             if not self.volume_is_low:
-                LOG.info('restoring volume')
                 self.current.restore_volume()
         if self.pulse_restore:
             self.pulse_restore()
@@ -353,40 +346,32 @@ class AudioService(object):
                 prefered_service: indecates the service the user prefer to play
                                   the tracks.
         """
-        LOG.info('play')
         self._stop()
         uri_type = tracks[0].split(':')[0]
-        LOG.info('uri_type: ' + uri_type)
         # check if user requested a particular service
         if prefered_service and uri_type in prefered_service.supported_uris():
             selected_service = prefered_service
         # check if default supports the uri
         elif self.default and uri_type in self.default.supported_uris():
-            LOG.info("Using default backend")
-            LOG.info(self.default.name)
+            LOG.debug("Using default backend ({})".format(self.default.name))
             selected_service = self.default
         else:  # Check if any other service can play the media
-            LOG.info("Searching the services")
+            LOG.debug("Searching the services")
             for s in self.service:
-                LOG.info(str(s))
                 if uri_type in s.supported_uris():
-                    LOG.info("Service " + str(s) + " supports URI " + uri_type)
+                    LOG.debug("Service {} supports URI {}".format(s, uri_type))
                     selected_service = s
                     break
             else:
                 LOG.info('No service found for uri_type: ' + uri_type)
                 return
-        LOG.info('Clear list')
         selected_service.clear_list()
-        LOG.info('Add tracks' + str(tracks))
         selected_service.add_list(tracks)
-        LOG.info('Playing')
         selected_service.play()
         self.current = selected_service
 
     def _queue(self, message):
         if self.current:
-            LOG('Queuing Track')
             tracks = message.data['tracks']
             self.current.add_list(tracks)
         else:
@@ -401,18 +386,14 @@ class AudioService(object):
             Args:
                 message: message bus message, not used but required
         """
-        LOG.info('mycroft.audio.service.play')
-        LOG.info(message.data['tracks'])
-
         tracks = message.data['tracks']
 
         # Find if the user wants to use a specific backend
         for s in self.service:
-            LOG.info(s.name)
             if ('utterance' in message.data and
                     s.name in message.data['utterance']):
                 prefered_service = s
-                LOG.info(s.name + ' would be prefered')
+                LOG.debug(s.name + ' would be prefered')
                 break
         else:
             prefered_service = None
@@ -449,6 +430,31 @@ class AudioService(object):
                 self.pulse_quiet = self.pulse_lower_volume
                 self.pulse_restore = self.pulse_restore_volume
 
+    def shutdown(self):
+        for s in self.service:
+            try:
+                LOG.info('shutting down ' + s.name)
+                s.shutdown()
+            except Exception as e:
+                LOG.error('shutdown of ' + s.name + ' failed: ' + repr(e))
+
+        # remove listeners
+        self.ws.remove('mycroft.audio.service.play', self._play)
+        self.ws.remove('mycroft.audio.service.queue', self._queue)
+        self.ws.remove('mycroft.audio.service.pause', self._pause)
+        self.ws.remove('mycroft.audio.service.resume', self._resume)
+        self.ws.remove('mycroft.audio.service.stop', self._stop)
+        self.ws.remove('mycroft.audio.service.next', self._next)
+        self.ws.remove('mycroft.audio.service.prev', self._prev)
+        self.ws.remove('mycroft.audio.service.track_info', self._track_info)
+        self.ws.remove('recognizer_loop:audio_output_start',
+                       self._lower_volume)
+        self.ws.remove('recognizer_loop:record_begin', self._lower_volume)
+        self.ws.remove('recognizer_loop:audio_output_end',
+                       self._restore_volume)
+        self.ws.remove('recognizer_loop:record_end', self._restore_volume)
+        self.ws.remove('mycroft.stop', self._stop)
+
 
 def main():
     """ Main function. Run when file is invoked. """
@@ -469,12 +475,13 @@ def main():
 
     LOG.info("Staring Audio Services")
     ws.on('message', echo)
-    AudioService(ws)  # Connect audio service instance to message bus
+    audio = AudioService(ws)  # Connect audio service instance to message bus
     try:
         ws.run_forever()
     except KeyboardInterrupt as e:
         LOG.exception(e)
         speech.shutdown()
+        audio.shutdown()
         sys.exit()
 
 
