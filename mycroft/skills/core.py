@@ -264,8 +264,10 @@ class MycroftSkill(object):
             self.emitter = emitter
             self.enclosure = EnclosureAPI(emitter, self.name)
             self.__register_stop()
-            self.add_event('mycroft.skill.enable_intent', self.handle_enable_intent)
-            self.add_event('mycroft.skill.disable_intent', self.handle_disable_intent)
+            self.add_event('mycroft.skill.enable_intent',
+                           self.handle_enable_intent)
+            self.add_event('mycroft.skill.disable_intent',
+                           self.handle_disable_intent)
 
     def __register_stop(self):
         self.stop_time = time.time()
