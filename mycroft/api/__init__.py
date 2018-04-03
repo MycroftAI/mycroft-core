@@ -14,6 +14,7 @@
 #
 from copy import copy
 
+import json
 import requests
 from requests import HTTPError, RequestException
 
@@ -39,6 +40,8 @@ class InternetDown(RequestException):
 
 class Api(object):
     """ Generic object to wrap web APIs """
+    params_to_etag = {}
+    etag_to_response = {}
 
     def __init__(self, path):
         self.path = path
@@ -76,14 +79,33 @@ class Api(object):
         IdentityManager.save(data)
 
     def send(self, params):
+        query_data = frozenset(params.get('query', {}).items())
+        params_key = (params.get('path'), query_data)
+        etag = self.params_to_etag.get(params_key)
+
         method = params.get("method", "GET")
         headers = self.build_headers(params)
         data = self.build_data(params)
-        json = self.build_json(params)
+        json_body = self.build_json(params)
         query = self.build_query(params)
         url = self.build_url(params)
-        response = requests.request(method, url, headers=headers, params=query,
-                                    data=data, json=json, timeout=(3.05, 15))
+
+        if etag:
+            headers['If-None-Match'] = etag
+
+        response = requests.request(
+            method, url, headers=headers, params=query,
+            data=data, json=json_body, timeout=(3.05, 15)
+        )
+        if response.status_code == 304:
+            LOG.debug('Etag matched. Nothing changed for: ' + params['path'])
+            response = self.etag_to_response[etag]
+        elif 'ETag' in response.headers:
+            etag = response.headers['ETag'].strip('"')
+            LOG.debug('Updating etag for: ' + params['path'])
+            self.params_to_etag[params_key] = etag
+            self.etag_to_response[etag] = response
+
         return self.get_response(response)
 
     def get_response(self, response):
