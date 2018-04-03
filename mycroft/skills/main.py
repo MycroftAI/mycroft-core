@@ -13,7 +13,6 @@
 # limitations under the License.
 #
 import gc
-import json
 import os
 import subprocess
 import sys
@@ -26,16 +25,19 @@ from os.path import exists, join
 import mycroft.lock
 from mycroft import MYCROFT_ROOT_PATH, dialog
 from mycroft.api import is_paired, BackendDown
+from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import load_skill, create_skill_descriptor, \
     MainModule, FallbackSkill
-from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.skills.event_scheduler import EventScheduler
 from mycroft.skills.intent_service import IntentService
 from mycroft.skills.padatious_service import PadatiousService
-from mycroft.util import connected, wait_while_speaking
+from mycroft.util import (
+    connected, wait_while_speaking, reset_sigint_handler,
+    create_echo_function, create_daemon, wait_for_exit_signal
+)
 from mycroft.util.log import LOG
 
 ws = None
@@ -146,8 +148,8 @@ def check_connection():
             # Time moved by over an hour in the NTP sync. Force a reboot to
             # prevent weird things from occcurring due to the 'time warp'.
             #
-            ws.emit(Message("speak", {'utterance':
-                    dialog.get("time.changed.reboot")}))
+            data = {'utterance': dialog.get("time.changed.reboot")}
+            ws.emit(Message("speak", data))
             wait_while_speaking()
 
             # provide visual indicators of the reboot
@@ -315,8 +317,8 @@ class SkillManager(Thread):
                     self.next_download = time.time() + 60 * MINUTES
 
                     if res == 0 and speak:
-                        self.ws.emit(Message("speak", {'utterance':
-                                     dialog.get("skills updated")}))
+                        data = {'utterance': dialog.get("skills updated")}
+                        self.ws.emit(Message("speak", data))
                     return True
                 elif not connected():
                     LOG.error('msm failed, network connection not available')
@@ -386,11 +388,10 @@ class SkillManager(Thread):
                 # Remove two local references that are known
                 refs = sys.getrefcount(skill["instance"]) - 2
                 if refs > 0:
-                    LOG.warning(
-                        "After shutdown of {} there are still "
-                        "{} references remaining. The skill "
-                        "won't be cleaned from memory."
-                        .format(skill['instance'].name, refs))
+                    msg = ("After shutdown of {} there are still "
+                           "{} references remaining. The skill "
+                           "won't be cleaned from memory.")
+                    LOG.warning(msg.format(skill['instance'].name, refs))
             del skill["instance"]
             self.ws.emit(Message("mycroft.skills.shutdown",
                                  {"folder": skill_folder,
@@ -478,13 +479,6 @@ class SkillManager(Thread):
             # Pause briefly before beginning next scan
             time.sleep(2)
 
-        # Do a clean shutdown of all skills
-        for skill in self.loaded_skills:
-            try:
-                self.loaded_skills[skill]['instance'].shutdown()
-            except BaseException:
-                pass
-
     def send_skill_list(self, message=None):
         """
             Send list of loaded skills.
@@ -503,6 +497,15 @@ class SkillManager(Thread):
     def stop(self):
         """ Tell the manager to shutdown """
         self._stop_event.set()
+
+        # Do a clean shutdown of all skills
+        for name, skill_info in self.loaded_skills.items():
+            instance = skill_info.get('instance')
+            if instance:
+                try:
+                    instance.shutdown()
+                except Exception:
+                    LOG.exception('Shutting down skill: ' + name)
 
     def handle_converse_request(self, message):
         """ Check if the targeted skill id can handle conversation
@@ -538,46 +541,31 @@ class SkillManager(Thread):
 
 def main():
     global ws
+    reset_sigint_handler()
     # Create PID file, prevent multiple instancesof this service
     mycroft.lock.Lock('skills')
     # Connect this Skill management process to the websocket
     ws = WebsocketClient()
     Configuration.init(ws)
-    ignore_logs = Configuration.get().get("ignore_logs")
 
-    # Listen for messages and echo them for logging
-    def _echo(message):
-        try:
-            _message = json.loads(message)
-
-            if _message.get("type") in ignore_logs:
-                return
-
-            if _message.get("type") == "registration":
-                # do not log tokens from registration messages
-                _message["data"]["token"] = None
-            message = json.dumps(_message)
-        except BaseException:
-            pass
-        LOG('SKILLS').debug(message)
-
-    ws.on('message', _echo)
+    ws.on('message', create_echo_function('SKILLS'))
     # Startup will be called after websocket is fully live
     ws.once('open', _starting_up)
-    ws.run_forever()
+
+    create_daemon(ws.run_forever)
+    wait_for_exit_signal()
+    shutdown()
+
+
+def shutdown():
+    if event_scheduler:
+        event_scheduler.shutdown()
+
+    # Terminate all running threads that update skills
+    if skill_manager:
+        skill_manager.stop()
+        skill_manager.join()
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        if event_scheduler:
-            event_scheduler.shutdown()
-
-        # Terminate all running threads that update skills
-        if skill_manager:
-            skill_manager.stop()
-            skill_manager.join()
-
-    finally:
-        sys.exit()
+    main()

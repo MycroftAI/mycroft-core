@@ -910,7 +910,7 @@ class MycroftSkill(object):
             Returns:
                 str: name unique to this skill
         """
-        return str(self.skill_id) + ':' + name
+        return str(self.skill_id) + ':' + (name or '')
 
     def _schedule_event(self, handler, when, data=None, name=None,
                         repeat=None):

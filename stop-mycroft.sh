@@ -53,7 +53,7 @@ function end-process() {
 
     if process-running $1 ; then
         pid=$( ps aux | grep "[p]ython .*${1}/main.py" | awk '{print $2}' )
-        kill ${pid}
+        kill -SIGINT ${pid}
 
         c=1
         while [ $c -le 20 ]
@@ -67,6 +67,7 @@ function end-process() {
         done
 
         if process-running $1 ; then
+            echo "Killing $1..."
             kill -9 ${pid}
         fi
     fi
