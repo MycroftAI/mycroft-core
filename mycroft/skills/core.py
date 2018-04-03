@@ -210,7 +210,7 @@ class MycroftSkill(object):
 
         self.bind(emitter)
         self.config_core = Configuration.get()
-        self.config = self.config_core.get(self.name)
+        self.config = self.config_core.get(self.name) or {}
         self.dialog_renderer = None
         self.vocab_dir = None
         self.root_dir = None
