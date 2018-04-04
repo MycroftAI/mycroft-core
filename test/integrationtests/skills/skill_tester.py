@@ -191,7 +191,12 @@ class SkillTest(object):
                 loader:  A list of loaded skills
         """
 
-        s = [s for s in loader.skills if s and s._dir == self.skill][0]
+        s = [s for s in loader.skills if s and s._dir == self.skill]
+        if s:
+            s = s[0]
+        else:
+            raise Exception('Skill couldn\'t be loaded')
+
         print 'Test case file: ' + self.test_case_file
         test_case = json.load(open(self.test_case_file, 'r'))
         print "Test case: " + str(test_case)
