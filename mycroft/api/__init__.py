@@ -79,6 +79,16 @@ class Api(object):
         IdentityManager.save(data)
 
     def send(self, params):
+        """ Send request to mycroft backend.
+        The method handles Etags and will return a cached response value
+        if nothing has changed on the remote.
+
+        Arguments:
+            params (dict): request parameters
+
+        Returns:
+            Requests response object.
+        """
         query_data = frozenset(params.get('query', {}).items())
         params_key = (params.get('path'), query_data)
         etag = self.params_to_etag.get(params_key)
@@ -90,6 +100,8 @@ class Api(object):
         query = self.build_query(params)
         url = self.build_url(params)
 
+        # For an introduction to the Etag feature check out:
+        # https://en.wikipedia.org/wiki/HTTP_ETag
         if etag:
             headers['If-None-Match'] = etag
 
