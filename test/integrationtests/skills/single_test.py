@@ -20,28 +20,35 @@
 import glob
 import unittest
 import os
+from os.path import exists
+import imp
+
 from test.integrationtests.skills.skill_tester import MockSkillsLoader
 from test.integrationtests.skills.skill_tester import SkillTest
 
 import sys
+
 d = sys.argv.pop() + '/'
-HOME_DIR = os.path.dirname(d)
+SKILL_DIR = os.path.dirname(d)
 
 
 def discover_tests():
-    """Find skills whith test files
+    """Find skill withh test files.
 
     For all skills with test files, starten from current directory,
     find the test files in subdirectory test/intent.
 
-    :return: skills and corresponding test case files found
+    Returns:
+        Test case files found along with test environment script if available.
     """
 
     tests = {}
+    test_envs = {}
 
-    skills = [HOME_DIR]
+    skills = [SKILL_DIR]
 
     for skill in skills:
+        # Find intent tests
         test_intent_files = [
             f for f
             in glob.glob(os.path.join(skill, 'test/intent/*.intent.json'))
@@ -49,18 +56,33 @@ def discover_tests():
         if len(test_intent_files) > 0:
             tests[skill] = test_intent_files
 
-    return tests
+        # Load test environment script
+        test_env = None
+        if exists(os.path.join(skill, 'test/__init__.py')):
+            module = imp.load_source(skill + '.test_env',
+                                     os.path.join(skill, 'test/__init__.py'))
+            if hasattr(module, 'test_runner') and callable(module.test_runner):
+                test_env = module
+        test_envs[skill] = test_env
+
+    return tests, test_envs
 
 
 class IntentTestSequenceMeta(type):
     def __new__(mcs, name, bases, d):
-        def gen_test(a, b):
+        def gen_test(a, b, test_env):
             def test(self):
-                if not SkillTest(a, b, self.emitter).run(self.loader):
-                    assert False
-            return test
+                assert SkillTest(a, b, self.emitter).run(self.loader)
 
-        tests = discover_tests()
+            def test_env_test(self):
+                assert test_env.test_runner(a, b, self.emitter, self.loader)
+
+            if test_env_test:
+                return test_env_test
+            else:
+                return test
+
+        tests, test_envs = discover_tests()
         for skill in tests.keys():
             skill_name = os.path.basename(skill)  # Path of the skill
             for example in tests[skill]:
@@ -69,7 +91,9 @@ class IntentTestSequenceMeta(type):
                     os.path.splitext(os.path.splitext(example)[0])[0])
                 test_name = "test_IntentValidation[%s:%s]" % (skill_name,
                                                               example_name)
-                d[test_name] = gen_test(skill, example)
+                test_env = test_envs[skill]
+                d[test_name] = gen_test(skill, example, test_env)
+
         return type.__new__(mcs, name, bases, d)
 
 
@@ -81,7 +105,7 @@ class IntentTestSequence(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.loader = MockSkillsLoader(HOME_DIR)
+        cls.loader = MockSkillsLoader(SKILL_DIR)
         cls.emitter = cls.loader.load_skills()
 
     @classmethod
