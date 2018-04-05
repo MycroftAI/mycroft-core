@@ -300,8 +300,14 @@ class EvaluationRule(object):
             _x.append(['endsWith', 'intent_type',
                        str(test_case['intent_type'])])
 
+        # Check for adapt intent info
         if test_case.get('intent', None):
             for item in test_case['intent'].items():
+                _x.append(['equal', str(item[0]), str(item[1])])
+
+        # Check for expected data structure
+        if test_case.get('expected_data'):
+            for item in test_case['expected_data'].items():
                 _x.append(['equal', str(item[0]), str(item[1])])
 
         if _x != ['and']:
