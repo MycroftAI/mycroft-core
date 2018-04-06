@@ -921,6 +921,8 @@ class MycroftSkill(object):
         if not name:
             name = self.name + handler.__name__
         name = self._unique_name(name)
+        if repeat:
+            self.scheduled_repeats.append(name)
 
         data = data or {}
         self.add_event(name, handler, once=not repeat)
@@ -965,7 +967,6 @@ class MycroftSkill(object):
             if not when:
                 when = datetime.now() + timedelta(seconds=frequency)
             self._schedule_event(handler, when, data, name, frequency)
-            self.scheduled_repeats.append(name)
         else:
             LOG.debug('The event is already scheduled, cancel previous '
                       'event if this scheduling should replace the last.')
