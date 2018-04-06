@@ -749,6 +749,12 @@ case ${OPT} in
          install_from_url_list "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/DEFAULT-SKILLS.${mycroft_platform}" || exit_code=$?
       fi
 
+      # Suppress error 20 (skill exists) since this is an expected error
+      # when doing `msm default`
+      if [ ${exit_code} == 20 ]; then
+         exit_code=0
+      fi
+
       update || exit_code=$?
       mv ${mycroft_skill_folder}/.msm.tmp ${mycroft_skill_folder}/.msm
    ;;
