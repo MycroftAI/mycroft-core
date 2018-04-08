@@ -88,6 +88,8 @@ def extractnumber(text, lang="en-us"):
         return extractnumber_fr(text)
     elif lang_lower.startswith("sv"):
         return extractnumber_sv(text)
+    elif lang_lower.startswith("de"):
+        return extractnumber_de(text)
     # TODO: extractnumber for other languages
     return text
 
