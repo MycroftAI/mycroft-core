@@ -248,7 +248,7 @@ def extract_datetime_de(string, currentDate=None):
         wordNextNext = words[idx + 2] if idx + 2 < len(words) else ""
 
         # this isn't in clean string because I don't want to save back to words
-        
+
         if word != 'morgen':
             word = word.rstrip('en') #remove dativ plural
         if word != 'heute':
