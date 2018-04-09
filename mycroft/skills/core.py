@@ -207,6 +207,7 @@ class MycroftSkill(object):
         self.name = name or self.__class__.__name__
         # Get directory of skill
         self._dir = dirname(abspath(sys.modules[self.__module__].__file__))
+        self.settings = SkillSettings(self._dir, self.name)
 
         self.bind(emitter)
         self.config_core = Configuration.get()
@@ -249,15 +250,6 @@ class MycroftSkill(object):
     def lang(self):
         return self.config_core.get('lang')
 
-    @property
-    def settings(self):
-        """ Load settings if not already loaded. """
-        try:
-            return self._settings
-        except:
-            self._settings = SkillSettings(self._dir, self.name)
-            return self._settings
-
     def bind(self, emitter):
         """ Register emitter with skill. """
         if emitter:
@@ -268,6 +260,11 @@ class MycroftSkill(object):
                            self.handle_enable_intent)
             self.add_event('mycroft.skill.disable_intent',
                            self.handle_disable_intent)
+
+            name = 'mycroft.skills.settings.update'
+            func = self.settings.run_poll
+            emitter.on(name, func)
+            self.events.append((name, func))
 
     def __register_stop(self):
         self.stop_time = time.time()
@@ -931,7 +928,7 @@ class MycroftSkill(object):
         """
         # Store settings
         self.settings.store()
-        self.settings.is_alive = False
+        self.settings.stop_polling()
         # removing events
         self.cancel_all_repeating_events()
         for e, f in self.events:

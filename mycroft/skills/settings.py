@@ -59,7 +59,6 @@
 """
 
 import json
-import subprocess
 import hashlib
 from threading import Timer
 from os.path import isfile, join, expanduser, basename
@@ -93,17 +92,29 @@ class SkillSettings(dict):
         # set file paths
         self._settings_path = join(directory, 'settings.json')
         self._meta_path = join(directory, 'settingsmeta.json')
-        self.is_alive = True
         self.loaded_hash = hash(str(self))
         self._complete_intialization = False
         self._device_identity = None
         self._api_path = None
         self._user_identity = None
         self.changed_callback = None
+        self._poll_timer = None
+        self._is_alive = True
 
         # if settingsmeta exist
         if isfile(self._meta_path):
             self._poll_skill_settings()
+
+    def run_poll(self, _=None):
+        """Immediately poll the web for new skill settings"""
+        if self._poll_timer:
+            self._poll_timer.cancel()
+            self._poll_skill_settings()
+
+    def stop_polling(self):
+        self._is_alive = False
+        if self._poll_timer:
+            self._poll_timer.cancel()
 
     def set_changed_callback(self, callback):
         """
@@ -393,12 +404,16 @@ class SkillSettings(dict):
             if self.changed_callback and hash(str(self)) != original:
                 self.changed_callback()
 
-        # this is used in core so do not delete!
-        if self.is_alive:
-            # continues to poll settings every minute
-            t = Timer(60, self._poll_skill_settings)
-            t.daemon = True
-            t.start()
+        if self._poll_timer:
+            self._poll_timer.cancel()
+
+        if not self._is_alive:
+            return
+
+        # continues to poll settings every minute
+        self._poll_timer = Timer(60, self._poll_skill_settings)
+        self._poll_timer.daemon = True
+        self._poll_timer.start()
 
     def load_skill_settings_from_file(self):
         """ If settings.json exist, open and read stored values into self """
