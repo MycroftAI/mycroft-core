@@ -12,12 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from __future__ import absolute_import
 import socket
 import subprocess
+from threading import Thread
+from time import sleep
 
+import json
 import os.path
 import psutil
 from stat import S_ISREG, ST_MTIME, ST_MODE, ST_SIZE
+
+import signal as sig
 
 import mycroft.audio
 import mycroft.configuration
@@ -266,3 +272,53 @@ def stop_speaking():
 def get_arch():
     """ Get architecture string of system. """
     return os.uname()[4]
+
+
+def reset_sigint_handler():
+    """
+    Reset the sigint handler to the default. This fixes KeyboardInterrupt
+    not getting raised when started via start-mycroft.sh
+    """
+    sig.signal(sig.SIGINT, sig.default_int_handler)
+
+
+def create_daemon(target, args=(), kwargs=None):
+    """Helper to quickly create and start a thread with daemon = True"""
+    t = Thread(target=target, args=args, kwargs=kwargs)
+    t.daemon = True
+    t.start()
+    return t
+
+
+def wait_for_exit_signal():
+    """Blocks until KeyboardInterrupt is received"""
+    try:
+        while True:
+            sleep(100)
+    except KeyboardInterrupt:
+        pass
+
+
+def create_echo_function(name, whitelist=None):
+    from mycroft.configuration import Configuration
+    blacklist = Configuration.get().get("ignore_logs")
+
+    def echo(message):
+        """Listen for messages and echo them for logging"""
+        try:
+            js_msg = json.loads(message)
+
+            if whitelist and js_msg.get("type") not in whitelist:
+                return
+
+            if blacklist and js_msg.get("type") in blacklist:
+                return
+
+            if js_msg.get("type") == "registration":
+                # do not log tokens from registration messages
+                js_msg["data"]["token"] = None
+                message = json.dumps(js_msg)
+        except Exception:
+            pass
+        LOG(name).debug(message)
+    return echo

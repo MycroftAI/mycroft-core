@@ -14,16 +14,16 @@
 #
 import json
 import time
-import monotonic
 from multiprocessing.pool import ThreadPool
-
 from threading import Event
+
+import monotonic
 from pyee import EventEmitter
-from websocket import WebSocketApp
+from websocket import WebSocketApp, WebSocketConnectionClosedException
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
-from mycroft.util import validate_param
+from mycroft.util import validate_param, create_echo_function
 from mycroft.util.log import LOG
 
 
@@ -68,11 +68,19 @@ class WebsocketClient(object):
         self.emitter.emit("close")
 
     def on_error(self, ws, error):
+        if isinstance(error, WebSocketConnectionClosedException):
+            LOG.warning('Could not send message because connection has closed')
+            return
+
+        LOG.exception(
+            '=== ' + error.__class__.__name__ + ': ' + str(error) + ' ===')
+
         try:
             self.emitter.emit('error', error)
-            self.client.close()
+            if self.client.keep_running:
+                self.client.close()
         except Exception as e:
-            LOG.error(repr(e))
+            LOG.error('Exception closing websocket: ' + repr(e))
         LOG.warning("WS Client will reconnect in %d seconds." % self.retry)
         time.sleep(self.retry)
         self.retry = min(self.retry * 2, 60)
@@ -92,10 +100,14 @@ class WebsocketClient(object):
                                  'before emitting messages')
             self.connected_event.wait()
 
-        if hasattr(message, 'serialize'):
-            self.client.send(message.serialize())
-        else:
-            self.client.send(json.dumps(message.__dict__))
+        try:
+            if hasattr(message, 'serialize'):
+                self.client.send(message.serialize())
+            else:
+                self.client.send(json.dumps(message.__dict__))
+        except WebSocketConnectionClosedException:
+            LOG.warning('Could not send {} message because connection '
+                        'has been closed'.format(message.type))
 
     def wait_for_response(self, message, reply_type=None, timeout=None):
         """Send a message and wait for a response.
@@ -141,7 +153,10 @@ class WebsocketClient(object):
         self.emitter.once(event_name, func)
 
     def remove(self, event_name, func):
-        self.emitter.remove_listener(event_name, func)
+        try:
+            self.emitter.remove_listener(event_name, func)
+        except ValueError as e:
+            LOG.warning('Failed to remove event {}: {}'.format(event_name, e))
 
     def remove_all_listeners(self, event_name):
         '''
@@ -166,14 +181,11 @@ class WebsocketClient(object):
 def echo():
     ws = WebsocketClient()
 
-    def echo(message):
-        LOG.info(message)
-
     def repeat_utterance(message):
         message.type = 'speak'
         ws.emit(message)
 
-    ws.on('message', echo)
+    ws.on('message', create_echo_function(None))
     ws.on('recognizer_loop:utterance', repeat_utterance)
     ws.run_forever()
 

@@ -151,7 +151,6 @@ def init(websocket):
 
 
 def shutdown():
-    global tts
     if tts:
         tts.playback.stop()
         tts.playback.join()

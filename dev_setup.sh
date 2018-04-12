@@ -176,7 +176,7 @@ if [ ! -f "$VENV_PATH_FILE" ] ; then
     echo "import sys; new=sys.path[sys.__plen:]; del sys.path[sys.__plen:]; p=getattr(sys,'__egginsert',0); sys.path[p:p]=new; sys.__egginsert = p+len(new)" >> "$VENV_PATH_FILE" || return 1
 fi
 
-if ! grep -q "mycroft-core" $VENV_PATH_FILE; then
+if ! grep -q "$TOP" $VENV_PATH_FILE; then
    echo "Adding mycroft-core to virtualenv path"
    sed -i.tmp '1 a\
 '"$TOP"'

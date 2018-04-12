@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import sys
-from threading import Thread, Lock
+from threading import Lock
 
 from mycroft import dialog
 from mycroft.client.enclosure.api import EnclosureAPI
@@ -23,13 +22,13 @@ from mycroft.identity import IdentityManager
 from mycroft.lock import Lock as PIDLock  # Create/Support PID locking file
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
+from mycroft.util import create_daemon, wait_for_exit_signal, \
+    reset_sigint_handler
 from mycroft.util.log import LOG
 
 ws = None
 lock = Lock()
 loop = None
-
-config = Configuration.get()
 
 
 def handle_record_begin():
@@ -132,17 +131,12 @@ def handle_open():
     EnclosureAPI(ws).reset()
 
 
-def connect():
-    ws.run_forever()
-
-
 def main():
     global ws
     global loop
-    global config
-    lock = PIDLock("voice")
+    reset_sigint_handler()
+    PIDLock("voice")
     ws = WebsocketClient()
-    config = Configuration.get()
     Configuration.init(ws)
     loop = RecognizerLoop()
     loop.on('recognizer_loop:utterance', handle_utterance)
@@ -163,15 +157,11 @@ def main():
     ws.on('recognizer_loop:audio_output_start', handle_audio_start)
     ws.on('recognizer_loop:audio_output_end', handle_audio_end)
     ws.on('mycroft.stop', handle_stop)
-    event_thread = Thread(target=connect)
-    event_thread.setDaemon(True)
-    event_thread.start()
 
-    try:
-        loop.run()
-    except KeyboardInterrupt as e:
-        LOG.exception(e)
-        sys.exit()
+    create_daemon(ws.run_forever)
+    create_daemon(loop.run)
+
+    wait_for_exit_signal()
 
 
 if __name__ == "__main__":
