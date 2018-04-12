@@ -18,24 +18,24 @@
     This handles playback of audio and speech
 """
 import imp
-import json
 import sys
 import time
-
 from os import listdir
+
 from os.path import abspath, dirname, basename, isdir, join
 
 import mycroft.audio.speech as speech
 from mycroft.configuration import Configuration
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
+from mycroft.util import reset_sigint_handler, wait_for_exit_signal, \
+    create_daemon, create_echo_function
 from mycroft.util.log import LOG
 
 try:
     import pulsectl
 except ImportError:
     pulsectl = None
-
 
 MAINMODULE = '__init__'
 sys.path.append(abspath(dirname(__file__)))
@@ -139,6 +139,7 @@ class AudioService(object):
         Handles playback of audio and selecting proper backend for the uri
         to be played.
     """
+
     def __init__(self, ws):
         """
             Args:
@@ -458,31 +459,20 @@ class AudioService(object):
 
 def main():
     """ Main function. Run when file is invoked. """
+    reset_sigint_handler()
     ws = WebsocketClient()
     Configuration.init(ws)
     speech.init(ws)
 
-    def echo(message):
-        """ Echo message bus messages. """
-        try:
-            _message = json.loads(message)
-            if 'mycroft.audio.service' not in _message.get('type'):
-                return
-            message = json.dumps(_message)
-        except Exception as e:
-            LOG.exception(e)
-        LOG.debug(message)
-
-    LOG.info("Staring Audio Services")
-    ws.on('message', echo)
+    LOG.info("Starting Audio Services")
+    ws.on('message', create_echo_function('AUDIO', ['mycroft.audio.service']))
     audio = AudioService(ws)  # Connect audio service instance to message bus
-    try:
-        ws.run_forever()
-    except KeyboardInterrupt as e:
-        LOG.exception(e)
-        speech.shutdown()
-        audio.shutdown()
-        sys.exit()
+    create_daemon(ws.run_forever)
+
+    wait_for_exit_signal()
+
+    speech.shutdown()
+    audio.shutdown()
 
 
 if __name__ == "__main__":
