@@ -58,7 +58,13 @@ MINUTES = 60  # number of seconds in a minute (syntactic sugar)
 
 
 def get_skills_dir():
-    return Configuration.get().get("skills", {}).get("directory", '/opt/mycroft/skills')
+    skills_dir = Configuration.get().get("skills", {})\
+        .get("directory", '~/.mycroft/jarbas_skills')
+    if "~" in skills_dir:
+        skills_dir = os.path.expanduser(skills_dir)
+    if not exists(skills_dir):
+        os.makedirs(skills_dir)
+    return skills_dir
 
 
 def get_blacklisted_skills():
