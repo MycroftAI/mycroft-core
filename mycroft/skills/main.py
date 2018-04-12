@@ -378,7 +378,7 @@ class SkillManager(Thread):
             LOG.debug("Reloading Skill: " + skill_folder)
             # removing listeners and stopping threads
             try:
-                skill["instance"].shutdown()
+                skill["instance"]._shutdown()
             except Exception:
                 LOG.exception("An error occured while shutting down {}"
                               .format(skill["instance"].name))
@@ -503,7 +503,7 @@ class SkillManager(Thread):
             instance = skill_info.get('instance')
             if instance:
                 try:
-                    instance.shutdown()
+                    instance._shutdown()
                 except Exception:
                     LOG.exception('Shutting down skill: ' + name)
 

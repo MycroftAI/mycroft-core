@@ -882,6 +882,11 @@ class MycroftSkill(object):
         process termination. The skill implementation must
         shutdown all processes and operations in execution.
         """
+        pass
+
+    def _shutdown(self):
+        """Parent function called internally to shut down everything"""
+        self.shutdown()
         # Store settings
         self.settings.store()
         self.settings.is_alive = False
@@ -1154,9 +1159,9 @@ class FallbackSkill(MycroftSkill):
             handler = self.instance_fallback_handlers.pop()
             self.remove_fallback(handler)
 
-    def shutdown(self):
+    def _shutdown(self):
         """
             Remove all registered handlers and perform skill shutdown.
         """
         self.remove_instance_handlers()
-        super(FallbackSkill, self).shutdown()
+        super(FallbackSkill, self)._shutdown()

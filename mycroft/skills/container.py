@@ -88,7 +88,7 @@ class SkillContainer(object):
 
     def stop(self):
         if self.skill:
-            self.skill.shutdown()
+            self.skill._shutdown()
 
 
 def main():
