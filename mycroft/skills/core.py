@@ -886,7 +886,11 @@ class MycroftSkill(object):
 
     def _shutdown(self):
         """Parent function called internally to shut down everything"""
-        self.shutdown()
+        try:
+            self.shutdown()
+        except exception as e:
+            LOG.error('Skill specific shutdown function encountered '
+                      'an error: {}'.format(repr(e)))
         # Store settings
         self.settings.store()
         self.settings.is_alive = False
