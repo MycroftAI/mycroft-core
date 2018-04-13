@@ -752,7 +752,12 @@ def show_skills(skills):
     column = 0
     col_width = 0
     for skill in sorted(skills.keys()):
-        scr.addstr(row, column,  "  {}".format(skill))
+        if skills[skill]['active']:
+            color = curses.color_pair(4)
+        else:
+            color = curses.color_pair(2)
+
+        scr.addstr(row, column,  "  {}".format(skill), color)
         row += 1
         col_width = max(col_width, len(skill))
         if row == 21:
@@ -863,6 +868,15 @@ def handle_cmd(cmd):
             scr.get_wch()  # blocks
             screen_mode = 0  # back to main screen
             draw_screen()
+    elif "deactivate" in cmd:
+        skills = cmd.split()[1:]
+        for s in skills:
+            ws.emit(Message("skillmanager.deactivate", data={'skill': s}))
+    elif "activate" in cmd:
+        skills = cmd.split()[1:]
+        for s in skills:
+            ws.emit(Message("skillmanager.activate", data={'skill': s}))
+
     # TODO: More commands
     return 0  # do nothing upon return
 
