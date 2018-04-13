@@ -752,7 +752,7 @@ def show_skills(skills):
     row = 2
     column = 0
     col_width = 0
-    for skill in sorted(skills):
+    for skill in sorted(skills.keys()):
         scr.addstr(row, column,  "  {}".format(skill))
         row += 1
         col_width = max(col_width, len(skill))
@@ -859,8 +859,8 @@ def handle_cmd(cmd):
         message = ws.wait_for_response(
             Message('skillmanager.list'), reply_type='mycroft.skills.list')
 
-        if message and 'skills' in message.data:
-            show_skills(message.data['skills'])
+        if message:
+            show_skills(message.data)
             c = scr.getch()  # blocks
             screen_mode = 0  # back to main screen
             draw_screen()
