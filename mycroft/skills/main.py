@@ -453,9 +453,13 @@ class SkillManager(Thread):
             Send list of loaded skills.
         """
         try:
-            self.ws.emit(Message('mycroft.skills.list', data={'skills': [
-                basename(skill_path) for skill_path in self.loaded_skills
-            ]}))
+            info = {}
+            for s in self.loaded_skills:
+                info[basename(s)] = {
+                    'active': self.loaded_skills[s].get('active', True),
+                    'id': self.loaded_skills[s]['id']
+                }
+            self.ws.emit(Message('mycroft.skills.list', data=info))
         except Exception as e:
             LOG.exception(e)
 
