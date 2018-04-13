@@ -872,6 +872,10 @@ def handle_cmd(cmd):
         skills = cmd.split()[1:]
         for s in skills:
             ws.emit(Message("skillmanager.deactivate", data={'skill': s}))
+    elif "keep" in cmd:
+        s = cmd.split()[1]
+        ws.emit(Message("skillmanager.keep", data={'skill': s}))
+
     elif "activate" in cmd:
         skills = cmd.split()[1:]
         for s in skills:
