@@ -59,7 +59,7 @@ MINUTES = 60  # number of seconds in a minute (syntactic sugar)
 
 def get_skills_dir():
     skills_dir = Configuration.get().get("skills", {})\
-        .get("directory", '~/.mycroft/jarbas_skills')
+        .get("directory", '/opt/mycroft/skills')
     if "~" in skills_dir:
         skills_dir = os.path.expanduser(skills_dir)
     if not exists(skills_dir):
