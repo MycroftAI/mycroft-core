@@ -224,6 +224,7 @@ class SkillManager(Thread):
         ws.on('skillmanager.update', self.schedule_now)
         ws.on('skillmanager.list', self.send_skill_list)
         ws.on('skillmanager.deactivate', self.deactivate_skill)
+        ws.on('skillmanager.keep', self.deactivate_except)
         ws.on('skillmanager.activate', self.activate_skill)
 
     @staticmethod
@@ -358,7 +359,8 @@ class SkillManager(Thread):
         # check if skill was modified
         elif skill.get("instance") and modified > last_mod:
             # check if skill has been blocked from reloading
-            if not skill["instance"].reload_skill:
+            if (not skill["instance"].reload_skill or
+                    not skill.get('active', True)):
                 return False
 
             LOG.debug("Reloading Skill: " + basename(skill_path))
@@ -465,16 +467,36 @@ class SkillManager(Thread):
         except Exception as e:
             LOG.exception(e)
 
+    def __deactivate_skill(self, skill):
+        """ Deactivate a skill. """
+        try:
+            self.loaded_skills[skill]['active'] = False
+            self.loaded_skills[skill]['instance']._shutdown()
+        except Exception as e:
+            LOG.error('Couldn\'t deactivate skill, {}'.format(repr(e)))
+
     def deactivate_skill(self, message):
+        """ Deactivate a skill. """
         try:
             skill = message.data['skill']
             if skill in self.loaded_skills:
-                self.loaded_skills[skill]['active'] = False
-                self.loaded_skills[skill]['instance']._shutdown()
+                self.__deactivate_skill(skill)
+        except Exception as e:
+            LOG.error('Couldn\'t deactivate skill, {}'.format(repr(e)))
+
+    def deactivate_except(self, message):
+        """ Deactivate all skills except the provided. """
+        try:
+            skill_to_keep = message.data['skill']
+            if skill_to_keep in self.loaded_skills:
+                for skill in self.loaded_skills:
+                    if skill != skill_to_keep:
+                        self.__deactivate_skill(skill)
         except Exception as e:
             LOG.error('Couldn\'t deactivate skill, {}'.format(repr(e)))
 
     def activate_skill(self, message):
+        """ Activate a deactivated skill. """
         try:
             skill = message.data['skill']
             if not self.loaded_skills[skill].get('active', True):
