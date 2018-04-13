@@ -77,7 +77,7 @@ class IntentTestSequenceMeta(type):
             def test_env_test(self):
                 assert test_env.test_runner(a, b, self.emitter, self.loader)
 
-            if test_env_test:
+            if test_env:
                 return test_env_test
             else:
                 return test

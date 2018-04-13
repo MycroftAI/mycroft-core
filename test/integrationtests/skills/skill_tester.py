@@ -191,7 +191,7 @@ class SkillTest(object):
                 loader:  A list of loaded skills
         """
 
-        s = [s for s in loader.skills if s and s._dir == self.skill]
+        s = [s for s in loader.skills if s and s.root_dir == self.skill]
         if s:
             s = s[0]
         else:
@@ -321,7 +321,7 @@ class EvaluationRule(object):
             # Make sure expected dialog file is used
             dialog = test_case['expected_dialog']
             # Extract dialog texts from skill
-            dialogs = skill.dialog_renderer.templates[dilog]
+            dialogs = skill.dialog_renderer.templates[dialog]
             # Allow custom fields to be anything
             d = [re.sub('\{.*?\}', '.*', t) for t in dialogs]
             # Create rule allowing any of the sentences for that dialog
