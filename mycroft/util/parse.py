@@ -16,7 +16,6 @@
 #
 from difflib import SequenceMatcher
 
-from mycroft.util.lang.parse_de import *
 from mycroft.util.lang.parse_en import *
 from mycroft.util.lang.parse_pt import *
 from mycroft.util.lang.parse_es import *
@@ -50,7 +49,7 @@ def match_one(query, choices):
         Returns: tuple with best match, score
     """
     if isinstance(choices, dict):
-        _choices = choices.keys()
+        _choices = list(choices.keys())
     elif isinstance(choices, list):
         _choices = choices
     else:
@@ -201,4 +200,6 @@ def get_gender(word, input_string="", lang="en-us"):
         return get_gender_pt(word, input_string)
     elif "it" in lang:
         return get_gender_it(word, input_string)
+    elif "de" in lang:
+        return get_gender_de(word, input_string)
     return False
