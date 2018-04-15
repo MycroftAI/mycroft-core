@@ -28,9 +28,12 @@ def extractnumber_de(text):
     Returns:
         (int) or (float): The value of extracted number
 
+
+    undefined articles cannot be suppressed in German: 'ein Pferd' means 'one horse' and 'a horse'
+
     """
     aWords = text.split()
-    aWords = [word for word in aWords if word not in ["der", "die", "das", "des", "den", "dem", "ein", "eine", "eines", "einer", "einem", "einen"]]
+    aWords = [word for word in aWords if word not in ["der", "die", "das", "des", "den", "dem"]]
     and_pass = False
     valPreAnd = False
     val = False
