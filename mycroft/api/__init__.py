@@ -14,23 +14,34 @@
 #
 from copy import copy
 
+import json
 import requests
-from requests import HTTPError
+from requests import HTTPError, RequestException
 
 from mycroft.configuration import Configuration
 from mycroft.configuration.config import DEFAULT_CONFIG, SYSTEM_CONFIG, \
     USER_CONFIG
 from mycroft.identity import IdentityManager
 from mycroft.version import VersionManager
-from mycroft.util import get_arch
+from mycroft.util import get_arch, connected, LOG
 # python 2/3 compatibility
 from future.utils import iteritems
 
 _paired_cache = False
 
 
+class BackendDown(RequestException):
+    pass
+
+
+class InternetDown(RequestException):
+    pass
+
+
 class Api(object):
     """ Generic object to wrap web APIs """
+    params_to_etag = {}
+    etag_to_response = {}
 
     def __init__(self, path):
         self.path = path
@@ -68,14 +79,45 @@ class Api(object):
         IdentityManager.save(data)
 
     def send(self, params):
+        """ Send request to mycroft backend.
+        The method handles Etags and will return a cached response value
+        if nothing has changed on the remote.
+
+        Arguments:
+            params (dict): request parameters
+
+        Returns:
+            Requests response object.
+        """
+        query_data = frozenset(params.get('query', {}).items())
+        params_key = (params.get('path'), query_data)
+        etag = self.params_to_etag.get(params_key)
+
         method = params.get("method", "GET")
         headers = self.build_headers(params)
         data = self.build_data(params)
-        json = self.build_json(params)
+        json_body = self.build_json(params)
         query = self.build_query(params)
         url = self.build_url(params)
-        response = requests.request(method, url, headers=headers, params=query,
-                                    data=data, json=json, timeout=(3.05, 15))
+
+        # For an introduction to the Etag feature check out:
+        # https://en.wikipedia.org/wiki/HTTP_ETag
+        if etag:
+            headers['If-None-Match'] = etag
+
+        response = requests.request(
+            method, url, headers=headers, params=query,
+            data=data, json=json_body, timeout=(3.05, 15)
+        )
+        if response.status_code == 304:
+            LOG.debug('Etag matched. Nothing changed for: ' + params['path'])
+            response = self.etag_to_response[etag]
+        elif 'ETag' in response.headers:
+            etag = response.headers['ETag'].strip('"')
+            LOG.debug('Updating etag for: ' + params['path'])
+            self.params_to_etag[params_key] = etag
+            self.etag_to_response[etag] = response
+
         return self.get_response(response)
 
     def get_response(self, response):
@@ -332,7 +374,7 @@ def has_been_paired():
     return id.uuid is not None and id.uuid != ""
 
 
-def is_paired():
+def is_paired(ignore_errors=True):
     """ Determine if this device is actively paired with a web backend
 
     Determines if the installation of Mycroft has been paired by the user
@@ -354,5 +396,13 @@ def is_paired():
         _paired_cache = api.identity.uuid is not None and \
             api.identity.uuid != ""
         return _paired_cache
-    except:
+    except HTTPError as e:
+        if e.response.status_code == 401:
+            return False
+    except Exception as e:
+        LOG.warning('Could not get device infO: ' + repr(e))
+    if ignore_errors:
         return False
+    if connected():
+        raise BackendDown
+    raise InternetDown

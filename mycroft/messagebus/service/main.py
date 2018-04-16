@@ -17,8 +17,8 @@ from tornado import autoreload, web, ioloop
 from mycroft.configuration import Configuration
 from mycroft.lock import Lock  # creates/supports PID locking file
 from mycroft.messagebus.service.ws import WebsocketEventHandler
-from mycroft.util import validate_param
-
+from mycroft.util import validate_param, reset_sigint_handler, create_daemon, \
+    wait_for_exit_signal
 
 settings = {
     'debug': True
@@ -27,6 +27,7 @@ settings = {
 
 def main():
     import tornado.options
+    reset_sigint_handler()
     lock = Lock("service")
     tornado.options.parse_command_line()
 
@@ -50,7 +51,9 @@ def main():
     ]
     application = web.Application(routes, **settings)
     application.listen(port, host)
-    ioloop.IOLoop.instance().start()
+    create_daemon(ioloop.IOLoop.instance().start)
+
+    wait_for_exit_signal()
 
 
 if __name__ == "__main__":

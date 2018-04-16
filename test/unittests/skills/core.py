@@ -29,6 +29,10 @@ from mycroft.skills.skill_data import load_regex_from_file, load_regex, \
 from mycroft.skills.core import MycroftSkill, load_skill, \
     create_skill_descriptor, open_intent_envelope
 
+from mycroft.configuration.config import LocalConf, DEFAULT_CONFIG
+
+BASE_CONF = LocalConf(DEFAULT_CONFIG)
+
 
 class MockEmitter(object):
     def __init__(self):
@@ -227,7 +231,7 @@ class MycroftSkillTest(unittest.TestCase):
 
     def test_register_intent(self):
         # Test register Intent object
-        s = TestSkill1()
+        s = SimpleSkill1()
         s.bind(self.emitter)
         s.initialize()
         expected = [{'at_least_one': [],
@@ -237,7 +241,7 @@ class MycroftSkillTest(unittest.TestCase):
         self.check_register_intent(expected)
 
         # Test register IntentBuilder object
-        s = TestSkill2()
+        s = SimpleSkill2()
         s.bind(self.emitter)
         s.initialize()
         expected = [{'at_least_one': [],
@@ -249,14 +253,14 @@ class MycroftSkillTest(unittest.TestCase):
 
         # Test register IntentBuilder object
         with self.assertRaises(ValueError):
-            s = TestSkill3()
+            s = SimpleSkill3()
             s.bind(self.emitter)
             s.initialize()
 
     def test_enable_disable_intent(self):
         """Test disable/enable intent."""
         # Setup basic test
-        s = TestSkill1()
+        s = SimpleSkill1()
         s.bind(self.emitter)
         s.initialize()
         expected = [{'at_least_one': [],
@@ -274,7 +278,7 @@ class MycroftSkillTest(unittest.TestCase):
     def test_register_vocab(self):
         """Test disable/enable intent."""
         # Setup basic test
-        s = TestSkill1()
+        s = SimpleSkill1()
         s.bind(self.emitter)
         s.initialize()
 
@@ -296,7 +300,7 @@ class MycroftSkillTest(unittest.TestCase):
         self.emitter.reset()
 
     def test_register_intent_file(self):
-        s = TestSkill4()
+        s = SimpleSkill4()
         s.bind(self.emitter)
         s.vocab_dir = join(dirname(__file__), 'intent_file')
         s.initialize()
@@ -330,8 +334,8 @@ class MycroftSkillTest(unittest.TestCase):
         """ Test decorated intents """
         path_orig = sys.path
         sys.path.append(abspath(dirname(__file__)))
-        TestSkill5 = __import__('decorator_test_skill').TestSkill
-        s = TestSkill5()
+        SimpleSkill5 = __import__('decorator_test_skill').TestSkill
+        s = SimpleSkill5()
         s.vocab_dir = join(dirname(__file__), 'intent_file')
         s.bind(self.emitter)
         s.initialize()
@@ -348,7 +352,7 @@ class MycroftSkillTest(unittest.TestCase):
         self.check_register_decorators(expected)
 
     def test_failing_set_context(self):
-        s = TestSkill1()
+        s = SimpleSkill1()
         s.bind(self.emitter)
         with self.assertRaises(ValueError):
             s.set_context(1)
@@ -365,7 +369,7 @@ class MycroftSkillTest(unittest.TestCase):
                               sorted(result_list))
             self.emitter.reset()
 
-        s = TestSkill1()
+        s = SimpleSkill1()
         s.bind(self.emitter)
         # No context content
         s.set_context('TurtlePower')
@@ -385,7 +389,7 @@ class MycroftSkillTest(unittest.TestCase):
         self.emitter.reset()
 
     def test_failing_remove_context(self):
-        s = TestSkill1()
+        s = SimpleSkill1()
         s.bind(self.emitter)
         with self.assertRaises(ValueError):
             s.remove_context(1)
@@ -398,66 +402,25 @@ class MycroftSkillTest(unittest.TestCase):
                               sorted(result_list))
             self.emitter.reset()
 
-        s = TestSkill1()
+        s = SimpleSkill1()
         s.bind(self.emitter)
         s.remove_context('Donatello')
         expected = [{'context': 'Donatello'}]
         check_remove_context(expected)
 
-    @mock.patch.object(Configuration, 'get')
-    def test_skill_location(self, mock_config_get):
-        test_config = {
-            "location": {
-                "city": {
-                    "code": "Lawrence",
-                    "name": "Lawrence",
-                    "state": {
-                        "code": "KS",
-                        "name": "Kansas",
-                        "country": {
-                            "code": "US",
-                            "name": "United States"
-                        }
-                    }
-                },
-                "coordinate": {
-                    "latitude": 38.971669,
-                    "longitude": -95.23525
-                },
-                "timezone": {
-                    "code": "America/Chicago",
-                    "name": "Central Standard Time",
-                    "dstOffset": 3600000,
-                    "offset": -21600000
-                }
-            }
-        }
-        mock_config_get.return_value = test_config
-        s = TestSkill1()
-        self.assertEqual(s.location, test_config.get('location'))
-        self.assertEqula(s.location_pretty,
-                         test_config['location']['city']['name'])
+    @mock.patch.dict(Configuration._Configuration__config, BASE_CONF)
+    def test_skill_location(self):
+        s = SimpleSkill1()
+        self.assertEqual(s.location, BASE_CONF.get('location'))
+        self.assertEqual(s.location_pretty,
+                         BASE_CONF['location']['city']['name'])
         self.assertEqual(s.location_timezone,
-                         test_config['location']['timezone']['code'])
+                         BASE_CONF['location']['timezone']['code'])
 
-    @mock.patch.object(Configuration, 'get')
-    def test_skill_location(self, mock_config_get):
-        test_config = {}
-        mock_config_get.return_value = test_config
-        s = TestSkill1()
-        self.assertEqual(s.location, None)
-        self.assertEqual(s.location_pretty, None)
-        self.assertEqual(s.location_timezone, None)
-
-    @mock.patch.object(Configuration, 'get')
-    def test_add_event(self, mock_config_get):
-        test_config = {
-            'skills': {
-            }
-        }
-        mock_config_get.return_value = test_config
+    @mock.patch.dict(Configuration._Configuration__config, BASE_CONF)
+    def test_add_event(self):
         emitter = mock.MagicMock()
-        s = TestSkill1()
+        s = SimpleSkill1()
         s.bind(emitter)
         s.add_event('handler1', s.handler)
         # Check that the handler was registered with the emitter
@@ -465,15 +428,10 @@ class MycroftSkillTest(unittest.TestCase):
         # Check that the handler was stored in the skill
         self.assertTrue('handler1' in zip(*s.events)[0])
 
-    @mock.patch.object(Configuration, 'get')
-    def test_remove_event(self, mock_config_get):
-        test_config = {
-            'skills': {
-            }
-        }
-        mock_config_get.return_value = test_config
+    @mock.patch.dict(Configuration._Configuration__config, BASE_CONF)
+    def test_remove_event(self):
         emitter = mock.MagicMock()
-        s = TestSkill1()
+        s = SimpleSkill1()
         s.bind(emitter)
         s.add_event('handler1', s.handler)
         self.assertTrue('handler1' in zip(*s.events)[0])
@@ -484,30 +442,20 @@ class MycroftSkillTest(unittest.TestCase):
         # Check that the handler was registered with the emitter
         self.assertEqual(emitter.remove.call_args[0][0], 'handler1')
 
-    @mock.patch.object(Configuration, 'get')
-    def test_add_scheduled_event(self, mock_config_get):
-        test_config = {
-            'skills': {
-            }
-        }
-        mock_config_get.return_value = test_config
+    @mock.patch.dict(Configuration._Configuration__config, BASE_CONF)
+    def test_add_scheduled_event(self):
         emitter = mock.MagicMock()
-        s = TestSkill1()
+        s = SimpleSkill1()
         s.bind(emitter)
         s.schedule_event(s.handler, datetime.now(), name='sched_handler1')
         # Check that the handler was registered with the emitter
         self.assertEqual(emitter.once.call_args[0][0], '0:sched_handler1')
         self.assertTrue('0:sched_handler1' in zip(*s.events)[0])
 
-    @mock.patch.object(Configuration, 'get')
-    def test_remove_scheduled_event(self, mock_config_get):
-        test_config = {
-            'skills': {
-            }
-        }
-        mock_config_get.return_value = test_config
+    @mock.patch.dict(Configuration._Configuration__config, BASE_CONF)
+    def test_remove_scheduled_event(self):
         emitter = mock.MagicMock()
-        s = TestSkill1()
+        s = SimpleSkill1()
         s.bind(emitter)
         s.schedule_event(s.handler, datetime.now(), name='sched_handler1')
         # Check that the handler was registered with the emitter
@@ -517,15 +465,10 @@ class MycroftSkillTest(unittest.TestCase):
         self.assertEqual(emitter.remove.call_args[0][0], '0:sched_handler1')
         self.assertTrue('0:sched_handler1' not in zip(*s.events)[0])
 
-    @mock.patch.object(Configuration, 'get')
-    def test_run_scheduled_event(self, mock_config_get):
-        test_config = {
-            'skills': {
-            }
-        }
-        mock_config_get.return_value = test_config
+    @mock.patch.dict(Configuration._Configuration__config, BASE_CONF)
+    def test_run_scheduled_event(self):
         emitter = mock.MagicMock()
-        s = TestSkill1()
+        s = SimpleSkill1()
         with mock.patch.object(s, '_settings',
                                create=True, value=mock.MagicMock()):
             s.bind(emitter)
@@ -539,9 +482,9 @@ class MycroftSkillTest(unittest.TestCase):
             self.assertTrue('0:sched_handler1' not in zip(*s.events)[0])
 
 
-class TestSkill1(MycroftSkill):
+class SimpleSkill1(MycroftSkill):
     def __init__(self):
-        super(TestSkill1, self).__init__()
+        super(SimpleSkill1, self).__init__()
         self.handler_run = False
 
     """ Test skill for normal intent builder syntax """
@@ -556,7 +499,7 @@ class TestSkill1(MycroftSkill):
         pass
 
 
-class TestSkill2(MycroftSkill):
+class SimpleSkill2(MycroftSkill):
     """ Test skill for intent builder without .build() """
     def initialize(self):
         i = IntentBuilder('a').require('Keyword')
@@ -569,7 +512,7 @@ class TestSkill2(MycroftSkill):
         pass
 
 
-class TestSkill3(MycroftSkill):
+class SimpleSkill3(MycroftSkill):
     """ Test skill for invalid Intent for register_intent """
     def initialize(self):
         self.register_intent('string', self.handler)
@@ -581,7 +524,7 @@ class TestSkill3(MycroftSkill):
         pass
 
 
-class TestSkill4(MycroftSkill):
+class SimpleSkill4(MycroftSkill):
     """ Test skill for padatious intent """
     def initialize(self):
         self.register_intent_file('test.intent', self.handler)

@@ -61,7 +61,7 @@ def load_skills(emitter, skills_root):
 
 def unload_skills(skills):
     for s in skills:
-        s.shutdown()
+        s._shutdown()
 
 
 class RegistrationOnlyEmitter(object):

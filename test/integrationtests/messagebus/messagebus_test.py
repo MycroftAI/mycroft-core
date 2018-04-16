@@ -33,6 +33,7 @@ class TestMessagebusMethods(unittest.TestCase):
     It currently only tests send and receive.  The tests could include
     more.
     """
+
     def setUp(self):
         """
         This sets up for testing the message buss
@@ -43,8 +44,6 @@ class TestMessagebusMethods(unittest.TestCase):
         """
         # start the mycroft service. and get the pid of the script.
         self.pid = Popen(["python", "mycroft/messagebus/service/main.py"]).pid
-        # delay to allow the service to start up.
-        time.sleep(10)
         # Create the two web clients
         self.ws1 = WebsocketClient()
         self.ws2 = WebsocketClient()
@@ -54,8 +53,6 @@ class TestMessagebusMethods(unittest.TestCase):
         # Start threads to handle websockets
         Thread(target=self.ws1.run_forever).start()
         Thread(target=self.ws2.run_forever).start()
-        # Sleep to give the websockets to startup before adding handlers
-        time.sleep(10)
         # Setup handlers for each of the messages.
         self.ws1.on('ws1.message', self.onHandle1)
         self.ws2.on('ws2.message', self.onHandle2)
@@ -98,7 +95,7 @@ class TestMessagebusMethods(unittest.TestCase):
         self.ws2.emit(Message('ws1.message'))
         self.ws1.emit(Message('ws2.message'))
         # allow time for messages to be processed
-        time.sleep(10)
+        time.sleep(0.2)
         # Check that both of the handlers were called.
         self.assertTrue(self.handle1)
         self.assertTrue(self.handle2)

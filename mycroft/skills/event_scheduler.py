@@ -101,9 +101,15 @@ class EventScheduler(Thread):
             event, sched_time, repeat, data = self.add.get(timeout=1)
             # get current list of scheduled times for event, [] if missing
             event_list = self.events.get(event, [])
-            # add received event and time
-            event_list.append((sched_time, repeat, data))
-            self.events[event] = event_list
+
+            # Don't schedule if the event is repeating and already scheduled
+            if repeat and event in self.events:
+                LOG.debug('Repeating event {} is already scheduled, discarding'
+                          .format(event))
+            else:
+                # add received event and time
+                event_list.append((sched_time, repeat, data))
+                self.events[event] = event_list
 
     def remove_events(self):
         """
