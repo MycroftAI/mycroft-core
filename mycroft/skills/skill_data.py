@@ -37,6 +37,8 @@ def load_vocab_from_file(path, vocab_type, emitter):
     if path.endswith('.voc'):
         with open(path, 'r') as voc_file:
             for line in voc_file.readlines():
+                if line.startswith("#"):
+                    continue
                 parts = line.strip().split("|")
                 entity = parts[0]
                 emitter.emit(Message("register_vocab", {
@@ -59,6 +61,8 @@ def load_regex_from_file(path, emitter, skill_id):
     if path.endswith('.rx'):
         with open(path, 'r') as reg_file:
             for line in reg_file.readlines():
+                if line.startswith("#"):
+                    continue
                 re.compile(munge_regex(line.strip(), skill_id))
                 emitter.emit(
                     Message("register_vocab",
