@@ -12,28 +12,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""Find test files starting from the directory where this file resides.
+
+The skill_developers_testrunner.py is intended to be copied to the
+skill developers own directory, where the skills __init__.py file
+resides. Running the python unit test in this module from that file
+location, will test the skill developers test the same way as
+discover_test.py, but running only the skill developers test.
+It is executed as a unit test.
+
+"""
+
 import glob
-import sys
 import unittest
-
 import os
-
 from test.integrationtests.skills.skill_tester import MockSkillsLoader
 from test.integrationtests.skills.skill_tester import SkillTest
 
-SKILL_PATH = '/opt/mycroft/skills'
+HOME_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def discover_tests():
-    global SKILL_PATH
-    if len(sys.argv) > 1:
-        SKILL_PATH = sys.argv.pop(1)
+    """Find skills whith test files
+
+    For all skills with test files, starten from current directory,
+    find the test files in subdirectory test/intent.
+
+    :return: skills and corresponding test case files found
+    """
+
     tests = {}
-    skills = [
-        skill for skill
-        in glob.glob(SKILL_PATH + '/*')
-        if os.path.isdir(skill)
-    ]
+
+    skills = [HOME_DIR]
 
     for skill in skills:
         test_intent_files = [
@@ -68,18 +78,20 @@ class IntentTestSequenceMeta(type):
 
 
 class IntentTestSequence(unittest.TestCase):
+    """This is the TestCase class that pythons unit tester can execute.
+    """
     __metaclass__ = IntentTestSequenceMeta
+    loader = None
 
     @classmethod
-    def setUpClass(self):
-        self.loader = MockSkillsLoader(SKILL_PATH)
-        self.emitter = self.loader.load_skills()
+    def setUpClass(cls):
+        cls.loader = MockSkillsLoader(HOME_DIR)
+        cls.emitter = cls.loader.load_skills()
 
     @classmethod
-    def tearDownClass(self):
-        self.loader.unload_skills()
+    def tearDownClass(cls):
+        cls.loader.unload_skills()
 
 
 if __name__ == '__main__':
-
     unittest.main()
