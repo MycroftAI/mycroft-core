@@ -43,14 +43,14 @@ def extractnumber_de(text):
         if is_numeric(word):
             # if word.isdigit():            # doesn't work with decimals
             val = float(word)
-        elif word == "erste":
+        elif word in ["erste", "ersten"]:
             val = 1
-        elif word == "zweite":
+        elif word in ["zweite", "zweiten"]:
             val = 2
         elif isFractional_en(word):
             val = isFractional_en(word)
         else:
-            if word == "eins":
+            if word in ["ein", "eines", "einer", "einen", "eine", "einem", "eins"]:
                 val = 1
             elif word == "zwei":
                 val = 2
@@ -58,7 +58,7 @@ def extractnumber_de(text):
                 val = 3
             elif word == "vier":
                 val = 4
-            elif word == "fuenf":
+            elif word == "fünf":
                 val = 5
             elif word == "sechs":
                 val = 6
@@ -136,17 +136,18 @@ def extract_datetime_en(string, currentDate=None):
             among other things.
         """
         s = s.lower().replace('?', '').replace('.', '').replace(',', '') \
-            .replace(' the ', ' ').replace(' a ', ' ').replace(' an ', ' ')
+            .replace(' der ', ' ').replace(' den ', ' ').replace(' an ', ' ').replace(' am ', ' ')
         wordList = s.split()
-        for idx, word in enumerate(wordList):
-            word = word.replace("'s", "")
 
-            ordinals = ["rd", "st", "nd", "th"]
-            if word[0].isdigit():
-                for ordinal in ordinals:
-                    if ordinal in word:
-                        word = word.replace(ordinal, "")
-            wordList[idx] = word
+        #for idx, word in enumerate(wordList):
+        #   word = word.replace("'s", "")
+        #
+        #    ordinals = ["rd", "st", "nd", "th"]
+        #    if word[0].isdigit():
+        #        for ordinal in ordinals:
+        #            if ordinal in word:
+        #                word = word.replace(ordinal, "")
+        #    wordList[idx] = word
 
         return wordList
 
@@ -178,15 +179,15 @@ def extract_datetime_en(string, currentDate=None):
     hasYear = False
     timeQualifier = ""
 
-    timeQualifiersList = ['morning', 'afternoon', 'evening']
-    markers = ['at', 'in', 'on', 'by', 'this', 'around', 'for', 'of']
-    days = ['monday', 'tuesday', 'wednesday',
-            'thursday', 'friday', 'saturday', 'sunday']
-    months = ['january', 'february', 'march', 'april', 'may', 'june',
-              'july', 'august', 'september', 'october', 'november',
-              'december']
-    monthsShort = ['jan', 'feb', 'mar', 'apr', 'may', 'june', 'july', 'aug',
-                   'sept', 'oct', 'nov', 'dec']
+    timeQualifiersList = ['morgen', 'nachmittag', 'abend']
+    markers = ['am', 'gegen', 'bis']
+    days = ['montag', 'dienstag', 'mittwoch',
+            'donnerstag', 'freitag', 'samstag', 'sonntag']
+    months = ['januar', 'februar', 'märz', 'april', 'mai', 'juni',
+              'juli', 'august', 'september', 'october', 'november',
+              'dezember']
+    monthsShort = ['jan', 'feb', 'mär', 'apr', 'mai', 'jun', 'jul', 'aug',
+                   'sept', 'oct', 'nov', 'dez']
 
     words = clean_string(string)
 
@@ -199,73 +200,79 @@ def extract_datetime_en(string, currentDate=None):
         wordNextNext = words[idx + 2] if idx + 2 < len(words) else ""
 
         # this isn't in clean string because I don't want to save back to words
-        word = word.rstrip('s')
+        if word == 'morgende':
+            word == word.rstrip('de') #remove plural morgende
+        if word != 'morgen':
+            word = word.rstrip('en') #remove dativ plural
+        if word != 'heute':
+            word = word.rstrip('e') #remove plural for most nouns
+
         start = idx
         used = 0
         # save timequalifier for later
         if word in timeQualifiersList:
             timeQualifier = word
             # parse today, tomorrow, day after tomorrow
-        elif word == "today" and not fromFlag:
+        elif word == "heute" and not fromFlag:
             dayOffset = 0
             used += 1
-        elif word == "tomorrow" and not fromFlag:
+        elif word == "morgen" and not fromFlag:
             dayOffset = 1
             used += 1
-        elif (word == "day" and
-                wordNext == "after" and
-                wordNextNext == "tomorrow" and
+        elif (word == "tag" and
+                wordNext == "nach" and
+                wordNextNext == "morgen" and
                 not fromFlag and
                 not wordPrev[0].isdigit()):
             dayOffset = 2
             used = 3
-            if wordPrev == "the":
+            if wordPrev == "der":
                 start -= 1
                 used += 1
                 # parse 5 days, 10 weeks, last week, next week
-        elif word == "day":
+        elif word == "tag":
             if wordPrev[0].isdigit():
                 dayOffset += int(wordPrev)
                 start -= 1
                 used = 2
-        elif word == "week" and not fromFlag:
+        elif word == "woch" and not fromFlag:
             if wordPrev[0].isdigit():
                 dayOffset += int(wordPrev) * 7
                 start -= 1
                 used = 2
-            elif wordPrev == "next":
+            elif wordPrev == "nächst":
                 dayOffset = 7
                 start -= 1
                 used = 2
-            elif wordPrev == "last":
+            elif wordPrev == "letzt":
                 dayOffset = -7
                 start -= 1
                 used = 2
                 # parse 10 months, next month, last month
-        elif word == "month" and not fromFlag:
+        elif word == "monat" and not fromFlag:
             if wordPrev[0].isdigit():
                 monthOffset = int(wordPrev)
                 start -= 1
                 used = 2
-            elif wordPrev == "next":
+            elif wordPrev == "nächst":
                 monthOffset = 1
                 start -= 1
                 used = 2
-            elif wordPrev == "last":
+            elif wordPrev == "letzt":
                 monthOffset = -1
                 start -= 1
                 used = 2
                 # parse 5 years, next year, last year
-        elif word == "year" and not fromFlag:
+        elif word == "jahr" and not fromFlag:
             if wordPrev[0].isdigit():
                 yearOffset = int(wordPrev)
                 start -= 1
                 used = 2
-            elif wordPrev == "next":
+            elif wordPrev == "nächst":
                 yearOffset = 1
                 start -= 1
                 used = 2
-            elif wordPrev == "last":
+            elif wordPrev == "nächst":
                 yearOffset = -1
                 start -= 1
                 used = 2
@@ -277,11 +284,11 @@ def extract_datetime_en(string, currentDate=None):
             used = 1
             if dayOffset < 0:
                 dayOffset += 7
-            if wordPrev == "next":
+            if wordPrev == "nächst":
                 dayOffset += 7
                 used += 1
                 start -= 1
-            elif wordPrev == "last":
+            elif wordPrev == "letzt":
                 dayOffset -= 7
                 used += 1
                 start -= 1
@@ -322,15 +329,15 @@ def extract_datetime_en(string, currentDate=None):
         # parse 5 days from tomorrow, 10 weeks from next thursday,
         # 2 months from July
         validFollowups = days + months + monthsShort
-        validFollowups.append("today")
-        validFollowups.append("tomorrow")
-        validFollowups.append("next")
-        validFollowups.append("last")
-        validFollowups.append("now")
-        if (word == "from" or word == "after") and wordNext in validFollowups:
+        validFollowups.append("heute")
+        validFollowups.append("morgen")
+        validFollowups.append("nächste")
+        validFollowups.append("letzte")
+        validFollowups.append("jetzt")
+        if (word == "von" or word == "nach") and wordNext in validFollowups:
             used = 2
             fromFlag = True
-            if wordNext == "tomorrow":
+            if wordNext == "morgen":
                 dayOffset += 1
             elif wordNext in days:
                 d = days.index(wordNext)
@@ -343,17 +350,17 @@ def extract_datetime_en(string, currentDate=None):
                 d = days.index(wordNextNext)
                 tmpOffset = (d + 1) - int(today)
                 used = 3
-                if wordNext == "next":
+                if wordNext == "nächst":
                     tmpOffset += 7
                     used += 1
                     start -= 1
-                elif wordNext == "last":
+                elif wordNext == "letzt":
                     tmpOffset -= 7
                     used += 1
                     start -= 1
                 dayOffset += tmpOffset
         if used > 0:
-            if start - 1 > 0 and words[start - 1] == "this":
+            if start - 1 > 0 and words[start - 1] == "dieser":
                 start -= 1
                 used += 1
 
@@ -384,32 +391,32 @@ def extract_datetime_en(string, currentDate=None):
         wordNextNext = words[idx + 2] if idx + 2 < len(words) else ""
         # parse noon, midnight, morning, afternoon, evening
         used = 0
-        if word == "noon":
+        if word == "mittag":
             hrAbs = 12
             used += 1
-        elif word == "midnight":
+        elif word == "mitternacht":
             hrAbs = 0
             used += 1
-        elif word == "morning":
+        elif word == "morgen":
             if hrAbs == 0:
                 hrAbs = 8
             used += 1
-        elif word == "afternoon":
+        elif word == "nachmittag":
             if hrAbs == 0:
                 hrAbs = 15
             used += 1
-        elif word == "evening":
+        elif word == "abend":
             if hrAbs == 0:
                 hrAbs = 19
             used += 1
             # parse half an hour, quarter hour
         elif word == "hour" and \
                 (wordPrev in markers or wordPrevPrev in markers):
-            if wordPrev == "half":
+            if wordPrev == "halb":
                 minOffset = 30
-            elif wordPrev == "quarter":
+            elif wordPrev == "viertel":
                 minOffset = 15
-            elif wordPrevPrev == "quarter":
+            elif wordPrevPrev == "viertel":
                 minOffset = 15
                 if idx > 2 and words[idx - 3] in markers:
                     words[idx - 3] = ""
@@ -456,52 +463,49 @@ def extract_datetime_en(string, currentDate=None):
                     if nextWord == "am" or nextWord == "pm":
                         remainder = nextWord
                         used += 1
-                    elif nextWord == "tonight":
+                    elif nextWord == "abends":
                         remainder = "pm"
                         used += 1
-                    elif wordNext == "in" and wordNextNext == "the" and \
-                            words[idx + 3] == "morning":
-                        remainder = "am"
-                        used += 3
-                    elif wordNext == "in" and wordNextNext == "the" and \
-                            words[idx + 3] == "afternoon":
-                        remainder = "pm"
-                        used += 3
-                    elif wordNext == "in" and wordNextNext == "the" and \
-                            words[idx + 3] == "evening":
-                        remainder = "pm"
-                        used += 3
-                    elif wordNext == "in" and wordNextNext == "morning":
+                    elif wordNext == "am" and wordNextNext == "morgen":
                         remainder = "am"
                         used += 2
-                    elif wordNext == "in" and wordNextNext == "afternoon":
+                    elif wordNext == "am" and wordNextNext ==  "nachmittag":
                         remainder = "pm"
                         used += 2
-                    elif wordNext == "in" and wordNextNext == "evening":
+                    elif wordNext == "am" and wordNextNext == "abend":
                         remainder = "pm"
                         used += 2
-                    elif wordNext == "this" and wordNextNext == "morning":
+                    elif wordNext == "morgens":
+                        remainder = "am"
+                        used += 1
+                    elif wordNext == "nachmittags":
+                        remainder = "pm"
+                        used += 1
+                    elif wordNext == "abends":
+                        remainder = "pm"
+                        used += 1
+                    elif wordNext == "heute" and wordNextNext == "morgen":
                         remainder = "am"
                         used = 2
-                    elif wordNext == "this" and wordNextNext == "afternoon":
+                    elif wordNext == "heute" and wordNextNext == "nachmittag":
                         remainder = "pm"
                         used = 2
-                    elif wordNext == "this" and wordNextNext == "evening":
+                    elif wordNext == "heute" and wordNextNext == "abend":
                         remainder = "pm"
                         used = 2
-                    elif wordNext == "at" and wordNextNext == "night":
-                        if strHH > 5:
+                    elif wordNext == "nachts":
+                        if strHH > 4:
                             remainder = "pm"
                         else:
                             remainder = "am"
-                        used += 2
+                        used += 1
                     else:
                         if timeQualifier != "":
                             military = True
                             if strHH <= 12 and \
-                                    (timeQualifier == "evening" or
-                                     timeQualifier == "afternoon"):
-                                strHH += 12
+                                    (timeQualifier == "abends" or
+                                     timeQualifier == "nachmittags"):
+                                strHH += 12 #what happens when strHH is 24?
             else:
                 # try to parse # s without colons
                 # 5 hours, 10 minutes etc.
@@ -545,17 +549,16 @@ def extract_datetime_en(string, currentDate=None):
                     elif (
                             int(word) > 100 and
                             (
-                                wordPrev == "o" or
-                                wordPrev == "oh"
+                                wordPrev == "uhr"
                             )):
                         # 0800 hours (pronounced oh-eight-hundred)
                         strHH = int(word) / 100
                         strMM = int(word) - strHH * 100
                         military = True
-                        if wordNext == "hours":
+                        if wordNext == "uhr":
                             used += 1
                     elif (
-                            wordNext == "hours" and
+                            wordNext == "stund" and
                             word[0] != '0' and
                             (
                                 int(word) < 100 and
@@ -569,14 +572,14 @@ def extract_datetime_en(string, currentDate=None):
                         hrAbs = -1
                         minAbs = -1
 
-                    elif wordNext == "minutes":
+                    elif wordNext == "minut":
                         # "in 10 minutes"
                         minOffset = int(word)
                         used = 2
                         isTime = False
                         hrAbs = -1
                         minAbs = -1
-                    elif wordNext == "seconds":
+                    elif wordNext == "sekund":
                         # in 5 seconds
                         secOffset = int(word)
                         used = 2
@@ -587,17 +590,17 @@ def extract_datetime_en(string, currentDate=None):
                         strHH = int(word) / 100
                         strMM = int(word) - strHH * 100
                         military = True
-                        if wordNext == "hours":
+                        if wordNext == "stund":
                             used += 1
                     elif wordNext[0].isdigit():
                         strHH = word
                         strMM = wordNext
                         military = True
                         used += 1
-                        if wordNextNext == "hours":
+                        if wordNextNext == "stund":
                             used += 1
                     elif (
-                            wordNext == "" or wordNext == "o'clock" or
+                            wordNext == "" or wordNext == "uhr" or
                             (
                                         wordNext == "in" and
                                         (
@@ -607,32 +610,32 @@ def extract_datetime_en(string, currentDate=None):
                             )):
                         strHH = word
                         strMM = 00
-                        if wordNext == "o'clock":
+                        if wordNext == "uhr":
                             used += 1
-                        if wordNext == "in" or wordNextNext == "in":
+                        if wordNext == "in":
                             used += (1 if wordNext == "in" else 2)
                             if (wordNextNext and
                                 wordNextNext in timeQualifier or
                                 (words[words.index(wordNextNext) + 1] and
                                  words[words.index(wordNextNext) + 1] in
                                  timeQualifier)):
-                                if (wordNextNext == "afternoon" or
+                                if (wordNextNext == "nachmittag" or
                                     (len(words) >
                                      words.index(wordNextNext) + 1 and
                                      words[words.index(
-                                         wordNextNext) + 1] == "afternoon")):
+                                         wordNextNext) + 1] == "abend")):
                                     remainder = "pm"
-                                if (wordNextNext == "evening" or
+                                if (wordNextNext == "abend" or
                                     (len(words) >
                                      (words.index(wordNextNext) + 1) and
                                      words[words.index(
-                                         wordNextNext) + 1] == "evening")):
+                                         wordNextNext) + 1] == "abend")):
                                     remainder = "pm"
-                                if (wordNextNext == "morning" or
+                                if (wordNextNext == "morgen" or
                                     (len(words) >
                                      words.index(wordNextNext) + 1 and
                                      words[words.index(
-                                         wordNextNext) + 1] == "morning")):
+                                         wordNextNext) + 1] == "morgen")):
                                     remainder = "am"
                         if timeQualifier != "":
                             military = True
@@ -655,14 +658,14 @@ def extract_datetime_en(string, currentDate=None):
             for i in range(used):
                 words[idx + i] = ""
 
-            if wordPrev == "o" or wordPrev == "oh":
+            if wordPrev == "Uhr":
                 words[words.index(wordPrev)] = ""
 
-            if wordPrev == "early":
+            if wordPrev == "früh":
                 hrOffset = -1
                 words[idx - 1] = ""
                 idx -= 1
-            elif wordPrev == "late":
+            elif wordPrev == "spät":
                 hrOffset = 1
                 words[idx - 1] = ""
                 idx -= 1
@@ -758,8 +761,8 @@ def isFractional_en(input_str):
     if input_str.endswith('s', -1):
         input_str = input_str[:len(input_str) - 1]  # e.g. "fifths"
 
-    aFrac = ["ganz", "halb", "drittel", "viertel", "fuenftel", "sechstel",
-             "siebtel", "achtel", "neuntel", "zehntel", "elftel", "zwoelftel"]
+    aFrac = ["ganz", "halb", "drittel", "viertel", "fünftel", "sechstel",
+             "siebtel", "achtel", "neuntel", "zehntel", "elftel", "zwölftel"]
 
     if input_str.lower() in aFrac:
         return 1.0 / (aFrac.index(input_str) + 1)
@@ -769,71 +772,33 @@ def isFractional_en(input_str):
     return False
 
 
-def normalize_en(text, remove_articles):
-    """ English string normalization """
+def normalize_de(text, remove_articles):
+    """ German string normalization """
 
     words = text.split()  # this also removed extra spaces
     normalized = ""
     for word in words:
-        if remove_articles and word in ["the", "a", "an"]:
+        if remove_articles and word in ["der", "die", "das", "des", "den", "dem"]:
             continue
 
         # Expand common contractions, e.g. "isn't" -> "is not"
-        contraction = ["ain't", "aren't", "can't", "could've", "couldn't",
-                       "didn't", "doesn't", "don't", "gonna", "gotta",
-                       "hadn't", "hasn't", "haven't", "he'd", "he'll", "he's",
-                       "how'd", "how'll", "how's", "I'd", "I'll", "I'm",
-                       "I've", "isn't", "it'd", "it'll", "it's", "mightn't",
-                       "might've", "mustn't", "must've", "needn't",
-                       "oughtn't",
-                       "shan't", "she'd", "she'll", "she's", "shouldn't",
-                       "should've", "somebody's", "someone'd", "someone'll",
-                       "someone's", "that'll", "that's", "that'd", "there'd",
-                       "there're", "there's", "they'd", "they'll", "they're",
-                       "they've", "wasn't", "we'd", "we'll", "we're", "we've",
-                       "weren't", "what'd", "what'll", "what're", "what's",
-                       "whats",  # technically incorrect but some STT outputs
-                       "what've", "when's", "when'd", "where'd", "where's",
-                       "where've", "who'd", "who'd've", "who'll", "who're",
-                       "who's", "who've", "why'd", "why're", "why's", "won't",
-                       "won't've", "would've", "wouldn't", "wouldn't've",
-                       "y'all", "ya'll", "you'd", "you'd've", "you'll",
-                       "y'aint", "y'ain't", "you're", "you've"]
+        contraction = ["net"]
         if word in contraction:
-            expansion = ["is not", "are not", "can not", "could have",
-                         "could not", "did not", "does not", "do not",
-                         "going to", "got to", "had not", "has not",
-                         "have not", "he would", "he will", "he is",
-                         "how did",
-                         "how will", "how is", "I would", "I will", "I am",
-                         "I have", "is not", "it would", "it will", "it is",
-                         "might not", "might have", "must not", "must have",
-                         "need not", "ought not", "shall not", "she would",
-                         "she will", "she is", "should not", "should have",
-                         "somebody is", "someone would", "someone will",
-                         "someone is", "that will", "that is", "that would",
-                         "there would", "there are", "there is", "they would",
-                         "they will", "they are", "they have", "was not",
-                         "we would", "we will", "we are", "we have",
-                         "were not", "what did", "what will", "what are",
-                         "what is",
-                         "what is", "what have", "when is", "when did",
-                         "where did", "where is", "where have", "who would",
-                         "who would have", "who will", "who are", "who is",
-                         "who have", "why did", "why are", "why is",
-                         "will not", "will not have", "would have",
-                         "would not", "would not have", "you all", "you all",
-                         "you would", "you would have", "you will",
-                         "you are not", "you are not", "you are", "you have"]
+            expansion = ["nicht"]
             word = expansion[contraction.index(word)]
 
         # Convert numbers into digits, e.g. "two" -> "2"
-        textNumbers = ["null", "eins", "zwei", "drei", "vier", "fuenf", "sechs",
-                       "sieben", "acht", "neun", "zehn", "elf", "zwoelf",
-                       "dreizehn", "vierzehn", "fuenfzehn", "sechzehn",
-                       "siebzehn", "achtzehn", "neunzehn", "zwanzig"]
+        textNumbers = ["null", "eins", "zwei", "drei", "vier", "fünf", "sechs",
+                       "sieben", "acht", "neun", "zehn", "elf", "zwölf",
+                       "dreizehn", "vierzehn", "fünfzehn", "sechzehn",
+                       "siebzehn", "achtzehn", "neunzehn", "zwanzig",
+                       "einundzwanzig", "zweiundzwanzig", "dreiundzwanzig"]
         if word in textNumbers:
             word = str(textNumbers.index(word))
+
+        # Replace indefinite article by number, e.g. "ein" <> "1"
+        if word in ["ein", "eines", "einer", "einen", "eine", "einem"]:
+            word = str(1)
 
         normalized += " " + word
 

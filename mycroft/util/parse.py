@@ -16,6 +16,7 @@
 #
 from difflib import SequenceMatcher
 
+from mycroft.util.lang.parse_de import normalize_de
 from mycroft.util.lang.parse_en import *
 from mycroft.util.lang.parse_pt import *
 from mycroft.util.lang.parse_es import *
