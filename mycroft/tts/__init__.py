@@ -160,14 +160,15 @@ class TTS(object):
     TTS abstract class to be implemented by all TTS engines.
 
     It aggregates the minimum required parameters and exposes
-    ``execute(sentence)`` function.
+    ``execute(sentence)`` and ``validate_ssml(sentence)`` functions.
     """
     __metaclass__ = ABCMeta
 
     def __init__(self, lang, voice, validator, phonetic_spelling=True):
         super(TTS, self).__init__()
         self.lang = lang or 'en-us'
-        self.voice = voice
+        self.config = config
+        self.voice = config.get("voice")
         self.filename = '/tmp/tts.wav'
         self.validator = validator
         self.phonetic_spelling = phonetic_spelling
@@ -177,6 +178,13 @@ class TTS(object):
         self.playback = PlaybackThread(self.queue)
         self.playback.start()
         self.clear_cache()
+        self.ssml_support = self.config.get("ssml", False)
+        default_tags = ["speak", "lang", "p", "phoneme", "prosody", "break",
+                        "sub"]
+        # check for engine overrided default supported tags
+        self.supported_tags = self.config.get("supported_tags", default_tags)
+        # extra engine specific tags
+        self.extra_tags = self.config.get("extra_tags", [])
         self.spellings = self.load_spellings()
 
     def load_spellings(self):
@@ -234,6 +242,47 @@ class TTS(object):
             Returns: (wav_file, phoneme) tuple
         """
         pass
+
+    def validate_ssml(self, utterance):
+        """
+            Check if engine supports ssml, if not remove all tags
+            Remove unsupported / invalid tags
+
+            Args:
+                sentence(str): Sentence to validate
+
+            Returns: validated_sentence (str)
+        """
+        # if ssml is not supported by TTS engine remove all tags
+        if not self.ssml_support:
+            return re.sub('<[^>]*>', '', utterance)
+
+        supported_tags = self.supported_tags + self.extra_tags
+
+        # find ssml tags in string
+        tags = re.findall('<[^>]*>', utterance)
+
+        for tag in tags:
+            flag = False  # not supported
+            for supported in supported_tags:
+                if supported in tag:
+                    flag = True  # supported
+            if not flag:
+                # remove unsupported tag
+                utterance = utterance.replace(tag, "")
+
+        # return text with supported ssml tags only
+        return utterance.replace("  ", " ")
+
+    def validate_and_execute(self, sentence, ident=None):
+        """
+            validate ssml, execute text to speech
+
+            Args:
+                sentence(str): Sentence to execute
+        """
+        sentence = self.validate_ssml(sentence)
+        self.execute(sentence, ident)
 
     def execute(self, sentence, ident=None):
         """
@@ -409,7 +458,6 @@ class TTSFactory(object):
             "module": <engine_name>
         }
         """
-
         from mycroft.tts.remote_tts import RemoteTTS
         config = Configuration.get().get('tts', {})
         module = config.get('module', 'mimic')

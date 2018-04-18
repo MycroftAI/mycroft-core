@@ -113,7 +113,10 @@ def mute_and_speak(utterance, ident):
         tts_hash = hash(str(config.get('tts', '')))
 
     LOG.info("Speak: " + utterance)
-    tts.execute(utterance, ident)
+    try:
+        tts.validate_and_execute(utterance, ident)
+    finally:
+        lock.release()
 
 
 def handle_stop(event):
