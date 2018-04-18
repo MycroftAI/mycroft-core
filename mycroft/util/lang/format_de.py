@@ -16,6 +16,9 @@
 #
 
 from mycroft.util.lang.format_common import convert_to_mixed_fraction
+from math import floor, modf
+
+
 
 NUM_STRING_DE = {
     0: 'null',
@@ -23,32 +26,29 @@ NUM_STRING_DE = {
     2: 'zwei',
     3: 'drei',
     4: 'vier',
-    5: 'fuenf',
+    5: 'fünf',
     6: 'sechs',
     7: 'sieben',
     8: 'acht',
     9: 'neun',
     10: 'zehn',
     11: 'elf',
-    12: 'zwoelf',
+    12: 'zwölf',
     13: 'dreizehn',
     14: 'vierzehn',
-    15: 'fuenfzehn',
+    15: 'fünfzehn',
     16: 'sechzehn',
     17: 'siebzehn',
     18: 'achtzehn',
     19: 'neunzehn',
-
     20: 'zwanzig',
-    30: 'dreissg',
+    30: 'dreißg',
     40: 'vierzig',
-    50: 'fuenfzig',
+    50: 'fünfzig',
     60: 'sechzig',
     70: 'siebzig',
     80: 'achtzig',
     90: 'neunzig',
-   100: 'hundert',
-
 }
 
 # German uses "long scale" https://en.wikipedia.org/wiki/Long_and_short_scales
@@ -61,17 +61,17 @@ FRACTION_STRING_DE = {
     2: 'halb',
     3: 'drittel',
     4: 'viertel',
-    5: 'fuenftel',
+    5: 'fünftel',
     6: 'sechstel',
     7: 'siebtel',
     8: 'achtel',
     9: 'neuntel',
     10: 'zehntel',
     11: 'elftel',
-    12: 'zwoelftel',
+    12: 'zwölftel',
     13: 'dreizehntel',
     14: 'vierzehntel',
-    15: 'fuenfzehntel',
+    15: 'fünfzehntel',
     16: 'sechzehntel',
     17: 'siebzehntel',
     18: 'achtzehntel',
@@ -137,37 +137,33 @@ def pronounce_number_de(num, places=2):
     Returns:
         (str): The pronounced number
     """
-    if abs(num) >= 1000000
+
+    if abs(num) >= 1000000 # cannot do more than 1000000
         return str(num)
     elif num == 0:
-        result = NUM_STRING_DE[0]
+        return str(NUM_STRING_DE[0])
     elif num < 0:
-        result = "minus " + pronounce_number_de(num, places)
+         return "minus " + pronounce_number_de(abs(num), places)
     else
 
 
-
-
-    if abs(num) >= 100:
-        # TODO: Support for numbers over 100
-        return str(num)
-
     result = ""
-    if num < 0:
-        result = "minus "
-    num = abs(num)
 
-    if num > 20:
-        tens = int(num-int(num) % 10)
-        result += NUM_STRING_EN[tens]
-        if int(num-tens) != 0:
-            result += " " + NUM_STRING_EN[int(num-tens)]
+    if num <= 20:
+       str(NUM_STRING_DE[num])
     else:
-        result += NUM_STRING_EN[int(num)]
+        tens = int(num-int(num) % 10)
+        ones = num-tens
+            if ones == 0:
+                result += NUM_STRING_DE[tens]
+            else:
+                result +=  NUM_STRING_DE[ones]+"und"+NUM_STRING_DE[tens]
+
+
 
     # Deal with fractional part
     if not num == int(num) and places > 0:
-        result += " point"
+        result += " komma"
         place = 10
         while int(num*place) % 10 > 0 and places > 0:
             result += " " + NUM_STRING_EN[int(num*place) % 10]
@@ -176,7 +172,7 @@ def pronounce_number_de(num, places=2):
     return result
 
 
-def nice_time_en(dt, speech=True, use_24hour=False, use_ampm=False):
+def nice_time_de(dt, speech=True, use_24hour=False, use_ampm=False):
     """
     Format a time to a comfortable human format
 
@@ -253,7 +249,7 @@ def nice_time_en(dt, speech=True, use_24hour=False, use_ampm=False):
         else:
             if dt.minute < 10:
                 speak += " oh"
-            speak += " " + pronounce_number_en(dt.minute)
+            speak += " " + pronounce_number_de(dt.minute)
 
         if use_ampm:
             if dt.hour > 11:
