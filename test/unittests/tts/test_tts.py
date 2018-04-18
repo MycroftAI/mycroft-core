@@ -1,16 +1,26 @@
 import unittest
+
 import mycroft.tts
 
 
-class TestSTT(unittest.TestCase):
+class TestTTS(unittest.TestCase):
     def test_ssml_support(self):
         class TestTTS(mycroft.tts.TTS):
-            def execute(self, audio, language=None):
+            def execute(self, sentence, ident=None):
                 pass
 
         class TestTTSValidator(mycroft.tts.TTSValidator):
             def validate(self):
                 pass
+
+            def validate_lang(self):
+                pass
+
+            def validate_connection(self):
+                pass
+
+            def get_tts_class(self):
+                return TestTTS
 
         sentence = "<speak>Prosody can be used to change the way words " \
                    "sound. The following words are " \
@@ -37,32 +47,33 @@ class TestSTT(unittest.TestCase):
         sentence_extra_ssml = "<whispered>whisper tts<\whispered>"
 
         # test valid ssml
-        test_config = {'voice': 'test_voice', 'ssml': True}
-        tts = TestTTS("en-US", test_config, TestTTSValidator(None))
+        tts = TestTTS("en-US", {}, TestTTSValidator(None),
+                      ssml_tags=['speak', 'prosody'])
         self.assertEqual(tts.validate_ssml(sentence), sentence)
 
         # test extra ssml
-        test_config = {'voice': 'test_voice', 'ssml': True,
-                       "extra_tags": ["whispered"]}
-        tts = TestTTS("en-US", test_config, TestTTSValidator(None))
+        tts = TestTTS("en-US", {}, TestTTSValidator(None),
+                      ssml_tags=['whispered'])
         self.assertEqual(tts.validate_ssml(sentence_extra_ssml),
                          sentence_extra_ssml)
 
         # test unsupported extra ssml
-        test_config = {'voice': 'test_voice', 'ssml': True}
-        tts = TestTTS("en-US", test_config, TestTTSValidator(None))
-        self.assertEqual(tts.validate_ssml(sentence_extra_ssml), "whisper "
-                                                                 "tts")
+        tts = TestTTS("en-US", {}, TestTTSValidator(None),
+                      ssml_tags=['speak', 'prosody'])
+        self.assertEqual(tts.validate_ssml(sentence_extra_ssml),
+                         "whisper tts")
 
         # test mixed valid / invalid ssml
-        test_config = {'voice': 'test_voice', 'ssml': True}
-        tts = TestTTS("en-US", test_config, TestTTSValidator(None))
+        tts = TestTTS("en-US", {}, TestTTSValidator(None),
+                      ssml_tags=['speak', 'prosody'])
         self.assertEqual(tts.validate_ssml(sentence_bad_ssml), sentence)
 
         # test unsupported ssml
-        test_config = {'voice': 'test_voice', 'ssml': False}
-        tts = TestTTS("en-US", test_config, TestTTSValidator(None))
+        tts = TestTTS("en-US", {}, TestTTSValidator(None))
         self.assertEqual(tts.validate_ssml(sentence), sentence_no_ssml)
 
         self.assertEqual(tts.validate_ssml(sentence_bad_ssml),
+                         sentence_no_ssml)
+
+        self.assertEqual(mycroft.tts.TTS.remove_ssml(sentence),
                          sentence_no_ssml)

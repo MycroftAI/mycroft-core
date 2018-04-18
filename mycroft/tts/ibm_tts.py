@@ -27,7 +27,6 @@ class WatsonTTS(RemoteTTS):
         super(WatsonTTS, self).__init__(lang, config, url, '/v1/synthesize',
                                         WatsonTTSValidator(self))
         self.type = "wav"
-        self.config = Configuration.get().get("tts", {}).get("watson", {})
         user = self.config.get("user") or self.config.get("username")
         password = self.config.get("password")
         self.auth = HTTPBasicAuth(user, password)

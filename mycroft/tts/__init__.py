@@ -13,26 +13,27 @@
 # limitations under the License.
 #
 import hashlib
+import os
 import random
+import re
+import sys
+from abc import ABCMeta, abstractmethod
 from threading import Thread
 from time import time, sleep
 
-import re
-import os
 import os.path
-from abc import ABCMeta, abstractmethod
 from os.path import dirname, exists, isdir, join
 
 import mycroft.util
 from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
+from mycroft.metrics import report_timing, Stopwatch
 from mycroft.util import (
     play_wav, play_mp3, check_for_signal, create_signal, resolve_resource_file
 )
 from mycroft.util.log import LOG
-from mycroft.metrics import report_timing, Stopwatch
-import sys
+
 if sys.version_info[0] < 3:
     from Queue import Queue, Empty
 else:
@@ -43,6 +44,7 @@ def send_playback_metric(stopwatch, ident):
     """
         Send playback metrics in a background thread
     """
+
     def do_send(stopwatch, ident):
         report_timing(ident, 'speech_playback', stopwatch)
 
@@ -135,7 +137,7 @@ class PlaybackThread(Thread):
                 return True
             if self.enclosure:
                 # Include time stamp to assist with animation timing
-                self.enclosure.mouth_viseme(code, start+duration)
+                self.enclosure.mouth_viseme(code, start + duration)
             delta = time() - start
             if delta < duration:
                 sleep(duration - delta)
@@ -161,17 +163,28 @@ class TTS(object):
 
     It aggregates the minimum required parameters and exposes
     ``execute(sentence)`` and ``validate_ssml(sentence)`` functions.
+
+    Args:
+        lang (str):
+        config (dict): Configuration for this specific tts engine
+        validator (TTSValidator): Used to verify proper installation
+        phonetic_spelling (bool): Whether to spell certain words phonetically
+        ssml_tags (list): Supported ssml properties. Ex. ['speak', 'prosody']
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, lang, config, validator, phonetic_spelling=True):
+    def __init__(self, lang, config, validator, audio_ext='wav',
+                 phonetic_spelling=True, ssml_tags=None):
         super(TTS, self).__init__()
         self.lang = lang or 'en-us'
         self.config = config
-        self.voice = config.get("voice")
-        self.filename = '/tmp/tts.wav'
         self.validator = validator
         self.phonetic_spelling = phonetic_spelling
+        self.audio_ext = audio_ext
+        self.ssml_tags = ssml_tags or []
+
+        self.voice = config.get("voice")
+        self.filename = '/tmp/tts.wav'
         self.enclosure = None
         random.seed()
         self.queue = Queue()
@@ -179,14 +192,6 @@ class TTS(object):
         self.playback.start()
         self.clear_cache()
         self.spellings = self.load_spellings()
-
-        self.ssml_support = self.config.get("ssml", False)
-        default_tags = ["speak", "lang", "p", "phoneme", "prosody", "break",
-                        "sub"]
-        # check for engine overrided default supported tags
-        self.supported_tags = self.config.get("supported_tags", default_tags)
-        # extra engine specific tags
-        self.extra_tags = self.config.get("extra_tags", [])
 
     def load_spellings(self):
         """Load phonetic spellings of words as dictionary"""
@@ -240,9 +245,18 @@ class TTS(object):
                 sentence(str): Sentence to synthesize
                 wav_file(str): output file
 
-            Returns: (wav_file, phoneme) tuple
+            Returns:
+                tuple: (wav_file, phoneme)
         """
         pass
+
+    def modify_tag(self, tag):
+        """Override to modify each supported ssml tag"""
+        return tag
+
+    @staticmethod
+    def remove_ssml(text):
+        return re.sub('<[^>]*>', '', text).replace('  ', ' ')
 
     def validate_ssml(self, utterance):
         """
@@ -255,40 +269,25 @@ class TTS(object):
             Returns: validated_sentence (str)
         """
         # if ssml is not supported by TTS engine remove all tags
-        if not self.ssml_support:
-            return re.sub('<[^>]*>', '', utterance)
-
-        supported_tags = self.supported_tags + self.extra_tags
+        if not self.ssml_tags:
+            return self.remove_ssml(utterance)
 
         # find ssml tags in string
         tags = re.findall('<[^>]*>', utterance)
 
         for tag in tags:
-            flag = False  # not supported
-            for supported in supported_tags:
-                if supported in tag:
-                    flag = True  # supported
-            if not flag:
+            if any(supported in tag for supported in self.ssml_tags):
+                utterance = utterance.replace(tag, self.modify_tag(tag))
+            else:
                 # remove unsupported tag
                 utterance = utterance.replace(tag, "")
 
         # return text with supported ssml tags only
         return utterance.replace("  ", " ")
 
-    def validate_and_execute(self, sentence, ident=None):
-        """
-            validate ssml, execute text to speech
-
-            Args:
-                sentence(str): Sentence to execute
-                ident(str):    Ident tying the utterance to the source query
-        """
-        sentence = self.validate_ssml(sentence)
-        self.execute(sentence, ident)
-
     def execute(self, sentence, ident=None):
         """
-            Convert sentence to speech.
+            Convert sentence to speech, preprocessing out unsupported ssml
 
             The method caches results if possible using the hash of the
             sentence.
@@ -297,6 +296,8 @@ class TTS(object):
                 sentence:   Sentence to be spoken
                 ident:      Id reference to current interaction
         """
+        sentence = self.validate_ssml(sentence)
+
         create_signal("isSpeaking")
         if self.phonetic_spelling:
             for word in re.findall(r"[\w']+", sentence):
@@ -305,7 +306,7 @@ class TTS(object):
 
         key = str(hashlib.md5(sentence.encode('utf-8', 'ignore')).hexdigest())
         wav_file = os.path.join(mycroft.util.get_cache_directory("tts"),
-                                key + '.' + self.type)
+                                key + '.' + self.audio_ext)
 
         if os.path.exists(wav_file):
             LOG.debug("TTS cache hit")
@@ -315,7 +316,8 @@ class TTS(object):
             if phonemes:
                 self.save_phonemes(key, phonemes)
 
-        self.queue.put((self.type, wav_file, self.visime(phonemes), ident))
+        vis = self.visime(phonemes)
+        self.queue.put((self.audio_ext, wav_file, vis, ident))
 
     def visime(self, phonemes):
         """

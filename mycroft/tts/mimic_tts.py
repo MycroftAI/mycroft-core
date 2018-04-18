@@ -12,21 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import subprocess
-from time import time, sleep
-
 import os
 import stat
+import subprocess
+from threading import Thread
+from time import time, sleep
+
 import os.path
 from os.path import exists
 
 from mycroft import MYCROFT_ROOT_PATH
+from mycroft.api import DeviceApi
 from mycroft.configuration import Configuration
 from mycroft.tts import TTS, TTSValidator
-from mycroft.util.log import LOG
 from mycroft.util.download import download
-from mycroft.api import DeviceApi
-from threading import Thread
+from mycroft.util.log import LOG
 
 config = Configuration.get().get("tts").get("mimic")
 
@@ -36,6 +36,7 @@ BIN = config.get("path",
 if not os.path.isfile(BIN):
     # Search for mimic on the path
     import distutils.spawn
+
     BIN = distutils.spawn.find_executable("mimic")
 
 SUBSCRIBER_VOICES = {'trinity': '/opt/mycroft/voices/mimic_tn'}
@@ -46,6 +47,7 @@ def download_subscriber_voices(selected_voice):
         Function to download all premium voices, starting with
         the currently selected if applicable
     """
+
     def make_executable(dest):
         """ Call back function to make the downloaded file executable. """
         LOG.info('Make executable')
@@ -86,11 +88,12 @@ def download_subscriber_voices(selected_voice):
 
 class Mimic(TTS):
     def __init__(self, lang, config):
-        super(Mimic, self).__init__(lang, config, MimicValidator(self))
+        super(Mimic, self).__init__(
+            lang, config, MimicValidator(self), 'wav',
+            ssml_tags=["speak", "ssml", "phoneme", "voice", "audio", "prosody"]
+        )
         self.dl = None
         self.clear_cache()
-        self.type = 'wav'
-        self.extra_tags = ["voice", "emphasis", "audio", "sub", "ssml"]
 
         # Download subscriber voices if needed
         self.is_subscriber = DeviceApi().is_subscriber
@@ -98,6 +101,18 @@ class Mimic(TTS):
             t = Thread(target=download_subscriber_voices, args=[self.voice])
             t.daemon = True
             t.start()
+
+    def modify_tag(self, tag):
+        for key, value in [
+            ('x-slow', '0.4'),
+            ('slow', '0.7'),
+            ('medium', '1.0'),
+            ('high', '1.3'),
+            ('x-high', '1.6'),
+            ('speed', 'rate')
+        ]:
+            tag = tag.replace(key, value)
+        return tag
 
     @property
     def args(self):
@@ -116,10 +131,7 @@ class Mimic(TTS):
             mimic_bin = BIN
             voice = self.voice
 
-        args = [mimic_bin, '-voice', voice, '-psdur']
-
-        if self.ssml_support:
-            args += ['-ssml']
+        args = [mimic_bin, '-voice', voice, '-psdur', '-ssml']
 
         stretch = config.get('duration_stretch', None)
         if stretch:
