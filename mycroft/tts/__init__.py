@@ -431,6 +431,7 @@ class TTSValidator(object):
 
 class TTSFactory(object):
     from mycroft.tts.espeak_tts import ESpeak
+    from mycroft.tts.ivona_tts import Ivona
     from mycroft.tts.fa_tts import FATTS
     from mycroft.tts.google_tts import GoogleTTS
     from mycroft.tts.mary_tts import MaryTTS
@@ -447,7 +448,8 @@ class TTSFactory(object):
         "espeak": ESpeak,
         "spdsay": SpdSay,
         "watson": WatsonTTS,
-        "bing": BingTTS
+        "bing": BingTTS,
+        "ivona": Ivona
     }
 
     @staticmethod

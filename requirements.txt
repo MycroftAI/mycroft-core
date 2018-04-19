@@ -33,3 +33,6 @@ pep8==1.7.0
 fann2==1.0.7
 # Also update in mycroft/skills/padatious_service.py
 padatious==0.3.7
+
+# Ivona TTS Dependency
+pyvona==1.2.1
