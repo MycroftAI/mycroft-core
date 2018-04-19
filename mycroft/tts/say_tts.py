@@ -13,13 +13,13 @@
 # limitations under the License.
 #
 import subprocess
-
+import distutils.spawn
 from mycroft.tts import TTS, TTSValidator
 
 
-class Say(TTS):
+class RSynth(TTS):
     def __init__(self, lang, config):
-        super(Say, self).__init__(lang, config, SayValidator(self))
+        super(RSynth, self).__init__(lang, config, RSynthValidator(self))
 
     def execute(self, sentence, ident=None):
         self.begin_audio()
@@ -28,19 +28,20 @@ class Say(TTS):
         self.end_audio()
 
 
-class SayValidator(TTSValidator):
+class RSynthValidator(TTSValidator):
     def __init__(self, tts):
-        super(SayValidator, self).__init__(tts)
+        super(RSynthValidator, self).__init__(tts)
 
     def validate_lang(self):
         # TODO
         pass
 
     def validate_connection(self):
-        try:
-            subprocess.call(['say', 'hello'])
-        except:
+        is_available = distutils.spawn.find_executable('say')
+        if is_available is None:
             raise Exception('Say is not installed')
+        else:
+            pass
 
     def get_tts_class(self):
-        return Say
+        return RSynth
