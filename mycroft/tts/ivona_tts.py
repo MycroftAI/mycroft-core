@@ -10,14 +10,16 @@ class Ivona(TTS):
         self.access_key = self.config.get("access_key")
         self.secret_key = self.config.get("secret_key")
         self.gender = self.config.get("gender")
+        self.type = 'mp3'
         self.engine = pyvona.create_voice(self.access_key, self.secret_key)
+        self.engine.codec = 'mp3'
         if self.gender == 'female':
             self.engine.voice_name = 'Salli'
         else:
             self.engine.voice_name = 'Joey'
 
-    def get_tts(self, sentence, wav_file):
-        self.engine.fetch_voice(sentence, wav_file)
+    def get_tts(self, sentence, file_name):
+        self.engine.fetch_voice(sentence, file_name)
 
 
 class IvonaValidator(TTSValidator):
@@ -30,7 +32,7 @@ class IvonaValidator(TTSValidator):
 
     def validate_connection(self):
         try:
-            with tempfile.TemporaryFile(suffix='.ogg') as f:
+            with tempfile.TemporaryFile(suffix='.mp3') as f:
                 self.tts.engine.fetch_voice_fp('test', f)
         except Exception:
             raise Exception(
