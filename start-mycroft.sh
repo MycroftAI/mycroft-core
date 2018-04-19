@@ -162,8 +162,8 @@ case ${_opt} in
     launch-process ${_opt}
     ;;
   "unittest")
-    nose2 -t ./ -s test/unittests/ --with-coverage \
-        --config=test/unittests/unittest.cfg
+    source ${VIRTUALENV_ROOT}/bin/activate
+    pytest test/unittests/ --cov=mycroft
     ;;
   "audiotest")
     launch-process ${_opt}
