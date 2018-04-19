@@ -18,8 +18,8 @@ class Ivona(TTS):
         else:
             self.engine.voice_name = 'Joey'
 
-    def get_tts(self, sentence, file_name):
-        self.engine.fetch_voice(sentence, file_name)
+    def get_tts(self, sentence, wav_file):
+        self.engine.fetch_voice(sentence, wav_file)
 
 
 class IvonaValidator(TTSValidator):
