@@ -35,7 +35,7 @@ class IvonaValidator(TTSValidator):
             self.engine.speak(sentence)
         except:
             raise Exception(
-                'ESpeak is not installed. Run: sudo apt-get install espeak')
+                'pyvona is not installed')
 
     def get_tts_class(self):
         return Ivona
