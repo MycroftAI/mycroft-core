@@ -85,6 +85,8 @@ class KeySTT(STT):
 class GoogleSTT(TokenSTT):
     def __init__(self):
         super(GoogleSTT, self).__init__()
+        if self.token == "None":
+            self.token = None
 
     def execute(self, audio, language=None):
         self.lang = language or self.lang
