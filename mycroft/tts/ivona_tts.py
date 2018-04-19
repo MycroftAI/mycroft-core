@@ -16,10 +16,8 @@ class Ivona(TTS):
         else:
             self.engine.voice_name = 'Joey'
 
-    def execute(self, sentence, ident=None):
-        self.begin_audio()
-        self.engine.speak(sentence)
-        self.end_audio()
+    def get_tts(self, sentence, wav_file):
+        self.engine.fetch_voice(sentence, wav_file)
 
 
 class IvonaValidator(TTSValidator):
@@ -32,8 +30,9 @@ class IvonaValidator(TTSValidator):
 
     def validate_connection(self):
         try:
-            self.engine.speak(sentence)
-        except:
+            with tempfile.TemporaryFile(suffix='.ogg') as f:
+                self.tts.engine.fetch_voice_fp('test', f)
+        except Exception:
             raise Exception(
                 'pyvona is not installed')
 
