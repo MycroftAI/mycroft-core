@@ -1,5 +1,4 @@
 from mycroft.configuration import Configuration
-import subprocess
 from mycroft.tts import TTS, TTSValidator
 import pyvona
 
