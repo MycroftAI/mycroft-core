@@ -22,6 +22,7 @@ from speech_recognition import Recognizer
 from mycroft.api import STTApi
 from mycroft.configuration import Configuration
 from mycroft.util.log import LOG
+import speech
 
 
 class STT(object):
@@ -121,6 +122,15 @@ class IBMSTT(BasicSTT):
                                              self.password, self.lang)
 
 
+class SpeechSTT(STT):
+    def __init__(self):
+        super(SpeechSTT, self).__init__()
+
+    def execute(self, audio, language=None):
+        response = speech.input()
+        return response
+
+
 class MycroftSTT(STT):
     def __init__(self):
         super(MycroftSTT, self).__init__()
@@ -212,7 +222,8 @@ class STTFactory(object):
         "bing": BingSTT,
         "houndify": HoundifySTT,
         "deepspeech_server": DeepSpeechServerSTT,
-        "mycroft_deepspeech": MycroftDeepSpeechSTT
+        "mycroft_deepspeech": MycroftDeepSpeechSTT,
+        "speech": SpeechSTT
     }
 
     @staticmethod
