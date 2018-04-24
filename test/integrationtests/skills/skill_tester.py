@@ -250,6 +250,8 @@ class SkillTest(object):
         while not evaluation_rule.all_succeeded():
             try:
                 event = q.get(timeout=1)
+                event.data['__type__'] = event.type
+
                 evaluation_rule.evaluate(event.data)
                 if event.type == 'mycroft.skill.handler.complete':
                     break
@@ -357,7 +359,6 @@ class EvaluationRule(object):
             Args:
                 msg:  The message event to evaluate
         """
-
         print "\nEvaluating message: " + str(msg)
         for r in self.rule:
             self._partial_evaluate(r, msg)
