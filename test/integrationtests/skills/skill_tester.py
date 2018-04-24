@@ -286,12 +286,13 @@ class EvaluationRule(object):
         powerfull/individual test cases than the standard dictionaly
     """
 
-    def __init__(self, test_case, skill):
+    def __init__(self, test_case, skill=None):
         """
             Convert test_case read from file to internal rule format
 
             Args:
                 test_case:  The loaded test case
+                skill:      optional skill to test, used to fetch dialogs
         """
         self.rule = []
 
@@ -318,15 +319,18 @@ class EvaluationRule(object):
                               str(test_case['expected_response'])])
 
         if test_case.get('expected_dialog', None):
-            # Make sure expected dialog file is used
-            dialog = test_case['expected_dialog']
-            # Extract dialog texts from skill
-            dialogs = skill.dialog_renderer.templates[dialog]
-            # Allow custom fields to be anything
-            d = [re.sub('\{.*?\}', '.*', t) for t in dialogs]
-            # Create rule allowing any of the sentences for that dialog
-            rules = [['match', 'utterance', r] for r in d]
-            self.rule.append(['or'] + rules)
+            if not skill:
+                print('Skill is missing, can\'t run expected_dialog test')
+            else:
+                # Make sure expected dialog file is used
+                dialog = test_case['expected_dialog']
+                # Extract dialog texts from skill
+                dialogs = skill.dialog_renderer.templates[dialog]
+                # Allow custom fields to be anything
+                d = [re.sub('\{.*?\}', '.*', t) for t in dialogs]
+                # Create rule allowing any of the sentences for that dialog
+                rules = [['match', 'utterance', r] for r in d]
+                self.rule.append(['or'] + rules)
 
         if test_case.get('changed_context', None):
             ctx = test_case['changed_context']
