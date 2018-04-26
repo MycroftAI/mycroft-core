@@ -164,7 +164,14 @@ class RemoteConf(LocalConf):
             from mycroft.api import DeviceApi
             api = DeviceApi()
             setting = api.get_settings()
-            location = api.get_location()
+
+            try:
+                location = api.get_location()
+            except HTTPError as e:
+                LOG.error("RequestException fetching remote location: %s" %
+                          e.response.status_code)
+                location = load_commented_json(cache).get('location')
+
             if location:
                 setting["location"] = location
             # Remove server specific entries
