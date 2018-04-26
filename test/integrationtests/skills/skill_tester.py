@@ -201,6 +201,18 @@ class SkillTest(object):
         test_case = json.load(open(self.test_case_file, 'r'))
         print "Test case: " + str(test_case)
 
+        if 'responses' in test_case:
+            def get_response(dialog='', data=None, announcement='',
+                             validator=None, on_fail=None, num_retries=-1):
+                data = data or {}
+                utt = announcement or s.dialog_renderer.render(dialog, data)
+                s.speak(utt)
+                response = test_case['responses'].pop(0)
+                print ">" + utt
+                print "Responding with " + response
+                return response
+            s.get_response = get_response
+
         # If we keep track of test status for the entire skill, then
         # get all intents from the skill, and mark current intent
         # tested
@@ -327,7 +339,7 @@ class EvaluationRule(object):
 
         if test_case.get('expected_dialog', None):
             if not skill:
-                print('Skill is missing, can\'t run expected_dialog test')
+                print 'Skill is missing, can\'t run expected_dialog test'
             else:
                 # Make sure expected dialog file is used
                 dialog = test_case['expected_dialog']
