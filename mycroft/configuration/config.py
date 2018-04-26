@@ -18,7 +18,7 @@ import re
 import json
 import inflection
 from os.path import exists, isfile, join, dirname, expanduser
-from requests import HTTPError
+from requests import RequestException
 
 from mycroft.util.json_helper import load_commented_json
 from mycroft.util.log import LOG
@@ -167,7 +167,7 @@ class RemoteConf(LocalConf):
 
             try:
                 location = api.get_location()
-            except HTTPError as e:
+            except RequestException as e:
                 LOG.error("RequestException fetching remote location: %s" %
                           e.response.status_code)
                 location = load_commented_json(cache).get('location')
@@ -181,7 +181,7 @@ class RemoteConf(LocalConf):
                 self.__setitem__(key, config[key])
             self.store(cache)
 
-        except HTTPError as e:
+        except RequestException as e:
             LOG.error("RequestException fetching remote configuration: %s" %
                       e.response.status_code)
             self.load_local(cache)
