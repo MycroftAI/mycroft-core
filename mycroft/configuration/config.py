@@ -164,7 +164,7 @@ class RemoteConf(LocalConf):
             from mycroft.api import DeviceApi
             api = DeviceApi()
             setting = api.get_settings()
-            LOG.info("tsttinnng")
+
             try:
                 location = api.get_location()
             except RequestException as e:
