@@ -116,7 +116,8 @@ function fetch_skill_info() {
 
 # Return newline separated names of skills
 function get_skill_names() {
-  echo "${LIST_CACHE}" | grep -n 'submodule' | sed 's/[[:space:]]//g' | sed 's/\[submodule"//g' | sed 's/"\]//g'
+  grep_args=$1
+  echo "${LIST_CACHE}" | grep $grep_args 'submodule' | sed 's/[[:space:]]//g' | sed 's/\[submodule"//g' | sed 's/"\]//g'
 }
 
 function get_skill_repo() {
@@ -180,7 +181,7 @@ function remove() {
   # So you can install and remove with partial names.
 
   # Search for the given word(s) as the submodule
-  skills=$(get_skill_names)
+  skills=$(get_skill_names -n)
 
   # Test for exact name match
   exact_match=$(echo "$skills" | grep -i ".*:${str}$")
@@ -264,7 +265,7 @@ function install() {
       repo="${str}"
   else
       # Search for the given word(s) as the submodule
-      skills=$(get_skill_names)
+      skills=$(get_skill_names -n)
 
       # Test for exact name match
       exact_match=$(echo "$skills" | grep -i ".*:${str}$")
@@ -490,7 +491,7 @@ function pip_hack() {
 function fetch_skill_sha() {
   local folder_name=$1
   cd "$REPO_FOLDER"
-  git ls-tree "$REPO_BRANCH" | grep "$folder_name" | tr '\t' ' ' | cut -d " " -f 3
+  git ls-tree "origin/$REPO_BRANCH" | grep "$folder_name" | tr '\t' ' ' | cut -d " " -f 3
 }
 
 function update_skill() {
@@ -575,7 +576,7 @@ function print_info() {
         repo="${str}"
     else
         # Search for the given word(s) as the submodule
-        skills=$(get_skill_names)
+        skills=$(get_skill_names -n)
 
         # Test for exact name match
         exact_match=$(echo "$skills" | grep -i ".*:${str}$")
