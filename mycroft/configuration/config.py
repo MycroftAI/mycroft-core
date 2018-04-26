@@ -164,12 +164,12 @@ class RemoteConf(LocalConf):
             from mycroft.api import DeviceApi
             api = DeviceApi()
             setting = api.get_settings()
-
+            LOG.info("tsttinnng")
             try:
                 location = api.get_location()
             except RequestException as e:
-                LOG.error("RequestException fetching remote location: %s" %
-                          e.response.status_code)
+                LOG.error("RequestException fetching remote location: {}"
+                          .format(str(e)))
                 location = load_commented_json(cache).get('location')
 
             if location:
@@ -182,8 +182,8 @@ class RemoteConf(LocalConf):
             self.store(cache)
 
         except RequestException as e:
-            LOG.error("RequestException fetching remote configuration: %s" %
-                      e.response.status_code)
+            LOG.error("RequestException fetching remote configuration: {}"
+                      .format(str(e)))
             self.load_local(cache)
 
         except Exception as e:
