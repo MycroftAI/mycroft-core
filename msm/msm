@@ -18,6 +18,9 @@ RED='\033[0;31m'
 NOCOLOR='\033[0m'
 GREEN='\033[0;32m'
 
+REPO_URL='https://github.com/MycroftAI/mycroft-skills'
+REPO_BRANCH='18.02'
+REPO_FOLDER='/opt/mycroft/.skills-repo'
 
 script=${0}
 script=${script##*/}
@@ -101,22 +104,24 @@ fi
 # Cache to only retrieve list once per MSM invocation
 LIST_CACHE=''
 
-function get_skill_list() {
-  if ! [[ ${LIST_CACHE} ]] ; then
-    if hash curl ; then
-      # retrieve using curl
-      LIST_CACHE=$( curl -s "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules" )
-      if ! [[ "${LIST_CACHE}" ]] ; then
-         return 111
-      fi
-    else
-      # retrieve using wget
-      LIST_CACHE=$( wget -qO- "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/.gitmodules" )
-      if ! [[ "${LIST_CACHE}" ]] ; then
-         return 112
-      fi
-    fi
-  fi
+function fetch_skill_info() {
+  [ -d "$REPO_FOLDER" ] || git clone "$REPO_URL" -b "$REPO_BRANCH" "$REPO_FOLDER"
+
+  cd "$REPO_FOLDER"
+  git fetch
+  git reset --hard "origin/$REPO_BRANCH"
+
+  LIST_CACHE=$(cat .gitmodules)
+}
+
+# Return newline separated names of skills
+function get_skill_names() {
+  echo "${LIST_CACHE}" | grep -n 'submodule' | sed 's/[[:space:]]//g' | sed 's/\[submodule"//g' | sed 's/"\]//g'
+}
+
+function get_skill_repo() {
+  local repo=$1
+  echo "${LIST_CACHE}" | sed -n $repo_line'{p;q;}' | sed 's/[[:space:]]//g' | sed 's/[[:space:]]//g' | sed 's/url=//g'
 }
 
 # Communicate with mycroft-core to inform it of install status
@@ -175,7 +180,7 @@ function remove() {
   # So you can install and remove with partial names.
 
   # Search for the given word(s) as the submodule
-  skills=$(echo "${LIST_CACHE}" | grep -n 'submodule' | sed 's/[[:space:]]//g' | sed 's/\[submodule"//g' | sed 's/"\]//g')
+  skills=$(get_skill_names)
 
   # Test for exact name match
   exact_match=$(echo "$skills" | grep -i ".*:${str}$")
@@ -208,7 +213,7 @@ function remove() {
       return 252
     fi
     repo_line=$(($git_line + 2))
-    repo=$(echo "${LIST_CACHE}" | sed -n $repo_line'{p;q;}' | sed 's/[[:space:]]//g' | sed 's/[[:space:]]//g' | sed 's/url=//g')
+    repo=$(get_skill_repo "$repo")
   fi
 
   git_name=$(echo "${repo}" | sed 's/.*\///')
@@ -259,7 +264,7 @@ function install() {
       repo="${str}"
   else
       # Search for the given word(s) as the submodule
-      skills=$(echo "${LIST_CACHE}" | grep -n 'submodule' | sed 's/[[:space:]]//g' | sed 's/\[submodule"//g' | sed 's/"\]//g')
+      skills=$(get_skill_names)
 
       # Test for exact name match
       exact_match=$(echo "$skills" | grep -i ".*:${str}$")
@@ -292,7 +297,7 @@ function install() {
           return 202
         fi
         repo_line=$(($git_line + 2))
-        repo=$(echo "${LIST_CACHE}" | sed -n $repo_line'{p;q;}' | sed 's/[[:space:]]//g' | sed 's/[[:space:]]//g' | sed 's/url=//g')
+        repo=$(get_skill_repo "$repo")
       fi
     fi
 
@@ -391,10 +396,10 @@ function run_pip() {
     return 0  # no problem encountered
 }
 
-function install_from_url_list() {
+function install_from_list_file() {
   exit_code=0
-  skill_list=$( curl -s "${*}" )
-  if [[ $? -gt 0 || $skill_list =~ ^404 ]] ; then
+  skill_list=$(cat "$*")
+  if [[ $? -gt 0 ]] ; then
     # This is fine, just  no list found
     return 0
   fi
@@ -422,7 +427,7 @@ function install_from_url_list() {
 
 function search() {
   # Find the search string among the skills in the Skill repo
-  search_list=$(echo "${LIST_CACHE}" | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g')
+  search_list=$(get_skill_names)
   search_string="$*"
   shift
   while read -r matches; do
@@ -482,11 +487,20 @@ function pip_hack() {
   fi
 }
 
+function fetch_skill_sha() {
+  local folder_name=$1
+  cd "$REPO_FOLDER"
+  git ls-tree "$REPO_BRANCH" | grep "$folder_name" | tr '\t' ' ' | cut -d " " -f 3
+}
+
 function update_skill() {
   local folder=$1
 
+  local skill_name=$(basename "$folder")
+
   cd "$folder"
   ignore_pyc
+
   if ! should_update_git; then
     echo "Skipped $d."
     return
@@ -500,16 +514,19 @@ function update_skill() {
   before_head=$(git rev-parse HEAD)
   before=$(requirements_hash)
 
-  output=$(git fetch && git reset --hard origin/master)
+  sha=$(fetch_skill_sha "$skill_name")
+  output=$(git fetch && git reset --hard "${sha:-origin/master}")
 
   after=$(requirements_hash)
   after_head=$(git rev-parse HEAD)
 
+  [ -z "$sha" ] || sha=${sha:0:8}
+  head_label=${sha:-origin/master}
   if [ "$before_head" != "$after_head" ]; then
     echo "$output"
-    echo "Updated $folder."
+    echo "Updated $folder to $head_label."
   else
-    echo "Checked $folder."
+    echo "Retained $folder on $head_label."
   fi
 
   if [ "$before" != "$after" ]; then
@@ -558,7 +575,7 @@ function print_info() {
         repo="${str}"
     else
         # Search for the given word(s) as the submodule
-        skills=$(echo "${LIST_CACHE}" | grep -n 'submodule' | sed 's/[[:space:]]//g' | sed 's/\[submodule"//g' | sed 's/"\]//g')
+        skills=$(get_skill_names)
 
         # Test for exact name match
         exact_match=$(echo "$skills" | grep -i ".*:${str}$")
@@ -591,7 +608,7 @@ function print_info() {
             return 202
             fi
             repo_line=$(($git_line + 2))
-            repo=$(echo "${LIST_CACHE}" | sed -n $repo_line'{p;q;}' | sed 's/[[:space:]]//g' | sed 's/[[:space:]]//g' | sed 's/url=//g')
+            repo=$(get_skill_repo "$repo")
         fi
     fi
 
@@ -634,7 +651,7 @@ shift
 case ${OPT} in
   "install")
       if [[ $# -gt 0 ]] ; then
-         get_skill_list
+         fetch_skill_info
          exit_code=$?
          if [[ ${exit_code} -gt 0 ]] ; then
              echo "${script}: error ${exit_code}"
@@ -661,7 +678,7 @@ case ${OPT} in
       ;;
   "remove")
       if [[ $# -gt 0 ]] ; then
-         get_skill_list
+         fetch_skill_info
          exit_code=$?
          if [[ ${exit_code} -gt 0 ]] ; then
              echo "${script}: error ${exit_code}"
@@ -687,7 +704,7 @@ case ${OPT} in
       fi
       ;;
   "list")
-      get_skill_list
+      fetch_skill_info
       exit_code=$?
       if [[ ${exit_code} -gt 0 ]] ; then
           echo "${script}: error ${exit_code}"
@@ -695,7 +712,7 @@ case ${OPT} in
       fi
 
       # Get name and path
-      submods=($(echo "${LIST_CACHE}" | grep 'submodule "' | sed 's/\[submodule "//g'| sed 's/"\]//g'))
+      submods=($(get_skill_names))
       paths=($(echo "${LIST_CACHE}" | grep 'path =' | sed 's/\path = //g'| sed 's/"\]//g'))
       # Determine which have been installed
       results=()
@@ -716,7 +733,7 @@ case ${OPT} in
       exit_code=$?
       ;;
   "update")
-      get_skill_list
+      fetch_skill_info
       exit_code=$?
       if [[ ${exit_code} -gt 0 ]] ; then
          echo "${script}: error ${exit_code}"
@@ -729,7 +746,7 @@ case ${OPT} in
   "default")
       echo "=== Checking for default skills"
       INSTALLING_DEFAULTS="true"
-      get_skill_list
+      fetch_skill_info
       exit_code=$?
       if [[ ${exit_code} -gt 0 ]] ; then
          echo "${script}: error ${exit_code}"
@@ -741,12 +758,12 @@ case ${OPT} in
       printf "" > ${mycroft_skill_folder}/.msm.tmp
       # These skills are automatically installed on all mycroft-core
       # installations.
-      install_from_url_list "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/DEFAULT-SKILLS"
+      install_from_list_file "$REPO_FOLDER/DEFAULT-SKILLS"
       exit_code=$?
 
       # Grab any platform-specific skills
       if [[ ${mycroft_platform} != 'null' ]] ; then
-         install_from_url_list "https://raw.githubusercontent.com/MycroftAI/mycroft-skills/master/DEFAULT-SKILLS.${mycroft_platform}" || exit_code=$?
+         install_from_list_file "$REPO_FOLDER/DEFAULT-SKILLS.${mycroft_platform}" || exit_code=$?
       fi
 
       # Suppress error 20 (skill exists) since this is an expected error
@@ -760,7 +777,7 @@ case ${OPT} in
    ;;
   "search")
       if [[ $# -gt 0 ]] ; then
-         get_skill_list
+         fetch_skill_info
          exit_code=$?
          if [[ ${exit_code} -gt 0 ]] ; then
             echo "${script}: error ${exit_code}"
@@ -782,7 +799,7 @@ case ${OPT} in
       fi
       ;;
   "info")
-      get_skill_list
+      fetch_skill_info
       exit_code=$?
       if [[ ${exit_code} -gt 0 ]] ; then
           echo "${script}: error ${exit_code}"
