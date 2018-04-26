@@ -116,7 +116,7 @@ function fetch_skill_info() {
 
 # Return newline separated names of skills
 function get_skill_names() {
-  echo "${LIST_CACHE}" | grep -n 'submodule' | sed 's/[[:space:]]//g' | sed 's/\[submodule"//g' | sed 's/"\]//g'
+  echo "${LIST_CACHE}" | grep 'submodule' | sed 's/[[:space:]]//g' | sed 's/\[submodule"//g' | sed 's/"\]//g'
 }
 
 function get_skill_repo() {
