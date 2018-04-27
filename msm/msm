@@ -476,14 +476,16 @@ function pip_hack() {
   #       mycroft-core.
   if [ ! -f /tmp/mycroft_has_re-PIPed ] ; then
      run_pip "$1"
-     echo "Re-running PIP on requirements.txt"
+     echo "Re-running PIP on $1 requirements.txt"
   fi
 }
 
 function fetch_skill_sha() {
   local folder_name=$1
+  prev=$(pwd)
   cd "$REPO_FOLDER"
   git ls-tree "origin/$REPO_BRANCH" | grep "$folder_name" | tr '\t' ' ' | cut -d " " -f 3
+  cd "$prev"
 }
 
 function update_skill() {
@@ -496,6 +498,7 @@ function update_skill() {
 
   if ! should_update_git; then
     echo "Skipped $d."
+    pip_hack "$folder"
     return
   fi
 
