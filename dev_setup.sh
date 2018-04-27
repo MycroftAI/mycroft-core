@@ -123,7 +123,7 @@ TOP=$(cd $(dirname $0) && pwd -L)
 VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${TOP}/.venv"}
 
 install_venv() {
-    python3 -m venv "${VIRTUALENV_ROOT}/"
+    python3 -m venv "${VIRTUALENV_ROOT}/" --without-pip
     curl https://bootstrap.pypa.io/get-pip.py | "${VIRTUALENV_ROOT}/bin/python"
 }
 
