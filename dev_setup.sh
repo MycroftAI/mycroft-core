@@ -157,7 +157,7 @@ else
   fi
 fi
 
-if [ ! -d "${VIRTUALENV_ROOT}" ]; then
+if [ ! -x "${VIRTUALENV_ROOT}/bin/activate" ]; then
   install_venv
 fi
 
