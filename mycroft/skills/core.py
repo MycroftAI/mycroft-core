@@ -589,7 +589,7 @@ class MycroftSkill(object):
                 if handler_info:
                     # Indicate that the skill handler is starting if requested
                     msg_type = handler_info + '.start'
-                    self.emitter.emit(Message(msg_type, skill_data))
+                    self.emitter.emit(message.reply(msg_type, skill_data))
 
                 with stopwatch:
                     if len(signature(handler).parameters) == 0:
@@ -614,7 +614,7 @@ class MycroftSkill(object):
                 # Indicate that the skill handler has completed
                 if handler_info:
                     msg_type = handler_info + '.complete'
-                    self.emitter.emit(Message(msg_type, skill_data))
+                    self.emitter.emit(message.reply(msg_type, skill_data))
 
                 # Send timing metrics
                 context = message.context
@@ -1118,8 +1118,8 @@ class FallbackSkill(MycroftSkill):
 
         def handler(message):
             # indicate fallback handling start
-            ws.emit(Message("mycroft.skill.handler.start",
-                            data={'handler': "fallback"}))
+            ws.emit(message.reply("mycroft.skill.handler.start",
+                                  data={'handler': "fallback"}))
 
             stopwatch = Stopwatch()
             handler_name = None
@@ -1130,7 +1130,7 @@ class FallbackSkill(MycroftSkill):
                         if handler(message):
                             #  indicate completion
                             handler_name = get_handler_name(handler)
-                            ws.emit(Message(
+                            ws.emit(message.reply(
                                 'mycroft.skill.handler.complete',
                                 data={'handler': "fallback",
                                       "fallback_handler": handler_name}))
@@ -1138,13 +1138,13 @@ class FallbackSkill(MycroftSkill):
                     except Exception:
                         LOG.exception('Exception in fallback.')
                 else:  # No fallback could handle the utterance
-                    ws.emit(Message('complete_intent_failure'))
+                    ws.emit(message.reply('complete_intent_failure'))
                     warning = "No fallback could handle intent."
                     LOG.warning(warning)
                     #  indicate completion with exception
-                    ws.emit(Message('mycroft.skill.handler.complete',
-                                    data={'handler': "fallback",
-                                          'exception': warning}))
+                    ws.emit(message.reply('mycroft.skill.handler.complete',
+                                          data={'handler': "fallback",
+                                                'exception': warning}))
 
             # Send timing metric
             if message.context and message.context['ident']:

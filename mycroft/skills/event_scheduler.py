@@ -217,7 +217,7 @@ class EventScheduler(Thread):
         if event_name in self.events:
             event = self.events[event_name]
         emitter_name = 'mycroft.event_status.callback.{}'.format(event_name)
-        self.emitter.emit(Message(emitter_name, data=event))
+        self.emitter.emit(message.reply(emitter_name, data=event))
 
     def store(self):
         """

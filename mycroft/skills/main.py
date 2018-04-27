@@ -487,19 +487,19 @@ class SkillManager(Thread):
                     instance = self.loaded_skills[skill]["instance"]
                 except BaseException:
                     LOG.error("converse requested but skill not loaded")
-                    self.ws.emit(Message("skill.converse.response", {
+                    self.ws.emit(message.reply("skill.converse.response", {
                         "skill_id": 0, "result": False}))
                     return
                 try:
                     result = instance.converse(utterances, lang)
-                    self.ws.emit(Message("skill.converse.response", {
+                    self.ws.emit(message.reply("skill.converse.response", {
                         "skill_id": skill_id, "result": result}))
                     return
                 except BaseException:
                     LOG.exception(
                         "Error in converse method for skill " + str(skill_id))
-        self.ws.emit(Message("skill.converse.response",
-                             {"skill_id": 0, "result": False}))
+        self.ws.emit(message.reply("skill.converse.response",
+                                   {"skill_id": 0, "result": False}))
 
 
 def main():
