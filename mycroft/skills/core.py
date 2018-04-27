@@ -18,7 +18,7 @@ import sys
 import time
 import csv
 import inspect
-from inspect import getargspec
+from inspect import getargspec, signature
 from datetime import datetime, timedelta
 
 import abc
@@ -591,9 +591,7 @@ class MycroftSkill(object):
                     self.emitter.emit(Message(msg_type, skill_data))
 
                 with stopwatch:
-                    is_bound = bool(getattr(handler, 'im_self', None))
-                    num_args = len(getargspec(handler).args) - is_bound
-                    if num_args == 0:
+                    if len(signature(handler).parameters) == 0:
                         handler()
                     else:
                         handler(message)
