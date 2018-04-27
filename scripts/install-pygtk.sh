@@ -82,7 +82,7 @@ then
     echo -e "\E[1m * Installing gtk...\E[0m"
     # Fetch, build, and install gtk.
     (   cd $CACHE
-        curl 'https://pypi.python.org/packages/source/P/PyGTK/pygtk-2.24.0.tar.bz2' > 'pygtk.tar.bz2'
+        curl -L 'https://files.pythonhosted.org/packages/source/P/PyGTK/pygtk-2.24.0.tar.bz2' > 'pygtk.tar.bz2'
         tar -xvf pygtk.tar.bz2
         (   cd pygtk-*
             ./configure --prefix=$VIRTUAL_ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$VIRTUAL_ENV/lib/pkgconfig

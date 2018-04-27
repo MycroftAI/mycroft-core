@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import time
 import re
-
+import time
 from threading import Lock
+
 from mycroft.configuration import Configuration
+from mycroft.metrics import report_timing, Stopwatch
 from mycroft.tts import TTSFactory
 from mycroft.util import create_signal, check_for_signal
 from mycroft.util.log import LOG
-from mycroft.metrics import report_timing, Stopwatch
 
 ws = None  # TODO:18.02 - Rename to "messagebus"
 config = None
@@ -69,7 +69,8 @@ def handle_speak(event):
         #
         # TODO: Remove or make an option?  This is really a hack, anyway,
         # so we likely will want to get rid of this when not running on Mimic
-        if not config.get('enclosure', {}).get('platform') == "picroft":
+        if (config.get('enclosure', {}).get('platform') != "picroft" and
+                len(re.findall('<[^>]*>', utterance)) == 0):
             start = time.time()
             chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s',
                               utterance)
@@ -113,7 +114,10 @@ def mute_and_speak(utterance, ident):
         tts_hash = hash(str(config.get('tts', '')))
 
     LOG.info("Speak: " + utterance)
-    tts.execute(utterance, ident)
+    try:
+        tts.execute(utterance, ident)
+    finally:
+        lock.release()
 
 
 def handle_stop(event):

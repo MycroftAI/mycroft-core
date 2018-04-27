@@ -16,6 +16,8 @@ from __future__ import print_function
 import sys
 import io
 
+from mycroft.tts import TTS
+
 
 def custom_except_hook(exctype, value, traceback):           # noqa
     print(sys.stdout.getvalue(), file=sys.__stdout__)        # noqa
@@ -351,6 +353,7 @@ def rebuild_filtered_log():
 def handle_speak(event):
     global chat
     utterance = event.data.get('utterance')
+    utterance = TTS.remove_ssml(utterance)
     if bSimple:
         print(">> " + utterance)
     else:
