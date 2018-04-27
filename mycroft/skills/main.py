@@ -49,15 +49,33 @@ start_ticks = monotonic.monotonic()
 start_clock = time.time()
 
 DEBUG = Configuration.get().get("debug", False)
-skills_config = Configuration.get().get("skills")
-BLACKLISTED_SKILLS = skills_config.get("blacklisted_skills", [])
+skills_config = Configuration.get().get("skills", {})
 PRIORITY_SKILLS = skills_config.get("priority_skills", [])
-SKILLS_DIR = '/opt/mycroft/skills'
-
-installer_config = Configuration.get().get("SkillInstallerSkill")
+installer_config = Configuration.get().get("SkillInstallerSkill", {})
 MSM_BIN = installer_config.get("path", join(MYCROFT_ROOT_PATH, 'msm', 'msm'))
 
-MINUTES = 60  # number of seconds in a minute (syntatic sugar)
+MINUTES = 60  # number of seconds in a minute (syntactic sugar)
+
+
+def get_skills_dir():
+    # TODO support configurable directory,
+    # the "directory" configuration variable
+    # is included in the blob sent by the server as ~/.mycroft/skills
+
+    # skills_dir = Configuration.get().get("skills", {})\
+    #    .get("directory", '/opt/mycroft/skills')
+
+    skills_dir = "/opt/mycroft/skills"
+
+    if "~" in skills_dir:
+        skills_dir = os.path.expanduser(skills_dir)
+    if not exists(skills_dir):
+        os.makedirs(skills_dir)
+    return skills_dir
+
+
+def get_blacklisted_skills():
+    return Configuration.get().get("skills", {}).get("blacklisted_skills", [])
 
 
 def direct_update_needed():
@@ -65,7 +83,8 @@ def direct_update_needed():
     Direct update is needed if the .msm file doesn't exist, if it's older than
     12 hours (or as configured) or if any of the default skills are missing.
     """
-    dot_msm = join(SKILLS_DIR, '.msm')
+    skills_dir = get_skills_dir()
+    dot_msm = join(skills_dir, '.msm')
     hours = skills_config.get('startup_update_required_time', 12)
     LOG.info('TIME LIMIT {}'.format(hours))
     # if .msm file is missing or older than 1 hour update skills
@@ -75,7 +94,7 @@ def direct_update_needed():
     else:  # verify that all default skills are installed
         with open(dot_msm) as f:
             default_skills = [line.strip() for line in f if line != '']
-        skills = os.listdir(SKILLS_DIR)
+        skills = os.listdir(skills_dir)
         LOG.info(default_skills)
         for d in default_skills:
             if d not in skills:
@@ -350,12 +369,13 @@ class SkillManager(Thread):
 
             Returns True if the skill was loaded/reloaded
         """
+        skils_dir = get_skills_dir()
         if skill_folder not in self.loaded_skills:
             self.loaded_skills[skill_folder] = {
-                "id": hash(os.path.join(SKILLS_DIR, skill_folder))
+                "id": hash(os.path.join(skils_dir, skill_folder))
             }
         skill = self.loaded_skills.get(skill_folder)
-        skill["path"] = os.path.join(SKILLS_DIR, skill_folder)
+        skill["path"] = os.path.join(skils_dir, skill_folder)
 
         # check if folder is a skill (must have __init__.py)
         if not MainModule + ".py" in os.listdir(skill["path"]):
@@ -403,7 +423,7 @@ class SkillManager(Thread):
             desc = create_skill_descriptor(skill["path"])
             skill["instance"] = load_skill(desc,
                                            self.ws, skill["id"],
-                                           BLACKLISTED_SKILLS)
+                                           get_blacklisted_skills())
             skill["last_modified"] = modified
             if skill['instance'] is not None:
                 self.ws.emit(Message('mycroft.skills.loaded',
@@ -424,11 +444,12 @@ class SkillManager(Thread):
             Args:
                 skills_to_load (list): list of skill directory names to load
         """
-        if exists(SKILLS_DIR):
+        skills_dir = get_skills_dir()
+        if exists(skills_dir):
             # checking skills dir and getting all priority skills there
             skill_list = [folder for folder in filter(
-                lambda x: os.path.isdir(os.path.join(SKILLS_DIR, x)),
-                os.listdir(SKILLS_DIR)) if folder in skills_to_load]
+                lambda x: os.path.isdir(os.path.join(skills_dir, x)),
+                os.listdir(skills_dir)) if folder in skills_to_load]
             for skill_folder in skill_list:
                 self._load_or_reload_skill(skill_folder)
 
@@ -445,7 +466,7 @@ class SkillManager(Thread):
         # Scan the file folder that contains Skills.  If a Skill is updated,
         # unload the existing version from memory and reload from the disk.
         while not self._stop_event.is_set():
-
+            skills_dir = get_skills_dir()
             # check if skill updates are enabled
             update = Configuration.get().get("skills", {}).get("auto_update",
                                                                True)
@@ -456,11 +477,11 @@ class SkillManager(Thread):
                 self.download_skills()
 
             # Look for recently changed skill(s) needing a reload
-            if (exists(SKILLS_DIR) and
+            if (exists(skills_dir) and
                     (self.next_download or not update)):
                 # checking skills dir and getting all skills there
                 list = filter(lambda x: os.path.isdir(
-                    os.path.join(SKILLS_DIR, x)), os.listdir(SKILLS_DIR))
+                    os.path.join(skills_dir, x)), os.listdir(skills_dir))
 
                 still_loading = False
                 for skill_folder in list:
