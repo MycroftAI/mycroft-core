@@ -27,7 +27,7 @@ class ResponsiveVoice(TTS):
         self.pitch = config.get("pitch", 0.5)
         self.rate = config.get("rate", 0.5)
         self.vol = config.get("vol", 1)
-        if "m" in config.get("gender", "male"):
+        if "f" not in config.get("gender", "male"):
             self.sv = "g1"
             self.vn = "rjs"
         else:
