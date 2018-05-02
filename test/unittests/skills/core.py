@@ -424,7 +424,7 @@ class MycroftSkillTest(unittest.TestCase):
         # Check that the handler was registered with the emitter
         self.assertEqual(emitter.on.call_args[0][0], 'handler1')
         # Check that the handler was stored in the skill
-        self.assertTrue('handler1' in zip(*s.events)[0])
+        self.assertTrue('handler1' in [e[0] for e in s.events])
 
     @mock.patch.dict(Configuration._Configuration__config, BASE_CONF)
     def test_remove_event(self):
@@ -432,11 +432,11 @@ class MycroftSkillTest(unittest.TestCase):
         s = SimpleSkill1()
         s.bind(emitter)
         s.add_event('handler1', s.handler)
-        self.assertTrue('handler1' in zip(*s.events)[0])
+        self.assertTrue('handler1' in [e[0] for e in s.events])
         # Remove event handler
         s.remove_event('handler1')
         # make sure it's not in the event list anymore
-        self.assertTrue('handler1' not in zip(*s.events)[0])
+        self.assertTrue('handler1' not in [e[0] for e in s.events])
         # Check that the handler was registered with the emitter
         self.assertEqual(emitter.remove.call_args[0][0], 'handler1')
 
@@ -448,7 +448,7 @@ class MycroftSkillTest(unittest.TestCase):
         s.schedule_event(s.handler, datetime.now(), name='sched_handler1')
         # Check that the handler was registered with the emitter
         self.assertEqual(emitter.once.call_args[0][0], '0:sched_handler1')
-        self.assertTrue('0:sched_handler1' in zip(*s.events)[0])
+        self.assertTrue('0:sched_handler1' in [e[0] for e in s.events])
 
     @mock.patch.dict(Configuration._Configuration__config, BASE_CONF)
     def test_remove_scheduled_event(self):
@@ -457,11 +457,11 @@ class MycroftSkillTest(unittest.TestCase):
         s.bind(emitter)
         s.schedule_event(s.handler, datetime.now(), name='sched_handler1')
         # Check that the handler was registered with the emitter
-        self.assertTrue('0:sched_handler1' in zip(*s.events)[0])
+        self.assertTrue('0:sched_handler1' in [e[0] for e in s.events])
         s.cancel_scheduled_event('sched_handler1')
         # Check that the handler was removed
         self.assertEqual(emitter.remove.call_args[0][0], '0:sched_handler1')
-        self.assertTrue('0:sched_handler1' not in zip(*s.events)[0])
+        self.assertTrue('0:sched_handler1' not in [e[0] for e in s.events])
 
     @mock.patch.dict(Configuration._Configuration__config, BASE_CONF)
     def test_run_scheduled_event(self):
@@ -477,7 +477,7 @@ class MycroftSkillTest(unittest.TestCase):
             self.assertTrue(s.handler_run)
             # Check that the handler was removed from the list of registred
             # handler
-            self.assertTrue('0:sched_handler1' not in zip(*s.events)[0])
+            self.assertTrue('0:sched_handler1' not in [e[0] for e in s.events])
 
 
 class SimpleSkill1(MycroftSkill):
