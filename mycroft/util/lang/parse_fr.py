@@ -334,7 +334,7 @@ def number_ordinal_fr(words, i):
             strOrd = "2e"
         elif word.endswith("ième"):
             val2 = None
-            word = word[:-5]
+            word = word[:-4]
             # centième
             if word == "cent":
                 if val1:
