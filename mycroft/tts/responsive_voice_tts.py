@@ -64,4 +64,3 @@ class ResponsiveVoiceValidator(TTSValidator):
 
     def get_tts_class(self):
         return ResponsiveVoice
-
