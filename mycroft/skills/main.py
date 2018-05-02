@@ -475,8 +475,9 @@ class SkillManager(Thread):
             Send list of loaded skills.
         """
         try:
+            skill_list = list(self.loaded_skills.keys())
             self.ws.emit(Message('mycroft.skills.list',
-                                 data={'skills': self.loaded_skills.keys()}))
+                                 data={'skills': skill_list}))
         except Exception as e:
             LOG.exception(e)
 
