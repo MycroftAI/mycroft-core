@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import urllib
 import requests
 from mycroft.tts import TTS, TTSValidator
 
@@ -34,13 +33,9 @@ class ResponsiveVoice(TTS):
             self.vn = self.sv = ""
 
     def get_tts(self, sentence, wav_file):
-        params = urllib.urlencode({"t": sentence,
-                                   "tl": self.lang,
-                                   "pitch": self.pitch,
-                                   "rate": self.rate,
-                                   "vol": self.vol,
-                                   "sv": self.sv,
-                                   "vn": self.vn})
+        params = {"t": sentence, "tl": self.lang,
+                  "pitch": self.pitch, "rate": self.rate,
+                  "vol": self.vol, "sv": self.sv, "vn": self.vn}
         base_url = "http://responsivevoice.org/responsivevoice/getvoice.php"
         r = requests.get(base_url, params)
         with open(wav_file, "w") as f:
