@@ -18,7 +18,7 @@ import sys
 import time
 import csv
 import inspect
-from inspect import getargspec, signature
+from inspect import signature
 from datetime import datetime, timedelta
 
 import abc
@@ -41,7 +41,6 @@ from mycroft.skills.skill_data import (load_vocabulary, load_regex, to_letters,
                                        munge_regex, munge_intent_parser)
 from mycroft.util import resolve_resource_file
 from mycroft.util.log import LOG
-import sys
 
 MainModule = '__init__'
 

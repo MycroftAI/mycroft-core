@@ -167,7 +167,7 @@ cd "${TOP}"
 
 easy_install pip==9.0.1 # force version of pip
 
-PYTHON=`python -c "import sys;print('python{}.{}'.format(sys.version_info[0], sys.version_info[1]))"`
+PYTHON=$( python -c "import sys;print('python{}.{}'.format(sys.version_info[0], sys.version_info[1]))" )
 
 # Add mycroft-core to the virtualenv path
 # (This is equivalent to typing 'add2virtualenv $TOP', except
