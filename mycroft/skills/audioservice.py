@@ -78,7 +78,7 @@ class AudioService(object):
                            audio service.
         """
         tracks = tracks or []
-        if isinstance(tracks, basestring):
+        if isinstance(tracks, str):
             tracks = [tracks]
         elif not isinstance(tracks, list):
             raise ValueError
