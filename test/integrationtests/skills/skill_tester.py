@@ -290,6 +290,10 @@ class SkillTest(object):
         return True
 
 
+# Messages that should not print debug info
+HIDDEN_MESSAGES = ['skill.converse.request', 'skill.converse.response']
+
+
 class EvaluationRule(object):
     """
         This class initially convert the test_case json file to internal rule
@@ -376,7 +380,8 @@ class EvaluationRule(object):
             Args:
                 msg:  The message event to evaluate
         """
-        print "\nEvaluating message: " + str(msg)
+        if msg.get('__type__', '') not in HIDDEN_MESSAGES:
+            print "\nEvaluating message: " + str(msg)
         for r in self.rule:
             self._partial_evaluate(r, msg)
 
