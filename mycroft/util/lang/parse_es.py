@@ -92,6 +92,7 @@ es_numbers = {
     "novecientas": 900,
     "mil": 1000}
 
+
 def isFractional_es(input_str):
     """
     This function takes the given text and checks if it is a fraction.
@@ -106,9 +107,9 @@ def isFractional_es(input_str):
         input_str = input_str[:len(input_str) - 1]  # e.g. "fifths"
 
     aFrac = ["medio", "media", "tercio", "cuarto", "cuarta", "quinto", "quinta",
-            "sexto", "sexta", u"séptimo", u"séptima", "octavo", "octava",
-            "noveno", "novena", u"décimo", u"décima", u"onceavo", u"onceava",
-            u"doceavo", u"doceava"]
+             "sexto", "sexta", u"séptimo", u"séptima", "octavo", "octava",
+             "noveno", "novena", u"décimo", u"décima", u"onceavo", u"onceava",
+             u"doceavo", u"doceava"]
 
     if input_str.lower() in aFrac:
         return 1.0 / (aFrac.index(input_str) + 2)
@@ -123,6 +124,7 @@ def isFractional_es(input_str):
     if (input_str == u"milésimo" or input_str == u"milésima"):
         return 1.0 / 1000
     return False
+
 
 def extractnumber_es(text):
     """
@@ -357,6 +359,7 @@ def normalize_es(text, remove_articles):
 
     return normalized[1:]  # strip the initial space
 
+
 def extract_datetime_es(input_str, currentDate=None):
     def clean_string(s):
         # cleans the input string of unneeded punctuation and capitalization
@@ -427,7 +430,7 @@ def extract_datetime_es(input_str, currentDate=None):
 
     words = clean_string(input_str).split(" ")
     timeQualifiersList = [u'mañana', 'tarde', 'noche']
-    time_indicators = ["en", "la", "al", "por", "pasados", 
+    time_indicators = ["en", "la", "al", "por", "pasados",
                        "pasadas", u"día", "hora"]
     days = ['lunes', 'martes', u'miércoles',
             'jueves', 'viernes', u'sábado', 'domingo']
@@ -442,7 +445,7 @@ def extract_datetime_es(input_str, currentDate=None):
     suffix_lasts = ["pasada", "pasado", "anterior", "antes"]
     nxts = [u"después", "siguiente", u"próximo", u"próxima"]
     prevs = ["antes", "previa", "previo", "anterior"]
-    froms = ["desde", "en", "para", u"después de", "por", u"próximo", 
+    froms = ["desde", "en", "para", u"después de", "por", u"próximo",
              u"próxima", "de"]
     thises = ["este", "esta"]
     froms += thises
@@ -981,18 +984,18 @@ def extract_datetime_es(input_str, currentDate=None):
                             used += 1
 
                     elif wordNext == "" or (
-                            wordNext == "em" and wordNextNext == "ponto"):
+                            wordNext == "en" and wordNextNext == "punto"):
                         strHH = word
                         strMM = 00
-                        if wordNext == "em" and wordNextNext == "ponto":
+                        if wordNext == "en" and wordNextNext == "punto":
                             used += 2
                             if wordNextNextNext == "tarde":
                                 remainder = "pm"
                                 used += 1
-                            elif wordNextNextNext == "manha":
+                            elif wordNextNextNext == u"mañana":
                                 remainder = "am"
                                 used += 1
-                            elif wordNextNextNext == "noite":
+                            elif wordNextNextNext == "noche":
                                 if 0 > strHH > 6:
                                     remainder = "am"
                                 else:
@@ -1028,7 +1031,7 @@ def extract_datetime_es(input_str, currentDate=None):
             for i in range(used):
                 words[idx + i] = ""
 
-            if wordPrev == "em" or wordPrev == "ponto":
+            if wordPrev == "en" or wordPrev == "punto":
                 words[words.index(wordPrev)] = ""
 
             if idx > 0 and wordPrev in time_indicators:
@@ -1114,13 +1117,14 @@ def extract_datetime_es(input_str, currentDate=None):
 
     resultStr = " ".join(words)
     resultStr = ' '.join(resultStr.split())
-    #resultStr = pt_pruning(resultStr)
+    # resultStr = pt_pruning(resultStr)
     return [extractedDate, resultStr]
 
 
 def get_gender_es(word, raw_string=""):
     # Next rules are imprecise and incompleted, but is a good starting point.
-    # For more detailed explanation, see http://www.wikilengua.org/index.php/Género_gramatical
+    # For more detailed explanation, see 
+    # http://www.wikilengua.org/index.php/Género_gramatical
     word = word.rstrip("s")
     gender = False
     words = raw_string.split(" ")
