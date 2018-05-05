@@ -1123,7 +1123,7 @@ def extract_datetime_es(input_str, currentDate=None):
 
 def get_gender_es(word, raw_string=""):
     # Next rules are imprecise and incompleted, but is a good starting point.
-    # For more detailed explanation, see 
+    # For more detailed explanation, see
     # http://www.wikilengua.org/index.php/Género_gramatical
     word = word.rstrip("s")
     gender = False
