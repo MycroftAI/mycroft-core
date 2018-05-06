@@ -756,7 +756,7 @@ def extract_datetime_es(input_str, currentDate=None):
     secOffset = 0
     hrAbs = 0
     minAbs = 0
-    military = False
+    # military = False # This has no use in Spanish.
 
     for idx, word in enumerate(words):
         if word == "":
@@ -786,6 +786,10 @@ def extract_datetime_es(input_str, currentDate=None):
         elif word == "media" and wordNext == "tarde":
             if hrAbs == 0:
                 hrAbs = 17
+            used += 2
+        elif word == "tarde" and wordNext == "noche":
+            if hrAbs == 0:
+                hrAbs = 20
             used += 2
         elif word == "media" and wordNext == u"mañana":
             if hrAbs == 0:
