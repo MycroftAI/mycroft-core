@@ -18,9 +18,9 @@ from mycroft.tts import TTS, TTSValidator
 
 
 class GoogleTTS(TTS):
-    def __init__(self, lang, voice):
-        super(GoogleTTS, self).__init__(lang, voice, GoogleTTSValidator(self))
-        self.type = 'mp3'
+    def __init__(self, lang, config):
+        super(GoogleTTS, self).__init__(lang, config, GoogleTTSValidator(
+            self), 'mp3')
 
     def get_tts(self, sentence, wav_file):
         tts = gTTS(sentence, self.lang)

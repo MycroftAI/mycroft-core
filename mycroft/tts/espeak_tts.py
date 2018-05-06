@@ -18,8 +18,8 @@ from mycroft.tts import TTS, TTSValidator
 
 
 class ESpeak(TTS):
-    def __init__(self, lang, voice):
-        super(ESpeak, self).__init__(lang, voice, ESpeakValidator(self))
+    def __init__(self, lang, config):
+        super(ESpeak, self).__init__(lang, config, ESpeakValidator(self))
 
     def execute(self, sentence, ident=None):
         self.begin_audio()
