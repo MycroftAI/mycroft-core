@@ -139,9 +139,9 @@ echo '{
 	"name": "'${capital_desc}'",
 	"skillMetadata": {
 		"sections": [
-		{
-		 "name": "Section Friendly Display Name for Home.Mycroft.AI",
-		 "fields": [
+			{
+				"name": "Section Friendly Display Name for Home.Mycroft.AI",
+				"fields": [
 					{
 						"name": "internal_python_variable_name",
 						"type": "text",
@@ -155,9 +155,9 @@ echo '{
 				"name": "Login --Another Section But This One Has Two Values--",
 				"fields": [
 					{
-			"type": "label",
-			"label": "Just a little bit of extra info for the user to understand following settings"
-			},
+						"type": "label",
+						"label": "Just a little bit of extra info for the user to understand following settings"
+					},
 					{
 						"name": "username",
 						"type": "text",
