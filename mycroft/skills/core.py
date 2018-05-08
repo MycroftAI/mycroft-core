@@ -18,7 +18,7 @@ import sys
 import time
 import csv
 import inspect
-from inspect import getargspec
+from inspect import signature
 from datetime import datetime, timedelta
 
 import abc
@@ -41,8 +41,6 @@ from mycroft.skills.skill_data import (load_vocabulary, load_regex, to_letters,
                                        munge_regex, munge_intent_parser)
 from mycroft.util import resolve_resource_file
 from mycroft.util.log import LOG
-# python 2+3 compatibility
-from past.builtins import basestring
 
 MainModule = '__init__'
 
@@ -592,9 +590,7 @@ class MycroftSkill(object):
                     self.emitter.emit(Message(msg_type, skill_data))
 
                 with stopwatch:
-                    is_bound = bool(getattr(handler, 'im_self', None))
-                    num_args = len(getargspec(handler).args) - is_bound
-                    if num_args == 0:
+                    if len(signature(handler).parameters) == 0:
                         handler()
                     else:
                         handler(message)
@@ -805,9 +801,9 @@ class MycroftSkill(object):
                 context:    Keyword
                 word:       word connected to keyword
         """
-        if not isinstance(context, basestring):
+        if not isinstance(context, str):
             raise ValueError('context should be a string')
-        if not isinstance(word, basestring):
+        if not isinstance(word, str):
             raise ValueError('word should be a string')
         context = to_letters(self.skill_id) + context
         self.emitter.emit(Message('add_context',
@@ -817,7 +813,7 @@ class MycroftSkill(object):
         """
             remove_context removes a keyword from from the context manager.
         """
-        if not isinstance(context, basestring):
+        if not isinstance(context, str):
             raise ValueError('context should be a string')
         self.emitter.emit(Message('remove_context', {'context': context}))
 

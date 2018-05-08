@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from __future__ import print_function
 import sys
 import io
 
@@ -28,9 +27,8 @@ def custom_except_hook(exctype, value, traceback):           # noqa
 
 sys.excepthook = custom_except_hook  # noqa
 
-# capture any output
-sys.stdout = io.BytesIO()  # noqa
-sys.stderr = io.BytesIO()  # noqa
+sys.stdout = io.StringIO()  # noqa
+sys.stderr = io.StringIO()  # noqa
 
 import os
 import os.path
@@ -170,7 +168,7 @@ def save_settings():
     config["max_log_lines"] = max_log_lines
     config["show_meter"] = show_meter
     with io.open(config_file, 'w') as f:
-        f.write(unicode(json.dumps(config, ensure_ascii=False)))
+        f.write(str(json.dumps(config, ensure_ascii=False)))
 
 
 ##############################################################################
@@ -422,7 +420,7 @@ def scroll_log(up, num_lines=None):
 
     # default to a half-page
     if not num_lines:
-        num_lines = size_log_area/2
+        num_lines = size_log_area // 2
 
     if up:
         log_line_offset -= num_lines

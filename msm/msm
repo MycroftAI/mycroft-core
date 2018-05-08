@@ -22,6 +22,11 @@ REPO_URL='https://github.com/MycroftAI/mycroft-skills'
 REPO_BRANCH='18.02'
 REPO_FOLDER='/opt/mycroft/.skills-repo'
 
+# Set virtualenv for git clone install of mycroft
+TOP=$(cd $(dirname $0) && pwd -L)/..
+VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${TOP}/.venv"}
+ACTIVATE=$VIRTUALENV_ROOT/bin/activate
+
 script=${0}
 script=${script##*/}
 
@@ -86,19 +91,6 @@ picroft_mk1="false"
 vwrap="true"
 if [[ "${mycroft_platform}" == "picroft" ]] || [[ "${mycroft_platform}" == "mycroft_mark_1" ]] ; then
   picroft_mk1="true"
-else
-  if [[ -r /etc/bash_completion.d/virtualenvwrapper ]]; then
-    source /etc/bash_completion.d/virtualenvwrapper
-   elif [[ -r /usr/bin/virtualenvwrapper.sh ]]; then
-    source /usr/bin/virtualenvwrapper.sh
-  else
-    if locate virtualenvwrapper ; then
-      if ! source $(locate virtualenvwrapper) ; then
-        echo "WARNING: Unable to locate virtualenvwrapper.sh, not able to install skills!"
-        vwrap="false"
-      fi
-    fi
-  fi
 fi
 
 # Cache to only retrieve list once per MSM invocation
@@ -365,14 +357,14 @@ function run_pip() {
     if [[ -f "requirements.txt" ]]; then
       echo "  Installing requirements..."
       if [[ "${picroft_mk1}" == "false" ]]; then
-        if [[ "${VIRTUAL_ENV}" =~ .mycroft$ ]] ; then
+        if [[ "${VIRTUAL_ENV}" =~ .mycroft-core/.venv$ ]] ; then
           if ! pip install -r requirements.txt ; then
             echo "ERROR: Unable to install requirements for skill '${name}'"
             send_install_fail "${name}" 121
             return 121
           fi
         else
-          if workon mycroft ; then
+          if source "${ACTIVATE}" ; then
             if ! pip install -r requirements.txt ; then
               echo "ERROR: Unable to install requirements for skill '${name}'"
               deactivate mycroft
@@ -484,14 +476,16 @@ function pip_hack() {
   #       mycroft-core.
   if [ ! -f /tmp/mycroft_has_re-PIPed ] ; then
      run_pip "$1"
-     echo "Re-running PIP on requirements.txt"
+     echo "Re-running PIP on $1 requirements.txt"
   fi
 }
 
 function fetch_skill_sha() {
   local folder_name=$1
+  prev=$(pwd)
   cd "$REPO_FOLDER"
   git ls-tree "origin/$REPO_BRANCH" | grep "$folder_name" | tr '\t' ' ' | cut -d " " -f 3
+  cd "$prev"
 }
 
 function update_skill() {
@@ -504,6 +498,7 @@ function update_skill() {
 
   if ! should_update_git; then
     echo "Skipped $d."
+    pip_hack "$folder"
     return
   fi
 

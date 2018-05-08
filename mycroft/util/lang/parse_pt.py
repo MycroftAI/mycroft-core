@@ -1026,7 +1026,7 @@ def extract_datetime_pt(input_str, currentDate=None):
                                 remainder = "am"
                                 used += 1
                             elif wordNextNextNext == "noite":
-                                if 0 > strHH > 6:
+                                if 0 > int(strHH) > 6:
                                     remainder = "am"
                                 else:
                                     remainder = "pm"

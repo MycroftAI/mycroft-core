@@ -204,15 +204,6 @@ def _get_last_modified_date(path):
     """
     last_date = 0
     root_dir, subdirs, files = next(os.walk(path))
-    # get subdirs and remove hidden ones
-    subdirs = [s for s in subdirs if not s.startswith('.')]
-    for subdir in subdirs:
-        for root, _, _ in os.walk(join(path, subdir)):
-            base = os.path.basename(root)
-            # checking if is a hidden path
-            if not base.startswith(".") and not base.startswith("/."):
-                last_date = max(last_date, os.path.getmtime(root))
-
     # check files of interest in the skill root directory
     files = [f for f in files
              if not f.endswith('.pyc') and f != 'settings.json' and
@@ -484,8 +475,9 @@ class SkillManager(Thread):
             Send list of loaded skills.
         """
         try:
+            skill_list = list(self.loaded_skills.keys())
             self.ws.emit(Message('mycroft.skills.list',
-                                 data={'skills': self.loaded_skills.keys()}))
+                                 data={'skills': skill_list}))
         except Exception as e:
             LOG.exception(e)
 
