@@ -88,7 +88,6 @@ class SkillSettings(dict):
         self.api = DeviceApi()
         self.config = ConfigurationManager.get()
         self.name = name
-        self.directory = directory
         # set file paths
         self._settings_path = join(directory, 'settings.json')
         self._meta_path = join(directory, 'settingsmeta.json')
@@ -323,7 +322,7 @@ class SkillSettings(dict):
                 _hash (str): hashed to identify skills
         """
         _hash = self.hash(str(settings_meta) + str(self._user_identity))
-        return "{}--{}".format(basename(self.directory), _hash)
+        return "{}--{}".format(self.name, _hash)
 
     def _save_hash(self, hashed_meta):
         """ Saves hashed_meta to settings directory.
