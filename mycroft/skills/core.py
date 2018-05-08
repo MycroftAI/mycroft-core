@@ -99,14 +99,21 @@ def load_skill(skill_descriptor, emitter, skill_id, BLACKLISTED_SKILLS=None):
             MycroftSkill: the loaded skill or None on failure
     """
     BLACKLISTED_SKILLS = BLACKLISTED_SKILLS or []
+    path = skill_descriptor["path"]
+    name = basename(path)
+    LOG.info("ATTEMPTING TO LOAD SKILL: {} with ID {}".format(
+        name, skill_id
+    ))
+    if name in BLACKLISTED_SKILLS:
+        LOG.info("SKILL IS BLACKLISTED " + name)
+        return None
+    main_file = join(path, MainModule + '.py')
     try:
-        LOG.info("ATTEMPTING TO LOAD SKILL: " + skill_descriptor["name"] +
-                 " with ID " + str(skill_id))
-        if skill_descriptor['name'] in BLACKLISTED_SKILLS:
-            LOG.info("SKILL IS BLACKLISTED " + skill_descriptor["name"])
-            return None
-        skill_module = imp.load_module(
-            skill_descriptor["name"] + MainModule, *skill_descriptor["info"])
+        with open(main_file, 'rb') as fp:
+            skill_module = imp.load_module(
+                name.replace('.', '_'), fp, main_file,
+                ('.py', 'rb', imp.PY_SOURCE)
+            )
         if (hasattr(skill_module, 'create_skill') and
                 callable(skill_module.create_skill)):
             # v2 skills framework
@@ -115,16 +122,16 @@ def load_skill(skill_descriptor, emitter, skill_id, BLACKLISTED_SKILLS=None):
             skill.settings.load_skill_settings_from_file()
             skill.bind(emitter)
             skill.skill_id = skill_id
-            skill.load_data_files(dirname(skill_descriptor['info'][1]))
+            skill.load_data_files(path)
             # Set up intent handlers
             skill.initialize()
             skill._register_decorated()
-            LOG.info("Loaded " + skill_descriptor["name"])
+            LOG.info("Loaded " + name)
 
             # The very first time a skill is run, speak the intro
             first_run = skill.settings.get("__mycroft_skill_firstrun", True)
             if first_run:
-                LOG.info("First run of " + skill_descriptor["name"])
+                LOG.info("First run of " + name)
                 skill.settings["__mycroft_skill_firstrun"] = False
                 skill.settings.store()
                 intro = skill.get_intro_message()
@@ -132,19 +139,14 @@ def load_skill(skill_descriptor, emitter, skill_id, BLACKLISTED_SKILLS=None):
                     skill.speak(intro)
             return skill
         else:
-            LOG.warning(
-                "Module %s does not appear to be skill" % (
-                    skill_descriptor["name"]))
-    except:
-        LOG.error(
-            "Failed to load skill: " + skill_descriptor["name"],
-            exc_info=True)
+            LOG.warning("Module {} does not appear to be skill".format(name))
+    except Exception:
+        LOG.exception("Failed to load skill: " + name)
     return None
 
 
-def create_skill_descriptor(skill_folder):
-    info = imp.find_module(MainModule, [skill_folder])
-    return {"name": basename(skill_folder), "info": info}
+def create_skill_descriptor(skill_path):
+    return {"path": skill_path}
 
 
 def get_handler_name(handler):
