@@ -88,7 +88,6 @@ class SkillSettings(dict):
         self.api = DeviceApi()
         self.config = ConfigurationManager.get()
         self.name = name
-        self.directory = directory
         # set file paths
         self._settings_path = join(directory, 'settings.json')
         self._meta_path = join(directory, 'settingsmeta.json')
@@ -143,7 +142,7 @@ class SkillSettings(dict):
         self._api_path = "/" + self._device_identity + "/skill"
         self._user_identity = self.api.get()['user']['uuid']
         LOG.debug("settingsmeta.json exist for {}".format(self.name))
-        hashed_meta = self._get_meta_hash(str(settings_meta))
+        hashed_meta = self._get_meta_hash(settings_meta)
         skill_settings = self._request_other_settings(hashed_meta)
         # if hash is new then there is a diff version of settingsmeta
         if self._is_new_hash(hashed_meta):
@@ -317,27 +316,28 @@ class SkillSettings(dict):
         """ Get's the hash of skill
 
             Args:
-                settings_meta (str): stringified settingsmeta
+                settings_meta (dict): settingsmeta object
 
             Returns:
                 _hash (str): hashed to identify skills
         """
-        _hash = self.hash(str(settings_meta) + str(self._user_identity))
-        return "{}--{}".format(basename(self.directory), _hash)
+        _hash = self.hash(json.dumps(settings_meta, sort_keys=True) +
+                          self._user_identity)
+        return "{}--{}".format(self.name, _hash)
 
     def _save_hash(self, hashed_meta):
         """ Saves hashed_meta to settings directory.
 
             Args:
-                hashed_meta (int): hash of new settingsmeta
+                hashed_meta (str): hash of new settingsmeta
         """
-        LOG.debug("saving hash {}".format(str(hashed_meta)))
+        LOG.debug("saving hash {}".format(hashed_meta))
         directory = self.config.get("skills")["directory"]
         directory = join(directory, self.name)
         directory = expanduser(directory)
         hash_file = join(directory, 'hash')
         with open(hash_file, 'w') as f:
-            f.write(str(hashed_meta))
+            f.write(hashed_meta)
 
     def _is_new_hash(self, hashed_meta):
         """ checks if the stored hash is the same as current.
