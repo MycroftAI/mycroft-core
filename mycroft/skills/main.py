@@ -21,7 +21,7 @@ from threading import Timer, Thread, Event
 
 import monotonic
 from glob import glob
-from os.path import exists, join, basename
+from os.path import exists, join, basename, dirname, expanduser, isfile
 from msm import MycroftSkillsManager
 
 import mycroft.lock
@@ -227,6 +227,26 @@ class SkillManager(Thread):
     def schedule_now(self, message=None):
         self.next_download = time.time() - 1
 
+    @property
+    def installed_skills_file(self):
+        venv = dirname(dirname(sys.executable))
+        if os.access(venv, os.W_OK | os.R_OK | os.X_OK):
+            return join(venv, '.mycroft-skills')
+        return expanduser('~/.mycroft/.mycroft-skills')
+
+    def load_installed_skills(self) -> set:
+        skills_file = self.installed_skills_file
+        if not isfile(skills_file):
+            return set()
+        with open(skills_file) as f:
+            return {
+                i.strip() for i in f.read().split('\n') if i.strip()
+            }
+
+    def save_installed_skills(self, skill_names):
+        with open(self.installed_skills_file, 'w') as f:
+            f.write('\n'.join(skill_names))
+
     def download_skills(self, speak=False):
         """ Invoke MSM to install default skills and/or update installed skills
 
@@ -242,6 +262,7 @@ class SkillManager(Thread):
             self.next_download = time.time() + 5 * MINUTES
             return False
 
+        installed_skills = self.load_installed_skills()
         default_groups = dict(self.msm.repo.get_default_skill_names())
         default_names = set(chain(default_groups['default'],
                                   default_groups[self.msm.platform]))
@@ -250,10 +271,15 @@ class SkillManager(Thread):
             """Install missing defaults and update existing skills"""
             if skill.is_local:
                 skill.update()
+                if skill.name not in installed_skills:
+                    skill.update_deps()
+                    installed_skills.add(skill.name)
             elif skill.name in default_names:
                 skill.install()
+                installed_skills.add(skill.name)
 
         self.msm.apply(install_or_update, self.msm.list())
+        self.save_installed_skills(installed_skills)
 
         with open(self.dot_msm, 'a'):
             os.utime(self.dot_msm, None)
