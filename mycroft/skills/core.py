@@ -37,7 +37,7 @@ from mycroft.filesystem import FileSystemAccess
 from mycroft.messagebus.message import Message
 from mycroft.metrics import report_metric, report_timing, Stopwatch
 from mycroft.skills.settings import SkillSettings
-from mycroft.skills.skill_data import (load_vocabulary, load_regex, to_letters,
+from mycroft.skills.skill_data import (load_vocabulary, load_regex, to_alnum,
                                        munge_regex, munge_intent_parser)
 from mycroft.util import resolve_resource_file
 from mycroft.util.log import LOG
@@ -63,13 +63,13 @@ def unmunge_message(message, skill_id):
 
     Args:
         message (Message): Intent result message
-        skill_id (int): skill identifier
+        skill_id (str): skill identifier
 
     Returns:
         Message without clear keywords
     """
     if isinstance(message, Message) and isinstance(message.data, dict):
-        skill_id = to_letters(skill_id)
+        skill_id = to_alnum(skill_id)
         for key in message.data:
             if key[:len(skill_id)] == skill_id:
                 new_key = key[len(skill_id):]
@@ -807,7 +807,7 @@ class MycroftSkill(object):
             raise ValueError('context should be a string')
         if not isinstance(word, str):
             raise ValueError('word should be a string')
-        context = to_letters(self.skill_id) + context
+        context = to_alnum(self.skill_id) + context
         self.emitter.emit(Message('add_context',
                                   {'context': context, 'word': word}))
 
@@ -827,7 +827,7 @@ class MycroftSkill(object):
                 entity_type:    Intent handler entity to tie the word to
         """
         self.emitter.emit(Message('register_vocab', {
-            'start': entity, 'end': to_letters(self.skill_id) + entity_type
+            'start': entity, 'end': to_alnum(self.skill_id) + entity_type
         }))
 
     def register_regex(self, regex_str):

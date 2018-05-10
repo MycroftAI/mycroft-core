@@ -311,7 +311,7 @@ class SkillManager(Thread):
         skill_path = skill_path.rstrip('/')
         skill = self.loaded_skills.setdefault(skill_path, {})
         skill.update({
-            "id": hash(skill_path),
+            "id": basename(skill_path),
             "path": skill_path
         })
 
@@ -452,7 +452,7 @@ class SkillManager(Thread):
         If supported, the conversation is invoked.
         """
 
-        skill_id = int(message.data["skill_id"])
+        skill_id = message.data["skill_id"]
         utterances = message.data["utterances"]
         lang = message.data["lang"]
 
