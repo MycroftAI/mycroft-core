@@ -101,13 +101,13 @@ class IntentTestSequenceMeta(type):
                                 for i in skill_test_status.intent_list.items()
                                 if not all(i)]
                     for intent_status in untested:
-                        print "No test found for intent: " + intent_status[0]
+                        print("No test found for intent: ", intent_status[0])
 
                     if len(untested) > 0 or not succeeded:
                         assert False
 
                 else:
-                    print "No tests found for " + skill_name
+                    print("No tests found for ", skill_name)
                     assert False
 
             return test

@@ -31,7 +31,7 @@ To set up a test the test runner can
     for a very long time
 
 """
-import Queue
+from queue import Queue, Empty
 import json
 import time
 import os
@@ -119,7 +119,7 @@ class InterceptEmitter(object):
 
     def on(self, event, f):
         # run all events
-        print "Event: " + str(event)
+        print("Event: ", event)
         self.emitter.on(event, f)
 
     def emit(self, event, *args, **kwargs):
@@ -197,9 +197,9 @@ class SkillTest(object):
         else:
             raise Exception('Skill couldn\'t be loaded')
 
-        print 'Test case file: ' + self.test_case_file
+        print('Test case file: ', self.test_case_file)
         test_case = json.load(open(self.test_case_file, 'r'))
-        print "Test case: " + str(test_case)
+        print("Test case: ", test_case)
 
         if 'responses' in test_case:
             def get_response(dialog='', data=None, announcement='',
@@ -208,8 +208,8 @@ class SkillTest(object):
                 utt = announcement or s.dialog_renderer.render(dialog, data)
                 s.speak(utt)
                 response = test_case['responses'].pop(0)
-                print ">" + utt
-                print "Responding with " + response
+                print(">" + utt)
+                print("Responding with ", response)
                 return response
             s.get_response = get_response
 
@@ -227,7 +227,7 @@ class SkillTest(object):
         # the evaluation method expects events to be received in convoy,
         # and be handled one by one. We cant make assumptions about threading
         # in the core or the skill
-        q = Queue.Queue()
+        q = Queue()
         s.emitter.q = q
 
         # Set up context before calling intent
@@ -270,7 +270,7 @@ class SkillTest(object):
                 evaluation_rule.evaluate(event.data)
                 if event.type == 'mycroft.skill.handler.complete':
                     break
-            except Queue.Empty:
+            except Empty:
                 pass
             if time.time() > timeout:
                 break
@@ -283,8 +283,8 @@ class SkillTest(object):
         self.emitter.remove_all_listeners('mycroft.skill.handler.complete')
         # Report test result if failed
         if not evaluation_rule.all_succeeded():
-            print "Evaluation failed"
-            print "Rule status: " + str(evaluation_rule.rule)
+            print("Evaluation failed")
+            print("Rule status: ", evaluation_rule.rule)
             return False
 
         return True
@@ -343,14 +343,14 @@ class EvaluationRule(object):
 
         if test_case.get('expected_dialog', None):
             if not skill:
-                print 'Skill is missing, can\'t run expected_dialog test'
+                print('Skill is missing, can\'t run expected_dialog test')
             else:
                 # Make sure expected dialog file is used
                 dialog = test_case['expected_dialog']
                 # Extract dialog texts from skill
                 dialogs = skill.dialog_renderer.templates[dialog]
                 # Allow custom fields to be anything
-                d = [re.sub('\{.*?\}', '.*', t) for t in dialogs]
+                d = [re.sub('{.*?\}', '.*', t) for t in dialogs]
                 # Create rule allowing any of the sentences for that dialog
                 rules = [['match', 'utterance', r] for r in d]
                 self.rule.append(['or'] + rules)
@@ -367,7 +367,7 @@ class EvaluationRule(object):
             for _x in ast.literal_eval(test_case['assert']):
                 self.rule.append(_x)
 
-        print "Rule created " + str(self.rule)
+        print("Rule created ", self.rule)
 
     def evaluate(self, msg):
         """Main entry for evaluating a message against the rules.
@@ -381,7 +381,7 @@ class EvaluationRule(object):
                 msg:  The message event to evaluate
         """
         if msg.get('__type__', '') not in HIDDEN_MESSAGES:
-            print "\nEvaluating message: " + str(msg)
+            print("\nEvaluating message: ", msg)
         for r in self.rule:
             self._partial_evaluate(r, msg)
 
