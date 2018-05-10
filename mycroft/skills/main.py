@@ -22,7 +22,7 @@ from threading import Timer, Thread, Event
 import monotonic
 from glob import glob
 from os.path import exists, join, basename, dirname, expanduser, isfile
-from msm import MycroftSkillsManager
+from msm import MycroftSkillsManager, SkillRepo
 
 import mycroft.lock
 from mycroft import dialog
@@ -220,8 +220,19 @@ class SkillManager(Thread):
         ws.on('skillmanager.update', self.schedule_now)
         ws.on('skillmanager.list', self.send_skill_list)
 
-        self.msm = MycroftSkillsManager(
-            Configuration.get()['enclosure'].get('platform', 'default')
+        self.msm = self.create_msm()
+
+    @staticmethod
+    def create_msm():
+        config = Configuration.get()
+        msm_config = config['skills']['msm']
+        repo_config = msm_config['repo']
+        platform = config['enclosure'].get('platform', 'default')
+        return MycroftSkillsManager(
+            platform=platform, skills_dir=msm_config['directory'],
+            repo=SkillRepo(
+                repo_config['cache'], repo_config['url'], repo_config['branch']
+            ), versioned=msm_config['versioned']
         )
 
     def schedule_now(self, message=None):
