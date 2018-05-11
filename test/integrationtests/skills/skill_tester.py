@@ -37,7 +37,7 @@ import time
 import os
 import re
 import ast
-from os.path import join, isdir
+from os.path import join, isdir, basename
 from pyee import EventEmitter
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import create_skill_descriptor, load_skill, \
@@ -77,7 +77,7 @@ def get_skills(skills_folder):
 
     _get_skill_descriptor(skills_folder)
 
-    skills = sorted(skills, key=lambda p: p.get('name'))
+    skills = sorted(skills, key=lambda p: basename(p['path']))
     return skills
 
 
