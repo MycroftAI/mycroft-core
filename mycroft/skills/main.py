@@ -16,15 +16,15 @@ import gc
 import os
 import sys
 import time
+from glob import glob
 from itertools import chain
-from threading import Timer, Thread, Event
 
 import monotonic
-from glob import glob
 from os.path import exists, join, basename, dirname, expanduser, isfile
-from msm import MycroftSkillsManager, SkillRepo
+from threading import Timer, Thread, Event
 
 import mycroft.lock
+from msm import MycroftSkillsManager, SkillRepo
 from mycroft import dialog
 from mycroft.api import is_paired, BackendDown
 from mycroft.client.enclosure.api import EnclosureAPI
@@ -178,15 +178,15 @@ def _get_last_modified_date(path):
         Returns:
             int: time of last change
     """
-    last_date = 0
-    root_dir, subdirs, files = next(os.walk(path))
+    all_files = []
+    for root_dir, dirs, files in os.walk(path):
+        dirs[:] = [d for d in dirs if not d.startswith('.')]
+        for f in files:
+            if (not f.endswith('.pyc') and f != 'settings.json' and
+                    not f.startswith('.')):
+                all_files.append(join(root_dir, f))
     # check files of interest in the skill root directory
-    files = [f for f in files
-             if not f.endswith('.pyc') and f != 'settings.json' and
-             not f.startswith('.')]
-    for f in files:
-        last_date = max(last_date, os.path.getmtime(os.path.join(path, f)))
-    return last_date
+    return max(os.path.getmtime(f) for f in all_files)
 
 
 class SkillManager(Thread):
