@@ -172,7 +172,7 @@ class IntentService(object):
         Returns:
             (str) Skill name or the skill id if the skill wasn't found
         """
-        return self.skill_names.get(int(skill_id), skill_id)
+        return self.skill_names.get(skill_id, skill_id)
 
     def reset_converse(self, message):
         """Let skills know there was a problem with speech recognition"""
@@ -357,7 +357,7 @@ class IntentService(object):
         if best_intent and best_intent.get('confidence', 0.0) > 0.0:
             self.update_context(best_intent)
             # update active skills
-            skill_id = int(best_intent['intent_type'].split(":")[0])
+            skill_id = best_intent['intent_type'].split(":")[0]
             self.add_active_skill(skill_id)
             return best_intent
 

@@ -73,17 +73,18 @@ class MycroftSkillTest(unittest.TestCase):
 
     def check_regex_from_file(self, filename, result_list=None):
         result_list = result_list or []
-        load_regex_from_file(join(self.regex_path, filename), self.emitter, 0)
+        regex_file = join(self.regex_path, filename)
+        load_regex_from_file(regex_file, self.emitter, 'A')
         self.check_emitter(result_list)
 
     def check_vocab(self, path, result_list=None):
         result_list = result_list or []
-        load_vocabulary(path, self.emitter, 0)
+        load_vocabulary(path, self.emitter, 'A')
         self.check_emitter(result_list)
 
     def check_regex(self, path, result_list=None):
         result_list = result_list or []
-        load_regex(path, self.emitter, 0)
+        load_regex(path, self.emitter, 'A')
         self.check_emitter(result_list)
 
     def check_emitter(self, result_list):
@@ -231,7 +232,7 @@ class MycroftSkillTest(unittest.TestCase):
         s.bind(self.emitter)
         s.initialize()
         expected = [{'at_least_one': [],
-                     'name': '0:a',
+                     'name': 'A:a',
                      'optional': [],
                      'requires': [('AKeyword', 'AKeyword')]}]
         self.check_register_intent(expected)
@@ -241,7 +242,7 @@ class MycroftSkillTest(unittest.TestCase):
         s.bind(self.emitter)
         s.initialize()
         expected = [{'at_least_one': [],
-                     'name': '0:a',
+                     'name': 'A:a',
                      'optional': [],
                      'requires': [('AKeyword', 'AKeyword')]}]
 
@@ -260,7 +261,7 @@ class MycroftSkillTest(unittest.TestCase):
         s.bind(self.emitter)
         s.initialize()
         expected = [{'at_least_one': [],
-                     'name': '0:a',
+                     'name': 'A:a',
                      'optional': [],
                      'requires': [('AKeyword', 'AKeyword')]}]
         self.check_register_intent(expected)
@@ -334,12 +335,13 @@ class MycroftSkillTest(unittest.TestCase):
         sys.path.append(abspath(dirname(__file__)))
         SimpleSkill5 = __import__('decorator_test_skill').TestSkill
         s = SimpleSkill5()
+        s.skill_id = 'A'
         s.vocab_dir = join(dirname(__file__), 'intent_file')
         s.bind(self.emitter)
         s.initialize()
         s._register_decorated()
         expected = [{'at_least_one': [],
-                     'name': '0:a',
+                     'name': 'A:a',
                      'optional': [],
                      'requires': [('AKeyword', 'AKeyword')]},
                     {
@@ -447,8 +449,8 @@ class MycroftSkillTest(unittest.TestCase):
         s.bind(emitter)
         s.schedule_event(s.handler, datetime.now(), name='sched_handler1')
         # Check that the handler was registered with the emitter
-        self.assertEqual(emitter.once.call_args[0][0], '0:sched_handler1')
-        self.assertTrue('0:sched_handler1' in [e[0] for e in s.events])
+        self.assertEqual(emitter.once.call_args[0][0], 'A:sched_handler1')
+        self.assertTrue('A:sched_handler1' in [e[0] for e in s.events])
 
     @mock.patch.dict(Configuration._Configuration__config, BASE_CONF)
     def test_remove_scheduled_event(self):
@@ -457,11 +459,11 @@ class MycroftSkillTest(unittest.TestCase):
         s.bind(emitter)
         s.schedule_event(s.handler, datetime.now(), name='sched_handler1')
         # Check that the handler was registered with the emitter
-        self.assertTrue('0:sched_handler1' in [e[0] for e in s.events])
+        self.assertTrue('A:sched_handler1' in [e[0] for e in s.events])
         s.cancel_scheduled_event('sched_handler1')
         # Check that the handler was removed
-        self.assertEqual(emitter.remove.call_args[0][0], '0:sched_handler1')
-        self.assertTrue('0:sched_handler1' not in [e[0] for e in s.events])
+        self.assertEqual(emitter.remove.call_args[0][0], 'A:sched_handler1')
+        self.assertTrue('A:sched_handler1' not in [e[0] for e in s.events])
 
     @mock.patch.dict(Configuration._Configuration__config, BASE_CONF)
     def test_run_scheduled_event(self):
@@ -477,10 +479,16 @@ class MycroftSkillTest(unittest.TestCase):
             self.assertTrue(s.handler_run)
             # Check that the handler was removed from the list of registred
             # handler
-            self.assertTrue('0:sched_handler1' not in [e[0] for e in s.events])
+            self.assertTrue('A:sched_handler1' not in [e[0] for e in s.events])
 
 
-class SimpleSkill1(MycroftSkill):
+class _TestSkill(MycroftSkill):
+    def __init__(self):
+        super().__init__()
+        self.skill_id = 'A'
+
+
+class SimpleSkill1(_TestSkill):
     def __init__(self):
         super(SimpleSkill1, self).__init__()
         self.handler_run = False
@@ -497,8 +505,10 @@ class SimpleSkill1(MycroftSkill):
         pass
 
 
-class SimpleSkill2(MycroftSkill):
+class SimpleSkill2(_TestSkill):
     """ Test skill for intent builder without .build() """
+    skill_id = 'A'
+
     def initialize(self):
         i = IntentBuilder('a').require('Keyword')
         self.register_intent(i, self.handler)
@@ -510,8 +520,10 @@ class SimpleSkill2(MycroftSkill):
         pass
 
 
-class SimpleSkill3(MycroftSkill):
+class SimpleSkill3(_TestSkill):
     """ Test skill for invalid Intent for register_intent """
+    skill_id = 'A'
+
     def initialize(self):
         self.register_intent('string', self.handler)
 
@@ -522,8 +534,10 @@ class SimpleSkill3(MycroftSkill):
         pass
 
 
-class SimpleSkill4(MycroftSkill):
+class SimpleSkill4(_TestSkill):
     """ Test skill for padatious intent """
+    skill_id = 'A'
+
     def initialize(self):
         self.register_intent_file('test.intent', self.handler)
         self.register_entity_file('test_ent.entity')
