@@ -16,7 +16,7 @@
 #
 from difflib import SequenceMatcher
 
-from mycroft.util.lang.parse_de import normalize_de
+from mycroft.util.lang.parse_de import *
 from mycroft.util.lang.parse_en import *
 from mycroft.util.lang.parse_pt import *
 from mycroft.util.lang.parse_es import *
@@ -201,6 +201,4 @@ def get_gender(word, input_string="", lang="en-us"):
         return get_gender_pt(word, input_string)
     elif "it" in lang:
         return get_gender_it(word, input_string)
-    elif "de" in lang:
-        return get_gender_de(word, input_string)
     return False
