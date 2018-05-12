@@ -16,6 +16,7 @@
 #
 
 from mycroft.util.lang.format_common import convert_to_mixed_fraction
+from math import floor
 
 NUM_STRING_DE = {
     0: 'null',
@@ -77,6 +78,8 @@ FRACTION_STRING_DE = {
     20: 'zwanzigstel'
 }
 
+#EXTRA_SPACE = " "
+EXTRA_SPACE =""
 
 def nice_number_de(number, speech, denominators):
     """ German helper for nice_number
@@ -225,7 +228,7 @@ def pronounce_number_de(num, places=2):
             return result
 
 
-def nice_time_en(dt, speech=True, use_24hour=False, use_ampm=False):
+def nice_time_de(dt, speech=True, use_24hour=False, use_ampm=False):
     """
     Format a time to a comfortable human format
 
@@ -272,14 +275,14 @@ def nice_time_en(dt, speech=True, use_24hour=False, use_ampm=False):
 
         # not needed in German 13:00 -> "dreizehn Uhr"
         if string[3:5] == '00':
-            speak += "Uhr"
+            speak += "Uhr "
         else:
             if string[3] == '0':
                 #not needed in German, EN 13:05 -> "13 Oh 5" or "13 zero 5", DE 13:05 -> "13 Uhr 5" (leading zero is dropped)
                 #speak += pronounce_number_de(0) + " "
-                speak += "Uhr" + pronounce_number_de(int(string[4]))
+                speak += "Uhr " + pronounce_number_de(int(string[4]))
             else:
-                speak += "Uhr" + pronounce_number_de(int(string[3:5]))
+                speak += "Uhr " + pronounce_number_de(int(string[3:5]))
         return speak
     else:
         if dt.hour == 0 and dt.minute == 0:
@@ -297,9 +300,9 @@ def nice_time_en(dt, speech=True, use_24hour=False, use_ampm=False):
 
         if dt.minute == 0:
             if not use_ampm:
-                return speak + " Uhr"
+                return speak + " Uhr "
         else:
-            speak += " Uhr" + pronounce_number_en(dt.minute)
+            speak += " Uhr " + pronounce_number_en(dt.minute)
 
         if use_ampm:
             if dt.hour > 11:
