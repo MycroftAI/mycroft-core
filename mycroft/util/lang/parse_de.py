@@ -18,6 +18,54 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from mycroft.util.lang.parse_common import is_numeric, look_for_fractions
 
+de_numbers = {
+    'null': 0,
+    'ein': 1,
+    'eins': 1,
+    'eine': 1,
+    'einer': 1,
+    'einem': 1,
+    'einen': 1,
+    'eines': 1,
+    'zwei' :2,
+    'drei' :3,
+    'vier' :4,
+    u'fünf' :5,
+    'sechs' :6,
+    'sieben' :7,
+    'acht' :8,
+    'neun' :9,
+    'zehn' :10,
+    'elf' :11,
+    u'zwölf' :12,
+    'dreizehn' :13,
+    'vierzehn' :14,
+    u'fünfzehn' :15,
+    'sechzehn' :16,
+    'siebzehn' :17,
+    'achtzehn' :18,
+    'neunzehn' :19,
+    'zwanzig' :20,
+    u'dreißg' :30,
+    'vierzig' :40,
+    u'fünfzig' :50,
+    'sechzig' :60,
+    'siebzig' :70,
+    'achtzig' :80,
+    'neunzig' :90,
+    'hundert' :100,
+    'zweihundert' :200,
+    'dreihundert' :300,
+    'vierhundert' :400,
+    u'fünfhundert' :500,
+    'sechshundert' :600,
+    'siebenhundert' :700,
+    'achthundert' :800,
+    'neunhundert' :900,
+    'tausend' :1000,
+    'million' :1000000
+}
+
 
 def extractnumber_de(text):
     """
@@ -43,12 +91,12 @@ def extractnumber_de(text):
         if is_numeric(word):
             # if word.isdigit():            # doesn't work with decimals
             val = float(word)
-        elif word in ["erste", "ersten"]:
+        elif word in ["erste", "erstes", "erster", "ersten"]:
             val = 1
-        elif word in ["zweite", "zweiten"]:
+        elif word in ["zweite", "zweites", "zweiter", "zweiten"]:
             val = 2
-        elif isFractional_en(word):
-            val = isFractional_en(word)
+        elif isFractional_de(word):
+            val = isFractional_de(word)
         else:
             if word in ["ein", "eines", "einer", "einen", "eine", "einem", "eins"]:
                 val = 1
@@ -129,7 +177,7 @@ def extractnumber_de(text):
     return val
 
 
-def extract_datetime_en(string, currentDate=None):
+def extract_datetime_de(string, currentDate=None):
     def clean_string(s):
         """
             cleans the input string of unneeded punctuation and capitalization
@@ -218,18 +266,11 @@ def extract_datetime_en(string, currentDate=None):
         elif word == "morgen" and not fromFlag:
             dayOffset = 1
             used += 1
-        elif (word == "tag" and
-                wordNext == "nach" and
-                wordNextNext == "morgen" and
-                not fromFlag and
-                not wordPrev[0].isdigit()):
+        elif word == u"übermorgen" and not fromFlag:
             dayOffset = 2
-            used = 3
-            if wordPrev == "der":
-                start -= 1
-                used += 1
-                # parse 5 days, 10 weeks, last week, next week
-        elif word == "tag":
+            used += 1
+             # parse 5 days, 10 weeks, last week, next week
+        elif word == "tag" or word == "tage":
             if wordPrev[0].isdigit():
                 dayOffset += int(wordPrev)
                 start -= 1
@@ -239,7 +280,7 @@ def extract_datetime_en(string, currentDate=None):
                 dayOffset += int(wordPrev) * 7
                 start -= 1
                 used = 2
-            elif wordPrev == "nächst":
+            elif wordPrev == u"nächst":
                 dayOffset = 7
                 start -= 1
                 used = 2
@@ -691,6 +732,17 @@ def extract_datetime_en(string, currentDate=None):
                                           minute=0,
                                           hour=0)
     if datestr != "":
+        en_months = ['january', 'february', 'march', 'april', 'may', 'june',
+                     'july', 'august', 'september', 'october', 'november',
+                     'december']
+        en_monthsShort = ['jan', 'feb', 'mar', 'apr', 'may', 'june', 'july',
+                          'aug',
+                          'sept', 'oct', 'nov', 'dec']
+        for idx, en_month in enumerate(en_months):
+            datestr = datestr.replace(months[idx], en_month)
+        for idx, en_month in enumerate(en_monthsShort):
+            datestr = datestr.replace(monthsShort[idx], en_month)
+
         temp = datetime.strptime(datestr, "%B %d")
         if not hasYear:
             temp = temp.replace(year=extractedDate.year)
@@ -737,13 +789,10 @@ def extract_datetime_en(string, currentDate=None):
         extractedDate = extractedDate + relativedelta(minutes=minOffset)
     if secOffset != 0:
         extractedDate = extractedDate + relativedelta(seconds=secOffset)
-    for idx, word in enumerate(words):
-        if words[idx] == "and" and words[idx - 1] == "" and words[
-                idx + 1] == "":
-            words[idx] = ""
 
     resultStr = " ".join(words)
     resultStr = ' '.join(resultStr.split())
+    resultStr = pt_pruning(resultStr)
     return [extractedDate, resultStr]
 
 
@@ -757,16 +806,18 @@ def isFractional_en(input_str):
         (bool) or (float): False if not a fraction, otherwise the fraction
 
     """
-    if input_str.endswith('s', -1):
-        input_str = input_str[:len(input_str) - 1]  # e.g. "fifths"
+    if input_str.lower().startswith("halb"):
+        return 0.5
 
-    aFrac = ["ganz", "halb", "drittel", "viertel", "fünftel", "sechstel",
-             "siebtel", "achtel", "neuntel", "zehntel", "elftel", "zwölftel"]
+    if input_str.lower() == "drittel":
+        return 1.0 / 3
+    if input_str.endswith('stel'):
+        input_str = input_str[:len(input_str) - 4]  # e.g. "hundertstel"
+    elif input_str.endswith('tel'):
+        input_str = input_str[:len(input_str) - 3]  # e.g. "fünftel"
 
-    if input_str.lower() in aFrac:
-        return 1.0 / (aFrac.index(input_str) + 1)
-    if input_str == "viertel":
-        return 1.0 / 4
+    if input_str.lower() in de_numbers:
+        return 1.0 / (de_numbers[input_str.lower()])
 
     return False
 
@@ -781,23 +832,15 @@ def normalize_de(text, remove_articles):
             continue
 
         # Expand common contractions, e.g. "isn't" -> "is not"
-        contraction = ["net"]
+        contraction = ["net", "nett"]
         if word in contraction:
-            expansion = ["nicht"]
+            expansion = ["nicht", "nicht"]
             word = expansion[contraction.index(word)]
 
         # Convert numbers into digits, e.g. "two" -> "2"
-        textNumbers = ["null", "eins", "zwei", "drei", "vier", "fünf", "sechs",
-                       "sieben", "acht", "neun", "zehn", "elf", "zwölf",
-                       "dreizehn", "vierzehn", "fünfzehn", "sechzehn",
-                       "siebzehn", "achtzehn", "neunzehn", "zwanzig",
-                       "einundzwanzig", "zweiundzwanzig", "dreiundzwanzig"]
-        if word in textNumbers:
-            word = str(textNumbers.index(word))
 
-        # Replace indefinite article by number, e.g. "ein" <> "1"
-        if word in ["ein", "eines", "einer", "einen", "eine", "einem"]:
-            word = str(1)
+        if word in de_numbers:
+            word = str(de_numbers[word])
 
         normalized += " " + word
 
