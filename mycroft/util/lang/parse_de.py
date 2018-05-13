@@ -231,10 +231,10 @@ def extract_datetime_de(string, currentDate=None):
     markers = ['am', 'gegen', 'bis']
     days = ['montag', 'dienstag', 'mittwoch',
             'donnerstag', 'freitag', 'samstag', 'sonntag']
-    months = ['januar', 'februar', 'märz', 'april', 'mai', 'juni',
+    months = ['januar', 'februar', u'märz', 'april', 'mai', 'juni',
               'juli', 'august', 'september', 'october', 'november',
               'dezember']
-    monthsShort = ['jan', 'feb', 'mär', 'apr', 'mai', 'jun', 'jul', 'aug',
+    monthsShort = ['jan', 'feb', u'mär', 'apr', 'mai', 'jun', 'jul', 'aug',
                    'sept', 'oct', 'nov', 'dez']
 
     words = clean_string(string)
@@ -294,7 +294,7 @@ def extract_datetime_de(string, currentDate=None):
                 monthOffset = int(wordPrev)
                 start -= 1
                 used = 2
-            elif wordPrev == "nächst":
+            elif wordPrev == u"nächst":
                 monthOffset = 1
                 start -= 1
                 used = 2
@@ -308,11 +308,11 @@ def extract_datetime_de(string, currentDate=None):
                 yearOffset = int(wordPrev)
                 start -= 1
                 used = 2
-            elif wordPrev == "nächst":
+            elif wordPrev == u"nächst":
                 yearOffset = 1
                 start -= 1
                 used = 2
-            elif wordPrev == "nächst":
+            elif wordPrev == u"nächst":
                 yearOffset = -1
                 start -= 1
                 used = 2
@@ -324,7 +324,7 @@ def extract_datetime_de(string, currentDate=None):
             used = 1
             if dayOffset < 0:
                 dayOffset += 7
-            if wordPrev == "nächst":
+            if wordPrev == u"nächst":
                 dayOffset += 7
                 used += 1
                 start -= 1
@@ -371,7 +371,7 @@ def extract_datetime_de(string, currentDate=None):
         validFollowups = days + months + monthsShort
         validFollowups.append("heute")
         validFollowups.append("morgen")
-        validFollowups.append("nächste")
+        validFollowups.append(u"nächste")
         validFollowups.append("letzte")
         validFollowups.append("jetzt")
         if (word == "von" or word == "nach") and wordNext in validFollowups:
@@ -390,7 +390,7 @@ def extract_datetime_de(string, currentDate=None):
                 d = days.index(wordNextNext)
                 tmpOffset = (d + 1) - int(today)
                 used = 3
-                if wordNext == "nächst":
+                if wordNext == u"nächst":
                     tmpOffset += 7
                     used += 1
                     start -= 1
@@ -701,11 +701,11 @@ def extract_datetime_de(string, currentDate=None):
             if wordPrev == "Uhr":
                 words[words.index(wordPrev)] = ""
 
-            if wordPrev == "früh":
+            if wordPrev == u"früh":
                 hrOffset = -1
                 words[idx - 1] = ""
                 idx -= 1
-            elif wordPrev == "spät":
+            elif wordPrev == u"spät":
                 hrOffset = 1
                 words[idx - 1] = ""
                 idx -= 1
