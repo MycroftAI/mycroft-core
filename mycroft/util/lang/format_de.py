@@ -134,9 +134,6 @@ def pronounce_number_de(num, places=2):
     """
 
 
-
-
-
     def pronounce_triplet_de(num):
         result = ""
         num = floor(num)
@@ -226,6 +223,27 @@ def pronounce_number_de(num, places=2):
             result += " Komma"
             result += pronounce_fractional_de(fractional_part,places)
             return result
+
+def pronounce_ordinal_de(num):
+
+
+    #ordinals for 1, 3, 7 and 8 are irregular
+    #this produces the base form, it will have to be adapted for genus, casus, numerus
+
+    ordinals = ["nullte", "erste", "zweite", "dritte", "vierte", u"fünfte",
+                "sechste", "siebte", "achte"]
+
+    #only for whole positive numbers including zero
+    if num < 0 or num != int(num):
+        return num
+    elif num < 9:
+        return ordinals[num]
+    elif num < 20:
+        return pronounce_number_de(num) + "te"
+    else:
+        return pronounce_number_de(num) + "ste"
+
+
 
 
 def nice_time_de(dt, speech=True, use_24hour=False, use_ampm=False):
