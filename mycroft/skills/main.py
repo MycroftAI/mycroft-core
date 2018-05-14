@@ -24,7 +24,7 @@ from os.path import exists, join, basename, dirname, expanduser, isfile
 from threading import Timer, Thread, Event
 
 import mycroft.lock
-from msm import MycroftSkillsManager, SkillRepo
+from msm import MycroftSkillsManager, SkillRepo, MsmException
 from mycroft import dialog
 from mycroft.api import is_paired, BackendDown
 from mycroft.client.enclosure.api import EnclosureAPI
@@ -198,7 +198,6 @@ class SkillManager(Thread):
         self._connected_event = Event()
 
         self.loaded_skills = {}
-        self.msm_blocked = False
         self.ws = ws
         self.enclosure = EnclosureAPI(ws)
 
@@ -292,7 +291,11 @@ class SkillManager(Thread):
                 skill.install()
                 installed_skills.add(skill.name)
 
-        self.msm.apply(install_or_update, self.msm.list())
+        try:
+            self.msm.apply(install_or_update, self.msm.list())
+        except MsmException as e:
+            LOG.error('Failed to update skills: {}'.format(repr(e)))
+
         self.save_installed_skills(installed_skills)
 
         with open(self.dot_msm, 'a'):
