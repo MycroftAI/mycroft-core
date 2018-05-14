@@ -54,7 +54,6 @@ DEBUG = Configuration.get().get("debug", False)
 skills_config = Configuration.get().get("skills")
 BLACKLISTED_SKILLS = skills_config.get("blacklisted_skills", [])
 PRIORITY_SKILLS = skills_config.get("priority_skills", [])
-SKILLS_DIR = '/opt/mycroft/skills'
 
 installer_config = Configuration.get().get("SkillInstallerSkill")
 
@@ -202,9 +201,12 @@ class SkillManager(Thread):
         self.enclosure = EnclosureAPI(ws)
 
         # Schedule install/update of default skill
+        self.msm = self.create_msm()
+        self.num_install_retries = 0
+
         self.update_interval = Configuration.get()['skills']['update_interval']
         self.update_interval = int(self.update_interval * 60 * MINUTES)
-        self.dot_msm = join(SKILLS_DIR, '.msm')
+        self.dot_msm = join(self.msm.skills_dir, '.msm')
         if exists(self.dot_msm):
             self.next_download = os.path.getmtime(self.dot_msm) + \
                                  self.update_interval
@@ -221,9 +223,6 @@ class SkillManager(Thread):
         # Update upon request
         ws.on('skillmanager.update', self.schedule_now)
         ws.on('skillmanager.list', self.send_skill_list)
-
-        self.msm = self.create_msm()
-        self.num_install_retries = 0
 
     @staticmethod
     def create_msm():
@@ -432,7 +431,7 @@ class SkillManager(Thread):
 
             # Look for recently changed skill(s) needing a reload
             # checking skills dir and getting all skills there
-            skill_paths = glob(join(SKILLS_DIR, '*/'))
+            skill_paths = glob(join(self.msm.skills_dir, '*/'))
             still_loading = False
             for skill_path in skill_paths:
                 still_loading = (
