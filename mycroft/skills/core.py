@@ -221,7 +221,7 @@ class MycroftSkill(object):
         self.reload_skill = True  # allow reloading
         self.events = []
         self.scheduled_repeats = []
-        self.skill_id = 0
+        self.skill_id = ''
 
     @property
     def location(self):
@@ -930,7 +930,7 @@ class MycroftSkill(object):
         """Parent function called internally to shut down everything"""
         try:
             self.shutdown()
-        except exception as e:
+        except Exception as e:
             LOG.error('Skill specific shutdown function encountered '
                       'an error: {}'.format(repr(e)))
         # Store settings
