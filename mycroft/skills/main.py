@@ -203,9 +203,12 @@ class SkillManager(Thread):
         self.enclosure = EnclosureAPI(ws)
 
         # Schedule install/update of default skill
+        self.update_interval = Configuration.get()['skills']['update_interval']
+        self.update_interval = int(self.update_interval * 60 * MINUTES)
         self.dot_msm = join(SKILLS_DIR, '.msm')
         if exists(self.dot_msm):
-            self.next_download = os.path.getmtime(self.dot_msm) + 60 * MINUTES
+            self.next_download = os.path.getmtime(self.dot_msm) + \
+                                 self.update_interval
         else:
             self.next_download = time.time() - 1
 
@@ -294,7 +297,7 @@ class SkillManager(Thread):
 
         with open(self.dot_msm, 'a'):
             os.utime(self.dot_msm, None)
-        self.next_download = time.time() + 60 * MINUTES
+        self.next_download = time.time() + self.update_interval
 
         if speak:
             data = {'utterance': dialog.get("skills updated")}
