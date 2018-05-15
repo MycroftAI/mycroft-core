@@ -302,7 +302,7 @@ class SkillSettings(dict):
         meta = self._migrate_settings(settings_meta)
         meta['identifier'] = str(hashed_meta)
         response = self._send_settings_meta(meta)
-        if response:
+        if response and 'uuid' in response:
             self._save_uuid(response['uuid'])
             if 'not_owner' in self:
                 del self['not_owner']
