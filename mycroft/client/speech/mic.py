@@ -366,6 +366,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                     os.remove(fn)
                 else:
                     LOG.debug('Failed to upload wake word to metrics server')
+                    break
 
     def _wait_until_wake_word(self, source, sec_per_buffer):
         """Listen continuously on source until a wake word is spoken
