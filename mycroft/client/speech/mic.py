@@ -32,7 +32,7 @@ from speech_recognition import (
     AudioData
 )
 import requests
-from subprocess import check_output
+from subprocess import check_output, Popen, PIPE
 
 from mycroft.api import DeviceApi
 from mycroft.configuration import Configuration
@@ -204,7 +204,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         num_phonemes = wake_word_recognizer.num_phonemes
         len_phoneme = listener_config.get('phoneme_duration', 120) / 1000.0
         self.TEST_WW_SEC = num_phonemes * len_phoneme
-        self.SAVED_WW_SEC = 10 if self.save_wake_words else self.TEST_WW_SEC
+        self.SAVED_WW_SEC = 3 if self.save_wake_words else self.TEST_WW_SEC
 
         try:
             self.account_id = DeviceApi().get()['user']['uuid']
@@ -347,25 +347,26 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             os.chmod(userfile, 0o600)
             keyfile = userfile
 
-        address = self.upload_config['user'] + '@' + \
-            server + ':' + self.upload_config['folder']
+        address = '{}@{}:{}'.format(
+            self.upload_config['user'], server, self.upload_config['folder']
+        )
 
-        self.upload_lock.acquire()
-        try:
+        with self.upload_lock:
             self.filenames_to_upload.append(filename)
             for i, fn in enumerate(self.filenames_to_upload):
-                LOG.debug('Uploading ' + fn + '...')
+                LOG.debug('Uploading wake word...')
                 os.chmod(fn, 0o666)
-                cmd = 'scp -o StrictHostKeyChecking=no -P ' + \
-                      str(self.upload_config['port']) + ' -i ' + \
-                      keyfile + ' ' + fn + ' ' + address
-                if os.system(cmd) == 0:
+                scp_status = Popen([
+                    'scp', '-o', 'StrictHostKeyChecking=no', '-P',
+                    str(self.upload_config['port']), '-i', keyfile,
+                    fn, address
+                ], stdout=PIPE, stderr=PIPE).wait()
+                if scp_status == 0:
                     del self.filenames_to_upload[i]
                     os.remove(fn)
                 else:
-                    LOG.debug('Could not upload ' + fn + ' to ' + server)
-        finally:
-            self.upload_lock.release()
+                    LOG.debug('Failed to upload wake word to metrics server')
+                    break
 
     def _wait_until_wake_word(self, source, sec_per_buffer):
         """Listen continuously on source until a wake word is spoken
