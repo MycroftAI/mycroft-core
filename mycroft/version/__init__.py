@@ -15,7 +15,9 @@
 import json
 
 from genericpath import exists, isfile
+from os.path import join
 
+from mycroft.configuration import Configuration
 from mycroft.util.log import LOG
 
 
@@ -33,18 +35,15 @@ CORE_VERSION_STR = '.'.join(map(str, CORE_VERSION_TUPLE))
 
 
 class VersionManager(object):
-    __location = "/opt/mycroft/version.json"
-
     @staticmethod
     def get():
-        if (exists(VersionManager.__location) and
-                isfile(VersionManager.__location)):
+        version_file = join(Configuration.get()['data_dir'], 'version.json')
+        if exists(version_file) and isfile(version_file):
             try:
-                with open(VersionManager.__location) as f:
+                with open(version_file) as f:
                     return json.load(f)
-            except:
-                LOG.error("Failed to load version from '%s'"
-                          % VersionManager.__location)
+            except Exception:
+                LOG.error("Failed to load version from '%s'" % version_file)
         return {"coreVersion": None, "enclosureVersion": None}
 
 

@@ -229,11 +229,13 @@ class SkillManager(Thread):
         config = Configuration.get()
         msm_config = config['skills']['msm']
         repo_config = msm_config['repo']
+        skills_dir = join(config['data_dir'], msm_config['directory'])
+        repo_cache = join(config['data_dir'], repo_config['cache'])
         platform = config['enclosure'].get('platform', 'default')
         return MycroftSkillsManager(
-            platform=platform, skills_dir=msm_config['directory'],
+            platform=platform, skills_dir=skills_dir,
             repo=SkillRepo(
-                repo_config['cache'], repo_config['url'], repo_config['branch']
+                repo_cache, repo_config['url'], repo_config['branch']
             ), versioned=msm_config['versioned']
         )
 

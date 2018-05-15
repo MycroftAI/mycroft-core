@@ -19,7 +19,7 @@ from threading import Thread
 from time import time, sleep
 
 import os.path
-from os.path import exists
+from os.path import exists, join
 
 from mycroft import MYCROFT_ROOT_PATH
 from mycroft.api import DeviceApi
@@ -29,6 +29,7 @@ from mycroft.util.download import download
 from mycroft.util.log import LOG
 
 config = Configuration.get().get("tts").get("mimic")
+data_dir = Configuration.get()['data_dir']
 
 BIN = config.get("path",
                  os.path.join(MYCROFT_ROOT_PATH, 'mimic', 'bin', 'mimic'))
@@ -39,7 +40,7 @@ if not os.path.isfile(BIN):
 
     BIN = distutils.spawn.find_executable("mimic")
 
-SUBSCRIBER_VOICES = {'trinity': '/opt/mycroft/voices/mimic_tn'}
+SUBSCRIBER_VOICES = {'trinity': join(data_dir, 'voices/mimic_tn')}
 
 
 def download_subscriber_voices(selected_voice):
