@@ -61,7 +61,7 @@
 import json
 import hashlib
 from threading import Timer
-from os.path import isfile, join, expanduser, basename
+from os.path import isfile, join, expanduser
 
 from mycroft.api import DeviceApi, is_paired
 from mycroft.util.log import LOG
@@ -209,7 +209,7 @@ class SkillSettings(dict):
                 settings_meta (dict): dictionary of the current settings meta
 
             Returns:
-                str: uuid, a unique id for the setting meta data
+                dict: uuid, a unique id for the setting meta data
         """
         try:
             uuid = self._put_metadata(settings_meta)
@@ -222,7 +222,7 @@ class SkillSettings(dict):
         """ takes skill object and save onto self
 
             Args:
-                settings (dict): skill
+                skill_settings (dict): skill
         """
         if self._is_new_hash(skill_settings['identifier']):
             self._save_uuid(skill_settings['uuid'])
@@ -254,7 +254,7 @@ class SkillSettings(dict):
         """ Saves uuid.
 
             Args:
-                str: uuid, unique id of new settingsmeta
+                uuid (str): uuid, unique id of new settingsmeta
         """
         LOG.debug("saving uuid {}".format(str(uuid)))
         directory = self.config.get("skills")["directory"]
@@ -302,7 +302,7 @@ class SkillSettings(dict):
         meta = self._migrate_settings(settings_meta)
         meta['identifier'] = str(hashed_meta)
         response = self._send_settings_meta(meta)
-        if response:
+        if response and 'uuid' in response:
             self._save_uuid(response['uuid'])
             if 'not_owner' in self:
                 del self['not_owner']
@@ -345,7 +345,7 @@ class SkillSettings(dict):
             case of first load, then the create it and return True
 
             Args:
-                hashed_meta (int): hash of metadata and uuid of device
+                hashed_meta (str): hash of metadata and uuid of device
 
             Returns:
                 bool: True if hash is new, otherwise False
@@ -383,9 +383,6 @@ class SkillSettings(dict):
         """ If identifier exists for this skill poll to backend to
             request settings and store it if it changes
             TODO: implement as websocket
-
-            Args:
-                hashed_meta (int): the hashed identifier
         """
         original = hash(str(self))
         try:
@@ -399,7 +396,7 @@ class SkillSettings(dict):
                 self.update_remote()
 
         except Exception as e:
-            LOG.error('Failed to fetch skill settings:\n{}'.format(e))
+            LOG.exception('Failed to fetch skill settings: {}'.format(repr(e)))
         finally:
             # Call callback for updated settings
             if self.changed_callback and hash(str(self)) != original:
@@ -466,7 +463,7 @@ class SkillSettings(dict):
         """ Retrieves user skill from other devices by identifier (hashed_meta)
 
         Args:
-            indentifier (str): identifier for this skill
+            identifier (str): identifier for this skill
 
         Returns:
             settings (dict or None): returns the settings if true else None
