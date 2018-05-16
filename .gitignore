@@ -21,6 +21,7 @@ doc/_build/
 .installed
 .mypy_cache
 .vscode
+.venv/
 
 # Created by unit tests
 test/unittests/skills/test_skill/settings.json

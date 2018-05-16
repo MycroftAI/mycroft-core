@@ -189,11 +189,7 @@ class PreciseHotword(HotWordEngine):
     def download(url, filename):
         import shutil
 
-        # python 2/3 compatibility
-        if sys.version_info[0] >= 3:
-            from urllib.request import urlopen
-        else:
-            from urllib2 import urlopen
+        from urllib.request import urlopen
         LOG.info('Downloading: ' + url)
         req = urlopen(url)
         with open(filename, 'wb') as fp:

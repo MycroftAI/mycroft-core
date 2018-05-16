@@ -22,9 +22,6 @@ from mycroft.skills.core import open_intent_envelope
 from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
 from mycroft.metrics import report_timing, Stopwatch
-# python 2+3 compatibility
-from past.builtins import basestring
-from future.builtins import range
 
 
 class ContextManager(object):
@@ -175,7 +172,7 @@ class IntentService(object):
         Returns:
             (str) Skill name or the skill id if the skill wasn't found
         """
-        return self.skill_names.get(int(skill_id), skill_id)
+        return self.skill_names.get(skill_id, skill_id)
 
     def reset_converse(self, message):
         """Let skills know there was a problem with speech recognition"""
@@ -360,7 +357,7 @@ class IntentService(object):
         if best_intent and best_intent.get('confidence', 0.0) > 0.0:
             self.update_context(best_intent)
             # update active skills
-            skill_id = int(best_intent['intent_type'].split(":")[0])
+            skill_id = best_intent['intent_type'].split(":")[0]
             self.add_active_skill(skill_id)
             return best_intent
 
@@ -404,7 +401,7 @@ class IntentService(object):
         context = message.data.get('context')
         word = message.data.get('word') or ''
         # if not a string type try creating a string from it
-        if not isinstance(word, basestring):
+        if not isinstance(word, str):
             word = str(word)
         entity['data'] = [(word, context)]
         entity['match'] = word

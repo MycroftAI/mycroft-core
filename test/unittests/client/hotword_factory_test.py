@@ -44,7 +44,6 @@ class PocketSphinxTest(unittest.TestCase):
         self.assertEquals(p.key_phrase, 'hey mycroft')
 
     def testVictoria(self):
-        print "VICTORIA!"
         config = {
             'hey victoria': {
                 'module': 'pocketsphinx',

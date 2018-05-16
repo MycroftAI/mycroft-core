@@ -76,8 +76,8 @@ class EnclosureMouth:
         clearPrevious = ""
         if event and event.data:
             code = event.data.get("img_code", code)
-            xOffset = event.data.get("xOffset", xOffset)
-            yOffset = event.data.get("yOffset", yOffset)
+            xOffset = int(event.data.get("xOffset", xOffset))
+            yOffset = int(event.data.get("yOffset", yOffset))
             clearPrevious = event.data.get("clearPrev", clearPrevious)
 
         clearPrevious = int(str(clearPrevious) == "True")

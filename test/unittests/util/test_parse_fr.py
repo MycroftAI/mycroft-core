@@ -86,7 +86,7 @@ class TestNormalize_fr(unittest.TestCase):
 
     def test_extractdatetime_fr(self):
         def extractWithFormat_fr(text):
-            date = datetime(2017, 06, 27, 00, 00)
+            date = datetime(2017, 6, 27, 0, 0)
             [extractedDate, leftover] = extract_datetime(text, date,
                                                          lang="fr-fr")
             extractedDate = extractedDate.strftime("%Y-%m-%d %H:%M:%S")
@@ -98,7 +98,7 @@ class TestNormalize_fr(unittest.TestCase):
             self.assertEqual(res[1], expected_leftover)
 
         def extractWithFormatDate2_fr(text):
-            date = datetime(2017, 06, 30, 17, 00)
+            date = datetime(2017, 6, 30, 17, 0)
             [extractedDate, leftover] = extract_datetime(text, date,
                                                          lang="fr-fr")
             extractedDate = extractedDate.strftime("%Y-%m-%d %H:%M:%S")

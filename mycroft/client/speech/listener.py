@@ -29,10 +29,7 @@ from mycroft.session import SessionManager
 from mycroft.stt import STTFactory
 from mycroft.util import connected
 from mycroft.util.log import LOG
-if sys.version_info[0] < 3:
-    from Queue import Queue, Empty
-else:
-    from queue import Queue, Empty
+from queue import Queue, Empty
 
 
 class AudioProducer(Thread):
