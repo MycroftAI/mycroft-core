@@ -19,7 +19,8 @@ from threading import Event
 
 import monotonic
 from pyee import EventEmitter
-from websocket import WebSocketApp, WebSocketConnectionClosedException
+from websocket import (WebSocketApp, WebSocketConnectionClosedException,
+                       WebSocketException)
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
@@ -68,12 +69,11 @@ class WebsocketClient(object):
         self.emitter.emit("close")
 
     def on_error(self, ws, error):
+        """ On error start trying to reconnect to the websocket. """
         if isinstance(error, WebSocketConnectionClosedException):
             LOG.warning('Could not send message because connection has closed')
-            return
-
-        LOG.exception(
-            '=== ' + error.__class__.__name__ + ': ' + str(error) + ' ===')
+        else:
+            LOG.exception('=== ' + repr(error) + ' ===')
 
         try:
             self.emitter.emit('error', error)
@@ -81,11 +81,15 @@ class WebsocketClient(object):
                 self.client.close()
         except Exception as e:
             LOG.error('Exception closing websocket: ' + repr(e))
+
         LOG.warning("WS Client will reconnect in %d seconds." % self.retry)
         time.sleep(self.retry)
         self.retry = min(self.retry * 2, 60)
-        self.client = self.create_client()
-        self.run_forever()
+        try:
+            self.client = self.create_client()
+            self.run_forever()
+        except WebSocketException:
+            pass
 
     def on_message(self, ws, message):
         self.emitter.emit('message', message)

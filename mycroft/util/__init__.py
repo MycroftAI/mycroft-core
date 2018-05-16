@@ -22,6 +22,7 @@ import json
 import os.path
 import psutil
 from stat import S_ISREG, ST_MTIME, ST_MODE, ST_SIZE
+import requests
 
 import signal as sig
 
@@ -136,18 +137,41 @@ def read_dict(filename, div='='):
     return d
 
 
-def connected(host="8.8.8.8", port=53, timeout=3):
-    """
-    Thanks to 7h3rAm on
-    Host: 8.8.8.8 (google-public-dns-a.google.com)
-    OpenPort: 53/tcp
-    Service: domain (DNS/TCP)
+def connected():
+    """ Check connection by connecting to 8.8.8.8, if this is
+    blocked/fails, Microsoft NCSI is used as a backup
 
-    NOTE:
-    This is no longer in use by this version
-    New method checks for a connection using ConnectionError only when
-    a question is asked
+    Returns:
+        True if internet connection can be detected
     """
+    return connected_dns() or connected_ncsi()
+
+
+def connected_ncsi():
+    """ Check internet connection by retrieving the Microsoft NCSI endpoint.
+
+    Returns:
+        True if internet connection can be detected
+    """
+    try:
+        r = requests.get('http://www.msftncsi.com/ncsi.txt')
+        if r.text == u'Microsoft NCSI':
+            return True
+    except Exception:
+        pass
+    return False
+
+
+def connected_dns(host="8.8.8.8", port=53, timeout=3):
+    """ Check internet connection by connecting to DNS servers
+
+    Returns:
+        True if internet connection can be detected
+    """
+    # Thanks to 7h3rAm on
+    # Host: 8.8.8.8 (google-public-dns-a.google.com)
+    # OpenPort: 53/tcp
+    # Service: domain (DNS/TCP)
     try:
         socket.setdefaulttimeout(timeout)
         socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
