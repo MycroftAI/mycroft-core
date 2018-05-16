@@ -51,6 +51,9 @@ NUM_STRING_DE = {
 }
 
 # German uses "long scale" https://en.wikipedia.org/wiki/Long_and_short_scales
+# Currently, numbers are limited to 1000000000000000000000000,
+# but NUM_POWERS_OF_TEN can be extended to include additional number words
+
 
 NUM_POWERS_OF_TEN = {
     'tausend','Million','Milliarde','Billion','Billiarde','Trillion','Trilliarde'
@@ -77,6 +80,13 @@ FRACTION_STRING_DE = {
     19: 'neunzehntel',
     20: 'zwanzigstel'
 }
+
+
+
+#Numbers below 1 million are written in one word in German, yielding very long words
+#In some circumstances it may better to seperate individual words
+#Set EXTRA_SPACE=" " for separating numbers below 1 million (orthographically incorrect)
+#Set EXTRA_SPACE="" for correct spelling, this is standard
 
 #EXTRA_SPACE = " "
 EXTRA_SPACE =""
@@ -132,7 +142,6 @@ def pronounce_number_de(num, places=2):
         (str): The pronounced number
 
     """
-
 
     def pronounce_triplet_de(num):
         result = ""
@@ -226,14 +235,13 @@ def pronounce_number_de(num, places=2):
 
 def pronounce_ordinal_de(num):
 
-
-    #ordinals for 1, 3, 7 and 8 are irregular
-    #this produces the base form, it will have to be adapted for genus, casus, numerus
+    # ordinals for 1, 3, 7 and 8 are irregular
+    # this produces the base form, it will have to be adapted for genus, casus, numerus
 
     ordinals = ["nullte", "erste", "zweite", "dritte", "vierte", u"fünfte",
                 "sechste", "siebte", "achte"]
 
-    #only for whole positive numbers including zero
+    # only for whole positive numbers including zero
     if num < 0 or num != int(num):
         return num
     elif num < 9:
@@ -296,8 +304,8 @@ def nice_time_de(dt, speech=True, use_24hour=False, use_ampm=False):
             speak += "Uhr "
         else:
             if string[3] == '0':
-                #not needed in German, EN 13:05 -> "13 Oh 5" or "13 zero 5", DE 13:05 -> "13 Uhr 5" (leading zero is dropped)
-                #speak += pronounce_number_de(0) + " "
+                # not needed in German, EN 13:05 -> "13 Oh 5" or "13 zero 5", DE 13:05 -> "13 Uhr 5" (leading zero is dropped)
+                # speak += pronounce_number_de(0) + " "
                 speak += "Uhr " + pronounce_number_de(int(string[4]))
             else:
                 speak += "Uhr " + pronounce_number_de(int(string[3:5]))
