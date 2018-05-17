@@ -280,16 +280,23 @@ class SkillManager(Thread):
         default_names = set(chain(default_groups['default'],
                                   default_groups[self.msm.platform]))
 
+        default_skill_errored = False
+
         def install_or_update(skill):
             """Install missing defaults and update existing skills"""
-            if skill.is_local:
-                skill.update()
-                if skill.name not in installed_skills:
-                    skill.update_deps()
-                    installed_skills.add(skill.name)
-            elif skill.name in default_names:
-                skill.install()
-                installed_skills.add(skill.name)
+            try:
+                if skill.is_local:
+                    skill.update()
+                    if skill.name not in installed_skills:
+                        skill.update_deps()
+                elif skill.name in default_names:
+                    skill.install()
+            except Exception:
+                if skill.name in default_names:
+                    nonlocal default_skill_errored
+                    default_skill_errored = True
+                raise
+            installed_skills.add(skill.name)
 
         try:
             self.msm.apply(install_or_update, self.msm.list())
@@ -298,13 +305,18 @@ class SkillManager(Thread):
 
         self.save_installed_skills(installed_skills)
 
+        if speak:
+            data = {'utterance': dialog.get("skills updated")}
+            self.ws.emit(Message("speak", data))
+
+        if default_skill_errored:
+            self.next_download = time.time() + 5 * MINUTES
+            return False
+
         with open(self.dot_msm, 'a'):
             os.utime(self.dot_msm, None)
         self.next_download = time.time() + self.update_interval
 
-        if speak:
-            data = {'utterance': dialog.get("skills updated")}
-            self.ws.emit(Message("speak", data))
         return True
 
     def _load_or_reload_skill(self, skill_path):
