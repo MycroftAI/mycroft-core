@@ -16,8 +16,6 @@ import time
 from os.path import abspath
 
 from mycroft.messagebus.message import Message
-# Python 2+3 compatibility
-from past.builtins import basestring
 
 
 def ensure_uri(s):
@@ -63,7 +61,7 @@ class AudioService(object):
                 tracks: track uri or list of track uri's
         """
         tracks = tracks or []
-        if isinstance(tracks, basestring):
+        if isinstance(tracks, str):
             tracks = [tracks]
         elif not isinstance(tracks, list):
             raise ValueError
@@ -80,7 +78,7 @@ class AudioService(object):
                            audio service.
         """
         tracks = tracks or []
-        if isinstance(tracks, basestring):
+        if isinstance(tracks, str):
             tracks = [tracks]
         elif not isinstance(tracks, list):
             raise ValueError

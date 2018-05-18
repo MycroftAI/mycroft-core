@@ -27,8 +27,6 @@ while [ -h "$SOURCE" ]; do
 done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
  
-chmod +x ${DIR}/../msm/msm
-
 # Determine which user is running this script
 setup_user=$USER
 setup_group=$( id -gn $USER )

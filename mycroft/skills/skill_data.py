@@ -80,7 +80,7 @@ def load_vocabulary(basedir, emitter, skill_id):
     """
     for vocab_file in listdir(basedir):
         if vocab_file.endswith(".voc"):
-            vocab_type = to_letters(skill_id) + splitext(vocab_file)[0]
+            vocab_type = to_alnum(skill_id) + splitext(vocab_file)[0]
             load_vocab_from_file(
                 join(basedir, vocab_file), vocab_type, emitter)
 
@@ -92,28 +92,24 @@ def load_regex(basedir, emitter, skill_id):
         basedir (str): path of directory to load from
         emitter (messagebus emitter): websocket used to send the vocab to
                                       the intent service
-        skill_id (int): skill identifier
+        skill_id (str): skill identifier
     """
     for regex_type in listdir(basedir):
         if regex_type.endswith(".rx"):
-            load_regex_from_file(
-                join(basedir, regex_type), emitter, skill_id)
+            load_regex_from_file(join(basedir, regex_type), emitter, skill_id)
 
 
-def to_letters(number):
-    """Convert number to string of letters.
+def to_alnum(skill_id):
+    """Convert a skill id to only alphanumeric characters
 
-    0 -> A, 1 -> B, etc.
+     Non alpha-numeric characters are converted to "_"
 
     Args:
-        number (int): number to be converted
+        skill_id (str): identifier to be converted
     Returns:
         (str) String of letters
     """
-    ret = ''
-    for n in str(number).strip('-'):
-        ret += chr(65 + int(n))
-    return ret
+    return ''.join(c if c.isalnum() else '_' for c in str(skill_id))
 
 
 def munge_regex(regex, skill_id):
@@ -121,11 +117,11 @@ def munge_regex(regex, skill_id):
 
     Args:
         regex (str): regex string
-        skill_id (int): skill identifier
+        skill_id (str): skill identifier
     Returns:
         (str) munged regex
     """
-    base = '(?P<' + to_letters(skill_id)
+    base = '(?P<' + to_alnum(skill_id)
     return base.join(regex.split('(?P<'))
 
 
@@ -150,7 +146,7 @@ def munge_intent_parser(intent_parser, name, skill_id):
         intent_parser.name = name
 
     # Munge keywords
-    skill_id = to_letters(skill_id)
+    skill_id = to_alnum(skill_id)
     # Munge required keyword
     reqs = []
     for i in intent_parser.requires:

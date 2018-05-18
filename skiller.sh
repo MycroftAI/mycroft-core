@@ -135,7 +135,49 @@ def create_skill():
     return $class_name()
 """ > "$skill_dir/__init__.py"
 
-echo -e "*.pyc\nsettings.json\n" > $skill_dir/.gitignore
+echo '{
+	"name": "'${capital_desc}'",
+	"skillMetadata": {
+		"sections": [
+			{
+				"name": "Section Friendly Display Name for Home.Mycroft.AI",
+				"fields": [
+					{
+						"name": "internal_python_variable_name",
+						"type": "text",
+						"label": "Setting Friendly Display Name",
+						"value": "",
+						"placeholder": "demo prompt in the input box"
+					}
+				]
+			},
+			{
+				"name": "Login --Another Section But This One Has Two Values--",
+				"fields": [
+					{
+						"type": "label",
+						"label": "Just a little bit of extra info for the user to understand following settings"
+					},
+					{
+						"name": "username",
+						"type": "text",
+						"label": "Username",
+						"value": ""
+					},
+					{
+						"name": "password",
+						"type": "password",
+						"label": "Password",
+						"value": ""
+					}
+				]
+			}
+		]
+	}
+}
+' > "$skill_dir/settingsmeta.json.example"
+
+echo -e "*.pyc\nsettings.json\nsettingsmeta.json.example\n" > $skill_dir/.gitignore
 for i in "dialog" "vocab"; do mkdir -p "$skill_dir/$i/$lang"; done
 echo "$skill_desc" > "$skill_dir/vocab/$lang/$keyword.voc"
 echo "$skill_desc" > "$skill_dir/dialog/$lang/$dialog_name.dialog"

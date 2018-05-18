@@ -61,7 +61,7 @@
 import json
 import hashlib
 from threading import Timer
-from os.path import isfile, join, expanduser, basename
+from os.path import isfile, join, expanduser
 
 from mycroft.api import DeviceApi, is_paired
 from mycroft.util.log import LOG
@@ -88,11 +88,11 @@ class SkillSettings(dict):
         self.api = DeviceApi()
         self.config = ConfigurationManager.get()
         self.name = name
-        self.directory = directory
         # set file paths
         self._settings_path = join(directory, 'settings.json')
         self._meta_path = join(directory, 'settingsmeta.json')
-        self.loaded_hash = hash(str(self))
+        self.is_alive = True
+        self.loaded_hash = hash(json.dumps(self, sort_keys=True))
         self._complete_intialization = False
         self._device_identity = None
         self._api_path = None
@@ -142,7 +142,7 @@ class SkillSettings(dict):
         self._api_path = "/" + self._device_identity + "/skill"
         self._user_identity = self.api.get()['user']['uuid']
         LOG.debug("settingsmeta.json exist for {}".format(self.name))
-        hashed_meta = self._get_meta_hash(str(settings_meta))
+        hashed_meta = self._get_meta_hash(settings_meta)
         skill_settings = self._request_other_settings(hashed_meta)
         # if hash is new then there is a diff version of settingsmeta
         if self._is_new_hash(hashed_meta):
@@ -176,7 +176,7 @@ class SkillSettings(dict):
 
     @property
     def _is_stored(self):
-        return hash(str(self)) == self.loaded_hash
+        return hash(json.dumps(self, sort_keys=True)) == self.loaded_hash
 
     def __getitem__(self, key):
         """ Get key """
@@ -209,7 +209,7 @@ class SkillSettings(dict):
                 settings_meta (dict): dictionary of the current settings meta
 
             Returns:
-                str: uuid, a unique id for the setting meta data
+                dict: uuid, a unique id for the setting meta data
         """
         try:
             uuid = self._put_metadata(settings_meta)
@@ -222,7 +222,7 @@ class SkillSettings(dict):
         """ takes skill object and save onto self
 
             Args:
-                settings (dict): skill
+                skill_settings (dict): skill
         """
         if self._is_new_hash(skill_settings['identifier']):
             self._save_uuid(skill_settings['uuid'])
@@ -254,7 +254,7 @@ class SkillSettings(dict):
         """ Saves uuid.
 
             Args:
-                str: uuid, unique id of new settingsmeta
+                uuid (str): uuid, unique id of new settingsmeta
         """
         LOG.debug("saving uuid {}".format(str(uuid)))
         directory = self.config.get("skills")["directory"]
@@ -302,41 +302,42 @@ class SkillSettings(dict):
         meta = self._migrate_settings(settings_meta)
         meta['identifier'] = str(hashed_meta)
         response = self._send_settings_meta(meta)
-        if response:
+        if response and 'uuid' in response:
             self._save_uuid(response['uuid'])
             if 'not_owner' in self:
                 del self['not_owner']
         self._save_hash(hashed_meta)
 
-    def hash(self, str):
+    def hash(self, string):
         """ md5 hasher for consistency across cpu architectures """
-        return hashlib.md5(str).hexdigest()
+        return hashlib.md5(bytes(string, 'utf-8')).hexdigest()
 
     def _get_meta_hash(self, settings_meta):
         """ Get's the hash of skill
 
             Args:
-                settings_meta (str): stringified settingsmeta
+                settings_meta (dict): settingsmeta object
 
             Returns:
                 _hash (str): hashed to identify skills
         """
-        _hash = self.hash(str(settings_meta) + str(self._user_identity))
-        return "{}--{}".format(basename(self.directory), _hash)
+        _hash = self.hash(json.dumps(settings_meta, sort_keys=True) +
+                          self._user_identity)
+        return "{}--{}".format(self.name, _hash)
 
     def _save_hash(self, hashed_meta):
         """ Saves hashed_meta to settings directory.
 
             Args:
-                hashed_meta (int): hash of new settingsmeta
+                hashed_meta (str): hash of new settingsmeta
         """
-        LOG.debug("saving hash {}".format(str(hashed_meta)))
+        LOG.debug("saving hash {}".format(hashed_meta))
         directory = self.config.get("skills")["directory"]
         directory = join(directory, self.name)
         directory = expanduser(directory)
         hash_file = join(directory, 'hash')
         with open(hash_file, 'w') as f:
-            f.write(str(hashed_meta))
+            f.write(hashed_meta)
 
     def _is_new_hash(self, hashed_meta):
         """ checks if the stored hash is the same as current.
@@ -344,7 +345,7 @@ class SkillSettings(dict):
             case of first load, then the create it and return True
 
             Args:
-                hashed_meta (int): hash of metadata and uuid of device
+                hashed_meta (str): hash of metadata and uuid of device
 
             Returns:
                 bool: True if hash is new, otherwise False
@@ -382,9 +383,6 @@ class SkillSettings(dict):
         """ If identifier exists for this skill poll to backend to
             request settings and store it if it changes
             TODO: implement as websocket
-
-            Args:
-                hashed_meta (int): the hashed identifier
         """
         original = hash(str(self))
         try:
@@ -398,7 +396,7 @@ class SkillSettings(dict):
                 self.update_remote()
 
         except Exception as e:
-            LOG.error('Failed to fetch skill settings:\n{}'.format(e))
+            LOG.exception('Failed to fetch skill settings: {}'.format(repr(e)))
         finally:
             # Call callback for updated settings
             if self.changed_callback and hash(str(self)) != original:
@@ -465,7 +463,7 @@ class SkillSettings(dict):
         """ Retrieves user skill from other devices by identifier (hashed_meta)
 
         Args:
-            indentifier (str): identifier for this skill
+            identifier (str): identifier for this skill
 
         Returns:
             settings (dict or None): returns the settings if true else None
@@ -547,7 +545,7 @@ class SkillSettings(dict):
         if force or not self._is_stored:
             with open(self._settings_path, 'w') as f:
                 json.dump(self, f)
-            self.loaded_hash = hash(str(self))
+            self.loaded_hash = hash(json.dumps(self, sort_keys=True))
 
         if self._should_upload_from_change:
             settings_meta = self._load_settings_meta()

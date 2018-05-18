@@ -117,7 +117,7 @@ class PadatiousService(FallbackSkill):
 
         data.matches['utterance'] = utt
 
-        self.service.add_active_skill(int(data.name.split(':')[0]))
+        self.service.add_active_skill(data.name.split(':')[0])
 
         self.emitter.emit(Message(data.name, data=data.matches))
         return True

@@ -18,7 +18,7 @@ import sys
 import time
 import csv
 import inspect
-from inspect import getargspec
+from inspect import signature
 from datetime import datetime, timedelta
 
 import abc
@@ -37,12 +37,10 @@ from mycroft.filesystem import FileSystemAccess
 from mycroft.messagebus.message import Message
 from mycroft.metrics import report_metric, report_timing, Stopwatch
 from mycroft.skills.settings import SkillSettings
-from mycroft.skills.skill_data import (load_vocabulary, load_regex, to_letters,
+from mycroft.skills.skill_data import (load_vocabulary, load_regex, to_alnum,
                                        munge_regex, munge_intent_parser)
 from mycroft.util import resolve_resource_file
 from mycroft.util.log import LOG
-# python 2+3 compatibility
-from past.builtins import basestring
 
 MainModule = '__init__'
 
@@ -65,13 +63,13 @@ def unmunge_message(message, skill_id):
 
     Args:
         message (Message): Intent result message
-        skill_id (int): skill identifier
+        skill_id (str): skill identifier
 
     Returns:
         Message without clear keywords
     """
     if isinstance(message, Message) and isinstance(message.data, dict):
-        skill_id = to_letters(skill_id)
+        skill_id = to_alnum(skill_id)
         for key in message.data:
             if key[:len(skill_id)] == skill_id:
                 new_key = key[len(skill_id):]
@@ -101,14 +99,21 @@ def load_skill(skill_descriptor, emitter, skill_id, BLACKLISTED_SKILLS=None):
             MycroftSkill: the loaded skill or None on failure
     """
     BLACKLISTED_SKILLS = BLACKLISTED_SKILLS or []
+    path = skill_descriptor["path"]
+    name = basename(path)
+    LOG.info("ATTEMPTING TO LOAD SKILL: {} with ID {}".format(
+        name, skill_id
+    ))
+    if name in BLACKLISTED_SKILLS:
+        LOG.info("SKILL IS BLACKLISTED " + name)
+        return None
+    main_file = join(path, MainModule + '.py')
     try:
-        LOG.info("ATTEMPTING TO LOAD SKILL: " + skill_descriptor["name"] +
-                 " with ID " + str(skill_id))
-        if skill_descriptor['name'] in BLACKLISTED_SKILLS:
-            LOG.info("SKILL IS BLACKLISTED " + skill_descriptor["name"])
-            return None
-        skill_module = imp.load_module(
-            skill_descriptor["name"] + MainModule, *skill_descriptor["info"])
+        with open(main_file, 'rb') as fp:
+            skill_module = imp.load_module(
+                name.replace('.', '_'), fp, main_file,
+                ('.py', 'rb', imp.PY_SOURCE)
+            )
         if (hasattr(skill_module, 'create_skill') and
                 callable(skill_module.create_skill)):
             # v2 skills framework
@@ -117,16 +122,16 @@ def load_skill(skill_descriptor, emitter, skill_id, BLACKLISTED_SKILLS=None):
             skill.settings.load_skill_settings_from_file()
             skill.bind(emitter)
             skill.skill_id = skill_id
-            skill.load_data_files(dirname(skill_descriptor['info'][1]))
+            skill.load_data_files(path)
             # Set up intent handlers
             skill.initialize()
             skill._register_decorated()
-            LOG.info("Loaded " + skill_descriptor["name"])
+            LOG.info("Loaded " + name)
 
             # The very first time a skill is run, speak the intro
             first_run = skill.settings.get("__mycroft_skill_firstrun", True)
             if first_run:
-                LOG.info("First run of " + skill_descriptor["name"])
+                LOG.info("First run of " + name)
                 skill.settings["__mycroft_skill_firstrun"] = False
                 skill.settings.store()
                 intro = skill.get_intro_message()
@@ -134,19 +139,14 @@ def load_skill(skill_descriptor, emitter, skill_id, BLACKLISTED_SKILLS=None):
                     skill.speak(intro)
             return skill
         else:
-            LOG.warning(
-                "Module %s does not appear to be skill" % (
-                    skill_descriptor["name"]))
-    except:
-        LOG.error(
-            "Failed to load skill: " + skill_descriptor["name"],
-            exc_info=True)
+            LOG.warning("Module {} does not appear to be skill".format(name))
+    except Exception:
+        LOG.exception("Failed to load skill: " + name)
     return None
 
 
-def create_skill_descriptor(skill_folder):
-    info = imp.find_module(MainModule, [skill_folder])
-    return {"name": basename(skill_folder), "info": info}
+def create_skill_descriptor(skill_path):
+    return {"path": skill_path}
 
 
 def get_handler_name(handler):
@@ -221,7 +221,7 @@ class MycroftSkill(object):
         self.reload_skill = True  # allow reloading
         self.events = []
         self.scheduled_repeats = []
-        self.skill_id = 0
+        self.skill_id = ''
 
     @property
     def location(self):
@@ -592,9 +592,7 @@ class MycroftSkill(object):
                     self.emitter.emit(Message(msg_type, skill_data))
 
                 with stopwatch:
-                    is_bound = bool(getattr(handler, 'im_self', None))
-                    num_args = len(getargspec(handler).args) - is_bound
-                    if num_args == 0:
+                    if len(signature(handler).parameters) == 0:
                         handler()
                     else:
                         handler(message)
@@ -805,11 +803,11 @@ class MycroftSkill(object):
                 context:    Keyword
                 word:       word connected to keyword
         """
-        if not isinstance(context, basestring):
+        if not isinstance(context, str):
             raise ValueError('context should be a string')
-        if not isinstance(word, basestring):
+        if not isinstance(word, str):
             raise ValueError('word should be a string')
-        context = to_letters(self.skill_id) + context
+        context = to_alnum(self.skill_id) + context
         self.emitter.emit(Message('add_context',
                                   {'context': context, 'word': word}))
 
@@ -817,7 +815,7 @@ class MycroftSkill(object):
         """
             remove_context removes a keyword from from the context manager.
         """
-        if not isinstance(context, basestring):
+        if not isinstance(context, str):
             raise ValueError('context should be a string')
         self.emitter.emit(Message('remove_context', {'context': context}))
 
@@ -829,7 +827,7 @@ class MycroftSkill(object):
                 entity_type:    Intent handler entity to tie the word to
         """
         self.emitter.emit(Message('register_vocab', {
-            'start': entity, 'end': to_letters(self.skill_id) + entity_type
+            'start': entity, 'end': to_alnum(self.skill_id) + entity_type
         }))
 
     def register_regex(self, regex_str):
@@ -932,7 +930,7 @@ class MycroftSkill(object):
         """Parent function called internally to shut down everything"""
         try:
             self.shutdown()
-        except exception as e:
+        except Exception as e:
             LOG.error('Skill specific shutdown function encountered '
                       'an error: {}'.format(repr(e)))
         # Store settings

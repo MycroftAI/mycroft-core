@@ -19,7 +19,7 @@ class TestEventScheduler(unittest.TestCase):
             Test creating and shutting down event_scheduler.
         """
         mock_load.return_value = ''
-        mock_open.return_value = mock.MagicMock(spec=file)
+        mock_open.return_value = mock.MagicMock()
         emitter = mock.MagicMock()
         es = EventScheduler(emitter)
         es.shutdown()
@@ -36,7 +36,7 @@ class TestEventScheduler(unittest.TestCase):
         """
         # Thread start is mocked so will not actually run the thread loop
         mock_load.return_value = ''
-        mock_open.return_value = mock.MagicMock(spec=file)
+        mock_open.return_value = mock.MagicMock()
         emitter = mock.MagicMock()
         es = EventScheduler(emitter)
 
@@ -63,7 +63,7 @@ class TestEventScheduler(unittest.TestCase):
             Test save functionality.
         """
         mock_load.return_value = ''
-        mock_open.return_value = mock.MagicMock(spec=file)
+        mock_open.return_value = mock.MagicMock()
         emitter = mock.MagicMock()
         es = EventScheduler(emitter)
 
@@ -87,7 +87,7 @@ class TestEventScheduler(unittest.TestCase):
             Test save functionality.
         """
         mock_load.return_value = ''
-        mock_open.return_value = mock.MagicMock(spec=file)
+        mock_open.return_value = mock.MagicMock()
         emitter = mock.MagicMock()
         es = EventScheduler(emitter)
 
