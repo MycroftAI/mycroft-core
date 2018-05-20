@@ -69,7 +69,7 @@ class TestNiceNumberFormat(unittest.TestCase):
                              nice_number(5.5, denominators=[1, 2, 3])))
         self.assertEqual(nice_number(2.333, lang="de-de", denominators=[1, 2]),
                          '2,333',
-                         'should format 2.333 as 2,333 not {}'.format(
+                         'should format 2,333 as 2,333 not {}'.format(
                              nice_number(2.333, lang="de-de", denominators=[1, 2])))
 
     def test_no_speech(self):
