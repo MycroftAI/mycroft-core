@@ -123,7 +123,7 @@ def extractnumber_de(text):
                     wordNext = aWords[count + 1]
                 else:
                     wordNext = ""
-                valNext = isFractional_en(wordNext)
+                valNext = isFractional_de(wordNext)
 
                 if valNext:
                     val = val * valNext
@@ -792,11 +792,11 @@ def extract_datetime_de(string, currentDate=None):
 
     resultStr = " ".join(words)
     resultStr = ' '.join(resultStr.split())
-    resultStr = pt_pruning(resultStr)
+
     return [extractedDate, resultStr]
 
 
-def isFractional_en(input_str):
+def isFractional_de(input_str):
     """
     This function takes the given text and checks if it is a fraction.
 
