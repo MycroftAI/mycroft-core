@@ -93,10 +93,10 @@ def load_skills(emitter, skills_root):
 
     """
     skill_list = []
-    skill_id = 1211234556  # Use a skill id similar to the full Mycroft
     for skill in get_skills(skills_root):
+        path = skill["path"]
+        skill_id = 'test-' + basename(path)
         skill_list.append(load_skill(skill, emitter, skill_id))
-        skill_id += 1
 
     return skill_list
 
