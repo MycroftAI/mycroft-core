@@ -90,9 +90,9 @@ class TestNormalize(unittest.TestCase):
                     "2017-06-29 15:45:00", "starte die invasion")
         testExtract(u"am montag bestelle kuchen von der bäckerei",
                     "2017-07-03 00:00:00", u"bestelle kuchen von bäckerei")
-        testExtract("spiele happy birthday musik von 5 jahre von heute",
-                    "2022-06-27 00:00:00", "spiele happy birthday musik ")
-        testExtract(u"Skype Mama um 12:45 pm nächsten Donnerstag",
+        testExtract("spiele happy birthday musik 5 jahre von heute",
+                    "2022-06-27 00:00:00", "spiele happy birthday musik")
+        testExtract(u"skype mama um 12:45 pm nächsten Donnerstag",
                     "2017-07-06 12:45:00", "skype mama")
         testExtract(u"Wie ist das Wetter nächsten Donnerstag?",
                     "2017-07-06 00:00:00", "wie wetter")
