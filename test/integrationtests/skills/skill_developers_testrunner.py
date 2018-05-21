@@ -77,10 +77,9 @@ class IntentTestSequenceMeta(type):
         return type.__new__(mcs, name, bases, d)
 
 
-class IntentTestSequence(unittest.TestCase):
+class IntentTestSequence(unittest.TestCase, metaclass=IntentTestSequenceMeta):
     """This is the TestCase class that pythons unit tester can execute.
     """
-    __metaclass__ = IntentTestSequenceMeta
     loader = None
 
     @classmethod

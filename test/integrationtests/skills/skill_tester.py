@@ -243,7 +243,7 @@ class SkillTest(object):
 
         cxt = test_case.get('set_context', None)
         if cxt:
-            for key, value in cxt.iteritems():
+            for key, value in cxt.items():
                 MycroftSkill.set_context(s, key, value)
 
         # Emit an utterance, just like the STT engine does.  This sends the
