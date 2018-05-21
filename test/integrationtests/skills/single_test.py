@@ -81,7 +81,6 @@ class IntentTestSequenceMeta(type):
                 return test_env_test
             else:
                 return test
-
         tests, test_envs = discover_tests()
         for skill in tests.keys():
             skill_name = os.path.basename(skill)  # Path of the skill
@@ -97,10 +96,9 @@ class IntentTestSequenceMeta(type):
         return type.__new__(mcs, name, bases, d)
 
 
-class IntentTestSequence(unittest.TestCase):
+class IntentTestSequence(unittest.TestCase, metaclass=IntentTestSequenceMeta):
     """This is the TestCase class that pythons unit tester can execute.
     """
-    __metaclass__ = IntentTestSequenceMeta
     loader = None
 
     @classmethod
