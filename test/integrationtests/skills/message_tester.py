@@ -23,8 +23,8 @@
     must be installed (on Ubuntu: apt-get install python-tk)
 """
 
-from Tkinter import Label, Button, Tk, NORMAL, END, DISABLED
-import ScrolledText
+from tkinter import Label, Button, Tk, NORMAL, END, DISABLED
+from tkinter.scrolledtext import ScrolledText
 import skill_tester
 import ast
 
@@ -47,19 +47,16 @@ class MessageTester:
     def __init__(self, root):
         root.title("Message tester")
         Label(root, text="Enter message event below", bg="light green").pack()
-        self.event_field = ScrolledText.ScrolledText(root,
-                                                     width=180, height=10)
+        self.event_field = ScrolledText(root, width=180, height=10)
         self.event_field.pack()
 
         Label(root, text="Enter test case below", bg="light green").pack()
-        self.test_case_field = ScrolledText.ScrolledText(root,
-                                                         width=180, height=20)
+        self.test_case_field = ScrolledText(root, width=180, height=20)
         self.test_case_field.pack()
 
         Label(root, text="Test result:", bg="light green").pack()
 
-        self.result_field = ScrolledText.ScrolledText(root,
-                                                      width=180, height=10)
+        self.result_field = ScrolledText(root, width=180, height=10)
         self.result_field.pack()
         self.result_field.config(state=DISABLED)
         self.button = Button(root, text="Evaluate", fg="red",
