@@ -42,7 +42,8 @@ function help() {
   echo
   echo "Tools:"
   echo "  cli                      the Command Line Interface"
-  echo "  unittest                 run mycroft-core unit tests (requires nose2)"
+  echo "  unittest                 run mycroft-core unit tests (requires pytest)"
+  echo "  skillstest               run the skill autotests for all skills (requires pytest)"
   echo
   echo "Utils:"
   echo "  skill_container <skill>  container for running a single skill"
@@ -162,8 +163,12 @@ case ${_opt} in
     launch-process ${_opt}
     ;;
   "unittest")
-    nose2 -t ./ -s test/unittests/ --with-coverage \
-        --config=test/unittests/unittest.cfg
+    source ${VIRTUALENV_ROOT}/bin/activate
+    pytest test/unittests/ --cov=mycroft
+    ;;
+  "skillstest")
+    source ${VIRTUALENV_ROOT}/bin/activate
+    pytest test/integrationtests/skills/discover_tests.py
     ;;
   "audiotest")
     launch-process ${_opt}

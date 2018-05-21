@@ -194,6 +194,10 @@ if ! pip install -r requirements.txt; then
     fi
 fi
 
+if ! pip install -r test-requirements.txt; then
+  echo "Warning test requirements wasn't installed, Note: normal operation should still work fine..."
+fi
+
 SYSMEM=$(free|awk '/^Mem:/{print $2}')
 MAXCORES=$(($SYSMEM / 512000))
 CORES=$(nproc)

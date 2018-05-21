@@ -181,10 +181,10 @@ class IntentService(object):
             self.do_converse(None, skill[0], lang)
 
     def do_converse(self, utterances, skill_id, lang):
-        self.emitter.emit(Message("skill.converse.request", {
-            "skill_id": skill_id, "utterances": utterances, "lang": lang}))
         self.waiting = True
         self.result = False
+        self.emitter.emit(Message("skill.converse.request", {
+            "skill_id": skill_id, "utterances": utterances, "lang": lang}))
         start_time = time.time()
         t = 0
         while self.waiting and t < 5:

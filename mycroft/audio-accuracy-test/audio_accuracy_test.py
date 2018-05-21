@@ -83,11 +83,11 @@ class FileMockMicrophone(AudioSource):
 
 class AudioTester(object):
     def __init__(self, samp_rate):
-        print  # Pad debug messages
+        print()  # Pad debug messages
         self.ww_recognizer = RecognizerLoop().create_mycroft_recognizer(
             samp_rate, 'en-us')
         self.listener = ResponsiveRecognizer(self.ww_recognizer)
-        print
+        print()
 
     def test_audio(self, file_name):
         source = FileMockMicrophone(file_name)

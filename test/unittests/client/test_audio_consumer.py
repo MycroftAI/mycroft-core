@@ -71,7 +71,6 @@ class AudioConsumerTest(unittest.TestCase):
         the audio. ``tolerance`` is an acceptable margin error for the distance
         between the ideal and actual values found by the ``WordExtractor``
         """
-
         # TODO: implement WordExtractor test without relying on the listener
         return
 
