@@ -469,6 +469,10 @@ class SkillManager(Thread):
 
     def __deactivate_skill(self, skill):
         """ Deactivate a skill. """
+        for s in self.loaded_skills:
+            if skill in s:
+                skill = s
+                break
         try:
             self.loaded_skills[skill]['active'] = False
             self.loaded_skills[skill]['instance']._shutdown()
@@ -479,7 +483,7 @@ class SkillManager(Thread):
         """ Deactivate a skill. """
         try:
             skill = message.data['skill']
-            if skill in self.loaded_skills:
+            if skill in [basename(s) for s in self.loaded_skills]:
                 self.__deactivate_skill(skill)
         except Exception as e:
             LOG.error('Couldn\'t deactivate skill, {}'.format(repr(e)))
@@ -488,21 +492,28 @@ class SkillManager(Thread):
         """ Deactivate all skills except the provided. """
         try:
             skill_to_keep = message.data['skill']
-            if skill_to_keep in self.loaded_skills:
+            LOG.info('DEACTIVATING ALL SKILLS EXCEPT {}'.format(skill_to_keep))
+            if skill_to_keep in [basename(i) for i in self.loaded_skills]:
                 for skill in self.loaded_skills:
-                    if skill != skill_to_keep:
+                    if basename(skill) != skill_to_keep:
                         self.__deactivate_skill(skill)
+            else:
+                LOG.info('Couldn\'t find skill')
         except Exception as e:
-            LOG.error('Couldn\'t deactivate skill, {}'.format(repr(e)))
+            LOG.error('Error during skill removal, {}'.format(repr(e)))
 
     def activate_skill(self, message):
         """ Activate a deactivated skill. """
         try:
             skill = message.data['skill']
+            for s in self.loaded_skills:
+                if skill in s:
+                    skill = s
+                    break
             if not self.loaded_skills[skill].get('active', True):
                 self.loaded_skills[skill]['loaded'] = False
                 self.loaded_skills[skill]['active'] = True
-        except:
+        except Exception as e:
             LOG.error('Couldn\'t activate skill, {}'.format(repr(e)))
 
     def stop(self):
