@@ -72,26 +72,26 @@ class TestNormalize(unittest.TestCase):
             self.assertEqual(res[0], expected_date)
             self.assertEqual(res[1], expected_leftover)
 
-        testExtract(u"Setze den Überfall auf 5 Tage von heute",
-                    "2017-07-02 00:00:00", u"Setze Überfall")
-        testExtract(u"Wie ist das Wetter übermorgen?",
-                    "2017-06-29 00:00:00", "wie ist das Wetter")
-        testExtract("erinnere mich um 10:45 pm",
+        testExtract(u"setze den frisörtermin auf 5 tage von heute",
+                    "2017-07-02 00:00:00", u"setze frisörtermin")
+        testExtract(u"wie ist das wetter übermorgen?",
+                    "2017-06-29 00:00:00", "wie ist das wetter")
+        testExtract("erinnere mich um 10:45 abends",
                     "2017-06-27 22:45:00", "erinnere mich")
-        testExtract("was ist das Wetter am Freitag morgen",
-                    "2017-06-30 08:00:00", "was ist das Wetter")
-        testExtract("was ist das Wetter morgen",
-                    "2017-06-28 00:00:00", "was ist das Wetter")
-        testExtract("erinnere mich meine Mutter anzurufen in 8 Wochen und 2 Tagen",
-                    "2017-08-24 00:00:00", "erinnere mich meine Mutter anzurufen ")
-        testExtract("Spiele Rick Astley Musik 2 Tage von Freitag",
-                    "2017-07-02 00:00:00", "Spiele Rick Astley Musik")
-        testExtract("Starte die Invasion um 3:45 pm am Donnerstag",
-                    "2017-06-29 15:45:00", "Starte die Invasion")
-        testExtract(u"Am Montag bestelle Kuchen von der Bäckerei",
-                    "2017-07-03 00:00:00", u"bestelle Kuchen von der Bäckerei")
-        testExtract("Spiele Happy Birthday Musik von 5 Jahre von heute",
-                    "2022-06-27 00:00:00", "Spiele Happy Birthday Musik ")
+        testExtract("was ist das Wetter am freitag morgen",
+                    "2017-06-30 08:00:00", "was ist das wetter")
+        testExtract("wie ist das wetter morgen",
+                    "2017-06-28 00:00:00", "wie ist das wetter")
+        testExtract("erinnere mich meine mutter anzurufen in 8 Wochen und 2 Tagen",
+                    "2017-08-24 00:00:00", "erinnere mich meine mutter anzurufen")
+        testExtract("spiele rick astley musik 2 tage von freitag",
+                    "2017-07-02 00:00:00", "spiele rick astley musik")
+        testExtract("starte die invasion um 3:45 pm am Donnerstag",
+                    "2017-06-29 15:45:00", "starte die invasion")
+        testExtract(u"am montag bestelle kuchen von der bäckerei",
+                    "2017-07-03 00:00:00", u"bestelle kuchen von bäckerei")
+        testExtract("spiele happy birthday musik von 5 jahre von heute",
+                    "2022-06-27 00:00:00", "spiele happy birthday musik ")
         testExtract(u"Skype Mama um 12:45 pm nächsten Donnerstag",
                     "2017-07-06 12:45:00", "skype mama")
         testExtract(u"Wie ist das Wetter nächsten Donnerstag?",
