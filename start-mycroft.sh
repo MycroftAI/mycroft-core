@@ -118,9 +118,20 @@ function launch-background() {
     python ${_script} $_params >> ${scripts_dir}/logs/mycroft-${1}.log 2>&1 &
 }
 
+function check-dependencies() {
+  if [ ! -f .installed ] || ! md5sum -c &> /dev/null < .installed; then
+    echo "Please update dependencies by running ./dev_setup.sh again."
+    if command -v notify-send >/dev/null; then
+      notify-send "Mycroft Dependencies Outdated" "Run ./dev_setup.sh again"
+    fi
+  fi
+}
+
 _opt=$1
 shift
 _params=$@
+
+check-dependencies
 
 case ${_opt} in
   "all")
