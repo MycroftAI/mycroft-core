@@ -223,6 +223,7 @@ class SkillManager(Thread):
         ws.on('skillmanager.list', self.send_skill_list)
 
         self.msm = self.create_msm()
+        self.num_install_retries = 0
 
     @staticmethod
     def create_msm():
@@ -284,18 +285,21 @@ class SkillManager(Thread):
 
         def install_or_update(skill):
             """Install missing defaults and update existing skills"""
-            try:
-                if skill.is_local:
-                    skill.update()
-                    if skill.name not in installed_skills:
-                        skill.update_deps()
-                elif skill.name in default_names:
+            if skill.is_local:
+                skill.update()
+                if skill.name not in installed_skills:
+                    skill.update_deps()
+            elif skill.name in default_names:
+                try:
                     skill.install()
-            except Exception:
-                if skill.name in default_names:
-                    nonlocal default_skill_errored
-                    default_skill_errored = True
-                raise
+                except Exception:
+                    if skill.name in default_names:
+                        LOG.warning(
+                            'Failed to install default skill: ' + skill.name
+                        )
+                        nonlocal default_skill_errored
+                        default_skill_errored = True
+                    raise
             installed_skills.add(skill.name)
 
         try:
@@ -309,9 +313,11 @@ class SkillManager(Thread):
             data = {'utterance': dialog.get("skills updated")}
             self.ws.emit(Message("speak", data))
 
-        if default_skill_errored:
+        if default_skill_errored and self.num_install_retries < 10:
+            self.num_install_retries += 1
             self.next_download = time.time() + 5 * MINUTES
             return False
+        self.num_install_retries = 0
 
         with open(self.dot_msm, 'a'):
             os.utime(self.dot_msm, None)
