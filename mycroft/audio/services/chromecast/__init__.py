@@ -139,6 +139,10 @@ class ChromecastService(AudioBackend):
             ret['album'] = ''
         return ret
 
+    def shutdown(self):
+        """ Disconnect from the device. """
+        self.cast.disconnect()
+
 
 def autodetect(config, emitter):
     """
