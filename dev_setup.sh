@@ -225,4 +225,4 @@ chmod +x start-mycroft.sh
 chmod +x stop-mycroft.sh
 
 #Store a fingerprint of setup
-md5sum requirements.txt dev_setup.sh > .installed
+md5sum requirements.txt test-requirements.txt dev_setup.sh > .installed
