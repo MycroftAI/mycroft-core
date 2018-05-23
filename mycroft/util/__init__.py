@@ -15,7 +15,7 @@
 from __future__ import absolute_import
 import socket
 import subprocess
-from os.path import join
+from os.path import join, expanduser
 
 from threading import Thread
 from time import sleep
@@ -73,7 +73,8 @@ def resolve_resource_file(res_name):
         return filename
 
     # Next look for /opt/mycroft/res/res_name
-    filename = os.path.expanduser(join(config['data_dir'], res_name))
+    data_dir = expanduser(config['data_dir'])
+    filename = os.path.expanduser(join(data_dir, res_name))
     if os.path.isfile(filename):
         return filename
 

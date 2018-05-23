@@ -15,7 +15,7 @@
 import json
 
 from genericpath import exists, isfile
-from os.path import join
+from os.path import join, expanduser
 
 from mycroft.configuration import Configuration
 from mycroft.util.log import LOG
@@ -37,7 +37,8 @@ CORE_VERSION_STR = '.'.join(map(str, CORE_VERSION_TUPLE))
 class VersionManager(object):
     @staticmethod
     def get():
-        version_file = join(Configuration.get()['data_dir'], 'version.json')
+        data_dir = expanduser(Configuration.get()['data_dir'])
+        version_file = join(data_dir, 'version.json')
         if exists(version_file) and isfile(version_file):
             try:
                 with open(version_file) as f:

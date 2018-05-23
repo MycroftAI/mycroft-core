@@ -16,7 +16,7 @@ import json
 import time
 from threading import Thread
 
-from os.path import isfile, join
+from os.path import isfile, join, expanduser
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
@@ -52,7 +52,7 @@ class EventScheduler(Thread):
                 schedule_file:  File to store pending events to on shutdown
         """
         super(EventScheduler, self).__init__()
-        data_dir = Configuration.get()['data_dir']
+        data_dir = expanduser(Configuration.get()['data_dir'])
 
         self.events = {}
         self.emitter = emitter

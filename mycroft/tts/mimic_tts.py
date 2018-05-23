@@ -19,7 +19,7 @@ from threading import Thread
 from time import time, sleep
 
 import os.path
-from os.path import exists, join
+from os.path import exists, join, expanduser
 
 from mycroft import MYCROFT_ROOT_PATH
 from mycroft.api import DeviceApi
@@ -29,7 +29,7 @@ from mycroft.util.download import download
 from mycroft.util.log import LOG
 
 config = Configuration.get().get("tts").get("mimic")
-data_dir = Configuration.get()['data_dir']
+data_dir = expanduser(Configuration.get()['data_dir'])
 
 BIN = config.get("path",
                  os.path.join(MYCROFT_ROOT_PATH, 'mimic', 'bin', 'mimic'))
