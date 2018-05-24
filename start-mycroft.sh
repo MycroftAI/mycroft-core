@@ -42,7 +42,8 @@ function help() {
   echo
   echo "Tools:"
   echo "  cli                      the Command Line Interface"
-  echo "  unittest                 run mycroft-core unit tests (requires nose2)"
+  echo "  unittest                 run mycroft-core unit tests (requires pytest)"
+  echo "  skillstest               run the skill autotests for all skills (requires pytest)"
   echo
   echo "Utils:"
   echo "  skill_container <skill>  container for running a single skill"
@@ -117,9 +118,20 @@ function launch-background() {
     python ${_script} $_params >> ${scripts_dir}/logs/mycroft-${1}.log 2>&1 &
 }
 
+function check-dependencies() {
+  if [ ! -f .installed ] || ! md5sum -c &> /dev/null < .installed; then
+    echo "Please update dependencies by running ./dev_setup.sh again."
+    if command -v notify-send >/dev/null; then
+      notify-send "Mycroft Dependencies Outdated" "Run ./dev_setup.sh again"
+    fi
+  fi
+}
+
 _opt=$1
 shift
 _params=$@
+
+check-dependencies
 
 case ${_opt} in
   "all")
@@ -162,8 +174,12 @@ case ${_opt} in
     launch-process ${_opt}
     ;;
   "unittest")
-    nose2 -t ./ -s test/unittests/ --with-coverage \
-        --config=test/unittests/unittest.cfg
+    source ${VIRTUALENV_ROOT}/bin/activate
+    pytest test/unittests/ --cov=mycroft
+    ;;
+  "skillstest")
+    source ${VIRTUALENV_ROOT}/bin/activate
+    pytest test/integrationtests/skills/discover_tests.py
     ;;
   "audiotest")
     launch-process ${_opt}

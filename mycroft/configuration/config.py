@@ -149,7 +149,7 @@ class RemoteConf(LocalConf):
     def __init__(self, cache=None):
         super(RemoteConf, self).__init__(None)
 
-        cache = cache or '/opt/mycroft/web_config_cache.json'
+        cache = cache or '/var/tmp/mycroft_web_cache.json'
         from mycroft.api import is_paired
         if not is_paired():
             self.load_local(cache)

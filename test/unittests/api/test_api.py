@@ -22,6 +22,7 @@ import mycroft.configuration
 from mycroft.util.log import LOG
 
 CONFIG = {
+    'data_dir': '/opt/mycroft',
     'server': {
         'url': 'https://api-test.mycroft.ai',
         'version': 'v1',

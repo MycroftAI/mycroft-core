@@ -54,7 +54,6 @@ DEBUG = Configuration.get().get("debug", False)
 skills_config = Configuration.get().get("skills")
 BLACKLISTED_SKILLS = skills_config.get("blacklisted_skills", [])
 PRIORITY_SKILLS = skills_config.get("priority_skills", [])
-SKILLS_DIR = '/opt/mycroft/skills'
 
 installer_config = Configuration.get().get("SkillInstallerSkill")
 
@@ -202,9 +201,12 @@ class SkillManager(Thread):
         self.enclosure = EnclosureAPI(ws)
 
         # Schedule install/update of default skill
+        self.msm = self.create_msm()
+        self.num_install_retries = 0
+
         self.update_interval = Configuration.get()['skills']['update_interval']
         self.update_interval = int(self.update_interval * 60 * MINUTES)
-        self.dot_msm = join(SKILLS_DIR, '.msm')
+        self.dot_msm = join(self.msm.skills_dir, '.msm')
         if exists(self.dot_msm):
             self.next_download = os.path.getmtime(self.dot_msm) + \
                                  self.update_interval
@@ -222,18 +224,19 @@ class SkillManager(Thread):
         ws.on('skillmanager.update', self.schedule_now)
         ws.on('skillmanager.list', self.send_skill_list)
 
-        self.msm = self.create_msm()
-
     @staticmethod
     def create_msm():
         config = Configuration.get()
         msm_config = config['skills']['msm']
         repo_config = msm_config['repo']
+        data_dir = expanduser(config['data_dir'])
+        skills_dir = join(data_dir, msm_config['directory'])
+        repo_cache = join(data_dir, repo_config['cache'])
         platform = config['enclosure'].get('platform', 'default')
         return MycroftSkillsManager(
-            platform=platform, skills_dir=msm_config['directory'],
+            platform=platform, skills_dir=skills_dir,
             repo=SkillRepo(
-                repo_config['cache'], repo_config['url'], repo_config['branch']
+                repo_cache, repo_config['url'], repo_config['branch']
             ), versioned=msm_config['versioned']
         )
 
@@ -284,18 +287,21 @@ class SkillManager(Thread):
 
         def install_or_update(skill):
             """Install missing defaults and update existing skills"""
-            try:
-                if skill.is_local:
-                    skill.update()
-                    if skill.name not in installed_skills:
-                        skill.update_deps()
-                elif skill.name in default_names:
+            if skill.is_local:
+                skill.update()
+                if skill.name not in installed_skills:
+                    skill.update_deps()
+            elif skill.name in default_names:
+                try:
                     skill.install()
-            except Exception:
-                if skill.name in default_names:
-                    nonlocal default_skill_errored
-                    default_skill_errored = True
-                raise
+                except Exception:
+                    if skill.name in default_names:
+                        LOG.warning(
+                            'Failed to install default skill: ' + skill.name
+                        )
+                        nonlocal default_skill_errored
+                        default_skill_errored = True
+                    raise
             installed_skills.add(skill.name)
 
         try:
@@ -309,9 +315,11 @@ class SkillManager(Thread):
             data = {'utterance': dialog.get("skills updated")}
             self.ws.emit(Message("speak", data))
 
-        if default_skill_errored:
+        if default_skill_errored and self.num_install_retries < 10:
+            self.num_install_retries += 1
             self.next_download = time.time() + 5 * MINUTES
             return False
+        self.num_install_retries = 0
 
         with open(self.dot_msm, 'a'):
             os.utime(self.dot_msm, None)
@@ -426,7 +434,7 @@ class SkillManager(Thread):
 
             # Look for recently changed skill(s) needing a reload
             # checking skills dir and getting all skills there
-            skill_paths = glob(join(SKILLS_DIR, '*/'))
+            skill_paths = glob(join(self.msm.skills_dir, '*/'))
             still_loading = False
             for skill_path in skill_paths:
                 still_loading = (
@@ -481,19 +489,19 @@ class SkillManager(Thread):
                     instance = self.loaded_skills[skill]["instance"]
                 except BaseException:
                     LOG.error("converse requested but skill not loaded")
-                    self.ws.emit(Message("skill.converse.response", {
+                    self.ws.emit(message.reply("skill.converse.response", {
                         "skill_id": 0, "result": False}))
                     return
                 try:
                     result = instance.converse(utterances, lang)
-                    self.ws.emit(Message("skill.converse.response", {
+                    self.ws.emit(message.reply("skill.converse.response", {
                         "skill_id": skill_id, "result": result}))
                     return
                 except BaseException:
                     LOG.exception(
                         "Error in converse method for skill " + str(skill_id))
-        self.ws.emit(Message("skill.converse.response",
-                             {"skill_id": 0, "result": False}))
+        self.ws.emit(message.reply("skill.converse.response",
+                                   {"skill_id": 0, "result": False}))
 
 
 def main():
