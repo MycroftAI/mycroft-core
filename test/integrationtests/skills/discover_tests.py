@@ -20,13 +20,12 @@ from os.path import exists
 import sys
 import imp
 
+from mycroft.configuration import Configuration
 from test.integrationtests.skills.skill_tester import MockSkillsLoader
 from test.integrationtests.skills.skill_tester import SkillTest
 
-SKILL_PATH = '/opt/mycroft/skills/'
 
-
-def discover_tests():
+def discover_tests(skills_dir):
     """ Find all tests for the skills in the default skill path,
     or in the path provided as the LAST command line argument.
 
@@ -36,13 +35,10 @@ def discover_tests():
     Returns:
         Tests, lists of (intent example, test environment)
     """
-    global SKILL_PATH
-    if len(sys.argv) > 2:
-        SKILL_PATH = sys.argv.pop()
     tests = {}
     skills = [
         skill for skill
-        in glob.glob(SKILL_PATH + '/*')
+        in glob.glob(skills_dir + '/*')
         if os.path.isdir(skill)
     ]
 
@@ -66,8 +62,15 @@ def discover_tests():
     return tests
 
 
-tests = discover_tests()
-loader = MockSkillsLoader(SKILL_PATH)
+def get_skills_dir():
+    if len(sys.argv) > 1:
+        return sys.argv[1]
+    return Configuration.get()['skills']['msm']['directory']
+
+
+skills_dir = get_skills_dir()
+tests = discover_tests(skills_dir)
+loader = MockSkillsLoader(skills_dir)
 emitter = loader.load_skills()
 
 
