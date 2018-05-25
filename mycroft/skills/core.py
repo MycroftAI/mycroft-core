@@ -934,8 +934,9 @@ class MycroftSkill(object):
             LOG.error('Skill specific shutdown function encountered '
                       'an error: {}'.format(repr(e)))
         # Store settings
-        self.settings.store()
-        self.settings.stop_polling()
+        if exists(self._dir):
+            self.settings.store()
+            self.settings.stop_polling()
         # removing events
         self.cancel_all_repeating_events()
         for e, f in self.events:
