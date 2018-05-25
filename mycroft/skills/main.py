@@ -330,6 +330,25 @@ class SkillManager(Thread):
 
         return True
 
+    def _unload_removed(self, paths):
+        """ Shutdown removed skills.
+
+            Arguments:
+                paths: list of current directories in the skills folder
+        """
+        paths = [p.rstrip('/') for p in paths]
+        skills = self.loaded_skills
+        # Find loaded skills that doesn't exist on disk
+        removed_skills = [str(s) for s in skills.keys() if str(s) not in paths]
+        for s in removed_skills:
+            LOG.info('removing {}'.format(s))
+            try:
+                LOG.debug('Removing: {}'.format(skills[s]))
+                skills[s]['instance']._shutdown()
+            except Exception as e:
+                LOG.exception(e)
+            self.loaded_skills.pop(s)
+
     def _load_or_reload_skill(self, skill_path):
         """
             Check if unloaded skill or changed skill needs reloading
@@ -449,6 +468,7 @@ class SkillManager(Thread):
                 has_loaded = True
                 self.ws.emit(Message('mycroft.skills.initialized'))
 
+            self._unload_removed(skill_paths)
             # Pause briefly before beginning next scan
             time.sleep(2)
 
