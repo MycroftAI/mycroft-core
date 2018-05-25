@@ -752,8 +752,13 @@ def show_skills(skills):
     row = 2
     column = 0
     col_width = 0
-    for skill in sorted(skills):
-        scr.addstr(row, column,  "  {}".format(skill))
+    for skill in sorted(skills.keys()):
+        if skills[skill]['active']:
+            color = curses.color_pair(4)
+        else:
+            color = curses.color_pair(2)
+
+        scr.addstr(row, column,  "  {}".format(skill), color)
         row += 1
         col_width = max(col_width, len(skill))
         if row == 21:
@@ -859,11 +864,24 @@ def handle_cmd(cmd):
         message = ws.wait_for_response(
             Message('skillmanager.list'), reply_type='mycroft.skills.list')
 
-        if message and 'skills' in message.data:
-            show_skills(message.data['skills'])
+        if message:
+            show_skills(message.data)
             c = scr.getch()  # blocks
             screen_mode = 0  # back to main screen
             draw_screen()
+    elif "deactivate" in cmd:
+        skills = cmd.split()[1:]
+        for s in skills:
+            ws.emit(Message("skillmanager.deactivate", data={'skill': s}))
+    elif "keep" in cmd:
+        s = cmd.split()[1]
+        ws.emit(Message("skillmanager.keep", data={'skill': s}))
+
+    elif "activate" in cmd:
+        skills = cmd.split()[1:]
+        for s in skills:
+            ws.emit(Message("skillmanager.activate", data={'skill': s}))
+
     # TODO: More commands
     return 0  # do nothing upon return
 
