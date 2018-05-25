@@ -166,7 +166,8 @@ class RemoteConf(LocalConf):
             except RequestException as e:
                 LOG.error("RequestException fetching remote location: {}"
                           .format(str(e)))
-                location = load_commented_json(cache).get('location')
+                if exists(cache) and isfile(cache):
+                    location = load_commented_json(cache).get('location')
 
             if location:
                 setting["location"] = location
