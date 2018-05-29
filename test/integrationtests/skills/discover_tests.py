@@ -16,7 +16,7 @@ import pytest
 
 import glob
 import os
-from os.path import exists
+from os.path import exists, join, expanduser
 import sys
 import imp
 
@@ -38,7 +38,7 @@ def discover_tests(skills_dir):
     tests = {}
     skills = [
         skill for skill
-        in glob.glob(skills_dir + '/*')
+        in sorted(glob.glob(skills_dir + '/*'))
         if os.path.isdir(skill)
     ]
 
@@ -54,7 +54,8 @@ def discover_tests(skills_dir):
         # Find all intent test files
         test_intent_files = [
             (f, test_env) for f
-            in glob.glob(os.path.join(skill, 'test/intent/*.intent.json'))
+            in sorted(
+                glob.glob(os.path.join(skill, 'test/intent/*.intent.json')))
         ]
         if len(test_intent_files) > 0:
             tests[skill] = test_intent_files
@@ -64,8 +65,10 @@ def discover_tests(skills_dir):
 
 def get_skills_dir():
     if len(sys.argv) > 1:
-        return sys.argv[1]
-    return Configuration.get()['skills']['msm']['directory']
+        return expanduser(sys.argv[-1])
+
+    return expanduser(join(Configuration.get()['data_dir'],
+                      Configuration.get()['skills']['msm']['directory']))
 
 
 skills_dir = get_skills_dir()
