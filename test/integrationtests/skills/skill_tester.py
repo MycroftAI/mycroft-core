@@ -331,7 +331,7 @@ class EvaluationRule(object):
         if test_case.get('expected_data'):
             _d = ['and']
             for item in test_case['expected_data'].items():
-                _d.append(['equal', str(item[0]), str(item[1])])
+                _d.append(['equal', item[0], item[1]])
             self.rule.append(_d)
 
         if _x != ['and']:
