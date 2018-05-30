@@ -87,7 +87,7 @@ def get_services(services_folder):
         try:
             services.append(create_service_descriptor(location))
         except Exception:
-            LOG.error('Failed to create service from ' + name,
+            LOG.error('Failed to create service from ' + location,
                       exc_info=True)
     return sorted(services, key=lambda p: p.get('name'))
 
