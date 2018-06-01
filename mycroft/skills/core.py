@@ -606,7 +606,7 @@ class MycroftSkill(object):
                 self.speak(msg)
                 LOG.exception(msg)
                 # append exception information in message
-                skill_data['exception'] = e.message
+                skill_data['exception'] = repr(e)
             finally:
                 if once:
                     self.remove_event(name)
