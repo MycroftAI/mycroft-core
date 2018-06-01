@@ -319,8 +319,10 @@ class EvaluationRule(object):
 
         _x = ['and']
         if 'utterance' in test_case and 'intent_type' in test_case:
-            _x.append(['endsWith', 'intent_type',
-                       str(test_case['intent_type'])])
+            intent_type = str(test_case['intent_type'])
+            _x.append(['or'] +
+                      [['endsWith', 'intent_type', intent_type]] +
+                      [['endsWith', '__type__', intent_type]])
 
         # Check for adapt intent info
         if test_case.get('intent', None):
