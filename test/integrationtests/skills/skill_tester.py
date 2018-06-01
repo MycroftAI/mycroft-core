@@ -319,8 +319,10 @@ class EvaluationRule(object):
 
         _x = ['and']
         if 'utterance' in test_case and 'intent_type' in test_case:
-            _x.append(['endsWith', 'intent_type',
-                       str(test_case['intent_type'])])
+            intent_type = str(test_case['intent_type'])
+            _x.append(['or'] +
+                      [['endsWith', 'intent_type', intent_type]] +
+                      [['endsWith', '__type__', intent_type]])
 
         # Check for adapt intent info
         if test_case.get('intent', None):
@@ -410,6 +412,9 @@ class EvaluationRule(object):
             Returns:
                  Bool: True if a partial evaluation succeeded
         """
+        if 'succeeded' in rule:  # Rule has already succeeded, test not needed
+            return True
+
         if rule[0] == 'equal':
             if self._get_field_value(rule[1], msg) != rule[2]:
                 return False
@@ -440,10 +445,9 @@ class EvaluationRule(object):
         if rule[0] == 'or':
             for i in rule[1:]:
                 if self._partial_evaluate(i, msg):
-                    rule.append('succeeded')
-                    return True
-            return False
-
+                    break
+            else:
+                return False
         rule.append('succeeded')
         return True
 
