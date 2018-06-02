@@ -662,9 +662,9 @@ class MycroftSkill(object):
                                utterance for the handler.
                 handler:       function to register with intent
         """
-        if type(intent_parser) == IntentBuilder:
+        if isinstance(intent_parser, IntentBuilder):
             intent_parser = intent_parser.build()
-        elif type(intent_parser) != Intent:
+        elif not isinstance(intent_parser, Intent):
             raise ValueError('intent_parser is not an Intent')
 
         # Default to the handler's function name if none given
