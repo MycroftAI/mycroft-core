@@ -15,6 +15,7 @@
 import time
 from adapt.context import ContextManagerFrame
 from adapt.engine import IntentDeterminationEngine
+from adapt.intent import IntentBuilder
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
@@ -22,6 +23,11 @@ from mycroft.skills.core import open_intent_envelope
 from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
 from mycroft.metrics import report_timing, Stopwatch
+
+
+class AdaptIntent(IntentBuilder):
+    def __init__(self, name=''):
+        super().__init__(name)
 
 
 class ContextManager(object):
