@@ -46,7 +46,17 @@ de_numbers = {
     'achtzehn' :18,
     'neunzehn' :19,
     'zwanzig' :20,
-    u'dreißg' :30,
+    'einundzwanzig' : 21,
+    'zweiundzwanzig' :22,
+    'dreiundzwanzig' :23,
+    'vierundzwanzig' :24,
+    u'fünfundzwanzig' :25,
+    'sechsundzwanzig' :26,
+    'siebenundzwanzig' :27,
+    'achtundzwanzig' : 28,
+    'neunundzwanzig' :29,
+    u'dreißig' :30,
+    u'einunddreißig' :31,
     'vierzig' :40,
     u'fünfzig' :50,
     'sechzig' :60,
@@ -190,7 +200,11 @@ def extract_datetime_de(string, currentDate=None):
             .replace(' auf ', ' ').replace(' um ', ' ')
         wordList = s.split()
 
-        #for idx, word in enumerate(wordList):
+        for idx, word in enumerate(wordList):
+            if not isOrdinal_de(word) == False:
+                word = str(isOrdinal_de(word))
+                wordList[idx] = word
+
         #   word = word.replace("'s", "")
         #
         #    ordinals = ["rd", "st", "nd", "th"]
@@ -237,7 +251,7 @@ def extract_datetime_de(string, currentDate=None):
     months = ['januar', 'februar', u'märz', 'april', 'mai', 'juni',
               'juli', 'august', 'september', 'october', 'november',
               'dezember']
-    monthsShort = ['jan', 'feb', u'mär', 'apr', 'mai', 'jun', 'jul', 'aug',
+    monthsShort = ['jan', 'feb', u'mär', 'apr', 'mai', 'juni', 'juli', 'aug',
                    'sept', 'oct', 'nov', 'dez']
 
     words = clean_string(string)
@@ -332,7 +346,7 @@ def extract_datetime_de(string, currentDate=None):
                 dayOffset += 7
             if wordNext == "morgen": #morgen means morning if preceded by the day of the week
                 words[idx + 1] = u"früh"
-            if wordPrev[:5] == u"nächst":
+            if wordPrev[:6] == u"nächst":
                 dayOffset += 7
                 used += 1
                 start -= 1
@@ -739,8 +753,7 @@ def extract_datetime_de(string, currentDate=None):
         en_months = ['january', 'february', 'march', 'april', 'may', 'june',
                      'july', 'august', 'september', 'october', 'november',
                      'december']
-        en_monthsShort = ['jan', 'feb', 'mar', 'apr', 'may', 'june', 'july',
-                          'aug',
+        en_monthsShort = ['jan', 'feb', 'mar', 'apr', 'may', 'june', 'july', 'aug',
                           'sept', 'oct', 'nov', 'dec']
         for idx, en_month in enumerate(en_months):
             datestr = datestr.replace(months[idx], en_month)
@@ -830,6 +843,56 @@ def isFractional_de(input_str):
     return False
 
 
+def isOrdinal_de(input_str):
+    """
+    This function takes the given text and checks if it is an ordinal number.
+
+    Args:
+        input_str (str): the string to check if ordinal
+    Returns:
+        (bool) or (float): False if not an ordinal, otherwise the number corresponding to the ordinal
+
+    ordinals for 1, 3, 7 and 8 are irregular
+
+    only works for ordinals corresponding to the numbers in de_numbers
+
+    """
+
+
+    lowerstr = input_str.lower()
+
+    if lowerstr.startswith("erste"):
+        return 1
+    if lowerstr.startswith("dritte"):
+        return 3
+    if lowerstr.startswith("siebte"):
+        return 7
+    if lowerstr.startswith("achte"):
+        return 8
+
+    if lowerstr[-3:] == "ste": #from 20 suffix is -ste*
+        lowerstr = lowerstr[:-3]
+        if lowerstr in de_numbers:
+            return (de_numbers[lowerstr])
+
+    if lowerstr[-4:] in ["ster", "stes", "sten", "stem"]:
+        lowerstr = lowerstr[:-4]
+        if lowerstr in de_numbers:
+            return (de_numbers[lowerstr])
+
+    if lowerstr[-2:] == "te": #below 20 suffix is -te*
+        lowerstr = lowerstr[:-2]
+        if lowerstr in de_numbers:
+            return (de_numbers[lowerstr])
+
+    if lowerstr[-3:] in ["ter", "tes", "ten", "tem"]:
+        lowerstr = lowerstr[:-3]
+        if lowerstr in de_numbers:
+            return (de_numbers[lowerstr])
+
+    return False
+
+
 def normalize_de(text, remove_articles):
     """ German string normalization """
 
@@ -849,6 +912,8 @@ def normalize_de(text, remove_articles):
 
         if word in de_numbers:
             word = str(de_numbers[word])
+
+
 
         normalized += " " + word
 
