@@ -245,7 +245,7 @@ def extract_datetime_de(string, currentDate=None):
     timeQualifier = ""
 
     timeQualifiersList = [u'früh', 'morgens', 'vormittag', 'vormittags', 'nachmittag','nachmittags', 'abend', 'abends']
-    markers = ['in', 'am', 'gegen', 'bis']
+    markers = ['in', 'am', 'gegen', 'bis', u'für']
     days = ['montag', 'dienstag', 'mittwoch',
             'donnerstag', 'freitag', 'samstag', 'sonntag']
     months = ['januar', 'februar', u'märz', 'april', 'mai', 'juni',
@@ -253,6 +253,21 @@ def extract_datetime_de(string, currentDate=None):
               'dezember']
     monthsShort = ['jan', 'feb', u'mär', 'apr', 'mai', 'juni', 'juli', 'aug',
                    'sept', 'oct', 'nov', 'dez']
+
+    validFollowups = days + months + monthsShort
+    validFollowups.append("heute")
+    validFollowups.append("morgen")
+    validFollowups.append(u"nächste")
+    validFollowups.append(u"nächster")
+    validFollowups.append(u"nächstes")
+    validFollowups.append(u"nächsten")
+    validFollowups.append(u"nächstem")
+    validFollowups.append("letzte")
+    validFollowups.append("letzter")
+    validFollowups.append("letztes")
+    validFollowups.append("letzten")
+    validFollowups.append("letztem")
+    validFollowups.append("jetzt")
 
     words = clean_string(string)
 
@@ -300,11 +315,11 @@ def extract_datetime_de(string, currentDate=None):
                 dayOffset += int(wordPrev) * 7
                 start -= 1
                 used = 2
-            elif wordPrev == u"nächst":
+            elif wordPrev[:6] == u"nächst":
                 dayOffset = 7
                 start -= 1
                 used = 2
-            elif wordPrev == "letzt":
+            elif wordPrev[:5] == "letzt":
                 dayOffset = -7
                 start -= 1
                 used = 2
@@ -314,11 +329,11 @@ def extract_datetime_de(string, currentDate=None):
                 monthOffset = int(wordPrev)
                 start -= 1
                 used = 2
-            elif wordPrev == u"nächst":
+            elif wordPrev[:6] == u"nächst":
                 monthOffset = 1
                 start -= 1
                 used = 2
-            elif wordPrev == "letzt":
+            elif wordPrev[:5] == "letzt":
                 monthOffset = -1
                 start -= 1
                 used = 2
@@ -328,11 +343,11 @@ def extract_datetime_de(string, currentDate=None):
                 yearOffset = int(wordPrev)
                 start -= 1
                 used = 2
-            elif wordPrev == u"nächst":
+            elif wordPrev[:6] == u"nächst":
                 yearOffset = 1
                 start -= 1
                 used = 2
-            elif wordPrev == u"nächst":
+            elif wordPrev[:6] == u"nächst":
                 yearOffset = -1
                 start -= 1
                 used = 2
@@ -390,12 +405,7 @@ def extract_datetime_de(string, currentDate=None):
                     hasYear = False
         # parse 5 days from tomorrow, 10 weeks from next thursday,
         # 2 months from July
-        validFollowups = days + months + monthsShort
-        validFollowups.append("heute")
-        validFollowups.append("morgen")
-        validFollowups.append(u"nächste")
-        validFollowups.append("letzte")
-        validFollowups.append("jetzt")
+
         if (word == "von" or word == "nach" or word == "ab") and wordNext in validFollowups:
             used = 2
             fromFlag = True
@@ -413,17 +423,17 @@ def extract_datetime_de(string, currentDate=None):
                 d = days.index(wordNextNext)
                 tmpOffset = (d + 1) - int(today)
                 used = 3
-                if wordNext == u"nächst":
+                if wordNext[:6] == u"nächst":
                     tmpOffset += 7
                     used += 1
                     start -= 1
-                elif wordNext == "letzt":
+                elif wordNext[:5] == "letzt":
                     tmpOffset -= 7
                     used += 1
                     start -= 1
                 dayOffset += tmpOffset
         if used > 0:
-            if start - 1 > 0 and words[start - 1] == "dieser":
+            if start - 1 > 0 and words[start - 1].startswith("diese"):
                 start -= 1
                 used += 1
 
