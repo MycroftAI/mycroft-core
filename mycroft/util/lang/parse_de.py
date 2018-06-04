@@ -283,7 +283,7 @@ def extract_datetime_de(string, currentDate=None):
         
         if word != 'morgen' and word != u'übermorgen':
             if word[-2:] == "en":
-                word = word[:-2] #remove dativ plural
+                word = word[:-2] #remove en
         if word != 'heute':
             if word[-1:] == "e":
                 word = word[:-1] #remove plural for most nouns
@@ -489,6 +489,8 @@ def extract_datetime_de(string, currentDate=None):
                 minOffset = 30
             elif wordPrev == "viertel":
                 minOffset = 15
+            elif wordPrev == "dreiviertel":
+                minOffset = 45
             else:
                 hrOffset = 1
             if wordPrevPrev in markers:
@@ -534,13 +536,13 @@ def extract_datetime_de(string, currentDate=None):
                     elif nextWord == "abends":
                         remainder = "pm"
                         used += 1
-                    elif wordNext == "am" and wordNextNext == "morgens":
+                    elif wordNext == "am" and wordNextNext == "morgen":
                         remainder = "am"
                         used += 2
-                    elif wordNext == "am" and wordNextNext ==  "nachmittags":
+                    elif wordNext == "am" and wordNextNext ==  "nachmittag":
                         remainder = "pm"
                         used += 2
-                    elif wordNext == "am" and wordNextNext == "abends":
+                    elif wordNext == "am" and wordNextNext == "abend":
                         remainder = "pm"
                         used += 2
                     elif wordNext == "morgens":
@@ -606,6 +608,7 @@ def extract_datetime_de(string, currentDate=None):
                     remainder = "am"
                     used = 1
                 else:
+                    '''
                     if wordNext == "pm" or wordNext == "p.m.":
                         strHH = strNum
                         remainder = "pm"
@@ -614,7 +617,8 @@ def extract_datetime_de(string, currentDate=None):
                         strHH = strNum
                         remainder = "am"
                         used = 1
-                    elif (
+                    '''
+                    if (
                             int(word) > 100 and
                             (
                                 wordPrev == "uhr"
@@ -672,7 +676,7 @@ def extract_datetime_de(string, currentDate=None):
                             (
                                         wordNext == "in" and
                                         (
-                                            wordNextNext == "the" or
+                                            wordNextNext == "am" or
                                             wordNextNext == timeQualifier
                                         )
                             )):
@@ -680,7 +684,39 @@ def extract_datetime_de(string, currentDate=None):
                         strMM = 00
                         if wordNext == "uhr":
                             used += 1
-                        if wordNext == "in" or wordNextNext == "in":
+                            if wordNextNext[:10] == "nachmittag":
+                                used += 1
+                                remainder = "pm"
+                            elif len(words) > words.index(wordNextNext) + 1 and words[words.index(wordNextNext) + 1] == "nachmittag":
+                                used += 2
+                                remainder = "pm"
+                            elif wordNextNext[:5] == "abend":
+                                used += 1
+                                remainder = "pm"
+                            elif len(words) > (words.index(wordNextNext) + 1) and words[words.index(wordNextNext) + 1] == "abend":
+                                used += 2
+                                remainder = "pm"
+                            elif wordNextNext[:6] == "morgen":
+                                used += 1
+                                remainder = "am"
+                            elif len(words) > words.index(wordNextNext) + 1 and words[words.index(wordNextNext) + 1] == "morgen":
+                                used += 2
+                                remainder = "am"
+
+                    elif wordNext == timeQualifier:
+                            strHH = word
+                            strMM = 00
+                            if wordNext[:10] == "nachmittag":
+                                used += 1
+                                remainder = "pm"
+                            elif wordNext[:5] == "abend":
+                                used += 1
+                                remainder = "pm"
+                            elif wordNext[:6] == "morgen":
+                                used += 1
+                                remainder = "am"
+                    '''                
+                    if wordNext == "am" or wordNextNext == "in": #do we need this in German? Maybe for "in der Nacht"?
                             used += (1 if wordNext == "in" else 2)
                             if (wordNextNext and
                                 wordNextNext in timeQualifier or
@@ -691,7 +727,7 @@ def extract_datetime_de(string, currentDate=None):
                                     (len(words) >
                                      words.index(wordNextNext) + 1 and
                                      words[words.index(
-                                         wordNextNext) + 1] == "abend")):
+                                         wordNextNext) + 1] == "nachmittag")):
                                     remainder = "pm"
                                 if (wordNextNext == "abend" or
                                     (len(words) >
@@ -705,8 +741,9 @@ def extract_datetime_de(string, currentDate=None):
                                      words[words.index(
                                          wordNextNext) + 1] == "morgen")):
                                     remainder = "am"
-                        if timeQualifier != "":
-                            military = True
+                    '''
+                    if timeQualifier != "":
+                        military = True
                     else:
                         isTime = False
 
