@@ -115,13 +115,13 @@ class TestNormalize(unittest.TestCase):
         testExtract("Mache einen Termin um 12:45 pm nächsten donnerstag",
                     "2017-07-06 12:45:00", "mache einen termin")
         testExtract("wie ist das wetter an diesem donnerstag?",
-                    "2017-06-29 00:00:00", "wie wetter")
-        testExtract("vereinbare den besuch für 2 wochen und 6 tage ab sonntag",
+                    "2017-06-29 00:00:00", "wie ist das wetter")
+        testExtract("vereinbare den besuch für 2 wochen und 6 tage ab samstag",
                     "2017-07-21 00:00:00", "vereinbare besuch")
         testExtract("beginne die invasion um 03 45 am donnerstag",
-                    "2017-06-29 03:45:00", "beginne invasion")
+                    "2017-06-29 03:45:00", "beginne die invasion")
         testExtract("beginne die invasion um 8 Uhr am donnerstag",
-                    "2017-06-29 08:00:00", "beginne invasion")
+                    "2017-06-29 08:00:00", "beginne die invasion")
         testExtract("starte die party um 8 uhr abends am donnerstag",
                     "2017-06-29 20:00:00", "starte party")
         testExtract("starte die invasion um 8 abends am donnerstag",
