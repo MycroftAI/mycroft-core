@@ -27,7 +27,8 @@ pulsectl==17.7.4
 google-api-python-client==1.6.4
 monotonic
 
-msm==0.5.13
+msm==0.5.14
+msk==0.3.4
 adapt-parser==0.3.0
 
 # dev setup tools
