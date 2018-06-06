@@ -1,2 +1,4 @@
 jalepeno: hallipeenyo
 ai: A.I.
+mycroftai: mycroft A.I.
+spotify: spot-ify
