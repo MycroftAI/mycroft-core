@@ -101,12 +101,16 @@ def extractnumber_de(text):
         if is_numeric(word):
             # if word.isdigit():            # doesn't work with decimals
             val = float(word)
+            '''
         elif word in ["erste", "erstes", "erster", "ersten"]:
             val = 1
         elif word in ["zweite", "zweites", "zweiter", "zweiten"]:
             val = 2
+            '''
         elif isFractional_de(word):
             val = isFractional_de(word)
+        elif isOrdinal_de(word):
+            val = isOrdinal_de(word)
         else:
             if word in ["ein", "eines", "einer", "einen", "eine", "einem", "eins"]:
                 val = 1
@@ -244,7 +248,7 @@ def extract_datetime_de(string, currentDate=None):
     hasYear = False
     timeQualifier = ""
 
-    timeQualifiersList = [u'früh', 'morgens', 'vormittag', 'vormittags', 'nachmittag','nachmittags', 'abend', 'abends']
+    timeQualifiersList = [u'früh', 'morgens', 'vormittag', 'vormittags', 'nachmittag','nachmittags', 'abend', 'abends', 'nachts']
     markers = ['in', 'am', 'gegen', 'bis', u'für']
     days = ['montag', 'dienstag', 'mittwoch',
             'donnerstag', 'freitag', 'samstag', 'sonntag']
@@ -278,6 +282,7 @@ def extract_datetime_de(string, currentDate=None):
         wordPrev = words[idx - 1] if idx > 0 else ""
         wordNext = words[idx + 1] if idx + 1 < len(words) else ""
         wordNextNext = words[idx + 2] if idx + 2 < len(words) else ""
+
 
         # this isn't in clean string because I don't want to save back to words
         
@@ -462,6 +467,9 @@ def extract_datetime_de(string, currentDate=None):
         wordPrev = words[idx - 1] if idx > 0 else ""
         wordNext = words[idx + 1] if idx + 1 < len(words) else ""
         wordNextNext = words[idx + 2] if idx + 2 < len(words) else ""
+        wordNextNextNext = words[idx + 3] if idx + 3 < len(words) else ""
+        wordNextNextNextNext = words[idx + 4] if idx + 4 < len(words) else ""
+
         # parse noon, midnight, morning, afternoon, evening
         used = 0
         if word[:6] == "mittag":
@@ -617,7 +625,7 @@ def extract_datetime_de(string, currentDate=None):
                         strHH = strNum
                         remainder = "am"
                         used = 1
-                    '''
+                    
                     if (
                             int(word) > 100 and
                             (
@@ -629,21 +637,14 @@ def extract_datetime_de(string, currentDate=None):
                         military = True
                         if wordNext == "uhr":
                             used += 1
-                    elif (
-                            wordNext == "stund" and
-                            word[0] != '0' and
-                            (
-                                int(word) < 100 and
-                                int(word) > 2400
-                            )):
-                        # ignores military time
+                    elif'''
+                    if wordNext == "stund" and int(word) < 100:
                         # "in 3 hours"
                         hrOffset = int(word)
                         used = 2
                         isTime = False
                         hrAbs = -1
                         minAbs = -1
-
                     elif wordNext == "minut":
                         # "in 10 minutes"
                         minOffset = int(word)
@@ -658,94 +659,102 @@ def extract_datetime_de(string, currentDate=None):
                         isTime = False
                         hrAbs = -1
                         minAbs = -1
-                    elif int(word) > 100:
-                        strHH = int(word) / 100
-                        strMM = int(word) - strHH * 100
-                        military = True
-                        if wordNext == "stund":
-                            used += 1
-                    elif wordNext[0].isdigit():
+
+                    elif wordNext == "uhr":
                         strHH = word
-                        strMM = wordNext
-                        military = True
                         used += 1
-                        if wordNextNext == "stund":
-                            used += 1
-                    elif (
-                            wordNext == "" or wordNext == "uhr" or
-                            (
-                                        wordNext == "in" and
-                                        (
-                                            wordNextNext == "am" or
-                                            wordNextNext == timeQualifier
-                                        )
-                            )):
-                        strHH = word
-                        strMM = 00
-                        if wordNext == "uhr":
-                            used += 1
+                        isTime = True
+                        if wordNextNext == timeQualifier:
+                            strMM = ""
                             if wordNextNext[:10] == "nachmittag":
                                 used += 1
                                 remainder = "pm"
-                            elif len(words) > words.index(wordNextNext) + 1 and words[words.index(wordNextNext) + 1] == "nachmittag":
+                            elif wordNextNext == "am" and wordNextNextNext == "nachmittag":
                                 used += 2
                                 remainder = "pm"
                             elif wordNextNext[:5] == "abend":
                                 used += 1
                                 remainder = "pm"
-                            elif len(words) > (words.index(wordNextNext) + 1) and words[words.index(wordNextNext) + 1] == "abend":
+                            elif wordNextNext == "am" and wordNextNextNext == "abend":
                                 used += 2
                                 remainder = "pm"
-                            elif wordNextNext[:6] == "morgen":
+                            elif wordNextNext[:7] == "morgens":
                                 used += 1
                                 remainder = "am"
-                            elif len(words) > words.index(wordNextNext) + 1 and words[words.index(wordNextNext) + 1] == "morgen":
+                            elif wordNextNext == "am" and wordNextNextNext == "morgen":
                                 used += 2
                                 remainder = "am"
+                            elif wordNextNext == "nachts":
+                                used += 1
+                                if int(word) >= 8 and int(word) <= 12:
+                                    remainder = "pm"
+                                else:
+                                    remainder = "am"
+
+
+                        elif is_numeric(wordNextNext):
+                            strMM = wordNextNext
+                            used += 1
+                            if wordNextNextNext == timeQualifier:
+                                if wordNextNextNext[:10] == "nachmittag":
+                                    used += 1
+                                    remainder = "pm"
+                                elif wordNextNextNext == "am" and wordNextNextNextNext == "nachmittag":
+                                    used += 2
+                                    remainder = "pm"
+                                elif wordNextNextNext[:5] == "abend":
+                                    used += 1
+                                    remainder = "pm"
+                                elif wordNextNextNext == "am" and wordNextNextNextNext == "abend":
+                                    used += 2
+                                    remainder = "pm"
+                                elif wordNextNextNext[:7] == "morgens":
+                                    used += 1
+                                    remainder = "am"
+                                elif wordNextNextNext == "am" and wordNextNextNextNext == "morgen":
+                                    used += 2
+                                    remainder = "am"
+                                elif wordNextNextNext == "nachts":
+                                    used += 1
+                                    if int(word) >= 8 and int(word) <= 12:
+                                        remainder = "pm"
+                                    else:
+                                        remainder = "am"
 
                     elif wordNext == timeQualifier:
-                            strHH = word
-                            strMM = 00
-                            if wordNext[:10] == "nachmittag":
-                                used += 1
+                        strHH = word
+                        strMM = 00
+                        isTime = True
+                        if wordNext[:10] == "nachmittag":
+                            used += 1
+                            remainder = "pm"
+                        elif wordNext == "am" and wordNextNext == "nachmittag":
+                            used += 2
+                            remainder = "pm"
+                        elif wordNext[:5] == "abend":
+                            used += 1
+                            remainder = "pm"
+                        elif wordNext == "am" and wordNextNext == "abend":
+                            used += 2
+                            remainder = "pm"
+                        elif wordNext[:7] == "morgens":
+                            used += 1
+                            remainder = "am"
+                        elif wordNext == "am" and wordNextNext == "morgen":
+                            used += 2
+                            remainder = "am"
+                        elif wordNext == "nachts":
+                            used += 1
+                            if int(word) >= 8 and int(word) <= 12:
                                 remainder = "pm"
-                            elif wordNext[:5] == "abend":
-                                used += 1
-                                remainder = "pm"
-                            elif wordNext[:6] == "morgen":
-                                used += 1
+                            else:
                                 remainder = "am"
-                    '''                
-                    if wordNext == "am" or wordNextNext == "in": #do we need this in German? Maybe for "in der Nacht"?
-                            used += (1 if wordNext == "in" else 2)
-                            if (wordNextNext and
-                                wordNextNext in timeQualifier or
-                                (words[words.index(wordNextNext) + 1] and
-                                 words[words.index(wordNextNext) + 1] in
-                                 timeQualifier)):
-                                if (wordNextNext == "nachmittag" or
-                                    (len(words) >
-                                     words.index(wordNextNext) + 1 and
-                                     words[words.index(
-                                         wordNextNext) + 1] == "nachmittag")):
-                                    remainder = "pm"
-                                if (wordNextNext == "abend" or
-                                    (len(words) >
-                                     (words.index(wordNextNext) + 1) and
-                                     words[words.index(
-                                         wordNextNext) + 1] == "abend")):
-                                    remainder = "pm"
-                                if (wordNextNext == "morgen" or
-                                    (len(words) >
-                                     words.index(wordNextNext) + 1 and
-                                     words[words.index(
-                                         wordNextNext) + 1] == "morgen")):
-                                    remainder = "am"
-                    '''
-                    if timeQualifier != "":
-                        military = True
-                    else:
-                        isTime = False
+
+                   # if timeQualifier != "":
+                   #     military = True
+                   # else:
+                   #     isTime = False
+
 
             strHH = int(strHH) if strHH else 0
             strMM = int(strMM) if strMM else 0
@@ -879,13 +888,13 @@ def isFractional_de(input_str):
 
     if input_str.lower() == "drittel":
         return 1.0 / 3
-    if input_str.endswith('stel'):
-        input_str = input_str[:len(input_str) - 4]  # e.g. "hundertstel"
     elif input_str.endswith('tel'):
-        input_str = input_str[:len(input_str) - 3]  # e.g. "fünftel"
-
-    if input_str.lower() in de_numbers:
-        return 1.0 / (de_numbers[input_str.lower()])
+        if input_str.endswith('stel'):
+            input_str = input_str[:len(input_str) - 4]  # e.g. "hundertstel"
+        else:
+            input_str = input_str[:len(input_str) - 3]  # e.g. "fünftel"
+        if input_str.lower() in de_numbers:
+            return 1.0 / (de_numbers[input_str.lower()])
 
     return False
 
