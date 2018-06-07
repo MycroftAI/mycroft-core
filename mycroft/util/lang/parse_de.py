@@ -101,38 +101,13 @@ def extractnumber_de(text):
         if is_numeric(word):
             # if word.isdigit():            # doesn't work with decimals
             val = float(word)
-            '''
-        elif word in ["erste", "erstes", "erster", "ersten"]:
-            val = 1
-        elif word in ["zweite", "zweites", "zweiter", "zweiten"]:
-            val = 2
-            '''
         elif isFractional_de(word):
             val = isFractional_de(word)
         elif isOrdinal_de(word):
             val = isOrdinal_de(word)
         else:
-            if word in ["ein", "eines", "einer", "einen", "eine", "einem", "eins"]:
-                val = 1
-            elif word == "zwei":
-                val = 2
-            elif word == "drei":
-                val = 3
-            elif word == "vier":
-                val = 4
-            elif word == "fünf":
-                val = 5
-            elif word == "sechs":
-                val = 6
-            elif word == "sieben":
-                val = 7
-            elif word == "acht":
-                val = 8
-            elif word == "neun":
-                val = 9
-            elif word == "zehn":
-                val = 10
-            if val:
+            if word in de_numbers:
+                val = de_numbers[word]
                 if count < (len(aWords) - 1):
                     wordNext = aWords[count + 1]
                 else:
@@ -143,7 +118,6 @@ def extractnumber_de(text):
                     val = val * valNext
                     aWords[count + 1] = ""
 
-        # if val == False:
         if not val:
             # look for fractions like "2/3"
             aPieces = word.split('/')
