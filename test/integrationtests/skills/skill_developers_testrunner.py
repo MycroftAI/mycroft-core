@@ -48,7 +48,8 @@ def discover_tests():
     for skill in skills:
         test_intent_files = [
             f for f
-            in glob.glob(os.path.join(skill, 'test/intent/*.intent.json'))
+            in sorted(
+                glob.glob(os.path.join(skill, 'test/intent/*.intent.json')))
         ]
         if len(test_intent_files) > 0:
             tests[skill] = test_intent_files

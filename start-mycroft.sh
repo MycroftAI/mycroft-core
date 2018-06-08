@@ -175,11 +175,11 @@ case ${_opt} in
     ;;
   "unittest")
     source ${VIRTUALENV_ROOT}/bin/activate
-    pytest test/unittests/ --cov=mycroft
+    pytest test/unittests/ --cov=mycroft "$@"
     ;;
   "skillstest")
     source ${VIRTUALENV_ROOT}/bin/activate
-    pytest test/integrationtests/skills/discover_tests.py
+    pytest test/integrationtests/skills/discover_tests.py "$@"
     ;;
   "audiotest")
     launch-process ${_opt}

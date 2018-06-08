@@ -297,8 +297,9 @@ class TTS(object):
         create_signal("isSpeaking")
         if self.phonetic_spelling:
             for word in re.findall(r"[\w']+", sentence):
-                if word in self.spellings:
-                    sentence = sentence.replace(word, self.spellings[word])
+                if word.lower() in self.spellings:
+                    sentence = sentence.replace(word,
+                                                self.spellings[word.lower()])
 
         key = str(hashlib.md5(sentence.encode('utf-8', 'ignore')).hexdigest())
         wav_file = os.path.join(mycroft.util.get_cache_directory("tts"),
