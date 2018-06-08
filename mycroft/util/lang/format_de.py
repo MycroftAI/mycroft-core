@@ -20,7 +20,7 @@ from math import floor
 
 NUM_STRING_DE = {
     0: 'null',
-    1: 'ein', #ein Viertel etc., nicht eins Viertel
+    1: 'ein',  # ein Viertel etc., nicht eins Viertel
     2: 'zwei',
     3: 'drei',
     4: 'vier',
@@ -56,7 +56,8 @@ NUM_STRING_DE = {
 
 
 NUM_POWERS_OF_TEN = [
-    '', 'tausend','Million','Milliarde','Billion','Billiarde','Trillion','Trilliarde'
+    '', 'tausend', 'Million', 'Milliarde', 'Billion', 'Billiarde', 'Trillion',
+    'Trilliarde'
 ]
 
 FRACTION_STRING_DE = {
@@ -81,15 +82,16 @@ FRACTION_STRING_DE = {
     20: 'zwanzigstel'
 }
 
+# Numbers below 1 million are written in one word in German, yielding very
+# long words
+# In some circumstances it may better to seperate individual words
+# Set EXTRA_SPACE=" " for separating numbers below 1 million (
+# orthographically incorrect)
+# Set EXTRA_SPACE="" for correct spelling, this is standard
 
+# EXTRA_SPACE = " "
+EXTRA_SPACE = ""
 
-#Numbers below 1 million are written in one word in German, yielding very long words
-#In some circumstances it may better to seperate individual words
-#Set EXTRA_SPACE=" " for separating numbers below 1 million (orthographically incorrect)
-#Set EXTRA_SPACE="" for correct spelling, this is standard
-
-#EXTRA_SPACE = " "
-EXTRA_SPACE =""
 
 def nice_number_de(number, speech, denominators):
     """ German helper for nice_number
@@ -105,7 +107,7 @@ def nice_number_de(number, speech, denominators):
     result = convert_to_mixed_fraction(number, denominators)
     if not result:
         # Give up, just represent as a 3 decimal number
-        return str(round(number, 3)).replace(".",",")
+        return str(round(number, 3)).replace(".", ",")
     whole, num, den = result
     if not speech:
         if num == 0:
@@ -146,35 +148,40 @@ def pronounce_number_de(num, places=2):
     def pronounce_triplet_de(num):
         result = ""
         num = floor(num)
-        if num>99:
-            hundreds=floor(num/100)
+        if num > 99:
+            hundreds = floor(num / 100)
             if hundreds > 0:
-                result += NUM_STRING_DE[hundreds] + EXTRA_SPACE + 'hundert' + EXTRA_SPACE
-                num -= hundreds*100
+                result += NUM_STRING_DE[
+                              hundreds] + EXTRA_SPACE + 'hundert' + EXTRA_SPACE
+                num -= hundreds * 100
         if num == 0:
-                result += '' # do nothing
+            result += ''  # do nothing
         elif num == 1:
-                result += 'eins' #need the s for the last digit
+            result += 'eins'  # need the s for the last digit
         elif num <= 20:
-                result += NUM_STRING_DE[num]# + EXTRA_SPACE
+            result += NUM_STRING_DE[num]  # + EXTRA_SPACE
         elif num > 20:
-             ones = num % 10
-             tens = num - ones
-             if ones > 0:
-                 result += NUM_STRING_DE[ones] + EXTRA_SPACE
-                 if tens > 0:
-                     result += 'und' + EXTRA_SPACE
-             if tens > 0:
-                     result += NUM_STRING_DE[tens] + EXTRA_SPACE
+            ones = num % 10
+            tens = num - ones
+            if ones > 0:
+                result += NUM_STRING_DE[ones] + EXTRA_SPACE
+                if tens > 0:
+                    result += 'und' + EXTRA_SPACE
+            if tens > 0:
+                result += NUM_STRING_DE[tens] + EXTRA_SPACE
         return result
 
-    def pronounce_fractional_de(num, places): # fixed number of places even with trailing zeros
+    def pronounce_fractional_de(num,
+                                places):  # fixed number of places even with
+        # trailing zeros
         result = ""
         place = 10
-        while places > 0:             #doesn't work with 1.0001 and places = 2: int(num*place) % 10 > 0 and places > 0:
-            result += " " + NUM_STRING_DE[int(num*place) % 10]
-            if int(num*place) % 10 == 1:
-                result += 's'  # "1" is pronounced "eins" after the decimal point
+        while places > 0:  # doesn't work with 1.0001 and places = 2: int(
+            # num*place) % 10 > 0 and places > 0:
+            result += " " + NUM_STRING_DE[int(num * place) % 10]
+            if int(num * place) % 10 == 1:
+                result += 's'  # "1" is pronounced "eins" after the decimal
+                # point
             place *= 10
             places -= 1
         return result
@@ -200,28 +207,29 @@ def pronounce_number_de(num, places=2):
         elif last_triplet > 1:
             result += pronounce_triplet_de(last_triplet)
             if scale_level == 1:
-                #result += EXTRA_SPACE
+                # result += EXTRA_SPACE
                 result += 'tausend' + EXTRA_SPACE
             if scale_level >= 2:
-                #if EXTRA_SPACE == '':
+                # if EXTRA_SPACE == '':
                 #    result += " "
                 result += " " + NUM_POWERS_OF_TEN[scale_level]
             if scale_level >= 2:
                 if scale_level % 2 == 0:
-                    result += "e" #MillionE
-                result += "n "   #MilliardeN, MillioneN
+                    result += "e"  # MillionE
+                result += "n "  # MilliardeN, MillioneN
 
-        num = floor(num/1000)
+        num = floor(num / 1000)
         scale_level += 1
-        return pronounce_whole_number_de(num,scale_level) +  result# + EXTRA_SPACE
+        return pronounce_whole_number_de(num,
+                                         scale_level) + result  # + EXTRA_SPACE
 
     result = ""
-    if abs(num) >= 1000000000000000000000000: # cannot do more than this
+    if abs(num) >= 1000000000000000000000000:  # cannot do more than this
         return str(num)
     elif num == 0:
         return str(NUM_STRING_DE[0])
     elif num < 0:
-         return "minus " + pronounce_number_de(abs(num), places)
+        return "minus " + pronounce_number_de(abs(num), places)
     else:
         if num == int(num):
             return pronounce_whole_number_de(num)
@@ -231,13 +239,14 @@ def pronounce_number_de(num, places=2):
             result += pronounce_whole_number_de(whole_number_part)
             if places > 0:
                 result += " Komma"
-                result += pronounce_fractional_de(fractional_part,places)
+                result += pronounce_fractional_de(fractional_part, places)
             return result
 
-def pronounce_ordinal_de(num):
 
+def pronounce_ordinal_de(num):
     # ordinals for 1, 3, 7 and 8 are irregular
-    # this produces the base form, it will have to be adapted for genus, casus, numerus
+    # this produces the base form, it will have to be adapted for genus,
+    # casus, numerus
 
     ordinals = ["nullte", "erste", "zweite", "dritte", "vierte", u"fünfte",
                 "sechste", "siebte", "achte"]
@@ -251,8 +260,6 @@ def pronounce_ordinal_de(num):
         return pronounce_number_de(num) + "te"
     else:
         return pronounce_number_de(num) + "ste"
-
-
 
 
 def nice_time_de(dt, speech=True, use_24hour=False, use_ampm=False):
@@ -290,14 +297,15 @@ def nice_time_de(dt, speech=True, use_24hour=False, use_ampm=False):
     speak = ""
     if use_24hour:
         if dt.hour == 1:
-            speak += "ein" #01:00 is "ein Uhr" not "eins Uhr"
+            speak += "ein"  # 01:00 is "ein Uhr" not "eins Uhr"
         else:
             speak += pronounce_number_de(dt.hour)
         speak += " Uhr"
-        if not dt.minute== 0: #zero minutes are not pronounced, 13:00 is "13 Uhr" not "13 hundred hours"
+        if not dt.minute == 0:  # zero minutes are not pronounced, 13:00 is
+            # "13 Uhr" not "13 hundred hours"
             speak += " " + pronounce_number_de(dt.minute)
 
-        return speak # ampm is ignored when use_24hour is true
+        return speak  # ampm is ignored when use_24hour is true
     else:
         if dt.hour == 0 and dt.minute == 0:
             return "Mitternacht"
@@ -308,31 +316,31 @@ def nice_time_de(dt, speech=True, use_24hour=False, use_ampm=False):
         if dt.hour == 0:
             speak += pronounce_number_de(12)
         elif dt.hour <= 13:
-            if dt.hour == 1 or dt.hour == 13: #01:00 and 13:00 is "ein Uhr" not "eins Uhr"
+            if dt.hour == 1 or dt.hour == 13:  # 01:00 and 13:00 is "ein Uhr"
+                # not "eins Uhr"
                 speak += 'ein'
             else:
                 speak += pronounce_number_de(dt.hour)
         else:
-            speak += pronounce_number_de(dt.hour-12)
+            speak += pronounce_number_de(dt.hour - 12)
 
         speak += " Uhr"
 
         if not dt.minute == 0:
             speak += " " + pronounce_number_de(dt.minute)
 
-
-
         if use_ampm:
             if dt.hour > 11:
                 if dt.hour < 18:
-                    speak += " nachmittags"     # 12:01 - 17:59 nachmittags/afternoon
+                    speak += " nachmittags"  # 12:01 - 17:59
+                    # nachmittags/afternoon
                 elif dt.hour < 22:
-                    speak += " abends"          # 18:00 - 21:59 abends/evening
+                    speak += " abends"  # 18:00 - 21:59 abends/evening
                 else:
-                    speak += " nachts"          # 22:00 - 23:59 nachts/at night
+                    speak += " nachts"  # 22:00 - 23:59 nachts/at night
             elif dt.hour < 3:
-                speak += " nachts"              # 00:01 - 02:59 nachts/at night
+                speak += " nachts"  # 00:01 - 02:59 nachts/at night
             else:
-                speak += " morgens"             # 03:00 - 11:59 morgens/in the morning
+                speak += " morgens"  # 03:00 - 11:59 morgens/in the morning
 
         return speak

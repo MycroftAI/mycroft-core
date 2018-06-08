@@ -22,7 +22,7 @@ from mycroft.util.format import nice_time
 from mycroft.util.format import pronounce_number
 from mycroft.util.format import pronounce_ordinal_de
 
-#fractions are not capitalized for now
+# fractions are not capitalized for now
 NUMBERS_FIXTURE_DE = {
     1.435634: '1,436',
     2: '2',
@@ -55,12 +55,14 @@ NUMBERS_FIXTURE_DE = {
     0.05: 'ein zwanzigstel'
 }
 
+
 class TestNiceNumberFormat(unittest.TestCase):
     def test_convert_float_to_nice_number(self):
         for number, number_str in NUMBERS_FIXTURE_DE.items():
             self.assertEqual(nice_number(number, lang="de-de"), number_str,
                              'should format {} as {} and not {}'.format(
-                                 number, number_str, nice_number(number, lang="de-de")))
+                                 number, number_str,
+                                 nice_number(number, lang="de-de")))
 
     def test_specify_denominator(self):
         self.assertEqual(nice_number(5.5, lang="de-de", denominators=[1, 2, 3]),
@@ -70,7 +72,8 @@ class TestNiceNumberFormat(unittest.TestCase):
         self.assertEqual(nice_number(2.333, lang="de-de", denominators=[1, 2]),
                          '2,333',
                          'should format 2,333 as 2,333 not {}'.format(
-                             nice_number(2.333, lang="de-de", denominators=[1, 2])))
+                             nice_number(2.333, lang="de-de",
+                                         denominators=[1, 2])))
 
     def test_no_speech(self):
         self.assertEqual(nice_number(6.777, speech=False),
@@ -81,8 +84,6 @@ class TestNiceNumberFormat(unittest.TestCase):
                          '6',
                          'should format 6.0 as 6 not {}'.format(
                              nice_number(6.0, lang="de-de", speech=False)))
-
-
 
 
 class TestPronounceOrdinal(unittest.TestCase):
@@ -98,14 +99,19 @@ class TestPronounceOrdinal(unittest.TestCase):
         self.assertEqual(pronounce_ordinal_de(1000),
                          "eintausendste")
         self.assertEqual(pronounce_ordinal_de(123456),
-                         "einhundertdreiundzwanzigtausendvierhundertsechsundfünfzigste")
+                         "einhundertdreiundzwanzigtausendvierhundertsechsundf"
+                         "ünfzigste")
 
 
 # def pronounce_number(number, lang="de-de", places=2):
 class TestPronounceNumber(unittest.TestCase):
     def test_convert_int_de(self):
         self.assertEqual(pronounce_number(123456789123456789, lang="de-de"),
-                         "einhundertdreiundzwanzig Billiarden vierhundertsechsundfünfzig Billionen siebenhundertneunundachtzig Milliarden einhundertdreiundzwanzig Millionen vierhundertsechsundfünfzigtausendsiebenhundertneunundachtzig")
+                         "einhundertdreiundzwanzig Billiarden "
+                         "vierhundertsechsundfünfzig Billionen "
+                         "siebenhundertneunundachtzig Milliarden "
+                         "einhundertdreiundzwanzig Millionen "
+                         "vierhundertsechsundfünfzigtausendsiebenhundertneunundachtzig")
         self.assertEqual(pronounce_number(1, lang="de-de"), "eins")
         self.assertEqual(pronounce_number(10, lang="de-de"), "zehn")
         self.assertEqual(pronounce_number(15, lang="de-de"), u"fünfzehn")
@@ -125,7 +131,7 @@ class TestPronounceNumber(unittest.TestCase):
         self.assertEqual(pronounce_number(97, lang="de-de"),
                          "siebenundneunzig")
         self.assertEqual(pronounce_number(300, lang="de-de"), "dreihundert")
-        
+
     def test_convert_negative_int_de(self):
         self.assertEqual(pronounce_number(-1, lang="de-de"), "minus eins")
         self.assertEqual(pronounce_number(-10, lang="de-de"), "minus zehn")
@@ -136,7 +142,6 @@ class TestPronounceNumber(unittest.TestCase):
         self.assertEqual(pronounce_number(-30, lang="de-de"), u"minus dreißig")
         self.assertEqual(pronounce_number(-33, lang="de-de"),
                          u"minus dreiunddreißig")
-
 
     def test_convert_decimals_de(self):
         self.assertEqual(pronounce_number(1.234, lang="de-de"),
@@ -167,6 +172,7 @@ class TestPronounceNumber(unittest.TestCase):
                          "minus einundzwanzig Komma zwei drei vier null")
         self.assertEqual(pronounce_number(-21.234, lang="de-de", places=5),
                          "minus einundzwanzig Komma zwei drei vier null null")
+
 
 # def nice_time(dt, lang="de-de", speech=True, use_24hour=False,
 #              use_ampm=False):
