@@ -289,6 +289,13 @@ class TestNiceDateFormat(unittest.TestCase):
                 lang='en-us'),
                 'tuesday, january the thirty-first, 2017 at one twenty two')
 
+        # test for language not supported, result in funny time
+        self.assertEqual(
+            nice_date_time(
+                dt,
+                lang='invalid'),
+                'tuesday, january the thirty-first, 2017 at 2017-01-31 13:22:03')
+
     def test_nice_year(self):
         dt = datetime.datetime(2017, 1, 31, 13, 22, 3)
         self.assertEqual(nice_year(dt), '2017')

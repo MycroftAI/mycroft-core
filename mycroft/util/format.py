@@ -27,13 +27,14 @@ import os
 import datetime
 import re
 
+
 class DateTimeFormat:
     def __init__(self, config_path):
         self.lang_config = {}
         self.config_path = config_path
 
     def cache(self, lang):
-        if not lang in self.lang_config:
+        if lang not in self.lang_config:
             try:
                 with open(self.config_path + '/' + lang + '/date_time.json',
                           'r') as lang_config_file:
@@ -54,13 +55,13 @@ class DateTimeFormat:
             if (now + datetime.timedelta(1)).day == dt.day:
                 format_str = 'tomorrow'
             if now.day == dt.day:
-                format_str ='today'
+                format_str = 'today'
 
         return self.lang_config[lang]['date_format'][format_str].format(
-            weekday = self.lang_config[lang]['weekday'][str(dt.weekday())],
-            month = self.lang_config[lang]['month'][str(dt.month)],
-            day = self.lang_config[lang]['date'][str(dt.day)],
-            formatted_year = self.year_format(dt, lang, False))
+            weekday=self.lang_config[lang]['weekday'][str(dt.weekday())],
+            month=self.lang_config[lang]['month'][str(dt.month)],
+            day=self.lang_config[lang]['date'][str(dt.day)],
+            formatted_year=self.year_format(dt, lang, False))
 
     def date_time_format(self, dt, lang, now, use_24hour, use_ampm):
         date_str = self.date_format(dt, lang, now)
@@ -76,22 +77,24 @@ class DateTimeFormat:
                     dt.year <=
                     int(self.lang_config[lang]['year_format'][str(i)]['to'])):
                 return re.sub(' +', ' ',
-                    self.lang_config[lang]['year_format'][str(i)]['format'].format(
-                    year = str(dt.year),
-                    century = str(int(dt.year/100)),
-                    decade = str(dt.year%100),
-                    bc=formatted_bc)).strip()
+                              self.lang_config[lang]['year_format'][str(i)][
+                                  'format'].format(
+                                  year=str(dt.year),
+                                  century=str(int(dt.year / 100)),
+                                  decade=str(dt.year % 100),
+                                  bc=formatted_bc)).strip()
             i = i + 1
 
         return re.sub(' +', ' ',
-            self.lang_config[lang]['year_format']['default'].format(
-            year=str(dt.year),
-            century=str(int(dt.year / 100)),
-            decade=str(dt.year % 100),
-            bc=formatted_bc)).strip()
+                      self.lang_config[lang]['year_format']['default'].format(
+                          year=str(dt.year),
+                          century=str(int(dt.year / 100)),
+                          decade=str(dt.year % 100),
+                          bc=formatted_bc)).strip()
 
 
-date_time_format = DateTimeFormat(os.path.dirname(os.path.abspath(__file__)) + '/../res/text')
+date_time_format = DateTimeFormat(
+    os.path.dirname(os.path.abspath(__file__)) + '/../res/text')
 
 
 def nice_number(number, lang="en-us", speech=True, denominators=None):
@@ -176,6 +179,7 @@ def pronounce_number(number, lang="en-us", places=2):
     # Default to just returning the numeric value
     return str(number)
 
+
 def nice_date(dt, lang='en-us', now=None):
     """
     Format a datetime to a pronounceable date
@@ -185,8 +189,8 @@ def nice_date(dt, lang='en-us', now=None):
         dt (datetime): date to format (assumes already in local timezone)
         lang (string): the language to use, use Mycroft default language if not
             provided
-        now (datetime): Current date. If provided, the returned date for speech will be
-            shortened accordingly: No year is returned if now is in the
+        now (datetime): Current date. If provided, the returned date for speech
+            will be shortened accordingly: No year is returned if now is in the
             same year as td, no month is returned if now is in the same month
             as td. If now and td is the same day, 'today' is returned.
     Returns:
@@ -198,7 +202,8 @@ def nice_date(dt, lang='en-us', now=None):
     return date_time_format.date_format(dt, lang, now)
 
 
-def nice_date_time(dt, lang='en-us', now=None, use_24hour=False, use_ampm=False):
+def nice_date_time(dt, lang='en-us', now=None, use_24hour=False,
+                   use_ampm=False):
     """
         Format a datetime to a pronounceable date and time
 
@@ -206,12 +211,13 @@ def nice_date_time(dt, lang='en-us', now=None, use_24hour=False, use_ampm=False)
 
         Args:
             dt (datetime): date to format (assumes already in local timezone)
-            lang (string): the language to use, use Mycroft default language if not
-                provided
-            now (datetime): Current date. If provided, the returned date for speech will be
-                shortened accordingly: No year is returned if now is in the
-                same year as td, no month is returned if now is in the same month
-                as td. If now and td is the same day, 'today' is returned.
+            lang (string): the language to use, use Mycroft default language if
+                not provided
+            now (datetime): Current date. If provided, the returned date for
+                speech will be shortened accordingly: No year is returned if
+                now is in the same year as td, no month is returned if now is
+                in the same month as td. If now and td is the same day, 'today'
+                is returned.
             use_24hour (bool): output in 24-hour/military or 12-hour format
             use_ampm (bool): include the am/pm for 12-hour format
         Returns:
@@ -232,8 +238,8 @@ def nice_year(dt, lang='en-us', bc=False):
 
         Args:
             dt (datetime): date to format (assumes already in local timezone)
-            lang (string): the language to use, use Mycroft default language if not
-                provided
+            lang (string): the language to use, use Mycroft default language if
+            not provided
             bc (bool) pust B.C. after the year (python does not support dates
                 B.C. in datetime)
         Returns:
@@ -243,4 +249,3 @@ def nice_year(dt, lang='en-us', bc=False):
     date_time_format.cache(lang)
 
     return date_time_format.year_format(dt, lang, bc)
-
