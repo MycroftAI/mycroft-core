@@ -201,4 +201,5 @@ def get_gender(word, input_string="", lang="en-us"):
         return get_gender_pt(word, input_string)
     elif "it" in lang:
         return get_gender_it(word, input_string)
+    
     return False
