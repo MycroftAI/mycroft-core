@@ -28,7 +28,7 @@ google-api-python-client==1.6.4
 monotonic
 
 msm==0.5.14
-msk==0.3.4
+msk==0.3.9
 adapt-parser==0.3.0
 
 # dev setup tools
