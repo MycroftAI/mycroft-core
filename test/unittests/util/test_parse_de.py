@@ -35,8 +35,8 @@ class TestNormalize(unittest.TestCase):
                          "dies ist der Extra-Test")
 
     def test_extractnumber(self):
-        self.assertEqual(extractnumber("dies ist der erste Test", lang="de-de"),
-                         1)
+        self.assertEqual(extractnumber("dies ist der erste Test",
+                                       lang="de-de"), 1)
         self.assertEqual(extractnumber("dies ist 2 Test", lang="de-de"), 2)
         self.assertEqual(extractnumber("dies ist zweiter Test", lang="de-de"),
                          2)
@@ -44,8 +44,8 @@ class TestNormalize(unittest.TestCase):
             extractnumber("dies ist der dritte Test", lang="de-de"), 3)
         self.assertEqual(
             extractnumber("dies ist der Test Nummer 4", lang="de-de"), 4)
-        self.assertEqual(extractnumber("ein drittel einer Tasse", lang="de-de"),
-                         1.0 / 3.0)
+        self.assertEqual(extractnumber("ein drittel einer Tasse",
+                                       lang="de-de"), 1.0 / 3.0)
         self.assertEqual(extractnumber("drei Tassen", lang="de-de"), 3)
         self.assertEqual(extractnumber("1/3 Tasse", lang="de-de"), 1.0 / 3.0)
         self.assertEqual(extractnumber("eine viertel Tasse", lang="de-de"),
@@ -61,8 +61,8 @@ class TestNormalize(unittest.TestCase):
             extractnumber("eine Tasse und eine halbe", lang="de-de"), 1.5)
         self.assertEqual(
             extractnumber("eine und eine halbe Tasse", lang="de-de"), 1.5)
-        self.assertEqual(extractnumber("ein und ein halb Tassen", lang="de-de"),
-                         1.5)
+        self.assertEqual(extractnumber("ein und ein halb Tassen",
+                                       lang="de-de"), 1.5)
         self.assertEqual(extractnumber("drei Viertel Tasse", lang="de-de"),
                          3.0 / 4.0)
         self.assertEqual(extractnumber("drei Viertel Tassen", lang="de-de"),
@@ -158,8 +158,8 @@ class TestNormalize(unittest.TestCase):
     def test_spaces(self):
         self.assertEqual(normalize("  dies   ist  ein    test", lang="de-de"),
                          "dies ist 1 test")
-        self.assertEqual(normalize("  dies   ist  ein    test  ", lang="de-de"),
-                         "dies ist 1 test")
+        self.assertEqual(normalize("  dies   ist  ein    test  ",
+                                   lang="de-de"), "dies ist 1 test")
 
     def test_numbers(self):
         self.assertEqual(

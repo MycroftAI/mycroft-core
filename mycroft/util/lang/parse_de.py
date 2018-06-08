@@ -155,13 +155,8 @@ def extractnumber_de(text):
 
         break
 
-    # if val == False:
     if not val:
         return False
-
-    # Return the string with the number related words removed
-    # (now empty strings, so strlen == 0)
-    aWords = [word for word in aWords if len(word) > 0]
 
     return val
 
@@ -184,7 +179,7 @@ def extract_datetime_de(string, currentDate=None):
         wordList = s.split()
 
         for idx, word in enumerate(wordList):
-            if not isOrdinal_de(word) == False:
+            if isOrdinal_de(word) is not False:
                 word = str(isOrdinal_de(word))
                 wordList[idx] = word
 
@@ -274,7 +269,7 @@ def extract_datetime_de(string, currentDate=None):
             dayOffset = 0
             used += 1
         elif word == "morgen" and not fromFlag and wordPrev != "am" and \
-                not wordPrev in days:  # morgen means tomorrow if not "am
+                wordPrev not in days:  # morgen means tomorrow if not "am
             # Morgen" and not [day of the week] morgen
             dayOffset = 1
             used += 1
@@ -390,7 +385,7 @@ def extract_datetime_de(string, currentDate=None):
             used = 2
             fromFlag = True
             if wordNext == "morgen" and wordPrev != "am" and \
-                    not wordPrev in days:  # morgen means tomorrow if not "am
+                    wordPrev not in days:  # morgen means tomorrow if not "am
                 #  Morgen" and not [day of the week] morgen:
                 dayOffset += 1
             elif wordNext in days:
@@ -821,8 +816,8 @@ def extract_datetime_de(string, currentDate=None):
     if secOffset != 0:
         extractedDate = extractedDate + relativedelta(seconds=secOffset)
     for idx, word in enumerate(words):
-        if words[idx] == "und" and words[idx - 1] == "" and words[
-            idx + 1] == "":
+        if words[idx] == "und" and words[idx - 1] == "" \
+                and words[idx + 1] == "":
             words[idx] = ""
 
     resultStr = " ".join(words)

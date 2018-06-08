@@ -65,8 +65,8 @@ class TestNiceNumberFormat(unittest.TestCase):
                                  nice_number(number, lang="de-de")))
 
     def test_specify_denominator(self):
-        self.assertEqual(nice_number(5.5, lang="de-de", denominators=[1, 2, 3]),
-                         '5 und ein halb',
+        self.assertEqual(nice_number(5.5, lang="de-de",
+                                     denominators=[1, 2, 3]), '5 und ein halb',
                          'should format 5.5 as 5 und ein halb not {}'.format(
                              nice_number(5.5, denominators=[1, 2, 3])))
         self.assertEqual(nice_number(2.333, lang="de-de", denominators=[1, 2]),
@@ -111,12 +111,14 @@ class TestPronounceNumber(unittest.TestCase):
                          "vierhundertsechsundfünfzig Billionen "
                          "siebenhundertneunundachtzig Milliarden "
                          "einhundertdreiundzwanzig Millionen "
-                "vierhundertsechsundfünfzigtausendsiebenhundertneunundachtzig")
+                         "vierhundertsechsundfünfzigtausendsiebenhundert"
+                         "neunundachtzig")
         self.assertEqual(pronounce_number(1, lang="de-de"), "eins")
         self.assertEqual(pronounce_number(10, lang="de-de"), "zehn")
         self.assertEqual(pronounce_number(15, lang="de-de"), u"fünfzehn")
         self.assertEqual(pronounce_number(20, lang="de-de"), "zwanzig")
-        self.assertEqual(pronounce_number(27, lang="de-de"), "siebenundzwanzig")
+        self.assertEqual(pronounce_number(27, lang="de-de"),
+                         "siebenundzwanzig")
         self.assertEqual(pronounce_number(30, lang="de-de"), u"dreißig")
         self.assertEqual(pronounce_number(33, lang="de-de"), u"dreiunddreißig")
         self.assertEqual(pronounce_number(71, lang="de-de"),
@@ -135,7 +137,8 @@ class TestPronounceNumber(unittest.TestCase):
     def test_convert_negative_int_de(self):
         self.assertEqual(pronounce_number(-1, lang="de-de"), "minus eins")
         self.assertEqual(pronounce_number(-10, lang="de-de"), "minus zehn")
-        self.assertEqual(pronounce_number(-15, lang="de-de"), u"minus fünfzehn")
+        self.assertEqual(pronounce_number(-15, lang="de-de"),
+                         u"minus fünfzehn")
         self.assertEqual(pronounce_number(-20, lang="de-de"), "minus zwanzig")
         self.assertEqual(pronounce_number(-27, lang="de-de"),
                          "minus siebenundzwanzig")
