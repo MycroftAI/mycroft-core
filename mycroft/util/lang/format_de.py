@@ -40,7 +40,7 @@ NUM_STRING_DE = {
     18: 'achtzehn',
     19: 'neunzehn',
     20: 'zwanzig',
-    30: u'dreißg',
+    30: u'dreißig',
     40: 'vierzig',
     50: u'fünfzig',
     60: 'sechzig',
@@ -51,10 +51,13 @@ NUM_STRING_DE = {
 }
 
 # German uses "long scale" https://en.wikipedia.org/wiki/Long_and_short_scales
+# Currently, numbers are limited to 1000000000000000000000000,
+# but NUM_POWERS_OF_TEN can be extended to include additional number words
 
-NUM_POWERS_OF_TEN = {
-    'tausend','Million','Milliarde','Billion','Billiarde','Trillion','Trilliarde'
-}
+
+NUM_POWERS_OF_TEN = [
+    '', 'tausend','Million','Milliarde','Billion','Billiarde','Trillion','Trilliarde'
+]
 
 FRACTION_STRING_DE = {
     2: 'halb',
@@ -78,6 +81,13 @@ FRACTION_STRING_DE = {
     20: 'zwanzigstel'
 }
 
+
+
+#Numbers below 1 million are written in one word in German, yielding very long words
+#In some circumstances it may better to seperate individual words
+#Set EXTRA_SPACE=" " for separating numbers below 1 million (orthographically incorrect)
+#Set EXTRA_SPACE="" for correct spelling, this is standard
+
 #EXTRA_SPACE = " "
 EXTRA_SPACE =""
 
@@ -95,7 +105,7 @@ def nice_number_de(number, speech, denominators):
     result = convert_to_mixed_fraction(number, denominators)
     if not result:
         # Give up, just represent as a 3 decimal number
-        return str(round(number, 3))
+        return str(round(number, 3)).replace(".",",")
     whole, num, den = result
     if not speech:
         if num == 0:
@@ -132,10 +142,6 @@ def pronounce_number_de(num, places=2):
         (str): The pronounced number
 
     """
-
-
-
-
 
     def pronounce_triplet_de(num):
         result = ""
@@ -223,9 +229,30 @@ def pronounce_number_de(num, places=2):
             whole_number_part = floor(num)
             fractional_part = num - whole_number_part
             result += pronounce_whole_number_de(whole_number_part)
-            result += " Komma"
-            result += pronounce_fractional_de(fractional_part,places)
+            if places > 0:
+                result += " Komma"
+                result += pronounce_fractional_de(fractional_part,places)
             return result
+
+def pronounce_ordinal_de(num):
+
+    # ordinals for 1, 3, 7 and 8 are irregular
+    # this produces the base form, it will have to be adapted for genus, casus, numerus
+
+    ordinals = ["nullte", "erste", "zweite", "dritte", "vierte", u"fünfte",
+                "sechste", "siebte", "achte"]
+
+    # only for whole positive numbers including zero
+    if num < 0 or num != int(num):
+        return num
+    elif num < 9:
+        return ordinals[num]
+    elif num < 20:
+        return pronounce_number_de(num) + "te"
+    else:
+        return pronounce_number_de(num) + "ste"
+
+
 
 
 def nice_time_de(dt, speech=True, use_24hour=False, use_ampm=False):
@@ -260,30 +287,17 @@ def nice_time_de(dt, speech=True, use_24hour=False, use_ampm=False):
         return string
 
     # Generate a speakable version of the time
+    speak = ""
     if use_24hour:
-        speak = ""
-
-        # speaking leading 0 not needed in German: 08:00 -> "acht Uhr"
-        # 13:00 -> "13 Uhr"
-        if string[0] == '0':
-        #    speak += pronounce_number_en(int(string[0])) + " "
-            speak += pronounce_number_de(int(string[1]))
+        if dt.hour == 1:
+            speak += "ein" #01:00 is "ein Uhr" not "eins Uhr"
         else:
-            speak = pronounce_number_de(int(string[0:2]))
+            speak += pronounce_number_de(dt.hour)
+        speak += " Uhr"
+        if not dt.minute== 0: #zero minutes are not pronounced, 13:00 is "13 Uhr" not "13 hundred hours"
+            speak += " " + pronounce_number_de(dt.minute)
 
-        speak += " "
-
-        # not needed in German 13:00 -> "dreizehn Uhr"
-        if string[3:5] == '00':
-            speak += "Uhr "
-        else:
-            if string[3] == '0':
-                #not needed in German, EN 13:05 -> "13 Oh 5" or "13 zero 5", DE 13:05 -> "13 Uhr 5" (leading zero is dropped)
-                #speak += pronounce_number_de(0) + " "
-                speak += "Uhr " + pronounce_number_de(int(string[4]))
-            else:
-                speak += "Uhr " + pronounce_number_de(int(string[3:5]))
-        return speak
+        return speak # ampm is ignored when use_24hour is true
     else:
         if dt.hour == 0 and dt.minute == 0:
             return "Mitternacht"
@@ -292,22 +306,33 @@ def nice_time_de(dt, speech=True, use_24hour=False, use_ampm=False):
         # TODO: "half past 3", "a quarter of 4" and other idiomatic times
 
         if dt.hour == 0:
-            speak = pronounce_number_de(12)
-        elif dt.hour < 13:
-            speak = pronounce_number_de(dt.hour)
+            speak += pronounce_number_de(12)
+        elif dt.hour <= 13:
+            if dt.hour == 1 or dt.hour == 13: #01:00 and 13:00 is "ein Uhr" not "eins Uhr"
+                speak += 'ein'
+            else:
+                speak += pronounce_number_de(dt.hour)
         else:
-            speak = pronounce_number_de(dt.hour-12)
+            speak += pronounce_number_de(dt.hour-12)
 
-        if dt.minute == 0:
-            if not use_ampm:
-                return speak + " Uhr "
-        else:
-            speak += " Uhr " + pronounce_number_en(dt.minute)
+        speak += " Uhr"
+
+        if not dt.minute == 0:
+            speak += " " + pronounce_number_de(dt.minute)
+
+
 
         if use_ampm:
             if dt.hour > 11:
-                speak += " PM"
+                if dt.hour < 18:
+                    speak += " nachmittags"     # 12:01 - 17:59 nachmittags/afternoon
+                elif dt.hour < 22:
+                    speak += " abends"          # 18:00 - 21:59 abends/evening
+                else:
+                    speak += " nachts"          # 22:00 - 23:59 nachts/at night
+            elif dt.hour < 3:
+                speak += " nachts"              # 00:01 - 02:59 nachts/at night
             else:
-                speak += " AM"
+                speak += " morgens"             # 03:00 - 11:59 morgens/in the morning
 
         return speak
