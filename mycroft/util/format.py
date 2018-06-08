@@ -17,8 +17,9 @@ from mycroft.util.lang.format_en import *
 from mycroft.util.lang.format_pt import *
 from mycroft.util.lang.format_it import *
 from mycroft.util.lang.format_sv import *
-from mycroft.util.lang.format_de import *
-
+from mycroft.util.lang.format_de import nice_number_de
+from mycroft.util.lang.format_de import nice_time_de
+from mycroft.util.lang.format_de import pronounce_number_de
 from mycroft.util.lang.format_fr import nice_number_fr
 from mycroft.util.lang.format_fr import nice_time_fr
 from mycroft.util.lang.format_fr import pronounce_number_fr

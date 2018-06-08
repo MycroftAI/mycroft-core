@@ -591,28 +591,6 @@ def extract_datetime_de(string, currentDate=None):
                     remainder = "am"
                     used = 1
                 else:
-                    '''
-                    if wordNext == "pm" or wordNext == "p.m.":
-                        strHH = strNum
-                        remainder = "pm"
-                        used = 1
-                    elif wordNext == "am" or wordNext == "a.m.":
-                        strHH = strNum
-                        remainder = "am"
-                        used = 1
-                    
-                    if (
-                            int(word) > 100 and
-                            (
-                                wordPrev == "uhr"
-                            )):
-                        # 0800 hours (pronounced oh-eight-hundred)
-                        strHH = int(word) / 100
-                        strMM = int(word) - strHH * 100
-                        military = True
-                        if wordNext == "uhr":
-                            used += 1
-                    elif'''
                     if wordNext == "stund" and int(word) < 100:
                         # "in 3 hours"
                         hrOffset = int(word)

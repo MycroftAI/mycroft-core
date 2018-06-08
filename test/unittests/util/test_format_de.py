@@ -20,7 +20,7 @@ import datetime
 from mycroft.util.format import nice_number
 from mycroft.util.format import nice_time
 from mycroft.util.format import pronounce_number
-from mycroft.util.format import pronounce_ordinal_de
+from mycroft.util.lang.format_de import pronounce_ordinal_de
 
 # fractions are not capitalized for now
 NUMBERS_FIXTURE_DE = {

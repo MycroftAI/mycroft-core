@@ -134,6 +134,7 @@ class TimeRulesEnUs(AbstractTimeRules):
         if group.__contains__('sunday'):
             days[6] = True
 
+
 class TimeRulesDe(AbstractTimeRules):
     def __init__(self):
         super(TimeRulesDe, self).__init__()
@@ -142,17 +143,19 @@ class TimeRulesDe(AbstractTimeRules):
         self.rules = {
             'time_advs': 'heute|heute abend|morgen',
             'time_units': 'sekunde|minute|stunde|tag|woche|monat|jahr',
-            'day_parts': u'daemmerung|morgen|mittag|nachmittag|abend|nacht|mitternacht',
-            'week_days': ('montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag'),
-            'months': (u'januar|februar|maerz|april|mai|juni|juli|august|oktober|'
-                'september|november|dezember'),
+            'day_parts': u'daemmerung|morgen|mittag|nachmittag|abend|nacht|'
+                         u'mitternacht',
+            'week_days': 'montag|dienstag|mittwoch|donnerstag|freitag|samstag|'
+                         'sonntag',
+            'months': (u'januar|februar|maerz|april|mai|juni|juli|august|'
+                       'oktober|september|november|dezember'),
             'mealtimes': (
                 'fruehstueck|mittagszeit|teestunde|abendessenszeit|'
                 'mittagsessen|kaffee|abendessen'),
             'celebrations': 'ostern|weihnachten',
             'repeat_time_regex': (
-                '((jede|jeder|jeden|alle) (single )?(tag|(<week_days>)s?( (and )?'
-                '(<week_days>)s?)*))|taeglich|jeden tag'),
+                '((jede|jeder|jeden|alle) (single )?(tag|(<week_days>)s?'
+                '( (and )?(<week_days>)s?)*))|taeglich|jeden tag'),
             'time_regex': [
                 '(<time_advs>)',
                 '((in der|am|um|morgen)\s)?(<day_parts>)',
@@ -197,6 +200,7 @@ class TimeRulesDe(AbstractTimeRules):
             days[5] = True
         if group.__contains__('sonntag'):
             days[6] = True
+
 
 class TimeRulesPtBr(AbstractTimeRules):
     def __init__(self):
