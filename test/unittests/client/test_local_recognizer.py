@@ -37,11 +37,8 @@ class LocalRecognizerTest(unittest.TestCase):
                     "record_wake_words": False,
                     "record_utterances": False,
                     "wake_word_upload": {
-                        "enable": False,
-                        "server": "mycroft.wickedbroadband.com",
-                        "port": 1776,
-                        "user": "precise",
-                        "folder": "/home/precise/wakewords"
+                        "disable": False,
+                        "url": "https://training.mycroft.ai/precise/upload"
                     },
                     "phoneme_duration": 120,
                     "multiplier": 1.0,
@@ -97,11 +94,8 @@ class LocalRecognizerInitTest(unittest.TestCase):
                 "record_wake_words": False,
                 "record_utterances": False,
                 "wake_word_upload": {
-                    "enable": False,
-                    "server": "mycroft.wickedbroadband.com",
-                    "port": 1776,
-                    "user": "precise",
-                    "folder": "/home/precise/wakewords"
+                    "disable": False,
+                    "url": "https://training.mycroft.ai/precise/upload"
                 },
                 "phoneme_duration": 120,
                 "multiplier": 1.0,

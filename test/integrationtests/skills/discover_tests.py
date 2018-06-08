@@ -16,8 +16,7 @@ import pytest
 
 import glob
 import os
-from os.path import exists
-import sys
+from os.path import exists, join, expanduser, abspath
 import imp
 
 from mycroft.configuration import Configuration
@@ -38,7 +37,7 @@ def discover_tests(skills_dir):
     tests = {}
     skills = [
         skill for skill
-        in glob.glob(skills_dir + '/*')
+        in sorted(glob.glob(skills_dir + '/*'))
         if os.path.isdir(skill)
     ]
 
@@ -54,7 +53,8 @@ def discover_tests(skills_dir):
         # Find all intent test files
         test_intent_files = [
             (f, test_env) for f
-            in glob.glob(os.path.join(skill, 'test/intent/*.intent.json'))
+            in sorted(
+                glob.glob(os.path.join(skill, 'test/intent/*.intent.json')))
         ]
         if len(test_intent_files) > 0:
             tests[skill] = test_intent_files
@@ -63,21 +63,27 @@ def discover_tests(skills_dir):
 
 
 def get_skills_dir():
-    if len(sys.argv) > 1:
-        return sys.argv[1]
-    return Configuration.get()['skills']['msm']['directory']
+    return (
+        expanduser(os.environ.get('SKILLS_DIR', '')) or
+        expanduser(join(
+            Configuration.get()['data_dir'],
+            Configuration.get()['skills']['msm']['directory']
+        ))
+    )
 
 
 skills_dir = get_skills_dir()
 tests = discover_tests(skills_dir)
 loader = MockSkillsLoader(skills_dir)
 emitter = loader.load_skills()
+skill_dir = os.environ.get('SKILL_DIR', '')
 
 
 class TestCase(object):
     @pytest.mark.parametrize("skill,test", sum([
         [(skill, test) for test in tests[skill]]
         for skill in tests.keys()
+        if not skill_dir or abspath(skill).startswith(abspath(skill_dir))
         ], []))
     def test_skill(self, skill, test):
         example, test_env = test

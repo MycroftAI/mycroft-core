@@ -114,6 +114,13 @@ function launch-background() {
         echo "Starting background service $1"
     fi
 
+    # Security warning/reminder for the user
+    if [[ "${1}" = "bus" ]] ; then
+        echo "CAUTION: The Mycroft bus is an open websocket with no built-in security"
+        echo "         measures.  You are responsible for protecting the local port"
+        echo "         8181 with a firewall as appropriate."
+    fi
+
     # Launch process in background, sending log to scripts/log/mycroft-*.log
     python ${_script} $_params >> ${scripts_dir}/logs/mycroft-${1}.log 2>&1 &
 }
@@ -175,11 +182,11 @@ case ${_opt} in
     ;;
   "unittest")
     source ${VIRTUALENV_ROOT}/bin/activate
-    pytest test/unittests/ --cov=mycroft
+    pytest test/unittests/ --cov=mycroft "$@"
     ;;
   "skillstest")
     source ${VIRTUALENV_ROOT}/bin/activate
-    pytest test/integrationtests/skills/discover_tests.py
+    pytest test/integrationtests/skills/discover_tests.py "$@"
     ;;
   "audiotest")
     launch-process ${_opt}
