@@ -120,8 +120,6 @@ def nice_number_de(number, speech, denominators):
     den_str = FRACTION_STRING_DE[den]
     if whole == 0:
         if num == 1:
-            if den == 2:
-                return_string = ''
             return_string = 'ein {}'.format(den_str)
         else:
             return_string = '{} {}'.format(num, den_str)

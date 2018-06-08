@@ -87,8 +87,8 @@ def extractnumber_de(text):
         (int) or (float): The value of extracted number
 
 
-    undefined articles cannot be suppressed in German: 'ein Pferd' means 'one
-    horse' and 'a horse'
+    undefined articles cannot be suppressed in German:
+    'ein Pferd' means 'one horse' and 'a horse'
 
     """
     aWords = text.split()
@@ -162,7 +162,6 @@ def extractnumber_de(text):
     # Return the string with the number related words removed
     # (now empty strings, so strlen == 0)
     aWords = [word for word in aWords if len(word) > 0]
-    text = ' '.join(aWords)
 
     return val
 
@@ -386,7 +385,7 @@ def extract_datetime_de(string, currentDate=None):
         # 2 months from July
 
         if (
-                word == "von" or word == "nach" or word == "ab") and wordNext\
+                word == "von" or word == "nach" or word == "ab") and wordNext \
                 in validFollowups:
             used = 2
             fromFlag = True
@@ -434,7 +433,6 @@ def extract_datetime_de(string, currentDate=None):
     secOffset = 0
     hrAbs = 0
     minAbs = 0
-    military = False
 
     for idx, word in enumerate(words):
         if word == "":
@@ -557,7 +555,6 @@ def extract_datetime_de(string, currentDate=None):
                         used += 1
                     else:
                         if timeQualifier != "":
-                            military = True
                             if strHH <= 12 and \
                                     (timeQualifier == "abends" or
                                      timeQualifier == "nachmittags"):
@@ -647,31 +644,30 @@ def extract_datetime_de(string, currentDate=None):
                             if wordNextNext[:10] == "nachmittag":
                                 used += 1
                                 remainder = "pm"
-                            elif wordNextNext == "am" and wordNextNextNext ==\
+                            elif wordNextNext == "am" and wordNextNextNext == \
                                     "nachmittag":
                                 used += 2
                                 remainder = "pm"
                             elif wordNextNext[:5] == "abend":
                                 used += 1
                                 remainder = "pm"
-                            elif wordNextNext == "am" and wordNextNextNext ==\
+                            elif wordNextNext == "am" and wordNextNextNext == \
                                     "abend":
                                 used += 2
                                 remainder = "pm"
                             elif wordNextNext[:7] == "morgens":
                                 used += 1
                                 remainder = "am"
-                            elif wordNextNext == "am" and wordNextNextNext ==\
+                            elif wordNextNext == "am" and wordNextNextNext == \
                                     "morgen":
                                 used += 2
                                 remainder = "am"
                             elif wordNextNext == "nachts":
                                 used += 1
-                                if int(word) >= 8 and int(word) <= 12:
+                                if 8 <= int(word) <= 12:
                                     remainder = "pm"
                                 else:
                                     remainder = "am"
-
 
                         elif is_numeric(wordNextNext):
                             strMM = wordNextNext
@@ -700,7 +696,7 @@ def extract_datetime_de(string, currentDate=None):
                                     remainder = "am"
                                 elif wordNextNextNext == "nachts":
                                     used += 1
-                                    if int(word) >= 8 and int(word) <= 12:
+                                    if 8 <= int(word) <= 12:
                                         remainder = "pm"
                                     else:
                                         remainder = "am"
@@ -729,7 +725,7 @@ def extract_datetime_de(string, currentDate=None):
                             remainder = "am"
                         elif wordNext == "nachts":
                             used += 1
-                            if int(word) >= 8 and int(word) <= 12:
+                            if 8 <= int(word) <= 12:
                                 remainder = "pm"
                             else:
                                 remainder = "am"
@@ -913,22 +909,22 @@ def isOrdinal_de(input_str):
     if lowerstr[-3:] == "ste":  # from 20 suffix is -ste*
         lowerstr = lowerstr[:-3]
         if lowerstr in de_numbers:
-            return (de_numbers[lowerstr])
+            return de_numbers[lowerstr]
 
     if lowerstr[-4:] in ["ster", "stes", "sten", "stem"]:
         lowerstr = lowerstr[:-4]
         if lowerstr in de_numbers:
-            return (de_numbers[lowerstr])
+            return de_numbers[lowerstr]
 
     if lowerstr[-2:] == "te":  # below 20 suffix is -te*
         lowerstr = lowerstr[:-2]
         if lowerstr in de_numbers:
-            return (de_numbers[lowerstr])
+            return de_numbers[lowerstr]
 
     if lowerstr[-3:] in ["ter", "tes", "ten", "tem"]:
         lowerstr = lowerstr[:-3]
         if lowerstr in de_numbers:
-            return (de_numbers[lowerstr])
+            return de_numbers[lowerstr]
 
     return False
 

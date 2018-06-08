@@ -111,7 +111,7 @@ class TestPronounceNumber(unittest.TestCase):
                          "vierhundertsechsundfünfzig Billionen "
                          "siebenhundertneunundachtzig Milliarden "
                          "einhundertdreiundzwanzig Millionen "
-                         "vierhundertsechsundfünfzigtausendsiebenhundertneunundachtzig")
+                "vierhundertsechsundfünfzigtausendsiebenhundertneunundachtzig")
         self.assertEqual(pronounce_number(1, lang="de-de"), "eins")
         self.assertEqual(pronounce_number(10, lang="de-de"), "zehn")
         self.assertEqual(pronounce_number(15, lang="de-de"), u"fünfzehn")
