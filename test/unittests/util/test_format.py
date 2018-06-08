@@ -19,6 +19,9 @@ import datetime
 
 from mycroft.util.format import nice_number
 from mycroft.util.format import nice_time
+from mycroft.util.format import nice_date
+from mycroft.util.format import nice_date_time
+from mycroft.util.format import nice_year
 from mycroft.util.format import pronounce_number
 
 
@@ -246,6 +249,62 @@ class TestNiceDateFormat(unittest.TestCase):
                          "zero one zero two")
         self.assertEqual(nice_time(dt, use_24hour=True, use_ampm=False),
                          "zero one zero two")
+
+    def test_nice_date(self):
+        dt = datetime.datetime(2017, 1, 31, 0, 2, 3)
+        self.assertEqual(nice_date(dt),
+                         'tuesday, january the thirty-first, 2017')
+        self.assertEqual(nice_date(dt, lang='en-au'),
+                         'tuesday, january the thirty-first, 20:17')
+
+        dt = datetime.datetime(2018, 2, 4, 0, 2, 3)
+        self.assertEqual(nice_date(dt, lang='en-us',
+                                   now=datetime.datetime(2017, 1, 1, 0, 2, 3)),
+                         'sunday, february the fourth, 2018')
+        self.assertEqual(nice_date(dt, lang='en-us',
+                                   now=datetime.datetime(2018, 1, 1, 0, 2, 3)),
+                         'sunday, february the fourth')
+        self.assertEqual(nice_date(dt, lang='en-us',
+                                   now=datetime.datetime(2018, 2, 1, 0, 2, 3)),
+                         'sunday, the fourth')
+        self.assertEqual(nice_date(dt, lang='en-us',
+                                   now=datetime.datetime(2018, 2, 3, 0, 2, 3)),
+                         'tomorrow')
+        self.assertEqual(nice_date(dt, lang='en-us',
+                                   now=datetime.datetime(2018, 2, 4, 0, 2, 3)),
+                         'today')
+
+        # test fall back to english
+        self.assertEqual(nice_date(dt, lang='invalid',
+                                   now=datetime.datetime(2018, 2, 4, 0, 2, 3)),
+                         'today')
+
+
+    def test_nice_date_time(self):
+        # just a single test since, both date and time was already tested above
+        dt = datetime.datetime(2017, 1, 31, 13, 22, 3)
+        self.assertEqual(
+            nice_date_time(
+                dt,
+                lang='en-us'),
+                'tuesday, january the thirty-first, 2017 at one twenty two')
+
+    def test_nice_year(self):
+        dt = datetime.datetime(2017, 1, 31, 13, 22, 3)
+        self.assertEqual(nice_year(dt), '2017')
+        self.assertEqual(nice_year(dt, lang='en-au'), '20:17')
+        dt = datetime.datetime(1984, 1, 31, 13, 22, 3)
+        self.assertEqual(nice_year(dt), '19:84')
+        dt = datetime.datetime(99, 1, 31, 13, 22, 3)
+        self.assertEqual(nice_year(dt, bc=True), '99 b.c.')
+        dt = datetime.datetime(1968, 1, 31, 13, 22, 3)
+        self.assertEqual(nice_year(dt, lang='en-test'), 'before we landed on the moon')
+        dt = datetime.datetime(1969, 1, 31, 13, 22, 3)
+        self.assertEqual(nice_year(dt, lang='en-test'), 'when we landed on the moon')
+        dt = datetime.datetime(1970, 1, 31, 13, 22, 3)
+        self.assertEqual(nice_year(dt, lang='en-test'), '19:70')
+        dt = datetime.datetime(1644, 1, 31, 13, 22, 3)
+        self.assertEqual(nice_year(dt, lang='en-test'), 'while Newton lived')
 
 
 if __name__ == "__main__":

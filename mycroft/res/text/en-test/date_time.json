@@ -1,0 +1,76 @@
+{
+  "year_format": {
+    "1": { "from": "1970", "to": "1999", "format": "{century}:{decade} {bc}" },
+    "2": { "from": "1969", "to": "1969", "format": "when we landed on the moon"},
+    "3": { "from": "1728", "to": "1968", "format": "before we landed on the moon" },
+    "4": { "from": "1643", "to": "1727", "format": "while Newton lived"},
+    "default": "{year} {bc}",
+    "bc": "b.c."
+  },
+  "date_format": {
+    "date_full": "{weekday}, {month} the {day}, {formatted_year}",
+    "date_full_no_year": "{weekday}, {month} the {day}",
+    "date_full_no_year_month": "{weekday}, the {day}",
+    "today": "today",
+    "tomorrow": "tomorrow"
+  },
+  "date_time_format": {
+    "date_time": "{formatted_date} at {formatted_time}"
+  },
+  "weekday": {
+    "0": "monday",
+    "1": "tuesday",
+    "2": "wednesday",
+    "3": "thursday",
+    "4": "friday",
+    "5": "saturday",
+    "6": "sunday"
+  },
+  "date": {
+    "1": "first",
+    "2": "second",
+    "3": "third",
+    "4": "fourth",
+    "5": "fifth",
+    "6": "sixth",
+    "7": "seventh",
+    "8": "eighth",
+    "9": "ninth",
+    "10": "tenth",
+    "11": "eleventh",
+    "12": "twelfth",
+    "13": "thirteenth",
+    "14": "fourteenth",
+    "15": "fifteenth",
+    "16": "sixteenth",
+    "17": "seventeenth",
+    "18": "eighteenth",
+    "19": "nineteenth",
+    "20": "twentieth",
+    "21": "twenty-first",
+    "22": "twenty-second",
+    "23": "twenty-third",
+    "24": "twenty-fourth",
+    "25": "twenty-fifth",
+    "26": "twenty-sixth",
+    "27": "twenty-seventh",
+    "28": "twenty-eighth",
+    "29": "twenty-ninth",
+    "30": "thirtieth",
+    "31": "thirty-first"
+  },
+  "month": {
+    "1": "january",
+    "2": "february",
+    "3": "march",
+    "4": "april",
+    "5": "may",
+    "6": "june",
+    "7": "july",
+    "8": "august",
+    "9": "september",
+    "10": "october",
+    "11": "november",
+    "12": "december"
+  }
+}
