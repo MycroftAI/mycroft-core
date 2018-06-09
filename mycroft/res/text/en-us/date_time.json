@@ -9,7 +9,8 @@
     "date_full_no_year": "{weekday}, {month} the {day}",
     "date_full_no_year_month": "{weekday}, the {day}",
     "today": "today",
-    "tomorrow": "tomorrow"
+    "tomorrow": "tomorrow",
+    "yesterday": "yesterday"
   },
   "date_time_format": {
     "date_time": "{formatted_date} at {formatted_time}"

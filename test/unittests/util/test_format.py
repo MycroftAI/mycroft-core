@@ -24,7 +24,6 @@ from mycroft.util.format import nice_date_time
 from mycroft.util.format import nice_year
 from mycroft.util.format import pronounce_number
 
-
 NUMBERS_FIXTURE_EN = {
     1.435634: '1.436',
     2: '2',
@@ -274,27 +273,28 @@ class TestNiceDateFormat(unittest.TestCase):
                                    now=datetime.datetime(2018, 2, 4, 0, 2, 3)),
                          'today')
 
-        # test fall back to english
-        self.assertEqual(nice_date(dt, lang='invalid',
-                                   now=datetime.datetime(2018, 2, 4, 0, 2, 3)),
-                         'today')
+        self.assertEqual(nice_date(dt, lang='en-us',
+                                   now=datetime.datetime(2018, 2, 5, 0, 2, 3)),
+                         'yesterday')
 
+        # test fall back to english
+        self.assertEqual(nice_date(
+            dt, lang='invalid', now=datetime.datetime(2018, 2, 4, 0, 2, 3)),
+            'today')
 
     def test_nice_date_time(self):
         # just a single test since, both date and time was already tested above
         dt = datetime.datetime(2017, 1, 31, 13, 22, 3)
-        self.assertEqual(
-            nice_date_time(
-                dt,
-                lang='en-us'),
-                'tuesday, january the thirty-first, 2017 at one twenty two')
+        self.assertEqual(nice_date_time(
+            dt,
+            lang='en-us'),
+            'tuesday, january the thirty-first, 2017 at one twenty two')
 
         # test for language not supported, result in funny time
-        self.assertEqual(
-            nice_date_time(
-                dt,
-                lang='invalid'),
-                'tuesday, january the thirty-first, 2017 at 2017-01-31 13:22:03')
+        self.assertEqual(nice_date_time(
+            dt,
+            lang='invalid'),
+            'tuesday, january the thirty-first, 2017 at 2017-01-31 13:22:03')
 
     def test_nice_year(self):
         dt = datetime.datetime(2017, 1, 31, 13, 22, 3)
@@ -305,9 +305,11 @@ class TestNiceDateFormat(unittest.TestCase):
         dt = datetime.datetime(99, 1, 31, 13, 22, 3)
         self.assertEqual(nice_year(dt, bc=True), '99 b.c.')
         dt = datetime.datetime(1968, 1, 31, 13, 22, 3)
-        self.assertEqual(nice_year(dt, lang='en-test'), 'before we landed on the moon')
+        self.assertEqual(nice_year(dt, lang='en-test'),
+                         'before we landed on the moon')
         dt = datetime.datetime(1969, 1, 31, 13, 22, 3)
-        self.assertEqual(nice_year(dt, lang='en-test'), 'when we landed on the moon')
+        self.assertEqual(nice_year(dt, lang='en-test'),
+                         'when we landed on the moon')
         dt = datetime.datetime(1970, 1, 31, 13, 22, 3)
         self.assertEqual(nice_year(dt, lang='en-test'), '19:70')
         dt = datetime.datetime(1644, 1, 31, 13, 22, 3)

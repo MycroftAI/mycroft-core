@@ -56,6 +56,8 @@ class DateTimeFormat:
                 format_str = 'tomorrow'
             if now.day == dt.day:
                 format_str = 'today'
+            if (now - datetime.timedelta(1)).day == dt.day:
+                format_str = 'yesterday'
 
         return self.lang_config[lang]['date_format'][format_str].format(
             weekday=self.lang_config[lang]['weekday'][str(dt.weekday())],
