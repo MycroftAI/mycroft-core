@@ -38,11 +38,13 @@ class DateTimeFormat:
             try:
                 with open(self.config_path + '/' + lang + '/date_time.json',
                           'r') as lang_config_file:
-                    self.lang_config[lang] = json.loads(lang_config_file.read())
+                    self.lang_config[lang] = json.loads(
+                        lang_config_file.read())
             except FileNotFoundError:
                 with open(self.config_path + '/en-us/date_time.json',
                           'r') as lang_config_file:
-                    self.lang_config[lang] = json.loads(lang_config_file.read())
+                    self.lang_config[lang] = json.loads(
+                        lang_config_file.read())
 
     def date_format(self, dt, lang, now):
         format_str = 'date_full'
@@ -67,12 +69,14 @@ class DateTimeFormat:
 
     def date_time_format(self, dt, lang, now, use_24hour, use_ampm):
         date_str = self.date_format(dt, lang, now)
-        time_str = nice_time(dt, lang, use_24hour=use_24hour, use_ampm=use_ampm)
+        time_str = nice_time(dt, lang, use_24hour=use_24hour,
+                             use_ampm=use_ampm)
         return self.lang_config[lang]['date_time_format']['date_time'].format(
             formatted_date=date_str, formatted_time=time_str)
 
     def year_format(self, dt, lang, bc):
-        formatted_bc = self.lang_config[lang]['year_format']['bc'] if bc else ''
+        formatted_bc = (
+            self.lang_config[lang]['year_format']['bc'] if bc else '')
         i = 1
         while self.lang_config[lang]['year_format'].get(str(i)):
             if (int(self.lang_config[lang]['year_format'][str(i)]['from']) <=
