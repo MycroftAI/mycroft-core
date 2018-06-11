@@ -103,7 +103,7 @@ def load_skills(emitter, skills_root):
 
 def unload_skills(skills):
     for s in skills:
-        s._shutdown()
+        s.default_shutdown()
 
 
 class InterceptEmitter(object):

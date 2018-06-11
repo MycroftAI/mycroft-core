@@ -344,7 +344,7 @@ class SkillManager(Thread):
             LOG.info('removing {}'.format(s))
             try:
                 LOG.debug('Removing: {}'.format(skills[s]))
-                skills[s]['instance']._shutdown()
+                skills[s]['instance'].default_shutdown()
             except Exception as e:
                 LOG.exception(e)
             self.loaded_skills.pop(s)
@@ -385,7 +385,7 @@ class SkillManager(Thread):
             LOG.debug("Reloading Skill: " + basename(skill_path))
             # removing listeners and stopping threads
             try:
-                skill["instance"]._shutdown()
+                skill["instance"].default_shutdown()
             except Exception:
                 LOG.exception("An error occured while shutting down {}"
                               .format(skill["instance"].name))
@@ -495,7 +495,7 @@ class SkillManager(Thread):
                 break
         try:
             self.loaded_skills[skill]['active'] = False
-            self.loaded_skills[skill]['instance']._shutdown()
+            self.loaded_skills[skill]['instance'].default_shutdown()
         except Exception as e:
             LOG.error('Couldn\'t deactivate skill, {}'.format(repr(e)))
 
@@ -545,7 +545,7 @@ class SkillManager(Thread):
             instance = skill_info.get('instance')
             if instance:
                 try:
-                    instance._shutdown()
+                    instance.default_shutdown()
                 except Exception:
                     LOG.exception('Shutting down skill: ' + name)
 

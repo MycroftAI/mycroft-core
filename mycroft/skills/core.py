@@ -926,8 +926,11 @@ class MycroftSkill(object):
         """
         pass
 
-    def _shutdown(self):
-        """Parent function called internally to shut down everything"""
+    def default_shutdown(self):
+        """Parent function called internally to shut down everything.
+
+        Shuts down known entities and calls skill specific shutdown method.
+        """
         try:
             self.shutdown()
         except Exception as e:
@@ -1207,9 +1210,9 @@ class FallbackSkill(MycroftSkill):
             handler = self.instance_fallback_handlers.pop()
             self.remove_fallback(handler)
 
-    def _shutdown(self):
+    def default_shutdown(self):
         """
             Remove all registered handlers and perform skill shutdown.
         """
         self.remove_instance_handlers()
-        super(FallbackSkill, self)._shutdown()
+        super(FallbackSkill, self).default_shutdown()
