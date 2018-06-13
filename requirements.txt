@@ -27,12 +27,11 @@ pulsectl==17.7.4
 google-api-python-client==1.6.4
 monotonic
 
-msm==0.5.14
+msm==0.5.15
 msk==0.3.9
 adapt-parser==0.3.0
 
 # dev setup tools
 pep8==1.7.0
 fann2==1.0.7
-# Also update in mycroft/skills/padatious_service.py
-padatious==0.3.7
+padatious==0.4.1
