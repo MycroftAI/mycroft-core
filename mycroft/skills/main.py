@@ -19,7 +19,6 @@ import time
 from glob import glob
 from itertools import chain
 
-import monotonic
 from os.path import exists, join, basename, dirname, expanduser, isfile
 from threading import Timer, Thread, Event
 
@@ -47,7 +46,7 @@ event_scheduler = None
 skill_manager = None
 
 # Remember "now" at startup.  Used to detect clock changes.
-start_ticks = monotonic.monotonic()
+start_ticks = time.monotonic()
 start_clock = time.time()
 
 DEBUG = Configuration.get().get("debug", False)
@@ -117,7 +116,7 @@ def check_connection():
             time.sleep(15)  # TODO: Generate/listen for a message response...
 
         # Check if the time skewed significantly.  If so, reboot
-        skew = abs((monotonic.monotonic() - start_ticks) -
+        skew = abs((time.monotonic() - start_ticks) -
                    (time.time() - start_clock))
         if skew > 60 * 60:
             # Time moved by over an hour in the NTP sync. Force a reboot to
