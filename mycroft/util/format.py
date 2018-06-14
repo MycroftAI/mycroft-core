@@ -62,19 +62,20 @@ class DateTimeFormat:
                     i = i + 1
 
     def _number_strings(self, number, lang):
-        x = (self.lang_config[lang]['number'].get(str(number % 10))
-             or str(number % 10))
-        xx = (self.lang_config[lang]['number'].get(str(number % 100))
-              or str(number % 100))
+        x = (self.lang_config[lang]['number'].get(str(number % 10)) or
+             str(number % 10))
+        xx = (self.lang_config[lang]['number'].get(str(number % 100)) or
+              str(number % 100))
         x_in_x0 = self.lang_config[lang]['number'].get(
             str(int(number % 100 / 10))) or str(int(number % 100 / 10))
         x0 = (self.lang_config[lang]['number'].get(
-            str(int(number % 100 / 10) * 10))
-              or str(int(number % 100 / 10) * 10))
-        xxx = self.lang_config[lang]['number'].get(str(number % 1000)) or str(
-            number % 1000)
-        x00 = self.lang_config[lang]['number'].get(str(int(
-            number % 1000 / 100) * 100)) or str(int(number % 1000 / 100) * 100)
+            str(int(number % 100 / 10) * 10)) or
+              str(int(number % 100 / 10) * 10))
+        xxx = (self.lang_config[lang]['number'].get(str(number % 1000)) or
+               str(number % 1000))
+        x00 = (self.lang_config[lang]['number'].get(str(int(
+            number % 1000 / 100) * 100)) or
+               str(int(number % 1000 / 100) * 100))
         x_in_x00 = self.lang_config[lang]['number'].get(str(int(
             number % 1000 / 100))) or str(int(number % 1000 / 100))
         xx00 = self.lang_config[lang]['number'].get(str(int(
@@ -82,9 +83,9 @@ class DateTimeFormat:
                                                  100)
         xx_in_xx00 = self.lang_config[lang]['number'].get(str(int(
             number % 10000 / 100))) or str(int(number % 10000 / 100))
-        x000 = self.lang_config[lang]['number'].get(str(int(
-            number % 10000 / 1000) * 1000)) or str(int(number % 10000 / 1000)
-                                                   * 1000)
+        x000 = (self.lang_config[lang]['number'].get(str(int(
+            number % 10000 / 1000) * 1000)) or
+                str(int(number % 10000 / 1000) * 1000))
         x_in_x000 = self.lang_config[lang]['number'].get(str(int(
             number % 10000 / 1000))) or str(int(number % 10000 / 1000))
         x0_in_x000 = self.lang_config[lang]['number'].get(str(int(
