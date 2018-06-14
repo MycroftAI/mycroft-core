@@ -30,7 +30,8 @@ import re
 
 NUMBER_TUPLE = namedtuple(
     'number',
-    'x, xx, x0, x_in_x0, xxx, x00, x_in_x00, xx00, xx_in_xx00, x000, x_in_x000, x0_in_x000')
+    ('x, xx, x0, x_in_x0, xxx, x00, x_in_x00, xx00, xx_in_xx00, x000, ' +
+     'x_in_x000, x0_in_x000'))
 
 
 class DateTimeFormat:
