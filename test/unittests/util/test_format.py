@@ -14,8 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import json
 import unittest
 import datetime
+from pathlib import Path
 
 from mycroft.util.format import nice_number
 from mycroft.util.format import nice_time
@@ -23,6 +25,7 @@ from mycroft.util.format import nice_date
 from mycroft.util.format import nice_date_time
 from mycroft.util.format import nice_year
 from mycroft.util.format import pronounce_number
+from mycroft.util.format import date_time_format
 
 NUMBERS_FIXTURE_EN = {
     1.435634: '1.436',
@@ -143,6 +146,18 @@ class TestPronounceNumber(unittest.TestCase):
 # def nice_time(dt, lang="en-us", speech=True, use_24hour=False,
 #              use_ampm=False):
 class TestNiceDateFormat(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Read date_time_test.json files for test data
+        cls.test_config = {}
+        p = Path(date_time_format.config_path)
+        for sub_dir in [x for x in p.iterdir() if x.is_dir()]:
+            if (sub_dir / 'date_time_test.json').exists():
+                print("Getting test for " +
+                      str(sub_dir / 'date_time_test.json'))
+                with (sub_dir / 'date_time_test.json').open() as f:
+                    cls.test_config[sub_dir.parts[-1]] = json.loads(f.read())
+
     def test_convert_times(self):
         dt = datetime.datetime(2017, 1, 31,
                                13, 22, 3)
@@ -250,70 +265,80 @@ class TestNiceDateFormat(unittest.TestCase):
                          "zero one zero two")
 
     def test_nice_date(self):
-        dt = datetime.datetime(2017, 1, 31, 0, 2, 3)
-        self.assertEqual(nice_date(dt),
-                         'tuesday, january the thirty-first, 2017')
-        self.assertEqual(nice_date(dt, lang='en-au'),
-                         'tuesday, january the thirty-first, 20:17')
-
-        dt = datetime.datetime(2018, 2, 4, 0, 2, 3)
-        self.assertEqual(nice_date(dt, lang='en-us',
-                                   now=datetime.datetime(2017, 1, 1, 0, 2, 3)),
-                         'sunday, february the fourth, 2018')
-        self.assertEqual(nice_date(dt, lang='en-us',
-                                   now=datetime.datetime(2018, 1, 1, 0, 2, 3)),
-                         'sunday, february the fourth')
-        self.assertEqual(nice_date(dt, lang='en-us',
-                                   now=datetime.datetime(2018, 2, 1, 0, 2, 3)),
-                         'sunday, the fourth')
-        self.assertEqual(nice_date(dt, lang='en-us',
-                                   now=datetime.datetime(2018, 2, 3, 0, 2, 3)),
-                         'tomorrow')
-        self.assertEqual(nice_date(dt, lang='en-us',
-                                   now=datetime.datetime(2018, 2, 4, 0, 2, 3)),
-                         'today')
-
-        self.assertEqual(nice_date(dt, lang='en-us',
-                                   now=datetime.datetime(2018, 2, 5, 0, 2, 3)),
-                         'yesterday')
+        for lang in self.test_config:
+            i = 1
+            while (self.test_config[lang].get('test_nice_date') and
+                   self.test_config[lang]['test_nice_date'].get(str(i))):
+                p = self.test_config[lang]['test_nice_date'][str(i)]
+                dt = eval('datetime.datetime(' + p['datetime_param'] + ')')
+                now = None if not eval(p['now']) else eval(
+                    'datetime.datetime(' + p['now'] + ')')
+                print('Testing for ' + lang + ' that ' + str(dt) +
+                      ' is date ' + p['assertEqual'])
+                self.assertEqual(p['assertEqual'], nice_date(dt, lang=lang,
+                                                             now=now))
+                i = i + 1
 
         # test fall back to english
+        dt = datetime.datetime(2018, 2, 4, 0, 2, 3)
         self.assertEqual(nice_date(
             dt, lang='invalid', now=datetime.datetime(2018, 2, 4, 0, 2, 3)),
             'today')
 
+        # test all days in a year for all languages,
+        # that some output is produced
+        for lang in self.test_config:
+            for dt in (datetime.datetime(2017, 12, 30, 0, 2, 3) +
+                       datetime.timedelta(n) for n in range(368)):
+                self.assertTrue(len(nice_date(dt, lang=lang)) > 0)
+
     def test_nice_date_time(self):
-        # just a single test since, both date and time was already tested above
-        dt = datetime.datetime(2017, 1, 31, 13, 22, 3)
-        self.assertEqual(nice_date_time(
-            dt,
-            lang='en-us'),
-            'tuesday, january the thirty-first, 2017 at one twenty two')
+        for lang in self.test_config:
+            i = 1
+            while (self.test_config[lang].get('test_nice_date_time') and
+                   self.test_config[lang]['test_nice_date_time'].get(str(i))):
+                p = self.test_config[lang]['test_nice_date_time'][str(i)]
+                dt = eval('datetime.datetime(' + p['datetime_param'] + ')')
+                now = None if not eval(p['now']) else eval(
+                    'datetime.datetime(' + p['now'] + ')')
+                print('Testing for ' + lang + ' that ' + str(dt) +
+                      ' is date time ' + p['assertEqual'])
+                self.assertEqual(
+                    p['assertEqual'],
+                    nice_date_time(dt, lang=lang, now=now,
+                                   use_24hour=eval(p['use_24hour']),
+                                   use_ampm=eval(p['use_ampm'])))
+                i = i + 1
 
         # test for language not supported, result in funny time
+        dt = datetime.datetime(2017, 1, 31, 13, 22, 3)
         self.assertEqual(nice_date_time(
             dt,
             lang='invalid'),
-            'tuesday, january the thirty-first, 2017 at 2017-01-31 13:22:03')
+            'tuesday, january the thirty-first, ' +
+            'two thousand and seventeen at 2017-01-31 13:22:03')
 
     def test_nice_year(self):
-        dt = datetime.datetime(2017, 1, 31, 13, 22, 3)
-        self.assertEqual(nice_year(dt), '2017')
-        self.assertEqual(nice_year(dt, lang='en-au'), '20:17')
-        dt = datetime.datetime(1984, 1, 31, 13, 22, 3)
-        self.assertEqual(nice_year(dt), '19:84')
-        dt = datetime.datetime(99, 1, 31, 13, 22, 3)
-        self.assertEqual(nice_year(dt, bc=True), '99 b.c.')
-        dt = datetime.datetime(1968, 1, 31, 13, 22, 3)
-        self.assertEqual(nice_year(dt, lang='en-test'),
-                         'before we landed on the moon')
-        dt = datetime.datetime(1969, 1, 31, 13, 22, 3)
-        self.assertEqual(nice_year(dt, lang='en-test'),
-                         'when we landed on the moon')
-        dt = datetime.datetime(1970, 1, 31, 13, 22, 3)
-        self.assertEqual(nice_year(dt, lang='en-test'), '19:70')
-        dt = datetime.datetime(1644, 1, 31, 13, 22, 3)
-        self.assertEqual(nice_year(dt, lang='en-test'), 'while Newton lived')
+        for lang in self.test_config:
+            i = 1
+            while (self.test_config[lang].get('test_nice_year') and
+                   self.test_config[lang]['test_nice_year'].get(str(i))):
+                p = self.test_config[lang]['test_nice_year'][str(i)]
+                dt = eval('datetime.datetime(' + p['datetime_param'] + ')')
+                print('Testing for ' + lang + ' that ' + str(dt) +
+                      ' is year ' + p['assertEqual'])
+                self.assertEqual(p['assertEqual'], nice_year(dt, lang=lang,
+                                                             bc=eval(p['bc'])))
+                i = i + 1
+
+        # Test all years from 0 to 9999 for all languages,
+        # that some output is produced
+        for lang in self.test_config:
+            for i in range(1, 9999):
+                dt = eval('datetime.datetime(' + str(i) + ',1, 31, 13, 2, 3)')
+                self.assertTrue(len(nice_year(dt, lang=lang)) > 0)
+                # Looking through the date sequence can be helpful
+#                print(nice_year(dt, lang=lang))
 
 
 if __name__ == "__main__":

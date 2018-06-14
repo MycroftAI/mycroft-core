@@ -22,10 +22,15 @@ from mycroft.util.lang.format_fr import nice_number_fr
 from mycroft.util.lang.format_fr import nice_time_fr
 from mycroft.util.lang.format_fr import pronounce_number_fr
 
+from collections import namedtuple
 import json
 import os
 import datetime
 import re
+
+NUMBER_TUPLE = namedtuple(
+    'number',
+    'x, xx, x0, x_in_x0, xxx, x00, x_in_x00, xx00, xx_in_xx00, x000, x_in_x000, x0_in_x000')
 
 
 class DateTimeFormat:
@@ -46,12 +51,91 @@ class DateTimeFormat:
                     self.lang_config[lang] = json.loads(
                         lang_config_file.read())
 
+            for x in ['decade_format', 'hundreds_format', 'thousand_format',
+                      'year_format']:
+                i = 1
+                while self.lang_config[lang][x].get(str(i)):
+                    self.lang_config[lang][x][str(i)]['re'] = (
+                        re.compile(self.lang_config[lang][x][str(i)]['match']
+                                   ))
+                    i = i + 1
+
+    def _number_strings(self, number, lang):
+        x = (self.lang_config[lang]['number'].get(str(number % 10))
+             or str(number % 10))
+        xx = (self.lang_config[lang]['number'].get(str(number % 100))
+              or str(number % 100))
+        x_in_x0 = self.lang_config[lang]['number'].get(
+            str(int(number % 100 / 10))) or str(int(number % 100 / 10))
+        x0 = (self.lang_config[lang]['number'].get(
+            str(int(number % 100 / 10) * 10))
+              or str(int(number % 100 / 10) * 10))
+        xxx = self.lang_config[lang]['number'].get(str(number % 1000)) or str(
+            number % 1000)
+        x00 = self.lang_config[lang]['number'].get(str(int(
+            number % 1000 / 100) * 100)) or str(int(number % 1000 / 100) * 100)
+        x_in_x00 = self.lang_config[lang]['number'].get(str(int(
+            number % 1000 / 100))) or str(int(number % 1000 / 100))
+        xx00 = self.lang_config[lang]['number'].get(str(int(
+            number % 10000 / 100) * 100)) or str(int(number % 10000 / 100) *
+                                                 100)
+        xx_in_xx00 = self.lang_config[lang]['number'].get(str(int(
+            number % 10000 / 100))) or str(int(number % 10000 / 100))
+        x000 = self.lang_config[lang]['number'].get(str(int(
+            number % 10000 / 1000) * 1000)) or str(int(number % 10000 / 1000)
+                                                   * 1000)
+        x_in_x000 = self.lang_config[lang]['number'].get(str(int(
+            number % 10000 / 1000))) or str(int(number % 10000 / 1000))
+        x0_in_x000 = self.lang_config[lang]['number'].get(str(int(
+            number % 10000 / 1000)*10)) or str(int(number % 10000 / 1000)*10)
+
+        return NUMBER_TUPLE(
+            x, xx, x0, x_in_x0, xxx, x00, x_in_x00, xx00, xx_in_xx00, x000,
+            x_in_x000, x0_in_x000)
+
+    def _format_string(self, number, format_section, lang):
+        s = self.lang_config[lang][format_section]['default']
+        i = 1
+        while self.lang_config[lang][format_section].get(str(i)):
+            e = self.lang_config[lang][format_section][str(i)]
+            if e['re'].match(str(number)):
+                return e['format']
+            i = i + 1
+        return s
+
+    def _decade_format(self, number, number_tuple, lang):
+        s = self._format_string(number % 100, 'decade_format', lang)
+        return s.format(x=number_tuple.x, xx=number_tuple.xx,
+                        x0=number_tuple.x0, x_in_x0=number_tuple.x_in_x0,
+                        number=str(number % 100))
+
+    def _number_format_hundreds(self, number, number_tuple, lang,
+                                formatted_decade):
+        s = self._format_string(number % 1000, 'hundreds_format', lang)
+        return s.format(xxx=number_tuple.xxx, x00=number_tuple.x00,
+                        x_in_x00=number_tuple.x_in_x00,
+                        formatted_decade=formatted_decade,
+                        number=str(number % 1000))
+
+    def _number_format_thousand(self, number, number_tuple, lang,
+                                formatted_decade, formatted_hundreds):
+        s = self._format_string(number % 10000, 'thousand_format', lang)
+        return s.format(x_in_x00=number_tuple.x_in_x00,
+                        xx00=number_tuple.xx00,
+                        xx_in_xx00=number_tuple.xx_in_xx00,
+                        x000=number_tuple.x000,
+                        x_in_x000=number_tuple.x_in_x000,
+                        x0_in_x000=number_tuple.x0_in_x000,
+                        formatted_decade=formatted_decade,
+                        formatted_hundreds=formatted_hundreds,
+                        number=str(number % 10000))
+
     def date_format(self, dt, lang, now):
         format_str = 'date_full'
         if now:
             if dt.year == now.year:
                 format_str = 'date_full_no_year'
-                if dt.month == now.month:
+                if dt.month == now.month and dt.day > now.day:
                     format_str = 'date_full_no_year_month'
 
             if (now + datetime.timedelta(1)).day == dt.day:
@@ -75,27 +159,26 @@ class DateTimeFormat:
             formatted_date=date_str, formatted_time=time_str)
 
     def year_format(self, dt, lang, bc):
+        number_tuple = self._number_strings(dt.year, lang)
         formatted_bc = (
             self.lang_config[lang]['year_format']['bc'] if bc else '')
-        i = 1
-        while self.lang_config[lang]['year_format'].get(str(i)):
-            if (int(self.lang_config[lang]['year_format'][str(i)]['from']) <=
-                    dt.year <=
-                    int(self.lang_config[lang]['year_format'][str(i)]['to'])):
-                return re.sub(' +', ' ',
-                              self.lang_config[lang]['year_format'][str(i)][
-                                  'format'].format(
-                                  year=str(dt.year),
-                                  century=str(int(dt.year / 100)),
-                                  decade=str(dt.year % 100),
-                                  bc=formatted_bc)).strip()
-            i = i + 1
+        formatted_decade = self._decade_format(
+            dt.year, number_tuple, lang)
+        formatted_hundreds = self._number_format_hundreds(
+            dt.year, number_tuple, lang, formatted_decade)
+        formatted_thousand = self._number_format_thousand(
+            dt.year, number_tuple, lang, formatted_decade, formatted_hundreds)
+
+        s = self._format_string(dt.year, 'year_format', lang)
 
         return re.sub(' +', ' ',
-                      self.lang_config[lang]['year_format']['default'].format(
+                      s.format(
                           year=str(dt.year),
                           century=str(int(dt.year / 100)),
                           decade=str(dt.year % 100),
+                          formatted_hundreds=formatted_hundreds,
+                          formatted_decade=formatted_decade,
+                          formatted_thousand=formatted_thousand,
                           bc=formatted_bc)).strip()
 
 
@@ -240,7 +323,7 @@ def nice_year(dt, lang='en-us', bc=False):
     """
         Format a datetime to a pronounceable year
 
-        For example, generate '20:18' that will be pronounced twenty eighteen
+        For example, generate 'nineteen-hundred and eighty-four' for year 1984
 
         Args:
             dt (datetime): date to format (assumes already in local timezone)

@@ -1,6 +1,28 @@
 {
+  "decade_format": {
+    "1": {"match": "^\\d$", "format": "{x}"},
+    "2": {"match": "^1\\d$", "format": "{xx}"},
+    "3": {"match": "^\\d0$", "format": "{x0}"},
+    "4": {"match": "^[2-9]\\d$", "format": "{x0} {x}"},
+    "default": "{number}"
+  },
+  "hundreds_format": {
+    "1": {"match": "^\\d{3}$", "format": "{x_in_x00} hundred"},
+    "default": "{number}"
+  },
+  "thousand_format": {
+    "1": {"match": "^1[1-9]\\d{2}$", "format": "{xx_in_xx00} hundred"},
+    "2": {"match": "^\\d{4}$", "format": "{x_in_x000} thousand"},
+    "default": "{number}"
+  },
   "year_format": {
-    "1": { "from": "1001", "to": "1999", "format": "{century}:{decade} {bc}" },
+    "1": {"match": "^\\d\\d?$", "format": "{formatted_decade} {bc}"},
+    "2": {"match": "^\\d00$", "format": "{formatted_hundreds} {bc}"},
+    "3": {"match": "^\\d{3}$", "format": "{formatted_hundreds} and {formatted_decade} {bc}"},
+    "4": {"match": "^(1\\d00)|([2-9]000)$", "format": "{formatted_thousand} {bc}"},
+    "5": {"match": "^\\d{2}00$", "format": "{formatted_thousand} {formatted_hundreds} {bc}"},
+    "6": {"match": "^(1\\d{3})|(\\d0\\d{2})$", "format": "{formatted_thousand} and {formatted_decade} {bc}"},
+    "7": {"match": "^\\d{4}$", "format": "{formatted_thousand} {formatted_hundreds} and {formatted_decade} {bc}"},
     "default": "{year} {bc}",
     "bc": "b.c."
   },
@@ -70,5 +92,37 @@
     "10": "october",
     "11": "november",
     "12": "december"
+  },
+  "number": {
+    "0": "zero",
+    "1": "one",
+    "2": "two",
+    "3": "three",
+    "4": "four",
+    "5": "five",
+    "6": "six",
+    "7": "seven",
+    "8": "eight",
+    "9": "nine",
+    "10": "ten",
+    "11": "eleven",
+    "12": "twelve",
+    "13": "thirteen",
+    "14": "fourteen",
+    "15": "fifteen",
+    "16": "sixteen",
+    "17": "seventeen",
+    "18": "eighteen",
+    "19": "nineteen",
+    "20": "twenty",
+    "30": "thirty",
+    "40": "forty",
+    "50": "fifty",
+    "60": "sixty",
+    "70": "seventy",
+    "80": "eighty",
+    "90": "ninety",
+    "100": "hundred",
+    "1000": "thousand"
   }
 }
