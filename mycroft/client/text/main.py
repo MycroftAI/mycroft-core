@@ -14,6 +14,7 @@
 #
 import sys
 import io
+from math import ceil
 
 from mycroft.tts import TTS
 
@@ -686,48 +687,94 @@ def make_titlebar(title, bar_length):
     return title + " " + ("=" * (bar_length - 1 - len(title)))
 
 
+help_struct = [
+    ('Keyboard shortcuts',
+     [("Ctrl+N / Ctrl+P", "scroll thru query history"),
+      ("Up/Down/PgUp/PgDn",  "scroll thru log history"),
+      ("Ctrl+T / Ctrl+PgUp",       "scroll to top (oldest)"),
+      ("Ctrl+B / Ctrl+PgDn",       "scroll to bottom (newest)"),
+      ("Left / Right",             "scroll long lines left/right"),
+      ("Home",                     "scroll to start of long lines"),
+      ("End",                      "scroll to end of long lines")
+      ]
+     ),
+    ("Commands (type ':' to enter command mode)",
+     [(":help",                   "this screen"),
+      (":quit or :exit",          "exit the program"),
+      (":meter (show|hide)",      "display of microphone level"),
+      (":filter [remove] 'str'",  "adds or removes a log filter"),
+      (":filter (clear|reset)", "reset filters"),
+      (":filter (show|list)", "display current filters"),
+      (":history (# lines)", "set number of history lines"),
+      (":find 'str'", "show logs containing 'str'"),
+      (":keycode (show|hide)", "display keyboard codes"),
+      (":clear log", "flush the logs"),
+      (":skills", "list installed skills"),
+      (":activate 'skill'", "activate skill"),
+      (":deactivate 'skill'", "deactivate skill"),
+      (":keep 'skill'", ("deactivate all skills except",
+                         "the indicated skill"))
+      ]
+     )
+]
+
+
+def help_new_page():
+    # Header
+    scr.erase()
+    scr.addstr(0, 0, center(25) + "Mycroft Command Line Help",
+               CLR_CMDLINE)
+    scr.addstr(1, 0, "=" * (curses.COLS - 1), CLR_CMDLINE)
+
+
+def help_footer(page, total):
+    global scr
+    text = "Page {} of {} [ Press any key to continue ]".format(page, total)
+    scr.addstr(curses.LINES - 1, 0, center(len(text)) + text, CLR_HEADING)
+    scr.refresh()
+    scr.get_wch()  # blocks
+
+
+def num_help_pages():
+    lines = 0
+    for section in help_struct:
+        lines += 2 + len(section[1])
+    return ceil(lines / (curses.LINES - 4))
+
+
 def show_help():
     global scr
     global screen_mode
 
     if not scr:
         return
-
     screen_mode = 1  # showing help (prevents overwrite by log updates)
-    scr.erase()
-    scr.addstr(0, 0,  center(25) + "Mycroft Command Line Help",
-               CLR_CMDLINE)
-    scr.addstr(1, 0,  "=" * (curses.COLS - 1),
-               CLR_CMDLINE)
-    scr.addstr(2, 0,  "Ctrl+N / Ctrl+P          scroll thru query history")
-    scr.addstr(3, 0,  "Up/Down/PgUp/PgDn        scroll thru log history")
-    scr.addstr(4, 0,  "Ctrl+T / Ctrl+PgUp       scroll to top (oldest)")
-    scr.addstr(5, 0,  "Ctrl+B / Ctrl+PgDn       scroll to bottom (newest)")
-    scr.addstr(6, 0,  "Left / Right             scroll long lines left/right")
-    scr.addstr(7, 0,  "Home                     scroll to start of long lines")
-    scr.addstr(8, 0,  "End                      scroll to end of long lines")
 
-    scr.addstr(10, 0,  "Commands (type ':' to enter command mode)",
-               CLR_CMDLINE)
-    scr.addstr(11, 0,  "=" * (curses.COLS - 1),
-               CLR_CMDLINE)
-    scr.addstr(12, 0,  ":help                   this screen")
-    scr.addstr(13, 0,  ":quit or :exit          exit the program")
-    scr.addstr(14, 0,  ":meter (show|hide)      display of microphone level")
-    scr.addstr(15, 0,  ":filter [remove] 'str'  adds or removes a log filter")
-    scr.addstr(16, 0,  ":filter (clear|reset)   reset filters")
-    scr.addstr(17, 0,  ":filter (show|list)     display current filters")
-    scr.addstr(18, 0,  ":history (# lines)      set number of history lines")
-    scr.addstr(19, 0,  ":find 'str'             show logs containing 'str'")
-    scr.addstr(20, 0,  ":keycode (show|hide)    display keyboard codes")
-    scr.addstr(21, 0,  ":clear log              flush the logs")
+    help_new_page()
+    y_pos = 2
+    page = 1
+    for section in help_struct:
+        scr.addstr(y_pos, 0, section[0], CLR_CMDLINE)
+        y_pos += 1
+        scr.addstr(y_pos, 0, "=" * (curses.COLS - 1), CLR_CMDLINE)
+        y_pos += 1
+        for line in section[1]:
+            scr.addstr(y_pos, 0, line[0])
+            if isinstance(line[1], tuple):
+                explaination = line[1]
+            else:
+                explaination = (line[1],)
+            for e in explaination:
+                scr.addstr(y_pos, 40, e)
+                y_pos += 1
+                if y_pos >= curses.LINES - 2:
+                    help_footer(page, num_help_pages())
+                    page += 1
+                    help_new_page()
+                    y_pos = 2
 
-    scr.addstr(curses.LINES - 1, 0,  center(23) + "Press any key to return",
-               CLR_HEADING)
-
-    scr.refresh()
-    scr.get_wch()  # blocks
-
+    if y_pos != 2:  # If we didn't just have a page break pause and show footer
+        help_footer(page, num_help_pages())
     screen_mode = 0  # back to main screen
     draw_screen()
 
@@ -746,8 +793,8 @@ def show_skills(skills):
 
     screen_mode = 1  # showing help (prevents overwrite by log updates)
     scr.erase()
-    scr.addstr(0, 0,  center(25) + "Loaded skills", CLR_CMDLINE)
-    scr.addstr(1, 1,  "=" * (curses.COLS - 2), CLR_CMDLINE)
+    scr.addstr(0, 0, center(25) + "Loaded skills", CLR_CMDLINE)
+    scr.addstr(1, 1, "=" * (curses.COLS - 2), CLR_CMDLINE)
     row = 2
     column = 0
     col_width = 0
@@ -870,17 +917,25 @@ def handle_cmd(cmd):
             draw_screen()
     elif "deactivate" in cmd:
         skills = cmd.split()[1:]
-        for s in skills:
-            ws.emit(Message("skillmanager.deactivate", data={'skill': s}))
+        if len(skills) > 0:
+            for s in skills:
+                ws.emit(Message("skillmanager.deactivate", data={'skill': s}))
+        else:
+            add_log_message('Usage :deactivate SKILL [SKILL2] [...]')
     elif "keep" in cmd:
         s = cmd.split()
         if len(s) > 1:
             ws.emit(Message("skillmanager.keep", data={'skill': s[1]}))
+        else:
+            add_log_message('Usage :keep SKILL')
 
     elif "activate" in cmd:
         skills = cmd.split()[1:]
-        for s in skills:
-            ws.emit(Message("skillmanager.activate", data={'skill': s}))
+        if len(skills) > 0:
+            for s in skills:
+                ws.emit(Message("skillmanager.activate", data={'skill': s}))
+        else:
+            add_log_message('Usage :activate SKILL [SKILL2] [...]')
 
     # TODO: More commands
     return 0  # do nothing upon return
