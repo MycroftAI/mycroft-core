@@ -45,9 +45,11 @@ NUM_STRING_EN = {
     60: 'sixty',
     70: 'seventy',
     80: 'eighty',
-    90: 'ninety'
+    90: 'ninety',
+    100: 'hundred',
+    1000: 'thousand',
+    1000000: 'million'
 }
-
 
 FRACTION_STRING_EN = {
     2: 'half',
@@ -139,10 +141,10 @@ def pronounce_number_en(num, places=2):
     num = abs(num)
 
     if num > 20:
-        tens = int(num-int(num) % 10)
+        tens = int(num - int(num) % 10)
         result += NUM_STRING_EN[tens]
-        if int(num-tens) != 0:
-            result += " " + NUM_STRING_EN[int(num-tens)]
+        if int(num - tens) != 0:
+            result += " " + NUM_STRING_EN[int(num - tens)]
     else:
         result += NUM_STRING_EN[int(num)]
 
@@ -150,8 +152,8 @@ def pronounce_number_en(num, places=2):
     if not num == int(num) and places > 0:
         result += " point"
         place = 10
-        while int(num*place) % 10 > 0 and places > 0:
-            result += " " + NUM_STRING_EN[int(num*place) % 10]
+        while int(num * place) % 10 > 0 and places > 0:
+            result += " " + NUM_STRING_EN[int(num * place) % 10]
             place *= 10
             places -= 1
     return result
@@ -221,7 +223,7 @@ def nice_time_en(dt, speech=True, use_24hour=False, use_ampm=False):
         elif dt.hour < 13:
             speak = pronounce_number_en(dt.hour)
         else:
-            speak = pronounce_number_en(dt.hour-12)
+            speak = pronounce_number_en(dt.hour - 12)
 
         if dt.minute == 0:
             if not use_ampm:
