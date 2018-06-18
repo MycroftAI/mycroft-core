@@ -32,6 +32,8 @@ adapt-parser==0.3.0
 padatious==0.4.3
 fann2==1.0.7
 padaos==0.1.5
+precise-runner==0.2.1
+petact==0.1.2
 
 # dev setup tools
 pep8==1.7.0
