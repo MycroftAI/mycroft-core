@@ -73,7 +73,9 @@ def extractnumber(text, short_scale=True, lang="en-us"):
     """Takes in a string and extracts a number.
     Args:
         text (str): the string to extract a number from
-        short_scale (bool): use short or long scale
+        short_scale (bool): use short or long scale. See
+            https://en.wikipedia.org/wiki/Names_of_large_numbers
+
         lang (str): the code for the language text is in
     Returns:
         (str): The number extracted or the original text.
