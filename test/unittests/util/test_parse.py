@@ -17,12 +17,12 @@
 import unittest
 from datetime import datetime
 
-from mycroft.util.parse import get_gender
 from mycroft.util.parse import extract_datetime
 from mycroft.util.parse import extractnumber
-from mycroft.util.parse import normalize
 from mycroft.util.parse import fuzzy_match
+from mycroft.util.parse import get_gender
 from mycroft.util.parse import match_one
+from mycroft.util.parse import normalize
 
 
 class TestFuzzyMatch(unittest.TestCase):
@@ -80,6 +80,28 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extractnumber("one and one half cups"), 1.5)
         self.assertEqual(extractnumber("three quarter cups"), 3.0 / 4.0)
         self.assertEqual(extractnumber("three quarters cups"), 3.0 / 4.0)
+        self.assertEqual(extractnumber("twenty two"), 22)
+        self.assertEqual(extractnumber("two hundred"), 200)
+        self.assertEqual(extractnumber("nine thousand"), 9000)
+        self.assertEqual(extractnumber("six hundred sixty six"), 666)
+        self.assertEqual(extractnumber("two million"), 2000000)
+        self.assertEqual(extractnumber("two million five hundred thousand "
+                                       "tons of spinning metal"), 2500000)
+        self.assertEqual(extractnumber("six trillion"), 600000000000.0)
+        self.assertEqual(extractnumber("six trillion", short_scale=False),
+                         6e+19)
+        self.assertEqual(extractnumber("one point five"), 1.5)
+        self.assertEqual(extractnumber("three dot fourteen"), 3.14)
+        self.assertEqual(extractnumber("zero point two"), 0.2)
+        self.assertEqual(extractnumber("billions of years older"),
+                         10000000000.0)
+        self.assertEqual(extractnumber("billions of years older",
+                                       short_scale=False),
+                         10000000000000.0)
+        self.assertEqual(extractnumber("one hundred thousand"), 100000)
+        self.assertEqual(extractnumber("minus 2"), -2)
+        self.assertEqual(extractnumber("negative seventy"), -70)
+        self.assertEqual(extractnumber("thousand million"), 1000000000)
 
     def test_extractdatetime_en(self):
         def extractWithFormat(text):
