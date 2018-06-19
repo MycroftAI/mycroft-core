@@ -73,9 +73,9 @@ FRACTION_STRING_EN = {
 }
 
 LONG_SCALE_EN = collections.OrderedDict([
-    (10e1, 'hundred'),
-    (10e3, 'thousand'),
-    (10e6, 'million'),
+    (100, 'hundred'),
+    (1000, 'thousand'),
+    (1000000, 'million'),
     (10e12, "billion"),
     (10e18, 'trillion'),
     (10e24, "quadrillion"),
@@ -98,16 +98,15 @@ LONG_SCALE_EN = collections.OrderedDict([
     (10e306, "unquinquagintillion"),
     (10e312, "duoquinquagintillion"),
     (10e336, "sesquinquagintillion"),
-    (10e366, "unsexagintillion"),
-    (10e100, "googol")
+    (10e366, "unsexagintillion")
 ])
 
 SHORT_SCALE_EN = collections.OrderedDict([
-    (10e1, 'hundred'),
-    (10e3, 'thousand'),
-    (10e6, 'million'),
+    (100, 'hundred'),
+    (1000, 'thousand'),
+    (1000000, 'million'),
     (10e9, "billion"),
-    (10e12, 'trillion'),
+    (10e10, 'trillion'),
     (10e15, "quadrillion"),
     (10e18, "quintillion"),
     (10e21, "sextillion"),
@@ -173,8 +172,7 @@ SHORT_SCALE_EN = collections.OrderedDict([
     (10e2103, "septingentillion"),
     (10e2403, "octingentillion"),
     (10e2703, "nongentillion"),
-    (10e3003, "millinillion"),
-    (10e100, "googol")
+    (10e3003, "millinillion")
 ])
 
 

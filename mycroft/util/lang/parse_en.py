@@ -15,24 +15,12 @@
 # limitations under the License.
 #
 from datetime import datetime
+
 from dateutil.relativedelta import relativedelta
+
 from mycroft.util.lang.parse_common import is_numeric, look_for_fractions
 from mycroft.util.lang.format_en import NUM_STRING_EN, LONG_SCALE_EN, \
     SHORT_SCALE_EN
-
-STRING_NUM_EN = {"first": 1,
-                 "second": 2,
-                 "half": 0.5,
-                 "halves": 0.5,
-                 "hundreds": 100,
-                 "thousands": 1000,
-                 'millions': 1000000,
-                 "billions": 1000000000,
-                 'trillions': 1000000000000}
-
-for num in NUM_STRING_EN:
-    num_string = NUM_STRING_EN[num]
-    STRING_NUM_EN[num_string] = num
 
 
 def extractnumber_en(text, short_scale=True):
@@ -54,8 +42,11 @@ def extractnumber_en(text, short_scale=True):
                      "second": 2,
                      "half": 0.5,
                      "halves": 0.5,
+                     "hundred": 100,
                      "hundreds": 100,
+                     "thousand": 1000,
                      "thousands": 1000,
+                     "million": 1000000,
                      'millions': 1000000}
 
     for num in NUM_STRING_EN:
