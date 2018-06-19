@@ -223,7 +223,7 @@ def nice_number_en(number, speech, denominators):
     return return_string
 
 
-def pronounce_number_en(num, places=2, short_scale=False):
+def pronounce_number_en(num, places=2, short_scale=True):
     """
     Convert a number to it's spoken equivalent
 
@@ -232,6 +232,8 @@ def pronounce_number_en(num, places=2, short_scale=False):
     Args:
         num(float or int): the number to pronounce (under 100)
         places(int): maximum decimal places to speak
+        short_scale (bool) : use short (True) or long scale (False)
+            https://en.wikipedia.org/wiki/Names_of_large_numbers
     Returns:
         (str): The pronounced number
     """
@@ -287,11 +289,37 @@ def pronounce_number_en(num, places=2, short_scale=False):
                 res.append(r)
             return res
 
+        def _split_by_millions(n):
+            assert (0 <= n)
+            res = []
+            while n:
+                n, r = divmod(n, 1000)
+                res.append(r)
+            return res
+
+        def _long_scale(n):
+            if n >= 10e153:
+                return "infinity"
+            n = int(n)
+            assert (0 <= n)
+            res = []
+            for i, z in enumerate(_split_by_millions(n)):
+                if not z:
+                    continue
+                number = pronounce_number_en(z, places, True)
+                if i % 2 != 0 and i > 1:
+                    number += " " + "thousand"
+                elif i > 0 and i < 3:
+                    number += " " + hundreds[i] + ","
+                elif i:
+                    number += " " + hundreds[i - 1] + ","
+                res.append(number)
+            return " ".join(reversed(res))
+
         if short_scale:
             result += _short_scale(num)
         else:
-            # TODO long scale
-            result += _short_scale(num)
+            result += _long_scale(num)
 
     # Deal with fractional part
     if not num == int(num) and places > 0:

@@ -140,8 +140,8 @@ class TestPronounceNumber(unittest.TestCase):
     def test_convert_hundreds(self):
         self.assertEqual(pronounce_number(100), "one hundred")
         self.assertEqual(pronounce_number(666), "six hundred and sixty six")
-        # self.assertEqual(pronounce_number(1456), "one thousand, four hundred "
-        #                                          "and fifty six")
+        self.assertEqual(pronounce_number(1456), "one thousand, four hundred "
+                                                 "and fifty six")
         self.assertEqual(pronounce_number(103254654), "one hundred and three "
                                                       "million, two hundred "
                                                       "and fifty four "
@@ -159,6 +159,12 @@ class TestPronounceNumber(unittest.TestCase):
                          "trillion, eight hundred and ninety six billion, six "
                          "hundred and thirty nine million, six hundred and "
                          "thirty one thousand, eight hundred and ninety three")
+        self.assertEqual(pronounce_number(95505896639631893,
+                                          short_scale=False),
+                         "ninety five thousand five hundred and five billion, "
+                         "eight hundred and ninety six thousand six hundred "
+                         "and thirty nine million, six hundred and thirty one "
+                         "thousand, eight hundred and ninety three")
 
 
 # def nice_time(dt, lang="en-us", speech=True, use_24hour=False,
