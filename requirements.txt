@@ -34,4 +34,4 @@ adapt-parser==0.3.0
 # dev setup tools
 pep8==1.7.0
 fann2==1.0.7
-padatious==0.4.2
+padatious==0.4.3
