@@ -106,6 +106,7 @@ def play_mp3(uri):
             play_mp3_cmd[index] = (get_http(uri))
     return subprocess.Popen(play_mp3_cmd)
 
+
 def play_ogg(uri):
     config = mycroft.configuration.Configuration.get()
     play_cmd = config.get("play_ogg_cmdline")
