@@ -522,17 +522,24 @@ class SkillManager(Thread):
         except Exception as e:
             LOG.error('Error during skill removal, {}'.format(repr(e)))
 
+    def __activate_skill(self, skill):
+        if not self.loaded_skills[skill].get('active', True):
+            self.loaded_skills[skill]['loaded'] = False
+            self.loaded_skills[skill]['active'] = True
+
     def activate_skill(self, message):
         """ Activate a deactivated skill. """
         try:
             skill = message.data['skill']
-            for s in self.loaded_skills:
-                if skill in s:
-                    skill = s
-                    break
-            if not self.loaded_skills[skill].get('active', True):
-                self.loaded_skills[skill]['loaded'] = False
-                self.loaded_skills[skill]['active'] = True
+            if skill == 'all':
+                for s in self.loaded_skills:
+                    self.__activate_skill(s)
+            else:
+                for s in self.loaded_skills:
+                    if skill in s:
+                        skill = s
+                        break
+                self.__activate_skill(skill)
         except Exception as e:
             LOG.error('Couldn\'t activate skill, {}'.format(repr(e)))
 
