@@ -264,7 +264,7 @@ def pronounce_number_en(num, places=2, short_scale=True):
         result += number_names[num]
     else:
         def _sub_thousand(n):
-            assert (0 <= n <= 999)
+            assert 0 <= n <= 999
             if n <= 19:
                 return digits[n]
             elif n <= 99:
@@ -277,14 +277,14 @@ def pronounce_number_en(num, places=2, short_scale=True):
 
         def _short_scale(n):
             n = int(n)
-            assert (0 <= n)
+            assert 0 <= n
             return ", ".join(reversed(
                 [_sub_thousand(z) + (
                     " " + hundreds[i] if i else "") if z else ""
                  for i, z in enumerate(_split_by_thousands(n))]))
 
         def _split_by_thousands(n):
-            assert (0 <= n)
+            assert 0 <= n
             res = []
             while n:
                 n, r = divmod(n, 1000)
@@ -292,7 +292,7 @@ def pronounce_number_en(num, places=2, short_scale=True):
             return res
 
         def _split_by_millions(n):
-            assert (0 <= n)
+            assert 0 <= n
             res = []
             while n:
                 n, r = divmod(n, 1000)
@@ -303,7 +303,7 @@ def pronounce_number_en(num, places=2, short_scale=True):
             if n >= 10e153:
                 return "infinity"
             n = int(n)
-            assert (0 <= n)
+            assert 0 <= n
             res = []
             for i, z in enumerate(_split_by_millions(n)):
                 if not z:
