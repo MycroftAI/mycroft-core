@@ -141,8 +141,8 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
                 words[idx] = ""
             elif word in replaces.keys():
                 words[idx] = replaces[word]
-                if replaces[word] in check_duplicates and replaces[
-                    word] in " ".join(words[:idx]):
+                if replaces[word] in check_duplicates and \
+                        replaces[word] in " ".join(words[:idx]):
                     words[idx] = ""
             if word in check_duplicates and word in " ".join(words[:idx]):
                 words[idx] = ""
