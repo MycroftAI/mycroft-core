@@ -221,7 +221,7 @@ def nice_number_en(number, speech, denominators):
     return return_string
 
 
-def pronounce_number_en(num, places=2, short_scale=True):
+def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
     """
     Convert a number to it's spoken equivalent
 
@@ -232,9 +232,18 @@ def pronounce_number_en(num, places=2, short_scale=True):
         places(int): maximum decimal places to speak
         short_scale (bool) : use short (True) or long scale (False)
             https://en.wikipedia.org/wiki/Names_of_large_numbers
+        scientific (bool): pronounce in scientific notation
     Returns:
         (str): The pronounced number
     """
+    if scientific:
+        number = '%E' % num
+        n, power = number.replace("+", "").split("E")
+        power = int(power)
+        if power != 0:
+            return pronounce_number_en(float(n), places, short_scale, False) + \
+                   " times ten to the power of " + \
+                   pronounce_number_en(power, places, short_scale, False)
     if short_scale:
         number_names = NUM_STRING_EN.copy()
         number_names.update(SHORT_SCALE_EN)

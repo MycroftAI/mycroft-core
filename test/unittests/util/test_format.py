@@ -166,6 +166,20 @@ class TestPronounceNumber(unittest.TestCase):
                          "and thirty nine million, six hundred and thirty one "
                          "thousand, eight hundred and ninety three")
 
+    def test_convert_scientific_notation(self):
+        self.assertEqual(pronounce_number(0, scientific=True), "zero")
+        self.assertEqual(pronounce_number(33, scientific=True),
+                         "three point three times ten to the power of one")
+        self.assertEqual(pronounce_number(299792458, scientific=True),
+                         "two point nine nine times ten to the power of eight")
+        self.assertEqual(pronounce_number(299792458, places=6,
+                                          scientific=True),
+                         "two point nine nine seven nine two five times "
+                         "ten to the power of eight")
+        self.assertEqual(pronounce_number(1.672e-27, places=3,
+                                          scientific=True),
+                         "one point six seven two times ten to the power of "
+                         "negative twenty seven")
 
 # def nice_time(dt, lang="en-us", speech=True, use_24hour=False,
 #              use_ampm=False):
