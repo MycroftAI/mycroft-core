@@ -192,10 +192,7 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
 
     # decimal marker ( 1 point 5 = 1 + 0.5)
     decimal_marker = [" point ", " dot "]
-    decimal_point = False
-    for m in decimal_marker:
-        if m in text:
-            decimal_point = True
+
     if short_scale:
         for num in SHORT_SCALE_EN:
             num_string = SHORT_SCALE_EN[num]
@@ -232,7 +229,6 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
             if number is not False and decimal is not False:
                 number = extractnumber_en(components[0])
                 # TODO handle number dot number number number
-                decimal = extractnumber_en(components[1])
                 if "." not in str(decimal):
                     return number + float("0." + str(decimal))
 
