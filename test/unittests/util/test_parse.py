@@ -132,6 +132,42 @@ class TestNormalize(unittest.TestCase):
 
         self.assertTrue(extract_number("grobo 0") is not False)
         self.assertEqual(extract_number("grobo 0"), 0)
+        self.assertEqual(extract_number("gravitational constant is 6.67408 "
+                                       "by 10 to the power of minus eleven"),
+                         6.67408e-11)
+        self.assertEqual(extract_number("planck constant is 4.1356677 "
+                                       "by 10 to the power of minus 15 electron volts"),
+                         4.1356677e-15)
+        self.assertEqual(extract_number("666 by 10 elevated to 9"), 666e9)
+        self.assertEqual(extract_number("666 times 10 to the power of 9"),
+                         666e9)
+        self.assertEqual(extract_number("666 times 10 to the power of minus "
+                                        "9"),
+                         666e-9)
+        self.assertEqual(extract_number("666 by 10 to the power of 9"),
+                         666e9)
+        self.assertEqual(extract_number("666 times 10 exponentiated to 9"),
+                         666e9)
+        self.assertEqual(extract_number("666 times 10 raised to 9"),
+                         666e9)
+        self.assertEqual(extract_number("666 times 10 elevated to 9"),
+                         666e9)
+        self.assertEqual(extract_number("negative 666 by 10 elevated to "
+                                       "power 9"), -666e9)
+        self.assertEqual(extract_number("sixty six times ten to the "
+                                       "power of nine"), 66e9)
+        self.assertEqual(
+            extract_number("six hundred sixty six times ten to the "
+                          "power of nine"), 666e9)
+        self.assertEqual(extract_number("six hundred sixty six by ten "
+                                       "to the 9 power"), 666e9)
+        self.assertEqual(
+            extract_number("six hundred sixty six by ten to the minus 9 "
+                           "power"),
+            666e-9)
+        self.assertEqual(
+            extract_number("six dot sixty six times ten to the power of six"),
+            6.66e6)
 
     def test_extractdatetime_en(self):
         def extractWithFormat(text):
