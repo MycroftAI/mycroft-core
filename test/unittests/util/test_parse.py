@@ -197,6 +197,8 @@ class TestNormalize(unittest.TestCase):
                     "2017-06-27 00:01:00", "lets meet")
         testExtract("lets meet in 1 second",
                     "2017-06-27 00:00:01", "lets meet")
+        testExtract("lets meet at 5pm",
+                    "2017-06-27 17:00:00", "lets meet")
 
     def test_spaces(self):
         self.assertEqual(normalize("  this   is  a    test"),
