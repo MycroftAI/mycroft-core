@@ -241,8 +241,8 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
         n, power = number.replace("+", "").split("E")
         power = int(power)
         if power != 0:
-            return pronounce_number_en(float(n), places, short_scale, False) + \
-                   " times ten to the power of " + \
+            return pronounce_number_en(float(n), places, short_scale, False) \
+                   + " times ten to the power of " + \
                    pronounce_number_en(power, places, short_scale, False)
     if short_scale:
         number_names = NUM_STRING_EN.copy()
