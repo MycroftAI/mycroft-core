@@ -127,6 +127,7 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
     """
 
     def _normalize(text):
+        text = text.lower()
         erases = ["the", "of", "a", "an", "to", "positive", "plus"]
         replaces = {
             "exponentiated": "power",
@@ -135,8 +136,14 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
             "by": "times"  # scientific notation
         }
         check_duplicates = ["power"]
+        # cardinals
+        cards = [CARDINAL_STRING_EN[c] for c in CARDINAL_STRING_EN.keys()]
+
         words = text.split(" ")
         for idx, word in enumerate(words):
+            prev_word = words[idx - 1] if idx > 0 else ""
+            if word == "power" and prev_word in cards:
+                words[idx - 1] = NUM_STRING_EN[cards.index(prev_word) + 1]
             if word in erases:
                 words[idx] = ""
             elif word in replaces.keys():
