@@ -177,13 +177,15 @@ def connected_dns(host="8.8.8.8", port=53, timeout=3):
     # OpenPort: 53/tcp
     # Service: domain (DNS/TCP)
     try:
-        socket.setdefaulttimeout(timeout)
-        socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(timeout)
+        s.connect((host, port))
         return True
     except IOError:
         try:
-            socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect(
-                ("8.8.4.4", port))
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(timeout)
+            s.connect(("8.8.4.4", port))
             return True
         except IOError:
             return False

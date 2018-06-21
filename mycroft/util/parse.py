@@ -21,7 +21,9 @@ from mycroft.util.lang.parse_pt import *
 from mycroft.util.lang.parse_es import *
 from mycroft.util.lang.parse_it import *
 from mycroft.util.lang.parse_sv import *
-
+from mycroft.util.lang.parse_de import extractnumber_de
+from mycroft.util.lang.parse_de import extract_datetime_de
+from mycroft.util.lang.parse_de import normalize_de
 from mycroft.util.lang.parse_fr import extractnumber_fr
 from mycroft.util.lang.parse_fr import extract_datetime_fr
 from mycroft.util.lang.parse_fr import normalize_fr
@@ -67,10 +69,13 @@ def match_one(query, choices):
         return best
 
 
-def extractnumber(text, lang="en-us"):
+def extractnumber(text, short_scale=True, lang="en-us"):
     """Takes in a string and extracts a number.
     Args:
         text (str): the string to extract a number from
+        short_scale (bool): use short or long scale. See
+            https://en.wikipedia.org/wiki/Names_of_large_numbers
+
         lang (str): the code for the language text is in
     Returns:
         (str): The number extracted or the original text.
@@ -79,7 +84,7 @@ def extractnumber(text, lang="en-us"):
     lang_lower = str(lang).lower()
     if lang_lower.startswith("en"):
         # return extractnumber_en(text, remove_articles)
-        return extractnumber_en(text)
+        return extractnumber_en(text, short_scale)
     elif lang_lower.startswith("pt"):
         return extractnumber_pt(text)
     elif lang_lower.startswith("it"):
@@ -88,6 +93,8 @@ def extractnumber(text, lang="en-us"):
         return extractnumber_fr(text)
     elif lang_lower.startswith("sv"):
         return extractnumber_sv(text)
+    elif lang_lower.startswith("de"):
+        return extractnumber_de(text)
     # TODO: extractnumber for other languages
     return text
 
@@ -149,6 +156,8 @@ def extract_datetime(text, anchorDate=None, lang="en-us"):
         return extract_datetime_fr(text, anchorDate)
     elif lang_lower.startswith("sv"):
         return extract_datetime_sv(text, anchorDate)
+    elif lang_lower.startswith("de"):
+        return extract_datetime_de(text, anchorDate)
     # TODO: extract_datetime for other languages
     return text
 # ==============================================================
@@ -180,6 +189,8 @@ def normalize(text, lang="en-us", remove_articles=True):
         return normalize_fr(text, remove_articles)
     elif lang_lower.startswith("sv"):
         return normalize_sv(text, remove_articles)
+    elif lang_lower.startswith("de"):
+        return normalize_de(text, remove_articles)
     # TODO: Normalization for other languages
     return text
 
@@ -194,5 +205,4 @@ def get_gender(word, input_string="", lang="en-us"):
         return get_gender_pt(word, input_string)
     elif "it" in lang:
         return get_gender_it(word, input_string)
-
     return False

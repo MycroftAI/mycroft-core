@@ -17,7 +17,6 @@ import time
 from multiprocessing.pool import ThreadPool
 from threading import Event
 
-import monotonic
 from pyee import EventEmitter
 from websocket import (WebSocketApp, WebSocketConnectionClosedException,
                        WebSocketException)
@@ -135,10 +134,10 @@ class WebsocketClient(object):
         # Send request
         self.emit(message)
         # Wait for response
-        start_time = monotonic.monotonic()
+        start_time = time.monotonic()
         while len(response) == 0:
             time.sleep(0.2)
-            if monotonic.monotonic() - start_time > (timeout or 3.0):
+            if time.monotonic() - start_time > (timeout or 3.0):
                 try:
                     self.remove(reply_type, handler)
                 except (ValueError, KeyError):
