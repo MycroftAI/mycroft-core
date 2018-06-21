@@ -174,6 +174,8 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(
             extractnumber("sixty six times ten to the sixth power"),
             66e6)
+        self.assertEqual(extractnumber("666 times 10 raised to the ninth"),
+                         666e9)
         # TODO handle this case
         # self.assertEqual(
         #    extractnumber("6 dot six six six"),
