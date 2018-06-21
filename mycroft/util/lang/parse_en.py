@@ -137,8 +137,12 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
         }
         check_duplicates = ["power"]
         # cardinals
-        cards = [CARDINAL_STRING_EN[c] for c in CARDINAL_STRING_EN.keys()]
-
+        if short_scale:
+            cards = [SHORT_ORDINAL_STRING_EN[c]
+                     for c in SHORT_ORDINAL_STRING_EN.keys()]
+        else:
+            cards = [LONG_ORDINAL_STRING_EN[c]
+                     for c in LONG_ORDINAL_STRING_EN.keys()]
         words = text.split(" ")
         for idx, word in enumerate(words):
             prev_word = words[idx - 1] if idx > 0 else ""
