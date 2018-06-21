@@ -235,8 +235,12 @@ def pronounce_number_en(num, places=2, short_scale=True):
     Returns:
         (str): The pronounced number
     """
-    number_names = {**NUM_STRING_EN, **LONG_SCALE_EN} if not short_scale \
-        else {**NUM_STRING_EN, **SHORT_SCALE_EN}
+    if short_scale:
+        number_names = NUM_STRING_EN.copy()
+        number_names.update(SHORT_SCALE_EN)
+    else:
+        number_names = NUM_STRING_EN.copy()
+        number_names.update(LONG_SCALE_EN)
 
     digits = [number_names[n] for n in range(0, 20)]
 
