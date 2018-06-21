@@ -58,11 +58,11 @@ FRACTION_STRING_EN = {
     5: 'fifth',
     6: 'sixth',
     7: 'seventh',
-    8: 'eigth',
+    8: 'eighth',
     9: 'ninth',
     10: 'tenth',
     11: 'eleventh',
-    12: 'twelveth',
+    12: 'twelfth',
     13: 'thirteenth',
     14: 'fourteenth',
     15: 'fifteenth',
@@ -70,7 +70,17 @@ FRACTION_STRING_EN = {
     17: 'seventeenth',
     18: 'eighteenth',
     19: 'nineteenth',
-    20: 'twentyith'
+    20: 'twentieth',
+    30: 'thirtieth',
+    40: "fortieth",
+    50: "fiftieth",
+    60: "sixtieth",
+    70: "seventieth",
+    80: "eightieth",
+    90: "ninetieth",
+    10e-3: "hundredth",
+    1e-3: "thousandth",
+    1e-6: "millionth",
 }
 
 LONG_SCALE_EN = collections.OrderedDict([
