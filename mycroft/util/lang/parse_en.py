@@ -703,10 +703,10 @@ def extract_datetime_en(string, currentDate=None):
                         if wordNext == "hours":
                             used += 1
                     elif (
-                            wordNext == "hours" and
+                            (wordNext == "hours" or wordNext == "hour") and
                             word[0] != '0' and
                             (
-                                    int(word) < 100 and
+                                    int(word) < 100 or
                                     int(word) > 2400
                             )):
                         # ignores military time
@@ -717,14 +717,14 @@ def extract_datetime_en(string, currentDate=None):
                         hrAbs = -1
                         minAbs = -1
 
-                    elif wordNext == "minutes":
+                    elif wordNext == "minutes" or wordNext == "minute":
                         # "in 10 minutes"
                         minOffset = int(word)
                         used = 2
                         isTime = False
                         hrAbs = -1
                         minAbs = -1
-                    elif wordNext == "seconds":
+                    elif wordNext == "seconds" or wordNext == "second":
                         # in 5 seconds
                         secOffset = int(word)
                         used = 2
@@ -735,14 +735,14 @@ def extract_datetime_en(string, currentDate=None):
                         strHH = int(word) / 100
                         strMM = int(word) - strHH * 100
                         military = True
-                        if wordNext == "hours":
+                        if wordNext == "hours" or wordNext == "hour":
                             used += 1
                     elif wordNext[0].isdigit():
                         strHH = word
                         strMM = wordNext
                         military = True
                         used += 1
-                        if wordNextNext == "hours":
+                        if wordNextNext == "hours" or wordNextNext == "hour":
                             used += 1
                     elif (
                             wordNext == "" or wordNext == "o'clock" or
@@ -802,6 +802,8 @@ def extract_datetime_en(string, currentDate=None):
         if used > 0:
             # removed parsed words from the sentence
             for i in range(used):
+                if idx + i >= len(words):
+                    break
                 words[idx + i] = ""
 
             if wordPrev == "o" or wordPrev == "oh":
