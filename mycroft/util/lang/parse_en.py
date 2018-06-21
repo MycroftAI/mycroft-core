@@ -147,9 +147,15 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
         for idx, word in enumerate(words):
             prev_word = words[idx - 1] if idx > 0 else ""
             if word == "power" and prev_word in cards:
-                words[idx - 1] = NUM_STRING_EN[cards.index(prev_word) + 1]
+                i = cards.index(prev_word) + 1
+                # TODO > 20
+                if i <= 20:
+                    words[idx - 1] = NUM_STRING_EN[i]
             elif prev_word == "power" and word in cards:
-                words[idx] = word = NUM_STRING_EN[cards.index(word) + 1]
+                i = cards.index(word) + 1
+                # TODO > 20
+                if i <= 20:
+                    words[idx] = word = NUM_STRING_EN[i]
             if word in erases:
                 words[idx] = ""
             elif word in replaces.keys():
