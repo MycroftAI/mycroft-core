@@ -36,18 +36,18 @@ NUMBERS_FIXTURE_EN = {
     0.5: 'a half',
     1.333: '1 and a third',
     2.666: '2 and 2 thirds',
-    0.25: 'a forth',
-    1.25: '1 and a forth',
-    0.75: '3 forths',
-    1.75: '1 and 3 forths',
+    0.25: 'a fourth',
+    1.25: '1 and a fourth',
+    0.75: '3 fourths',
+    1.75: '1 and 3 fourths',
     3.4: '3 and 2 fifths',
     16.8333: '16 and 5 sixths',
     12.5714: '12 and 4 sevenths',
-    9.625: '9 and 5 eigths',
+    9.625: '9 and 5 eighths',
     6.777: '6 and 7 ninths',
     3.1: '3 and a tenth',
     2.272: '2 and 3 elevenths',
-    5.583: '5 and 7 twelveths',
+    5.583: '5 and 7 twelfths',
     8.384: '8 and 5 thirteenths',
     0.071: 'a fourteenth',
     6.466: '6 and 7 fifteenths',
@@ -55,7 +55,7 @@ NUMBERS_FIXTURE_EN = {
     2.176: '2 and 3 seventeenths',
     200.722: '200 and 13 eighteenths',
     7.421: '7 and 8 nineteenths',
-    0.05: 'a twentyith'
+    0.05: 'a twentieth'
 }
 
 

@@ -54,7 +54,7 @@ NUM_STRING_EN = {
 FRACTION_STRING_EN = {
     2: 'half',
     3: 'third',
-    4: 'forth',
+    4: 'fourth',
     5: 'fifth',
     6: 'sixth',
     7: 'seventh',
