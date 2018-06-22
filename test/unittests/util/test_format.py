@@ -318,14 +318,6 @@ class TestNiceDateFormat(unittest.TestCase):
                         use_ampm=ast.literal_eval(p['use_ampm'])))
                 i = i + 1
 
-        # test for language not supported, result in funny time
-        dt = datetime.datetime(2017, 1, 31, 13, 22, 3)
-        self.assertEqual(nice_date_time(
-            dt,
-            lang='invalid'),
-            'tuesday, january the thirty-first, ' +
-            'two thousand and seventeen at 2017-01-31 13:22:03')
-
     def test_nice_year(self):
         for lang in self.test_config:
             i = 1
@@ -344,10 +336,13 @@ class TestNiceDateFormat(unittest.TestCase):
         # Test all years from 0 to 9999 for all languages,
         # that some output is produced
         for lang in self.test_config:
+            print("Test all years in " + lang)
             for i in range(1, 9999):
                 dt = datetime.datetime(i, 1, 31, 13, 2, 3)
                 self.assertTrue(len(nice_year(dt, lang=lang)) > 0)
                 # Looking through the date sequence can be helpful
+
+
 #                print(nice_year(dt, lang=lang))
 
 

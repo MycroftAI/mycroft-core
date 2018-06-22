@@ -6,38 +6,41 @@
     "4": {"match": "^[2-9]\\d$", "format": "{x0} {x}"},
     "default": "{number}"
   },
-  "hundreds_format": {
+    "hundreds_format": {
     "1": {"match": "^\\d{3}$", "format": "{x_in_x00} hundred"},
     "default": "{number}"
   },
-  "thousand_format": {
-    "1": {"match": "^1[1-9]\\d{2}$", "format": "{xx_in_xx00} hundred"},
-    "2": {"match": "^\\d{4}$", "format": "{x_in_x000} thousand"},
+    "thousand_format": {
+    "1": {"match": "^\\d00\\d$", "format": "{x_in_x000} thousand"},
+    "2": {"match": "^1\\d00$", "format": "{xx_in_xx00} hundred"},
+    "3": {"match": "^\\d{2}00$", "format": "{x0_in_x000} {x_in_x00} hundred"},
+    "4": {"match": "^(1\\d{3})|(\\d0\\d{2})$", "format": "{xx_in_xx00}"},
+    "5": {"match": "^\\d{4}$", "format": "{x0_in_x000} {x_in_x00}"},
     "default": "{number}"
   },
-  "year_format": {
+    "year_format": {
     "1": {"match": "^\\d\\d?$", "format": "{formatted_decade} {bc}"},
     "2": {"match": "^\\d00$", "format": "{formatted_hundreds} {bc}"},
-    "3": {"match": "^\\d{3}$", "format": "{formatted_hundreds} and {formatted_decade} {bc}"},
-    "4": {"match": "^(1\\d00)|([2-9]000)$", "format": "{formatted_thousand} {bc}"},
-    "5": {"match": "^\\d{2}00$", "format": "{formatted_thousand} {formatted_hundreds} {bc}"},
-    "6": {"match": "^(1\\d{3})|(\\d0\\d{2})$", "format": "{formatted_thousand} and {formatted_decade} {bc}"},
-    "7": {"match": "^\\d{4}$", "format": "{formatted_thousand} {formatted_hundreds} and {formatted_decade} {bc}"},
+    "3": {"match": "^\\d{3}$", "format": "{formatted_hundreds} {formatted_decade} {bc}"},
+    "4": {"match": "^\\d{2}00$", "format": "{formatted_thousand} {bc}"},
+    "5": {"match": "^\\d00\\d$", "format": "{formatted_thousand} {formatted_decade} {bc}"},
+    "6": {"match": "^\\d{2}0\\d$", "format": "{formatted_thousand} oh {formatted_decade} {bc}"},
+    "7": {"match": "^\\d{4}$", "format": "{formatted_thousand} {formatted_decade} {bc}"},
     "default": "{year} {bc}",
     "bc": "b.c."
   },
-  "date_format": {
-    "date_full": "{weekday}, {month} the {day}, {formatted_year}",
-    "date_full_no_year": "{weekday}, {month} the {day}",
-    "date_full_no_year_month": "{weekday}, the {day}",
+    "date_format": {
+    "date_full": "{weekday}, {month} {day}, {formatted_year}",
+    "date_full_no_year": "{weekday}, {month} {day}",
+    "date_full_no_year_month": "{weekday}, {day}",
     "today": "today",
     "tomorrow": "tomorrow",
     "yesterday": "yesterday"
   },
-  "date_time_format": {
+    "date_time_format": {
     "date_time": "{formatted_date} at {formatted_time}"
   },
-  "weekday": {
+    "weekday": {
     "0": "monday",
     "1": "tuesday",
     "2": "wednesday",
@@ -121,8 +124,6 @@
     "60": "sixty",
     "70": "seventy",
     "80": "eighty",
-    "90": "ninety",
-    "100": "hundred",
-    "1000": "thousand"
+    "90": "ninety"
   }
 }
