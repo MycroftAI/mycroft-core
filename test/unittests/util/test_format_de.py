@@ -20,6 +20,7 @@ import datetime
 from mycroft.util.format import nice_number
 from mycroft.util.format import nice_time
 from mycroft.util.format import pronounce_number
+from mycroft.util.lang.format_de import nice_ordinal
 from mycroft.util.lang.format_de import pronounce_ordinal_de
 
 # fractions are not capitalized for now
@@ -54,6 +55,20 @@ NUMBERS_FIXTURE_DE = {
     7.421: '7 und 8 neunzehntel',
     0.05: 'ein zwanzigstel'
 }
+
+
+class TestReplaceOrdinal(unittest.TestCase):
+    def test_replace_ordinal(self):
+        self.assertEqual(nice_ordinal("dies ist der 31. mai"),
+                         "dies ist der einunddreiﬂigste mai")
+
+    def test_replace_ordinal(self):
+        self.assertEqual(nice_ordinal("es f‰ngt am 31. mai an"),
+                         "es f‰ngt am einunddreiﬂigsten mai an")
+
+    def test_replace_ordinal(self):
+        self.assertEqual(nice_ordinal("der 31. mai"),
+                         "der einunddreiﬂigste mai")
 
 
 class TestNiceNumberFormat(unittest.TestCase):
