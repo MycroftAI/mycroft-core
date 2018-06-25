@@ -110,29 +110,25 @@ function github_init_scripts {
 
         # switch to point a github install and run as the current user
 # TODO Verify all of these
-        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'${path}'/start.sh audio"_g' /etc/init.d/mycroft-audio
+        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'${path}'/start-mycroft.sh audio"_g' /etc/init.d/mycroft-audio
         sudo sed -i 's_.*RUNAS=.*_RUNAS='${user}'_g' /etc/init.d/mycroft-audio
         sudo sed -i 's_stop() {_stop() {\nPID=$(ps ax | grep mycroft/audio/ | awk '"'NR==1{print \$1; exit}'"')\necho "${PID}" > "$PIDFILE"_g' /etc/init.d/mycroft-audio
 
-        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'${path}'/start.sh enclosure-client"_g' /etc/init.d/mycroft-enclosure-client
+        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'${path}'/start-mycroft.sh enclosure"_g' /etc/init.d/mycroft-enclosure-client
         sudo sed -i 's_.*RUNAS=.*_RUNAS='${user}'_g' /etc/init.d/mycroft-enclosure-client
         sudo sed -i 's_stop() {_stop() {\nPID=$(ps ax | grep mycroft/enclosure-client/ | awk '"'NR==1{print \$1; exit}'"')\necho "${PID}" > "$PIDFILE"_g' /etc/init.d/mycroft-enclosure-client
 
-        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'${path}'/start.sh service"_g' /etc/init.d/mycroft-messagebus
+        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'${path}'/start-mycroft.sh bus"_g' /etc/init.d/mycroft-messagebus
         sudo sed -i 's_.*RUNAS=.*_RUNAS='${user}'_g' /etc/init.d/mycroft-messagebus
         sudo sed -i 's_stop() {_stop() {\nPID=$(ps ax | grep mycroft/messagebus/ | awk '"'NR==1{print \$1; exit}'"')\necho "${PID}" > "$PIDFILE"_g' /etc/init.d/mycroft-messagebus
 
-        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'${path}'/start.sh skills"_g' /etc/init.d/mycroft-skills
+        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'${path}'/start-mycroft.sh skills"_g' /etc/init.d/mycroft-skills
         sudo sed -i 's_.*RUNAS=.*_RUNAS='${user}'_g' /etc/init.d/mycroft-skills
         sudo sed -i 's_stop() {_stop() {\nPID=$(ps ax | grep mycroft/skills/ | awk '"'NR==1{print \$1; exit}'"')\necho "${PID}" > "$PIDFILE"_g' /etc/init.d/mycroft-skills
 
-        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'${path}'/start.sh voice"_g' /etc/init.d/mycroft-speech-client
+        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'${path}'/start-mycroft.sh voice"_g' /etc/init.d/mycroft-speech-client
         sudo sed -i 's_.*RUNAS=.*_RUNAS='${user}'_g' /etc/init.d/mycroft-speech-client
         sudo sed -i 's_stop() {_stop() {\nPID=$(ps ax | grep mycroft/client/ | awk '"'NR==1{print \$1; exit}'"')\necho "${PID}" > "$PIDFILE"_g' /etc/init.d/mycroft-speech-client
-
-#        sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'${path}'/start.sh voice"_g' /etc/init.d/mycroft-wifi-setup-client
-#        sudo sed -i 's_.*RUNAS=.*_RUNAS='${user}'_g' /etc/init.d/mycroft-wifi-setup-client
-#        sudo sed -i 's_stop() {_stop() {\nPID=$(ps ax | grep mycroft/client/ | awk '"'NR==1{print \$1; exit}'"')\necho "${PID}" > "$PIDFILE"_g' /etc/init.d/mycroft-wifi-setup-client
 
         # soft link the current user to the mycroft user's identity file
         sudo ln -s /home/mycroft/.mycroft/identity/identity2.json /home/${user}/.mycroft/identity/identity2.json
