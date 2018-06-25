@@ -664,7 +664,6 @@ def extract_datetime_en(string, currentDate=None):
 
                 if remainder == "":
                     remainder = wordNext.replace(".", "").lstrip().rstrip()
-
                 if (
                         remainder == "pm" or
                         wordNext == "pm" or
@@ -682,67 +681,64 @@ def extract_datetime_en(string, currentDate=None):
                     remainder = "am"
                     used = 1
                 else:
-                    if wordNext == "pm" or wordNext == "p.m.":
-                        strHH = strNum
-                        remainder = "pm"
-                        used = 1
-                    elif wordNext == "am" or wordNext == "a.m.":
-                        strHH = strNum
-                        remainder = "am"
-                        used = 1
-                    elif (
-                            int(word) > 100 and
+                    if (
+                            int(strNum) > 100 and
                             (
                                     wordPrev == "o" or
                                     wordPrev == "oh"
                             )):
                         # 0800 hours (pronounced oh-eight-hundred)
-                        strHH = int(word) / 100
-                        strMM = int(word) - strHH * 100
+                        strHH = int(strNum) / 100
+                        strMM = int(strNum) - strHH * 100
                         military = True
                         if wordNext == "hours":
                             used += 1
                     elif (
-                            (wordNext == "hours" or wordNext == "hour") and
+                            (wordNext == "hours" or wordNext == "hour" or
+                             remainder == "hours" or remainder == "hour") and
                             word[0] != '0' and
                             (
-                                    int(word) < 100 or
-                                    int(word) > 2400
+                                    int(strNum) < 100 or
+                                    int(strNum) > 2400
                             )):
                         # ignores military time
                         # "in 3 hours"
-                        hrOffset = int(word)
+                        hrOffset = int(strNum)
                         used = 2
                         isTime = False
                         hrAbs = -1
                         minAbs = -1
 
-                    elif wordNext == "minutes" or wordNext == "minute":
+                    elif wordNext == "minutes" or wordNext == "minute" or \
+                            remainder == "minutes" or remainder == "minute":
                         # "in 10 minutes"
-                        minOffset = int(word)
+                        minOffset = int(strNum)
                         used = 2
                         isTime = False
                         hrAbs = -1
                         minAbs = -1
-                    elif wordNext == "seconds" or wordNext == "second":
+                    elif wordNext == "seconds" or wordNext == "second" \
+                            or remainder == "seconds" or remainder == "second":
                         # in 5 seconds
-                        secOffset = int(word)
+                        secOffset = int(strNum)
                         used = 2
                         isTime = False
                         hrAbs = -1
                         minAbs = -1
-                    elif int(word) > 100:
-                        strHH = int(word) / 100
-                        strMM = int(word) - strHH * 100
+                    elif int(strNum) > 100:
+                        strHH = int(strNum) / 100
+                        strMM = int(strNum) - strHH * 100
                         military = True
-                        if wordNext == "hours" or wordNext == "hour":
+                        if wordNext == "hours" or wordNext == "hour" or \
+                                remainder == "hours" or remainder == "hour":
                             used += 1
-                    elif wordNext[0].isdigit():
-                        strHH = word
+                    elif wordNext and wordNext[0].isdigit():
+                        strHH = strNum
                         strMM = wordNext
                         military = True
                         used += 1
-                        if wordNextNext == "hours" or wordNextNext == "hour":
+                        if wordNext == "hours" or wordNext == "hour" or \
+                                remainder == "hours" or remainder == "hour":
                             used += 1
                     elif (
                             wordNext == "" or wordNext == "o'clock" or
@@ -753,7 +749,7 @@ def extract_datetime_en(string, currentDate=None):
                                             wordNextNext == timeQualifier
                                     )
                             )):
-                        strHH = word
+                        strHH = strNum
                         strMM = 00
                         if wordNext == "o'clock":
                             used += 1
