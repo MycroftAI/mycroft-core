@@ -14,9 +14,8 @@
 #
 import re
 import json
-import requests
 from abc import ABCMeta, abstractmethod
-from requests import post, exceptions
+from requests import post, put, exceptions
 from speech_recognition import Recognizer
 
 from mycroft.api import STTApi
