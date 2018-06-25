@@ -53,7 +53,7 @@ function stop_mycroft {
     service_ctl mycroft-skills stop
     service_ctl mycroft-speech-client stop
     service_ctl mycroft-enclosure-client stop
-    service_ctl mycroft-wifi-setup-client stop
+    service_ctl mycroft-admin-service stop
     service_ctl mycroft-messagebus stop
 }
 
@@ -64,7 +64,7 @@ function restart_mycroft {
     service_ctl mycroft-skills start
     service_ctl mycroft-speech-client start
     service_ctl mycroft-enclosure-client start
-    service_ctl mycroft-wifi-setup-client start
+    service_ctl mycroft-admin-service start
     service_ctl mycroft-messagebus start
 }
 
@@ -81,7 +81,7 @@ function restore_init_scripts {
         sudo sh -c 'cat /etc/init.d/mycroft-messagebus.original > /etc/init.d/mycroft-messagebus'
         sudo sh -c 'cat /etc/init.d/mycroft-skills.original > /etc/init.d/mycroft-skills'
         sudo sh -c 'cat /etc/init.d/mycroft-speech-client.original > /etc/init.d/mycroft-speech-client'
-        sudo sh -c 'cat /etc/init.d/mycroft-wifi-setup-client.original > /etc/init.d/mycroft-wifi-setup-client'
+        sudo sh -c 'cat /etc/init.d/mycroft-admin-service.original > /etc/init.d/mycroft-admin-service'
         sudo rm /etc/init.d/*.original
         sudo chown -Rvf mycroft:mycroft /var/log/mycroft*
         sudo chown -Rvf mycroft:mycroft /tmp/mycroft/*
@@ -107,7 +107,7 @@ function github_init_scripts {
         sudo sh -c 'cat /etc/init.d/mycroft-messagebus > /etc/init.d/mycroft-messagebus.original'
         sudo sh -c 'cat /etc/init.d/mycroft-skills > /etc/init.d/mycroft-skills.original'
         sudo sh -c 'cat /etc/init.d/mycroft-speech-client > /etc/init.d/mycroft-speech-client.original'
-        sudo sh -c 'cat /etc/init.d/mycroft-wifi-setup-client > /etc/init.d/mycroft-wifi-setup-client.original'
+        sudo sh -c 'cat /etc/init.d/mycroft-admin-service > /etc/init.d/mycroft-admin-service.original'
 
         # switch to point a github install and run as the current user
 # TODO Verify all of these
