@@ -299,12 +299,6 @@ elif [ "${change_to}" = "stable" ]; then
 
         restore_init_scripts
 elif [ "${change_to}" = "github" ]; then
-    # make sure user is running as sudo first
-    if [ "$EUID" -ne 0 ] ; then
-        echo "Please run with sudo"
-        exit
-    fi
-
     echo "Switching to github..."
     if [ ! -d ${path} ]; then
         mkdir --parents "${path}"
