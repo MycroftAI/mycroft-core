@@ -516,9 +516,9 @@ def extract_datetime_en(string, currentDate=None):
 
     # parse time
     timeStr = ""
-    hrOffset = int(dateNow.strftime("%H"))
-    minOffset = int(dateNow.strftime("%M"))
-    secOffset = int(dateNow.strftime("%S"))
+    hrOffset = 0
+    minOffset = 0
+    secOffset = 0
     hrAbs = 0
     minAbs = 0
     military = False
@@ -784,6 +784,12 @@ def extract_datetime_en(string, currentDate=None):
                             military = True
                     else:
                         isTime = False
+
+            # keep current date
+            if not military and remainder not in ["pm", "am", "o'clock"]:
+                hrOffset = hrOffset + int(dateNow.strftime("%H"))
+                minOffset = minOffset + int(dateNow.strftime("%M"))
+                secOffset = secOffset + int(dateNow.strftime("%S"))
 
             strHH = int(strHH) if strHH else 0
             strMM = int(strMM) if strMM else 0
