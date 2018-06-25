@@ -86,6 +86,7 @@ function restore_init_scripts {
         sudo chown -Rvf mycroft:mycroft /var/log/mycroft*
         sudo chown -Rvf mycroft:mycroft /tmp/mycroft/*
         sudo chown -Rvf mycroft:mycroft /var/run/mycroft*
+        sudo chown -Rvf mycroft:mycroft /var/tmp/mycroft_web_cache.json
 
         # reload daemon scripts
         sudo systemctl daemon-reload
@@ -136,6 +137,7 @@ function github_init_scripts {
         sudo chown -Rvf ${user}:${user} /var/log/mycroft*
         sudo chown -Rvf ${user}:${user} /var/run/mycroft*
         sudo chown -Rvf ${user}:${user} /tmp/mycroft/*
+        sudo chown -Rvf ${user}:${user} /var/tmp/mycroft_web_cache.json
 
         # reload daemon scripts
         sudo systemctl daemon-reload
