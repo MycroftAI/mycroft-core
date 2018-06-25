@@ -185,6 +185,8 @@ class TestNormalize(unittest.TestCase):
                     "2017-12-03 00:00:00", "")
         testExtract("lets meet at 8:00 tonight",
                     "2017-06-27 20:00:00", "lets meet")
+        testExtract("lets meet at 5pm",
+                    "2017-06-27 17:00:00", "lets meet")
 
     def test_extract_relativedatetime_en(self):
         def extractWithFormat(text):
