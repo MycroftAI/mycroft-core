@@ -34,6 +34,8 @@ class Mpg123Service(AudioBackend):
         self.name = name
         self._stop_signal = False
         self._is_playing = False
+        self.tracks = []
+        self.index = 0
 
         self.emitter.on('Mpg123ServicePlay', self._play)
 

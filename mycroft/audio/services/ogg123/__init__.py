@@ -34,6 +34,8 @@ class Ogg123Service(AudioBackend):
         self.name = name
         self._stop_signal = False
         self._is_playing = False
+        self.index = 0
+        self.tracks = []
 
         self.emitter.on('Ogg123ServicePlay', self._play)
 
