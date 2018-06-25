@@ -323,7 +323,7 @@ elif [ "${change_to}" = "github" ]; then
         fi
 
         # Build the dev environment
-        ${path}/dev_setup.sh
+        ${path}/dev_setup.sh --allow-root
 
         # Switch init scripts to start the github version
         github_init_scripts
