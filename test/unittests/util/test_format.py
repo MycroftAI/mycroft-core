@@ -14,13 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import json
 import unittest
 import datetime
+import ast
+from pathlib import Path
 
 from mycroft.util.format import nice_number
 from mycroft.util.format import nice_time
+from mycroft.util.format import nice_date
+from mycroft.util.format import nice_date_time
+from mycroft.util.format import nice_year
 from mycroft.util.format import pronounce_number
-
+from mycroft.util.format import date_time_format
 
 NUMBERS_FIXTURE_EN = {
     1.435634: '1.436',
@@ -141,6 +147,18 @@ class TestPronounceNumber(unittest.TestCase):
 # def nice_time(dt, lang="en-us", speech=True, use_24hour=False,
 #              use_ampm=False):
 class TestNiceDateFormat(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Read date_time_test.json files for test data
+        cls.test_config = {}
+        p = Path(date_time_format.config_path)
+        for sub_dir in [x for x in p.iterdir() if x.is_dir()]:
+            if (sub_dir / 'date_time_test.json').exists():
+                print("Getting test for " +
+                      str(sub_dir / 'date_time_test.json'))
+                with (sub_dir / 'date_time_test.json').open() as f:
+                    cls.test_config[sub_dir.parts[-1]] = json.loads(f.read())
+
     def test_convert_times(self):
         dt = datetime.datetime(2017, 1, 31,
                                13, 22, 3)
@@ -246,6 +264,86 @@ class TestNiceDateFormat(unittest.TestCase):
                          "zero one zero two")
         self.assertEqual(nice_time(dt, use_24hour=True, use_ampm=False),
                          "zero one zero two")
+
+    def test_nice_date(self):
+        for lang in self.test_config:
+            i = 1
+            while (self.test_config[lang].get('test_nice_date') and
+                   self.test_config[lang]['test_nice_date'].get(str(i))):
+                p = self.test_config[lang]['test_nice_date'][str(i)]
+                dp = ast.literal_eval(p['datetime_param'])
+                np = ast.literal_eval(p['now'])
+                dt = datetime.datetime(
+                    dp[0], dp[1], dp[2], dp[3], dp[4], dp[5])
+                now = None if not np else datetime.datetime(
+                    np[0], np[1], np[2], np[3], np[4], np[5])
+                print('Testing for ' + lang + ' that ' + str(dt) +
+                      ' is date ' + p['assertEqual'])
+                self.assertEqual(p['assertEqual'],
+                                 nice_date(dt, lang=lang, now=now))
+                i = i + 1
+
+        # test fall back to english
+        dt = datetime.datetime(2018, 2, 4, 0, 2, 3)
+        self.assertEqual(nice_date(
+            dt, lang='invalid', now=datetime.datetime(2018, 2, 4, 0, 2, 3)),
+            'today')
+
+        # test all days in a year for all languages,
+        # that some output is produced
+        for lang in self.test_config:
+            for dt in (datetime.datetime(2017, 12, 30, 0, 2, 3) +
+                       datetime.timedelta(n) for n in range(368)):
+                self.assertTrue(len(nice_date(dt, lang=lang)) > 0)
+
+    def test_nice_date_time(self):
+        for lang in self.test_config:
+            i = 1
+            while (self.test_config[lang].get('test_nice_date_time') and
+                   self.test_config[lang]['test_nice_date_time'].get(str(i))):
+                p = self.test_config[lang]['test_nice_date_time'][str(i)]
+                dp = ast.literal_eval(p['datetime_param'])
+                np = ast.literal_eval(p['now'])
+                dt = datetime.datetime(
+                    dp[0], dp[1], dp[2], dp[3], dp[4], dp[5])
+                now = None if not np else datetime.datetime(
+                    np[0], np[1], np[2], np[3], np[4], np[5])
+                print('Testing for ' + lang + ' that ' + str(dt) +
+                      ' is date time ' + p['assertEqual'])
+                self.assertEqual(
+                    p['assertEqual'],
+                    nice_date_time(
+                        dt, lang=lang, now=now,
+                        use_24hour=ast.literal_eval(p['use_24hour']),
+                        use_ampm=ast.literal_eval(p['use_ampm'])))
+                i = i + 1
+
+    def test_nice_year(self):
+        for lang in self.test_config:
+            i = 1
+            while (self.test_config[lang].get('test_nice_year') and
+                   self.test_config[lang]['test_nice_year'].get(str(i))):
+                p = self.test_config[lang]['test_nice_year'][str(i)]
+                dp = ast.literal_eval(p['datetime_param'])
+                dt = datetime.datetime(
+                    dp[0], dp[1], dp[2], dp[3], dp[4], dp[5])
+                print('Testing for ' + lang + ' that ' + str(dt) +
+                      ' is year ' + p['assertEqual'])
+                self.assertEqual(p['assertEqual'], nice_year(
+                    dt, lang=lang, bc=ast.literal_eval(p['bc'])))
+                i = i + 1
+
+        # Test all years from 0 to 9999 for all languages,
+        # that some output is produced
+        for lang in self.test_config:
+            print("Test all years in " + lang)
+            for i in range(1, 9999):
+                dt = datetime.datetime(i, 1, 31, 13, 2, 3)
+                self.assertTrue(len(nice_year(dt, lang=lang)) > 0)
+                # Looking through the date sequence can be helpful
+
+
+#                print(nice_year(dt, lang=lang))
 
 
 if __name__ == "__main__":
