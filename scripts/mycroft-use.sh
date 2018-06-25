@@ -316,14 +316,14 @@ elif [ "${change_to}" = "github" ]; then
     if [ -d ${path} ]; then
         if  [ -f /usr/local/bin/mimic ]; then
             echo "Mimic file exists"
-            sed -i "s_.*'${TOP}/scripts/install-mimic.sh'.*_#'${TOP}/scripts/install-mimic.sh'_g" ${path}/dev_setup.sh
+            mimic_flag='-sm'
         else
             echo "file doesn't exist"
-            sed -i "s_.*#'${TOP}/scripts/install-mimic.sh'.*_'${TOP}/scripts/install-mimic.sh'_g" ${path}/dev_setup.sh
+            mimic_flag=''
         fi
-
+        cd ${path}
         # Build the dev environment
-        ${path}/dev_setup.sh --allow-root
+        ${path}/dev_setup.sh --allow-root ${mimic_flag}
 
         # Switch init scripts to start the github version
         github_init_scripts
