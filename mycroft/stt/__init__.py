@@ -217,10 +217,7 @@ class GoVivaceSTT(TokenSTT):
         return self.get_response(response)
 
     def get_response(self, response):
-        try:
-            return response.json()["result"]["hypotheses"][0]["transcript"]
-        except:
-            return None
+        return response.json()["result"]["hypotheses"][0]["transcript"]
 
 
 class STTFactory(object):
