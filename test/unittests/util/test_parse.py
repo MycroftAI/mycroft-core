@@ -185,26 +185,6 @@ class TestNormalize(unittest.TestCase):
                     "2017-12-03 00:00:00", "")
         testExtract("lets meet at 8:00 tonight",
                     "2017-06-27 20:00:00", "lets meet")
-        testExtract("lets meet in 5 minutes",
-                    "2017-06-27 00:05:00", "lets meet")
-        testExtract("lets meet in 5minutes",
-                    "2017-06-27 00:05:00", "lets meet")
-        testExtract("lets meet in 5 seconds",
-                    "2017-06-27 00:00:05", "lets meet")
-        testExtract("lets meet in 1 hour",
-                    "2017-06-27 01:00:00", "lets meet")
-        testExtract("lets meet in 2 hours",
-                    "2017-06-27 02:00:00", "lets meet")
-        testExtract("lets meet in 2hours",
-                    "2017-06-27 02:00:00", "lets meet")
-        testExtract("lets meet in 1 minute",
-                    "2017-06-27 00:01:00", "lets meet")
-        testExtract("lets meet in 1 second",
-                    "2017-06-27 00:00:01", "lets meet")
-        testExtract("lets meet at 5pm",
-                    "2017-06-27 17:00:00", "lets meet")
-        testExtract("lets meet in 5seconds",
-                    "2017-06-27 00:00:05", "lets meet")
 
     def test_extract_relativedatetime_en(self):
         def extractWithFormat(text):
@@ -218,8 +198,6 @@ class TestNormalize(unittest.TestCase):
             self.assertEqual(res[0], expected_date)
             self.assertEqual(res[1], expected_leftover)
 
-        testExtract("lets meet at 8:00 tonight",
-                    "2017-06-27 20:00:00", "lets meet")
         testExtract("lets meet in 5 minutes",
                     "2017-06-27 10:05:00", "lets meet")
         testExtract("lets meet in 5minutes",
