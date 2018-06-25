@@ -515,9 +515,9 @@ def extract_datetime_en(string, currentDate=None):
 
     # parse time
     timeStr = ""
-    hrOffset = 0
-    minOffset = 0
-    secOffset = 0
+    hrOffset = int(dateNow.strftime("%H"))
+    minOffset = int(dateNow.strftime("%M"))
+    secOffset = int(dateNow.strftime("%S"))
     hrAbs = 0
     minAbs = 0
     military = False
