@@ -210,8 +210,8 @@ class GoVivaceSTT(TokenSTT):
             raise NotImplementedError
 
     def execute(self, audio, language=None):
-        url = self.config.get("uri", self.default_uri) + "?key=" + self.token + \
-              "&action=find&format=8K_PCM16&validation_string="
+        url = self.config.get("uri", self.default_uri) + "?key=" + \
+              self.token + "&action=find&format=8K_PCM16&validation_string="
         response = put(url,
                        data=audio.get_wav_data())
         return self.get_response(response)
