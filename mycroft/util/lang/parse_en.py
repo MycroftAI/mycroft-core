@@ -292,7 +292,8 @@ def extract_datetime_en(string, currentDate=None):
             ordinals = ["rd", "st", "nd", "th"]
             if word[0].isdigit():
                 for ordinal in ordinals:
-                    if ordinal in word:
+                    # "second" is the only case we should not do this
+                    if ordinal in word and "second" not in word:
                         word = word.replace(ordinal, "")
             wordList[idx] = word
 

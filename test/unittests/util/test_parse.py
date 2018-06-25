@@ -203,9 +203,8 @@ class TestNormalize(unittest.TestCase):
                     "2017-06-27 00:00:01", "lets meet")
         testExtract("lets meet at 5pm",
                     "2017-06-27 17:00:00", "lets meet")
-        # TODO fix this, 5seconds becomes 5secos and this fails
-        # testExtract("lets meet in 5seconds",
-        #            "2017-06-27 00:00:05", "lets meet")
+        testExtract("lets meet in 5seconds",
+                    "2017-06-27 00:00:05", "lets meet")
 
     def test_spaces(self):
         self.assertEqual(normalize("  this   is  a    test"),
