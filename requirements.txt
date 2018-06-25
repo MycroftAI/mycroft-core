@@ -29,8 +29,9 @@ google-api-python-client==1.6.4
 msm==0.5.15
 msk==0.3.9
 adapt-parser==0.3.0
+padatious==0.4.3
+fann2==1.0.7
+padaos==0.1.4
 
 # dev setup tools
 pep8==1.7.0
-fann2==1.0.7
-padatious==0.4.3
