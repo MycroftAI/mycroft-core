@@ -20,7 +20,7 @@ user=$(whoami)
 #Build being changed to
 change_to=${1}
 #path to mycroft-core checkout
-path=${2:-"/home/${user}/mycroft-core"}
+path=${2:-"${HOME}/mycroft-core"}
 #currently installed package
 current_pkg=$(cat /etc/apt/sources.list.d/repo.mycroft.ai.list)
 stable_pkg="deb http://repo.mycroft.ai/repos/apt/debian debian main"
@@ -131,7 +131,7 @@ function github_init_scripts {
         sudo sed -i 's_stop() {_stop() {\nPID=$(ps ax | grep mycroft/client/ | awk '"'NR==1{print \$1; exit}'"')\necho "${PID}" > "$PIDFILE"_g' /etc/init.d/mycroft-speech-client
 
         # soft link the current user to the mycroft user's identity file
-        sudo ln -s /home/mycroft/.mycroft/identity/identity2.json /home/${user}/.mycroft/identity/identity2.json
+        sudo ln -s /home/mycroft/.mycroft/identity/identity2.json ${HOME}/.mycroft/identity/identity2.json
 
         sudo chown -Rvf ${user}:${user} /var/log/mycroft*
         sudo chown -Rvf ${user}:${user} /var/run/mycroft*
