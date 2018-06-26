@@ -213,7 +213,7 @@ class GoVivaceSTT(TokenSTT):
         url = self.config.get("uri", self.default_uri) + "?key=" + \
               self.token + "&action=find&format=8K_PCM16&validation_string="
         response = put(url,
-                       data=audio.get_wav_data())
+                       data=audio.get_wav_data(convert_rate=8000))
         return self.get_response(response)
 
     def get_response(self, response):
