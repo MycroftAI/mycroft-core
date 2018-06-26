@@ -104,7 +104,7 @@ def handle_mic_is_muted(event):
         Query microphone mute status.
     """
     data = {'mic_state': loop.is_muted()}
-    ws.emit(Message('mycroft.mic.muted', data))
+    ws.emit(event.response(data))
 
 
 def handle_paired(event):
