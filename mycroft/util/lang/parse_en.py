@@ -120,8 +120,31 @@ SHORT_SCALE_EN = {
     10e100: "googol"
 }
 
+ORDINALS_EN = {
+    1: "first",
+    2: 'second',
+    3: 'third',
+    4: 'fourth',
+    5: 'fifth',
+    6: 'sixth',
+    7: 'seventh',
+    8: 'eighth',
+    9: 'ninth',
+    10: 'tenth',
+    11: 'eleventh',
+    12: 'twelfth',
+    13: 'thirteenth',
+    14: 'fourteenth',
+    15: 'fifteenth',
+    16: 'sixteenth',
+    17: 'seventeenth',
+    18: 'eighteenth',
+    19: 'nineteenth',
+    20: 'twentieth'
+}
 
-def extractnumber_en(text, short_scale=True):
+
+def extractnumber_en(text, short_scale=True, ordinals=False):
     """
     This function extracts a number from a text string,
     handles pronunciations in long scale and short scale
@@ -131,13 +154,13 @@ def extractnumber_en(text, short_scale=True):
     Args:
         text (str): the string to normalize
         short_scale (bool): use short scale if True, long scale if False
+        ordinals (bool): consider ordinal numbers, third=3 instead of 1/3
     Returns:
         (int) or (float) or None: The value of extracted number or None
                                   if number not found
 
     """
-    string_num_en = {"first": 1,
-                     "second": 2,
+    string_num_en = {
                      "half": 0.5,
                      "halves": 0.5,
                      "hundreds": 100,
@@ -147,6 +170,12 @@ def extractnumber_en(text, short_scale=True):
     for num in NUM_STRING_EN:
         num_string = NUM_STRING_EN[num]
         string_num_en[num_string] = num
+
+    # first, second
+    if ordinals:
+        for num in ORDINALS_EN:
+            num_string = ORDINALS_EN[num]
+            string_num_en[num_string] = num
 
     # negate next number (-2 = 0 - 2)
     negatives = ["negative", "minus"]
@@ -225,8 +254,8 @@ def extractnumber_en(text, short_scale=True):
 
         # is the prev word a number and should we sum it?
         # twenty two, fifty six
-        if prev_word in sums:
-            val = prev_val + val
+        if prev_word in sums and extractnumber_en(word, ordinals=ordinals):
+            val = prev_val + extractnumber_en(word, ordinals=ordinals)
 
         # is the prev word a number and should we multiply it?
         # twenty hundred, six hundred
@@ -241,11 +270,12 @@ def extractnumber_en(text, short_scale=True):
             val = isFractional_en(word)
 
         # 2 fifths
-        next_value = isFractional_en(next_word)
-        if next_value:
-            if not val:
-                val = 1
-            val = val * next_value
+        if not ordinals:
+            next_value = isFractional_en(next_word)
+            if next_value:
+                if not val:
+                    val = 1
+                val = val * next_value
 
         # is this a negative number?
         if val and prev_word and prev_word in negatives:

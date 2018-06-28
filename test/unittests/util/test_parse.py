@@ -60,10 +60,14 @@ class TestNormalize(unittest.TestCase):
                          "this is an extra test")
 
     def test_extractnumber(self):
-        self.assertEqual(extractnumber("this is the first test"), 1)
+        self.assertEqual(extractnumber("this is the first test",
+                                       ordinals=True), 1)
         self.assertEqual(extractnumber("this is 2 test"), 2)
-        self.assertEqual(extractnumber("this is second test"), 2)
+        self.assertEqual(extractnumber("this is second test",
+                                       ordinals=True), 2)
         self.assertEqual(extractnumber("this is the third test"), 1.0 / 3.0)
+        self.assertEqual(extractnumber("this is the third test",
+                                       ordinals=True), 3.0)
         self.assertEqual(extractnumber("this is test number 4"), 4)
         self.assertEqual(extractnumber("one third of a cup"), 1.0 / 3.0)
         self.assertEqual(extractnumber("three cups"), 3)
@@ -102,6 +106,8 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extractnumber("minus 2"), -2)
         self.assertEqual(extractnumber("negative seventy"), -70)
         self.assertEqual(extractnumber("thousand million"), 1000000000)
+        self.assertEqual(extractnumber("thirty second"), 30)
+        self.assertEqual(extractnumber("thirty second", ordinals=True), 32)
 
     def test_extractdatetime_en(self):
         def extractWithFormat(text):
