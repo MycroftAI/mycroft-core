@@ -122,7 +122,7 @@ def extract_datetime(text, anchorDate=None, lang="en-us"):
     If a time isn't supplied, the function defaults to 12 AM
 
     Args:
-        str (string): the text to be normalized
+        text (str): the text to be normalized
         anchortDate (:obj:`datetime`, optional): the date to be used for
             relative dating (for example, what does "tomorrow" mean?).
             Defaults to the current date
@@ -136,7 +136,7 @@ def extract_datetime(text, anchorDate=None, lang="en-us"):
             related keywords stripped out. See examples for further
             clarification
 
-            Returns 'None' if no date was extracted.
+            Returns 'None' if the input string is empty.
 
     Examples:
 
@@ -180,7 +180,8 @@ def normalize(text, lang="en-us", remove_articles=True):
     Args:
         text (str): the string to normalize
         lang (str): the code for the language text is in
-        remove_articles (bool): whether to remove articles (like 'a', or 'the')
+        remove_articles (bool): whether to remove articles (like 'a', or
+                                'the'). True by default.
     Returns:
         (str): The normalized string.
     """
