@@ -17,11 +17,6 @@ from copy import copy
 
 import requests
 
-try:
-    basestring            # Python 2
-except NameError:
-    basestring = (str, )  # Python 3
-
 MOPIDY_API = '/mopidy/rpc'
 
 _base_dict = {'jsonrpc': '2.0', 'id': 1, 'params': {}}
@@ -90,7 +85,7 @@ class Mopidy(object):
     def add_list(self, uri):
         d = copy(_base_dict)
         d['method'] = 'core.tracklist.add'
-        if isinstance(uri, basestring):
+        if isinstance(uri, str):
             d['params'] = {'uri': uri}
         elif type(uri) == list:
             d['params'] = {'uris': uri}
