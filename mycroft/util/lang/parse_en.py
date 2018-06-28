@@ -254,8 +254,9 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
 
         # is the prev word a number and should we sum it?
         # twenty two, fifty six
-        if prev_word in sums and extractnumber_en(word, ordinals=ordinals):
-            val = prev_val + extractnumber_en(word, ordinals=ordinals)
+        if prev_word in sums and word in string_num_en:
+            if val and val < 10:
+                val = prev_val + val
 
         # is the prev word a number and should we multiply it?
         # twenty hundred, six hundred
