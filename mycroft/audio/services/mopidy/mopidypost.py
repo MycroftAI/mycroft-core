@@ -17,6 +17,10 @@ from copy import copy
 
 import requests
 
+try:
+    basestring            # Python 2
+except NameError:
+    basestring = (str, )  # Python 3
 
 MOPIDY_API = '/mopidy/rpc'
 
@@ -86,7 +90,7 @@ class Mopidy(object):
     def add_list(self, uri):
         d = copy(_base_dict)
         d['method'] = 'core.tracklist.add'
-        if type(uri) == str or type(uri) == unicode:
+        if type(uri) in basestring:
             d['params'] = {'uri': uri}
         elif type(uri) == list:
             d['params'] = {'uris': uri}
