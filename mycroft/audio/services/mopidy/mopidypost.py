@@ -90,7 +90,7 @@ class Mopidy(object):
     def add_list(self, uri):
         d = copy(_base_dict)
         d['method'] = 'core.tracklist.add'
-        if type(uri) in basestring:
+        if isinstance(uri, basestring):
             d['params'] = {'uri': uri}
         elif type(uri) == list:
             d['params'] = {'uris': uri}
