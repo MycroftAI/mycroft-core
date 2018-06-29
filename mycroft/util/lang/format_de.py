@@ -347,12 +347,14 @@ def nice_time_de(dt, speech=True, use_24hour=False, use_ampm=False):
 
         return speak
 
-def nice_response(text):
+def nice_response_de(text):
+    # check for months and call nice_ordinal_de declension of ordinals
+    # replace "^" with "hoch" (to the power of)
     words = text.split()
 
     for idx, word in enumerate(words):
         if word.lower() in months:
-            text = nice_ordinal(text)
+            text = nice_ordinal_de(text)
 
         if word == '^':
             wordNext = words[idx + 1] if idx + 1 < len(words) else ""
@@ -361,8 +363,9 @@ def nice_response(text):
                 text = " ".join(words)
     return text
 
-def nice_ordinal(text):
-
+def nice_ordinal_de(text):
+    # check for months for declension of ordinals before months
+    # depending on articles/prepositions
     normalized_text = text
     words = text.split()
 
