@@ -25,7 +25,7 @@ import abc
 import re
 from adapt.intent import Intent, IntentBuilder
 from os.path import join, abspath, dirname, basename, exists
-from threading import Event
+from threading import Event, Timer
 
 from mycroft import dialog
 from mycroft.api import DeviceApi
@@ -253,9 +253,9 @@ class MycroftSkill(object):
     def bind(self, emitter):
         """ Register emitter with skill. """
         if emitter:
-            self.emitter = emitter
+            self.emitter = emitter  # TODO:18.08 - move to self.messagbus name
             self.enclosure = EnclosureAPI(emitter, self.name)
-            self.__register_stop()
+            self.add_event('mycroft.stop', self.__handle_stop)
             self.add_event('mycroft.skill.enable_intent',
                            self.handle_enable_intent)
             self.add_event('mycroft.skill.disable_intent',
@@ -265,12 +265,6 @@ class MycroftSkill(object):
             func = self.settings.run_poll
             emitter.on(name, func)
             self.events.append((name, func))
-
-    def __register_stop(self):
-        self.stop_time = time.time()
-        self.stop_threshold = self.config_core.get("skills").get(
-            'stop_threshold')
-        self.add_event('mycroft.stop', self.__handle_stop)
 
     def detach(self):
         for (name, intent) in self.registered_intents:
@@ -903,20 +897,27 @@ class MycroftSkill(object):
             Handler for the "mycroft.stop" signal. Runs the user defined
             `stop()` method.
         """
-        self.stop_time = time.time()
+
+        def __stop_timeout():
+            # The self.stop() call took more than 100ms, assume it handled Stop
+            self.emitter.emit(
+                Message("mycroft.stop.handled", {"skill_id": str(self.skill_id) + ":"}))
+            pass
+
+        timer = Timer(0.1, __stop_timeout)  # set timer for 100ms
         try:
-            self.stop()
+            if self.stop():
+                self.emitter.emit(
+                    Message("mycroft.stop.handled", {"by": "skill:"+str(self.skill_id)}))
+            timer.cancel()
         except:
+            timer.cancel()
             LOG.error("Failed to stop skill: {}".format(self.name),
                       exc_info=True)
 
     @abc.abstractmethod
     def stop(self):
         pass
-
-    def is_stop(self):
-        passed_time = time.time() - self.stop_time
-        return passed_time < self.stop_threshold
 
     def shutdown(self):
         """
