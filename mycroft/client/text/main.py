@@ -848,13 +848,11 @@ def show_skills(skills):
 
     screen_mode = 1  # showing help (prevents overwrite by log updates)
     scr.erase()
-    scr.addstr(0, 0, center(25) + "Skill List", CLR_CMDLINE)
-    # scr.addstr(0, 0, str(skills)[:50], CLR_CMDLINE)
+    scr.addstr(0, 0, center(25) + "Loaded skills", CLR_CMDLINE)
     scr.addstr(1, 1, "=" * (curses.COLS - 2), CLR_CMDLINE)
     row = 2
     column = 0
     col_width = 0
-    # for skill in sorted(skills.keys()):
     for skill in sorted(skills.keys()):
         if skills[skill]['active']:
             color = curses.color_pair(4)
