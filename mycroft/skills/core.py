@@ -901,14 +901,15 @@ class MycroftSkill(object):
         def __stop_timeout():
             # The self.stop() call took more than 100ms, assume it handled Stop
             self.emitter.emit(
-                Message("mycroft.stop.handled", {"skill_id": str(self.skill_id) + ":"}))
-            pass
+                Message("mycroft.stop.handled",
+                        {"skill_id": str(self.skill_id) + ":"}))
 
         timer = Timer(0.1, __stop_timeout)  # set timer for 100ms
         try:
             if self.stop():
                 self.emitter.emit(
-                    Message("mycroft.stop.handled", {"by": "skill:"+str(self.skill_id)}))
+                    Message("mycroft.stop.handled",
+                            {"by": "skill:"+str(self.skill_id)}))
             timer.cancel()
         except:
             timer.cancel()
