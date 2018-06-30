@@ -706,42 +706,53 @@ def make_titlebar(title, bar_length):
 # Help system
 
 help_struct = [
-    ('Log Scrolling shortcuts',
-     [("Up / Down / PgUp / PgDn",   "scroll thru history"),
+    (
+     'Log Scrolling shortcuts',
+     [
+      ("Up / Down / PgUp / PgDn",   "scroll thru history"),
       ("Ctrl+T / Ctrl+PgUp",        "scroll to top of logs (jump to oldest)"),
-      ("Ctrl+B / Ctrl+PgDn",        "scroll to bottom of logs (jump to newest)"),
+      ("Ctrl+B / Ctrl+PgDn",        "scroll to bottom of logs" +
+                                    "(jump to newest)"),
       ("Left / Right",              "scroll long lines left/right"),
       ("Home / End",                "scroll to start/end of long lines")
-      ]
+     ]
     ),
-    ("Query History shortcuts",
-     [("Ctrl+N / Ctrl+Right",       "previous query"),
+    (
+     "Query History shortcuts",
+     [
+      ("Ctrl+N / Ctrl+Right",       "previous query"),
       ("Ctrl+P / Ctrl+Left",        "next query")
      ]
     ),
-    ("General Commands (type ':' to enter command mode)",
-     [(":quit or :exit",        "exit the program"),
+    (
+     "General Commands (type ':' to enter command mode)",
+     [
+      (":quit or :exit",        "exit the program"),
       (":meter (show|hide)",    "display the microphone level"),
       (":keycode (show|hide)",  "display typed key codes (mainly debugging)"),
       (":history (# lines)",    "set size of visible history buffer"),
       (":clear log",            "flush the logs")
      ]
     ),
-    ("Log Manipulation Commands",
-     [(":filter 'STR'",         "adds a log filter (optional quotes)"),
+    (
+     "Log Manipulation Commands",
+     [
+      (":filter 'STR'",         "adds a log filter (optional quotes)"),
       (":filter remove 'STR'",  "removes a log filter"),
       (":filter (clear|reset)", "reset filters"),
       (":filter (show|list)",   "display current filters"),
       (":find 'STR'",           "show logs containing 'str'")
      ]
     ),
-    ("Skill Debugging Commands",
-     [(":skills",               "list installed skills"),
+    (
+     "Skill Debugging Commands",
+     [
+      (":skills",               "list installed skills"),
       (":activate SKILL",       "activate skill, e.g. 'activate skill-wiki'"),
       (":deactivate SKILL",     "deactivate skill"),
-      (":keep SKILL",           "deactivate all skills except "+
+      (":keep SKILL",           "deactivate all skills except " +
                                 "the indicated skill")
-      ]
+     ]
     )
 ]
 help_longest = 0
@@ -781,8 +792,8 @@ def _do_draw_help(scr):
     y = 2
     page = subscreen+1
 
-    first = subscreen* (curses.LINES-4)  # account for header
-    last = first + (curses.LINES-7)      # account for header/footer
+    first = subscreen * (curses.LINES-4)  # account for header
+    last = first + (curses.LINES-7)       # account for header/footer
     i = 0
     for section in help_struct:
         y = __render_help(scr, section[0], y, i, first, last, CLR_HEADING)
@@ -821,6 +832,7 @@ def show_help():
         subscreen = 0
         draw_screen()
 
+
 def show_next_help():
     global screen_mode
     global subscreen
@@ -830,6 +842,7 @@ def show_next_help():
         if subscreen >= num_help_pages():
             screen_mode = 0
         draw_screen()
+
 
 ##############################################################################
 # Skill debugging
@@ -1062,9 +1075,9 @@ def gui_main(stdscr):
                     last_key = "ESC"
             else:
                 if code < 33:
-                    last_key = str(code) # +" "+curses.unctrl(c)+" ^"+chr(ord("A")+code)
+                    last_key = str(code)
                 else:
-                    last_key = str(code) # +"y "+curses.unctrl(c)
+                    last_key = str(code)
 
             if code == 27:    # Hitting ESC twice clears the entry line
                 hist_idx = -1
