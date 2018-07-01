@@ -804,14 +804,14 @@ def _do_draw_help(scr):
 
         for line in section[1]:
             words = line[1].split()
-            l = line[0].ljust(help_longest+1)
+            ln = line[0].ljust(help_longest+1)
             for w in words:
-                if len(l)+1+len(w) < curses.COLS:
-                    l += " "+w
+                if len(ln)+1+len(w) < curses.COLS:
+                    ln += " "+w
                 else:
-                    y = __render_help(scr, l, y, i, first, last, CLR_CMDLINE)
-                    l = " ".ljust(help_longest+2)+w
-            y = __render_help(scr, l, y, i, first, last, CLR_CMDLINE)
+                    y = __render_help(scr, ln, y, i, first, last, CLR_CMDLINE)
+                    ln = " ".ljust(help_longest+2)+w
+            y = __render_help(scr, ln, y, i, first, last, CLR_CMDLINE)
             i += 1
 
         y = __render_help(scr, " ", y, i, first, last, CLR_CMDLINE)
