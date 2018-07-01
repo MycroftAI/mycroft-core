@@ -18,8 +18,8 @@
 from mycroft.util.lang.format_common import convert_to_mixed_fraction
 from math import floor
 
-months = ['januar', 'februar', u'märz', 'april', 'mai', 'juni',
-          'juli', 'august', 'september', 'october', 'november',
+months = ['januar', 'februar', 'märz', 'april', 'mai', 'juni',
+          'juli', 'august', 'september', 'oktober', 'november',
           'dezember']
 
 NUM_STRING_DE = {
