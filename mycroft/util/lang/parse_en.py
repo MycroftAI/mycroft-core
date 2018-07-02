@@ -132,8 +132,8 @@ def extractnumber_en(text, short_scale=True):
         text (str): the string to normalize
         short_scale (bool): use short scale if True, long scale if False
     Returns:
-        (int) or (float) or None: The value of extracted number or None
-                                  if number not found
+        (int) or (float) or False: The extracted number or False if no number
+                                   was found
 
     """
     string_num_en = {"first": 1,
@@ -203,7 +203,7 @@ def extractnumber_en(text, short_scale=True):
 
     aWords = text.split()
     aWords = [word for word in aWords if word not in ["the", "a", "an"]]
-    val = None
+    val = False
     prev_val = None
     negative = False
     to_sum = []
