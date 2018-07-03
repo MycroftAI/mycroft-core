@@ -105,6 +105,12 @@ class TestNormalize(unittest.TestCase):
         self.assertTrue(extractnumber("The tennis player is fast") is False)
         self.assertTrue(extractnumber("fraggle") is False)
 
+        self.assertTrue(extractnumber("fraggle zero") is not False)
+        self.assertEqual(extractnumber("fraggle zero"), 0)
+
+        self.assertTrue(extractnumber("grobo 0") is not False)
+        self.assertEqual(extractnumber("grobo 0"), 0)
+
     def test_extractdatetime_en(self):
         def extractWithFormat(text):
             date = datetime(2017, 6, 27, 0, 0)

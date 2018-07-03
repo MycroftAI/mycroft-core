@@ -237,7 +237,7 @@ def extractnumber_en(text, short_scale=True):
 
         # is this a spoken fraction?
         # half cup
-        if not val:
+        if val is False:
             val = isFractional_en(word)
 
         # 2 fifths
