@@ -310,6 +310,8 @@ elif [ "${change_to}" = "stable" ]; then
 
         if [ -f /etc/init.d/mycroft-skills.original ]; then
             restore_init_scripts
+            sudo chmod -x /etc/cron.hourly/mycroft-core # Enable updates
+
             # Reboot since the audio input won't work for some reason
             sudo reboot
         fi
@@ -322,6 +324,8 @@ elif [ "${change_to}" = "github" ]; then
         cd ..
         git clone https://github.com/MycroftAI/mycroft-core.git "${path}"
     fi
+
+    sudo chmod -x /etc/cron.hourly/mycroft-core # Disable updates
 
     if [ -d ${path} ]; then
         if  [ -f /usr/local/bin/mimic ]; then
