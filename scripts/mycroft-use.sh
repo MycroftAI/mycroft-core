@@ -137,9 +137,14 @@ function github_init_scripts {
         sudo sed -i 's_.*RUNAS=.*_RUNAS='${user}'_g' /etc/init.d/mycroft-speech-client
         sudo sed -i 's_stop() {_stop() {\nPID=$(ps ax | grep mycroft/client/speech | awk '"'NR==1{print \$1; exit}'"')\necho "${PID}" > "$PIDFILE"_g' /etc/init.d/mycroft-speech-client
 
-        # soft link the current user to the mycroft user's identity file
+        # soft link the current user to the mycroft user's identity folder
         chown ${user}:${user} /home/mycroft/.mycroft/identity/identity2.json
-        sudo ln -s /home/mycroft/.mycroft/identity/identity2.json ${HOME}/.mycroft/identity/identity2.json
+        if [ ! -e ${HOME}/.mycroft ]; then
+            mkdir ${HOME}/.mycroft
+        fi
+        if [ ! -e ${HOME}/.mycroft/identity ]; then
+            sudo ln -s /home/mycroft/.mycroft/identity ${HOME}/.mycroft/
+        fi
 
         sudo chown -Rvf ${user}:${user} /var/log/mycroft*
         sudo chown -Rvf ${user}:${user} /var/run/mycroft*
