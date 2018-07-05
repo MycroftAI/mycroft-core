@@ -29,9 +29,9 @@ from mycroft.skills.skill_data import load_regex_from_file, load_regex, \
 from mycroft.skills.core import MycroftSkill, load_skill, \
     create_skill_descriptor, open_intent_envelope
 
-from mycroft.configuration.config import LocalConf, DEFAULT_CONFIG
+from test.util import base_config
 
-BASE_CONF = LocalConf(DEFAULT_CONFIG)
+BASE_CONF = base_config()
 
 
 class MockEmitter(object):

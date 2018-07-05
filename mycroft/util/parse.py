@@ -69,19 +69,31 @@ def match_one(query, choices):
         return best
 
 
-def extractnumber(text, lang="en-us"):
+# TODO:18.08
+def extractnumber(text, short_scale=True, lang="en-us"):
+    """ Depreciated, replaced by extract_number. Will be removed
+    in the 18.08b release.
+
+    """
+    return extract_number(text, short_scale, lang)
+
+
+def extract_number(text, short_scale=True, lang="en-us"):
     """Takes in a string and extracts a number.
     Args:
         text (str): the string to extract a number from
+        short_scale (bool): use short or long scale. See
+            https://en.wikipedia.org/wiki/Names_of_large_numbers
+
         lang (str): the code for the language text is in
     Returns:
-        (str): The number extracted or the original text.
+        (int, float or False): The number extracted or False if the input
+                               text contains no numbers
     """
 
     lang_lower = str(lang).lower()
     if lang_lower.startswith("en"):
-        # return extractnumber_en(text, remove_articles)
-        return extractnumber_en(text)
+        return extractnumber_en(text, short_scale)
     elif lang_lower.startswith("pt"):
         return extractnumber_pt(text)
     elif lang_lower.startswith("it"):
@@ -110,7 +122,7 @@ def extract_datetime(text, anchorDate=None, lang="en-us"):
     If a time isn't supplied, the function defaults to 12 AM
 
     Args:
-        str (string): the text to be normalized
+        text (str): the text to be normalized
         anchortDate (:obj:`datetime`, optional): the date to be used for
             relative dating (for example, what does "tomorrow" mean?).
             Defaults to the current date
@@ -124,7 +136,7 @@ def extract_datetime(text, anchorDate=None, lang="en-us"):
             related keywords stripped out. See examples for further
             clarification
 
-            Returns 'None' if no date was extracted.
+            Returns 'None' if the input string is empty.
 
     Examples:
 
@@ -168,7 +180,8 @@ def normalize(text, lang="en-us", remove_articles=True):
     Args:
         text (str): the string to normalize
         lang (str): the code for the language text is in
-        remove_articles (bool): whether to remove articles (like 'a', or 'the')
+        remove_articles (bool): whether to remove articles (like 'a', or
+                                'the'). True by default.
     Returns:
         (str): The normalized string.
     """

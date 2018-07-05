@@ -25,9 +25,6 @@ from mycroft.skills.core import FallbackSkill
 from mycroft.util.log import LOG
 
 
-PADATIOUS_VERSION = '0.3.7'  # Also update in requirements.txt
-
-
 class PadatiousService(FallbackSkill):
     def __init__(self, emitter, service):
         FallbackSkill.__init__(self)
@@ -45,10 +42,6 @@ class PadatiousService(FallbackSkill):
             except OSError:
                 pass
             return
-        ver = get_distribution('padatious').version
-        if ver != PADATIOUS_VERSION:
-            LOG.warning('Using Padatious v' + ver + '. Please re-run ' +
-                        'dev_setup.sh to install ' + PADATIOUS_VERSION)
 
         self.container = IntentContainer(intent_cache)
 
