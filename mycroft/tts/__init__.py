@@ -107,6 +107,7 @@ class PlaybackThread(Thread):
                 if self.queue.empty():
                     self.tts.end_audio()
                     self._processing_queue = False
+                    self._clear_visimes = False
                 self.blink(0.2)
             except Empty:
                 pass
