@@ -255,12 +255,14 @@ class RecognizerLoop(EventEmitter):
             config[word]["threshold"] = thresh
         if phonemes is None or thresh is None:
             config = None
-        return HotWordFactory.create_hotword(word, config, self.lang)
+        return HotWordFactory.create_hotword(
+            word, config, self.lang, loop=self
+        )
 
     def create_wakeup_recognizer(self):
         LOG.info("creating stand up word engine")
         word = self.config.get("stand_up_word", "wake up")
-        return HotWordFactory.create_hotword(word, lang=self.lang)
+        return HotWordFactory.create_hotword(word, lang=self.lang, loop=self)
 
     def start_async(self):
         """
