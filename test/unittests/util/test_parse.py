@@ -102,6 +102,8 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extractnumber("minus 2"), -2)
         self.assertEqual(extractnumber("negative seventy"), -70)
         self.assertEqual(extractnumber("thousand million"), 1000000000)
+        self.assertTrue(extractnumber("The tennis player is fast") is False)
+        self.assertTrue(extractnumber("fraggle") is False)
 
     def test_extractdatetime_en(self):
         def extractWithFormat(text):
@@ -185,6 +187,39 @@ class TestNormalize(unittest.TestCase):
                     "2017-12-03 00:00:00", "")
         testExtract("lets meet at 8:00 tonight",
                     "2017-06-27 20:00:00", "lets meet")
+        testExtract("lets meet at 5pm",
+                    "2017-06-27 17:00:00", "lets meet")
+
+    def test_extract_relativedatetime_en(self):
+        def extractWithFormat(text):
+            date = datetime(2017, 6, 27, 10, 0)
+            [extractedDate, leftover] = extract_datetime(text, date)
+            extractedDate = extractedDate.strftime("%Y-%m-%d %H:%M:%S")
+            return [extractedDate, leftover]
+
+        def testExtract(text, expected_date, expected_leftover):
+            res = extractWithFormat(text)
+            self.assertEqual(res[0], expected_date)
+            self.assertEqual(res[1], expected_leftover)
+
+        testExtract("lets meet in 5 minutes",
+                    "2017-06-27 10:05:00", "lets meet")
+        testExtract("lets meet in 5minutes",
+                    "2017-06-27 10:05:00", "lets meet")
+        testExtract("lets meet in 5 seconds",
+                    "2017-06-27 10:00:05", "lets meet")
+        testExtract("lets meet in 1 hour",
+                    "2017-06-27 11:00:00", "lets meet")
+        testExtract("lets meet in 2 hours",
+                    "2017-06-27 12:00:00", "lets meet")
+        testExtract("lets meet in 2hours",
+                    "2017-06-27 12:00:00", "lets meet")
+        testExtract("lets meet in 1 minute",
+                    "2017-06-27 10:01:00", "lets meet")
+        testExtract("lets meet in 1 second",
+                    "2017-06-27 10:00:01", "lets meet")
+        testExtract("lets meet in 5seconds",
+                    "2017-06-27 10:00:05", "lets meet")
 
     def test_spaces(self):
         self.assertEqual(normalize("  this   is  a    test"),

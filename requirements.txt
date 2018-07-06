@@ -1,5 +1,5 @@
 six==1.10.0
-requests==2.13.0
+requests==2.19.1
 gTTS==1.1.7
 gTTS-token==1.1.1
 backports.ssl-match-hostname==3.4.0.2
@@ -26,11 +26,14 @@ python-vlc==1.1.2
 pulsectl==17.7.4
 google-api-python-client==1.6.4
 
-msm==0.5.15
+msm==0.5.16
 msk==0.3.9
 adapt-parser==0.3.0
+padatious==0.4.3
+fann2==1.0.7
+padaos==0.1.5
+precise-runner==0.2.1
+petact==0.1.2
 
 # dev setup tools
 pep8==1.7.0
-fann2==1.0.7
-padatious==0.4.3

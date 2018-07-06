@@ -335,7 +335,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
     def _upload_wake_word(self, audio):
         ww_module = self.wake_word_recognizer.__class__.__name__
         if ww_module == 'PreciseHotword':
-            _, model_path = self.wake_word_recognizer.get_model_info()
+            model_path = self.wake_word_recognizer.precise_model
             with open(model_path, 'rb') as f:
                 model_hash = md5(f.read()).hexdigest()
         else:
