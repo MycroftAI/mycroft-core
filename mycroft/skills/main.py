@@ -282,9 +282,12 @@ class SkillManager(Thread):
 
         installed_skills = self.load_installed_skills()
         default_groups = dict(self.msm.repo.get_default_skill_names())
-        default_names = set(chain(default_groups['default'],
-                                  default_groups[self.msm.platform]))
-
+        if self.msm.platform in default_groups:
+            platform_groups = default_groups[self.msm.platform]
+        else:
+            LOG.info('Platform defaults not found, using DEFAULT skills only')
+            platform_groups = []
+        default_names = set(chain(default_groups['default'], platform_groups))
         default_skill_errored = False
 
         def install_or_update(skill):
