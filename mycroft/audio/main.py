@@ -261,6 +261,9 @@ class AudioService(object):
         LOG.debug('stopping all playing services')
         if self.current:
             self.current.stop()
+            self.ws.emit(Message("mycroft.stop.handled",
+                                 {"by": "audio:" + self.current.name}))
+
             self.current = None
 
     def _lower_volume(self, message=None):
