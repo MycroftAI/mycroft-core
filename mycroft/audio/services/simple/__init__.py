@@ -22,7 +22,8 @@ from mycroft.util.log import LOG
 
 class SimpleAudioService(AudioBackend):
     """
-        Simple Audio backend for both mpg123 and the ogg123 player. This one is rather limited and
+        Simple Audio backend for both mpg123 and the ogg123 player.
+        This one is rather limited and
         only implements basic usage.
     """
 
