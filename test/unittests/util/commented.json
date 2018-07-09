@@ -28,6 +28,7 @@
   },
   "play_wav_cmdline": "aplay %1",
   "play_mp3_cmdline": "mpg123 %1",
+  "play_ogg_cmdline": "ogg123 %1",
   "location": {
     "city": {
       "code": "Lawrence",
