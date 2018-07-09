@@ -20,6 +20,7 @@ from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
 import mimetypes
 
+
 class SimpleAudioService(AudioBackend):
     """
         Simple Audio backend for both mpg123 and the ogg123 player.
