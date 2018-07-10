@@ -198,7 +198,7 @@ case ${_opt} in
     launch-process ${_opt}
     ;;
   "enclosure")
-    launch-process ${_opt}
+    launch-background ${_opt}
     ;;
 
   *)
