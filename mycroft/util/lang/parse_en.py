@@ -120,8 +120,94 @@ SHORT_SCALE_EN = {
     10e100: "googol"
 }
 
+SHORT_ORDINAL_STRING_EN = {
+    1: 'first',
+    2: 'second',
+    3: 'third',
+    4: 'fourth',
+    5: 'fifth',
+    6: 'sixth',
+    7: 'seventh',
+    8: 'eighth',
+    9: 'ninth',
+    10: 'tenth',
+    11: 'eleventh',
+    12: 'twelfth',
+    13: 'thirteenth',
+    14: 'fourteenth',
+    15: 'fifteenth',
+    16: 'sixteenth',
+    17: 'seventeenth',
+    18: 'eighteenth',
+    19: 'nineteenth',
+    20: 'twentieth',
+    30: 'thirtieth',
+    40: "fortieth",
+    50: "fiftieth",
+    60: "sixtieth",
+    70: "seventieth",
+    80: "eightieth",
+    90: "ninetieth",
+    10e3: "hundredth",
+    1e3: "thousandth",
+    1e6: "millionth",
+    1e9: "billionth",
+    1e12: "trillionth",
+    1e15: "quadrillionth",
+    1e18: "quintillionth",
+    1e21: "sextillionth",
+    1e24: "septillionth",
+    1e27: "octillionth",
+    1e30: "nonillionth",
+    1e33: "decillionth"
+    # TODO > 1e-33
+}
 
-def extractnumber_en(text, short_scale=True):
+LONG_ORDINAL_STRING_EN = {
+    1: 'first',
+    2: 'second',
+    3: 'third',
+    4: 'fourth',
+    5: 'fifth',
+    6: 'sixth',
+    7: 'seventh',
+    8: 'eighth',
+    9: 'ninth',
+    10: 'tenth',
+    11: 'eleventh',
+    12: 'twelfth',
+    13: 'thirteenth',
+    14: 'fourteenth',
+    15: 'fifteenth',
+    16: 'sixteenth',
+    17: 'seventeenth',
+    18: 'eighteenth',
+    19: 'nineteenth',
+    20: 'twentieth',
+    30: 'thirtieth',
+    40: "fortieth",
+    50: "fiftieth",
+    60: "sixtieth",
+    70: "seventieth",
+    80: "eightieth",
+    90: "ninetieth",
+    10e3: "hundredth",
+    1e3: "thousandth",
+    1e6: "millionth",
+    1e12: "billionth",
+    1e18: "trillionth",
+    1e24: "quadrillionth",
+    1e30: "quintillionth",
+    1e36: "sextillionth",
+    1e42: "septillionth",
+    1e48: "octillionth",
+    1e54: "nonillionth",
+    1e60: "decillionth"
+    # TODO > 1e60
+}
+
+
+def extractnumber_en(text, short_scale=True, ordinals=False):
     """
     This function extracts a number from a text string,
     handles pronunciations in long scale and short scale
@@ -131,13 +217,14 @@ def extractnumber_en(text, short_scale=True):
     Args:
         text (str): the string to normalize
         short_scale (bool): use short scale if True, long scale if False
+        ordinals (bool): consider ordinal numbers, third=3 instead of 1/3
     Returns:
         (int) or (float) or False: The extracted number or False if no number
                                    was found
 
     """
-    string_num_en = {"first": 1,
-                     "second": 2,
+
+    string_num_en = {
                      "half": 0.5,
                      "halves": 0.5,
                      "hundreds": 100,
@@ -147,6 +234,17 @@ def extractnumber_en(text, short_scale=True):
     for num in NUM_STRING_EN:
         num_string = NUM_STRING_EN[num]
         string_num_en[num_string] = num
+
+    # first, second...
+    if ordinals:
+        if short_scale:
+            for num in SHORT_ORDINAL_STRING_EN:
+                num_string = SHORT_ORDINAL_STRING_EN[num]
+                string_num_en[num_string] = num
+        else:
+            for num in LONG_ORDINAL_STRING_EN:
+                num_string = LONG_ORDINAL_STRING_EN[num]
+                string_num_en[num_string] = num
 
     # negate next number (-2 = 0 - 2)
     negatives = ["negative", "minus"]
@@ -196,16 +294,17 @@ def extractnumber_en(text, short_scale=True):
     for c in decimal_marker:
         components = text.split(c)
         if len(components) == 2:
-            if extractnumber_en(components[0]) is not None \
-                    and extractnumber_en(components[1]):
-                return extractnumber_en(components[0]) + float(
-                    "0." + str(extractnumber_en(components[1])).split(".")[0])
+            number = extractnumber_en(components[0])
+            decimal = extractnumber_en(components[1])
+            if number is not None and decimal is not None:
+                # TODO handle number dot number number number
+                if "." not in str(decimal):
+                    return number + float("0." + str(decimal))
 
     aWords = text.split()
     aWords = [word for word in aWords if word not in ["the", "a", "an"]]
     val = False
     prev_val = None
-    negative = False
     to_sum = []
     for idx, word in enumerate(aWords):
 
@@ -225,8 +324,9 @@ def extractnumber_en(text, short_scale=True):
 
         # is the prev word a number and should we sum it?
         # twenty two, fifty six
-        if prev_word in sums:
-            val = prev_val + val
+        if prev_word in sums and word in string_num_en:
+            if val and val < 10:
+                val = prev_val + val
 
         # is the prev word a number and should we multiply it?
         # twenty hundred, six hundred
@@ -238,18 +338,19 @@ def extractnumber_en(text, short_scale=True):
         # is this a spoken fraction?
         # half cup
         if val is False:
-            val = isFractional_en(word)
+            val = isFractional_en(word, short_scale=short_scale)
 
         # 2 fifths
-        next_value = isFractional_en(next_word)
-        if next_value:
-            if not val:
-                val = 1
-            val = val * next_value
+        if not ordinals:
+            next_value = isFractional_en(next_word, short_scale=short_scale)
+            if next_value:
+                if not val:
+                    val = 1
+                val = val * next_value
 
         # is this a negative number?
         if val and prev_word and prev_word in negatives:
-            negative = True
+            val = 0 - val
 
         # let's make sure it isn't a fraction
         if not val:
@@ -260,7 +361,6 @@ def extractnumber_en(text, short_scale=True):
 
         else:
             prev_val = val
-
             # handle long numbers
             # six hundred sixty six
             # two million five hundred thousand
@@ -272,8 +372,6 @@ def extractnumber_en(text, short_scale=True):
     if val is not None:
         for v in to_sum:
             val = val + v
-    if negative:
-        val = 0 - val
     return val
 
 
@@ -899,12 +997,13 @@ def extract_datetime_en(string, currentDate=None):
     return [extractedDate, resultStr]
 
 
-def isFractional_en(input_str):
+def isFractional_en(input_str, short_scale=True):
     """
     This function takes the given text and checks if it is a fraction.
 
     Args:
         input_str (str): the string to check if fractional
+        short_scale (bool): use short scale if True, long scale if False
     Returns:
         (bool) or (float): False if not a fraction, otherwise the fraction
 
@@ -912,14 +1011,18 @@ def isFractional_en(input_str):
     if input_str.endswith('s', -1):
         input_str = input_str[:len(input_str) - 1]  # e.g. "fifths"
 
-    aFrac = ["whole", "half", "third", "fourth", "fifth", "sixth",
-             "seventh", "eighth", "ninth", "tenth", "eleventh", "twelfth"]
+    fracts = {"whole": 1, "half": 2, "halve": 2, "quarter": 4}
+    if short_scale:
+        for num in SHORT_ORDINAL_STRING_EN:
+            if num > 2:
+                fracts[SHORT_ORDINAL_STRING_EN[num]] = num
+    else:
+        for num in LONG_ORDINAL_STRING_EN:
+            if num > 2:
+                fracts[LONG_ORDINAL_STRING_EN[num]] = num
 
-    if input_str.lower() in aFrac:
-        return 1.0 / (aFrac.index(input_str) + 1)
-    if input_str == "quarter":
-        return 1.0 / 4
-
+    if input_str.lower() in fracts:
+        return 1.0 / fracts[input_str.lower()]
     return False
 
 

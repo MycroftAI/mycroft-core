@@ -70,21 +70,21 @@ def match_one(query, choices):
 
 
 # TODO:18.08
-def extractnumber(text, short_scale=True, lang="en-us"):
+def extractnumber(text, short_scale=True, ordinals=False, lang="en-us"):
     """ Depreciated, replaced by extract_number. Will be removed
     in the 18.08b release.
 
     """
-    return extract_number(text, short_scale, lang)
+    return extract_number(text, short_scale, ordinals, lang)
 
 
-def extract_number(text, short_scale=True, lang="en-us"):
+def extract_number(text, short_scale=True, ordinals=False, lang="en-us"):
     """Takes in a string and extracts a number.
     Args:
         text (str): the string to extract a number from
         short_scale (bool): use short or long scale. See
             https://en.wikipedia.org/wiki/Names_of_large_numbers
-
+        ordinals (bool): consider ordinal numbers, third=3 instead of 1/3
         lang (str): the code for the language text is in
     Returns:
         (int, float or False): The number extracted or False if the input
@@ -93,7 +93,8 @@ def extract_number(text, short_scale=True, lang="en-us"):
 
     lang_lower = str(lang).lower()
     if lang_lower.startswith("en"):
-        return extractnumber_en(text, short_scale)
+        return extractnumber_en(text, short_scale=short_scale,
+                                ordinals=ordinals)
     elif lang_lower.startswith("pt"):
         return extractnumber_pt(text)
     elif lang_lower.startswith("it"):
