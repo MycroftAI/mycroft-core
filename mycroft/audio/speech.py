@@ -117,8 +117,8 @@ def mute_and_speak(utterance, ident):
     LOG.info("Speak: " + utterance)
     try:
         tts.execute(utterance, ident)
-    finally:
-        lock.release()
+    except Exception as e:
+        LOG.error('TTS execution failed ({})'.format(repr(e)))
 
 
 def handle_stop(event):
