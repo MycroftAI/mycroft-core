@@ -58,8 +58,12 @@ class VlcService(AudioBackend):
 
     def stop(self):
         LOG.info('VLCService Stop')
-        self.clear_list()
-        self.list_player.stop()
+        if self.player.is_playing():
+            self.clear_list()
+            self.list_player.stop()
+            return True
+        else:
+            return False
 
     def pause(self):
         self.player.set_pause(1)
