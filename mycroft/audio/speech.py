@@ -21,6 +21,7 @@ from mycroft.metrics import report_timing, Stopwatch
 from mycroft.tts import TTSFactory
 from mycroft.util import create_signal, check_for_signal
 from mycroft.util.log import LOG
+from mycroft.messagebus.message import Message
 
 ws = None  # TODO:18.02 - Rename to "messagebus"
 config = None
@@ -129,11 +130,12 @@ def handle_stop(event):
         _last_stop_signal = time.time()
         tts.playback.clear_queue()
         tts.playback.clear_visimes()
+        ws.emit(Message("mycroft.stop.handled", {"by": "TTS"}))
 
 
 def init(websocket):
     """
-        Start speach related handlers
+        Start speech related handlers
     """
 
     global ws

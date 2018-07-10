@@ -5,10 +5,6 @@ LOG
 ---
 .. autofunction:: mycroft.util.LOG
 
-wait_while_speaking
--------------------
-.. autofunction:: mycroft.util.wait_while_speaking
-
 play_wav
 ---------
 .. autofunction:: mycroft.util.play_wav

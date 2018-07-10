@@ -222,6 +222,9 @@ class SkillManager(Thread):
         # Update upon request
         ws.on('skillmanager.update', self.schedule_now)
         ws.on('skillmanager.list', self.send_skill_list)
+        ws.on('skillmanager.deactivate', self.deactivate_skill)
+        ws.on('skillmanager.keep', self.deactivate_except)
+        ws.on('skillmanager.activate', self.activate_skill)
 
     @staticmethod
     def create_msm():
@@ -279,9 +282,12 @@ class SkillManager(Thread):
 
         installed_skills = self.load_installed_skills()
         default_groups = dict(self.msm.repo.get_default_skill_names())
-        default_names = set(chain(default_groups['default'],
-                                  default_groups[self.msm.platform]))
-
+        if self.msm.platform in default_groups:
+            platform_groups = default_groups[self.msm.platform]
+        else:
+            LOG.info('Platform defaults not found, using DEFAULT skills only')
+            platform_groups = []
+        default_names = set(chain(default_groups['default'], platform_groups))
         default_skill_errored = False
 
         def install_or_update(skill):
@@ -326,6 +332,25 @@ class SkillManager(Thread):
 
         return True
 
+    def _unload_removed(self, paths):
+        """ Shutdown removed skills.
+
+            Arguments:
+                paths: list of current directories in the skills folder
+        """
+        paths = [p.rstrip('/') for p in paths]
+        skills = self.loaded_skills
+        # Find loaded skills that doesn't exist on disk
+        removed_skills = [str(s) for s in skills.keys() if str(s) not in paths]
+        for s in removed_skills:
+            LOG.info('removing {}'.format(s))
+            try:
+                LOG.debug('Removing: {}'.format(skills[s]))
+                skills[s]['instance'].default_shutdown()
+            except Exception as e:
+                LOG.exception(e)
+            self.loaded_skills.pop(s)
+
     def _load_or_reload_skill(self, skill_path):
         """
             Check if unloaded skill or changed skill needs reloading
@@ -355,13 +380,14 @@ class SkillManager(Thread):
         # check if skill was modified
         elif skill.get("instance") and modified > last_mod:
             # check if skill has been blocked from reloading
-            if not skill["instance"].reload_skill:
+            if (not skill["instance"].reload_skill or
+                    not skill.get('active', True)):
                 return False
 
             LOG.debug("Reloading Skill: " + basename(skill_path))
             # removing listeners and stopping threads
             try:
-                skill["instance"]._shutdown()
+                skill["instance"].default_shutdown()
             except Exception:
                 LOG.exception("An error occured while shutting down {}"
                               .format(skill["instance"].name))
@@ -444,6 +470,7 @@ class SkillManager(Thread):
                 has_loaded = True
                 self.ws.emit(Message('mycroft.skills.initialized'))
 
+            self._unload_removed(skill_paths)
             # Pause briefly before beginning next scan
             time.sleep(2)
 
@@ -452,11 +479,71 @@ class SkillManager(Thread):
             Send list of loaded skills.
         """
         try:
-            self.ws.emit(Message('mycroft.skills.list', data={'skills': [
-                basename(skill_path) for skill_path in self.loaded_skills
-            ]}))
+            info = {}
+            for s in self.loaded_skills:
+                info[basename(s)] = {
+                    'active': self.loaded_skills[s].get('active', True),
+                    'id': self.loaded_skills[s]['id']
+                }
+            self.ws.emit(Message('mycroft.skills.list', data=info))
         except Exception as e:
             LOG.exception(e)
+
+    def __deactivate_skill(self, skill):
+        """ Deactivate a skill. """
+        for s in self.loaded_skills:
+            if skill in s:
+                skill = s
+                break
+        try:
+            self.loaded_skills[skill]['active'] = False
+            self.loaded_skills[skill]['instance'].default_shutdown()
+        except Exception as e:
+            LOG.error('Couldn\'t deactivate skill, {}'.format(repr(e)))
+
+    def deactivate_skill(self, message):
+        """ Deactivate a skill. """
+        try:
+            skill = message.data['skill']
+            if skill in [basename(s) for s in self.loaded_skills]:
+                self.__deactivate_skill(skill)
+        except Exception as e:
+            LOG.error('Couldn\'t deactivate skill, {}'.format(repr(e)))
+
+    def deactivate_except(self, message):
+        """ Deactivate all skills except the provided. """
+        try:
+            skill_to_keep = message.data['skill']
+            LOG.info('DEACTIVATING ALL SKILLS EXCEPT {}'.format(skill_to_keep))
+            if skill_to_keep in [basename(i) for i in self.loaded_skills]:
+                for skill in self.loaded_skills:
+                    if basename(skill) != skill_to_keep:
+                        self.__deactivate_skill(skill)
+            else:
+                LOG.info('Couldn\'t find skill')
+        except Exception as e:
+            LOG.error('Error during skill removal, {}'.format(repr(e)))
+
+    def __activate_skill(self, skill):
+        if not self.loaded_skills[skill].get('active', True):
+            self.loaded_skills[skill]['loaded'] = False
+            self.loaded_skills[skill]['active'] = True
+
+    def activate_skill(self, message):
+        """ Activate a deactivated skill. """
+        try:
+            skill = message.data['skill']
+            if skill == 'all':
+                for s in self.loaded_skills:
+                    self.__activate_skill(s)
+            else:
+                for s in self.loaded_skills:
+                    if skill in s:
+                        skill = s
+                        break
+                self.__activate_skill(skill)
+        except Exception as e:
+            LOG.error('Couldn\'t activate skill, {}'.format(repr(e)))
 
     def stop(self):
         """ Tell the manager to shutdown """
@@ -467,7 +554,7 @@ class SkillManager(Thread):
             instance = skill_info.get('instance')
             if instance:
                 try:
-                    instance._shutdown()
+                    instance.default_shutdown()
                 except Exception:
                     LOG.exception('Shutting down skill: ' + name)
 

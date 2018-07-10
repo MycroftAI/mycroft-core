@@ -99,6 +99,14 @@ def handle_mic_unmute(event):
     loop.unmute()
 
 
+def handle_mic_get_status(event):
+    """
+        Query microphone mute status.
+    """
+    data = {'muted': loop.is_muted()}
+    ws.emit(event.response(data))
+
+
 def handle_paired(event):
     IdentityManager.update(event.data)
 
@@ -153,6 +161,7 @@ def main():
     ws.on('recognizer_loop:wake_up', handle_wake_up)
     ws.on('mycroft.mic.mute', handle_mic_mute)
     ws.on('mycroft.mic.unmute', handle_mic_unmute)
+    ws.on('mycroft.mic.get_status', handle_mic_get_status)
     ws.on("mycroft.paired", handle_paired)
     ws.on('recognizer_loop:audio_output_start', handle_audio_start)
     ws.on('recognizer_loop:audio_output_end', handle_audio_end)

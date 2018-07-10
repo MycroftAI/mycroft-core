@@ -32,7 +32,7 @@ from mycroft.configuration import Configuration, LocalConf, USER_CONFIG
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util import play_wav, create_signal, connected, \
-    wait_while_speaking
+    wait_while_speaking, check_for_signal
 from mycroft.util.audio_test import record
 from mycroft.util.log import LOG
 from queue import Queue
@@ -62,6 +62,9 @@ class EnclosureReader(Thread):
         self.lang = lang or 'en-us'
         self.start()
 
+        # Notifications from mycroft-core
+        self.ws.on("mycroft.stop.handled", self.on_stop_handled)
+
     def read(self):
         while self.alive:
             try:
@@ -70,6 +73,10 @@ class EnclosureReader(Thread):
                     self.process(data.decode())
             except Exception as e:
                 LOG.error("Reading error: {0}".format(e))
+
+    def on_stop_handled(self, event):
+        # A skill performed a stop
+        check_for_signal('buttonPress')
 
     def process(self, data):
         # TODO: Look into removing this emit altogether.
