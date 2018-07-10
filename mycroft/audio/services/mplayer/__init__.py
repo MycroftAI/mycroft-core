@@ -58,6 +58,7 @@ class MPlayerService(AudioBackend):
 
     def stop(self):
         self.mpc.stop()
+        return True  # TODO: Return False if not playing
 
     def pause(self):
         if not self.mpc.paused:

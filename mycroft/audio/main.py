@@ -21,6 +21,7 @@ import imp
 import sys
 import time
 from os import listdir
+from threading import Lock
 
 from os.path import abspath, dirname, basename, isdir, join
 
@@ -147,6 +148,7 @@ class AudioService(object):
         """
         self.ws = ws
         self.config = Configuration.get().get("Audio")
+        self.service_lock = Lock()
 
         self.default = None
         self.service = []
@@ -198,7 +200,6 @@ class AudioService(object):
         self.ws.on('recognizer_loop:record_begin', self._lower_volume)
         self.ws.on('recognizer_loop:audio_output_end', self._restore_volume)
         self.ws.on('recognizer_loop:record_end', self._restore_volume)
-        self.ws.on('mycroft.stop', self._stop)
 
     def track_start(self, track):
         """
@@ -259,12 +260,14 @@ class AudioService(object):
                 message: message bus message, not used but required
         """
         LOG.debug('stopping all playing services')
-        if self.current:
-            self.current.stop()
-            self.ws.emit(Message("mycroft.stop.handled",
-                                 {"by": "audio:" + self.current.name}))
+        with self.service_lock:
+            if self.current:
+                name = self.current.name
+                if self.current.stop():
+                    self.ws.emit(Message("mycroft.stop.handled",
+                                         {"by": "audio:" + name}))
 
-            self.current = None
+                self.current = None
 
     def _lower_volume(self, message=None):
         """

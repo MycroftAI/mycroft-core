@@ -63,6 +63,8 @@ class AudioBackend():
     def stop(self):
         """
             Stop playback.
+
+            Returns: (bool) True if playback was stopped, otherwise False
         """
         pass
 
