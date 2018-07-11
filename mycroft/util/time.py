@@ -37,7 +37,7 @@ def default_timezone():
         code = config["location"]["timezone"]["code"]
 
         return gettz(code)
-    except:
+    except Exception:
         # Just go with system default timezone
         return tzlocal()
 
