@@ -161,7 +161,7 @@ def extractnumber_de(text):
     return val
 
 
-def extract_datetime_de(string, currentDate=None):
+def extract_datetime_de(string, currentDate):
     def clean_string(s):
         """
             cleans the input string of unneeded punctuation
@@ -195,10 +195,8 @@ def extract_datetime_de(string, currentDate=None):
                        minAbs != 0 or secOffset != 0
                )
 
-    if string == "":
+    if string == "" or not currentDate:
         return None
-    if currentDate is None:
-        currentDate = datetime.now()
 
     found = False
     daySpecified = False

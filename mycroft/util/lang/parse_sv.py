@@ -124,7 +124,7 @@ def extractnumber_sv(text):
     return val
 
 
-def extract_datetime_sv(string, currentDate=None):
+def extract_datetime_sv(string, currentDate):
     def clean_string(s):
         """
             cleans the input string of unneeded punctuation and capitalization
@@ -155,10 +155,8 @@ def extract_datetime_sv(string, currentDate=None):
                 minAbs != 0 or secOffset != 0
             )
 
-    if string == "":
+    if string == "" or not currentDate:
         return None
-    if currentDate is None:
-        currentDate = datetime.now()
 
     found = False
     daySpecified = False
