@@ -24,5 +24,7 @@ if [ "$0" = "$BASH_SOURCE" ] ; then
     echo "ERROR: Invoke with 'source venv-activate.sh' or '. venv-activate.sh'"
 else
     echo "Entering mycroft-core virtual environment.  Run 'deactivate' to exit"
-    source .venv/bin/activate
+    MVA_SRC_DIR="$( cd "$( dirname "${BASH_SOURCE}" )" ; pwd -P )"
+    source ${MVA_SRC_DIR}/.venv/bin/activate
+    unset MVA_SRC_DIR
 fi
