@@ -470,7 +470,7 @@ def extractnumber_fr(text):
     return result
 
 
-def extract_datetime_fr(string, currentDate=None):
+def extract_datetime_fr(string, currentDate):
     def clean_string(s):
         """
             cleans the input string of unneeded punctuation and capitalization
@@ -495,10 +495,8 @@ def extract_datetime_fr(string, currentDate=None):
                 hrOffset != 0 or minOffset != 0 or secOffset != 0
             )
 
-    if string == "":
+    if string == "" or not currentDate:
         return None
-    if currentDate is None:
-        currentDate = datetime.now()
 
     found = False
     daySpecified = False
