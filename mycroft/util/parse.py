@@ -14,10 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from datetime import datetime
-from dateutil.tz import gettz, tzlocal
+from dateutil.tz import tzlocal
 from difflib import SequenceMatcher
-from mycroft.util.time import *
+import mycroft.util.time
 
 from mycroft.util.lang.parse_en import *
 from mycroft.util.lang.parse_pt import *

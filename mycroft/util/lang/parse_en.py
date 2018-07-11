@@ -393,7 +393,7 @@ def extract_datetime_en(string, currentDate):
 
     Args:
         string (str): string containing date words
-        currentDate (datetime): A reference date, default=current
+        currentDate (datetime): A reference date/time for "tommorrow", etc
 
     Returns:
         [datetime, str]: An array containing the datetime and the remaining
@@ -401,12 +401,12 @@ def extract_datetime_en(string, currentDate):
     """
 
     def clean_string(s):
-        """
-            cleans the input string of unneeded punctuation and capitalization
-            among other things.
-        """
+        # clean unneeded punctuation and capitalization among other things.
         s = s.lower().replace('?', '').replace('.', '').replace(',', '') \
-            .replace(' the ', ' ').replace(' a ', ' ').replace(' an ', ' ')
+            .replace(' the ', ' ').replace(' a ', ' ').replace(' an ', ' ') \
+            .replace("o' clock", "o'clock").replace("o clock", "o'clock") \
+            .replace("o ' clock", "o'clock").replace("o 'clock", "o'clock")
+
         wordList = s.split()
         for idx, word in enumerate(wordList):
             word = word.replace("'s", "")
@@ -887,25 +887,18 @@ def extract_datetime_en(string, currentDate):
                             used += 1
                         if wordNext == "in" or wordNextNext == "in":
                             used += (1 if wordNext == "in" else 2)
+                            wordNextNextNext = words[idx + 3] \
+                                if idx + 3 < len(words) else ""
+
                             if (wordNextNext and
-                                    wordNextNext in timeQualifier or
-                                    (words[words.index(wordNextNext) + 1] and
-                                     words[words.index(wordNextNext) + 1] in
-                                     timeQualifier)):
+                                    (wordNextNext in timeQualifier or
+                                     wordNextNextNext in timeQualifier)):
                                 if (wordNextNext in timeQualifiersPM or
-                                        (len(words) >
-                                         words.index(wordNextNext) + 1 and
-                                         words[words.index(
-                                             wordNextNext) + 1] in
-                                         timeQualifiersPM)):
+                                        wordNextNextNext in timeQualifiersPM):
                                     remainder = "pm"
                                     used += 1
                                 if (wordNextNext in timeQualifiersAM or
-                                        (len(words) >
-                                         words.index(wordNextNext) + 1 and
-                                         words[words.index(
-                                             wordNextNext) + 1]
-                                         in timeQualifiersAM)):
+                                        wordNextNextNext in timeQualifiersAM):
                                     remainder = "am"
                                     used += 1
                         if timeQualifier != "":
@@ -985,7 +978,7 @@ def extract_datetime_en(string, currentDate):
         # date included an explicit date, e.g. "june 5" or "june 2, 2017"
         try:
             temp = datetime.strptime(datestr, "%B %d")
-        except:
+        except ValueError:
             # Try again, allowing the year
             temp = datetime.strptime(datestr, "%B %d %Y")
         extractedDate = extractedDate.replace(hour=0, minute=0, second=0)
