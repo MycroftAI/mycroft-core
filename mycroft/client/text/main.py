@@ -524,12 +524,12 @@ def draw_screen():
     # from multiple threads
     with screen_lock:
         if screen_mode == 0:
-            _do_draw_main(scr)
+            do_draw_main(scr)
         elif screen_mode == 1:
-            _do_draw_help(scr)
+            do_draw_help(scr)
 
 
-def _do_draw_main(scr):
+def do_draw_main(scr):
     global log_line_offset
     global longest_visible_line
     global last_full_redraw
@@ -573,7 +573,7 @@ def _do_draw_main(scr):
         scr.addstr(0, 0, "Log Output:" + " " * (curses.COLS - 31) +
                    str(start) + "-" + str(end) + " of " + str(cLogs),
                    CLR_HEADING)
-    ver = " mycroft-core "+mycroft.version.CORE_VERSION_STR+" ==="
+    ver = " mycroft-core " + mycroft.version.CORE_VERSION_STR + " ==="
     scr.addstr(1, 0, "=" * (curses.COLS-1-len(ver)), CLR_HEADING)
     scr.addstr(1, curses.COLS-1-len(ver), ver, CLR_HEADING)
 
@@ -761,18 +761,6 @@ for s in help_struct:
         help_longest = max(help_longest, len(ent[0]))
 
 
-def _help_draw_header(scr):
-    # Header
-    scr.erase()
-    scr.addstr(0, 0, center(25) + "Mycroft Command Line Help", CLR_HEADING)
-    scr.addstr(1, 0, "=" * (curses.COLS - 1), CLR_HEADING)
-
-
-def _help_draw_footer(scr, page, total):
-    text = "Page {} of {} [ Press any key to continue ]".format(page, total)
-    scr.addstr(curses.LINES - 1, 0, center(len(text)) + text, CLR_HEADING)
-
-
 def num_help_pages():
     lines = 0
     for section in help_struct:
@@ -780,47 +768,56 @@ def num_help_pages():
     return ceil(lines / (curses.LINES - 4))
 
 
-def __render_help(scr, txt, y_pos, i, first_line, last_line, clr):
-    if i >= first_line and i < last_line:
-        scr.addstr(y_pos, 0, txt, clr)
-        y_pos += 1
-    return y_pos
+def do_draw_help(scr):
 
+    def render_header():
+        scr.erase()
+        scr.addstr(0, 0, center(25) + "Mycroft Command Line Help", CLR_HEADING)
+        scr.addstr(1, 0, "=" * (curses.COLS - 1), CLR_HEADING)
 
-def _do_draw_help(scr):
-    _help_draw_header(scr)
+    def render_help(txt, y_pos, i, first_line, last_line, clr):
+        if i >= first_line and i < last_line:
+            scr.addstr(y_pos, 0, txt, clr)
+            y_pos += 1
+        return y_pos
+
+    def render_footer(page, total):
+        text = "Page {} of {} [ Any key to continue ]".format(page, total)
+        scr.addstr(curses.LINES - 1, 0, center(len(text)) + text, CLR_HEADING)
+
+    render_header()
     y = 2
-    page = subscreen+1
+    page = subscreen + 1
 
-    first = subscreen * (curses.LINES-4)  # account for header
-    last = first + (curses.LINES-7)       # account for header/footer
+    first = subscreen * (curses.LINES - 7)  # account for header
+    last = first + (curses.LINES - 7)       # account for header/footer
     i = 0
     for section in help_struct:
-        y = __render_help(scr, section[0], y, i, first, last, CLR_HEADING)
+        y = render_help(section[0], y, i, first, last, CLR_HEADING)
         i += 1
-        y = __render_help(scr, "=" * (curses.COLS - 1), y, i, first, last,
-                          CLR_HEADING)
+        y = render_help("=" * (curses.COLS - 1), y, i, first, last,
+                        CLR_HEADING)
         i += 1
 
         for line in section[1]:
             words = line[1].split()
-            ln = line[0].ljust(help_longest+1)
+            ln = line[0].ljust(help_longest + 1)
             for w in words:
-                if len(ln)+1+len(w) < curses.COLS:
+                if len(ln) + 1 + len(w) < curses.COLS:
                     ln += " "+w
                 else:
-                    y = __render_help(scr, ln, y, i, first, last, CLR_CMDLINE)
-                    ln = " ".ljust(help_longest+2)+w
-            y = __render_help(scr, ln, y, i, first, last, CLR_CMDLINE)
+                    y = render_help(ln, y, i, first, last, CLR_CMDLINE)
+                    ln = " ".ljust(help_longest + 2) + w
+            y = render_help(ln, y, i, first, last, CLR_CMDLINE)
             i += 1
 
-        y = __render_help(scr, " ", y, i, first, last, CLR_CMDLINE)
+        y = render_help(" ", y, i, first, last, CLR_CMDLINE)
         i += 1
 
         if i > last:
             break
 
-    _help_draw_footer(scr, page, num_help_pages())
+    render_footer(page, num_help_pages())
 
 
 def show_help():
@@ -1069,7 +1066,7 @@ def gui_main(stdscr):
                     c = c1
 
                 if c1 != -1:
-                    last_key = str(c)+",ESC+"+str(c1)+"+"+str(c2)
+                    last_key = str(c) + ",ESC+" + str(c1) + "+" + str(c2)
                     code = c
                 else:
                     last_key = "ESC"
