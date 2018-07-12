@@ -150,12 +150,12 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
                 i = cards.index(prev_word) + 1
                 # TODO > 20
                 if i <= 20:
-                    words[idx - 1] = NUM_STRING_EN[i]
+                    words[idx - 1] = NUM_STRING_EN[i - 1]
             elif prev_word == "power" and word in cards:
                 i = cards.index(word) + 1
                 # TODO > 20
                 if i <= 20:
-                    words[idx] = word = NUM_STRING_EN[i]
+                    words[idx] = word = NUM_STRING_EN[i - 1]
             if word in erases:
                 words[idx] = ""
             elif word in replaces.keys():
@@ -169,7 +169,6 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
         return " ".join(words).rstrip().lstrip()
 
     text = _normalize(text)
-
     string_num_en = {
                      "half": 0.5,
                      "halves": 0.5,

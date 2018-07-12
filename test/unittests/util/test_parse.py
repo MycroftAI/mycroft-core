@@ -176,12 +176,6 @@ class TestNormalize(unittest.TestCase):
             66e6)
         self.assertEqual(extractnumber("666 times 10 raised to the ninth"),
                          666e9)
-        self.assertEqual(extractnumber("sixth sixth"),
-                         1 / 6 / 6)
-        # TODO handle this case
-        # self.assertEqual(
-        #    extractnumber("6 dot six six six"),
-        #    6.666)
 
     def test_extractdatetime_en(self):
         def extractWithFormat(text):
