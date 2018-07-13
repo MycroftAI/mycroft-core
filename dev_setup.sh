@@ -201,7 +201,8 @@ fi
 MINCORES=1
 CORES=$(nproc)
 
-if [[ ${CORES} -lt ${MINCORES} ]]; then
+# look for positive integer
+if ! [[ ${CORES} =~ ^[0-9]+$ ]]; then
   CORES=${MINCORES}
 fi
 echo "Building with $CORES cores."
