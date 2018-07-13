@@ -48,6 +48,19 @@ MainModule = '__init__'
 DEFAULT_EVALUAITON_TIMEOUT = 30
 
 
+# Easy way to show colors on terminals
+class clr:
+    PINK = '\033[95m'
+    BLUE = '\033[94m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    HEADER = '\033[94m'   # blue
+    WARNING = '\033[93m'  # yellow
+    FAIL = '\033[91m'     # red
+    RESET = '\033[0m'
+
+
 def get_skills(skills_folder):
     """Find skills in the skill folder or sub folders.
 
@@ -181,6 +194,7 @@ class SkillTest(object):
         self.output_file = None
         self.returned_intent = False
         self.test_status = test_status
+        self.failure_msg = None
 
     def run(self, loader):
         """
@@ -197,6 +211,8 @@ class SkillTest(object):
         else:
             raise Exception('Skill couldn\'t be loaded')
 
+        print("")
+        print(clr.HEADER, "="*20 + " RUNNING TEST " + "="*20, clr.RESET)
         print('Test case file: ', self.test_case_file)
         test_case = json.load(open(self.test_case_file, 'r'))
         print("Test case: ", test_case)
@@ -208,8 +224,8 @@ class SkillTest(object):
                 utt = announcement or s.dialog_renderer.render(dialog, data)
                 s.speak(utt)
                 response = test_case['responses'].pop(0)
-                print(">" + utt)
-                print("Responding with ", response)
+                print(clr.BLUE, ">" + utt, clr.RESET)
+                print(clr.GREEN, "Responding with ", response, clr.RESET)
                 return response
             s.get_response = get_response
 
@@ -283,8 +299,9 @@ class SkillTest(object):
         self.emitter.remove_all_listeners('mycroft.skill.handler.complete')
         # Report test result if failed
         if not evaluation_rule.all_succeeded():
-            print("Evaluation failed")
-            print("Rule status: ", evaluation_rule.rule)
+            self.failure_msg = str(evaluation_rule.get_failure())
+            print(clr.FAIL, "Evaluation failed", clr.RESET)
+            print(clr.FAIL, "Failure:", self.failure_msg, clr.RESET)
             return False
 
         return True
@@ -308,8 +325,7 @@ class EvaluationRule(object):
     """
 
     def __init__(self, test_case, skill=None):
-        """
-            Convert test_case read from file to internal rule format
+        """ Convert test_case read from file to internal rule format
 
             Args:
                 test_case:  The loaded test case
@@ -345,12 +361,23 @@ class EvaluationRule(object):
 
         if test_case.get('expected_dialog', None):
             if not skill:
-                print('Skill is missing, can\'t run expected_dialog test')
+                print(clr.FAIL,
+                      'Skill is missing, can\'t run expected_dialog test',
+                      clr.RESET)
             else:
-                # Make sure expected dialog file is used
+                # Check that expected dialog file is used
                 dialog = test_case['expected_dialog']
                 # Extract dialog texts from skill
-                dialogs = skill.dialog_renderer.templates[dialog]
+                try:
+                    dialogs = skill.dialog_renderer.templates[dialog]
+                except Exception as template_load_exception:
+                    print(clr.FAIL,
+                          "Failed to load dialog template " +
+                          "'dialog/en-us/"+dialog+".dialog'",
+                          clr.RESET)
+                    raise Exception("Can't load 'excepected_dialog': "
+                                    "file '" + dialog + ".dialog'") \
+                        from template_load_exception
                 # Allow custom fields to be anything
                 d = [re.sub('{.*?\}', '.*', t) for t in dialogs]
                 # Create rule allowing any of the sentences for that dialog
@@ -372,7 +399,7 @@ class EvaluationRule(object):
         print("Rule created ", self.rule)
 
     def evaluate(self, msg):
-        """Main entry for evaluating a message against the rules.
+        """ Main entry for evaluating a message against the rules.
 
             The rules are prepared in the __init__
             This method is usually called several times with different
@@ -401,9 +428,9 @@ class EvaluationRule(object):
         return value
 
     def _partial_evaluate(self, rule, msg):
-        """Evaluate the message against a part of the rules
+        """ Evaluate the message against a part of the rules
 
-        Recursive over rules
+            Recursive over rules
 
             Args:
                 rule:  A rule or a part of the rules to be broken down further
@@ -451,11 +478,21 @@ class EvaluationRule(object):
         rule.append('succeeded')
         return True
 
+    def get_failure(self):
+        """ Get the first rule which has not succeeded
+
+            Returns:
+                str: The failed rule
+        """
+        for x in self.rule:
+            if x[-1] != 'succeeded':
+                return x
+        return None
+
     def all_succeeded(self):
-        """Test if all rules succeeded
+        """ Test if all rules succeeded
 
             Returns:
                 bool: True if all rules succeeded
         """
-
         return len([x for x in self.rule if x[-1] != 'succeeded']) == 0

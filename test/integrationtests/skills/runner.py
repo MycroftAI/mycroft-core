@@ -1,4 +1,4 @@
-# Copyright 2017 Mycroft AI Inc.
+# Copyright 2018 Mycroft AI Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,44 +12,56 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-"""Find test files starting from the directory where this file resides.
+"""Execute Mycroft Skill intent testing
 
-The skill_developers_testrunner.py is intended to be copied to the
-skill developers own directory, where the skills __init__.py file
-resides. Running the python unit test in this module from that file
-location, will test the skill developers test the same way as
-discover_test.py, but running only the skill developers test.
-It is executed as a unit test.
-
+This standalone tester can be invoked by a skill developer from
+within the Mycroft venv by using the command:
+    python -m test.integrationtests.skills.runner
+This will test the skill the same way as discover_test.py used
+for automatic integration tests, but will run only the skill
+developer's tests.
 """
 
 import glob
 import unittest
 import os
+import argparse
 from test.integrationtests.skills.skill_tester import MockSkillsLoader
 from test.integrationtests.skills.skill_tester import SkillTest
 
-HOME_DIR = os.path.dirname(os.path.abspath(__file__))
+
+help = "Standalone test utility for Mycroft Skills.  This will execute the " \
+    "tests defined under the Skill's test/intent folder.  For more " \
+    "information on creating tests, see:  " \
+    "https://mycroft.ai/documentation/skills/automatic-testing/"
+
+# Get path to skill(s) to test from command line, default to cwd
+parser = argparse.ArgumentParser(description=help)
+parser.add_argument("skill_path", nargs='?', default=os.getcwd(),
+                    help="path to skill to test, default=current")
+args = parser.parse_args()
+HOME_DIR = args.skill_path
 
 
 def discover_tests():
-    """Find skills whith test files
+    """Find skills with test files
 
     For all skills with test files, starten from current directory,
     find the test files in subdirectory test/intent.
 
     :return: skills and corresponding test case files found
     """
-
     tests = {}
 
     skills = [HOME_DIR]
 
     for skill in skills:
+        print("Searching for tests under: " +
+              os.path.join(skill, "test/intent/*.json"))
         test_intent_files = [
             f for f
             in sorted(
-                glob.glob(os.path.join(skill, 'test/intent/*.intent.json')))
+                glob.glob(os.path.join(skill, 'test/intent/*.json')))
         ]
         if len(test_intent_files) > 0:
             tests[skill] = test_intent_files
@@ -61,8 +73,9 @@ class IntentTestSequenceMeta(type):
     def __new__(mcs, name, bases, d):
         def gen_test(a, b):
             def test(self):
-                if not SkillTest(a, b, self.emitter).run(self.loader):
-                    assert False
+                t = SkillTest(a, b, self.emitter)
+                if not t.run(self.loader):
+                    assert False, "Failure: " + t.failure_msg
             return test
 
         tests = discover_tests()
@@ -70,16 +83,15 @@ class IntentTestSequenceMeta(type):
             skill_name = os.path.basename(skill)  # Path of the skill
             for example in tests[skill]:
                 # Name of the intent
-                example_name = os.path.basename(
-                    os.path.splitext(os.path.splitext(example)[0])[0])
-                test_name = "test_IntentValidation[%s:%s]" % (skill_name,
-                                                              example_name)
+                test_filename = os.path.basename(example)
+                test_name = "test_Intent[%s:%s]" % (skill_name,
+                                                    test_filename)
                 d[test_name] = gen_test(skill, example)
         return type.__new__(mcs, name, bases, d)
 
 
 class IntentTestSequence(unittest.TestCase, metaclass=IntentTestSequenceMeta):
-    """This is the TestCase class that pythons unit tester can execute.
+    """This is the TestCase class that Python's unit tester can execute.
     """
     loader = None
 
