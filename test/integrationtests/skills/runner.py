@@ -30,13 +30,13 @@ from test.integrationtests.skills.skill_tester import MockSkillsLoader
 from test.integrationtests.skills.skill_tester import SkillTest
 
 
-help = "Standalone test utility for Mycroft Skills.  This will execute the " \
+desc = "Standalone test utility for Mycroft Skills.  This will execute the " \
     "tests defined under the Skill's test/intent folder.  For more " \
     "information on creating tests, see:  " \
     "https://mycroft.ai/documentation/skills/automatic-testing/"
 
 # Get path to skill(s) to test from command line, default to cwd
-parser = argparse.ArgumentParser(description=help)
+parser = argparse.ArgumentParser(description=desc)
 parser.add_argument("skill_path", nargs='?', default=os.getcwd(),
                     help="path to skill to test, default=current")
 args = parser.parse_args()
