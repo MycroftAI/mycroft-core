@@ -198,12 +198,11 @@ if ! pip install -r test-requirements.txt; then
   echo "Warning test requirements wasn't installed, Note: normal operation should still work fine..."
 fi
 
-SYSMEM=$(free|awk '/^Mem:/{print $2}')
-MAXCORES=$(($SYSMEM / 512000))
+MINCORES=1
 CORES=$(nproc)
 
-if [[ ${MAXCORES} -lt ${CORES} ]]; then
-  CORES=${MAXCORES}
+if [[ ${CORES} -lt ${MINCORES} ]]; then
+  CORES=${MINCORES}
 fi
 echo "Building with $CORES cores."
 
