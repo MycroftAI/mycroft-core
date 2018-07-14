@@ -211,7 +211,10 @@ fi
 # look for positive integer
 if ! [[ ${CORES} =~ ^[0-9]+$ ]]; then
   CORES=${MINCORES}
+elif [[ ${MAXCORES} -lt ${CORES} ]]; then
+  CORES=${MAXCORES}
 fi
+
 echo "Building with $CORES cores."
 
 #build and install pocketsphinx
