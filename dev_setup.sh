@@ -198,8 +198,15 @@ if ! pip install -r test-requirements.txt; then
   echo "Warning test requirements wasn't installed, Note: normal operation should still work fine..."
 fi
 
+SYSMEM=$(free|awk '/^Mem:/{print $2}')
+MAXCORES=$(($SYSMEM / 512000))
 MINCORES=1
 CORES=$(nproc)
+
+# ensure MAXCORES is > 0
+if [[ ${MAXCORES} -lt 1 ]]; then
+	MAXCORES=${MINCORES}
+fi
 
 # look for positive integer
 if ! [[ ${CORES} =~ ^[0-9]+$ ]]; then
