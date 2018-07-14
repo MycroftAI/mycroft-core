@@ -46,7 +46,6 @@ function help() {
   echo "  skillstest               run the skill autotests for all skills (requires pytest)"
   echo
   echo "Utils:"
-  echo "  skill_container <skill>  container for running a single skill"
   echo "  audiotest                attempt simple audio validation"
   echo "  audioaccuracytest        more complex audio validation"
   echo "  sdkdoc                   generate sdk documentation"
@@ -68,7 +67,6 @@ function name-to-script-path() {
     "voice")           _script=${DIR}/mycroft/client/speech/main.py ;;
     "cli")             _script=${DIR}/mycroft/client/text/main.py ;;
     "wifi")            _script=${DIR}/mycroft/client/wifisetup/main.py ;;
-    "skill_container") _script=${DIR}/mycroft/skills/container.py ;;
     "audiotest")       _script=${DIR}/mycroft/util/audio_test.py ;;
     "audioaccuracytest") _script=${DIR}/mycroft/audio-accuracy-test/audio_accuracy_test.py ;;
     "sdkdoc")          _script=${DIR}/doc/generate_sdk_docs.py ;;
@@ -176,9 +174,6 @@ case ${_opt} in
     ;;
   "wifi")
     launch-background ${_opt}
-    ;;
-  "skill_container")
-    launch-process ${_opt}
     ;;
   "unittest")
     source ${VIRTUALENV_ROOT}/bin/activate
