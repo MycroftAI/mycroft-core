@@ -71,7 +71,8 @@ def unmunge_message(message, skill_id):
     if isinstance(message, Message) and isinstance(message.data, dict):
         skill_id = to_alnum(skill_id)
         for key in list(message.data.keys()):
-            if key[:len(skill_id)] == skill_id:
+            if key.startswith(skill_id):
+                # replace the munged key with the real one
                 new_key = key[len(skill_id):]
                 message.data[new_key] = message.data.pop(key)
 
