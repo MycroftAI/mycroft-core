@@ -48,6 +48,7 @@ class PadatiousService(FallbackSkill):
         self.emitter = emitter
         self.emitter.on('padatious:register_intent', self.register_intent)
         self.emitter.on('padatious:register_entity', self.register_entity)
+        self.emitter.on('detach_intent', self.handle_detach_intent)
         self.emitter.on('mycroft.skills.initialized', self.train)
         self.register_fallback(self.handle_fallback, 5)
         self.finished_training_event = Event()
@@ -77,6 +78,10 @@ class PadatiousService(FallbackSkill):
         if self.train_time <= get_time() + 0.01:
             self.train_time = -1.0
             self.train()
+
+    def handle_detach_intent(self, message):
+        intent_name = message.data.get('intent_name')
+        self.container.remove_intent(intent_name)
 
     def _register_object(self, message, object_name, register_func):
         file_name = message.data['file_name']
