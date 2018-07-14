@@ -124,8 +124,8 @@ def load_skill(skill_descriptor, emitter, skill_id, BLACKLISTED_SKILLS=None):
             skill.skill_id = skill_id
             skill.load_data_files(path)
             # Set up intent handlers
-            skill.initialize()
             skill._register_decorated()
+            skill.initialize()
             LOG.info("Loaded " + name)
 
             # The very first time a skill is run, speak the intro
