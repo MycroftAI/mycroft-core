@@ -783,10 +783,10 @@ class MycroftSkill(object):
         if intent_name in names:
             intent = intents[names.index(intent_name)]
             self.registered_intents.remove((intent_name, intent))
-            intent.name = intent_name
             if ".intent" in intent_name:
-                self.register_intent_file(intent, None)
+                self.register_intent_file(intent_name, None)
             else:
+                intent.name = intent_name
                 self.register_intent(intent, None)
             LOG.debug('Enabling intent ' + intent_name)
             return True
