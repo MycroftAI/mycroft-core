@@ -19,16 +19,32 @@ from mycroft.audio.services import AudioBackend
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
 import mimetypes
+from requests import Session
+
+
+def find_mime(path):
+    mime = None
+    if path.startswith('http'):
+        response = Session().head(path, allow_redirects=True)
+        if 200 <= response.status_code < 300:
+            mime = response.headers['content-type']
+    if not mime:
+        mime = mimetypes.guess_mime(path)[0]
+
+    if mime:
+        return mime.split('/')
+    else:
+        return (None, None)
 
 
 class SimpleAudioService(AudioBackend):
     """
         Simple Audio backend for both mpg123 and the ogg123 player.
-        This one is rather limited and
-        only implements basic usage.
+        This one is rather limited and only implements basic usage.
     """
 
     def __init__(self, config, emitter, name='simple'):
+
         super(SimpleAudioService, self).__init__(config, emitter)
         self.config = config
         self.process = None
@@ -38,6 +54,7 @@ class SimpleAudioService(AudioBackend):
         self._is_playing = False
         self.tracks = []
         self.index = 0
+        self.supports_mime_hints = True
         mimetypes.init()
 
         self.emitter.on('SimpleAudioServicePlay', self._play)
@@ -59,18 +76,34 @@ class SimpleAudioService(AudioBackend):
         """
         LOG.info('SimpleAudioService._play')
         self._is_playing = True
-        track = self.tracks[self.index]
+        if isinstance(self.tracks[self.index], list):
+            track = self.tracks[self.index][0]
+            mime = self.tracks[self.index][1]
+            mime = mime.split('/')
+        else:  # Assume string
+            track = self.tracks[self.index]
+            mime = find_mime(track)
+            print('MIME: ' + str(mime))
         # Indicate to audio service which track is being played
         if self._track_start_callback:
             self._track_start_callback(track)
 
         # Replace file:// uri's with normal paths
         track = track.replace('file://', '')
-
-        self.process = subprocess.Popen(['mpg123', track])
-        # Wait for completion or stop request
-        while self.process.poll() is None and not self._stop_signal:
-            sleep(0.25)
+        proc = None
+        if 'mpeg' in mime[1]:
+            proc = 'mpg123'
+        elif 'ogg' in mime[1]:
+            proc = 'ogg123'
+        elif 'wav' in mime[1]:
+            proc = 'aplay'
+        else:
+            proc = 'mpg123'  # If no mime info could be determined gues mp3
+        if proc:
+            self.process = subprocess.Popen([proc, track])
+            # Wait for completion or stop request
+            while self.process.poll() is None and not self._stop_signal:
+                sleep(0.25)
 
         if self._stop_signal:
             self.process.terminate()
@@ -120,7 +153,7 @@ class SimpleAudioService(AudioBackend):
 def load_service(base_config, emitter):
     backends = base_config.get('backends', [])
     services = [(b, backends[b]) for b in backends
-                if backends[b]['type'] == 'mpg123' and
+                if backends[b]['type'] == 'simple' and
                 backends[b].get('active', True)]
     instances = [SimpleAudioService(s[1], emitter, s[0]) for s in services]
     return instances

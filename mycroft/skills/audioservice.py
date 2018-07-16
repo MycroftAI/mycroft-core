@@ -28,10 +28,18 @@ def ensure_uri(s):
         Returns:
             if s is uri, s is returned otherwise file:// is prepended
     """
-    if '://' not in s:
-        return 'file://' + abspath(s)
+    if isinstance(s, str):
+        if '://' not in s:
+            return 'file://' + abspath(s)
+        else:
+            return s
+    elif isinstance(s, (tuple, list)):
+        if '://' not in s[0]:
+            return 'file://' + abspath(s[0]), s[1]
+        else:
+            return s
     else:
-        return s
+        raise ValueError('Invalid track')
 
 
 class AudioService(object):
@@ -74,11 +82,13 @@ class AudioService(object):
 
             Args:
                 tracks: track uri or list of track uri's
+                        Each track can be added as a tuple with (uri, mime)
+                        to give a hint of the mime type to the system
                 utterance: forward utterance for further processing by the
                            audio service.
         """
         tracks = tracks or []
-        if isinstance(tracks, str):
+        if isinstance(tracks, (str, tuple)):
             tracks = [tracks]
         elif not isinstance(tracks, list):
             raise ValueError
