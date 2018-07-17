@@ -17,6 +17,7 @@ from io import open
 
 import os
 import re
+from pathlib import Path
 
 from mycroft.util import resolve_resource_file
 from mycroft.util.log import LOG
@@ -106,16 +107,15 @@ class DialogLoader(object):
         Returns:
             a loaded instance of a dialog renderer
         """
-        if not os.path.exists(dialog_dir) or not os.path.isdir(dialog_dir):
+        directory = Path(dialog_dir)
+        if not directory.exists() or not directory.is_dir():
             LOG.warning("No dialog found: " + dialog_dir)
             return self.__renderer
 
-        for f in sorted(
-                filter(lambda x: os.path.isfile(
-                    os.path.join(dialog_dir, x)), os.listdir(dialog_dir))):
-            dialog_entry_name = os.path.splitext(f)[0]
-            self.__renderer.load_template_file(
-                dialog_entry_name, os.path.join(dialog_dir, f))
+        for dialog_entry in directory.glob('*.dialog'):
+            if dialog_entry.is_file():
+                self.__renderer.load_template_file(dialog_entry.stem,
+                                                   dialog_entry)
 
         return self.__renderer
 
