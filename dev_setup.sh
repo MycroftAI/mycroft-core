@@ -200,11 +200,21 @@ fi
 
 SYSMEM=$(free|awk '/^Mem:/{print $2}')
 MAXCORES=$(($SYSMEM / 512000))
+MINCORES=1
 CORES=$(nproc)
 
-if [[ ${MAXCORES} -lt ${CORES} ]]; then
+# ensure MAXCORES is > 0
+if [[ ${MAXCORES} -lt 1 ]]; then
+	MAXCORES=${MINCORES}
+fi
+
+# look for positive integer
+if ! [[ ${CORES} =~ ^[0-9]+$ ]]; then
+  CORES=${MINCORES}
+elif [[ ${MAXCORES} -lt ${CORES} ]]; then
   CORES=${MAXCORES}
 fi
+
 echo "Building with $CORES cores."
 
 #build and install pocketsphinx

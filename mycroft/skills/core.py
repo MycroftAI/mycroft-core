@@ -124,8 +124,8 @@ def load_skill(skill_descriptor, emitter, skill_id, BLACKLISTED_SKILLS=None):
             skill.skill_id = skill_id
             skill.load_data_files(path)
             # Set up intent handlers
-            skill.initialize()
             skill._register_decorated()
+            skill.initialize()
             LOG.info("Loaded " + name)
 
             # The very first time a skill is run, speak the intro
@@ -695,10 +695,12 @@ class MycroftSkill(object):
                 handler:     function to register with intent
         """
         name = str(self.skill_id) + ':' + intent_file
-        self.emitter.emit(Message("padatious:register_intent", {
+        data = {
             "file_name": join(self.vocab_dir, intent_file),
             "name": name
-        }))
+        }
+        self.emitter.emit(Message("padatious:register_intent", data))
+        self.registered_intents.append((intent_file, data))
         self.add_event(name, handler, 'mycroft.skill.handler')
 
     def register_entity_file(self, entity_file):
@@ -781,8 +783,11 @@ class MycroftSkill(object):
         if intent_name in names:
             intent = intents[names.index(intent_name)]
             self.registered_intents.remove((intent_name, intent))
-            intent.name = intent_name
-            self.register_intent(intent, None)
+            if ".intent" in intent_name:
+                self.register_intent_file(intent_name, None)
+            else:
+                intent.name = intent_name
+                self.register_intent(intent, None)
             LOG.debug('Enabling intent ' + intent_name)
             return True
         LOG.error('Could not enable ' + intent_name + ', it hasn\'t been '
