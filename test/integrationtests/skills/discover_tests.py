@@ -54,7 +54,7 @@ def discover_tests(skills_dir):
         test_intent_files = [
             (f, test_env) for f
             in sorted(
-                glob.glob(os.path.join(skill, 'test/intent/*.intent.json')))
+                glob.glob(os.path.join(skill, 'test/intent/*.json')))
         ]
         if len(test_intent_files) > 0:
             tests[skill] = test_intent_files
@@ -90,4 +90,6 @@ class TestCase(object):
         if test_env:
             assert test_env.test_runner(skill, example, emitter, loader)
         else:
-            assert SkillTest(skill, example, emitter).run(loader)
+            t = SkillTest(skill, example, emitter)
+            if not t.run(loader):
+                assert False, "Failure: " + t.failure_msg
