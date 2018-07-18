@@ -61,6 +61,25 @@ class clr:
     RESET = '\033[0m'
 
 
+class no_clr:
+    PINK = ''
+    BLUE = ''
+    GREEN = ''
+    YELLOW = ''
+    RED = ''
+    HEADER = ''
+    WARNING = ''
+    FAIL = ''
+    RESET = ''
+
+
+# MST as in Mycroft Skill Tester
+if 'MST_NO_COLOR' not in os.environ:
+    color = clr
+else:
+    color = no_clr
+
+
 def get_skills(skills_folder):
     """Find skills in the skill folder or sub folders.
 
@@ -212,7 +231,7 @@ class SkillTest(object):
             raise Exception('Skill couldn\'t be loaded')
 
         print("")
-        print(clr.HEADER, "="*20 + " RUNNING TEST " + "="*20, clr.RESET)
+        print(color.HEADER, "="*20 + " RUNNING TEST " + "="*20, color.RESET)
         print('Test case file: ', self.test_case_file)
         test_case = json.load(open(self.test_case_file, 'r'))
         print("Test case: ", test_case)
@@ -224,8 +243,8 @@ class SkillTest(object):
                 utt = announcement or s.dialog_renderer.render(dialog, data)
                 s.speak(utt)
                 response = test_case['responses'].pop(0)
-                print(clr.BLUE, ">" + utt, clr.RESET)
-                print(clr.GREEN, "Responding with ", response, clr.RESET)
+                print(color.BLUE, ">" + utt, color.RESET)
+                print(color.GREEN, "Responding with ", response, color.RESET)
                 return response
             s.get_response = get_response
 
@@ -300,8 +319,8 @@ class SkillTest(object):
         # Report test result if failed
         if not evaluation_rule.all_succeeded():
             self.failure_msg = str(evaluation_rule.get_failure())
-            print(clr.FAIL, "Evaluation failed", clr.RESET)
-            print(clr.FAIL, "Failure:", self.failure_msg, clr.RESET)
+            print(color.FAIL, "Evaluation failed", color.RESET)
+            print(color.FAIL, "Failure:", self.failure_msg, color.RESET)
             return False
 
         return True
@@ -361,9 +380,9 @@ class EvaluationRule(object):
 
         if test_case.get('expected_dialog', None):
             if not skill:
-                print(clr.FAIL,
+                print(color.FAIL,
                       'Skill is missing, can\'t run expected_dialog test',
-                      clr.RESET)
+                      color.RESET)
             else:
                 # Check that expected dialog file is used
                 dialog = test_case['expected_dialog']
@@ -371,10 +390,10 @@ class EvaluationRule(object):
                 try:
                     dialogs = skill.dialog_renderer.templates[dialog]
                 except Exception as template_load_exception:
-                    print(clr.FAIL,
+                    print(color.FAIL,
                           "Failed to load dialog template " +
                           "'dialog/en-us/"+dialog+".dialog'",
-                          clr.RESET)
+                          color.RESET)
                     raise Exception("Can't load 'excepected_dialog': "
                                     "file '" + dialog + ".dialog'") \
                         from template_load_exception
