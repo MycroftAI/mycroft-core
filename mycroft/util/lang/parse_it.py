@@ -331,7 +331,7 @@ def normalize_it(text, remove_articles):
     return normalized[1:]
 
 
-def extract_datetime_it(string, currentDate=None):
+def extract_datetime_it(string, currentDate):
     def clean_string(s):
         """
             cleans the input string of unneeded punctuation and capitalization
@@ -410,10 +410,8 @@ def extract_datetime_it(string, currentDate=None):
                 minAbs != 0 or secOffset != 0
             )
 
-    if string == "":
+    if string == "" or not currentDate:
         return None
-    if currentDate is None:
-        currentDate = datetime.now()
 
     found = False
     daySpecified = False

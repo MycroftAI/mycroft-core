@@ -235,8 +235,8 @@ def nice_time_en(dt, speech=True, use_24hour=False, use_ampm=False):
 
         if use_ampm:
             if dt.hour > 11:
-                speak += " PM"
+                speak += " p.m."
             else:
-                speak += " AM"
+                speak += " a.m."
 
         return speak

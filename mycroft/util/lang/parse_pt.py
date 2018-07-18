@@ -367,7 +367,7 @@ def normalize_pt(text, remove_articles):
     return pt_pruning(normalized[1:], agressive=remove_articles)
 
 
-def extract_datetime_pt(input_str, currentDate=None):
+def extract_datetime_pt(input_str, currentDate):
     def clean_string(s):
         # cleans the input string of unneeded punctuation and capitalization
         # among other things
@@ -430,10 +430,8 @@ def extract_datetime_pt(input_str, currentDate=None):
                 minAbs != 0 or secOffset != 0
             )
 
-    if input_str == "":
+    if input_str == "" or not currentDate:
         return None
-    if currentDate is None:
-        currentDate = datetime.now()
 
     found = False
     daySpecified = False

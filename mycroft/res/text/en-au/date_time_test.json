@@ -37,7 +37,7 @@
     "9": {"datetime_param": "2018, 2, 4, 0, 2, 3", "now": "2019, 2, 6, 0, 2, 3", "assertEqual": "sunday, february fourth, twenty eighteen"}
   },
   "test_nice_date_time": {
-    "1": {"datetime_param": "2017, 1, 31, 13, 22, 3", "now": "None", "use_24hour": "False", "use_ampm": "True", "assertEqual": "tuesday, january thirty-first, twenty seventeen at one twenty two PM"},
+    "1": {"datetime_param": "2017, 1, 31, 13, 22, 3", "now": "None", "use_24hour": "False", "use_ampm": "True", "assertEqual": "tuesday, january thirty-first, twenty seventeen at one twenty two p.m."},
     "2": {"datetime_param": "2017, 1, 31, 13, 22, 3", "now": "None", "use_24hour": "True", "use_ampm": "False", "assertEqual": "tuesday, january thirty-first, twenty seventeen at thirteen twenty two"}
   }
 }

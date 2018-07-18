@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 from difflib import SequenceMatcher
+from mycroft.util.time import now_local
 
 from mycroft.util.lang.parse_en import *
 from mycroft.util.lang.parse_pt import *
@@ -80,17 +81,19 @@ def extractnumber(text, short_scale=True, ordinals=False, lang="en-us"):
 
 def extract_number(text, short_scale=True, ordinals=False, lang="en-us"):
     """Takes in a string and extracts a number.
+
     Args:
         text (str): the string to extract a number from
-        short_scale (bool): use short or long scale. See
-            https://en.wikipedia.org/wiki/Names_of_large_numbers
-        ordinals (bool): consider ordinal numbers, third=3 instead of 1/3
-        lang (str): the code for the language text is in
+        short_scale (bool): Use "short scale" or "long scale" for large
+            numbers -- over a million.  The default is short scale, which
+            is now common in most English speaking countries.
+            See https://en.wikipedia.org/wiki/Names_of_large_numbers
+        ordinals (bool): consider ordinal numbers, e.g. third=3 instead of 1/3
+        lang (str): the BCP-47 code for the language to use
     Returns:
         (int, float or False): The number extracted or False if the input
                                text contains no numbers
     """
-
     lang_lower = str(lang).lower()
     if lang_lower.startswith("en"):
         return extractnumber_en(text, short_scale=short_scale,
@@ -111,28 +114,27 @@ def extract_number(text, short_scale=True, ordinals=False, lang="en-us"):
 
 def extract_datetime(text, anchorDate=None, lang="en-us"):
     """
-    Parsing function that extracts date and time information
-    from sentences. Parses many of the common ways that humans
-    express dates and times. Includes relative dates like "5 days from today".
+    Extracts date and time information from a sentence.  Parses many of the
+    common ways that humans express dates and times, including relative dates
+    like "5 days from today", "tomorrow', and "Tuesday".
 
     Vague terminology are given arbitrary values, like:
         - morning = 8 AM
         - afternoon = 3 PM
         - evening = 7 PM
 
-    If a time isn't supplied, the function defaults to 12 AM
+    If a time isn't supplied or implied, the function defaults to 12 AM
 
     Args:
-        text (str): the text to be normalized
-        anchortDate (:obj:`datetime`, optional): the date to be used for
+        text (str): the text to be interpreted
+        anchorDate (:obj:`datetime`, optional): the date to be used for
             relative dating (for example, what does "tomorrow" mean?).
-            Defaults to the current date
-            (acquired with datetime.datetime.now())
-        lang (string): the language of the sentence(s)
+            Defaults to the current local date/time.
+        lang (string): the BCP-47 code for the language to use
 
     Returns:
         [:obj:`datetime`, :obj:`str`]: 'datetime' is the extracted date
-            as a datetime object. Times are represented in 24 hour notation.
+            as a datetime object in the user's local timezone.
             'leftover_string' is the original phrase with all date and time
             related keywords stripped out. See examples for further
             clarification
@@ -155,6 +157,9 @@ def extract_datetime(text, anchorDate=None, lang="en-us"):
     """
 
     lang_lower = str(lang).lower()
+
+    if not anchorDate:
+        anchorDate = now_local()
 
     if lang_lower.startswith("en"):
         return extract_datetime_en(text, anchorDate)
