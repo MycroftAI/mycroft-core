@@ -437,9 +437,11 @@ class TTSFactory(object):
     from mycroft.tts.bing_tts import BingTTS
     from mycroft.tts.ibm_tts import WatsonTTS
     from mycroft.tts.responsive_voice_tts import ResponsiveVoice
+    from mycroft.tts.mimic2_tts import Mimic2
 
     CLASSES = {
         "mimic": Mimic,
+        "mimic2": Mimic2,
         "google": GoogleTTS,
         "marytts": MaryTTS,
         "fatts": FATTS,
