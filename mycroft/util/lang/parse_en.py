@@ -983,24 +983,26 @@ def extract_datetime_en(string, currentDate):
             temp = datetime.strptime(datestr, "%B %d %Y")
         extractedDate = extractedDate.replace(hour=0, minute=0, second=0)
         if not hasYear:
-            temp = temp.replace(year=extractedDate.year)
+            temp = temp.replace(year=extractedDate.year,
+                                tzinfo=extractedDate.tzinfo)
             if extractedDate < temp:
-                extractedDate = extractedDate.replace(year=int(currentYear),
-                                                      month=int(
-                                                          temp.strftime(
-                                                              "%m")),
-                                                      day=int(temp.strftime(
-                                                          "%d")))
+                extractedDate = extractedDate.replace(
+                                    year=int(currentYear),
+                                    month=int(temp.strftime("%m")),
+                                    day=int(temp.strftime("%d")),
+                                    tzinfo=extractedDate.tzinfo)
             else:
                 extractedDate = extractedDate.replace(
                     year=int(currentYear) + 1,
                     month=int(temp.strftime("%m")),
-                    day=int(temp.strftime("%d")))
+                    day=int(temp.strftime("%d")),
+                    tzinfo=extractedDate.tzinfo)
         else:
             extractedDate = extractedDate.replace(
                 year=int(temp.strftime("%Y")),
                 month=int(temp.strftime("%m")),
-                day=int(temp.strftime("%d")))
+                day=int(temp.strftime("%d")),
+                tzinfo=extractedDate.tzinfo)
     else:
         # ignore the current HH:MM:SS if relative using days or greater
         if not timeStr and hrOffset == 0 and minOffset == 0 and secOffset == 0:
@@ -1010,7 +1012,8 @@ def extract_datetime_en(string, currentDate):
         temp = datetime(timeStr)
         extractedDate = extractedDate.replace(hour=temp.strftime("%H"),
                                               minute=temp.strftime("%M"),
-                                              second=temp.strftime("%S"))
+                                              second=temp.strftime("%S"),
+                                              tzinfo=extractedDate.tzinfo)
 
     if yearOffset != 0:
         extractedDate = extractedDate + relativedelta(years=yearOffset)
