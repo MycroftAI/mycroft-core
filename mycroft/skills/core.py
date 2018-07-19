@@ -359,6 +359,12 @@ class MycroftSkill(object):
         data = data or {}
 
         def get_announcement():
+            nonlocal announcement
+            # The dialog param can be either a spoken string or a dialog file
+            # TODO: 18.08 merge dialog/announcement
+            if not exists(join(self.root_dir, 'dialog', self.lang,
+                               dialog + '.dialog')) and not announcement:
+                announcement = dialog
             return announcement or self.dialog_renderer.render(dialog, data)
 
         if not get_announcement():
