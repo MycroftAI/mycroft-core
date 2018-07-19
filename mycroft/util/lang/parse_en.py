@@ -986,14 +986,12 @@ def extract_datetime_en(string, currentDate):
             temp = temp.replace(year=extractedDate.year,
                                 tzinfo=extractedDate.tzinfo)
             if extractedDate < temp:
-                extractedDate = extractedDate.replace(year=int(currentYear),
-                                                      month=int(
-                                                          temp.strftime(
-                                                              "%m")),
-                                                      day=int(temp.strftime(
-                                                          "%d")),
-                                                      tzinfo=extractedDate.tzinfo
-                                                          )
+                extractedDate = extractedDate.replace(
+                                    year=int(currentYear),
+                                    month=int(temp.strftime("%m")),
+                                    day=int(temp.strftime("%d")),
+                                    tzinfo=extractedDate.tzinfo
+                                )
             else:
                 extractedDate = extractedDate.replace(
                     year=int(currentYear) + 1,
