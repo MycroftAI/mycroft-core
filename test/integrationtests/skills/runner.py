@@ -1,4 +1,4 @@
-# Copyright 2017 Mycroft AI Inc.
+# Copyright 2018 Mycroft AI Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,28 +12,43 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-""" Test a single skill
+"""Execute Mycroft Skill intent testing
 
-    python single_test.py PATH_TO_SKILL
+This standalone tester can be invoked by a skill developer from
+within the Mycroft venv by using the command:
+    python -m test.integrationtests.skills.runner
+This will test the skill the same way as discover_test.py used
+for automatic integration tests, but will run only the skill
+developer's tests.
 """
 
 import glob
 import unittest
 import os
 from os.path import exists
+import sys
 import imp
-
+import argparse
 from test.integrationtests.skills.skill_tester import MockSkillsLoader
 from test.integrationtests.skills.skill_tester import SkillTest
 
-import sys
 
-d = sys.argv.pop() + '/'
-SKILL_DIR = os.path.dirname(d)
+desc = "Standalone test utility for Mycroft Skills.  This will execute the " \
+    "tests defined under the Skill's test/intent folder.  For more " \
+    "information on creating tests, see:  " \
+    "https://mycroft.ai/documentation/skills/automatic-testing/"
+
+# Get path to skill(s) to test from command line, default to cwd
+parser = argparse.ArgumentParser(description=desc)
+parser.add_argument("skill_path", nargs='?', default=os.getcwd(),
+                    help="path to skill to test, default=current")
+args = parser.parse_args()
+HOME_DIR = os.path.dirname(args.skill_path + '/')
+sys.argv = sys.argv[:1]
 
 
 def discover_tests():
-    """Find skill withh test files.
+    """Find skills with test files
 
     For all skills with test files, starten from current directory,
     find the test files in subdirectory test/intent.
@@ -45,14 +60,15 @@ def discover_tests():
     tests = {}
     test_envs = {}
 
-    skills = [SKILL_DIR]
+    skills = [HOME_DIR]
 
     for skill in skills:
-        # Find intent tests
+        print("Searching for tests under: " +
+              os.path.join(skill, "test/intent/*.json"))
         test_intent_files = [
             f for f
             in sorted(
-                glob.glob(os.path.join(skill, 'test/intent/*.intent.json')))
+                glob.glob(os.path.join(skill, 'test/intent/*.json')))
         ]
         if len(test_intent_files) > 0:
             tests[skill] = test_intent_files
@@ -73,7 +89,9 @@ class IntentTestSequenceMeta(type):
     def __new__(mcs, name, bases, d):
         def gen_test(a, b, test_env):
             def test(self):
-                assert SkillTest(a, b, self.emitter).run(self.loader)
+                t = SkillTest(a, b, self.emitter)
+                if not t.run(self.loader):
+                    assert False, "Failure: " + t.failure_msg
 
             def test_env_test(self):
                 assert test_env.test_runner(a, b, self.emitter, self.loader)
@@ -87,10 +105,9 @@ class IntentTestSequenceMeta(type):
             skill_name = os.path.basename(skill)  # Path of the skill
             for example in tests[skill]:
                 # Name of the intent
-                example_name = os.path.basename(
-                    os.path.splitext(os.path.splitext(example)[0])[0])
-                test_name = "test_IntentValidation[%s:%s]" % (skill_name,
-                                                              example_name)
+                test_filename = os.path.basename(example)
+                test_name = "test_Intent[%s:%s]" % (skill_name,
+                                                    test_filename)
                 test_env = test_envs[skill]
                 d[test_name] = gen_test(skill, example, test_env)
 
@@ -98,13 +115,13 @@ class IntentTestSequenceMeta(type):
 
 
 class IntentTestSequence(unittest.TestCase, metaclass=IntentTestSequenceMeta):
-    """This is the TestCase class that pythons unit tester can execute.
+    """This is the TestCase class that Python's unit tester can execute.
     """
     loader = None
 
     @classmethod
     def setUpClass(cls):
-        cls.loader = MockSkillsLoader(SKILL_DIR)
+        cls.loader = MockSkillsLoader(HOME_DIR)
         cls.emitter = cls.loader.load_skills()
 
     @classmethod
