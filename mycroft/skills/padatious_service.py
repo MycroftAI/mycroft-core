@@ -58,7 +58,10 @@ class PadatiousService(FallbackSkill):
         self.train_time = get_time() + self.train_delay
 
     def train(self, message=None):
-        single_thread = message.data.get('single_thread', False)
+        if message is None:
+            single_thread = False
+        else:
+            single_thread = message.data.get('single_thread', False)
         self.finished_training_event.clear()
 
         LOG.info('Training...')
