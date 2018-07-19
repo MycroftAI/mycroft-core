@@ -18,6 +18,10 @@
 from mycroft.util.lang.format_common import convert_to_mixed_fraction
 from math import floor
 
+months = ['januar', 'februar', 'märz', 'april', 'mai', 'juni',
+          'juli', 'august', 'september', 'oktober', 'november',
+          'dezember']
+
 NUM_STRING_DE = {
     0: 'null',
     1: 'ein',  # ein Viertel etc., nicht eins Viertel
@@ -342,3 +346,43 @@ def nice_time_de(dt, speech=True, use_24hour=False, use_ampm=False):
                 speak += " morgens"  # 03:00 - 11:59 morgens/in the morning
 
         return speak
+
+
+def nice_response_de(text):
+    # check for months and call nice_ordinal_de declension of ordinals
+    # replace "^" with "hoch" (to the power of)
+    words = text.split()
+
+    for idx, word in enumerate(words):
+        if word.lower() in months:
+            text = nice_ordinal_de(text)
+
+        if word == '^':
+            wordNext = words[idx + 1] if idx + 1 < len(words) else ""
+            if wordNext.isnumeric():
+                words[idx] = "hoch"
+                text = " ".join(words)
+    return text
+
+
+def nice_ordinal_de(text):
+    # check for months for declension of ordinals before months
+    # depending on articles/prepositions
+    normalized_text = text
+    words = text.split()
+
+    for idx, word in enumerate(words):
+        wordNext = words[idx + 1] if idx + 1 < len(words) else ""
+        wordPrev = words[idx - 1] if idx > 0 else ""
+        if word[-1:] == ".":
+            if word[:-1].isdecimal():
+                if wordNext.lower() in months:
+                    word = pronounce_ordinal_de(int(word[:-1]))
+                    if wordPrev.lower() in ["am", "dem", "vom", "zum",
+                                            "(vom", "(am", "zum"]:
+                        word += "n"
+                    elif wordPrev.lower() not in ["der", "die", "das"]:
+                        word += "r"
+                    words[idx] = word
+            normalized_text = " ".join(words)
+    return normalized_text

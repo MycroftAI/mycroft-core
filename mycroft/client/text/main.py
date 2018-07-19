@@ -61,6 +61,7 @@ ws = None
 mutex = Lock()
 
 utterances = []
+history = []
 chat = []   # chat history, oldest at the lowest index
 line = ""
 bSimple = '--simple' in sys.argv
@@ -92,6 +93,7 @@ meter_cur = -1
 meter_thresh = -1
 
 screen_mode = 0   # 0 = main, 1 = help, others in future?
+subscreen = 0     # for help pages, etc.
 FULL_REDRAW_FREQUENCY = 10    # seconds between full redraws
 last_full_redraw = time.time()-(FULL_REDRAW_FREQUENCY-1)  # seed for 1s redraw
 screen_lock = Lock()
@@ -142,6 +144,7 @@ def load_settings():
     global cy_chat_area
     global show_last_key
     global max_log_lines
+    global show_meter
 
     try:
         with io.open(config_file, 'r') as f:
@@ -315,6 +318,7 @@ def add_log_message(message):
 def clear_log():
     global filteredLog
     global mergedLog
+    global log_line_offset
 
     mergedLog = []
     filteredLog = []
@@ -356,6 +360,18 @@ def handle_speak(event):
         print(">> " + utterance)
     else:
         chat.append(">> " + utterance)
+    draw_screen()
+
+
+def handle_utterance(event):
+    global chat
+    global history
+    utterance = event.data.get('utterances')[0]
+    history.append(utterance)
+    if bSimple:
+        print(utterance)
+    else:
+        chat.append(utterance)
     draw_screen()
 
 
@@ -504,16 +520,16 @@ def draw_screen():
     if not scr:
         return
 
-    if not screen_mode == 0:
-        return
-
     # Use a lock to prevent screen corruption when drawing
     # from multiple threads
     with screen_lock:
-        _do_drawing(scr)
+        if screen_mode == 0:
+            do_draw_main(scr)
+        elif screen_mode == 1:
+            do_draw_help(scr)
 
 
-def _do_drawing(scr):
+def do_draw_main(scr):
     global log_line_offset
     global longest_visible_line
     global last_full_redraw
@@ -557,7 +573,7 @@ def _do_drawing(scr):
         scr.addstr(0, 0, "Log Output:" + " " * (curses.COLS - 31) +
                    str(start) + "-" + str(end) + " of " + str(cLogs),
                    CLR_HEADING)
-    ver = " mycroft-core "+mycroft.version.CORE_VERSION_STR+" ==="
+    ver = " mycroft-core " + mycroft.version.CORE_VERSION_STR + " ==="
     scr.addstr(1, 0, "=" * (curses.COLS-1-len(ver)), CLR_HEADING)
     scr.addstr(1, curses.COLS-1-len(ver), ver, CLR_HEADING)
 
@@ -686,53 +702,63 @@ def _do_drawing(scr):
 def make_titlebar(title, bar_length):
     return title + " " + ("=" * (bar_length - 1 - len(title)))
 
+##############################################################################
+# Help system
 
 help_struct = [
-    ('Keyboard shortcuts',
-     [("Ctrl+N / Ctrl+P", "scroll thru query history"),
-      ("Up/Down/PgUp/PgDn",  "scroll thru log history"),
-      ("Ctrl+T / Ctrl+PgUp",       "scroll to top (oldest)"),
-      ("Ctrl+B / Ctrl+PgDn",       "scroll to bottom (newest)"),
-      ("Left / Right",             "scroll long lines left/right"),
-      ("Home",                     "scroll to start of long lines"),
-      ("End",                      "scroll to end of long lines")
-      ]
-     ),
-    ("Commands (type ':' to enter command mode)",
-     [(":help",                   "this screen"),
-      (":quit or :exit",          "exit the program"),
-      (":meter (show|hide)",      "display of microphone level"),
-      (":filter [remove] 'str'",  "adds or removes a log filter"),
+    (
+     'Log Scrolling shortcuts',
+     [
+      ("Up / Down / PgUp / PgDn",   "scroll thru history"),
+      ("Ctrl+T / Ctrl+PgUp",        "scroll to top of logs (jump to oldest)"),
+      ("Ctrl+B / Ctrl+PgDn",        "scroll to bottom of logs" +
+                                    "(jump to newest)"),
+      ("Left / Right",              "scroll long lines left/right"),
+      ("Home / End",                "scroll to start/end of long lines")
+     ]
+    ),
+    (
+     "Query History shortcuts",
+     [
+      ("Ctrl+N / Ctrl+Right",       "previous query"),
+      ("Ctrl+P / Ctrl+Left",        "next query")
+     ]
+    ),
+    (
+     "General Commands (type ':' to enter command mode)",
+     [
+      (":quit or :exit",        "exit the program"),
+      (":meter (show|hide)",    "display the microphone level"),
+      (":keycode (show|hide)",  "display typed key codes (mainly debugging)"),
+      (":history (# lines)",    "set size of visible history buffer"),
+      (":clear log",            "flush the logs")
+     ]
+    ),
+    (
+     "Log Manipulation Commands",
+     [
+      (":filter 'STR'",         "adds a log filter (optional quotes)"),
+      (":filter remove 'STR'",  "removes a log filter"),
       (":filter (clear|reset)", "reset filters"),
-      (":filter (show|list)", "display current filters"),
-      (":history (# lines)", "set number of history lines"),
-      (":find 'str'", "show logs containing 'str'"),
-      (":keycode (show|hide)", "display keyboard codes"),
-      (":clear log", "flush the logs"),
-      (":skills", "list installed skills"),
-      (":activate 'skill'", "activate skill"),
-      (":deactivate 'skill'", "deactivate skill"),
-      (":keep 'skill'", ("deactivate all skills except",
-                         "the indicated skill"))
-      ]
-     )
+      (":filter (show|list)",   "display current filters"),
+      (":find 'STR'",           "show logs containing 'str'")
+     ]
+    ),
+    (
+     "Skill Debugging Commands",
+     [
+      (":skills",               "list installed skills"),
+      (":activate SKILL",       "activate skill, e.g. 'activate skill-wiki'"),
+      (":deactivate SKILL",     "deactivate skill"),
+      (":keep SKILL",           "deactivate all skills except " +
+                                "the indicated skill")
+     ]
+    )
 ]
-
-
-def help_new_page():
-    # Header
-    scr.erase()
-    scr.addstr(0, 0, center(25) + "Mycroft Command Line Help",
-               CLR_CMDLINE)
-    scr.addstr(1, 0, "=" * (curses.COLS - 1), CLR_CMDLINE)
-
-
-def help_footer(page, total):
-    global scr
-    text = "Page {} of {} [ Press any key to continue ]".format(page, total)
-    scr.addstr(curses.LINES - 1, 0, center(len(text)) + text, CLR_HEADING)
-    scr.refresh()
-    scr.get_wch()  # blocks
+help_longest = 0
+for s in help_struct:
+    for ent in s[1]:
+        help_longest = max(help_longest, len(ent[0]))
 
 
 def num_help_pages():
@@ -742,42 +768,81 @@ def num_help_pages():
     return ceil(lines / (curses.LINES - 4))
 
 
-def show_help():
-    global scr
-    global screen_mode
+def do_draw_help(scr):
 
-    if not scr:
-        return
-    screen_mode = 1  # showing help (prevents overwrite by log updates)
+    def render_header():
+        scr.erase()
+        scr.addstr(0, 0, center(25) + "Mycroft Command Line Help", CLR_HEADING)
+        scr.addstr(1, 0, "=" * (curses.COLS - 1), CLR_HEADING)
 
-    help_new_page()
-    y_pos = 2
-    page = 1
+    def render_help(txt, y_pos, i, first_line, last_line, clr):
+        if i >= first_line and i < last_line:
+            scr.addstr(y_pos, 0, txt, clr)
+            y_pos += 1
+        return y_pos
+
+    def render_footer(page, total):
+        text = "Page {} of {} [ Any key to continue ]".format(page, total)
+        scr.addstr(curses.LINES - 1, 0, center(len(text)) + text, CLR_HEADING)
+
+    render_header()
+    y = 2
+    page = subscreen + 1
+
+    first = subscreen * (curses.LINES - 7)  # account for header
+    last = first + (curses.LINES - 7)       # account for header/footer
+    i = 0
     for section in help_struct:
-        scr.addstr(y_pos, 0, section[0], CLR_CMDLINE)
-        y_pos += 1
-        scr.addstr(y_pos, 0, "=" * (curses.COLS - 1), CLR_CMDLINE)
-        y_pos += 1
+        y = render_help(section[0], y, i, first, last, CLR_HEADING)
+        i += 1
+        y = render_help("=" * (curses.COLS - 1), y, i, first, last,
+                        CLR_HEADING)
+        i += 1
+
         for line in section[1]:
-            scr.addstr(y_pos, 0, line[0])
-            if isinstance(line[1], tuple):
-                explaination = line[1]
-            else:
-                explaination = (line[1],)
-            for e in explaination:
-                scr.addstr(y_pos, 40, e)
-                y_pos += 1
-                if y_pos >= curses.LINES - 2:
-                    help_footer(page, num_help_pages())
-                    page += 1
-                    help_new_page()
-                    y_pos = 2
+            words = line[1].split()
+            ln = line[0].ljust(help_longest + 1)
+            for w in words:
+                if len(ln) + 1 + len(w) < curses.COLS:
+                    ln += " "+w
+                else:
+                    y = render_help(ln, y, i, first, last, CLR_CMDLINE)
+                    ln = " ".ljust(help_longest + 2) + w
+            y = render_help(ln, y, i, first, last, CLR_CMDLINE)
+            i += 1
 
-    if y_pos != 2:  # If we didn't just have a page break pause and show footer
-        help_footer(page, num_help_pages())
-    screen_mode = 0  # back to main screen
-    draw_screen()
+        y = render_help(" ", y, i, first, last, CLR_CMDLINE)
+        i += 1
 
+        if i > last:
+            break
+
+    render_footer(page, num_help_pages())
+
+
+def show_help():
+    global screen_mode
+    global subscreen
+
+    if screen_mode != 1:
+        screen_mode = 1
+        subscreen = 0
+        draw_screen()
+
+
+def show_next_help():
+    global screen_mode
+    global subscreen
+
+    if screen_mode == 1:
+        subscreen += 1
+        if subscreen >= num_help_pages():
+            screen_mode = 0
+        draw_screen()
+
+
+##############################################################################
+# Skill debugging
 
 def show_skills(skills):
     """
@@ -949,6 +1014,7 @@ def gui_main(stdscr):
     global longest_visible_line
     global find_str
     global last_key
+    global history
 
     scr = stdscr
     init_screen()
@@ -956,23 +1022,30 @@ def gui_main(stdscr):
     ws = WebsocketClient()
     ws.on('speak', handle_speak)
     ws.on('message', handle_message)
+    ws.on('recognizer_loop:utterance', handle_utterance)
     event_thread = Thread(target=connect)
     event_thread.setDaemon(True)
     event_thread.start()
 
-    history = []
     hist_idx = -1  # index, from the bottom
     try:
-        input = ""
         while True:
             draw_screen()
 
-            c = scr.get_wch()
+            c = scr.get_wch()  # unicode char or int for special keys
+            if isinstance(c, int):
+                code = c
+            else:
+                code = ord(c)
 
             # Convert VT100 ESC codes generated by some terminals
-            if c == 27:
-                c1 = scr.get_wch()
-                c2 = scr.get_wch()
+            if code == 27:
+                scr.timeout(100)
+                c1 = scr.getch()
+                if c1 != -1:
+                    c2 = scr.getch()
+                scr.timeout(-1)
+
                 if c1 == 79 and c2 == 120:
                     c = curses.KEY_UP
                 elif c1 == 79 and c2 == 116:
@@ -990,12 +1063,35 @@ def gui_main(stdscr):
                 elif c1 == 79 and c2 == 113:
                     c = curses.KEY_END
                 else:
-                    c = c2
-                last_key = str(c)+",ESC+"+str(c1)+"+"+str(c2)
-            else:
-                last_key = str(c)
+                    c = c1
 
-            if c == '\n' or c == 10 or c == 13:
+                if c1 != -1:
+                    last_key = str(c) + ",ESC+" + str(c1) + "+" + str(c2)
+                    code = c
+                else:
+                    last_key = "ESC"
+            else:
+                if code < 33:
+                    last_key = str(code)
+                else:
+                    last_key = str(code)
+
+            if code == 27:    # Hitting ESC twice clears the entry line
+                hist_idx = -1
+                line = ""
+            elif c == curses.KEY_RESIZE:
+                # Generated by Curses when window/screen has been resized
+                y, x = scr.getmaxyx()
+                curses.resizeterm(y, x)
+
+                # resizeterm() causes another curses.KEY_RESIZE, so
+                # we need to capture that to prevent a loop of resizes
+                c = scr.get_wch()
+            elif screen_mode == 1:
+                # in Help mode, any key goes to next page
+                show_next_help()
+                continue
+            elif c == '\n' or code == 10 or code == 13 or code == 343:
                 # ENTER sends the typed line to be processed by Mycroft
                 if line == "":
                     continue
@@ -1006,21 +1102,19 @@ def gui_main(stdscr):
                         break
                 else:
                     # Treat this as an utterance
-                    history.append(line)
-                    chat.append(line)
                     ws.emit(Message("recognizer_loop:utterance",
                                     {'utterances': [line.strip()],
                                      'lang': 'en-us'}))
                 hist_idx = -1
                 line = ""
-            elif c == 16 or c == 545:  # Ctrl+P or Ctrl+Left (Previous)
+            elif code == 16 or code == 545:  # Ctrl+P or Ctrl+Left (Previous)
                 # Move up the history stack
                 hist_idx = clamp(hist_idx + 1, -1, len(history) - 1)
                 if hist_idx >= 0:
                     line = history[len(history) - hist_idx - 1]
                 else:
                     line = ""
-            elif c == 14 or c == 560:  # Ctrl+N or Ctrl+Right (Next)
+            elif code == 14 or code == 560:  # Ctrl+N or Ctrl+Right (Next)
                 # Move down the history stack
                 hist_idx = clamp(hist_idx - 1, -1, len(history) - 1)
                 if hist_idx >= 0:
@@ -1051,32 +1145,24 @@ def gui_main(stdscr):
             elif c == curses.KEY_PPAGE:  # aka PgUp
                 # PgUp to go up a page in the logs
                 scroll_log(False)
-            elif c == 2 or c == 550:  # Ctrl+B or Ctrl+PgDn
+            elif code == 2 or code == 550:  # Ctrl+B or Ctrl+PgDn
                 scroll_log(True, max_log_lines)
-            elif c == 20 or c == 555:  # Ctrl+T or Ctrl+PgUp
+            elif code == 20 or code == 555:  # Ctrl+T or Ctrl+PgUp
                 scroll_log(False, max_log_lines)
-            elif c == curses.KEY_RESIZE:
-                # Generated by Curses when window/screen has been resized
-                y, x = scr.getmaxyx()
-                curses.resizeterm(y, x)
-
-                # resizeterm() causes another curses.KEY_RESIZE, so
-                # we need to capture that to prevent a loop of resizes
-                c = scr.get_wch()
-            elif c == curses.KEY_BACKSPACE or c == 127:
+            elif code == curses.KEY_BACKSPACE or code == 127:
                 # Backspace to erase a character in the utterance
                 line = line[:-1]
-            elif c == 6:  # Ctrl+F (Find)
+            elif code == 6:  # Ctrl+F (Find)
                 line = ":find "
-            elif c == 18:  # Ctrl+R (Redraw)
+            elif code == 18:  # Ctrl+R (Redraw)
                 scr.erase()
                 scr.refresh()
-            elif c == 24:  # Ctrl+X (Exit)
+            elif code == 24:  # Ctrl+X (Exit)
                 if find_str:
                     # End the find session
                     find_str = None
                     rebuild_filtered_log()
-            elif isinstance(c, str):
+            elif code > 31 and isinstance(c, str):
                 # Accept typed character in the utterance
                 line += c
 

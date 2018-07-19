@@ -170,7 +170,7 @@ class TestNiceDateFormat(unittest.TestCase):
         self.assertEqual(nice_time(dt),
                          "one twenty two")
         self.assertEqual(nice_time(dt, use_ampm=True),
-                         "one twenty two PM")
+                         "one twenty two p.m.")
         self.assertEqual(nice_time(dt, speech=False),
                          "1:22")
         self.assertEqual(nice_time(dt, speech=False, use_ampm=True),
@@ -190,7 +190,7 @@ class TestNiceDateFormat(unittest.TestCase):
         self.assertEqual(nice_time(dt),
                          "one o'clock")
         self.assertEqual(nice_time(dt, use_ampm=True),
-                         "one PM")
+                         "one p.m.")
         self.assertEqual(nice_time(dt, speech=False),
                          "1:00")
         self.assertEqual(nice_time(dt, speech=False, use_ampm=True),
@@ -210,7 +210,7 @@ class TestNiceDateFormat(unittest.TestCase):
         self.assertEqual(nice_time(dt),
                          "one oh two")
         self.assertEqual(nice_time(dt, use_ampm=True),
-                         "one oh two PM")
+                         "one oh two p.m.")
         self.assertEqual(nice_time(dt, speech=False),
                          "1:02")
         self.assertEqual(nice_time(dt, speech=False, use_ampm=True),
@@ -230,7 +230,7 @@ class TestNiceDateFormat(unittest.TestCase):
         self.assertEqual(nice_time(dt),
                          "twelve oh two")
         self.assertEqual(nice_time(dt, use_ampm=True),
-                         "twelve oh two AM")
+                         "twelve oh two a.m.")
         self.assertEqual(nice_time(dt, speech=False),
                          "12:02")
         self.assertEqual(nice_time(dt, speech=False, use_ampm=True),
@@ -250,7 +250,7 @@ class TestNiceDateFormat(unittest.TestCase):
         self.assertEqual(nice_time(dt),
                          "one oh two")
         self.assertEqual(nice_time(dt, use_ampm=True),
-                         "one oh two AM")
+                         "one oh two a.m.")
         self.assertEqual(nice_time(dt, speech=False),
                          "1:02")
         self.assertEqual(nice_time(dt, speech=False, use_ampm=True),

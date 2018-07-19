@@ -98,8 +98,12 @@ class ChromecastService(AudioBackend):
 
     def stop(self):
         """ Stop playback and quit app. """
-        self.cast.media_controller.stop()
-        self.cast.quit_app()
+        if self.cast.media_controller.is_playing:
+            self.cast.media_controller.stop()
+            self.cast.quit_app()
+            return True
+        else:
+            return False
 
     def pause(self):
         """ Pause current playback. """

@@ -70,8 +70,9 @@ def unmunge_message(message, skill_id):
     """
     if isinstance(message, Message) and isinstance(message.data, dict):
         skill_id = to_alnum(skill_id)
-        for key in message.data:
-            if key[:len(skill_id)] == skill_id:
+        for key in list(message.data.keys()):
+            if key.startswith(skill_id):
+                # replace the munged key with the real one
                 new_key = key[len(skill_id):]
                 message.data[new_key] = message.data.pop(key)
 
@@ -124,8 +125,8 @@ def load_skill(skill_descriptor, emitter, skill_id, BLACKLISTED_SKILLS=None):
             skill.skill_id = skill_id
             skill.load_data_files(path)
             # Set up intent handlers
-            skill.initialize()
             skill._register_decorated()
+            skill.initialize()
             LOG.info("Loaded " + name)
 
             # The very first time a skill is run, speak the intro
@@ -359,6 +360,12 @@ class MycroftSkill(object):
         data = data or {}
 
         def get_announcement():
+            nonlocal announcement
+            # The dialog param can be either a spoken string or a dialog file
+            # TODO: 18.08 merge dialog/announcement
+            if not exists(join(self.root_dir, 'dialog', self.lang,
+                               dialog + '.dialog')) and not announcement:
+                announcement = dialog
             return announcement or self.dialog_renderer.render(dialog, data)
 
         if not get_announcement():
@@ -372,13 +379,8 @@ class MycroftSkill(object):
             else:
                 return get_announcement()
 
-        # TODO: Load with something like mycroft.dialog.get_all()
-        cancel_voc = 'text/' + self.lang + '/cancel.voc'
-        with open(resolve_resource_file(cancel_voc)) as f:
-            cancel_words = list(filter(bool, f.read().split('\n')))
-
         def is_cancel(utterance):
-            return utterance in cancel_words
+            return self.is_match(utterance, 'cancel')
 
         def validator_default(utterance):
             # accept anything except 'cancel'
@@ -412,6 +414,53 @@ class MycroftSkill(object):
 
             line = on_fail_fn(response)
             self.speak(line, expect_response=True)
+
+    def ask_yesno(self, prompt, data=None):
+        """
+        Read prompt and wait for a yes/no answer
+
+        This automatically deals with translation and common variants,
+        such as 'yeah', 'sure', etc.
+
+        Args:
+              prompt (str): a dialog id or string to read
+        Returns:
+              string:  'yes', 'no' or whatever the user response if not
+                       one of those, including None
+        """
+        resp = self.get_response(dialog=prompt, data=data)
+
+        if self.is_match(resp, 'yes'):
+            return 'yes'
+
+        if self.is_match(resp, 'no'):
+            return 'no'
+
+        return resp
+
+    def is_match(self, utt, voc_filename, lang=None):
+        """ Determine if the given utterance contains the vocabular proviced
+
+        This checks for vocabulary match in the utternce instead of the other
+        way around to allow the user to say things like "yes, please" and
+        still match against voc files with only "yes" in it.
+
+        Args:
+            utt (str): Utterance to be tested
+            voc_filename (str): Name of vocabulary file (e.g. 'yes' for
+                                'res/text/en-us/yes.voc')
+            lang (str): Language code, defaults to self.long
+
+        Returns:
+            bool: True if the utterance has the given vocabulary it
+        """
+        lang = lang or self.lang
+        voc = join('text', self.lang, voc_filename+".voc")
+        with open(resolve_resource_file(voc)) as f:
+            words = list(filter(bool, f.read().split('\n')))
+        if (utt and any(i.strip() in utt for i in words)):
+            return True
+        return False
 
     def report_metric(self, name, data):
         """
@@ -695,10 +744,12 @@ class MycroftSkill(object):
                 handler:     function to register with intent
         """
         name = str(self.skill_id) + ':' + intent_file
-        self.emitter.emit(Message("padatious:register_intent", {
+        data = {
             "file_name": join(self.vocab_dir, intent_file),
             "name": name
-        }))
+        }
+        self.emitter.emit(Message("padatious:register_intent", data))
+        self.registered_intents.append((intent_file, data))
         self.add_event(name, handler, 'mycroft.skill.handler')
 
     def register_entity_file(self, entity_file):
@@ -781,8 +832,11 @@ class MycroftSkill(object):
         if intent_name in names:
             intent = intents[names.index(intent_name)]
             self.registered_intents.remove((intent_name, intent))
-            intent.name = intent_name
-            self.register_intent(intent, None)
+            if ".intent" in intent_name:
+                self.register_intent_file(intent_name, None)
+            else:
+                intent.name = intent_name
+                self.register_intent(intent, None)
             LOG.debug('Enabling intent ' + intent_name)
             return True
         LOG.error('Could not enable ' + intent_name + ', it hasn\'t been '

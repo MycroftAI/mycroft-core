@@ -78,8 +78,12 @@ class MopidyService(AudioBackend):
         self.mopidy.play()
 
     def stop(self):
-        self.mopidy.clear_list()
-        self.mopidy.stop()
+        if self.mopidy.is_playing():
+            self.mopidy.clear_list()
+            self.mopidy.stop()
+            return True
+        else:
+            return False
 
     def pause(self):
         self.mopidy.pause()
