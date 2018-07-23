@@ -90,7 +90,7 @@ function launch-process() {
 
     # Launch process in background, sending log to scripts/log/mycroft-*.log
     echo "Starting $1"
-    python ${_script} $_params
+    python3 ${_script} $_params
 }
 
 function launch-background() {
@@ -119,7 +119,7 @@ function launch-background() {
     fi
 
     # Launch process in background, sending log to scripts/log/mycroft-*.log
-    python ${_script} $_params >> ${scripts_dir}/logs/mycroft-${1}.log 2>&1 &
+    python3 ${_script} $_params >> ${scripts_dir}/logs/mycroft-${1}.log 2>&1 &
 }
 
 function check-dependencies() {
@@ -184,7 +184,7 @@ case ${_opt} in
     ;;
   "audiotest")
     source ${VIRTUALENV_ROOT}/bin/activate
-    python -m mycroft.util.audio_test "${@:1}"
+    python3 -m mycroft.util.audio_test "${@:1}"
     ;;
   "audioaccuracytest")
     launch-process ${_opt}
@@ -200,4 +200,3 @@ case ${_opt} in
     help
     ;;
 esac
-
