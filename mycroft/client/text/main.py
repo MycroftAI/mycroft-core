@@ -58,8 +58,6 @@ except (locale.Error, ValueError):
     sys.exit(1)
 
 ws = None
-mutex = Lock()
-
 utterances = []
 history = []
 chat = []   # chat history, oldest at the lowest index
@@ -75,6 +73,7 @@ auto_scroll = True
 last_key = ""
 show_last_key = False
 
+log_lock = Lock()
 max_log_lines = 5000
 mergedLog = []
 filteredLog = []
@@ -97,6 +96,7 @@ subscreen = 0     # for help pages, etc.
 FULL_REDRAW_FREQUENCY = 10    # seconds between full redraws
 last_full_redraw = time.time()-(FULL_REDRAW_FREQUENCY-1)  # seed for 1s redraw
 screen_lock = Lock()
+is_screen_dirty = True
 
 # Curses color codes (reassigned at runtime)
 CLR_HEADING = 0
@@ -195,7 +195,7 @@ class LogMonitorThread(Thread):
                 if not st_results.st_mtime == self.st_results.st_mtime:
                     self.read_file_from(self.st_results.st_size)
                     self.st_results = st_results
-                    draw_screen()
+                    set_screen_dirty()
             finally:
                 time.sleep(0.1)
 
@@ -205,6 +205,7 @@ class LogMonitorThread(Thread):
         global filteredLog
         global mergedLog
         global log_line_offset
+        global log_lock
 
         with io.open(self.filename) as fh:
             fh.seek(bytefrom)
@@ -224,25 +225,27 @@ class LogMonitorThread(Thread):
                             ignore = True
                             break
 
-                if ignore:
-                    mergedLog.append(self.logid + line.strip())
-                else:
-                    if bSimple:
-                        print(line.strip())
-                    else:
-                        filteredLog.append(self.logid + line.strip())
+                with log_lock:
+                    if ignore:
                         mergedLog.append(self.logid + line.strip())
-                        if not auto_scroll:
-                            log_line_offset += 1
+                    else:
+                        if bSimple:
+                            print(line.strip())
+                        else:
+                            filteredLog.append(self.logid + line.strip())
+                            mergedLog.append(self.logid + line.strip())
+                            if not auto_scroll:
+                                log_line_offset += 1
 
         # Limit log to  max_log_lines
         if len(mergedLog) >= max_log_lines:
-            cToDel = len(mergedLog) - max_log_lines
-            if len(filteredLog) == len(mergedLog):
-                del filteredLog[:cToDel]
-            del mergedLog[:cToDel]
-            if len(filteredLog) != len(mergedLog):
-                rebuild_filtered_log()
+            with log_lock:
+                cToDel = len(mergedLog) - max_log_lines
+                if len(filteredLog) == len(mergedLog):
+                    del filteredLog[:cToDel]
+                del mergedLog[:cToDel]
+                if len(filteredLog) != len(mergedLog):
+                    rebuild_filtered_log()
 
 
 def start_log_monitor(filename):
@@ -267,7 +270,7 @@ class MicMonitorThread(Thread):
                         not st_results.st_mtime == self.st_results.st_mtime):
                     self.read_file_from(0)
                     self.st_results = st_results
-                    draw_screen()
+                    set_screen_dirty()
             finally:
                 time.sleep(0.2)
 
@@ -288,6 +291,32 @@ class MicMonitorThread(Thread):
                 meter_thresh = float(parts[-1])
                 meter_cur = float(parts[-2].split(" ")[0])
 
+class ScreenDrawThread(Thread):
+    def __init__(self):
+        Thread.__init__(self)
+
+    def run(self):
+        global scr
+        global screen_lock
+        global is_screen_dirty
+        global log_lock
+
+        while scr:
+            try:
+                if is_screen_dirty:
+                    # Use a lock to prevent screen corruption when drawing
+                    # from multiple threads
+                    with screen_lock:
+                        is_screen_dirty = False
+
+                        if screen_mode == 0:
+                            with log_lock:
+                                do_draw_main(scr)
+                        elif screen_mode == 1:
+                            do_draw_help(scr)
+            finally:
+                time.sleep(0.01)
+
 
 def start_mic_monitor(filename):
     if os.path.isfile(filename):
@@ -301,52 +330,54 @@ def add_log_message(message):
     global filteredLog
     global mergedLog
     global log_line_offset
-    global screen_lock
+    global log_lock
 
-    message = "@" + message       # the first byte is a code
-    filteredLog.append(message)
-    mergedLog.append(message)
+    with log_lock:
+        message = "@" + message       # the first byte is a code
+        filteredLog.append(message)
+        mergedLog.append(message)
 
-    if log_line_offset != 0:
-        log_line_offset = 0  # scroll so the user can see the message
-    if scr:
-        with screen_lock:
-            scr.erase()
-            scr.refresh()
+        if log_line_offset != 0:
+            log_line_offset = 0  # scroll so the user can see the message
+    set_screen_dirty()
 
 
 def clear_log():
     global filteredLog
     global mergedLog
     global log_line_offset
+    global log_lock
 
-    mergedLog = []
-    filteredLog = []
-    log_line_offset = 0
+    with log_lock:
+        mergedLog = []
+        filteredLog = []
+        log_line_offset = 0
 
 
 def rebuild_filtered_log():
     global filteredLog
     global mergedLog
+    global log_lock
 
-    filteredLog = []
-    for line in mergedLog:
-        # Apply filters
-        ignore = False
-
-        if find_str and find_str != "":
-            # Searching log
-            if find_str not in line:
-                ignore = True
-        else:
+    with log_lock:
+        filteredLog = []
+        for line in mergedLog:
             # Apply filters
-            for filtered_text in log_filters:
-                if filtered_text in line:
-                    ignore = True
-                    break
+            ignore = False
 
-        if not ignore:
-            filteredLog.append(line)
+            if find_str and find_str != "":
+                # Searching log
+                if find_str not in line:
+                    ignore = True
+            else:
+                # Apply filters
+                for filtered_text in log_filters:
+                    if filtered_text in line:
+                        ignore = True
+                        break
+
+            if not ignore:
+                filteredLog.append(line)
 
 
 ##############################################################################
@@ -360,7 +391,7 @@ def handle_speak(event):
         print(">> " + utterance)
     else:
         chat.append(">> " + utterance)
-    draw_screen()
+    set_screen_dirty()
 
 
 def handle_utterance(event):
@@ -372,7 +403,7 @@ def handle_utterance(event):
         print(utterance)
     else:
         chat.append(utterance)
-    draw_screen()
+    set_screen_dirty()
 
 
 def connect():
@@ -438,15 +469,16 @@ def scroll_log(up, num_lines=None):
     if not num_lines:
         num_lines = size_log_area // 2
 
-    if up:
-        log_line_offset -= num_lines
-    else:
-        log_line_offset += num_lines
-    if log_line_offset > len(filteredLog):
-        log_line_offset = len(filteredLog) - 10
-    if log_line_offset < 0:
-        log_line_offset = 0
-    draw_screen()
+    with log_lock:
+        if up:
+            log_line_offset -= num_lines
+        else:
+            log_line_offset += num_lines
+        if log_line_offset > len(filteredLog):
+            log_line_offset = len(filteredLog) - 10
+        if log_line_offset < 0:
+            log_line_offset = 0
+    set_screen_dirty()
 
 
 def _do_meter(height):
@@ -512,21 +544,12 @@ def _do_meter(height):
             scr.addstr(curses.LINES - 1 - i, curses.COLS - len(str_thresh) - 4,
                        "*", clr_bar)
 
-
-def draw_screen():
+def set_screen_dirty():
+    global is_screen_dirty
     global screen_lock
-    global scr
 
-    if not scr:
-        return
-
-    # Use a lock to prevent screen corruption when drawing
-    # from multiple threads
     with screen_lock:
-        if screen_mode == 0:
-            do_draw_main(scr)
-        elif screen_mode == 1:
-            do_draw_help(scr)
+        is_screen_dirty = True
 
 
 def do_draw_main(scr):
@@ -696,6 +719,8 @@ def do_draw_main(scr):
 
     _do_meter(cy_chat_area + 2)
     scr.addstr(curses.LINES - 1, 2, l, CLR_INPUT)
+
+    # Curses doesn't actually update the display until refresh() is called
     scr.refresh()
 
 
@@ -827,7 +852,7 @@ def show_help():
     if screen_mode != 1:
         screen_mode = 1
         subscreen = 0
-        draw_screen()
+        set_screen_dirty()
 
 
 def show_next_help():
@@ -838,7 +863,7 @@ def show_next_help():
         subscreen += 1
         if subscreen >= num_help_pages():
             screen_mode = 0
-        draw_screen()
+        set_screen_dirty()
 
 
 ##############################################################################
@@ -979,7 +1004,7 @@ def handle_cmd(cmd):
             show_skills(message.data)
             scr.get_wch()  # blocks
             screen_mode = 0  # back to main screen
-            draw_screen()
+            set_screen_dirty()
     elif "deactivate" in cmd:
         skills = cmd.split()[1:]
         if len(skills) > 0:
@@ -1015,9 +1040,12 @@ def gui_main(stdscr):
     global find_str
     global last_key
     global history
+    global screen_lock
 
     scr = stdscr
     init_screen()
+    scr.keypad(1)
+    scr.notimeout(1)
 
     ws = WebsocketClient()
     ws.on('speak', handle_speak)
@@ -1027,10 +1055,14 @@ def gui_main(stdscr):
     event_thread.setDaemon(True)
     event_thread.start()
 
+    gui_thread = ScreenDrawThread()
+    gui_thread.setDaemon(True)  # this thread won't prevent prog from exiting
+    gui_thread.start()
+
     hist_idx = -1  # index, from the bottom
     try:
         while True:
-            draw_screen()
+            set_screen_dirty()
 
             c = scr.get_wch()  # unicode char or int for special keys
             if isinstance(c, int):
@@ -1040,11 +1072,25 @@ def gui_main(stdscr):
 
             # Convert VT100 ESC codes generated by some terminals
             if code == 27:
-                scr.timeout(100)
-                c1 = scr.getch()
-                if c1 != -1:
-                    c2 = scr.getch()
-                scr.timeout(-1)
+                # NOTE:  Not sure exactly why, but the screen can get corrupted
+                # if we draw to the screen while doing a scr.getch().  So
+                # lock screen updates until the VT100 sequence has been
+                # completely read.
+                with screen_lock:
+                    scr.timeout(0)
+                    c1 = -1
+                    start = time.time()
+                    while c1 == -1:
+                        c1 = scr.getch()
+                        if time.time()-start > 1:
+                            break  # 1 second timeout waiting for ESC code
+
+                    c2 = -1
+                    while c2 == -1:
+                        c2 = scr.getch()
+                        if time.time()-start > 1:  # 1 second timeout
+                            break  # 1 second timeout waiting for ESC code
+                    scr.timeout(-1)
 
                 if c1 == 79 and c2 == 120:
                     c = curses.KEY_UP
@@ -1156,7 +1202,6 @@ def gui_main(stdscr):
                 line = ":find "
             elif code == 18:  # Ctrl+R (Redraw)
                 scr.erase()
-                scr.refresh()
             elif code == 24:  # Ctrl+X (Exit)
                 if find_str:
                     # End the find session
