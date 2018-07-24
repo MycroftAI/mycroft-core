@@ -291,6 +291,7 @@ class MicMonitorThread(Thread):
                 meter_thresh = float(parts[-1])
                 meter_cur = float(parts[-2].split(" ")[0])
 
+
 class ScreenDrawThread(Thread):
     def __init__(self):
         Thread.__init__(self)
@@ -543,6 +544,7 @@ def _do_meter(height):
                 clr_bar = curses.color_pair(5)   # dark blue for 'silent'
             scr.addstr(curses.LINES - 1 - i, curses.COLS - len(str_thresh) - 4,
                        "*", clr_bar)
+
 
 def set_screen_dirty():
     global is_screen_dirty
