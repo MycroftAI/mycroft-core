@@ -14,6 +14,7 @@
 #
 import sys
 from mycroft.configuration.config import Configuration
+from mycroft.util.log import LOG
 
 
 def main():
@@ -28,7 +29,7 @@ def main():
     try:
         enclosure.run()
     except Exception as e:
-        print(e)
+        LOG.error(e)
     finally:
         enclosure.shutdown()
         sys.exit()
