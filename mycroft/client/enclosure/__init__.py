@@ -286,8 +286,7 @@ class Mark1Enclosure(Enclosure):
         self.mouth = EnclosureMouth(self.writer)
         self.system = EnclosureArduino(self.writer)
         self.weather = EnclosureWeather(self.writer)
-        self.__register_events()
-        self.__reset()
+        self.reset()
         self.arduino_responded = True
 
         # verify internet connection and prompt user on bootup if needed
@@ -297,8 +296,6 @@ class Mark1Enclosure(Enclosure):
             # receive the "speak".  This was sometimes happening too
             # quickly and the user wasn't notified what to do.
             Timer(5, self._do_net_check).start()
-
-        Timer(60, self._hack_check_for_duplicates).start()
 
     def on_no_internet(self, message=None):
         if connected():
@@ -465,37 +462,7 @@ class Mark1Enclosure(Enclosure):
             LOG.error("Impossible to connect to serial port: "+str(self.port))
             raise
 
-    def __register_events(self):
-        self.ws.on('enclosure.mouth.events.activate',
-                   self.__register_mouth_events)
-        self.ws.on('enclosure.mouth.events.deactivate',
-                   self.__remove_mouth_events)
-        self.ws.on('enclosure.reset',
-                   self.__reset)
-        self.__register_mouth_events()
-
-    def activate_mouth_events(self, message=None):
-        self.__register_mouth_events(message)
-
-    def deactivate_mouth_events(self, message=None):
-        self.__remove_mouth_events(message)
-
-    def __register_mouth_events(self, event=None):
-        self.ws.on('recognizer_loop:record_begin', self.mouth_listen)
-        self.ws.on('recognizer_loop:record_end', self.mouth_reset)
-        self.ws.on('recognizer_loop:audio_output_start', self.mouth_talk)
-        self.ws.on('recognizer_loop:audio_output_end', self.mouth_reset)
-
-    def __remove_mouth_events(self, event=None):
-        self.ws.remove('recognizer_loop:record_begin',
-                       self.mouth_listen)
-        self.ws.remove('recognizer_loop:record_end', self.mouth_reset)
-        self.ws.remove('recognizer_loop:audio_output_start',
-                       self.mouth_talk)
-        self.ws.remove('recognizer_loop:audio_output_end',
-                       self.mouth_reset)
-
-    def __reset(self, event=None):
+    def reset(self, message=None):
         # Reset both the mouth and the eye elements to indicate the unit is
         # ready for input.
         self.writer.write("eyes.reset")
