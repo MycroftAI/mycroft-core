@@ -277,9 +277,6 @@ class Mark1Enclosure(Enclosure):
         # we aren't running a Mark 1 with an Arduino)
         Timer(5, self.check_for_response).start()
 
-        # Notifications from mycroft-core
-        self.ws.on("enclosure.notify.no_internet", self.on_no_internet)
-
         # initiates the web sockets on display manager
         # NOTE: this is a temporary place to initiate display manager sockets
         initiate_display_manager_ws()
@@ -303,7 +300,7 @@ class Mark1Enclosure(Enclosure):
 
         Timer(60, self._hack_check_for_duplicates).start()
 
-    def on_no_internet(self, event=None):
+    def on_no_internet(self, message=None):
         if connected():
             # One last check to see if connection was established
             return
@@ -314,7 +311,6 @@ class Mark1Enclosure(Enclosure):
 
         Mark1Enclosure._last_internet_notification = time.time()
 
-        # TODO: This should go into EnclosureMark1 subclass of Enclosure.
         if has_been_paired():
             # Handle the translation within that code.
             self.ws.emit(Message("speak", {
@@ -393,6 +389,24 @@ class Mark1Enclosure(Enclosure):
         if message and message.data:
             length = message.data.get("length", length)
         self.eyes.timed_spin(length)
+
+    def eyes_set_pixel(self, event=None):
+        idx = 0
+        r, g, b = 255, 255, 255
+        if event and event.data:
+            idx = int(event.data.get("idx", idx))
+            r = int(event.data.get("r", r))
+            g = int(event.data.get("g", g))
+            b = int(event.data.get("b", b))
+        color = (r * 65536) + (g * 256) + b
+        self.eyes.set_pixel(idx, color)
+
+    def eyes_fill(self, event=None):
+        amount = 0
+        if event and event.data:
+            percent = int(event.data.get("percentage", 0))
+            amount = int(round(23.0 * percent / 100.0))
+        self.eyes.fill(amount)
 
     def mouth_reset(self, message=None):
         self.mouth.reset()
@@ -541,39 +555,3 @@ class Mark1Enclosure(Enclosure):
                 # Kick off wifi-setup automatically
                 data = {'allow_timeout': False, 'lang': self.lang}
                 self.ws.emit(Message('system.wifi.setup', data))
-
-    def _hack_check_for_duplicates(self):
-        # TEMPORARY HACK:  Look for multiple instance of the
-        # mycroft-speech-client and/or mycroft-skills services, which could
-        # happen when upgrading a shipping Mark 1 from release 0.8.17 or
-        # before.  When found, force the unit to reboot.
-        import psutil
-
-        LOG.info("Hack to check for duplicate service instances")
-
-        count_instances = 0
-        needs_reboot = False
-        for process in psutil.process_iter():
-            if process.cmdline() == ['python2.7',
-                                     '/usr/local/bin/mycroft-speech-client']:
-                count_instances += 1
-        if (count_instances > 1):
-            LOG.info("Duplicate mycroft-speech-client found")
-            needs_reboot = True
-
-        count_instances = 0
-        for process in psutil.process_iter():
-            if process.cmdline() == ['python2.7',
-                                     '/usr/local/bin/mycroft-skills']:
-                count_instances += 1
-        if (count_instances > 1):
-            LOG.info("Duplicate mycroft-skills found")
-            needs_reboot = True
-
-        if needs_reboot:
-            LOG.info("Hack reboot...")
-            self.reader.process("unit.reboot")
-            self.ws.emit(Message("enclosure.eyes.spin"))
-            self.ws.emit(Message("enclosure.mouth.reset"))
-        # END HACK
-        # TODO: Remove this hack ASAP

@@ -50,16 +50,20 @@ class Enclosure(object):
         self.ws.on("enclosure.system.unmute", self.system_unmute)
         self.ws.on("enclosure.system.blink", self.system_blink)
         # enclosure commands for eyes
-        self.ws.on("enclosure.eyes.on", self.eyes_on)
-        self.ws.on("enclosure.eyes.off", self.eyes_off)
-        self.ws.on("enclosure.eyes.blink", self.eyes_blink)
-        self.ws.on("enclosure.eyes.narrow", self.eyes_narrow)
-        self.ws.on("enclosure.eyes.look", self.eyes_look)
-        self.ws.on("enclosure.eyes.color", self.eyes_color)
-        self.ws.on("enclosure.eyes.brightness", self.eyes_brightness)
-        self.ws.on("enclosure.eyes.reset", self.eyes_reset)
-        self.ws.on("enclosure.eyes.timedspin", self.eyes_timed_spin)
-        self.ws.on("enclosure.eyes.volume", self.eyes_volume)
+        self.ws.on('enclosure.eyes.on', self.eyes_on)
+        self.ws.on('enclosure.eyes.off', self.eyes_off)
+        self.ws.on('enclosure.eyes.blink', self.eyes_blink)
+        self.ws.on('enclosure.eyes.narrow', self.eyes_narrow)
+        self.ws.on('enclosure.eyes.look', self.eyes_look)
+        self.ws.on('enclosure.eyes.color', self.eyes_color)
+        self.ws.on('enclosure.eyes.level', self.eyes_brightness)
+        self.ws.on('enclosure.eyes.volume', self.eyes_volume)
+        self.ws.on('enclosure.eyes.spin', self.eyes_spin)
+        self.ws.on('enclosure.eyes.timedspin', self.eyes_timed_spin)
+        self.ws.on('enclosure.eyes.reset', self.eyes_reset)
+        self.ws.on('enclosure.eyes.setpixel', self.eyes_set_pixel)
+        self.ws.on('enclosure.eyes.fill', self.eyes_fill)
+
         # enclosure commands for mouth
         self.ws.on("enclosure.mouth.reset", self.mouth_reset)
         self.ws.on("enclosure.mouth.talk", self.mouth_talk)
@@ -257,6 +261,27 @@ class Enclosure(object):
         Args:
             volume (int): 0 to 11
         """
+        pass
+
+    def eyes_set_pixel(self, message=None):
+        idx = 0
+        r, g, b = 255, 255, 255
+        if message and message.data:
+            idx = int(message.data.get("idx", idx))
+            r = int(message.data.get("r", r))
+            g = int(message.data.get("g", g))
+            b = int(message.data.get("b", b))
+        color = (r * 65536) + (g * 256) + b
+
+    def eyes_fill(self, message=None):
+        """ fill a percentage of the eyes """
+        amount = 0
+        if message and message.data:
+            percent = int(message.data.get("percentage", 0))
+            amount = int(round(23.0 * percent / 100.0))
+
+    def eyes_spin(self, message=None):
+        """ make the eyes spin """
         pass
 
     def mouth_reset(self, message=None):

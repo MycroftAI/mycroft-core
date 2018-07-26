@@ -22,22 +22,6 @@ class EnclosureEyes(object):
 
     def __init__(self, writer):
         self.writer = writer
-        self.__init_events()
-
-    def __init_events(self):
-        self.ws.on('enclosure.eyes.on', self.on)
-        self.ws.on('enclosure.eyes.off', self.off)
-        self.ws.on('enclosure.eyes.blink', self.blink)
-        self.ws.on('enclosure.eyes.narrow', self.narrow)
-        self.ws.on('enclosure.eyes.look', self.look)
-        self.ws.on('enclosure.eyes.color', self.color)
-        self.ws.on('enclosure.eyes.level', self.brightness)
-        self.ws.on('enclosure.eyes.volume', self.volume)
-        self.ws.on('enclosure.eyes.spin', self.spin)
-        self.ws.on('enclosure.eyes.timedspin', self.timed_spin)
-        self.ws.on('enclosure.eyes.reset', self.reset)
-        self.ws.on('enclosure.eyes.setpixel', self.set_pixel)
-        self.ws.on('enclosure.eyes.fill', self.fill)
 
     def on(self):
         self.writer.write("eyes.on")
@@ -57,22 +41,10 @@ class EnclosureEyes(object):
     def color(self, color=(255 * 65536) + (255 * 256) + 255):
         self.writer.write("eyes.color=" + str(color))
 
-    def set_pixel(self, event=None):
-        idx = 0
-        r, g, b = 255, 255, 255
-        if event and event.data:
-            idx = int(event.data.get("idx", idx))
-            r = int(event.data.get("r", r))
-            g = int(event.data.get("g", g))
-            b = int(event.data.get("b", b))
-        color = (r * 65536) + (g * 256) + b
+    def set_pixel(self, idx, color):
         self.writer.write("eyes.set=" + str(idx) + "," + str(color))
 
-    def fill(self, event=None):
-        amount = 0
-        if event and event.data:
-            percent = int(event.data.get("percentage", 0))
-            amount = int(round(23.0 * percent / 100.0))
+    def fill(self, amount=0):
         self.writer.write("eyes.fill=" + str(amount))
 
     def brightness(self, message=None):
