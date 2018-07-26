@@ -387,21 +387,21 @@ class Mark1Enclosure(Enclosure):
             length = message.data.get("length", length)
         self.eyes.timed_spin(length)
 
-    def eyes_set_pixel(self, event=None):
+    def eyes_set_pixel(self, message=None):
         idx = 0
         r, g, b = 255, 255, 255
-        if event and event.data:
-            idx = int(event.data.get("idx", idx))
-            r = int(event.data.get("r", r))
-            g = int(event.data.get("g", g))
-            b = int(event.data.get("b", b))
+        if message and message.data:
+            idx = int(message.data.get("idx", idx))
+            r = int(message.data.get("r", r))
+            g = int(message.data.get("g", g))
+            b = int(message.data.get("b", b))
         color = (r * 65536) + (g * 256) + b
         self.eyes.set_pixel(idx, color)
 
-    def eyes_fill(self, event=None):
+    def eyes_fill(self, message=None):
         amount = 0
-        if event and event.data:
-            percent = int(event.data.get("percentage", 0))
+        if message and message.data:
+            percent = int(message.data.get("percentage", 0))
             amount = int(round(23.0 * percent / 100.0))
         self.eyes.fill(amount)
 
