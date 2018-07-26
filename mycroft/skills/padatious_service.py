@@ -109,7 +109,6 @@ class PadatiousService(FallbackSkill):
     def handle_fallback(self, message):
         if not self.finished_training_event.is_set():
             LOG.debug('Waiting for Padatious training to finish...')
-            # self.finished_training_event.wait()
             return False
 
         utt = message.data.get('utterance')
