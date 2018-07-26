@@ -64,7 +64,7 @@ class PadatiousService(FallbackSkill):
             single_thread = message.data.get('single_thread', False)
         self.finished_training_event.clear()
 
-        LOG.info('Training...'+str(single_thread))
+        LOG.info('Training... (single_thread={})'.format(single_thread))
         self.container.train(single_thread=single_thread)
         LOG.info('Training complete.')
 
