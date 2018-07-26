@@ -1058,7 +1058,8 @@ class MycroftSkill(object):
 
             Args:
                 handler:               method to be called
-                when (datetime):       when the handler should be called (local time)
+                when (datetime):       when the handler should be called
+                                       (local time)
                 data (dict, optional): data to send when the handler is called
                 name (str, optional):  friendly name parameter
         """

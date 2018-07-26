@@ -145,7 +145,7 @@ class EventScheduler(Thread):
             # Don't schedule if the event is repeating and already scheduled
             if repeat and event in self.events:
                 LOG.debug('Repeating event {} is already scheduled, discarding'
-                            .format(event))
+                          .format(event))
             else:
                 # add received event and time
                 event_list.append((sched_time, repeat, data))
@@ -226,7 +226,7 @@ class EventScheduler(Thread):
         """
         with self.event_lock:
             self.events = {k: self.events[k] for k in self.events
-                        if self.events[k] != []}
+                           if self.events[k] != []}
 
     def shutdown(self):
         """ Stop the running thread. """
