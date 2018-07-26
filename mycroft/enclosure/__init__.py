@@ -87,6 +87,7 @@ class Enclosure(object):
         self.ws.on('recognizer_loop:record_end', self.record_end)
         self.ws.on('mycroft.audio.speech.start', self.talk_start)
         self.ws.on("enclosure.notify.no_internet", self.on_no_internet)
+        self.activate_mouth_events()
 
     def shutdown(self):
         self.ws.remove("enclosure.reset", self.reset)
