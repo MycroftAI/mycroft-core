@@ -1,1 +1,1 @@
-from mycroft.enclosure.api import *
+from mycroft.enclosure.api import EnclosureAPI

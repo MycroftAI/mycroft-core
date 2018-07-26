@@ -267,6 +267,7 @@ class Enclosure(object):
         pass
 
     def eyes_set_pixel(self, message=None):
+        """
         idx = 0
         r, g, b = 255, 255, 255
         if message and message.data:
@@ -275,13 +276,17 @@ class Enclosure(object):
             g = int(message.data.get("g", g))
             b = int(message.data.get("b", b))
         color = (r * 65536) + (g * 256) + b
+        """
+        pass
 
     def eyes_fill(self, message=None):
-        """ fill a percentage of the eyes """
+        """ fill a percentage of the eyes
         amount = 0
         if message and message.data:
             percent = int(message.data.get("percentage", 0))
             amount = int(round(23.0 * percent / 100.0))
+        """
+        pass
 
     def eyes_spin(self, message=None):
         """ make the eyes spin """
