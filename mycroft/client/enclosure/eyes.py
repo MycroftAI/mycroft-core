@@ -47,10 +47,7 @@ class EnclosureEyes(object):
     def fill(self, amount=0):
         self.writer.write("eyes.fill=" + str(amount))
 
-    def brightness(self, message=None):
-        level = 30
-        if message and message.data:
-            level = message.data.get("level", level)
+    def brightness(self, level=30):
         self.writer.write("eyes.level=" + str(level))
 
     def volume(self, volume=4):
