@@ -222,7 +222,7 @@ class MycroftSkill(object):
         self.reload_skill = True  # allow reloading
         self.events = []
         self.scheduled_repeats = []
-        self.skill_id = ''
+        self.skill_id = ''  # will be set from the path, so guaranteed unique
 
     @property
     def location(self):
@@ -634,6 +634,11 @@ class MycroftSkill(object):
                     msg_type = handler_info + '.start'
                     self.emitter.emit(message.reply(msg_type, skill_data))
 
+                if once:
+                    # Remove registered one-time handler before invoking,
+                    # allowing them to re-schedule themselves.
+                    self.remove_event(name)
+
                 with stopwatch:
                     if len(signature(handler).parameters) == 0:
                         handler()
@@ -651,9 +656,6 @@ class MycroftSkill(object):
                 # append exception information in message
                 skill_data['exception'] = repr(e)
             finally:
-                if once:
-                    self.remove_event(name)
-
                 # Indicate that the skill handler has completed
                 if handler_info:
                     msg_type = handler_info + '.complete'
@@ -688,12 +690,17 @@ class MycroftSkill(object):
                     self.events.remove((_name, _handler))
                 except ValueError:
                     pass
-                try:
-                    self.emitter.remove(_name, _handler)
-                except (ValueError, KeyError):
-                    LOG.debug('{} is not registered in the emitter'.format(
-                              _name))
                 removed = True
+
+        # Because of function wrappers, the emitter doesn't always directly
+        # hold the _handler function, it sometimes holds something like
+        # 'wrapper(_handler)'.  So a call like:
+        #     self.emitter.remove(_name, _handler)
+        # will not find it, leaving an event handler with that name left behind
+        # waiting to fire if it is ever re-installed and triggered.
+        # Remove all handlers with the given name, regardless of handler.
+        if removed:
+            self.emitter.remove_all_listeners(name)
         return removed
 
     def register_intent(self, intent_parser, handler):
@@ -1051,7 +1058,7 @@ class MycroftSkill(object):
 
             Args:
                 handler:               method to be called
-                when (datetime):       when the handler should be called
+                when (datetime):       when the handler should be called (local time)
                 data (dict, optional): data to send when the handler is called
                 name (str, optional):  friendly name parameter
         """

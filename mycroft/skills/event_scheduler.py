@@ -14,7 +14,7 @@
 #
 import json
 import time
-from threading import Thread
+from threading import Thread, Lock
 
 from os.path import isfile, join, expanduser
 
@@ -25,8 +25,8 @@ from queue import Queue
 
 
 def repeat_time(sched_time, repeat):
-    """Next scheduled time for repeating event. Asserts that the
-    time is not in the past.
+    """Next scheduled time for repeating event. Guarantees that the
+    time is not in the past (but could skip interim events)
 
     Args:
         sched_time (float): Scheduled unix time for the event
@@ -35,9 +35,9 @@ def repeat_time(sched_time, repeat):
     Returns: (float) time for next event
     """
     next_time = sched_time + repeat
-    if next_time < time.time():
+    while next_time < time.time():
         # Schedule at an offset to assure no doubles
-        next_time = time.time() + repeat
+        next_time = time.time() + abs(repeat)
     return next_time
 
 
@@ -55,15 +55,14 @@ class EventScheduler(Thread):
         data_dir = expanduser(Configuration.get()['data_dir'])
 
         self.events = {}
+        self.event_lock = Lock()
+
         self.emitter = emitter
         self.isRunning = True
         self.schedule_file = join(data_dir, schedule_file)
         if self.schedule_file:
             self.load()
 
-        self.add = Queue()
-        self.remove = Queue()
-        self.update = Queue()
         self.emitter.on('mycroft.scheduler.schedule_event',
                         self.schedule_event_handler)
         self.emitter.on('mycroft.scheduler.remove_event',
@@ -86,49 +85,12 @@ class EventScheduler(Thread):
                 except Exception as e:
                     LOG.error(e)
             current_time = time.time()
-            for key in json_data:
-                event_list = json_data[key]
-                # discard non repeating events that has already happened
-                self.events[key] = [tuple(e) for e in event_list
-                                    if e[0] > current_time or e[1]]
-
-    def fetch_new_events(self):
-        """
-            Fetch new events and add to list of pending events.
-        """
-        while not self.add.empty():
-            event, sched_time, repeat, data = self.add.get(timeout=1)
-            # get current list of scheduled times for event, [] if missing
-            event_list = self.events.get(event, [])
-
-            # Don't schedule if the event is repeating and already scheduled
-            if repeat and event in self.events:
-                LOG.debug('Repeating event {} is already scheduled, discarding'
-                          .format(event))
-            else:
-                # add received event and time
-                event_list.append((sched_time, repeat, data))
-                self.events[event] = event_list
-
-    def remove_events(self):
-        """
-            Remove event from event list.
-        """
-        while not self.remove.empty():
-            event = self.remove.get()
-            if event in self.events:
-                self.events.pop(event)
-
-    def update_events(self):
-        """
-            Update event list with new data.
-        """
-        while not self.remove.empty():
-            event, data = self.update.get()
-            # if there is an active event with this name
-            if len(self.events.get(event, [])) > 0:
-                time, repeat, _ = self.events[event][0]
-                self.events[event][0] = (time, repeat, data)
+            with self.event_lock:
+                for key in json_data:
+                    event_list = json_data[key]
+                    # discard non repeating events that has already happened
+                    self.events[key] = [tuple(e) for e in event_list
+                                        if e[0] > current_time or e[1]]
 
     def run(self):
         while self.isRunning:
@@ -139,35 +101,55 @@ class EventScheduler(Thread):
         """
             Check if an event should be triggered.
         """
-        # Remove events
-        self.remove_events()
-        # Fetch newly scheduled events
-        self.fetch_new_events()
-        # Update events
-        self.update_events()
+        with self.event_lock:
+            # Check all events
+            pending_messages = []
+            for event in self.events:
+                current_time = time.time()
+                e = self.events[event]
+                # Get scheduled times that has passed
+                passed = [(t, r, d) for (t, r, d) in e if t <= current_time]
+                # and remaining times that we're still waiting for
+                remaining = [(t, r, d) for t, r, d in e if t > current_time]
+                # Trigger registered methods
+                for sched_time, repeat, data in passed:
+                    pending_messages.append(Message(event, data))
+                    # if this is a repeated event add a new trigger time
+                    if repeat:
+                        next_time = repeat_time(sched_time, repeat)
+                        remaining.append((next_time, repeat, data))
+                # update list of events
+                self.events[event] = remaining
 
-        # Check all events
-        for event in self.events:
-            current_time = time.time()
-            e = self.events[event]
-            # Get scheduled times that has passed
-            passed = [(t, r, d) for (t, r, d) in e if t <= current_time]
-            # and remaining times that we're still waiting for
-            remaining = [(t, r, d) for t, r, d in e if t > current_time]
-            # Trigger registered methods
-            for sched_time, repeat, data in passed:
-                self.emitter.emit(Message(event, data))
-                # if this is a repeated event add a new trigger time
-                if repeat:
-                    next_time = repeat_time(sched_time, repeat)
-                    remaining.append((next_time, repeat, data))
-            # update list of events
-            self.events[event] = remaining
+        # Remove events have are now completed
+        self.clear_empty()
+
+        # Finally, emit the queued up events that triggered
+        for msg in pending_messages:
+            self.emitter.emit(msg)
 
     def schedule_event(self, event, sched_time, repeat=None, data=None):
-        """ Send event to thread using thread safe queue. """
+        """ Add event to pending event schedule using thread safe queue.
+
+        Args:
+            event (str): Handler for the event
+            sched_time ([type]): [description]
+            repeat ([type], optional): Defaults to None. [description]
+            data ([type], optional): Defaults to None. [description]
+        """
         data = data or {}
-        self.add.put((event, sched_time, repeat, data))
+        with self.event_lock:
+            # get current list of scheduled times for event, [] if missing
+            event_list = self.events.get(event, [])
+
+            # Don't schedule if the event is repeating and already scheduled
+            if repeat and event in self.events:
+                LOG.debug('Repeating event {} is already scheduled, discarding'
+                            .format(event))
+            else:
+                # add received event and time
+                event_list.append((sched_time, repeat, data))
+                self.events[event] = event_list
 
     def schedule_event_handler(self, message):
         """
@@ -192,23 +174,22 @@ class EventScheduler(Thread):
         else:
             LOG.error('Scheduled event time not provided')
 
-    def remove_event(self, event):
-        """ Remove event using thread safe queue. """
-        self.remove.put(event)
-
     def remove_event_handler(self, message):
         """ Messagebus interface to the remove_event method. """
         event = message.data.get('event')
-        self.remove_event(event)
-
-    def update_event(self, event, data):
-        self.update((event, data))
+        with self.event_lock:
+            if event in self.events:
+                self.events.pop(event)
 
     def update_event_handler(self, message):
         """ Messagebus interface to the update_event method. """
         event = message.data.get('event')
         data = message.data.get('data')
-        self.update_event(event, data)
+        with self.event_lock:
+            # if there is an active event with this name
+            if len(self.events.get(event, [])) > 0:
+                time, repeat, _ = self.events[event][0]
+                self.events[event][0] = (time, repeat, data)
 
     def get_event_handler(self, message):
         """
@@ -217,8 +198,9 @@ class EventScheduler(Thread):
         """
         event_name = message.data.get("name")
         event = None
-        if event_name in self.events:
-            event = self.events[event_name]
+        with self.event_lock:
+            if event_name in self.events:
+                event = self.events[event_name]
         emitter_name = 'mycroft.event_status.callback.{}'.format(event_name)
         self.emitter.emit(message.reply(emitter_name, data=event))
 
@@ -226,22 +208,25 @@ class EventScheduler(Thread):
         """
             Write current schedule to disk.
         """
-        with open(self.schedule_file, 'w') as f:
-            json.dump(self.events, f)
+        with self.event_lock:
+            with open(self.schedule_file, 'w') as f:
+                json.dump(self.events, f)
 
     def clear_repeating(self):
         """
             Remove repeating events from events dict.
         """
-        for e in self.events:
-            self.events[e] = [i for i in self.events[e] if i[1] is None]
+        with self.event_lock:
+            for e in self.events:
+                self.events[e] = [i for i in self.events[e] if i[1] is None]
 
     def clear_empty(self):
         """
             Remove empty event entries from events dict
         """
-        self.events = {k: self.events[k] for k in self.events
-                       if self.events[k] != []}
+        with self.event_lock:
+            self.events = {k: self.events[k] for k in self.events
+                        if self.events[k] != []}
 
     def shutdown(self):
         """ Stop the running thread. """
