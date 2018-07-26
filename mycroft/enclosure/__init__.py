@@ -105,6 +105,8 @@ class Enclosure(object):
         self.ws.remove("enclosure.eyes.reset", self.eyes_reset)
         self.ws.remove("enclosure.eyes.timedspin", self.eyes_timed_spin)
         self.ws.remove("enclosure.eyes.volume", self.eyes_volume)
+        self.ws.remove("enclosure.eyes.spin", self.eyes_spin)
+        self.ws.remove("enclosure.eyes.set_pixel", self.eyes_set_pixel)
 
         self.ws.remove("enclosure.mouth.reset", self.mouth_reset)
         self.ws.remove("enclosure.mouth.talk", self.mouth_talk)
@@ -128,6 +130,7 @@ class Enclosure(object):
         self.ws.remove('recognizer_loop:record_end', self.record_end)
         self.ws.remove('recognizer_loop:audio_output_start', self.talk_start)
         self.ws.remove("enclosure.notify.no_internet", self.on_no_internet)
+        self.deactivate_mouth_events()
 
     def on_no_internet(self, message=None):
         pass

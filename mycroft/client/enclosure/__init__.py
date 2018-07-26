@@ -432,6 +432,20 @@ class Mark1Enclosure(Enclosure):
             text = message.data.get("text", text)
         self.mouth.text(text)
 
+    def activate_mouth_events(self, message=None):
+        self.ws.on('recognizer_loop:record_begin', self.mouth.listen)
+        self.ws.on('recognizer_loop:record_end', self.mouth.reset)
+        self.ws.on('recognizer_loop:audio_output_start', self.mouth.talk)
+        self.ws.on('recognizer_loop:audio_output_end', self.mouth.reset)
+
+    def deactivate_mouth_events(self, message=None):
+        self.ws.remove('recognizer_loop:record_begin', self.mouth.listen)
+        self.ws.remove('recognizer_loop:record_end', self.mouth.reset)
+        self.ws.remove('recognizer_loop:audio_output_start',
+                       self.mouth.talk)
+        self.ws.remove('recognizer_loop:audio_output_end',
+                       self.mouth.reset)
+
     def mouth_display(self, message=None):
         code = ""
         xOffset = ""
