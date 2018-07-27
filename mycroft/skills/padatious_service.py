@@ -64,7 +64,7 @@ class PadatiousService(FallbackSkill):
             single_thread = message.data.get('single_thread', False)
         self.finished_training_event.clear()
 
-        LOG.info('Training...')
+        LOG.info('Training... (single_thread={})'.format(single_thread))
         self.container.train(single_thread=single_thread)
         LOG.info('Training complete.')
 
@@ -107,13 +107,12 @@ class PadatiousService(FallbackSkill):
         self._register_object(message, 'entity', self.container.load_entity)
 
     def handle_fallback(self, message):
+        if not self.finished_training_event.is_set():
+            LOG.debug('Waiting for Padatious training to finish...')
+            return False
+
         utt = message.data.get('utterance')
         LOG.debug("Padatious fallback attempt: " + utt)
-
-        if not self.finished_training_event.is_set():
-            LOG.debug('Waiting for training to finish...')
-            self.finished_training_event.wait()
-
         data = self.container.calc_intent(utt)
 
         if data.conf < 0.5:
