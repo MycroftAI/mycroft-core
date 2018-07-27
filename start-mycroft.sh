@@ -88,7 +88,7 @@ function launch-process() {
 
     name-to-script-path ${1}
 
-    # Launch process in background, sending log to scripts/log/mycroft-*.log
+    # Launch process in foreground
     echo "Starting $1"
     python3 ${_script} $_params
 }
@@ -122,6 +122,23 @@ function launch-background() {
     python3 ${_script} $_params >> ${scripts_dir}/logs/mycroft-${1}.log 2>&1 &
 }
 
+function launch-all() {
+    echo "Starting all mycroft-core services"
+    launch-background bus
+    launch-background skills
+    launch-background audio
+    launch-background voice
+
+    # Determine platform type
+    if [[ -r /etc/mycroft/mycroft.conf ]] ; then
+        mycroft_platform=$( jq -r ".enclosure.platform" < /etc/mycroft/mycroft.conf )
+        if [[ $mycroft_platform = 'mycroft_mark_1' ]] ; then
+            # running on a Mark 1, start enclosure service
+            launch-background enclosure
+        fi
+    fi
+}
+
 function check-dependencies() {
   if [ ! -f .installed ] || ! md5sum -c &> /dev/null < .installed; then
     echo "Please update dependencies by running ./dev_setup.sh again."
@@ -139,11 +156,7 @@ check-dependencies
 
 case ${_opt} in
   "all")
-    echo "Starting all mycroft-core services"
-    launch-background bus
-    launch-background skills
-    launch-background audio
-    launch-background voice
+    launch-all
     ;;
 
   "bus")
@@ -160,11 +173,7 @@ case ${_opt} in
     ;;
 
   "debug")
-    echo "Starting all mycroft-core services"
-    launch-background bus
-    launch-background skills
-    launch-background audio
-    launch-background voice
+    launch-all
     launch-process cli
     ;;
 

@@ -33,6 +33,7 @@ function help() {
   echo "  audio     stop the audio playback service"
   echo "  skills    stop the skill service"
   echo "  voice     stop voice capture service"
+  echo "  enclosure stop mark_1 enclosure service"
   echo
   echo "Examples:"
   echo "  ${script}"
@@ -42,7 +43,7 @@ function help() {
 }
 
 function process-running() {
-    if [[ $( ps aux | grep "[p]ython .*${1}/main.py" ) ]] ; then
+    if [[ $( ps aux | grep "python3\? .*${1}/main.py" ) ]] ; then
         return 0
     else
         return 1
@@ -52,7 +53,7 @@ function process-running() {
 function end-process() {
 
     if process-running $1 ; then
-        pid=$( ps aux | grep "[p]ython .*${1}/main.py" | awk '{print $2}' )
+        pid=$( ps aux | grep "python3\? .*${1}/main.py" | awk '{print $2}' )
         kill -SIGINT ${pid}
 
         c=1
@@ -67,8 +68,9 @@ function end-process() {
         done
 
         if process-running $1 ; then
-            echo "Killing $1..."
+            echo -n "Killing $1..."
             kill -9 ${pid}
+            echo "killed."
         fi
     fi
 }
@@ -87,6 +89,15 @@ case ${OPT} in
     end-process skills
     end-process audio
     end-process speech
+
+    # determine platform type
+    if [[ -r /etc/mycroft/mycroft.conf ]] ; then
+        mycroft_platform=$( jq -r ".enclosure.platform" < /etc/mycroft/mycroft.conf )
+        if [[ $mycroft_platform = 'mycroft_mark_1' ]] ; then
+            # running on a Mark 1, stop enclosure service
+            end-process enclosure
+        fi
+    fi
     ;;
   "bus")
     end-process service
@@ -100,10 +111,12 @@ case ${OPT} in
   "voice")
     end-process speech
     ;;
+  "enclosure")
+    end-process enclosure
+    ;;
 
 
   *)
     help
     ;;
 esac
-
