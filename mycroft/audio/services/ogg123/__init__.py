@@ -89,10 +89,14 @@ class Ogg123Service(AudioBackend):
 
     def stop(self):
         LOG.info('Ogg123ServiceStop')
-        self._stop_signal = True
-        while self._is_playing:
-            sleep(0.1)
-        self._stop_signal = False
+        if self._is_playing:
+            self._stop_signal = True
+            while self._is_playing:
+                sleep(0.1)
+            self._stop_signal = False
+            return True
+        else:
+            return False
 
     def pause(self):
         pass
