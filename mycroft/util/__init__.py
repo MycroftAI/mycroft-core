@@ -32,7 +32,7 @@ import mycroft.audio
 import mycroft.configuration
 from mycroft.util.format import nice_number
 # Officially exported methods from this file:
-# play_wav, play_mp3, get_cache_directory,
+# play_wav, play_mp3, play_ogg, get_cache_directory,
 # resolve_resource_file, wait_while_speaking
 from mycroft.util.log import LOG
 from mycroft.util.parse import extract_datetime, extractnumber, normalize
@@ -105,6 +105,16 @@ def play_mp3(uri):
         if cmd == "%1":
             play_mp3_cmd[index] = (get_http(uri))
     return subprocess.Popen(play_mp3_cmd)
+
+
+def play_ogg(uri):
+    config = mycroft.configuration.Configuration.get()
+    play_cmd = config.get("play_ogg_cmdline")
+    play_ogg_cmd = str(play_cmd).split(" ")
+    for index, cmd in enumerate(play_ogg_cmd):
+        if cmd == "%1":
+            play_ogg_cmd[index] = (get_http(uri))
+    return subprocess.Popen(play_ogg_cmd)
 
 
 def record(file_path, duration, rate, channels):
