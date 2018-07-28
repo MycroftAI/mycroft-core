@@ -1066,7 +1066,21 @@ def gui_main(stdscr):
         while True:
             set_screen_dirty()
 
-            c = scr.get_wch()  # unicode char or int for special keys
+            try:
+                c = scr.get_wch()  # unicode char or int for special keys
+            except KeyboardInterrupt as e:
+                # User hit Ctrl+C to quit
+                if find_str:
+                    # End the find session
+                    find_str = None
+                    rebuild_filtered_log()
+                else:
+                    break
+            except:
+                # This happens in odd cases, such as when you Ctrl+Z suspend
+                # the CLI and then resume.  Curses fails on get_wch().
+                continue
+
             if isinstance(c, int):
                 code = c
             else:
@@ -1213,16 +1227,6 @@ def gui_main(stdscr):
                 # Accept typed character in the utterance
                 line += c
 
-            # DEBUG: Uncomment the following code to see what key codes
-            #        are generated when an unknown key is pressed.
-            # else:
-            #    line += str(c)
-
-    except KeyboardInterrupt as e:
-        # User hit Ctrl+C to quit
-        pass
-    except KeyboardInterrupt as e:
-        LOG.exception(e)
     finally:
         scr.erase()
         scr.refresh()
