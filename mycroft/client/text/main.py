@@ -1068,7 +1068,7 @@ def gui_main(stdscr):
 
             try:
                 c = scr.get_wch()  # unicode char or int for special keys
-            except KeyboardInterrupt as e:
+            except KeyboardInterrupt:
                 # User hit Ctrl+C to quit
                 if find_str:
                     # End the find session
@@ -1076,7 +1076,7 @@ def gui_main(stdscr):
                     rebuild_filtered_log()
                 else:
                     break
-            except:
+            except curses.error:
                 # This happens in odd cases, such as when you Ctrl+Z suspend
                 # the CLI and then resume.  Curses fails on get_wch().
                 continue
