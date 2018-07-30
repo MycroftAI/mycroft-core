@@ -440,7 +440,8 @@ class MycroftSkillTest(unittest.TestCase):
         # make sure it's not in the event list anymore
         self.assertTrue('handler1' not in [e[0] for e in s.events])
         # Check that the handler was registered with the emitter
-        self.assertEqual(emitter.remove.call_args[0][0], 'handler1')
+        self.assertEqual(emitter.remove_all_listeners.call_args[0][0],
+                         'handler1')
 
     @mock.patch.dict(Configuration._Configuration__config, BASE_CONF)
     def test_add_scheduled_event(self):
@@ -462,7 +463,8 @@ class MycroftSkillTest(unittest.TestCase):
         self.assertTrue('A:sched_handler1' in [e[0] for e in s.events])
         s.cancel_scheduled_event('sched_handler1')
         # Check that the handler was removed
-        self.assertEqual(emitter.remove.call_args[0][0], 'A:sched_handler1')
+        self.assertEqual(emitter.remove_all_listeners.call_args[0][0],
+                         'A:sched_handler1')
         self.assertTrue('A:sched_handler1' not in [e[0] for e in s.events])
 
     @mock.patch.dict(Configuration._Configuration__config, BASE_CONF)

@@ -21,7 +21,6 @@ from os.path import isfile, join, expanduser
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
-from queue import Queue
 
 
 def repeat_time(sched_time, repeat):
@@ -174,22 +173,28 @@ class EventScheduler(Thread):
         else:
             LOG.error('Scheduled event time not provided')
 
-    def remove_event_handler(self, message):
-        """ Messagebus interface to the remove_event method. """
-        event = message.data.get('event')
+    def remove_event(self, event):
         with self.event_lock:
             if event in self.events:
                 self.events.pop(event)
 
-    def update_event_handler(self, message):
-        """ Messagebus interface to the update_event method. """
+    def remove_event_handler(self, message):
+        """ Messagebus interface to the remove_event method. """
         event = message.data.get('event')
-        data = message.data.get('data')
+        self.remove_event(event)
+
+    def update_event(self, event, data):
         with self.event_lock:
             # if there is an active event with this name
             if len(self.events.get(event, [])) > 0:
                 time, repeat, _ = self.events[event][0]
                 self.events[event][0] = (time, repeat, data)
+
+    def update_event_handler(self, message):
+        """ Messagebus interface to the update_event method. """
+        event = message.data.get('event')
+        data = message.data.get('data')
+        self.update_event(event, data)
 
     def get_event_handler(self, message):
         """
