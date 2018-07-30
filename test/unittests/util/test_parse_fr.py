@@ -303,8 +303,8 @@ class TestNormalize_fr(unittest.TestCase):
         # test is being run) is a different than the date in UTC.
         #
         # testExtractNoDate_fr("tais-toi aujourd'hui",
-        #                     datetime.now().strftime("%Y-%m-%d") + " 00:00:00",
-        #                     "tais-toi")
+        #                   datetime.now().strftime("%Y-%m-%d") + " 00:00:00",
+        #                   "tais-toi")
         self.assertEqual(extract_datetime("", lang="fr-fr"), None)
         self.assertEqual(extract_datetime("phrase inutile", lang="fr-fr"),
                          None)
