@@ -157,7 +157,6 @@ class Mimic2(TTS):
             lang, config, Mimic2Validator(self)
         )
         self.url = config['url']
-        self.api_path = config['api_path']
         self.session = FuturesSession()
         chunk_size = config.get('chunk_size')
         self.chunk_size = \
@@ -202,7 +201,7 @@ class Mimic2(TTS):
         reqs = []
         for chunk in chunks:
             if len(chunk) > 0:
-                url = self.url + self.api_path + parse.quote(chunk)
+                url = self.url + parse.quote(chunk)
                 req_route = url + "&visimes=True"
                 reqs.append(self.session.get(req_route))
         return reqs
@@ -243,14 +242,12 @@ class Mimic2(TTS):
             results = req.result().json()
             audio = base64.b64decode(results['audio_base64'])
             vis = self.visime(results['visimes'])
-            LOG.info(vis)
             key = str(hashlib.md5(
                 chunks[idx].encode('utf-8', 'ignore')).hexdigest())
             wav_file = os.path.join(
                 get_cache_directory("tts"),
                 key + '.' + self.audio_ext
             )
-            LOG.info(wav_file)
             with open(wav_file, 'wb') as f:
                 f.write(audio)
             self.queue.put((self.audio_ext, wav_file, vis, ident))
