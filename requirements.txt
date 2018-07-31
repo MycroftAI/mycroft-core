@@ -29,7 +29,7 @@ google-api-python-client==1.6.4
 msm==0.5.17
 msk==0.3.10
 adapt-parser==0.3.0
-padatious==0.4.3
+padatious==0.4.4
 fann2==1.0.7
 padaos==0.1.6
 precise-runner==0.2.1
