@@ -16,6 +16,8 @@
 #
 
 from mycroft.util.lang.format_common import convert_to_mixed_fraction
+import collections
+
 
 NUM_STRING_EN = {
     0: 'zero',
@@ -45,10 +47,7 @@ NUM_STRING_EN = {
     60: 'sixty',
     70: 'seventy',
     80: 'eighty',
-    90: 'ninety',
-    100: 'hundred',
-    1000: 'thousand',
-    1000000: 'million'
+    90: 'ninety'
 }
 
 FRACTION_STRING_EN = {
@@ -72,6 +71,109 @@ FRACTION_STRING_EN = {
     19: 'nineteenth',
     20: 'twentyith'
 }
+
+LONG_SCALE_EN = collections.OrderedDict([
+    (100, 'hundred'),
+    (1000, 'thousand'),
+    (1000000, 'million'),
+    (1e12, "billion"),
+    (1e18, 'trillion'),
+    (1e24, "quadrillion"),
+    (1e30, "quintillion"),
+    (1e36, "sextillion"),
+    (1e42, "septillion"),
+    (1e48, "octillion"),
+    (1e54, "nonillion"),
+    (1e60, "decillion"),
+    (1e66, "undecillion"),
+    (1e72, "duodecillion"),
+    (1e78, "tredecillion"),
+    (1e84, "quattuordecillion"),
+    (1e90, "quinquadecillion"),
+    (1e96, "sedecillion"),
+    (1e102, "septendecillion"),
+    (1e108, "octodecillion"),
+    (1e114, "novendecillion"),
+    (1e120, "vigintillion"),
+    (1e306, "unquinquagintillion"),
+    (1e312, "duoquinquagintillion"),
+    (1e336, "sesquinquagintillion"),
+    (1e366, "unsexagintillion")
+])
+
+SHORT_SCALE_EN = collections.OrderedDict([
+    (100, 'hundred'),
+    (1000, 'thousand'),
+    (1000000, 'million'),
+    (1e9, "billion"),
+    (1e10, 'trillion'),
+    (1e15, "quadrillion"),
+    (1e18, "quintillion"),
+    (1e21, "sextillion"),
+    (1e24, "septillion"),
+    (1e27, "octillion"),
+    (1e30, "nonillion"),
+    (1e33, "decillion"),
+    (1e36, "undecillion"),
+    (1e39, "duodecillion"),
+    (1e42, "tredecillion"),
+    (1e45, "quattuordecillion"),
+    (1e48, "quinquadecillion"),
+    (1e51, "sedecillion"),
+    (1e54, "septendecillion"),
+    (1e57, "octodecillion"),
+    (1e60, "novendecillion"),
+    (1e63, "vigintillion"),
+    (1e66, "unvigintillion"),
+    (1e69, "uuovigintillion"),
+    (1e72, "tresvigintillion"),
+    (1e75, "quattuorvigintillion"),
+    (1e78, "quinquavigintillion"),
+    (1e81, "qesvigintillion"),
+    (1e84, "septemvigintillion"),
+    (1e87, "octovigintillion"),
+    (1e90, "novemvigintillion"),
+    (1e93, "trigintillion"),
+    (1e96, "untrigintillion"),
+    (1e99, "duotrigintillion"),
+    (1e102, "trestrigintillion"),
+    (1e105, "quattuortrigintillion"),
+    (1e108, "quinquatrigintillion"),
+    (1e111, "sestrigintillion"),
+    (1e114, "septentrigintillion"),
+    (1e117, "octotrigintillion"),
+    (1e120, "noventrigintillion"),
+    (1e123, "quadragintillion"),
+    (1e153, "quinquagintillion"),
+    (1e183, "sexagintillion"),
+    (1e213, "septuagintillion"),
+    (1e243, "octogintillion"),
+    (1e273, "nonagintillion"),
+    (1e303, "centillion"),
+    (1e306, "uncentillion"),
+    (1e309, "duocentillion"),
+    (1e312, "trescentillion"),
+    (1e333, "decicentillion"),
+    (1e336, "undecicentillion"),
+    (1e363, "viginticentillion"),
+    (1e366, "unviginticentillion"),
+    (1e393, "trigintacentillion"),
+    (1e423, "quadragintacentillion"),
+    (1e453, "quinquagintacentillion"),
+    (1e483, "sexagintacentillion"),
+    (1e513, "septuagintacentillion"),
+    (1e543, "ctogintacentillion"),
+    (1e573, "nonagintacentillion"),
+    (1e603, "ducentillion"),
+    (1e903, "trecentillion"),
+    (1e1203, "quadringentillion"),
+    (1e1503, "quingentillion"),
+    (1e1803, "sescentillion"),
+    (1e2103, "septingentillion"),
+    (1e2403, "octingentillion"),
+    (1e2703, "nongentillion"),
+    (1e3003, "millinillion")
+])
 
 
 def nice_number_en(number, speech, denominators):
@@ -119,7 +221,7 @@ def nice_number_en(number, speech, denominators):
     return return_string
 
 
-def pronounce_number_en(num, places=2):
+def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
     """
     Convert a number to it's spoken equivalent
 
@@ -128,32 +230,114 @@ def pronounce_number_en(num, places=2):
     Args:
         num(float or int): the number to pronounce (under 100)
         places(int): maximum decimal places to speak
+        short_scale (bool) : use short (True) or long scale (False)
+            https://en.wikipedia.org/wiki/Names_of_large_numbers
+        scientific (bool): pronounce in scientific notation
     Returns:
         (str): The pronounced number
     """
-    if abs(num) >= 100:
-        # TODO: Support for numbers over 100
-        return str(num)
+    if scientific:
+        number = '%E' % num
+        n, power = number.replace("+", "").split("E")
+        power = int(power)
+        if power != 0:
+            return pronounce_number_en(float(n), places, short_scale, False) \
+                   + " times ten to the power of " + \
+                   pronounce_number_en(power, places, short_scale, False)
+    if short_scale:
+        number_names = NUM_STRING_EN.copy()
+        number_names.update(SHORT_SCALE_EN)
+    else:
+        number_names = NUM_STRING_EN.copy()
+        number_names.update(LONG_SCALE_EN)
 
+    digits = [number_names[n] for n in range(0, 20)]
+
+    tens = [number_names[n] for n in range(10, 100, 10)]
+
+    if short_scale:
+        hundreds = [SHORT_SCALE_EN[n] for n in SHORT_SCALE_EN.keys()]
+    else:
+        hundreds = [LONG_SCALE_EN[n] for n in LONG_SCALE_EN.keys()]
+
+    # deal with negatives
     result = ""
     if num < 0:
         result = "negative "
     num = abs(num)
 
-    if num > 20:
-        tens = int(num - int(num) % 10)
-        result += NUM_STRING_EN[tens]
-        if int(num - tens) != 0:
-            result += " " + NUM_STRING_EN[int(num - tens)]
+    # check for a direct match
+    if num in number_names:
+        if num > 90:
+            result += "one "
+        result += number_names[num]
     else:
-        result += NUM_STRING_EN[int(num)]
+        def _sub_thousand(n):
+            assert 0 <= n <= 999
+            if n <= 19:
+                return digits[n]
+            elif n <= 99:
+                q, r = divmod(n, 10)
+                return tens[q - 1] + (" " + _sub_thousand(r) if r else "")
+            else:
+                q, r = divmod(n, 100)
+                return digits[q] + " hundred" + (
+                    " and " + _sub_thousand(r) if r else "")
+
+        def _short_scale(n):
+            n = int(n)
+            assert 0 <= n
+            return ", ".join(reversed(
+                [_sub_thousand(z) + (
+                    " " + hundreds[i] if i else "") if z else ""
+                 for i, z in enumerate(_split_by_thousands(n))]))
+
+        def _split_by_thousands(n):
+            assert 0 <= n
+            res = []
+            while n:
+                n, r = divmod(n, 1000)
+                res.append(r)
+            return res
+
+        def _split_by_millions(n):
+            assert 0 <= n
+            res = []
+            while n:
+                n, r = divmod(n, 1000)
+                res.append(r)
+            return res
+
+        def _long_scale(n):
+            if n >= 10e153:
+                return "infinity"
+            n = int(n)
+            assert 0 <= n
+            res = []
+            for i, z in enumerate(_split_by_millions(n)):
+                if not z:
+                    continue
+                number = pronounce_number_en(z, places, True)
+                if i % 2 != 0 and i > 1:
+                    number += " " + "thousand"
+                elif i > 0 and i < 3:
+                    number += " " + hundreds[i] + ","
+                elif i:
+                    number += " " + hundreds[i - 1] + ","
+                res.append(number)
+            return " ".join(reversed(res))
+
+        if short_scale:
+            result += _short_scale(num)
+        else:
+            result += _long_scale(num)
 
     # Deal with fractional part
     if not num == int(num) and places > 0:
         result += " point"
         place = 10
         while int(num * place) % 10 > 0 and places > 0:
-            result += " " + NUM_STRING_EN[int(num * place) % 10]
+            result += " " + number_names[int(num * place) % 10]
             place *= 10
             places -= 1
     return result
