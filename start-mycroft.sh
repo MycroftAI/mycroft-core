@@ -78,9 +78,10 @@ function name-to-script-path() {
 }
 
 function source-venv() {
-	if [ ! -f "/.dockerenv" ]; then
-		source ${VIRTUALENV_ROOT}/bin/activate
-	fi
+    # Enter Python virtual environment, unless under Docker (where venv is needed)
+    if [ ! -f "/.dockerenv" ]; then
+        source ${VIRTUALENV_ROOT}/bin/activate
+    fi
 }
 
 first_time=true
