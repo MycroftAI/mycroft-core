@@ -331,10 +331,10 @@ elif [ "${change_to}" == "github" ] ; then
     if [ -d ${path} ] ; then
         if  [ -f /usr/local/bin/mimic ] ; then
             echo "Mimic file exists"
-            mimic_flag='-sm'
+            mimic_flag="-sm"
         else
             echo "file doesn't exist"
-            mimic_flag=''
+            mimic_flag=""
         fi
         cd ${path}
         # Build the dev environment

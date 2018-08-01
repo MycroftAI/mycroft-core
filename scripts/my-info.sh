@@ -39,7 +39,7 @@ if [[ $# -eq 0 ]] ; then
     helpfunc && exit 1
 fi
 
-MYCROFT_HOME=''
+MYCROFT_HOME=""
 RUN_AS_ROOT=1
 source $( locate virtualenvwrapper.sh )
 
@@ -101,11 +101,11 @@ EOF
         while read CHECKFN ; do
             checkperms "${CHECKFN}"
             case $? in
-                '0') mlog " - ${CHECKFN} has viable permissions." ;;
-                '1') mlog " = Error: ${CHECKFN} doesn't exist?" ;;
-                '2') mlog " = Error: ${CHECKFN} not owned by ${UID}." ;;
-                '3') mlog " = Error: ${CHECKFN} not writeable by ${UID}." ;;
-                '10') mlog " - ${CHECKFN} is executable and has viable permissions." ;;
+                "0") mlog " - ${CHECKFN} has viable permissions." ;;
+                "1") mlog " = Error: ${CHECKFN} doesn't exist?" ;;
+                "2") mlog " = Error: ${CHECKFN} not owned by ${UID}." ;;
+                "3") mlog " = Error: ${CHECKFN} not writeable by ${UID}." ;;
+                "10") mlog " - ${CHECKFN} is executable and has viable permissions." ;;
                 *) mlog " = Error: unable to verify permissions on ${CHECKFN}." ;;
             esac
         done < /tmp/my-list.$$

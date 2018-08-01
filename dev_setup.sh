@@ -133,9 +133,9 @@ install_deps
 git config commit.template .gitmessage
 
 # Check whether to build mimic (it takes a really long time!)
-build_mimic='y'
+build_mimic="y"
 if [[ ${opt_skipmimic} == true ]] ; then
-    build_mimic='n'
+    build_mimic="n"
 else
     # first, look for a build of mimic in the folder
     has_mimic=""
@@ -222,7 +222,7 @@ echo "Building with $CORES cores."
 #build and install mimic
 cd "${TOP}"
 
-if [[ "$build_mimic" == 'y' ]] || [[ "$build_mimic" == 'Y' ]] ; then
+if [[ "$build_mimic" == "y" ]] || [[ "$build_mimic" == "Y" ]] ; then
     echo "WARNING: The following can take a long time to run!"
     "${TOP}/scripts/install-mimic.sh" " ${CORES}"
 else

@@ -139,7 +139,7 @@ function launch-all() {
     # Determine platform type
     if [[ -r /etc/mycroft/mycroft.conf ]] ; then
         mycroft_platform=$( jq -r ".enclosure.platform" < /etc/mycroft/mycroft.conf )
-        if [[ $mycroft_platform = 'mycroft_mark_1' ]] ; then
+        if [[ $mycroft_platform = "mycroft_mark_1" ]] ; then
             # running on a Mark 1, start enclosure service
             launch-background enclosure
         fi

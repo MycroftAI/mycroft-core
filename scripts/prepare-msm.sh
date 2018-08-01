@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-mycroft_root_dir='/opt/mycroft'  # Also change in configuration
+mycroft_root_dir="/opt/mycroft"  # Also change in configuration
 skills_dir="${mycroft_root_dir}"/skills
 # exit on any error
 set -Ee

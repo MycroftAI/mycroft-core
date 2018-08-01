@@ -90,7 +90,7 @@ case ${OPT} in
         # determine platform type
         if [[ -r /etc/mycroft/mycroft.conf ]] ; then
             mycroft_platform=$( jq -r ".enclosure.platform" < /etc/mycroft/mycroft.conf )
-            if [[ $mycroft_platform == 'mycroft_mark_1' ]] ; then
+            if [[ $mycroft_platform == "mycroft_mark_1" ]] ; then
                 # running on a Mark 1, stop enclosure service
                 end-process enclosure
             fi
