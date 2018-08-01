@@ -30,7 +30,7 @@ function disable_local() {
 
 function install_pocketsphinx() {
     # clone pocketsphinx-python at HEAD (fix to a constant version later)
-    if [ ! -d ${TOP}/pocketsphinx-python ]; then
+    if [ ! -d ${TOP}/pocketsphinx-python ] ; then
         # build sphinxbase and pocketsphinx if we haven't already
         git clone --recursive https://github.com/cmusphinx/pocketsphinx-python
         pushd ./pocketsphinx-python/sphinxbase
@@ -50,7 +50,7 @@ function install_pocketsphinx() {
     python setup.py install
 }
 
-if [ "$1" = "-q" ]; then
+if [ "$1" = "-q" ] ; then
     enable_local
     install_pocketsphinx
     exit 0
@@ -60,8 +60,7 @@ echo "This script will checkout, compile, and install pocketsphinx locally if th
 
 PS3='Please enter your choice: '
 options=("Enable local checkout, compile and install" "Disable local checkout and exit" "Do nothing and quit")
-select opt in "${options[@]}"
-do
+select opt in "${options[@]}" ; do
     case $opt in
         "Enable local checkout, compile and install")
             echo "you chose choice 1"

@@ -98,7 +98,7 @@ ${MYCROFT_HOME}/scripts/logs
 EOF
 
     if [[ ${RUN_AS_ROOT} -eq 1 ]] ; then
-        while read CHECKFN; do
+        while read CHECKFN ; do
             checkperms "${CHECKFN}"
             case $? in
                 '0') mlog " - ${CHECKFN} has viable permissions." ;;
@@ -148,10 +148,10 @@ function checkPIP() {
     if workon mycroft ; then
         pip list > /tmp/mycroft-piplist.$$
 
-        while read reqline; do
+        while read reqline ; do
             IFS='==' read  -r -a PIPREQ <<< "$reqline"
             PIPREQVER=$( grep -i ^"${PIPREQ[0]} " /tmp/mycroft-piplist.$$ | cut -d'(' -f2 | tr -d '\051' )
-            if [[ "${PIPREQVER}" == "${PIPREQ[2]}" ]]; then
+            if [[ "${PIPREQVER}" == "${PIPREQ[2]}" ]] ; then
                 mlog " -- pip ${PIPREQ[0]} version ${PIPREQ[2]}"
             else
                 mlog " ~~ Warn: can't find ${PIPREQ[0]} ${PIPREQ[2]} in pip. (found ${PIPREQVER})"

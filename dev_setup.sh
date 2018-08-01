@@ -58,8 +58,7 @@ function show_help() {
 opt_skipmimic=false
 opt_allowroot=false
 
-for var in "$@"
-do
+for var in "$@" ; do
     if [[ ${var} == "-h" ]] || [[ ${var} == "--help" ]] ; then
         show_help
         exit 0
@@ -86,14 +85,14 @@ function found_exe() {
 
 function install_deps() {
     echo "Installing packages..."
-    if found_exe sudo; then
+    if found_exe sudo ; then
         SUDO=sudo
     fi
 
-    if found_exe zypper; then
+    if found_exe zypper ; then
 	$SUDO zypper install -y git python glibc-devel linux-glibc-devel python-devel python2-virtualenv python2-gobject-devel python-virtualenvwrapper libtool libffi-devel libopenssl-devel autoconf automake bison swig glib2-devel portaudio-devel mpg123 flac curl libicu-devel pkg-config pkg-config libjpeg-devel libfann-devel python-curses
 	$SUDO zypper install -y -t pattern devel_C_C++
-    elif found_exe apt-get; then
+    elif found_exe apt-get ; then
         $SUDO apt-get install -y git python3 python3-dev python-setuptools python-gobject-2-dev libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config automake libjpeg-dev libfann-dev build-essential jq
     elif found_exe pacman; then
         $SUDO pacman -S --needed --noconfirm git python2 python2-pip python2-setuptools python2-virtualenv python2-gobject python-virtualenvwrapper libtool libffi openssl autoconf bison swig glib2 portaudio mpg123 screen flac curl pkg-config icu automake libjpeg-turbo base-devel jq
@@ -104,10 +103,10 @@ function install_deps() {
             cd ..
             rm -rf fann
         )
-    elif found_exe dnf; then
+    elif found_exe dnf ; then
         $SUDO dnf install -y git python3 python3-devel python3-pip python3-setuptools python3-virtualenv pygobject3-devel libtool libffi-devel openssl-devel autoconf bison swig glib2-devel portaudio-devel mpg123 mpg123-plugins-pulseaudio screen curl pkgconfig libicu-devel automake libjpeg-turbo-devel fann-devel gcc-c++ redhat-rpm-config jq
     else
-        if found_exe tput; then
+        if found_exe tput ; then
 			green="$(tput setaf 2)"
 			blue="$(tput setaf 4)"
 			reset="$(tput sgr0)"
@@ -145,8 +144,8 @@ else
     fi
 
     # in not, check the system path
-    if [ "$has_mimic" = "" ] ; then
-        if [ -x "$(command -v mimic)" ]; then
+    if [ "$has_mimic" == "" ] ; then
+        if [ -x "$(command -v mimic)" ] ; then
             has_mimic="$( mimic -lv | grep Voice )" || true
         fi
     fi
@@ -157,7 +156,7 @@ else
     fi
 fi
 
-if [ ! -x "${VIRTUALENV_ROOT}/bin/activate" ]; then
+if [ ! -x "${VIRTUALENV_ROOT}/bin/activate" ] ; then
     install_venv
 fi
 
@@ -178,7 +177,7 @@ if [ ! -f "$VENV_PATH_FILE" ] ; then
     echo "import sys; new=sys.path[sys.__plen:]; del sys.path[sys.__plen:]; p=getattr(sys,'__egginsert',0); sys.path[p:p]=new; sys.__egginsert = p+len(new)" >> "$VENV_PATH_FILE" || return 1
 fi
 
-if ! grep -q "$TOP" $VENV_PATH_FILE; then
+if ! grep -q "$TOP" $VENV_PATH_FILE ; then
     echo "Adding mycroft-core to virtualenv path"
     sed -i.tmp '1 a\
 '"$TOP"'
@@ -186,7 +185,7 @@ if ! grep -q "$TOP" $VENV_PATH_FILE; then
 fi
 
 # install required python modules
-if ! pip install -r requirements.txt; then
+if ! pip install -r requirements.txt ; then
     echo "Warning: Failed to install all requirements. Continue? y/N"
     read -n1 continue
     if [[ "$continue" != "y" ]] ; then
@@ -194,7 +193,7 @@ if ! pip install -r requirements.txt; then
     fi
 fi
 
-if ! pip install -r test-requirements.txt; then
+if ! pip install -r test-requirements.txt ; then
     echo "Warning test requirements wasn't installed, Note: normal operation should still work fine..."
 fi
 
@@ -204,14 +203,14 @@ MINCORES=1
 CORES=$( nproc )
 
 # ensure MAXCORES is > 0
-if [[ ${MAXCORES} -lt 1 ]]; then
+if [[ ${MAXCORES} -lt 1 ]] ; then
     MAXCORES=${MINCORES}
 fi
 
 # look for positive integer
-if ! [[ ${CORES} =~ ^[0-9]+$ ]]; then
+if ! [[ ${CORES} =~ ^[0-9]+$ ]] ; then
     CORES=${MINCORES}
-elif [[ ${MAXCORES} -lt ${CORES} ]]; then
+elif [[ ${MAXCORES} -lt ${CORES} ]] ; then
     CORES=${MAXCORES}
 fi
 
@@ -223,7 +222,7 @@ echo "Building with $CORES cores."
 #build and install mimic
 cd "${TOP}"
 
-if [[ "$build_mimic" == 'y' ]] || [[ "$build_mimic" == 'Y' ]]; then
+if [[ "$build_mimic" == 'y' ]] || [[ "$build_mimic" == 'Y' ]] ; then
     echo "WARNING: The following can take a long time to run!"
     "${TOP}/scripts/install-mimic.sh" " ${CORES}"
 else

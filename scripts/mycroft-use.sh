@@ -102,7 +102,7 @@ function restore_init_scripts() {
 }
 
 function github_init_scripts() {
-    if [ ! -f /etc/init.d/mycroft-skills.original ]; then
+    if [ ! -f /etc/init.d/mycroft-skills.original ] ; then
         stop_mycroft
 
         # save original scripts
@@ -137,10 +137,10 @@ function github_init_scripts() {
 
         # soft link the current user to the mycroft user's identity folder
         chown ${user}:${user} /home/mycroft/.mycroft/identity/identity2.json
-        if [ ! -e ${HOME}/.mycroft ]; then
+        if [ ! -e ${HOME}/.mycroft ] ; then
             mkdir ${HOME}/.mycroft
         fi
-        if [ ! -e ${HOME}/.mycroft/identity ]; then
+        if [ ! -e ${HOME}/.mycroft/identity ] ; then
             sudo ln -s /home/mycroft/.mycroft/identity ${HOME}/.mycroft/
         fi
 
@@ -205,12 +205,12 @@ function stable_to_unstable_server() {
 
     # point to test server
     echo "Changing mycroft.conf to point to test server api-test.mycroft.ai"
-    if [ -f ${conf_path}mycroft.conf ]; then
+    if [ -f ${conf_path}mycroft.conf ] ; then
         cp ${conf_path}mycroft.conf ${conf_path}mycroft.conf.stable
     else
         echo "could not find mycroft.conf, was it deleted?"
     fi
-    if [ -f ${conf_path}mycroft.conf.unstable ]; then
+    if [ -f ${conf_path}mycroft.conf.unstable ] ; then
         cp ${conf_path}mycroft.conf.unstable ${conf_path}mycroft.conf
     else
         rm -r ${conf_path}mycroft.conf
@@ -219,10 +219,10 @@ function stable_to_unstable_server() {
 
     # saving identity2.json to stable state
     echo "Pointing identity2.json to unstable and saving to identity2.json.stable"
-    if [ -f ${identity_path}identity2.json ]; then
+    if [ -f ${identity_path}identity2.json ] ; then
         mv ${identity_path}identity2.json ${identity_path}identity2.json.stable
     fi
-    if [ -f /home/mycroft/.mycroft/identity/identity2.json.unstable ]; then
+    if [ -f /home/mycroft/.mycroft/identity/identity2.json.unstable ] ; then
         cp ${identity_path}identity2.json.unstable ${identity_path}identity2.json
     else
         echo "NOTE:  This seems to be your first time switching to unstable. You will need to go to home-test.mycroft.ai to pair on unstable."
@@ -246,12 +246,12 @@ function unstable_to_stable_server() {
 
     # point api to production server
     echo "Changing mycroft.conf to point to production server api.mycroft.ai"
-    if [ -f ${conf_path}mycroft.conf ]; then
+    if [ -f ${conf_path}mycroft.conf ] ; then
         echo '{"server": {"url":"https://api-test.mycroft.ai", "version":"v1", "update":true, "metrics":false }}' $( cat ${conf_path}mycroft.conf ) | jq -s add > ${conf_path}mycroft.conf.unstable
     else
         echo "could not find mycroft.conf, was it deleted?"
     fi
-    if [ -f ${conf_path}mycroft.conf.stable ]; then
+    if [ -f ${conf_path}mycroft.conf.stable ] ; then
         cp ${conf_path}mycroft.conf.stable ${conf_path}mycroft.conf
     else
         echo "ERROR:  Could not find mycroft.conf.stable, was it deleted?, an easy fix would be to copy mycroft.conf.unstable to mycroft.conf but remove the server field"
@@ -259,10 +259,10 @@ function unstable_to_stable_server() {
 
     # saving identity2.json into unstable state, then copying identity2.json.stable to identity2.json
     echo "Pointing identity2.json to unstable and saving to identity2.json.unstable"
-    if [ -f ${identity_path}identity2.json ]; then
+    if [ -f ${identity_path}identity2.json ] ; then
         mv ${identity_path}identity2.json ${identity_path}identity2.json.unstable
     fi
-    if [ -f ${identity_path}identity2.json.stable ]; then
+    if [ -f ${identity_path}identity2.json.stable ] ; then
         cp ${identity_path}identity2.json.stable ${identity_path}identity2.json
     else
         echo "Can not find identity2.json.stable, was it deleted? You may need to repair at home.mycroft.ai"
@@ -272,7 +272,7 @@ function unstable_to_stable_server() {
     echo "Set to use the home.mycroft.ai server!"
 }
 
-if [ "${change_to}" = "unstable" ]; then
+if [ "${change_to}" == "unstable" ] ; then
     # make sure user is running as sudo first
     if [ "$EUID" -ne 0 ] ; then
         echo "Please run with sudo"
@@ -280,18 +280,18 @@ if [ "${change_to}" = "unstable" ]; then
     fi
 
     echo "Switching to unstable build..."
-    if [ "${current_pkg}" = "${stable_pkg}" ]; then
+    if [ "${current_pkg}" == "${stable_pkg}" ] ; then
         change_build "${unstable_pkg}"
     else
         echo "already on unstable"
     fi
 
-    if [ -f /etc/init.d/mycroft-skills.original ]; then
+    if [ -f /etc/init.d/mycroft-skills.original ] ; then
         restore_init_scripts
         # Reboot since the audio input won't work for some reason
         sudo reboot
     fi
-elif [ "${change_to}" = "stable" ]; then
+elif [ "${change_to}" == "stable" ] ; then
     # make sure user is running as sudo first
     if [ "$EUID" -ne 0 ] ; then
         echo "Please run with sudo"
@@ -299,7 +299,7 @@ elif [ "${change_to}" = "stable" ]; then
     fi
 
         echo "Switching to stable build..."
-        if [ "${current_pkg}" = "${unstable_pkg}" ]; then
+        if [ "${current_pkg}" == "${unstable_pkg}" ] ; then
             # Need to remove the package to make sure upgrade happens due to
             # difference in stable/unstable to package numbering schemes
             remove_all
@@ -309,7 +309,7 @@ elif [ "${change_to}" = "stable" ]; then
             echo "already on stable"
         fi
 
-        if [ -f /etc/init.d/mycroft-skills.original ]; then
+        if [ -f /etc/init.d/mycroft-skills.original ] ; then
             restore_init_scripts
             sudo chmod -x /etc/cron.hourly/mycroft-core # Enable updates
 
@@ -317,9 +317,9 @@ elif [ "${change_to}" = "stable" ]; then
             sudo reboot
         fi
 
-elif [ "${change_to}" = "github" ]; then
+elif [ "${change_to}" == "github" ] ; then
     echo "Switching to github..."
-    if [ ! -d ${path} ]; then
+    if [ ! -d ${path} ] ; then
         mkdir --parents "${path}"
         cd "${path}"
         cd ..
@@ -328,8 +328,8 @@ elif [ "${change_to}" = "github" ]; then
 
     sudo chmod -x /etc/cron.hourly/mycroft-core # Disable updates
 
-    if [ -d ${path} ]; then
-        if  [ -f /usr/local/bin/mimic ]; then
+    if [ -d ${path} ] ; then
+        if  [ -f /usr/local/bin/mimic ] ; then
             echo "Mimic file exists"
             mimic_flag='-sm'
         else
@@ -348,14 +348,14 @@ elif [ "${change_to}" = "github" ]; then
     # For some reason precise won't trigger until after a reboot
     echo "Rebooting..."
     sudo reboot
-elif [ "${change_to}" = "home" ]; then
+elif [ "${change_to}" == "home" ] ; then
     # make sure user is running as sudo first
     if [ "$EUID" -ne 0 ] ; then
         echo "Please run with sudo"
         exit
     fi
     unstable_to_stable_server
-elif [ "${change_to}" = "home-test" ]; then
+elif [ "${change_to}" == "home-test" ] ; then
     # make sure user is running as sudo first
     if [ "$EUID" -ne 0 ] ; then
         echo "Please run with sudo"

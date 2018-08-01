@@ -56,8 +56,7 @@ function end-process() {
         kill -SIGINT ${pid}
 
         c=1
-        while [ $c -le 20 ]
-        do
+        while [ $c -le 20 ] ; do
             if process-running $1 ; then
                 sleep 0.1
                 (( c++ ))
@@ -73,7 +72,6 @@ function end-process() {
         fi
     fi
 }
-
 
 
 OPT=$1
@@ -92,7 +90,7 @@ case ${OPT} in
         # determine platform type
         if [[ -r /etc/mycroft/mycroft.conf ]] ; then
             mycroft_platform=$( jq -r ".enclosure.platform" < /etc/mycroft/mycroft.conf )
-            if [[ $mycroft_platform = 'mycroft_mark_1' ]] ; then
+            if [[ $mycroft_platform == 'mycroft_mark_1' ]] ; then
                 # running on a Mark 1, stop enclosure service
                 end-process enclosure
             fi

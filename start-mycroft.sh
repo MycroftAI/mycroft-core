@@ -79,7 +79,7 @@ function name-to-script-path() {
 
 function source-venv() {
     # Enter Python virtual environment, unless under Docker
-    if [ ! -f "/.dockerenv" ]; then
+    if [ ! -f "/.dockerenv" ] ; then
         source ${VIRTUALENV_ROOT}/bin/activate
     fi
 }
@@ -111,7 +111,7 @@ function launch-background() {
     name-to-script-path ${1}
 
     # Check if already running
-    if [[ $( ps aux ) = *${_script}* ]] ; then
+    if [[ $( ps aux ) == *${_script}* ]] ; then
         echo "Restarting: ${1}"
         source stop-mycroft.sh ${1}
     else
@@ -119,7 +119,7 @@ function launch-background() {
     fi
 
     # Security warning/reminder for the user
-    if [[ "${1}" = "bus" ]] ; then
+    if [[ "${1}" == "bus" ]] ; then
         echo "CAUTION: The Mycroft bus is an open websocket with no built-in security"
         echo "         measures.  You are responsible for protecting the local port"
         echo "         8181 with a firewall as appropriate."
@@ -147,9 +147,9 @@ function launch-all() {
 }
 
 function check-dependencies() {
-  if [ ! -f .installed ] || ! md5sum -c &> /dev/null < .installed; then
+  if [ ! -f .installed ] || ! md5sum -c &> /dev/null < .installed ; then
     echo "Please update dependencies by running ./dev_setup.sh again."
-    if command -v notify-send >/dev/null; then
+    if command -v notify-send >/dev/null ; then
       notify-send "Mycroft Dependencies Outdated" "Run ./dev_setup.sh again"
     fi
   fi

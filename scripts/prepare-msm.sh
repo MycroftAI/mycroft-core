@@ -20,7 +20,7 @@ skills_dir="${mycroft_root_dir}"/skills
 set -Ee
 
 SOURCE="${BASH_SOURCE[0]}"
-while [ -h "$SOURCE" ]; do
+while [ -h "$SOURCE" ] ; do
     DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
     SOURCE="$(readlink "$SOURCE")"
     [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
@@ -38,19 +38,19 @@ function change_ownership {
 }
 
 
-if [[ ${IS_TRAVIS} != true ]]; then
-    if [ ! -d ${skills_dir} ]; then
+if [[ ${IS_TRAVIS} != true ]] ; then
+    if [ ! -d ${skills_dir} ] ; then
         echo "Create /opt/mycroft/skills"
         sudo mkdir -p ${skills_dir}
 	change_ownership
     fi
 
-    if [ ! -w ${SKILLS_DIR} ]; then
+    if [ ! -w ${SKILLS_DIR} ] ; then
         change_ownership
     fi
 fi
 
 # fix ownership of ${mycroft_root_dir} if it is not owned by the ${setup_user}
-if [[ `stat -c "%U:%G" /opt/mycroft` != "${setup_user}:${setup_user}" ]]; then
+if [[ `stat -c "%U:%G" /opt/mycroft` != "${setup_user}:${setup_user}" ]] ; then
     change_ownership
 fi
