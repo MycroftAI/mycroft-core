@@ -42,17 +42,17 @@
 set -Ee
 
 show_help() {
-        echo "dev_setup.sh: Mycroft development environment setup"
-        echo "Usage: dev_setup.sh [options]"
-        echo
-        echo "Options:"
-        echo "    -r, --allow-root  Allow to be run as root (e.g. sudo)"
-        echo "    -sm               Skip building mimic"
-        echo "    -h, --help        Show this message"
-        echo
-        echo "This will prepare your environment for running the mycroft-core"
-	echo "services. Normally this should be run as a normal user,"
-	echo "not as root/sudo."
+    echo "dev_setup.sh: Mycroft development environment setup"
+    echo "Usage: dev_setup.sh [options]"
+    echo
+    echo "Options:"
+    echo "    -r, --allow-root  Allow to be run as root (e.g. sudo)"
+    echo "    -sm               Skip building mimic"
+    echo "    -h, --help        Show this message"
+    echo
+    echo "This will prepare your environment for running the mycroft-core"
+    echo "services. Normally this should be run as a normal user,"
+    echo "not as root/sudo."
 }
 
 opt_skipmimic=false
@@ -75,9 +75,9 @@ do
 done
 
 if [ $(id -u) -eq 0 ] && [ "${opt_allowroot}" != true ] ; then
-  echo "This script should not be run as root or with sudo."
-  echo "To force, rerun with --allow-root"
-  exit 1
+    echo "This script should not be run as root or with sudo."
+    echo "To force, rerun with --allow-root"
+    exit 1
 fi
 
 found_exe() {
@@ -119,7 +119,7 @@ install_deps() {
     fi
 }
 
-TOP=$(cd $(dirname $0) && pwd -L)
+TOP=$( cd $( dirname $0 ) && pwd -L )
 VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${TOP}/.venv"}
 
 install_venv() {
@@ -136,29 +136,29 @@ git config commit.template .gitmessage
 # Check whether to build mimic (it takes a really long time!)
 build_mimic='y'
 if [[ ${opt_skipmimic} == true ]] ; then
-  build_mimic='n'
+    build_mimic='n'
 else
-  # first, look for a build of mimic in the folder
-  has_mimic=""
-  if [[ -f ${TOP}/mimic/bin/mimic ]] ; then
-      has_mimic=$( ${TOP}/mimic/bin/mimic -lv | grep Voice ) || true
-  fi
-
-  # in not, check the system path
-  if [ "$has_mimic" = "" ] ; then
-    if [ -x "$(command -v mimic)" ]; then
-      has_mimic="$( mimic -lv | grep Voice )" || true
+    # first, look for a build of mimic in the folder
+    has_mimic=""
+    if [[ -f ${TOP}/mimic/bin/mimic ]] ; then
+        has_mimic=$( ${TOP}/mimic/bin/mimic -lv | grep Voice ) || true
     fi
-  fi
 
-  if ! [ "$has_mimic" == "" ] ; then
-    echo "Mimic is installed. Press 'y' to rebuild mimic, any other key to skip."
-    read -n1 build_mimic
-  fi
+    # in not, check the system path
+    if [ "$has_mimic" = "" ] ; then
+        if [ -x "$(command -v mimic)" ]; then
+            has_mimic="$( mimic -lv | grep Voice )" || true
+        fi
+    fi
+
+    if ! [ "$has_mimic" == "" ] ; then
+        echo "Mimic is installed. Press 'y' to rebuild mimic, any other key to skip."
+        read -n1 build_mimic
+    fi
 fi
 
 if [ ! -x "${VIRTUALENV_ROOT}/bin/activate" ]; then
-  install_venv
+    install_venv
 fi
 
 # Start the virtual environment
@@ -179,8 +179,8 @@ if [ ! -f "$VENV_PATH_FILE" ] ; then
 fi
 
 if ! grep -q "$TOP" $VENV_PATH_FILE; then
-   echo "Adding mycroft-core to virtualenv path"
-   sed -i.tmp '1 a\
+    echo "Adding mycroft-core to virtualenv path"
+    sed -i.tmp '1 a\
 '"$TOP"'
 ' "${VENV_PATH_FILE}"
 fi
@@ -195,24 +195,24 @@ if ! pip install -r requirements.txt; then
 fi
 
 if ! pip install -r test-requirements.txt; then
-  echo "Warning test requirements wasn't installed, Note: normal operation should still work fine..."
+    echo "Warning test requirements wasn't installed, Note: normal operation should still work fine..."
 fi
 
-SYSMEM=$(free|awk '/^Mem:/{print $2}')
+SYSMEM=$( free | awk '/^Mem:/ { print $2 }' )
 MAXCORES=$(($SYSMEM / 512000))
 MINCORES=1
-CORES=$(nproc)
+CORES=$( nproc )
 
 # ensure MAXCORES is > 0
 if [[ ${MAXCORES} -lt 1 ]]; then
-	MAXCORES=${MINCORES}
+    MAXCORES=${MINCORES}
 fi
 
 # look for positive integer
 if ! [[ ${CORES} =~ ^[0-9]+$ ]]; then
-  CORES=${MINCORES}
+    CORES=${MINCORES}
 elif [[ ${MAXCORES} -lt ${CORES} ]]; then
-  CORES=${MAXCORES}
+    CORES=${MAXCORES}
 fi
 
 echo "Building with $CORES cores."
@@ -224,10 +224,10 @@ echo "Building with $CORES cores."
 cd "${TOP}"
 
 if [[ "$build_mimic" == 'y' ]] || [[ "$build_mimic" == 'Y' ]]; then
-  echo "WARNING: The following can take a long time to run!"
-  "${TOP}/scripts/install-mimic.sh" " ${CORES}"
+    echo "WARNING: The following can take a long time to run!"
+    "${TOP}/scripts/install-mimic.sh" " ${CORES}"
 else
-  echo "Skipping mimic build."
+    echo "Skipping mimic build."
 fi
 
 # set permissions for common scripts

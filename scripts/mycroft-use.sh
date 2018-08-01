@@ -16,13 +16,13 @@
 
 # this script is for the Mark 1 and Picroft units
 
-user=$(whoami)
+user=$( whoami )
 #Build being changed to
 change_to=${1}
 #path to mycroft-core checkout
 path=${2:-"${HOME}/mycroft-core"}
 #currently installed package
-current_pkg=$(cat /etc/apt/sources.list.d/repo.mycroft.ai.list)
+current_pkg=$( cat /etc/apt/sources.list.d/repo.mycroft.ai.list )
 stable_pkg="deb http://repo.mycroft.ai/repos/apt/debian debian main"
 unstable_pkg="deb http://repo.mycroft.ai/repos/apt/debian debian-unstable main"
 
@@ -32,15 +32,14 @@ picroft_package_list="mycroft-picroft mycroft-core mycroft-wifi-setup"
 # Determine the platform
 mycroft_platform="null"
 if [[ -r /etc/mycroft/mycroft.conf ]] ; then
-   mycroft_platform=$( jq -r '.enclosure.platform' /etc/mycroft/mycroft.conf )
+    mycroft_platform=$( jq -r '.enclosure.platform' /etc/mycroft/mycroft.conf )
 else
-   if [[ "$(hostname)" == "picroft" ]] ; then
-      mycroft_platform="picroft"
-   elif [[ "$(hostname)" =~ "mark_1" ]] ; then
-      mycroft_platform="mycroft_mark_1"
-   fi
+    if [[ "$( hostname )" == "picroft" ]] ; then
+        mycroft_platform="picroft"
+    elif [[ "$( hostname )" =~ "mark_1" ]] ; then
+        mycroft_platform="mycroft_mark_1"
+    fi
 fi
-
 
 function service_ctl {
     service=${1}
@@ -104,7 +103,6 @@ function restore_init_scripts {
 
 function github_init_scripts {
     if [ ! -f /etc/init.d/mycroft-skills.original ]; then
-
         stop_mycroft
 
         # save original scripts
@@ -116,7 +114,7 @@ function github_init_scripts {
         sudo sh -c 'cat /etc/init.d/mycroft-admin-service > /etc/init.d/mycroft-admin-service.original'
 
         # switch to point a github install and run as the current user
-# TODO Verify all of these
+        # TODO Verify all of these
         sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'${path}'/start-mycroft.sh audio"_g' /etc/init.d/mycroft-audio
         sudo sed -i 's_.*RUNAS=.*_RUNAS='${user}'_g' /etc/init.d/mycroft-audio
         sudo sed -i 's_stop() {_stop() {\nPID=$(ps ax | grep mycroft/audio/ | awk '"'NR==1{print \$1; exit}'"')\necho "${PID}" > "$PIDFILE"_g' /etc/init.d/mycroft-audio
@@ -216,7 +214,7 @@ function stable_to_unstable_server {
         cp ${conf_path}mycroft.conf.unstable ${conf_path}mycroft.conf
     else
         rm -r ${conf_path}mycroft.conf
-        echo '{"server": {"url":"https://api-test.mycroft.ai", "version":"v1", "update":true, "metrics":false }}' $(cat ${conf_path}mycroft.conf.stable) | jq -s add > ${conf_path}mycroft.conf
+        echo '{"server": {"url":"https://api-test.mycroft.ai", "version":"v1", "update":true, "metrics":false }}' $( cat ${conf_path}mycroft.conf.stable ) | jq -s add > ${conf_path}mycroft.conf
     fi
 
     # saving identity2.json to stable state
@@ -242,21 +240,21 @@ function unstable_to_stable_server {
     # check if on stable (home.mycroft.ai) already
     cmp --silent ${conf_path}/mycroft.conf ${conf_path}/mycroft.conf.stable
     if [ $? -eq 0 ] ; then
-       echo "Already set to use the home.mycroft.ai server"
-       return
+        echo "Already set to use the home.mycroft.ai server"
+        return
     fi
 
     # point api to production server
     echo "Changing mycroft.conf to point to production server api.mycroft.ai"
     if [ -f ${conf_path}mycroft.conf ]; then
-       echo '{"server": {"url":"https://api-test.mycroft.ai", "version":"v1", "update":true, "metrics":false }}' $(cat ${conf_path}mycroft.conf) | jq -s add > ${conf_path}mycroft.conf.unstable
+        echo '{"server": {"url":"https://api-test.mycroft.ai", "version":"v1", "update":true, "metrics":false }}' $( cat ${conf_path}mycroft.conf ) | jq -s add > ${conf_path}mycroft.conf.unstable
     else
-       echo "could not find mycroft.conf, was it deleted?"
+        echo "could not find mycroft.conf, was it deleted?"
     fi
     if [ -f ${conf_path}mycroft.conf.stable ]; then
-       cp ${conf_path}mycroft.conf.stable ${conf_path}mycroft.conf
+        cp ${conf_path}mycroft.conf.stable ${conf_path}mycroft.conf
     else
-       echo "ERROR:  Could not find mycroft.conf.stable, was it deleted?, an easy fix would be to copy mycroft.conf.unstable to mycroft.conf but remove the server field"
+        echo "ERROR:  Could not find mycroft.conf.stable, was it deleted?, an easy fix would be to copy mycroft.conf.unstable to mycroft.conf but remove the server field"
     fi
 
     # saving identity2.json into unstable state, then copying identity2.json.stable to identity2.json
@@ -273,8 +271,6 @@ function unstable_to_stable_server {
     restart_mycroft
     echo "Set to use the home.mycroft.ai server!"
 }
-
-
 
 if [ "${change_to}" = "unstable" ]; then
     # make sure user is running as sudo first

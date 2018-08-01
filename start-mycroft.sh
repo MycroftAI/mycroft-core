@@ -25,55 +25,55 @@ mkdir -p $scripts_dir/logs
 VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${DIR}/.venv"}
 
 function help() {
-  echo "${script}:  Mycroft command/service launcher"
-  echo "usage: ${script} [command] [params]"
-  echo
-  echo "Services:"
-  echo "  all                      runs core services: bus, audio, skills, voice"
-  echo "  debug                    runs core services, then starts the CLI"
-  echo
-  echo "Services:"
-  echo "  audio                    the audio playback service"
-  echo "  bus                      the messagebus service"
-  echo "  skills                   the skill service"
-  echo "  voice                    voice capture service"
-  echo "  wifi                     wifi setup service"
-  echo "  enclosure                mark_1 enclosure service"
-  echo
-  echo "Tools:"
-  echo "  cli                      the Command Line Interface"
-  echo "  unittest                 run mycroft-core unit tests (requires pytest)"
-  echo "  skillstest               run the skill autotests for all skills (requires pytest)"
-  echo
-  echo "Utils:"
-  echo "  audiotest                attempt simple audio validation"
-  echo "  audioaccuracytest        more complex audio validation"
-  echo "  sdkdoc                   generate sdk documentation"
-  echo
-  echo "Examples:"
-  echo "  ${script} all"
-  echo "  ${script} cli"
-  echo "  ${script} unittest"
+    echo "${script}:  Mycroft command/service launcher"
+    echo "usage: ${script} [command] [params]"
+    echo
+    echo "Services:"
+    echo "  all                      runs core services: bus, audio, skills, voice"
+    echo "  debug                    runs core services, then starts the CLI"
+    echo
+    echo "Services:"
+    echo "  audio                    the audio playback service"
+    echo "  bus                      the messagebus service"
+    echo "  skills                   the skill service"
+    echo "  voice                    voice capture service"
+    echo "  wifi                     wifi setup service"
+    echo "  enclosure                mark_1 enclosure service"
+    echo
+    echo "Tools:"
+    echo "  cli                      the Command Line Interface"
+    echo "  unittest                 run mycroft-core unit tests (requires pytest)"
+    echo "  skillstest               run the skill autotests for all skills (requires pytest)"
+    echo
+    echo "Utils:"
+    echo "  audiotest                attempt simple audio validation"
+    echo "  audioaccuracytest        more complex audio validation"
+    echo "  sdkdoc                   generate sdk documentation"
+    echo
+    echo "Examples:"
+    echo "  ${script} all"
+    echo "  ${script} cli"
+    echo "  ${script} unittest"
 
-  exit 1
+    exit 1
 }
 
 _script=""
 function name-to-script-path() {
     case ${1} in
-    "bus")             _script=${DIR}/mycroft/messagebus/service/main.py ;;
-    "skills")          _script=${DIR}/mycroft/skills/main.py ;;
-    "audio")           _script=${DIR}/mycroft/audio/main.py ;;
-    "voice")           _script=${DIR}/mycroft/client/speech/main.py ;;
-    "cli")             _script=${DIR}/mycroft/client/text/main.py ;;
-    "wifi")            _script=${DIR}/mycroft/client/wifisetup/main.py ;;
-    "audioaccuracytest") _script=${DIR}/mycroft/audio-accuracy-test/audio_accuracy_test.py ;;
-    "sdkdoc")          _script=${DIR}/doc/generate_sdk_docs.py ;;
-    "enclosure")       _script=${DIR}/mycroft/client/enclosure/main.py ;;
+        "bus")             _script=${DIR}/mycroft/messagebus/service/main.py ;;
+        "skills")          _script=${DIR}/mycroft/skills/main.py ;;
+        "audio")           _script=${DIR}/mycroft/audio/main.py ;;
+        "voice")           _script=${DIR}/mycroft/client/speech/main.py ;;
+        "cli")             _script=${DIR}/mycroft/client/text/main.py ;;
+        "wifi")            _script=${DIR}/mycroft/client/wifisetup/main.py ;;
+        "audioaccuracytest") _script=${DIR}/mycroft/audio-accuracy-test/audio_accuracy_test.py ;;
+        "sdkdoc")          _script=${DIR}/doc/generate_sdk_docs.py ;;
+        "enclosure")       _script=${DIR}/mycroft/client/enclosure/main.py ;;
 
-    *)
-        echo "Error: Unknown name '${1}'"
-        exit 1
+        *)
+            echo "Error: Unknown name '${1}'"
+            exit 1
     esac
 }
 
@@ -162,57 +162,57 @@ _params=$@
 check-dependencies
 
 case ${_opt} in
-  "all")
-    launch-all
-    ;;
+    "all")
+        launch-all
+        ;;
 
-  "bus")
-    launch-background ${_opt}
-    ;;
-  "audio")
-    launch-background ${_opt}
-    ;;
-  "skills")
-    launch-background ${_opt}
-    ;;
-  "voice")
-    launch-background ${_opt}
-    ;;
+    "bus")
+        launch-background ${_opt}
+        ;;
+    "audio")
+        launch-background ${_opt}
+        ;;
+    "skills")
+        launch-background ${_opt}
+        ;;
+    "voice")
+        launch-background ${_opt}
+        ;;
 
-  "debug")
-    launch-all
-    launch-process cli
-    ;;
+    "debug")
+        launch-all
+        launch-process cli
+        ;;
 
-  "cli")
-    launch-process ${_opt}
-    ;;
-  "wifi")
-    launch-background ${_opt}
-    ;;
-  "unittest")
-    source-venv
-    pytest test/unittests/ --cov=mycroft "$@"
-    ;;
-  "skillstest")
-    source-venv
-    pytest test/integrationtests/skills/discover_tests.py "$@"
-    ;;
-  "audiotest")
-    source-venv
-    python3 -m mycroft.util.audio_test "${@:1}"
-    ;;
-  "audioaccuracytest")
-    launch-process ${_opt}
-    ;;
-  "sdkdoc")
-    launch-process ${_opt}
-    ;;
-  "enclosure")
-    launch-background ${_opt}
-    ;;
+    "cli")
+        launch-process ${_opt}
+        ;;
+    "wifi")
+        launch-background ${_opt}
+        ;;
+    "unittest")
+        source-venv
+        pytest test/unittests/ --cov=mycroft "$@"
+        ;;
+    "skillstest")
+        source-venv
+        pytest test/integrationtests/skills/discover_tests.py "$@"
+        ;;
+    "audiotest")
+        source-venv
+        python3 -m mycroft.util.audio_test "${@:1}"
+        ;;
+    "audioaccuracytest")
+        launch-process ${_opt}
+        ;;
+    "sdkdoc")
+        launch-process ${_opt}
+        ;;
+    "enclosure")
+        launch-background ${_opt}
+        ;;
 
-  *)
-    help
-    ;;
+    *)
+        help
+        ;;
 esac
