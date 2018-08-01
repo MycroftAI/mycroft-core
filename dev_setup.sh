@@ -41,7 +41,7 @@
 # exit on any error
 set -Ee
 
-show_help() {
+function show_help() {
     echo "dev_setup.sh: Mycroft development environment setup"
     echo "Usage: dev_setup.sh [options]"
     echo
@@ -80,11 +80,11 @@ if [ $(id -u) -eq 0 ] && [ "${opt_allowroot}" != true ] ; then
     exit 1
 fi
 
-found_exe() {
+function found_exe() {
     hash "$1" 2>/dev/null
 }
 
-install_deps() {
+function install_deps() {
     echo "Installing packages..."
     if found_exe sudo; then
         SUDO=sudo
@@ -122,7 +122,7 @@ install_deps() {
 TOP=$( cd $( dirname $0 ) && pwd -L )
 VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${TOP}/.venv"}
 
-install_venv() {
+function install_venv() {
     python3 -m venv "${VIRTUALENV_ROOT}/" --without-pip
     curl https://bootstrap.pypa.io/get-pip.py | "${VIRTUALENV_ROOT}/bin/python"
 }

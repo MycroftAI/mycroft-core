@@ -41,13 +41,13 @@ else
     fi
 fi
 
-function service_ctl {
+function service_ctl() {
     service=${1}
     action=${2}
     sudo /etc/init.d/${service} ${action}
 }
 
-function stop_mycroft {
+function stop_mycroft() {
     service_ctl mycroft-audio stop
     service_ctl mycroft-skills stop
     service_ctl mycroft-speech-client stop
@@ -56,7 +56,7 @@ function stop_mycroft {
     service_ctl mycroft-messagebus stop
 }
 
-function start_mycroft {
+function start_mycroft() {
     service_ctl mycroft-messagebus start
     service_ctl mycroft-enclosure-client start
     service_ctl mycroft-audio start
@@ -65,7 +65,7 @@ function start_mycroft {
     service_ctl mycroft-admin-service start
 }
 
-function restart_mycroft {
+function restart_mycroft() {
     service_ctl mycroft-messagebus restart
     service_ctl mycroft-audio restart
     service_ctl mycroft-skills restart
@@ -75,7 +75,7 @@ function restart_mycroft {
 }
 
 #Changes init scripts back to the original versions
-function restore_init_scripts {
+function restore_init_scripts() {
     # stop running Mycroft services
     stop_mycroft
 
@@ -101,7 +101,7 @@ function restore_init_scripts {
     start_mycroft
 }
 
-function github_init_scripts {
+function github_init_scripts() {
     if [ ! -f /etc/init.d/mycroft-skills.original ]; then
         stop_mycroft
 
@@ -156,7 +156,7 @@ function github_init_scripts {
     fi
 }
 
-function invoke_apt {
+function invoke_apt() {
     if [ ${mycroft_platform} == "mycroft_mark_1" ] ; then
         echo "${1}ing the mycroft-mark-1 metapackage..."
         sudo apt-get ${1} mycroft-mark-1 -y
@@ -170,7 +170,7 @@ function invoke_apt {
     fi
 }
 
-function remove_all {
+function remove_all() {
     if [ ${mycroft_platform} == "mycroft_mark_1" ] ; then
         echo "Removing the mycroft mark-1 packages..."
         sudo apt-get remove ${mark_1_package_list} -y
@@ -184,7 +184,7 @@ function remove_all {
     fi
 }
 
-function change_build {
+function change_build() {
     build=${1}
     sudo sh -c 'echo '"${build}"' > /etc/apt/sources.list.d/repo.mycroft.ai.list'
     sudo apt-get update
@@ -192,7 +192,7 @@ function change_build {
     invoke_apt install
 }
 
-function stable_to_unstable_server {
+function stable_to_unstable_server() {
     identity_path=/home/mycroft/.mycroft/identity/
     conf_path=/home/mycroft/.mycroft/
 
@@ -232,7 +232,7 @@ function stable_to_unstable_server {
     echo "Set to use the home-test.mycroft.ai server!"
 }
 
-function unstable_to_stable_server {
+function unstable_to_stable_server() {
     # switching from unstable -> stable
     identity_path=/home/mycroft/.mycroft/identity/
     conf_path=/home/mycroft/.mycroft/

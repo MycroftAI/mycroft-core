@@ -20,7 +20,7 @@
 # To do: functionalize and allow for parametereized calls of each.
 # rs 2017-05-05
 
-helpfunc() {
+function helpfunc() {
     echo "Usage: ${0} [FUNCTION]"
     echo " Functions include
   -v version
@@ -55,14 +55,14 @@ else
 fi
 
 # it's big, it's heavy, it's wood!
-mlog() {
+function mlog() {
     local timestamp="[$( date +"%Y-%m-%d %H:%M:%S" )]"
     message="$*"
     echo "${timestamp} ${message}" |tee -a ${LOG_FILE}
 }
 
 # Sup big perm.
-checkperms () {
+function checkperms() {
 if ! [[ -e "${1}" && -w "${1}" && -O "${1}"  ]] ; then
     if ! [[ -e "${1}" ]] ; then
         # doesn't exist?
@@ -88,7 +88,7 @@ echo "If you can read this, we may need glasses."
 }
 
 # Check before we wreck:
-checkfiles() {
+function checkfiles() {
     mlog "Permission checks..."
     cat << EOF > /tmp/my-list.$$
 ${MYCROFT_HOME}
@@ -116,7 +116,7 @@ EOF
 }
 
 # random info of potential interest
-checksysinfo () {
+function checksysinfo() {
     mlog "System info..."
     mlog " - CPU: $( awk -F: '/model name/ { print $2;exit }' /proc/cpuinfo )"
     mlog " - $( echo "RAM Utilization:" && free -h )"
@@ -126,12 +126,12 @@ checksysinfo () {
 }
 
 # -v
-checkversion () {
+function checkversion() {
     mlog "Mycroft version is $( grep -B3 'END_VERSION_BLOCK' ${MYCROFT_HOME}/mycroft/version/__init__.py | cut -d' ' -f3 | tr -s '\012' '\056' )"
 }
 
 # do you want to do repeat?
-checkmimic () {
+function checkmimic() {
     mlog "Checking Mimic..."
     if hash mimic ; then
         mlog " - Mimic$( mimic --version | grep mimic )"
@@ -142,7 +142,7 @@ checkmimic () {
 }
 
 # pythoning!
-checkPIP () {
+function checkPIP() {
     mlog "Python checks"
     mlog " - Verifying ${MYCROFT_HOME}/requirements.txt:"
     if workon mycroft ; then
@@ -165,7 +165,7 @@ checkPIP () {
 }
 
 # a series of tubes
-checktubes () {
+function checktubes() {
     mlog "Internet connectivity..."
     case "$( curl -s --max-time 2 -I http://home.mycroft.ai/ | sed 's/^[^ ]*  *\([0-9]\).*/\1/; 1q' )" in
         [23]) mlog " - HTTP connectivity to https://home.mycroft.ai worked!";;
@@ -175,7 +175,7 @@ checktubes () {
 }
 
 # I prefer biking myself.
-checkrunning () {
+function checkrunning() {
     while read SCREEN_SESS ; do
         SESS_NAME=$( echo "${SCREEN_SESS}" | cut -d'(' -f1 | cut -d'.' -f2 )
         SESS_ID=$( echo "${SCREEN_SESS}" | cut -d'.' -f1 )
@@ -186,7 +186,7 @@ checkrunning () {
 }
 
 # He's dead, Jim.
-checkpulse () {
+function checkpulse() {
     mlog "Sound settings..."
     if hash pactl && [[ ${RUN_AS_ROOT} -eq 1 ]] ; then
         mlog " - $( echo "Pulse Audio Defaults:" && pactl info | grep "Default S[i,o]" )"
