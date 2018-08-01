@@ -77,12 +77,19 @@ function name-to-script-path() {
     esac
 }
 
+function source-venv() {
+    # Enter Python virtual environment, unless under Docker
+    if [ ! -f "/.dockerenv" ]; then
+        source ${VIRTUALENV_ROOT}/bin/activate
+    fi
+}
+
 first_time=true
 function launch-process() {
     if ($first_time) ; then
         echo "Initializing..."
         ${DIR}/scripts/prepare-msm.sh
-        source ${VIRTUALENV_ROOT}/bin/activate
+        source-venv
         first_time=false
     fi
 
@@ -97,7 +104,7 @@ function launch-background() {
     if ($first_time) ; then
         echo "Initializing..."
         ${DIR}/scripts/prepare-msm.sh
-        source ${VIRTUALENV_ROOT}/bin/activate
+        source-venv
         first_time=false
     fi
 
@@ -184,15 +191,15 @@ case ${_opt} in
     launch-background ${_opt}
     ;;
   "unittest")
-    source ${VIRTUALENV_ROOT}/bin/activate
+    source-venv
     pytest test/unittests/ --cov=mycroft "$@"
     ;;
   "skillstest")
-    source ${VIRTUALENV_ROOT}/bin/activate
+    source-venv
     pytest test/integrationtests/skills/discover_tests.py "$@"
     ;;
   "audiotest")
-    source ${VIRTUALENV_ROOT}/bin/activate
+    source-venv
     python3 -m mycroft.util.audio_test "${@:1}"
     ;;
   "audioaccuracytest")
