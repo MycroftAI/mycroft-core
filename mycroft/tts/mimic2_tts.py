@@ -13,13 +13,17 @@
 # limitations under the License.
 #
 
-from mycroft.tts import TTSValidator
+from mycroft.tts import TTS, TTSValidator
 from mycroft.tts.remote_tts import RemoteTTS
 from mycroft.util.log import LOG
-from mycroft.util import play_wav
+from mycroft.util import play_wav, get_cache_directory
 from requests_futures.sessions import FuturesSession
 from urllib import parse
+from .mimic_tts import VISIMES
 import math
+import base64
+import os
+import hashlib
 
 
 def break_chunks(l, n):
@@ -124,7 +128,7 @@ def sentence_chunker(text, chunk_size, split_by_punc=True):
     # if the chracter count is less then 55
     if len(text_list) <= chunk_size * 1.3:
         if len(text) < 55:
-            return [text]
+            return [add_punctuation(text)]
 
     # split text by punctuations if split_by_punc set to true
     punc_splits = None
@@ -146,14 +150,13 @@ def sentence_chunker(text, chunk_size, split_by_punc=True):
     return chunks
 
 
-class Mimic2(RemoteTTS):
-    PARAMS = {'accept': 'audio/wav'}
+class Mimic2(TTS):
 
     def __init__(self, lang, config):
         super(Mimic2, self).__init__(
-            lang, config, config['url'],
-            config['api_path'], Mimic2Validator(self)
+            lang, config, Mimic2Validator(self)
         )
+        self.url = config['url']
         self.session = FuturesSession()
         chunk_size = config.get('chunk_size')
         self.chunk_size = \
@@ -197,10 +200,35 @@ class Mimic2(RemoteTTS):
         """
         reqs = []
         for chunk in chunks:
-            req_route = \
-                self.url + self.api_path + parse.quote(chunk)
-            reqs.append(self.session.get(req_route))
+            if len(chunk) > 0:
+                url = self.url + parse.quote(chunk)
+                req_route = url + "&visimes=True"
+                reqs.append(self.session.get(req_route))
         return reqs
+
+    def visime(self, phonemes):
+        """maps phonemes to visemes encoding
+
+        Args:
+            phonemes (list): list of tuples (phoneme, time_start)
+
+        Returns:
+            list: list of tuples (viseme_encoding, time_start)
+        """
+
+        visemes = []
+        for pair in phonemes:
+            if pair[0]:
+                phone = pair[0].lower()
+            else:
+                # if phoneme doesn't exist use
+                # this as placeholder since it
+                # is the most common one "3"
+                phone = 'z'
+            vis = VISIMES.get(phone)
+            vis_dur = float(pair[1])
+            visemes.append((vis, vis_dur))
+        return visemes
 
     def execute(self, sentence, ident=None):
         """request and play mimic2 wav audio
@@ -210,15 +238,19 @@ class Mimic2(RemoteTTS):
             ident (optional): Defaults to None.
         """
         chunks = sentence_chunker(sentence, self.chunk_size)
-        for req in self._requests(chunks):
-            try:
-                res = req.result()
-                self.begin_audio()
-                self._play(res)
-            except Exception as e:
-                LOG.error(e)
-            finally:
-                self.end_audio()
+        for idx, req in enumerate(self._requests(chunks)):
+            results = req.result().json()
+            audio = base64.b64decode(results['audio_base64'])
+            vis = self.visime(results['visimes'])
+            key = str(hashlib.md5(
+                chunks[idx].encode('utf-8', 'ignore')).hexdigest())
+            wav_file = os.path.join(
+                get_cache_directory("tts"),
+                key + '.' + self.audio_ext
+            )
+            with open(wav_file, 'wb') as f:
+                f.write(audio)
+            self.queue.put((self.audio_ext, wav_file, vis, ident))
 
 
 class Mimic2Validator(TTSValidator):
