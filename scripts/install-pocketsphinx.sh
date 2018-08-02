@@ -21,11 +21,11 @@ set -Ee
 
 
 function enable_local() {
-    sed -i -- 's/from pocketsphinx.pocketsphinx import Decoder/from pocketsphinx import Decoder/g' mycroft/client/speech/local_recognizer.py
+    sed -i 's/from pocketsphinx.pocketsphinx import Decoder/from pocketsphinx import Decoder/g' mycroft/client/speech/local_recognizer.py
 }
 
 function disable_local() {
-    sed -i -- 's/from pocketsphinx import Decoder/from pocketsphinx.pocketsphinx import Decoder/g' mycroft/client/speech/local_recognizer.py
+    sed -i 's/from pocketsphinx import Decoder/from pocketsphinx.pocketsphinx import Decoder/g' mycroft/client/speech/local_recognizer.py
 }
 
 function install_pocketsphinx() {
