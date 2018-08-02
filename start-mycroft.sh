@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Copyright 2017 Mycroft AI Inc.
 #
@@ -25,61 +25,61 @@ mkdir -p $scripts_dir/logs
 VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${DIR}/.venv"}
 
 function help() {
-  echo "${script}:  Mycroft command/service launcher"
-  echo "usage: ${script} [command] [params]"
-  echo
-  echo "Services:"
-  echo "  all                      runs core services: bus, audio, skills, voice"
-  echo "  debug                    runs core services, then starts the CLI"
-  echo
-  echo "Services:"
-  echo "  audio                    the audio playback service"
-  echo "  bus                      the messagebus service"
-  echo "  skills                   the skill service"
-  echo "  voice                    voice capture service"
-  echo "  wifi                     wifi setup service"
-  echo "  enclosure                mark_1 enclosure service"
-  echo
-  echo "Tools:"
-  echo "  cli                      the Command Line Interface"
-  echo "  unittest                 run mycroft-core unit tests (requires pytest)"
-  echo "  skillstest               run the skill autotests for all skills (requires pytest)"
-  echo
-  echo "Utils:"
-  echo "  audiotest                attempt simple audio validation"
-  echo "  audioaccuracytest        more complex audio validation"
-  echo "  sdkdoc                   generate sdk documentation"
-  echo
-  echo "Examples:"
-  echo "  ${script} all"
-  echo "  ${script} cli"
-  echo "  ${script} unittest"
+    echo "${script}:  Mycroft command/service launcher"
+    echo "usage: ${script} [command] [params]"
+    echo
+    echo "Services:"
+    echo "  all                      runs core services: bus, audio, skills, voice"
+    echo "  debug                    runs core services, then starts the CLI"
+    echo
+    echo "Services:"
+    echo "  audio                    the audio playback service"
+    echo "  bus                      the messagebus service"
+    echo "  skills                   the skill service"
+    echo "  voice                    voice capture service"
+    echo "  wifi                     wifi setup service"
+    echo "  enclosure                mark_1 enclosure service"
+    echo
+    echo "Tools:"
+    echo "  cli                      the Command Line Interface"
+    echo "  unittest                 run mycroft-core unit tests (requires pytest)"
+    echo "  skillstest               run the skill autotests for all skills (requires pytest)"
+    echo
+    echo "Utils:"
+    echo "  audiotest                attempt simple audio validation"
+    echo "  audioaccuracytest        more complex audio validation"
+    echo "  sdkdoc                   generate sdk documentation"
+    echo
+    echo "Examples:"
+    echo "  ${script} all"
+    echo "  ${script} cli"
+    echo "  ${script} unittest"
 
-  exit 1
+    exit 1
 }
 
 _script=""
 function name-to-script-path() {
     case ${1} in
-    "bus")             _script=${DIR}/mycroft/messagebus/service/main.py ;;
-    "skills")          _script=${DIR}/mycroft/skills/main.py ;;
-    "audio")           _script=${DIR}/mycroft/audio/main.py ;;
-    "voice")           _script=${DIR}/mycroft/client/speech/main.py ;;
-    "cli")             _script=${DIR}/mycroft/client/text/main.py ;;
-    "wifi")            _script=${DIR}/mycroft/client/wifisetup/main.py ;;
-    "audioaccuracytest") _script=${DIR}/mycroft/audio-accuracy-test/audio_accuracy_test.py ;;
-    "sdkdoc")          _script=${DIR}/doc/generate_sdk_docs.py ;;
-    "enclosure")       _script=${DIR}/mycroft/client/enclosure/main.py ;;
+        "bus")             _script=${DIR}/mycroft/messagebus/service/main.py ;;
+        "skills")          _script=${DIR}/mycroft/skills/main.py ;;
+        "audio")           _script=${DIR}/mycroft/audio/main.py ;;
+        "voice")           _script=${DIR}/mycroft/client/speech/main.py ;;
+        "cli")             _script=${DIR}/mycroft/client/text/main.py ;;
+        "wifi")            _script=${DIR}/mycroft/client/wifisetup/main.py ;;
+        "audioaccuracytest") _script=${DIR}/mycroft/audio-accuracy-test/audio_accuracy_test.py ;;
+        "sdkdoc")          _script=${DIR}/doc/generate_sdk_docs.py ;;
+        "enclosure")       _script=${DIR}/mycroft/client/enclosure/main.py ;;
 
-    *)
-        echo "Error: Unknown name '${1}'"
-        exit 1
+        *)
+            echo "Error: Unknown name '${1}'"
+            exit 1
     esac
 }
 
 function source-venv() {
     # Enter Python virtual environment, unless under Docker
-    if [ ! -f "/.dockerenv" ]; then
+    if [ ! -f "/.dockerenv" ] ; then
         source ${VIRTUALENV_ROOT}/bin/activate
     fi
 }
@@ -111,7 +111,7 @@ function launch-background() {
     name-to-script-path ${1}
 
     # Check if already running
-    if [[ $( ps aux ) = *${_script}* ]] ; then
+    if [[ $( ps aux ) == *${_script}* ]] ; then
         echo "Restarting: ${1}"
         source stop-mycroft.sh ${1}
     else
@@ -119,7 +119,7 @@ function launch-background() {
     fi
 
     # Security warning/reminder for the user
-    if [[ "${1}" = "bus" ]] ; then
+    if [[ "${1}" == "bus" ]] ; then
         echo "CAUTION: The Mycroft bus is an open websocket with no built-in security"
         echo "         measures.  You are responsible for protecting the local port"
         echo "         8181 with a firewall as appropriate."
@@ -139,7 +139,7 @@ function launch-all() {
     # Determine platform type
     if [[ -r /etc/mycroft/mycroft.conf ]] ; then
         mycroft_platform=$( jq -r ".enclosure.platform" < /etc/mycroft/mycroft.conf )
-        if [[ $mycroft_platform = 'mycroft_mark_1' ]] ; then
+        if [[ $mycroft_platform = "mycroft_mark_1" ]] ; then
             # running on a Mark 1, start enclosure service
             launch-background enclosure
         fi
@@ -147,9 +147,9 @@ function launch-all() {
 }
 
 function check-dependencies() {
-  if [ ! -f .installed ] || ! md5sum -c &> /dev/null < .installed; then
+  if [ ! -f .installed ] || ! md5sum -c &> /dev/null < .installed ; then
     echo "Please update dependencies by running ./dev_setup.sh again."
-    if command -v notify-send >/dev/null; then
+    if command -v notify-send >/dev/null ; then
       notify-send "Mycroft Dependencies Outdated" "Run ./dev_setup.sh again"
     fi
   fi
@@ -162,57 +162,57 @@ _params=$@
 check-dependencies
 
 case ${_opt} in
-  "all")
-    launch-all
-    ;;
+    "all")
+        launch-all
+        ;;
 
-  "bus")
-    launch-background ${_opt}
-    ;;
-  "audio")
-    launch-background ${_opt}
-    ;;
-  "skills")
-    launch-background ${_opt}
-    ;;
-  "voice")
-    launch-background ${_opt}
-    ;;
+    "bus")
+        launch-background ${_opt}
+        ;;
+    "audio")
+        launch-background ${_opt}
+        ;;
+    "skills")
+        launch-background ${_opt}
+        ;;
+    "voice")
+        launch-background ${_opt}
+        ;;
 
-  "debug")
-    launch-all
-    launch-process cli
-    ;;
+    "debug")
+        launch-all
+        launch-process cli
+        ;;
 
-  "cli")
-    launch-process ${_opt}
-    ;;
-  "wifi")
-    launch-background ${_opt}
-    ;;
-  "unittest")
-    source-venv
-    pytest test/unittests/ --cov=mycroft "$@"
-    ;;
-  "skillstest")
-    source-venv
-    pytest test/integrationtests/skills/discover_tests.py "$@"
-    ;;
-  "audiotest")
-    source-venv
-    python3 -m mycroft.util.audio_test "${@:1}"
-    ;;
-  "audioaccuracytest")
-    launch-process ${_opt}
-    ;;
-  "sdkdoc")
-    launch-process ${_opt}
-    ;;
-  "enclosure")
-    launch-background ${_opt}
-    ;;
+    "cli")
+        launch-process ${_opt}
+        ;;
+    "wifi")
+        launch-background ${_opt}
+        ;;
+    "unittest")
+        source-venv
+        pytest test/unittests/ --cov=mycroft "$@"
+        ;;
+    "skillstest")
+        source-venv
+        pytest test/integrationtests/skills/discover_tests.py "$@"
+        ;;
+    "audiotest")
+        source-venv
+        python3 -m mycroft.util.audio_test "${@:1}"
+        ;;
+    "audioaccuracytest")
+        launch-process ${_opt}
+        ;;
+    "sdkdoc")
+        launch-process ${_opt}
+        ;;
+    "enclosure")
+        launch-background ${_opt}
+        ;;
 
-  *)
-    help
-    ;;
+    *)
+        help
+        ;;
 esac

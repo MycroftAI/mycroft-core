@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Copyright 2017 Mycroft AI Inc.
 #
@@ -16,13 +16,13 @@
 
 # this script is for the Mark 1 and Picroft units
 
-user=$(whoami)
+user=$( whoami )
 #Build being changed to
 change_to=${1}
 #path to mycroft-core checkout
 path=${2:-"${HOME}/mycroft-core"}
 #currently installed package
-current_pkg=$(cat /etc/apt/sources.list.d/repo.mycroft.ai.list)
+current_pkg=$( cat /etc/apt/sources.list.d/repo.mycroft.ai.list )
 stable_pkg="deb http://repo.mycroft.ai/repos/apt/debian debian main"
 unstable_pkg="deb http://repo.mycroft.ai/repos/apt/debian debian-unstable main"
 
@@ -32,23 +32,22 @@ picroft_package_list="mycroft-picroft mycroft-core mycroft-wifi-setup"
 # Determine the platform
 mycroft_platform="null"
 if [[ -r /etc/mycroft/mycroft.conf ]] ; then
-   mycroft_platform=$( jq -r '.enclosure.platform' /etc/mycroft/mycroft.conf )
+    mycroft_platform=$( jq -r '.enclosure.platform' /etc/mycroft/mycroft.conf )
 else
-   if [[ "$(hostname)" == "picroft" ]] ; then
-      mycroft_platform="picroft"
-   elif [[ "$(hostname)" =~ "mark_1" ]] ; then
-      mycroft_platform="mycroft_mark_1"
-   fi
+    if [[ "$( hostname )" == "picroft" ]] ; then
+        mycroft_platform="picroft"
+    elif [[ "$( hostname )" =~ "mark_1" ]] ; then
+        mycroft_platform="mycroft_mark_1"
+    fi
 fi
 
-
-function service_ctl {
+function service_ctl() {
     service=${1}
     action=${2}
     sudo /etc/init.d/${service} ${action}
 }
 
-function stop_mycroft {
+function stop_mycroft() {
     service_ctl mycroft-audio stop
     service_ctl mycroft-skills stop
     service_ctl mycroft-speech-client stop
@@ -57,7 +56,7 @@ function stop_mycroft {
     service_ctl mycroft-messagebus stop
 }
 
-function start_mycroft {
+function start_mycroft() {
     service_ctl mycroft-messagebus start
     service_ctl mycroft-enclosure-client start
     service_ctl mycroft-audio start
@@ -66,7 +65,7 @@ function start_mycroft {
     service_ctl mycroft-admin-service start
 }
 
-function restart_mycroft {
+function restart_mycroft() {
     service_ctl mycroft-messagebus restart
     service_ctl mycroft-audio restart
     service_ctl mycroft-skills restart
@@ -76,7 +75,7 @@ function restart_mycroft {
 }
 
 #Changes init scripts back to the original versions
-function restore_init_scripts {
+function restore_init_scripts() {
     # stop running Mycroft services
     stop_mycroft
 
@@ -102,9 +101,8 @@ function restore_init_scripts {
     start_mycroft
 }
 
-function github_init_scripts {
-    if [ ! -f /etc/init.d/mycroft-skills.original ]; then
-
+function github_init_scripts() {
+    if [ ! -f /etc/init.d/mycroft-skills.original ] ; then
         stop_mycroft
 
         # save original scripts
@@ -116,7 +114,7 @@ function github_init_scripts {
         sudo sh -c 'cat /etc/init.d/mycroft-admin-service > /etc/init.d/mycroft-admin-service.original'
 
         # switch to point a github install and run as the current user
-# TODO Verify all of these
+        # TODO Verify all of these
         sudo sed -i 's_.*SCRIPT=.*_SCRIPT="'${path}'/start-mycroft.sh audio"_g' /etc/init.d/mycroft-audio
         sudo sed -i 's_.*RUNAS=.*_RUNAS='${user}'_g' /etc/init.d/mycroft-audio
         sudo sed -i 's_stop() {_stop() {\nPID=$(ps ax | grep mycroft/audio/ | awk '"'NR==1{print \$1; exit}'"')\necho "${PID}" > "$PIDFILE"_g' /etc/init.d/mycroft-audio
@@ -139,10 +137,10 @@ function github_init_scripts {
 
         # soft link the current user to the mycroft user's identity folder
         chown ${user}:${user} /home/mycroft/.mycroft/identity/identity2.json
-        if [ ! -e ${HOME}/.mycroft ]; then
+        if [ ! -e ${HOME}/.mycroft ] ; then
             mkdir ${HOME}/.mycroft
         fi
-        if [ ! -e ${HOME}/.mycroft/identity ]; then
+        if [ ! -e ${HOME}/.mycroft/identity ] ; then
             sudo ln -s /home/mycroft/.mycroft/identity ${HOME}/.mycroft/
         fi
 
@@ -158,7 +156,7 @@ function github_init_scripts {
     fi
 }
 
-function invoke_apt {
+function invoke_apt() {
     if [ ${mycroft_platform} == "mycroft_mark_1" ] ; then
         echo "${1}ing the mycroft-mark-1 metapackage..."
         sudo apt-get ${1} mycroft-mark-1 -y
@@ -172,7 +170,7 @@ function invoke_apt {
     fi
 }
 
-function remove_all {
+function remove_all() {
     if [ ${mycroft_platform} == "mycroft_mark_1" ] ; then
         echo "Removing the mycroft mark-1 packages..."
         sudo apt-get remove ${mark_1_package_list} -y
@@ -186,7 +184,7 @@ function remove_all {
     fi
 }
 
-function change_build {
+function change_build() {
     build=${1}
     sudo sh -c 'echo '"${build}"' > /etc/apt/sources.list.d/repo.mycroft.ai.list'
     sudo apt-get update
@@ -194,7 +192,7 @@ function change_build {
     invoke_apt install
 }
 
-function stable_to_unstable_server {
+function stable_to_unstable_server() {
     identity_path=/home/mycroft/.mycroft/identity/
     conf_path=/home/mycroft/.mycroft/
 
@@ -207,24 +205,24 @@ function stable_to_unstable_server {
 
     # point to test server
     echo "Changing mycroft.conf to point to test server api-test.mycroft.ai"
-    if [ -f ${conf_path}mycroft.conf ]; then
+    if [ -f ${conf_path}mycroft.conf ] ; then
         cp ${conf_path}mycroft.conf ${conf_path}mycroft.conf.stable
     else
         echo "could not find mycroft.conf, was it deleted?"
     fi
-    if [ -f ${conf_path}mycroft.conf.unstable ]; then
+    if [ -f ${conf_path}mycroft.conf.unstable ] ; then
         cp ${conf_path}mycroft.conf.unstable ${conf_path}mycroft.conf
     else
         rm -r ${conf_path}mycroft.conf
-        echo '{"server": {"url":"https://api-test.mycroft.ai", "version":"v1", "update":true, "metrics":false }}' $(cat ${conf_path}mycroft.conf.stable) | jq -s add > ${conf_path}mycroft.conf
+        echo '{"server": {"url":"https://api-test.mycroft.ai", "version":"v1", "update":true, "metrics":false }}' $( cat ${conf_path}mycroft.conf.stable ) | jq -s add > ${conf_path}mycroft.conf
     fi
 
     # saving identity2.json to stable state
     echo "Pointing identity2.json to unstable and saving to identity2.json.stable"
-    if [ -f ${identity_path}identity2.json ]; then
+    if [ -f ${identity_path}identity2.json ] ; then
         mv ${identity_path}identity2.json ${identity_path}identity2.json.stable
     fi
-    if [ -f /home/mycroft/.mycroft/identity/identity2.json.unstable ]; then
+    if [ -f /home/mycroft/.mycroft/identity/identity2.json.unstable ] ; then
         cp ${identity_path}identity2.json.unstable ${identity_path}identity2.json
     else
         echo "NOTE:  This seems to be your first time switching to unstable. You will need to go to home-test.mycroft.ai to pair on unstable."
@@ -234,7 +232,7 @@ function stable_to_unstable_server {
     echo "Set to use the home-test.mycroft.ai server!"
 }
 
-function unstable_to_stable_server {
+function unstable_to_stable_server() {
     # switching from unstable -> stable
     identity_path=/home/mycroft/.mycroft/identity/
     conf_path=/home/mycroft/.mycroft/
@@ -242,29 +240,29 @@ function unstable_to_stable_server {
     # check if on stable (home.mycroft.ai) already
     cmp --silent ${conf_path}/mycroft.conf ${conf_path}/mycroft.conf.stable
     if [ $? -eq 0 ] ; then
-       echo "Already set to use the home.mycroft.ai server"
-       return
+        echo "Already set to use the home.mycroft.ai server"
+        return
     fi
 
     # point api to production server
     echo "Changing mycroft.conf to point to production server api.mycroft.ai"
-    if [ -f ${conf_path}mycroft.conf ]; then
-       echo '{"server": {"url":"https://api-test.mycroft.ai", "version":"v1", "update":true, "metrics":false }}' $(cat ${conf_path}mycroft.conf) | jq -s add > ${conf_path}mycroft.conf.unstable
+    if [ -f ${conf_path}mycroft.conf ] ; then
+        echo '{"server": {"url":"https://api-test.mycroft.ai", "version":"v1", "update":true, "metrics":false }}' $( cat ${conf_path}mycroft.conf ) | jq -s add > ${conf_path}mycroft.conf.unstable
     else
-       echo "could not find mycroft.conf, was it deleted?"
+        echo "could not find mycroft.conf, was it deleted?"
     fi
-    if [ -f ${conf_path}mycroft.conf.stable ]; then
-       cp ${conf_path}mycroft.conf.stable ${conf_path}mycroft.conf
+    if [ -f ${conf_path}mycroft.conf.stable ] ; then
+        cp ${conf_path}mycroft.conf.stable ${conf_path}mycroft.conf
     else
-       echo "ERROR:  Could not find mycroft.conf.stable, was it deleted?, an easy fix would be to copy mycroft.conf.unstable to mycroft.conf but remove the server field"
+        echo "ERROR:  Could not find mycroft.conf.stable, was it deleted?, an easy fix would be to copy mycroft.conf.unstable to mycroft.conf but remove the server field"
     fi
 
     # saving identity2.json into unstable state, then copying identity2.json.stable to identity2.json
     echo "Pointing identity2.json to unstable and saving to identity2.json.unstable"
-    if [ -f ${identity_path}identity2.json ]; then
+    if [ -f ${identity_path}identity2.json ] ; then
         mv ${identity_path}identity2.json ${identity_path}identity2.json.unstable
     fi
-    if [ -f ${identity_path}identity2.json.stable ]; then
+    if [ -f ${identity_path}identity2.json.stable ] ; then
         cp ${identity_path}identity2.json.stable ${identity_path}identity2.json
     else
         echo "Can not find identity2.json.stable, was it deleted? You may need to repair at home.mycroft.ai"
@@ -274,9 +272,7 @@ function unstable_to_stable_server {
     echo "Set to use the home.mycroft.ai server!"
 }
 
-
-
-if [ "${change_to}" = "unstable" ]; then
+if [ "${change_to}" == "unstable" ] ; then
     # make sure user is running as sudo first
     if [ "$EUID" -ne 0 ] ; then
         echo "Please run with sudo"
@@ -284,18 +280,18 @@ if [ "${change_to}" = "unstable" ]; then
     fi
 
     echo "Switching to unstable build..."
-    if [ "${current_pkg}" = "${stable_pkg}" ]; then
+    if [ "${current_pkg}" == "${stable_pkg}" ] ; then
         change_build "${unstable_pkg}"
     else
         echo "already on unstable"
     fi
 
-    if [ -f /etc/init.d/mycroft-skills.original ]; then
+    if [ -f /etc/init.d/mycroft-skills.original ] ; then
         restore_init_scripts
         # Reboot since the audio input won't work for some reason
         sudo reboot
     fi
-elif [ "${change_to}" = "stable" ]; then
+elif [ "${change_to}" == "stable" ] ; then
     # make sure user is running as sudo first
     if [ "$EUID" -ne 0 ] ; then
         echo "Please run with sudo"
@@ -303,7 +299,7 @@ elif [ "${change_to}" = "stable" ]; then
     fi
 
         echo "Switching to stable build..."
-        if [ "${current_pkg}" = "${unstable_pkg}" ]; then
+        if [ "${current_pkg}" == "${unstable_pkg}" ] ; then
             # Need to remove the package to make sure upgrade happens due to
             # difference in stable/unstable to package numbering schemes
             remove_all
@@ -313,7 +309,7 @@ elif [ "${change_to}" = "stable" ]; then
             echo "already on stable"
         fi
 
-        if [ -f /etc/init.d/mycroft-skills.original ]; then
+        if [ -f /etc/init.d/mycroft-skills.original ] ; then
             restore_init_scripts
             sudo chmod -x /etc/cron.hourly/mycroft-core # Enable updates
 
@@ -321,9 +317,9 @@ elif [ "${change_to}" = "stable" ]; then
             sudo reboot
         fi
 
-elif [ "${change_to}" = "github" ]; then
+elif [ "${change_to}" == "github" ] ; then
     echo "Switching to github..."
-    if [ ! -d ${path} ]; then
+    if [ ! -d ${path} ] ; then
         mkdir --parents "${path}"
         cd "${path}"
         cd ..
@@ -332,13 +328,13 @@ elif [ "${change_to}" = "github" ]; then
 
     sudo chmod -x /etc/cron.hourly/mycroft-core # Disable updates
 
-    if [ -d ${path} ]; then
-        if  [ -f /usr/local/bin/mimic ]; then
+    if [ -d ${path} ] ; then
+        if  [ -f /usr/local/bin/mimic ] ; then
             echo "Mimic file exists"
-            mimic_flag='-sm'
+            mimic_flag="-sm"
         else
             echo "file doesn't exist"
-            mimic_flag=''
+            mimic_flag=""
         fi
         cd ${path}
         # Build the dev environment
@@ -352,14 +348,14 @@ elif [ "${change_to}" = "github" ]; then
     # For some reason precise won't trigger until after a reboot
     echo "Rebooting..."
     sudo reboot
-elif [ "${change_to}" = "home" ]; then
+elif [ "${change_to}" == "home" ] ; then
     # make sure user is running as sudo first
     if [ "$EUID" -ne 0 ] ; then
         echo "Please run with sudo"
         exit
     fi
     unstable_to_stable_server
-elif [ "${change_to}" = "home-test" ]; then
+elif [ "${change_to}" == "home-test" ] ; then
     # make sure user is running as sudo first
     if [ "$EUID" -ne 0 ] ; then
         echo "Please run with sudo"
