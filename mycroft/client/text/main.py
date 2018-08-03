@@ -1259,15 +1259,10 @@ def simple_cli():
         sys.exit()
 
 
-# Find the correct log path relative to this script
-scriptPath = os.path.dirname(os.path.realpath(__file__))
-localLogPath = os.path.realpath(scriptPath + "/../../../scripts/logs")
-
-# Monitor relative logs (for Github installs)
-start_log_monitor(localLogPath + "/mycroft-skills.log")
-start_log_monitor(localLogPath + "/mycroft-voice.log")
-
-# Also monitor system logs (for package installs)
+# Monitor system logs
+start_log_monitor("/var/log/mycroft/skills.log")
+start_log_monitor("/var/log/mycroft/voice.log")
+# logs when using Debian package   TODO: Unify all
 start_log_monitor("/var/log/mycroft-skills.log")
 start_log_monitor("/var/log/mycroft-speech-client.log")
 
