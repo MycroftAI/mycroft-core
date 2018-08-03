@@ -438,12 +438,16 @@ class SkillManager(Thread):
                         continue
             self._load_or_reload_skill(skill.path)
 
+    def remove_git_locks(self):
+        """If git gets killed from an abrupt shutdown it leaves lock files"""
+        for i in glob(join(self.msm.skills_dir, '*/.git/index.lock')):
+            LOG.warning('Found and removed git lock file: ' + i)
+            os.remove(i)
+
     def run(self):
         """ Load skills and update periodically from disk and internet """
 
-        # Load priority skills first, in order (very first time this will
-        # occur before MSM has run)
-
+        self.remove_git_locks()
         self._connected_event.wait()
         has_loaded = False
 
