@@ -26,8 +26,13 @@ from mycroft.util.log import LOG
 
 
 class PadatiousService(FallbackSkill):
+    instance = None
+
     def __init__(self, emitter, service):
         FallbackSkill.__init__(self)
+        if not PadatiousService.instance:
+            PadatiousService.instance = self
+
         self.config = Configuration.get()['padatious']
         self.service = service
         intent_cache = expanduser(self.config['intent_cache'])
@@ -113,8 +118,7 @@ class PadatiousService(FallbackSkill):
 
         utt = message.data.get('utterance')
         LOG.debug("Padatious fallback attempt: " + utt)
-        data = self.container.calc_intent(utt)
-
+        data = self.calc_intent(utt)
         if data.conf < 0.5:
             return False
 
@@ -124,3 +128,6 @@ class PadatiousService(FallbackSkill):
 
         self.emitter.emit(message.reply(data.name, data=data.matches))
         return True
+
+    def calc_intent(self, utt):
+        return self.container.calc_intent(utt)
