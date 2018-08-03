@@ -254,7 +254,8 @@ def nice_time(dt, lang="en-us", speech=True, use_24hour=False,
     return str(dt)
 
 
-def pronounce_number(number, lang="en-us", places=2):
+def pronounce_number(number, lang="en-us", places=2, short_scale=True,
+                     scientific=False):
     """
     Convert a number to it's spoken equivalent
 
@@ -262,12 +263,17 @@ def pronounce_number(number, lang="en-us", places=2):
 
     Args:
         number: the number to pronounce
+        short_scale (bool) : use short (True) or long scale (False)
+            https://en.wikipedia.org/wiki/Names_of_large_numbers
+        scientific (bool) : convert and pronounce in scientific notation
     Returns:
         (str): The pronounced number
     """
     lang_lower = str(lang).lower()
     if lang_lower.startswith("en"):
-        return pronounce_number_en(number, places=places)
+        return pronounce_number_en(number, places=places,
+                                   short_scale=short_scale,
+                                   scientific=scientific)
     elif lang_lower.startswith("it"):
         return pronounce_number_it(number, places=places)
     elif lang_lower.startswith("fr"):
