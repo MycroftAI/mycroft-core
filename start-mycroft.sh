@@ -122,8 +122,8 @@ function launch-background() {
         echo "         8181 with a firewall as appropriate."
     fi
 
-    # Launch process in background, sending log to scripts/log/mycroft-*.log
-    python3 ${_script} $_params >> /var/log/mycroft-${1}.log 2>&1 &
+    # Launch process in background, sending logs to standard location
+    python3 ${_script} $_params >> /var/log/mycroft/${1}.log 2>&1 &
 }
 
 function launch-all() {

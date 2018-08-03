@@ -1260,9 +1260,11 @@ def simple_cli():
 
 
 # Monitor system logs
+start_log_monitor("/var/log/mycroft/skills.log")
+start_log_monitor("/var/log/mycroft/voice.log")
+# logs when using Debian package   TODO: Unify all
 start_log_monitor("/var/log/mycroft-skills.log")
-start_log_monitor("/var/log/mycroft-voice.log")        # when start-mycroft.sh
-start_log_monitor("/var/log/mycroft-speech-client.log")  # when Debian package
+start_log_monitor("/var/log/mycroft-speech-client.log")
 
 # Monitor IPC file containing microphone level info
 start_mic_monitor(os.path.join(get_ipc_directory(), "mic_level"))
