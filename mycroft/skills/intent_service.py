@@ -296,7 +296,8 @@ class IntentService(object):
                 report_timing(ident, 'intent_service', stopwatch,
                               {'intent_type': 'converse'})
                 return
-            elif intent and padatious_intent and padatious_intent.conf < 0.95:
+            elif intent and not (padatious_intent and
+                                 padatious_intent.conf >= 0.95):
                 # Send the message to the Adapt intent's handler unless
                 # Padatious is REALLY sure it was directed at it instead.
                 reply = message.reply(intent.get('intent_type'), intent)
