@@ -23,6 +23,7 @@ from mycroft.skills.core import open_intent_envelope
 from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
 from mycroft.metrics import report_timing, Stopwatch
+from mycroft.skills.padatious_service import PadatiousService
 
 
 class AdaptIntent(IntentBuilder):
@@ -244,7 +245,6 @@ class IntentService(object):
 
         NOTE: This only applies to those with Opt In.
         """
-        LOG.debug('Sending metric if opt_in is enabled')
         ident = context['ident'] if context else None
         if intent:
             # Recreate skill name from skill id
@@ -287,6 +287,8 @@ class IntentService(object):
                 if not converse:
                     # No conversation, use intent system to handle utterance
                     intent = self._adapt_intent_match(utterances, lang)
+                    padatious_intent = PadatiousService.instance.calc_intent(
+                                        utterances[0])
 
             if converse:
                 # Report that converse handled the intent and return
@@ -294,8 +296,9 @@ class IntentService(object):
                 report_timing(ident, 'intent_service', stopwatch,
                               {'intent_type': 'converse'})
                 return
-            elif intent:
-                # Send the message to the intent handler
+            elif intent and padatious_intent and padatious_intent.conf < 0.95:
+                # Send the message to the Adapt intent's handler unless
+                # Padatious is REALLY sure it was directed at it instead.
                 reply = message.reply(intent.get('intent_type'), intent)
             else:
                 # Allow fallback system to handle utterance
