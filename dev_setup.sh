@@ -41,6 +41,9 @@
 # exit on any error
 set -Ee
 
+TOP=$( cd $( dirname $0 ) && pwd -L )
+cd $(dirname $0)
+
 function show_help() {
     echo "dev_setup.sh: Mycroft development environment setup"
     echo "Usage: dev_setup.sh [options]"
@@ -118,7 +121,6 @@ function install_deps() {
     fi
 }
 
-TOP=$( cd $( dirname $0 ) && pwd -L )
 VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${TOP}/.venv"}
 
 function install_venv() {
@@ -232,6 +234,22 @@ fi
 # set permissions for common scripts
 chmod +x start-mycroft.sh
 chmod +x stop-mycroft.sh
+
+# create and set permissions for log files
+function validate_log() {
+    if [[ ! -w /var/log/mycroft-$1.log ]] ; then
+        # Creating / setting permissions
+        echo "Setting up $1.log"
+        sudo touch /var/log/mycroft-$1.log
+        sudo chmod 666 /var/log/mycroft-$1.log
+    fi
+}
+validate_log audio
+validate_log bus
+validate_log cli
+validate_log enclosure
+validate_log skills
+validate_log voice
 
 #Store a fingerprint of setup
 md5sum requirements.txt test-requirements.txt dev_setup.sh > .installed

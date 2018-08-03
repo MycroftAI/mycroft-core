@@ -19,9 +19,6 @@ SOURCE="${BASH_SOURCE[0]}"
 script=${0}
 script=${script##*/}
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
-scripts_dir="$DIR/scripts"
-mkdir -p $scripts_dir/logs
-
 VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${DIR}/.venv"}
 
 function help() {
@@ -37,7 +34,7 @@ function help() {
     echo "  bus                      the messagebus service"
     echo "  skills                   the skill service"
     echo "  voice                    voice capture service"
-    echo "  wifi                     wifi setup service"
+    # echo "  wifi                     wifi setup service"
     echo "  enclosure                mark_1 enclosure service"
     echo
     echo "Tools:"
@@ -66,7 +63,7 @@ function name-to-script-path() {
         "audio")           _script=${DIR}/mycroft/audio/main.py ;;
         "voice")           _script=${DIR}/mycroft/client/speech/main.py ;;
         "cli")             _script=${DIR}/mycroft/client/text/main.py ;;
-        "wifi")            _script=${DIR}/mycroft/client/wifisetup/main.py ;;
+        # "wifi")            _script=${DIR}/mycroft/client/wifisetup/main.py ;;
         "audioaccuracytest") _script=${DIR}/mycroft/audio-accuracy-test/audio_accuracy_test.py ;;
         "sdkdoc")          _script=${DIR}/doc/generate_sdk_docs.py ;;
         "enclosure")       _script=${DIR}/mycroft/client/enclosure/main.py ;;
@@ -126,7 +123,7 @@ function launch-background() {
     fi
 
     # Launch process in background, sending log to scripts/log/mycroft-*.log
-    python3 ${_script} $_params >> ${scripts_dir}/logs/mycroft-${1}.log 2>&1 &
+    python3 ${_script} $_params >> /var/log/mycroft-${1}.log 2>&1 &
 }
 
 function launch-all() {
@@ -152,6 +149,7 @@ function check-dependencies() {
     if command -v notify-send >/dev/null ; then
       notify-send "Mycroft Dependencies Outdated" "Run ./dev_setup.sh again"
     fi
+    exit 1
   fi
 }
 
@@ -187,9 +185,11 @@ case ${_opt} in
     "cli")
         launch-process ${_opt}
         ;;
-    "wifi")
-        launch-background ${_opt}
-        ;;
+
+    # TODO: Restore support for Wifi Setup on a Picroft, etc.
+    # "wifi")
+    #    launch-background ${_opt}
+    #    ;;
     "unittest")
         source-venv
         pytest test/unittests/ --cov=mycroft "$@"

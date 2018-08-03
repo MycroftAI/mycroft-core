@@ -1259,17 +1259,10 @@ def simple_cli():
         sys.exit()
 
 
-# Find the correct log path relative to this script
-scriptPath = os.path.dirname(os.path.realpath(__file__))
-localLogPath = os.path.realpath(scriptPath + "/../../../scripts/logs")
-
-# Monitor relative logs (for Github installs)
-start_log_monitor(localLogPath + "/mycroft-skills.log")
-start_log_monitor(localLogPath + "/mycroft-voice.log")
-
-# Also monitor system logs (for package installs)
+# Monitor system logs
 start_log_monitor("/var/log/mycroft-skills.log")
-start_log_monitor("/var/log/mycroft-speech-client.log")
+start_log_monitor("/var/log/mycroft-voice.log")        # when start-mycroft.sh
+start_log_monitor("/var/log/mycroft-speech-client.log")  # when Debian package
 
 # Monitor IPC file containing microphone level info
 start_mic_monitor(os.path.join(get_ipc_directory(), "mic_level"))
