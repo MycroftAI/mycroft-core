@@ -51,6 +51,6 @@ if [[ ${IS_TRAVIS} != true ]] ; then
 fi
 
 # fix ownership of ${mycroft_root_dir} if it is not owned by the ${setup_user}
-if [[ $( stat -c "%U:%G" /opt/mycroft ) != "${setup_user}:${setup_user}" ]] ; then
+if [[ $( stat -c "%U:%G" ${mycroft_root_dir} ) != "${setup_user}:${setup_user}" ]] ; then
     change_ownership
 fi
