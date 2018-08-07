@@ -224,6 +224,8 @@ class MycroftSkill(object):
         self.scheduled_repeats = []
         self.skill_id = ''
 
+        self.is_match_cache = {}
+
     @property
     def location(self):
         """ Get the JSON data struction holding location information. """
@@ -445,7 +447,8 @@ class MycroftSkill(object):
         way around to allow the user to say things like "yes, please" and
         still match against voc files with only "yes" in it. The method first
         checks in the current skills voc files and secondly in the "text"
-        folder in mycroft-core
+        folder in mycroft-core. The result is cached to avoid hitting the
+        disk each time the method is called.
 
         Args:
             utt (str): Utterance to be tested
@@ -457,22 +460,25 @@ class MycroftSkill(object):
             bool: True if the utterance has the given vocabulary it
         """
         lang = lang or self.lang
-        # Check both skill/vocab/LANG and .../res/text/LANG
-        voc = join(self.vocab_dir, voc_filename + '.voc')
-        if not exists(voc):
-            voc = resolve_resource_file(join('text', lang,
-                                             voc_filename + '.voc'))
+        cache_key = lang + voc_filename
+        if cache_key not in self.is_match_cache:
+            # Check both skill/vocab/LANG and .../res/text/LANG
+            voc = join(self.vocab_dir, voc_filename + '.voc')
+            if not exists(voc):
+                voc = resolve_resource_file(join('text', lang,
+                                                 voc_filename + '.voc'))
 
-        if not exists(voc):
-            raise FileNotFoundError(
-                    'Could not find voc file, checked {} and {}'
-                    .format(voc, skill_voc))
+            if not exists(voc):
+                raise FileNotFoundError(
+                        'Could not find voc file, checked {} and {}'
+                        .format(voc, skill_voc))
 
-        with open(voc) as f:
-            words = f.read().splitlines()
+            with open(voc) as f:
+                self.is_match_cache[cache_key] = f.read().splitlines()
 
         # Check for match
-        if utt and any(i.strip() in utt for i in words):
+        if utt and any(i.strip() in utt
+                       for i in self.is_match_cache[cache_key]):
             return True
         return False
 
