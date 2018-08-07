@@ -443,7 +443,9 @@ class MycroftSkill(object):
 
         This checks for vocabulary match in the utternce instead of the other
         way around to allow the user to say things like "yes, please" and
-        still match against voc files with only "yes" in it.
+        still match against voc files with only "yes" in it. The method first
+        checks in the current skills voc files and secondly in the "text"
+        folder in mycroft-core
 
         Args:
             utt (str): Utterance to be tested
@@ -455,10 +457,22 @@ class MycroftSkill(object):
             bool: True if the utterance has the given vocabulary it
         """
         lang = lang or self.lang
-        voc = join('text', self.lang, voc_filename+".voc")
-        with open(resolve_resource_file(voc)) as f:
-            words = list(filter(bool, f.read().split('\n')))
-        if (utt and any(i.strip() in utt for i in words)):
+        # Check both skill/vocab/LANG and .../res/text/LANG
+        voc = join(self.vocab_dir, voc_filename + '.voc')
+        if not exists(voc):
+            voc = resolve_resource_file(join('text', lang,
+                                             voc_filename + '.voc'))
+
+        if not exists(voc):
+            raise FileNotFoundError(
+                    'Could not find voc file, checked {} and {}'
+                    .format(voc, skill_voc))
+
+        with open(voc) as f:
+            words = f.read().splitlines()
+
+        # Check for match
+        if utt and any(i.strip() in utt for i in words):
             return True
         return False
 
