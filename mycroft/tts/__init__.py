@@ -351,8 +351,8 @@ class TTS(object):
         try:
             with open(pho_file, "w") as cachefile:
                 cachefile.write(phonemes)
-        except:
-            LOG.debug("Failed to write .PHO to cache")
+        except Exception:
+            LOG.exception("Failed to write %s to cache" % pho_file)
             pass
 
     def load_phonemes(self, key):
