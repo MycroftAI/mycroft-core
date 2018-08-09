@@ -32,6 +32,7 @@ from mycroft.messagebus.message import Message
 from mycroft.util import reset_sigint_handler, wait_for_exit_signal, \
     create_daemon, create_echo_function
 from mycroft.util.log import LOG
+from mycroft.util import check_for_signal
 
 try:
     import pulsectl
@@ -466,6 +467,7 @@ class AudioService(object):
 def main():
     """ Main function. Run when file is invoked. """
     reset_sigint_handler()
+    check_for_signal("isSpeaking")
     ws = WebsocketClient()
     Configuration.init(ws)
     speech.init(ws)
