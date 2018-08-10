@@ -41,7 +41,7 @@ function help() {
 }
 
 function process-running() {
-    if [[ $( ps aux | grep "python3\? .*${1}/main.py" ) ]] ; then
+    if [[ $( pgrep -f "python3 -m mycroft.*${1}" ) ]] ; then
         return 0
     else
         return 1
@@ -50,7 +50,7 @@ function process-running() {
 
 function end-process() {
     if process-running $1 ; then
-        pid=$( ps aux | grep "python3\? .*${1}/main.py" | awk '{print $2}' )
+        pid=$( pgrep -f "python3 -m mycroft.*${1}" )
         kill -SIGINT ${pid}
 
         c=1
