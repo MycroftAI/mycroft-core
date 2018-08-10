@@ -16,7 +16,7 @@
 from mycroft.tts import TTS, TTSValidator
 from mycroft.tts.remote_tts import RemoteTTS
 from mycroft.util.log import LOG
-from mycroft.util import play_wav, get_cache_directory
+from mycroft.util import play_wav, get_cache_directory, create_signal
 from requests_futures.sessions import FuturesSession
 from urllib import parse
 from .mimic_tts import VISIMES
@@ -237,6 +237,8 @@ class Mimic2(TTS):
             sentence (str): sentence to synthesize from mimic2
             ident (optional): Defaults to None.
         """
+        create_signal("isSpeaking")
+
         chunks = sentence_chunker(sentence, self.chunk_size)
         for idx, req in enumerate(self._requests(chunks)):
             results = req.result().json()
