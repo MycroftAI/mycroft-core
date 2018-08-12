@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 from __future__ import absolute_import
+import re
 import socket
 import subprocess
 from os.path import join, expanduser
@@ -362,3 +363,10 @@ def create_echo_function(name, whitelist=None):
             pass
         LOG(name).debug(message)
     return echo
+
+
+def camel_case_split(identifier: str) -> str:
+    """Split camel case string"""
+    regex = '.+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)'
+    matches = re.finditer(regex, identifier)
+    return ' '.join([m.group(0) for m in matches])
