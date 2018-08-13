@@ -152,7 +152,7 @@ def autodetect(config, emitter):
     """
         Autodetect chromecasts on the network and create backends for each
     """
-    casts = pychromecast.get_chromecasts()
+    casts = pychromecast.get_chromecasts(timeout=5, tries=2, retry_wait=2)
     ret = []
     for c in casts:
         LOG.info(c.name + " found.")
