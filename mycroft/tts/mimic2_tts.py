@@ -16,6 +16,7 @@
 from mycroft.tts import TTS, TTSValidator
 from mycroft.tts.remote_tts import RemoteTTS
 from mycroft.util.log import LOG
+from mycroft.util.format import pronounce_number
 from mycroft.util import play_wav, get_cache_directory
 from requests_futures.sessions import FuturesSession
 from urllib import parse
@@ -24,6 +25,7 @@ import math
 import base64
 import os
 import hashlib
+import re
 
 
 def break_chunks(l, n):
@@ -90,7 +92,6 @@ def split_by_punctuation(text, chunk_size):
                 break
 
     # TODO: check if splits are to small, combined them
-
     return splits
 
 
@@ -215,7 +216,6 @@ class Mimic2(TTS):
         Returns:
             list: list of tuples (viseme_encoding, time_start)
         """
-
         visemes = []
         for pair in phonemes:
             if pair[0]:
@@ -230,6 +230,27 @@ class Mimic2(TTS):
             visemes.append((vis, vis_dur))
         return visemes
 
+    def _normalized_numbers(self, sentence):
+        """normalized numbers to word equivalent.
+
+        Args:
+            sentence (str): setence to speak
+
+        Returns:
+            stf: normalized sentences to speak
+        """
+        try:
+            numbers = re.findall(r'\d+', sentence)
+            normalized_num = [
+                (num, pronounce_number(int(num)))
+                for num in numbers
+            ]
+            for num, norm_num in normalized_num:
+                sentence = sentence.replace(num, norm_num)
+        except TypeError:
+            LOG.exception("type error in mimic2_tts.py _normalized_numbers()")
+        return sentence
+
     def execute(self, sentence, ident=None):
         """request and play mimic2 wav audio
 
@@ -237,6 +258,7 @@ class Mimic2(TTS):
             sentence (str): sentence to synthesize from mimic2
             ident (optional): Defaults to None.
         """
+        sentence = self._normalized_numbers(sentence)
         chunks = sentence_chunker(sentence, self.chunk_size)
         for idx, req in enumerate(self._requests(chunks)):
             results = req.result().json()
