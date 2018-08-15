@@ -29,6 +29,7 @@ import json
 import os
 import datetime
 import re
+import quantulum
 
 NUMBER_TUPLE = namedtuple(
     'number',
@@ -356,3 +357,30 @@ def nice_year(dt, lang='en-us', bc=False):
     date_time_format.cache(lang)
 
     return date_time_format.year_format(dt, lang, bc)
+
+def nice_unit(unit, context=None, lang='en-us'):
+    """
+        Format a unit to a pronouncable string
+        
+        Args:
+            unit (string): The unit abbreviation that is to be pronounced
+                (i.e. "C", "MW", "mW", "°F" etc)
+            context (string): A text in which the correct meaning of this
+                abbreviation becomes clear (i.e. "It's almost 30 C outside")
+            lang (string): the language to use, use Mycroft default language if
+            not provided
+        Returns:
+            (str): A fully de-abbreviated unit for insertion in a context like
+                    situation (i.e. "degree Celsius", "percent")
+            (object): The parsed value of the quantity
+    
+    """
+    if unit is None or unit == '':
+        return ''
+    quantity = quantulum.parser.parse(context or unit)
+    print(quantity)
+    if len(quantity) > 0:
+        quantity = quantity[0]
+        if (quantity.unit.name != "dimensionless" and
+                quantity.uncertainty <= 0.5):
+            return quantity.unit.name, quantity.value
