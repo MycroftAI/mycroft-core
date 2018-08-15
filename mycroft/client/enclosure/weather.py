@@ -13,25 +13,19 @@
 # limitations under the License.
 
 
-class EnclosureWeather:
+class EnclosureWeather(object):
     """
     Listens for Enclosure API commands to display indicators of the weather.
 
     Performs the associated command on Arduino by writing on the Serial port.
     """
 
-    def __init__(self, ws, writer):
-        self.ws = ws
+    def __init__(self, writer):
         self.writer = writer
-        self.__init_events()
 
-    def __init_events(self):
-        self.ws.on('enclosure.weather.display', self.display)
-
-    def display(self, event=None):
-        if event and event.data:
+    def display(self, img_code=None, temp=None):
+        if img_code:
             # Convert img_code to icon
-            img_code = event.data.get("img_code", None)
             icon = None
             if img_code == 0:
                 # sunny
@@ -58,7 +52,6 @@ class EnclosureWeather:
                 # wind/mist
                 icon = "IIABIBIBIJIJJGJAGA"
 
-            temp = event.data.get("temp", None)
             if icon is not None and temp is not None:
                 icon = "x=2," + icon
                 msg = "weather.display=" + str(temp) + "," + str(icon)

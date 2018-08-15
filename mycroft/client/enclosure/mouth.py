@@ -15,71 +15,43 @@
 import time
 
 
-class EnclosureMouth:
+class EnclosureMouth(object):
     """
     Listens to enclosure commands for Mycroft's Mouth.
 
     Performs the associated command on Arduino by writing on the Serial port.
     """
 
-    def __init__(self, ws, writer):
-        self.ws = ws
+    def __init__(self, writer):
         self.writer = writer
         self.is_timer_on = False
-        self.__init_events()
 
-    def __init_events(self):
-        self.ws.on('enclosure.mouth.reset', self.reset)
-        self.ws.on('enclosure.mouth.talk', self.talk)
-        self.ws.on('enclosure.mouth.think', self.think)
-        self.ws.on('enclosure.mouth.listen', self.listen)
-        self.ws.on('enclosure.mouth.smile', self.smile)
-        self.ws.on('enclosure.mouth.viseme', self.viseme)
-        self.ws.on('enclosure.mouth.text', self.text)
-        self.ws.on('enclosure.mouth.display', self.display)
-
-    def reset(self, event=None):
+    def reset(self):
         self.writer.write("mouth.reset")
 
-    def talk(self, event=None):
+    def talk(self):
         self.writer.write("mouth.talk")
 
-    def think(self, event=None):
+    def think(self):
         self.writer.write("mouth.think")
 
-    def listen(self, event=None):
+    def listen(self):
         self.writer.write("mouth.listen")
 
-    def smile(self, event=None):
+    def smile(self):
         self.writer.write("mouth.smile")
 
-    def viseme(self, event=None):
-        if event and event.data:
-            code = event.data.get("code")
-            time_until = event.data.get("until")
-            # Skip the viseme if the time has expired.  This helps when a
-            # system glitch overloads the bus and throws off the timing of
-            # the animation timing.
-            if code and (not time_until or time.time() < time_until):
-                self.writer.write("mouth.viseme=" + code)
+    def viseme(self, code, time_until):
+        # Skip the viseme if the time has expired.  This helps when a
+        # system glitch overloads the bus and throws off the timing of
+        # the animation timing.
+        if code and (not time_until or time.time() < time_until):
+            self.writer.write("mouth.viseme=" + code)
 
-    def text(self, event=None):
-        text = ""
-        if event and event.data:
-            text = event.data.get("text", text)
+    def text(self, text=""):
         self.writer.write("mouth.text=" + text)
 
-    def display(self, event=None):
-        code = ""
-        xOffset = ""
-        yOffset = ""
-        clearPrevious = ""
-        if event and event.data:
-            code = event.data.get("img_code", code)
-            xOffset = int(event.data.get("xOffset", xOffset))
-            yOffset = int(event.data.get("yOffset", yOffset))
-            clearPrevious = event.data.get("clearPrev", clearPrevious)
-
+    def display(self, code="", xOffset="", yOffset="", clearPrevious=""):
         clearPrevious = int(str(clearPrevious) == "True")
         clearPrevious = "cP=" + str(clearPrevious) + ","
         x_offset = "x=" + str(xOffset) + ","

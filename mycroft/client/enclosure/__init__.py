@@ -14,7 +14,6 @@
 #
 import subprocess
 import time
-import sys
 from alsaaudio import Mixer
 from threading import Thread, Timer
 
@@ -22,13 +21,10 @@ import serial
 
 import mycroft.dialog
 from mycroft.api import has_been_paired
-from mycroft.client.enclosure.arduino import EnclosureArduino
+from mycroft.enclosure import Enclosure
 from mycroft.client.enclosure.display_manager import \
     initiate_display_manager_ws
-from mycroft.client.enclosure.eyes import EnclosureEyes
-from mycroft.client.enclosure.mouth import EnclosureMouth
-from mycroft.client.enclosure.weather import EnclosureWeather
-from mycroft.configuration import Configuration, LocalConf, USER_CONFIG
+from mycroft.configuration.config import Configuration, LocalConf, USER_CONFIG
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util import play_wav, create_signal, connected, \
@@ -36,6 +32,11 @@ from mycroft.util import play_wav, create_signal, connected, \
 from mycroft.util.audio_test import record
 from mycroft.util.log import LOG
 from queue import Queue
+
+from mycroft.client.enclosure.arduino import EnclosureArduino
+from mycroft.client.enclosure.eyes import EnclosureEyes
+from mycroft.client.enclosure.mouth import EnclosureMouth
+from mycroft.client.enclosure.weather import EnclosureWeather
 
 
 class EnclosureReader(Thread):
@@ -232,7 +233,7 @@ class EnclosureWriter(Thread):
         self.alive = False
 
 
-class Enclosure(object):
+class Mark1Enclosure(Enclosure):
     """
     Serves as a communication interface between Arduino and Mycroft Core.
 
@@ -250,6 +251,7 @@ class Enclosure(object):
 
     def __init__(self):
         self.ws = WebsocketClient()
+        super(Mark1Enclosure, self).__init__(self.ws, "Mark1")
 
         Configuration.init(self.ws)
 
@@ -274,20 +276,16 @@ class Enclosure(object):
         # we aren't running a Mark 1 with an Arduino)
         Timer(5, self.check_for_response).start()
 
-        # Notifications from mycroft-core
-        self.ws.on("enclosure.notify.no_internet", self.on_no_internet)
-
         # initiates the web sockets on display manager
         # NOTE: this is a temporary place to initiate display manager sockets
         initiate_display_manager_ws()
 
     def on_arduino_responded(self, event=None):
-        self.eyes = EnclosureEyes(self.ws, self.writer)
-        self.mouth = EnclosureMouth(self.ws, self.writer)
-        self.system = EnclosureArduino(self.ws, self.writer)
-        self.weather = EnclosureWeather(self.ws, self.writer)
-        self.__register_events()
-        self.__reset()
+        self.eyes = EnclosureEyes(self.writer)
+        self.mouth = EnclosureMouth(self.writer)
+        self.system = EnclosureArduino(self.writer)
+        self.weather = EnclosureWeather(self.writer)
+        self.reset()
         self.arduino_responded = True
 
         # verify internet connection and prompt user on bootup if needed
@@ -298,20 +296,17 @@ class Enclosure(object):
             # quickly and the user wasn't notified what to do.
             Timer(5, self._do_net_check).start()
 
-        Timer(60, self._hack_check_for_duplicates).start()
-
-    def on_no_internet(self, event=None):
+    def on_no_internet(self, message=None):
         if connected():
             # One last check to see if connection was established
             return
 
-        if time.time() - Enclosure._last_internet_notification < 30:
+        if time.time() - Mark1Enclosure._last_internet_notification < 30:
             # don't bother the user with multiple notifications with 30 secs
             return
 
-        Enclosure._last_internet_notification = time.time()
+        Mark1Enclosure._last_internet_notification = time.time()
 
-        # TODO: This should go into EnclosureMark1 subclass of Enclosure.
         if has_been_paired():
             # Handle the translation within that code.
             self.ws.emit(Message("speak", {
@@ -322,6 +317,150 @@ class Enclosure(object):
         else:
             # enter wifi-setup mode automatically
             self.ws.emit(Message('system.wifi.setup', {'lang': self.lang}))
+
+    def system_reset(self, message=None):
+        self.system.reset()
+
+    def system_mute(self, message=None):
+        self.system.mute()
+
+    def system_unmute(self, message=None):
+        self.system.unmute()
+
+    def system_blink(self, message=None):
+        times = 1
+        if message and message.data:
+            times = message.data.get("times", times)
+        self.system.blink(times)
+
+    def eyes_on(self, message=None):
+        self.eyes.on()
+
+    def eyes_off(self, message=None):
+        self.eyes.off()
+
+    def eyes_blink(self, message=None):
+        side = "b"
+        if message and message.data:
+            side = message.data.get("side", side)
+        self.eyes.blink(side)
+
+    def eyes_narrow(self, message=None):
+        self.eyes.narrow()
+
+    def eyes_look(self, message=None):
+        if message and message.data:
+            side = message.data.get("side", "")
+            self.eyes.look(side)
+
+    def eyes_color(self, message=None):
+        r, g, b = 255, 255, 255
+        if message and message.data:
+            r = int(message.data.get("r", r))
+            g = int(message.data.get("g", g))
+            b = int(message.data.get("b", b))
+        color = (r * 65536) + (g * 256) + b
+        self.eyes.color(color)
+
+    def eyes_brightness(self, message=None):
+        level = 30
+        if message and message.data:
+            level = message.data.get("level", level)
+        self.eyes.brightness(level)
+
+    def eyes_volume(self, message=None):
+        volume = 4
+        if message and message.data:
+            volume = message.data.get("volume", volume)
+        self.eyes.volume(volume)
+
+    def eyes_reset(self, message=None):
+        self.eyes.reset()
+
+    def eyes_spin(self, message=None):
+        self.eyes.spin()
+
+    def eyes_timed_spin(self, message=None):
+        length = 5000
+        if message and message.data:
+            length = message.data.get("length", length)
+        self.eyes.timed_spin(length)
+
+    def eyes_set_pixel(self, message=None):
+        idx = 0
+        r, g, b = 255, 255, 255
+        if message and message.data:
+            idx = int(message.data.get("idx", idx))
+            r = int(message.data.get("r", r))
+            g = int(message.data.get("g", g))
+            b = int(message.data.get("b", b))
+        color = (r * 65536) + (g * 256) + b
+        self.eyes.set_pixel(idx, color)
+
+    def eyes_fill(self, message=None):
+        amount = 0
+        if message and message.data:
+            percent = int(message.data.get("percentage", 0))
+            amount = int(round(23.0 * percent / 100.0))
+        self.eyes.fill(amount)
+
+    def mouth_reset(self, message=None):
+        self.mouth.reset()
+
+    def mouth_talk(self, message=None):
+        self.mouth.talk()
+
+    def mouth_think(self, message=None):
+        self.mouth.think()
+
+    def mouth_listen(self, message=None):
+        self.mouth.listen()
+
+    def mouth_smile(self, message=None):
+        self.mouth.smile()
+
+    def mouth_viseme(self, message=None):
+        if message and message.data:
+            code = message.data.get("code")
+            time_until = message.data.get("until")
+            self.mouth.viseme(code, time_until)
+
+    def mouth_text(self, message=None):
+        text = ""
+        if message and message.data:
+            text = message.data.get("text", text)
+        self.mouth.text(text)
+
+    def activate_mouth_events(self, message=None):
+        self.ws.on('recognizer_loop:record_begin', self.mouth.listen)
+        self.ws.on('recognizer_loop:record_end', self.mouth.reset)
+        self.ws.on('recognizer_loop:audio_output_start', self.mouth.talk)
+        self.ws.on('recognizer_loop:audio_output_end', self.mouth.reset)
+
+    def deactivate_mouth_events(self, message=None):
+        self.ws.remove('recognizer_loop:record_begin', self.mouth.listen)
+        self.ws.remove('recognizer_loop:record_end', self.mouth.reset)
+        self.ws.remove('recognizer_loop:audio_output_start',
+                       self.mouth.talk)
+        self.ws.remove('recognizer_loop:audio_output_end',
+                       self.mouth.reset)
+
+    def mouth_display(self, message=None):
+        code = ""
+        xOffset = ""
+        yOffset = ""
+        clearPrevious = ""
+        if message and message.data:
+            code = message.data.get("img_code", code)
+            xOffset = message.data.get("xOffset", xOffset)
+            yOffset = message.data.get("yOffset", yOffset)
+            clearPrevious = message.data.get("clearPrev", clearPrevious)
+        self.mouth.display(code, xOffset, yOffset, clearPrevious)
+
+    def weather_display(self, message=None):
+        img_code = message.data.get("img_code", None)
+        temp = message.data.get("temp", None)
+        self.weather.display(img_code, temp)
 
     def __init_serial(self):
         try:
@@ -336,30 +475,7 @@ class Enclosure(object):
             LOG.error("Impossible to connect to serial port: "+str(self.port))
             raise
 
-    def __register_events(self):
-        self.ws.on('enclosure.mouth.events.activate',
-                   self.__register_mouth_events)
-        self.ws.on('enclosure.mouth.events.deactivate',
-                   self.__remove_mouth_events)
-        self.ws.on('enclosure.reset',
-                   self.__reset)
-        self.__register_mouth_events()
-
-    def __register_mouth_events(self, event=None):
-        self.ws.on('recognizer_loop:record_begin', self.mouth.listen)
-        self.ws.on('recognizer_loop:record_end', self.mouth.reset)
-        self.ws.on('recognizer_loop:audio_output_start', self.mouth.talk)
-        self.ws.on('recognizer_loop:audio_output_end', self.mouth.reset)
-
-    def __remove_mouth_events(self, event=None):
-        self.ws.remove('recognizer_loop:record_begin', self.mouth.listen)
-        self.ws.remove('recognizer_loop:record_end', self.mouth.reset)
-        self.ws.remove('recognizer_loop:audio_output_start',
-                       self.mouth.talk)
-        self.ws.remove('recognizer_loop:audio_output_end',
-                       self.mouth.reset)
-
-    def __reset(self, event=None):
+    def reset(self, message=None):
         # Reset both the mouth and the eye elements to indicate the unit is
         # ready for input.
         self.writer.write("eyes.reset")
@@ -373,7 +489,7 @@ class Enclosure(object):
             self.ws.run_forever()
         except Exception as e:
             LOG.error("Error: {0}".format(e))
-            self.stop()
+            self.shutdown()
 
     def check_for_response(self):
         if not self.arduino_responded:
@@ -392,7 +508,6 @@ class Enclosure(object):
         self.ws.emit(Message("mycroft.mic.unmute"))
 
     def _do_net_check(self):
-        # TODO: This should live in the derived Enclosure, e.g. Enclosure_Mark1
         LOG.info("Checking internet connection")
         if not connected():  # and self.conn_monitor is None:
             if has_been_paired():
@@ -405,7 +520,6 @@ class Enclosure(object):
                 # Begin the unit startup process, this is the first time it
                 # is being run with factory defaults.
 
-                # TODO: This logic should be in Enclosure_Mark1
                 # TODO: Enclosure/localization
 
                 # Don't listen to mic during this out-of-box experience
@@ -421,39 +535,3 @@ class Enclosure(object):
                 # Kick off wifi-setup automatically
                 data = {'allow_timeout': False, 'lang': self.lang}
                 self.ws.emit(Message('system.wifi.setup', data))
-
-    def _hack_check_for_duplicates(self):
-        # TEMPORARY HACK:  Look for multiple instance of the
-        # mycroft-speech-client and/or mycroft-skills services, which could
-        # happen when upgrading a shipping Mark 1 from release 0.8.17 or
-        # before.  When found, force the unit to reboot.
-        import psutil
-
-        LOG.info("Hack to check for duplicate service instances")
-
-        count_instances = 0
-        needs_reboot = False
-        for process in psutil.process_iter():
-            if process.cmdline() == ['python2.7',
-                                     '/usr/local/bin/mycroft-speech-client']:
-                count_instances += 1
-        if (count_instances > 1):
-            LOG.info("Duplicate mycroft-speech-client found")
-            needs_reboot = True
-
-        count_instances = 0
-        for process in psutil.process_iter():
-            if process.cmdline() == ['python2.7',
-                                     '/usr/local/bin/mycroft-skills']:
-                count_instances += 1
-        if (count_instances > 1):
-            LOG.info("Duplicate mycroft-skills found")
-            needs_reboot = True
-
-        if needs_reboot:
-            LOG.info("Hack reboot...")
-            self.reader.process("unit.reboot")
-            self.ws.emit(Message("enclosure.eyes.spin"))
-            self.ws.emit(Message("enclosure.mouth.reset"))
-        # END HACK
-        # TODO: Remove this hack ASAP
