@@ -22,6 +22,7 @@ import serial
 
 import mycroft.dialog
 from mycroft.api import has_been_paired
+from mycroft.audio import wait_while_speaking
 from mycroft.client.enclosure.arduino import EnclosureArduino
 from mycroft.client.enclosure.display_manager import \
     initiate_display_manager_ws
@@ -31,8 +32,7 @@ from mycroft.client.enclosure.weather import EnclosureWeather
 from mycroft.configuration import Configuration, LocalConf, USER_CONFIG
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
-from mycroft.util import play_wav, create_signal, connected, \
-    wait_while_speaking, check_for_signal
+from mycroft.util import play_wav, create_signal, connected, check_for_signal
 from mycroft.util.audio_test import record
 from mycroft.util.log import LOG
 from queue import Queue
