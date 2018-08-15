@@ -145,7 +145,7 @@ function launch-all() {
 }
 
 function check-dependencies() {
-  if [ ! -f .installed ] || ! md5sum -c &> /dev/null < .installed ; then
+  if [ ! -f ~/mycroft-core/.installed ] || ! md5sum -c &> /dev/null < ~/mycroft-core/.installed ; then
     echo "Please update dependencies by running ./dev_setup.sh again."
     if command -v notify-send >/dev/null ; then
       notify-send "Mycroft Dependencies Outdated" "Run ./dev_setup.sh again"
