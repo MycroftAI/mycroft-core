@@ -18,7 +18,7 @@ SOURCE="${BASH_SOURCE[0]}"
 
 script=${0}
 script=${script##*/}
-DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+cd -P "$( dirname "$SOURCE" )"
 
 function help() {
     echo "${script}:  Mycroft service stopper"
