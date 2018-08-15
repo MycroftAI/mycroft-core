@@ -47,15 +47,8 @@ from mycroft.util.log import LOG
 import locale
 # Curses uses LC_ALL to determine how to display chars set it to system
 # default
-try:
-    default_locale = '.'.join((locale.getdefaultlocale()[0], 'UTF-8'))
-    locale.setlocale(locale.LC_ALL, default_locale)
-except (locale.Error, ValueError):
-    print('Locale not supported, please try starting the command and '
-          'setting LANG="en_US.UTF-8"\n\n'
-          '\tExample: LANG="en_US.UTF-8" ./start-mycroft.sh cli\n',
-          file=sys.__stderr__)
-    sys.exit(1)
+locale.setlocale(locale.LC_ALL, "")  # Set LC_ALL to user default
+preferred_encoding = locale.getpreferredencoding()
 
 ws = None
 utterances = []
@@ -127,10 +120,10 @@ def handleNonAscii(text):
         If default locale supports UTF-8 reencode the string otherwise
         remove the offending characters.
     """
-    if locale.getdefaultlocale()[1] == 'UTF-8':
-        return text.encode('utf-8')
-    else:
+    if preferred_encoding == 'ASCII':
         return ''.join([i if ord(i) < 128 else ' ' for i in text])
+    else:
+        return text.encode(preferred_encoding)
 
 
 ##############################################################################
