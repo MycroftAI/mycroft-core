@@ -143,7 +143,7 @@ class Mimic(TTS):
         #  Generate WAV and phonemes
         phonemes = subprocess.check_output(self.args + ['-o', wav_file,
                                                         '-t', sentence])
-        return wav_file, phonemes
+        return wav_file, phonemes.decode()
 
     def visime(self, output):
         visimes = []
