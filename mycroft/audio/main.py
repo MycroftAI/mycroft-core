@@ -30,7 +30,7 @@ from mycroft.configuration import Configuration
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util import reset_sigint_handler, wait_for_exit_signal, \
-    create_daemon, create_echo_function
+    create_daemon, create_echo_function, check_for_signal
 from mycroft.util.log import LOG
 
 try:
@@ -466,6 +466,7 @@ class AudioService(object):
 def main():
     """ Main function. Run when file is invoked. """
     reset_sigint_handler()
+    check_for_signal("isSpeaking")
     ws = WebsocketClient()
     Configuration.init(ws)
     speech.init(ws)
