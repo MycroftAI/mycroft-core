@@ -266,6 +266,39 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
         result = "negative "
     num = abs(num)
 
+    try:
+        # deal with 4 digits
+        # usually if it's a 4 digit num it should be said like a date
+        # i.e. 1972 => nineteen seventy two
+        if len(str(num)) == 4:
+            _num = str(num)
+            # deal with 1000, 2000, 2001, 2100, 3123, etc
+            # is skipped as the rest of the
+            # functin deals with this already
+            if _num[1:4] == '000' or _num[1:3] == '00' or int(_num[0:2]) >= 20:
+                pass
+            # deal with 1900, 1300, etc
+            # i.e. 1900 => nineteen hundred
+            elif _num[2:4] == '00':
+                first = number_names[int(_num[0:2])]
+                last = number_names[100]
+                return first + " " + last
+            # deal with 1960, 1961, etc
+            # i.e. 1960 => nineteen sixty
+            #      1961 => nineteen sixty one
+            else:
+                first = number_names[int(_num[0:2])]
+                if _num[3:4] == '0':
+                    last = number_names[int(_num[2:4])]
+                else:
+                    second = number_names[int(_num[2:3])*10]
+                    last = second + " " + number_names[int(_num[3:4])]
+                return first + " " + last
+    # exception used to catch any unforseen edge cases
+    # will default back to normal subroutine
+    except Exception as e:
+        print('Exception in pronounce_number_en' + e)
+
     # check for a direct match
     if num in number_names:
         if num > 90:
