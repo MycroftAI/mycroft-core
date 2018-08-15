@@ -259,7 +259,7 @@ class Mimic2(TTS):
             ident (optional): Defaults to None.
         """
         create_signal("isSpeaking")
-        
+
         sentence = self._normalized_numbers(sentence)
         chunks = sentence_chunker(sentence, self.chunk_size)
         for idx, req in enumerate(self._requests(chunks)):
