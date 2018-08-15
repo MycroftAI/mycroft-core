@@ -42,6 +42,7 @@ from pyee import EventEmitter
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import create_skill_descriptor, load_skill, \
     MycroftSkill, FallbackSkill
+from mycroft.skills.settings import SkillSettings
 
 MainModule = '__init__'
 
@@ -170,6 +171,28 @@ class InterceptEmitter(object):
         pass
 
 
+class TestSettings(SkillSettings):
+    """ SkillSettings instance without saving/loading capability.
+    """
+    def save_skill_settings(self, skill_settings):
+        pass
+
+    def _poll_skill_settings(self):
+        pass
+
+    def _load_settings_meta(self):
+        return None
+
+    def update(self, settings_meta):
+        pass
+
+    def load_skill_settings_from_file(self):
+        pass
+
+    def store(self, force=False):
+        pass
+
+
 class MockSkillsLoader(object):
     """Load a skill and set up emitter
     """
@@ -238,6 +261,15 @@ class SkillTest(object):
         print('Test case file: ', self.test_case_file)
         test_case = json.load(open(self.test_case_file, 'r'))
         print("Test case: ", test_case)
+
+        original_settings = None
+        if 'settings' in test_case:
+            original_settings = s.settings
+            s.settings = TestSettings('/tmp/', self.test_case_file)
+            for key in test_case['settings']:
+                s.settings[key] = test_case['settings'][key]
+            print(color.YELLOW, 'will run test with custom settings:',
+                  '\n{}'.format(s.settings), color.RESET)
 
         if 'responses' in test_case:
             def get_response(dialog='', data=None, announcement='',
@@ -326,6 +358,8 @@ class SkillTest(object):
             print(color.FAIL, "Failure:", self.failure_msg, color.RESET)
             return False
 
+        if original_settings:
+            s.settings = original_settings
         return True
 
 
