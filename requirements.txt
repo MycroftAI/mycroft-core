@@ -26,7 +26,7 @@ python-vlc==1.1.2
 pulsectl==17.7.4
 google-api-python-client==1.6.4
 
-msm==0.5.17
+msm==0.5.18
 msk==0.3.10
 adapt-parser==0.3.0
 padatious==0.4.4
