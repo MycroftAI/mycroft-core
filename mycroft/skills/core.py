@@ -39,7 +39,7 @@ from mycroft.metrics import report_metric, report_timing, Stopwatch
 from mycroft.skills.settings import SkillSettings
 from mycroft.skills.skill_data import (load_vocabulary, load_regex, to_alnum,
                                        munge_regex, munge_intent_parser)
-from mycroft.util import resolve_resource_file
+from mycroft.util import camel_case_split, resolve_resource_file
 from mycroft.util.log import LOG
 
 MainModule = '__init__'
@@ -648,7 +648,7 @@ class MycroftSkill(object):
 
             except Exception as e:
                 # Convert "MyFancySkill" to "My Fancy Skill" for speaking
-                handler_name = re.sub(r"([a-z])([A-Z])", r"\1 \2", self.name)
+                handler_name = camel_case_split(self.name)
                 msg_data = {'skill': handler_name}
                 msg = dialog.get('skill.error', self.lang, msg_data)
                 self.speak(msg)

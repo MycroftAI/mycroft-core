@@ -146,8 +146,7 @@ class TestPronounceNumber(unittest.TestCase):
     def test_convert_hundreds(self):
         self.assertEqual(pronounce_number(100), "one hundred")
         self.assertEqual(pronounce_number(666), "six hundred and sixty six")
-        self.assertEqual(pronounce_number(1456), "one thousand, four hundred "
-                                                 "and fifty six")
+        self.assertEqual(pronounce_number(1456), "fourteen fifty six")
         self.assertEqual(pronounce_number(103254654), "one hundred and three "
                                                       "million, two hundred "
                                                       "and fifty four "

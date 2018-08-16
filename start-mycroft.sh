@@ -18,7 +18,8 @@ SOURCE="${BASH_SOURCE[0]}"
 
 script=${0}
 script=${script##*/}
-DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+cd -P "$( dirname "$SOURCE" )"
+DIR="$( pwd )"
 VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${DIR}/.venv"}
 
 function help() {

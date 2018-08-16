@@ -166,6 +166,9 @@ class InterceptEmitter(object):
     def remove(self, event_name, func):
         pass
 
+    def remove_all_listeners(self, event_name):
+        pass
+
 
 class MockSkillsLoader(object):
     """Load a skill and set up emitter

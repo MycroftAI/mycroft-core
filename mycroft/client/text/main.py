@@ -47,15 +47,8 @@ from mycroft.util.log import LOG
 import locale
 # Curses uses LC_ALL to determine how to display chars set it to system
 # default
-try:
-    default_locale = '.'.join((locale.getdefaultlocale()[0], 'UTF-8'))
-    locale.setlocale(locale.LC_ALL, default_locale)
-except (locale.Error, ValueError):
-    print('Locale not supported, please try starting the command and '
-          'setting LANG="en_US.UTF-8"\n\n'
-          '\tExample: LANG="en_US.UTF-8" ./start-mycroft.sh cli\n',
-          file=sys.__stderr__)
-    sys.exit(1)
+locale.setlocale(locale.LC_ALL, "")  # Set LC_ALL to user default
+preferred_encoding = locale.getpreferredencoding()
 
 ws = None
 utterances = []
@@ -127,10 +120,10 @@ def handleNonAscii(text):
         If default locale supports UTF-8 reencode the string otherwise
         remove the offending characters.
     """
-    if locale.getdefaultlocale()[1] == 'UTF-8':
-        return text.encode('utf-8')
-    else:
+    if preferred_encoding == 'ASCII':
         return ''.join([i if ord(i) < 128 else ' ' for i in text])
+    else:
+        return text.encode(preferred_encoding)
 
 
 ##############################################################################
@@ -244,8 +237,10 @@ class LogMonitorThread(Thread):
                 if len(filteredLog) == len(mergedLog):
                     del filteredLog[:cToDel]
                 del mergedLog[:cToDel]
-                if len(filteredLog) != len(mergedLog):
-                    rebuild_filtered_log()
+
+            # release log_lock before calling to prevent deadlock
+            if len(filteredLog) != len(mergedLog):
+                rebuild_filtered_log()
 
 
 def start_log_monitor(filename):
@@ -400,10 +395,7 @@ def handle_utterance(event):
     global history
     utterance = event.data.get('utterances')[0]
     history.append(utterance)
-    if bSimple:
-        print(utterance)
-    else:
-        chat.append(utterance)
+    chat.append(utterance)
     set_screen_dirty()
 
 
@@ -798,7 +790,6 @@ def num_help_pages():
 def do_draw_help(scr):
 
     def render_header():
-        scr.erase()
         scr.addstr(0, 0, center(25) + "Mycroft Command Line Help", CLR_HEADING)
         scr.addstr(1, 0, "=" * (curses.COLS - 1), CLR_HEADING)
 
@@ -812,6 +803,7 @@ def do_draw_help(scr):
         text = "Page {} of {} [ Any key to continue ]".format(page, total)
         scr.addstr(curses.LINES - 1, 0, center(len(text)) + text, CLR_HEADING)
 
+    scr.erase()
     render_header()
     y = 2
     page = subscreen + 1
@@ -845,6 +837,9 @@ def do_draw_help(scr):
             break
 
     render_footer(page, num_help_pages())
+
+    # Curses doesn't actually update the display until refresh() is called
+    scr.refresh()
 
 
 def show_help():
@@ -1062,6 +1057,7 @@ def gui_main(stdscr):
     gui_thread.start()
 
     hist_idx = -1  # index, from the bottom
+    c = 0
     try:
         while True:
             set_screen_dirty()
@@ -1240,6 +1236,7 @@ def simple_cli():
     event_thread = Thread(target=connect)
     event_thread.setDaemon(True)
     event_thread.start()
+    ws.on('speak', handle_speak)
     try:
         while True:
             # Sleep for a while so all the output that results
