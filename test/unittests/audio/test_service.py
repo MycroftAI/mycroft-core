@@ -16,7 +16,7 @@ import unittest
 
 from os.path import dirname, join, abspath
 
-import mycroft.audio.__main__ as audio_service
+import mycroft.audio.audioservice as audio_service
 
 """
     Tests for service loader
