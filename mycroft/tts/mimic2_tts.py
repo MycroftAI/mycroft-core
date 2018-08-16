@@ -246,7 +246,7 @@ class Mimic2(TTS):
                 for num in numbers
             ]
             for num, norm_num in normalized_num:
-                sentence = sentence.replace(num, norm_num)
+                sentence = sentence.replace(num, norm_num, 1)
         except TypeError:
             LOG.exception("type error in mimic2_tts.py _normalized_numbers()")
         return sentence
