@@ -684,7 +684,7 @@ class MycroftSkill(object):
                 bool: True if found and removed, False if not found
         """
         removed = False
-        for _name, _handler in self.events:
+        for _name, _handler in list(self.events):
             if name == _name:
                 try:
                     self.events.remove((_name, _handler))
@@ -1034,19 +1034,19 @@ class MycroftSkill(object):
                         repeat=None):
         """
             Underlying method for schedule_event and schedule_repeating_event.
-            Takes scheduling information and sends it of on the message bus.
+            Takes scheduling information and sends it off on the message bus.
         """
         if not name:
             name = self.name + handler.__name__
-        name = self._unique_name(name)
+        unique_name = self._unique_name(name)
         if repeat:
-            self.scheduled_repeats.append(name)
+            self.scheduled_repeats.append(name)  # store "friendly name"
 
         data = data or {}
-        self.add_event(name, handler, once=not repeat)
+        self.add_event(unique_name, handler, once=not repeat)
         event_data = {}
         event_data['time'] = time.mktime(when.timetuple())
-        event_data['event'] = name
+        event_data['event'] = unique_name
         event_data['repeat'] = repeat
         event_data['data'] = data
         self.emitter.emit(Message('mycroft.scheduler.schedule_event',
@@ -1158,7 +1158,9 @@ class MycroftSkill(object):
 
     def cancel_all_repeating_events(self):
         """ Cancel any repeating events started by the skill. """
-        for e in self.scheduled_repeats:
+        # NOTE: Gotta make a copy of the list due to the removes that happen
+        #       in cancel_scheduled_event().
+        for e in list(self.scheduled_repeats):
             self.cancel_scheduled_event(e)
 
 
