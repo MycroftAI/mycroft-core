@@ -303,21 +303,6 @@ class DeviceApi(Api):
             path = '/' + self.identity.uuid + '/voice?arch=' + arch
             return self.request({'path': path})['link']
 
-    def find(self):
-        """ Deprecated, see get_location() """
-        # TODO: Eliminate ASAP, for backwards compatibility only
-        return self.get()
-
-    def find_setting(self):
-        """ Deprecated, see get_settings() """
-        # TODO: Eliminate ASAP, for backwards compatibility only
-        return self.get_settings()
-
-    def find_location(self):
-        """ Deprecated, see get_location() """
-        # TODO: Eliminate ASAP, for backwards compatibility only
-        return self.get_location()
-
     def get_oauth_token(self, dev_cred):
         """
             Get Oauth token for dev_credential dev_cred.
