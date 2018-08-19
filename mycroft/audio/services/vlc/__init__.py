@@ -19,8 +19,8 @@ from mycroft.util.log import LOG
 
 
 class VlcService(AudioBackend):
-    def __init__(self, config, emitter=None, name='vlc'):
-        super(VlcService, self).__init__(config, emitter)
+    def __init__(self, config, bus=None, name='vlc'):
+        super(VlcService, self).__init__(config, bus)
         self.instance = vlc.Instance()
         self.list_player = self.instance.media_list_player_new()
         self.player = self.instance.media_player_new()
@@ -31,7 +31,7 @@ class VlcService(AudioBackend):
         self.vlc_events.event_attach(vlc.EventType.MediaPlayerPlaying,
                                      self.track_start, 1)
         self.config = config
-        self.emitter = emitter
+        self.bus = bus
         self.name = name
         self.normal_volume = None
         self.low_volume = self.config.get('low_volume', 30)
@@ -116,10 +116,10 @@ class VlcService(AudioBackend):
         return ret
 
 
-def load_service(base_config, emitter):
+def load_service(base_config, bus):
     backends = base_config.get('backends', [])
     services = [(b, backends[b]) for b in backends
                 if backends[b]['type'] == 'vlc' and
                 backends[b].get('active', True)]
-    instances = [VlcService(s[1], emitter, s[0]) for s in services]
+    instances = [VlcService(s[1], bus, s[0]) for s in services]
     return instances

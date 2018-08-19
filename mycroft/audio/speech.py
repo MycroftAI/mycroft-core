@@ -23,7 +23,7 @@ from mycroft.util import create_signal, check_for_signal
 from mycroft.util.log import LOG
 from mycroft.messagebus.message import Message
 
-ws = None  # TODO:18.02 - Rename to "messagebus"
+bus = None  # Mycroft messagebus connection
 config = None
 tts = None
 tts_hash = None
@@ -44,7 +44,7 @@ def handle_speak(event):
         Handle "speak" message
     """
     config = Configuration.get()
-    Configuration.init(ws)
+    Configuration.init(bus)
     global _last_stop_signal
 
     # Get conversation ID
@@ -60,7 +60,7 @@ def handle_speak(event):
         if event.data.get('expect_response', False):
             # When expect_response is requested, the listener will be restarted
             # at the end of the next bit of spoken audio.
-            ws.once('recognizer_loop:audio_output_end', _start_listener)
+            bus.once('recognizer_loop:audio_output_end', _start_listener)
 
         # This is a bit of a hack for Picroft.  The analog audio on a Pi blocks
         # for 30 seconds fairly often, so we don't want to break on periods
@@ -111,7 +111,7 @@ def mute_and_speak(utterance, ident):
         tts.playback.join()
         # Create new tts instance
         tts = TTSFactory.create()
-        tts.init(ws)
+        tts.init(bus)
         tts_hash = hash(str(config.get('tts', '')))
 
     LOG.info("Speak: " + utterance)
@@ -130,29 +130,31 @@ def handle_stop(event):
         _last_stop_signal = time.time()
         tts.playback.clear_queue()
         tts.playback.clear_visimes()
-        ws.emit(Message("mycroft.stop.handled", {"by": "TTS"}))
+        bus.emit(Message("mycroft.stop.handled", {"by": "TTS"}))
 
 
-def init(websocket):
+def init(messagebus):
+    """ Start speech related handlers.
+
+    Arguments:
+        messagebus: Connection to the Mycroft messagebus
     """
-        Start speech related handlers
-    """
 
-    global ws
+    global bus
     global tts
     global tts_hash
     global config
 
-    ws = websocket
-    Configuration.init(ws)
+    bus = messagebus
+    Configuration.init(bus)
     config = Configuration.get()
-    ws.on('mycroft.stop', handle_stop)
-    ws.on('mycroft.audio.speech.stop', handle_stop)
-    ws.on('speak', handle_speak)
-    ws.on('mycroft.mic.listen', _start_listener)
+    bus.on('mycroft.stop', handle_stop)
+    bus.on('mycroft.audio.speech.stop', handle_stop)
+    bus.on('speak', handle_speak)
+    bus.on('mycroft.mic.listen', _start_listener)
 
     tts = TTSFactory.create()
-    tts.init(ws)
+    tts.init(bus)
     tts_hash = config.get('tts')
 
 
