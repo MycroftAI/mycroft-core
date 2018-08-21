@@ -36,7 +36,7 @@ from mycroft.util.format import nice_number
 # play_wav, play_mp3, play_ogg, get_cache_directory,
 # resolve_resource_file, wait_while_speaking
 from mycroft.util.log import LOG
-from mycroft.util.parse import extract_datetime, extractnumber, normalize
+from mycroft.util.parse import extract_datetime, extract_number, normalize
 from mycroft.util.signal import *
 
 
