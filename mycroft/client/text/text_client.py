@@ -18,19 +18,6 @@ from math import ceil
 
 from mycroft.tts import TTS
 
-
-def custom_except_hook(exctype, value, traceback):           # noqa
-    print(sys.stdout.getvalue(), file=sys.__stdout__)        # noqa
-    print(sys.stderr.getvalue(), file=sys.__stderr__)        # noqa
-    sys.stdout, sys.stderr = sys.__stdout__, sys.__stderr__  # noqa
-    sys.__excepthook__(exctype, value, traceback)            # noqa
-
-
-sys.excepthook = custom_except_hook  # noqa
-
-sys.stdout = io.StringIO()  # noqa
-sys.stderr = io.StringIO()  # noqa
-
 import os
 import os.path
 import time
@@ -41,7 +28,6 @@ import mycroft.version
 from threading import Thread, Lock
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
-from mycroft.util import get_ipc_directory
 from mycroft.util.log import LOG
 
 import locale
@@ -50,12 +36,11 @@ import locale
 locale.setlocale(locale.LC_ALL, "")  # Set LC_ALL to user default
 preferred_encoding = locale.getpreferredencoding()
 
+bSimple = False
 ws = None
-utterances = []
 history = []
 chat = []   # chat history, oldest at the lowest index
 line = ""
-bSimple = '--simple' in sys.argv
 scr = None
 log_line_offset = 0  # num lines back in logs to show
 log_line_lr_scroll = 0  # amount to scroll left/right for long lines
@@ -1232,6 +1217,8 @@ def gui_main(stdscr):
 
 def simple_cli():
     global ws
+    global bSimple
+    bSimple = True
     ws = WebsocketClient()
     event_thread = Thread(target=connect)
     event_thread.setDaemon(True)
@@ -1254,29 +1241,3 @@ def simple_cli():
         LOG.exception(e)
         event_thread.exit()
         sys.exit()
-
-
-# Monitor system logs
-start_log_monitor("/var/log/mycroft/skills.log")
-start_log_monitor("/var/log/mycroft/voice.log")
-# logs when using Debian package   TODO: Unify all
-start_log_monitor("/var/log/mycroft-skills.log")
-start_log_monitor("/var/log/mycroft-speech-client.log")
-
-# Monitor IPC file containing microphone level info
-start_mic_monitor(os.path.join(get_ipc_directory(), "mic_level"))
-
-
-def main():
-    if bSimple:
-        sys.stdout = sys.__stdout__
-        sys.stderr = sys.__stderr__
-        simple_cli()
-    else:
-        load_settings()
-        curses.wrapper(gui_main)
-        curses.endwin()
-        save_settings()
-
-if __name__ == "__main__":
-    main()

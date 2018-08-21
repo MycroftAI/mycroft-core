@@ -14,41 +14,25 @@
 #
 import gc
 import json
-import os
 import sys
 import time
 from glob import glob
 from itertools import chain
 
+import os
 from os.path import exists, join, basename, dirname, expanduser, isfile
-from threading import Timer, Thread, Event
+from threading import Thread, Event
 
-import mycroft.lock
 from msm import MycroftSkillsManager, SkillRepo, MsmException
 from mycroft import dialog
-from mycroft.api import is_paired, BackendDown
 from mycroft.client.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
-from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
-from mycroft.skills.core import load_skill, create_skill_descriptor, \
-    MainModule, FallbackSkill
-from mycroft.skills.event_scheduler import EventScheduler
-from mycroft.skills.intent_service import IntentService
-from mycroft.skills.padatious_service import PadatiousService
-from mycroft.util import (
-    connected, wait_while_speaking, reset_sigint_handler,
-    create_echo_function, create_daemon, wait_for_exit_signal
-)
+from mycroft.util import connected
 from mycroft.util.log import LOG
 
-ws = None
-event_scheduler = None
-skill_manager = None
+from .core import load_skill, create_skill_descriptor, MainModule
 
-# Remember "now" at startup.  Used to detect clock changes.
-start_ticks = time.monotonic()
-start_clock = time.time()
 
 DEBUG = Configuration.get().get("debug", False)
 skills_config = Configuration.get().get("skills")
@@ -58,112 +42,6 @@ PRIORITY_SKILLS = skills_config.get("priority_skills", [])
 installer_config = Configuration.get().get("SkillInstallerSkill")
 
 MINUTES = 60  # number of seconds in a minute (syntatic sugar)
-
-
-def connect():
-    global ws
-    ws.run_forever()
-
-
-def _starting_up():
-    """
-        Start loading skills.
-
-        Starts
-        - SkillManager to load/reloading of skills when needed
-        - a timer to check for internet connection
-        - adapt intent service
-        - padatious intent service
-    """
-    global ws, skill_manager, event_scheduler
-
-    ws.on('intent_failure', FallbackSkill.make_intent_failure_handler(ws))
-
-    # Create the Intent manager, which converts utterances to intents
-    # This is the heart of the voice invoked skill system
-
-    service = IntentService(ws)
-    PadatiousService(ws, service)
-    event_scheduler = EventScheduler(ws)
-
-    # Create a thread that monitors the loaded skills, looking for updates
-    skill_manager = SkillManager(ws)
-    skill_manager.daemon = True
-    # Wait until skills have been loaded once before starting to check
-    # network connection
-    skill_manager.load_priority()
-    skill_manager.start()
-    check_connection()
-
-
-def check_connection():
-    """
-        Check for network connection. If not paired trigger pairing.
-        Runs as a Timer every second until connection is detected.
-    """
-    if connected():
-        enclosure = EnclosureAPI(ws)
-
-        if is_paired():
-            # Skip the sync message when unpaired because the prompt to go to
-            # home.mycrof.ai will be displayed by the pairing skill
-            enclosure.mouth_text(dialog.get("message_synching.clock"))
-
-        # Force a sync of the local clock with the internet
-        config = Configuration.get()
-        platform = config['enclosure'].get("platform", "unknown")
-        if platform in ['mycroft_mark_1', 'picroft']:
-            ws.emit(Message("system.ntp.sync"))
-            time.sleep(15)  # TODO: Generate/listen for a message response...
-
-        # Check if the time skewed significantly.  If so, reboot
-        skew = abs((time.monotonic() - start_ticks) -
-                   (time.time() - start_clock))
-        if skew > 60 * 60:
-            # Time moved by over an hour in the NTP sync. Force a reboot to
-            # prevent weird things from occcurring due to the 'time warp'.
-            #
-            data = {'utterance': dialog.get("time.changed.reboot")}
-            ws.emit(Message("speak", data))
-            wait_while_speaking()
-
-            # provide visual indicators of the reboot
-            enclosure.mouth_text(dialog.get("message_rebooting"))
-            enclosure.eyes_color(70, 65, 69)  # soft gray
-            enclosure.eyes_spin()
-
-            # give the system time to finish processing enclosure messages
-            time.sleep(1.0)
-
-            # reboot
-            ws.emit(Message("system.reboot"))
-            return
-        else:
-            ws.emit(Message("enclosure.mouth.reset"))
-            time.sleep(0.5)
-
-        ws.emit(Message('mycroft.internet.connected'))
-        # check for pairing, if not automatically start pairing
-        try:
-            if not is_paired(ignore_errors=False):
-                payload = {
-                    'utterances': ["pair my device"],
-                    'lang': "en-us"
-                }
-                ws.emit(Message("recognizer_loop:utterance", payload))
-            else:
-                from mycroft.api import DeviceApi
-                api = DeviceApi()
-                api.update_version()
-        except BackendDown:
-            data = {'utterance': dialog.get("backend.down")}
-            ws.emit(Message("speak", data))
-            ws.emit(Message("backend.down"))
-
-    else:
-        thread = Timer(1, check_connection)
-        thread.daemon = True
-        thread.start()
 
 
 def _get_last_modified_date(path):
@@ -616,35 +494,3 @@ class SkillManager(Thread):
                         "Error in converse method for skill " + str(skill_id))
         self.ws.emit(message.reply("skill.converse.response",
                                    {"skill_id": 0, "result": False}))
-
-
-def main():
-    global ws
-    reset_sigint_handler()
-    # Create PID file, prevent multiple instancesof this service
-    mycroft.lock.Lock('skills')
-    # Connect this Skill management process to the websocket
-    ws = WebsocketClient()
-    Configuration.init(ws)
-
-    ws.on('message', create_echo_function('SKILLS'))
-    # Startup will be called after websocket is fully live
-    ws.once('open', _starting_up)
-
-    create_daemon(ws.run_forever)
-    wait_for_exit_signal()
-    shutdown()
-
-
-def shutdown():
-    if event_scheduler:
-        event_scheduler.shutdown()
-
-    # Terminate all running threads that update skills
-    if skill_manager:
-        skill_manager.stop()
-        skill_manager.join()
-
-
-if __name__ == "__main__":
-    main()

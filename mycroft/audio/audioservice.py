@@ -11,26 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
-"""
-    Mycroft audio service.
 
-    This handles playback of audio and speech
-"""
 import imp
 import sys
 import time
 from os import listdir
+from os.path import abspath, dirname, basename, isdir, join
 from threading import Lock
 
-from os.path import abspath, dirname, basename, isdir, join
-
-import mycroft.audio.speech as speech
 from mycroft.configuration import Configuration
-from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
-from mycroft.util import reset_sigint_handler, wait_for_exit_signal, \
-    create_daemon, create_echo_function, check_for_signal
 from mycroft.util.log import LOG
 
 try:
@@ -461,26 +451,3 @@ class AudioService(object):
                        self._restore_volume)
         self.ws.remove('recognizer_loop:record_end', self._restore_volume)
         self.ws.remove('mycroft.stop', self._stop)
-
-
-def main():
-    """ Main function. Run when file is invoked. """
-    reset_sigint_handler()
-    check_for_signal("isSpeaking")
-    ws = WebsocketClient()
-    Configuration.init(ws)
-    speech.init(ws)
-
-    LOG.info("Starting Audio Services")
-    ws.on('message', create_echo_function('AUDIO', ['mycroft.audio.service']))
-    audio = AudioService(ws)  # Connect audio service instance to message bus
-    create_daemon(ws.run_forever)
-
-    wait_for_exit_signal()
-
-    speech.shutdown()
-    audio.shutdown()
-
-
-if __name__ == "__main__":
-    main()
