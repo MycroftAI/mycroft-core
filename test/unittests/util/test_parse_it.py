@@ -19,7 +19,7 @@ from datetime import datetime
 
 from mycroft.util.parse import get_gender
 from mycroft.util.parse import extract_datetime
-from mycroft.util.parse import extractnumber
+from mycroft.util.parse import extract_number
 from mycroft.util.parse import normalize
 
 
@@ -42,100 +42,83 @@ class TestNormalize(unittest.TestCase):
                          u"questo è il test extra")
 
     def test_extractnumber_it(self):
-        self.assertEqual(extractnumber(u"questo è il primo test",
-                                       lang="it"), 1)
-        self.assertEqual(extractnumber(u"questo è il 2 test",
-                                       lang="it"), 2)
-        self.assertEqual(extractnumber(u"questo è il secondo test",
-                                       lang="it"), 2)
-        self.assertEqual(extractnumber(u"questo è un terzo di test",
-                                       lang="it"), 1.0 / 3.0)
-        self.assertEqual(extractnumber(u"questo è test numero 4",
-                                       lang="it"), 4)
-        self.assertEqual(extractnumber("un terzo di tazza",
-                                       lang="it"), 1.0 / 3.0)
-        self.assertEqual(extractnumber("tre tazze",
-                                       lang="it"), 3)
-        self.assertEqual(extractnumber("1/3 tazze",
-                                       lang="it"), 1.0 / 3.0)
-        self.assertEqual(extractnumber("un quarto di tazza",
-                                       lang="it"), 0.25)
-        self.assertEqual(extractnumber("1/4 tazza",
-                                       lang="it"), 0.25)
-        self.assertEqual(extractnumber("2/3 tazza",
-                                       lang="it"), 2.0 / 3.0)
-        self.assertEqual(extractnumber("3/4 tazza",
-                                       lang="it"), 3.0 / 4.0)
-        self.assertEqual(extractnumber("1 e 1/4 tazza",
-                                       lang="it"), 1.25)
-        self.assertEqual(extractnumber("1 tazza e mezzo",
-                                       lang="it"), 1.5)
-        self.assertEqual(extractnumber("una tazza e mezzo",
-                                       lang="it"), 1.5)
-        self.assertEqual(extractnumber("una e mezza tazza",
-                                       lang="it"), 1.5)
-        self.assertEqual(extractnumber("una e una mezza tazza",
-                                       lang="it"), 1.5)
-        self.assertEqual(extractnumber("tre quarti tazza",
-                                       lang="it"), 3.0 / 4.0)
-        self.assertEqual(extractnumber("tre quarto tazza",
-                                       lang="it"), 3.0 / 4.0)
-        self.assertEqual(extractnumber("sette punto cinque",
-                                       lang="it"), 7.5)
-        self.assertEqual(extractnumber("sette punto 5",
-                                       lang="it"), 7.5)
-        self.assertEqual(extractnumber("sette e mezzo",
-                                       lang="it"), 7.5)
-        self.assertEqual(extractnumber("sette e ottanta",
-                                       lang="it"), 7.80)
-        self.assertEqual(extractnumber("sette e otto",
-                                       lang="it"), 7.8)
-        self.assertEqual(extractnumber("sette e zero otto",
-                                       lang="it"), 7.08)
-        self.assertEqual(extractnumber("sette e zero zero otto",
-                                       lang="it"), 7.008)
-        self.assertEqual(extractnumber("venti tredicesimi",
-                                       lang="it"), 20.0 / 13.0)
-        self.assertEqual(extractnumber("sei virgola sessanta sei",
-                                       lang="it"), 6.66)
-        self.assertEqual(extractnumber("sei virgola sessantasei",
-                                       lang="it"), 6.66)
-        self.assertEqual(extractnumber("seicento sessanta  sei",
-                                       lang="it"), 666)
-        self.assertEqual(extractnumber("seicento punto zero sei",
-                                       lang="it"), 600.06)
-        self.assertEqual(extractnumber("seicento punto zero zero sei",
-                                       lang="it"), 600.006)
-        self.assertEqual(extractnumber("seicento punto zero zero zero sei",
-                                       lang="it"), 600.0006)
-        self.assertEqual(extractnumber("tre decimi ",
-                                       lang="it"), 0.30000000000000004)
-        self.assertEqual(extractnumber("dodici centesimi",
-                                       lang="it"), 0.12)
-        self.assertEqual(extractnumber("cinque e quaranta due millesimi",
-                                       lang="it"), 5.042)
-        self.assertEqual(extractnumber("mille e uno",
-                                       lang="it"), 1001)
-        self.assertEqual(extractnumber("due mila venti due dollari ",
-                                       lang="it"), 2022)
-        self.assertEqual(extractnumber(
+        self.assertEqual(extract_number(u"questo è il primo test",
+                                        lang="it"), 1)
+        self.assertEqual(extract_number(u"questo è il 2 test", lang="it"), 2)
+        self.assertEqual(extract_number(u"questo è il secondo test",
+                                        lang="it"), 2)
+        self.assertEqual(extract_number(u"questo è un terzo di test",
+                                        lang="it"), 1.0 / 3.0)
+        self.assertEqual(extract_number(u"questo è test numero 4", lang="it"),
+                         4)
+        self.assertEqual(extract_number("un terzo di tazza", lang="it"),
+                         1.0 / 3.0)
+        self.assertEqual(extract_number("tre tazze", lang="it"), 3)
+        self.assertEqual(extract_number("1/3 tazze", lang="it"), 1.0 / 3.0)
+        self.assertEqual(extract_number("un quarto di tazza", lang="it"), 0.25)
+        self.assertEqual(extract_number("1/4 tazza", lang="it"), 0.25)
+        self.assertEqual(extract_number("2/3 tazza", lang="it"), 2.0 / 3.0)
+        self.assertEqual(extract_number("3/4 tazza", lang="it"), 3.0 / 4.0)
+        self.assertEqual(extract_number("1 e 1/4 tazza", lang="it"), 1.25)
+        self.assertEqual(extract_number("1 tazza e mezzo", lang="it"), 1.5)
+        self.assertEqual(extract_number("una tazza e mezzo", lang="it"), 1.5)
+        self.assertEqual(extract_number("una e mezza tazza", lang="it"), 1.5)
+        self.assertEqual(extract_number("una e una mezza tazza",
+                                        lang="it"), 1.5)
+        self.assertEqual(extract_number("tre quarti tazza",
+                                        lang="it"), 3.0 / 4.0)
+        self.assertEqual(extract_number("tre quarto tazza",
+                                        lang="it"), 3.0 / 4.0)
+        self.assertEqual(extract_number("sette punto cinque", lang="it"), 7.5)
+        self.assertEqual(extract_number("sette punto 5", lang="it"), 7.5)
+        self.assertEqual(extract_number("sette e mezzo", lang="it"), 7.5)
+        self.assertEqual(extract_number("sette e ottanta", lang="it"), 7.80)
+        self.assertEqual(extract_number("sette e otto", lang="it"), 7.8)
+        self.assertEqual(extract_number("sette e zero otto", lang="it"), 7.08)
+        self.assertEqual(extract_number("sette e zero zero otto",
+                                        lang="it"), 7.008)
+        self.assertEqual(extract_number("venti tredicesimi",
+                                        lang="it"), 20.0 / 13.0)
+        self.assertEqual(extract_number("sei virgola sessanta sei",
+                                        lang="it"), 6.66)
+        self.assertEqual(extract_number("sei virgola sessantasei",
+                                        lang="it"), 6.66)
+        self.assertEqual(extract_number("seicento sessanta  sei",
+                                        lang="it"), 666)
+        self.assertEqual(extract_number("seicento punto zero sei",
+                                        lang="it"), 600.06)
+        self.assertEqual(extract_number("seicento punto zero zero sei",
+                                        lang="it"), 600.006)
+        self.assertEqual(extract_number("seicento punto zero zero zero sei",
+                                        lang="it"), 600.0006)
+        self.assertEqual(extract_number("tre decimi ",
+                                        lang="it"), 0.30000000000000004)
+        self.assertEqual(extract_number("dodici centesimi",
+                                        lang="it"), 0.12)
+        self.assertEqual(extract_number("cinque e quaranta due millesimi",
+                                        lang="it"), 5.042)
+        self.assertEqual(extract_number("mille e uno",
+                                        lang="it"), 1001)
+        self.assertEqual(extract_number("due mila venti due dollari ",
+                                        lang="it"), 2022)
+        self.assertEqual(extract_number(
             "cento quattordici mila quattrocento undici dollari ",
             lang="it"), 114411)
-        self.assertEqual(extractnumber("ventitre dollari ", lang="it"), 23)
-        self.assertEqual(extractnumber("quarantacinque minuti ",
-                                       lang="it"), 45)
-        self.assertEqual(extractnumber("ventuno anni ",
-                                       lang="it"), 21)
-        self.assertEqual(extractnumber("ventotto euro ",
-                                       lang="it"), 28)
-        self.assertEqual(extractnumber("dodici e quarantacinque ",
-                                       lang="it"), 12.45)
-        self.assertEqual(extractnumber("quarantotto euro ",
-                                       lang="it"), 48)
-        self.assertEqual(extractnumber("novantanove euro ",
-                                       lang="it"), 99)
-        self.assertEqual(extractnumber("avvisa se qualcuno arriva ",
-                                       lang="it"), False)
+        self.assertEqual(extract_number("ventitre dollari ", lang="it"), 23)
+        self.assertEqual(extract_number("quarantacinque minuti ",
+                                        lang="it"), 45)
+        self.assertEqual(extract_number("ventuno anni ",
+                                        lang="it"), 21)
+        self.assertEqual(extract_number("ventotto euro ",
+                                        lang="it"), 28)
+        self.assertEqual(extract_number("dodici e quarantacinque ",
+                                        lang="it"), 12.45)
+        self.assertEqual(extract_number("quarantotto euro ",
+                                        lang="it"), 48)
+        self.assertEqual(extract_number("novantanove euro ",
+                                        lang="it"), 99)
+        self.assertEqual(extract_number("avvisa se qualcuno arriva ",
+                                        lang="it"), False)
 
     def test_spaces_it(self):
         self.assertEqual(normalize(u"questo   e'  il    test",

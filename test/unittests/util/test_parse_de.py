@@ -18,7 +18,7 @@ import unittest
 from datetime import datetime
 
 from mycroft.util.parse import extract_datetime
-from mycroft.util.parse import extractnumber
+from mycroft.util.parse import extract_number
 from mycroft.util.parse import normalize
 
 
@@ -34,40 +34,41 @@ class TestNormalize(unittest.TestCase):
                                    remove_articles=False),
                          "dies ist der Extra-Test")
 
-    def test_extractnumber(self):
-        self.assertEqual(extractnumber("dies ist der 1. Test",
-                                       lang="de-de"), 1)
-        self.assertEqual(extractnumber("dies ist der erste Test",
-                                       lang="de-de"), 1)
-        self.assertEqual(extractnumber("dies ist 2 Test", lang="de-de"), 2)
-        self.assertEqual(extractnumber("dies ist zweiter Test", lang="de-de"),
+    def test_extract_number(self):
+        self.assertEqual(extract_number("dies ist der 1. Test",
+                                        lang="de-de"), 1)
+        self.assertEqual(extract_number("dies ist der erste Test",
+                                        lang="de-de"), 1)
+        self.assertEqual(extract_number("dies ist 2 Test", lang="de-de"), 2)
+        self.assertEqual(extract_number("dies ist zweiter Test", lang="de-de"),
                          2)
         self.assertEqual(
-            extractnumber("dies ist der dritte Test", lang="de-de"), 3)
+            extract_number("dies ist der dritte Test", lang="de-de"), 3)
         self.assertEqual(
-            extractnumber("dies ist der Test Nummer 4", lang="de-de"), 4)
-        self.assertEqual(extractnumber("ein drittel einer Tasse",
-                                       lang="de-de"), 1.0 / 3.0)
-        self.assertEqual(extractnumber("drei Tassen", lang="de-de"), 3)
-        self.assertEqual(extractnumber("1/3 Tasse", lang="de-de"), 1.0 / 3.0)
-        self.assertEqual(extractnumber("eine viertel Tasse", lang="de-de"),
+            extract_number("dies ist der Test Nummer 4", lang="de-de"), 4)
+        self.assertEqual(extract_number("ein drittel einer Tasse",
+                                        lang="de-de"), 1.0 / 3.0)
+        self.assertEqual(extract_number("drei Tassen", lang="de-de"), 3)
+        self.assertEqual(extract_number("1/3 Tasse", lang="de-de"), 1.0 / 3.0)
+        self.assertEqual(extract_number("eine viertel Tasse", lang="de-de"),
                          0.25)
-        self.assertEqual(extractnumber("1/4 Tasse", lang="de-de"), 0.25)
-        self.assertEqual(extractnumber("viertel Tasse", lang="de-de"), 0.25)
-        self.assertEqual(extractnumber("2/3 Tasse", lang="de-de"), 2.0 / 3.0)
-        self.assertEqual(extractnumber("3/4 Tasse", lang="de-de"), 3.0 / 4.0)
-        self.assertEqual(extractnumber("1 und 3/4 Tassen", lang="de-de"), 1.75)
-        self.assertEqual(extractnumber("1 Tasse und eine halbe", lang="de-de"),
-                         1.5)
+        self.assertEqual(extract_number("1/4 Tasse", lang="de-de"), 0.25)
+        self.assertEqual(extract_number("viertel Tasse", lang="de-de"), 0.25)
+        self.assertEqual(extract_number("2/3 Tasse", lang="de-de"), 2.0 / 3.0)
+        self.assertEqual(extract_number("3/4 Tasse", lang="de-de"), 3.0 / 4.0)
+        self.assertEqual(extract_number("1 und 3/4 Tassen", lang="de-de"),
+                         1.75)
+        self.assertEqual(extract_number("1 Tasse und eine halbe",
+                                        lang="de-de"), 1.5)
         self.assertEqual(
-            extractnumber("eine Tasse und eine halbe", lang="de-de"), 1.5)
+            extract_number("eine Tasse und eine halbe", lang="de-de"), 1.5)
         self.assertEqual(
-            extractnumber("eine und eine halbe Tasse", lang="de-de"), 1.5)
-        self.assertEqual(extractnumber("ein und ein halb Tassen",
-                                       lang="de-de"), 1.5)
-        self.assertEqual(extractnumber("drei Viertel Tasse", lang="de-de"),
+            extract_number("eine und eine halbe Tasse", lang="de-de"), 1.5)
+        self.assertEqual(extract_number("ein und ein halb Tassen",
+                                        lang="de-de"), 1.5)
+        self.assertEqual(extract_number("drei Viertel Tasse", lang="de-de"),
                          3.0 / 4.0)
-        self.assertEqual(extractnumber("drei Viertel Tassen", lang="de-de"),
+        self.assertEqual(extract_number("drei Viertel Tassen", lang="de-de"),
                          3.0 / 4.0)
 
     def test_extractdatetime_de(self):

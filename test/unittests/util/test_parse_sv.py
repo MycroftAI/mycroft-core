@@ -18,46 +18,46 @@ import unittest
 from datetime import datetime
 
 from mycroft.util.parse import extract_datetime
-from mycroft.util.parse import extractnumber
+from mycroft.util.parse import extract_number
 from mycroft.util.parse import normalize
 
 
 class TestNormalize(unittest.TestCase):
     def test_extractnumber_sv(self):
-        self.assertEqual(extractnumber("1 och en halv deciliter",
-                                       lang='sv-se'), 1.5)
-        self.assertEqual(extractnumber("det här är det första testet",
-                                       lang='sv-se'), 1)
-        self.assertEqual(extractnumber("det här är test nummer 2",
-                                       lang='sv-se'), 2)
-        self.assertEqual(extractnumber("det här är det andra testet",
-                                       lang='sv-se'), 2)
-        self.assertEqual(extractnumber("det här är tredje testet",
-                                       lang='sv-se'), 3)
-        self.assertEqual(extractnumber("det här är test nummer 4",
-                                       lang='sv-se'), 4)
-        self.assertEqual(extractnumber("en tredjedels dl",
-                                       lang='sv-se'), 1.0 / 3.0)
-        self.assertEqual(extractnumber("tre deciliter",
-                                       lang='sv-se'), 3)
-        self.assertEqual(extractnumber("1/3 deciliter",
-                                       lang='sv-se'), 1.0 / 3.0)
-        self.assertEqual(extractnumber("en kvarts dl",
-                                       lang='sv-se'), 0.25)
-        self.assertEqual(extractnumber("1/4 dl",
-                                       lang='sv-se'), 0.25)
-        self.assertEqual(extractnumber("en kvarts dl",
-                                       lang='sv-se'), 0.25)
-        self.assertEqual(extractnumber("2/3 dl",
-                                       lang='sv-se'), 2.0 / 3.0)
-        self.assertEqual(extractnumber("3/4 dl",
-                                       lang='sv-se'), 3.0 / 4.0)
-        self.assertEqual(extractnumber("1 och 3/4 dl",
-                                       lang='sv-se'), 1.75)
-        self.assertEqual(extractnumber("tre fjärdedels dl",
-                                       lang='sv-se'), 3.0 / 4.0)
-        self.assertEqual(extractnumber("trekvarts kopp",
-                                       lang='sv-se'), 3.0 / 4.0)
+        self.assertEqual(extract_number("1 och en halv deciliter",
+                                        lang='sv-se'), 1.5)
+        self.assertEqual(extract_number("det här är det första testet",
+                                        lang='sv-se'), 1)
+        self.assertEqual(extract_number("det här är test nummer 2",
+                                        lang='sv-se'), 2)
+        self.assertEqual(extract_number("det här är det andra testet",
+                                        lang='sv-se'), 2)
+        self.assertEqual(extract_number("det här är tredje testet",
+                                        lang='sv-se'), 3)
+        self.assertEqual(extract_number("det här är test nummer 4",
+                                        lang='sv-se'), 4)
+        self.assertEqual(extract_number("en tredjedels dl",
+                                        lang='sv-se'), 1.0 / 3.0)
+        self.assertEqual(extract_number("tre deciliter",
+                                        lang='sv-se'), 3)
+        self.assertEqual(extract_number("1/3 deciliter",
+                                        lang='sv-se'), 1.0 / 3.0)
+        self.assertEqual(extract_number("en kvarts dl",
+                                        lang='sv-se'), 0.25)
+        self.assertEqual(extract_number("1/4 dl",
+                                        lang='sv-se'), 0.25)
+        self.assertEqual(extract_number("en kvarts dl",
+                                        lang='sv-se'), 0.25)
+        self.assertEqual(extract_number("2/3 dl",
+                                        lang='sv-se'), 2.0 / 3.0)
+        self.assertEqual(extract_number("3/4 dl",
+                                        lang='sv-se'), 3.0 / 4.0)
+        self.assertEqual(extract_number("1 och 3/4 dl",
+                                        lang='sv-se'), 1.75)
+        self.assertEqual(extract_number("tre fjärdedels dl",
+                                        lang='sv-se'), 3.0 / 4.0)
+        self.assertEqual(extract_number("trekvarts kopp",
+                                        lang='sv-se'), 3.0 / 4.0)
 
     def test_extractdatetime_sv(self):
         def extractWithFormat(text):

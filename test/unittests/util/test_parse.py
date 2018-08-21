@@ -18,7 +18,7 @@ import unittest
 from datetime import datetime
 
 from mycroft.util.parse import extract_datetime
-from mycroft.util.parse import extractnumber
+from mycroft.util.parse import extract_number
 from mycroft.util.parse import fuzzy_match
 from mycroft.util.parse import get_gender
 from mycroft.util.parse import match_one
@@ -59,79 +59,79 @@ class TestNormalize(unittest.TestCase):
                                    remove_articles=False),
                          "this is an extra test")
 
-    def test_extractnumber(self):
-        self.assertEqual(extractnumber("this is the first test",
-                                       ordinals=True), 1)
-        self.assertEqual(extractnumber("this is 2 test"), 2)
-        self.assertEqual(extractnumber("this is second test",
-                                       ordinals=True), 2)
-        self.assertEqual(extractnumber("this is the third test"), 1.0 / 3.0)
-        self.assertEqual(extractnumber("this is the third test",
-                                       ordinals=True), 3.0)
-        self.assertEqual(extractnumber("this is test number 4"), 4)
-        self.assertEqual(extractnumber("one third of a cup"), 1.0 / 3.0)
-        self.assertEqual(extractnumber("three cups"), 3)
-        self.assertEqual(extractnumber("1/3 cups"), 1.0 / 3.0)
-        self.assertEqual(extractnumber("quarter cup"), 0.25)
-        self.assertEqual(extractnumber("1/4 cup"), 0.25)
-        self.assertEqual(extractnumber("one fourth cup"), 0.25)
-        self.assertEqual(extractnumber("2/3 cups"), 2.0 / 3.0)
-        self.assertEqual(extractnumber("3/4 cups"), 3.0 / 4.0)
-        self.assertEqual(extractnumber("1 and 3/4 cups"), 1.75)
-        self.assertEqual(extractnumber("1 cup and a half"), 1.5)
-        self.assertEqual(extractnumber("one cup and a half"), 1.5)
-        self.assertEqual(extractnumber("one and a half cups"), 1.5)
-        self.assertEqual(extractnumber("one and one half cups"), 1.5)
-        self.assertEqual(extractnumber("three quarter cups"), 3.0 / 4.0)
-        self.assertEqual(extractnumber("three quarters cups"), 3.0 / 4.0)
-        self.assertEqual(extractnumber("twenty two"), 22)
-        self.assertEqual(extractnumber("two hundred"), 200)
-        self.assertEqual(extractnumber("nine thousand"), 9000)
-        self.assertEqual(extractnumber("six hundred sixty six"), 666)
-        self.assertEqual(extractnumber("two million"), 2000000)
-        self.assertEqual(extractnumber("two million five hundred thousand "
-                                       "tons of spinning metal"), 2500000)
-        self.assertEqual(extractnumber("six trillion"), 60000000000.0)
-        self.assertEqual(extractnumber("six trillion", short_scale=False),
+    def test_extract_number(self):
+        self.assertEqual(extract_number("this is the first test",
+                                        ordinals=True), 1)
+        self.assertEqual(extract_number("this is 2 test"), 2)
+        self.assertEqual(extract_number("this is second test",
+                                        ordinals=True), 2)
+        self.assertEqual(extract_number("this is the third test"), 1.0 / 3.0)
+        self.assertEqual(extract_number("this is the third test",
+                                        ordinals=True), 3.0)
+        self.assertEqual(extract_number("this is test number 4"), 4)
+        self.assertEqual(extract_number("one third of a cup"), 1.0 / 3.0)
+        self.assertEqual(extract_number("three cups"), 3)
+        self.assertEqual(extract_number("1/3 cups"), 1.0 / 3.0)
+        self.assertEqual(extract_number("quarter cup"), 0.25)
+        self.assertEqual(extract_number("1/4 cup"), 0.25)
+        self.assertEqual(extract_number("one fourth cup"), 0.25)
+        self.assertEqual(extract_number("2/3 cups"), 2.0 / 3.0)
+        self.assertEqual(extract_number("3/4 cups"), 3.0 / 4.0)
+        self.assertEqual(extract_number("1 and 3/4 cups"), 1.75)
+        self.assertEqual(extract_number("1 cup and a half"), 1.5)
+        self.assertEqual(extract_number("one cup and a half"), 1.5)
+        self.assertEqual(extract_number("one and a half cups"), 1.5)
+        self.assertEqual(extract_number("one and one half cups"), 1.5)
+        self.assertEqual(extract_number("three quarter cups"), 3.0 / 4.0)
+        self.assertEqual(extract_number("three quarters cups"), 3.0 / 4.0)
+        self.assertEqual(extract_number("twenty two"), 22)
+        self.assertEqual(extract_number("two hundred"), 200)
+        self.assertEqual(extract_number("nine thousand"), 9000)
+        self.assertEqual(extract_number("six hundred sixty six"), 666)
+        self.assertEqual(extract_number("two million"), 2000000)
+        self.assertEqual(extract_number("two million five hundred thousand "
+                                        "tons of spinning metal"), 2500000)
+        self.assertEqual(extract_number("six trillion"), 60000000000.0)
+        self.assertEqual(extract_number("six trillion", short_scale=False),
                          6e+18)
-        self.assertEqual(extractnumber("one point five"), 1.5)
-        self.assertEqual(extractnumber("three dot fourteen"), 3.14)
-        self.assertEqual(extractnumber("zero point two"), 0.2)
-        self.assertEqual(extractnumber("billions of years older"),
+        self.assertEqual(extract_number("one point five"), 1.5)
+        self.assertEqual(extract_number("three dot fourteen"), 3.14)
+        self.assertEqual(extract_number("zero point two"), 0.2)
+        self.assertEqual(extract_number("billions of years older"),
                          1000000000.0)
-        self.assertEqual(extractnumber("billions of years older",
-                                       short_scale=False),
+        self.assertEqual(extract_number("billions of years older",
+                                        short_scale=False),
                          1000000000000.0)
-        self.assertEqual(extractnumber("one hundred thousand"), 100000)
-        self.assertEqual(extractnumber("minus 2"), -2)
-        self.assertEqual(extractnumber("negative seventy"), -70)
-        self.assertEqual(extractnumber("thousand million"), 1000000000)
-        self.assertEqual(extractnumber("sixth third"),
+        self.assertEqual(extract_number("one hundred thousand"), 100000)
+        self.assertEqual(extract_number("minus 2"), -2)
+        self.assertEqual(extract_number("negative seventy"), -70)
+        self.assertEqual(extract_number("thousand million"), 1000000000)
+        self.assertEqual(extract_number("sixth third"),
                          1 / 6 / 3)
-        self.assertEqual(extractnumber("sixth third", ordinals=True),
+        self.assertEqual(extract_number("sixth third", ordinals=True),
                          3)
-        self.assertEqual(extractnumber("thirty second"), 30)
-        self.assertEqual(extractnumber("thirty second", ordinals=True), 32)
-        self.assertEqual(extractnumber("this is the billionth test",
-                                       ordinals=True), 1e09)
-        self.assertEqual(extractnumber("this is the billionth test"), 1e-9)
-        self.assertEqual(extractnumber("this is the billionth test",
-                                       ordinals=True,
-                                       short_scale=False), 1e12)
-        self.assertEqual(extractnumber("this is the billionth test",
-                                       short_scale=False), 1e-12)
+        self.assertEqual(extract_number("thirty second"), 30)
+        self.assertEqual(extract_number("thirty second", ordinals=True), 32)
+        self.assertEqual(extract_number("this is the billionth test",
+                                        ordinals=True), 1e09)
+        self.assertEqual(extract_number("this is the billionth test"), 1e-9)
+        self.assertEqual(extract_number("this is the billionth test",
+                                        ordinals=True,
+                                        short_scale=False), 1e12)
+        self.assertEqual(extract_number("this is the billionth test",
+                                        short_scale=False), 1e-12)
         # TODO handle this case
         # self.assertEqual(
-        #    extractnumber("6 dot six six six"),
+        #    extract_number("6 dot six six six"),
         #    6.666)
-        self.assertTrue(extractnumber("The tennis player is fast") is False)
-        self.assertTrue(extractnumber("fraggle") is False)
+        self.assertTrue(extract_number("The tennis player is fast") is False)
+        self.assertTrue(extract_number("fraggle") is False)
 
-        self.assertTrue(extractnumber("fraggle zero") is not False)
-        self.assertEqual(extractnumber("fraggle zero"), 0)
+        self.assertTrue(extract_number("fraggle zero") is not False)
+        self.assertEqual(extract_number("fraggle zero"), 0)
 
-        self.assertTrue(extractnumber("grobo 0") is not False)
-        self.assertEqual(extractnumber("grobo 0"), 0)
+        self.assertTrue(extract_number("grobo 0") is not False)
+        self.assertEqual(extract_number("grobo 0"), 0)
 
     def test_extractdatetime_en(self):
         def extractWithFormat(text):
