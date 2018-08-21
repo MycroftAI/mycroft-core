@@ -15,7 +15,7 @@
 from threading import Lock
 
 from mycroft import dialog
-from mycroft.client.enclosure.api import EnclosureAPI
+from mycroft.enclosure.api import EnclosureAPI
 from mycroft.client.speech.listener import RecognizerLoop
 from mycroft.configuration import Configuration
 from mycroft.identity import IdentityManager

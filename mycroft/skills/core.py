@@ -30,7 +30,7 @@ from threading import Event, Timer
 from mycroft import dialog
 from mycroft.api import DeviceApi
 from mycroft.audio import wait_while_speaking
-from mycroft.client.enclosure.api import EnclosureAPI
+from mycroft.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
 from mycroft.dialog import DialogLoader
 from mycroft.filesystem import FileSystemAccess

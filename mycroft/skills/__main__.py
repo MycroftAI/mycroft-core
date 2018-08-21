@@ -17,7 +17,7 @@ from threading import Timer
 import mycroft.lock
 from mycroft import dialog
 from mycroft.api import is_paired, BackendDown
-from mycroft.client.enclosure.api import EnclosureAPI
+from mycroft.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message

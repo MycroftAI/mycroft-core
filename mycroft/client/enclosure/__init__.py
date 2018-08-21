@@ -24,7 +24,7 @@ import mycroft.dialog
 from mycroft.api import has_been_paired
 from mycroft.audio import wait_while_speaking
 from mycroft.client.enclosure.arduino import EnclosureArduino
-from mycroft.client.enclosure.display_manager import \
+from mycroft.enclosure.display_manager import \
     init_display_manager_bus_connection
 from mycroft.client.enclosure.eyes import EnclosureEyes
 from mycroft.client.enclosure.mouth import EnclosureMouth

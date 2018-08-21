@@ -14,7 +14,7 @@
 #
 from PIL import Image
 
-import mycroft.client.enclosure.display_manager as DisplayManager
+from . import display_manager as DisplayManager
 from mycroft.messagebus.message import Message
 
 
@@ -127,8 +127,8 @@ class EnclosureAPI:
         """
         if idx < 0 or idx > 23:
             raise ValueError('idx ({}) must be between 0-23'.format(str(idx)))
-        selfbus.emit(Message("enclosure.eyes.setpixel",
-                             {'idx': idx, 'r': r, 'g': g, 'b': b}))
+        self.bus.emit(Message("enclosure.eyes.setpixel",
+                              {'idx': idx, 'r': r, 'g': g, 'b': b}))
 
     def eyes_fill(self, percentage):
         """Use the eyes as a type of progress meter
