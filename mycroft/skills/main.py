@@ -607,6 +607,7 @@ class SkillManager(Thread):
                         "skill_id": 0, "result": False}))
                     return
                 try:
+                    LOG.info("INSTANCE: "+str(skill_id)+","+str(instance))
                     result = instance.converse(utterances, lang)
                     self.ws.emit(message.reply("skill.converse.response", {
                         "skill_id": skill_id, "result": result}))
