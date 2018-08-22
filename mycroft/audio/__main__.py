@@ -31,14 +31,14 @@ def main():
     """ Main function. Run when file is invoked. """
     reset_sigint_handler()
     check_for_signal("isSpeaking")
-    ws = WebsocketClient()
-    Configuration.init(ws)
-    speech.init(ws)
+    bus = WebsocketClient()  # Connect to the Mycroft Messagebus
+    Configuration.init(bus)
+    speech.init(bus)
 
     LOG.info("Starting Audio Services")
-    ws.on('message', create_echo_function('AUDIO', ['mycroft.audio.service']))
-    audio = AudioService(ws)  # Connect audio service instance to message bus
-    create_daemon(ws.run_forever)
+    bus.on('message', create_echo_function('AUDIO', ['mycroft.audio.service']))
+    audio = AudioService(bus)  # Connect audio service instance to message bus
+    create_daemon(bus.run_forever)
 
     wait_for_exit_signal()
 

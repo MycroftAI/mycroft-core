@@ -41,13 +41,13 @@ def repeat_time(sched_time, repeat):
 
 
 class EventScheduler(Thread):
-    def __init__(self, emitter, schedule_file='schedule.json'):
+    def __init__(self, bus, schedule_file='schedule.json'):
         """
             Create an event scheduler thread. Will send messages at a
             predetermined time to the registered targets.
 
             Args:
-                emitter:        event emitter to use to send messages
+                bus:            Mycroft messagebus (mycroft.messagebus)
                 schedule_file:  File to store pending events to on shutdown
         """
         super(EventScheduler, self).__init__()
@@ -56,20 +56,20 @@ class EventScheduler(Thread):
         self.events = {}
         self.event_lock = Lock()
 
-        self.emitter = emitter
+        self.bus = bus
         self.isRunning = True
         self.schedule_file = join(data_dir, schedule_file)
         if self.schedule_file:
             self.load()
 
-        self.emitter.on('mycroft.scheduler.schedule_event',
-                        self.schedule_event_handler)
-        self.emitter.on('mycroft.scheduler.remove_event',
-                        self.remove_event_handler)
-        self.emitter.on('mycroft.scheduler.update_event',
-                        self.update_event_handler)
-        self.emitter.on('mycroft.scheduler.get_event',
-                        self.get_event_handler)
+        self.bus.on('mycroft.scheduler.schedule_event',
+                    self.schedule_event_handler)
+        self.bus.on('mycroft.scheduler.remove_event',
+                    self.remove_event_handler)
+        self.bus.on('mycroft.scheduler.update_event',
+                    self.update_event_handler)
+        self.bus.on('mycroft.scheduler.get_event',
+                    self.get_event_handler)
         self.start()
 
     def load(self):
@@ -125,7 +125,7 @@ class EventScheduler(Thread):
 
         # Finally, emit the queued up events that triggered
         for msg in pending_messages:
-            self.emitter.emit(msg)
+            self.bus.emit(msg)
 
     def schedule_event(self, event, sched_time, repeat=None, data=None):
         """ Add event to pending event schedule using thread safe queue.
@@ -207,7 +207,7 @@ class EventScheduler(Thread):
             if event_name in self.events:
                 event = self.events[event_name]
         emitter_name = 'mycroft.event_status.callback.{}'.format(event_name)
-        self.emitter.emit(message.reply(emitter_name, data=event))
+        self.bus.emit(message.reply(emitter_name, data=event))
 
     def store(self):
         """
@@ -237,9 +237,9 @@ class EventScheduler(Thread):
         """ Stop the running thread. """
         self.isRunning = False
         # Remove listeners
-        self.emitter.remove_all_listeners('mycroft.scheduler.schedule_event')
-        self.emitter.remove_all_listeners('mycroft.scheduler.remove_event')
-        self.emitter.remove_all_listeners('mycroft.scheduler.update_event')
+        self.bus.remove_all_listeners('mycroft.scheduler.schedule_event')
+        self.bus.remove_all_listeners('mycroft.scheduler.remove_event')
+        self.bus.remove_all_listeners('mycroft.scheduler.update_event')
         # Wait for thread to finish
         self.join()
         # Prune event list in preparation for saving

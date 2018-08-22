@@ -88,13 +88,13 @@ def open_intent_envelope(message):
                   intent_dict.get('optional'))
 
 
-def load_skill(skill_descriptor, emitter, skill_id, BLACKLISTED_SKILLS=None):
+def load_skill(skill_descriptor, bus, skill_id, BLACKLISTED_SKILLS=None):
     """
         load skill from skill descriptor.
 
         Args:
             skill_descriptor: descriptor of skill to load
-            emitter:          messagebus emitter
+            bus:              Mycroft messagebus connection
             skill_id:         id number for skill
         Returns:
             MycroftSkill: the loaded skill or None on failure
@@ -121,7 +121,7 @@ def load_skill(skill_descriptor, emitter, skill_id, BLACKLISTED_SKILLS=None):
             skill = skill_module.create_skill()
             skill.settings.allow_overwrite = True
             skill.settings.load_skill_settings_from_file()
-            skill.bind(emitter)
+            skill.bind(bus)
             skill.skill_id = skill_id
             skill.load_data_files(path)
             # Set up intent handlers
@@ -204,13 +204,14 @@ class MycroftSkill(object):
     Skills implementation.
     """
 
-    def __init__(self, name=None, emitter=None):
+    def __init__(self, name=None, bus=None):
         self.name = name or self.__class__.__name__
         # Get directory of skill
         self._dir = dirname(abspath(sys.modules[self.__module__].__file__))
         self.settings = SkillSettings(self._dir, self.name)
 
-        self.bind(emitter)
+        self.bus = None
+        self.bind(bus)
         self.config_core = Configuration.get()
         self.config = self.config_core.get(self.name) or {}
         self.dialog_renderer = None
@@ -223,6 +224,14 @@ class MycroftSkill(object):
         self.events = []
         self.scheduled_repeats = []
         self.skill_id = ''  # will be set from the path, so guaranteed unique
+
+    @property
+    def emitter(self):
+        """ Backwards compatibility. This is the same as self.bus.
+        TODO: Remove in 19.02
+        """
+        self.log.warning('self.emitter is deprecated switch to "self.bus"')
+        return self.bus
 
     @property
     def location(self):
@@ -251,11 +260,15 @@ class MycroftSkill(object):
     def lang(self):
         return self.config_core.get('lang')
 
-    def bind(self, emitter):
-        """ Register emitter with skill. """
-        if emitter:
-            self.emitter = emitter  # TODO:18.08 - move to self.messagbus name
-            self.enclosure = EnclosureAPI(emitter, self.name)
+    def bind(self, bus):
+        """ Register messagebus emitter with skill.
+
+        Arguments:
+            bus:              Mycroft messagebus connection
+        """
+        if bus:
+            self.bus = bus
+            self.enclosure = EnclosureAPI(bus, self.name)
             self.add_event('mycroft.stop', self.__handle_stop)
             self.add_event('mycroft.skill.enable_intent',
                            self.handle_enable_intent)
@@ -264,13 +277,13 @@ class MycroftSkill(object):
 
             name = 'mycroft.skills.settings.update'
             func = self.settings.run_poll
-            emitter.on(name, func)
+            bus.on(name, func)
             self.events.append((name, func))
 
     def detach(self):
         for (name, intent) in self.registered_intents:
             name = str(self.skill_id) + ':' + name
-            self.emitter.emit(Message("detach_intent", {"intent_name": name}))
+            self.bus.emit(Message("detach_intent", {"intent_name": name}))
 
     def initialize(self):
         """
@@ -489,8 +502,8 @@ class MycroftSkill(object):
             this enables converse method to be called even without skill being
             used in last 5 minutes
         """
-        self.emitter.emit(Message('active_skill_request',
-                                  {"skill_id": self.skill_id}))
+        self.bus.emit(Message('active_skill_request',
+                              {"skill_id": self.skill_id}))
 
     def _register_decorated(self):
         """
@@ -632,7 +645,7 @@ class MycroftSkill(object):
                 if handler_info:
                     # Indicate that the skill handler is starting if requested
                     msg_type = handler_info + '.start'
-                    self.emitter.emit(message.reply(msg_type, skill_data))
+                    self.bus.emit(message.reply(msg_type, skill_data))
 
                 if once:
                     # Remove registered one-time handler before invoking,
@@ -659,7 +672,7 @@ class MycroftSkill(object):
                 # Indicate that the skill handler has completed
                 if handler_info:
                     msg_type = handler_info + '.complete'
-                    self.emitter.emit(message.reply(msg_type, skill_data))
+                    self.bus.emit(message.reply(msg_type, skill_data))
 
                 # Send timing metrics
                 context = message.context
@@ -669,14 +682,14 @@ class MycroftSkill(object):
 
         if handler:
             if once:
-                self.emitter.once(name, wrapper)
+                self.bus.once(name, wrapper)
             else:
-                self.emitter.on(name, wrapper)
+                self.bus.on(name, wrapper)
             self.events.append((name, wrapper))
 
     def remove_event(self, name):
         """
-            Removes an event from emitter and events list
+            Removes an event from bus emitter and events list
 
             Args:
                 name: Name of Intent or Scheduler Event
@@ -695,12 +708,12 @@ class MycroftSkill(object):
         # Because of function wrappers, the emitter doesn't always directly
         # hold the _handler function, it sometimes holds something like
         # 'wrapper(_handler)'.  So a call like:
-        #     self.emitter.remove(_name, _handler)
+        #     self.bus.remove(_name, _handler)
         # will not find it, leaving an event handler with that name left behind
         # waiting to fire if it is ever re-installed and triggered.
         # Remove all handlers with the given name, regardless of handler.
         if removed:
-            self.emitter.remove_all_listeners(name)
+            self.bus.remove_all_listeners(name)
         return removed
 
     def register_intent(self, intent_parser, handler):
@@ -720,7 +733,7 @@ class MycroftSkill(object):
         # Default to the handler's function name if none given
         name = intent_parser.name or handler.__name__
         munge_intent_parser(intent_parser, name, self.skill_id)
-        self.emitter.emit(Message("register_intent", intent_parser.__dict__))
+        self.bus.emit(Message("register_intent", intent_parser.__dict__))
         self.registered_intents.append((name, intent_parser))
         self.add_event(intent_parser.name, handler, 'mycroft.skill.handler')
 
@@ -755,7 +768,7 @@ class MycroftSkill(object):
             "file_name": join(self.vocab_dir, intent_file),
             "name": name
         }
-        self.emitter.emit(Message("padatious:register_intent", data))
+        self.bus.emit(Message("padatious:register_intent", data))
         self.registered_intents.append((intent_file, data))
         self.add_event(name, handler, 'mycroft.skill.handler')
 
@@ -780,7 +793,7 @@ class MycroftSkill(object):
         if '.entity' not in entity_file:
             raise ValueError('Invalid entity filename: ' + entity_file)
         name = str(self.skill_id) + ':' + entity_file.replace('.entity', '')
-        self.emitter.emit(Message("padatious:register_entity", {
+        self.bus.emit(Message("padatious:register_entity", {
             "file_name": join(self.vocab_dir, entity_file),
             "name": name
         }))
@@ -817,8 +830,7 @@ class MycroftSkill(object):
         if intent_name in names:
             LOG.debug('Disabling intent ' + intent_name)
             name = str(self.skill_id) + ':' + intent_name
-            self.emitter.emit(
-                Message("detach_intent", {"intent_name": name}))
+            self.bus.emit(Message("detach_intent", {"intent_name": name}))
             return True
         LOG.error('Could not disable ' + intent_name +
                   ', it hasn\'t been registered.')
@@ -863,8 +875,8 @@ class MycroftSkill(object):
         if not isinstance(word, str):
             raise ValueError('word should be a string')
         context = to_alnum(self.skill_id) + context
-        self.emitter.emit(Message('add_context',
-                                  {'context': context, 'word': word}))
+        self.bus.emit(Message('add_context',
+                              {'context': context, 'word': word}))
 
     def remove_context(self, context):
         """
@@ -872,7 +884,7 @@ class MycroftSkill(object):
         """
         if not isinstance(context, str):
             raise ValueError('context should be a string')
-        self.emitter.emit(Message('remove_context', {'context': context}))
+        self.bus.emit(Message('remove_context', {'context': context}))
 
     def register_vocabulary(self, entity, entity_type):
         """ Register a word to an keyword
@@ -881,7 +893,7 @@ class MycroftSkill(object):
                 entity:         word to register
                 entity_type:    Intent handler entity to tie the word to
         """
-        self.emitter.emit(Message('register_vocab', {
+        self.bus.emit(Message('register_vocab', {
             'start': entity, 'end': to_alnum(self.skill_id) + entity_type
         }))
 
@@ -892,7 +904,7 @@ class MycroftSkill(object):
         """
         regex = munge_regex(regex_str, self.skill_id)
         re.compile(regex)  # validate regex
-        self.emitter.emit(Message('register_vocab', {'regex': regex}))
+        self.bus.emit(Message('register_vocab', {'regex': regex}))
 
     def speak(self, utterance, expect_response=False):
         """
@@ -910,9 +922,9 @@ class MycroftSkill(object):
                 'expect_response': expect_response}
         message = dig_for_message()
         if message:
-            self.emitter.emit(message.reply("speak", data))
+            self.bus.emit(message.reply("speak", data))
         else:
-            self.emitter.emit(Message("speak", data))
+            self.bus.emit(Message("speak", data))
 
     def speak_dialog(self, key, data=None, expect_response=False):
         """
@@ -946,12 +958,12 @@ class MycroftSkill(object):
     def load_vocab_files(self, vocab_dir):
         self.vocab_dir = vocab_dir
         if exists(vocab_dir):
-            load_vocabulary(vocab_dir, self.emitter, self.skill_id)
+            load_vocabulary(vocab_dir, self.bus, self.skill_id)
         else:
             LOG.debug('No vocab loaded, ' + vocab_dir + ' does not exist')
 
     def load_regex_files(self, regex_dir):
-        load_regex(regex_dir, self.emitter, self.skill_id)
+        load_regex(regex_dir, self.bus, self.skill_id)
 
     def __handle_stop(self, event):
         """
@@ -961,16 +973,14 @@ class MycroftSkill(object):
 
         def __stop_timeout():
             # The self.stop() call took more than 100ms, assume it handled Stop
-            self.emitter.emit(
-                Message("mycroft.stop.handled",
-                        {"skill_id": str(self.skill_id) + ":"}))
+            self.bus.emit(Message("mycroft.stop.handled",
+                                  {"skill_id": str(self.skill_id) + ":"}))
 
         timer = Timer(0.1, __stop_timeout)  # set timer for 100ms
         try:
             if self.stop():
-                self.emitter.emit(
-                    Message("mycroft.stop.handled",
-                            {"by": "skill:"+str(self.skill_id)}))
+                self.bus.emit(Message("mycroft.stop.handled",
+                                      {"by": "skill:"+str(self.skill_id)}))
             timer.cancel()
         except:
             timer.cancel()
@@ -1006,10 +1016,10 @@ class MycroftSkill(object):
         # removing events
         self.cancel_all_repeating_events()
         for e, f in self.events:
-            self.emitter.remove(e, f)
+            self.bus.remove(e, f)
         self.events = []  # Remove reference to wrappers
 
-        self.emitter.emit(
+        self.bus.emit(
             Message("detach_skill", {"skill_id": str(self.skill_id) + ":"}))
         try:
             self.stop()
@@ -1049,8 +1059,8 @@ class MycroftSkill(object):
         event_data['event'] = unique_name
         event_data['repeat'] = repeat
         event_data['data'] = data
-        self.emitter.emit(Message('mycroft.scheduler.schedule_event',
-                                  data=event_data))
+        self.bus.emit(Message('mycroft.scheduler.schedule_event',
+                              data=event_data))
 
     def schedule_event(self, handler, when, data=None, name=None):
         """
@@ -1102,7 +1112,7 @@ class MycroftSkill(object):
             'event': self._unique_name(name),
             'data': data
         }
-        self.emitter.emit(Message('mycroft.schedule.update_event', data=data))
+        self.bus.emit(Message('mycroft.schedule.update_event', data=data))
 
     def cancel_scheduled_event(self, name):
         """
@@ -1117,8 +1127,8 @@ class MycroftSkill(object):
         if name in self.scheduled_repeats:
             self.scheduled_repeats.remove(name)
         if self.remove_event(unique_name):
-            self.emitter.emit(Message('mycroft.scheduler.remove_event',
-                                      data=data))
+            self.bus.emit(Message('mycroft.scheduler.remove_event',
+                                  data=data))
 
     def get_scheduled_event_status(self, name):
         """
@@ -1146,8 +1156,8 @@ class MycroftSkill(object):
             finished_callback[0] = True
 
         emitter_name = 'mycroft.event_status.callback.{}'.format(event_name)
-        self.emitter.once(emitter_name, callback)
-        self.emitter.emit(Message('mycroft.scheduler.get_event', data=data))
+        self.bus.once(emitter_name, callback)
+        self.bus.emit(Message('mycroft.scheduler.get_event', data=data))
 
         start_wait = time.time()
         while finished_callback[0] is False and time.time() - start_wait < 3.0:
@@ -1176,20 +1186,20 @@ class FallbackSkill(MycroftSkill):
     """
     fallback_handlers = {}
 
-    def __init__(self, name=None, emitter=None):
-        MycroftSkill.__init__(self, name, emitter)
+    def __init__(self, name=None, bus=None):
+        MycroftSkill.__init__(self, name, bus)
 
         #  list of fallback handlers registered by this instance
         self.instance_fallback_handlers = []
 
     @classmethod
-    def make_intent_failure_handler(cls, ws):
+    def make_intent_failure_handler(cls, bus):
         """Goes through all fallback handlers until one returns True"""
 
         def handler(message):
             # indicate fallback handling start
-            ws.emit(message.reply("mycroft.skill.handler.start",
-                                  data={'handler': "fallback"}))
+            bus.emit(message.reply("mycroft.skill.handler.start",
+                                   data={'handler': "fallback"}))
 
             stopwatch = Stopwatch()
             handler_name = None
@@ -1200,21 +1210,21 @@ class FallbackSkill(MycroftSkill):
                         if handler(message):
                             #  indicate completion
                             handler_name = get_handler_name(handler)
-                            ws.emit(message.reply(
-                                'mycroft.skill.handler.complete',
-                                data={'handler': "fallback",
-                                      "fallback_handler": handler_name}))
+                            bus.emit(message.reply(
+                                     'mycroft.skill.handler.complete',
+                                     data={'handler': "fallback",
+                                           "fallback_handler": handler_name}))
                             break
                     except Exception:
                         LOG.exception('Exception in fallback.')
                 else:  # No fallback could handle the utterance
-                    ws.emit(message.reply('complete_intent_failure'))
+                    bus.emit(message.reply('complete_intent_failure'))
                     warning = "No fallback could handle intent."
                     LOG.warning(warning)
                     #  indicate completion with exception
-                    ws.emit(message.reply('mycroft.skill.handler.complete',
-                                          data={'handler': "fallback",
-                                                'exception': warning}))
+                    bus.emit(message.reply('mycroft.skill.handler.complete',
+                                           data={'handler': "fallback",
+                                                 'exception': warning}))
 
             # Send timing metric
             if message.context and message.context['ident']:

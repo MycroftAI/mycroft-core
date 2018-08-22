@@ -43,13 +43,13 @@ class ChromecastService(AudioBackend):
             LOG.info('Couldn\'t find chromecast ' + identifier)
             self.connection_attempts += 1
             time.sleep(10)
-            self.emitter.emit(Message('ChromecastServiceConnect'))
+            self.bus.emit(Message('ChromecastServiceConnect'))
             return
 
-    def __init__(self, config, emitter, name='chromecast', cast=None):
+    def __init__(self, config, bus, name='chromecast', cast=None):
         super(ChromecastService, self).__init__(config, emitter)
         self.connection_attempts = 0
-        self.emitter = emitter
+        self.bus = bus
         self.config = config
         self.name = name
 
@@ -59,8 +59,8 @@ class ChromecastService(AudioBackend):
             self.cast = cast
         else:
             self.cast = None
-            self.emitter.on('ChromecastServiceConnect', self._connect)
-            self.emitter.emit(Message('ChromecastServiceConnect'))
+            self.bus.on('ChromecastServiceConnect', self._connect)
+            self.bus.emit(Message('ChromecastServiceConnect'))
 
     def supported_uris(self):
         """ Return supported uris of chromecast. """

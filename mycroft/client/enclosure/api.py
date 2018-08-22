@@ -38,8 +38,8 @@ class EnclosureAPI:
     where there is no face at all.
     """
 
-    def __init__(self, ws, name=""):
-        self.ws = ws
+    def __init__(self, bus, name=""):
+        self.bus = bus
         self.name = name
 
     def register(self, skill_name=""):
@@ -56,45 +56,45 @@ class EnclosureAPI:
         Typically this would be represented by the eyes being 'open'
         and the mouth reset to its default (smile or blank).
         """
-        self.ws.emit(Message("enclosure.reset"))
+        self.bus.emit(Message("enclosure.reset"))
 
     def system_reset(self):
         """The enclosure hardware should reset any CPUs, etc."""
-        self.ws.emit(Message("enclosure.system.reset"))
+        self.bus.emit(Message("enclosure.system.reset"))
 
     def system_mute(self):
         """Mute (turn off) the system speaker."""
-        self.ws.emit(Message("enclosure.system.mute"))
+        self.bus.emit(Message("enclosure.system.mute"))
 
     def system_unmute(self):
         """Unmute (turn on) the system speaker."""
-        self.ws.emit(Message("enclosure.system.unmute"))
+        self.bus.emit(Message("enclosure.system.unmute"))
 
     def system_blink(self, times):
         """The 'eyes' should blink the given number of times.
         Args:
             times (int): number of times to blink
         """
-        self.ws.emit(Message("enclosure.system.blink", {'times': times}))
+        self.bus.emit(Message("enclosure.system.blink", {'times': times}))
 
     def eyes_on(self):
         """Illuminate or show the eyes."""
-        self.ws.emit(Message("enclosure.eyes.on"))
+        self.bus.emit(Message("enclosure.eyes.on"))
 
     def eyes_off(self):
         """Turn off or hide the eyes."""
-        self.ws.emit(Message("enclosure.eyes.off"))
+        self.bus.emit(Message("enclosure.eyes.off"))
 
     def eyes_blink(self, side):
         """Make the eyes blink
         Args:
             side (str): 'r', 'l', or 'b' for 'right', 'left' or 'both'
         """
-        self.ws.emit(Message("enclosure.eyes.blink", {'side': side}))
+        self.bus.emit(Message("enclosure.eyes.blink", {'side': side}))
 
     def eyes_narrow(self):
         """Make the eyes look narrow, like a squint"""
-        self.ws.emit(Message("enclosure.eyes.narrow"))
+        self.bus.emit(Message("enclosure.eyes.narrow"))
 
     def eyes_look(self, side):
         """Make the eyes look to the given side
@@ -105,7 +105,7 @@ class EnclosureAPI:
                         'd' for down
                         'c' for crossed
         """
-        self.ws.emit(Message("enclosure.eyes.look", {'side': side}))
+        self.bus.emit(Message("enclosure.eyes.look", {'side': side}))
 
     def eyes_color(self, r=255, g=255, b=255):
         """Change the eye color to the given RGB color
@@ -114,8 +114,8 @@ class EnclosureAPI:
             g (int): 0-255, green value
             b (int): 0-255, blue value
         """
-        self.ws.emit(Message("enclosure.eyes.color",
-                             {'r': r, 'g': g, 'b': b}))
+        self.bus.emit(Message("enclosure.eyes.color",
+                              {'r': r, 'g': g, 'b': b}))
 
     def eyes_setpixel(self, idx, r=255, g=255, b=255):
         """Set individual pixels of the Mark 1 neopixel eyes
@@ -127,7 +127,7 @@ class EnclosureAPI:
         """
         if idx < 0 or idx > 23:
             raise ValueError('idx ({}) must be between 0-23'.format(str(idx)))
-        self.ws.emit(Message("enclosure.eyes.setpixel",
+        selfbus.emit(Message("enclosure.eyes.setpixel",
                              {'idx': idx, 'r': r, 'g': g, 'b': b}))
 
     def eyes_fill(self, percentage):
@@ -138,32 +138,32 @@ class EnclosureAPI:
         if percentage < 0 or percentage > 100:
             raise ValueError('percentage ({}) must be between 0-100'.
                              format(str(percentage)))
-        self.ws.emit(Message("enclosure.eyes.fill",
-                             {'percentage': percentage}))
+        self.bus.emit(Message("enclosure.eyes.fill",
+                              {'percentage': percentage}))
 
     def eyes_brightness(self, level=30):
         """Set the brightness of the eyes in the display.
         Args:
             level (int): 1-30, bigger numbers being brighter
         """
-        self.ws.emit(Message("enclosure.eyes.level", {'level': level}))
+        self.bus.emit(Message("enclosure.eyes.level", {'level': level}))
 
     def eyes_reset(self):
         """Restore the eyes to their default (ready) state."""
-        self.ws.emit(Message("enclosure.eyes.reset"))
+        self.bus.emit(Message("enclosure.eyes.reset"))
 
     def eyes_spin(self):
         """Make the eyes 'roll'
         """
-        self.ws.emit(Message("enclosure.eyes.spin"))
+        self.bus.emit(Message("enclosure.eyes.spin"))
 
     def eyes_timed_spin(self, length):
         """Make the eyes 'roll' for the given time.
         Args:
             length (int): duration in milliseconds of roll, None = forever
         """
-        self.ws.emit(Message("enclosure.eyes.timedspin",
-                             {'length': length}))
+        self.bus.emit(Message("enclosure.eyes.timedspin",
+                              {'length': length}))
 
     def eyes_volume(self, volume):
         """Indicate the volume using the eyes
@@ -173,31 +173,31 @@ class EnclosureAPI:
         if volume < 0 or volume > 11:
             raise ValueError('volume ({}) must be between 0-11'.
                              format(str(volume)))
-        self.ws.emit(Message("enclosure.eyes.volume", {'volume': volume}))
+        self.bus.emit(Message("enclosure.eyes.volume", {'volume': volume}))
 
     def mouth_reset(self):
         """Restore the mouth display to normal (blank)"""
-        self.ws.emit(Message("enclosure.mouth.reset"))
+        self.bus.emit(Message("enclosure.mouth.reset"))
         DisplayManager.set_active(self.name)
 
     def mouth_talk(self):
         """Show a generic 'talking' animation for non-synched speech"""
-        self.ws.emit(Message("enclosure.mouth.talk"))
+        self.bus.emit(Message("enclosure.mouth.talk"))
         DisplayManager.set_active(self.name)
 
     def mouth_think(self):
         """Show a 'thinking' image or animation"""
-        self.ws.emit(Message("enclosure.mouth.think"))
+        self.bus.emit(Message("enclosure.mouth.think"))
         DisplayManager.set_active(self.name)
 
     def mouth_listen(self):
         """Show a 'thinking' image or animation"""
-        self.ws.emit(Message("enclosure.mouth.listen"))
+        self.bus.emit(Message("enclosure.mouth.listen"))
         DisplayManager.set_active(self.name)
 
     def mouth_smile(self):
         """Show a 'smile' image or animation"""
-        self.ws.emit(Message("enclosure.mouth.smile"))
+        self.bus.emit(Message("enclosure.mouth.smile"))
         DisplayManager.set_active(self.name)
 
     def mouth_viseme(self, code, time_until=0):
@@ -213,8 +213,8 @@ class EnclosureAPI:
             time_until (float): (optional) For timing, time.time() when this
                          shape expires, or 0 for display regardles of time
         """
-        self.ws.emit(Message("enclosure.mouth.viseme", {'code': code,
-                                                        'until': time_until}))
+        self.bus.emit(Message("enclosure.mouth.viseme", {'code': code,
+                                                         'until': time_until}))
 
     def mouth_text(self, text=""):
         """Display text (scrolling as needed)
@@ -222,7 +222,7 @@ class EnclosureAPI:
             text (str): text string to display
         """
         DisplayManager.set_active(self.name)
-        self.ws.emit(Message("enclosure.mouth.text", {'text': text}))
+        self.bus.emit(Message("enclosure.mouth.text", {'text': text}))
 
     def mouth_display(self, img_code="", x=0, y=0, refresh=True):
         """Display images on faceplate. Currently supports images up to 16x8,
@@ -238,11 +238,11 @@ class EnclosureAPI:
                             on the faceplate at once.
         """
         DisplayManager.set_active(self.name)
-        self.ws.emit(Message('enclosure.mouth.display',
-                             {'img_code': img_code,
-                              'xOffset': x,
-                              'yOffset': y,
-                              'clearPrev': refresh}))
+        self.bus.emit(Message('enclosure.mouth.display',
+                              {'img_code': img_code,
+                               'xOffset': x,
+                               'yOffset': y,
+                               'clearPrev': refresh}))
 
     def mouth_display_png(self, image_absolute_path, threshold=70,
                           invert=False, x=0, y=0, refresh=True):
@@ -362,11 +362,11 @@ class EnclosureAPI:
             pixel_code = pixel_codes[number]
             encode += pixel_code
 
-        self.ws.emit(Message("enclosure.mouth.display",
-                             {'img_code': encode,
-                              'xOffset': x,
-                              'yOffset': y,
-                              'clearPrev': refresh}))
+        self.bus.emit(Message("enclosure.mouth.display",
+                              {'img_code': encode,
+                               'xOffset': x,
+                               'yOffset': y,
+                               'clearPrev': refresh}))
 
     def weather_display(self, img_code, temp):
         """Show a the temperature and a weather icon
@@ -384,13 +384,13 @@ class EnclosureAPI:
             temp (int): the temperature (either C or F, not indicated)
         """
         DisplayManager.set_active(self.name)
-        self.ws.emit(Message("enclosure.weather.display",
-                             {'img_code': img_code, 'temp': temp}))
+        self.bus.emit(Message("enclosure.weather.display",
+                              {'img_code': img_code, 'temp': temp}))
 
     def activate_mouth_events(self):
         """Enable movement of the mouth with speech"""
-        self.ws.emit(Message('enclosure.mouth.events.activate'))
+        self.bus.emit(Message('enclosure.mouth.events.activate'))
 
     def deactivate_mouth_events(self):
         """Disable movement of the mouth with speech"""
-        self.ws.emit(Message('enclosure.mouth.events.deactivate'))
+        self.bus.emit(Message('enclosure.mouth.events.deactivate'))

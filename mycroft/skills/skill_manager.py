@@ -67,16 +67,20 @@ def _get_last_modified_date(path):
 
 
 class SkillManager(Thread):
-    """ Load, update and manage instances of Skill on this system. """
+    """ Load, update and manage instances of Skill on this system.
 
-    def __init__(self, ws):
+    Arguments:
+        bus (eventemitter): Mycroft messagebus connection
+    """
+
+    def __init__(self, bus):
         super(SkillManager, self).__init__()
         self._stop_event = Event()
         self._connected_event = Event()
 
         self.loaded_skills = {}
-        self.ws = ws
-        self.enclosure = EnclosureAPI(ws)
+        self.bus = bus
+        self.enclosure = EnclosureAPI(bus)
 
         # Schedule install/update of default skill
         self.msm = self.create_msm()
@@ -92,18 +96,18 @@ class SkillManager(Thread):
             self.next_download = time.time() - 1
 
         # Conversation management
-        ws.on('skill.converse.request', self.handle_converse_request)
+        bus.on('skill.converse.request', self.handle_converse_request)
 
         # Update on initial connection
-        ws.on('mycroft.internet.connected',
-              lambda x: self._connected_event.set())
+        bus.on('mycroft.internet.connected',
+               lambda x: self._connected_event.set())
 
         # Update upon request
-        ws.on('skillmanager.update', self.schedule_now)
-        ws.on('skillmanager.list', self.send_skill_list)
-        ws.on('skillmanager.deactivate', self.deactivate_skill)
-        ws.on('skillmanager.keep', self.deactivate_except)
-        ws.on('skillmanager.activate', self.activate_skill)
+        bus.on('skillmanager.update', self.schedule_now)
+        bus.on('skillmanager.list', self.send_skill_list)
+        bus.on('skillmanager.deactivate', self.deactivate_skill)
+        bus.on('skillmanager.keep', self.deactivate_except)
+        bus.on('skillmanager.activate', self.activate_skill)
 
     @staticmethod
     def create_msm():
@@ -169,7 +173,7 @@ class SkillManager(Thread):
         if not connected():
             LOG.error('msm failed, network connection not available')
             if speak:
-                self.ws.emit(Message("speak", {
+                self.bus.emit(Message("speak", {
                     'utterance': dialog.get(
                         "not connected to the internet")}))
             self.next_download = time.time() + 5 * MINUTES
@@ -220,7 +224,7 @@ class SkillManager(Thread):
 
         if speak:
             data = {'utterance': dialog.get("skills updated")}
-            self.ws.emit(Message("speak", data))
+            self.bus.emit(Message("speak", data))
 
         if default_skill_errored and self.num_install_retries < 10:
             self.num_install_retries += 1
@@ -304,27 +308,27 @@ class SkillManager(Thread):
                            "won't be cleaned from memory.")
                     LOG.warning(msg.format(skill['instance'].name, refs))
             del skill["instance"]
-            self.ws.emit(Message("mycroft.skills.shutdown",
-                                 {"path": skill_path,
-                                  "id": skill["id"]}))
+            self.bus.emit(Message("mycroft.skills.shutdown",
+                                  {"path": skill_path,
+                                   "id": skill["id"]}))
 
         skill["loaded"] = True
         desc = create_skill_descriptor(skill_path)
         skill["instance"] = load_skill(desc,
-                                       self.ws, skill["id"],
+                                       self.bus, skill["id"],
                                        BLACKLISTED_SKILLS)
         skill["last_modified"] = modified
         if skill['instance'] is not None:
-            self.ws.emit(Message('mycroft.skills.loaded',
-                                 {'path': skill_path,
-                                  'id': skill['id'],
-                                  'name': skill['instance'].name,
-                                  'modified': modified}))
+            self.bus.emit(Message('mycroft.skills.loaded',
+                                  {'path': skill_path,
+                                   'id': skill['id'],
+                                   'name': skill['instance'].name,
+                                   'modified': modified}))
             return True
         else:
-            self.ws.emit(Message('mycroft.skills.loading_failure',
-                                 {'path': skill_path,
-                                  'id': skill['id']}))
+            self.bus.emit(Message('mycroft.skills.loading_failure',
+                                  {'path': skill_path,
+                                   'id': skill['id']}))
         return False
 
     def load_priority(self):
@@ -374,7 +378,7 @@ class SkillManager(Thread):
                 )
             if not has_loaded and not still_loading and len(skill_paths) > 0:
                 has_loaded = True
-                self.ws.emit(Message('mycroft.skills.initialized'))
+                self.bus.emit(Message('mycroft.skills.initialized'))
 
             self._unload_removed(skill_paths)
             # Pause briefly before beginning next scan
@@ -391,7 +395,7 @@ class SkillManager(Thread):
                     'active': self.loaded_skills[s].get('active', True),
                     'id': self.loaded_skills[s]['id']
                 }
-            self.ws.emit(Message('mycroft.skills.list', data=info))
+            self.bus.emit(Message('mycroft.skills.list', data=info))
         except Exception as e:
             LOG.exception(e)
 
@@ -481,16 +485,16 @@ class SkillManager(Thread):
                     instance = self.loaded_skills[skill]["instance"]
                 except BaseException:
                     LOG.error("converse requested but skill not loaded")
-                    self.ws.emit(message.reply("skill.converse.response", {
+                    self.bus.emit(message.reply("skill.converse.response", {
                         "skill_id": 0, "result": False}))
                     return
                 try:
                     result = instance.converse(utterances, lang)
-                    self.ws.emit(message.reply("skill.converse.response", {
+                    self.bus.emit(message.reply("skill.converse.response", {
                         "skill_id": skill_id, "result": result}))
                     return
                 except BaseException:
                     LOG.exception(
                         "Error in converse method for skill " + str(skill_id))
-        self.ws.emit(message.reply("skill.converse.response",
-                                   {"skill_id": 0, "result": False}))
+        self.bus.emit(message.reply("skill.converse.response",
+                                    {"skill_id": 0, "result": False}))

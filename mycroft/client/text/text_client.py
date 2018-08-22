@@ -37,7 +37,7 @@ locale.setlocale(locale.LC_ALL, "")  # Set LC_ALL to user default
 preferred_encoding = locale.getpreferredencoding()
 
 bSimple = False
-ws = None
+bus = None  # Mycroft messagebus connection
 history = []
 chat = []   # chat history, oldest at the lowest index
 line = ""
@@ -386,7 +386,7 @@ def handle_utterance(event):
 
 def connect():
     # Once the websocket has connected, just watch it for speak events
-    ws.run_forever()
+    bus.run_forever()
 
 
 ##############################################################################
@@ -979,7 +979,7 @@ def handle_cmd(cmd):
         cy_chat_area = lines
     elif "skills" in cmd:
         # List loaded skill
-        message = ws.wait_for_response(
+        message = bus.wait_for_response(
             Message('skillmanager.list'), reply_type='mycroft.skills.list')
 
         if message:
@@ -991,13 +991,13 @@ def handle_cmd(cmd):
         skills = cmd.split()[1:]
         if len(skills) > 0:
             for s in skills:
-                ws.emit(Message("skillmanager.deactivate", data={'skill': s}))
+                bus.emit(Message("skillmanager.deactivate", data={'skill': s}))
         else:
             add_log_message('Usage :deactivate SKILL [SKILL2] [...]')
     elif "keep" in cmd:
         s = cmd.split()
         if len(s) > 1:
-            ws.emit(Message("skillmanager.keep", data={'skill': s[1]}))
+            bus.emit(Message("skillmanager.keep", data={'skill': s[1]}))
         else:
             add_log_message('Usage :keep SKILL')
 
@@ -1005,7 +1005,7 @@ def handle_cmd(cmd):
         skills = cmd.split()[1:]
         if len(skills) > 0:
             for s in skills:
-                ws.emit(Message("skillmanager.activate", data={'skill': s}))
+                bus.emit(Message("skillmanager.activate", data={'skill': s}))
         else:
             add_log_message('Usage :activate SKILL [SKILL2] [...]')
 
@@ -1015,7 +1015,7 @@ def handle_cmd(cmd):
 
 def gui_main(stdscr):
     global scr
-    global ws
+    global bus
     global line
     global log_line_lr_scroll
     global longest_visible_line
@@ -1029,10 +1029,10 @@ def gui_main(stdscr):
     scr.keypad(1)
     scr.notimeout(1)
 
-    ws = WebsocketClient()
-    ws.on('speak', handle_speak)
-    ws.on('message', handle_message)
-    ws.on('recognizer_loop:utterance', handle_utterance)
+    bus = WebsocketClient()  # Mycroft messagebus connection
+    bus.on('speak', handle_speak)
+    bus.on('message', handle_message)
+    bus.on('recognizer_loop:utterance', handle_utterance)
     event_thread = Thread(target=connect)
     event_thread.setDaemon(True)
     event_thread.start()
@@ -1145,9 +1145,9 @@ def gui_main(stdscr):
                         break
                 else:
                     # Treat this as an utterance
-                    ws.emit(Message("recognizer_loop:utterance",
-                                    {'utterances': [line.strip()],
-                                     'lang': 'en-us'}))
+                    bus.emit(Message("recognizer_loop:utterance",
+                                     {'utterances': [line.strip()],
+                                      'lang': 'en-us'}))
                 hist_idx = -1
                 line = ""
             elif code == 16 or code == 545:  # Ctrl+P or Ctrl+Left (Previous)
@@ -1216,14 +1216,14 @@ def gui_main(stdscr):
 
 
 def simple_cli():
-    global ws
+    global bus
     global bSimple
     bSimple = True
-    ws = WebsocketClient()
+    bus = WebsocketClient()  # Mycroft messagebus connection
     event_thread = Thread(target=connect)
     event_thread.setDaemon(True)
     event_thread.start()
-    ws.on('speak', handle_speak)
+    bus.on('speak', handle_speak)
     try:
         while True:
             # Sleep for a while so all the output that results
@@ -1231,9 +1231,8 @@ def simple_cli():
             time.sleep(1.5)
             print("Input (Ctrl+C to quit):")
             line = sys.stdin.readline()
-            ws.emit(
-                Message("recognizer_loop:utterance",
-                        {'utterances': [line.strip()]}))
+            bus.emit(Message("recognizer_loop:utterance",
+                             {'utterances': [line.strip()]}))
     except KeyboardInterrupt as e:
         # User hit Ctrl+C to quit
         print("")

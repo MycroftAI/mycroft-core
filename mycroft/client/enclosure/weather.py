@@ -20,13 +20,13 @@ class EnclosureWeather:
     Performs the associated command on Arduino by writing on the Serial port.
     """
 
-    def __init__(self, ws, writer):
-        self.ws = ws
+    def __init__(self, bus, writer):
+        self.bus = bus
         self.writer = writer
         self.__init_events()
 
     def __init_events(self):
-        self.ws.on('enclosure.weather.display', self.display)
+        self.bus.on('enclosure.weather.display', self.display)
 
     def display(self, event=None):
         if event and event.data:

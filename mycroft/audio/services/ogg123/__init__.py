@@ -26,18 +26,18 @@ class Ogg123Service(AudioBackend):
         only implements basic usage.
     """
 
-    def __init__(self, config, emitter, name='ogg123'):
-        super(Ogg123Service, self).__init__(config, emitter)
+    def __init__(self, config, bus, name='ogg123'):
+        super(Ogg123Service, self).__init__(config, bus)
         self.config = config
         self.process = None
-        self.emitter = emitter
+        self.bus = bus
         self.name = name
         self._stop_signal = False
         self._is_playing = False
         self.index = 0
         self.tracks = []
 
-        self.emitter.on('Ogg123ServicePlay', self._play)
+        self.bus.on('Ogg123ServicePlay', self._play)
 
     def supported_uris(self):
         return ['file', 'http']
@@ -78,14 +78,14 @@ class Ogg123Service(AudioBackend):
         self.index += 1
         # if there are more tracks available play next
         if self.index < len(self.tracks):
-            self.emitter.emit(Message('Ogg123ServicePlay'))
+            self.bus.emit(Message('Ogg123ServicePlay'))
         else:
             self._is_playing = False
 
     def play(self):
         LOG.info('Call Ogg123ServicePlay')
         self.index = 0
-        self.emitter.emit(Message('Ogg123ServicePlay'))
+        self.bus.emit(Message('Ogg123ServicePlay'))
 
     def stop(self):
         LOG.info('Ogg123ServiceStop')
@@ -118,10 +118,10 @@ class Ogg123Service(AudioBackend):
         pass
 
 
-def load_service(base_config, emitter):
+def load_service(base_config, bus):
     backends = base_config.get('backends', [])
     services = [(b, backends[b]) for b in backends
                 if backends[b]['type'] == 'ogg123' and
                 backends[b].get('active', True)]
-    instances = [Ogg123Service(s[1], emitter, s[0]) for s in services]
+    instances = [Ogg123Service(s[1], bus, s[0]) for s in services]
     return instances

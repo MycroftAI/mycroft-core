@@ -27,10 +27,10 @@ class MPlayerService(AudioBackend):
         Audio backend for mplayer.
     """
 
-    def __init__(self, config, emitter, name='mplayer'):
-        super(MPlayerService, self).__init__(config, emitter)
+    def __init__(self, config, bus, name='mplayer'):
+        super(MPlayerService, self).__init__(config, bus)
         self.config = config
-        self.emitter = emitter
+        self.bus = bus
         self.name = name
         self.index = 0
         self.normal_volume = None

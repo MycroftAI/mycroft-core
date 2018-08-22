@@ -32,7 +32,7 @@ from .event_scheduler import EventScheduler
 from .intent_service import IntentService
 from .padatious_service import PadatiousService
 
-ws = None
+bus = None  # Mycroft messagebus reference, see "mycroft.messagebus"
 event_scheduler = None
 skill_manager = None
 
@@ -42,8 +42,8 @@ start_clock = time.time()
 
 
 def connect():
-    global ws
-    ws.run_forever()
+    global bus
+    bus.run_forever()
 
 
 def _starting_up():
@@ -56,19 +56,19 @@ def _starting_up():
         - adapt intent service
         - padatious intent service
     """
-    global ws, skill_manager, event_scheduler
+    global bus, skill_manager, event_scheduler
 
-    ws.on('intent_failure', FallbackSkill.make_intent_failure_handler(ws))
+    bus.on('intent_failure', FallbackSkill.make_intent_failure_handler(bus))
 
     # Create the Intent manager, which converts utterances to intents
     # This is the heart of the voice invoked skill system
 
-    service = IntentService(ws)
-    PadatiousService(ws, service)
-    event_scheduler = EventScheduler(ws)
+    service = IntentService(bus)
+    PadatiousService(bus, service)
+    event_scheduler = EventScheduler(bus)
 
     # Create a thread that monitors the loaded skills, looking for updates
-    skill_manager = SkillManager(ws)
+    skill_manager = SkillManager(bus)
     skill_manager.daemon = True
     # Wait until skills have been loaded once before starting to check
     # network connection
@@ -83,7 +83,7 @@ def check_connection():
         Runs as a Timer every second until connection is detected.
     """
     if connected():
-        enclosure = EnclosureAPI(ws)
+        enclosure = EnclosureAPI(bus)
 
         if is_paired():
             # Skip the sync message when unpaired because the prompt to go to
@@ -94,7 +94,7 @@ def check_connection():
         config = Configuration.get()
         platform = config['enclosure'].get("platform", "unknown")
         if platform in ['mycroft_mark_1', 'picroft']:
-            ws.emit(Message("system.ntp.sync"))
+            bus.emit(Message("system.ntp.sync"))
             time.sleep(15)  # TODO: Generate/listen for a message response...
 
         # Check if the time skewed significantly.  If so, reboot
@@ -105,7 +105,7 @@ def check_connection():
             # prevent weird things from occcurring due to the 'time warp'.
             #
             data = {'utterance': dialog.get("time.changed.reboot")}
-            ws.emit(Message("speak", data))
+            bus.emit(Message("speak", data))
             wait_while_speaking()
 
             # provide visual indicators of the reboot
@@ -117,13 +117,13 @@ def check_connection():
             time.sleep(1.0)
 
             # reboot
-            ws.emit(Message("system.reboot"))
+            bus.emit(Message("system.reboot"))
             return
         else:
-            ws.emit(Message("enclosure.mouth.reset"))
+            bus.emit(Message("enclosure.mouth.reset"))
             time.sleep(0.5)
 
-        ws.emit(Message('mycroft.internet.connected'))
+        bus.emit(Message('mycroft.internet.connected'))
         # check for pairing, if not automatically start pairing
         try:
             if not is_paired(ignore_errors=False):
@@ -131,15 +131,15 @@ def check_connection():
                     'utterances': ["pair my device"],
                     'lang': "en-us"
                 }
-                ws.emit(Message("recognizer_loop:utterance", payload))
+                bus.emit(Message("recognizer_loop:utterance", payload))
             else:
                 from mycroft.api import DeviceApi
                 api = DeviceApi()
                 api.update_version()
         except BackendDown:
             data = {'utterance': dialog.get("backend.down")}
-            ws.emit(Message("speak", data))
-            ws.emit(Message("backend.down"))
+            bus.emit(Message("speak", data))
+            bus.emit(Message("backend.down"))
 
     else:
         thread = Timer(1, check_connection)
@@ -148,19 +148,19 @@ def check_connection():
 
 
 def main():
-    global ws
+    global bus
     reset_sigint_handler()
     # Create PID file, prevent multiple instancesof this service
     mycroft.lock.Lock('skills')
-    # Connect this Skill management process to the websocket
-    ws = WebsocketClient()
-    Configuration.init(ws)
+    # Connect this Skill management process to the Mycroft Messagebus
+    bus = WebsocketClient()
+    Configuration.init(bus)
 
-    ws.on('message', create_echo_function('SKILLS'))
-    # Startup will be called after websocket is fully live
-    ws.once('open', _starting_up)
+    bus.on('message', create_echo_function('SKILLS'))
+    # Startup will be called after the connection with the Messagebus is done
+    bus.once('open', _starting_up)
 
-    create_daemon(ws.run_forever)
+    create_daemon(bus.run_forever)
     wait_for_exit_signal()
     shutdown()
 

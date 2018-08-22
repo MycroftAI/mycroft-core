@@ -141,9 +141,9 @@ def remove_active():
     _write_data({"active_skill": ""})
 
 
-def initiate_display_manager_ws():
-    """ Initiates the web sockets on the display_manager """
-    LOG.info("Initiating display manager websocket")
+def init_display_manager_bus_connection():
+    """ Connects the display manager to the messagebus """
+    LOG.info("Connecting display manager to messagebus")
 
     # Should remove needs to be an object so it can be referenced in functions
     # [https://stackoverflow.com/questions/986006/how-do-i-pass-a-variable-by-reference]
@@ -161,7 +161,7 @@ def initiate_display_manager_ws():
         should_remove[0] = False
 
     def connect():
-        ws.run_forever()
+        bus.run_forever()
 
     def remove_wake_word():
         data = _read_data()
@@ -172,10 +172,10 @@ def initiate_display_manager_ws():
         set_active("wakeword")
         Timer(10, remove_wake_word).start()
 
-    ws = WebsocketClient()
-    ws.on('recognizer_loop:audio_output_end', set_delay)
-    ws.on('recognizer_loop:audio_output_start', set_remove_flag)
-    ws.on('recognizer_loop:record_begin', set_wakeword_skill)
+    bus = WebsocketClient()
+    bus.on('recognizer_loop:audio_output_end', set_delay)
+    bus.on('recognizer_loop:audio_output_start', set_remove_flag)
+    bus.on('recognizer_loop:record_begin', set_wakeword_skill)
 
     event_thread = Thread(target=connect)
     event_thread.setDaemon(True)

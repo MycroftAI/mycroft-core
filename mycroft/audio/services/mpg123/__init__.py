@@ -26,16 +26,16 @@ class Mpg123Service(AudioBackend):
         only implements basic usage.
     """
 
-    def __init__(self, config, emitter, name='mpg123'):
-        super(Mpg123Service, self).__init__(config, emitter)
+    def __init__(self, config, bus, name='mpg123'):
+        super(Mpg123Service, self).__init__(config, bus)
         self.config = config
         self.process = None
-        self.emitter = emitter
+        self.bus = bus
         self.name = name
         self._stop_signal = False
         self._is_playing = False
 
-        self.emitter.on('Mpg123ServicePlay', self._play)
+        bus.on('Mpg123ServicePlay', self._play)
 
     def supported_uris(self):
         return ['file', 'http']
@@ -76,14 +76,14 @@ class Mpg123Service(AudioBackend):
         self.index += 1
         # if there are more tracks available play next
         if self.index < len(self.tracks):
-            self.emitter.emit(Message('Mpg123ServicePlay'))
+            bus.emit(Message('Mpg123ServicePlay'))
         else:
             self._is_playing = False
 
     def play(self):
         LOG.info('Call Mpg123ServicePlay')
         self.index = 0
-        self.emitter.emit(Message('Mpg123ServicePlay'))
+        bus.emit(Message('Mpg123ServicePlay'))
 
     def stop(self):
         LOG.info('Mpg123ServiceStop')
@@ -116,10 +116,10 @@ class Mpg123Service(AudioBackend):
         pass
 
 
-def load_service(base_config, emitter):
+def load_service(base_config, bus):
     backends = base_config.get('backends', [])
     services = [(b, backends[b]) for b in backends
                 if backends[b]['type'] == 'mpg123' and
                 backends[b].get('active', True)]
-    instances = [Mpg123Service(s[1], emitter, s[0]) for s in services]
+    instances = [Mpg123Service(s[1], bus, s[0]) for s in services]
     return instances
