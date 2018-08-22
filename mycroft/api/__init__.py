@@ -108,11 +108,11 @@ class Api(object):
             data=data, json=json_body, timeout=(3.05, 15)
         )
         if response.status_code == 304:
-            # LOG.debug('Etag matched. Nothing changed for: ' + params['path'])
+            # ETag matched. Nothing changed, use prev resp
             response = self.etag_to_response[etag]
         elif 'ETag' in response.headers:
             etag = response.headers['ETag'].strip('"')
-            # LOG.debug('Updating etag for: ' + params['path'])
+            # Cache response by ETag for future
             self.params_to_etag[params_key] = etag
             self.etag_to_response[etag] = response
 
