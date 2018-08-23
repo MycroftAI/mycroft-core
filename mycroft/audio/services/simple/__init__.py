@@ -43,12 +43,12 @@ class SimpleAudioService(AudioBackend):
         This one is rather limited and only implements basic usage.
     """
 
-    def __init__(self, config, emitter, name='simple'):
+    def __init__(self, config, bus, name='simple'):
 
-        super(SimpleAudioService, self).__init__(config, emitter)
+        super(SimpleAudioService, self).__init__(config, bus)
         self.config = config
         self.process = None
-        self.emitter = emitter
+        self.bus = bus
         self.name = name
         self._stop_signal = False
         self._is_playing = False
@@ -57,7 +57,7 @@ class SimpleAudioService(AudioBackend):
         self.supports_mime_hints = True
         mimetypes.init()
 
-        self.emitter.on('SimpleAudioServicePlay', self._play)
+        self.bus.on('SimpleAudioServicePlay', self._play)
 
     def supported_uris(self):
         return ['file', 'http']
@@ -114,14 +114,14 @@ class SimpleAudioService(AudioBackend):
         self.index += 1
         # if there are more tracks available play next
         if self.index < len(self.tracks):
-            self.emitter.emit(Message('SimpleAudioServicePlay'))
+            self.bus.emit(Message('SimpleAudioServicePlay'))
         else:
             self._is_playing = False
 
     def play(self):
         LOG.info('Call SimpleAudioServicePlay')
         self.index = 0
-        self.emitter.emit(Message('SimpleAudioServicePlay'))
+        self.bus.emit(Message('SimpleAudioServicePlay'))
 
     def stop(self):
         LOG.info('SimpleAudioServiceStop')
@@ -150,10 +150,10 @@ class SimpleAudioService(AudioBackend):
         pass
 
 
-def load_service(base_config, emitter):
+def load_service(base_config, bus):
     backends = base_config.get('backends', [])
     services = [(b, backends[b]) for b in backends
                 if backends[b]['type'] == 'simple' and
                 backends[b].get('active', True)]
-    instances = [SimpleAudioService(s[1], emitter, s[0]) for s in services]
+    instances = [SimpleAudioService(s[1], bus, s[0]) for s in services]
     return instances
