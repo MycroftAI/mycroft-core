@@ -113,32 +113,38 @@ def _read_data():
     return data
 
 
-def set_active(skill_name):
-    """ Sets skill name as active in the display Manager
-    Args:
-        string: skill_name
+class DisplayManager():
+    """ The Display manager handles the basic state of the display,
+    be it a mark-1 or a mark-2 or even a future Mark-3.
     """
-    _write_data({"active_skill": skill_name})
+    def __init__(self, name=None):
+        self.name = name or ""
 
+    def set_active(self, skill_name=None):
+        """ Sets skill name as active in the display Manager
+        Args:
+            string: skill_name
+        """
+        name = skill_name if skill_name is not None else self.name
+        _write_data({"active_skill": name})
 
-def get_active():
-    """ Get the currenlty active skill from the display manager
-    Returns:
-        string: The active skill's name
-    """
-    data = _read_data()
-    active_skill = ""
+    def get_active(self):
+        """ Get the currenlty active skill from the display manager
+        Returns:
+            string: The active skill's name
+        """
+        data = _read_data()
+        active_skill = ""
 
-    if "active_skill" in data:
-        active_skill = data["active_skill"]
+        if "active_skill" in data:
+            active_skill = data["active_skill"]
 
-    return active_skill
+        return active_skill
 
-
-def remove_active():
-    """ Clears the active skill """
-    LOG.debug("Removing active skill...")
-    _write_data({"active_skill": ""})
+    def remove_active(self):
+        """ Clears the active skill """
+        LOG.debug("Removing active skill...")
+        _write_data({"active_skill": ""})
 
 
 def init_display_manager_bus_connection():
