@@ -371,7 +371,6 @@ class SkillSettings(dict):
             skills_settings = self._request_other_settings(hashed_meta)
         if not skills_settings:
             skills_settings = self._request_my_settings(hashed_meta)
-
         if skills_settings is not None:
             self.save_skill_settings(skills_settings)
             self.store()
@@ -426,6 +425,31 @@ class SkillSettings(dict):
                     # metadata to be able to edit later.
                     LOG.error(e)
 
+    def _type_cast(self, settings_meta, to_platform):
+        meta = settings_meta.copy()
+        sections = meta['skillMetadata']['sections']
+
+        for i, section in enumerate(sections):
+            for j, field in enumerate(section.get('fields', [])):
+                _type = field.get('type')
+                if _type == 'checkbox':
+                    value = field.get('value')
+
+                    if to_platform == 'web':
+                        if value is True or value == 'True':
+                            sections[i]['fields'][j]['value'] = 'true'
+                        elif value is False or value == 'False':
+                            sections[i]['fields'][j]['value'] = 'false'
+
+                    elif to_platform == 'core':
+                        if value == 'true' or value == 'True':
+                            sections[i]['fields'][j]['value'] = True
+                        elif value == 'false' or value == 'False':
+                            sections[i]['fields'][j]['value'] = False
+
+        meta['skillMetadata']['sections'] = sections
+        return meta
+
     def _request_my_settings(self, identifier):
         """ Get skill settings for this device associated
             with the identifier
@@ -442,6 +466,8 @@ class SkillSettings(dict):
         # this loads the settings into memory for use in self.store
         for skill_settings in settings:
             if skill_settings['identifier'] == identifier:
+                skill_settings = \
+                    self._type_cast(skill_settings, to_platform='core')
                 self._remote_settings = skill_settings
                 return skill_settings
         return None
@@ -481,7 +507,8 @@ class SkillSettings(dict):
         if len(user_skill) == 0:
             return None
         else:
-            return user_skill[0]
+            settings = self._type_cast(user_skill[0], to_platform='core')
+            return settings
 
     def _put_metadata(self, settings_meta):
         """ PUT settingsmeta to backend to be configured in server.
@@ -491,6 +518,7 @@ class SkillSettings(dict):
                 settings_meta (dict): dictionary of the current settings meta
                                       data
         """
+        settings_meta = self._type_cast(settings_meta, to_platform='web')
         return self.api.request({
             "method": "PUT",
             "path": self._api_path,
