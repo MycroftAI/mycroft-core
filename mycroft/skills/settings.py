@@ -473,6 +473,9 @@ class SkillSettings(dict):
                         else:
                             sections[i]['fields'][j]['value'] = int(value)
 
+                    elif to_platform == 'web':
+                        sections[i]['fields'][j]['value'] = str(value)
+
         meta['skillMetadata']['sections'] = sections
         return meta
 
