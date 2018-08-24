@@ -426,6 +426,23 @@ class SkillSettings(dict):
                     LOG.error(e)
 
     def _type_cast(self, settings_meta, to_platform):
+        """Tranforms data type to be compatible with Home and or Core.
+
+        e.g.
+        Web to core
+        "true" => True, "1.4" =>  1.4
+
+        core to Web
+        False => "false'
+
+        Args:
+            settings_meta (dict): skills object
+            to_platform (str): platform to convert
+                               compatible data types to
+
+        Returns:
+            dict: skills object
+        """
         meta = settings_meta.copy()
         sections = meta['skillMetadata']['sections']
 
@@ -446,6 +463,15 @@ class SkillSettings(dict):
                             sections[i]['fields'][j]['value'] = True
                         elif value == 'false' or value == 'False':
                             sections[i]['fields'][j]['value'] = False
+
+                elif _type == 'number':
+                    value = field.get('value')
+
+                    if to_platform == 'core':
+                        if "." in value:
+                            sections[i]['fields'][j]['value'] = float(value)
+                        else:
+                            sections[i]['fields'][j]['value'] = int(value)
 
         meta['skillMetadata']['sections'] = sections
         return meta
