@@ -69,7 +69,11 @@ meter_peak = 20
 meter_cur = -1
 meter_thresh = -1
 
-screen_mode = 0   # 0 = main, 1 = help, others in future?
+SCR_MAIN = 0
+SCR_HELP = 1
+SCR_SKILLS = 2
+screen_mode = SCR_MAIN
+
 subscreen = 0     # for help pages, etc.
 FULL_REDRAW_FREQUENCY = 10    # seconds between full redraws
 last_full_redraw = time.time()-(FULL_REDRAW_FREQUENCY-1)  # seed for 1s redraw
@@ -290,11 +294,12 @@ class ScreenDrawThread(Thread):
                     with screen_lock:
                         is_screen_dirty = False
 
-                        if screen_mode == 0:
+                        if screen_mode == SCR_MAIN:
                             with log_lock:
                                 do_draw_main(scr)
-                        elif screen_mode == 1:
+                        elif screen_mode == SCR_HELP:
                             do_draw_help(scr)
+
             finally:
                 time.sleep(0.01)
 
@@ -831,8 +836,8 @@ def show_help():
     global screen_mode
     global subscreen
 
-    if screen_mode != 1:
-        screen_mode = 1
+    if screen_mode != SCR_HELP:
+        screen_mode = SCR_HELP
         subscreen = 0
         set_screen_dirty()
 
@@ -841,10 +846,10 @@ def show_next_help():
     global screen_mode
     global subscreen
 
-    if screen_mode == 1:
+    if screen_mode == SCR_HELP:
         subscreen += 1
         if subscreen >= num_help_pages():
-            screen_mode = 0
+            screen_mode = SCR_MAIN
         set_screen_dirty()
 
 
@@ -854,8 +859,6 @@ def show_next_help():
 def show_skills(skills):
     """
         Show list of loaded skills in as many column as necessary
-
-        TODO: Handle multiscreen
     """
     global scr
     global screen_mode
@@ -863,23 +866,41 @@ def show_skills(skills):
     if not scr:
         return
 
-    screen_mode = 1  # showing help (prevents overwrite by log updates)
-    scr.erase()
-    scr.addstr(0, 0, center(25) + "Loaded skills", CLR_CMDLINE)
-    scr.addstr(1, 1, "=" * (curses.COLS - 2), CLR_CMDLINE)
+    screen_mode = SCR_SKILLS
+
     row = 2
     column = 0
+
+    def prepare_page():
+        global scr
+        nonlocal row
+        nonlocal column
+        scr.erase()
+        scr.addstr(0, 0, center(25) + "Loaded skills", CLR_CMDLINE)
+        scr.addstr(1, 1, "=" * (curses.COLS - 2), CLR_CMDLINE)
+        row = 2
+        column = 0
+
+    prepare_page()
     col_width = 0
-    for skill in sorted(skills.keys()):
+    skill_names = sorted(skills.keys())
+    for skill in skill_names:
         if skills[skill]['active']:
             color = curses.color_pair(4)
         else:
             color = curses.color_pair(2)
 
-        scr.addstr(row, column,  "  {}".format(skill), color)
+        scr.addstr(row, column, "  {}".format(skill), color)
         row += 1
         col_width = max(col_width, len(skill))
-        if row == 21:
+        if row == curses.LINES - 2 and column > 0 and skill != skill_names[-1]:
+            column = 0
+            scr.addstr(curses.LINES - 1, 0,
+                       center(23) + "Press any key to continue", CLR_HEADING)
+            scr.refresh()
+            scr.get_wch()  # blocks
+            prepare_page()
+        elif row == curses.LINES - 2:
             # Reached bottom of screen, start at top and move output to a
             # New column
             row = 2
@@ -889,9 +910,8 @@ def show_skills(skills):
                 # End of screen
                 break
 
-    scr.addstr(curses.LINES - 1, 0,  center(23) + "Press any key to return",
+    scr.addstr(curses.LINES - 1, 0, center(23) + "Press any key to return",
                CLR_HEADING)
-
     scr.refresh()
 
 
@@ -985,7 +1005,7 @@ def handle_cmd(cmd):
         if message:
             show_skills(message.data)
             scr.get_wch()  # blocks
-            screen_mode = 0  # back to main screen
+            screen_mode = SCR_MAIN
             set_screen_dirty()
     elif "deactivate" in cmd:
         skills = cmd.split()[1:]
@@ -1130,7 +1150,7 @@ def gui_main(stdscr):
                 # resizeterm() causes another curses.KEY_RESIZE, so
                 # we need to capture that to prevent a loop of resizes
                 c = scr.get_wch()
-            elif screen_mode == 1:
+            elif screen_mode == SCR_HELP:
                 # in Help mode, any key goes to next page
                 show_next_help()
                 continue
