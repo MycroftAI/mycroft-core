@@ -233,6 +233,8 @@ class MycroftSkill(object):
         self.log.warning('self.emitter is deprecated switch to "self.bus"')
         return self.bus
 
+        self.voc_match_cache = {}
+
     @property
     def location(self):
         """ Get the JSON data struction holding location information. """
@@ -393,7 +395,7 @@ class MycroftSkill(object):
                 return get_announcement()
 
         def is_cancel(utterance):
-            return self.is_match(utterance, 'cancel')
+            return self.voc_match(utterance, 'cancel')
 
         def validator_default(utterance):
             # accept anything except 'cancel'
@@ -443,20 +445,23 @@ class MycroftSkill(object):
         """
         resp = self.get_response(dialog=prompt, data=data)
 
-        if self.is_match(resp, 'yes'):
+        if self.voc_match(resp, 'yes'):
             return 'yes'
 
-        if self.is_match(resp, 'no'):
+        if self.voc_match(resp, 'no'):
             return 'no'
 
         return resp
 
-    def is_match(self, utt, voc_filename, lang=None):
-        """ Determine if the given utterance contains the vocabular proviced
+    def voc_match(self, utt, voc_filename, lang=None):
+        """ Determine if the given utterance contains the vocabulary provided
 
-        This checks for vocabulary match in the utternce instead of the other
+        Checks for vocabulary match in the utterance instead of the other
         way around to allow the user to say things like "yes, please" and
-        still match against voc files with only "yes" in it.
+        still match against "Yes.voc" containing only "yes". The method first
+        checks in the current skill's .voc files and secondly the "res/text"
+        folder of mycroft-core. The result is cached to avoid hitting the
+        disk each time the method is called.
 
         Args:
             utt (str): Utterance to be tested
@@ -468,10 +473,25 @@ class MycroftSkill(object):
             bool: True if the utterance has the given vocabulary it
         """
         lang = lang or self.lang
-        voc = join('text', self.lang, voc_filename+".voc")
-        with open(resolve_resource_file(voc)) as f:
-            words = list(filter(bool, f.read().split('\n')))
-        if (utt and any(i.strip() in utt for i in words)):
+        cache_key = lang + voc_filename
+        if cache_key not in self.voc_match_cache:
+            # Check both skill/vocab/LANG and .../res/text/LANG
+            voc = join(self.vocab_dir, voc_filename + '.voc')
+            if not exists(voc):
+                voc = resolve_resource_file(join('text', lang,
+                                                 voc_filename + '.voc'))
+
+            if not exists(voc):
+                raise FileNotFoundError(
+                        'Could not find voc file, checked {} and {}'
+                        .format(voc, skill_voc))
+
+            with open(voc) as f:
+                self.voc_match_cache[cache_key] = f.read().splitlines()
+
+        # Check for match
+        if utt and any(i.strip() in utt
+                       for i in self.voc_match_cache[cache_key]):
             return True
         return False
 
