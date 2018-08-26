@@ -343,22 +343,21 @@ class MycroftSkill(object):
         self.converse = default_converse
         return converse.response
 
-    def get_response(self, dialog='', data=None, announcement='',
-                     validator=None, on_fail=None, num_retries=-1):
+    def get_response(self, dialog='', data=None, validator=None,
+                     on_fail=None, num_retries=-1):
         """
         Prompt user and wait for response
 
-        The given dialog or announcement will be spoken, the immediately
-        listen and return user response.  The response can optionally be
-        validated.
+        The given dialog is spoken, followed immediately by listening
+        for a user response.  The response can optionally be
+        validated before returning.
 
         Example:
             color = self.get_response('ask.favorite.color')
 
         Args:
-            dialog (str): Announcement dialog to read to the user
+            dialog (str): Announcement dialog to speak to the user
             data (dict): Data used to render the dialog
-            announcement (str): Literal string (overrides dialog)
             validator (any): Function with following signature
                 def validator(utterance):
                     return utterance != "red"
@@ -375,16 +374,10 @@ class MycroftSkill(object):
         data = data or {}
 
         def get_announcement():
-            nonlocal announcement
-            # The dialog param can be either a spoken string or a dialog file
-            # TODO: 18.08 merge dialog/announcement
-            if not exists(join(self.root_dir, 'dialog', self.lang,
-                               dialog + '.dialog')) and not announcement:
-                announcement = dialog
-            return announcement or self.dialog_renderer.render(dialog, data)
+            return self.dialog_renderer.render(dialog, data)
 
         if not get_announcement():
-            raise ValueError('announcement or dialog message required')
+            raise ValueError('dialog message required')
 
         def on_fail_default(utterance):
             fail_data = data.copy()
