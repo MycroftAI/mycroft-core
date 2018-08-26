@@ -76,14 +76,14 @@ class Mpg123Service(AudioBackend):
         self.index += 1
         # if there are more tracks available play next
         if self.index < len(self.tracks):
-            bus.emit(Message('Mpg123ServicePlay'))
+            self.bus.emit(Message('Mpg123ServicePlay'))
         else:
             self._is_playing = False
 
     def play(self):
         LOG.info('Call Mpg123ServicePlay')
         self.index = 0
-        bus.emit(Message('Mpg123ServicePlay'))
+        self.bus.emit(Message('Mpg123ServicePlay'))
 
     def stop(self):
         LOG.info('Mpg123ServiceStop')
