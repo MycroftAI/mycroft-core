@@ -346,16 +346,15 @@ class MycroftSkill(object):
         """
         Prompt user and wait for response
 
-        The given dialog will be spoken, then immediately trigger
-        listening and return user response.  The response can optionally be
-        validated.
+        The given dialog is spoken, followed immediately by listening
+        for a user response.  The response can optionally be
+        validated before returning.
 
         Example:
             color = self.get_response('ask.favorite.color')
 
         Args:
-            dialog (str): Announcement dialog to read to the user,
-                          can be dialog file or literal string.
+            dialog (str): Announcement dialog to speak to the user
             data (dict): Data used to render the dialog
             validator (any): Function with following signature
                 def validator(utterance):
@@ -373,12 +372,7 @@ class MycroftSkill(object):
         data = data or {}
 
         def get_announcement():
-            # The dialog param can be either a litteral string or a dialog file
-            if not exists(join(self.root_dir, 'dialog', self.lang,
-                               dialog + '.dialog')):
-                return dialog  # litteral string
-            else:
-                return self.dialog_renderer.render(dialog, data)
+            return self.dialog_renderer.render(dialog, data)
 
         if not get_announcement():
             raise ValueError('dialog message required')
