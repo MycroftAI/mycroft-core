@@ -344,7 +344,12 @@ class AudioService(object):
                                   the tracks.
         """
         self._stop()
-        uri_type = tracks[0].split(':')[0]
+
+        if isinstance(tracks[0], str):
+            uri_type = tracks[0].split(':')[0]
+        else:
+            uri_type = tracks[0][0].split(':')[0]
+
         # check if user requested a particular service
         if prefered_service and uri_type in prefered_service.supported_uris():
             selected_service = prefered_service
@@ -362,6 +367,8 @@ class AudioService(object):
             else:
                 LOG.info('No service found for uri_type: ' + uri_type)
                 return
+        if not selected_service.supports_mime_hints:
+            tracks = [t[0] if isinstance(t, list) else t for t in tracks]
         selected_service.clear_list()
         selected_service.add_list(tracks)
         selected_service.play()

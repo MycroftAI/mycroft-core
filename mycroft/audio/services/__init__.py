@@ -27,6 +27,7 @@ class AudioBackend():
 
     def __init__(self, config, bus):
         self._track_start_callback = None
+        self.supports_mime_hints = False
 
     @abstractmethod
     def supported_uris(self):
