@@ -165,7 +165,7 @@ class WebsocketClient(object):
             self.emitter.remove_listener(event_name, func)
         except ValueError as e:
             LOG.warning('Failed to remove event {}: {}'.format(event_name,
-                                                               str(func), e))
+                                                               str(func)))
             for line in traceback.format_stack():
                 LOG.warning(line.strip())
 
