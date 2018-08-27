@@ -62,7 +62,8 @@ class MustacheDialogRenderer(object):
 
     def render(self, template_name, context=None, index=None):
         """
-        Given a template name, pick a template and render it using the context
+        Given a template name, pick a template and render it using the context.
+        If no matching template exists use template_name as template.
 
         Args:
             template_name (str): the name of a template group.
@@ -72,10 +73,6 @@ class MustacheDialogRenderer(object):
 
         Returns:
             str: the rendered string
-
-        Raises:
-            NotImplementedError: if no template can be found identified by
-                template_name
         """
         context = context or {}
         if template_name not in self.templates:
