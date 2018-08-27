@@ -25,7 +25,7 @@ import os.path
 from os.path import dirname, exists, isdir, join
 
 import mycroft.util
-from mycroft.client.enclosure.api import EnclosureAPI
+from mycroft.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.metrics import report_timing, Stopwatch

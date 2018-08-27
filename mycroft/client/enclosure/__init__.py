@@ -24,11 +24,10 @@ import mycroft.dialog
 from mycroft.api import has_been_paired
 from mycroft.audio import wait_while_speaking
 from mycroft.client.enclosure.arduino import EnclosureArduino
-from mycroft.client.enclosure.display_manager import \
+from mycroft.enclosure.display_manager import \
     init_display_manager_bus_connection
 from mycroft.client.enclosure.eyes import EnclosureEyes
 from mycroft.client.enclosure.mouth import EnclosureMouth
-from mycroft.client.enclosure.weather import EnclosureWeather
 from mycroft.configuration import Configuration, LocalConf, USER_CONFIG
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
@@ -285,7 +284,6 @@ class Enclosure(object):
         self.eyes = EnclosureEyes(self.bus, self.writer)
         self.mouth = EnclosureMouth(self.bus, self.writer)
         self.system = EnclosureArduino(self.bus, self.writer)
-        self.weather = EnclosureWeather(self.bus, self.writer)
         self.__register_events()
         self.__reset()
         self.arduino_responded = True
