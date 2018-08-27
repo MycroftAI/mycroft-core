@@ -223,6 +223,7 @@ class MycroftSkill(object):
         self.events = []
         self.scheduled_repeats = []
         self.skill_id = ''  # will be set from the path, so guaranteed unique
+        self.voc_match_cache = {}
 
     @property
     def emitter(self):
@@ -231,8 +232,6 @@ class MycroftSkill(object):
         """
         self.log.warning('self.emitter is deprecated switch to "self.bus"')
         return self.bus
-
-        self.voc_match_cache = {}
 
     @property
     def location(self):
