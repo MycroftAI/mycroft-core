@@ -234,7 +234,7 @@ def nice_time(dt, lang="en-us", speech=True, use_24hour=False,
     Args:
         dt (datetime): date to format (assumes already in local timezone)
         lang (str): code for the language to use
-        speech (bool): format for speech (default/True) or display (False)=Fal
+        speech (bool): format for speech (default/True) or display (False)
         use_24hour (bool): output in 24-hour/military or 12-hour format
         use_ampm (bool): include the am/pm for 12-hour format
     Returns:

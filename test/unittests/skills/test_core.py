@@ -299,8 +299,8 @@ class MycroftSkillTest(unittest.TestCase):
 
     def test_register_intent_file(self):
         s = SimpleSkill4()
+        s.root_dir = abspath(join(dirname(__file__), 'intent_file'))
         s.bind(self.emitter)
-        s.vocab_dir = join(dirname(__file__), 'intent_file')
         s.initialize()
 
         expected_types = [
@@ -310,13 +310,13 @@ class MycroftSkillTest(unittest.TestCase):
 
         expected_results = [
             {
-                'file_name': join(dirname(__file__),
-                                  'intent_file', 'test.intent'),
+                'file_name': join(dirname(__file__), 'intent_file',
+                                  'vocab', 'en-us', 'test.intent'),
                 'name': str(s.skill_id) + ':test.intent'
             },
             {
-                'file_name': join(dirname(__file__),
-                                  'intent_file', 'test_ent.entity'),
+                'file_name': join(dirname(__file__), 'intent_file',
+                                  'vocab', 'en-us', 'test_ent.entity'),
                 'name': str(s.skill_id) + ':test_ent'
             }
         ]
@@ -336,8 +336,8 @@ class MycroftSkillTest(unittest.TestCase):
         SimpleSkill5 = __import__('decorator_test_skill').TestSkill
         s = SimpleSkill5()
         s.skill_id = 'A'
-        s.vocab_dir = join(dirname(__file__), 'intent_file')
         s.bind(self.emitter)
+        s.root_dir = abspath(join(dirname(__file__), 'intent_file'))
         s.initialize()
         s._register_decorated()
         expected = [{'at_least_one': [],
@@ -346,7 +346,7 @@ class MycroftSkillTest(unittest.TestCase):
                      'requires': [('AKeyword', 'AKeyword')]},
                     {
                      'file_name': join(dirname(__file__), 'intent_file',
-                                       'test.intent'),
+                                       'vocab', 'en-us', 'test.intent'),
                      'name': str(s.skill_id) + ':test.intent'}]
 
         self.check_register_decorators(expected)
