@@ -164,8 +164,8 @@ class WebsocketClient(object):
                 LOG.debug("Not able to find '"+str(event_name)+"'")
             self.emitter.remove_listener(event_name, func)
         except ValueError as e:
-            import traceback
-            LOG.warning('Failed to remove event {}: {}'.format(event_name, str(func), e))
+            LOG.warning('Failed to remove event {}: {}'.format(event_name,
+                                                               str(func), e))
             for line in traceback.format_stack():
                 LOG.warning(line.strip())
 
@@ -182,7 +182,6 @@ class WebsocketClient(object):
             else:
                 LOG.debug("Not able to find '"+str(event_name)+"'")
             LOG.warning('----- End dump -----')
-
 
     def remove_all_listeners(self, event_name):
         '''
