@@ -18,26 +18,46 @@ from time import sleep
 from mycroft.audio.services import AudioBackend
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
+import mimetypes
+from requests import Session
 
 
-class Ogg123Service(AudioBackend):
+def find_mime(path):
+    mime = None
+    if path.startswith('http'):
+        response = Session().head(path, allow_redirects=True)
+        if 200 <= response.status_code < 300:
+            mime = response.headers['content-type']
+    if not mime:
+        mime = mimetypes.guess_mime(path)[0]
+
+    if mime:
+        return mime.split('/')
+    else:
+        return (None, None)
+
+
+class SimpleAudioService(AudioBackend):
     """
-        Audio backend for ogg123 player. This one is rather limited and
-        only implements basic usage.
+        Simple Audio backend for both mpg123 and the ogg123 player.
+        This one is rather limited and only implements basic usage.
     """
 
-    def __init__(self, config, bus, name='ogg123'):
-        super(Ogg123Service, self).__init__(config, bus)
+    def __init__(self, config, bus, name='simple'):
+
+        super(SimpleAudioService, self).__init__(config, bus)
         self.config = config
         self.process = None
         self.bus = bus
         self.name = name
         self._stop_signal = False
         self._is_playing = False
-        self.index = 0
         self.tracks = []
+        self.index = 0
+        self.supports_mime_hints = True
+        mimetypes.init()
 
-        self.bus.on('Ogg123ServicePlay', self._play)
+        self.bus.on('SimpleAudioServicePlay', self._play)
 
     def supported_uris(self):
         return ['file', 'http']
@@ -51,23 +71,39 @@ class Ogg123Service(AudioBackend):
 
     def _play(self, message=None):
         """ Implementation specific async method to handle playback.
-            This allows ogg123 service to use the "next method as well
+            This allows mpg123 service to use the "next method as well
             as basic play/stop.
         """
-        LOG.info('Ogg123Service._play')
+        LOG.info('SimpleAudioService._play')
         self._is_playing = True
-        track = self.tracks[self.index]
+        if isinstance(self.tracks[self.index], list):
+            track = self.tracks[self.index][0]
+            mime = self.tracks[self.index][1]
+            mime = mime.split('/')
+        else:  # Assume string
+            track = self.tracks[self.index]
+            mime = find_mime(track)
+            print('MIME: ' + str(mime))
         # Indicate to audio service which track is being played
         if self._track_start_callback:
             self._track_start_callback(track)
 
         # Replace file:// uri's with normal paths
         track = track.replace('file://', '')
-
-        self.process = subprocess.Popen(['ogg123', track])
-        # Wait for completion or stop request
-        while self.process.poll() is None and not self._stop_signal:
-            sleep(0.25)
+        proc = None
+        if 'mpeg' in mime[1]:
+            proc = 'mpg123'
+        elif 'ogg' in mime[1]:
+            proc = 'ogg123'
+        elif 'wav' in mime[1]:
+            proc = 'aplay'
+        else:
+            proc = 'mpg123'  # If no mime info could be determined gues mp3
+        if proc:
+            self.process = subprocess.Popen([proc, track])
+            # Wait for completion or stop request
+            while self.process.poll() is None and not self._stop_signal:
+                sleep(0.25)
 
         if self._stop_signal:
             self.process.terminate()
@@ -78,25 +114,21 @@ class Ogg123Service(AudioBackend):
         self.index += 1
         # if there are more tracks available play next
         if self.index < len(self.tracks):
-            self.bus.emit(Message('Ogg123ServicePlay'))
+            self.bus.emit(Message('SimpleAudioServicePlay'))
         else:
             self._is_playing = False
 
     def play(self):
-        LOG.info('Call Ogg123ServicePlay')
+        LOG.info('Call SimpleAudioServicePlay')
         self.index = 0
-        self.bus.emit(Message('Ogg123ServicePlay'))
+        self.bus.emit(Message('SimpleAudioServicePlay'))
 
     def stop(self):
-        LOG.info('Ogg123ServiceStop')
-        if self._is_playing:
-            self._stop_signal = True
-            while self._is_playing:
-                sleep(0.1)
-            self._stop_signal = False
-            return True
-        else:
-            return False
+        LOG.info('SimpleAudioServiceStop')
+        self._stop_signal = True
+        while self._is_playing:
+            sleep(0.1)
+        self._stop_signal = False
 
     def pause(self):
         pass
@@ -121,7 +153,7 @@ class Ogg123Service(AudioBackend):
 def load_service(base_config, bus):
     backends = base_config.get('backends', [])
     services = [(b, backends[b]) for b in backends
-                if backends[b]['type'] == 'ogg123' and
+                if backends[b]['type'] == 'simple' and
                 backends[b].get('active', True)]
-    instances = [Ogg123Service(s[1], bus, s[0]) for s in services]
+    instances = [SimpleAudioService(s[1], bus, s[0]) for s in services]
     return instances

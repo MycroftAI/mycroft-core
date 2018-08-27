@@ -16,6 +16,7 @@ import json
 import time
 from multiprocessing.pool import ThreadPool
 from threading import Event
+import traceback
 
 from pyee import EventEmitter
 from websocket import (WebSocketApp, WebSocketConnectionClosedException,
@@ -144,7 +145,7 @@ class WebsocketClient(object):
                     # ValueError occurs on pyee 1.0.1 removing handlers
                     # registered with once.
                     # KeyError may theoretically occur if the event occurs as
-                    # the handler is removbed
+                    # the handler is removed
                     pass
                 return None
         return response[0]
@@ -157,9 +158,31 @@ class WebsocketClient(object):
 
     def remove(self, event_name, func):
         try:
+            if event_name in self.emitter._events:
+                LOG.debug("Removing found '"+str(event_name)+"'")
+            else:
+                LOG.debug("Not able to find '"+str(event_name)+"'")
             self.emitter.remove_listener(event_name, func)
         except ValueError as e:
-            LOG.warning('Failed to remove event {}: {}'.format(event_name, e))
+            import traceback
+            LOG.warning('Failed to remove event {}: {}'.format(event_name, str(func), e))
+            for line in traceback.format_stack():
+                LOG.warning(line.strip())
+
+            if event_name in self.emitter._events:
+                LOG.debug("Removing found '"+str(event_name)+"'")
+            else:
+                LOG.debug("Not able to find '"+str(event_name)+"'")
+            LOG.warning("Existing events: " + str(self.emitter._events))
+            for evt in self.emitter._events:
+                LOG.warning("   "+str(evt))
+                LOG.warning("       "+str(self.emitter._events[evt]))
+            if event_name in self.emitter._events:
+                LOG.debug("Removing found '"+str(event_name)+"'")
+            else:
+                LOG.debug("Not able to find '"+str(event_name)+"'")
+            LOG.warning('----- End dump -----')
+
 
     def remove_all_listeners(self, event_name):
         '''
