@@ -18,6 +18,7 @@ from io import open
 import os
 import re
 from pathlib import Path
+from os.path import join
 
 from mycroft.util import resolve_resource_file
 from mycroft.util.log import LOG
@@ -78,7 +79,12 @@ class MustacheDialogRenderer(object):
         """
         context = context or {}
         if template_name not in self.templates:
-            raise NotImplementedError("Template not found: %s" % template_name)
+            # When not found, return the name itself as the dialog
+            # This allows things like render("record.not.found") to either
+            # find a translation file "record.not.found.dialog" or return
+            # "record not found" literal.
+            return template_name.replace(".", " ")
+
         template_functions = self.templates.get(template_name)
         if index is None:
             index = random.randrange(len(template_functions))
@@ -109,14 +115,15 @@ class DialogLoader(object):
         """
         directory = Path(dialog_dir)
         if not directory.exists() or not directory.is_dir():
-            LOG.warning("No dialog found: " + dialog_dir)
+            LOG.warning("No dialog files found: " + dialog_dir)
             return self.__renderer
 
-        for dialog_entry in directory.glob('*.dialog'):
-            if dialog_entry.is_file():
-                self.__renderer.load_template_file(dialog_entry.stem,
-                                                   dialog_entry)
-
+        for path, _, files in os.walk(str(directory)):
+            for f in files:
+                if f.endswith(".dialog"):
+                    self.__renderer.load_template_file(
+                        f.replace('.dialog', ''),
+                        join(directory, path, f))
         return self.__renderer
 
 

@@ -17,7 +17,7 @@
 data such as dialogs, intents and regular expressions.
 """
 
-from os import listdir
+from os import walk
 from os.path import splitext, join
 import re
 
@@ -73,16 +73,16 @@ def load_vocabulary(basedir, bus, skill_id):
     """Load vocabulary from all files in the specified directory.
 
     Args:
-        basedir (str): path of directory to load from
+        basedir (str): path of directory to load from (will recurse)
         bus (messagebus emitter): messagebus instance used to send the vocab to
                                   the intent service
         skill_id: skill the data belongs to
     """
-    for vocab_file in listdir(basedir):
-        if vocab_file.endswith(".voc"):
-            vocab_type = to_alnum(skill_id) + splitext(vocab_file)[0]
-            load_vocab_from_file(
-                join(basedir, vocab_file), vocab_type, bus)
+    for path, _, files in walk(basedir):
+        for f in files:
+            if f.endswith(".voc"):
+                vocab_type = to_alnum(skill_id) + splitext(f)[0]
+                load_vocab_from_file(join(basedir, path, f), vocab_type, bus)
 
 
 def load_regex(basedir, bus, skill_id):
@@ -94,9 +94,10 @@ def load_regex(basedir, bus, skill_id):
                                   the intent service
         skill_id (str): skill identifier
     """
-    for regex_type in listdir(basedir):
-        if regex_type.endswith(".rx"):
-            load_regex_from_file(join(basedir, regex_type), bus, skill_id)
+    for path, _, files in walk(basedir):
+        for f in files:
+            if f.endswith(".rx"):
+                load_regex_from_file(join(basedir, path, f), bus, skill_id)
 
 
 def to_alnum(skill_id):
