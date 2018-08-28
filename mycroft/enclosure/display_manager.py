@@ -153,11 +153,12 @@ def init_display_manager_bus_connection():
 
     # Should remove needs to be an object so it can be referenced in functions
     # [https://stackoverflow.com/questions/986006/how-do-i-pass-a-variable-by-reference]
+    display_manager = DisplayManager()
     should_remove = [True]
 
     def check_flag(flag):
         if flag[0] is True:
-            remove_active()
+            display_manager.remove_active()
 
     def set_delay(event=None):
         should_remove[0] = True
@@ -172,10 +173,10 @@ def init_display_manager_bus_connection():
     def remove_wake_word():
         data = _read_data()
         if "active_skill" in data and data["active_skill"] == "wakeword":
-            remove_active()
+            display_manager.remove_active()
 
     def set_wakeword_skill(event=None):
-        set_active("wakeword")
+        display_manager.set_active("wakeword")
         Timer(10, remove_wake_word).start()
 
     bus = WebsocketClient()

@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 import time
+from PIL import Image
 
 
 class EnclosureMouth:
@@ -37,6 +38,7 @@ class EnclosureMouth:
         self.bus.on('enclosure.mouth.viseme', self.viseme)
         self.bus.on('enclosure.mouth.text', self.text)
         self.bus.on('enclosure.mouth.display', self.display)
+        self.bus.on('enclosure.mouth.display_image', self.display_image)
         self.bus.on('enclosure.weather.display', self.display_weather)
 
     def reset(self, event=None):
@@ -70,23 +72,22 @@ class EnclosureMouth:
             text = event.data.get("text", text)
         self.writer.write("mouth.text=" + text)
 
-    def display(self, event=None):
-        code = ""
-        xOffset = ""
-        yOffset = ""
-        clearPrevious = ""
-        if event and event.data:
-            code = event.data.get("img_code", code)
-            xOffset = int(event.data.get("xOffset", xOffset))
-            yOffset = int(event.data.get("yOffset", yOffset))
-            clearPrevious = event.data.get("clearPrev", clearPrevious)
+    def __display(self, code, clear_previous, x_offset, y_offset):
+        """ Write the encoded image to enclosure screen.
 
-        clearPrevious = int(str(clearPrevious) == "True")
-        clearPrevious = "cP=" + str(clearPrevious) + ","
-        x_offset = "x=" + str(xOffset) + ","
-        y_offset = "y=" + str(yOffset) + ","
+        Arguments:
+            code (str):           encoded image to display
+            clean_previous (str): if "True" will clear the screen before
+                                  drawing.
+            x_offset (int):       x direction offset
+            y_offset (int):       y direction offset
+        """
+        clear_previous = int(str(clear_previous) == "True")
+        clear_previous = "cP=" + str(clear_previous) + ","
+        x_offset = "x=" + str(x_offset) + ","
+        y_offset = "y=" + str(y_offset) + ","
 
-        message = "mouth.icon=" + x_offset + y_offset + clearPrevious + code
+        message = "mouth.icon=" + x_offset + y_offset + clear_previous + code
         # Check if message exceeds Arduino's serial buffer input limit 64 bytes
         if len(message) > 60:
             message1 = message[:31]
@@ -100,6 +101,136 @@ class EnclosureMouth:
         else:
             time.sleep(0.1)
             self.writer.write(message)
+
+    def display(self, event=None):
+        """ Display a Mark-1 specific code.
+        Arguments:
+            event (Message): messagebus message with data to display
+        """
+        code = ""
+        x_offset = ""
+        y_offset = ""
+        clear_previous = ""
+        if event and event.data:
+            code = event.data.get("img_code", code)
+            x_offset = int(event.data.get("xOffset", xOffset))
+            y_offset = int(event.data.get("yOffset", yOffset))
+            clear_previous = event.data.get("clearPrev", clearPrevious)
+            self.__display(code, clear_previous, x_offset, y_offset)
+
+    def display_image(self, event=None):
+        """ Display an image on the enclosure.
+
+        The method uses PIL to convert the image supplied into a code
+        suitable for the Mark-1 display.
+
+        Arguments:
+            event (Message): messagebus message with data to display
+        """
+        if not event:
+            return
+
+        image_absolute_path = event.data['img_path']
+        refresh = event.data['clearPrev']
+        invert = event.data['invert']
+        x_offset = event.data['xOffset']
+        y_offset = event.data['yOffset']
+        threshold = event.data.get('threshold', 70)  # default threshold
+        # to understand how this funtion works you need to understand how the
+        # Mark I arduino proprietary encoding works to display to the faceplate
+        img = Image.open(image_absolute_path).convert("RGBA")
+        img2 = Image.new('RGBA', img.size, (255, 255, 255))
+        width = img.size[0]
+        height = img.size[1]
+
+        # strips out alpha value and blends it with the RGB values
+        img = Image.alpha_composite(img2, img)
+        img = img.convert("L")
+
+        # crop image to only allow a max width of 16
+        if width > 32:
+            img = img.crop((0, 0, 32, height))
+            width = img.size[0]
+            height = img.size[1]
+
+        # crop the image to limit the max height of 8
+        if height > 8:
+            img = img.crop((0, 0, width, 8))
+            width = img.size[0]
+            height = img.size[1]
+
+        encode = ""
+
+        # Each char value represents a width number starting with B=1
+        # then increment 1 for the next. ie C=2
+        width_codes = ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
+                       'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W',
+                       'X', 'Y', 'Z', '[', '\\', ']', '^', '_', '`', 'a']
+
+        height_codes = ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']
+
+        encode += width_codes[width - 1]
+        encode += height_codes[height - 1]
+        # Turn the image pixels into binary values 1's and 0's
+        # the Mark I face plate encoding uses binary values to
+        # binary_values returns a list of 1's and 0s'. ie ['1', '1', '0', ...]
+        binary_values = []
+        for i in range(width):
+            for j in range(height):
+                if img.getpixel((i, j)) < threshold:
+                    if invert is False:
+                        binary_values.append('1')
+                    else:
+                        binary_values.append('0')
+                else:
+                    if invert is False:
+                        binary_values.append('0')
+                    else:
+                        binary_values.append('1')
+
+        # these values are used to determine how binary values
+        # needs to be grouped together
+        number_of_top_pixel = 0
+        number_of_bottom_pixel = 0
+
+        if height > 4:
+            number_of_top_pixel = 4
+            number_of_bottom_pixel = height - 4
+        else:
+            number_of_top_pixel = height
+
+        # this loop will group together the individual binary values
+        # ie. binary_list = ['1111', '001', '0101', '100']
+        binary_list = []
+        binary_code = ''
+        increment = 0
+        alternate = False
+        for val in binary_values:
+            binary_code += val
+            increment += 1
+            if increment == number_of_top_pixel and alternate is False:
+                # binary code is reversed for encoding
+                binary_list.append(binary_code[::-1])
+                increment = 0
+                binary_code = ''
+                alternate = True
+            elif increment == number_of_bottom_pixel and alternate is True:
+                binary_list.append(binary_code[::-1])
+                increment = 0
+                binary_code = ''
+                alternate = False
+
+        # Code to let the Makrk I arduino know where to place the
+        # pixels on the faceplate
+        pixel_codes = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
+                       'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P']
+
+        for binary_values in binary_list:
+            number = int(binary_values, 2)
+            pixel_code = pixel_codes[number]
+            encode += pixel_code
+
+        self.__display(encode, refresh, x_offset, y_offset)
 
     def display_weather(self, event=None):
         if event and event.data:
