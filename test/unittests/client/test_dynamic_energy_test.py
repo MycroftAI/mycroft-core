@@ -59,7 +59,7 @@ class DynamicEnergytest(unittest.TestCase):
 
         source = MockSource()
 
-        for i in xrange(100):
+        for i in range(100):
             source.stream.inject(low_base)
 
         source.stream.inject(higher_base)
