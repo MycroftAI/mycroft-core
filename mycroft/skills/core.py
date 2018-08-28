@@ -520,7 +520,8 @@ class MycroftSkill(object):
         Looks for all functions that have been marked by a decorator
         and read the intent data from them
         """
-        for attr_name in dir(self):
+        attributes = [a for a in dir(self) if not a == 'emitter']
+        for attr_name in attributes:
             method = getattr(self, attr_name)
 
             if hasattr(method, 'intents'):

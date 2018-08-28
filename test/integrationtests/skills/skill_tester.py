@@ -310,7 +310,7 @@ class SkillTest(object):
         # and be handled one by one. We cant make assumptions about threading
         # in the core or the skill
         q = Queue()
-        s.emitter.q = q
+        s.bus.q = q
 
         # Set up context before calling intent
         # This option makes it possible to better isolate (reduce dependance)
@@ -360,7 +360,7 @@ class SkillTest(object):
                 break
 
         # Stop emmiter from sending on queue
-        s.emitter.q = None
+        s.bus.q = None
 
         # remove the skill which is not responding
         self.emitter.remove_all_listeners('speak')
