@@ -577,7 +577,7 @@ class MycroftSkill(object):
         root_path = join(self.root_dir, 'locale', self.lang)
         for path, _, files in os.walk(root_path):
             if res_name in files:
-                return join(root_path, path, res_name)
+                return join(path, res_name)
 
         # Not found
         return None

@@ -120,7 +120,7 @@ class DialogLoader(object):
                 if f.endswith(".dialog"):
                     self.__renderer.load_template_file(
                         f.replace('.dialog', ''),
-                        join(directory, path, f))
+                        join(path, f))
         return self.__renderer
 
 
