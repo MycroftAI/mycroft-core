@@ -82,7 +82,7 @@ def load_vocabulary(basedir, bus, skill_id):
         for f in files:
             if f.endswith(".voc"):
                 vocab_type = to_alnum(skill_id) + splitext(f)[0]
-                load_vocab_from_file(join(basedir, path, f), vocab_type, bus)
+                load_vocab_from_file(join(path, f), vocab_type, bus)
 
 
 def load_regex(basedir, bus, skill_id):
@@ -97,7 +97,7 @@ def load_regex(basedir, bus, skill_id):
     for path, _, files in walk(basedir):
         for f in files:
             if f.endswith(".rx"):
-                load_regex_from_file(join(basedir, path, f), bus, skill_id)
+                load_regex_from_file(join(path, f), bus, skill_id)
 
 
 def to_alnum(skill_id):
