@@ -18,6 +18,7 @@ from time import sleep
 from mycroft.audio.services import AudioBackend
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
+from mycroft.util import play_mp3, play_ogg, play_wav
 import mimetypes
 from requests import Session
 
@@ -83,27 +84,30 @@ class SimpleAudioService(AudioBackend):
         else:  # Assume string
             track = self.tracks[self.index]
             mime = find_mime(track)
-            print('MIME: ' + str(mime))
         # Indicate to audio service which track is being played
         if self._track_start_callback:
             self._track_start_callback(track)
 
         # Replace file:// uri's with normal paths
         track = track.replace('file://', '')
-        proc = None
-        if 'mpeg' in mime[1]:
-            proc = 'mpg123'
-        elif 'ogg' in mime[1]:
-            proc = 'ogg123'
-        elif 'wav' in mime[1]:
-            proc = 'aplay'
-        else:
-            proc = 'mpg123'  # If no mime info could be determined gues mp3
-        if proc:
-            self.process = subprocess.Popen([proc, track])
-            # Wait for completion or stop request
-            while self.process.poll() is None and not self._stop_signal:
-                sleep(0.25)
+        try:
+            if 'mpeg' in mime[1]:
+                self.process = play_mp3(track)
+            elif 'ogg' in mime[1]:
+                self.process = play_ogg(track)
+            elif 'wav' in mime[1]:
+                self.process = play_wav(track)
+            else:
+                # If no mime info could be determined guess mp3
+                self.process = play_mp3(track)
+        except FileNotFoundError as e:
+            LOG.error('Couldn\'t play audio, {}'.format(repr(e)))
+            self.process = None
+
+        # Wait for completion or stop request
+        while (self.process and self.process.poll() is None and
+                not self._stop_signal):
+            sleep(0.25)
 
         if self._stop_signal:
             self.process.terminate()
