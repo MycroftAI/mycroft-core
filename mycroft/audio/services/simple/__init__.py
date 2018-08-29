@@ -29,7 +29,7 @@ def find_mime(path):
         if 200 <= response.status_code < 300:
             mime = response.headers['content-type']
     if not mime:
-        mime = mimetypes.guess_mime(path)[0]
+        mime = mimetypes.guess_type(path)[0]
 
     if mime:
         return mime.split('/')
