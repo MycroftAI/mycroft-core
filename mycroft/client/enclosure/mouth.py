@@ -113,9 +113,9 @@ class EnclosureMouth:
         clear_previous = ""
         if event and event.data:
             code = event.data.get("img_code", code)
-            x_offset = int(event.data.get("xOffset", xOffset))
-            y_offset = int(event.data.get("yOffset", yOffset))
-            clear_previous = event.data.get("clearPrev", clearPrevious)
+            x_offset = int(event.data.get("xOffset", x_offset))
+            y_offset = int(event.data.get("yOffset", y_offset))
+            clear_previous = event.data.get("clearPrev", clear_previous)
             self.__display(code, clear_previous, x_offset, y_offset)
 
     def display_image(self, event=None):
