@@ -28,7 +28,7 @@ from mycroft.util.log import LOG
 class PadatiousService(FallbackSkill):
     instance = None
 
-    def __init__(self, emitter, service):
+    def __init__(self, bus, service):
         FallbackSkill.__init__(self)
         if not PadatiousService.instance:
             PadatiousService.instance = self
@@ -50,11 +50,11 @@ class PadatiousService(FallbackSkill):
 
         self.container = IntentContainer(intent_cache)
 
-        self.emitter = emitter
-        self.emitter.on('padatious:register_intent', self.register_intent)
-        self.emitter.on('padatious:register_entity', self.register_entity)
-        self.emitter.on('detach_intent', self.handle_detach_intent)
-        self.emitter.on('mycroft.skills.initialized', self.train)
+        self.bus = bus
+        self.bus.on('padatious:register_intent', self.register_intent)
+        self.bus.on('padatious:register_entity', self.register_entity)
+        self.bus.on('detach_intent', self.handle_detach_intent)
+        self.bus.on('mycroft.skills.initialized', self.train)
         self.register_fallback(self.handle_fallback, 5)
         self.finished_training_event = Event()
         self.finished_initial_train = False
@@ -126,7 +126,7 @@ class PadatiousService(FallbackSkill):
 
         self.service.add_active_skill(data.name.split(':')[0])
 
-        self.emitter.emit(message.reply(data.name, data=data.matches))
+        self.bus.emit(message.reply(data.name, data=data.matches))
         return True
 
     def calc_intent(self, utt):

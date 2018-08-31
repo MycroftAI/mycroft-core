@@ -11,31 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
-from mycroft.audio.services import AudioBackend
 
-
-class WorkingBackend(AudioBackend):
-    def __init__(self, config, bus, name='Working'):
-        super(WorkingBackend, self).__init__(config, bus)
-        self.name = name
-
-    def supported_uris(self):
-        return ['file', 'http']
-
-    def add_list(self, tracks):
-        pass
-
-    def clear_list(self):
-        pass
-
-    def play(self):
-        pass
-
-    def stop(self):
-        pass
-
-
-def load_service(base_config, bus):
-    instances = [WorkingBackend(base_config, bus)]
-    return instances
+from .api import EnclosureAPI
+from .display_manager import DisplayManager

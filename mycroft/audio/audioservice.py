@@ -11,26 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
-"""
-    Mycroft audio service.
 
-    This handles playback of audio and speech
-"""
 import imp
 import sys
 import time
 from os import listdir
+from os.path import abspath, dirname, basename, isdir, join
 from threading import Lock
 
-from os.path import abspath, dirname, basename, isdir, join
-
-import mycroft.audio.speech as speech
 from mycroft.configuration import Configuration
-from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
-from mycroft.util import reset_sigint_handler, wait_for_exit_signal, \
-    create_daemon, create_echo_function, check_for_signal
 from mycroft.util.log import LOG
 
 try:
@@ -93,13 +83,13 @@ def get_services(services_folder):
     return sorted(services, key=lambda p: p.get('name'))
 
 
-def load_services(config, ws, path=None):
+def load_services(config, bus, path=None):
     """
         Search though the service directory and load any services.
 
         Args:
             config: configuration dict for the audio backends.
-            ws: websocket object for communication.
+            bus: Mycroft messagebus
 
         Returns:
             List of started services.
@@ -121,13 +111,13 @@ def load_services(config, ws, path=None):
         if (hasattr(service_module, 'autodetect') and
                 callable(service_module.autodetect)):
             try:
-                s = service_module.autodetect(config, ws)
+                s = service_module.autodetect(config, bus)
                 service += s
             except Exception as e:
                 LOG.error('Failed to autodetect. ' + repr(e))
         if hasattr(service_module, 'load_service'):
             try:
-                s = service_module.load_service(config, ws)
+                s = service_module.load_service(config, bus)
                 service += s
             except Exception as e:
                 LOG.error('Failed to load service. ' + repr(e))
@@ -141,12 +131,12 @@ class AudioService(object):
         to be played.
     """
 
-    def __init__(self, ws):
+    def __init__(self, bus):
         """
             Args:
-                ws: Websocket instance to use
+                bus: Mycroft messagebus
         """
-        self.ws = ws
+        self.bus = bus
         self.config = Configuration.get().get("Audio")
         self.service_lock = Lock()
 
@@ -161,7 +151,7 @@ class AudioService(object):
         self.muted_sinks = []
         # Setup control of pulse audio
         self.setup_pulseaudio_handlers(self.config.get('pulseaudio'))
-        ws.once('open', self.load_services_callback)
+        bus.once('open', self.load_services_callback)
 
     def load_services_callback(self):
         """
@@ -170,7 +160,7 @@ class AudioService(object):
             subsystem.
         """
 
-        self.service = load_services(self.config, self.ws)
+        self.service = load_services(self.config, self.bus)
         # Register end of track callback
         for s in self.service:
             s.set_track_start_callback(self.track_start)
@@ -188,26 +178,26 @@ class AudioService(object):
             LOG.info('no default found')
 
         # Setup event handlers
-        self.ws.on('mycroft.audio.service.play', self._play)
-        self.ws.on('mycroft.audio.service.queue', self._queue)
-        self.ws.on('mycroft.audio.service.pause', self._pause)
-        self.ws.on('mycroft.audio.service.resume', self._resume)
-        self.ws.on('mycroft.audio.service.stop', self._stop)
-        self.ws.on('mycroft.audio.service.next', self._next)
-        self.ws.on('mycroft.audio.service.prev', self._prev)
-        self.ws.on('mycroft.audio.service.track_info', self._track_info)
-        self.ws.on('recognizer_loop:audio_output_start', self._lower_volume)
-        self.ws.on('recognizer_loop:record_begin', self._lower_volume)
-        self.ws.on('recognizer_loop:audio_output_end', self._restore_volume)
-        self.ws.on('recognizer_loop:record_end', self._restore_volume)
+        self.bus.on('mycroft.audio.service.play', self._play)
+        self.bus.on('mycroft.audio.service.queue', self._queue)
+        self.bus.on('mycroft.audio.service.pause', self._pause)
+        self.bus.on('mycroft.audio.service.resume', self._resume)
+        self.bus.on('mycroft.audio.service.stop', self._stop)
+        self.bus.on('mycroft.audio.service.next', self._next)
+        self.bus.on('mycroft.audio.service.prev', self._prev)
+        self.bus.on('mycroft.audio.service.track_info', self._track_info)
+        self.bus.on('recognizer_loop:audio_output_start', self._lower_volume)
+        self.bus.on('recognizer_loop:record_begin', self._lower_volume)
+        self.bus.on('recognizer_loop:audio_output_end', self._restore_volume)
+        self.bus.on('recognizer_loop:record_end', self._restore_volume)
 
     def track_start(self, track):
         """
             Callback method called from the services to indicate start of
             playback of a track.
         """
-        self.ws.emit(Message('mycroft.audio.playing_track',
-                             data={'track': track}))
+        self.bus.emit(Message('mycroft.audio.playing_track',
+                              data={'track': track}))
 
     def _pause(self, message=None):
         """
@@ -264,8 +254,8 @@ class AudioService(object):
             if self.current:
                 name = self.current.name
                 if self.current.stop():
-                    self.ws.emit(Message("mycroft.stop.handled",
-                                         {"by": "audio:" + name}))
+                    self.bus.emit(Message("mycroft.stop.handled",
+                                          {"by": "audio:" + name}))
 
                 self.current = None
 
@@ -354,7 +344,12 @@ class AudioService(object):
                                   the tracks.
         """
         self._stop()
-        uri_type = tracks[0].split(':')[0]
+
+        if isinstance(tracks[0], str):
+            uri_type = tracks[0].split(':')[0]
+        else:
+            uri_type = tracks[0][0].split(':')[0]
+
         # check if user requested a particular service
         if prefered_service and uri_type in prefered_service.supported_uris():
             selected_service = prefered_service
@@ -372,6 +367,8 @@ class AudioService(object):
             else:
                 LOG.info('No service found for uri_type: ' + uri_type)
                 return
+        if not selected_service.supports_mime_hints:
+            tracks = [t[0] if isinstance(t, list) else t for t in tracks]
         selected_service.clear_list()
         selected_service.add_list(tracks)
         selected_service.play()
@@ -417,8 +414,8 @@ class AudioService(object):
             track_info = self.current.track_info()
         else:
             track_info = {}
-        self.ws.emit(Message('mycroft.audio.service.track_info_reply',
-                             data=track_info))
+        self.bus.emit(Message('mycroft.audio.service.track_info_reply',
+                              data=track_info))
 
     def setup_pulseaudio_handlers(self, pulse_choice=None):
         """
@@ -446,41 +443,18 @@ class AudioService(object):
                 LOG.error('shutdown of ' + s.name + ' failed: ' + repr(e))
 
         # remove listeners
-        self.ws.remove('mycroft.audio.service.play', self._play)
-        self.ws.remove('mycroft.audio.service.queue', self._queue)
-        self.ws.remove('mycroft.audio.service.pause', self._pause)
-        self.ws.remove('mycroft.audio.service.resume', self._resume)
-        self.ws.remove('mycroft.audio.service.stop', self._stop)
-        self.ws.remove('mycroft.audio.service.next', self._next)
-        self.ws.remove('mycroft.audio.service.prev', self._prev)
-        self.ws.remove('mycroft.audio.service.track_info', self._track_info)
-        self.ws.remove('recognizer_loop:audio_output_start',
-                       self._lower_volume)
-        self.ws.remove('recognizer_loop:record_begin', self._lower_volume)
-        self.ws.remove('recognizer_loop:audio_output_end',
-                       self._restore_volume)
-        self.ws.remove('recognizer_loop:record_end', self._restore_volume)
-        self.ws.remove('mycroft.stop', self._stop)
-
-
-def main():
-    """ Main function. Run when file is invoked. """
-    reset_sigint_handler()
-    check_for_signal("isSpeaking")
-    ws = WebsocketClient()
-    Configuration.init(ws)
-    speech.init(ws)
-
-    LOG.info("Starting Audio Services")
-    ws.on('message', create_echo_function('AUDIO', ['mycroft.audio.service']))
-    audio = AudioService(ws)  # Connect audio service instance to message bus
-    create_daemon(ws.run_forever)
-
-    wait_for_exit_signal()
-
-    speech.shutdown()
-    audio.shutdown()
-
-
-if __name__ == "__main__":
-    main()
+        self.bus.remove('mycroft.audio.service.play', self._play)
+        self.bus.remove('mycroft.audio.service.queue', self._queue)
+        self.bus.remove('mycroft.audio.service.pause', self._pause)
+        self.bus.remove('mycroft.audio.service.resume', self._resume)
+        self.bus.remove('mycroft.audio.service.stop', self._stop)
+        self.bus.remove('mycroft.audio.service.next', self._next)
+        self.bus.remove('mycroft.audio.service.prev', self._prev)
+        self.bus.remove('mycroft.audio.service.track_info', self._track_info)
+        self.bus.remove('recognizer_loop:audio_output_start',
+                        self._lower_volume)
+        self.bus.remove('recognizer_loop:record_begin', self._lower_volume)
+        self.bus.remove('recognizer_loop:audio_output_end',
+                        self._restore_volume)
+        self.bus.remove('recognizer_loop:record_end', self._restore_volume)
+        self.bus.remove('mycroft.stop', self._stop)

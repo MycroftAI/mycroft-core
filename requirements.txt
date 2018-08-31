@@ -11,7 +11,6 @@ websocket-client==0.32.0
 futures==3.0.3
 future==0.16.0
 requests-futures==0.9.5
-parsedatetime==1.5
 pyyaml==3.11
 pyalsaaudio==0.8.2
 xmlrunner==1.7.7
@@ -26,8 +25,8 @@ python-vlc==1.1.2
 pulsectl==17.7.4
 google-api-python-client==1.6.4
 
-msm==0.5.18
-msk==0.3.10
+msm==0.5.19
+msk==0.3.11
 adapt-parser==0.3.0
 padatious==0.4.5
 fann2==1.0.7

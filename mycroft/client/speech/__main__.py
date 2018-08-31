@@ -15,7 +15,7 @@
 from threading import Lock
 
 from mycroft import dialog
-from mycroft.client.enclosure.api import EnclosureAPI
+from mycroft.enclosure.api import EnclosureAPI
 from mycroft.client.speech.listener import RecognizerLoop
 from mycroft.configuration import Configuration
 from mycroft.identity import IdentityManager
@@ -26,35 +26,35 @@ from mycroft.util import create_daemon, wait_for_exit_signal, \
     reset_sigint_handler
 from mycroft.util.log import LOG
 
-ws = None
+bus = None  # Mycroft messagebus connection
 lock = Lock()
 loop = None
 
 
 def handle_record_begin():
     LOG.info("Begin Recording...")
-    ws.emit(Message('recognizer_loop:record_begin'))
+    bus.emit(Message('recognizer_loop:record_begin'))
 
 
 def handle_record_end():
     LOG.info("End Recording...")
-    ws.emit(Message('recognizer_loop:record_end'))
+    bus.emit(Message('recognizer_loop:record_end'))
 
 
 def handle_no_internet():
     LOG.debug("Notifying enclosure of no internet connection")
-    ws.emit(Message('enclosure.notify.no_internet'))
+    bus.emit(Message('enclosure.notify.no_internet'))
 
 
 def handle_awoken():
     """ Forward mycroft.awoken to the messagebus. """
     LOG.info("Listener is now Awake: ")
-    ws.emit(Message('mycroft.awoken'))
+    bus.emit(Message('mycroft.awoken'))
 
 
 def handle_wakeword(event):
     LOG.info("Wakeword Detected: " + event['utterance'])
-    ws.emit(Message('recognizer_loop:wakeword', event))
+    bus.emit(Message('recognizer_loop:wakeword', event))
 
 
 def handle_utterance(event):
@@ -63,24 +63,24 @@ def handle_utterance(event):
     if 'ident' in event:
         ident = event.pop('ident')
         context['ident'] = ident
-    ws.emit(Message('recognizer_loop:utterance', event, context))
+    bus.emit(Message('recognizer_loop:utterance', event, context))
 
 
 def handle_unknown():
-    ws.emit(Message('mycroft.speech.recognition.unknown'))
+    bus.emit(Message('mycroft.speech.recognition.unknown'))
 
 
 def handle_speak(event):
     """
         Forward speak message to message bus.
     """
-    ws.emit(Message('speak', event))
+    bus.emit(Message('speak', event))
 
 
 def handle_complete_intent_failure(event):
     LOG.info("Failed to find intent.")
     data = {'utterance': dialog.get('not.loaded')}
-    ws.emit(Message('speak', data))
+    bus.emit(Message('speak', data))
 
 
 def handle_sleep(event):
@@ -104,7 +104,7 @@ def handle_mic_get_status(event):
         Query microphone mute status.
     """
     data = {'muted': loop.is_muted()}
-    ws.emit(event.response(data))
+    bus.emit(event.response(data))
 
 
 def handle_paired(event):
@@ -136,16 +136,18 @@ def handle_stop(event):
 def handle_open():
     # TODO: Move this into the Enclosure (not speech client)
     # Reset the UI to indicate ready for speech processing
-    EnclosureAPI(ws).reset()
+    EnclosureAPI(bus).reset()
 
 
 def main():
-    global ws
+    global bus
     global loop
     reset_sigint_handler()
     PIDLock("voice")
-    ws = WebsocketClient()
-    Configuration.init(ws)
+    bus = WebsocketClient()  # Mycroft messagebus, see mycroft.messagebus
+    Configuration.init(bus)
+
+    # Register handlers on internal RecognizerLoop bus
     loop = RecognizerLoop()
     loop.on('recognizer_loop:utterance', handle_utterance)
     loop.on('recognizer_loop:speech.recognition.unknown', handle_unknown)
@@ -155,19 +157,21 @@ def main():
     loop.on('recognizer_loop:wakeword', handle_wakeword)
     loop.on('recognizer_loop:record_end', handle_record_end)
     loop.on('recognizer_loop:no_internet', handle_no_internet)
-    ws.on('open', handle_open)
-    ws.on('complete_intent_failure', handle_complete_intent_failure)
-    ws.on('recognizer_loop:sleep', handle_sleep)
-    ws.on('recognizer_loop:wake_up', handle_wake_up)
-    ws.on('mycroft.mic.mute', handle_mic_mute)
-    ws.on('mycroft.mic.unmute', handle_mic_unmute)
-    ws.on('mycroft.mic.get_status', handle_mic_get_status)
-    ws.on("mycroft.paired", handle_paired)
-    ws.on('recognizer_loop:audio_output_start', handle_audio_start)
-    ws.on('recognizer_loop:audio_output_end', handle_audio_end)
-    ws.on('mycroft.stop', handle_stop)
 
-    create_daemon(ws.run_forever)
+    # Register handlers for events on main Mycroft messagebus
+    bus.on('open', handle_open)
+    bus.on('complete_intent_failure', handle_complete_intent_failure)
+    bus.on('recognizer_loop:sleep', handle_sleep)
+    bus.on('recognizer_loop:wake_up', handle_wake_up)
+    bus.on('mycroft.mic.mute', handle_mic_mute)
+    bus.on('mycroft.mic.unmute', handle_mic_unmute)
+    bus.on('mycroft.mic.get_status', handle_mic_get_status)
+    bus.on("mycroft.paired", handle_paired)
+    bus.on('recognizer_loop:audio_output_start', handle_audio_start)
+    bus.on('recognizer_loop:audio_output_end', handle_audio_end)
+    bus.on('mycroft.stop', handle_stop)
+
+    create_daemon(bus.run_forever)
     create_daemon(loop.run)
 
     wait_for_exit_signal()

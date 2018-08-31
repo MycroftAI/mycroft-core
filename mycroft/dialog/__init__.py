@@ -17,6 +17,8 @@ from io import open
 
 import os
 import re
+from pathlib import Path
+from os.path import join
 
 from mycroft.util import resolve_resource_file
 from mycroft.util.log import LOG
@@ -60,7 +62,8 @@ class MustacheDialogRenderer(object):
 
     def render(self, template_name, context=None, index=None):
         """
-        Given a template name, pick a template and render it using the context
+        Given a template name, pick a template and render it using the context.
+        If no matching template exists use template_name as template.
 
         Args:
             template_name (str): the name of a template group.
@@ -70,14 +73,15 @@ class MustacheDialogRenderer(object):
 
         Returns:
             str: the rendered string
-
-        Raises:
-            NotImplementedError: if no template can be found identified by
-                template_name
         """
         context = context or {}
         if template_name not in self.templates:
-            raise NotImplementedError("Template not found: %s" % template_name)
+            # When not found, return the name itself as the dialog
+            # This allows things like render("record.not.found") to either
+            # find a translation file "record.not.found.dialog" or return
+            # "record not found" literal.
+            return template_name.replace(".", " ")
+
         template_functions = self.templates.get(template_name)
         if index is None:
             index = random.randrange(len(template_functions))
@@ -106,17 +110,17 @@ class DialogLoader(object):
         Returns:
             a loaded instance of a dialog renderer
         """
-        if not os.path.exists(dialog_dir) or not os.path.isdir(dialog_dir):
-            LOG.warning("No dialog found: " + dialog_dir)
+        directory = Path(dialog_dir)
+        if not directory.exists() or not directory.is_dir():
+            LOG.warning("No dialog files found: " + dialog_dir)
             return self.__renderer
 
-        for f in sorted(
-                filter(lambda x: os.path.isfile(
-                    os.path.join(dialog_dir, x)), os.listdir(dialog_dir))):
-            dialog_entry_name = os.path.splitext(f)[0]
-            self.__renderer.load_template_file(
-                dialog_entry_name, os.path.join(dialog_dir, f))
-
+        for path, _, files in os.walk(str(directory)):
+            for f in files:
+                if f.endswith(".dialog"):
+                    self.__renderer.load_template_file(
+                        f.replace('.dialog', ''),
+                        join(path, f))
         return self.__renderer
 
 

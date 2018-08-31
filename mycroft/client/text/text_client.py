@@ -18,19 +18,6 @@ from math import ceil
 
 from mycroft.tts import TTS
 
-
-def custom_except_hook(exctype, value, traceback):           # noqa
-    print(sys.stdout.getvalue(), file=sys.__stdout__)        # noqa
-    print(sys.stderr.getvalue(), file=sys.__stderr__)        # noqa
-    sys.stdout, sys.stderr = sys.__stdout__, sys.__stderr__  # noqa
-    sys.__excepthook__(exctype, value, traceback)            # noqa
-
-
-sys.excepthook = custom_except_hook  # noqa
-
-sys.stdout = io.StringIO()  # noqa
-sys.stderr = io.StringIO()  # noqa
-
 import os
 import os.path
 import time
@@ -41,7 +28,6 @@ import mycroft.version
 from threading import Thread, Lock
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
-from mycroft.util import get_ipc_directory
 from mycroft.util.log import LOG
 
 import locale
@@ -50,12 +36,11 @@ import locale
 locale.setlocale(locale.LC_ALL, "")  # Set LC_ALL to user default
 preferred_encoding = locale.getpreferredencoding()
 
-ws = None
-utterances = []
+bSimple = False
+bus = None  # Mycroft messagebus connection
 history = []
 chat = []   # chat history, oldest at the lowest index
 line = ""
-bSimple = '--simple' in sys.argv
 scr = None
 log_line_offset = 0  # num lines back in logs to show
 log_line_lr_scroll = 0  # amount to scroll left/right for long lines
@@ -84,7 +69,11 @@ meter_peak = 20
 meter_cur = -1
 meter_thresh = -1
 
-screen_mode = 0   # 0 = main, 1 = help, others in future?
+SCR_MAIN = 0
+SCR_HELP = 1
+SCR_SKILLS = 2
+screen_mode = SCR_MAIN
+
 subscreen = 0     # for help pages, etc.
 FULL_REDRAW_FREQUENCY = 10    # seconds between full redraws
 last_full_redraw = time.time()-(FULL_REDRAW_FREQUENCY-1)  # seed for 1s redraw
@@ -305,11 +294,12 @@ class ScreenDrawThread(Thread):
                     with screen_lock:
                         is_screen_dirty = False
 
-                        if screen_mode == 0:
+                        if screen_mode == SCR_MAIN:
                             with log_lock:
                                 do_draw_main(scr)
-                        elif screen_mode == 1:
+                        elif screen_mode == SCR_HELP:
                             do_draw_help(scr)
+
             finally:
                 time.sleep(0.01)
 
@@ -401,7 +391,7 @@ def handle_utterance(event):
 
 def connect():
     # Once the websocket has connected, just watch it for speak events
-    ws.run_forever()
+    bus.run_forever()
 
 
 ##############################################################################
@@ -846,8 +836,8 @@ def show_help():
     global screen_mode
     global subscreen
 
-    if screen_mode != 1:
-        screen_mode = 1
+    if screen_mode != SCR_HELP:
+        screen_mode = SCR_HELP
         subscreen = 0
         set_screen_dirty()
 
@@ -856,10 +846,10 @@ def show_next_help():
     global screen_mode
     global subscreen
 
-    if screen_mode == 1:
+    if screen_mode == SCR_HELP:
         subscreen += 1
         if subscreen >= num_help_pages():
-            screen_mode = 0
+            screen_mode = SCR_MAIN
         set_screen_dirty()
 
 
@@ -869,8 +859,6 @@ def show_next_help():
 def show_skills(skills):
     """
         Show list of loaded skills in as many column as necessary
-
-        TODO: Handle multiscreen
     """
     global scr
     global screen_mode
@@ -878,23 +866,41 @@ def show_skills(skills):
     if not scr:
         return
 
-    screen_mode = 1  # showing help (prevents overwrite by log updates)
-    scr.erase()
-    scr.addstr(0, 0, center(25) + "Loaded skills", CLR_CMDLINE)
-    scr.addstr(1, 1, "=" * (curses.COLS - 2), CLR_CMDLINE)
+    screen_mode = SCR_SKILLS
+
     row = 2
     column = 0
+
+    def prepare_page():
+        global scr
+        nonlocal row
+        nonlocal column
+        scr.erase()
+        scr.addstr(0, 0, center(25) + "Loaded skills", CLR_CMDLINE)
+        scr.addstr(1, 1, "=" * (curses.COLS - 2), CLR_CMDLINE)
+        row = 2
+        column = 0
+
+    prepare_page()
     col_width = 0
-    for skill in sorted(skills.keys()):
+    skill_names = sorted(skills.keys())
+    for skill in skill_names:
         if skills[skill]['active']:
             color = curses.color_pair(4)
         else:
             color = curses.color_pair(2)
 
-        scr.addstr(row, column,  "  {}".format(skill), color)
+        scr.addstr(row, column, "  {}".format(skill), color)
         row += 1
         col_width = max(col_width, len(skill))
-        if row == 21:
+        if row == curses.LINES - 2 and column > 0 and skill != skill_names[-1]:
+            column = 0
+            scr.addstr(curses.LINES - 1, 0,
+                       center(23) + "Press any key to continue", CLR_HEADING)
+            scr.refresh()
+            scr.get_wch()  # blocks
+            prepare_page()
+        elif row == curses.LINES - 2:
             # Reached bottom of screen, start at top and move output to a
             # New column
             row = 2
@@ -904,9 +910,8 @@ def show_skills(skills):
                 # End of screen
                 break
 
-    scr.addstr(curses.LINES - 1, 0,  center(23) + "Press any key to return",
+    scr.addstr(curses.LINES - 1, 0, center(23) + "Press any key to return",
                CLR_HEADING)
-
     scr.refresh()
 
 
@@ -994,25 +999,25 @@ def handle_cmd(cmd):
         cy_chat_area = lines
     elif "skills" in cmd:
         # List loaded skill
-        message = ws.wait_for_response(
+        message = bus.wait_for_response(
             Message('skillmanager.list'), reply_type='mycroft.skills.list')
 
         if message:
             show_skills(message.data)
             scr.get_wch()  # blocks
-            screen_mode = 0  # back to main screen
+            screen_mode = SCR_MAIN
             set_screen_dirty()
     elif "deactivate" in cmd:
         skills = cmd.split()[1:]
         if len(skills) > 0:
             for s in skills:
-                ws.emit(Message("skillmanager.deactivate", data={'skill': s}))
+                bus.emit(Message("skillmanager.deactivate", data={'skill': s}))
         else:
             add_log_message('Usage :deactivate SKILL [SKILL2] [...]')
     elif "keep" in cmd:
         s = cmd.split()
         if len(s) > 1:
-            ws.emit(Message("skillmanager.keep", data={'skill': s[1]}))
+            bus.emit(Message("skillmanager.keep", data={'skill': s[1]}))
         else:
             add_log_message('Usage :keep SKILL')
 
@@ -1020,7 +1025,7 @@ def handle_cmd(cmd):
         skills = cmd.split()[1:]
         if len(skills) > 0:
             for s in skills:
-                ws.emit(Message("skillmanager.activate", data={'skill': s}))
+                bus.emit(Message("skillmanager.activate", data={'skill': s}))
         else:
             add_log_message('Usage :activate SKILL [SKILL2] [...]')
 
@@ -1030,7 +1035,7 @@ def handle_cmd(cmd):
 
 def gui_main(stdscr):
     global scr
-    global ws
+    global bus
     global line
     global log_line_lr_scroll
     global longest_visible_line
@@ -1044,10 +1049,10 @@ def gui_main(stdscr):
     scr.keypad(1)
     scr.notimeout(1)
 
-    ws = WebsocketClient()
-    ws.on('speak', handle_speak)
-    ws.on('message', handle_message)
-    ws.on('recognizer_loop:utterance', handle_utterance)
+    bus = WebsocketClient()  # Mycroft messagebus connection
+    bus.on('speak', handle_speak)
+    bus.on('message', handle_message)
+    bus.on('recognizer_loop:utterance', handle_utterance)
     event_thread = Thread(target=connect)
     event_thread.setDaemon(True)
     event_thread.start()
@@ -1145,7 +1150,7 @@ def gui_main(stdscr):
                 # resizeterm() causes another curses.KEY_RESIZE, so
                 # we need to capture that to prevent a loop of resizes
                 c = scr.get_wch()
-            elif screen_mode == 1:
+            elif screen_mode == SCR_HELP:
                 # in Help mode, any key goes to next page
                 show_next_help()
                 continue
@@ -1160,9 +1165,9 @@ def gui_main(stdscr):
                         break
                 else:
                     # Treat this as an utterance
-                    ws.emit(Message("recognizer_loop:utterance",
-                                    {'utterances': [line.strip()],
-                                     'lang': 'en-us'}))
+                    bus.emit(Message("recognizer_loop:utterance",
+                                     {'utterances': [line.strip()],
+                                      'lang': 'en-us'}))
                 hist_idx = -1
                 line = ""
             elif code == 16 or code == 545:  # Ctrl+P or Ctrl+Left (Previous)
@@ -1231,12 +1236,14 @@ def gui_main(stdscr):
 
 
 def simple_cli():
-    global ws
-    ws = WebsocketClient()
+    global bus
+    global bSimple
+    bSimple = True
+    bus = WebsocketClient()  # Mycroft messagebus connection
     event_thread = Thread(target=connect)
     event_thread.setDaemon(True)
     event_thread.start()
-    ws.on('speak', handle_speak)
+    bus.on('speak', handle_speak)
     try:
         while True:
             # Sleep for a while so all the output that results
@@ -1244,9 +1251,8 @@ def simple_cli():
             time.sleep(1.5)
             print("Input (Ctrl+C to quit):")
             line = sys.stdin.readline()
-            ws.emit(
-                Message("recognizer_loop:utterance",
-                        {'utterances': [line.strip()]}))
+            bus.emit(Message("recognizer_loop:utterance",
+                             {'utterances': [line.strip()]}))
     except KeyboardInterrupt as e:
         # User hit Ctrl+C to quit
         print("")
@@ -1254,29 +1260,3 @@ def simple_cli():
         LOG.exception(e)
         event_thread.exit()
         sys.exit()
-
-
-# Monitor system logs
-start_log_monitor("/var/log/mycroft/skills.log")
-start_log_monitor("/var/log/mycroft/voice.log")
-# logs when using Debian package   TODO: Unify all
-start_log_monitor("/var/log/mycroft-skills.log")
-start_log_monitor("/var/log/mycroft-speech-client.log")
-
-# Monitor IPC file containing microphone level info
-start_mic_monitor(os.path.join(get_ipc_directory(), "mic_level"))
-
-
-def main():
-    if bSimple:
-        sys.stdout = sys.__stdout__
-        sys.stderr = sys.__stderr__
-        simple_cli()
-    else:
-        load_settings()
-        curses.wrapper(gui_main)
-        curses.endwin()
-        save_settings()
-
-if __name__ == "__main__":
-    main()

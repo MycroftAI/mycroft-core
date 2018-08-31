@@ -19,7 +19,7 @@ from datetime import datetime
 
 from mycroft.util.parse import get_gender
 from mycroft.util.parse import extract_datetime
-from mycroft.util.parse import extractnumber
+from mycroft.util.parse import extract_number
 from mycroft.util.parse import normalize
 
 
@@ -39,50 +39,52 @@ class TestNormalize_fr(unittest.TestCase):
                          "la dernière tentative")
 
     def test_extractnumber_fr(self):
-        self.assertEqual(extractnumber("voici le premier test", lang="fr-fr"),
+        self.assertEqual(extract_number("voici le premier test", lang="fr-fr"),
                          1)
-        self.assertEqual(extractnumber("c'est 2 tests", lang="fr-fr"), 2)
-        self.assertEqual(extractnumber("voici le second test", lang="fr-fr"),
+        self.assertEqual(extract_number("c'est 2 tests", lang="fr-fr"), 2)
+        self.assertEqual(extract_number("voici le second test", lang="fr-fr"),
                          2)
-        self.assertEqual(extractnumber("voici trois tests",
-                                       lang="fr-fr"),
+        self.assertEqual(extract_number("voici trois tests",
+                                        lang="fr-fr"),
                          3)
-        self.assertEqual(extractnumber("voici le test numéro 4", lang="fr-fr"),
-                         4)
-        self.assertEqual(extractnumber("un tiers de litre", lang="fr-fr"),
+        self.assertEqual(extract_number("voici le test numéro 4",
+                                        lang="fr-fr"), 4)
+        self.assertEqual(extract_number("un tiers de litre", lang="fr-fr"),
                          1.0 / 3.0)
-        self.assertEqual(extractnumber("3 cuillères", lang="fr-fr"), 3)
-        self.assertEqual(extractnumber("1/3 de litre", lang="fr-fr"),
+        self.assertEqual(extract_number("3 cuillères", lang="fr-fr"), 3)
+        self.assertEqual(extract_number("1/3 de litre", lang="fr-fr"),
                          1.0 / 3.0)
-        self.assertEqual(extractnumber("un quart de bol", lang="fr-fr"), 0.25)
-        self.assertEqual(extractnumber("1/4 de verre", lang="fr-fr"), 0.25)
-        self.assertEqual(extractnumber("2/3 de bol", lang="fr-fr"), 2.0 / 3.0)
-        self.assertEqual(extractnumber("3/4 de bol", lang="fr-fr"), 3.0 / 4.0)
-        self.assertEqual(extractnumber("1 et 3/4 de bol", lang="fr-fr"), 1.75)
-        self.assertEqual(extractnumber("1 bol et demi", lang="fr-fr"), 1.5)
-        self.assertEqual(extractnumber("un bol et demi", lang="fr-fr"), 1.5)
-        self.assertEqual(extractnumber("un et demi bols", lang="fr-fr"), 1.5)
-        self.assertEqual(extractnumber("un bol et un demi", lang="fr-fr"), 1.5)
-        self.assertEqual(extractnumber("trois quarts de bol", lang="fr-fr"),
+        self.assertEqual(extract_number("un quart de bol", lang="fr-fr"), 0.25)
+        self.assertEqual(extract_number("1/4 de verre", lang="fr-fr"), 0.25)
+        self.assertEqual(extract_number("2/3 de bol", lang="fr-fr"), 2.0 / 3.0)
+        self.assertEqual(extract_number("3/4 de bol", lang="fr-fr"), 3.0 / 4.0)
+        self.assertEqual(extract_number("1 et 3/4 de bol", lang="fr-fr"), 1.75)
+        self.assertEqual(extract_number("1 bol et demi", lang="fr-fr"), 1.5)
+        self.assertEqual(extract_number("un bol et demi", lang="fr-fr"), 1.5)
+        self.assertEqual(extract_number("un et demi bols", lang="fr-fr"), 1.5)
+        self.assertEqual(extract_number("un bol et un demi", lang="fr-fr"),
+                         1.5)
+        self.assertEqual(extract_number("trois quarts de bol", lang="fr-fr"),
                          3.0 / 4.0)
-        self.assertEqual(extractnumber("32.2 degrés", lang="fr-fr"), 32.2)
-        self.assertEqual(extractnumber("2 virgule 2 cm", lang="fr-fr"), 2.2)
-        self.assertEqual(extractnumber("2 virgule 0 2 cm", lang="fr-fr"), 2.02)
-        self.assertEqual(extractnumber("ça fait virgule 2 cm", lang="fr-fr"),
+        self.assertEqual(extract_number("32.2 degrés", lang="fr-fr"), 32.2)
+        self.assertEqual(extract_number("2 virgule 2 cm", lang="fr-fr"), 2.2)
+        self.assertEqual(extract_number("2 virgule 0 2 cm", lang="fr-fr"),
+                         2.02)
+        self.assertEqual(extract_number("ça fait virgule 2 cm", lang="fr-fr"),
                          0.2)
-        self.assertEqual(extractnumber("point du tout", lang="fr-fr"),
+        self.assertEqual(extract_number("point du tout", lang="fr-fr"),
                          "point tout")
-        self.assertEqual(extractnumber("32.00 secondes", lang="fr-fr"), 32)
-        self.assertEqual(extractnumber("mange trente-et-une bougies",
-                                       lang="fr-fr"), 31)
-        self.assertEqual(extractnumber("un trentième",
-                                       lang="fr-fr"), 1.0 / 30.0)
-        self.assertEqual(extractnumber("un centième",
-                                       lang="fr-fr"), 0.01)
-        self.assertEqual(extractnumber("un millième",
-                                       lang="fr-fr"), 0.001)
-        self.assertEqual(extractnumber("un 20e",
-                                       lang="fr-fr"), 1.0 / 20.0)
+        self.assertEqual(extract_number("32.00 secondes", lang="fr-fr"), 32)
+        self.assertEqual(extract_number("mange trente-et-une bougies",
+                                        lang="fr-fr"), 31)
+        self.assertEqual(extract_number("un trentième",
+                                        lang="fr-fr"), 1.0 / 30.0)
+        self.assertEqual(extract_number("un centième",
+                                        lang="fr-fr"), 0.01)
+        self.assertEqual(extract_number("un millième",
+                                        lang="fr-fr"), 0.001)
+        self.assertEqual(extract_number("un 20e",
+                                        lang="fr-fr"), 1.0 / 20.0)
 
     def test_extractdatetime_fr(self):
         def extractWithFormat_fr(text):

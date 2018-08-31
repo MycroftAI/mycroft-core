@@ -42,6 +42,7 @@ from pyee import EventEmitter
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import create_skill_descriptor, load_skill, \
     MycroftSkill, FallbackSkill
+from mycroft.skills.settings import SkillSettings
 
 MainModule = '__init__'
 
@@ -52,21 +53,30 @@ DEFAULT_EVALUAITON_TIMEOUT = 30
 class clr:
     PINK = '\033[95m'
     BLUE = '\033[94m'
+    CYAN = '\033[96m'
     GREEN = '\033[92m'
     YELLOW = '\033[93m'
     RED = '\033[91m'
-    HEADER = '\033[94m'   # blue
-    WARNING = '\033[93m'  # yellow
-    FAIL = '\033[91m'     # red
+    DKGRAY = '\033[90m'
+    # Classes
+    USER_UTT = '\033[96m'  # cyan
+    MYCROFT = '\033[33m'   # bright yellow
+    HEADER = '\033[94m'    # blue
+    WARNING = '\033[93m'   # yellow
+    FAIL = '\033[91m'      # red
     RESET = '\033[0m'
 
 
 class no_clr:
     PINK = ''
     BLUE = ''
+    CYAN = ''
     GREEN = ''
     YELLOW = ''
     RED = ''
+    DKGRAY = ''
+    USER_UTT = ''
+    MYCROFT = ''
     HEADER = ''
     WARNING = ''
     FAIL = ''
@@ -170,6 +180,28 @@ class InterceptEmitter(object):
         pass
 
 
+class TestSettings(SkillSettings):
+    """ SkillSettings instance without saving/loading capability.
+    """
+    def save_skill_settings(self, skill_settings):
+        pass
+
+    def _poll_skill_settings(self):
+        pass
+
+    def _load_settings_meta(self):
+        return None
+
+    def update(self, settings_meta):
+        pass
+
+    def load_skill_settings_from_file(self):
+        pass
+
+    def store(self, force=False):
+        pass
+
+
 class MockSkillsLoader(object):
     """Load a skill and set up emitter
     """
@@ -234,20 +266,32 @@ class SkillTest(object):
             raise Exception('Skill couldn\'t be loaded')
 
         print("")
-        print(color.HEADER, "="*20 + " RUNNING TEST " + "="*20, color.RESET)
-        print('Test case file: ', self.test_case_file)
-        test_case = json.load(open(self.test_case_file, 'r'))
-        print("Test case: ", test_case)
+        print(color.HEADER + "="*20 + " RUNNING TEST " + "="*20 + color.RESET)
+        print('Test file: ', self.test_case_file)
+        with open(self.test_case_file, 'r') as f:
+            test_case = json.load(f)
+        print('Test:', json.dumps(test_case, indent=4, sort_keys=False))
+
+        original_settings = None
+        if 'settings' in test_case:
+            original_settings = s.settings
+            s.settings = TestSettings('/tmp/', self.test_case_file)
+            for key in test_case['settings']:
+                s.settings[key] = test_case['settings'][key]
+            print(color.YELLOW, 'will run test with custom settings:',
+                  '\n{}'.format(s.settings), color.RESET)
 
         if 'responses' in test_case:
             def get_response(dialog='', data=None, announcement='',
                              validator=None, on_fail=None, num_retries=-1):
                 data = data or {}
                 utt = announcement or s.dialog_renderer.render(dialog, data)
+                print(color.MYCROFT + ">> " + utt + color.RESET)
                 s.speak(utt)
+
                 response = test_case['responses'].pop(0)
-                print(color.BLUE, ">" + utt, color.RESET)
-                print(color.GREEN, "Responding with ", response, color.RESET)
+                print("SENDING RESPONSE:",
+                      color.USER_UTT + response + color.RESET)
                 return response
             s.get_response = get_response
 
@@ -266,7 +310,7 @@ class SkillTest(object):
         # and be handled one by one. We cant make assumptions about threading
         # in the core or the skill
         q = Queue()
-        s.emitter.q = q
+        s.bus.q = q
 
         # Set up context before calling intent
         # This option makes it possible to better isolate (reduce dependance)
@@ -287,10 +331,12 @@ class SkillTest(object):
         # Emit an utterance, just like the STT engine does.  This sends the
         # provided text to the skill engine for intent matching and it then
         # invokes the skill.
+        utt = test_case.get('utterance', None)
+        print("UTTERANCE:", color.USER_UTT + utt + color.RESET)
         self.emitter.emit(
             'recognizer_loop:utterance',
             Message('recognizer_loop:utterance',
-                    {'utterances': [test_case.get('utterance', None)]}))
+                    {'utterances': [utt]}))
 
         # Wait up to X seconds for the test_case to complete
         timeout = time.time() + int(test_case.get('evaluation_timeout')) \
@@ -314,7 +360,7 @@ class SkillTest(object):
                 break
 
         # Stop emmiter from sending on queue
-        s.emitter.q = None
+        s.bus.q = None
 
         # remove the skill which is not responding
         self.emitter.remove_all_listeners('speak')
@@ -322,10 +368,12 @@ class SkillTest(object):
         # Report test result if failed
         if not evaluation_rule.all_succeeded():
             self.failure_msg = str(evaluation_rule.get_failure())
-            print(color.FAIL, "Evaluation failed", color.RESET)
-            print(color.FAIL, "Failure:", self.failure_msg, color.RESET)
+            print(color.FAIL + "Evaluation failed" + color.RESET)
+            print(color.FAIL + "Failure:", self.failure_msg + color.RESET)
             return False
 
+        if original_settings:
+            s.settings = original_settings
         return True
 
 
@@ -383,8 +431,8 @@ class EvaluationRule(object):
 
         if test_case.get('expected_dialog', None):
             if not skill:
-                print(color.FAIL,
-                      'Skill is missing, can\'t run expected_dialog test',
+                print(color.FAIL +
+                      'Skill is missing, can\'t run expected_dialog test' +
                       color.RESET)
             else:
                 # Check that expected dialog file is used
@@ -393,9 +441,9 @@ class EvaluationRule(object):
                 try:
                     dialogs = skill.dialog_renderer.templates[dialog]
                 except Exception as template_load_exception:
-                    print(color.FAIL,
+                    print(color.FAIL +
                           "Failed to load dialog template " +
-                          "'dialog/en-us/"+dialog+".dialog'",
+                          "'dialog/en-us/"+dialog+".dialog'" +
                           color.RESET)
                     raise Exception("Can't load 'excepected_dialog': "
                                     "file '" + dialog + ".dialog'") \

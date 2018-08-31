@@ -128,7 +128,7 @@ class ContextManager(object):
 
 
 class IntentService(object):
-    def __init__(self, emitter):
+    def __init__(self, bus):
         self.config = Configuration.get().get('context', {})
         self.engine = IntentDeterminationEngine()
 
@@ -140,26 +140,24 @@ class IntentService(object):
         self.context_timeout = self.config.get('timeout', 2)
         self.context_greedy = self.config.get('greedy', False)
         self.context_manager = ContextManager(self.context_timeout)
-        self.emitter = emitter
-        self.emitter.on('register_vocab', self.handle_register_vocab)
-        self.emitter.on('register_intent', self.handle_register_intent)
-        self.emitter.on('recognizer_loop:utterance', self.handle_utterance)
-        self.emitter.on('detach_intent', self.handle_detach_intent)
-        self.emitter.on('detach_skill', self.handle_detach_skill)
+        self.bus = bus
+        self.bus.on('register_vocab', self.handle_register_vocab)
+        self.bus.on('register_intent', self.handle_register_intent)
+        self.bus.on('recognizer_loop:utterance', self.handle_utterance)
+        self.bus.on('detach_intent', self.handle_detach_intent)
+        self.bus.on('detach_skill', self.handle_detach_skill)
         # Context related handlers
-        self.emitter.on('add_context', self.handle_add_context)
-        self.emitter.on('remove_context', self.handle_remove_context)
-        self.emitter.on('clear_context', self.handle_clear_context)
+        self.bus.on('add_context', self.handle_add_context)
+        self.bus.on('remove_context', self.handle_remove_context)
+        self.bus.on('clear_context', self.handle_clear_context)
         # Converse method
-        self.emitter.on('skill.converse.response',
-                        self.handle_converse_response)
-        self.emitter.on('mycroft.speech.recognition.unknown',
-                        self.reset_converse)
-        self.emitter.on('mycroft.skills.loaded', self.update_skill_name_dict)
+        self.bus.on('skill.converse.response', self.handle_converse_response)
+        self.bus.on('mycroft.speech.recognition.unknown', self.reset_converse)
+        self.bus.on('mycroft.skills.loaded', self.update_skill_name_dict)
 
         def add_active_skill_handler(message):
             self.add_active_skill(message.data['skill_id'])
-        self.emitter.on('active_skill_request', add_active_skill_handler)
+        self.bus.on('active_skill_request', add_active_skill_handler)
         self.active_skills = []  # [skill_id , timestamp]
         self.converse_timeout = 5  # minutes to prune active_skills
 
@@ -190,7 +188,7 @@ class IntentService(object):
     def do_converse(self, utterances, skill_id, lang):
         self.waiting = True
         self.result = False
-        self.emitter.emit(Message("skill.converse.request", {
+        self.bus.emit(Message("skill.converse.request", {
             "skill_id": skill_id, "utterances": utterances, "lang": lang}))
         start_time = time.time()
         t = 0
@@ -307,7 +305,7 @@ class IntentService(object):
                 reply = message.reply('intent_failure',
                                       {'utterance': utterances[0],
                                        'lang': lang})
-            self.emitter.emit(reply)
+            self.bus.emit(reply)
             self.send_metrics(intent, message.context, stopwatch)
         except Exception as e:
             LOG.exception(e)

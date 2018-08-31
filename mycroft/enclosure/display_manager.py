@@ -113,45 +113,52 @@ def _read_data():
     return data
 
 
-def set_active(skill_name):
-    """ Sets skill name as active in the display Manager
-    Args:
-        string: skill_name
+class DisplayManager():
+    """ The Display manager handles the basic state of the display,
+    be it a mark-1 or a mark-2 or even a future Mark-3.
     """
-    _write_data({"active_skill": skill_name})
+    def __init__(self, name=None):
+        self.name = name or ""
+
+    def set_active(self, skill_name=None):
+        """ Sets skill name as active in the display Manager
+        Args:
+            string: skill_name
+        """
+        name = skill_name if skill_name is not None else self.name
+        _write_data({"active_skill": name})
+
+    def get_active(self):
+        """ Get the currenlty active skill from the display manager
+        Returns:
+            string: The active skill's name
+        """
+        data = _read_data()
+        active_skill = ""
+
+        if "active_skill" in data:
+            active_skill = data["active_skill"]
+
+        return active_skill
+
+    def remove_active(self):
+        """ Clears the active skill """
+        LOG.debug("Removing active skill...")
+        _write_data({"active_skill": ""})
 
 
-def get_active():
-    """ Get the currenlty active skill from the display manager
-    Returns:
-        string: The active skill's name
-    """
-    data = _read_data()
-    active_skill = ""
-
-    if "active_skill" in data:
-        active_skill = data["active_skill"]
-
-    return active_skill
-
-
-def remove_active():
-    """ Clears the active skill """
-    LOG.debug("Removing active skill...")
-    _write_data({"active_skill": ""})
-
-
-def initiate_display_manager_ws():
-    """ Initiates the web sockets on the display_manager """
-    LOG.info("Initiating display manager websocket")
+def init_display_manager_bus_connection():
+    """ Connects the display manager to the messagebus """
+    LOG.info("Connecting display manager to messagebus")
 
     # Should remove needs to be an object so it can be referenced in functions
     # [https://stackoverflow.com/questions/986006/how-do-i-pass-a-variable-by-reference]
+    display_manager = DisplayManager()
     should_remove = [True]
 
     def check_flag(flag):
         if flag[0] is True:
-            remove_active()
+            display_manager.remove_active()
 
     def set_delay(event=None):
         should_remove[0] = True
@@ -161,21 +168,21 @@ def initiate_display_manager_ws():
         should_remove[0] = False
 
     def connect():
-        ws.run_forever()
+        bus.run_forever()
 
     def remove_wake_word():
         data = _read_data()
         if "active_skill" in data and data["active_skill"] == "wakeword":
-            remove_active()
+            display_manager.remove_active()
 
     def set_wakeword_skill(event=None):
-        set_active("wakeword")
+        display_manager.set_active("wakeword")
         Timer(10, remove_wake_word).start()
 
-    ws = WebsocketClient()
-    ws.on('recognizer_loop:audio_output_end', set_delay)
-    ws.on('recognizer_loop:audio_output_start', set_remove_flag)
-    ws.on('recognizer_loop:record_begin', set_wakeword_skill)
+    bus = WebsocketClient()
+    bus.on('recognizer_loop:audio_output_end', set_delay)
+    bus.on('recognizer_loop:audio_output_start', set_remove_flag)
+    bus.on('recognizer_loop:record_begin', set_wakeword_skill)
 
     event_thread = Thread(target=connect)
     event_thread.setDaemon(True)

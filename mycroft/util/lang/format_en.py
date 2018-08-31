@@ -17,6 +17,7 @@
 
 from mycroft.util.lang.format_common import convert_to_mixed_fraction
 import collections
+from mycroft.util.log import LOG
 
 
 NUM_STRING_EN = {
@@ -297,7 +298,7 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
     # exception used to catch any unforseen edge cases
     # will default back to normal subroutine
     except Exception as e:
-        print('Exception in pronounce_number_en' + e)
+        LOG.error('Exception in pronounce_number_en: {}' + repr(e))
 
     # check for a direct match
     if num in number_names:

@@ -42,20 +42,20 @@ class MopidyService(AudioBackend):
                 LOG.debug('Could not connect to server, will retry quietly')
             self.connection_attempts += 1
             time.sleep(10)
-            self.emitter.emit(Message('MopidyServiceConnect'))
+            self.bus.emit(Message('MopidyServiceConnect'))
             return
 
         LOG.info('Connected to mopidy server')
 
-    def __init__(self, config, emitter, name='mopidy'):
+    def __init__(self, config, bus, name='mopidy'):
         self.connection_attempts = 0
-        self.emitter = emitter
+        self.bus = bus
         self.config = config
         self.name = name
 
         self.mopidy = None
-        self.emitter.on('MopidyServiceConnect', self._connect)
-        self.emitter.emit(Message('MopidyServiceConnect'))
+        self.bus.on('MopidyServiceConnect', self._connect)
+        self.bus.emit(Message('MopidyServiceConnect'))
 
     def supported_uris(self):
         """
@@ -116,10 +116,10 @@ class MopidyService(AudioBackend):
         return ret
 
 
-def load_service(base_config, emitter):
+def load_service(base_config, bus):
     backends = base_config.get('backends', [])
     services = [(b, backends[b]) for b in backends
                 if backends[b]['type'] == 'mopidy' and
                 backends[b].get('active', True)]
-    instances = [MopidyService(s[1], emitter, s[0]) for s in services]
+    instances = [MopidyService(s[1], bus, s[0]) for s in services]
     return instances

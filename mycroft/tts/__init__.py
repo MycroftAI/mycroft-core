@@ -25,7 +25,7 @@ import os.path
 from os.path import dirname, exists, isdir, join
 
 import mycroft.util
-from mycroft.client.enclosure.api import EnclosureAPI
+from mycroft.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.metrics import report_timing, Stopwatch
@@ -173,6 +173,7 @@ class TTS(object):
     def __init__(self, lang, config, validator, audio_ext='wav',
                  phonetic_spelling=True, ssml_tags=None):
         super(TTS, self).__init__()
+        self.bus = None  # initalized in "init" step
         self.lang = lang or 'en-us'
         self.config = config
         self.validator = validator
@@ -208,7 +209,7 @@ class TTS(object):
     def begin_audio(self):
         """Helper function for child classes to call in execute()"""
         # Create signals informing start of speech
-        self.ws.emit(Message("recognizer_loop:audio_output_start"))
+        self.bus.emit(Message("recognizer_loop:audio_output_start"))
 
     def end_audio(self):
         """
@@ -219,7 +220,7 @@ class TTS(object):
             directory needs cleaning to free up disk space.
         """
 
-        self.ws.emit(Message("recognizer_loop:audio_output_end"))
+        self.bus.emit(Message("recognizer_loop:audio_output_end"))
         # Clean the cache as needed
         cache_dir = mycroft.util.get_cache_directory("tts")
         mycroft.util.curate_cache(cache_dir, min_free_percent=100)
@@ -227,10 +228,15 @@ class TTS(object):
         # This check will clear the "signal"
         check_for_signal("isSpeaking")
 
-    def init(self, ws):
-        self.ws = ws
+    def init(self, bus):
+        """ Performs intial setup of TTS object.
+
+        Arguments:
+            bus:    Mycroft messagebus connection
+        """
+        self.bus = bus
         self.playback.init(self)
-        self.enclosure = EnclosureAPI(self.ws)
+        self.enclosure = EnclosureAPI(self.bus)
         self.playback.enclosure = self.enclosure
 
     def get_tts(self, sentence, wav_file):

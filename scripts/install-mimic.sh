@@ -30,7 +30,7 @@ if [ ! -d ${MIMIC_DIR} ] ; then
     git clone --branch ${MIMIC_VERSION} https://github.com/MycroftAI/mimic.git --depth=1
     cd ${MIMIC_DIR}
     ./autogen.sh
-    ./configure --with-audio=alsa --enable-shared --prefix=$(pwd)
+    ./configure --with-audio=alsa --enable-shared --prefix="$(pwd)"
     make -j${CORES}
     make install
 else
@@ -41,7 +41,7 @@ else
     git fetch --all --tags --prune
     git checkout tags/${MIMIC_VERSION}
     ./autogen.sh
-    ./configure --with-audio=alsa --enable-shared --prefix=$(pwd)
+    ./configure --with-audio=alsa --enable-shared --prefix="$(pwd)"
     make clean
     make -j${CORES}
     make install

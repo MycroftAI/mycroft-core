@@ -70,15 +70,6 @@ def match_one(query, choices):
         return best
 
 
-# TODO:18.08
-def extractnumber(text, short_scale=True, ordinals=False, lang="en-us"):
-    """ Depreciated, replaced by extract_number. Will be removed
-    in the 18.08b release.
-
-    """
-    return extract_number(text, short_scale, ordinals, lang)
-
-
 def extract_number(text, short_scale=True, ordinals=False, lang="en-us"):
     """Takes in a string and extracts a number.
 
@@ -108,7 +99,7 @@ def extract_number(text, short_scale=True, ordinals=False, lang="en-us"):
         return extractnumber_sv(text)
     elif lang_lower.startswith("de"):
         return extractnumber_de(text)
-    # TODO: extractnumber for other languages
+    # TODO: extractnumber_xx for other languages
     return text
 
 
