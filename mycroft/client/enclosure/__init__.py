@@ -69,7 +69,13 @@ class EnclosureReader(Thread):
             try:
                 data = self.serial.readline()[:-2]
                 if data:
-                    self.process(data.decode())
+                    try:
+                        data_str = data.decode()
+                    except UnicodeError as e:
+                        data_str = data.decode('utf-8', errors='replace')
+                        LOG.warning('Invalid characters in response from '
+                                    ' enclosure: {}'.format(repr(e)))
+                    self.process(data_str)
             except Exception as e:
                 LOG.error("Reading error: {0}".format(e))
 
