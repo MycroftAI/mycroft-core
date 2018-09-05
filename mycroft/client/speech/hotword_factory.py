@@ -126,9 +126,14 @@ class PreciseHotword(HotWordEngine):
         self.show_download_progress = Timer(0, lambda: None)
         precise_config = Configuration.get()['precise']
         precise_exe = self.install_exe(precise_config['dist_url'])
-        self.precise_model = self.install_model(
-            precise_config['model_url'], key_phrase.replace(' ', '-')
-        ).replace('.tar.gz', '.pb')
+
+        local_model = self.config.get('local_model_file')
+        if local_model:
+            self.precise_model = expanduser(local_model)
+        else:
+            self.precise_model = self.install_model(
+                precise_config['model_url'], key_phrase.replace(' ', '-')
+            ).replace('.tar.gz', '.pb')
 
         self.has_found = False
         self.stream = ReadWriteStream()
@@ -280,6 +285,7 @@ class HotWordFactory(object):
         if not config:
             config = Configuration.get()['hotwords']
         config = config[hotword]
+
         module = config.get("module", "pocketsphinx")
         return cls.load_module(module, hotword, config, lang, loop) or \
             cls.load_module('pocketsphinx', hotword, config, lang, loop) or \
