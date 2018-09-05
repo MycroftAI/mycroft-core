@@ -50,7 +50,7 @@ function show_help() {
     echo
     echo "Options:"
     echo "    -r, --allow-root  Allow to be run as root (e.g. sudo)"
-    echo "    -sm               Skip building mimic"
+    echo "    -fm               Force mimic build"
     echo "    -h, --help        Show this message"
     echo
     echo "This will prepare your environment for running the mycroft-core"
@@ -58,7 +58,7 @@ function show_help() {
     echo "not as root/sudo."
 }
 
-opt_skipmimic=false
+opt_forcemimicbuild=false
 opt_allowroot=false
 
 for var in "$@" ; do
@@ -71,8 +71,8 @@ for var in "$@" ; do
         opt_allowroot=true
     fi
 
-    if [[ ${var} == "-sm" ]] ; then
-        opt_skipmimic=true
+    if [[ ${var} == "-fm" ]] ; then
+        opt_forcemimicbuild=true
     fi
 done
 
@@ -135,9 +135,9 @@ install_deps
 git config commit.template .gitmessage
 
 # Check whether to build mimic (it takes a really long time!)
-build_mimic="y"
-if [[ ${opt_skipmimic} == true ]] ; then
-    build_mimic="n"
+build_mimic="n"
+if [[ ${opt_forcemimicbuild} == true ]] ; then
+    build_mimic="y"
 else
     # first, look for a build of mimic in the folder
     has_mimic=""
@@ -152,9 +152,8 @@ else
         fi
     fi
 
-    if ! [ "$has_mimic" == "" ] ; then
-        echo "Mimic is installed. Press 'y' to rebuild mimic, any other key to skip."
-        read -n1 build_mimic
+    if [ "$has_mimic" == "" ]; then
+        build_mimic="y"
     fi
 fi
 
