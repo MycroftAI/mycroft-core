@@ -28,6 +28,9 @@ import hashlib
 import re
 
 
+max_sentence_size = 170
+
+
 def break_chunks(l, n):
     """Yield successive n-sized chunks from l."""
     for i in range(0, len(l), n):
@@ -71,41 +74,27 @@ def split_by_chunk_size(text, chunk_size):
         ))
 
 
-def split_by_punctuation(text, chunk_size):
-    """split text by punctuations
-        i.e "hello, world" -> ["hello", "world"]
-
-    Args:
-        text (str): text to split
-        chunk_size (int): size of each chunk
-
-    Returns:
-        list: list of sentence chunk
-    """
-    punctuations = [',', '.', '-', '?', '!', ':', ';']
-    text_list = text.split()
-    splits = None
-    if len(text_list) >= chunk_size:
-        for punc in punctuations:
-            if punc in text:
-                splits = text.split(punc)
-                break
-
-    # TODO: check if splits are to small, combined them
-    return splits
+def split_by_punctuation(text, puncs=[]):
+    splits = text.split()
+    split_by_punc = False
+    for punc in puncs:
+        if punc in text:
+            splits = text.split(punc)
+            split_by_punc = True
+            break
+    if split_by_punc:
+        return splits
+    else:
+        return [text]
 
 
 def add_punctuation(text):
     """add punctuation at the end of each chunk. Mimic2
-    expects a form of punctuation
+    expects some form of punctuations
     """
     punctuations = ['.', '?', '!']
     if len(text) < 1:
         return text
-    if len(text) < 10:
-        if text[-1] in punctuations:
-            if text[-1] != ".":
-                return text[:-1] + "."
     if text[-1] not in punctuations:
         text += '.'
     return text
@@ -124,31 +113,51 @@ def sentence_chunker(text, chunk_size, split_by_punc=True):
     Returns:
         list: list of text chunks
     """
-    text_list = text.split()
-    # if initial text is 1.3 times chunk size, no need to split
-    # if the chracter count is less then 55
-    if len(text_list) <= chunk_size * 1.3:
-        if len(text) < 55:
-            return [add_punctuation(text)]
+    if len(text) <= max_sentence_size:
+        return [add_punctuation(text)]
 
     # split text by punctuations if split_by_punc set to true
-    punc_splits = None
+    chunks = None
     if split_by_punc:
-        punc_splits = split_by_punctuation(text, chunk_size)
+        # first split by periods ending puncs
+        LOG.info("!")
+        chunks = split_by_punctuation(
+            text.strip(),
+            puncs=['.', '!', '?', ':', '-', ';']
+        )
 
-    # split text by chunk size
-    chunks = []
-    if punc_splits:
-        for sentence in punc_splits:
-            sentence = sentence.strip()
-            chunks += split_by_chunk_size(sentence, chunk_size)
-    # split text by chunk size
-    else:
-        chunks += split_by_chunk_size(text, chunk_size)
+        # if sentence is still to big, split by other commas
+        second_splits = []
+        did_second_split = False
+        for sentence in chunks:
+            if len(sentence) > max_sentence_size:
+                comma_splits = split_by_punctuation(
+                    sentence.strip(), puncs=[',']
+                )
+                second_splits += comma_splits
+                did_second_split = True
+            else:
+                second_splits.append(sentence.strip())
 
-    chunks = [add_punctuation(chunk) for chunk in chunks]
+        if did_second_split:
+            chunks = second_splits
 
-    return chunks
+        # if sentence is still to by 15 word chunks
+        third_splits = []
+        did_third_split = False
+        for sentence in chunks:
+            if len(sentence) > max_sentence_size:
+                chunk_split = split_by_chunk_size(sentence.strip(), 20)
+                third_splits += chunk_split
+                did_third_split = True
+            else:
+                third_splits.append(sentence.strip())
+
+        if did_third_split:
+            chunks = third_splits
+
+        chunks = [add_punctuation(chunk) for chunk in chunks]
+        return chunks
 
 
 class Mimic2(TTS):
