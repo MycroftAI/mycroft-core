@@ -392,8 +392,10 @@ class SkillManager(Thread):
         try:
             info = {}
             for s in self.loaded_skills:
+                is_active = (self.loaded_skills[s].get('active', True) and
+                             self.loaded_skills[s].get('instance') is not None)
                 info[basename(s)] = {
-                    'active': self.loaded_skills[s].get('active', True),
+                    'active': is_active,
                     'id': self.loaded_skills[s]['id']
                 }
             self.bus.emit(Message('mycroft.skills.list', data=info))
