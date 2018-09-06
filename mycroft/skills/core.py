@@ -123,13 +123,18 @@ def load_skill(skill_descriptor, bus, skill_id, BLACKLISTED_SKILLS=None):
             skill.settings.allow_overwrite = True
             skill.settings.load_skill_settings_from_file()
             skill.bind(bus)
-            skill.skill_id = skill_id
-            skill.load_data_files(path)
-            # Set up intent handlers
-            skill._register_decorated()
-            skill.initialize()
-            LOG.info("Loaded " + name)
+            try:
+                skill.skill_id = skill_id
+                skill.load_data_files(path)
+                # Set up intent handlers
+                skill._register_decorated()
+                skill.initialize()
+            except Exception as e:
+                # If an exception occurs, make sure to clean up the skill
+                skill.default_shutdown()
+                raise e
 
+            LOG.info("Loaded " + name)
             # The very first time a skill is run, speak the intro
             first_run = skill.settings.get("__mycroft_skill_firstrun", True)
             if first_run:
