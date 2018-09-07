@@ -43,10 +43,14 @@ from mycroft.messagebus.message import Message
 from mycroft.skills.core import create_skill_descriptor, load_skill, \
     MycroftSkill, FallbackSkill
 from mycroft.skills.settings import SkillSettings
+from mycroft.configuration import Configuration
 
 MainModule = '__init__'
 
 DEFAULT_EVALUAITON_TIMEOUT = 30
+
+# Set a configuration value to allow skills to check if they're in a test
+Configuration.get()['test_env'] = True
 
 
 # Easy way to show colors on terminals
