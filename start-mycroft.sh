@@ -105,9 +105,8 @@ function launch-background() {
         first_time=false
     fi
 
+    # Check if given module is running and start (or restart if running)
     name-to-script-path ${1}
-
-    # Start (or restart if already running)
     if pgrep -f "python3 -m ${_module}" > /dev/null ; then
         echo "Restarting: ${1}"
         "${DIR}/stop-mycroft.sh" ${1}
@@ -146,7 +145,11 @@ function launch-all() {
 function check-dependencies() {
     if [ ! -f .installed ] || ! md5sum -c &> /dev/null < .installed ; then
         # Critical files have changed, dev_setup.sh should be run again
-        auto_update=$( jq -r ".auto_update" < .dev_opts.json )
+        if [ -f .dev_opts.json ] ; then
+            auto_update=$( jq -r ".auto_update" < .dev_opts.json 2> /dev/null)
+        else
+            auto_update="false"
+        fi
 
         if [ "$auto_update" == "true" ] ; then
             bash dev_setup.sh

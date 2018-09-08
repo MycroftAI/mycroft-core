@@ -179,7 +179,7 @@ fi
 source "${VIRTUALENV_ROOT}/bin/activate"
 cd "${TOP}"
 
-# Force version of pip for reproducability, but there ins nothing special
+# Force version of pip for reproducability, but there is nothing special
 # about this version.  Update whenever a new version is released and
 # verified functional.
 easy_install pip==18.0
@@ -253,6 +253,8 @@ chmod +x stop-mycroft.sh
 chmod +x bin/mycroft-cli-client
 chmod +x bin/mycroft-help
 chmod +x bin/mycroft-mic-test
+chmod +x bin/mycroft-msk
+chmod +x bin/mycroft-msm
 chmod +x bin/mycroft-pip
 chmod +x bin/mycroft-skill-testrunner
 chmod +x bin/mycroft-speak
