@@ -89,7 +89,7 @@ fi
     #  * Auto-update?  When on, it will pull and run dev_setup automatically
     #  * Pull down mimic source?  Most will be happy with just the package
     #  * Add mycroft-core/bin to the .bashrc PATH?
-    
+
     # from Picroft's wizard:
     #   echo '{"use_branch":"master", "auto_update": true}' > .dev_opts.json
     # or
@@ -256,6 +256,7 @@ chmod +x bin/mycroft-mic-test
 chmod +x bin/mycroft-msk
 chmod +x bin/mycroft-msm
 chmod +x bin/mycroft-pip
+chmod +x bin/mycroft-say-to
 chmod +x bin/mycroft-skill-testrunner
 chmod +x bin/mycroft-speak
 
