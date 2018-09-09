@@ -317,6 +317,7 @@ class SkillManager(Thread):
         skill["instance"] = load_skill(desc,
                                        self.bus, skill["id"],
                                        BLACKLISTED_SKILLS)
+
         skill["last_modified"] = modified
         if skill['instance'] is not None:
             self.bus.emit(Message('mycroft.skills.loaded',
@@ -391,8 +392,10 @@ class SkillManager(Thread):
         try:
             info = {}
             for s in self.loaded_skills:
+                is_active = (self.loaded_skills[s].get('active', True) and
+                             self.loaded_skills[s].get('instance') is not None)
                 info[basename(s)] = {
-                    'active': self.loaded_skills[s].get('active', True),
+                    'active': is_active,
                     'id': self.loaded_skills[s]['id']
                 }
             self.bus.emit(Message('mycroft.skills.list', data=info))
@@ -480,7 +483,8 @@ class SkillManager(Thread):
 
         # loop trough skills list and call converse for skill with skill_id
         for skill in self.loaded_skills:
-            if self.loaded_skills[skill]["id"] == skill_id:
+            if (self.loaded_skills[skill]["instance"] and
+                    self.loaded_skills[skill]["id"] == skill_id):
                 try:
                     instance = self.loaded_skills[skill]["instance"]
                 except BaseException:
