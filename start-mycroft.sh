@@ -85,7 +85,7 @@ first_time=true
 function launch-process() {
     if ($first_time) ; then
         echo "Initializing..."
-        ${DIR}/scripts/prepare-msm.sh
+        "${DIR}/scripts/prepare-msm.sh"
         source-venv
         first_time=false
     fi
@@ -100,17 +100,16 @@ function launch-process() {
 function launch-background() {
     if ($first_time) ; then
         echo "Initializing..."
-        ${DIR}/scripts/prepare-msm.sh
+        "${DIR}/scripts/prepare-msm.sh"
         source-venv
         first_time=false
     fi
 
+    # Check if given module is running and start (or restart if running)
     name-to-script-path ${1}
-
-    # Check if already running
     if pgrep -f "python3 -m ${_module}" > /dev/null ; then
         echo "Restarting: ${1}"
-        source stop-mycroft.sh ${1}
+        "${DIR}/stop-mycroft.sh" ${1}
     else
         echo "Starting background service $1"
     fi
@@ -144,13 +143,25 @@ function launch-all() {
 }
 
 function check-dependencies() {
-  if [ ! -f .installed ] || ! md5sum -c &> /dev/null < .installed ; then
-    echo "Please update dependencies by running ./dev_setup.sh again."
-    if command -v notify-send >/dev/null ; then
-      notify-send "Mycroft Dependencies Outdated" "Run ./dev_setup.sh again"
+    if [ ! -f .installed ] || ! md5sum -c &> /dev/null < .installed ; then
+        # Critical files have changed, dev_setup.sh should be run again
+        if [ -f .dev_opts.json ] ; then
+            auto_update=$( jq -r ".auto_update" < .dev_opts.json 2> /dev/null)
+        else
+            auto_update="false"
+        fi
+
+        if [ "$auto_update" == "true" ] ; then
+            bash dev_setup.sh
+        else
+            echo "Please update dependencies by running ./dev_setup.sh again."
+            if command -v notify-send >/dev/null ; then
+                # Generate a desktop notification (ArchLinux)
+                notify-send "Mycroft Dependencies Outdated" "Run ./dev_setup.sh again"
+            fi
+            exit 1
+        fi
     fi
-    exit 1
-  fi
 }
 
 _opt=$1
@@ -206,7 +217,7 @@ case ${_opt} in
         ;;
     "sdkdoc")
         source-venv
-        python3 ${DIR}/doc/generate_sdk_docs.py ${_opt}
+        python3 "${DIR}/doc/generate_sdk_docs.py" ${_opt}
         ;;
     "enclosure")
         launch-background ${_opt}

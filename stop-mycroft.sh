@@ -37,7 +37,7 @@ function help() {
     echo "  ${script}"
     echo "  ${script} audio"
 
-    exit 1
+    exit 0
 }
 
 function process-running() {
@@ -50,11 +50,13 @@ function process-running() {
 
 function end-process() {
     if process-running $1 ; then
+        echo -n "Stopping $1..."
         pid=$( pgrep -f "python3 -m mycroft.*${1}" )
         kill -SIGINT ${pid}
 
+        # Wait up to 5 seconds (50 * 0.1) for process to stop
         c=1
-        while [ $c -le 20 ] ; do
+        while [ $c -le 50 ] ; do
             if process-running $1 ; then
                 sleep 0.1
                 (( c++ ))
@@ -64,12 +66,22 @@ function end-process() {
         done
 
         if process-running $1 ; then
-            echo -n "Killing $1..."
+            echo "failed to stop."
+            echo -n "  Killing $1..."
             kill -9 ${pid}
             echo "killed."
+            result=120
+        else
+            echo "stopped."
+            if [ $result -eq 0 ] ; then
+                result=100
+            fi
         fi
     fi
 }
+
+
+result=0  # default, no change
 
 
 OPT=$1
@@ -80,7 +92,7 @@ case ${OPT} in
         ;&
     "")
         echo "Stopping all mycroft-core services"
-        end-process service
+        end-process messagebus.service
         end-process skills
         end-process audio
         end-process speech
@@ -95,7 +107,7 @@ case ${OPT} in
         fi
         ;;
     "bus")
-        end-process service
+        end-process messagebus.service
         ;;
     "audio")
         end-process audio
@@ -114,3 +126,9 @@ case ${OPT} in
         help
         ;;
 esac
+
+# Exit codes:
+#     0   if nothing changed (e.g. --help or no process was running)
+#     100 at least one process was stopped
+#     120 if any process had to be killed
+exit $result
