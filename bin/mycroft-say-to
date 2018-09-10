@@ -22,4 +22,4 @@ DIR="$( pwd )"
 source "$DIR/../venv-activate.sh" -q
 
 # Send a message to be spoken
-output=$(python -m mycroft.messagebus.send "speak"  "{\"utterance\": \"$@\"}")
+output=$(python -m mycroft.messagebus.send "recognizer_loop:utterance"  "{\"utterances\": [\"$@\"], \"lang\": \"en-us\"}")
