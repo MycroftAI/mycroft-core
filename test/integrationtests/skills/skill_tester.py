@@ -425,10 +425,19 @@ class EvaluationRule(object):
         if _x != ['and']:
             self.rule.append(_x)
 
-        if test_case.get('expected_response', None):
+        # Add rules from expeceted_response
+        # Accepts a string or a list of multiple strings
+        if isinstance(test_case.get('expected_response', None), str):
             self.rule.append(['match', 'utterance',
                               str(test_case['expected_response'])])
+        elif isinstance(test_case.get('expected_response', None), list):
+            texts = test_case['expected_response']
+            rules = [['match', 'utterance', str(r)] for r in texts]
+            self.rule.append(['or'] + rules)
 
+        # Add rules from expected_dialog
+        # Accepts dialog (without ".dialog"), the same way as self.speak_dialog
+        # as a string or a list of dialogs
         if test_case.get('expected_dialog', None):
             if not skill:
                 print(color.FAIL +
@@ -436,17 +445,22 @@ class EvaluationRule(object):
                       color.RESET)
             else:
                 # Check that expected dialog file is used
-                dialog = test_case['expected_dialog']
+                if isinstance(test_case['expected_dialog'], str):
+                    dialog = [test_case['expected_dialog']]  # Make list
+                else:
+                    dialog = test_case['expected_dialog']
                 # Extract dialog texts from skill
+                dialogs = []
                 try:
-                    dialogs = skill.dialog_renderer.templates[dialog]
+                    for d in dialog:
+                        dialogs += skill.dialog_renderer.templates[d]
                 except Exception as template_load_exception:
                     print(color.FAIL +
                           "Failed to load dialog template " +
-                          "'dialog/en-us/"+dialog+".dialog'" +
+                          "'dialog/en-us/" + d + ".dialog'" +
                           color.RESET)
                     raise Exception("Can't load 'excepected_dialog': "
-                                    "file '" + dialog + ".dialog'") \
+                                    "file '" + d + ".dialog'") \
                         from template_load_exception
                 # Allow custom fields to be anything
                 d = [re.sub('{.*?\}', '.*', t) for t in dialogs]
