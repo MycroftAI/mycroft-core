@@ -74,7 +74,17 @@ def split_by_chunk_size(text, chunk_size):
         ))
 
 
-def split_by_punctuation(text, puncs=[]):
+def split_by_punctuation(text, puncs):
+    """splits text by various punctionations
+    e.g. hello, world => [hello, world]
+
+    Args:
+        text (str): text to split
+        puncs (list): list of punctuations used to split text
+
+    Returns:
+        list: list with split text
+    """
     splits = text.split()
     split_by_punc = False
     for punc in puncs:
