@@ -129,13 +129,13 @@ def sentence_chunker(text, chunk_size, split_by_punc=True):
     # split text by punctuations if split_by_punc set to true
     chunks = None
     if split_by_punc:
-        # first split by periods ending puncs
+        # first split by "ending" punctuations
         chunks = split_by_punctuation(
             text.strip(),
             puncs=['.', '!', '?', ':', '-', ';']
         )
 
-        # if sentence is still to big, split by other commas
+        # if sentence is still to big, split by commas
         second_splits = []
         did_second_split = False
         for sentence in chunks:
@@ -151,7 +151,7 @@ def sentence_chunker(text, chunk_size, split_by_punc=True):
         if did_second_split:
             chunks = second_splits
 
-        # if sentence is still to by 15 word chunks
+        # if sentence is still to big by 20 word chunks
         third_splits = []
         did_third_split = False
         for sentence in chunks:
