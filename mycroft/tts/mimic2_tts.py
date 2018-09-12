@@ -130,7 +130,6 @@ def sentence_chunker(text, chunk_size, split_by_punc=True):
     chunks = None
     if split_by_punc:
         # first split by periods ending puncs
-        LOG.info("!")
         chunks = split_by_punctuation(
             text.strip(),
             puncs=['.', '!', '?', ':', '-', ';']
