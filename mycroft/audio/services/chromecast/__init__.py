@@ -47,7 +47,7 @@ class ChromecastService(AudioBackend):
             return
 
     def __init__(self, config, bus, name='chromecast', cast=None):
-        super(ChromecastService, self).__init__(config, emitter)
+        super(ChromecastService, self).__init__(config, bus)
         self.connection_attempts = 0
         self.bus = bus
         self.config = config
@@ -148,7 +148,7 @@ class ChromecastService(AudioBackend):
         self.cast.disconnect()
 
 
-def autodetect(config, emitter):
+def autodetect(config, bus):
     """
         Autodetect chromecasts on the network and create backends for each
     """
@@ -156,6 +156,6 @@ def autodetect(config, emitter):
     ret = []
     for c in casts:
         LOG.info(c.name + " found.")
-        ret.append(ChromecastService(config, emitter, c.name.lower(), c))
+        ret.append(ChromecastService(config, bus, c.name.lower(), c))
 
     return ret

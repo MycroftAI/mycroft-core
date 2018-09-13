@@ -50,7 +50,7 @@ function show_help() {
     echo
     echo "Options:"
     echo "    -r, --allow-root  Allow to be run as root (e.g. sudo)"
-    echo "    -sm               Skip building mimic"
+    echo "    -fm               Force mimic build"
     echo "    -h, --help        Show this message"
     echo
     echo "This will prepare your environment for running the mycroft-core"
@@ -58,7 +58,7 @@ function show_help() {
     echo "not as root/sudo."
 }
 
-opt_skipmimic=false
+opt_forcemimicbuild=false
 opt_allowroot=false
 
 for var in "$@" ; do
@@ -71,8 +71,8 @@ for var in "$@" ; do
         opt_allowroot=true
     fi
 
-    if [[ ${var} == "-sm" ]] ; then
-        opt_skipmimic=true
+    if [[ ${var} == "-fm" ]] ; then
+        opt_forcemimicbuild=true
     fi
 done
 
@@ -81,6 +81,20 @@ if [ $(id -u) -eq 0 ] && [ "${opt_allowroot}" != true ] ; then
     echo "To force, rerun with --allow-root"
     exit 1
 fi
+
+# TODO: Create a setup wizard that guides the user through some decisions
+# if [ ! -f .dev_opts.json ] ; then
+    # E.g.:
+    #  * Run on 'master' or on 'dev'?  Most users probably want 'master'
+    #  * Auto-update?  When on, it will pull and run dev_setup automatically
+    #  * Pull down mimic source?  Most will be happy with just the package
+    #  * Add mycroft-core/bin to the .bashrc PATH?
+
+    # from Picroft's wizard:
+    #   echo '{"use_branch":"master", "auto_update": true}' > .dev_opts.json
+    # or
+    #   echo '{"use_branch":"dev", "auto_update": false}' > .dev_opts.json
+# fi
 
 function found_exe() {
     hash "$1" 2>/dev/null
@@ -93,8 +107,8 @@ function install_deps() {
     fi
 
     if found_exe zypper ; then
-	$SUDO zypper install -y git python glibc-devel linux-glibc-devel python-devel python2-virtualenv python2-gobject-devel python-virtualenvwrapper libtool libffi-devel libopenssl-devel autoconf automake bison swig glib2-devel portaudio-devel mpg123 flac curl libicu-devel pkg-config pkg-config libjpeg-devel libfann-devel python-curses
-	$SUDO zypper install -y -t pattern devel_C_C++
+        $SUDO zypper install -y git python glibc-devel linux-glibc-devel python-devel python2-virtualenv python2-gobject-devel python-virtualenvwrapper libtool libffi-devel libopenssl-devel autoconf automake bison swig glib2-devel portaudio-devel mpg123 flac curl libicu-devel pkg-config pkg-config libjpeg-devel libfann-devel python-curses
+        $SUDO zypper install -y -t pattern devel_C_C++
     elif found_exe apt-get ; then
         $SUDO apt-get install -y git python3 python3-dev python-setuptools python-gobject-2-dev libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config automake libjpeg-dev libfann-dev build-essential jq
     elif found_exe pacman; then
@@ -135,9 +149,9 @@ install_deps
 git config commit.template .gitmessage
 
 # Check whether to build mimic (it takes a really long time!)
-build_mimic="y"
-if [[ ${opt_skipmimic} == true ]] ; then
-    build_mimic="n"
+build_mimic="n"
+if [[ ${opt_forcemimicbuild} == true ]] ; then
+    build_mimic="y"
 else
     # first, look for a build of mimic in the folder
     has_mimic=""
@@ -152,9 +166,8 @@ else
         fi
     fi
 
-    if ! [ "$has_mimic" == "" ] ; then
-        echo "Mimic is installed. Press 'y' to rebuild mimic, any other key to skip."
-        read -n1 build_mimic
+    if [ "$has_mimic" == "" ]; then
+        build_mimic="y"
     fi
 fi
 
@@ -166,7 +179,10 @@ fi
 source "${VIRTUALENV_ROOT}/bin/activate"
 cd "${TOP}"
 
-easy_install pip==9.0.1 # force version of pip
+# Force version of pip for reproducability, but there is nothing special
+# about this version.  Update whenever a new version is released and
+# verified functional.
+easy_install pip==18.0
 
 PYTHON=$( python -c "import sys;print('python{}.{}'.format(sys.version_info[0], sys.version_info[1]))" )
 
@@ -234,6 +250,15 @@ fi
 # set permissions for common scripts
 chmod +x start-mycroft.sh
 chmod +x stop-mycroft.sh
+chmod +x bin/mycroft-cli-client
+chmod +x bin/mycroft-help
+chmod +x bin/mycroft-mic-test
+chmod +x bin/mycroft-msk
+chmod +x bin/mycroft-msm
+chmod +x bin/mycroft-pip
+chmod +x bin/mycroft-say-to
+chmod +x bin/mycroft-skill-testrunner
+chmod +x bin/mycroft-speak
 
 # create and set permissions for logging
 if [[ ! -w /var/log/mycroft/ ]] ; then
