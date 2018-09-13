@@ -463,7 +463,7 @@ class EvaluationRule(object):
                                     "file '" + d + ".dialog'") \
                         from template_load_exception
                 # Allow custom fields to be anything
-                d = [re.sub('{.*?\}', '.*', t) for t in dialogs]
+                d = [re.sub(r'{.*?\}', r'.*', t) for t in dialogs]
                 # Create rule allowing any of the sentences for that dialog
                 rules = [['match', 'utterance', r] for r in d]
                 self.rule.append(['or'] + rules)
