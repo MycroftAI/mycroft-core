@@ -107,7 +107,7 @@ function install_deps() {
     fi
 
     if found_exe zypper ; then
-        $SUDO zypper install -y git python glibc-devel linux-glibc-devel python-devel python2-virtualenv python2-gobject-devel python-virtualenvwrapper libtool libffi-devel libopenssl-devel autoconf automake bison swig glib2-devel portaudio-devel mpg123 flac curl libicu-devel pkg-config pkg-config libjpeg-devel libfann-devel python-curses
+        $SUDO zypper install -y git python3 python3-devel libtool libffi-devel libopenssl-devel autoconf automake bison swig portaudio-devel mpg123 flac curl libicu-devel pkg-config libjpeg-devel libfann-devel python3-curses pulseaudio
         $SUDO zypper install -y -t pattern devel_C_C++
     elif found_exe apt-get ; then
         $SUDO apt-get install -y git python3 python3-dev python-setuptools python-gobject-2-dev libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config automake libjpeg-dev libfann-dev build-essential jq
