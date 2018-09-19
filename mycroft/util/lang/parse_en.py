@@ -310,7 +310,8 @@ def extract_datetime_en(string, currentDate):
         s = s.lower().replace('?', '').replace('.', '').replace(',', '') \
             .replace(' the ', ' ').replace(' a ', ' ').replace(' an ', ' ') \
             .replace("o' clock", "o'clock").replace("o clock", "o'clock") \
-            .replace("o ' clock", "o'clock").replace("o 'clock", "o'clock")
+            .replace("o ' clock", "o'clock").replace("o 'clock", "o'clock") \
+            .replace("oclock", "o'clock")
 
         wordList = s.split()
         for idx, word in enumerate(wordList):
@@ -817,16 +818,18 @@ def extract_datetime_en(string, currentDate):
             HH = HH + 12 if remainder == "pm" and HH < 12 else HH
             HH = HH - 12 if remainder == "am" and HH >= 12 else HH
 
-            if not military and not(remainder in ['am', 'pm']):
-                if not daySpecified or dayOffset < 1:
-                    # ambiguous time, detect whether they mean this evening or
-                    # the next morning based on whether it has already passed
-                    if HH > dateNow.hour:
-                        # has passed, assume the next morning
-                        dayOffset += 1
-                    elif HH <= 12:
-                        # forthcoming, assume this afternoon/evening
-                        HH += 12
+            if (not military and
+                    remainder not in ['am', 'pm', 'hours', 'minutes'] and
+                    ((not daySpecified) or dayOffset < 1)):
+                # ambiguous time, detect whether they mean this evening or
+                # the next morning based on whether it has already passed
+                if dateNow.hour < HH:
+                    pass  # No modification needed
+                elif dateNow.hour < HH + 12:
+                    HH += 12
+                else:
+                    # has passed, assume the next morning
+                    dayOffset += 1
 
             if timeQualifier in timeQualifiersPM and HH < 12:
                 HH += 12
