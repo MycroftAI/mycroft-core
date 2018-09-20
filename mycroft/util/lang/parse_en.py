@@ -280,7 +280,7 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
     return val
 
 
-def extract_datetime_en(string, currentDate):
+def extract_datetime_en(string, dateNow):
     """ Convert a human date reference into an exact datetime
 
     Convert things like
@@ -298,7 +298,7 @@ def extract_datetime_en(string, currentDate):
 
     Args:
         string (str): string containing date words
-        currentDate (datetime): A reference date/time for "tommorrow", etc
+        dateNow (datetime): A reference date/time for "tommorrow", etc
 
     Returns:
         [datetime, str]: An array containing the datetime and the remaining
@@ -337,7 +337,7 @@ def extract_datetime_en(string, currentDate):
                        minAbs != 0 or secOffset != 0
                )
 
-    if string == "" or not currentDate:
+    if string == "" or not dateNow:
         return None
 
     found = False
@@ -345,7 +345,6 @@ def extract_datetime_en(string, currentDate):
     dayOffset = False
     monthOffset = 0
     yearOffset = 0
-    dateNow = currentDate
     today = dateNow.strftime("%w")
     currentYear = dateNow.strftime("%Y")
     fromFlag = False
