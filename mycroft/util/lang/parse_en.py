@@ -330,7 +330,7 @@ def extract_datetime_en(string, currentDate):
     def date_found():
         return found or \
                (
-                       datestr != "" or timeStr != "" or
+                       datestr != "" or
                        yearOffset != 0 or monthOffset != 0 or
                        dayOffset is True or hrOffset != 0 or
                        hrAbs != 0 or minOffset != 0 or
@@ -543,7 +543,6 @@ def extract_datetime_en(string, currentDate):
             daySpecified = True
 
     # parse time
-    timeStr = ""
     hrOffset = 0
     minOffset = 0
     secOffset = 0
@@ -913,15 +912,8 @@ def extract_datetime_en(string, currentDate):
                 tzinfo=extractedDate.tzinfo)
     else:
         # ignore the current HH:MM:SS if relative using days or greater
-        if not timeStr and hrOffset == 0 and minOffset == 0 and secOffset == 0:
+        if hrOffset == 0 and minOffset == 0 and secOffset == 0:
             extractedDate = extractedDate.replace(hour=0, minute=0, second=0)
-
-    if timeStr != "":
-        temp = datetime(timeStr)
-        extractedDate = extractedDate.replace(hour=temp.strftime("%H"),
-                                              minute=temp.strftime("%M"),
-                                              second=temp.strftime("%S"),
-                                              tzinfo=extractedDate.tzinfo)
 
     if yearOffset != 0:
         extractedDate = extractedDate + relativedelta(years=yearOffset)
