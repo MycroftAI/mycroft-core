@@ -54,9 +54,12 @@ class AudioBackend():
         pass
 
     @abstractmethod
-    def play(self):
+    def play(self, repeat=False):
         """
             Start playback.
+
+            Args:
+                repeat: Repeat playlist, defaults to False
         """
         pass
 
