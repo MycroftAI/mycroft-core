@@ -161,7 +161,9 @@ def extractnumber_de(text):
     return val
 
 
-def extract_datetime_de(string, currentDate):
+def extract_datetime_de(string, currentDate, default_time):
+    # TODO: Handle default time
+
     def clean_string(s):
         """
             cleans the input string of unneeded punctuation

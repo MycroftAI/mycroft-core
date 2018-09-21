@@ -470,7 +470,8 @@ def extractnumber_fr(text):
     return result
 
 
-def extract_datetime_fr(string, currentDate):
+def extract_datetime_fr(string, currentDate, default_time):
+    # TODO: handle default time
     def clean_string(s):
         """
             cleans the input string of unneeded punctuation and capitalization

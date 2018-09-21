@@ -280,7 +280,7 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
     return val
 
 
-def extract_datetime_en(string, dateNow):
+def extract_datetime_en(string, dateNow, default_time):
     """ Convert a human date reference into an exact datetime
 
     Convert things like
@@ -299,6 +299,7 @@ def extract_datetime_en(string, dateNow):
     Args:
         string (str): string containing date words
         dateNow (datetime): A reference date/time for "tommorrow", etc
+        default_time (time): Time to set if no time was found in the string
 
     Returns:
         [datetime, str]: An array containing the datetime and the remaining
@@ -545,8 +546,8 @@ def extract_datetime_en(string, dateNow):
     hrOffset = 0
     minOffset = 0
     secOffset = 0
-    hrAbs = 0
-    minAbs = 0
+    hrAbs = None
+    minAbs = None
     military = False
 
     for idx, word in enumerate(words):
@@ -566,18 +567,18 @@ def extract_datetime_en(string, dateNow):
             hrAbs = 0
             used += 1
         elif word == "morning":
-            if hrAbs == 0:
+            if hrAbs is None:
                 hrAbs = 8
             used += 1
         elif word == "afternoon":
-            if hrAbs == 0:
+            if hrAbs is None:
                 hrAbs = 15
             used += 1
         elif word == "evening":
-            if hrAbs == 0:
+            if hrAbs is None:
                 hrAbs = 19
             used += 1
-            # parse half an hour, quarter hour
+        # parse half an hour, quarter hour
         elif word == "hour" and \
                 (wordPrev in markers or wordPrevPrev in markers):
             if wordPrev == "half":
@@ -921,6 +922,13 @@ def extract_datetime_en(string, dateNow):
     if dayOffset != 0:
         extractedDate = extractedDate + relativedelta(days=dayOffset)
     if hrAbs != -1 and minAbs != -1:
+        # If no time was supplied in the string set the time to default
+        # time if it's available
+        if hrAbs is None and minAbs is None and default_time is not None:
+            hrAbs, minAbs = default_time.hour, default_time.minute
+        else:
+            hrAbs = hrAbs or 0
+            minAbs = minAbs or 0
 
         extractedDate = extractedDate + relativedelta(hours=hrAbs,
                                                       minutes=minAbs)

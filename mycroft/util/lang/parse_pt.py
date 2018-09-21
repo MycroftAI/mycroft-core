@@ -367,7 +367,8 @@ def normalize_pt(text, remove_articles):
     return pt_pruning(normalized[1:], agressive=remove_articles)
 
 
-def extract_datetime_pt(input_str, currentDate):
+def extract_datetime_pt(input_str, currentDate, default_time):
+    # TODO handle default_time
     def clean_string(s):
         # cleans the input string of unneeded punctuation and capitalization
         # among other things

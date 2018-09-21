@@ -331,7 +331,8 @@ def normalize_it(text, remove_articles):
     return normalized[1:]
 
 
-def extract_datetime_it(string, currentDate):
+def extract_datetime_it(string, currentDate, default_time):
+    # TODO handle default_time
     def clean_string(s):
         """
             cleans the input string of unneeded punctuation and capitalization

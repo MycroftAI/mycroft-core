@@ -124,7 +124,8 @@ def extractnumber_sv(text):
     return val
 
 
-def extract_datetime_sv(string, currentDate):
+def extract_datetime_sv(string, currentDate, default_time):
+    # TODO handle default_time
     def clean_string(s):
         """
             cleans the input string of unneeded punctuation and capitalization
