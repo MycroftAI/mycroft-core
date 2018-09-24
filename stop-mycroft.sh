@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Copyright 2017 Mycroft AI Inc.
 #
@@ -18,31 +18,30 @@ SOURCE="${BASH_SOURCE[0]}"
 
 script=${0}
 script=${script##*/}
-DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
-SCRIPTS="$DIR/scripts"
-mkdir -p $SCRIPTS/logs
+cd -P "$( dirname "$SOURCE" )"
 
 function help() {
-  echo "${script}:  Mycroft service stopper"
-  echo "usage: ${script} [service]"
-  echo
-  echo "Service:"
-  echo "  all       ends core services: bus, audio, skills, voice"
-  echo "  (none)    same as \"all\""
-  echo "  bus       stop the Mycroft messagebus service"
-  echo "  audio     stop the audio playback service"
-  echo "  skills    stop the skill service"
-  echo "  voice     stop voice capture service"
-  echo
-  echo "Examples:"
-  echo "  ${script}"
-  echo "  ${script} audio"
+    echo "${script}:  Mycroft service stopper"
+    echo "usage: ${script} [service]"
+    echo
+    echo "Service:"
+    echo "  all       ends core services: bus, audio, skills, voice"
+    echo "  (none)    same as \"all\""
+    echo "  bus       stop the Mycroft messagebus service"
+    echo "  audio     stop the audio playback service"
+    echo "  skills    stop the skill service"
+    echo "  voice     stop voice capture service"
+    echo "  enclosure stop mark_1 enclosure service"
+    echo
+    echo "Examples:"
+    echo "  ${script}"
+    echo "  ${script} audio"
 
-  exit 1
+    exit 0
 }
 
 function process-running() {
-    if [[ $( ps aux | grep "[p]ython .*${1}/main.py" ) ]] ; then
+    if [[ $( pgrep -f "python3 -m mycroft.*${1}" ) ]] ; then
         return 0
     else
         return 1
@@ -50,14 +49,14 @@ function process-running() {
 }
 
 function end-process() {
-
     if process-running $1 ; then
-        pid=$( ps aux | grep "[p]ython .*${1}/main.py" | awk '{print $2}' )
+        echo -n "Stopping $1..."
+        pid=$( pgrep -f "python3 -m mycroft.*${1}" )
         kill -SIGINT ${pid}
 
+        # Wait up to 5 seconds (50 * 0.1) for process to stop
         c=1
-        while [ $c -le 20 ]
-        do
+        while [ $c -le 50 ] ; do
             if process-running $1 ; then
                 sleep 0.1
                 (( c++ ))
@@ -67,43 +66,69 @@ function end-process() {
         done
 
         if process-running $1 ; then
-            echo "Killing $1..."
+            echo "failed to stop."
+            echo -n "  Killing $1..."
             kill -9 ${pid}
+            echo "killed."
+            result=120
+        else
+            echo "stopped."
+            if [ $result -eq 0 ] ; then
+                result=100
+            fi
         fi
     fi
 }
 
+
+result=0  # default, no change
 
 
 OPT=$1
 shift
 
 case ${OPT} in
-  "all")
-    ;&
-  "")
-    echo "Stopping all mycroft-core services"
-    end-process service
-    end-process skills
-    end-process audio
-    end-process speech
-    ;;
-  "bus")
-    end-process service
-    ;;
-  "audio")
-    end-process audio
-    ;;
-  "skills")
-    end-process skills
-    ;;
-  "voice")
-    end-process speech
-    ;;
+    "all")
+        ;&
+    "")
+        echo "Stopping all mycroft-core services"
+        end-process messagebus.service
+        end-process skills
+        end-process audio
+        end-process speech
 
+        # determine platform type
+        if [[ -r /etc/mycroft/mycroft.conf ]] ; then
+            mycroft_platform=$( jq -r ".enclosure.platform" < /etc/mycroft/mycroft.conf )
+            if [[ $mycroft_platform == "mycroft_mark_1" ]] ; then
+                # running on a Mark 1, stop enclosure service
+                end-process enclosure
+            fi
+        fi
+        ;;
+    "bus")
+        end-process messagebus.service
+        ;;
+    "audio")
+        end-process audio
+        ;;
+    "skills")
+        end-process skills
+        ;;
+    "voice")
+        end-process speech
+        ;;
+    "enclosure")
+        end-process enclosure
+        ;;
 
-  *)
-    help
-    ;;
+    *)
+        help
+        ;;
 esac
 
+# Exit codes:
+#     0   if nothing changed (e.g. --help or no process was running)
+#     100 at least one process was stopped
+#     120 if any process had to be killed
+exit $result

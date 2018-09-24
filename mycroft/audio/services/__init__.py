@@ -21,12 +21,13 @@ class AudioBackend():
 
         Args:
             config: configuration dict for the instance
-            emitter: eventemitter or websocket object
+            bus:    mycroft messagebus emitter
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, config, emitter):
+    def __init__(self, config, bus):
         self._track_start_callback = None
+        self.supports_mime_hints = False
 
     @abstractmethod
     def supported_uris(self):
@@ -63,6 +64,8 @@ class AudioBackend():
     def stop(self):
         """
             Stop playback.
+
+            Returns: (bool) True if playback was stopped, otherwise False
         """
         pass
 

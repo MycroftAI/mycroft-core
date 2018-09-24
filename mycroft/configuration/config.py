@@ -23,10 +23,6 @@ from requests import RequestException
 from mycroft.util.json_helper import load_commented_json
 from mycroft.util.log import LOG
 
-# Python 2+3 compatibility
-from future.utils import iteritems
-from past.builtins import basestring
-
 
 def merge_dict(base, delta):
     """
@@ -37,7 +33,7 @@ def merge_dict(base, delta):
             delta: Dictionary to merge into base
     """
 
-    for k, dv in iteritems(delta):
+    for k, dv in delta.items():
         bv = base.get(k)
         if isinstance(dv, dict) and isinstance(bv, dict):
             merge_dict(bv, dv)
@@ -67,7 +63,7 @@ def translate_remote(config, setting):
     """
     IGNORED_SETTINGS = ["uuid", "@type", "active", "user", "device"]
 
-    for k, v in iteritems(setting):
+    for k, v in setting.items():
         if k not in IGNORED_SETTINGS:
             # Translate the CamelCase values stored remotely into the
             # Python-style names used within mycroft-core.
@@ -153,7 +149,7 @@ class RemoteConf(LocalConf):
     def __init__(self, cache=None):
         super(RemoteConf, self).__init__(None)
 
-        cache = cache or '/opt/mycroft/web_config_cache.json'
+        cache = cache or '/var/tmp/mycroft_web_cache.json'
         from mycroft.api import is_paired
         if not is_paired():
             self.load_local(cache)
@@ -170,7 +166,8 @@ class RemoteConf(LocalConf):
             except RequestException as e:
                 LOG.error("RequestException fetching remote location: {}"
                           .format(str(e)))
-                location = load_commented_json(cache).get('location')
+                if exists(cache) and isfile(cache):
+                    location = load_commented_json(cache).get('location')
 
             if location:
                 setting["location"] = location
@@ -235,7 +232,7 @@ class Configuration(object):
         else:
             # Handle strings in stack
             for index, item in enumerate(configs):
-                if isinstance(item, basestring):
+                if isinstance(item, str):
                     configs[index] = LocalConf(item)
 
         # Merge all configs into one

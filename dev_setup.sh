@@ -41,25 +41,27 @@
 # exit on any error
 set -Ee
 
-show_help() {
-        echo "dev_setup.sh: Mycroft development environment setup"
-        echo "Usage: dev_setup.sh [options]"
-        echo
-        echo "Options:"
-        echo "    -r, --allow-root  Allow to be run as root (e.g. sudo)"
-        echo "    -sm               Skip building mimic"
-        echo "    -h, --help        Show this message"
-        echo
-        echo "This will prepare your environment for running the mycroft-core"
-	echo "services. Normally this should be run as a normal user,"
-	echo "not as root/sudo."
+cd $(dirname $0)
+TOP=$( pwd -L )
+
+function show_help() {
+    echo "dev_setup.sh: Mycroft development environment setup"
+    echo "Usage: dev_setup.sh [options]"
+    echo
+    echo "Options:"
+    echo "    -r, --allow-root  Allow to be run as root (e.g. sudo)"
+    echo "    -fm               Force mimic build"
+    echo "    -h, --help        Show this message"
+    echo
+    echo "This will prepare your environment for running the mycroft-core"
+    echo "services. Normally this should be run as a normal user,"
+    echo "not as root/sudo."
 }
 
-opt_skipmimic=false
+opt_forcemimicbuild=false
 opt_allowroot=false
 
-for var in "$@"
-do
+for var in "$@" ; do
     if [[ ${var} == "-h" ]] || [[ ${var} == "--help" ]] ; then
         show_help
         exit 0
@@ -69,34 +71,51 @@ do
         opt_allowroot=true
     fi
 
-    if [[ ${var} == "-sm" ]] ; then
-        opt_skipmimic=true
+    if [[ ${var} == "-fm" ]] ; then
+        opt_forcemimicbuild=true
     fi
 done
 
 if [ $(id -u) -eq 0 ] && [ "${opt_allowroot}" != true ] ; then
-  echo "This script should not be run as root or with sudo."
-  echo "To force, rerun with --allow-root"
-  exit 1
+    echo "This script should not be run as root or with sudo."
+    echo "To force, rerun with --allow-root"
+    exit 1
 fi
 
-found_exe() {
+# TODO: Create a setup wizard that guides the user through some decisions
+# if [ ! -f .dev_opts.json ] ; then
+    # E.g.:
+    #  * Run on 'master' or on 'dev'?  Most users probably want 'master'
+    #  * Auto-update?  When on, it will pull and run dev_setup automatically
+    #  * Pull down mimic source?  Most will be happy with just the package
+    #  * Add mycroft-core/bin to the .bashrc PATH?
+
+    # from Picroft's wizard:
+    #   echo '{"use_branch":"master", "auto_update": true}' > .dev_opts.json
+    # or
+    #   echo '{"use_branch":"dev", "auto_update": false}' > .dev_opts.json
+# fi
+
+function found_exe() {
     hash "$1" 2>/dev/null
 }
 
-install_deps() {
+function install_deps() {
     echo "Installing packages..."
-    if found_exe sudo; then
+    if found_exe sudo ; then
         SUDO=sudo
+    else
+        echo "This script requires \"sudo\" to install system packages. Please install it, then re-run this script."
+        exit 1
     fi
 
-    if found_exe zypper; then
-	$SUDO zypper install -y git python glibc-devel linux-glibc-devel python-devel python2-virtualenv python2-gobject-devel python-virtualenvwrapper libtool libffi-devel libopenssl-devel autoconf automake bison swig glib2-devel portaudio-devel mpg123 flac curl libicu-devel pkg-config pkg-config libjpeg-devel libfann-devel python-curses
-	$SUDO zypper install -y -t pattern devel_C_C++
-    elif found_exe apt-get; then
-        $SUDO apt-get install -y git python python-dev python-setuptools python-virtualenv python-gobject-2-dev virtualenvwrapper libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config automake libjpeg-dev libfann-dev build-essential jq
+    if found_exe zypper ; then
+        $SUDO zypper install -y git python3 python3-devel libtool libffi-devel libopenssl-devel autoconf automake bison swig portaudio-devel mpg123 flac curl libicu-devel pkg-config libjpeg-devel libfann-devel python3-curses pulseaudio
+        $SUDO zypper install -y -t pattern devel_C_C++
+    elif found_exe apt-get ; then
+        $SUDO apt-get install -y git python3 python3-dev python-setuptools python-gobject-2-dev libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config automake libjpeg-dev libfann-dev build-essential jq
     elif found_exe pacman; then
-        $SUDO pacman -S --needed --noconfirm git python2 python2-pip python2-setuptools python2-virtualenv python2-gobject python-virtualenvwrapper libtool libffi openssl autoconf bison swig glib2 portaudio mpg123 screen flac curl pkg-config icu automake libjpeg-turbo base-devel jq
+        $SUDO pacman -S --needed --noconfirm git python python-pip python-setuptools python-virtualenv python-gobject python-virtualenvwrapper libffi swig portaudio mpg123 screen flac curl icu libjpeg-turbo base-devel jq pulseaudio pulseaudio-alsa
         pacman -Qs "^fann$" &> /dev/null || (
             git clone  https://aur.archlinux.org/fann.git
             cd fann
@@ -104,10 +123,10 @@ install_deps() {
             cd ..
             rm -rf fann
         )
-    elif found_exe dnf; then
-        $SUDO dnf install -y git python python-devel python-pip python-setuptools python-virtualenv pygobject2-devel python-virtualenvwrapper libtool libffi-devel openssl-devel autoconf bison swig glib2-devel portaudio-devel mpg123 mpg123-plugins-pulseaudio screen curl pkgconfig libicu-devel automake libjpeg-turbo-devel fann-devel gcc-c++ redhat-rpm-config jq
+    elif found_exe dnf ; then
+        $SUDO dnf install -y git python3 python3-devel python3-pip python3-setuptools python3-virtualenv pygobject3-devel libtool libffi-devel openssl-devel autoconf bison swig glib2-devel portaudio-devel mpg123 mpg123-plugins-pulseaudio screen curl pkgconfig libicu-devel automake libjpeg-turbo-devel fann-devel gcc-c++ redhat-rpm-config jq
     else
-        if found_exe tput; then
+        if found_exe tput ; then
 			green="$(tput setaf 2)"
 			blue="$(tput setaf 4)"
 			reset="$(tput sgr0)"
@@ -119,74 +138,75 @@ install_deps() {
     fi
 }
 
+VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${TOP}/.venv"}
+
+function install_venv() {
+    python3 -m venv "${VIRTUALENV_ROOT}/" --without-pip
+    curl https://bootstrap.pypa.io/get-pip.py | "${VIRTUALENV_ROOT}/bin/python"
+}
+
 install_deps
 
 # Configure to use the standard commit template for
 # this repo only.
 git config commit.template .gitmessage
 
-TOP=$(cd $(dirname $0) && pwd -L)
-
-if [ -z "$WORKON_HOME" ]; then
-    VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${HOME}/.virtualenvs/mycroft"}
-else
-    VIRTUALENV_ROOT="$WORKON_HOME/mycroft"
-fi
-
 # Check whether to build mimic (it takes a really long time!)
-build_mimic='y'
-if [[ ${opt_skipmimic} == true ]] ; then
-  build_mimic='n'
+build_mimic="n"
+if [[ ${opt_forcemimicbuild} == true ]] ; then
+    build_mimic="y"
 else
-  # first, look for a build of mimic in the folder
-  has_mimic=""
-  if [[ -f ${TOP}/mimic/bin/mimic ]] ; then
-      has_mimic=$( ${TOP}/mimic/bin/mimic -lv | grep Voice )
-  fi
-
-  # in not, check the system path
-  if [ "$has_mimic" = "" ] ; then
-    if [ -x "$(command -v mimic)" ]; then
-      has_mimic="$( mimic -lv | grep Voice )"
+    # first, look for a build of mimic in the folder
+    has_mimic=""
+    if [[ -f ${TOP}/mimic/bin/mimic ]] ; then
+        has_mimic=$( ${TOP}/mimic/bin/mimic -lv | grep Voice ) || true
     fi
-  fi
 
-  if ! [ "$has_mimic" == "" ] ; then
-    echo "Mimic is installed. Press 'y' to rebuild mimic, any other key to skip."
-    read -n1 build_mimic
-  fi
+    # in not, check the system path
+    if [ "$has_mimic" == "" ] ; then
+        if [ -x "$(command -v mimic)" ] ; then
+            has_mimic="$( mimic -lv | grep Voice )" || true
+        fi
+    fi
+
+    if [ "$has_mimic" == "" ]; then
+        build_mimic="y"
+    fi
 fi
 
-# create virtualenv, consistent with virtualenv-wrapper conventions
-if [ ! -d "${VIRTUALENV_ROOT}" ]; then
-   mkdir -p $(dirname "${VIRTUALENV_ROOT}")
-  virtualenv -p python2.7 "${VIRTUALENV_ROOT}"
+if [ ! -x "${VIRTUALENV_ROOT}/bin/activate" ] ; then
+    install_venv
 fi
+
+# Start the virtual environment
 source "${VIRTUALENV_ROOT}/bin/activate"
 cd "${TOP}"
-easy_install pip==9.0.1 # force version of pip
-pip install --upgrade virtualenv
+
+# Force version of pip for reproducability, but there is nothing special
+# about this version.  Update whenever a new version is released and
+# verified functional.
+easy_install pip==18.0
+
+PYTHON=$( python -c "import sys;print('python{}.{}'.format(sys.version_info[0], sys.version_info[1]))" )
 
 # Add mycroft-core to the virtualenv path
 # (This is equivalent to typing 'add2virtualenv $TOP', except
 # you can't invoke that shell function from inside a script)
-VENV_PATH_FILE="${VIRTUALENV_ROOT}/lib/python2.7/site-packages/_virtualenv_path_extensions.pth"
+VENV_PATH_FILE="${VIRTUALENV_ROOT}/lib/$PYTHON/site-packages/_virtualenv_path_extensions.pth"
 if [ ! -f "$VENV_PATH_FILE" ] ; then
     echo "import sys; sys.__plen = len(sys.path)" > "$VENV_PATH_FILE" || return 1
     echo "import sys; new=sys.path[sys.__plen:]; del sys.path[sys.__plen:]; p=getattr(sys,'__egginsert',0); sys.path[p:p]=new; sys.__egginsert = p+len(new)" >> "$VENV_PATH_FILE" || return 1
 fi
 
-if ! grep -q "$TOP" $VENV_PATH_FILE; then
-   echo "Adding mycroft-core to virtualenv path"
-   sed -i.tmp '1 a\
+if ! grep -q "$TOP" $VENV_PATH_FILE ; then
+    echo "Adding mycroft-core to virtualenv path"
+    sed -i.tmp '1 a\
 '"$TOP"'
 ' "${VENV_PATH_FILE}"
 fi
 
-# install requirements (except pocketsphinx)
-# removing the pip2 explicit usage here for consistency with the above use.
-
-if ! pip install -r requirements.txt; then
+# install required python modules
+if ! pip install -r requirements.txt ; then
     echo "Warning: Failed to install all requirements. Continue? y/N"
     read -n1 continue
     if [[ "$continue" != "y" ]] ; then
@@ -194,13 +214,27 @@ if ! pip install -r requirements.txt; then
     fi
 fi
 
-SYSMEM=$(free|awk '/^Mem:/{print $2}')
-MAXCORES=$(($SYSMEM / 512000))
-CORES=$(nproc)
-
-if [[ ${MAXCORES} -lt ${CORES} ]]; then
-  CORES=${MAXCORES}
+if ! pip install -r test-requirements.txt ; then
+    echo "Warning test requirements wasn't installed, Note: normal operation should still work fine..."
 fi
+
+SYSMEM=$( free | awk '/^Mem:/ { print $2 }' )
+MAXCORES=$(($SYSMEM / 512000))
+MINCORES=1
+CORES=$( nproc )
+
+# ensure MAXCORES is > 0
+if [[ ${MAXCORES} -lt 1 ]] ; then
+    MAXCORES=${MINCORES}
+fi
+
+# look for positive integer
+if ! [[ ${CORES} =~ ^[0-9]+$ ]] ; then
+    CORES=${MINCORES}
+elif [[ ${MAXCORES} -lt ${CORES} ]] ; then
+    CORES=${MAXCORES}
+fi
+
 echo "Building with $CORES cores."
 
 #build and install pocketsphinx
@@ -209,18 +243,35 @@ echo "Building with $CORES cores."
 #build and install mimic
 cd "${TOP}"
 
-if [[ "$build_mimic" == 'y' ]] || [[ "$build_mimic" == 'Y' ]]; then
-  echo "WARNING: The following can take a long time to run!"
-  "${TOP}/scripts/install-mimic.sh" " ${CORES}"
+if [[ "$build_mimic" == "y" ]] || [[ "$build_mimic" == "Y" ]] ; then
+    echo "WARNING: The following can take a long time to run!"
+    "${TOP}/scripts/install-mimic.sh" " ${CORES}"
 else
-  echo "Skipping mimic build."
+    echo "Skipping mimic build."
 fi
-
-# install pygtk for desktop_launcher skill
-"${TOP}/scripts/install-pygtk.sh" " ${CORES}"
 
 # set permissions for common scripts
 chmod +x start-mycroft.sh
 chmod +x stop-mycroft.sh
+chmod +x bin/mycroft-cli-client
+chmod +x bin/mycroft-help
+chmod +x bin/mycroft-mic-test
+chmod +x bin/mycroft-msk
+chmod +x bin/mycroft-msm
+chmod +x bin/mycroft-pip
+chmod +x bin/mycroft-say-to
+chmod +x bin/mycroft-skill-testrunner
+chmod +x bin/mycroft-speak
 
-md5sum requirements.txt dev_setup.sh > .installed
+# create and set permissions for logging
+if [[ ! -w /var/log/mycroft/ ]] ; then
+    # Creating and setting permissions
+    echo "Creating /var/log/mycroft/ directory"
+    if [[ ! -d /var/log/mycroft/ ]] ; then
+        sudo mkdir /var/log/mycroft/
+    fi
+    sudo chmod 777 /var/log/mycroft/
+fi
+
+#Store a fingerprint of setup
+md5sum requirements.txt test-requirements.txt dev_setup.sh > .installed

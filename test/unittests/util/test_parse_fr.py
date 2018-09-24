@@ -15,11 +15,11 @@
 # limitations under the License.
 #
 import unittest
-from datetime import datetime
+from datetime import datetime, time
 
 from mycroft.util.parse import get_gender
 from mycroft.util.parse import extract_datetime
-from mycroft.util.parse import extractnumber
+from mycroft.util.parse import extract_number
 from mycroft.util.parse import normalize
 
 
@@ -39,54 +39,56 @@ class TestNormalize_fr(unittest.TestCase):
                          "la dernière tentative")
 
     def test_extractnumber_fr(self):
-        self.assertEqual(extractnumber("voici le premier test", lang="fr-fr"),
+        self.assertEqual(extract_number("voici le premier test", lang="fr-fr"),
                          1)
-        self.assertEqual(extractnumber("c'est 2 tests", lang="fr-fr"), 2)
-        self.assertEqual(extractnumber("voici le second test", lang="fr-fr"),
+        self.assertEqual(extract_number("c'est 2 tests", lang="fr-fr"), 2)
+        self.assertEqual(extract_number("voici le second test", lang="fr-fr"),
                          2)
-        self.assertEqual(extractnumber("voici trois tests",
-                                       lang="fr-fr"),
+        self.assertEqual(extract_number("voici trois tests",
+                                        lang="fr-fr"),
                          3)
-        self.assertEqual(extractnumber("voici le test numéro 4", lang="fr-fr"),
-                         4)
-        self.assertEqual(extractnumber("un tiers de litre", lang="fr-fr"),
+        self.assertEqual(extract_number("voici le test numéro 4",
+                                        lang="fr-fr"), 4)
+        self.assertEqual(extract_number("un tiers de litre", lang="fr-fr"),
                          1.0 / 3.0)
-        self.assertEqual(extractnumber("3 cuillères", lang="fr-fr"), 3)
-        self.assertEqual(extractnumber("1/3 de litre", lang="fr-fr"),
+        self.assertEqual(extract_number("3 cuillères", lang="fr-fr"), 3)
+        self.assertEqual(extract_number("1/3 de litre", lang="fr-fr"),
                          1.0 / 3.0)
-        self.assertEqual(extractnumber("un quart de bol", lang="fr-fr"), 0.25)
-        self.assertEqual(extractnumber("1/4 de verre", lang="fr-fr"), 0.25)
-        self.assertEqual(extractnumber("2/3 de bol", lang="fr-fr"), 2.0 / 3.0)
-        self.assertEqual(extractnumber("3/4 de bol", lang="fr-fr"), 3.0 / 4.0)
-        self.assertEqual(extractnumber("1 et 3/4 de bol", lang="fr-fr"), 1.75)
-        self.assertEqual(extractnumber("1 bol et demi", lang="fr-fr"), 1.5)
-        self.assertEqual(extractnumber("un bol et demi", lang="fr-fr"), 1.5)
-        self.assertEqual(extractnumber("un et demi bols", lang="fr-fr"), 1.5)
-        self.assertEqual(extractnumber("un bol et un demi", lang="fr-fr"), 1.5)
-        self.assertEqual(extractnumber("trois quarts de bol", lang="fr-fr"),
+        self.assertEqual(extract_number("un quart de bol", lang="fr-fr"), 0.25)
+        self.assertEqual(extract_number("1/4 de verre", lang="fr-fr"), 0.25)
+        self.assertEqual(extract_number("2/3 de bol", lang="fr-fr"), 2.0 / 3.0)
+        self.assertEqual(extract_number("3/4 de bol", lang="fr-fr"), 3.0 / 4.0)
+        self.assertEqual(extract_number("1 et 3/4 de bol", lang="fr-fr"), 1.75)
+        self.assertEqual(extract_number("1 bol et demi", lang="fr-fr"), 1.5)
+        self.assertEqual(extract_number("un bol et demi", lang="fr-fr"), 1.5)
+        self.assertEqual(extract_number("un et demi bols", lang="fr-fr"), 1.5)
+        self.assertEqual(extract_number("un bol et un demi", lang="fr-fr"),
+                         1.5)
+        self.assertEqual(extract_number("trois quarts de bol", lang="fr-fr"),
                          3.0 / 4.0)
-        self.assertEqual(extractnumber("32.2 degrés", lang="fr-fr"), 32.2)
-        self.assertEqual(extractnumber("2 virgule 2 cm", lang="fr-fr"), 2.2)
-        self.assertEqual(extractnumber("2 virgule 0 2 cm", lang="fr-fr"), 2.02)
-        self.assertEqual(extractnumber("ça fait virgule 2 cm", lang="fr-fr"),
+        self.assertEqual(extract_number("32.2 degrés", lang="fr-fr"), 32.2)
+        self.assertEqual(extract_number("2 virgule 2 cm", lang="fr-fr"), 2.2)
+        self.assertEqual(extract_number("2 virgule 0 2 cm", lang="fr-fr"),
+                         2.02)
+        self.assertEqual(extract_number("ça fait virgule 2 cm", lang="fr-fr"),
                          0.2)
-        self.assertEqual(extractnumber("point du tout", lang="fr-fr"),
+        self.assertEqual(extract_number("point du tout", lang="fr-fr"),
                          "point tout")
-        self.assertEqual(extractnumber("32.00 secondes", lang="fr-fr"), 32)
-        self.assertEqual(extractnumber("mange trente-et-une bougies",
-                                       lang="fr-fr"), 31)
-        self.assertEqual(extractnumber("un trentième",
-                                       lang="fr-fr"), 1.0 / 30.0)
-        self.assertEqual(extractnumber("un centième",
-                                       lang="fr-fr"), 0.01)
-        self.assertEqual(extractnumber("un millième",
-                                       lang="fr-fr"), 0.001)
-        self.assertEqual(extractnumber("un 20e",
-                                       lang="fr-fr"), 1.0 / 20.0)
+        self.assertEqual(extract_number("32.00 secondes", lang="fr-fr"), 32)
+        self.assertEqual(extract_number("mange trente-et-une bougies",
+                                        lang="fr-fr"), 31)
+        self.assertEqual(extract_number("un trentième",
+                                        lang="fr-fr"), 1.0 / 30.0)
+        self.assertEqual(extract_number("un centième",
+                                        lang="fr-fr"), 0.01)
+        self.assertEqual(extract_number("un millième",
+                                        lang="fr-fr"), 0.001)
+        self.assertEqual(extract_number("un 20e",
+                                        lang="fr-fr"), 1.0 / 20.0)
 
     def test_extractdatetime_fr(self):
         def extractWithFormat_fr(text):
-            date = datetime(2017, 06, 27, 00, 00)
+            date = datetime(2017, 6, 27, 0, 0)
             [extractedDate, leftover] = extract_datetime(text, date,
                                                          lang="fr-fr")
             extractedDate = extractedDate.strftime("%Y-%m-%d %H:%M:%S")
@@ -98,7 +100,7 @@ class TestNormalize_fr(unittest.TestCase):
             self.assertEqual(res[1], expected_leftover)
 
         def extractWithFormatDate2_fr(text):
-            date = datetime(2017, 06, 30, 17, 00)
+            date = datetime(2017, 6, 30, 17, 0)
             [extractedDate, leftover] = extract_datetime(text, date,
                                                          lang="fr-fr")
             extractedDate = extractedDate.strftime("%Y-%m-%d %H:%M:%S")
@@ -297,14 +299,26 @@ class TestNormalize_fr(unittest.TestCase):
                             "2017-07-17 00:00:00", "range contrat")
         testExtractDate2_fr("achète-toi de l'humour à 15h",
                             "2017-07-01 15:00:00", "achète-toi humour")
-        testExtractNoDate_fr("tais-toi aujourd'hui",
-                             datetime.now().strftime("%Y-%m-%d") + " 00:00:00",
-                             "tais-toi")
+        # Disabling test until French Extract-date incorporates the fixes for
+        # UTC / Local timezones.  Until then this test fails periodically
+        # whenever test is run and the date in the local timezone (where the
+        # test is being run) is a different than the date in UTC.
+        #
+        # testExtractNoDate_fr("tais-toi aujourd'hui",
+        #                   datetime.now().strftime("%Y-%m-%d") + " 00:00:00",
+        #                   "tais-toi")
         self.assertEqual(extract_datetime("", lang="fr-fr"), None)
         self.assertEqual(extract_datetime("phrase inutile", lang="fr-fr"),
                          None)
         self.assertEqual(extract_datetime(
             "apprendre à compter à 37 heures", lang="fr-fr"), None)
+
+    def test_extractdatetime_default_fr(self):
+        default = time(9, 0, 0)
+        anchor = datetime(2017, 6, 27, 0, 0)
+        res = extract_datetime("faire les plantations le 3ème jour de mars",
+                               anchor, lang='fr-fr', default_time=default)
+        self.assertEqual(default, res[0].time())
 
     def test_spaces_fr(self):
         self.assertEqual(normalize("  c'est   le     test", lang="fr-fr"),

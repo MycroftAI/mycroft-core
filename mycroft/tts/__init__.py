@@ -25,7 +25,7 @@ import os.path
 from os.path import dirname, exists, isdir, join
 
 import mycroft.util
-from mycroft.client.enclosure.api import EnclosureAPI
+from mycroft.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.metrics import report_timing, Stopwatch
@@ -33,11 +33,7 @@ from mycroft.util import (
     play_wav, play_mp3, check_for_signal, create_signal, resolve_resource_file
 )
 from mycroft.util.log import LOG
-
-if sys.version_info[0] < 3:
-    from Queue import Queue, Empty
-else:
-    from queue import Queue, Empty
+from queue import Queue, Empty
 
 
 def send_playback_metric(stopwatch, ident):
@@ -111,6 +107,7 @@ class PlaybackThread(Thread):
                 if self.queue.empty():
                     self.tts.end_audio()
                     self._processing_queue = False
+                    self._clear_visimes = False
                 self.blink(0.2)
             except Empty:
                 pass
@@ -176,6 +173,7 @@ class TTS(object):
     def __init__(self, lang, config, validator, audio_ext='wav',
                  phonetic_spelling=True, ssml_tags=None):
         super(TTS, self).__init__()
+        self.bus = None  # initalized in "init" step
         self.lang = lang or 'en-us'
         self.config = config
         self.validator = validator
@@ -211,7 +209,7 @@ class TTS(object):
     def begin_audio(self):
         """Helper function for child classes to call in execute()"""
         # Create signals informing start of speech
-        self.ws.emit(Message("recognizer_loop:audio_output_start"))
+        self.bus.emit(Message("recognizer_loop:audio_output_start"))
 
     def end_audio(self):
         """
@@ -222,7 +220,7 @@ class TTS(object):
             directory needs cleaning to free up disk space.
         """
 
-        self.ws.emit(Message("recognizer_loop:audio_output_end"))
+        self.bus.emit(Message("recognizer_loop:audio_output_end"))
         # Clean the cache as needed
         cache_dir = mycroft.util.get_cache_directory("tts")
         mycroft.util.curate_cache(cache_dir, min_free_percent=100)
@@ -230,10 +228,15 @@ class TTS(object):
         # This check will clear the "signal"
         check_for_signal("isSpeaking")
 
-    def init(self, ws):
-        self.ws = ws
+    def init(self, bus):
+        """ Performs intial setup of TTS object.
+
+        Arguments:
+            bus:    Mycroft messagebus connection
+        """
+        self.bus = bus
         self.playback.init(self)
-        self.enclosure = EnclosureAPI(self.ws)
+        self.enclosure = EnclosureAPI(self.bus)
         self.playback.enclosure = self.enclosure
 
     def get_tts(self, sentence, wav_file):
@@ -301,8 +304,9 @@ class TTS(object):
         create_signal("isSpeaking")
         if self.phonetic_spelling:
             for word in re.findall(r"[\w']+", sentence):
-                if word in self.spellings:
-                    sentence = sentence.replace(word, self.spellings[word])
+                if word.lower() in self.spellings:
+                    sentence = sentence.replace(word,
+                                                self.spellings[word.lower()])
 
         key = str(hashlib.md5(sentence.encode('utf-8', 'ignore')).hexdigest())
         wav_file = os.path.join(mycroft.util.get_cache_directory("tts"),
@@ -353,8 +357,8 @@ class TTS(object):
         try:
             with open(pho_file, "w") as cachefile:
                 cachefile.write(phonemes)
-        except:
-            LOG.debug("Failed to write .PHO to cache")
+        except Exception:
+            LOG.exception("Failed to write {} to cache".format(pho_file))
             pass
 
     def load_phonemes(self, key):
@@ -438,16 +442,20 @@ class TTSFactory(object):
     from mycroft.tts.spdsay_tts import SpdSay
     from mycroft.tts.bing_tts import BingTTS
     from mycroft.tts.ibm_tts import WatsonTTS
+    from mycroft.tts.responsive_voice_tts import ResponsiveVoice
+    from mycroft.tts.mimic2_tts import Mimic2
 
     CLASSES = {
         "mimic": Mimic,
+        "mimic2": Mimic2,
         "google": GoogleTTS,
         "marytts": MaryTTS,
         "fatts": FATTS,
         "espeak": ESpeak,
         "spdsay": SpdSay,
         "watson": WatsonTTS,
-        "bing": BingTTS
+        "bing": BingTTS,
+        "responsive_voice": ResponsiveVoice
     }
 
     @staticmethod

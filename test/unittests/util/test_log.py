@@ -14,7 +14,7 @@
 #
 import unittest
 import sys
-from cStringIO import StringIO
+from io import StringIO
 from threading import Thread
 from mycroft.util.log import LOG
 
@@ -65,6 +65,7 @@ class TestLog(unittest.TestCase):
                 if 'testing ' + msg in line:
                     found_msg = True
             assert found_msg
+
 
 if __name__ == "__main__":
     unittest.main()

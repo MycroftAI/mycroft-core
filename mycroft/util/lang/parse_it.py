@@ -331,7 +331,7 @@ def normalize_it(text, remove_articles):
     return normalized[1:]
 
 
-def extract_datetime_it(string, currentDate=None):
+def extract_datetime_it(string, currentDate, default_time):
     def clean_string(s):
         """
             cleans the input string of unneeded punctuation and capitalization
@@ -410,10 +410,8 @@ def extract_datetime_it(string, currentDate=None):
                 minAbs != 0 or secOffset != 0
             )
 
-    if string == "":
+    if string == "" or not currentDate:
         return None
-    if currentDate is None:
-        currentDate = datetime.now()
 
     found = False
     daySpecified = False
@@ -621,8 +619,8 @@ def extract_datetime_it(string, currentDate=None):
     hrOffset = 0
     minOffset = 0
     secOffset = 0
-    hrAbs = 0
-    minAbs = 0
+    hrAbs = None
+    minAbs = None
 
     for idx, word in enumerate(words):
         if word == "":
@@ -649,30 +647,30 @@ def extract_datetime_it(string, currentDate=None):
             hrAbs = 24
             used += 2
         elif word == "mattina":
-            if hrAbs == 0:
+            if not hrAbs:
                 hrAbs = 8
             used += 1
             if wordNext and wordNext[0].isdigit():  # mattina alle 5
                 hrAbs = int(wordNext)
                 used += 1
         elif word == "pomeriggio":
-            if hrAbs == 0:
+            if not hrAbs:
                 hrAbs = 15
             used += 1
             if wordNext and wordNext[0].isdigit():  # pomeriggio alle 5
                 hrAbs = int(wordNext)
                 used += 1
-                if hrAbs < 12:
-                    hrAbs += 12
+                if (hrAbs or 0) < 12:
+                    hrAbs = (hrAbs or 0) + 12
         elif word == "sera":
-            if hrAbs == 0:
+            if not hrAbs:
                 hrAbs = 19
             used += 1
             if wordNext and wordNext[0].isdigit():  # sera alle 8
                 hrAbs = int(wordNext)
                 used += 1
-                if hrAbs < 12:
-                    hrAbs += 12
+                if (hrAbs or 0) < 12:
+                    hrAbs = (hrAbs or 0) + 12
 
         # parse 5:00 am, 12:00 p.m., etc
         elif word[0].isdigit():
@@ -886,9 +884,9 @@ def extract_datetime_it(string, currentDate=None):
                 minAbs = strMM * 1
                 used += 1
 
-            if hrAbs <= 12 and (timeQualifier == "sera" or
-                                timeQualifier == "pomeriggio"):
-                hrAbs += 12
+            if (hrAbs or 0) <= 12 and (timeQualifier == "sera" or
+                                       timeQualifier == "pomeriggio"):
+                hrAbs = (hrAbs or 0) + 12
 
         if used > 0:
             # removed parsed words from the sentence
@@ -974,11 +972,13 @@ def extract_datetime_it(string, currentDate=None):
         extractedDate = extractedDate + relativedelta(months=monthOffset)
     if dayOffset != 0:
         extractedDate = extractedDate + relativedelta(days=dayOffset)
+    if not hrAbs and not minAbs and default_time:
+        hrAbs = default_time.hour
+        minAbs = default_time.minute
     if hrAbs != -1 and minAbs != -1:
-
-        extractedDate = extractedDate + relativedelta(hours=hrAbs,
-                                                      minutes=minAbs)
-        if (hrAbs != 0 or minAbs != 0) and datestr == "":
+        extractedDate = extractedDate + relativedelta(hours=hrAbs or 0,
+                                                      minutes=minAbs or 0)
+        if (hrAbs or minAbs) and datestr == "":
             if not daySpecified and dateNow > extractedDate:
                 extractedDate = extractedDate + relativedelta(days=1)
     if hrOffset != 0:

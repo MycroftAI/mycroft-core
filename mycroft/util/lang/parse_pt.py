@@ -367,7 +367,7 @@ def normalize_pt(text, remove_articles):
     return pt_pruning(normalized[1:], agressive=remove_articles)
 
 
-def extract_datetime_pt(input_str, currentDate=None):
+def extract_datetime_pt(input_str, currentDate, default_time):
     def clean_string(s):
         # cleans the input string of unneeded punctuation and capitalization
         # among other things
@@ -426,14 +426,12 @@ def extract_datetime_pt(input_str, currentDate=None):
                 datestr != "" or timeStr != "" or
                 yearOffset != 0 or monthOffset != 0 or
                 dayOffset is True or hrOffset != 0 or
-                hrAbs != 0 or minOffset != 0 or
-                minAbs != 0 or secOffset != 0
+                hrAbs or minOffset != 0 or
+                minAbs or secOffset != 0
             )
 
-    if input_str == "":
+    if input_str == "" or not currentDate:
         return None
-    if currentDate is None:
-        currentDate = datetime.now()
 
     found = False
     daySpecified = False
@@ -784,8 +782,8 @@ def extract_datetime_pt(input_str, currentDate=None):
     hrOffset = 0
     minOffset = 0
     secOffset = 0
-    hrAbs = 0
-    minAbs = 0
+    hrAbs = None
+    minAbs = None
     military = False
 
     for idx, word in enumerate(words):
@@ -806,35 +804,35 @@ def extract_datetime_pt(input_str, currentDate=None):
             hrAbs = 0
             used += 2
         elif word == "manha":
-            if hrAbs == 0:
+            if not hrAbs:
                 hrAbs = 8
             used += 1
         elif word == "tarde":
-            if hrAbs == 0:
+            if not hrAbs:
                 hrAbs = 15
             used += 1
         elif word == "meio" and wordNext == "tarde":
-            if hrAbs == 0:
+            if not hrAbs:
                 hrAbs = 17
             used += 2
         elif word == "meio" and wordNext == "manha":
-            if hrAbs == 0:
+            if not hrAbs:
                 hrAbs = 10
             used += 2
         elif word == "fim" and wordNext == "tarde":
-            if hrAbs == 0:
+            if not hrAbs:
                 hrAbs = 19
             used += 2
         elif word == "fim" and wordNext == "manha":
-            if hrAbs == 0:
+            if not hrAbs:
                 hrAbs = 11
             used += 2
         elif word == "tantas" and wordNext == "manha":
-            if hrAbs == 0:
+            if not hrAbs:
                 hrAbs = 4
             used += 2
         elif word == "noite":
-            if hrAbs == 0:
+            if not hrAbs:
                 hrAbs = 22
             used += 1
         # parse half an hour, quarter hour
@@ -1026,7 +1024,7 @@ def extract_datetime_pt(input_str, currentDate=None):
                                 remainder = "am"
                                 used += 1
                             elif wordNextNextNext == "noite":
-                                if 0 > strHH > 6:
+                                if 0 > int(strHH) > 6:
                                     remainder = "am"
                                 else:
                                     remainder = "pm"
@@ -1131,11 +1129,13 @@ def extract_datetime_pt(input_str, currentDate=None):
         extractedDate = extractedDate + relativedelta(months=monthOffset)
     if dayOffset != 0:
         extractedDate = extractedDate + relativedelta(days=dayOffset)
-    if hrAbs != -1 and minAbs != -1:
-
-        extractedDate = extractedDate + relativedelta(hours=hrAbs,
-                                                      minutes=minAbs)
-        if (hrAbs != 0 or minAbs != 0) and datestr == "":
+    if (hrAbs or 0) != -1 and (minAbs or 0) != -1:
+        if hrAbs is None and minAbs is None and default_time:
+            hrAbs = default_time.hour
+            minAbs = default_time.minute
+        extractedDate = extractedDate + relativedelta(hours=hrAbs or 0,
+                                                      minutes=minAbs or 0)
+        if (hrAbs or minAbs) and datestr == "":
             if not daySpecified and dateNow > extractedDate:
                 extractedDate = extractedDate + relativedelta(days=1)
     if hrOffset != 0:

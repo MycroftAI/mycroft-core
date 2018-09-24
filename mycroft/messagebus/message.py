@@ -74,7 +74,7 @@ class Message(object):
         obj = json.loads(value)
         return Message(obj.get('type'), obj.get('data'), obj.get('context'))
 
-    def reply(self, type, data, context=None):
+    def reply(self, type, data=None, context=None):
         """Construct a reply message for a given message
 
         This will take the same parameters as a message object but use
@@ -94,6 +94,7 @@ class Message(object):
         Returns:
             Message: Message object to be used on the reply to the message
         """
+        data = data or {}
         context = context or {}
 
         new_context = self.context if self.context else {}

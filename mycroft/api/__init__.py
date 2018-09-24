@@ -24,8 +24,6 @@ from mycroft.configuration.config import DEFAULT_CONFIG, SYSTEM_CONFIG, \
 from mycroft.identity import IdentityManager
 from mycroft.version import VersionManager
 from mycroft.util import get_arch, connected, LOG
-# python 2/3 compatibility
-from future.utils import iteritems
 
 _paired_cache = False
 
@@ -157,7 +155,7 @@ class Api(object):
     def build_json(self, params):
         json = params.get("json")
         if json and params["headers"]["Content-Type"] == "application/json":
-            for k, v in iteritems(json):
+            for k, v in json.items():
                 if v == "":
                     json[k] = None
             params["json"] = json
@@ -304,21 +302,6 @@ class DeviceApi(Api):
         if arch:
             path = '/' + self.identity.uuid + '/voice?arch=' + arch
             return self.request({'path': path})['link']
-
-    def find(self):
-        """ Deprecated, see get_location() """
-        # TODO: Eliminate ASAP, for backwards compatibility only
-        return self.get()
-
-    def find_setting(self):
-        """ Deprecated, see get_settings() """
-        # TODO: Eliminate ASAP, for backwards compatibility only
-        return self.get_settings()
-
-    def find_location(self):
-        """ Deprecated, see get_location() """
-        # TODO: Eliminate ASAP, for backwards compatibility only
-        return self.get_location()
 
     def get_oauth_token(self, dev_cred):
         """

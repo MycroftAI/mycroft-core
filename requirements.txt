@@ -1,5 +1,5 @@
 six==1.10.0
-requests==2.13.0
+requests==2.19.1
 gTTS==1.1.7
 gTTS-token==1.1.1
 backports.ssl-match-hostname==3.4.0.2
@@ -8,11 +8,9 @@ pyee==1.0.1
 SpeechRecognition==3.8.1
 tornado==4.2.1
 websocket-client==0.32.0
-adapt-parser==0.3.0
 futures==3.0.3
 future==0.16.0
 requests-futures==0.9.5
-parsedatetime==1.5
 pyyaml==3.11
 pyalsaaudio==0.8.2
 xmlrunner==1.7.7
@@ -26,10 +24,15 @@ pychromecast==0.7.7
 python-vlc==1.1.2
 pulsectl==17.7.4
 google-api-python-client==1.6.4
-monotonic
+
+msm==0.5.19
+msk==0.3.11
+adapt-parser==0.3.0
+padatious==0.4.5
+fann2==1.0.7
+padaos==0.1.7
+precise-runner==0.2.1
+petact==0.1.2
 
 # dev setup tools
 pep8==1.7.0
-fann2==1.0.7
-# Also update in mycroft/skills/padatious_service.py
-padatious==0.3.7

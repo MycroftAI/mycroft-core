@@ -15,6 +15,7 @@
 import time
 from adapt.context import ContextManagerFrame
 from adapt.engine import IntentDeterminationEngine
+from adapt.intent import IntentBuilder
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
@@ -22,9 +23,12 @@ from mycroft.skills.core import open_intent_envelope
 from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
 from mycroft.metrics import report_timing, Stopwatch
-# python 2+3 compatibility
-from past.builtins import basestring
-from future.builtins import range
+from mycroft.skills.padatious_service import PadatiousService
+
+
+class AdaptIntent(IntentBuilder):
+    def __init__(self, name=''):
+        super().__init__(name)
 
 
 class ContextManager(object):
@@ -124,7 +128,7 @@ class ContextManager(object):
 
 
 class IntentService(object):
-    def __init__(self, emitter):
+    def __init__(self, bus):
         self.config = Configuration.get().get('context', {})
         self.engine = IntentDeterminationEngine()
 
@@ -136,26 +140,24 @@ class IntentService(object):
         self.context_timeout = self.config.get('timeout', 2)
         self.context_greedy = self.config.get('greedy', False)
         self.context_manager = ContextManager(self.context_timeout)
-        self.emitter = emitter
-        self.emitter.on('register_vocab', self.handle_register_vocab)
-        self.emitter.on('register_intent', self.handle_register_intent)
-        self.emitter.on('recognizer_loop:utterance', self.handle_utterance)
-        self.emitter.on('detach_intent', self.handle_detach_intent)
-        self.emitter.on('detach_skill', self.handle_detach_skill)
+        self.bus = bus
+        self.bus.on('register_vocab', self.handle_register_vocab)
+        self.bus.on('register_intent', self.handle_register_intent)
+        self.bus.on('recognizer_loop:utterance', self.handle_utterance)
+        self.bus.on('detach_intent', self.handle_detach_intent)
+        self.bus.on('detach_skill', self.handle_detach_skill)
         # Context related handlers
-        self.emitter.on('add_context', self.handle_add_context)
-        self.emitter.on('remove_context', self.handle_remove_context)
-        self.emitter.on('clear_context', self.handle_clear_context)
+        self.bus.on('add_context', self.handle_add_context)
+        self.bus.on('remove_context', self.handle_remove_context)
+        self.bus.on('clear_context', self.handle_clear_context)
         # Converse method
-        self.emitter.on('skill.converse.response',
-                        self.handle_converse_response)
-        self.emitter.on('mycroft.speech.recognition.unknown',
-                        self.reset_converse)
-        self.emitter.on('mycroft.skills.loaded', self.update_skill_name_dict)
+        self.bus.on('skill.converse.response', self.handle_converse_response)
+        self.bus.on('mycroft.speech.recognition.unknown', self.reset_converse)
+        self.bus.on('mycroft.skills.loaded', self.update_skill_name_dict)
 
         def add_active_skill_handler(message):
             self.add_active_skill(message.data['skill_id'])
-        self.emitter.on('active_skill_request', add_active_skill_handler)
+        self.bus.on('active_skill_request', add_active_skill_handler)
         self.active_skills = []  # [skill_id , timestamp]
         self.converse_timeout = 5  # minutes to prune active_skills
 
@@ -175,7 +177,7 @@ class IntentService(object):
         Returns:
             (str) Skill name or the skill id if the skill wasn't found
         """
-        return self.skill_names.get(int(skill_id), skill_id)
+        return self.skill_names.get(skill_id, skill_id)
 
     def reset_converse(self, message):
         """Let skills know there was a problem with speech recognition"""
@@ -184,10 +186,10 @@ class IntentService(object):
             self.do_converse(None, skill[0], lang)
 
     def do_converse(self, utterances, skill_id, lang):
-        self.emitter.emit(Message("skill.converse.request", {
-            "skill_id": skill_id, "utterances": utterances, "lang": lang}))
         self.waiting = True
         self.result = False
+        self.bus.emit(Message("skill.converse.request", {
+            "skill_id": skill_id, "utterances": utterances, "lang": lang}))
         start_time = time.time()
         t = 0
         while self.waiting and t < 5:
@@ -241,7 +243,6 @@ class IntentService(object):
 
         NOTE: This only applies to those with Opt In.
         """
-        LOG.debug('Sending metric if opt_in is enabled')
         ident = context['ident'] if context else None
         if intent:
             # Recreate skill name from skill id
@@ -284,6 +285,8 @@ class IntentService(object):
                 if not converse:
                     # No conversation, use intent system to handle utterance
                     intent = self._adapt_intent_match(utterances, lang)
+                    padatious_intent = PadatiousService.instance.calc_intent(
+                                        utterances[0])
 
             if converse:
                 # Report that converse handled the intent and return
@@ -291,8 +294,10 @@ class IntentService(object):
                 report_timing(ident, 'intent_service', stopwatch,
                               {'intent_type': 'converse'})
                 return
-            elif intent:
-                # Send the message to the intent handler
+            elif intent and not (padatious_intent and
+                                 padatious_intent.conf >= 0.95):
+                # Send the message to the Adapt intent's handler unless
+                # Padatious is REALLY sure it was directed at it instead.
                 reply = message.reply(intent.get('intent_type'), intent)
             else:
                 # Allow fallback system to handle utterance
@@ -300,7 +305,7 @@ class IntentService(object):
                 reply = message.reply('intent_failure',
                                       {'utterance': utterances[0],
                                        'lang': lang})
-            self.emitter.emit(reply)
+            self.bus.emit(reply)
             self.send_metrics(intent, message.context, stopwatch)
         except Exception as e:
             LOG.exception(e)
@@ -360,7 +365,7 @@ class IntentService(object):
         if best_intent and best_intent.get('confidence', 0.0) > 0.0:
             self.update_context(best_intent)
             # update active skills
-            skill_id = int(best_intent['intent_type'].split(":")[0])
+            skill_id = best_intent['intent_type'].split(":")[0]
             self.add_active_skill(skill_id)
             return best_intent
 
@@ -404,7 +409,7 @@ class IntentService(object):
         context = message.data.get('context')
         word = message.data.get('word') or ''
         # if not a string type try creating a string from it
-        if not isinstance(word, basestring):
+        if not isinstance(word, str):
             word = str(word)
         entity['data'] = [(word, context)]
         entity['match'] = word

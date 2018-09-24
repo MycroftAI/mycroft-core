@@ -12,26 +12,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import tempfile
 import time
-
-import sys
-from tempfile import NamedTemporaryFile
+from time import sleep
 
 import os
-from os.path import dirname, exists, join, abspath, expanduser, isdir, isfile
+import platform
+import posixpath
+import tempfile
+import requests
+from contextlib import suppress
+from glob import glob
+from os.path import dirname, exists, join, abspath, expanduser, isfile, isdir
+from petact import install_package
+from shutil import rmtree
+from threading import Timer, Event, Thread
+from urllib.error import HTTPError
 
-from os import mkdir, getcwd, chdir
-from time import time as get_time
-
-from mycroft.configuration import Configuration
-from subprocess import Popen, PIPE, call
-from threading import Thread
-
+from mycroft.configuration import Configuration, LocalConf, USER_CONFIG
 from mycroft.util.log import LOG
 
-
 RECOGNIZER_DIR = join(abspath(dirname(__file__)), "recognizer")
+INIT_TIMEOUT = 10  # In seconds
+
+
+class TriggerReload(Exception):
+    pass
 
 
 class HotWordEngine(object):
@@ -58,12 +63,6 @@ class PocketsphinxHotWord(HotWordEngine):
         super(PocketsphinxHotWord, self).__init__(key_phrase, config, lang)
         # Hotword module imports
         from pocketsphinx import Decoder
-        # Hotword module config
-        module = self.config.get("module")
-        if module != "pocketsphinx":
-            LOG.warning(
-                str(module) + " module does not match with "
-                              "Hotword class pocketsphinx")
         # Hotword module params
         self.phonemes = self.config.get("phonemes", "HH EY . M AY K R AO F T")
         self.num_phonemes = len(self.phonemes.split())
@@ -112,120 +111,110 @@ class PocketsphinxHotWord(HotWordEngine):
 class PreciseHotword(HotWordEngine):
     def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
         super(PreciseHotword, self).__init__(key_phrase, config, lang)
-        self.update_freq = 24  # in hours
+        from precise_runner import (
+            PreciseRunner, PreciseEngine, ReadWriteStream
+        )
+        local_conf = LocalConf(USER_CONFIG)
+        if local_conf.get('precise', {}).get('dist_url') == \
+                'http://bootstrap.mycroft.ai/artifacts/static/daily/':
+            del local_conf['precise']['dist_url']
+            local_conf.store()
+            Configuration.updated(None)
 
+        self.download_complete = True
+
+        self.show_download_progress = Timer(0, lambda: None)
         precise_config = Configuration.get()['precise']
-        self.dist_url = precise_config['dist_url']
-        self.models_url = precise_config['models_url']
-        self.exe_name = 'precise-stream'
+        precise_exe = self.install_exe(precise_config['dist_url'])
 
-        model_name, model_path = self.get_model_info()
+        local_model = self.config.get('local_model_file')
+        if local_model:
+            self.precise_model = expanduser(local_model)
+        else:
+            self.precise_model = self.install_model(
+                precise_config['model_url'], key_phrase.replace(' ', '-')
+            ).replace('.tar.gz', '.pb')
 
-        exe_file = self.find_download_exe()
-        LOG.info('Found precise executable: ' + exe_file)
-        self.update_model(model_name, model_path)
-
-        args = [exe_file, model_path, '1024']
-        self.proc = Popen(args, stdin=PIPE, stdout=PIPE)
         self.has_found = False
-        self.cooldown = 20
-        t = Thread(target=self.check_stdout)
-        t.daemon = True
-        t.start()
+        self.stream = ReadWriteStream()
 
-    def get_model_info(self):
-        ww = Configuration.get()['listener']['wake_word']
-        model_name = ww.replace(' ', '-') + '.pb'
-        model_folder = expanduser('~/.mycroft/precise')
-        if not isdir(model_folder):
-            mkdir(model_folder)
-        model_path = join(model_folder, model_name)
-        return model_name, model_path
+        def on_activation():
+            self.has_found = True
 
-    def find_download_exe(self):
+        self.runner = PreciseRunner(
+            PreciseEngine(precise_exe, self.precise_model),
+            stream=self.stream, on_activation=on_activation
+        )
+        self.runner.start()
+
+    @property
+    def folder(self):
+        return join(expanduser('~'), '.mycroft', 'precise')
+
+    def install_exe(self, url: str) -> str:
+        url = url.format(arch=platform.machine())
+        if not url.endswith('.tar.gz'):
+            url = requests.get(url).text.strip()
+        if install_package(
+                url, self.folder,
+                on_download=self.on_download, on_complete=self.on_complete
+        ):
+            raise TriggerReload
+        return join(self.folder, 'precise-engine', 'precise-engine')
+
+    def install_model(self, url: str, wake_word: str) -> str:
+        model_url = url.format(wake_word=wake_word)
+        model_file = join(self.folder, posixpath.basename(model_url))
         try:
-            if call('command -v ' + self.exe_name,
-                    shell=True, stdout=PIPE) == 0:
-                return self.exe_name
-        except OSError:
-            pass
-
-        precise_folder = expanduser('~/.mycroft/precise')
-        if isfile(join(precise_folder, 'precise-stream')):
-            os.remove(join(precise_folder, 'precise-stream'))
-
-        exe_file = join(precise_folder, 'precise-stream', 'precise-stream')
-        if isfile(exe_file):
-            return exe_file
-
-        import platform
-        import stat
-
-        def snd_msg(cmd):
-            """Send message to faceplate"""
-            Popen('echo "' + cmd + '" > /dev/ttyAMA0', shell=True)
-
-        arch = platform.machine()
-
-        url = self.dist_url + arch + '/precise-stream.tar.gz'
-        tar_file = NamedTemporaryFile().name + '.tar.gz'
-
-        snd_msg('mouth.text=Updating Listener...')
-        cur_dir = getcwd()
-        chdir(precise_folder)
-        try:
-            self.download(url, tar_file)
-            call(['tar', '-xzvf', tar_file])
-        finally:
-            chdir(cur_dir)
-            snd_msg('mouth.reset')
-
-        if not isfile(exe_file):
-            raise RuntimeError('Could not extract file: ' + exe_file)
-        os.chmod(exe_file, os.stat(exe_file).st_mode | stat.S_IEXEC)
-        return exe_file
+            install_package(
+                model_url, self.folder,
+                on_download=lambda: LOG.info('Updated precise model')
+            )
+        except HTTPError:
+            if isfile(model_file):
+                LOG.info("Couldn't find remote model.  Using local file")
+            else:
+                raise RuntimeError('Failed to download model:', model_url)
+        return model_file
 
     @staticmethod
-    def download(url, filename):
-        import shutil
+    def _snd_msg(cmd):
+        with suppress(OSError):
+            with open('/dev/ttyAMA0', 'w') as f:
+                print(cmd, file=f)
 
-        # python 2/3 compatibility
-        if sys.version_info[0] >= 3:
-            from urllib.request import urlopen
-        else:
-            from urllib2 import urlopen
-        LOG.info('Downloading: ' + url)
-        req = urlopen(url)
-        with open(filename, 'wb') as fp:
-            shutil.copyfileobj(req, fp)
-        LOG.info('Download complete.')
+    def on_download(self):
+        LOG.info('Downloading Precise executable...')
+        if isdir(join(self.folder, 'precise-stream')):
+            rmtree(join(self.folder, 'precise-stream'))
+        for old_package in glob(join(self.folder, 'precise-engine_*.tar.gz')):
+            os.remove(old_package)
+        self.download_complete = False
+        self.show_download_progress = Timer(
+            5, self.during_download, args=[True]
+        )
+        self.show_download_progress.start()
 
-    def update_model(self, name, file_name):
-        if isfile(file_name):
-            stat = os.stat(file_name)
-            if get_time() - stat.st_mtime < self.update_freq * 60 * 60:
-                return
-        name = name.replace(' ', '%20')
-        url = self.models_url + name
-        self.download(url, file_name)
-        self.download(url + '.params', file_name + '.params')
+    def during_download(self, first_run=False):
+        LOG.info('Still downloading executable...')
+        if first_run:  # TODO: Localize
+            self._snd_msg('mouth.text=Updating listener...')
+        if not self.download_complete:
+            self.show_download_progress = Timer(30, self.during_download)
+            self.show_download_progress.start()
 
-    def check_stdout(self):
-        while True:
-            line = self.proc.stdout.readline()
-            if self.cooldown > 0:
-                self.cooldown -= 1
-                self.has_found = False
-                continue
-            self.has_found = float(line) > 0.5
+    def on_complete(self):
+        LOG.info('Precise download complete!')
+        self.download_complete = True
+        self.show_download_progress.cancel()
+        self._snd_msg('mouth.reset')
 
     def update(self, chunk):
-        self.proc.stdin.write(chunk)
-        self.proc.stdin.flush()
+        self.stream.write(chunk)
 
     def found_wake_word(self, frame_data):
-        if self.has_found and self.cooldown == 0:
-            self.cooldown = 20
+        if self.has_found:
+            self.has_found = False
             return True
         return False
 
@@ -264,15 +253,40 @@ class HotWordFactory(object):
     }
 
     @staticmethod
-    def create_hotword(hotword="hey mycroft", config=None, lang="en-us"):
-        LOG.info("creating " + hotword)
+    def load_module(module, hotword, config, lang, loop):
+        LOG.info('Loading "{}" wake word via {}'.format(hotword, module))
+        instance = None
+        complete = Event()
+
+        def initialize():
+            nonlocal instance, complete
+            try:
+                clazz = HotWordFactory.CLASSES[module]
+                instance = clazz(hotword, config, lang=lang)
+            except TriggerReload:
+                complete.set()
+                sleep(0.5)
+                loop.reload()
+            except Exception:
+                LOG.exception(
+                    'Could not create hotword. Falling back to default.')
+                instance = None
+            complete.set()
+
+        Thread(target=initialize, daemon=True).start()
+        if not complete.wait(INIT_TIMEOUT):
+            LOG.info('{} is taking too long to load'.format(module))
+            complete.set()
+        return instance
+
+    @classmethod
+    def create_hotword(cls, hotword="hey mycroft", config=None,
+                       lang="en-us", loop=None):
         if not config:
-            config = Configuration.get().get("hotwords", {})
-        module = config.get(hotword).get("module", "pocketsphinx")
-        config = config.get(hotword, {"module": module})
-        clazz = HotWordFactory.CLASSES.get(module)
-        try:
-            return clazz(hotword, config, lang=lang)
-        except Exception:
-            LOG.exception('Could not create hotword. Falling back to default.')
-            return HotWordFactory.CLASSES['pocketsphinx']()
+            config = Configuration.get()['hotwords']
+        config = config[hotword]
+
+        module = config.get("module", "pocketsphinx")
+        return cls.load_module(module, hotword, config, lang, loop) or \
+            cls.load_module('pocketsphinx', hotword, config, lang, loop) or \
+            cls.CLASSES['pocketsphinx']()
