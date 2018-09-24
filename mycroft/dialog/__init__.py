@@ -55,7 +55,7 @@ class MustacheDialogRenderer(object):
                 # double (or more) '{' followed by any number of whitespace
                 # followed by actual key followed by any number of whitespace
                 # followed by double (or more) '}'
-                template_text = re.sub('\{\{+\s*(.*?)\s*\}\}+', r'{\1}',
+                template_text = re.sub(r'\{\{+\s*(.*?)\s*\}\}+', r'{\1}',
                                        template_text)
 
                 self.templates[template_name].append(template_text)
