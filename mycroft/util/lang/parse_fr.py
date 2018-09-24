@@ -492,7 +492,7 @@ def extract_datetime_fr(string, currentDate, default_time):
             (
                 datestr != "" or
                 yearOffset != 0 or monthOffset != 0 or dayOffset or
-                (isTime and (hrAbs != 0 or minAbs != 0)) or
+                (isTime and (hrAbs or minAbs)) or
                 hrOffset != 0 or minOffset != 0 or secOffset != 0
             )
 
@@ -687,8 +687,8 @@ def extract_datetime_fr(string, currentDate, default_time):
     hrOffset = 0
     minOffset = 0
     secOffset = 0
-    hrAbs = 0
-    minAbs = 0
+    hrAbs = None
+    minAbs = None
     ampm = ""
     isTime = False
 
@@ -725,14 +725,14 @@ def extract_datetime_fr(string, currentDate, default_time):
             elif wordNext == "moins":
                 if wordNextNext.isdigit():
                     minAbs = 60 - int(wordNextNext)
-                    if hrAbs == 0:
+                    if not hrAbs:
                         hrAbs = 23
                     else:
                         hrAbs -= 1
                     used += 2
                 if wordNextNext == "quart":
                     minAbs = 45
-                    if hrAbs == 0:
+                    if not hrAbs:
                         hrAbs = 23
                     else:
                         hrAbs -= 1
@@ -890,13 +890,15 @@ def extract_datetime_fr(string, currentDate, default_time):
                 elif timeQualifier == "soir":
                     ampm = "pm"
                 elif timeQualifier == "nuit":
-                    if hrAbs > 8:
+                    if (hrAbs or 0) > 8:
                         ampm = "pm"
                     else:
                         ampm = "am"
-            hrAbs = hrAbs + 12 if ampm == "pm" and hrAbs < 12 else hrAbs
-            hrAbs = hrAbs - 12 if ampm == "am" and hrAbs >= 12 else hrAbs
-            if hrAbs > 24 or minAbs > 59:
+            hrAbs = ((hrAbs or 0) + 12 if ampm == "pm" and
+                     (hrAbs or 0) < 12 else hrAbs)
+            hrAbs = ((hrAbs or 0) - 12 if ampm == "am" and
+                     (hrAbs or 0) >= 12 else hrAbs)
+            if (hrAbs or 0) > 24 or ((minAbs or 0) > 59):
                 isTime = False
                 used = 0
             elif wordPrev in words_in:
@@ -904,7 +906,7 @@ def extract_datetime_fr(string, currentDate, default_time):
             else:
                 isTime = True
 
-        elif hrAbs == 0 and timeQualifier:
+        elif not hrAbs and timeQualifier:
             if timeQualifier == "matin":
                 hrAbs = 8
             elif timeQualifier == "après-midi":
@@ -968,11 +970,14 @@ def extract_datetime_fr(string, currentDate, default_time):
         extractedDate = extractedDate + relativedelta(months=monthOffset)
     if dayOffset != 0:
         extractedDate = extractedDate + relativedelta(days=dayOffset)
-    if hrAbs != -1 and minAbs != -1:
 
-        extractedDate = extractedDate + relativedelta(hours=hrAbs,
-                                                      minutes=minAbs)
-        if (hrAbs != 0 or minAbs != 0) and datestr == "":
+    if hrAbs is None and minAbs is None and default_time:
+        hrAbs = default_time.hour
+        minAbs = default_time.minute
+    if hrAbs != -1 and minAbs != -1:
+        extractedDate = extractedDate + relativedelta(hours=hrAbs or 0,
+                                                      minutes=minAbs or 0)
+        if (hrAbs or minAbs) and datestr == "":
             if not daySpecified and dateNow > extractedDate:
                 extractedDate = extractedDate + relativedelta(days=1)
     if hrOffset != 0:
