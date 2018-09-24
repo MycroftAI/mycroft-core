@@ -89,6 +89,8 @@ def extract_number(text, short_scale=True, ordinals=False, lang="en-us"):
     if lang_lower.startswith("en"):
         return extractnumber_en(text, short_scale=short_scale,
                                 ordinals=ordinals)
+    elif lang_lower.startswith("es"):
+        return extractnumber_es(text)
     elif lang_lower.startswith("pt"):
         return extractnumber_pt(text)
     elif lang_lower.startswith("it"):
@@ -135,7 +137,6 @@ def extract_datetime(text, anchorDate=None, lang="en-us", default_time=None):
             Returns 'None' if the input string is empty.
 
     Examples:
-
         >>> extract_datetime(
         ... "What is the weather like the day after tomorrow?",
         ... datetime(2017, 06, 30, 00, 00)
@@ -156,6 +157,8 @@ def extract_datetime(text, anchorDate=None, lang="en-us", default_time=None):
 
     if lang_lower.startswith("en"):
         return extract_datetime_en(text, anchorDate, default_time)
+    elif lang_lower.startswith("es"):
+        return extract_datetime_es(text, anchorDate, default_time)
     elif lang_lower.startswith("pt"):
         return extract_datetime_pt(text, anchorDate, default_time)
     elif lang_lower.startswith("it"):
