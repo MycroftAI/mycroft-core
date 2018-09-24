@@ -106,10 +106,10 @@ def isFractional_es(input_str):
     if input_str.endswith('s', -1):
         input_str = input_str[:len(input_str) - 1]  # e.g. "fifths"
 
-    aFrac = ["medio", "media", "tercio", "cuarto", "cuarta", "quinto", "quinta",
-             "sexto", "sexta", u"séptimo", u"séptima", "octavo", "octava",
-             "noveno", "novena", u"décimo", u"décima", u"onceavo", u"onceava",
-             u"doceavo", u"doceava"]
+    aFrac = ["medio", "media", "tercio", "cuarto", "cuarta", "quinto",
+             "quinta", "sexto", "sexta", u"séptimo", u"séptima", "octavo",
+             "octava", "noveno", "novena", u"décimo", u"décima", u"onceavo",
+             u"onceava", u"doceavo", u"doceava"]
 
     if input_str.lower() in aFrac:
         return 1.0 / (aFrac.index(input_str) + 2)
@@ -360,7 +360,7 @@ def normalize_es(text, remove_articles):
     return normalized[1:]  # strip the initial space
 
 
-def extract_datetime_es(input_str, currentDate=None):
+def extract_datetime_es(input_str, currentDate=None, default_time=None):
     def clean_string(s):
         # cleans the input string of unneeded punctuation and capitalization
         # among other things
@@ -392,8 +392,8 @@ def extract_datetime_es(input_str, currentDate=None):
             for word in synonims[syn]:
                 s = s.replace(" " + word + " ", " " + syn + " ")
         # relevant plurals, cant just extract all s in pt
-        wordlist = [u"mañanas", "tardes", "noches", u"días", "semanas", u"años",
-                    "minutos", "segundos", "las", "los", "siguientes",
+        wordlist = [u"mañanas", "tardes", "noches", u"días", "semanas",
+                    u"años", "minutos", "segundos", "las", "los", "siguientes",
                     u"próximas", u"próximos", "horas"]
         for _, word in enumerate(wordlist):
             s = s.replace(word, word.rstrip('s'))
@@ -403,11 +403,11 @@ def extract_datetime_es(input_str, currentDate=None):
     def date_found():
         return found or \
             (
-                datestr != "" or timeStr != "" or
+                datestr != "" or
                 yearOffset != 0 or monthOffset != 0 or
                 dayOffset is True or hrOffset != 0 or
-                hrAbs != 0 or minOffset != 0 or
-                minAbs != 0 or secOffset != 0
+                hrAbs or minOffset != 0 or
+                minAbs or secOffset != 0
             )
 
     if input_str == "":
@@ -750,13 +750,11 @@ def extract_datetime_es(input_str, currentDate=None):
             daySpecified = True
 
     # parse time
-    timeStr = ""
     hrOffset = 0
     minOffset = 0
     secOffset = 0
-    hrAbs = 0
-    minAbs = 0
-    # military = False # This has no use in Spanish.
+    hrAbs = None
+    minAbs = None
 
     for idx, word in enumerate(words):
         if word == "":
@@ -776,39 +774,39 @@ def extract_datetime_es(input_str, currentDate=None):
             hrAbs = 0
             used += 2
         elif word == u"mañana":
-            if hrAbs == 0:
+            if not hrAbs:
                 hrAbs = 8
             used += 1
         elif word == "tarde":
-            if hrAbs == 0:
+            if not hrAbs:
                 hrAbs = 15
             used += 1
         elif word == "media" and wordNext == "tarde":
-            if hrAbs == 0:
+            if not hrAbs:
                 hrAbs = 17
             used += 2
         elif word == "tarde" and wordNext == "noche":
-            if hrAbs == 0:
+            if not hrAbs:
                 hrAbs = 20
             used += 2
         elif word == "media" and wordNext == u"mañana":
-            if hrAbs == 0:
+            if not hrAbs:
                 hrAbs = 10
             used += 2
         # elif word == "fim" and wordNext == "tarde":
-        #     if hrAbs == 0:
+        #     if not hrAbs:
         #         hrAbs = 19
         #     used += 2
         # elif word == "fim" and wordNext == "manha":
-        #     if hrAbs == 0:
+        #     if not hrAbs:
         #         hrAbs = 11
         #     used += 2
         elif word == "madrugada":
-            if hrAbs == 0:
+            if not hrAbs:
                 hrAbs = 1
             used += 2
         elif word == "noche":
-            if hrAbs == 0:
+            if not hrAbs:
                 hrAbs = 21
             used += 1
         # parse half an hour, quarter hour
@@ -889,7 +887,6 @@ def extract_datetime_es(input_str, currentDate=None):
                         used = 2
                     else:
                         if timeQualifier != "":
-                            military = True
                             if strHH <= 12 and \
                                     (timeQualifier == u"mañana" or
                                      timeQualifier == "tarde"):
@@ -948,7 +945,6 @@ def extract_datetime_es(input_str, currentDate=None):
                         # 0800 hours (pronounced oh-eight-hundred)
                         strHH = int(word) / 100
                         strMM = int(word) - strHH * 100
-                        military = True
                         if wordNext == "hora":
                             used += 1
                     elif (
@@ -983,7 +979,6 @@ def extract_datetime_es(input_str, currentDate=None):
                     elif int(word) > 100:
                         strHH = int(word) / 100
                         strMM = int(word) - strHH * 100
-                        military = True
                         if wordNext == "hora":
                             used += 1
 
@@ -1009,7 +1004,6 @@ def extract_datetime_es(input_str, currentDate=None):
                     elif wordNext[0].isdigit():
                         strHH = word
                         strMM = wordNext
-                        military = True
                         used += 1
                         if wordNextNext == "hora":
                             used += 1
@@ -1093,23 +1087,21 @@ def extract_datetime_es(input_str, currentDate=None):
                 month=int(temp.strftime("%m")),
                 day=int(temp.strftime("%d")))
 
-    if timeStr != "":
-        temp = datetime(timeStr)
-        extractedDate = extractedDate.replace(hour=temp.strftime("%H"),
-                                              minute=temp.strftime("%M"),
-                                              second=temp.strftime("%S"))
-
     if yearOffset != 0:
         extractedDate = extractedDate + relativedelta(years=yearOffset)
     if monthOffset != 0:
         extractedDate = extractedDate + relativedelta(months=monthOffset)
     if dayOffset != 0:
         extractedDate = extractedDate + relativedelta(days=dayOffset)
-    if hrAbs != -1 and minAbs != -1:
 
-        extractedDate = extractedDate + relativedelta(hours=hrAbs,
-                                                      minutes=minAbs)
-        if (hrAbs != 0 or minAbs != 0) and datestr == "":
+    if hrAbs is None and minAbs is None and default_time:
+        hrAbs = default_time.hour
+        minAbs = default_time.minute
+
+    if hrAbs != -1 and minAbs != -1:
+        extractedDate = extractedDate + relativedelta(hours=hrAbs or 0,
+                                                      minutes=minAbs or 0)
+        if (hrAbs or minAbs) and datestr == "":
             if not daySpecified and dateNow > extractedDate:
                 extractedDate = extractedDate + relativedelta(days=1)
     if hrOffset != 0:
