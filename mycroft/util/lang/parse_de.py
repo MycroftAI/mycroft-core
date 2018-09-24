@@ -161,7 +161,7 @@ def extractnumber_de(text):
     return val
 
 
-def extract_datetime_de(string, currentDate):
+def extract_datetime_de(string, currentDate, default_time):
     def clean_string(s):
         """
             cleans the input string of unneeded punctuation
@@ -424,8 +424,8 @@ def extract_datetime_de(string, currentDate):
     hrOffset = 0
     minOffset = 0
     secOffset = 0
-    hrAbs = 0
-    minAbs = 0
+    hrAbs = None
+    minAbs = None
 
     for idx, word in enumerate(words):
         if word == "":
@@ -448,15 +448,15 @@ def extract_datetime_de(string, currentDate):
             used += 1
         elif word == "morgens" or (
                 wordPrev == "am" and word == "morgen") or word == u"früh":
-            if hrAbs == 0:
+            if not hrAbs:
                 hrAbs = 8
             used += 1
         elif word[:10] == "nachmittag":
-            if hrAbs == 0:
+            if not hrAbs:
                 hrAbs = 15
             used += 1
         elif word[:5] == "abend":
-            if hrAbs == 0:
+            if not hrAbs:
                 hrAbs = 19
             used += 1
             # parse half an hour, quarter hour
@@ -800,10 +800,15 @@ def extract_datetime_de(string, currentDate):
         extractedDate = extractedDate + relativedelta(months=monthOffset)
     if dayOffset != 0:
         extractedDate = extractedDate + relativedelta(days=dayOffset)
+
+    if hrAbs is None and minAbs is None and default_time:
+        hrAbs = default_time.hour
+        minAbs = default_time.minute
+
     if hrAbs != -1 and minAbs != -1:
 
-        extractedDate = extractedDate + relativedelta(hours=hrAbs,
-                                                      minutes=minAbs)
+        extractedDate = extractedDate + relativedelta(hours=hrAbs or 0,
+                                                      minutes=minAbs or 0)
         if (hrAbs != 0 or minAbs != 0) and datestr == "":
             if not daySpecified and dateNow > extractedDate:
                 extractedDate = extractedDate + relativedelta(days=1)

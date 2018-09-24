@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 import unittest
-from datetime import datetime
+from datetime import datetime, time
 
 from mycroft.util.parse import extract_datetime
 from mycroft.util.parse import extract_number
@@ -88,6 +88,13 @@ class TestNormalize(unittest.TestCase):
                     "2017-07-02 00:00:00", "spela kurt olssons musik")
         testExtract("vi möts 20:00",
                     "2017-06-27 20:00:00", "vi möts")
+
+    def test_extractdatetime_default_sv(self):
+        default = time(9, 0, 0)
+        anchor = datetime(2017, 6, 27, 0, 0)
+        res = extract_datetime('påminn mig att klippa mig på fredag',
+                               anchor, lang='sv-se', default_time=default)
+        self.assertEqual(default, res[0].time())
 
     def test_numbers(self):
         self.assertEqual(normalize("det här är ett ett två tre  test",

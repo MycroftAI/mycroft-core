@@ -280,7 +280,7 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
     return val
 
 
-def extract_datetime_en(string, currentDate):
+def extract_datetime_en(string, dateNow, default_time):
     """ Convert a human date reference into an exact datetime
 
     Convert things like
@@ -298,7 +298,8 @@ def extract_datetime_en(string, currentDate):
 
     Args:
         string (str): string containing date words
-        currentDate (datetime): A reference date/time for "tommorrow", etc
+        dateNow (datetime): A reference date/time for "tommorrow", etc
+        default_time (time): Time to set if no time was found in the string
 
     Returns:
         [datetime, str]: An array containing the datetime and the remaining
@@ -310,7 +311,8 @@ def extract_datetime_en(string, currentDate):
         s = s.lower().replace('?', '').replace('.', '').replace(',', '') \
             .replace(' the ', ' ').replace(' a ', ' ').replace(' an ', ' ') \
             .replace("o' clock", "o'clock").replace("o clock", "o'clock") \
-            .replace("o ' clock", "o'clock").replace("o 'clock", "o'clock")
+            .replace("o ' clock", "o'clock").replace("o 'clock", "o'clock") \
+            .replace("oclock", "o'clock")
 
         wordList = s.split()
         for idx, word in enumerate(wordList):
@@ -329,14 +331,14 @@ def extract_datetime_en(string, currentDate):
     def date_found():
         return found or \
                (
-                       datestr != "" or timeStr != "" or
+                       datestr != "" or
                        yearOffset != 0 or monthOffset != 0 or
                        dayOffset is True or hrOffset != 0 or
                        hrAbs != 0 or minOffset != 0 or
                        minAbs != 0 or secOffset != 0
                )
 
-    if string == "" or not currentDate:
+    if string == "" or not dateNow:
         return None
 
     found = False
@@ -344,7 +346,6 @@ def extract_datetime_en(string, currentDate):
     dayOffset = False
     monthOffset = 0
     yearOffset = 0
-    dateNow = currentDate
     today = dateNow.strftime("%w")
     currentYear = dateNow.strftime("%Y")
     fromFlag = False
@@ -542,12 +543,11 @@ def extract_datetime_en(string, currentDate):
             daySpecified = True
 
     # parse time
-    timeStr = ""
     hrOffset = 0
     minOffset = 0
     secOffset = 0
-    hrAbs = 0
-    minAbs = 0
+    hrAbs = None
+    minAbs = None
     military = False
 
     for idx, word in enumerate(words):
@@ -567,18 +567,18 @@ def extract_datetime_en(string, currentDate):
             hrAbs = 0
             used += 1
         elif word == "morning":
-            if hrAbs == 0:
+            if hrAbs is None:
                 hrAbs = 8
             used += 1
         elif word == "afternoon":
-            if hrAbs == 0:
+            if hrAbs is None:
                 hrAbs = 15
             used += 1
         elif word == "evening":
-            if hrAbs == 0:
+            if hrAbs is None:
                 hrAbs = 19
             used += 1
-            # parse half an hour, quarter hour
+        # parse half an hour, quarter hour
         elif word == "hour" and \
                 (wordPrev in markers or wordPrevPrev in markers):
             if wordPrev == "half":
@@ -817,16 +817,18 @@ def extract_datetime_en(string, currentDate):
             HH = HH + 12 if remainder == "pm" and HH < 12 else HH
             HH = HH - 12 if remainder == "am" and HH >= 12 else HH
 
-            if not military and not(remainder in ['am', 'pm']):
-                if not daySpecified or dayOffset < 1:
-                    # ambiguous time, detect whether they mean this evening or
-                    # the next morning based on whether it has already passed
-                    if HH > dateNow.hour:
-                        # has passed, assume the next morning
-                        dayOffset += 1
-                    elif HH <= 12:
-                        # forthcoming, assume this afternoon/evening
-                        HH += 12
+            if (not military and
+                    remainder not in ['am', 'pm', 'hours', 'minutes'] and
+                    ((not daySpecified) or dayOffset < 1)):
+                # ambiguous time, detect whether they mean this evening or
+                # the next morning based on whether it has already passed
+                if dateNow.hour < HH:
+                    pass  # No modification needed
+                elif dateNow.hour < HH + 12:
+                    HH += 12
+                else:
+                    # has passed, assume the next morning
+                    dayOffset += 1
 
             if timeQualifier in timeQualifiersPM and HH < 12:
                 HH += 12
@@ -910,15 +912,8 @@ def extract_datetime_en(string, currentDate):
                 tzinfo=extractedDate.tzinfo)
     else:
         # ignore the current HH:MM:SS if relative using days or greater
-        if not timeStr and hrOffset == 0 and minOffset == 0 and secOffset == 0:
+        if hrOffset == 0 and minOffset == 0 and secOffset == 0:
             extractedDate = extractedDate.replace(hour=0, minute=0, second=0)
-
-    if timeStr != "":
-        temp = datetime(timeStr)
-        extractedDate = extractedDate.replace(hour=temp.strftime("%H"),
-                                              minute=temp.strftime("%M"),
-                                              second=temp.strftime("%S"),
-                                              tzinfo=extractedDate.tzinfo)
 
     if yearOffset != 0:
         extractedDate = extractedDate + relativedelta(years=yearOffset)
@@ -927,6 +922,13 @@ def extract_datetime_en(string, currentDate):
     if dayOffset != 0:
         extractedDate = extractedDate + relativedelta(days=dayOffset)
     if hrAbs != -1 and minAbs != -1:
+        # If no time was supplied in the string set the time to default
+        # time if it's available
+        if hrAbs is None and minAbs is None and default_time is not None:
+            hrAbs, minAbs = default_time.hour, default_time.minute
+        else:
+            hrAbs = hrAbs or 0
+            minAbs = minAbs or 0
 
         extractedDate = extractedDate + relativedelta(hours=hrAbs,
                                                       minutes=minAbs)
