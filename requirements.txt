@@ -1,7 +1,7 @@
 six==1.10.0
 requests==2.19.1
 gTTS==1.1.7
-gTTS-token==1.1.1
+gTTS-token==1.1.2
 backports.ssl-match-hostname==3.4.0.2
 PyAudio==0.2.11
 pyee==1.0.1
