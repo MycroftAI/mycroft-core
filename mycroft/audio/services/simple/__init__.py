@@ -70,12 +70,13 @@ class SimpleAudioService(AudioBackend):
         self.tracks += tracks
         LOG.info("Track list is " + str(tracks))
 
-    def _play(self, message=None):
+    def _play(self, message):
         """ Implementation specific async method to handle playback.
             This allows mpg123 service to use the "next method as well
             as basic play/stop.
         """
         LOG.info('SimpleAudioService._play')
+        repeat = message.data.get('repeat', False)
         self._is_playing = True
         if isinstance(self.tracks[self.index], list):
             track = self.tracks[self.index][0]
@@ -117,15 +118,18 @@ class SimpleAudioService(AudioBackend):
 
         self.index += 1
         # if there are more tracks available play next
-        if self.index < len(self.tracks):
-            self.bus.emit(Message('SimpleAudioServicePlay'))
+        if self.index < len(self.tracks) or repeat:
+            if self.index >= len(self.tracks):
+                self.index = 0
+            self.bus.emit(Message('SimpleAudioServicePlay',
+                                  {'repeat': repeat}))
         else:
             self._is_playing = False
 
-    def play(self):
+    def play(self, repeat=False):
         LOG.info('Call SimpleAudioServicePlay')
         self.index = 0
-        self.bus.emit(Message('SimpleAudioServicePlay'))
+        self.bus.emit(Message('SimpleAudioServicePlay', {'repeat': repeat}))
 
     def stop(self):
         LOG.info('SimpleAudioServiceStop')
