@@ -137,7 +137,6 @@ def extract_datetime(text, anchorDate=None, lang="en-us", default_time=None):
             Returns 'None' if the input string is empty.
 
     Examples:
-
         >>> extract_datetime(
         ... "What is the weather like the day after tomorrow?",
         ... datetime(2017, 06, 30, 00, 00)
