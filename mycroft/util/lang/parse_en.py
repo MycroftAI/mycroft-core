@@ -303,7 +303,8 @@ def extract_datetime_en(string, dateNow, default_time):
 
     Returns:
         [datetime, str]: An array containing the datetime and the remaining
-                         text not consumed in the parsing.
+                         text not consumed in the parsing, or None if no
+                         date or time related text was found.
     """
 
     def clean_string(s):
@@ -334,8 +335,8 @@ def extract_datetime_en(string, dateNow, default_time):
                        datestr != "" or
                        yearOffset != 0 or monthOffset != 0 or
                        dayOffset is True or hrOffset != 0 or
-                       hrAbs != 0 or minOffset != 0 or
-                       minAbs != 0 or secOffset != 0
+                       hrAbs or minOffset != 0 or
+                       minAbs or secOffset != 0
                )
 
     if string == "" or not dateNow:

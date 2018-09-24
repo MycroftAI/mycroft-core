@@ -406,8 +406,8 @@ def extract_datetime_it(string, currentDate, default_time):
                 datestr != "" or timeStr != "" or
                 yearOffset != 0 or monthOffset != 0 or
                 dayOffset is True or hrOffset != 0 or
-                hrAbs != 0 or minOffset != 0 or
-                minAbs != 0 or secOffset != 0
+                hrAbs or minOffset != 0 or
+                minAbs or secOffset != 0
             )
 
     if string == "" or not currentDate:

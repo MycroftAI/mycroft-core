@@ -151,8 +151,8 @@ def extract_datetime_sv(string, currentDate, default_time):
                 datestr != "" or timeStr != "" or
                 yearOffset != 0 or monthOffset != 0 or
                 dayOffset is True or hrOffset != 0 or
-                hrAbs != 0 or minOffset != 0 or
-                minAbs != 0 or secOffset != 0
+                hrAbs or minOffset != 0 or
+                minAbs or secOffset != 0
             )
 
     if string == "" or not currentDate:
@@ -704,10 +704,9 @@ def extract_datetime_sv(string, currentDate, default_time):
         hrAbs = default_time.hour
         minAbs = default_time.minute
     if hrAbs != -1 and minAbs != -1:
-        print(hrAbs)
         extractedDate = extractedDate + relativedelta(hours=hrAbs or 0,
                                                       minutes=minAbs or 0)
-        if (hrAbs != 0 or minAbs != 0) and datestr == "":
+        if (hrAbs or minAbs) and datestr == "":
             if not daySpecified and dateNow > extractedDate:
                 extractedDate = extractedDate + relativedelta(days=1)
     if hrOffset != 0:
