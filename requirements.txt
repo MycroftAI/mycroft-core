@@ -11,7 +11,7 @@ websocket-client==0.32.0
 futures==3.0.3
 future==0.16.0
 requests-futures==0.9.5
-pyyaml==3.11
+pyyaml==3.13
 pyalsaaudio==0.8.2
 xmlrunner==1.7.7
 pyserial==3.0
