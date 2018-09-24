@@ -162,8 +162,6 @@ def extractnumber_de(text):
 
 
 def extract_datetime_de(string, currentDate, default_time):
-    # TODO: Handle default time
-
     def clean_string(s):
         """
             cleans the input string of unneeded punctuation

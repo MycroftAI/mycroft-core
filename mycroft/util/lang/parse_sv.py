@@ -125,7 +125,6 @@ def extractnumber_sv(text):
 
 
 def extract_datetime_sv(string, currentDate, default_time):
-    # TODO handle default_time
     def clean_string(s):
         """
             cleans the input string of unneeded punctuation and capitalization
