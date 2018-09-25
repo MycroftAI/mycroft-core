@@ -78,7 +78,10 @@ def discover_tests():
         if exists(os.path.join(skill, 'test/__init__.py')):
             module = imp.load_source(skill + '.test_env',
                                      os.path.join(skill, 'test/__init__.py'))
-            if hasattr(module, 'test_runner') and callable(module.test_runner):
+            if (hasattr(module, 'test_runner') and
+                    callable(module.test_runner) or
+                    hasattr(module, 'test_setup') and
+                    callable(module.test_setup)):
                 test_env = module
         test_envs[skill] = test_env
 
@@ -96,11 +99,13 @@ class IntentTestSequenceMeta(type):
             def test_env_test(self):
                 assert test_env.test_runner(a, b, self.emitter, self.loader)
 
-            if test_env:
+            if test_env and hasattr(test_env, 'test_runner'):
                 return test_env_test
             else:
                 return test
         tests, test_envs = discover_tests()
+        mcs.tests, mcs.test_envs = tests, test_envs
+
         for skill in tests.keys():
             skill_name = os.path.basename(skill)  # Path of the skill
             for example in tests[skill]:
@@ -123,6 +128,16 @@ class IntentTestSequence(unittest.TestCase, metaclass=IntentTestSequenceMeta):
     def setUpClass(cls):
         cls.loader = MockSkillsLoader(HOME_DIR)
         cls.emitter = cls.loader.load_skills()
+
+        # Run test setup provided by the test environment
+        for s in cls.loader.skills:
+            if (s.root_dir in cls.test_envs and
+                    hasattr(cls.test_envs[s.root_dir], 'test_setup')):
+                try:
+                    cls.test_envs[s.root_dir].test_setup(s)
+                except Exception as e:
+                    print('test_setup for {} failed: {}'.format(s.name,
+                                                                repr(e)))
 
     @classmethod
     def tearDownClass(cls):
