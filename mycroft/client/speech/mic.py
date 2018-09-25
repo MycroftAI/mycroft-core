@@ -13,26 +13,23 @@
 # limitations under the License.
 #
 import audioop
-import collections
-import datetime
-from hashlib import md5
-import shutil
-from tempfile import gettempdir
-from threading import Thread, Lock
 from time import sleep, time as get_time
 
+import collections
+import datetime
+import json
 import os
 import pyaudio
+import requests
 import speech_recognition
-from os import mkdir
-from os.path import isdir, join, expanduser, isfile
+from hashlib import md5
+from io import BytesIO, StringIO
 from speech_recognition import (
     Microphone,
     AudioSource,
     AudioData
 )
-import requests
-from subprocess import check_output
+from threading import Thread, Lock
 
 from mycroft.api import DeviceApi
 from mycroft.configuration import Configuration
@@ -178,7 +175,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         self.config = Configuration.get()
         listener_config = self.config.get('listener')
-        self.upload_config = listener_config.get('wake_word_upload')
+        self.upload_url = listener_config['wake_word_upload']['url']
+        self.upload_disabled = listener_config['wake_word_upload']['disable']
         self.wake_word_name = wake_word_recognizer.key_phrase
 
         self.overflow_exc = listener_config.get('overflow_exception', False)
@@ -191,10 +189,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         # check the config for the flag to save wake words.
 
         self.save_utterances = listener_config.get('record_utterances', False)
-        self.save_wake_words = listener_config.get('record_wake_words') \
-            or self.upload_config['enable'] or self.config['opt_in']
         self.upload_lock = Lock()
-        self.save_wake_words_dir = join(gettempdir(), 'mycroft_wake_words')
         self.filenames_to_upload = []
         self.mic_level_file = os.path.join(get_ipc_directory(), "mic_level")
         self._stop_signaled = False
@@ -204,7 +199,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         num_phonemes = wake_word_recognizer.num_phonemes
         len_phoneme = listener_config.get('phoneme_duration', 120) / 1000.0
         self.TEST_WW_SEC = num_phonemes * len_phoneme
-        self.SAVED_WW_SEC = 10 if self.save_wake_words else self.TEST_WW_SEC
+        self.SAVED_WW_SEC = max(3, self.TEST_WW_SEC)
 
         try:
             self.account_id = DeviceApi().get()['user']['uuid']
@@ -337,35 +332,29 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         """
         self._stop_signaled = True
 
-    def _upload_file(self, filename):
-        server = self.upload_config['server']
-        keyfile = resolve_resource_file('wakeword_rsa')
-        userfile = expanduser('~/.mycroft/wakeword_rsa')
+    def _upload_wake_word(self, audio):
+        ww_module = self.wake_word_recognizer.__class__.__name__
+        if ww_module == 'PreciseHotword':
+            model_path = self.wake_word_recognizer.precise_model
+            with open(model_path, 'rb') as f:
+                model_hash = md5(f.read()).hexdigest()
+        else:
+            model_hash = '0'
 
-        if not isfile(userfile):
-            shutil.copy2(keyfile, userfile)
-            os.chmod(userfile, 0o600)
-            keyfile = userfile
-
-        address = self.upload_config['user'] + '@' + \
-            server + ':' + self.upload_config['folder']
-
-        self.upload_lock.acquire()
-        try:
-            self.filenames_to_upload.append(filename)
-            for i, fn in enumerate(self.filenames_to_upload):
-                LOG.debug('Uploading ' + fn + '...')
-                os.chmod(fn, 0o666)
-                cmd = 'scp -o StrictHostKeyChecking=no -P ' + \
-                      str(self.upload_config['port']) + ' -i ' + \
-                      keyfile + ' ' + fn + ' ' + address
-                if os.system(cmd) == 0:
-                    del self.filenames_to_upload[i]
-                    os.remove(fn)
-                else:
-                    LOG.debug('Could not upload ' + fn + ' to ' + server)
-        finally:
-            self.upload_lock.release()
+        metadata = {
+            'name': self.wake_word_name.replace(' ', '-'),
+            'engine': md5(ww_module.encode('utf-8')).hexdigest(),
+            'time': str(int(1000 * get_time())),
+            'sessionId': SessionManager.get().session_id,
+            'accountId': self.account_id,
+            'model': str(model_hash)
+        }
+        requests.post(
+            self.upload_url, files={
+                'audio': BytesIO(audio.get_wav_data()),
+                'metadata': StringIO(json.dumps(metadata))
+            }
+        )
 
     def _wait_until_wake_word(self, source, sec_per_buffer):
         """Listen continuously on source until a wake word is spoken
@@ -398,13 +387,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         idx_energy = 0
         avg_energy = 0.0
         energy_avg_samples = int(5 / sec_per_buffer)  # avg over last 5 secs
-
-        ww_module = self.wake_word_recognizer.__class__.__name__
-        if ww_module == 'PreciseHotword':
-            _, model_path = self.wake_word_recognizer.get_model_info()
-            model_hash = check_output(['md5sum', model_path]).split()[0]
-        else:
-            model_hash = '0'
         counter = 0
 
         while not said_wake_word and not self._stop_signaled:
@@ -459,31 +441,13 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 audio_data = chopped + silence
                 said_wake_word = \
                     self.wake_word_recognizer.found_wake_word(audio_data)
-                # if a wake word is success full then record audio in temp
-                # file.
-                if self.save_wake_words and said_wake_word:
-                    audio = self._create_audio_data(byte_data, source)
-
-                    if not isdir(self.save_wake_words_dir):
-                        mkdir(self.save_wake_words_dir)
-                    dr = self.save_wake_words_dir
-
-                    components = [
-                        self.wake_word_name.replace(' ', '-'),
-                        md5(ww_module.encode('utf-8')).hexdigest(),
-                        str(int(1000 * get_time())),
-                        SessionManager.get().session_id,
-                        self.account_id,
-                        model_hash
-                    ]
-                    fn = join(dr, '.'.join(components) + '.wav')
-                    with open(fn, 'wb') as f:
-                        f.write(audio.get_wav_data())
-
-                    if self.upload_config['enable'] or self.config['opt_in']:
-                        t = Thread(target=self._upload_file, args=(fn,))
-                        t.daemon = True
-                        t.start()
+                # if a wake word is success full then upload wake word
+                if said_wake_word and self.config['opt_in'] and not \
+                        self.upload_disabled:
+                    Thread(
+                        target=self._upload_wake_word, daemon=True,
+                        args=[self._create_audio_data(byte_data, source)]
+                    ).start()
 
     @staticmethod
     def _create_audio_data(raw_data, source):

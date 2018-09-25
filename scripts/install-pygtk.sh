@@ -15,8 +15,7 @@
 # limitations under the License.
 
 # Ensure we're in a virtualenv.
-if [ "$VIRTUAL_ENV" == "" ]
-then
+if [ "$VIRTUAL_ENV" == "" ] ; then
     echo "ERROR: not in a virtual environment."
     exit -1
 fi
@@ -34,8 +33,7 @@ python -c "
 try: import cairo; raise SystemExit(0)
 except ImportError: raise SystemExit(-1)"
 
-if [ $? == 255 ]
-then
+if [ $? == 255 ] ; then
     echo -e "\E[1m * Installing cairo...\E[0m"
     # Fetch, build, and install py2cairo.
     (   cd $CACHE
@@ -56,8 +54,7 @@ python -c "
 try: import gobject; raise SystemExit(0)
 except ImportError: raise SystemExit(-1)"
 
-if [ $? == 255 ]
-then
+if [ $? == 255 ] ; then
     echo -e "\E[1m * Installing gobject...\E[0m"
     # Fetch, build, and install gobject.
     (   cd $CACHE
@@ -77,8 +74,7 @@ python -c "
 try: import gtk; raise SystemExit(0)
 except ImportError: raise SystemExit(-1)" 2&> /dev/null
 
-if [ $? == 255 ]
-then
+if [ $? == 255 ] ; then
     echo -e "\E[1m * Installing gtk...\E[0m"
     # Fetch, build, and install gtk.
     (   cd $CACHE

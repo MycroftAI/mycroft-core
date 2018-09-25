@@ -27,10 +27,10 @@ class MPlayerService(AudioBackend):
         Audio backend for mplayer.
     """
 
-    def __init__(self, config, emitter, name='mplayer'):
-        super(MPlayerService, self).__init__(config, emitter)
+    def __init__(self, config, bus, name='mplayer'):
+        super(MPlayerService, self).__init__(config, bus)
         self.config = config
-        self.emitter = emitter
+        self.bus = bus
         self.name = name
         self.index = 0
         self.normal_volume = None
@@ -47,7 +47,11 @@ class MPlayerService(AudioBackend):
         self.tracks += tracks
         LOG.info("Track list is " + str(tracks))
 
-    def play(self):
+    def play(self, repeat=False):
+        """ Start playback of playlist.
+
+        TODO: Add support for repeat
+        """
         self.stop()
         if len(self.tracks):
             # play first track
@@ -58,6 +62,7 @@ class MPlayerService(AudioBackend):
 
     def stop(self):
         self.mpc.stop()
+        return True  # TODO: Return False if not playing
 
     def pause(self):
         if not self.mpc.paused:

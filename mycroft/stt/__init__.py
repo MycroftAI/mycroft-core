@@ -14,9 +14,8 @@
 #
 import re
 import json
-import requests
 from abc import ABCMeta, abstractmethod
-from requests import post, exceptions
+from requests import post, put, exceptions
 from speech_recognition import Recognizer
 
 from mycroft.api import STTApi
@@ -201,6 +200,26 @@ class HoundifySTT(KeySTT):
         return self.recognizer.recognize_houndify(audio, self.id, self.key)
 
 
+class GoVivaceSTT(TokenSTT):
+    def __init__(self):
+        super(GoVivaceSTT, self).__init__()
+        self.default_uri = "https://services.govivace.com:49149/telephony"
+
+        if not self.lang.startswith("en") and not self.lang.startswith("es"):
+            LOG.error("GoVivace STT only supports english and spanish")
+            raise NotImplementedError
+
+    def execute(self, audio, language=None):
+        url = self.config.get("uri", self.default_uri) + "?key=" + \
+              self.token + "&action=find&format=8K_PCM16&validation_string="
+        response = put(url,
+                       data=audio.get_wav_data(convert_rate=8000))
+        return self.get_response(response)
+
+    def get_response(self, response):
+        return response.json()["result"]["hypotheses"][0]["transcript"]
+
+
 class STTFactory(object):
     CLASSES = {
         "mycroft": MycroftSTT,
@@ -210,6 +229,7 @@ class STTFactory(object):
         "ibm": IBMSTT,
         "kaldi": KaldiSTT,
         "bing": BingSTT,
+        "govivace": GoVivaceSTT,
         "houndify": HoundifySTT,
         "deepspeech_server": DeepSpeechServerSTT,
         "mycroft_deepspeech": MycroftDeepSpeechSTT

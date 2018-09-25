@@ -16,8 +16,6 @@ import time
 from os.path import abspath
 
 from mycroft.messagebus.message import Message
-# Python 2+3 compatibility
-from past.builtins import basestring
 
 
 def ensure_uri(s):
@@ -30,24 +28,32 @@ def ensure_uri(s):
         Returns:
             if s is uri, s is returned otherwise file:// is prepended
     """
-    if '://' not in s:
-        return 'file://' + abspath(s)
+    if isinstance(s, str):
+        if '://' not in s:
+            return 'file://' + abspath(s)
+        else:
+            return s
+    elif isinstance(s, (tuple, list)):
+        if '://' not in s[0]:
+            return 'file://' + abspath(s[0]), s[1]
+        else:
+            return s
     else:
-        return s
+        raise ValueError('Invalid track')
 
 
 class AudioService(object):
     """
         AudioService object for interacting with the audio subsystem
 
-        Args:
-            emitter: eventemitter or websocket object
+        Arguments:
+            bus: Mycroft messagebus connection
     """
 
-    def __init__(self, emitter):
-        self.emitter = emitter
-        self.emitter.on('mycroft.audio.service.track_info_reply',
-                        self._track_info)
+    def __init__(self, bus):
+        self.bus = bus
+        self.bus.on('mycroft.audio.service.track_info_reply',
+                    self._track_info)
         self.info = None
 
     def _track_info(self, message=None):
@@ -63,51 +69,56 @@ class AudioService(object):
                 tracks: track uri or list of track uri's
         """
         tracks = tracks or []
-        if isinstance(tracks, basestring):
+        if isinstance(tracks, str):
             tracks = [tracks]
         elif not isinstance(tracks, list):
             raise ValueError
         tracks = [ensure_uri(t) for t in tracks]
-        self.emitter.emit(Message('mycroft.audio.service.queue',
-                                  data={'tracks': tracks}))
+        self.bus.emit(Message('mycroft.audio.service.queue',
+                              data={'tracks': tracks}))
 
-    def play(self, tracks=None, utterance=''):
+    def play(self, tracks=None, utterance='', repeat=None):
         """ Start playback.
 
             Args:
                 tracks: track uri or list of track uri's
+                        Each track can be added as a tuple with (uri, mime)
+                        to give a hint of the mime type to the system
                 utterance: forward utterance for further processing by the
                            audio service.
+                repeat: if the playback should be looped
         """
+        repeat = repeat or False
         tracks = tracks or []
-        if isinstance(tracks, basestring):
+        if isinstance(tracks, (str, tuple)):
             tracks = [tracks]
         elif not isinstance(tracks, list):
             raise ValueError
         tracks = [ensure_uri(t) for t in tracks]
-        self.emitter.emit(Message('mycroft.audio.service.play',
-                                  data={'tracks': tracks,
-                                        'utterance': utterance}))
+        self.bus.emit(Message('mycroft.audio.service.play',
+                              data={'tracks': tracks,
+                                    'utterance': utterance,
+                                    'repeat': repeat}))
 
     def stop(self):
         """ Stop the track. """
-        self.emitter.emit(Message('mycroft.audio.service.stop'))
+        self.bus.emit(Message('mycroft.audio.service.stop'))
 
     def next(self):
         """ Change to next track. """
-        self.emitter.emit(Message('mycroft.audio.service.next'))
+        self.bus.emit(Message('mycroft.audio.service.next'))
 
     def prev(self):
         """ Change to previous track. """
-        self.emitter.emit(Message('mycroft.audio.service.prev'))
+        self.bus.emit(Message('mycroft.audio.service.prev'))
 
     def pause(self):
         """ Pause playback. """
-        self.emitter.emit(Message('mycroft.audio.service.pause'))
+        self.bus.emit(Message('mycroft.audio.service.pause'))
 
     def resume(self):
         """ Resume paused playback. """
-        self.emitter.emit(Message('mycroft.audio.service.resume'))
+        self.bus.emit(Message('mycroft.audio.service.resume'))
 
     def track_info(self):
         """ Request information of current playing track.
@@ -116,7 +127,7 @@ class AudioService(object):
                 Dict with track info.
         """
         self.info = None
-        self.emitter.emit(Message('mycroft.audio.service.track_info'))
+        self.bus.emit(Message('mycroft.audio.service.track_info'))
         wait = 5.0
         while self.info is None and wait >= 0:
             time.sleep(0.1)

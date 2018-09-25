@@ -15,13 +15,16 @@
 # limitations under the License.
 #
 from difflib import SequenceMatcher
+from mycroft.util.time import now_local
 
 from mycroft.util.lang.parse_en import *
 from mycroft.util.lang.parse_pt import *
 from mycroft.util.lang.parse_es import *
 from mycroft.util.lang.parse_it import *
 from mycroft.util.lang.parse_sv import *
-
+from mycroft.util.lang.parse_de import extractnumber_de
+from mycroft.util.lang.parse_de import extract_datetime_de
+from mycroft.util.lang.parse_de import normalize_de
 from mycroft.util.lang.parse_fr import extractnumber_fr
 from mycroft.util.lang.parse_fr import extract_datetime_fr
 from mycroft.util.lang.parse_fr import normalize_fr
@@ -49,7 +52,7 @@ def match_one(query, choices):
         Returns: tuple with best match, score
     """
     if isinstance(choices, dict):
-        _choices = choices.keys()
+        _choices = list(choices.keys())
     elif isinstance(choices, list):
         _choices = choices
     else:
@@ -67,19 +70,27 @@ def match_one(query, choices):
         return best
 
 
-def extractnumber(text, lang="en-us"):
+def extract_number(text, short_scale=True, ordinals=False, lang="en-us"):
     """Takes in a string and extracts a number.
+
     Args:
         text (str): the string to extract a number from
-        lang (str): the code for the language text is in
+        short_scale (bool): Use "short scale" or "long scale" for large
+            numbers -- over a million.  The default is short scale, which
+            is now common in most English speaking countries.
+            See https://en.wikipedia.org/wiki/Names_of_large_numbers
+        ordinals (bool): consider ordinal numbers, e.g. third=3 instead of 1/3
+        lang (str): the BCP-47 code for the language to use
     Returns:
-        (str): The number extracted or the original text.
+        (int, float or False): The number extracted or False if the input
+                               text contains no numbers
     """
-
     lang_lower = str(lang).lower()
     if lang_lower.startswith("en"):
-        # return extractnumber_en(text, remove_articles)
-        return extractnumber_en(text)
+        return extractnumber_en(text, short_scale=short_scale,
+                                ordinals=ordinals)
+    elif lang_lower.startswith("es"):
+        return extractnumber_es(text)
     elif lang_lower.startswith("pt"):
         return extractnumber_pt(text)
     elif lang_lower.startswith("it"):
@@ -88,39 +99,42 @@ def extractnumber(text, lang="en-us"):
         return extractnumber_fr(text)
     elif lang_lower.startswith("sv"):
         return extractnumber_sv(text)
-    # TODO: extractnumber for other languages
+    elif lang_lower.startswith("de"):
+        return extractnumber_de(text)
+    # TODO: extractnumber_xx for other languages
     return text
 
 
-def extract_datetime(text, anchorDate=None, lang="en-us"):
+def extract_datetime(text, anchorDate=None, lang="en-us", default_time=None):
     """
-    Parsing function that extracts date and time information
-    from sentences. Parses many of the common ways that humans
-    express dates and times. Includes relative dates like "5 days from today".
+    Extracts date and time information from a sentence.  Parses many of the
+    common ways that humans express dates and times, including relative dates
+    like "5 days from today", "tomorrow', and "Tuesday".
 
     Vague terminology are given arbitrary values, like:
         - morning = 8 AM
         - afternoon = 3 PM
         - evening = 7 PM
 
-    If a time isn't supplied, the function defaults to 12 AM
+    If a time isn't supplied or implied, the function defaults to 12 AM
 
     Args:
-        str (string): the text to be normalized
-        anchortDate (:obj:`datetime`, optional): the date to be used for
+        text (str): the text to be interpreted
+        anchorDate (:obj:`datetime`, optional): the date to be used for
             relative dating (for example, what does "tomorrow" mean?).
-            Defaults to the current date
-            (acquired with datetime.datetime.now())
-        lang (string): the language of the sentence(s)
+            Defaults to the current local date/time.
+        lang (string): the BCP-47 code for the language to use
+        default_time (datetime.time): time to use if none was found in
+            the input string.
 
     Returns:
         [:obj:`datetime`, :obj:`str`]: 'datetime' is the extracted date
-            as a datetime object. Times are represented in 24 hour notation.
+            as a datetime object in the user's local timezone.
             'leftover_string' is the original phrase with all date and time
             related keywords stripped out. See examples for further
             clarification
 
-            Returns 'None' if no date was extracted.
+            Returns 'None' if no date or time related text is found.
 
     Examples:
 
@@ -135,20 +149,33 @@ def extract_datetime(text, anchorDate=None, lang="en-us"):
         ... datetime(2016, 02, 19, 00, 00)
         ... )
         [datetime.datetime(2016, 3, 6, 17, 0), 'set up appointment']
+
+        >>> extract_datetime(
+        ... "Set up an appointment",
+        ... datetime(2016, 02, 19, 00, 00)
+        ... )
+        None
     """
 
     lang_lower = str(lang).lower()
 
+    if not anchorDate:
+        anchorDate = now_local()
+
     if lang_lower.startswith("en"):
-        return extract_datetime_en(text, anchorDate)
+        return extract_datetime_en(text, anchorDate, default_time)
+    elif lang_lower.startswith("es"):
+        return extract_datetime_es(text, anchorDate, default_time)
     elif lang_lower.startswith("pt"):
-        return extract_datetime_pt(text, anchorDate)
+        return extract_datetime_pt(text, anchorDate, default_time)
     elif lang_lower.startswith("it"):
-        return extract_datetime_it(text, anchorDate)
+        return extract_datetime_it(text, anchorDate, default_time)
     elif lang_lower.startswith("fr"):
-        return extract_datetime_fr(text, anchorDate)
+        return extract_datetime_fr(text, anchorDate, default_time)
     elif lang_lower.startswith("sv"):
-        return extract_datetime_sv(text, anchorDate)
+        return extract_datetime_sv(text, anchorDate, default_time)
+    elif lang_lower.startswith("de"):
+        return extract_datetime_de(text, anchorDate, default_time)
     # TODO: extract_datetime for other languages
     return text
 # ==============================================================
@@ -162,7 +189,8 @@ def normalize(text, lang="en-us", remove_articles=True):
     Args:
         text (str): the string to normalize
         lang (str): the code for the language text is in
-        remove_articles (bool): whether to remove articles (like 'a', or 'the')
+        remove_articles (bool): whether to remove articles (like 'a', or
+                                'the'). True by default.
     Returns:
         (str): The normalized string.
     """
@@ -180,6 +208,8 @@ def normalize(text, lang="en-us", remove_articles=True):
         return normalize_fr(text, remove_articles)
     elif lang_lower.startswith("sv"):
         return normalize_sv(text, remove_articles)
+    elif lang_lower.startswith("de"):
+        return normalize_de(text, remove_articles)
     # TODO: Normalization for other languages
     return text
 
@@ -194,5 +224,4 @@ def get_gender(word, input_string="", lang="en-us"):
         return get_gender_pt(word, input_string)
     elif "it" in lang:
         return get_gender_it(word, input_string)
-
     return False

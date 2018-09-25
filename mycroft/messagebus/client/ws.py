@@ -16,10 +16,11 @@ import json
 import time
 from multiprocessing.pool import ThreadPool
 from threading import Event
+import traceback
 
-import monotonic
 from pyee import EventEmitter
-from websocket import WebSocketApp, WebSocketConnectionClosedException
+from websocket import (WebSocketApp, WebSocketConnectionClosedException,
+                       WebSocketException)
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
@@ -68,12 +69,11 @@ class WebsocketClient(object):
         self.emitter.emit("close")
 
     def on_error(self, ws, error):
+        """ On error start trying to reconnect to the websocket. """
         if isinstance(error, WebSocketConnectionClosedException):
             LOG.warning('Could not send message because connection has closed')
-            return
-
-        LOG.exception(
-            '=== ' + error.__class__.__name__ + ': ' + str(error) + ' ===')
+        else:
+            LOG.exception('=== ' + repr(error) + ' ===')
 
         try:
             self.emitter.emit('error', error)
@@ -81,11 +81,15 @@ class WebsocketClient(object):
                 self.client.close()
         except Exception as e:
             LOG.error('Exception closing websocket: ' + repr(e))
+
         LOG.warning("WS Client will reconnect in %d seconds." % self.retry)
         time.sleep(self.retry)
         self.retry = min(self.retry * 2, 60)
-        self.client = self.create_client()
-        self.run_forever()
+        try:
+            self.client = self.create_client()
+            self.run_forever()
+        except WebSocketException:
+            pass
 
     def on_message(self, ws, message):
         self.emitter.emit('message', message)
@@ -131,17 +135,17 @@ class WebsocketClient(object):
         # Send request
         self.emit(message)
         # Wait for response
-        start_time = monotonic.monotonic()
+        start_time = time.monotonic()
         while len(response) == 0:
             time.sleep(0.2)
-            if monotonic.monotonic() - start_time > (timeout or 3.0):
+            if time.monotonic() - start_time > (timeout or 3.0):
                 try:
                     self.remove(reply_type, handler)
                 except (ValueError, KeyError):
                     # ValueError occurs on pyee 1.0.1 removing handlers
                     # registered with once.
                     # KeyError may theoretically occur if the event occurs as
-                    # the handler is removbed
+                    # the handler is removed
                     pass
                 return None
         return response[0]
@@ -154,9 +158,30 @@ class WebsocketClient(object):
 
     def remove(self, event_name, func):
         try:
+            if event_name in self.emitter._events:
+                LOG.debug("Removing found '"+str(event_name)+"'")
+            else:
+                LOG.debug("Not able to find '"+str(event_name)+"'")
             self.emitter.remove_listener(event_name, func)
         except ValueError as e:
-            LOG.warning('Failed to remove event {}: {}'.format(event_name, e))
+            LOG.warning('Failed to remove event {}: {}'.format(event_name,
+                                                               str(func)))
+            for line in traceback.format_stack():
+                LOG.warning(line.strip())
+
+            if event_name in self.emitter._events:
+                LOG.debug("Removing found '"+str(event_name)+"'")
+            else:
+                LOG.debug("Not able to find '"+str(event_name)+"'")
+            LOG.warning("Existing events: " + str(self.emitter._events))
+            for evt in self.emitter._events:
+                LOG.warning("   "+str(evt))
+                LOG.warning("       "+str(self.emitter._events[evt]))
+            if event_name in self.emitter._events:
+                LOG.debug("Removing found '"+str(event_name)+"'")
+            else:
+                LOG.debug("Not able to find '"+str(event_name)+"'")
+            LOG.warning('----- End dump -----')
 
     def remove_all_listeners(self, event_name):
         '''

@@ -1,0 +1,6 @@
+recursive-include mycroft/client/speech/recognizer/model *
+include requirements.txt
+include mycroft/configuration/*.conf
+recursive-include mycroft/res *
+recursive-include mycroft/res/snd *
+recursive-include mycroft/res/text/* *

@@ -43,13 +43,13 @@ class ChromecastService(AudioBackend):
             LOG.info('Couldn\'t find chromecast ' + identifier)
             self.connection_attempts += 1
             time.sleep(10)
-            self.emitter.emit(Message('ChromecastServiceConnect'))
+            self.bus.emit(Message('ChromecastServiceConnect'))
             return
 
-    def __init__(self, config, emitter, name='chromecast', cast=None):
-        super(ChromecastService, self).__init__(config, emitter)
+    def __init__(self, config, bus, name='chromecast', cast=None):
+        super(ChromecastService, self).__init__(config, bus)
         self.connection_attempts = 0
-        self.emitter = emitter
+        self.bus = bus
         self.config = config
         self.name = name
 
@@ -59,8 +59,8 @@ class ChromecastService(AudioBackend):
             self.cast = cast
         else:
             self.cast = None
-            self.emitter.on('ChromecastServiceConnect', self._connect)
-            self.emitter.emit(Message('ChromecastServiceConnect'))
+            self.bus.on('ChromecastServiceConnect', self._connect)
+            self.bus.emit(Message('ChromecastServiceConnect'))
 
     def supported_uris(self):
         """ Return supported uris of chromecast. """
@@ -84,8 +84,11 @@ class ChromecastService(AudioBackend):
         self.tracklist = tracks
         pass
 
-    def play(self):
-        """ Start playback. """
+    def play(self, repeat=False):
+        """ Start playback.
+
+        TODO: add playlist support and repeat
+        """
         self.cast.quit_app()
 
         track = self.tracklist[0]
@@ -98,8 +101,12 @@ class ChromecastService(AudioBackend):
 
     def stop(self):
         """ Stop playback and quit app. """
-        self.cast.media_controller.stop()
-        self.cast.quit_app()
+        if self.cast.media_controller.is_playing:
+            self.cast.media_controller.stop()
+            self.cast.quit_app()
+            return True
+        else:
+            return False
 
     def pause(self):
         """ Pause current playback. """
@@ -139,15 +146,19 @@ class ChromecastService(AudioBackend):
             ret['album'] = ''
         return ret
 
+    def shutdown(self):
+        """ Disconnect from the device. """
+        self.cast.disconnect()
 
-def autodetect(config, emitter):
+
+def autodetect(config, bus):
     """
         Autodetect chromecasts on the network and create backends for each
     """
-    casts = pychromecast.get_chromecasts()
+    casts = pychromecast.get_chromecasts(timeout=5, tries=2, retry_wait=2)
     ret = []
     for c in casts:
         LOG.info(c.name + " found.")
-        ret.append(ChromecastService(config, emitter, c.name.lower(), c))
+        ret.append(ChromecastService(config, bus, c.name.lower(), c))
 
     return ret

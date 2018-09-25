@@ -86,7 +86,7 @@ class Mopidy(object):
     def add_list(self, uri):
         d = copy(_base_dict)
         d['method'] = 'core.tracklist.add'
-        if type(uri) == str or type(uri) == unicode:
+        if isinstance(uri, str):
             d['params'] = {'uri': uri}
         elif type(uri) == list:
             d['params'] = {'uris': uri}

@@ -22,7 +22,7 @@ from mycroft.api import DeviceApi, is_paired
 from mycroft.configuration import Configuration
 from mycroft.session import SessionManager
 from mycroft.util.log import LOG
-from mycroft.util.setup_base import get_version
+from mycroft.version import CORE_VERSION_STR
 from copy import copy
 
 
@@ -121,7 +121,7 @@ class MetricsAggregator(object):
         self._timers = {}
         self._levels = {}
         self._attributes = {}
-        self.attr("version", get_version())
+        self.attr("version", CORE_VERSION_STR)
 
     def increment(self, name, value=1):
         cur = self._counters.get(name, 0)
@@ -142,7 +142,7 @@ class MetricsAggregator(object):
         self._timers = {}
         self._levels = {}
         self._attributes = {}
-        self.attr("version", get_version())
+        self.attr("version", CORE_VERSION_STR)
 
     def attr(self, name, value):
         self._attributes[name] = value

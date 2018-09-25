@@ -25,12 +25,14 @@ from mycroft.skills.core import FallbackSkill
 from mycroft.util.log import LOG
 
 
-PADATIOUS_VERSION = '0.3.7'  # Also update in requirements.txt
-
-
 class PadatiousService(FallbackSkill):
-    def __init__(self, emitter, service):
+    instance = None
+
+    def __init__(self, bus, service):
         FallbackSkill.__init__(self)
+        if not PadatiousService.instance:
+            PadatiousService.instance = self
+
         self.config = Configuration.get()['padatious']
         self.service = service
         intent_cache = expanduser(self.config['intent_cache'])
@@ -45,17 +47,14 @@ class PadatiousService(FallbackSkill):
             except OSError:
                 pass
             return
-        ver = get_distribution('padatious').version
-        if ver != PADATIOUS_VERSION:
-            LOG.warning('Using Padatious v' + ver + '. Please re-run ' +
-                        'dev_setup.sh to install ' + PADATIOUS_VERSION)
 
         self.container = IntentContainer(intent_cache)
 
-        self.emitter = emitter
-        self.emitter.on('padatious:register_intent', self.register_intent)
-        self.emitter.on('padatious:register_entity', self.register_entity)
-        self.emitter.on('mycroft.skills.initialized', self.train)
+        self.bus = bus
+        self.bus.on('padatious:register_intent', self.register_intent)
+        self.bus.on('padatious:register_entity', self.register_entity)
+        self.bus.on('detach_intent', self.handle_detach_intent)
+        self.bus.on('mycroft.skills.initialized', self.train)
         self.register_fallback(self.handle_fallback, 5)
         self.finished_training_event = Event()
         self.finished_initial_train = False
@@ -64,10 +63,16 @@ class PadatiousService(FallbackSkill):
         self.train_time = get_time() + self.train_delay
 
     def train(self, message=None):
+        if message is None:
+            single_thread = False
+        else:
+            single_thread = message.data.get('single_thread', False)
         self.finished_training_event.clear()
-        LOG.info('Training...')
-        self.container.train()
+
+        LOG.info('Training... (single_thread={})'.format(single_thread))
+        self.container.train(single_thread=single_thread)
         LOG.info('Training complete.')
+
         self.finished_training_event.set()
         self.finished_initial_train = True
 
@@ -81,6 +86,10 @@ class PadatiousService(FallbackSkill):
         if self.train_time <= get_time() + 0.01:
             self.train_time = -1.0
             self.train()
+
+    def handle_detach_intent(self, message):
+        intent_name = message.data.get('intent_name')
+        self.container.remove_intent(intent_name)
 
     def _register_object(self, message, object_name, register_func):
         file_name = message.data['file_name']
@@ -103,21 +112,22 @@ class PadatiousService(FallbackSkill):
         self._register_object(message, 'entity', self.container.load_entity)
 
     def handle_fallback(self, message):
+        if not self.finished_training_event.is_set():
+            LOG.debug('Waiting for Padatious training to finish...')
+            return False
+
         utt = message.data.get('utterance')
         LOG.debug("Padatious fallback attempt: " + utt)
-
-        if not self.finished_training_event.is_set():
-            LOG.debug('Waiting for training to finish...')
-            self.finished_training_event.wait()
-
-        data = self.container.calc_intent(utt)
-
+        data = self.calc_intent(utt)
         if data.conf < 0.5:
             return False
 
         data.matches['utterance'] = utt
 
-        self.service.add_active_skill(int(data.name.split(':')[0]))
+        self.service.add_active_skill(data.name.split(':')[0])
 
-        self.emitter.emit(Message(data.name, data=data.matches))
+        self.bus.emit(message.reply(data.name, data=data.matches))
         return True
+
+    def calc_intent(self, utt):
+        return self.container.calc_intent(utt)

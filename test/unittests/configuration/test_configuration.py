@@ -22,7 +22,7 @@ class TestConfiguration(TestCase):
     @mock.patch('mycroft.api.DeviceApi')
     def test_remote(self, mock_api):
         remote_conf = {'TestConfig': True, 'uuid': 1234}
-        remote_location = {'city': 'Stockholm'}
+        remote_location = {'city': {'name': 'Stockholm'}}
         dev_api = mock.MagicMock()
         dev_api.get_settings.return_value = remote_conf
         dev_api.get_location.return_value = remote_location
@@ -30,7 +30,7 @@ class TestConfiguration(TestCase):
 
         rc = mycroft.configuration.RemoteConf()
         self.assertTrue(rc['test_config'])
-        self.assertEquals(rc['location']['city'], 'Stockholm')
+        self.assertEquals(rc['location']['city']['name'], 'Stockholm')
 
     @mock.patch('json.dump')
     @mock.patch('mycroft.configuration.config.exists')

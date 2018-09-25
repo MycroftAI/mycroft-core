@@ -19,5 +19,6 @@ from mycroft.messagebus.message import Message
 from mycroft.skills.context import adds_context, removes_context
 from mycroft.skills.core import MycroftSkill, FallbackSkill, \
     intent_handler, intent_file_handler
+from mycroft.skills.intent_service import AdaptIntent
 
 MYCROFT_ROOT_PATH = abspath(join(dirname(__file__), '..'))

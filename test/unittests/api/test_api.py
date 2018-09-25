@@ -21,14 +21,19 @@ import mycroft.api
 import mycroft.configuration
 from mycroft.util.log import LOG
 
-CONFIG = {
-    'server': {
-        'url': 'https://api-test.mycroft.ai',
-        'version': 'v1',
-        'update': True,
-        'metrics': False
+from test.util import base_config
+CONFIG = base_config()
+CONFIG.merge(
+    {
+        'data_dir': '/opt/mycroft',
+        'server': {
+            'url': 'https://api-test.mycroft.ai',
+            'version': 'v1',
+            'update': True,
+            'metrics': False
         }
     }
+)
 
 
 mycroft.api.requests.post = mock.MagicMock()
