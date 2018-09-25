@@ -142,7 +142,10 @@ VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${TOP}/.venv"}
 
 function install_venv() {
     python3 -m venv "${VIRTUALENV_ROOT}/" --without-pip
-    curl https://bootstrap.pypa.io/get-pip.py | "${VIRTUALENV_ROOT}/bin/python"
+    # Force version of pip for reproducability, but there is nothing special
+    # about this version.  Update whenever a new version is released and
+    # verified functional.
+    curl https://bootstrap.pypa.io/get-pip.py | "${VIRTUALENV_ROOT}/bin/python" - 'pip==18.0.0'
 }
 
 install_deps
@@ -181,11 +184,6 @@ fi
 # Start the virtual environment
 source "${VIRTUALENV_ROOT}/bin/activate"
 cd "${TOP}"
-
-# Force version of pip for reproducability, but there is nothing special
-# about this version.  Update whenever a new version is released and
-# verified functional.
-easy_install pip==18.0
 
 PYTHON=$( python -c "import sys;print('python{}.{}'.format(sys.version_info[0], sys.version_info[1]))" )
 
