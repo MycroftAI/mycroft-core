@@ -31,6 +31,20 @@ class AdaptIntent(IntentBuilder):
         super().__init__(name)
 
 
+def workaround_one_of_context(best_intent):
+    """ Handle Adapt issue with context injection combined with one_of.
+
+    For all entries in the intent result where the value is None try to
+    populate using a value from the __tags__ structure.
+    """
+    for key in best_intent:
+        if best_intent[key] is None:
+            for t in best_intent['__tags__']:
+                if key in t:
+                    best_intent[key] = t[key][0]['entities'][0]['key']
+    return best_intent
+
+
 class ContextManager(object):
     """
     ContextManager
@@ -367,6 +381,12 @@ class IntentService(object):
             # update active skills
             skill_id = best_intent['intent_type'].split(":")[0]
             self.add_active_skill(skill_id)
+            # adapt doesn't handle context injection for one_of keywords
+            # correctly. Workaround this issue if possible.
+            try:
+                best_intent = workaround_one_of_context(best_intent)
+            except LookupError:
+                LOG.error('Error during workaround_one_of_context')
             return best_intent
 
     def handle_register_vocab(self, message):

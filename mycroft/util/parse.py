@@ -89,6 +89,8 @@ def extract_number(text, short_scale=True, ordinals=False, lang="en-us"):
     if lang_lower.startswith("en"):
         return extractnumber_en(text, short_scale=short_scale,
                                 ordinals=ordinals)
+    elif lang_lower.startswith("es"):
+        return extractnumber_es(text)
     elif lang_lower.startswith("pt"):
         return extractnumber_pt(text)
     elif lang_lower.startswith("it"):
@@ -103,7 +105,7 @@ def extract_number(text, short_scale=True, ordinals=False, lang="en-us"):
     return text
 
 
-def extract_datetime(text, anchorDate=None, lang="en-us"):
+def extract_datetime(text, anchorDate=None, lang="en-us", default_time=None):
     """
     Extracts date and time information from a sentence.  Parses many of the
     common ways that humans express dates and times, including relative dates
@@ -122,6 +124,8 @@ def extract_datetime(text, anchorDate=None, lang="en-us"):
             relative dating (for example, what does "tomorrow" mean?).
             Defaults to the current local date/time.
         lang (string): the BCP-47 code for the language to use
+        default_time (datetime.time): time to use if none was found in
+            the input string.
 
     Returns:
         [:obj:`datetime`, :obj:`str`]: 'datetime' is the extracted date
@@ -130,7 +134,7 @@ def extract_datetime(text, anchorDate=None, lang="en-us"):
             related keywords stripped out. See examples for further
             clarification
 
-            Returns 'None' if the input string is empty.
+            Returns 'None' if no date or time related text is found.
 
     Examples:
 
@@ -145,6 +149,12 @@ def extract_datetime(text, anchorDate=None, lang="en-us"):
         ... datetime(2016, 02, 19, 00, 00)
         ... )
         [datetime.datetime(2016, 3, 6, 17, 0), 'set up appointment']
+
+        >>> extract_datetime(
+        ... "Set up an appointment",
+        ... datetime(2016, 02, 19, 00, 00)
+        ... )
+        None
     """
 
     lang_lower = str(lang).lower()
@@ -153,17 +163,19 @@ def extract_datetime(text, anchorDate=None, lang="en-us"):
         anchorDate = now_local()
 
     if lang_lower.startswith("en"):
-        return extract_datetime_en(text, anchorDate)
+        return extract_datetime_en(text, anchorDate, default_time)
+    elif lang_lower.startswith("es"):
+        return extract_datetime_es(text, anchorDate, default_time)
     elif lang_lower.startswith("pt"):
-        return extract_datetime_pt(text, anchorDate)
+        return extract_datetime_pt(text, anchorDate, default_time)
     elif lang_lower.startswith("it"):
-        return extract_datetime_it(text, anchorDate)
+        return extract_datetime_it(text, anchorDate, default_time)
     elif lang_lower.startswith("fr"):
-        return extract_datetime_fr(text, anchorDate)
+        return extract_datetime_fr(text, anchorDate, default_time)
     elif lang_lower.startswith("sv"):
-        return extract_datetime_sv(text, anchorDate)
+        return extract_datetime_sv(text, anchorDate, default_time)
     elif lang_lower.startswith("de"):
-        return extract_datetime_de(text, anchorDate)
+        return extract_datetime_de(text, anchorDate, default_time)
     # TODO: extract_datetime for other languages
     return text
 # ==============================================================

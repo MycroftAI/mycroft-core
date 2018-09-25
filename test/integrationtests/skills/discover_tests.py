@@ -47,7 +47,10 @@ def discover_tests(skills_dir):
         if exists(os.path.join(skill, 'test/__init__.py')):
             module = imp.load_source(skill + '.test_env',
                                      os.path.join(skill, 'test/__init__.py'))
-            if hasattr(module, 'test_runner') and callable(module.test_runner):
+            if (hasattr(module, 'test_runner') and
+                    callable(module.test_runner) or
+                    hasattr(module, 'test_setup') and
+                    callable(module.test_setup)):
                 test_env = module
 
         # Find all intent test files
@@ -72,11 +75,25 @@ def get_skills_dir():
     )
 
 
+def run_test_setup(loader, tests):
+    """ Run test_setup for all loaded skills. """
+    for s in loader.skills:
+        if len(tests[s.root_dir]) > 0:
+            try:
+                test_env = tests[s.root_dir][0]
+                if hasattr(test_env[1], 'test_setup'):
+                    print('Running test setup for {}'.format(s.name))
+                    test_env[1].test_setup(s)
+            except Exception as e:
+                print('test_setup for {} failed: {}'.format(s.name, repr(e)))
+
+
 skills_dir = get_skills_dir()
 tests = discover_tests(skills_dir)
 loader = MockSkillsLoader(skills_dir)
 emitter = loader.load_skills()
 skill_dir = os.environ.get('SKILL_DIR', '')
+run_test_setup(loader, tests)
 
 
 class TestCase(object):
@@ -87,7 +104,7 @@ class TestCase(object):
         ], []))
     def test_skill(self, skill, test):
         example, test_env = test
-        if test_env:
+        if test_env and hasattr(test_env, 'test_runner'):
             assert test_env.test_runner(skill, example, emitter, loader)
         else:
             t = SkillTest(skill, example, emitter)

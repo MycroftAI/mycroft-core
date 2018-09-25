@@ -43,10 +43,14 @@ from mycroft.messagebus.message import Message
 from mycroft.skills.core import create_skill_descriptor, load_skill, \
     MycroftSkill, FallbackSkill
 from mycroft.skills.settings import SkillSettings
+from mycroft.configuration import Configuration
 
 MainModule = '__init__'
 
 DEFAULT_EVALUAITON_TIMEOUT = 30
+
+# Set a configuration value to allow skills to check if they're in a test
+Configuration.get()['test_env'] = True
 
 
 # Easy way to show colors on terminals
@@ -463,7 +467,7 @@ class EvaluationRule(object):
                                     "file '" + d + ".dialog'") \
                         from template_load_exception
                 # Allow custom fields to be anything
-                d = [re.sub('{.*?\}', '.*', t) for t in dialogs]
+                d = [re.sub(r'{.*?\}', r'.*', t) for t in dialogs]
                 # Create rule allowing any of the sentences for that dialog
                 rules = [['match', 'utterance', r] for r in d]
                 self.rule.append(['or'] + rules)

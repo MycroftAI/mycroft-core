@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 import unittest
-from datetime import datetime
+from datetime import datetime, time
 
 from mycroft.util.parse import get_gender
 from mycroft.util.parse import extract_datetime
@@ -312,6 +312,13 @@ class TestNormalize_fr(unittest.TestCase):
                          None)
         self.assertEqual(extract_datetime(
             "apprendre à compter à 37 heures", lang="fr-fr"), None)
+
+    def test_extractdatetime_default_fr(self):
+        default = time(9, 0, 0)
+        anchor = datetime(2017, 6, 27, 0, 0)
+        res = extract_datetime("faire les plantations le 3ème jour de mars",
+                               anchor, lang='fr-fr', default_time=default)
+        self.assertEqual(default, res[0].time())
 
     def test_spaces_fr(self):
         self.assertEqual(normalize("  c'est   le     test", lang="fr-fr"),

@@ -1,14 +1,14 @@
 six==1.10.0
 requests==2.19.1
 gTTS==1.1.7
-gTTS-token==1.1.1
+gTTS-token==1.1.2
 PyAudio==0.2.11
 pyee==1.0.1
 SpeechRecognition==3.8.1
 tornado==4.2.1
 websocket-client==0.32.0
 requests-futures==0.9.5
-pyyaml==3.11
+pyyaml==3.13
 pyalsaaudio==0.8.2
 xmlrunner==1.7.7
 pyserial==3.0

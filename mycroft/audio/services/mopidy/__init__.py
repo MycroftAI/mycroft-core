@@ -74,7 +74,11 @@ class MopidyService(AudioBackend):
     def add_list(self, tracks):
         self.mopidy.add_list(tracks)
 
-    def play(self):
+    def play(self, repeat=False):
+        """ Start playback.
+
+        TODO: Add repeat support.
+        """
         self.mopidy.play()
 
     def stop(self):

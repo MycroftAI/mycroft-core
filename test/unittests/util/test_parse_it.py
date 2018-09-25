@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 import unittest
-from datetime import datetime
+from datetime import datetime, time
 
 from mycroft.util.parse import get_gender
 from mycroft.util.parse import extract_datetime
@@ -262,6 +262,13 @@ class TestNormalize(unittest.TestCase):
                     "2018-01-14 09:30:00", "inserire appuntamento")
         testExtract(u"inserire appuntamento domani sera alle 23 e 3 quarti",
                     "2018-01-14 23:45:00", "inserire appuntamento")
+
+    def test_extractdatetime_default_it(self):
+        default = time(9, 0, 0)
+        anchor = datetime(2017, 6, 27, 0, 0)
+        res = extract_datetime("Come è il meteo 3 tra giorni?",
+                               anchor, lang='it-it', default_time=default)
+        self.assertEqual(default, res[0].time())
 
     def test_gender_it(self):
         self.assertEqual(get_gender("mucca", lang="it"), "f")

@@ -351,6 +351,20 @@ class TestNormalize(unittest.TestCase):
         testExtract("remind me to call mom at 10am next saturday",
                     "2017-07-08 10:00:00", "remind me to call mom")
 
+    def test_extract_ambiguous_time_en(self):
+        morning = datetime(2017, 6, 27, 8, 1, 2)
+        evening = datetime(2017, 6, 27, 20, 1, 2)
+        noonish = datetime(2017, 6, 27, 12, 1, 2)
+        self.assertEqual(
+            extract_datetime('feed fish at 10 o\'clock', morning)[0],
+            datetime(2017, 6, 27, 10, 0, 0))
+        self.assertEqual(
+            extract_datetime('feed fish at 10 o\'clock', noonish)[0],
+            datetime(2017, 6, 27, 22, 0, 0))
+        self.assertEqual(
+            extract_datetime('feed fish at 10 o\'clock', evening)[0],
+            datetime(2017, 6, 27, 22, 0, 0))
+
     def test_extract_relativedatetime_en(self):
         def extractWithFormat(text):
             date = datetime(2017, 6, 27, 10, 1, 2)

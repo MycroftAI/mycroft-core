@@ -104,15 +104,18 @@ function install_deps() {
     echo "Installing packages..."
     if found_exe sudo ; then
         SUDO=sudo
+    else
+        echo "This script requires \"sudo\" to install system packages. Please install it, then re-run this script."
+        exit 1
     fi
 
     if found_exe zypper ; then
-        $SUDO zypper install -y git python glibc-devel linux-glibc-devel python-devel python2-virtualenv python2-gobject-devel python-virtualenvwrapper libtool libffi-devel libopenssl-devel autoconf automake bison swig glib2-devel portaudio-devel mpg123 flac curl libicu-devel pkg-config pkg-config libjpeg-devel libfann-devel python-curses
+        $SUDO zypper install -y git python3 python3-devel libtool libffi-devel libopenssl-devel autoconf automake bison swig portaudio-devel mpg123 flac curl libicu-devel pkg-config libjpeg-devel libfann-devel python3-curses pulseaudio
         $SUDO zypper install -y -t pattern devel_C_C++
     elif found_exe apt-get ; then
         $SUDO apt-get install -y git python3 python3-dev python-setuptools python-gobject-2-dev libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config automake libjpeg-dev libfann-dev build-essential jq
     elif found_exe pacman; then
-        $SUDO pacman -S --needed --noconfirm git python2 python2-pip python2-setuptools python2-virtualenv python2-gobject python-virtualenvwrapper libtool libffi openssl autoconf bison swig glib2 portaudio mpg123 screen flac curl pkg-config icu automake libjpeg-turbo base-devel jq
+        $SUDO pacman -S --needed --noconfirm git python python-pip python-setuptools python-virtualenv python-gobject python-virtualenvwrapper libffi swig portaudio mpg123 screen flac curl icu libjpeg-turbo base-devel jq pulseaudio pulseaudio-alsa
         pacman -Qs "^fann$" &> /dev/null || (
             git clone  https://aur.archlinux.org/fann.git
             cd fann
