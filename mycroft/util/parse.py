@@ -134,9 +134,10 @@ def extract_datetime(text, anchorDate=None, lang="en-us", default_time=None):
             related keywords stripped out. See examples for further
             clarification
 
-            Returns 'None' if the input string is empty.
+            Returns 'None' if no date or time related text is found.
 
     Examples:
+
         >>> extract_datetime(
         ... "What is the weather like the day after tomorrow?",
         ... datetime(2017, 06, 30, 00, 00)
@@ -148,6 +149,12 @@ def extract_datetime(text, anchorDate=None, lang="en-us", default_time=None):
         ... datetime(2016, 02, 19, 00, 00)
         ... )
         [datetime.datetime(2016, 3, 6, 17, 0), 'set up appointment']
+
+        >>> extract_datetime(
+        ... "Set up an appointment",
+        ... datetime(2016, 02, 19, 00, 00)
+        ... )
+        None
     """
 
     lang_lower = str(lang).lower()
