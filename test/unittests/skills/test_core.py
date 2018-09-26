@@ -405,7 +405,7 @@ class MycroftSkillTest(unittest.TestCase):
         s = SimpleSkill1()
         s.bind(self.emitter)
         s.remove_context('Donatello')
-        expected = [{'context': 'Donatello'}]
+        expected = [{'context': 'ADonatello'}]
         check_remove_context(expected)
 
     @mock.patch.dict(Configuration._Configuration__config, BASE_CONF)
