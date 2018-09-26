@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 import imp
+import collections
 import operator
 import sys
 import time
@@ -603,7 +604,7 @@ class MycroftSkill(object):
         """
 
         delim = delim or ','
-        result = {}
+        result = collections.OrderedDict()
         if not name.endswith(".value"):
             name += ".value"
 
