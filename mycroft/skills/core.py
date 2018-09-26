@@ -1212,7 +1212,7 @@ class MycroftSkill(object):
 
             Return:
                 int: the time left in seconds
-                
+
             Raises:
                 Exception: Raised if event is not found
         """
