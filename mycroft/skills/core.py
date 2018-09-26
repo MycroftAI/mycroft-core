@@ -965,7 +965,7 @@ class MycroftSkill(object):
         re.compile(regex)  # validate regex
         self.bus.emit(Message('register_vocab', {'regex': regex}))
 
-    def speak(self, utterance, expect_response=False):
+    def speak(self, utterance, expect_response=False, wait=False):
         """ Speak a sentence.
 
             Args:
@@ -973,6 +973,8 @@ class MycroftSkill(object):
                 expect_response (bool): set to True if Mycroft should listen
                                         for a response immediately after
                                         speaking the utterance.
+                wait (bool):            set to True to block while the text
+                                        is being spoken.
         """
         # registers the skill as being active
         self.enclosure.register(self.name)
@@ -983,19 +985,25 @@ class MycroftSkill(object):
             self.bus.emit(message.reply("speak", data))
         else:
             self.bus.emit(Message("speak", data))
+        if wait:
+            wait_while_speaking()
 
-    def speak_dialog(self, key, data=None, expect_response=False):
+    def speak_dialog(self, key, data=None, expect_response=False, wait=False):
         """ Speak a random sentence from a dialog file.
 
             Args:
-                key (str): dialog file key (filename without extension)
+                key (str): dialog file key (e.g. "hello" to speak from the file
+                                            "locale/en-us/hello.dialog")
                 data (dict): information used to populate sentence
                 expect_response (bool): set to True if Mycroft should listen
                                         for a response immediately after
                                         speaking the utterance.
+                wait (bool):            set to True to block while the text
+                                        is being spoken.
         """
         data = data or {}
-        self.speak(self.dialog_renderer.render(key, data), expect_response)
+        self.speak(self.dialog_renderer.render(key, data),
+                   expect_response, wait)
 
     def init_dialog(self, root_directory):
         # If "<skill>/dialog/<lang>" exists, load from there.  Otherwise
