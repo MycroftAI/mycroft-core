@@ -78,7 +78,7 @@ def get_skills_dir():
 def run_test_setup(loader, tests):
     """ Run test_setup for all loaded skills. """
     for s in loader.skills:
-        if len(tests[s.root_dir]) > 0:
+        if len(tests.get(s.root_dir, [])) > 0:
             try:
                 test_env = tests[s.root_dir][0]
                 if hasattr(test_env[1], 'test_setup'):
