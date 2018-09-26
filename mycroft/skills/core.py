@@ -888,7 +888,7 @@ class MycroftSkill(object):
         word = message.data.get("word")
         self.set_context(context, word)
 
-    def set_cross_skill_context(self, context, word):
+    def set_cross_skill_context(self, context, word=''):
         """
             Tell all skills to add a context to intent service
 
