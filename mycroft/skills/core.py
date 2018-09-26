@@ -1049,7 +1049,7 @@ class MycroftSkill(object):
                 self.bus.emit(Message("mycroft.stop.handled",
                                       {"by": "skill:"+str(self.skill_id)}))
             timer.cancel()
-        except:  # noqa
+        except Exception:
             timer.cancel()
             LOG.error("Failed to stop skill: {}".format(self.name),
                       exc_info=True)
