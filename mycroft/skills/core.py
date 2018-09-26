@@ -972,7 +972,7 @@ class MycroftSkill(object):
                 expect_response (bool): set to True if Mycroft should listen
                                         for a response immediately after
                                         speaking the utterance.
-                wait (bool):            set to True to block while the utterance
+                wait (bool):            set to True to block while the text
                                         is being spoken.
         """
         # registers the skill as being active
