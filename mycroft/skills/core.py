@@ -997,13 +997,12 @@ class MycroftSkill(object):
                 expect_response (bool): set to True if Mycroft should listen
                                         for a response immediately after
                                         speaking the utterance.
-                wait (bool):            set to True to block while the dialog
+                wait (bool):            set to True to block while the text
                                         is being spoken.
         """
         data = data or {}
-        self.speak(self.dialog_renderer.render(key, data), expect_response)
-        if wait:
-            wait_while_speaking()
+        self.speak(self.dialog_renderer.render(key, data),
+                   expect_response, wait)
 
     def init_dialog(self, root_directory):
         # If "<skill>/dialog/<lang>" exists, load from there.  Otherwise
