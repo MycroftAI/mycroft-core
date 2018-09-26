@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 import imp
+import collections
 import operator
 import sys
 import time
@@ -603,7 +604,7 @@ class MycroftSkill(object):
         """
 
         delim = delim or ','
-        result = {}
+        result = collections.OrderedDict()
         if not name.endswith(".value"):
             name += ".value"
 
@@ -1049,7 +1050,7 @@ class MycroftSkill(object):
                 self.bus.emit(Message("mycroft.stop.handled",
                                       {"by": "skill:"+str(self.skill_id)}))
             timer.cancel()
-        except:
+        except:  # noqa
             timer.cancel()
             LOG.error("Failed to stop skill: {}".format(self.name),
                       exc_info=True)
@@ -1090,7 +1091,7 @@ class MycroftSkill(object):
             Message("detach_skill", {"skill_id": str(self.skill_id) + ":"}))
         try:
             self.stop()
-        except:
+        except:  # noqa
             LOG.error("Failed to stop skill: {}".format(self.name),
                       exc_info=True)
 
