@@ -896,7 +896,8 @@ class MycroftSkill(object):
                 context:    Keyword
                 word:       word connected to keyword
         """
-        self.bus.emit(Message("mycroft.skill.cross_context", {"context": context, "word": word}))
+        self.bus.emit(Message("mycroft.skill.cross_context",
+                              {"context": context, "word": word}))
 
     def remove_context(self, context):
         """
