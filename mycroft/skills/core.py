@@ -274,7 +274,8 @@ class MycroftSkill(object):
                            self.handle_enable_intent)
             self.add_event('mycroft.skill.disable_intent',
                            self.handle_disable_intent)
-
+            self.add_event("mycroft.skill.cross_context",
+                           self.handle_cross_context)
             name = 'mycroft.skills.settings.update'
             func = self.settings.run_poll
             bus.on(name, func)
@@ -877,6 +878,25 @@ class MycroftSkill(object):
         context = to_alnum(self.skill_id) + context
         self.bus.emit(Message('add_context',
                               {'context': context, 'word': word}))
+
+    def handle_cross_context(self, message):
+        """
+            Add global context to intent service
+
+        """
+        context = message.data.get("context")
+        word = message.data.get("word")
+        self.set_context(context, word)
+
+    def set_cross_skill_context(self, context, word):
+        """
+            Tell all skills to add a context to intent service
+
+            Args:
+                context:    Keyword
+                word:       word connected to keyword
+        """
+        self.bus.emit(Message("mycroft.skill.cross_context", {"context": context, "word": word}))
 
     def remove_context(self, context):
         """
