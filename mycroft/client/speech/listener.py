@@ -248,7 +248,7 @@ class RecognizerLoop(EventEmitter):
         config = self.config_core.get("hotwords", {word: {}})
 
         if word not in config:
-            config[word] = {'module': 'pocketsphinx'}
+            config[word] = {'module': 'precise'}
         if phonemes:
             config[word]["phonemes"] = phonemes
         if thresh:
