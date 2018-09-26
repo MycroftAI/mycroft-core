@@ -1050,7 +1050,7 @@ class MycroftSkill(object):
                 self.bus.emit(Message("mycroft.stop.handled",
                                       {"by": "skill:"+str(self.skill_id)}))
             timer.cancel()
-        except:  # noqa
+        except Exception:
             timer.cancel()
             LOG.error("Failed to stop skill: {}".format(self.name),
                       exc_info=True)
@@ -1132,16 +1132,22 @@ class MycroftSkill(object):
 
     def schedule_event(self, handler, when, data=None, name=None):
         """
-            Schedule a single event.
+            Schedule a single-shot event.
 
             Args:
                 handler:               method to be called
-                when (datetime):       when the handler should be called
-                                       (local time)
+                when (datetime/int):   local datetime or number of seconds in
+                                       the future when the handler should be
+                                       called
                 data (dict, optional): data to send when the handler is called
-                name (str, optional):  friendly name parameter
+                name (str, optional):  reference name
+                                       NOTE: This will not warn or replace a
+                                       previously scheduled event of the same
+                                       name.
         """
         data = data or {}
+        if isinstance(when, int):
+            when = datetime.now() + timedelta(seconds=when)
         self._schedule_event(handler, when, data, name)
 
     def schedule_repeating_event(self, handler, when, frequency,
@@ -1151,12 +1157,12 @@ class MycroftSkill(object):
 
             Args:
                 handler:                method to be called
-                when (datetime):        time for calling the handler or None
-                                        to initially trigger <frequency>
-                                        seconds from now
+                when (datetime):        local time for first calling the
+                                        handler, or None to initially trigger
+                                        <frequency> seconds from now
                 frequency (float/int):  time in seconds between calls
-                data (dict, optional):  data to send along to the handler
-                name (str, optional):   friendly name parameter
+                data (dict, optional):  data to send when the handler is called
+                name (str, optional):   reference name, must be unique
         """
         # Do not schedule if this event is already scheduled by the skill
         if name not in self.scheduled_repeats:
@@ -1173,7 +1179,7 @@ class MycroftSkill(object):
             Change data of event.
 
             Args:
-                name (str):   Name of event
+                name (str): reference name of event (from original scheduling)
         """
         data = data or {}
         data = {
@@ -1188,7 +1194,7 @@ class MycroftSkill(object):
             to be executed
 
             Args:
-                name (str):   Name of event
+                name (str): reference name of event (from original scheduling)
         """
         unique_name = self._unique_name(name)
         data = {'event': unique_name}
@@ -1203,10 +1209,13 @@ class MycroftSkill(object):
             Get scheduled event data and return the amount of time left
 
             Args:
-                name (str): Name of event
+                name (str): reference name of event (from original scheduling)
 
             Return:
                 int: the time left in seconds
+
+            Raises:
+                Exception: Raised if event is not found
         """
         event_name = self._unique_name(name)
         data = {'name': event_name}
