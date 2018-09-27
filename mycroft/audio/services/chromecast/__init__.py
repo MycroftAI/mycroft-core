@@ -84,8 +84,11 @@ class ChromecastService(AudioBackend):
         self.tracklist = tracks
         pass
 
-    def play(self):
-        """ Start playback. """
+    def play(self, repeat=False):
+        """ Start playback.
+
+        TODO: add playlist support and repeat
+        """
         self.cast.quit_app()
 
         track = self.tracklist[0]

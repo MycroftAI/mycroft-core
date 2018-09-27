@@ -77,7 +77,7 @@ class AudioService(object):
         self.bus.emit(Message('mycroft.audio.service.queue',
                               data={'tracks': tracks}))
 
-    def play(self, tracks=None, utterance=''):
+    def play(self, tracks=None, utterance='', repeat=None):
         """ Start playback.
 
             Args:
@@ -86,7 +86,9 @@ class AudioService(object):
                         to give a hint of the mime type to the system
                 utterance: forward utterance for further processing by the
                            audio service.
+                repeat: if the playback should be looped
         """
+        repeat = repeat or False
         tracks = tracks or []
         if isinstance(tracks, (str, tuple)):
             tracks = [tracks]
@@ -95,7 +97,8 @@ class AudioService(object):
         tracks = [ensure_uri(t) for t in tracks]
         self.bus.emit(Message('mycroft.audio.service.play',
                               data={'tracks': tracks,
-                                    'utterance': utterance}))
+                                    'utterance': utterance,
+                                    'repeat': repeat}))
 
     def stop(self):
         """ Stop the track. """

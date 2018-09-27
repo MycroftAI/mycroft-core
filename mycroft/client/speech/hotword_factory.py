@@ -39,6 +39,10 @@ class TriggerReload(Exception):
     pass
 
 
+class NoModelAvailable(Exception):
+    pass
+
+
 class HotWordEngine(object):
     def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
         self.key_phrase = str(key_phrase).lower()
@@ -170,11 +174,11 @@ class PreciseHotword(HotWordEngine):
                 model_url, self.folder,
                 on_download=lambda: LOG.info('Updated precise model')
             )
-        except HTTPError:
+        except (HTTPError, ValueError):
             if isfile(model_file):
                 LOG.info("Couldn't find remote model.  Using local file")
             else:
-                raise RuntimeError('Failed to download model:', model_url)
+                raise NoModelAvailable('Failed to download model:', model_url)
         return model_file
 
     @staticmethod
@@ -267,6 +271,11 @@ class HotWordFactory(object):
                 complete.set()
                 sleep(0.5)
                 loop.reload()
+            except NoModelAvailable:
+                LOG.warning('Could not found find model for {} on {}.'.format(
+                    hotword, module
+                ))
+                instance = None
             except Exception:
                 LOG.exception(
                     'Could not create hotword. Falling back to default.')
@@ -286,7 +295,7 @@ class HotWordFactory(object):
             config = Configuration.get()['hotwords']
         config = config[hotword]
 
-        module = config.get("module", "pocketsphinx")
+        module = config.get("module", "precise")
         return cls.load_module(module, hotword, config, lang, loop) or \
             cls.load_module('pocketsphinx', hotword, config, lang, loop) or \
             cls.CLASSES['pocketsphinx']()

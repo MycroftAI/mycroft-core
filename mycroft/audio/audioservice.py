@@ -333,13 +333,14 @@ class AudioService(object):
         if self.pulse_restore:
             self.pulse_restore()
 
-    def play(self, tracks, prefered_service):
+    def play(self, tracks, prefered_service, repeat=False):
         """
             play starts playing the audio on the prefered service if it
             supports the uri. If not the next best backend is found.
 
             Args:
                 tracks: list of tracks to play.
+                repeat: should the playlist repeat
                 prefered_service: indecates the service the user prefer to play
                                   the tracks.
         """
@@ -371,7 +372,7 @@ class AudioService(object):
             tracks = [t[0] if isinstance(t, list) else t for t in tracks]
         selected_service.clear_list()
         selected_service.add_list(tracks)
-        selected_service.play()
+        selected_service.play(repeat)
         self.current = selected_service
 
     def _queue(self, message):
@@ -391,7 +392,7 @@ class AudioService(object):
                 message: message bus message, not used but required
         """
         tracks = message.data['tracks']
-
+        repeat = message.data.get('repeat', False)
         # Find if the user wants to use a specific backend
         for s in self.service:
             if ('utterance' in message.data and
@@ -401,7 +402,7 @@ class AudioService(object):
                 break
         else:
             prefered_service = None
-        self.play(tracks, prefered_service)
+        self.play(tracks, prefered_service, repeat)
 
     def _track_info(self, message):
         """

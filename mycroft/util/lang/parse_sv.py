@@ -124,7 +124,7 @@ def extractnumber_sv(text):
     return val
 
 
-def extract_datetime_sv(string, currentDate):
+def extract_datetime_sv(string, currentDate, default_time):
     def clean_string(s):
         """
             cleans the input string of unneeded punctuation and capitalization
@@ -151,8 +151,8 @@ def extract_datetime_sv(string, currentDate):
                 datestr != "" or timeStr != "" or
                 yearOffset != 0 or monthOffset != 0 or
                 dayOffset is True or hrOffset != 0 or
-                hrAbs != 0 or minOffset != 0 or
-                minAbs != 0 or secOffset != 0
+                hrAbs or minOffset != 0 or
+                minAbs or secOffset != 0
             )
 
     if string == "" or not currentDate:
@@ -359,8 +359,8 @@ def extract_datetime_sv(string, currentDate):
     hrOffset = 0
     minOffset = 0
     secOffset = 0
-    hrAbs = 0
-    minAbs = 0
+    hrAbs = None
+    minAbs = None
 
     for idx, word in enumerate(words):
         if word == "":
@@ -379,19 +379,19 @@ def extract_datetime_sv(string, currentDate):
             hrAbs = 0
             used += 1
         elif word == "morgon":
-            if hrAbs == 0:
+            if not hrAbs:
                 hrAbs = 8
             used += 1
         elif word == "förmiddag":
-            if hrAbs == 0:
+            if not hrAbs:
                 hrAbs = 10
             used += 1
         elif word == "eftermiddag":
-            if hrAbs == 0:
+            if not hrAbs:
                 hrAbs = 15
             used += 1
         elif word == "kväll":
-            if hrAbs == 0:
+            if not hrAbs:
                 hrAbs = 19
             used += 1
             # parse half an hour, quarter hour
@@ -699,11 +699,14 @@ def extract_datetime_sv(string, currentDate):
         extractedDate = extractedDate + relativedelta(months=monthOffset)
     if dayOffset != 0:
         extractedDate = extractedDate + relativedelta(days=dayOffset)
-    if hrAbs != -1 and minAbs != -1:
 
-        extractedDate = extractedDate + relativedelta(hours=hrAbs,
-                                                      minutes=minAbs)
-        if (hrAbs != 0 or minAbs != 0) and datestr == "":
+    if hrAbs is None and minAbs is None and default_time:
+        hrAbs = default_time.hour
+        minAbs = default_time.minute
+    if hrAbs != -1 and minAbs != -1:
+        extractedDate = extractedDate + relativedelta(hours=hrAbs or 0,
+                                                      minutes=minAbs or 0)
+        if (hrAbs or minAbs) and datestr == "":
             if not daySpecified and dateNow > extractedDate:
                 extractedDate = extractedDate + relativedelta(days=1)
     if hrOffset != 0:

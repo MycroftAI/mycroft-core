@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 import imp
+import collections
 import operator
 import sys
 import time
@@ -603,7 +604,7 @@ class MycroftSkill(object):
         """
 
         delim = delim or ','
-        result = {}
+        result = collections.OrderedDict()
         if not name.endswith(".value"):
             name += ".value"
 
@@ -668,7 +669,7 @@ class MycroftSkill(object):
         if filename:
             with open(filename) as f:
                 text = f.read().replace('{{', '{').replace('}}', '}')
-                return text.format(**data or {}).split('\n')
+                return text.format(**data or {}).rstrip('\n').split('\n')
         else:
             return None
 
@@ -964,7 +965,7 @@ class MycroftSkill(object):
         re.compile(regex)  # validate regex
         self.bus.emit(Message('register_vocab', {'regex': regex}))
 
-    def speak(self, utterance, expect_response=False):
+    def speak(self, utterance, expect_response=False, wait=False):
         """ Speak a sentence.
 
             Args:
@@ -972,6 +973,8 @@ class MycroftSkill(object):
                 expect_response (bool): set to True if Mycroft should listen
                                         for a response immediately after
                                         speaking the utterance.
+                wait (bool):            set to True to block while the text
+                                        is being spoken.
         """
         # registers the skill as being active
         self.enclosure.register(self.name)
@@ -982,19 +985,25 @@ class MycroftSkill(object):
             self.bus.emit(message.reply("speak", data))
         else:
             self.bus.emit(Message("speak", data))
+        if wait:
+            wait_while_speaking()
 
-    def speak_dialog(self, key, data=None, expect_response=False):
+    def speak_dialog(self, key, data=None, expect_response=False, wait=False):
         """ Speak a random sentence from a dialog file.
 
             Args:
-                key (str): dialog file key (filename without extension)
+                key (str): dialog file key (e.g. "hello" to speak from the file
+                                            "locale/en-us/hello.dialog")
                 data (dict): information used to populate sentence
                 expect_response (bool): set to True if Mycroft should listen
                                         for a response immediately after
                                         speaking the utterance.
+                wait (bool):            set to True to block while the text
+                                        is being spoken.
         """
         data = data or {}
-        self.speak(self.dialog_renderer.render(key, data), expect_response)
+        self.speak(self.dialog_renderer.render(key, data),
+                   expect_response, wait)
 
     def init_dialog(self, root_directory):
         # If "<skill>/dialog/<lang>" exists, load from there.  Otherwise
@@ -1049,7 +1058,7 @@ class MycroftSkill(object):
                 self.bus.emit(Message("mycroft.stop.handled",
                                       {"by": "skill:"+str(self.skill_id)}))
             timer.cancel()
-        except:
+        except Exception:
             timer.cancel()
             LOG.error("Failed to stop skill: {}".format(self.name),
                       exc_info=True)
@@ -1090,7 +1099,7 @@ class MycroftSkill(object):
             Message("detach_skill", {"skill_id": str(self.skill_id) + ":"}))
         try:
             self.stop()
-        except:
+        except:  # noqa
             LOG.error("Failed to stop skill: {}".format(self.name),
                       exc_info=True)
 
@@ -1131,16 +1140,22 @@ class MycroftSkill(object):
 
     def schedule_event(self, handler, when, data=None, name=None):
         """
-            Schedule a single event.
+            Schedule a single-shot event.
 
             Args:
                 handler:               method to be called
-                when (datetime):       when the handler should be called
-                                       (local time)
+                when (datetime/int):   local datetime or number of seconds in
+                                       the future when the handler should be
+                                       called
                 data (dict, optional): data to send when the handler is called
-                name (str, optional):  friendly name parameter
+                name (str, optional):  reference name
+                                       NOTE: This will not warn or replace a
+                                       previously scheduled event of the same
+                                       name.
         """
         data = data or {}
+        if isinstance(when, int):
+            when = datetime.now() + timedelta(seconds=when)
         self._schedule_event(handler, when, data, name)
 
     def schedule_repeating_event(self, handler, when, frequency,
@@ -1150,12 +1165,12 @@ class MycroftSkill(object):
 
             Args:
                 handler:                method to be called
-                when (datetime):        time for calling the handler or None
-                                        to initially trigger <frequency>
-                                        seconds from now
+                when (datetime):        local time for first calling the
+                                        handler, or None to initially trigger
+                                        <frequency> seconds from now
                 frequency (float/int):  time in seconds between calls
-                data (dict, optional):  data to send along to the handler
-                name (str, optional):   friendly name parameter
+                data (dict, optional):  data to send when the handler is called
+                name (str, optional):   reference name, must be unique
         """
         # Do not schedule if this event is already scheduled by the skill
         if name not in self.scheduled_repeats:
@@ -1172,7 +1187,7 @@ class MycroftSkill(object):
             Change data of event.
 
             Args:
-                name (str):   Name of event
+                name (str): reference name of event (from original scheduling)
         """
         data = data or {}
         data = {
@@ -1187,7 +1202,7 @@ class MycroftSkill(object):
             to be executed
 
             Args:
-                name (str):   Name of event
+                name (str): reference name of event (from original scheduling)
         """
         unique_name = self._unique_name(name)
         data = {'event': unique_name}
@@ -1202,10 +1217,13 @@ class MycroftSkill(object):
             Get scheduled event data and return the amount of time left
 
             Args:
-                name (str): Name of event
+                name (str): reference name of event (from original scheduling)
 
             Return:
                 int: the time left in seconds
+
+            Raises:
+                Exception: Raised if event is not found
         """
         event_name = self._unique_name(name)
         data = {'name': event_name}

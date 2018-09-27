@@ -47,7 +47,11 @@ class MPlayerService(AudioBackend):
         self.tracks += tracks
         LOG.info("Track list is " + str(tracks))
 
-    def play(self):
+    def play(self, repeat=False):
+        """ Start playback of playlist.
+
+        TODO: Add support for repeat
+        """
         self.stop()
         if len(self.tracks):
             # play first track

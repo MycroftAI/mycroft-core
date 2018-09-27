@@ -48,7 +48,7 @@ def now_utc():
     Returns:
         (datetime): The current time in Universal Time, aka GMT
     """
-    return datetime.utcnow()
+    return to_utc(datetime.utcnow())
 
 
 def now_local(tz=None):
