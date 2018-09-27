@@ -669,7 +669,7 @@ class MycroftSkill(object):
         if filename:
             with open(filename) as f:
                 text = f.read().replace('{{', '{').replace('}}', '}')
-                return text.format(**data or {}).split('\n')
+                return text.format(**data or {}).rstrip('\n').split('\n')
         else:
             return None
 
