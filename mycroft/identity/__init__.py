@@ -41,18 +41,19 @@ class IdentityManager(object):
         LOG.debug('Loading identity')
         time.sleep(1.2)
         os.sync()
-        with FileSystemAccess('identity').open('identity2.json', 'r') as f:
-            IdentityManager.__identity = DeviceIdentity(**json.load(f))
-            IdentityManager.__identity.expires_at = time.time() + 60
+        try:
+            with FileSystemAccess('identity').open('identity2.json', 'r') as f:
+                IdentityManager.__identity = DeviceIdentity(**json.load(f))
+                IdentityManager.__identity.expires_at = time.time() + 60
+        except Exception:
+            IdentityManager.__identity = DeviceIdentity()
 
     @staticmethod
     def load(lock=True):
-        if lock:
-            identity_lock.acquire()
         try:
-            IdentityManager._load()
-        except Exception:
-            IdentityManager.__identity = DeviceIdentity()
+            if lock:
+                identity_lock.acquire()
+                IdentityManager._load()
         finally:
             if lock:
                 identity_lock.release()
