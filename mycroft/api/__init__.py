@@ -21,9 +21,10 @@ from requests import HTTPError, RequestException
 from mycroft.configuration import Configuration
 from mycroft.configuration.config import DEFAULT_CONFIG, SYSTEM_CONFIG, \
     USER_CONFIG
-from mycroft.identity import IdentityManager
+from mycroft.identity import IdentityManager, identity_lock
 from mycroft.version import VersionManager
 from mycroft.util import get_arch, connected, LOG
+
 
 _paired_cache = False
 
@@ -64,17 +65,28 @@ class Api(object):
     def check_token(self):
         if self.identity.refresh and self.identity.is_expired():
             self.identity = IdentityManager.load()
+
             if self.identity.is_expired():
                 self.refresh_token()
 
     def refresh_token(self):
-        data = self.send({
-            "path": "auth/token",
-            "headers": {
-                "Authorization": "Bearer " + self.identity.refresh
-            }
-        })
-        IdentityManager.save(data)
+        LOG.debug('Refreshing token')
+        if identity_lock.acquire(blocking=False):
+            try:
+                data = self.send({
+                    "path": "auth/token",
+                    "headers": {
+                        "Authorization": "Bearer " + self.identity.refresh
+                    }
+                })
+                IdentityManager.save(data, lock=False)
+                LOG.debug('Saved credentials')
+            finally:
+                identity_lock.release()
+        else:  # Someone is updating the identity wait for release
+            LOG.debug('Refresh is already in progress, waiting until done')
+            self.identity = IdentityManager.load()
+            LOG.debug('new credentials loaded')
 
     def send(self, params):
         """ Send request to mycroft backend.
@@ -120,6 +132,7 @@ class Api(object):
 
     def get_response(self, response):
         data = self.get_data(response)
+
         if 200 <= response.status_code < 300:
             return data
         elif response.status_code == 401 \

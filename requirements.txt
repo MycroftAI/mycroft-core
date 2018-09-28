@@ -21,6 +21,7 @@ pychromecast==0.7.7
 python-vlc==1.1.2
 pulsectl==17.7.4
 google-api-python-client==1.6.4
+fasteners==0.14.1
 
 msm==0.5.19
 msk==0.3.11

@@ -14,8 +14,12 @@
 #
 import json
 import time
+import os
 
 from mycroft.filesystem import FileSystemAccess
+from mycroft.util.log import LOG
+from mycroft.util.combo_lock import ComboLock
+identity_lock = ComboLock('/tmp/identity-lock')
 
 
 class DeviceIdentity(object):
@@ -33,23 +37,46 @@ class IdentityManager(object):
     __identity = None
 
     @staticmethod
-    def load():
+    def _load():
+        LOG.debug('Loading identity')
+        time.sleep(1.2)
+        os.sync()
+        with FileSystemAccess('identity').open('identity2.json', 'r') as f:
+            IdentityManager.__identity = DeviceIdentity(**json.load(f))
+            IdentityManager.__identity.expires_at = time.time() + 60
+
+    @staticmethod
+    def load(lock=True):
+        if lock:
+            identity_lock.acquire()
         try:
-            with FileSystemAccess('identity').open('identity2.json', 'r') as f:
-                IdentityManager.__identity = DeviceIdentity(**json.load(f))
+            IdentityManager._load()
         except Exception:
             IdentityManager.__identity = DeviceIdentity()
+        finally:
+            if lock:
+                identity_lock.release()
         return IdentityManager.__identity
 
     @staticmethod
-    def save(login=None):
-        if login:
-            IdentityManager.update(login)
-        with FileSystemAccess('identity').open('identity2.json', 'w') as f:
-            json.dump(IdentityManager.__identity.__dict__, f)
+    def save(login=None, lock=True):
+        LOG.debug('Saving identity')
+        if lock:
+            identity_lock.acquire()
+        try:
+            if login:
+                IdentityManager._update(login)
+            with FileSystemAccess('identity').open('identity2.json', 'w') as f:
+                json.dump(IdentityManager.__identity.__dict__, f)
+                f.flush()
+                os.fsync(f.fileno())
+        finally:
+            if lock:
+                identity_lock.release()
 
     @staticmethod
-    def update(login=None):
+    def _update(login=None):
+        LOG.debug('Updaing identity')
         login = login or {}
         expiration = login.get("expiration", 0)
         IdentityManager.__identity.uuid = login.get("uuid", "")
@@ -58,7 +85,18 @@ class IdentityManager(object):
         IdentityManager.__identity.expires_at = time.time() + expiration
 
     @staticmethod
+    def update(login=None, lock=True):
+        if lock:
+            identity_lock.acquire()
+        try:
+            IdentityManager._update()
+        finally:
+            if lock:
+                identity_lock.release()
+
+    @staticmethod
     def get():
-        if not IdentityManager.__identity:
-            IdentityManager.load()
-        return IdentityManager.__identity
+        with identity_lock:
+            if not IdentityManager.__identity:
+                IdentityManager._load()
+            return IdentityManager.__identity
