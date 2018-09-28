@@ -63,6 +63,10 @@ class Api(object):
         return self.send(params)
 
     def check_token(self):
+        # If the identity hasn't been loaded, load it
+        if not self.identity.has_refresh():
+            self.identity = IdentityManager.load()
+        # If refresh is needed perform a refresh
         if self.identity.refresh and self.identity.is_expired():
             self.identity = IdentityManager.load()
             # if no one else has updated the token refresh it

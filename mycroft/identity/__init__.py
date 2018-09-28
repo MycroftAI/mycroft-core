@@ -32,6 +32,9 @@ class DeviceIdentity(object):
     def is_expired(self):
         return self.refresh and 0 < self.expires_at <= time.time()
 
+    def has_refresh(self):
+        return self.refresh != ""
+
 
 class IdentityManager(object):
     __identity = None
