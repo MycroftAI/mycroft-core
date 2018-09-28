@@ -96,7 +96,6 @@ class IdentityManager(object):
 
     @staticmethod
     def get():
-        with identity_lock:
-            if not IdentityManager.__identity:
-                IdentityManager._load()
-            return IdentityManager.__identity
+        if not IdentityManager.__identity:
+            IdentityManager.load()
+        return IdentityManager.__identity
