@@ -30,7 +30,7 @@ class DeviceIdentity(object):
         self.expires_at = kwargs.get("expires_at", 0)
 
     def is_expired(self):
-        return self.refresh and self.expires_at <= time.time()
+        return self.refresh and 0 < self.expires_at <= time.time()
 
 
 class IdentityManager(object):
