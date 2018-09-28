@@ -30,7 +30,7 @@ class DeviceIdentity(object):
         self.expires_at = kwargs.get("expires_at", 0)
 
     def is_expired(self):
-        return self.refresh and self.expires_at <= time.time()
+        return self.refresh and 0 < self.expires_at <= time.time()
 
 
 class IdentityManager(object):
@@ -41,18 +41,18 @@ class IdentityManager(object):
         LOG.debug('Loading identity')
         time.sleep(1.2)
         os.sync()
-        with FileSystemAccess('identity').open('identity2.json', 'r') as f:
-            IdentityManager.__identity = DeviceIdentity(**json.load(f))
-            IdentityManager.__identity.expires_at = time.time() + 60
+        try:
+            with FileSystemAccess('identity').open('identity2.json', 'r') as f:
+                IdentityManager.__identity = DeviceIdentity(**json.load(f))
+        except Exception:
+            IdentityManager.__identity = DeviceIdentity()
 
     @staticmethod
     def load(lock=True):
-        if lock:
-            identity_lock.acquire()
         try:
-            IdentityManager._load()
-        except Exception:
-            IdentityManager.__identity = DeviceIdentity()
+            if lock:
+                identity_lock.acquire()
+                IdentityManager._load()
         finally:
             if lock:
                 identity_lock.release()
@@ -96,7 +96,6 @@ class IdentityManager(object):
 
     @staticmethod
     def get():
-        with identity_lock:
-            if not IdentityManager.__identity:
-                IdentityManager._load()
-            return IdentityManager.__identity
+        if not IdentityManager.__identity:
+            IdentityManager.load()
+        return IdentityManager.__identity

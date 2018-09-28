@@ -65,7 +65,7 @@ class Api(object):
     def check_token(self):
         if self.identity.refresh and self.identity.is_expired():
             self.identity = IdentityManager.load()
-
+            # if no one else has updated the token refresh it
             if self.identity.is_expired():
                 self.refresh_token()
 
@@ -88,13 +88,14 @@ class Api(object):
             self.identity = IdentityManager.load()
             LOG.debug('new credentials loaded')
 
-    def send(self, params):
+    def send(self, params, no_refresh=False):
         """ Send request to mycroft backend.
         The method handles Etags and will return a cached response value
         if nothing has changed on the remote.
 
         Arguments:
             params (dict): request parameters
+            no_refresh (bool): optional parameter to disable refreshs of token
 
         Returns:
             Requests response object.
@@ -128,17 +129,28 @@ class Api(object):
             self.params_to_etag[params_key] = etag
             self.etag_to_response[etag] = response
 
-        return self.get_response(response)
+        return self.get_response(response, no_refresh)
 
-    def get_response(self, response):
+    def get_response(self, response, no_refresh=False):
+        """ Parse response and extract data from response.
+
+        Will try to refresh the access token if it's expired.
+
+        Arguments:
+            response (requests Response object): Response to parse
+            no_refresh (bool): Disable refreshing of the token
+        Returns:
+            data fetched from server
+        """
         data = self.get_data(response)
 
         if 200 <= response.status_code < 300:
             return data
-        elif response.status_code == 401 \
-                and not response.url.endswith("auth/token"):
+        elif (not no_refresh and response.status_code == 401 and not
+                response.url.endswith("auth/token") and
+                self.identity.is_expired()):
             self.refresh_token()
-            return self.send(self.old_params)
+            return self.send(self.old_params, no_refresh=True)
         raise HTTPError(data, response=response)
 
     def get_data(self, response):
