@@ -44,7 +44,6 @@ class IdentityManager(object):
         try:
             with FileSystemAccess('identity').open('identity2.json', 'r') as f:
                 IdentityManager.__identity = DeviceIdentity(**json.load(f))
-                IdentityManager.__identity.expires_at = time.time() + 60
         except Exception:
             IdentityManager.__identity = DeviceIdentity()
 
