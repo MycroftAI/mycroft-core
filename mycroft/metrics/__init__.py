@@ -159,7 +159,7 @@ class MetricsAggregator(object):
         count = (len(payload['counters']) + len(payload['timers']) +
                  len(payload['levels']))
         if count > 0:
-            LOG.debug(json.dumps(payload))
+            # LOG.debug(json.dumps(payload))
 
             def publish():
                 publisher.publish(payload)

@@ -38,7 +38,7 @@ class WebsocketEventHandler(tornado.websocket.WebSocketHandler):
         self.emitter.on(event_name, handler)
 
     def on_message(self, message):
-        LOG.debug(message)
+        # LOG.debug(message)
         try:
             deserialized_message = Message.deserialize(message)
         except:
