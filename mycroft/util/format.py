@@ -29,7 +29,7 @@ import json
 import os
 import datetime
 import re
-import quantulum
+import quantulum3
 
 NUMBER_TUPLE = namedtuple(
     'number',
@@ -367,8 +367,10 @@ def nice_unit(unit, context=None, lang='en-us'):
                 (i.e. "C", "MW", "mW", "°F" etc)
             context (string): A text in which the correct meaning of this
                 abbreviation becomes clear (i.e. "It's almost 30 C outside")
+                If given, the whole context will be parsed and the first unit
+                to be found returned
             lang (string): the language to use, use Mycroft default language if
-            not provided
+                not provided
         Returns:
             (str): A fully de-abbreviated unit for insertion in a context like
                     situation (i.e. "degree Celsius", "percent")
@@ -377,10 +379,22 @@ def nice_unit(unit, context=None, lang='en-us'):
     """
     if unit is None or unit == '':
         return ''
-    quantity = quantulum.parser.parse(context or unit)
+    quantity = quantulum3.parser.parse(context or unit)
     print(quantity)
     if len(quantity) > 0:
         quantity = quantity[0]
-        if (quantity.unit.name != "dimensionless" and
-                quantity.uncertainty <= 0.5):
-            return quantity.unit.name, quantity.value
+        return quantity.unit.to_spoken(quantity.value), quantity.value
+
+def expand_units(text, lang='en-us'):
+    """
+        Format all units in a text and their amount into pronouncable strings 
+        
+        Args:
+            text (string): A text, ideally containing compact units (i.e. "It's almost 30 C outside")
+            lang (string): the language to use, use Mycroft default language if
+                not provided
+        Returns:
+            (str): A text with fully de-abbreviated units
+    """
+    return quantulum3.parser.inline_parse_and_expand(text)
+    
