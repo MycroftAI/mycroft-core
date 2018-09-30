@@ -1075,8 +1075,9 @@ def gui_main(stdscr):
                     # End the find session
                     find_str = None
                     rebuild_filtered_log()
+                    continue  # Consumed the Ctrl+C, get next character
                 else:
-                    break
+                    c = 24  # treat as Ctrl+X (Exit)
             except curses.error:
                 # This happens in odd cases, such as when you Ctrl+Z suspend
                 # the CLI and then resume.  Curses fails on get_wch().
@@ -1224,6 +1225,8 @@ def gui_main(stdscr):
                     # End the find session
                     find_str = None
                     rebuild_filtered_log()
+                else:
+                    break
             elif code > 31 and isinstance(c, str):
                 # Accept typed character in the utterance
                 line += c
@@ -1232,7 +1235,6 @@ def gui_main(stdscr):
         scr.erase()
         scr.refresh()
         scr = None
-        pass
 
 
 def simple_cli():
