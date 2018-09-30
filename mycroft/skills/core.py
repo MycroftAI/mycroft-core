@@ -1144,9 +1144,9 @@ class MycroftSkill(object):
 
             Args:
                 handler:               method to be called
-                when (datetime/int):   local datetime or number of seconds in
-                                       the future when the handler should be
-                                       called
+                when (datetime/int):   datetime (in system timezone) or number
+                                       of seconds in the future when the
+                                       handler should be called
                 data (dict, optional): data to send when the handler is called
                 name (str, optional):  reference name
                                        NOTE: This will not warn or replace a
@@ -1165,9 +1165,10 @@ class MycroftSkill(object):
 
             Args:
                 handler:                method to be called
-                when (datetime):        local time for first calling the
-                                        handler, or None to initially trigger
-                                        <frequency> seconds from now
+                when (datetime):        time (in system timezone) for first
+                                        calling the handler, or None to
+                                        initially trigger <frequency> seconds
+                                        from now
                 frequency (float/int):  time in seconds between calls
                 data (dict, optional):  data to send when the handler is called
                 name (str, optional):   reference name, must be unique

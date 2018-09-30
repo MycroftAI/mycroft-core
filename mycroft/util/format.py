@@ -148,7 +148,7 @@ class DateTimeFormat:
                 format_str = 'tomorrow'
             elif now.date() == dt.date():
                 format_str = 'today'
-            elif yesterday.date() = dt.date():
+            elif yesterday.date() == dt.date():
                 format_str = 'yesterday'
 
         return self.lang_config[lang]['date_format'][format_str].format(
