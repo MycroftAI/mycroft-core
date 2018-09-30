@@ -90,6 +90,7 @@ CLR_INPUT = 0
 CLR_LOG1 = 0
 CLR_LOG2 = 0
 CLR_LOG_DEBUG = 0
+CLR_LOG_ERROR = 0
 CLR_LOG_CMDMESSAGE = 0
 CLR_METER_CUR = 0
 CLR_METER = 0
@@ -209,13 +210,13 @@ class LogMonitorThread(Thread):
 
                 with log_lock:
                     if ignore:
-                        mergedLog.append(self.logid + line.strip())
+                        mergedLog.append(self.logid + line.rstrip())
                     else:
                         if bSimple:
-                            print(line.strip())
+                            print(line.rstrip())
                         else:
-                            filteredLog.append(self.logid + line.strip())
-                            mergedLog.append(self.logid + line.strip())
+                            filteredLog.append(self.logid + line.rstrip())
+                            mergedLog.append(self.logid + line.rstrip())
                             if not auto_scroll:
                                 log_line_offset += 1
 
@@ -416,6 +417,7 @@ def init_screen():
     global CLR_LOG1
     global CLR_LOG2
     global CLR_LOG_DEBUG
+    global CLR_LOG_ERROR
     global CLR_LOG_CMDMESSAGE
     global CLR_METER_CUR
     global CLR_METER
@@ -440,6 +442,7 @@ def init_screen():
         CLR_LOG1 = curses.color_pair(3)
         CLR_LOG2 = curses.color_pair(6)
         CLR_LOG_DEBUG = curses.color_pair(4)
+        CLR_LOG_ERROR = curses.color_pair(2)
         CLR_LOG_CMDMESSAGE = curses.color_pair(2)
         CLR_METER_CUR = curses.color_pair(2)
         CLR_METER = curses.color_pair(4)
@@ -601,6 +604,8 @@ def do_draw_main(scr):
         if " - DEBUG - " in log:
             log = log.replace("Skills ", "")
             clr = CLR_LOG_DEBUG
+        elif " - ERROR - " in log:
+            clr = CLR_LOG_ERROR
         else:
             if logid == "1":
                 clr = CLR_LOG1
