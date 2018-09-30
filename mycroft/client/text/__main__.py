@@ -56,5 +56,6 @@ def main():
         curses.endwin()
         save_settings()
 
+
 if __name__ == "__main__":
     main()
