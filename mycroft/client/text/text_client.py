@@ -142,8 +142,9 @@ def load_settings():
             max_log_lines = config["max_log_lines"]
         if "show_meter" in config:
             show_meter = config["show_meter"]
-    except Exception:
-        pass
+    except Exception as e:
+        LOG.info("Ignoring failed load of settings file")
+        LOG.exception(e)
 
 
 def save_settings():
