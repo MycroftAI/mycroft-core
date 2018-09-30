@@ -142,7 +142,7 @@ def load_settings():
             max_log_lines = config["max_log_lines"]
         if "show_meter" in config:
             show_meter = config["show_meter"]
-    except:
+    except Exception:
         pass
 
 
@@ -690,12 +690,12 @@ def do_draw_main(scr):
         y += 1
 
     # Command line at the bottom
-    l = line
+    ln = line
     if len(line) > 0 and line[0] == ":":
         scr.addstr(curses.LINES - 2, 0, "Command ('help' for options):",
                    CLR_CMDLINE)
         scr.addstr(curses.LINES - 1, 0, ":", CLR_CMDLINE)
-        l = line[1:]
+        ln = line[1:]
     else:
         prompt = "Input (':' for command, Ctrl+C to quit)"
         if show_last_key:
@@ -707,7 +707,7 @@ def do_draw_main(scr):
         scr.addstr(curses.LINES - 1, 0, ">", CLR_HEADING)
 
     _do_meter(cy_chat_area + 2)
-    scr.addstr(curses.LINES - 1, 2, l, CLR_INPUT)
+    scr.addstr(curses.LINES - 1, 2, ln, CLR_INPUT)
 
     # Curses doesn't actually update the display until refresh() is called
     scr.refresh()
@@ -718,6 +718,7 @@ def make_titlebar(title, bar_length):
 
 ##############################################################################
 # Help system
+
 
 help_struct = [
     (
