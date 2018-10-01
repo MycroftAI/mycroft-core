@@ -279,6 +279,14 @@ class Mimic2(TTS):
         create_signal("isSpeaking")
 
         sentence = self._normalized_numbers(sentence)
+
+        # Use the phonetic_spelling mechanism from the TTS base class
+        if self.phonetic_spelling:
+            for word in re.findall(r"[\w']+", sentence):
+                if word.lower() in self.spellings:
+                    sentence = sentence.replace(word,
+                                                self.spellings[word.lower()])
+
         chunks = sentence_chunker(sentence, self.chunk_size)
         for idx, req in enumerate(self._requests(chunks)):
             results = req.result().json()
