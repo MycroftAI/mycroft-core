@@ -1,10 +1,22 @@
 from threading import Lock
 from fasteners.process_lock import InterProcessLock
+from os.path import exists
+from os import chmod
 
 
 class ComboLock():
-    """ A combined process and thread lock. """
+    """ A combined process and thread lock.
+
+    Arguments:
+        path (str): path to the lockfile for the lock
+    """
     def __init__(self, path):
+        # Create lock file if it doesn't exist and set permissions for
+        # all users to lock/unlock
+        if not exists(path):
+            f = open(path, 'w+')
+            f.close()
+            chmod(path, 0o777)
         self.plock = InterProcessLock(path)
         self.tlock = Lock()
 
