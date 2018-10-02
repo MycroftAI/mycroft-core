@@ -30,6 +30,7 @@ from mycroft.util.lang.parse_fr import extract_datetime_fr
 from mycroft.util.lang.parse_fr import normalize_fr
 
 from mycroft.util.lang.parse_common import *
+from .log import LOG
 
 
 def fuzzy_match(x, against):
@@ -102,6 +103,8 @@ def extract_number(text, short_scale=True, ordinals=False, lang="en-us"):
     elif lang_lower.startswith("de"):
         return extractnumber_de(text)
     # TODO: extractnumber_xx for other languages
+    LOG.warning('Error: Language "{}" not recognized! Please make sure your language is'
+                       'one of the following: en, es, pt, it, fr, sv, de.'.format(lang_lower))
     return text
 
 
@@ -177,8 +180,10 @@ def extract_datetime(text, anchorDate=None, lang="en-us", default_time=None):
     elif lang_lower.startswith("de"):
         return extract_datetime_de(text, anchorDate, default_time)
     # TODO: extract_datetime for other languages
+    LOG.warning('Error: Language "{}" not recognized! Please make sure your language is'
+                       'one of the following: en, es, pt, it, fr, sv, de.'.format(lang_lower))
     return text
-# ==============================================================
+    # ==============================================================
 
 
 def normalize(text, lang="en-us", remove_articles=True):
@@ -211,6 +216,8 @@ def normalize(text, lang="en-us", remove_articles=True):
     elif lang_lower.startswith("de"):
         return normalize_de(text, remove_articles)
     # TODO: Normalization for other languages
+    LOG.warning('Error: Language "{}" not recognized! Please make sure your language is'
+                       'one of the following: en, es, pt, it, fr, sv, de.'.format(lang_lower))
     return text
 
 
