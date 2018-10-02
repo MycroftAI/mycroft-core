@@ -865,7 +865,7 @@ class MycroftSkill(object):
                                                       'registered.')
         return False
 
-    def set_context(self, context, word=''):
+    def set_context(self, context, word='', origin=None):
         """
             Add context to intent service
 
@@ -877,9 +877,12 @@ class MycroftSkill(object):
             raise ValueError('context should be a string')
         if not isinstance(word, str):
             raise ValueError('word should be a string')
+
+        origin = origin or ''
         context = to_alnum(self.skill_id) + context
         self.bus.emit(Message('add_context',
-                              {'context': context, 'word': word}))
+                              {'context': context, 'word': word,
+                               'origin': origin}))
 
     def handle_set_cross_context(self, message):
         """
@@ -888,7 +891,9 @@ class MycroftSkill(object):
         """
         context = message.data.get("context")
         word = message.data.get("word")
-        self.set_context(context, word)
+        origin = message.data.get("origin")
+
+        self.set_context(context, word, origin)
 
     def handle_remove_cross_context(self, message):
         """
@@ -907,7 +912,8 @@ class MycroftSkill(object):
                 word:       word connected to keyword
         """
         self.bus.emit(Message("mycroft.skill.set_cross_context",
-                              {"context": context, "word": word}))
+                              {"context": context, "word": word,
+                               "origin": self.skill_id}))
 
     def remove_cross_skill_context(self, context):
         """

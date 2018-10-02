@@ -373,17 +373,18 @@ class MycroftSkillTest(unittest.TestCase):
         s.bind(self.emitter)
         # No context content
         s.set_context('TurtlePower')
-        expected = [{'context': 'ATurtlePower', 'word': ''}]
+        expected = [{'context': 'ATurtlePower', 'origin': '', 'word': ''}]
         check_set_context(expected)
 
         # context with content
         s.set_context('Technodrome', 'Shredder')
-        expected = [{'context': 'ATechnodrome', 'word': 'Shredder'}]
+        expected = [{'context': 'ATechnodrome', 'origin': '',
+                     'word': 'Shredder'}]
         check_set_context(expected)
 
         # UTF-8 context
         s.set_context(u'Smörgåsbord€15')
-        expected = [{'context': u'ASmörgåsbord€15', 'word': ''}]
+        expected = [{'context': u'ASmörgåsbord€15', 'origin': '', 'word': ''}]
         check_set_context(expected)
 
         self.emitter.reset()
