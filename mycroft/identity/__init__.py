@@ -42,8 +42,6 @@ class IdentityManager(object):
     @staticmethod
     def _load():
         LOG.debug('Loading identity')
-        time.sleep(1.2)
-        os.sync()
         try:
             with FileSystemAccess('identity').open('identity2.json', 'r') as f:
                 IdentityManager.__identity = DeviceIdentity(**json.load(f))
