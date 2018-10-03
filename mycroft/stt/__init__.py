@@ -220,6 +220,16 @@ class GoVivaceSTT(TokenSTT):
         return response.json()["result"]["hypotheses"][0]["transcript"]
 
 
+class PocketSphinxSTT(BasicSTT):
+    def __init__(self):
+        super(PocketSphinxSTT, self).__init__()
+        from mycroft.stt.pocketsphinx_stt import PocketSphinxRecognizer
+        self.recognizer = PocketSphinxRecognizer(self.lang)
+
+    def execute(self, audio, language=None):
+        return self.recognizer.recognize(audio)
+
+
 class STTFactory(object):
     CLASSES = {
         "mycroft": MycroftSTT,
@@ -232,7 +242,8 @@ class STTFactory(object):
         "govivace": GoVivaceSTT,
         "houndify": HoundifySTT,
         "deepspeech_server": DeepSpeechServerSTT,
-        "mycroft_deepspeech": MycroftDeepSpeechSTT
+        "mycroft_deepspeech": MycroftDeepSpeechSTT,
+        "pocketsphinx": PocketSphinxSTT
     }
 
     @staticmethod
