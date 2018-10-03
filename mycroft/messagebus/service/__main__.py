@@ -19,6 +19,7 @@ from mycroft.lock import Lock  # creates/supports PID locking file
 from mycroft.messagebus.service.ws import WebsocketEventHandler
 from mycroft.util import validate_param, reset_sigint_handler, create_daemon, \
     wait_for_exit_signal
+from mycroft.util.log import LOG
 
 settings = {
     'debug': True
@@ -42,6 +43,7 @@ def main():
     host = config.get("host")
     port = config.get("port")
     route = config.get("route")
+    ssl = config.get("ssl", False)
     validate_param(host, "websocket.host")
     validate_param(port, "websocket.port")
     validate_param(route, "websocket.route")
@@ -50,7 +52,24 @@ def main():
         (route, WebsocketEventHandler)
     ]
     application = web.Application(routes, **settings)
-    application.listen(port, host)
+
+    ssl_options = None
+    if ssl:
+        cert = config.get("cert")
+        key = config.get("key")
+        if not key or not cert:
+            LOG.error("ssl keys dont exist, falling back to unsecured socket")
+
+        else:
+            LOG.info("using ssl key at " + key)
+            LOG.info("using ssl certificate at " + cert)
+            ssl_options = {"certfile": cert, "keyfile": key}
+    if ssl_options:
+        LOG.info("wss connection started")
+        application.listen(port, host, ssl_options=ssl_options)
+    else:
+        LOG.info("ws connection started")
+        application.listen(port, host)
     create_daemon(ioloop.IOLoop.instance().start)
 
     wait_for_exit_signal()

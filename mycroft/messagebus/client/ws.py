@@ -14,6 +14,7 @@
 #
 import json
 import time
+import ssl
 from multiprocessing.pool import ThreadPool
 from threading import Event
 import traceback
@@ -29,13 +30,16 @@ from mycroft.util.log import LOG
 
 
 class WebsocketClient(object):
-    def __init__(self, host=None, port=None, route=None, ssl=None):
+    def __init__(self, host=None, port=None, route=None, ssl=None,
+                 self_signed=False):
 
         config = Configuration.get().get("websocket")
         host = host or config.get("host")
         port = port or config.get("port")
         route = route or config.get("route")
         ssl = ssl or config.get("ssl")
+        self.allow_self_signed = self_signed or config.get(
+            "allow_self_signed", False)
         validate_param(host, "websocket.host")
         validate_param(port, "websocket.port")
         validate_param(route, "websocket.route")
@@ -195,8 +199,13 @@ class WebsocketClient(object):
         self.emitter.remove_all_listeners(event_name)
 
     def run_forever(self):
-        self.started_running = True
-        self.client.run_forever()
+        if self.allow_self_signed:
+            self.client.run_forever(sslopt={
+                "cert_reqs": ssl.CERT_NONE,
+                "check_hostname": False,
+                "ssl_version": ssl.PROTOCOL_TLSv1})
+        else:
+            self.client.run_forever()
 
     def close(self):
         self.client.close()
