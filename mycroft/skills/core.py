@@ -122,6 +122,8 @@ def load_skill(skill_descriptor, bus, skill_id, BLACKLISTED_SKILLS=None):
                 callable(skill_module.create_skill)):
             # v2 skills framework
             skill = skill_module.create_skill()
+            if not skill.is_current_language_supported(path):
+                LOG.info("SKILL DOES NOT SUPPORT CURRENT LANGUAGE")
             skill.settings.allow_overwrite = True
             skill.settings.load_skill_settings_from_file()
             skill.bind(bus)
@@ -315,6 +317,20 @@ class MycroftSkill(object):
             func = self.settings.run_poll
             bus.on(name, func)
             self.events.append((name, func))
+
+    def is_current_language_supported(self, root_directory):
+        # if lang folder in new locale exists, lang is supported
+        locale_path = join(root_directory, 'locale', self.lang)
+        if exists(locale_path):
+            return True
+
+        # also check old path
+        dialog_path = join(root_directory, 'dialog', self.lang)
+        vocab_path = join(root_directory, 'vocab', self.lang)
+        regex_path = join(root_directory, 'regex', self.lang)
+        if exists(dialog_path) or exists(vocab_path) or exists(regex_path):
+            return True
+        return False
 
     def detach(self):
         for (name, intent) in self.registered_intents:
