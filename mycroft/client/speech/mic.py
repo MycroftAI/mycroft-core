@@ -459,8 +459,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                         if file:
                             play_wav(file)
                     # if a wake word is success full then upload wake word
-                    if self.config['opt_in'] and not \
-                        self.upload_disabled:
+                    if self.config['opt_in'] and not self.upload_disabled:
                         Thread(
                             target=self._upload_wake_word, daemon=True,
                             args=[self._create_audio_data(byte_data, source)]
