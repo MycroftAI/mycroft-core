@@ -810,7 +810,9 @@ class MycroftSkill(object):
         # Default to the handler's function name if none given
         name = intent_parser.name or handler.__name__
         munge_intent_parser(intent_parser, name, self.skill_id)
-        self.bus.emit(Message("register_intent", intent_parser.__dict__))
+        data = intent_parser.__dict__
+        data["skill_id"] = self.skill_id
+        self.bus.emit(Message("register_intent", data))
         self.registered_intents.append((name, intent_parser))
         self.add_event(intent_parser.name, handler, 'mycroft.skill.handler')
 
@@ -849,7 +851,8 @@ class MycroftSkill(object):
 
         data = {
             "file_name": filename,
-            "name": name
+            "name": name,
+            "skill_id": self.skill_id
         }
         self.bus.emit(Message("padatious:register_intent", data))
         self.registered_intents.append((intent_file, data))
@@ -917,7 +920,8 @@ class MycroftSkill(object):
         if intent_name in names:
             LOG.debug('Disabling intent ' + intent_name)
             name = str(self.skill_id) + ':' + intent_name
-            self.bus.emit(Message("detach_intent", {"intent_name": name}))
+            self.bus.emit(Message("detach_intent", {"intent_name": name,
+                                                    "skill_id": self.skill_id}))
             return True
 
         LOG.error('Could not disable ' + intent_name +
