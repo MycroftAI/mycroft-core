@@ -17,6 +17,8 @@ from copy import copy
 import json
 import requests
 from requests import HTTPError, RequestException
+import os
+import time
 
 from mycroft.configuration import Configuration
 from mycroft.configuration.config import DEFAULT_CONFIG, SYSTEM_CONFIG, \
@@ -88,9 +90,12 @@ class Api(object):
             finally:
                 identity_lock.release()
         else:  # Someone is updating the identity wait for release
-            LOG.debug('Refresh is already in progress, waiting until done')
-            self.identity = IdentityManager.load()
-            LOG.debug('new credentials loaded')
+            with identity_lock:
+                LOG.debug('Refresh is already in progress, waiting until done')
+                time.sleep(1.2)
+                os.sync()
+                self.identity = IdentityManager.load(lock=False)
+                LOG.debug('new credentials loaded')
 
     def send(self, params, no_refresh=False):
         """ Send request to mycroft backend.
