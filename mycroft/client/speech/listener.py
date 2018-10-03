@@ -91,6 +91,11 @@ class AudioConsumer(Thread):
         self.wakeup_recognizer = wakeup_recognizer
         self.wakeword_recognizer = wakeword_recognizer
         self.metrics = MetricsAggregator()
+        self.word = self.wakeword_recognizer.key_phrase
+        self.emitter.on("recognizer_loop:hotword", self._set_word)
+
+    def _set_word(self, event):
+        self.word = event.get("hotword", self.wakeword_recognizer.key_phrase)
 
     def run(self):
         while self.state.running:
@@ -127,7 +132,7 @@ class AudioConsumer(Thread):
     def process(self, audio):
         SessionManager.touch()
         payload = {
-            'utterance': self.wakeword_recognizer.key_phrase,
+            'utterance': self.word,
             'session': SessionManager.get().session_id,
         }
         self.emitter.emit("recognizer_loop:wakeword", payload)
@@ -234,9 +239,28 @@ class RecognizerLoop(EventEmitter):
         self.wakeword_recognizer = self.create_wake_word_recognizer()
         # TODO - localization
         self.wakeup_recognizer = self.create_wakeup_recognizer()
+        self.hotword_engines = {}
+        self.create_hotword_engines()
         self.responsive_recognizer = ResponsiveRecognizer(
-            self.wakeword_recognizer)
+            self.wakeword_recognizer, self.hotword_engines)
         self.state = RecognizerLoopState()
+
+    def create_hotword_engines(self):
+        LOG.info("creating hotword engines")
+        hot_words = self.config_core.get("hotwords", {})
+        for word in hot_words:
+            data = hot_words[word]
+            if word == self.wakeup_recognizer.key_phrase \
+                    or word == self.wakeword_recognizer.key_phrase \
+                    or not data.get("active", True):
+                continue
+            module = data["module"]
+            sound = data.get("sound")
+            utterance = data.get("utterance")
+            listen = data.get("listen", False)
+            engine = HotWordFactory.create_hotword(word, lang=self.lang)
+            self.hotword_engines[word] = [engine, sound, utterance,
+                                          listen, module]
 
     def create_wake_word_recognizer(self):
         # Create a local recognizer to hear the wakeup word, e.g. 'Hey Mycroft'

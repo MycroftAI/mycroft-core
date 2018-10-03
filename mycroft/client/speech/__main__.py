@@ -66,6 +66,15 @@ def handle_utterance(event):
     bus.emit(Message('recognizer_loop:utterance', event, context))
 
 
+def handle_hotword(event):
+    listener_conf = Configuration.get()["listener"]
+    ww = listener_conf.get("wake_word", "hey mycroft")
+    suw = listener_conf.get("stand_up_word", "wake up")
+    if event["hotword"] != ww and event["hotword"] != suw:
+        LOG.info("Hotword Detected: " + event['hotword'])
+        bus.emit(Message('recognizer_loop:hotword', event))
+
+
 def handle_unknown():
     bus.emit(Message('mycroft.speech.recognition.unknown'))
 
@@ -157,6 +166,7 @@ def main():
     loop.on('recognizer_loop:wakeword', handle_wakeword)
     loop.on('recognizer_loop:record_end', handle_record_end)
     loop.on('recognizer_loop:no_internet', handle_no_internet)
+    loop.on('recognizer_loop:hotword', handle_hotword)
 
     # Register handlers for events on main Mycroft messagebus
     bus.on('open', handle_open)

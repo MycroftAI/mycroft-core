@@ -49,10 +49,11 @@ class HotWordEngine(object):
         # rough estimate 1 phoneme per 2 chars
         self.num_phonemes = len(key_phrase) / 2 + 1
         if config is None:
-            config = Configuration.get().get("hot_words", {})
+            config = Configuration.get().get("hotwords", {})
             config = config.get(self.key_phrase, {})
         self.config = config
         self.listener_config = Configuration.get().get("listener", {})
+        self.module = self.config.get("module")
         self.lang = str(self.config.get("lang", lang)).lower()
 
     def found_wake_word(self, frame_data):
