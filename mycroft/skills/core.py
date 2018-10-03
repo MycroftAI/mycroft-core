@@ -41,7 +41,7 @@ from mycroft.metrics import report_metric, report_timing, Stopwatch
 from mycroft.skills.settings import SkillSettings
 from mycroft.skills.skill_data import (load_vocabulary, load_regex, to_alnum,
                                        munge_regex, munge_intent_parser)
-from mycroft.util import camel_case_split, resolve_resource_file
+from mycroft.util import camel_case_split, resolve_resource_file, get_language_dir
 from mycroft.util.log import LOG
 
 MainModule = '__init__'
@@ -575,12 +575,13 @@ class MycroftSkill(object):
         """
         if old_dirname:
             # Try the old directory (dialog/vocab/regex)
-            path = join(self.root_dir, old_dirname, self.lang, res_name)
+            root_path = get_language_dir(join(self.root_dir, old_dirname), self.lang)
+            path = join(root_path, res_name)
             if exists(path):
                 return path
 
         # New scheme:  search for res_name under the 'locale' folder
-        root_path = join(self.root_dir, 'locale', self.lang)
+        root_path = get_language_dir(join(self.root_dir, 'locale'), self.lang)
         for path, _, files in os.walk(root_path):
             if res_name in files:
                 return join(path, res_name)

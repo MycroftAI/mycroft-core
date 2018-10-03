@@ -370,3 +370,28 @@ def camel_case_split(identifier: str) -> str:
     regex = '.+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)'
     matches = re.finditer(regex, identifier)
     return ' '.join([m.group(0) for m in matches])
+
+
+def get_language_dir(base_path, lang="en-us"):
+    # checks for all language variations and returns best path
+    lang_path = os.path.join(base_path, lang)
+    # base_path/en-us
+    if os.path.isdir(lang_path):
+        return lang_path
+    if "-" in lang:
+        main = lang.split("-")[0]
+        # base_path/en
+        general_lang_path = os.path.join(base_path, main)
+        if os.path.isdir(general_lang_path):
+            return general_lang_path
+    else:
+        main = lang
+    # base_path/en-uk, base_path/en-au...
+    if os.path.isdir(base_path):
+        candidates = [f for f in os.listdir(base_path) if f.startswith(main)]
+        candidates = [os.path.join(base_path, c) for c in candidates]
+        paths = [p for p in candidates if os.path.isdir(p)]
+        # TODO how to choose best local dialect?
+        if len(paths):
+            return paths[0]
+    return os.path.join(base_path, lang)
