@@ -41,7 +41,8 @@ from mycroft.metrics import report_metric, report_timing, Stopwatch
 from mycroft.skills.settings import SkillSettings
 from mycroft.skills.skill_data import (load_vocabulary, load_regex, to_alnum,
                                        munge_regex, munge_intent_parser)
-from mycroft.util import camel_case_split, resolve_resource_file, get_language_dir
+from mycroft.util import camel_case_split, resolve_resource_file, \
+    get_language_dir
 from mycroft.util.log import LOG
 
 MainModule = '__init__'
