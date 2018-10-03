@@ -23,6 +23,7 @@ from mycroft.util import create_signal, check_for_signal
 from mycroft.util.log import LOG
 from mycroft.messagebus.message import Message
 
+speak_muted = False
 bus = None  # Mycroft messagebus connection
 config = None
 tts = None
@@ -37,6 +38,25 @@ def _start_listener(message):
         Force Mycroft to start listening (as if 'Hey Mycroft' was spoken)
     """
     create_signal('startListening')
+
+
+def handle_unmute_tts(event):
+    """ enable tts execution """
+    global speak_muted
+    speak_muted = False
+    bus.emit(Message("mycroft.tts.mute_status", {"muted": speak_muted}))
+
+
+def handle_mute_tts(event):
+    """ disable tts execution """
+    global speak_muted
+    speak_muted = True
+    bus.emit(Message("mycroft.tts.mute_status", {"muted": speak_muted}))
+
+
+def handle_mute_status(event):
+    """ emit tts mute status to bus """
+    bus.emit(Message("mycroft.tts.mute_status", {"muted": speak_muted}))
 
 
 def handle_speak(event):
@@ -115,10 +135,11 @@ def mute_and_speak(utterance, ident):
         tts_hash = hash(str(config.get('tts', '')))
 
     LOG.info("Speak: " + utterance)
-    try:
-        tts.execute(utterance, ident)
-    except Exception as e:
-        LOG.error('TTS execution failed ({})'.format(repr(e)))
+    if not speak_muted:
+        try:
+            tts.execute(utterance, ident)
+        except Exception as e:
+            LOG.error('TTS execution failed ({})'.format(repr(e)))
 
 
 def handle_stop(event):
@@ -152,6 +173,10 @@ def init(messagebus):
     bus.on('mycroft.audio.speech.stop', handle_stop)
     bus.on('speak', handle_speak)
     bus.on('mycroft.mic.listen', _start_listener)
+
+    bus.on('mycroft.tts.mute', handle_mute_tts)
+    bus.on('mycroft.tts.unmute', handle_unmute_tts)
+    bus.on('mycroft.tts.mute_status.request', handle_mute_status)
 
     tts = TTSFactory.create()
     tts.init(bus)
