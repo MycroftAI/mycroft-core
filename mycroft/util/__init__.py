@@ -373,7 +373,7 @@ def camel_case_split(identifier: str) -> str:
 
 
 def get_language_dir(base_path, lang="en-us"):
-    # checks for all language variations and returns best path
+    """ checks for all language variations and returns best path """
     lang_path = os.path.join(base_path, lang)
     # base_path/en-us
     if os.path.isdir(lang_path):
@@ -388,8 +388,7 @@ def get_language_dir(base_path, lang="en-us"):
         main = lang
     # base_path/en-uk, base_path/en-au...
     if os.path.isdir(base_path):
-        candidates = [f for f in os.listdir(base_path) if f.startswith(main)]
-        candidates = [os.path.join(base_path, c) for c in candidates]
+        candidates = [os.path.join(base_path, f) for f in os.listdir(base_path) if f.startswith(main)]
         paths = [p for p in candidates if os.path.isdir(p)]
         # TODO how to choose best local dialect?
         if len(paths):
