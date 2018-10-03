@@ -1302,7 +1302,7 @@ class FallbackSkill(MycroftSkill):
     """
     fallback_handlers = {}
     skills_config = Configuration.get().get("skills", {})
-    override_order = skills_config.get("override", False)
+    override = skills_config.get("override", False)
     fallback_order = skills_config.get("fallback_order", [])
 
     def __init__(self, name=None, bus=None):
@@ -1382,7 +1382,7 @@ class FallbackSkill(MycroftSkill):
 
         self.instance_fallback_handlers.append(wrapper)
 
-        if self.override_order:
+        if self.override:
             folder = self.root_dir.split("/")[-1]
             if folder in self.fallback_order:
                 priority = self.fallback_order.index(folder) + 1
