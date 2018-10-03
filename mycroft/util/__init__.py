@@ -244,7 +244,7 @@ def curate_cache(directory, min_free_percent=5.0, min_free_disk=50):
             try:
                 os.remove(path)
                 space_freed += fsize
-            except:
+            except Exception as e:
                 pass
 
             if space_freed > bytes_needed:
@@ -388,7 +388,8 @@ def get_language_dir(base_path, lang="en-us"):
         main = lang
     # base_path/en-uk, base_path/en-au...
     if os.path.isdir(base_path):
-        candidates = [os.path.join(base_path, f) for f in os.listdir(base_path) if f.startswith(main)]
+        candidates = [os.path.join(base_path, f)
+                      for f in os.listdir(base_path) if f.startswith(main)]
         paths = [p for p in candidates if os.path.isdir(p)]
         # TODO how to choose best local dialect?
         if len(paths):
