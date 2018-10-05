@@ -20,25 +20,8 @@ import inflection
 from os.path import exists, isfile, join, dirname, expanduser
 from requests import RequestException
 
-from mycroft.util.json_helper import load_commented_json
+from mycroft.util.json_helper import load_commented_json, merge_dict
 from mycroft.util.log import LOG
-
-
-def merge_dict(base, delta):
-    """
-        Recursively merging configuration dictionaries.
-
-        Args:
-            base:  Target for merge
-            delta: Dictionary to merge into base
-    """
-
-    for k, dv in delta.items():
-        bv = base.get(k)
-        if isinstance(dv, dict) and isinstance(bv, dict):
-            merge_dict(bv, dv)
-        else:
-            base[k] = dv
 
 
 def is_remote_list(values):
