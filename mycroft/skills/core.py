@@ -114,19 +114,16 @@ def load_skill(skill_descriptor, bus, skill_id, BLACKLISTED_SKILLS=None):
     BLACKLISTED_SKILLS = BLACKLISTED_SKILLS or []
     path = skill_descriptor["path"]
     name = basename(path)
-    LOG.info("ATTEMPTING TO LOAD SKILL: {} with ID {}".format(
-        name, skill_id
-    ))
+    LOG.info("ATTEMPTING TO LOAD SKILL: {} with ID {}".format(name, skill_id))
     if name in BLACKLISTED_SKILLS:
         LOG.info("SKILL IS BLACKLISTED " + name)
         return None
     main_file = join(path, MainModule + '.py')
     try:
         with open(main_file, 'rb') as fp:
-            skill_module = imp.load_module(
-                name.replace('.', '_'), fp, main_file,
-                ('.py', 'rb', imp.PY_SOURCE)
-            )
+            skill_module = imp.load_module(name.replace('.', '_'), fp,
+                                           main_file, ('.py', 'rb',
+                                           imp.PY_SOURCE))
         if (hasattr(skill_module, 'create_skill') and
                 callable(skill_module.create_skill)):
             # v2 skills framework
