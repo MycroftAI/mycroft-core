@@ -48,6 +48,15 @@ from mycroft.util.log import LOG
 MainModule = '__init__'
 
 
+def simple_trace(stack_trace):
+    stack_trace = stack_trace[:-1]
+    tb = "Traceback:\n"
+    for line in stack_trace:
+        if line.strip():
+            tb += line
+    return tb
+
+
 def dig_for_message():
     """
         Dig Through the stack for message.
@@ -238,13 +247,9 @@ class MycroftSkill(object):
         if self._enclosure:
             return self._enclosure
         else:
-            LOG.error("ERROR:  Skill not fully initialized.  Move code from " +
-                      " __init__() to initialize() to correct this.")
-            tb = "Traceback:\n"
-            for line in traceback.format_stack()[:-1]:
-                if line.strip():
-                    tb += line
-            LOG.error(tb)
+            LOG.error("Skill not fully initialized. Move code " +
+                      "from  __init__() to initialize() to correct this.")
+            LOG.error(simple_trace(traceback.format_stack()))
             raise Exception("Accessed MycroftSkill.enclosure in __init__")
 
     @property
@@ -252,13 +257,9 @@ class MycroftSkill(object):
         if self._bus:
             return self._bus
         else:
-            LOG.error("ERROR:  Skill not fully initialized.  Move code from " +
-                      " __init__() to initialize() to correct this.")
-            tb = "Traceback:\n"
-            for line in traceback.format_stack()[:-1]:
-                if line.strip():
-                    tb += line
-            LOG.error(tb)
+            LOG.error("Skill not fully initialized. Move code " +
+                      "from __init__() to initialize() to correct this.")
+            LOG.error(simple_trace(traceback.format_stack()))
             raise Exception("Accessed MycroftSkill.bus in __init__")
 
     @property
