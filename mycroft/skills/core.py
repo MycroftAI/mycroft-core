@@ -173,11 +173,10 @@ def get_handler_name(handler):
     Returns:
         string: handler name as string
     """
-    name = ''
     if '__self__' in dir(handler) and 'name' in dir(handler.__self__):
-        name += handler.__self__.name + '.'
-    name += handler.__name__
-    return name
+        return handler.__self__.name + '.' + handler.__name__
+    else:
+        return handler.__name__
 
 
 def intent_handler(intent_parser):
