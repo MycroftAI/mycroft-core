@@ -362,7 +362,7 @@ def nice_year(dt, lang='en-us', bc=False):
 def nice_unit(unit, context=None, lang='en-us'):
     """
         Format a unit to a pronouncable string
-        
+
         Args:
             unit (string): The unit abbreviation that is to be pronounced
                 (i.e. "C", "MW", "mW", "°F" etc)
@@ -376,7 +376,7 @@ def nice_unit(unit, context=None, lang='en-us'):
             (str): A fully de-abbreviated unit for insertion in a context like
                     situation (i.e. "degree Celsius", "percent")
             (object): The parsed value of the quantity, if any
-    
+
     """
     if unit is None or unit == '':
         return ''
@@ -391,10 +391,11 @@ def nice_unit(unit, context=None, lang='en-us'):
 
 def expand_units(text, lang='en-us'):
     """
-        Format all units in a text and their amount into pronouncable strings 
-        
+        Format all units in a text and their amount into pronouncable strings
+
         Args:
-            text (string): A text, ideally containing compact units (i.e. "It's almost 30 C outside")
+            text (string): A text, ideally containing compact units
+                            (i.e. "It's almost 30 C outside")
             lang (string): the language to use, use Mycroft default language if
                 not provided
         Returns:
