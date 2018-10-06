@@ -145,7 +145,7 @@ function install_venv() {
     # Force version of pip for reproducability, but there is nothing special
     # about this version.  Update whenever a new version is released and
     # verified functional.
-    curl https://bootstrap.pypa.io/get-pip.py | "${VIRTUALENV_ROOT}/bin/python" - 'pip==18.0.0'
+    curl https://bootstrap.pypa.io/3.3/get-pip.py | "${VIRTUALENV_ROOT}/bin/python" - 'pip==18.0.0'
 }
 
 install_deps
