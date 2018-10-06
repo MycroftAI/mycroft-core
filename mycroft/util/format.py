@@ -358,6 +358,7 @@ def nice_year(dt, lang='en-us', bc=False):
 
     return date_time_format.year_format(dt, lang, bc)
 
+
 def nice_unit(unit, context=None, lang='en-us'):
     """
         Format a unit to a pronouncable string
@@ -374,16 +375,19 @@ def nice_unit(unit, context=None, lang='en-us'):
         Returns:
             (str): A fully de-abbreviated unit for insertion in a context like
                     situation (i.e. "degree Celsius", "percent")
-            (object): The parsed value of the quantity
+            (object): The parsed value of the quantity, if any
     
     """
     if unit is None or unit == '':
         return ''
-    quantity = quantulum3.parser.parse(context or unit)
-    print(quantity)
-    if len(quantity) > 0:
-        quantity = quantity[0]
-        return quantity.unit.to_spoken(quantity.value), quantity.value
+    try:
+        quantity = quantulum3.parser.parse(context or unit, lang)
+        if len(quantity) > 0:
+            quantity = quantity[0]
+            return quantity.unit.to_spoken(quantity.value, lang), quantity.value
+    except NotImplementedError:
+        return unit
+
 
 def expand_units(text, lang='en-us'):
     """
@@ -396,5 +400,7 @@ def expand_units(text, lang='en-us'):
         Returns:
             (str): A text with fully de-abbreviated units
     """
-    return quantulum3.parser.inline_parse_and_expand(text)
-    
+    try:
+        return quantulum3.parser.inline_parse_and_expand(text, lang)
+    except NotImplementedError:
+        return text
