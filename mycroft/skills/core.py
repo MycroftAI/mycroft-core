@@ -430,8 +430,7 @@ class MycroftSkill(object):
         validator = validator or validator_default
         on_fail_fn = on_fail if callable(on_fail) else on_fail_default
 
-        self.speak(get_announcement(), expect_response=True)
-        wait_while_speaking()
+        self.speak(get_announcement(), expect_response=True, wait=True)
         num_fails = 0
         while True:
             response = self.__get_response()
@@ -472,11 +471,10 @@ class MycroftSkill(object):
 
         if self.voc_match(resp, 'yes'):
             return 'yes'
-
-        if self.voc_match(resp, 'no'):
+        elif self.voc_match(resp, 'no'):
             return 'no'
-
-        return resp
+        else:
+            return resp
 
     def voc_match(self, utt, voc_filename, lang=None):
         """ Determine if the given utterance contains the vocabulary provided
@@ -1126,7 +1124,7 @@ class MycroftSkill(object):
             Message("detach_skill", {"skill_id": str(self.skill_id) + ":"}))
         try:
             self.stop()
-        except:  # noqa
+        except Exception:
             LOG.error("Failed to stop skill: {}".format(self.name),
                       exc_info=True)
 
