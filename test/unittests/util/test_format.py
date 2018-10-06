@@ -27,6 +27,8 @@ from mycroft.util.format import nice_date_time
 from mycroft.util.format import nice_year
 from mycroft.util.format import pronounce_number
 from mycroft.util.format import date_time_format
+from mycroft.util.format import nice_unit
+from mycroft.util.format import expand_units
 
 NUMBERS_FIXTURE_EN = {
     1.435634: '1.436',
@@ -387,6 +389,35 @@ class TestNiceDateFormat(unittest.TestCase):
 
 
 #                print(nice_year(dt, lang=lang))
+
+    def test_nice_unit(self):
+        test_examples = {
+            (["W"], ("watt", None)),
+            (["100 W"], ("watts", 100)),
+            (
+                ["°F", "The outside temperature is 35°F"],
+                ("degrees Fahrenheit", 35)
+            )
+        }
+        for example in test_examples:
+            expected_unit, expected_value = example[1]
+            unit, value = nice_unit(*example[0])
+            self.assertEqual(unit, expected_unit)
+            self.assertEqual(value, expected_value)
+
+    def test_expand_unit(self):
+        test_examples = {
+            (["W"], "watt"),
+            (["100 W"], "one hundred watts"),
+            (
+                ["The outside temperature is 35°F"],
+                "The outside temperature is thirty five degrees Celsius"
+            )
+        }
+        for example in test_examples:
+            expected = example[1]
+            result = expand_units(*example[0])
+            self.assertEqual(result, expected)
 
 
 if __name__ == "__main__":
