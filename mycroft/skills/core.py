@@ -1255,27 +1255,29 @@ class MycroftSkill(object):
         data = {'name': event_name}
 
         # making event_status an object so it's refrence can be changed
-        event_status = [None]
-        finished_callback = [False]
+        event_status = None
+        finished_callback = False
 
         def callback(message):
+            nonlocal event_status
+            nonlocal finished_callback
             if message.data is not None:
                 event_time = int(message.data[0][0])
                 current_time = int(time.time())
                 time_left_in_seconds = event_time - current_time
-                event_status[0] = time_left_in_seconds
-            finished_callback[0] = True
+                event_status = time_left_in_seconds
+            finished_callback = True
 
         emitter_name = 'mycroft.event_status.callback.{}'.format(event_name)
         self.bus.once(emitter_name, callback)
         self.bus.emit(Message('mycroft.scheduler.get_event', data=data))
 
         start_wait = time.time()
-        while finished_callback[0] is False and time.time() - start_wait < 3.0:
+        while finished_callback is False and time.time() - start_wait < 3.0:
             time.sleep(0.1)
         if time.time() - start_wait > 3.0:
             raise Exception("Event Status Messagebus Timeout")
-        return event_status[0]
+        return event_status
 
     def cancel_all_repeating_events(self):
         """ Cancel any repeating events started by the skill. """
