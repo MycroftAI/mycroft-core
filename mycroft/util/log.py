@@ -16,13 +16,10 @@ import inspect
 import logging
 import sys
 
-from os.path import isfile, join, expanduser
+from os.path import isfile
 
 from mycroft.util.json_helper import load_commented_json, merge_dict
-# from mycroft.configuration import SYSTEM_CONFIG, USER_CONFIG
-# TODO avoid circular imports, do not redefine these constants here
-SYSTEM_CONFIG = '/etc/mycroft/mycroft.conf'
-USER_CONFIG = join(expanduser('~'), '.mycroft/mycroft.conf')
+from mycroft.configuration.locations import SYSTEM_CONFIG, USER_CONFIG
 
 
 def getLogger(name="MYCROFT"):

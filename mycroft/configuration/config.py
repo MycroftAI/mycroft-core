@@ -17,11 +17,13 @@
 import re
 import json
 import inflection
-from os.path import exists, isfile, join, dirname, expanduser
+from os.path import exists, isfile
 from requests import RequestException
 
 from mycroft.util.json_helper import load_commented_json, merge_dict
 from mycroft.util.log import LOG
+
+from .locations import DEFAULT_CONFIG, SYSTEM_CONFIG, USER_CONFIG
 
 
 def is_remote_list(values):
@@ -170,12 +172,6 @@ class RemoteConf(LocalConf):
             LOG.error("Failed to fetch remote configuration: %s" % repr(e),
                       exc_info=True)
             self.load_local(cache)
-
-
-DEFAULT_CONFIG = join(dirname(__file__), 'mycroft.conf')
-SYSTEM_CONFIG = '/etc/mycroft/mycroft.conf'
-USER_CONFIG = join(expanduser('~'), '.mycroft/mycroft.conf')
-REMOTE_CONFIG = "mycroft.ai"
 
 
 class Configuration(object):
