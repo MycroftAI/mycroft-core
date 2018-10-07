@@ -381,11 +381,12 @@ def nice_unit(unit=None, context=None, lang='en-us'):
     # Return an empty string for None and empty strings
     if not unit and not context:
         return ''
-    else:
-        # Quantulum expects a unit to be prefixed with a quantifier
-        unit = "1 {}".format(unit)
     try:
-        quantity = quantity_parser.parse(context or unit, lang)
+        # Quantulum expects a unit to be prefixed with a quantifier
+        quantity = quantity_parser.parse(
+            context or "1 {}".format(unit),
+            lang
+        )
         if len(quantity) > 0:
             quantity = quantity[0]
             return (
