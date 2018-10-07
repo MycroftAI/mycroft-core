@@ -29,7 +29,7 @@ import json
 import os
 import datetime
 import re
-import quantulum3
+from quantulum3 import parser as quantity_parser
 
 NUMBER_TUPLE = namedtuple(
     'number',
@@ -359,7 +359,7 @@ def nice_year(dt, lang='en-us', bc=False):
     return date_time_format.year_format(dt, lang, bc)
 
 
-def nice_unit(unit, context=None, lang='en-us'):
+def nice_unit(unit=None, context=None, lang='en-us'):
     """
         Format a unit to a pronouncable string
 
@@ -375,18 +375,27 @@ def nice_unit(unit, context=None, lang='en-us'):
         Returns:
             (str): A fully de-abbreviated unit for insertion in a context like
                     situation (i.e. "degree Celsius", "percent")
-            (object): The parsed value of the quantity, if any
+            (object): The parsed value of the quantity, if any (else None)
 
     """
-    if unit is None or unit == '':
+    # Return an empty string for None and empty strings
+    if not unit and not context:
         return ''
+    else:
+        # Quantulum expects a unit to be prefixed with a quantifier
+        unit = "1 {}".format(unit)
     try:
-        quantity = quantulum3.parser.parse(context or unit, lang)
+        quantity = quantity_parser.parse(context or unit, lang)
         if len(quantity) > 0:
             quantity = quantity[0]
-            return quantity.unit.to_spoken(quantity.value, lang), quantity.value
+            return (
+                quantity.unit.to_spoken(quantity.value, lang),
+                quantity.value if context else None
+            )
+        else:
+            return unit, None
     except NotImplementedError:
-        return unit
+        return unit, None
 
 
 def expand_units(text, lang='en-us'):
@@ -402,6 +411,6 @@ def expand_units(text, lang='en-us'):
             (str): A text with fully de-abbreviated units
     """
     try:
-        return quantulum3.parser.inline_parse_and_expand(text, lang)
+        return quantity_parser.inline_parse_and_expand(text, lang)
     except NotImplementedError:
         return text

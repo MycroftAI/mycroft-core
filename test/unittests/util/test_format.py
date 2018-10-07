@@ -405,13 +405,16 @@ class TestNiceDateFormat(unittest.TestCase):
             self.assertEqual(unit, expected_unit)
             self.assertEqual(value, expected_value)
 
-    def test_expand_unit(self):
+    def test_expand_units(self):
         test_examples = [
-            (["W"], "watt"),
+            (
+                ["This solar panel merely produces one W"],
+                "This solar panel merely produces one watt"
+            ),
             (["100 W"], "one hundred watts"),
             (
                 ["The outside temperature is 35°F"],
-                "The outside temperature is thirty five degrees Celsius"
+                "The outside temperature is thirty-five degrees Celsius"
             )
         ]
         for example in test_examples:
