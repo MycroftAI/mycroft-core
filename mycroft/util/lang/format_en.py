@@ -321,6 +321,7 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
         def _short_scale(n):
             n = int(n)
             assert 0 <= n
+            # TODO Some more or less obvious error to be fixed here
             return ", ".join(reversed(
                 [_sub_thousand(z) + (
                     " " + hundreds[i] if i else "") if z else ""
@@ -334,27 +335,19 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
                 res.append(r)
             return res
 
-        def _split_by_millions(n):
-            assert 0 <= n
-            res = []
-            while n:
-                n, r = divmod(n, 1000)
-                res.append(r)
-            return res
-
         def _long_scale(n):
             if n >= 10e153:
                 return "infinity"
             n = int(n)
             assert 0 <= n
             res = []
-            for i, z in enumerate(_split_by_millions(n)):
+            for i, z in enumerate(_split_by_thousands(n)):
                 if not z:
                     continue
-                number = pronounce_number_en(z, places, True)
+                number = _sub_thousand(z)
                 if i % 2 != 0 and i > 1:
                     number += " " + "thousand"
-                elif i > 0 and i < 3:
+                elif 0 < i < 3:
                     number += " " + hundreds[i] + ","
                 elif i:
                     number += " " + hundreds[i - 1] + ","
