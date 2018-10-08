@@ -19,7 +19,9 @@ from mycroft.util.log import LOG
 from mycroft.util.format import pronounce_number
 from mycroft.util import play_wav, get_cache_directory, create_signal
 from requests_futures.sessions import FuturesSession
-from requests.exceptions import ReadTimeout, ConnectionError
+from requests.exceptions import (
+    ReadTimeout, ConnectionError, ConnectTimeout, HTTPError
+)
 from urllib import parse
 from .mimic_tts import VISIMES
 import math
@@ -299,7 +301,7 @@ class Mimic2(TTS):
                 with open(wav_file, 'wb') as f:
                     f.write(audio)
                 self.queue.put((self.audio_ext, wav_file, vis, ident))
-        except (ReadTimeout, ConnectionError):
+        except (ReadTimeout, ConnectionError, ConnectTimeout, HTTPError):
             raise RemoteTTSTimeoutException(
                 "Mimic 2 remote server request timedout. falling back to mimic"
             )
