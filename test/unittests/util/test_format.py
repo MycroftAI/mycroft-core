@@ -186,6 +186,19 @@ class TestPronounceNumber(unittest.TestCase):
                          "one point six seven two times ten to the power of "
                          "negative twenty seven")
 
+    def test_large_numbers(self):
+        self.assertEqual(pronounce_number(299792458, short_scale=True),
+                         "two hundred ninety nine million seven hundred ninety two thousand four hundred fifty eight")
+        self.assertEqual(pronounce_number(299792458, short_scale=False),
+                         "two hundred ninety nine million seven hundred ninety two thousand four hundred fifty eight")
+        self.assertEqual(pronounce_number(100034000299792458, short_scale=True),
+                         "one hundred quintillion thirty four quadrillion"
+                         "two hundred ninety nine million seven hundred ninety two thousand four hundred fifty eight")
+        self.assertEqual(pronounce_number(100034000299792458, short_scale=False),
+                         "one hundred trillion thirty four thousand billion"
+                         "two hundred ninety nine million seven hundred ninety two thousand four hundred fifty eight")
+
+
 
 # def nice_time(dt, lang="en-us", speech=True, use_24hour=False,
 #              use_ampm=False):
