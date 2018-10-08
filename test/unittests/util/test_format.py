@@ -393,10 +393,10 @@ class TestNiceDateFormat(unittest.TestCase):
     def test_nice_unit(self):
         test_examples = [
             (["W"], ("watt", None)),
-            (["100 W"], ("watts", 100)),
+            (["W", "100 W"], ("watts", 100)),
             (
                 ["°F", "The outside temperature is 35°F"],
-                ("degrees Fahrenheit", 35)
+                ("degrees fahrenheit", 35)
             )
         ]
         for example in test_examples:
@@ -414,7 +414,7 @@ class TestNiceDateFormat(unittest.TestCase):
             (["100 W"], "one hundred watts"),
             (
                 ["The outside temperature is 35°F"],
-                "The outside temperature is thirty-five degrees Celsius"
+                "The outside temperature is thirty-five degrees fahrenheit"
             )
         ]
         for example in test_examples:
