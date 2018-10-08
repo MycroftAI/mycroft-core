@@ -319,13 +319,13 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
                     " and " + _sub_thousand(r) if r else "")
 
         def _short_scale(n):
-            if n > max(SHORT_SCALE_EN.keys()):
+            if n >= max(SHORT_SCALE_EN.keys()):
                 return "infinity"
             n = int(n)
             assert 0 <= n
             # TODO Some more or less obvious error to be fixed here
             res = []
-            for i, z in enumerate(_split_by_thousands(n)):
+            for i, z in enumerate(_split_by(n, 1000)):
                 if not z:
                     continue
                 number = _sub_thousand(z)
@@ -334,34 +334,34 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
                     number += hundreds[i]
                 res.append(number)
 
-            return " ".join(reversed(res))
+            return ", ".join(reversed(res))
 
-        def _split_by_thousands(n):
+        def _split_by(n, split=1000):
             assert 0 <= n
             res = []
             while n:
-                n, r = divmod(n, 1000)
+                n, r = divmod(n, split)
                 res.append(r)
             return res
 
         def _long_scale(n):
-            if n > max(LONG_SCALE_EN.keys()):
+            if n >= max(LONG_SCALE_EN.keys()):
                 return "infinity"
             n = int(n)
             assert 0 <= n
             res = []
-            for i, z in enumerate(_split_by_thousands(n)):
+            for i, z in enumerate(_split_by(n, 1000000)):
                 if not z:
                     continue
-                number = _sub_thousand(z)
-                if i % 2 != 0 and i > 1:
-                    number += " " + "thousand"
-                elif 0 < i < 3:
-                    number += " " + hundreds[i] + ","
-                elif i:
-                    number += " " + hundreds[i - 1] + ","
+                number = pronounce_number_en(z, places, True, scientific)
+                # strip off the comma after the thousand
+                if i:
+                    # plus one as we skip 'thousand'
+                    # (and 'hundred', but this is excluded by index value)
+                    number = number.replace(',', '')
+                    number += " " + hundreds[i+1]
                 res.append(number)
-            return " ".join(reversed(res))
+            return ", ".join(reversed(res))
 
         if short_scale:
             result += _short_scale(num)

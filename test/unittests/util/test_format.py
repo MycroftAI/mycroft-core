@@ -188,15 +188,19 @@ class TestPronounceNumber(unittest.TestCase):
 
     def test_large_numbers(self):
         self.assertEqual(pronounce_number(299792458, short_scale=True),
-                         "two hundred ninety nine million seven hundred ninety two thousand four hundred fifty eight")
+                         "two hundred and ninety nine million, seven hundred "
+                         "and ninety two thousand, four hundred and fifty eight")
         self.assertEqual(pronounce_number(299792458, short_scale=False),
-                         "two hundred ninety nine million seven hundred ninety two thousand four hundred fifty eight")
-        self.assertEqual(pronounce_number(100034000299792458, short_scale=True),
-                         "one hundred quintillion thirty four quadrillion"
-                         "two hundred ninety nine million seven hundred ninety two thousand four hundred fifty eight")
-        self.assertEqual(pronounce_number(100034000299792458, short_scale=False),
-                         "one hundred trillion thirty four thousand billion"
-                         "two hundred ninety nine million seven hundred ninety two thousand four hundred fifty eight")
+                         "two hundred and ninety nine million, seven hundred "
+                         "and ninety two thousand, four hundred and fifty eight")
+        self.assertEqual(pronounce_number(100034000000299792458, short_scale=True),
+                         "one hundred quintillion, thirty four quadrillion, "
+                         "two hundred and ninety nine million, seven hundred "
+                         "and ninety two thousand, four hundred and fifty eight")
+        self.assertEqual(pronounce_number(100034000000299792458, short_scale=False),
+                         "one hundred trillion, thirty four thousand billion, "
+                         "two hundred and ninety nine million, seven hundred "
+                         "and ninety two thousand, four hundred and fifty eight")
 
 
 
