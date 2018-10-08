@@ -113,7 +113,14 @@ function install_deps() {
         $SUDO zypper install -y git python3 python3-devel libtool libffi-devel libopenssl-devel autoconf automake bison swig portaudio-devel mpg123 flac curl libicu-devel pkg-config libjpeg-devel libfann-devel python3-curses pulseaudio
         $SUDO zypper install -y -t pattern devel_C_C++
     elif found_exe yum ; then
-        $SUDO yum install -y git python34 python34-devel libtool libffi-devel openssl-devel autoconf automake bison swig portaudio-devel mpg123 flac curl libicu-devel python34-pkgconfig libjpeg-devel fann-devel python34-libs pulseaudio
+        $SUDO yum install epel-release
+        $SUDO yum install -y cmake gcc-c++ git python34 python34-devel libtool libffi-devel openssl-devel autoconf automake bison swig portaudio-devel mpg123 flac curl libicu-devel python34-pkgconfig libjpeg-devel fann-devel python34-libs pulseaudio
+        git clone https://github.com/libfann/fann.git
+        cd fann
+        cmake .
+        $SUDO make install
+        cd "${TOP}"
+        rm -rf fann
     elif found_exe apt-get ; then
         $SUDO apt-get install -y git python3 python3-dev python-setuptools python-gobject-2-dev libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config automake libjpeg-dev libfann-dev build-essential jq
     elif found_exe pacman; then
