@@ -14,11 +14,12 @@
 #
 
 from mycroft.tts import TTS, TTSValidator
-from mycroft.tts.remote_tts import RemoteTTS
+from mycroft.tts.remote_tts import RemoteTTSTimeoutException
 from mycroft.util.log import LOG
 from mycroft.util.format import pronounce_number
 from mycroft.util import play_wav, get_cache_directory, create_signal
 from requests_futures.sessions import FuturesSession
+from requests.exceptions import ReadTimeout, ConnectionError
 from urllib import parse
 from .mimic_tts import VISIMES
 import math
@@ -204,10 +205,6 @@ class Mimic2(TTS):
                 '%s Http Error: %s for url: %s' %
                 (req.status_code, req.reason, req.url))
 
-    def build_request_params(self, sentence):
-        """RemoteTTS expects this method as abc.abstractmethod"""
-        pass
-
     def _requests(self, chunks):
         """create asynchronous request list
 
@@ -222,7 +219,7 @@ class Mimic2(TTS):
             if len(chunk) > 0:
                 url = self.url + parse.quote(chunk)
                 req_route = url + "&visimes=True"
-                reqs.append(self.session.get(req_route))
+                reqs.append(self.session.get(req_route, timeout=5))
         return reqs
 
     def visime(self, phonemes):
@@ -288,19 +285,24 @@ class Mimic2(TTS):
                                                 self.spellings[word.lower()])
 
         chunks = sentence_chunker(sentence, self.chunk_size)
-        for idx, req in enumerate(self._requests(chunks)):
-            results = req.result().json()
-            audio = base64.b64decode(results['audio_base64'])
-            vis = self.visime(results['visimes'])
-            key = str(hashlib.md5(
-                chunks[idx].encode('utf-8', 'ignore')).hexdigest())
-            wav_file = os.path.join(
-                get_cache_directory("tts"),
-                key + '.' + self.audio_ext
+        try:
+            for idx, req in enumerate(self._requests(chunks)):
+                results = req.result().json()
+                audio = base64.b64decode(results['audio_base64'])
+                vis = self.visime(results['visimes'])
+                key = str(hashlib.md5(
+                    chunks[idx].encode('utf-8', 'ignore')).hexdigest())
+                wav_file = os.path.join(
+                    get_cache_directory("tts"),
+                    key + '.' + self.audio_ext
+                )
+                with open(wav_file, 'wb') as f:
+                    f.write(audio)
+                self.queue.put((self.audio_ext, wav_file, vis, ident))
+        except (ReadTimeout, ConnectionError):
+            raise RemoteTTSTimeoutException(
+                "Mimic 2 remote server request timedout. falling back to mimic"
             )
-            with open(wav_file, 'wb') as f:
-                f.write(audio)
-            self.queue.put((self.audio_ext, wav_file, vis, ident))
 
 
 class Mimic2Validator(TTSValidator):
