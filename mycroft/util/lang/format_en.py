@@ -107,7 +107,7 @@ SHORT_SCALE_EN = collections.OrderedDict([
     (1000, 'thousand'),
     (1000000, 'million'),
     (1e9, "billion"),
-    (1e10, 'trillion'),
+    (1e12, 'trillion'),
     (1e15, "quadrillion"),
     (1e18, "quintillion"),
     (1e21, "sextillion"),
@@ -323,7 +323,6 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
                 return "infinity"
             n = int(n)
             assert 0 <= n
-            # TODO Some more or less obvious error to be fixed here
             res = []
             for i, z in enumerate(_split_by(n, 1000)):
                 if not z:

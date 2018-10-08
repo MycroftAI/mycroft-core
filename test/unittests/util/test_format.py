@@ -187,21 +187,34 @@ class TestPronounceNumber(unittest.TestCase):
                          "negative twenty seven")
 
     def test_large_numbers(self):
-        self.assertEqual(pronounce_number(299792458, short_scale=True),
-                         "two hundred and ninety nine million, seven hundred "
-                         "and ninety two thousand, four hundred and fifty eight")
-        self.assertEqual(pronounce_number(299792458, short_scale=False),
-                         "two hundred and ninety nine million, seven hundred "
-                         "and ninety two thousand, four hundred and fifty eight")
-        self.assertEqual(pronounce_number(100034000000299792458, short_scale=True),
-                         "one hundred quintillion, thirty four quadrillion, "
-                         "two hundred and ninety nine million, seven hundred "
-                         "and ninety two thousand, four hundred and fifty eight")
-        self.assertEqual(pronounce_number(100034000000299792458, short_scale=False),
-                         "one hundred trillion, thirty four thousand billion, "
-                         "two hundred and ninety nine million, seven hundred "
-                         "and ninety two thousand, four hundred and fifty eight")
-
+        self.assertEqual(
+            pronounce_number(299792458, short_scale=True),
+            "two hundred and ninety nine million, seven hundred "
+            "and ninety two thousand, four hundred and fifty eight")
+        self.assertEqual(
+            pronounce_number(299792458, short_scale=False),
+            "two hundred and ninety nine million, seven hundred "
+            "and ninety two thousand, four hundred and fifty eight")
+        self.assertEqual(
+            pronounce_number(100034000000299792458, short_scale=True),
+            "one hundred quintillion, thirty four quadrillion, "
+            "two hundred and ninety nine million, seven hundred "
+            "and ninety two thousand, four hundred and fifty eight")
+        self.assertEqual(
+            pronounce_number(100034000000299792458, short_scale=False),
+            "one hundred trillion, thirty four thousand billion, "
+            "two hundred and ninety nine million, seven hundred "
+            "and ninety two thousand, four hundred and fifty eight")
+        self.assertEqual(
+            pronounce_number(10000000000, short_scale=True),
+            "ten billion")
+        self.assertEqual(
+            pronounce_number(1000000000000, short_scale=True),
+            "one trillion")
+        # TODO maybe beautify this
+        self.assertEqual(
+            pronounce_number(1000001, short_scale=True),
+            "one million, one")
 
 
 # def nice_time(dt, lang="en-us", speech=True, use_24hour=False,
