@@ -18,7 +18,8 @@ import sys
 
 from os.path import isfile
 
-from mycroft.util.json_helper import load_commented_json
+from mycroft.util.json_helper import load_commented_json, merge_dict
+from mycroft.configuration.locations import SYSTEM_CONFIG, USER_CONFIG
 
 
 def getLogger(name="MYCROFT"):
@@ -61,8 +62,12 @@ class LOG:
 
     @classmethod
     def init(cls):
-        sys_config = '/etc/mycroft/mycroft.conf'
-        config = load_commented_json(sys_config) if isfile(sys_config) else {}
+        confs = [SYSTEM_CONFIG, USER_CONFIG]
+        config = {}
+        for conf in confs:
+            merge_dict(config,
+                       load_commented_json(conf) if isfile(conf) else {})
+
         cls.level = logging.getLevelName(config.get('log_level', 'DEBUG'))
         fmt = '%(asctime)s.%(msecs)03d - ' \
               '%(name)s - %(levelname)s - %(message)s'
@@ -74,11 +79,11 @@ class LOG:
 
     @classmethod
     def create_logger(cls, name):
-        l = logging.getLogger(name)
-        l.propagate = False
-        l.addHandler(cls.handler)
-        l.setLevel(cls.level)
-        return l
+        logger = logging.getLogger(name)
+        logger.propagate = False
+        logger.addHandler(cls.handler)
+        logger.setLevel(cls.level)
+        return logger
 
     def __init__(self, name):
         LOG._custom_name = name
@@ -106,5 +111,6 @@ class LOG:
             module_name = mod.__name__ if mod else ''
             name = module_name + ':' + record[3] + ':' + str(record[2])
         func(cls.create_logger(name), *args, **kwargs)
+
 
 LOG.init()
