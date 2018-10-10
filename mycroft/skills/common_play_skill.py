@@ -20,18 +20,19 @@ from mycroft.messagebus.message import Message
 
 
 class CPSMatchLevel(Enum):
-        EXACT = 1
-        MULTI_KEY = 2
-        TITLE = 3
-        ARTIST = 4
-        CATEGORY = 5
-        GENERIC = 6
+    EXACT = 1
+    MULTI_KEY = 2
+    TITLE = 3
+    ARTIST = 4
+    CATEGORY = 5
+    GENERIC = 6
 
 
 class CommonPlaySkill(MycroftSkill, ABC):
     def __init__(self, name=None, bus=None):
         super().__init__(name, bus)
         self.audioservice = None
+        self.play_service_string = None
 
     def bind(self, bus):
         if bus:
