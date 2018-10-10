@@ -51,7 +51,7 @@ class CommonPlaySkill(MycroftSkill, ABC):
                                         "searching": True}))
 
         # Now invoke the CPS handler to let the skill perform its search
-        result = self.CPS__match_query_phrase(search_phrase)
+        result = self.CPS_match_query_phrase(search_phrase)
 
         if result:
             match = result[0]
@@ -101,21 +101,29 @@ class CommonPlaySkill(MycroftSkill, ABC):
             self.audioservice.stop()
         self.bus.emit(Message("mycroft.stop"))
 
-        # Save for play() later, e.g. if phrase includes service modifiers like
+        # Save for CPS_play() later, e.g. if phrase includes modifiers like
         # "... on the chromecast"
         self.play_service_string = phrase
 
         # Invoke derived class to provide playback data
-        self.CPS__start(phrase, data)
+        self.CPS_start(phrase, data)
 
-    def CPS__play(self, url):
+    def CPS_play(self, *args, **kwargs):
         """
-        Begin playback of media pointed to by 'url'
+        Begin playback of a media file or stream
+
+        Normal this method will be invoked with somthing like:
+           self.CPS_play(url)
+        Advanced use can also include keyword arguments, such as:
+           self.CPS_play(url, repeat=True)
 
         Args:
-            url (str): Audio to play
+            same as the Audioservice.play method
         """
-        self.audioservice.play(url, self.play_service_string)
+        # Inject the user's utterance in case the audio backend wants to
+        # interpret it.  E.g. "play some rock at full volume on the stereo"
+        kwargs['utterance'] = self.play_service_string
+        self.audioservice.play(*args, **kwargs)
 
     def stop(self):
         if self.audioservice.is_playing:
@@ -129,7 +137,7 @@ class CommonPlaySkill(MycroftSkill, ABC):
     # All of the following must be implemented by a skill that wants to
     # act as a CommonPlay Skill
     @abstractmethod
-    def CPS__match_query_phrase(self, phrase):
+    def CPS_match_query_phrase(self, phrase):
         """
         Analyze phrase to see if it is a play-able phrase with this
         skill.
@@ -161,7 +169,7 @@ class CommonPlaySkill(MycroftSkill, ABC):
         return None
 
     @abstractmethod
-    def CPS__start(self, phrase, data):
+    def CPS_start(self, phrase, data):
         """
         Begin playing whatever is specified in 'phrase'
 
@@ -170,5 +178,5 @@ class CommonPlaySkill(MycroftSkill, ABC):
             data (dict): Callback data specified in match_query_phrase()
         """
         # Derived classes must implement this, e.g.
-        # self.play("http://zoosh.com/stream_music")
+        # self.CPS_play("http://zoosh.com/stream_music")
         pass
