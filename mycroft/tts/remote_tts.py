@@ -55,7 +55,7 @@ class RemoteTTS(TTS):
 
     @staticmethod
     def __get_phrases(sentence):
-        phrases = re.split('\.+[\s+|\n]', sentence)
+        phrases = re.split(r'\.+[\s+|\n]', sentence)
         phrases = [p.replace('\n', '').strip() for p in phrases]
         phrases = [p for p in phrases if len(p) > 0]
         return phrases
