@@ -108,13 +108,21 @@ class ContextManager(object):
 
         missing_entities = list(missing_entities)
         context = []
+        last = ''
+        depth = 0
         for i in range(max_frames):
             frame_entities = [entity.copy() for entity in
                               relevant_frames[i].entities]
             for entity in frame_entities:
                 entity['confidence'] = entity.get('confidence', 1.0) \
-                    / (2.0 + i)
+                    / (2.0 + depth)
             context += frame_entities
+
+            # Update depth
+            if entity['origin'] != last or entity['origin'] == '':
+                depth += 1
+            last = entity['origin']
+            print(depth)
 
         result = []
         if len(missing_entities) > 0:
@@ -428,12 +436,14 @@ class IntentService(object):
         entity = {'confidence': 1.0}
         context = message.data.get('context')
         word = message.data.get('word') or ''
+        origin = message.data.get('origin') or ''
         # if not a string type try creating a string from it
         if not isinstance(word, str):
             word = str(word)
         entity['data'] = [(word, context)]
         entity['match'] = word
         entity['key'] = word
+        entity['origin'] = origin
         self.context_manager.inject_context(entity)
 
     def handle_remove_context(self, message):

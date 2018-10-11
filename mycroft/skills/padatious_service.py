@@ -50,7 +50,7 @@ class PadatiousService(FallbackSkill):
 
         self.container = IntentContainer(intent_cache)
 
-        self.bus = bus
+        self._bus = bus
         self.bus.on('padatious:register_intent', self.register_intent)
         self.bus.on('padatious:register_entity', self.register_entity)
         self.bus.on('detach_intent', self.handle_detach_intent)

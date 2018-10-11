@@ -22,6 +22,8 @@ from mycroft.tts import TTSFactory
 from mycroft.util import create_signal, check_for_signal
 from mycroft.util.log import LOG
 from mycroft.messagebus.message import Message
+from mycroft.tts.remote_tts import RemoteTTSTimeoutException
+from mycroft.tts.mimic_tts import Mimic
 
 bus = None  # Mycroft messagebus connection
 config = None
@@ -117,8 +119,21 @@ def mute_and_speak(utterance, ident):
     LOG.info("Speak: " + utterance)
     try:
         tts.execute(utterance, ident)
+    except RemoteTTSTimeoutException as e:
+        LOG.error(e)
+        mimic_fallback_tts(utterance, ident)
     except Exception as e:
         LOG.error('TTS execution failed ({})'.format(repr(e)))
+
+
+def mimic_fallback_tts(utterance, ident):
+    # fallback if connection is lost
+    config = Configuration.get()
+    tts_config = config.get('tts', {}).get("mimic", {})
+    lang = config.get("lang", "en-us")
+    tts = Mimic(lang, tts_config)
+    tts.init(bus)
+    tts.execute(utterance, ident)
 
 
 def handle_stop(event):

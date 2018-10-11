@@ -17,13 +17,16 @@ from copy import copy
 import json
 import requests
 from requests import HTTPError, RequestException
+import os
+import time
 
 from mycroft.configuration import Configuration
 from mycroft.configuration.config import DEFAULT_CONFIG, SYSTEM_CONFIG, \
     USER_CONFIG
-from mycroft.identity import IdentityManager
+from mycroft.identity import IdentityManager, identity_lock
 from mycroft.version import VersionManager
 from mycroft.util import get_arch, connected, LOG
+
 
 _paired_cache = False
 
@@ -62,27 +65,46 @@ class Api(object):
         return self.send(params)
 
     def check_token(self):
+        # If the identity hasn't been loaded, load it
+        if not self.identity.has_refresh():
+            self.identity = IdentityManager.load()
+        # If refresh is needed perform a refresh
         if self.identity.refresh and self.identity.is_expired():
             self.identity = IdentityManager.load()
+            # if no one else has updated the token refresh it
             if self.identity.is_expired():
                 self.refresh_token()
 
     def refresh_token(self):
-        data = self.send({
-            "path": "auth/token",
-            "headers": {
-                "Authorization": "Bearer " + self.identity.refresh
-            }
-        })
-        IdentityManager.save(data)
+        LOG.debug('Refreshing token')
+        if identity_lock.acquire(blocking=False):
+            try:
+                data = self.send({
+                    "path": "auth/token",
+                    "headers": {
+                        "Authorization": "Bearer " + self.identity.refresh
+                    }
+                })
+                IdentityManager.save(data, lock=False)
+                LOG.debug('Saved credentials')
+            finally:
+                identity_lock.release()
+        else:  # Someone is updating the identity wait for release
+            with identity_lock:
+                LOG.debug('Refresh is already in progress, waiting until done')
+                time.sleep(1.2)
+                os.sync()
+                self.identity = IdentityManager.load(lock=False)
+                LOG.debug('new credentials loaded')
 
-    def send(self, params):
+    def send(self, params, no_refresh=False):
         """ Send request to mycroft backend.
         The method handles Etags and will return a cached response value
         if nothing has changed on the remote.
 
         Arguments:
             params (dict): request parameters
+            no_refresh (bool): optional parameter to disable refreshs of token
 
         Returns:
             Requests response object.
@@ -108,24 +130,36 @@ class Api(object):
             data=data, json=json_body, timeout=(3.05, 15)
         )
         if response.status_code == 304:
-            LOG.debug('Etag matched. Nothing changed for: ' + params['path'])
+            # Etag matched, use response previously cached
             response = self.etag_to_response[etag]
         elif 'ETag' in response.headers:
             etag = response.headers['ETag'].strip('"')
-            LOG.debug('Updating etag for: ' + params['path'])
+            # Cache response for future lookup when we receive a 304
             self.params_to_etag[params_key] = etag
             self.etag_to_response[etag] = response
 
-        return self.get_response(response)
+        return self.get_response(response, no_refresh)
 
-    def get_response(self, response):
+    def get_response(self, response, no_refresh=False):
+        """ Parse response and extract data from response.
+
+        Will try to refresh the access token if it's expired.
+
+        Arguments:
+            response (requests Response object): Response to parse
+            no_refresh (bool): Disable refreshing of the token
+        Returns:
+            data fetched from server
+        """
         data = self.get_data(response)
+
         if 200 <= response.status_code < 300:
             return data
-        elif response.status_code == 401 \
-                and not response.url.endswith("auth/token"):
+        elif (not no_refresh and response.status_code == 401 and not
+                response.url.endswith("auth/token") and
+                self.identity.is_expired()):
             self.refresh_token()
-            return self.send(self.old_params)
+            return self.send(self.old_params, no_refresh=True)
         raise HTTPError(data, response=response)
 
     def get_data(self, response):

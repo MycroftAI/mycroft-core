@@ -142,11 +142,13 @@ class DateTimeFormat:
                 if dt.month == now.month and dt.day > now.day:
                     format_str = 'date_full_no_year_month'
 
-            if (now + datetime.timedelta(1)).day == dt.day:
+            tomorrow = now + datetime.timedelta(days=1)
+            yesterday = now - datetime.timedelta(days=1)
+            if tomorrow.date() == dt.date():
                 format_str = 'tomorrow'
-            if now.day == dt.day:
+            elif now.date() == dt.date():
                 format_str = 'today'
-            if (now - datetime.timedelta(1)).day == dt.day:
+            elif yesterday.date() == dt.date():
                 format_str = 'yesterday'
 
         return self.lang_config[lang]['date_format'][format_str].format(

@@ -1,4 +1,4 @@
-# Copyright 2017 Mycroft AI Inc.
+# Copyright 2018 Mycroft AI Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,13 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
-from .config import Configuration, LocalConf, RemoteConf
-from .locations import SYSTEM_CONFIG, USER_CONFIG
+from os.path import join, dirname, expanduser
 
-
-# Compatibility
-class ConfigurationManager(Configuration):
-    @staticmethod
-    def instance():
-        return Configuration.get()
+DEFAULT_CONFIG = join(dirname(__file__), 'mycroft.conf')
+SYSTEM_CONFIG = '/etc/mycroft/mycroft.conf'
+USER_CONFIG = join(expanduser('~'), '.mycroft/mycroft.conf')
+REMOTE_CONFIG = "mycroft.ai"

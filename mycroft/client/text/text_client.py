@@ -90,6 +90,7 @@ CLR_INPUT = 0
 CLR_LOG1 = 0
 CLR_LOG2 = 0
 CLR_LOG_DEBUG = 0
+CLR_LOG_ERROR = 0
 CLR_LOG_CMDMESSAGE = 0
 CLR_METER_CUR = 0
 CLR_METER = 0
@@ -141,8 +142,9 @@ def load_settings():
             max_log_lines = config["max_log_lines"]
         if "show_meter" in config:
             show_meter = config["show_meter"]
-    except:
-        pass
+    except Exception as e:
+        LOG.info("Ignoring failed load of settings file")
+        LOG.exception(e)
 
 
 def save_settings():
@@ -209,13 +211,13 @@ class LogMonitorThread(Thread):
 
                 with log_lock:
                     if ignore:
-                        mergedLog.append(self.logid + line.strip())
+                        mergedLog.append(self.logid + line.rstrip())
                     else:
                         if bSimple:
-                            print(line.strip())
+                            print(line.rstrip())
                         else:
-                            filteredLog.append(self.logid + line.strip())
-                            mergedLog.append(self.logid + line.strip())
+                            filteredLog.append(self.logid + line.rstrip())
+                            mergedLog.append(self.logid + line.rstrip())
                             if not auto_scroll:
                                 log_line_offset += 1
 
@@ -416,6 +418,7 @@ def init_screen():
     global CLR_LOG1
     global CLR_LOG2
     global CLR_LOG_DEBUG
+    global CLR_LOG_ERROR
     global CLR_LOG_CMDMESSAGE
     global CLR_METER_CUR
     global CLR_METER
@@ -440,6 +443,7 @@ def init_screen():
         CLR_LOG1 = curses.color_pair(3)
         CLR_LOG2 = curses.color_pair(6)
         CLR_LOG_DEBUG = curses.color_pair(4)
+        CLR_LOG_ERROR = curses.color_pair(2)
         CLR_LOG_CMDMESSAGE = curses.color_pair(2)
         CLR_METER_CUR = curses.color_pair(2)
         CLR_METER = curses.color_pair(4)
@@ -601,6 +605,8 @@ def do_draw_main(scr):
         if " - DEBUG - " in log:
             log = log.replace("Skills ", "")
             clr = CLR_LOG_DEBUG
+        elif " - ERROR - " in log:
+            clr = CLR_LOG_ERROR
         else:
             if logid == "1":
                 clr = CLR_LOG1
@@ -685,12 +691,12 @@ def do_draw_main(scr):
         y += 1
 
     # Command line at the bottom
-    l = line
+    ln = line
     if len(line) > 0 and line[0] == ":":
         scr.addstr(curses.LINES - 2, 0, "Command ('help' for options):",
                    CLR_CMDLINE)
         scr.addstr(curses.LINES - 1, 0, ":", CLR_CMDLINE)
-        l = line[1:]
+        ln = line[1:]
     else:
         prompt = "Input (':' for command, Ctrl+C to quit)"
         if show_last_key:
@@ -702,7 +708,7 @@ def do_draw_main(scr):
         scr.addstr(curses.LINES - 1, 0, ">", CLR_HEADING)
 
     _do_meter(cy_chat_area + 2)
-    scr.addstr(curses.LINES - 1, 2, l, CLR_INPUT)
+    scr.addstr(curses.LINES - 1, 2, ln, CLR_INPUT)
 
     # Curses doesn't actually update the display until refresh() is called
     scr.refresh()
@@ -713,6 +719,7 @@ def make_titlebar(title, bar_length):
 
 ##############################################################################
 # Help system
+
 
 help_struct = [
     (
@@ -1075,8 +1082,9 @@ def gui_main(stdscr):
                     # End the find session
                     find_str = None
                     rebuild_filtered_log()
+                    continue  # Consumed the Ctrl+C, get next character
                 else:
-                    break
+                    c = 24  # treat as Ctrl+X (Exit)
             except curses.error:
                 # This happens in odd cases, such as when you Ctrl+Z suspend
                 # the CLI and then resume.  Curses fails on get_wch().
@@ -1224,6 +1232,8 @@ def gui_main(stdscr):
                     # End the find session
                     find_str = None
                     rebuild_filtered_log()
+                else:
+                    break
             elif code > 31 and isinstance(c, str):
                 # Accept typed character in the utterance
                 line += c
@@ -1232,7 +1242,6 @@ def gui_main(stdscr):
         scr.erase()
         scr.refresh()
         scr = None
-        pass
 
 
 def simple_cli():
