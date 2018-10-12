@@ -54,6 +54,7 @@ class PadatiousService(FallbackSkill):
         self.bus.on('padatious:register_intent', self.register_intent)
         self.bus.on('padatious:register_entity', self.register_entity)
         self.bus.on('detach_intent', self.handle_detach_intent)
+        self.bus.on('detach_skill', self.handle_detach_skill)
         self.bus.on('mycroft.skills.initialized', self.train)
         self.register_fallback(self.handle_fallback, 5)
         self.finished_training_event = Event()
@@ -61,6 +62,8 @@ class PadatiousService(FallbackSkill):
 
         self.train_delay = self.config['train_delay']
         self.train_time = get_time() + self.train_delay
+
+        self.registered_intents = []
 
     def train(self, message=None):
         if message is None:
@@ -87,9 +90,18 @@ class PadatiousService(FallbackSkill):
             self.train_time = -1.0
             self.train()
 
-    def handle_detach_intent(self, message):
-        intent_name = message.data.get('intent_name')
+    def __detach_intent(self, intent_name):
+        self.registered_intents.remove(intent_name)
         self.container.remove_intent(intent_name)
+
+    def handle_detach_intent(self, message):
+        self.__detach_intent(message.data.get('intent_name'))
+
+    def handle_detach_skill(self, message):
+        skill_id = message.data['skill_id']
+        remove_list = [i for i in self.registered_intents if skill_id in i]
+        for i in remove_list:
+            self.__detach_intent(i)
 
     def _register_object(self, message, object_name, register_func):
         file_name = message.data['file_name']
@@ -106,6 +118,7 @@ class PadatiousService(FallbackSkill):
         self.wait_and_train()
 
     def register_intent(self, message):
+        self.registered_intents.append(message.data['name'])
         self._register_object(message, 'intent', self.container.load_intent)
 
     def register_entity(self, message):
