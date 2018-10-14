@@ -22,26 +22,55 @@ from mycroft.dialog import MustacheDialogRenderer
 
 
 class DialogTest(unittest.TestCase):
-
     def setUp(self):
         self.stache = MustacheDialogRenderer()
-        self.template_path = pathlib.Path('./mustache_templates')
+        self.topdir = pathlib.Path(__file__).parent
 
-    def test_fill_dialog(self):
+    def test_general_dialog(self):
         """ Test the loading and filling of valid simple mustache dialogs """
-        for file in self.template_path.iterdir():
+        template_path = self.topdir.joinpath('./mustache_templates')
+        for file in template_path.iterdir():
             if file.suffix == '.dialog':
-                self.stache.load_template_file("template", file.absolute())
-                context = json.load(file.with_suffix('.context.json').open('r', encoding='utf-8'))
+                self.stache.load_template_file(file.name, str(file.absolute()))
+                context = json.load(
+                    file.with_suffix('.context.json').open(
+                        'r', encoding='utf-8'))
                 self.assertEqual(
-                    self.stache.render("template", context),
-                    file.with_suffix('.result').open('r', encoding='utf-8').read()
-                )
+                    self.stache.render(file.name, context),
+                    file.with_suffix('.result').open('r',
+                                                     encoding='utf-8').read())
 
     def test_unknown_dialog(self):
         """ Test for returned file name literals in case of unkown dialog """
-        self.assertEqual(self.stache.render("unknown.template"),
-                         "unkown_template")
+        self.assertEqual(
+            self.stache.render("unknown.template"), "unknown template")
+
+    def test_multiple_dialog(self):
+        """
+        Test the loading and filling of valid mustache dialogs
+        where a dialog file contains multiple text versions
+        """
+        template_path = self.topdir.joinpath('./mustache_templates_multiple')
+        for file in template_path.iterdir():
+            if file.suffix == '.dialog':
+                self.stache.load_template_file(file.name, str(file.absolute()))
+                context = json.load(
+                    file.with_suffix('.context.json').open(
+                        'r', encoding='utf-8'))
+                results = [
+                    line.strip() for line in file.with_suffix('.result').open(
+                        'r', encoding='utf-8')
+                ]
+                # Try all lines
+                for index, line in enumerate(results):
+                    self.assertEqual(
+                        self.stache.render(
+                            file.name, index=index, context=context),
+                        line.strip())
+                # Test random index function
+                # (bad test because non-deterministic?)
+                self.assertIn(
+                    self.stache.render(file.name, context=context), results)
 
 
 if __name__ == "__main__":
