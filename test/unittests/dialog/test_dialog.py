@@ -30,13 +30,18 @@ class DialogTest(unittest.TestCase):
     def test_fill_dialog(self):
         """ Test the loading and filling of valid simple mustache dialogs """
         for file in self.template_path.iterdir():
-            if file.suffix == 'dialog':
+            if file.suffix == '.dialog':
                 self.stache.load_template_file("template", file.absolute())
                 context = json.load(file.with_suffix('.context.json').open('r', encoding='utf-8'))
                 self.assertEqual(
                     self.stache.render("template", context),
-                    file.with_suffix('result').open('r', encoding='utf-8').read()
+                    file.with_suffix('.result').open('r', encoding='utf-8').read()
                 )
+
+    def test_unknown_dialog(self):
+        """ Test for returned file name literals in case of unkown dialog """
+        self.assertEqual(self.stache.render("unknown.template"),
+                         "unkown_template")
 
 
 if __name__ == "__main__":
