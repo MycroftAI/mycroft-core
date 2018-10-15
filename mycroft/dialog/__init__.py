@@ -48,17 +48,19 @@ class MustacheDialogRenderer(object):
         with open(filename, 'r') as f:
             for line in f:
                 template_text = line.strip()
-                if template_name not in self.templates:
-                    self.templates[template_name] = []
+                # Skip all lines starting with '#'
+                if not template_text.startswith('#'):
+                    if template_name not in self.templates:
+                        self.templates[template_name] = []
 
-                # convert to standard python format string syntax. From
-                # double (or more) '{' followed by any number of whitespace
-                # followed by actual key followed by any number of whitespace
-                # followed by double (or more) '}'
-                template_text = re.sub(r'\{\{+\s*(.*?)\s*\}\}+', r'{\1}',
-                                       template_text)
+                    # convert to standard python format string syntax. From
+                    # double (or more) '{' followed by any number of
+                    # whitespace followed by actual key followed by any number
+                    # of whitespace followed by double (or more) '}'
+                    template_text = re.sub(r'\{\{+\s*(.*?)\s*\}\}+', r'{\1}',
+                                           template_text)
 
-                self.templates[template_name].append(template_text)
+                    self.templates[template_name].append(template_text)
 
     def render(self, template_name, context=None, index=None):
         """
