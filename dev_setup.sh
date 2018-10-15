@@ -96,6 +96,11 @@ fi
     #   echo '{"use_branch":"dev", "auto_update": false}' > .dev_opts.json
 # fi
 
+
+function os_is() {
+    [[ $(grep "^ID=" /etc/os-release | awk -F'=' '/^ID/ {print $2}' | sed 's/\"//g') == $1 ]]
+}
+
 function found_exe() {
     hash "$1" 2>/dev/null
 }
@@ -110,9 +115,11 @@ function install_deps() {
     fi
 
     if found_exe zypper ; then
+        # OpenSUSE
         $SUDO zypper install -y git python3 python3-devel libtool libffi-devel libopenssl-devel autoconf automake bison swig portaudio-devel mpg123 flac curl libicu-devel pkg-config libjpeg-devel libfann-devel python3-curses pulseaudio
         $SUDO zypper install -y -t pattern devel_C_C++
-    elif found_exe yum ; then
+    elif found_exe yum && os_is centos ; then
+        # CentOS
         $SUDO yum install epel-release
         $SUDO yum install -y cmake gcc-c++ git python34 python34-devel libtool libffi-devel openssl-devel autoconf automake bison swig portaudio-devel mpg123 flac curl libicu-devel python34-pkgconfig libjpeg-devel fann-devel python34-libs pulseaudio
         git clone https://github.com/libfann/fann.git
@@ -123,8 +130,10 @@ function install_deps() {
         cd "${TOP}"
         rm -rf fann
     elif found_exe apt-get ; then
+        # Debian / Ubuntu
         $SUDO apt-get install -y git python3 python3-dev python-setuptools python-gobject-2-dev libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config automake libjpeg-dev libfann-dev build-essential jq
     elif found_exe pacman; then
+        # Arch Linux
         $SUDO pacman -S --needed --noconfirm git python python-pip python-setuptools python-virtualenv python-gobject python-virtualenvwrapper libffi swig portaudio mpg123 screen flac curl icu libjpeg-turbo base-devel jq pulseaudio pulseaudio-alsa
         pacman -Qs "^fann$" &> /dev/null || (
             git clone  https://aur.archlinux.org/fann.git
@@ -134,6 +143,7 @@ function install_deps() {
             rm -rf fann
         )
     elif found_exe dnf ; then
+        # Fedora
         $SUDO dnf install -y git python3 python3-devel python3-pip python3-setuptools python3-virtualenv pygobject3-devel libtool libffi-devel openssl-devel autoconf bison swig glib2-devel portaudio-devel mpg123 mpg123-plugins-pulseaudio screen curl pkgconfig libicu-devel automake libjpeg-turbo-devel fann-devel gcc-c++ redhat-rpm-config jq
     else
         if found_exe tput ; then
