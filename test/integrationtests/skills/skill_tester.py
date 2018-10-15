@@ -45,6 +45,10 @@ from mycroft.skills.core import create_skill_descriptor, load_skill, \
 from mycroft.skills.settings import SkillSettings
 from mycroft.configuration import Configuration
 
+from logging import StreamHandler
+from io import StringIO
+from contextlib import contextmanager
+
 MainModule = '__init__'
 
 DEFAULT_EVALUAITON_TIMEOUT = 30
@@ -94,6 +98,20 @@ else:
     color = no_clr
 
 
+@contextmanager
+def temporary_handler(log, handler):
+    """Context manager to replace the default logger with a temporary logger.
+
+    Args:
+        log (LOG): mycroft LOG object
+        handler (logging.Handler): Handler object to use
+    """
+    old_handler = log.handler
+    log.handler = handler
+    yield
+    log.handler = old_handler
+
+
 def get_skills(skills_folder):
     """Find skills in the skill folder or sub folders.
 
@@ -135,16 +153,23 @@ def load_skills(emitter, skills_root):
             skills_root: Directory of the skills __init__.py
 
         Returns:
-            list: a list of loaded skills
+            tuple: (list of loaded skills, dict with logs for each skill)
 
     """
     skill_list = []
+    log = {}
     for skill in get_skills(skills_root):
         path = skill["path"]
         skill_id = 'test-' + basename(path)
-        skill_list.append(load_skill(skill, emitter, skill_id))
 
-    return skill_list
+        # Catch the logs during skill loading
+        from mycroft.skills.core import LOG as skills_log
+        buf = StringIO()
+        with temporary_handler(skills_log, StreamHandler(buf)):
+            skill_list.append(load_skill(skill, emitter, skill_id))
+        log[path] = buf.getvalue()
+
+    return skill_list, log
 
 
 def unload_skills(skills):
@@ -211,6 +236,8 @@ class MockSkillsLoader(object):
     """
 
     def __init__(self, skills_root):
+        self.load_log = None
+
         self.skills_root = skills_root
         self.emitter = InterceptEmitter()
         from mycroft.skills.intent_service import IntentService
@@ -228,8 +255,8 @@ class MockSkillsLoader(object):
         self.emitter.on('skill.converse.request', make_response)
 
     def load_skills(self):
-        self.skills = load_skills(self.emitter, self.skills_root)
-        self.skills = [s for s in self.skills if s]
+        skills, self.load_log = load_skills(self.emitter, self.skills_root)
+        self.skills = [s for s in skills if s]
         self.ps.train(Message('', data=dict(single_thread=True)))
         return self.emitter.emitter  # kick out the underlying emitter
 
@@ -262,11 +289,16 @@ class SkillTest(object):
             Args:
                 loader:  A list of loaded skills
         """
-
         s = [s for s in loader.skills if s and s.root_dir == self.skill]
         if s:
             s = s[0]
         else:
+            # The skill wasn't loaded, print the load log for the skill
+            if self.skill in loader.load_log:
+                print('\n {} Captured Logs from loading {}'.format('=' * 15,
+                                                                   '=' * 15))
+                print(loader.load_log.pop(self.skill))
+
             raise Exception('Skill couldn\'t be loaded')
 
         print("")
