@@ -22,6 +22,11 @@ cd -P "$( dirname "$SOURCE" )"
 DIR="$( pwd )"
 VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${DIR}/.venv"}
 
+prefix=""
+if [[ -s ".prefix" ]]; then
+	prefix=$(cat ".prefix")
+fi
+
 function help() {
     echo "${script}:  Mycroft command/service launcher"
     echo "usage: ${script} [command] [params]"
@@ -122,7 +127,7 @@ function launch-background() {
     fi
 
     # Launch process in background, sending logs to standard location
-    python3 -m ${_module} $_params >> /var/log/mycroft/${1}.log 2>&1 &
+    python3 -m ${_module} $_params >> $prefix/var/log/mycroft/${1}.log 2>&1 &
 }
 
 function launch-all() {

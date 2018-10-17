@@ -14,7 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-mycroft_root_dir="/opt/mycroft"  # Also change in configuration
+SUDO=sudo
+prefix=""
+if [[ -s .prefix ]]; then
+        prefix=$(cat .prefix)
+	SUDO=""
+fi
+
+mycroft_root_dir="$prefix/opt/mycroft"  # Also change in configuration
 skills_dir="${mycroft_root_dir}"/skills
 # exit on any error
 set -Ee
@@ -34,14 +41,14 @@ setup_group=$( id -gn $USER )
 # change ownership of ${mycroft_root_dir} to ${setup_user } recursively
 function change_ownership {
     echo "Changing ownership of" ${mycroft_root_dir} "to user:" ${setup_user} "with group:" ${setup_group}
-    sudo chown -Rvf ${setup_user}:${setup_group} ${mycroft_root_dir}
+    $SUDO chown -Rvf ${setup_user}:${setup_group} ${mycroft_root_dir}
 }
 
 
 if [[ ${IS_TRAVIS} != true ]] ; then
     if [ ! -d ${skills_dir} ] ; then
-        echo "Create /opt/mycroft/skills"
-        sudo mkdir -p ${skills_dir}
+        echo "Create $prefix/opt/mycroft/skills"
+        $SUDO mkdir -p ${skills_dir}
 	change_ownership
     fi
 

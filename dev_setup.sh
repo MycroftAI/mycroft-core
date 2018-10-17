@@ -60,7 +60,10 @@ function show_help() {
 
 opt_forcemimicbuild=false
 opt_allowroot=false
+opt_prefix="" # This is a prefix for /opt /var /etc/ etc.
 
+## TODO: This would be better to do with getopt
+prev="" # This shows the previous option
 for var in "$@" ; do
     if [[ ${var} == "-h" ]] || [[ ${var} == "--help" ]] ; then
         show_help
@@ -74,7 +77,15 @@ for var in "$@" ; do
     if [[ ${var} == "-fm" ]] ; then
         opt_forcemimicbuild=true
     fi
+
+    if [[ ${prev} == "-prefix" ]]; then 
+        prefix=${var}
+    fi
+
+    prev=${var}
 done
+
+echo ${prefix}
 
 if [ $(id -u) -eq 0 ] && [ "${opt_allowroot}" != true ] ; then
     echo "This script should not be run as root or with sudo."
@@ -272,13 +283,17 @@ chmod +x bin/mycroft-skill-testrunner
 chmod +x bin/mycroft-speak
 
 # create and set permissions for logging
-if [[ ! -w /var/log/mycroft/ ]] ; then
+if [[ $prefix != "" ]]; then 
+	SUDO=""
+	echo $prefix > .prefix
+fi
+if [[ ! -w $prefix/var/log/mycroft/ ]] ; then
     # Creating and setting permissions
-    echo "Creating /var/log/mycroft/ directory"
-    if [[ ! -d /var/log/mycroft/ ]] ; then
-        sudo mkdir /var/log/mycroft/
+    echo "Creating $prefix/var/log/mycroft/ directory"
+    if [[ ! -d $prefix/var/log/mycroft/ ]] ; then
+        $SUDO mkdir -p $prefix/var/log/mycroft/
     fi
-    sudo chmod 777 /var/log/mycroft/
+    $SUDO chmod 777 $prefix/var/log/mycroft/
 fi
 
 #Store a fingerprint of setup
