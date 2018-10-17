@@ -18,7 +18,7 @@ import unittest
 import pathlib
 import json
 
-from mycroft.dialog import MustacheDialogRenderer
+from mycroft.dialog import MustacheDialogRenderer, DialogLoader
 
 
 class DialogTest(unittest.TestCase):
@@ -71,6 +71,35 @@ class DialogTest(unittest.TestCase):
                 # (bad test because non-deterministic?)
                 self.assertIn(
                     self.stache.render(file.name, context=context), results)
+
+    def test_comment_dialog(self):
+        """
+        Test the loading and filling of valid mustache dialogs
+        where a dialog file contains multiple text versions
+        """
+        template_path = self.topdir.joinpath('./mustache_templates_comments')
+        for f in template_path.iterdir():
+            if f.suffix == '.dialog':
+                self.stache.load_template_file(f.name, str(f.absolute()))
+                results = [line.strip()
+                           for line in f.with_suffix('.result').open('r')]
+                # Try all lines
+                for index, line in enumerate(results):
+                    self.assertEqual(self.stache.render(f.name, index=index),
+                                     line.strip())
+
+    def test_dialog_loader(self):
+        template_path = self.topdir.joinpath('./multiple_dialogs')
+        loader = DialogLoader()
+        renderer = loader.load(template_path)
+        self.assertEqual(renderer.render('one'), 'ONE')
+        self.assertEqual(renderer.render('two'), 'TWO')
+
+    def test_dialog_loader_missing(self):
+        template_path = self.topdir.joinpath('./missing_dialogs')
+        loader = DialogLoader()
+        renderer = loader.load(template_path)
+        self.assertEqual(renderer.render('test'), 'test')
 
 
 if __name__ == "__main__":
