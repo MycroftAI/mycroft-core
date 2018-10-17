@@ -18,7 +18,8 @@ import unittest
 import pathlib
 import json
 
-from mycroft.dialog import MustacheDialogRenderer, DialogLoader
+from mycroft.dialog import MustacheDialogRenderer, DialogLoader, get
+from mycroft.util import resolve_resource_file
 
 
 class DialogTest(unittest.TestCase):
@@ -100,6 +101,24 @@ class DialogTest(unittest.TestCase):
         loader = DialogLoader()
         renderer = loader.load(template_path)
         self.assertEqual(renderer.render('test'), 'test')
+
+    def test_get(self):
+        phrase = 'i didn\'t catch that'
+        res_file = pathlib.Path('text/en-us/').joinpath(phrase + '.dialog')
+        print(res_file)
+        resource = resolve_resource_file(str(res_file))
+        with open(resource) as f:
+            results = [line.strip() for line in f]
+        string = get(phrase)
+        self.assertIn(string, results)
+
+        # Check that the filename is returned if phrase is missing for lang
+        string = get(phrase, lang='ne-ne')
+        self.assertEqual(string, phrase)
+
+        # Check that name is retured if phrase is missing
+        string = get('testing aardwark')
+        self.assertEqual(string, 'testing aardwark')
 
 
 if __name__ == "__main__":
