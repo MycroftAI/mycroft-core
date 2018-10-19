@@ -105,6 +105,17 @@ function found_exe() {
     hash "$1" 2>/dev/null
 }
 
+function redhat_common_install() {
+    $SUDO yum install -y cmake gcc-c++ git python34 python34-devel libtool libffi-devel openssl-devel autoconf automake bison swig portaudio-devel mpg123 flac curl libicu-devel python34-pkgconfig libjpeg-devel fann-devel python34-libs pulseaudio
+    git clone https://github.com/libfann/fann.git
+    cd fann
+    git checkout b211dc3db3a6a2540a34fbe8995bf2df63fc9939
+    cmake .
+    $SUDO make install
+    cd "${TOP}"
+    rm -rf fann
+
+}
 function install_deps() {
     echo "Installing packages..."
     if found_exe sudo ; then
@@ -121,14 +132,14 @@ function install_deps() {
     elif found_exe yum && os_is centos ; then
         # CentOS
         $SUDO yum install epel-release
-        $SUDO yum install -y cmake gcc-c++ git python34 python34-devel libtool libffi-devel openssl-devel autoconf automake bison swig portaudio-devel mpg123 flac curl libicu-devel python34-pkgconfig libjpeg-devel fann-devel python34-libs pulseaudio
-        git clone https://github.com/libfann/fann.git
-        cd fann
-        git checkout b211dc3db3a6a2540a34fbe8995bf2df63fc9939
-        cmake .
-        $SUDO make install
-        cd "${TOP}"
-        rm -rf fann
+        redhat_common_install
+    elif found_exe yum && os_is rhel ; then
+        # Redhat Enterprise Linux
+        $SUDO yum install -y wget
+        wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+        $SUDO yum install -y epel-release-latest-7.noarch.rpm
+        rm epel-release-latest-7.noarch.rpm
+        redhat_common_install
     elif found_exe apt-get ; then
         # Debian / Ubuntu
         $SUDO apt-get install -y git python3 python3-dev python-setuptools python-gobject-2-dev libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config automake libjpeg-dev libfann-dev build-essential jq
