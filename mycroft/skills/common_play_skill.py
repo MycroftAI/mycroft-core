@@ -122,7 +122,8 @@ class CommonPlaySkill(MycroftSkill, ABC):
         """
         # Inject the user's utterance in case the audio backend wants to
         # interpret it.  E.g. "play some rock at full volume on the stereo"
-        kwargs['utterance'] = self.play_service_string
+        if 'utterance' not in kwargs:
+            kwargs['utterance'] = self.play_service_string
         self.audioservice.play(*args, **kwargs)
 
     def stop(self):
