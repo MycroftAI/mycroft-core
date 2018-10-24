@@ -352,6 +352,18 @@ class DeviceApi(Api):
             "path": "/" + self.identity.uuid + "/token/" + str(dev_cred)
         })
 
+    def upload_skills_data(self, data):
+        """ Upload skills.json file.
+
+        Arguments:
+             data: dictionary with skills data from msm
+        """
+        self.request({
+            "method": "PUT",
+            "path": "/" + self.identity.uuid + "/skillJson",
+            "json": data
+            })
+
 
 class STTApi(Api):
     """ Web API wrapper for performing Speech to Text (STT) """
