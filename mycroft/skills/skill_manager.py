@@ -28,6 +28,7 @@ from mycroft import dialog
 from mycroft.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
+from mycroft.api import is_paired, DeviceApi
 from mycroft.util import connected
 from mycroft.util.log import LOG
 
@@ -141,6 +142,46 @@ class SkillManager(Thread):
         with open(skills_data_file, 'w') as f:
             json.dump(data, f)
 
+        if (is_paired and
+                Configuration.get()['skills'].get('upload_skill_manifest')):
+            upload_data = SkillManager.convert_skills_data(data)
+            try:
+                DeviceApi().upload_skills_data(upload_data)
+            except Exception as e:
+                LOG.error('An error occured ({})'.format(e))
+
+    @staticmethod
+    def convert_skills_data(data: dict):
+        """ Convert old style skill manifest to new style skill manifest. """
+        msm = SkillManager.create_msm()
+        defaults = [s.name for s in msm.list_defaults()]
+        installed_skills = [s.name for s in msm.list() if s.is_local]
+        ret = {'version': 1, 'blacklist': [], 'skills': []}
+        for key in data:
+            if (not isinstance(data[key], dict) or
+                    key not in installed_skills):
+                continue
+            e = {}
+            e['name'] = key
+            e['beta'] = data[key].get('beta', False)
+            e['installed'] = data[key].get('installed', 0)
+            if isinstance(e['installed'], bool):
+                e['installed'] = 0
+            e['installation'] = data[key].get('installation', 'installed')
+            e['status'] = data[key].get('status', 'active')
+            e['failure-message'] = data[key].get('failure-message', '')
+            e['updated'] = data[key].get('updated', 0)
+            if 'origin' in data[key]:
+                e['origin'] = data[key]['origin']
+            else:
+                if key in defaults:
+                    e['origin'] = 'default'
+                else:
+                    e['origin'] = 'voice'
+
+            ret['skills'].append(e)
+        return ret
+
     def schedule_now(self, message=None):
         self.next_download = time.time() - 1
 
@@ -191,16 +232,21 @@ class SkillManager(Thread):
 
         skills_data = self.load_skills_data()
 
+        new_installs = []
+        updated_skills = []
+
         def install_or_update(skill):
             """Install missing defaults and update existing skills"""
             if skills_data.get(skill.name, {}).get('beta'):
                 skill.sha = 'HEAD'
             if skill.is_local:
                 skill.update()
+                updated_skills.append(skill.name)
                 if skill.name not in installed_skills:
                     skill.update_deps()
             elif skill.name in default_names:
                 try:
+                    new_installs.append(skill.name)
                     skill.install()
                 except Exception:
                     if skill.name in default_names:
@@ -218,7 +264,11 @@ class SkillManager(Thread):
             LOG.error('Failed to update skills: {}'.format(repr(e)))
 
         for skill_name in installed_skills:
-            skills_data.setdefault(skill_name, {})['installed'] = True
+            if skill_name not in skills_data or skill_name in new_installs:
+                t = time.time() if skill_name in new_installs else 1
+                skills_data.setdefault(skill_name, {})['installed'] = t
+                skills_data[skill_name]['updated'] = 0
+
         self.write_skills_data(skills_data)
         self.save_installed_skills(installed_skills)
 
