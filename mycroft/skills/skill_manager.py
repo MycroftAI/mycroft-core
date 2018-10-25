@@ -238,7 +238,7 @@ class SkillManager(Thread):
         def install_or_update(skill):
             """Install missing defaults and update existing skills"""
             if skills_data.get(skill.name, {}).get('beta'):
-                skill.sha = 'HEAD'
+                skill.sha = None  # Will update to latest version
             if skill.is_local:
                 skill.update()
                 updated_skills.append(skill.name)
