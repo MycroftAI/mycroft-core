@@ -244,6 +244,7 @@ class SkillManager(Thread):
                 updated_skills.append(skill.name)
                 if skill.name not in installed_skills:
                     skill.update_deps()
+                    installed_skills.add(skill.name)
             elif skill.name in default_names:
                 try:
                     new_installs.append(skill.name)
@@ -256,14 +257,14 @@ class SkillManager(Thread):
                         nonlocal default_skill_errored
                         default_skill_errored = True
                     raise
-            installed_skills.add(skill.name)
+                installed_skills.add(skill.name)
 
         try:
             self.msm.apply(install_or_update, self.msm.list())
         except MsmException as e:
             LOG.error('Failed to update skills: {}'.format(repr(e)))
 
-        for skill_name in installed_skills:
+        for skill_name in new_installs + updated_skills:
             if skill_name not in skills_data or skill_name in new_installs:
                 t = time.time() if skill_name in new_installs else 1
                 skills_data.setdefault(skill_name, {})['installed'] = t
