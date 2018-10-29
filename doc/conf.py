@@ -22,6 +22,16 @@ import sys
 import re
 import os
 
+import sphinx_rtd_theme
+from sphinx.ext.autodoc import (
+    ClassLevelDocumenter, InstanceAttributeDocumenter)
+
+
+def iad_add_directive_header(self, sig):
+    ClassLevelDocumenter.add_directive_header(self, sig)
+
+
+InstanceAttributeDocumenter.add_directive_header = iad_add_directive_header
 
 sys.path.insert(0, os.path.abspath('../'))
 
@@ -73,7 +83,6 @@ pygments_style = 'sphinx'
 
 todo_include_todos = False
 
-import sphinx_rtd_theme
 html_theme = "sphinx_rtd_theme"
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 html_theme_options = {
