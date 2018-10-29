@@ -1,1 +1,2 @@
-six
+sphinx>= 1.8.1
+sphinx_rtd_theme>=0.4.2

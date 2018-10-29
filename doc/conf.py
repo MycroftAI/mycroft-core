@@ -43,7 +43,7 @@ with open(os.path.join(os.path.dirname(os.path.dirname(
                                flags=re.MULTILINE))
 
 # Dependencies with different module names
-autodoc_mock_imports += [
+autodoc_mock_imports = list(autodoc_mock_imports) + [
     'adapt',
     'alsaaudio',
     'dateutil',
