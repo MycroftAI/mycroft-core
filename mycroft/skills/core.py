@@ -225,14 +225,18 @@ class MycroftSkill(object):
         self._bus = None
         self._enclosure = None
         self.bind(bus)
+        #: Mycroft global configuration. (dict)
         self.config_core = Configuration.get()
         self.config = self.config_core.get(self.name) or {}
         self.dialog_renderer = None
-        self.root_dir = None
+        self.root_dir = None  #: skill root directory
+
+        #: Filesystem access to skill specific folder.
+        #: See mycroft.filesystem for details.
         self.file_system = FileSystemAccess(join('skills', self.name))
         self.registered_intents = []
-        self.log = LOG.create_logger(self.name)
-        self.reload_skill = True  # allow reloading
+        self.log = LOG.create_logger(self.name)  #: Skill logger instance
+        self.reload_skill = True  #: allow reloading (default True)
         self.events = []
         self.scheduled_repeats = []
         self.skill_id = ''  # will be set from the path, so guaranteed unique
