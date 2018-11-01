@@ -21,16 +21,16 @@ from itertools import chain
 
 import os
 from os.path import exists, join, basename, dirname, expanduser, isfile
-from threading import Thread, Event
+from threading import Thread, Event, Lock
 
 from msm import MycroftSkillsManager, SkillRepo, MsmException
 from mycroft import dialog
 from mycroft.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
-from mycroft.api import is_paired, DeviceApi
 from mycroft.util import connected
 from mycroft.util.log import LOG
+from mycroft.api import DeviceApi, is_paired
 
 from .core import load_skill, create_skill_descriptor, MainModule
 
@@ -67,6 +67,9 @@ def _get_last_modified_date(path):
     return max(os.path.getmtime(f) for f in all_files)
 
 
+MSM_LOCK = None
+
+
 class SkillManager(Thread):
     """ Load, update and manage instances of Skill on this system.
 
@@ -85,6 +88,7 @@ class SkillManager(Thread):
 
         # Schedule install/update of default skill
         self.msm = self.create_msm()
+        self.thread_lock = self.get_lock()
         self.num_install_retries = 0
 
         self.update_interval = Configuration.get()['skills']['update_interval']
@@ -111,6 +115,13 @@ class SkillManager(Thread):
         bus.on('skillmanager.activate', self.activate_skill)
 
     @staticmethod
+    def get_lock():
+        global MSM_LOCK
+        if MSM_LOCK is None:
+            MSM_LOCK = Lock()
+        return MSM_LOCK
+
+    @staticmethod
     def create_msm():
         config = Configuration.get()
         msm_config = config['skills']['msm']
@@ -125,62 +136,6 @@ class SkillManager(Thread):
                 repo_cache, repo_config['url'], repo_config['branch']
             ), versioned=msm_config['versioned']
         )
-
-    @staticmethod
-    def load_skills_data() -> dict:
-        """Contains info on how skills should be updated"""
-        skills_data_file = expanduser('~/.mycroft/skills.json')
-        if isfile(skills_data_file):
-            with open(skills_data_file) as f:
-                return json.load(f)
-        else:
-            return {}
-
-    @staticmethod
-    def write_skills_data(data: dict):
-        skills_data_file = expanduser('~/.mycroft/skills.json')
-        with open(skills_data_file, 'w') as f:
-            json.dump(data, f)
-
-        if (is_paired and
-                Configuration.get()['skills'].get('upload_skill_manifest')):
-            upload_data = SkillManager.convert_skills_data(data)
-            try:
-                DeviceApi().upload_skills_data(upload_data)
-            except Exception as e:
-                LOG.error('An error occured ({})'.format(e))
-
-    @staticmethod
-    def convert_skills_data(data: dict):
-        """ Convert old style skill manifest to new style skill manifest. """
-        msm = SkillManager.create_msm()
-        defaults = [s.name for s in msm.list_defaults()]
-        installed_skills = [s.name for s in msm.list() if s.is_local]
-        ret = {'version': 1, 'blacklist': [], 'skills': []}
-        for key in data:
-            if (not isinstance(data[key], dict) or
-                    key not in installed_skills):
-                continue
-            e = {}
-            e['name'] = key
-            e['beta'] = data[key].get('beta', False)
-            e['installed'] = data[key].get('installed', 0)
-            if isinstance(e['installed'], bool):
-                e['installed'] = 0
-            e['installation'] = data[key].get('installation', 'installed')
-            e['status'] = data[key].get('status', 'active')
-            e['failure-message'] = data[key].get('failure-message', '')
-            e['updated'] = data[key].get('updated', 0)
-            if 'origin' in data[key]:
-                e['origin'] = data[key]['origin']
-            else:
-                if key in defaults:
-                    e['origin'] = 'default'
-                else:
-                    e['origin'] = 'voice'
-
-            ret['skills'].append(e)
-        return ret
 
     def schedule_now(self, message=None):
         self.next_download = time.time() - 1
@@ -230,25 +185,25 @@ class SkillManager(Thread):
         default_names = set(chain(default_groups['default'], platform_groups))
         default_skill_errored = False
 
-        skills_data = self.load_skills_data()
-
-        new_installs = []
-        updated_skills = []
+        def get_skill_data(skill_name):
+            """ Get skill data structure from name. """
+            for e in self.msm.skills_data.get('skills', []):
+                if e.get('name') == skill_name:
+                    return e
+            # if skill isn't in the list return empty structure
+            return {}
 
         def install_or_update(skill):
             """Install missing defaults and update existing skills"""
-            if skills_data.get(skill.name, {}).get('beta'):
-                skill.sha = None  # Will update to latest version
+            if get_skill_data(skill.name).get('beta'):
+                skill.sha = None  # Will update to latest head
             if skill.is_local:
                 skill.update()
-                updated_skills.append(skill.name)
                 if skill.name not in installed_skills:
                     skill.update_deps()
-                    installed_skills.add(skill.name)
             elif skill.name in default_names:
                 try:
-                    new_installs.append(skill.name)
-                    skill.install()
+                    self.msm.install(skill, origin='default')
                 except Exception:
                     if skill.name in default_names:
                         LOG.warning(
@@ -257,20 +212,23 @@ class SkillManager(Thread):
                         nonlocal default_skill_errored
                         default_skill_errored = True
                     raise
-                installed_skills.add(skill.name)
+            installed_skills.add(skill.name)
 
         try:
-            self.msm.apply(install_or_update, self.msm.list())
+            with self.msm.lock, self.thread_lock:
+                self.msm.skills_data = self.msm.load_skills_data()
+                self.msm.apply(install_or_update, self.msm.list())
+                self.msm.write_skills_data(self.msm.skills_data)
+            if (Configuration.get()['skills'].get('upload_skill_manifest') and
+                    is_paired()):
+                try:
+                    DeviceApi().upload_skills_data(self.msm.skills_data)
+                except Exception:
+                    LOG.exception('Could not upload skill manifest')
+
         except MsmException as e:
             LOG.error('Failed to update skills: {}'.format(repr(e)))
 
-        for skill_name in new_installs + updated_skills:
-            if skill_name not in skills_data or skill_name in new_installs:
-                t = time.time() if skill_name in new_installs else 1
-                skills_data.setdefault(skill_name, {})['installed'] = t
-                skills_data[skill_name]['updated'] = 0
-
-        self.write_skills_data(skills_data)
         self.save_installed_skills(installed_skills)
 
         if speak:
