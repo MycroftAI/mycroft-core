@@ -39,6 +39,7 @@ import re
 import ast
 from os.path import join, isdir, basename
 from pyee import EventEmitter
+from numbers import Number
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import create_skill_descriptor, load_skill, \
     MycroftSkill, FallbackSkill
@@ -564,6 +565,18 @@ class EvaluationRule(object):
 
         if rule[0] == 'equal':
             if self._get_field_value(rule[1], msg) != rule[2]:
+                return False
+
+        if rule[0] == 'lt':
+            if not isinstance(self._get_field_value(rule[1], msg), Number):
+                return False
+            if self._get_field_value(rule[1], msg) >= rule[2]:
+                return False
+
+        if rule[0] == 'gt':
+            if not isinstance(self._get_field_value(rule[1], msg), Number):
+                return False
+            if self._get_field_value(rule[1], msg) <= rule[2]:
                 return False
 
         if rule[0] == 'notEqual':
