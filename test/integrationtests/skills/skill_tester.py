@@ -373,11 +373,26 @@ class SkillTest(object):
         # provided text to the skill engine for intent matching and it then
         # invokes the skill.
         utt = test_case.get('utterance', None)
-        print("UTTERANCE:", color.USER_UTT + utt + color.RESET)
-        self.emitter.emit(
-            'recognizer_loop:utterance',
-            Message('recognizer_loop:utterance',
-                    {'utterances': [utt]}))
+        play_utt = test_case.get('play_query', None)
+        play_start = test_case.get('play_start', None)
+        if utt:
+            print("UTTERANCE:", color.USER_UTT + utt + color.RESET)
+            self.emitter.emit(
+                'recognizer_loop:utterance',
+                Message('recognizer_loop:utterance',
+                        {'utterances': [utt]}))
+        elif play_utt:
+            print('PLAY QUERY', color.USER_UTT + play_utt + color.RESET)
+            self.emitter.emit('play:query', Message('play:query:',
+                                                    {'phrase': play_utt}))
+        elif play_start:
+            print('PLAY START')
+            callback_data = play_start
+            callback_data['skill_id'] = s.skill_id
+            self.emitter.emit('play:start',
+                              Message('play:start', callback_data))
+        else:
+            raise SkillTestError('No input utterance provided')
 
         # Wait up to X seconds for the test_case to complete
         timeout = time.time() + int(test_case.get('evaluation_timeout')) \
@@ -455,6 +470,17 @@ class EvaluationRule(object):
         if test_case.get('intent', None):
             for item in test_case['intent'].items():
                 _x.append(['equal', str(item[0]), str(item[1])])
+
+        if 'play_query_match' in test_case:
+            match = test_case['play_query_match']
+            print(test_case)
+            phrase = match.get('phrase', test_case.get('play_query'))
+            _d = ['and']
+            _d.append(['equal', '__type__', 'query'])
+            _d.append(['equal', 'skill_id', skill.skill_id])
+            _d.append(['equal', 'phrase', phrase])
+            _d.append(['gt', 'conf', match.get('confidence_threshold', 0.5)])
+            self.rule.append(_d)
 
         # Check for expected data structure
         if test_case.get('expected_data'):
