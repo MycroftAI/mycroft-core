@@ -1,10 +1,10 @@
 # API documentation
 
-The scripts in this folder builds the api documentation for mycroft core.
+The scripts in this folder build the API documentation for `mycroft-core`.
 
 ##
 
-Activate the mycroft venv
+Activate the mycroft `venv`
 
 ```
 source ../venv-activate.sh
