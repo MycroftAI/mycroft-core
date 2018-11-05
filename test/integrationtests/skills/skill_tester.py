@@ -58,6 +58,10 @@ DEFAULT_EVALUAITON_TIMEOUT = 30
 Configuration.get()['test_env'] = True
 
 
+class SkillTestError(Exception):
+    pass
+
+
 # Easy way to show colors on terminals
 class clr:
     PINK = '\033[95m'
@@ -300,7 +304,7 @@ class SkillTest(object):
                                                                    '=' * 15))
                 print(loader.load_log.pop(self.skill))
 
-            raise Exception('Skill couldn\'t be loaded')
+            raise SkillTestError('Skill couldn\'t be loaded')
 
         print("")
         print(color.HEADER + "="*20 + " RUNNING TEST " + "="*20 + color.RESET)
