@@ -111,7 +111,7 @@ class LocalConf(dict):
                 LOG.error("Error loading configuration '{}'".format(path))
                 LOG.error(repr(e))
         else:
-            LOG.debug("Configuration '{}' not found".format(path))
+            LOG.debug("Configuration '{}' not defined, skipping".format(path))
 
     def store(self, path=None):
         """

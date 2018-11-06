@@ -208,6 +208,43 @@ def intent_file_handler(intent_file):
 
 
 #######################################################################
+# SkillGUI - Interface to the Graphical User Interface
+#######################################################################
+class SkillGUI(object):
+
+    def __init__(self):
+        self.__dict = {}
+        self.page = None    # the GUI page (e.g. QML template) to show
+
+    def __setitem__(self, key, value):
+        self.__dict[key] = value
+        # TODO: emit notification
+
+    def __getitem__(self, key):
+        try:
+            return self.__dict[key]
+        except Exception:
+            return None
+
+    def clear(self):
+        self.__dict = {}
+        self.page = None
+
+    def show_page(self, name):
+        self.page = name
+
+        # Communicate with the enclosure process
+
+        # First sync any data...
+        data = self.__dict.copy()
+        data.update('__from': self.skill_id)
+        self.bus.emit(Message("gui.value.set", data))
+        # Then request display of the correct page
+        self.bus.emit(Message("gui.page.show", {"page": self.page,
+                                                '__from': self.skill_id})
+
+
+#######################################################################
 # MycroftSkill base class
 #######################################################################
 class MycroftSkill(object):
@@ -221,6 +258,8 @@ class MycroftSkill(object):
         # Get directory of skill
         self._dir = dirname(abspath(sys.modules[self.__module__].__file__))
         self.settings = SkillSettings(self._dir, self.name)
+
+        self.gui = SkillGUI()
 
         self._bus = None
         self._enclosure = None
@@ -247,6 +286,50 @@ class MycroftSkill(object):
                       "from  __init__() to initialize() to correct this.")
             LOG.error(simple_trace(traceback.format_stack()))
             raise Exception("Accessed MycroftSkill.enclosure in __init__")
+
+    def show_page(self, name):
+        '''Display a GUI page, using any values which have been preset
+
+        Arguments:
+            name (str): name of (QML) page which defines the page
+        '''
+        self.gui.show_page(name)
+
+    def show_text(self, text, title=None):
+        '''Display a GUI page for viewing simple text
+
+        Arguments:
+            text (str): Main text content.  It will auto-paginate
+            title (str): A title to display above the text content.
+        '''
+        self.gui.clear()
+        self.gui["text"] = text
+        self.gui["title"] = title
+        self.gui.show_page("SYSTEM_TEXTFRAME")
+
+    def show_image(self, url, caption=None, title=None):
+        '''Display a GUI page for viewing an image
+
+        Arguments:
+            url (str): Pointer to the image
+            caption (str): A caption to show under the image
+            title (str): A title to display above the image content
+        '''
+        self.gui.clear()
+        self.gui["image"] = url
+        self.gui["title"] = title
+        self.gui["caption"] = caption
+        self.gui.show_page("SYSTEM_IMAGEFRAME")
+
+    def show_html(self, html):
+        '''Display an HTML page in the GUI
+
+        Arguments:
+            html (str): HTML text to display
+        '''
+        self.gui.clear()
+        self.gui["html"] = url
+        self.gui.show_page("SYSTEM_HTMLFRAME")
 
     @property
     def bus(self):
