@@ -237,11 +237,11 @@ class SkillGUI(object):
 
         # First sync any data...
         data = self.__dict.copy()
-        data.update('__from': self.skill_id)
+        data.update({'__from': self.skill_id})
         self.bus.emit(Message("gui.value.set", data))
         # Then request display of the correct page
         self.bus.emit(Message("gui.page.show", {"page": self.page,
-                                                '__from': self.skill_id})
+                                                '__from': self.skill_id}))
 
 
 #######################################################################

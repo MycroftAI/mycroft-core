@@ -5,7 +5,7 @@ gTTS-token==1.1.2
 PyAudio==0.2.11
 pyee==1.0.1
 SpeechRecognition==3.8.1
-tornado==4.2.1
+tornado==4.5.3
 websocket-client==0.32.0
 requests-futures==0.9.5
 pyyaml==3.13

@@ -20,8 +20,10 @@ from mycroft.util import create_daemon
 from mycroft.util.log import LOG
 
 import tornado.web
+import json
 from tornado import autoreload, ioloop
 from tornado.websocket import WebSocketHandler
+from mycroft.messagebus.message import Message
 
 class Enclosure(object):
 
@@ -77,6 +79,7 @@ class Enclosure(object):
             pass
         self.GUIs[gui_id] = GUIConnection(gui_id, self.global_config,
                                           self.callback_disconnect)
+        print("Heard announcement from gui_id: "+str(gui_id))
 
         # Announce connection, the GUI should connect on it soon
         self.bus.emit(Message("mycroft.gui.port",
@@ -207,11 +210,38 @@ class MycroftGUIWebsocket(WebSocketHandler):
         print("WebSocket opened")
         self.application.gui.on_connection_opened(self)
 
-    def on_message(self, message):
-        self.write_message(u"You said: " + message)
+        self.send(
+            {
+                "type": "mycroft.session.set",
+                "namespace": "weather.mycroft",
+                "data": {
+                    "temperature": "28",
+                    "icon": "cloudy"
+                }
+            }
+        )
 
-    def send(self, message):
-        self.write_message(message)
+        self.send(
+            {
+                "type": "mycroft.gui.show",
+                "namespace": "weather.mycroft",
+                "gui_url": "file:///opt/mycroft/skills/mycroft-weather.mycroftai/ui/currentweather.qml"
+            }
+        )
+        # self.send(Message("mycroft.gui.show", data={"namespace": "weather.mycroft", "gui_url": "file:///opt/mycroft/weather.mycroft/ui/currentweather.qml"}))
+
+    def on_message(self, message):
+        print("Received: "+str(message))
+        # self.write_message(u"You said: " + message)
+        # self.write_message(u"Then You said: " + message)
+
+    def send_message(self, message):
+        self.write_message(message.serialize())
+
+    def send(self, data):
+        s = json.dumps(data)
+        self.write_message(s)
+        print("Sent: "+s)
 
     def on_close(self):
         print("WebSocket closed")
