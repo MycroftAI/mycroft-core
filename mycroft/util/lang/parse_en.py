@@ -20,7 +20,8 @@ from dateutil.relativedelta import relativedelta
 
 from mycroft.util.lang.parse_common import is_numeric, look_for_fractions
 from mycroft.util.lang.format_en import NUM_STRING_EN, LONG_SCALE_EN, \
-    SHORT_SCALE_EN
+    SHORT_SCALE_EN, pronounce_number_en
+
 
 SHORT_ORDINAL_STRING_EN = {
     1: 'first',
@@ -1107,15 +1108,21 @@ def normalize_en(text, remove_articles):
                          "you are not", "you are not", "you are", "you have"]
             word = expansion[contraction.index(word)]
 
-        # Convert numbers into digits, e.g. "two" -> "2"
-        textNumbers = ["zero", "one", "two", "three", "four", "five", "six",
-                       "seven", "eight", "nine", "ten", "eleven", "twelve",
-                       "thirteen", "fourteen", "fifteen", "sixteen",
-                       "seventeen", "eighteen", "nineteen", "twenty"]
-
-        if word in textNumbers:
-            word = str(textNumbers.index(word))
-
         normalized += " " + word
+
+    # needs to be here to avoid import error
+    from mycroft.util.parse import extract_numbers
+    # replace extracted numbers
+    numbers = extract_numbers(normalized, lang="en-us")
+    for n in numbers:
+        txt = pronounce_number_en(n)
+        n = str(n)
+        if n.endswith(".0"):
+            n = n[:-2]
+        normalized = normalized.replace(txt, n)
+        # prnounced may be different from txt, ie
+        # pronounce(0.5) != half
+        # extract(half) == 0.5
+        # TODO account for this
 
     return normalized[1:]  # strip the initial space

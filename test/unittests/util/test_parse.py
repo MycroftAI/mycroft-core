@@ -18,7 +18,7 @@ import unittest
 from datetime import datetime
 
 from mycroft.util.parse import extract_datetime
-from mycroft.util.parse import extract_number
+from mycroft.util.parse import extract_number, extract_numbers
 from mycroft.util.parse import fuzzy_match
 from mycroft.util.parse import get_gender
 from mycroft.util.parse import match_one
@@ -483,6 +483,21 @@ class TestNormalize(unittest.TestCase):
                          "that is 15 16 17")
         self.assertEqual(normalize("that's eighteen nineteen twenty"),
                          "that is 18 19 20")
+
+    def test_multiple_numbers(self):
+        self.assertEqual(extract_numbers("this is a one two three  test"),
+                         [1.0, 2.0, 3.0])
+        self.assertEqual(extract_numbers("it's  a four five six  test"),
+                         [4.0, 5.0, 6.0])
+        # TODO case when pronounced/extracted number dont match
+        # self.assertEqual(extract_numbers("this is a seven eight nine and a "
+        #                                 "half test"),
+        #                 [7.0, 8.0, 9.5])
+        self.assertEqual(extract_numbers("this is a ten eleven twelve  test"),
+                         [10.0, 11.0, 12.0])
+        self.assertEqual(extract_numbers("this is a one twenty one "
+                                         " test"),
+                         [1.0, 21.0])
 
     def test_contractions(self):
         self.assertEqual(normalize("ain't"), "is not")

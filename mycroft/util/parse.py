@@ -71,6 +71,48 @@ def match_one(query, choices):
         return best
 
 
+def extract_numbers(text, short_scale=True, ordinals=False, lang="en-us"):
+    """
+        Takes in a string and extracts a list of numbers.
+
+    Args:
+        text (str): the string to extract a number from
+        short_scale (bool): Use "short scale" or "long scale" for large
+            numbers -- over a million.  The default is short scale, which
+            is now common in most English speaking countries.
+            See https://en.wikipedia.org/wiki/Names_of_large_numbers
+        ordinals (bool): consider ordinal numbers, e.g. third=3 instead of 1/3
+        lang (str): the BCP-47 code for the language to use
+    Returns:
+        list: list of extracted numbers as floats
+    """
+    numbers = []
+    normalized = text
+    extract = extract_number(normalized, short_scale, ordinals, lang)
+    to_parse = normalized
+    while extract:
+        numbers.append(extract)
+        prev = to_parse
+        num_txt = pronounce_number_en(extract)
+        extract = str(extract)
+        if extract.endswith(".0"):
+            extract = extract[:-2]
+        normalized = normalized.replace(num_txt, extract)
+        # last biggest number was replaced, recurse to handle cases like
+        # test one two 3
+        to_parse = to_parse.replace(num_txt, extract).replace(extract, "")
+        if to_parse == prev:
+            # avoid infinite loops, occasionally pronounced number may be
+            # different from extracted text,
+            # ie pronounce(0.5) != half and extract(half) == 0.5
+            extract = False
+            # TODO fix this
+        else:
+            extract = extract_number(to_parse, short_scale, ordinals, lang)
+    numbers.reverse()
+    return numbers
+
+
 def extract_number(text, short_scale=True, ordinals=False, lang="en-us"):
     """Takes in a string and extracts a number.
 
