@@ -142,9 +142,15 @@ class TestNormalize(unittest.TestCase):
 
         def testExtract(text, expected_date, expected_leftover):
             res = extractWithFormat(normalize(text))
-            self.assertEqual(res[0], expected_date, "for="+text)
-            self.assertEqual(res[1], expected_leftover, "for="+text)
+            self.assertEqual(res[0], expected_date, "for=" + text)
+            self.assertEqual(res[1], expected_leftover, "for=" + text)
 
+        testExtract("now is the time",
+                    "2017-06-27 13:04:00", "is time")
+        testExtract("Set the ambush in 1 minute",
+                    "2017-06-27 13:05:00", "set ambush")
+        testExtract("Set the ambush for half an hour",
+                    "2017-06-27 13:34:00", "set ambush")
         testExtract("Set the ambush for 5 days from today",
                     "2017-07-02 00:00:00", "set ambush")
         testExtract("What is the day after tomorrow's weather?",

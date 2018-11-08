@@ -3,8 +3,8 @@
 
 # You can set these variables from the command line.
 SPHINXOPTS    =
-SPHINXBUILD   = python2 -msphinx
-SPHINXPROJ    = Padatious
+SPHINXBUILD   = python -msphinx
+SPHINXPROJ    = mycroft-core
 SOURCEDIR     = .
 BUILDDIR      = _build
 

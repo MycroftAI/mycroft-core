@@ -77,7 +77,7 @@ class AudioService(object):
         self.bus.emit(Message('mycroft.audio.service.queue',
                               data={'tracks': tracks}))
 
-    def play(self, tracks=None, utterance='', repeat=None):
+    def play(self, tracks=None, utterance=None, repeat=None):
         """ Start playback.
 
             Args:
@@ -90,6 +90,7 @@ class AudioService(object):
         """
         repeat = repeat or False
         tracks = tracks or []
+        utterance = utterance or ''
         if isinstance(tracks, (str, tuple)):
             tracks = [tracks]
         elif not isinstance(tracks, list):

@@ -47,7 +47,7 @@ function change_ownership {
 
 if [[ ${IS_TRAVIS} != true ]] ; then
     if [ ! -d ${skills_dir} ] ; then
-        echo "Create $prefix/opt/mycroft/skills"
+        echo "Create ${skills_dir}"
         $SUDO mkdir -p ${skills_dir}
 	change_ownership
     fi
