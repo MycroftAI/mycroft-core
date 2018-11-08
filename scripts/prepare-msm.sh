@@ -40,7 +40,7 @@ function change_ownership {
 
 if [[ ${IS_TRAVIS} != true ]] ; then
     if [ ! -d ${skills_dir} ] ; then
-        echo "Create /opt/mycroft/skills"
+        echo "Create ${skills_dir}"
         sudo mkdir -p ${skills_dir}
 	change_ownership
     fi

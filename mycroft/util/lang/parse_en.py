@@ -22,6 +22,7 @@ from mycroft.util.lang.parse_common import is_numeric, look_for_fractions
 from mycroft.util.lang.format_en import NUM_STRING_EN, LONG_SCALE_EN, \
     SHORT_SCALE_EN
 
+
 SHORT_ORDINAL_STRING_EN = {
     1: 'first',
     2: 'second',
@@ -381,7 +382,12 @@ def extract_datetime_en(string, dateNow, default_time):
         start = idx
         used = 0
         # save timequalifier for later
-        if word in timeQualifiersList:
+        if word == "now" and not datestr:
+            resultStr = " ".join(words[idx+1:])
+            resultStr = ' '.join(resultStr.split())
+            extractedDate = dateNow.replace(microsecond=0)
+            return [extractedDate, resultStr]
+        elif word in timeQualifiersList:
             timeQualifier = word
             # parse today, tomorrow, day after tomorrow
         elif word == "today" and not fromFlag:
@@ -684,7 +690,7 @@ def extract_datetime_en(string, dateNow, default_time):
                             military = True
                             if strHH and int(strHH) <= 12 and \
                                     (timeQualifier in timeQualifiersPM):
-                                strHH += str(int(strHH)+12)
+                                strHH += str(int(strHH) + 12)
             else:
                 # try to parse numbers without colons
                 # 5 hours, 10 minutes etc.
@@ -819,7 +825,8 @@ def extract_datetime_en(string, dateNow, default_time):
             HH = HH - 12 if remainder == "am" and HH >= 12 else HH
 
             if (not military and
-                    remainder not in ['am', 'pm', 'hours', 'minutes'] and
+                    remainder not in ['am', 'pm', 'hours', 'minutes',
+                                      "hour", "minute"] and
                     ((not daySpecified) or dayOffset < 1)):
                 # ambiguous time, detect whether they mean this evening or
                 # the next morning based on whether it has already passed
