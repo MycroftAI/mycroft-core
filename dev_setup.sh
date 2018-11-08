@@ -61,7 +61,7 @@ function show_help() {
 
 opt_forcemimicbuild=false
 opt_allowroot=false
-opt_prefix="" # This is a prefix for /opt /var /etc/ etc.
+prefix="" # This is a prefix for /opt /var /etc/ etc.
 
 ## TODO: This would be better to do with getopt
 prev="" # This shows the previous option
