@@ -51,6 +51,7 @@ function show_help() {
     echo "Options:"
     echo "    -r, --allow-root  Allow to be run as root (e.g. sudo)"
     echo "    -fm               Force mimic build"
+    echo "    --prefix          Give a prefix for log files and skills (e.g. /home/user/local)"
     echo "    -h, --help        Show this message"
     echo
     echo "This will prepare your environment for running the mycroft-core"
@@ -86,6 +87,10 @@ for var in "$@" ; do
 done
 
 echo ${prefix}
+pfound=`cat .gitignore | grep "^\.prefix$" | wc -l`
+if [[ $pfound != 0 ]]; then 
+	echo ".prefix" >> .gitignore; 
+fi
 
 if [ $(id -u) -eq 0 ] && [ "${opt_allowroot}" != true ] ; then
     echo "This script should not be run as root or with sudo."
