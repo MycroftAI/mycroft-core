@@ -78,7 +78,7 @@ for var in "$@" ; do
         opt_forcemimicbuild=true
     fi
 
-    if [[ ${prev} == "-prefix" ]]; then 
+    if [[ ${prev} == "--prefix" ]]; then 
         prefix=${var}
     fi
 
@@ -169,7 +169,7 @@ function install_venv() {
     curl https://bootstrap.pypa.io/3.3/get-pip.py | "${VIRTUALENV_ROOT}/bin/python" - 'pip==18.0.0'
 }
 
-install_deps
+#install_deps
 
 # Configure to use the standard commit template for
 # this repo only.
