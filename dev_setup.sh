@@ -87,7 +87,7 @@ for var in "$@" ; do
 done
 
 echo ${prefix}
-pfound=`grep "^\.prefix$" .gitignore | wc -l`
+pfound=$(grep "^\.prefix$" .gitignore | wc -l)
 if [[ $pfound != 0 ]]; then 
 	echo ".prefix" >> .gitignore; 
 fi
