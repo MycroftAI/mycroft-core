@@ -86,31 +86,9 @@ def extract_numbers(text, short_scale=True, ordinals=False, lang="en-us"):
     Returns:
         list: list of extracted numbers as floats
     """
-    numbers = []
-    normalized = text
-    extract = extract_number(normalized, short_scale, ordinals, lang)
-    to_parse = normalized
-    while extract:
-        numbers.append(extract)
-        prev = to_parse
-        num_txt = pronounce_number_en(extract)
-        extract = str(extract)
-        if extract.endswith(".0"):
-            extract = extract[:-2]
-        normalized = normalized.replace(num_txt, extract)
-        # last biggest number was replaced, recurse to handle cases like
-        # test one two 3
-        to_parse = to_parse.replace(num_txt, extract).replace(extract, "")
-        if to_parse == prev:
-            # avoid infinite loops, occasionally pronounced number may be
-            # different from extracted text,
-            # ie pronounce(0.5) != half and extract(half) == 0.5
-            extract = False
-            # TODO fix this
-        else:
-            extract = extract_number(to_parse, short_scale, ordinals, lang)
-    numbers.reverse()
-    return numbers
+    if lang.startswith("en"):
+        return extract_numbers_en(text, short_scale, ordinals)
+    return []
 
 
 def extract_number(text, short_scale=True, ordinals=False, lang="en-us"):
