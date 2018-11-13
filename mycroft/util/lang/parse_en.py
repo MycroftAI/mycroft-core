@@ -219,6 +219,8 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
         prev_word = aWords[idx - 1] if idx > 0 else ""
         next_word = aWords[idx + 1] if idx + 1 < len(aWords) else ""
 
+        if word == "couple":
+            word = "2"
         # is this word already a number ?
         if is_numeric(word):
             # if word.isdigit():            # doesn't work with decimals

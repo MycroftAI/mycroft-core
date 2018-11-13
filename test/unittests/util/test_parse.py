@@ -133,6 +133,10 @@ class TestNormalize(unittest.TestCase):
         self.assertTrue(extract_number("grobo 0") is not False)
         self.assertEqual(extract_number("grobo 0"), 0)
 
+        self.assertEqual(extract_number("a couple of beers"), 2)
+        self.assertEqual(extract_number("a couple hundred beers"), 200)
+        self.assertEqual(extract_number("a couple thousand beers"), 2000)
+
     def test_extractdatetime_en(self):
         def extractWithFormat(text):
             date = datetime(2017, 6, 27, 13, 4)  # Tue June 27, 2017 @ 1:04pm
