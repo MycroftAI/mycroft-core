@@ -1062,7 +1062,6 @@ def extract_numbers_en(text, short_scale=True, ordinals=False):
             is now common in most English speaking countries.
             See https://en.wikipedia.org/wiki/Names_of_large_numbers
         ordinals (bool): consider ordinal numbers, e.g. third=3 instead of 1/3
-        lang (str): the BCP-47 code for the language to use
     Returns:
         list: list of extracted numbers as floats
     """
