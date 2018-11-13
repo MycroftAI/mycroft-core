@@ -23,9 +23,11 @@ from mycroft.util.lang.parse_es import *
 from mycroft.util.lang.parse_it import *
 from mycroft.util.lang.parse_sv import *
 from mycroft.util.lang.parse_de import extractnumber_de
+from mycroft.util.lang.parse_de import extract_numbers_de
 from mycroft.util.lang.parse_de import extract_datetime_de
 from mycroft.util.lang.parse_de import normalize_de
 from mycroft.util.lang.parse_fr import extractnumber_fr
+from mycroft.util.lang.parse_fr import extract_numbers_fr
 from mycroft.util.lang.parse_fr import extract_datetime_fr
 from mycroft.util.lang.parse_fr import normalize_fr
 
@@ -88,6 +90,12 @@ def extract_numbers(text, short_scale=True, ordinals=False, lang="en-us"):
     """
     if lang.startswith("en"):
         return extract_numbers_en(text, short_scale, ordinals)
+    elif lang.startswith("de"):
+        return extract_numbers_de(text, short_scale, ordinals)
+    elif lang.startswith("fr"):
+        return extract_numbers_fr(text, short_scale, ordinals)
+    elif lang.startswith("it"):
+        return extract_numbers_it(text, short_scale, ordinals)
     return []
 
 
