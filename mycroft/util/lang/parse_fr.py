@@ -516,8 +516,8 @@ def extract_datetime_fr(string, currentDate, default_time):
 
     timeQualifiersList = ["matin", "après-midi", "soir", "nuit"]
     words_in = ["dans", "après"]
-    markers = ["à", "dès", "autour", "vers", "environs", "ce", "cette"] + \
-              words_in
+    markers = ["à", "dès", "autour", "vers", "environs", "ce",
+               "cette"] + words_in
     days = ["lundi", "mardi", "mercredi",
             "jeudi", "vendredi", "samedi", "dimanche"]
     months = ["janvier", "février", "mars", "avril", "mai", "juin",
@@ -896,10 +896,10 @@ def extract_datetime_fr(string, currentDate, default_time):
                         ampm = "pm"
                     else:
                         ampm = "am"
-            hrAbs = ((hrAbs or 0) + 12 if ampm == "pm" and
-                                          (hrAbs or 0) < 12 else hrAbs)
-            hrAbs = ((hrAbs or 0) - 12 if ampm == "am" and
-                                          (hrAbs or 0) >= 12 else hrAbs)
+            hrAbs = ((hrAbs or 0) + 12 if ampm == "pm" and (hrAbs or 0) < 12
+                     else hrAbs)
+            hrAbs = ((hrAbs or 0) - 12 if ampm == "am" and (hrAbs or 0) >=
+                                          12 else hrAbs)
             if (hrAbs or 0) > 24 or ((minAbs or 0) > 59):
                 isTime = False
                 used = 0
@@ -989,8 +989,8 @@ def extract_datetime_fr(string, currentDate, default_time):
     if secOffset != 0:
         extractedDate = extractedDate + relativedelta(seconds=secOffset)
     for idx, word in enumerate(words):
-        if words[idx] == "et" and words[idx - 1] == "" and words[
-            idx + 1] == "":
+        if words[idx] == "et" and words[idx - 1] == "" and \
+                words[idx + 1] == "":
             words[idx] = ""
 
     resultStr = " ".join(words)

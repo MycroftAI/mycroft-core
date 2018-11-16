@@ -495,21 +495,25 @@ class TestNormalize(unittest.TestCase):
                          "that is 1 2 22")
 
     def test_multiple_numbers(self):
-        self.assertEqual(extract_numbers_generic("this is a one two three  test"),
+        self.assertEqual(extract_numbers_generic("this is a one two "
+                                                 "three  test"),
                          [1.0, 2.0, 3.0])
-        self.assertEqual(extract_numbers_generic("it's  a four five six  test"),
+        self.assertEqual(extract_numbers_generic("it's  a four five "
+                                                 "six  test"),
                          [4.0, 5.0, 6.0])
         # TODO case when pronounced/extracted number dont match
         # self.assertEqual(extract_numbers("this is a seven eight nine and a "
         #                                 "half test"),
         #                 [7.0, 8.0, 9.5])
-        self.assertEqual(extract_numbers_generic("this is a ten eleven twelve  test"),
+        self.assertEqual(extract_numbers_generic("this is a ten eleven "
+                                                 "twelve  test"),
                          [10.0, 11.0, 12.0])
-        self.assertEqual(extract_numbers_generic("this is a one twenty one "
-                                         " test"),
+        self.assertEqual(extract_numbers_generic("this is a one twenty "
+                                                 "one  test"),
                          [1.0, 21.0])
-        self.assertEqual(extract_numbers_generic("1 dog, seven pigs, macdonald had "
-                                         "a farm, 3 times 5 macarena"),
+        self.assertEqual(extract_numbers_generic("1 dog, seven pigs, "
+                                                 "macdonald had a farm, 3 "
+                                                 "times 5 macarena"),
                          [1, 7, 3, 5])
         self.assertEqual(extract_numbers_generic("two beers for two bears"),
                          [2.0, 2.0])

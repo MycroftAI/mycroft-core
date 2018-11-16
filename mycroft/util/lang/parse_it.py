@@ -989,8 +989,8 @@ def extract_datetime_it(string, currentDate, default_time):
     if secOffset != 0:
         extractedDate = extractedDate + relativedelta(seconds=secOffset)
     for idx, word in enumerate(words):
-        if words[idx] == "e" and words[idx - 1] == "" and words[
-            idx + 1] == "":
+        if words[idx] == "e" and words[idx - 1] == "" and \
+                words[idx + 1] == "":
             words[idx] = ""
 
     resultStr = " ".join(words)
