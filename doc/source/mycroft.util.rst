@@ -13,6 +13,10 @@ play_mp3
 ---------
 .. autofunction:: mycroft.util.play_mp3
 
+play_ogg
+---------
+.. autofunction:: mycroft.util.play_ogg
+
 extract_datetime
 ----------------
 .. autofunction:: mycroft.util.extract_datetime
