@@ -25,7 +25,8 @@
 
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from mycroft.util.lang.parse_common import is_numeric, look_for_fractions
+from mycroft.util.lang.parse_common import is_numeric, look_for_fractions, \
+    extract_numbers_generic
 from mycroft.util.lang.format_it import pronounce_number_it
 
 # Undefined articles ["un", "una", "un'"] can not be supressed,
@@ -1041,5 +1042,5 @@ def extract_numbers_it(text, short_scale=True, ordinals=False):
     Returns:
         list: list of extracted numbers as floats
     """
-    return extract_numbers(text, pronounce_number_it, extractnumber_it,
+    return extract_numbers_generic(text, pronounce_number_it, extractnumber_it,
                            short_scale=short_scale, ordinals=ordinals)
