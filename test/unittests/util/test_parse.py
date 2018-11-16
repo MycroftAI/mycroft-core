@@ -506,12 +506,19 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extract_numbers("this is a one twenty one "
                                          " test"),
                          [1.0, 21.0])
-        self.assertEqual(extract_numbers("1 dog, seven pigs, macdonald had a farm, 3 times 5 macarena"),
+        self.assertEqual(extract_numbers("1 dog, seven pigs, macdonald had "
+                                         "a farm, 3 times 5 macarena"),
                          [1, 7, 3, 5])
-        # TODO fix case when there are duplicate but separate instances of
-        # the number
         self.assertEqual(extract_numbers("two beers for two bears"),
                          [2.0, 2.0])
+        self.assertEqual(extract_numbers("twenty 20 twenty"),
+                         [20, 20, 20])
+        self.assertEqual(extract_numbers("twenty 20 22"),
+                         [20, 20, 22])
+        self.assertEqual(extract_numbers("twenty twenty two twenty"),
+                         [20, 22, 20])
+        self.assertEqual(extract_numbers("twenty 20 twenty 2"),
+                         [20, 20, 20, 2])
 
     def test_contractions(self):
         self.assertEqual(normalize("ain't"), "is not")

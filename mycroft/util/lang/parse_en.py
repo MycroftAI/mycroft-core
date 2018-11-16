@@ -1075,10 +1075,16 @@ def extract_numbers_en(text, short_scale=True, ordinals=False):
         extract = str(extract)
         if extract.endswith(".0"):
             extract = extract[:-2]
-        normalized = normalized.replace(num_txt, extract)
+
+        # handle duplicate occurences, replace last one only
+        def replace_right(source, target, replacement, replacements=None):
+            return replacement.join(source.rsplit(target, replacements))
+
+        normalized = replace_right(normalized, num_txt, extract, 1)
         # last biggest number was replaced, recurse to handle cases like
         # test one two 3
-        to_parse = to_parse.replace(num_txt, extract).replace(extract, "")
+        to_parse = replace_right(to_parse, num_txt, extract, 1)
+        to_parse = replace_right(to_parse, extract, " ", 1)
         if to_parse == prev:
             # avoid infinite loops, occasionally pronounced number may be
             # different from extracted text,
