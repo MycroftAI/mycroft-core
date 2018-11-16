@@ -18,7 +18,8 @@ from datetime import datetime
 
 from dateutil.relativedelta import relativedelta
 
-from mycroft.util.lang.parse_common import is_numeric, look_for_fractions
+from mycroft.util.lang.parse_common import is_numeric, look_for_fractions, \
+    extract_numbers
 from mycroft.util.lang.format_en import NUM_STRING_EN, LONG_SCALE_EN, \
     SHORT_SCALE_EN, pronounce_number_en
 
@@ -1064,37 +1065,8 @@ def extract_numbers_en(text, short_scale=True, ordinals=False):
     Returns:
         list: list of extracted numbers as floats
     """
-    numbers = []
-    normalized = text
-    extract = extractnumber_en(normalized, short_scale, ordinals)
-    to_parse = normalized
-    while extract:
-        numbers.append(extract)
-        prev = to_parse
-        num_txt = pronounce_number_en(extract)
-        extract = str(extract)
-        if extract.endswith(".0"):
-            extract = extract[:-2]
-
-        # handle duplicate occurences, replace last one only
-        def replace_right(source, target, replacement, replacements=None):
-            return replacement.join(source.rsplit(target, replacements))
-
-        normalized = replace_right(normalized, num_txt, extract, 1)
-        # last biggest number was replaced, recurse to handle cases like
-        # test one two 3
-        to_parse = replace_right(to_parse, num_txt, extract, 1)
-        to_parse = replace_right(to_parse, extract, " ", 1)
-        if to_parse == prev:
-            # avoid infinite loops, occasionally pronounced number may be
-            # different from extracted text,
-            # ie pronounce(0.5) != half and extract(half) == 0.5
-            extract = False
-            # TODO fix this
-        else:
-            extract = extractnumber_en(to_parse, short_scale, ordinals)
-    numbers.reverse()
-    return numbers
+    return extract_numbers(text, pronounce_number_en, extractnumber_en,
+                           short_scale=short_scale, ordinals=ordinals)
 
 
 def normalize_en(text, remove_articles):

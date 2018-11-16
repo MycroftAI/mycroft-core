@@ -930,7 +930,6 @@ def normalize_de(text, remove_articles):
 
     return normalized[1:]  # strip the initial space
 
-
 def extract_numbers_de(text, short_scale=True, ordinals=False):
     """
         Takes in a string and extracts a list of numbers.
@@ -945,28 +944,5 @@ def extract_numbers_de(text, short_scale=True, ordinals=False):
     Returns:
         list: list of extracted numbers as floats
     """
-    numbers = []
-    normalized = text
-    extract = extractnumber_de(normalized)
-    to_parse = normalized
-    while extract:
-        numbers.append(extract)
-        prev = to_parse
-        num_txt = pronounce_number_de(extract)
-        extract = str(extract)
-        if extract.endswith(".0"):
-            extract = extract[:-2]
-        normalized = normalized.replace(num_txt, extract)
-        # last biggest number was replaced, recurse to handle cases like
-        # test one two 3
-        to_parse = to_parse.replace(num_txt, extract).replace(extract, "")
-        if to_parse == prev:
-            # avoid infinite loops, occasionally pronounced number may be
-            # different from extracted text,
-            # ie pronounce(0.5) != half and extract(half) == 0.5
-            extract = False
-            # TODO fix this
-        else:
-            extract = extractnumber_de(to_parse, short_scale, ordinals)
-    numbers.reverse()
-    return numbers
+    return extract_numbers(text, pronounce_number_de, extractnumber_de,
+                           short_scale=short_scale, ordinals=ordinals)
