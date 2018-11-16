@@ -462,6 +462,25 @@ class MycroftSkill(object):
             line = on_fail_fn(response)
             self.speak(line, expect_response=True)
 
+    @property
+    def grammatical_gender(self):
+        """
+        mycroft's gender
+
+        if not configured extrapolate from TTS config
+
+        Returns:
+              string:  'male', 'female' or None
+        """
+        gender = self.config.get("grammatical_gender")
+        if not gender:
+            tts_config = self.config["tts"]
+            gender = tts_config.get("gender")
+            if not gender:
+                tts_module = tts_config["module"]
+                gender = tts_config.get(tts_module, {}).get("gender")
+        return gender
+
     def ask_yesno(self, prompt, data=None):
         """ Read prompt and wait for a yes/no answer
 
@@ -1078,6 +1097,10 @@ class MycroftSkill(object):
                                         is being spoken.
         """
         data = data or {}
+        if self.grammatical_gender is not None:
+            if resolve_resource_file(key + "." + self.grammatical_gender +
+                                     ".dialog"):
+                key = key + "." + self.grammatical_gender
         self.speak(self.dialog_renderer.render(key, data),
                    expect_response, wait)
 
