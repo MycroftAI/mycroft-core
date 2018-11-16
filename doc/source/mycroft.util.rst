@@ -13,13 +13,17 @@ play_mp3
 ---------
 .. autofunction:: mycroft.util.play_mp3
 
+play_ogg
+---------
+.. autofunction:: mycroft.util.play_ogg
+
 extract_datetime
 ----------------
 .. autofunction:: mycroft.util.extract_datetime
 
-extractnumber
+extract_number
 -------------
-.. autofunction:: mycroft.util.extractnumber
+.. autofunction:: mycroft.util.extract_number
 
 normalize
 ---------
@@ -28,10 +32,6 @@ normalize
 nice_number
 -----------
 .. autofunction:: mycroft.util.nice_number
-
-convert_number
---------------
-.. autofunction:: mycroft.util.convert_number
 
 resolve_resource_file
 ---------------------

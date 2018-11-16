@@ -89,6 +89,17 @@ def resolve_resource_file(res_name):
 
 
 def play_wav(uri):
+    """ Play a wav-file.
+
+        This will use the application specified in the mycroft config
+        and play the uri passed as argument. The function will return directly
+        and play the file in the background.
+
+        Arguments:
+            uri:    uri to play
+
+        Returns: subprocess.Popen object
+    """
     config = mycroft.configuration.Configuration.get()
     play_cmd = config.get("play_wav_cmdline")
     play_wav_cmd = str(play_cmd).split(" ")
@@ -99,6 +110,17 @@ def play_wav(uri):
 
 
 def play_mp3(uri):
+    """ Play a mp3-file.
+
+        This will use the application specified in the mycroft config
+        and play the uri passed as argument. The function will return directly
+        and play the file in the background.
+
+        Arguments:
+            uri:    uri to play
+
+        Returns: subprocess.Popen object
+    """
     config = mycroft.configuration.Configuration.get()
     play_cmd = config.get("play_mp3_cmdline")
     play_mp3_cmd = str(play_cmd).split(" ")
@@ -109,6 +131,17 @@ def play_mp3(uri):
 
 
 def play_ogg(uri):
+    """ Play a ogg-file.
+
+        This will use the application specified in the mycroft config
+        and play the uri passed as argument. The function will return directly
+        and play the file in the background.
+
+        Arguments:
+            uri:    uri to play
+
+        Returns: subprocess.Popen object
+    """
     config = mycroft.configuration.Configuration.get()
     play_cmd = config.get("play_ogg_cmdline")
     play_ogg_cmd = str(play_cmd).split(" ")
@@ -244,7 +277,7 @@ def curate_cache(directory, min_free_percent=5.0, min_free_disk=50):
             try:
                 os.remove(path)
                 space_freed += fsize
-            except:
+            except Exception:
                 pass
 
             if space_freed > bytes_needed:

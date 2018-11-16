@@ -217,7 +217,9 @@ case ${_opt} in
         ;;
     "sdkdoc")
         source-venv
-        python3 "${DIR}/doc/generate_sdk_docs.py" ${_opt}
+        cd doc
+        make ${opt}
+        cd ..
         ;;
     "enclosure")
         launch-background ${_opt}
