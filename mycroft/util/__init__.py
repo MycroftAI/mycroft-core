@@ -277,7 +277,7 @@ def curate_cache(directory, min_free_percent=5.0, min_free_disk=50):
             try:
                 os.remove(path)
                 space_freed += fsize
-            except:
+            except Exception:
                 pass
 
             if space_freed > bytes_needed:
