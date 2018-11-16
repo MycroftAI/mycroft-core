@@ -474,10 +474,10 @@ class MycroftSkill(object):
         """
         gender = self.config.get("grammatical_gender")
         if not gender:
-            tts_config = self.config["tts"]
+            tts_config = self.config.get("tts", {})
             gender = tts_config.get("gender")
             if not gender:
-                tts_module = tts_config["module"]
+                tts_module = tts_config.get("module", "mimic")
                 gender = tts_config.get(tts_module, {}).get("gender")
         return gender
 
@@ -1098,8 +1098,8 @@ class MycroftSkill(object):
         """
         data = data or {}
         if self.grammatical_gender is not None:
-            if resolve_resource_file(key + "." + self.grammatical_gender +
-                                     ".dialog"):
+            gender_file = key + "." + self.grammatical_gender + ".dialog"
+            if resolve_resource_file(gender_file):
                 key = key + "." + self.grammatical_gender
         self.speak(self.dialog_renderer.render(key, data),
                    expect_response, wait)
