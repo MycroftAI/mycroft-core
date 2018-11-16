@@ -403,13 +403,13 @@ def extract_datetime_it(string, currentDate, default_time):
 
     def date_found():
         return found or \
-            (
-                datestr != "" or timeStr != "" or
-                yearOffset != 0 or monthOffset != 0 or
-                dayOffset is True or hrOffset != 0 or
-                hrAbs or minOffset != 0 or
-                minAbs or secOffset != 0
-            )
+               (
+                       datestr != "" or timeStr != "" or
+                       yearOffset != 0 or monthOffset != 0 or
+                       dayOffset is True or hrOffset != 0 or
+                       hrAbs or minOffset != 0 or
+                       minAbs or secOffset != 0
+               )
 
     if string == "" or not currentDate:
         return None
@@ -428,7 +428,7 @@ def extract_datetime_it(string, currentDate, default_time):
     timeQualifier = ""
 
     timeQualifiersList = ['mattina', 'pomeriggio', 'sera']
-    markers = ['alle', 'in', 'questo',  'per', 'di']
+    markers = ['alle', 'in', 'questo', 'per', 'di']
     days = ['lunedi', 'martedi', 'mercoledi',
             'giovedi', 'venerdi', 'sabato', 'domenica']
     months = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno',
@@ -644,7 +644,7 @@ def extract_datetime_it(string, currentDate, default_time):
         if word == "mezzo" and wordNext == "giorno":  # if stt splits the word
             hrAbs = 12
             used += 2
-        elif word == "mezza"and wordNext == "notte":  # if stt splits the word
+        elif word == "mezza" and wordNext == "notte":  # if stt splits the word
             hrAbs = 24
             used += 2
         elif word == "mattina":
@@ -777,8 +777,8 @@ def extract_datetime_it(string, currentDate, default_time):
                     elif (
                             int(word) > 100 and
                             (
-                                wordPrev == "o" or
-                                wordPrev == "oh"
+                                    wordPrev == "o" or
+                                    wordPrev == "oh"
                             )):
                         # 0800 hours (pronounced oh-eight-hundred)
                         strHH = int(word) / 100
@@ -790,8 +790,8 @@ def extract_datetime_it(string, currentDate, default_time):
                             wordNext == "ora" and
                             word[0] != '0' and
                             (
-                                int(word) < 100 and
-                                int(word) > 2400
+                                    int(word) < 100 and
+                                    int(word) > 2400
                             )):
                         # ignores military time
                         # "in 3 hours"
@@ -990,7 +990,7 @@ def extract_datetime_it(string, currentDate, default_time):
         extractedDate = extractedDate + relativedelta(seconds=secOffset)
     for idx, word in enumerate(words):
         if words[idx] == "e" and words[idx - 1] == "" and words[
-                idx + 1] == "":
+            idx + 1] == "":
             words[idx] = ""
 
     resultStr = " ".join(words)
@@ -1043,4 +1043,4 @@ def extract_numbers_it(text, short_scale=True, ordinals=False):
         list: list of extracted numbers as floats
     """
     return extract_numbers_generic(text, pronounce_number_it, extractnumber_it,
-                           short_scale=short_scale, ordinals=ordinals)
+                                   short_scale=short_scale, ordinals=ordinals)
