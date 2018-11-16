@@ -112,7 +112,7 @@ class CommonPlaySkill(MycroftSkill, ABC):
         """
         Begin playback of a media file or stream
 
-        Normal this method will be invoked with somthing like:
+        Normally this method will be invoked with somthing like:
            self.CPS_play(url)
         Advanced use can also include keyword arguments, such as:
            self.CPS_play(url, repeat=True)
@@ -147,7 +147,7 @@ class CommonPlaySkill(MycroftSkill, ABC):
             phrase (str): User phrase uttered after "Play", e.g. "some music"
 
         Returns:
-            (match, CPSMatchLevel[, callback_data]) or None: Tupple containing
+            (match, CPSMatchLevel[, callback_data]) or None: Tuple containing
                  a string with the appropriate matching phrase, the PlayMatch
                  type, and optionally data to return in the callback if the
                  match is selected.
