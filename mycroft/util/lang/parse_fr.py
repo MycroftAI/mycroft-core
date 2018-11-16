@@ -898,8 +898,8 @@ def extract_datetime_fr(string, currentDate, default_time):
                         ampm = "am"
             hrAbs = ((hrAbs or 0) + 12 if ampm == "pm" and (hrAbs or 0) < 12
                      else hrAbs)
-            hrAbs = ((hrAbs or 0) - 12 if ampm == "am" and (hrAbs or 0) >=
-                                          12 else hrAbs)
+            hrAbs = ((hrAbs or 0) - 12 if ampm == "am" and (hrAbs or 0) >= 12
+                     else hrAbs)
             if (hrAbs or 0) > 24 or ((minAbs or 0) > 59):
                 isTime = False
                 used = 0
