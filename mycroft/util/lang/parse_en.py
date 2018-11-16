@@ -19,7 +19,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 from mycroft.util.lang.parse_common import is_numeric, look_for_fractions, \
-    extract_numbers
+    extract_numbers_generic
 from mycroft.util.lang.format_en import NUM_STRING_EN, LONG_SCALE_EN, \
     SHORT_SCALE_EN, pronounce_number_en
 
@@ -1065,8 +1065,8 @@ def extract_numbers_en(text, short_scale=True, ordinals=False):
     Returns:
         list: list of extracted numbers as floats
     """
-    return extract_numbers(text, pronounce_number_en, extractnumber_en,
-                           short_scale=short_scale, ordinals=ordinals)
+    return extract_numbers_generic(text, pronounce_number_en, extractnumber_en,
+                                   short_scale=short_scale, ordinals=ordinals)
 
 
 def normalize_en(text, remove_articles):

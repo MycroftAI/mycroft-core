@@ -930,6 +930,7 @@ def normalize_de(text, remove_articles):
 
     return normalized[1:]  # strip the initial space
 
+
 def extract_numbers_de(text, short_scale=True, ordinals=False):
     """
         Takes in a string and extracts a list of numbers.

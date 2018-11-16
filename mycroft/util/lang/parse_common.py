@@ -51,8 +51,8 @@ def look_for_fractions(split_list):
     return False
 
 
-def extract_numbers(text, pronounce_handler, extract_handler,
-                    short_scale=True, ordinals=False):
+def extract_numbers_generic(text, pronounce_handler, extract_handler,
+                            short_scale=True, ordinals=False):
     """
         Takes in a string and extracts a list of numbers.
         Language agnostic, per language parsers need to be provided
