@@ -18,7 +18,7 @@ import unittest
 from datetime import datetime
 
 from mycroft.util.parse import extract_datetime
-from mycroft.util.parse import extract_number, extract_numbers
+from mycroft.util.parse import extract_number, extract_numbers_generic
 from mycroft.util.parse import fuzzy_match
 from mycroft.util.parse import get_gender
 from mycroft.util.parse import match_one
@@ -491,33 +491,35 @@ class TestNormalize(unittest.TestCase):
                          "that is 1 19 22")
         self.assertEqual(normalize("that's one hundred"),
                          "that is 100")
+        self.assertEqual(normalize("that's one two twenty two"),
+                         "that is 1 2 22")
 
     def test_multiple_numbers(self):
-        self.assertEqual(extract_numbers("this is a one two three  test"),
+        self.assertEqual(extract_numbers_generic("this is a one two three  test"),
                          [1.0, 2.0, 3.0])
-        self.assertEqual(extract_numbers("it's  a four five six  test"),
+        self.assertEqual(extract_numbers_generic("it's  a four five six  test"),
                          [4.0, 5.0, 6.0])
         # TODO case when pronounced/extracted number dont match
         # self.assertEqual(extract_numbers("this is a seven eight nine and a "
         #                                 "half test"),
         #                 [7.0, 8.0, 9.5])
-        self.assertEqual(extract_numbers("this is a ten eleven twelve  test"),
+        self.assertEqual(extract_numbers_generic("this is a ten eleven twelve  test"),
                          [10.0, 11.0, 12.0])
-        self.assertEqual(extract_numbers("this is a one twenty one "
+        self.assertEqual(extract_numbers_generic("this is a one twenty one "
                                          " test"),
                          [1.0, 21.0])
-        self.assertEqual(extract_numbers("1 dog, seven pigs, macdonald had "
+        self.assertEqual(extract_numbers_generic("1 dog, seven pigs, macdonald had "
                                          "a farm, 3 times 5 macarena"),
                          [1, 7, 3, 5])
-        self.assertEqual(extract_numbers("two beers for two bears"),
+        self.assertEqual(extract_numbers_generic("two beers for two bears"),
                          [2.0, 2.0])
-        self.assertEqual(extract_numbers("twenty 20 twenty"),
+        self.assertEqual(extract_numbers_generic("twenty 20 twenty"),
                          [20, 20, 20])
-        self.assertEqual(extract_numbers("twenty 20 22"),
+        self.assertEqual(extract_numbers_generic("twenty 20 22"),
                          [20, 20, 22])
-        self.assertEqual(extract_numbers("twenty twenty two twenty"),
+        self.assertEqual(extract_numbers_generic("twenty twenty two twenty"),
                          [20, 22, 20])
-        self.assertEqual(extract_numbers("twenty 20 twenty 2"),
+        self.assertEqual(extract_numbers_generic("twenty 20 twenty 2"),
                          [20, 20, 20, 2])
 
     def test_contractions(self):

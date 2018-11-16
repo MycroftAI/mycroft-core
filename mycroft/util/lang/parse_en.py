@@ -1131,6 +1131,8 @@ def normalize_en(text, remove_articles):
 
     # replace extracted numbers
     numbers = extract_numbers_en(normalized)
+    # sort by string size, "twenty two" should be replaced before "two"
+    numbers.sort(key=lambda s: len(pronounce_number_en(s)), reverse=True)
     for n in numbers:
         txt = pronounce_number_en(n)
         n = str(n)
