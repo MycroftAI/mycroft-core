@@ -147,6 +147,62 @@ class TestNormalize(unittest.TestCase):
 
         testExtract("now is the time",
                     "2017-06-27 13:04:00", "is time")
+        testExtract("in a second",
+                    "2017-06-27 13:04:01", "")
+        testExtract("in a minute",
+                    "2017-06-27 13:05:00", "")
+        testExtract("in a couple minutes",
+                    "2017-06-27 13:06:00", "")
+        testExtract("in a couple of minutes",
+                    "2017-06-27 13:06:00", "")
+        testExtract("in a couple hours",
+                    "2017-06-27 15:04:00", "")
+        testExtract("in a couple of hours",
+                    "2017-06-27 15:04:00", "")
+        testExtract("in a couple weeks",
+                    "2017-07-11 00:00:00", "")
+        testExtract("in a couple of weeks",
+                    "2017-07-11 00:00:00", "")
+        testExtract("in a couple months",
+                    "2017-08-27 00:00:00", "")
+        testExtract("in a couple years",
+                    "2019-06-27 00:00:00", "")
+        testExtract("in a couple of months",
+                    "2017-08-27 00:00:00", "")
+        testExtract("in a couple of years",
+                    "2019-06-27 00:00:00", "")
+        testExtract("in a decade",
+                    "2027-06-27 00:00:00", "")
+        testExtract("in a couple of decades",
+                    "2037-06-27 00:00:00", "")
+        testExtract("next decade",
+                    "2027-06-27 00:00:00", "")
+        testExtract("in a century",
+                    "2117-06-27 00:00:00", "")
+        testExtract("in a millennium",
+                    "3017-06-27 00:00:00", "")
+        testExtract("in a couple decades",
+                    "2037-06-27 00:00:00", "")
+        testExtract("in 5 decades",
+                    "2067-06-27 00:00:00", "")
+        testExtract("in a couple centuries",
+                    "2217-06-27 00:00:00", "")
+        testExtract("in a couple of centuries",
+                    "2217-06-27 00:00:00", "")
+        testExtract("in 2 centuries",
+                    "2217-06-27 00:00:00", "")
+        testExtract("in a couple millenniums",
+                    "4017-06-27 00:00:00", "")
+        testExtract("in a couple of millenniums",
+                    "4017-06-27 00:00:00", "")
+        testExtract("in an hour",
+                    "2017-06-27 14:04:00", "")
+        testExtract("i want it within the hour",
+                    "2017-06-27 14:04:00", "i want it")
+        testExtract("in 1 second",
+                    "2017-06-27 13:04:01", "")
+        testExtract("in 2 seconds",
+                    "2017-06-27 13:04:02", "")
         testExtract("Set the ambush in 1 minute",
                     "2017-06-27 13:05:00", "set ambush")
         testExtract("Set the ambush for half an hour",
