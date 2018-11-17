@@ -14,6 +14,7 @@
 #
 import inspect
 import logging
+import logging.config
 import sys
 
 from os.path import isfile
@@ -60,13 +61,18 @@ class LOG:
     error = _make_log_method(logging.Logger.error)
     exception = _make_log_method(logging.Logger.exception)
 
-    @classmethod
-    def init(cls):
+    @staticmethod
+    def get_config():
         confs = [SYSTEM_CONFIG, USER_CONFIG]
         config = {}
         for conf in confs:
             merge_dict(config,
                        load_commented_json(conf) if isfile(conf) else {})
+        return config
+
+    @classmethod
+    def init(cls):
+        config = cls.get_config()
 
         cls.level = logging.getLevelName(config.get('log_level', 'DEBUG'))
         fmt = '%(asctime)s.%(msecs)03d - ' \
@@ -79,7 +85,13 @@ class LOG:
 
     @classmethod
     def create_logger(cls, name):
+        config = cls.get_config()
         logger = logging.getLogger(name)
+
+        # Logging each skill as one
+        if config.get('log_per_skill'):
+            logger.addHandler(logging.FileHandler(filename='/var/log/mycroft/skill-' + name))
+
         logger.propagate = False
         logger.addHandler(cls.handler)
         logger.setLevel(cls.level)

@@ -138,7 +138,8 @@ def load_skill(skill_descriptor, bus, skill_id, BLACKLISTED_SKILLS=None):
                 skill._register_decorated()
                 skill.initialize()
             except Exception as e:
-                # If an exception occurs, make sure to clean up the skill
+                log = LOG.create_logger(name)
+                log.debug(e)
                 skill.default_shutdown()
                 raise e
 
@@ -155,7 +156,9 @@ def load_skill(skill_descriptor, bus, skill_id, BLACKLISTED_SKILLS=None):
             return skill
         else:
             LOG.warning("Module {} does not appear to be skill".format(name))
-    except Exception:
+    except Exception as e:
+        log = LOG.create_logger(name)
+        log.exception(e)
         LOG.exception("Failed to load skill: " + name)
     return None
 
