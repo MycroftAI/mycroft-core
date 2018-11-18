@@ -533,8 +533,8 @@ class TestNormalize(unittest.TestCase):
         #                                 "half test"),
         #                 [7.0, 8.0, 9.5])
         # TODO pronounce number should accept short_scale flag
-        #self.assertEqual(extract_numbers("two pigs and six trillion bacteria",
-        #                                 short_scale=False), [2, 6e18])
+        # self.assertEqual(extract_numbers("two pigs and six trillion
+        # bacteria", short_scale=False), [2, 6e18])
         # TODO pronounce_number should accept ordinals flag
         # self.assertEqual(extract_numbers("thirty second or first",
         #                                 ordinals=True), [32, 1])
