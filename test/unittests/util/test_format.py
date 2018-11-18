@@ -36,18 +36,18 @@ NUMBERS_FIXTURE_EN = {
     0.5: 'a half',
     1.333: '1 and a third',
     2.666: '2 and 2 thirds',
-    0.25: 'a forth',
-    1.25: '1 and a forth',
-    0.75: '3 forths',
-    1.75: '1 and 3 forths',
+    0.25: 'a fourth',
+    1.25: '1 and a fourth',
+    0.75: '3 fourths',
+    1.75: '1 and 3 fourths',
     3.4: '3 and 2 fifths',
     16.8333: '16 and 5 sixths',
     12.5714: '12 and 4 sevenths',
-    9.625: '9 and 5 eigths',
+    9.625: '9 and 5 eights',
     6.777: '6 and 7 ninths',
     3.1: '3 and a tenth',
     2.272: '2 and 3 elevenths',
-    5.583: '5 and 7 twelveths',
+    5.583: '5 and 7 twelfths',
     8.384: '8 and 5 thirteenths',
     0.071: 'a fourteenth',
     6.466: '6 and 7 fifteenths',
@@ -55,7 +55,7 @@ NUMBERS_FIXTURE_EN = {
     2.176: '2 and 3 seventeenths',
     200.722: '200 and 13 eighteenths',
     7.421: '7 and 8 nineteenths',
-    0.05: 'a twentyith'
+    0.05: 'a twentieth'
 }
 
 
@@ -215,6 +215,37 @@ class TestPronounceNumber(unittest.TestCase):
         self.assertEqual(
             pronounce_number(1000001, short_scale=True),
             "one million, one")
+
+    def test_ordinals(self):
+        self.assertEqual(pronounce_number(1, ordinals=True), "first")
+        self.assertEqual(pronounce_number(10, ordinals=True), "tenth")
+        self.assertEqual(pronounce_number(15, ordinals=True), "fifteenth")
+        self.assertEqual(pronounce_number(20, ordinals=True), "twentieth")
+        self.assertEqual(pronounce_number(27, ordinals=True), "twenty seventh")
+        self.assertEqual(pronounce_number(30, ordinals=True), "thirtieth")
+        self.assertEqual(pronounce_number(33, ordinals=True), "thirty third")
+        self.assertEqual(pronounce_number(100, ordinals=True), "hundredth")
+        self.assertEqual(pronounce_number(1000, ordinals=True), "thousandth")
+        self.assertEqual(pronounce_number(10000, ordinals=True),
+                         "ten thousandth")
+        self.assertEqual(pronounce_number(18691, ordinals=True),
+                         "eighteen thousand, six hundred and ninety first")
+        self.assertEqual(pronounce_number(1567, ordinals=True),
+                         "one thousand, five hundred and sixty seventh")
+        self.assertEqual(pronounce_number(1.672e-27, places=3,
+                                          scientific=True, ordinals=True),
+                         "one point six seven two times ten to the negative "
+                         "twenty seventh power")
+        self.assertEqual(pronounce_number(18e6, ordinals=True),
+                         "eighteen millionth")
+        self.assertEqual(pronounce_number(18e12, ordinals=True,
+                                          short_scale=False),
+                         "eighteen billionth")
+        self.assertEqual(pronounce_number(18e12, ordinals=True),
+                         "eighteen trillionth")
+        self.assertEqual(pronounce_number(18e18, ordinals=True,
+                                          short_scale=False), "eighteen "
+                                                              "trillionth")
 
 
 # def nice_time(dt, lang="en-us", speech=True, use_24hour=False,

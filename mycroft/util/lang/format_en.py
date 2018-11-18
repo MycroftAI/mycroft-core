@@ -54,15 +54,15 @@ NUM_STRING_EN = {
 FRACTION_STRING_EN = {
     2: 'half',
     3: 'third',
-    4: 'forth',
+    4: 'fourth',
     5: 'fifth',
     6: 'sixth',
     7: 'seventh',
-    8: 'eigth',
+    8: 'eight',
     9: 'ninth',
     10: 'tenth',
     11: 'eleventh',
-    12: 'twelveth',
+    12: 'twelfth',
     13: 'thirteenth',
     14: 'fourteenth',
     15: 'fifteenth',
@@ -70,7 +70,39 @@ FRACTION_STRING_EN = {
     17: 'seventeenth',
     18: 'eighteenth',
     19: 'nineteenth',
-    20: 'twentyith'
+    20: 'twentieth'
+}
+
+ORDINALS_EN = {
+    1: "first",
+    2: 'second',
+    3: 'third',
+    4: 'fourth',
+    5: 'fifth',
+    6: 'sixth',
+    7: 'seventh',
+    8: 'eight',
+    9: 'ninth',
+    10: 'tenth',
+    11: 'eleventh',
+    12: 'twelfth',
+    13: 'thirteenth',
+    14: 'fourteenth',
+    15: 'fifteenth',
+    16: 'sixteenth',
+    17: 'seventeenth',
+    18: 'eighteenth',
+    19: 'nineteenth',
+    20: 'twentieth',
+    30: 'thirtieth',
+    40: "fortieth",
+    50: "fiftieth",
+    60: "sixtieth",
+    70: "seventieth",
+    80: "eightieth",
+    90: "ninetieth",
+    100: "hundredth",
+    1000: "thousandth"
 }
 
 LONG_SCALE_EN = collections.OrderedDict([
@@ -222,7 +254,8 @@ def nice_number_en(number, speech, denominators):
     return return_string
 
 
-def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
+def pronounce_number_en(num, places=2, short_scale=True, scientific=False,
+                        ordinals=False):
     """
     Convert a number to it's spoken equivalent
 
@@ -234,6 +267,7 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
         short_scale (bool) : use short (True) or long scale (False)
             https://en.wikipedia.org/wiki/Names_of_large_numbers
         scientific (bool): pronounce in scientific notation
+        ordinals (bool): pronounce in ordinal form "first" instead of "one"
     Returns:
         (str): The pronounced number
     """
@@ -242,9 +276,18 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
         n, power = number.replace("+", "").split("E")
         power = int(power)
         if power != 0:
-            return pronounce_number_en(float(n), places, short_scale, False) \
-                   + " times ten to the power of " + \
-                   pronounce_number_en(power, places, short_scale, False)
+
+            if ordinals:
+                return pronounce_number_en(float(n), places, short_scale,
+                                           False, ordinals=False) \
+                       + " times ten to the " + \
+                       pronounce_number_en(power, places, short_scale,
+                                           False, ordinals=True) + " power"
+            else:
+                return pronounce_number_en(float(n), places, short_scale,
+                                           False) \
+                       + " times ten to the power of " + \
+                       pronounce_number_en(power, places, short_scale, False)
     if short_scale:
         number_names = NUM_STRING_EN.copy()
         number_names.update(SHORT_SCALE_EN)
@@ -266,72 +309,99 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
     if num < 0:
         result = "negative "
     num = abs(num)
-
-    try:
-        # deal with 4 digits
-        # usually if it's a 4 digit num it should be said like a date
-        # i.e. 1972 => nineteen seventy two
-        if len(str(num)) == 4:
-            _num = str(num)
-            # deal with 1000, 2000, 2001, 2100, 3123, etc
-            # is skipped as the rest of the
-            # functin deals with this already
-            if _num[1:4] == '000' or _num[1:3] == '00' or int(_num[0:2]) >= 20:
-                pass
-            # deal with 1900, 1300, etc
-            # i.e. 1900 => nineteen hundred
-            elif _num[2:4] == '00':
-                first = number_names[int(_num[0:2])]
-                last = number_names[100]
-                return first + " " + last
-            # deal with 1960, 1961, etc
-            # i.e. 1960 => nineteen sixty
-            #      1961 => nineteen sixty one
-            else:
-                first = number_names[int(_num[0:2])]
-                if _num[3:4] == '0':
-                    last = number_names[int(_num[2:4])]
+    if not ordinals:
+        try:
+            # deal with 4 digits
+            # usually if it's a 4 digit num it should be said like a date
+            # i.e. 1972 => nineteen seventy two
+            if len(str(num)) == 4:
+                _num = str(num)
+                # deal with 1000, 2000, 2001, 2100, 3123, etc
+                # is skipped as the rest of the
+                # functin deals with this already
+                if _num[1:4] == '000' or _num[1:3] == '00' or int(
+                        _num[0:2]) >= 20:
+                    pass
+                # deal with 1900, 1300, etc
+                # i.e. 1900 => nineteen hundred
+                elif _num[2:4] == '00':
+                    first = number_names[int(_num[0:2])]
+                    last = number_names[100]
+                    return first + " " + last
+                # deal with 1960, 1961, etc
+                # i.e. 1960 => nineteen sixty
+                #      1961 => nineteen sixty one
                 else:
-                    second = number_names[int(_num[2:3])*10]
-                    last = second + " " + number_names[int(_num[3:4])]
-                return first + " " + last
-    # exception used to catch any unforseen edge cases
-    # will default back to normal subroutine
-    except Exception as e:
-        LOG.error('Exception in pronounce_number_en: {}' + repr(e))
+                    first = number_names[int(_num[0:2])]
+                    if _num[3:4] == '0':
+                        last = number_names[int(_num[2:4])]
+                    else:
+                        second = number_names[int(_num[2:3]) * 10]
+                        last = second + " " + number_names[int(_num[3:4])]
+                    return first + " " + last
+        # exception used to catch any unforseen edge cases
+        # will default back to normal subroutine
+        except Exception as e:
+            LOG.error('Exception in pronounce_number_en: {}' + repr(e))
 
     # check for a direct match
-    if num in number_names:
+    if num in number_names and not ordinals:
         if num > 90:
             result += "one "
         result += number_names[num]
     else:
-        def _sub_thousand(n):
+        def _sub_thousand(n, ordinals=False):
             assert 0 <= n <= 999
+            if n in ORDINALS_EN and ordinals:
+                return ORDINALS_EN[n]
             if n <= 19:
                 return digits[n]
             elif n <= 99:
                 q, r = divmod(n, 10)
-                return tens[q - 1] + (" " + _sub_thousand(r) if r else "")
+                return tens[q - 1] + (" " + _sub_thousand(r, ordinals) if r
+                                      else "")
             else:
                 q, r = divmod(n, 100)
                 return digits[q] + " hundred" + (
-                    " and " + _sub_thousand(r) if r else "")
+                    " and " + _sub_thousand(r, ordinals) if r else "")
 
         def _short_scale(n):
             if n >= max(SHORT_SCALE_EN.keys()):
                 return "infinity"
+            ordi = ordinals
+
+            if int(n) != n:
+                ordi = False
             n = int(n)
             assert 0 <= n
             res = []
+
             for i, z in enumerate(_split_by(n, 1000)):
                 if not z:
                     continue
-                number = _sub_thousand(z)
+
+                number = _sub_thousand(z, not i and ordi)
+
                 if i:
                     number += " "
-                    number += hundreds[i]
+                    if ordi:
+
+                        if i * 1000 in ORDINALS_EN:
+                            if z == 1:
+                                number = ORDINALS_EN[i * 1000]
+                            else:
+                                number += ORDINALS_EN[i * 1000]
+                        else:
+                            if n not in SHORT_SCALE_EN:
+                                num = int("1" + "0"*(len(str(n)) - 2))
+
+                                number += SHORT_SCALE_EN[num] + "th"
+                            else:
+                                number = SHORT_SCALE_EN[n] + "th"
+                    else:
+                        number += hundreds[i]
                 res.append(number)
+                ordi = False
 
             return ", ".join(reversed(res))
 
@@ -346,19 +416,39 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
         def _long_scale(n):
             if n >= max(LONG_SCALE_EN.keys()):
                 return "infinity"
+            ordi = ordinals
+            if int(n) != n:
+                ordi = False
             n = int(n)
             assert 0 <= n
             res = []
             for i, z in enumerate(_split_by(n, 1000000)):
                 if not z:
                     continue
-                number = pronounce_number_en(z, places, True, scientific)
+                number = pronounce_number_en(z, places, True, scientific,
+                                             ordinals=ordi and not i)
                 # strip off the comma after the thousand
                 if i:
                     # plus one as we skip 'thousand'
                     # (and 'hundred', but this is excluded by index value)
                     number = number.replace(',', '')
-                    number += " " + hundreds[i+1]
+
+                    if ordi:
+                        if i * 1000000 in ORDINALS_EN:
+                            if z == 1:
+                                number = ORDINALS_EN[(i + 1) * 1000000]
+                            else:
+                                number += ORDINALS_EN[(i + 1) * 1000000]
+                        else:
+                            if n not in LONG_SCALE_EN:
+                                num = int("1" + "0" * (len(str(n)) - 2))
+
+                                number += " " + LONG_SCALE_EN[num] + "th"
+                            else:
+                                number = " " + LONG_SCALE_EN[n] + "th"
+                    else:
+
+                        number += " " + hundreds[i + 1]
                 res.append(number)
             return ", ".join(reversed(res))
 
