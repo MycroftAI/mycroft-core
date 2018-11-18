@@ -266,7 +266,10 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
                 val = float(aPieces[0]) / float(aPieces[1])
 
         else:
-            prev_val = val
+            if prev_val and val is 1 and ordinals:
+                val = prev_val
+            else:
+                prev_val = val
             # handle long numbers
             # six hundred sixty six
             # two million five hundred thousand
