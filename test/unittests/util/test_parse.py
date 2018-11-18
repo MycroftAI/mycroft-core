@@ -68,6 +68,9 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extract_number("this is the third test"), 1.0 / 3.0)
         self.assertEqual(extract_number("this is the third test",
                                         ordinals=True), 3.0)
+        self.assertEqual(extract_number("the fourth one", ordinals=True), 4.0)
+        self.assertEqual(extract_number("the thirty sixth one",
+                                        ordinals=True), 36.0)
         self.assertEqual(extract_number("this is test number 4"), 4)
         self.assertEqual(extract_number("one third of a cup"), 1.0 / 3.0)
         self.assertEqual(extract_number("three cups"), 3)

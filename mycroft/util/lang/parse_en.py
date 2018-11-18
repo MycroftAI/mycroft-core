@@ -138,6 +138,8 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
         "million": 1000000,
         'millions': 1000000}
 
+    string_num_ordinal_en = {}
+
     for num in NUM_STRING_EN:
         num_string = NUM_STRING_EN[num]
         string_num_en[num_string] = num
@@ -147,10 +149,12 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
         if short_scale:
             for num in SHORT_ORDINAL_STRING_EN:
                 num_string = SHORT_ORDINAL_STRING_EN[num]
+                string_num_ordinal_en[num_string] = num
                 string_num_en[num_string] = num
         else:
             for num in LONG_ORDINAL_STRING_EN:
                 num_string = LONG_ORDINAL_STRING_EN[num]
+                string_num_ordinal_en[num_string] = num
                 string_num_en[num_string] = num
 
     # negate next number (-2 = 0 - 2)
@@ -229,6 +233,11 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
         if word in string_num_en:
             val = string_num_en[word]
 
+        # is the prev word an ordinal number and current word is one?
+        # second one, third one
+        if ordinals and prev_word in string_num_ordinal_en and val is 1:
+            val = prev_val
+
         # is the prev word a number and should we sum it?
         # twenty two, fifty six
         if prev_word in sums and word in string_num_en:
@@ -268,6 +277,7 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
 
         else:
             prev_val = val
+
             # handle long numbers
             # six hundred sixty six
             # two million five hundred thousand
