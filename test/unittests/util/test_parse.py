@@ -499,10 +499,6 @@ class TestNormalize(unittest.TestCase):
                          [1.0, 2.0, 3.0])
         self.assertEqual(extract_numbers("it's  a four five six  test"),
                          [4.0, 5.0, 6.0])
-        # TODO case when pronounced/extracted number dont match
-        # self.assertEqual(extract_numbers("this is a seven eight nine and a "
-        #                                 "half test"),
-        #                 [7.0, 8.0, 9.5])
         self.assertEqual(extract_numbers("this is a ten eleven twelve  test"),
                          [10.0, 11.0, 12.0])
         self.assertEqual(extract_numbers("this is a one twenty one  test"),
@@ -520,6 +516,28 @@ class TestNormalize(unittest.TestCase):
                          [20, 22, 20])
         self.assertEqual(extract_numbers("twenty 20 twenty 2"),
                          [20, 20, 20, 2])
+        self.assertEqual(extract_numbers("third one"),
+                         [1 / 3, 1])
+        # NOTE ambiguous case, should return [3] or [3, 1] ?
+        self.assertEqual(extract_numbers("third one", ordinals=True),
+                         [3, 1])
+        self.assertEqual(extract_numbers("six trillion", short_scale=True),
+                         [6e12])
+        self.assertEqual(extract_numbers("six trillion", short_scale=False),
+                         [6e18])
+        self.assertEqual(extract_numbers("two pigs and six trillion bacteria",
+                                         short_scale=True), [2, 6e12])
+        # TODO case when pronounced/extracted number don't match
+        # fractional numbers often fail
+        # self.assertEqual(extract_numbers("this is a seven eight nine and a "
+        #                                 "half test"),
+        #                 [7.0, 8.0, 9.5])
+        # TODO pronounce number should accept short_scale flag
+        #self.assertEqual(extract_numbers("two pigs and six trillion bacteria",
+        #                                 short_scale=False), [2, 6e18])
+        # TODO pronounce_number should accept ordinals flag
+        # self.assertEqual(extract_numbers("thirty second or first",
+        #                                 ordinals=True), [32, 1])
 
     def test_contractions(self):
         self.assertEqual(normalize("ain't"), "is not")
