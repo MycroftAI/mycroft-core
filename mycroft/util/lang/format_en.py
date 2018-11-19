@@ -237,6 +237,11 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
     Returns:
         (str): The pronounced number
     """
+    # deal with infinity
+    if num == float("inf"):
+        return "infinity"
+    elif num == float("-inf"):
+        return "negative infinity"
     if scientific:
         number = '%E' % num
         n, power = number.replace("+", "").split("E")
@@ -320,7 +325,7 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
 
         def _short_scale(n):
             if n >= max(SHORT_SCALE_EN.keys()):
-                return "infinity"
+                return ""
             n = int(n)
             assert 0 <= n
             res = []
@@ -329,6 +334,8 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
                     continue
                 number = _sub_thousand(z)
                 if i:
+                    if i >= len(hundreds):
+                        return ""
                     number += " "
                     number += hundreds[i]
                 res.append(number)
@@ -345,7 +352,7 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
 
         def _long_scale(n):
             if n >= max(LONG_SCALE_EN.keys()):
-                return "infinity"
+                return ""
             n = int(n)
             assert 0 <= n
             res = []
@@ -355,6 +362,8 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
                 number = pronounce_number_en(z, places, True, scientific)
                 # strip off the comma after the thousand
                 if i:
+                    if i >= len(hundreds):
+                        return ""
                     # plus one as we skip 'thousand'
                     # (and 'hundred', but this is excluded by index value)
                     number = number.replace(',', '')
@@ -367,8 +376,11 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
         else:
             result += _long_scale(num)
 
+    # deal with scientific notation unpronounceable as number
+    if not result and "e" in str(num):
+        return pronounce_number_en(num, places, short_scale, scientific=True)
     # Deal with fractional part
-    if not num == int(num) and places > 0:
+    elif not num == int(num) and places > 0:
         result += " point"
         place = 10
         while int(num * place) % 10 > 0 and places > 0:

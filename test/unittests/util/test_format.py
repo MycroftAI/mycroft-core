@@ -18,6 +18,7 @@ import json
 import unittest
 import datetime
 import ast
+import sys
 from pathlib import Path
 
 from mycroft.util.format import nice_number
@@ -159,17 +160,6 @@ class TestPronounceNumber(unittest.TestCase):
         self.assertEqual(pronounce_number(209996), "two hundred and nine "
                                                    "thousand, nine hundred "
                                                    "and ninety six")
-        self.assertEqual(pronounce_number(95505896639631893),
-                         "ninety five quadrillion, five hundred and five "
-                         "trillion, eight hundred and ninety six billion, six "
-                         "hundred and thirty nine million, six hundred and "
-                         "thirty one thousand, eight hundred and ninety three")
-        self.assertEqual(pronounce_number(95505896639631893,
-                                          short_scale=False),
-                         "ninety five thousand five hundred and five billion, "
-                         "eight hundred and ninety six thousand six hundred "
-                         "and thirty nine million, six hundred and thirty one "
-                         "thousand, eight hundred and ninety three")
 
     def test_convert_scientific_notation(self):
         self.assertEqual(pronounce_number(0, scientific=True), "zero")
@@ -185,6 +175,21 @@ class TestPronounceNumber(unittest.TestCase):
                                           scientific=True),
                          "one point six seven two times ten to the power of "
                          "negative twenty seven")
+
+    def test_auto_scientific_notation(self):
+        self.assertEqual(
+            pronounce_number(1.1e-150), "one point one times ten to the "
+                                        "power of negative one hundred "
+                                        "and fifty")
+        self.assertEqual(
+            pronounce_number(sys.float_info.min), "two point two two times "
+                                                  "ten to the power of "
+                                                  "negative three hundred "
+                                                  "and eight")
+        self.assertEqual(
+            pronounce_number(sys.float_info.max), "one point seven nine "
+                                                  "times ten to the power of"
+                                                  " three hundred and eight")
 
     def test_large_numbers(self):
         self.assertEqual(
@@ -215,6 +220,100 @@ class TestPronounceNumber(unittest.TestCase):
         self.assertEqual(
             pronounce_number(1000001, short_scale=True),
             "one million, one")
+        self.assertEqual(pronounce_number(95505896639631893),
+                         "ninety five quadrillion, five hundred and five "
+                         "trillion, eight hundred and ninety six billion, six "
+                         "hundred and thirty nine million, six hundred and "
+                         "thirty one thousand, eight hundred and ninety three")
+        self.assertEqual(pronounce_number(95505896639631893,
+                                          short_scale=False),
+                         "ninety five thousand five hundred and five billion, "
+                         "eight hundred and ninety six thousand six hundred "
+                         "and thirty nine million, six hundred and thirty one "
+                         "thousand, eight hundred and ninety three")
+        self.assertEqual(pronounce_number(10e80, places=1),
+                         "one qesvigintillion")
+        # TODO floating point rounding issues might happen
+        self.assertEqual(pronounce_number(1.9874522571e80, places=9),
+                         "one hundred and ninety eight quinquavigintillion, "
+                         "seven hundred and forty five quattuorvigintillion, "
+                         "two hundred and twenty five tresvigintillion, "
+                         "seven hundred and nine uuovigintillion, "
+                         "nine hundred and ninety nine unvigintillion, "
+                         "nine hundred and eighty nine vigintillion, "
+                         "seven hundred and thirty novendecillion, nine "
+                         "hundred and nineteen octodecillion, nine hundred "
+                         "and ninety nine septendecillion, nine hundred "
+                         "and fifty five sedecillion, four hundred and "
+                         "ninety eight quinquadecillion, two hundred and "
+                         "fourteen quattuordecillion, eight hundred and "
+                         "forty five tredecillion, four hundred and "
+                         "twenty nine duodecillion, four hundred and "
+                         "forty four undecillion, three hundred and "
+                         "thirty six decillion, seven hundred and twenty "
+                         "four nonillion, five hundred and sixty nine "
+                         "octillion, three hundred and seventy five "
+                         "septillion, two hundred and thirty nine sextillion,"
+                         " six hundred and seventy quintillion, five hundred "
+                         "and seventy four quadrillion, seven hundred and "
+                         "thirty nine trillion, seven hundred and forty "
+                         "eight billion, four hundred and seventy million, "
+                         "nine hundred and fifteen thousand, seventy two")
+        self.assertEqual(pronounce_number(1.00000000000000001e150),
+                         "nine hundred and ninety nine millinillion, nine "
+                         "hundred and ninety nine uncentillion, nine hundred "
+                         "and ninety nine centillion, nine hundred and ninety"
+                         " nine nonagintillion, nine hundred and ninety nine"
+                         " octogintillion, nine hundred and eighty"
+                         " septuagintillion, eight hundred and thirty five "
+                         "sexagintillion, five hundred and ninety six "
+                         "quinquagintillion, one hundred and seventy two"
+                         " quadragintillion, four hundred and thirty seven"
+                         " noventrigintillion, three hundred and seventy four"
+                         " octotrigintillion, five hundred and ninety"
+                         " septentrigintillion, five hundred and seventy"
+                         " three sestrigintillion, one hundred and twenty "
+                         "quinquatrigintillion, fourteen quattuortrigintillion"
+                         ", thirty trestrigintillion, three hundred and "
+                         "eighteen duotrigintillion, seven hundred and ninety"
+                         " three untrigintillion, ninety one trigintillion,"
+                         " one hundred and sixty four novemvigintillion, eight"
+                         " hundred and ten octovigintillion, one hundred and"
+                         " fifty four septemvigintillion, one hundred "
+                         "qesvigintillion, one hundred and twelve "
+                         "quinquavigintillion, two hundred and three "
+                         "quattuorvigintillion, six hundred and seventy "
+                         "eight tresvigintillion, five hundred and eighty "
+                         "two uuovigintillion, nine hundred and seventy six"
+                         " unvigintillion, two hundred and ninety eight "
+                         "vigintillion, two hundred and sixty eight "
+                         "novendecillion, six hundred and sixteen "
+                         "octodecillion, two hundred and twenty one "
+                         "septendecillion, one hundred and fifty one"
+                         " sedecillion, nine hundred and sixty two "
+                         "quinquadecillion, seven hundred and two"
+                         " quattuordecillion, sixty tredecillion, two hundred"
+                         " and sixty six duodecillion, one hundred and "
+                         "seventy six undecillion, five decillion, four "
+                         "hundred and forty nonillion, five hundred and"
+                         " sixty seven octillion, thirty two septillion, "
+                         "three hundred and thirty one sextillion, "
+                         "two hundred and eight quintillion, four hundred and "
+                         "three quadrillion, nine hundred and forty eight "
+                         "trillion, two hundred and thirty three billion, "
+                         "three hundred and seventy three million, five "
+                         "hundred and fifteen thousand, seven hundred and "
+                         "seventy six")
+
+        # infinity
+        self.assertEqual(
+            pronounce_number(sys.float_info.max * 2), "infinity")
+        self.assertEqual(
+            pronounce_number(float("inf")),
+            "infinity")
+        self.assertEqual(
+            pronounce_number(float("-inf")),
+            "negative infinity")
 
 
 # def nice_time(dt, lang="en-us", speech=True, use_24hour=False,
