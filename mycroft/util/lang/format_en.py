@@ -19,7 +19,6 @@ from mycroft.util.lang.format_common import convert_to_mixed_fraction
 import collections
 from mycroft.util.log import LOG
 
-
 NUM_STRING_EN = {
     0: 'zero',
     1: 'one',
@@ -354,9 +353,11 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False,
     tens = [number_names[n] for n in range(10, 100, 10)]
 
     if short_scale:
-        hundreds = [SHORT_SCALE_STRING_EN[n] for n in SHORT_SCALE_STRING_EN.keys()]
+        hundreds = [SHORT_SCALE_STRING_EN[n] for n in
+                    SHORT_SCALE_STRING_EN.keys()]
     else:
-        hundreds = [LONG_SCALE_STRING_EN[n] for n in LONG_SCALE_STRING_EN.keys()]
+        hundreds = [LONG_SCALE_STRING_EN[n] for n in
+                    LONG_SCALE_STRING_EN.keys()]
 
     # deal with negatives
     result = ""
@@ -447,7 +448,7 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False,
                                 number += SHORT_ORDINALS_STRING_EN[i * 1000]
                         else:
                             if n not in SHORT_SCALE_STRING_EN:
-                                num = int("1" + "0"*(len(str(n)) - 2))
+                                num = int("1" + "0" * (len(str(n)) - 2))
 
                                 number += SHORT_SCALE_STRING_EN[num] + "th"
                             else:
@@ -490,14 +491,17 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False,
                     if ordi:
                         if i * 1000000 in LONG_ORDINALS_STRING_EN:
                             if z == 1:
-                                number = LONG_ORDINALS_STRING_EN[(i + 1) * 1000000]
+                                number = LONG_ORDINALS_STRING_EN[
+                                    (i + 1) * 1000000]
                             else:
-                                number += LONG_ORDINALS_STRING_EN[(i + 1) * 1000000]
+                                number += LONG_ORDINALS_STRING_EN[
+                                    (i + 1) * 1000000]
                         else:
                             if n not in LONG_SCALE_STRING_EN:
                                 num = int("1" + "0" * (len(str(n)) - 2))
 
-                                number += " " + LONG_SCALE_STRING_EN[num] + "th"
+                                number += " " + LONG_SCALE_STRING_EN[
+                                    num] + "th"
                             else:
                                 number = " " + LONG_SCALE_STRING_EN[n] + "th"
                     else:
