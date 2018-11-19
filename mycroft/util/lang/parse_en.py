@@ -18,9 +18,10 @@ from datetime import datetime
 
 from dateutil.relativedelta import relativedelta
 
-from mycroft.util.lang.parse_common import is_numeric, look_for_fractions
+from mycroft.util.lang.parse_common import is_numeric, look_for_fractions, \
+    extract_numbers_generic
 from mycroft.util.lang.format_en import NUM_STRING_EN, LONG_SCALE_EN, \
-    SHORT_SCALE_EN
+    SHORT_SCALE_EN, pronounce_number_en
 
 SHORT_ORDINAL_STRING_EN = {
     1: 'first',
@@ -129,6 +130,7 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
     string_num_en = {
         "half": 0.5,
         "halves": 0.5,
+        "couple": 2,
         "hundred": 100,
         "hundreds": 100,
         "thousand": 1000,
@@ -1049,6 +1051,24 @@ def isFractional_en(input_str, short_scale=True):
     return False
 
 
+def extract_numbers_en(text, short_scale=True, ordinals=False):
+    """
+        Takes in a string and extracts a list of numbers.
+
+    Args:
+        text (str): the string to extract a number from
+        short_scale (bool): Use "short scale" or "long scale" for large
+            numbers -- over a million.  The default is short scale, which
+            is now common in most English speaking countries.
+            See https://en.wikipedia.org/wiki/Names_of_large_numbers
+        ordinals (bool): consider ordinal numbers, e.g. third=3 instead of 1/3
+    Returns:
+        list: list of extracted numbers as floats
+    """
+    return extract_numbers_generic(text, pronounce_number_en, extractnumber_en,
+                                   short_scale=short_scale, ordinals=ordinals)
+
+
 def normalize_en(text, remove_articles):
     """ English string normalization """
 
@@ -1107,15 +1127,21 @@ def normalize_en(text, remove_articles):
                          "you are not", "you are not", "you are", "you have"]
             word = expansion[contraction.index(word)]
 
-        # Convert numbers into digits, e.g. "two" -> "2"
-        textNumbers = ["zero", "one", "two", "three", "four", "five", "six",
-                       "seven", "eight", "nine", "ten", "eleven", "twelve",
-                       "thirteen", "fourteen", "fifteen", "sixteen",
-                       "seventeen", "eighteen", "nineteen", "twenty"]
-
-        if word in textNumbers:
-            word = str(textNumbers.index(word))
-
         normalized += " " + word
+
+    # replace extracted numbers
+    numbers = extract_numbers_en(normalized)
+    # sort by string size, "twenty two" should be replaced before "two"
+    numbers.sort(key=lambda s: len(pronounce_number_en(s)), reverse=True)
+    for n in numbers:
+        txt = pronounce_number_en(n)
+        n = str(n)
+        if n.endswith(".0"):
+            n = n[:-2]
+        normalized = normalized.replace(txt, n)
+        # prnounced may be different from txt, ie
+        # pronounce(0.5) != half
+        # extract(half) == 0.5
+        # TODO account for this
 
     return normalized[1:]  # strip the initial space
