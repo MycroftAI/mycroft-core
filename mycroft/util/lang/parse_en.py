@@ -19,94 +19,8 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 from mycroft.util.lang.parse_common import is_numeric, look_for_fractions
-from mycroft.util.lang.format_en import NUM_STRING_EN, LONG_SCALE_EN, \
-    SHORT_SCALE_EN
-
-SHORT_ORDINAL_STRING_EN = {
-    1: 'first',
-    2: 'second',
-    3: 'third',
-    4: 'fourth',
-    5: 'fifth',
-    6: 'sixth',
-    7: 'seventh',
-    8: 'eighth',
-    9: 'ninth',
-    10: 'tenth',
-    11: 'eleventh',
-    12: 'twelfth',
-    13: 'thirteenth',
-    14: 'fourteenth',
-    15: 'fifteenth',
-    16: 'sixteenth',
-    17: 'seventeenth',
-    18: 'eighteenth',
-    19: 'nineteenth',
-    20: 'twentieth',
-    30: 'thirtieth',
-    40: "fortieth",
-    50: "fiftieth",
-    60: "sixtieth",
-    70: "seventieth",
-    80: "eightieth",
-    90: "ninetieth",
-    10e3: "hundredth",
-    1e3: "thousandth",
-    1e6: "millionth",
-    1e9: "billionth",
-    1e12: "trillionth",
-    1e15: "quadrillionth",
-    1e18: "quintillionth",
-    1e21: "sextillionth",
-    1e24: "septillionth",
-    1e27: "octillionth",
-    1e30: "nonillionth",
-    1e33: "decillionth"
-    # TODO > 1e-33
-}
-
-LONG_ORDINAL_STRING_EN = {
-    1: 'first',
-    2: 'second',
-    3: 'third',
-    4: 'fourth',
-    5: 'fifth',
-    6: 'sixth',
-    7: 'seventh',
-    8: 'eighth',
-    9: 'ninth',
-    10: 'tenth',
-    11: 'eleventh',
-    12: 'twelfth',
-    13: 'thirteenth',
-    14: 'fourteenth',
-    15: 'fifteenth',
-    16: 'sixteenth',
-    17: 'seventeenth',
-    18: 'eighteenth',
-    19: 'nineteenth',
-    20: 'twentieth',
-    30: 'thirtieth',
-    40: "fortieth",
-    50: "fiftieth",
-    60: "sixtieth",
-    70: "seventieth",
-    80: "eightieth",
-    90: "ninetieth",
-    10e3: "hundredth",
-    1e3: "thousandth",
-    1e6: "millionth",
-    1e12: "billionth",
-    1e18: "trillionth",
-    1e24: "quadrillionth",
-    1e30: "quintillionth",
-    1e36: "sextillionth",
-    1e42: "septillionth",
-    1e48: "octillionth",
-    1e54: "nonillionth",
-    1e60: "decillionth"
-    # TODO > 1e60
-}
+from mycroft.util.lang.format_en import NUM_STRING_EN, LONG_SCALE_STRING_EN, \
+    SHORT_SCALE_STRING_EN, SHORT_ORDINALS_STRING_EN, LONG_ORDINALS_STRING_EN
 
 
 def extractnumber_en(text, short_scale=True, ordinals=False):
@@ -143,12 +57,12 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
     # first, second...
     if ordinals:
         if short_scale:
-            for num in SHORT_ORDINAL_STRING_EN:
-                num_string = SHORT_ORDINAL_STRING_EN[num]
+            for num in SHORT_ORDINALS_STRING_EN:
+                num_string = SHORT_ORDINALS_STRING_EN[num]
                 string_num_en[num_string] = num
         else:
-            for num in LONG_ORDINAL_STRING_EN:
-                num_string = LONG_ORDINAL_STRING_EN[num]
+            for num in LONG_ORDINALS_STRING_EN:
+                num_string = LONG_ORDINALS_STRING_EN[num]
                 string_num_en[num_string] = num
 
     # negate next number (-2 = 0 - 2)
@@ -169,15 +83,15 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
     decimal_marker = [" point ", " dot "]
 
     if short_scale:
-        for num in SHORT_SCALE_EN:
-            num_string = SHORT_SCALE_EN[num]
+        for num in SHORT_SCALE_STRING_EN:
+            num_string = SHORT_SCALE_STRING_EN[num]
             string_num_en[num_string] = num
             string_num_en[num_string + "s"] = num
             multiplies.append(num_string)
             multiplies.append(num_string + "s")
     else:
-        for num in LONG_SCALE_EN:
-            num_string = LONG_SCALE_EN[num]
+        for num in LONG_SCALE_STRING_EN:
+            num_string = LONG_SCALE_STRING_EN[num]
             string_num_en[num_string] = num
             string_num_en[num_string + "s"] = num
             multiplies.append(num_string)
@@ -1036,13 +950,13 @@ def isFractional_en(input_str, short_scale=True):
 
     fracts = {"whole": 1, "half": 2, "halve": 2, "quarter": 4}
     if short_scale:
-        for num in SHORT_ORDINAL_STRING_EN:
+        for num in SHORT_ORDINALS_STRING_EN:
             if num > 2:
-                fracts[SHORT_ORDINAL_STRING_EN[num]] = num
+                fracts[SHORT_ORDINALS_STRING_EN[num]] = num
     else:
-        for num in LONG_ORDINAL_STRING_EN:
+        for num in LONG_ORDINALS_STRING_EN:
             if num > 2:
-                fracts[LONG_ORDINAL_STRING_EN[num]] = num
+                fracts[LONG_ORDINALS_STRING_EN[num]] = num
 
     if input_str.lower() in fracts:
         return 1.0 / fracts[input_str.lower()]

@@ -73,39 +73,7 @@ FRACTION_STRING_EN = {
     20: 'twentieth'
 }
 
-ORDINALS_EN = {
-    1: "first",
-    2: 'second',
-    3: 'third',
-    4: 'fourth',
-    5: 'fifth',
-    6: 'sixth',
-    7: 'seventh',
-    8: 'eight',
-    9: 'ninth',
-    10: 'tenth',
-    11: 'eleventh',
-    12: 'twelfth',
-    13: 'thirteenth',
-    14: 'fourteenth',
-    15: 'fifteenth',
-    16: 'sixteenth',
-    17: 'seventeenth',
-    18: 'eighteenth',
-    19: 'nineteenth',
-    20: 'twentieth',
-    30: 'thirtieth',
-    40: "fortieth",
-    50: "fiftieth",
-    60: "sixtieth",
-    70: "seventieth",
-    80: "eightieth",
-    90: "ninetieth",
-    100: "hundredth",
-    1000: "thousandth"
-}
-
-LONG_SCALE_EN = collections.OrderedDict([
+LONG_SCALE_STRING_EN = collections.OrderedDict([
     (100, 'hundred'),
     (1000, 'thousand'),
     (1000000, 'million'),
@@ -134,7 +102,7 @@ LONG_SCALE_EN = collections.OrderedDict([
     (1e366, "unsexagintillion")
 ])
 
-SHORT_SCALE_EN = collections.OrderedDict([
+SHORT_SCALE_STRING_EN = collections.OrderedDict([
     (100, 'hundred'),
     (1000, 'thousand'),
     (1000000, 'million'),
@@ -207,6 +175,92 @@ SHORT_SCALE_EN = collections.OrderedDict([
     (1e2703, "nongentillion"),
     (1e3003, "millinillion")
 ])
+
+SHORT_ORDINALS_STRING_EN = {
+    1: 'first',
+    2: 'second',
+    3: 'third',
+    4: 'fourth',
+    5: 'fifth',
+    6: 'sixth',
+    7: 'seventh',
+    8: 'eighth',
+    9: 'ninth',
+    10: 'tenth',
+    11: 'eleventh',
+    12: 'twelfth',
+    13: 'thirteenth',
+    14: 'fourteenth',
+    15: 'fifteenth',
+    16: 'sixteenth',
+    17: 'seventeenth',
+    18: 'eighteenth',
+    19: 'nineteenth',
+    20: 'twentieth',
+    30: 'thirtieth',
+    40: "fortieth",
+    50: "fiftieth",
+    60: "sixtieth",
+    70: "seventieth",
+    80: "eightieth",
+    90: "ninetieth",
+    100: "hundredth",
+    1e3: "thousandth",
+    1e6: "millionth",
+    1e9: "billionth",
+    1e12: "trillionth",
+    1e15: "quadrillionth",
+    1e18: "quintillionth",
+    1e21: "sextillionth",
+    1e24: "septillionth",
+    1e27: "octillionth",
+    1e30: "nonillionth",
+    1e33: "decillionth"
+    # TODO > 1e-33
+}
+
+LONG_ORDINALS_STRING_EN = {
+    1: 'first',
+    2: 'second',
+    3: 'third',
+    4: 'fourth',
+    5: 'fifth',
+    6: 'sixth',
+    7: 'seventh',
+    8: 'eighth',
+    9: 'ninth',
+    10: 'tenth',
+    11: 'eleventh',
+    12: 'twelfth',
+    13: 'thirteenth',
+    14: 'fourteenth',
+    15: 'fifteenth',
+    16: 'sixteenth',
+    17: 'seventeenth',
+    18: 'eighteenth',
+    19: 'nineteenth',
+    20: 'twentieth',
+    30: 'thirtieth',
+    40: "fortieth",
+    50: "fiftieth",
+    60: "sixtieth",
+    70: "seventieth",
+    80: "eightieth",
+    90: "ninetieth",
+    100: "hundredth",
+    1e3: "thousandth",
+    1e6: "millionth",
+    1e12: "billionth",
+    1e18: "trillionth",
+    1e24: "quadrillionth",
+    1e30: "quintillionth",
+    1e36: "sextillionth",
+    1e42: "septillionth",
+    1e48: "octillionth",
+    1e54: "nonillionth",
+    1e60: "decillionth"
+    # TODO > 1e60
+}
 
 
 def nice_number_en(number, speech, denominators):
@@ -290,19 +344,19 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False,
                        pronounce_number_en(power, places, short_scale, False)
     if short_scale:
         number_names = NUM_STRING_EN.copy()
-        number_names.update(SHORT_SCALE_EN)
+        number_names.update(SHORT_SCALE_STRING_EN)
     else:
         number_names = NUM_STRING_EN.copy()
-        number_names.update(LONG_SCALE_EN)
+        number_names.update(LONG_SCALE_STRING_EN)
 
     digits = [number_names[n] for n in range(0, 20)]
 
     tens = [number_names[n] for n in range(10, 100, 10)]
 
     if short_scale:
-        hundreds = [SHORT_SCALE_EN[n] for n in SHORT_SCALE_EN.keys()]
+        hundreds = [SHORT_SCALE_STRING_EN[n] for n in SHORT_SCALE_STRING_EN.keys()]
     else:
-        hundreds = [LONG_SCALE_EN[n] for n in LONG_SCALE_EN.keys()]
+        hundreds = [LONG_SCALE_STRING_EN[n] for n in LONG_SCALE_STRING_EN.keys()]
 
     # deal with negatives
     result = ""
@@ -352,8 +406,8 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False,
     else:
         def _sub_thousand(n, ordinals=False):
             assert 0 <= n <= 999
-            if n in ORDINALS_EN and ordinals:
-                return ORDINALS_EN[n]
+            if n in SHORT_ORDINALS_STRING_EN and ordinals:
+                return SHORT_ORDINALS_STRING_EN[n]
             if n <= 19:
                 return digits[n]
             elif n <= 99:
@@ -366,7 +420,7 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False,
                     " and " + _sub_thousand(r, ordinals) if r else "")
 
         def _short_scale(n):
-            if n >= max(SHORT_SCALE_EN.keys()):
+            if n >= max(SHORT_SCALE_STRING_EN.keys()):
                 return "infinity"
             ordi = ordinals
 
@@ -386,18 +440,18 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False,
                     number += " "
                     if ordi:
 
-                        if i * 1000 in ORDINALS_EN:
+                        if i * 1000 in SHORT_ORDINALS_STRING_EN:
                             if z == 1:
-                                number = ORDINALS_EN[i * 1000]
+                                number = SHORT_ORDINALS_STRING_EN[i * 1000]
                             else:
-                                number += ORDINALS_EN[i * 1000]
+                                number += SHORT_ORDINALS_STRING_EN[i * 1000]
                         else:
-                            if n not in SHORT_SCALE_EN:
+                            if n not in SHORT_SCALE_STRING_EN:
                                 num = int("1" + "0"*(len(str(n)) - 2))
 
-                                number += SHORT_SCALE_EN[num] + "th"
+                                number += SHORT_SCALE_STRING_EN[num] + "th"
                             else:
-                                number = SHORT_SCALE_EN[n] + "th"
+                                number = SHORT_SCALE_STRING_EN[n] + "th"
                     else:
                         number += hundreds[i]
                 res.append(number)
@@ -414,7 +468,7 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False,
             return res
 
         def _long_scale(n):
-            if n >= max(LONG_SCALE_EN.keys()):
+            if n >= max(LONG_SCALE_STRING_EN.keys()):
                 return "infinity"
             ordi = ordinals
             if int(n) != n:
@@ -434,18 +488,18 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False,
                     number = number.replace(',', '')
 
                     if ordi:
-                        if i * 1000000 in ORDINALS_EN:
+                        if i * 1000000 in LONG_ORDINALS_STRING_EN:
                             if z == 1:
-                                number = ORDINALS_EN[(i + 1) * 1000000]
+                                number = LONG_ORDINALS_STRING_EN[(i + 1) * 1000000]
                             else:
-                                number += ORDINALS_EN[(i + 1) * 1000000]
+                                number += LONG_ORDINALS_STRING_EN[(i + 1) * 1000000]
                         else:
-                            if n not in LONG_SCALE_EN:
+                            if n not in LONG_SCALE_STRING_EN:
                                 num = int("1" + "0" * (len(str(n)) - 2))
 
-                                number += " " + LONG_SCALE_EN[num] + "th"
+                                number += " " + LONG_SCALE_STRING_EN[num] + "th"
                             else:
-                                number = " " + LONG_SCALE_EN[n] + "th"
+                                number = " " + LONG_SCALE_STRING_EN[n] + "th"
                     else:
 
                         number += " " + hundreds[i + 1]
