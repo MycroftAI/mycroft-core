@@ -544,8 +544,6 @@ class SkillManager(Thread):
                                                  "error": "converse requested"
                                                           " but skill not "
                                                           "loaded"}))
-                    self.bus.emit(message.reply("skill.converse.response", {
-                        "skill_id": skill_id, "result": False}))
                     return
                 try:
                     result = instance.converse(utterances, lang)
@@ -557,12 +555,8 @@ class SkillManager(Thread):
                                                 {"skill_id": skill_id,
                                                  "error": "exception in "
                                                           "converse method"}))
-                    self.bus.emit(message.reply("skill.converse.response", {
-                        "skill_id": skill_id, "result": False}))
                     return
 
         self.bus.emit(message.reply("skill.converse.error",
                                     {"skill_id": skill_id,
                                      "error": "skill id does not exist"}))
-        self.bus.emit(message.reply("skill.converse.response",
-                                    {"skill_id": skill_id, "result": False}))
