@@ -223,6 +223,7 @@ class IntentService(object):
             t = time.time() - start_time
             time.sleep(0.1)
         self.waiting_for_converse = False
+        self.converse_skill_id = ""
         return self.converse_result
 
     def handle_converse_error(self, message):
