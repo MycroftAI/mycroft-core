@@ -534,14 +534,14 @@ class SkillManager(Thread):
 
         # loop trough skills list and call converse for skill with skill_id
         for skill in self.loaded_skills:
-            if (self.loaded_skills[skill]["instance"] and
-                    self.loaded_skills[skill]["id"] == skill_id):
-                try:
-                    instance = self.loaded_skills[skill]["instance"]
-                except BaseException:
-                    LOG.error("converse requested but skill not loaded")
-                    self.bus.emit(message.reply("skill.converse.response", {
-                        "skill_id": 0, "result": False}))
+            if self.loaded_skills[skill]["id"] == skill_id:
+                instance = self.loaded_skills[skill].get("instance")
+                if instance is None:
+                    self.bus.emit(message.reply("skill.converse.error",
+                                                {"skill_id": skill_id,
+                                                 "error": "converse requested"
+                                                          " but skill not "
+                                                          "loaded"}))
                     return
                 try:
                     result = instance.converse(utterances, lang)
@@ -549,7 +549,12 @@ class SkillManager(Thread):
                         "skill_id": skill_id, "result": result}))
                     return
                 except BaseException:
-                    LOG.exception(
-                        "Error in converse method for skill " + str(skill_id))
-        self.bus.emit(message.reply("skill.converse.response",
-                                    {"skill_id": 0, "result": False}))
+                    self.bus.emit(message.reply("skill.converse.error",
+                                                {"skill_id": skill_id,
+                                                 "error": "exception in "
+                                                          "converse method"}))
+                    return
+
+        self.bus.emit(message.reply("skill.converse.error",
+                                    {"skill_id": skill_id,
+                                     "error": "skill id does not exist"}))
