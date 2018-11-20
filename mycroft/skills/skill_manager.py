@@ -539,8 +539,13 @@ class SkillManager(Thread):
                     instance = self.loaded_skills[skill]["instance"]
                 except BaseException:
                     LOG.error("converse requested but skill not loaded")
+                    self.bus.emit(message.reply("skill.converse.error",
+                                                {"skill_id": skill_id,
+                                                 "error": "converse requested"
+                                                          " but skill not "
+                                                          "loaded"}))
                     self.bus.emit(message.reply("skill.converse.response", {
-                        "skill_id": 0, "result": False}))
+                        "skill_id": skill_id, "result": False}))
                     return
                 try:
                     result = instance.converse(utterances, lang)
@@ -548,7 +553,16 @@ class SkillManager(Thread):
                         "skill_id": skill_id, "result": result}))
                     return
                 except BaseException:
-                    LOG.exception(
-                        "Error in converse method for skill " + str(skill_id))
+                    self.bus.emit(message.reply("skill.converse.error",
+                                                {"skill_id": skill_id,
+                                                 "error": "exception in "
+                                                          "converse method"}))
+                    self.bus.emit(message.reply("skill.converse.response", {
+                        "skill_id": skill_id, "result": False}))
+                    return
+
+        self.bus.emit(message.reply("skill.converse.error",
+                                    {"skill_id": skill_id,
+                                     "error": "skill id does not exist"}))
         self.bus.emit(message.reply("skill.converse.response",
-                                    {"skill_id": 0, "result": False}))
+                                    {"skill_id": skill_id, "result": False}))
