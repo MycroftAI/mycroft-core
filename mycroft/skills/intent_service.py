@@ -227,7 +227,8 @@ class IntentService(object):
 
     def handle_converse_error(self, message):
         skill_id = message.data["skill_id"]
-        self.remove_active_skill(skill_id)
+        if message.data["error"] == "skill id does not exist":
+            self.remove_active_skill(skill_id)
         if skill_id == self.converse_skill_id:
             self.converse_result = False
             self.waiting_for_converse = False
