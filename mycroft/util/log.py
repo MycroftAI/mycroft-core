@@ -90,7 +90,8 @@ class LOG:
 
         # Logging each skill as one
         if config.get('log_per_skill'):
-            logger.addHandler(logging.FileHandler(filename='/var/log/mycroft/skill-' + name))
+            skill_log_filename = '/var/log/mycroft/skill-' + name + '.log'
+            logger.addHandler(logging.FileHandler(filename=skill_log_filename))
 
         logger.propagate = False
         logger.addHandler(cls.handler)
