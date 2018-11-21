@@ -212,13 +212,19 @@ def intent_file_handler(intent_file):
 #######################################################################
 class SkillGUI(object):
 
-    def __init__(self):
+    def __init__(self, skill):
         self.__dict = {}
-        self.page = None    # the GUI page (e.g. QML template) to show
+        self.page = None    # the active GUI page (e.g. QML template) to show
+        self.skill = skill
 
     def __setitem__(self, key, value):
         self.__dict[key] = value
-        # TODO: emit notification
+
+        if self.page:
+            # emit notification
+            data = self.__dict.copy()
+            data.update({'__from': self.skill.skill_id})
+            self.skill.bus.emit(Message("gui.value.set", data))
 
     def __getitem__(self, key):
         try:
@@ -227,21 +233,39 @@ class SkillGUI(object):
             return None
 
     def clear(self):
+        """ Reset the value dictionary """
         self.__dict = {}
         self.page = None
 
     def show_page(self, name):
+        """
+        Begin showing the page in the GUI
+
+        Args:
+            name (str): Name of page (e.g "mypage.qml") to display
+        """
+
         self.page = name
 
         # Communicate with the enclosure process
 
         # First sync any data...
         data = self.__dict.copy()
-        data.update({'__from': self.skill_id})
-        self.bus.emit(Message("gui.value.set", data))
-        # Then request display of the correct page
-        self.bus.emit(Message("gui.page.show", {"page": self.page,
-                                                '__from': self.skill_id}))
+        data.update({'__from': self.skill.skill_id})
+        self.skill.bus.emit(Message("gui.value.set", data))
+        # TODO: Minimize by tracking data that has already been synched?
+
+        # Convert page to full reference
+        page = self.skill.find_resource(self.page)
+        if page:
+            page_url = "file://" + page
+
+            # Then request display of the correct page
+            self.skill.bus.emit(Message("gui.page.show",
+                                        {"page": page_url,
+                                        '__from': self.skill.skill_id}))
+        else:
+            self.skill.log.debug("Unable to find page: " + str(self.page))
 
 
 #######################################################################
@@ -259,7 +283,7 @@ class MycroftSkill(object):
         self._dir = dirname(abspath(sys.modules[self.__module__].__file__))
         self.settings = SkillSettings(self._dir, self.name)
 
-        self.gui = SkillGUI()
+        self.gui = SkillGUI(self)
 
         self._bus = None
         self._enclosure = None
@@ -328,7 +352,17 @@ class MycroftSkill(object):
             html (str): HTML text to display
         '''
         self.gui.clear()
-        self.gui["html"] = url
+        self.gui["url"] = ""  # TODO: Save to a temp file... html
+        self.gui.show_page("SYSTEM_HTMLFRAME")
+
+    def show_url(self, url):
+        '''Display an HTML page in the GUI
+
+        Arguments:
+            url (str): URL to render
+        '''
+        self.gui.clear()
+        self.gui["url"] = url
         self.gui.show_page("SYSTEM_HTMLFRAME")
 
     @property

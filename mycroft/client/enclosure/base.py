@@ -25,6 +25,11 @@ from tornado import autoreload, ioloop
 from tornado.websocket import WebSocketHandler
 from mycroft.messagebus.message import Message
 
+
+def DEBUG(str):
+    print(str)
+
+
 class Enclosure(object):
 
     def __init__(self):
@@ -57,7 +62,30 @@ class Enclosure(object):
             self.stop()
 
     ######################################################################
-    # GUI client support
+    # GUI client API
+
+    def on_gui_set_value(self, message):
+        data = message.data
+        namespace = data.get("__from", "")
+
+        # Pass these values on to the GUI renderers
+        for id in self.GUIs:
+            for key in data:
+                if key != "__from":
+                    self.GUIs[id].set(namespace, key, data[key])
+
+    def on_gui_show_page(self, message):
+        data = message.data
+        if not 'page' in data:
+            return
+        namespace = data.get("__from", "")
+
+        # Pass the request to the GUI(s) to pull up a page template
+        for id in self.GUIs:
+            self.GUIs[id].show(namespace, data['page'])
+
+    ######################################################################
+    # GUI client socket
     #
     # The basic mechanism is:
     # 1) GUI client announces itself on the main messagebus
@@ -70,7 +98,7 @@ class Enclosure(object):
 
     def on_gui_client_connected(self, message):
         # GUI has announced presence
-        print("on_gui_client_connected")
+        DEBUG("on_gui_client_connected")
         gui_id = message.data.get("gui_id")
 
         # Spin up a new communication socket for this GUI
@@ -79,32 +107,15 @@ class Enclosure(object):
             pass
         self.GUIs[gui_id] = GUIConnection(gui_id, self.global_config,
                                           self.callback_disconnect)
-        print("Heard announcement from gui_id: "+str(gui_id))
+        DEBUG("Heard announcement from gui_id: "+str(gui_id))
 
         # Announce connection, the GUI should connect on it soon
         self.bus.emit(Message("mycroft.gui.port",
                               {"port": self.GUIs[gui_id].port,
                                "gui_id": gui_id}))
 
-    def on_gui_set_value(self, message):
-        data = message.data
-
-        # Pass these values on to the GUI renderers
-        for id in self.GUIs:
-            for d in data:
-                self.GUIs[id].send('set '+d+' to '+data[d])    # TODO: Actually use the protocol
-
-    def on_gui_show_page(self, message):
-        data = message.data
-        if not 'page' in data:
-            return
-
-        # Pass the display request to the GUI to pull up
-        for id in self.GUIs:
-            self.GUIs[id].send('show ' + data['page'])         # TODO: Actually use the protocol
-
     def callback_disconnect(self, gui_id):
-        print("Disconnecting!")
+        DEBUG("Disconnecting!")
         # TODO: Whatever is needed to kill the websocket instance
         del self.GUIs[gui_id]
 
@@ -151,16 +162,41 @@ gui_app_settings = {
 }
 
 class GUIConnection(object):
+    """ A single GUIConnection exists per graphic interface.  This object
+    maintains the socket used for communication and keeps the state of the
+    Mycroft data in sync with the GUIs data.
+
+    Serves as a communication interface between Qt/QML frontend and Mycroft
+    Core.  This is bidirectional, e.g. "show me this visual" to the frontend as
+    well as "the user just tapped this button" from the frontend.
+
+    For the rough protocol, see:
+    https://cgit.kde.org/scratch/mart/mycroft-gui.git/tree/transportProtocol.txt?h=newapi  # nopep8
+
+    TODO: Implement variable deletion
+    TODO: Implement 'models' support
+    TODO: Implement events
+    TODO: Implement data coming back from Qt to Mycroft
+    """
 
     last_used_port = 0
     server_thread = None
 
     def __init__(self, id, config, callback_disconnect):
-        print("Creating GUIConnection")
+        DEBUG("Creating GUIConnection")
         self.id = id
-        self.server = None
         self.socket = None
         self.callback_disconnect = callback_disconnect
+
+        # This datastore holds the data associated with the GUI provider.  Data
+        # is stored in Namespaces, so you can have:
+        #   self.datastore["namespace"]["name"] = value
+        # Typically the namespace is a meaningless identifier, but there is a
+        # special "SYSTEM" namespace.
+        self.datastore = {}
+
+        self.current_namespace = None
+        self.current_page = None
 
         # Each connection will run its own Tornado server.  If the
         # connection drops, the server is killed.
@@ -170,79 +206,81 @@ class GUIConnection(object):
         self.port = websocket_config.get("base_port") + GUIConnection.last_used_port
         GUIConnection.last_used_port += 1
 
-        routes = [
-            (route, MycroftGUIWebsocket)
-        ]
-        self.application = tornado.web.Application(routes, **gui_app_settings)
-        self.application.gui = self
-        self.server = self.application.listen(self.port, host)
+        self.webapp = tornado.web.Application([
+                                               (route, GUIWebsocketHandler)
+                                              ], **gui_app_settings)
+        self.webapp.gui = self  # Hacky way to associate socket with this
+        self.webapp.listen(self.port, host)
 
         # TODO: This might need to move up a level
         # Can't run two IOLoop's in the same process
         if not GUIConnection.server_thread:
-            GUIConnection.server_thread = create_daemon(ioloop.IOLoop.
-                                                        instance().start)
-        print("IOLoop started on ws://"+str(host)+":"+str(self.port)+str(route))
+            GUIConnection.server_thread = create_daemon(ioloop.IOLoop.instance().start)
+        DEBUG("IOLoop started on ws://"+str(host)+":"+str(self.port)+str(route))
 
-    def on_connection_opened(self, socket):
-        print("on_connection_opened")
-        self.socket = socket
+    def on_connection_opened(self, socket_handler):
+        DEBUG("on_connection_opened")
+        self.socket = socket_handler
+
+        # Synchronize existing datastore
+        for namespace in self.datastore:
+            msg = {"type": "mycroft.session.set",
+                   "namespace": namespace,
+                   "data": self.datastore[namespace]}
+            self.socket.send_message(msg)
+        if self.current_page:
+            self.show(self.current_namespace, self.current_page)
 
     def on_connection_closed(self, socket):
         # Self-destruct (can't reconnect on the same port)
-        print("on_connection_closed")
-        if self.server:
-            self.server.stop()
-            self.server = None
+        DEBUG("on_connection_closed")
+        if self.socket:
+            DEBUG("Server stopped: "+str(self.socket))
+            # TODO: How to stop the webapp for this socket?
+            # self.socket.stop()
+            self.socket = None
         self.callback_disconnect(self.id)
 
-class MycroftGUIWebsocket(WebSocketHandler):
-    """
-    Serves as a communication interface between Qt/QML frontend and Mycroft
-    Core.  This is bidirectional, e.g. "show me this visual" to the frontend as
-    well as "the user just tapped this button" from the frontend.
+    def set(self, namespace, name, value):
+        if not namespace in self.datastore:
+            self.datastore[namespace] = {}
+        if self.datastore[namespace].get(name) != value:
+            msg = { "type": "mycroft.session.set",
+                    "namespace": namespace,
+                    "data": { name: value}}
+            self.socket.send(msg)
+            self.datastore[namespace][name] = value
 
-    For the rough protocol, see:
-    https://cgit.kde.org/scratch/mart/mycroft-gui.git/tree/transportProtocol.txt?h=newapi  # nopep8
+    def show(self, namespace, page):
+        self.socket.send({"type": "mycroft.gui.show",
+                          "namespace": namespace,
+                          "gui_url": page})
+        self.current_namespace = namespace
+        self.current_page = page
+
+
+class GUIWebsocketHandler(WebSocketHandler):
+    """
+    The socket pipeline between Qt and Mycroft
     """
 
     def open(self):
-        print("WebSocket opened")
         self.application.gui.on_connection_opened(self)
 
-        self.send(
-            {
-                "type": "mycroft.session.set",
-                "namespace": "weather.mycroft",
-                "data": {
-                    "temperature": "28",
-                    "icon": "cloudy"
-                }
-            }
-        )
-
-        self.send(
-            {
-                "type": "mycroft.gui.show",
-                "namespace": "weather.mycroft",
-                "gui_url": "file:///opt/mycroft/skills/mycroft-weather.mycroftai/ui/currentweather.qml"
-            }
-        )
-        # self.send(Message("mycroft.gui.show", data={"namespace": "weather.mycroft", "gui_url": "file:///opt/mycroft/weather.mycroft/ui/currentweather.qml"}))
-
     def on_message(self, message):
-        print("Received: "+str(message))
-        # self.write_message(u"You said: " + message)
-        # self.write_message(u"Then You said: " + message)
+        DEBUG("Received: "+str(message))
 
     def send_message(self, message):
         self.write_message(message.serialize())
 
     def send(self, data):
+        """Send the given data across the socket as JSON
+
+        Args:
+            data (dict): Data to transmit
+        """
         s = json.dumps(data)
         self.write_message(s)
-        print("Sent: "+s)
 
     def on_close(self):
-        print("WebSocket closed")
         self.application.gui.on_connection_closed(self)

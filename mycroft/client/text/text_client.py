@@ -16,6 +16,8 @@ import sys
 import io
 from math import ceil
 
+from .gui_server import start_qml_gui
+
 from mycroft.tts import TTS
 
 import os
@@ -38,6 +40,7 @@ preferred_encoding = locale.getpreferredencoding()
 
 bSimple = False
 bus = None  # Mycroft messagebus connection
+event_thread = None
 history = []
 chat = []   # chat history, oldest at the lowest index
 line = ""
@@ -360,7 +363,7 @@ def rebuild_filtered_log():
             else:
                 # Apply filters
                 for filtered_text in log_filters:
-                    if filtered_text in line:
+                    if filtered_text and filtered_text in line:
                         ignore = True
                         break
 
@@ -708,7 +711,7 @@ def do_draw_main(scr):
         scr.addstr(curses.LINES - 1, 0, ">", CLR_HEADING)
 
     _do_meter(cy_chat_area + 2)
-    scr.addstr(curses.LINES - 1, 2, ln, CLR_INPUT)
+    scr.addstr(curses.LINES - 1, 2, ln[-(curses.COLS - 3):], CLR_INPUT)
 
     # Curses doesn't actually update the display until refresh() is called
     scr.refresh()
@@ -931,11 +934,14 @@ def center(str_len):
 ##############################################################################
 # Main UI lopo
 
-def _get_cmd_param(cmd):
+def _get_cmd_param(cmd, keyword):
     # Returns parameter to a command.  Will de-quote.
     # Ex: find 'abc def'   returns: abc def
     #    find abc def     returns: abc def
-    cmd = cmd.strip()
+    cmd = cmd.replace(keyword,"").strip()
+    if not cmd:
+        return None
+
     last_char = cmd[-1]
     if last_char == '"' or last_char == "'":
         parts = cmd.split(last_char)
@@ -974,7 +980,7 @@ def handle_cmd(cmd):
         elif "show" in cmd or "on" in cmd:
             show_meter = True
     elif "find" in cmd:
-        find_str = _get_cmd_param(cmd)
+        find_str = _get_cmd_param(cmd, "find")
         rebuild_filtered_log()
     elif "filter" in cmd:
         if "show" in cmd or "list" in cmd:
@@ -986,19 +992,19 @@ def handle_cmd(cmd):
             log_filters = list(default_log_filters)
         else:
             # extract last word(s)
-            param = _get_cmd_param(cmd)
-
-            if "remove" in cmd and param in log_filters:
-                log_filters.remove(param)
-            else:
-                log_filters.append(param)
+            param = _get_cmd_param(cmd, "filter")
+            if param:
+                if "remove" in cmd and param in log_filters:
+                    log_filters.remove(param)
+                else:
+                    log_filters.append(param)
 
         rebuild_filtered_log()
         add_log_message("Filters: " + str(log_filters))
     elif "history" in cmd:
         # extract last word(s)
-        lines = int(_get_cmd_param(cmd))
-        if lines < 1:
+        lines = int(_get_cmd_param(cmd, "history"))
+        if not lines or lines < 1:
             lines = 1
         max_chat_area = curses.LINES - 7
         if lines > max_chat_area:
@@ -1040,6 +1046,15 @@ def handle_cmd(cmd):
     return 0  # do nothing upon return
 
 
+def handle_is_connected(msg):
+    add_log_message("Connected to Messagebus!")
+    # start_qml_gui(bus, add_log_message)
+
+
+def handle_reconnecting():
+    add_log_message("Looking for Messagebus websocket...")
+
+
 def gui_main(stdscr):
     global scr
     global bus
@@ -1054,15 +1069,15 @@ def gui_main(stdscr):
     scr = stdscr
     init_screen()
     scr.keypad(1)
-    scr.notimeout(1)
+    scr.notimeout(True)
 
-    bus = WebsocketClient()  # Mycroft messagebus connection
     bus.on('speak', handle_speak)
     bus.on('message', handle_message)
     bus.on('recognizer_loop:utterance', handle_utterance)
-    event_thread = Thread(target=connect)
-    event_thread.setDaemon(True)
-    event_thread.start()
+    bus.on('connected', handle_is_connected)
+    bus.on('reconnecting', handle_reconnecting)
+
+    add_log_message("Establishing Mycroft Messagebus connection...")
 
     gui_thread = ScreenDrawThread()
     gui_thread.setDaemon(True)  # this thread won't prevent prog from exiting
@@ -1075,7 +1090,12 @@ def gui_main(stdscr):
             set_screen_dirty()
 
             try:
-                c = scr.get_wch()  # unicode char or int for special keys
+                # Don't block, this allows us to refresh the screen while
+                # waiting on initial messagebus connection, etc
+                scr.timeout(1)
+                c = scr.get_wch()   # unicode char or int for special keys
+                if c == -1:
+                    continue
             except KeyboardInterrupt:
                 # User hit Ctrl+C to quit
                 if find_str:
@@ -1115,7 +1135,6 @@ def gui_main(stdscr):
                         c2 = scr.getch()
                         if time.time()-start > 1:  # 1 second timeout
                             break  # 1 second timeout waiting for ESC code
-                    scr.timeout(-1)
 
                 if c1 == 79 and c2 == 120:
                     c = curses.KEY_UP
@@ -1147,6 +1166,7 @@ def gui_main(stdscr):
                 else:
                     last_key = str(code)
 
+            scr.timeout(-1)     # resume blocking
             if code == 27:    # Hitting ESC twice clears the entry line
                 hist_idx = -1
                 line = ""
@@ -1227,6 +1247,8 @@ def gui_main(stdscr):
                 line = ":find "
             elif code == 18:  # Ctrl+R (Redraw)
                 scr.erase()
+            elif code == 23:  # Ctrl+W (start Window)
+                start_qml_gui(bus, add_log_message)
             elif code == 24:  # Ctrl+X (Exit)
                 if find_str:
                     # End the find session
@@ -1245,13 +1267,9 @@ def gui_main(stdscr):
 
 
 def simple_cli():
-    global bus
     global bSimple
     bSimple = True
-    bus = WebsocketClient()  # Mycroft messagebus connection
-    event_thread = Thread(target=connect)
-    event_thread.setDaemon(True)
-    event_thread.start()
+
     bus.on('speak', handle_speak)
     try:
         while True:
@@ -1269,3 +1287,12 @@ def simple_cli():
         LOG.exception(e)
         event_thread.exit()
         sys.exit()
+
+
+def connect_to_messagebus():
+    global bus
+    bus = WebsocketClient()  # Mycroft messagebus connection
+
+    event_thread = Thread(target=connect)
+    event_thread.setDaemon(True)
+    event_thread.start()
