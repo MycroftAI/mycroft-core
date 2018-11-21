@@ -254,8 +254,9 @@ class MockSkillsLoader(object):
             'intent_failure',
             FallbackSkill.make_intent_failure_handler(self.emitter))
 
-        def make_response(_):
-            data = dict(result=False)
+        def make_response(message):
+            skill_id = message.data.get('skill_id', '')
+            data = dict(result=False, skill_id=skill_id)
             self.emitter.emit(Message('skill.converse.response', data))
         self.emitter.on('skill.converse.request', make_response)
 
