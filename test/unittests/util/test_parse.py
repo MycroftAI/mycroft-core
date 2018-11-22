@@ -521,9 +521,7 @@ class TestNormalize(unittest.TestCase):
                          [20, 20, 20, 2])
         self.assertEqual(extract_numbers("third one"),
                          [1 / 3, 1])
-        # NOTE ambiguous case, should return [3] or [3, 1] ?
-        self.assertEqual(extract_numbers("third one", ordinals=True),
-                         [3, 1])
+        self.assertEqual(extract_numbers("third one", ordinals=True), [3])
         self.assertEqual(extract_numbers("six trillion", short_scale=True),
                          [6e12])
         self.assertEqual(extract_numbers("six trillion", short_scale=False),
