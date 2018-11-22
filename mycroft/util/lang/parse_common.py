@@ -49,3 +49,55 @@ def look_for_fractions(split_list):
             return True
 
     return False
+
+
+def extract_numbers_generic(text, pronounce_handler, extract_handler,
+                            short_scale=True, ordinals=False):
+    """
+        Takes in a string and extracts a list of numbers.
+        Language agnostic, per language parsers need to be provided
+
+    Args:
+        text (str): the string to extract a number from
+        pronounce_handler (function): function that pronounces a number
+        extract_handler (function): function that extracts the last number
+        present in a string
+        short_scale (bool): Use "short scale" or "long scale" for large
+            numbers -- over a million.  The default is short scale, which
+            is now common in most English speaking countries.
+            See https://en.wikipedia.org/wiki/Names_of_large_numbers
+        ordinals (bool): consider ordinal numbers, e.g. third=3 instead of 1/3
+    Returns:
+        list: list of extracted numbers as floats
+    """
+    numbers = []
+    normalized = text
+    extract = extract_handler(normalized, short_scale, ordinals)
+    to_parse = normalized
+    while extract:
+        numbers.append(extract)
+        prev = to_parse
+        num_txt = pronounce_handler(extract)
+        extract = str(extract)
+        if extract.endswith(".0"):
+            extract = extract[:-2]
+
+        # handle duplicate occurences, replace last one only
+        def replace_right(source, target, replacement, replacements=None):
+            return replacement.join(source.rsplit(target, replacements))
+
+        normalized = replace_right(normalized, num_txt, extract, 1)
+        # last biggest number was replaced, recurse to handle cases like
+        # test one two 3
+        to_parse = replace_right(to_parse, num_txt, extract, 1)
+        to_parse = replace_right(to_parse, extract, " ", 1)
+        if to_parse == prev:
+            # avoid infinite loops, occasionally pronounced number may be
+            # different from extracted text,
+            # ie pronounce(0.5) != half and extract(half) == 0.5
+            extract = False
+            # TODO fix this
+        else:
+            extract = extract_handler(to_parse, short_scale, ordinals)
+    numbers.reverse()
+    return numbers

@@ -143,6 +143,7 @@ class AudioService(object):
         self.default = None
         self.service = []
         self.current = None
+        self.play_start_time = 0
         self.volume_is_low = False
         self.pulse = None
         self.pulse_quiet = None
@@ -249,15 +250,16 @@ class AudioService(object):
             Args:
                 message: message bus message, not used but required
         """
-        LOG.debug('stopping all playing services')
-        with self.service_lock:
-            if self.current:
-                name = self.current.name
-                if self.current.stop():
-                    self.bus.emit(Message("mycroft.stop.handled",
-                                          {"by": "audio:" + name}))
+        if time.monotonic() - self.play_start_time > 1:
+            LOG.debug('stopping all playing services')
+            with self.service_lock:
+                if self.current:
+                    name = self.current.name
+                    if self.current.stop():
+                        self.bus.emit(Message("mycroft.stop.handled",
+                                              {"by": "audio:" + name}))
 
-                self.current = None
+                    self.current = None
 
     def _lower_volume(self, message=None):
         """
@@ -374,6 +376,7 @@ class AudioService(object):
         selected_service.add_list(tracks)
         selected_service.play(repeat)
         self.current = selected_service
+        self.play_start_time = time.monotonic()
 
     def _queue(self, message):
         if self.current:

@@ -4,3 +4,5 @@ pytest==3.5.0
 pytest-cov==2.5.1
 cov-core==1.15.0
 mock==2.0.0
+sphinx==1.8.2
+sphinx-rtd-theme==0.4.2

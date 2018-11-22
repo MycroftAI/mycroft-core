@@ -23,9 +23,11 @@ from mycroft.util.lang.parse_es import *
 from mycroft.util.lang.parse_it import *
 from mycroft.util.lang.parse_sv import *
 from mycroft.util.lang.parse_de import extractnumber_de
+from mycroft.util.lang.parse_de import extract_numbers_de
 from mycroft.util.lang.parse_de import extract_datetime_de
 from mycroft.util.lang.parse_de import normalize_de
 from mycroft.util.lang.parse_fr import extractnumber_fr
+from mycroft.util.lang.parse_fr import extract_numbers_fr
 from mycroft.util.lang.parse_fr import extract_datetime_fr
 from mycroft.util.lang.parse_fr import normalize_fr
 
@@ -69,6 +71,32 @@ def match_one(query, choices):
         return (choices[best[0]], best[1])
     else:
         return best
+
+
+def extract_numbers(text, short_scale=True, ordinals=False, lang="en-us"):
+    """
+        Takes in a string and extracts a list of numbers.
+
+    Args:
+        text (str): the string to extract a number from
+        short_scale (bool): Use "short scale" or "long scale" for large
+            numbers -- over a million.  The default is short scale, which
+            is now common in most English speaking countries.
+            See https://en.wikipedia.org/wiki/Names_of_large_numbers
+        ordinals (bool): consider ordinal numbers, e.g. third=3 instead of 1/3
+        lang (str): the BCP-47 code for the language to use
+    Returns:
+        list: list of extracted numbers as floats
+    """
+    if lang.startswith("en"):
+        return extract_numbers_en(text, short_scale, ordinals)
+    elif lang.startswith("de"):
+        return extract_numbers_de(text, short_scale, ordinals)
+    elif lang.startswith("fr"):
+        return extract_numbers_fr(text, short_scale, ordinals)
+    elif lang.startswith("it"):
+        return extract_numbers_it(text, short_scale, ordinals)
+    return []
 
 
 def extract_number(text, short_scale=True, ordinals=False, lang="en-us"):

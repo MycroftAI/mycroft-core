@@ -24,7 +24,7 @@ google-api-python-client==1.6.4
 fasteners==0.14.1
 
 msm==0.5.19
-msk==0.3.11
+msk==0.3.12
 adapt-parser==0.3.0
 padatious==0.4.5
 fann2==1.0.7

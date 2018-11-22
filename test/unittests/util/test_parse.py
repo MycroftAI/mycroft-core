@@ -18,7 +18,7 @@ import unittest
 from datetime import datetime
 
 from mycroft.util.parse import extract_datetime
-from mycroft.util.parse import extract_number
+from mycroft.util.parse import extract_number, extract_numbers
 from mycroft.util.parse import fuzzy_match
 from mycroft.util.parse import get_gender
 from mycroft.util.parse import match_one
@@ -133,6 +133,10 @@ class TestNormalize(unittest.TestCase):
         self.assertTrue(extract_number("grobo 0") is not False)
         self.assertEqual(extract_number("grobo 0"), 0)
 
+        self.assertEqual(extract_number("a couple of beers"), 2)
+        self.assertEqual(extract_number("a couple hundred beers"), 200)
+        self.assertEqual(extract_number("a couple thousand beers"), 2000)
+
     def test_extractdatetime_en(self):
         def extractWithFormat(text):
             date = datetime(2017, 6, 27, 13, 4)  # Tue June 27, 2017 @ 1:04pm
@@ -147,6 +151,62 @@ class TestNormalize(unittest.TestCase):
 
         testExtract("now is the time",
                     "2017-06-27 13:04:00", "is time")
+        testExtract("in a second",
+                    "2017-06-27 13:04:01", "")
+        testExtract("in a minute",
+                    "2017-06-27 13:05:00", "")
+        testExtract("in a couple minutes",
+                    "2017-06-27 13:06:00", "")
+        testExtract("in a couple of minutes",
+                    "2017-06-27 13:06:00", "")
+        testExtract("in a couple hours",
+                    "2017-06-27 15:04:00", "")
+        testExtract("in a couple of hours",
+                    "2017-06-27 15:04:00", "")
+        testExtract("in a couple weeks",
+                    "2017-07-11 00:00:00", "")
+        testExtract("in a couple of weeks",
+                    "2017-07-11 00:00:00", "")
+        testExtract("in a couple months",
+                    "2017-08-27 00:00:00", "")
+        testExtract("in a couple years",
+                    "2019-06-27 00:00:00", "")
+        testExtract("in a couple of months",
+                    "2017-08-27 00:00:00", "")
+        testExtract("in a couple of years",
+                    "2019-06-27 00:00:00", "")
+        testExtract("in a decade",
+                    "2027-06-27 00:00:00", "")
+        testExtract("in a couple of decades",
+                    "2037-06-27 00:00:00", "")
+        testExtract("next decade",
+                    "2027-06-27 00:00:00", "")
+        testExtract("in a century",
+                    "2117-06-27 00:00:00", "")
+        testExtract("in a millennium",
+                    "3017-06-27 00:00:00", "")
+        testExtract("in a couple decades",
+                    "2037-06-27 00:00:00", "")
+        testExtract("in 5 decades",
+                    "2067-06-27 00:00:00", "")
+        testExtract("in a couple centuries",
+                    "2217-06-27 00:00:00", "")
+        testExtract("in a couple of centuries",
+                    "2217-06-27 00:00:00", "")
+        testExtract("in 2 centuries",
+                    "2217-06-27 00:00:00", "")
+        testExtract("in a couple millenniums",
+                    "4017-06-27 00:00:00", "")
+        testExtract("in a couple of millenniums",
+                    "4017-06-27 00:00:00", "")
+        testExtract("in an hour",
+                    "2017-06-27 14:04:00", "")
+        testExtract("i want it within the hour",
+                    "2017-06-27 14:04:00", "i want it")
+        testExtract("in 1 second",
+                    "2017-06-27 13:04:01", "")
+        testExtract("in 2 seconds",
+                    "2017-06-27 13:04:02", "")
         testExtract("Set the ambush in 1 minute",
                     "2017-06-27 13:05:00", "set ambush")
         testExtract("Set the ambush for half an hour",
@@ -380,8 +440,8 @@ class TestNormalize(unittest.TestCase):
 
         def testExtract(text, expected_date, expected_leftover):
             res = extractWithFormat(normalize(text))
-            self.assertEqual(res[0], expected_date, "for="+text)
-            self.assertEqual(res[1], expected_leftover, "for="+text)
+            self.assertEqual(res[0], expected_date, "for=" + text)
+            self.assertEqual(res[1], expected_leftover, "for=" + text)
 
         testExtract("lets meet in 5 minutes",
                     "2017-06-27 10:06:02", "lets meet")
@@ -427,6 +487,57 @@ class TestNormalize(unittest.TestCase):
                          "that is 15 16 17")
         self.assertEqual(normalize("that's eighteen nineteen twenty"),
                          "that is 18 19 20")
+        self.assertEqual(normalize("that's one nineteen twenty two"),
+                         "that is 1 19 22")
+        self.assertEqual(normalize("that's one hundred"),
+                         "that is 100")
+        self.assertEqual(normalize("that's one two twenty two"),
+                         "that is 1 2 22")
+
+    def test_multiple_numbers(self):
+        self.assertEqual(extract_numbers("this is a one two three  test"),
+                         [1.0, 2.0, 3.0])
+        self.assertEqual(extract_numbers("it's  a four five six  test"),
+                         [4.0, 5.0, 6.0])
+        self.assertEqual(extract_numbers("this is a ten eleven twelve  test"),
+                         [10.0, 11.0, 12.0])
+        self.assertEqual(extract_numbers("this is a one twenty one  test"),
+                         [1.0, 21.0])
+        self.assertEqual(extract_numbers("1 dog, seven pigs, macdonald had a "
+                                         "farm, 3 times 5 macarena"),
+                         [1, 7, 3, 5])
+        self.assertEqual(extract_numbers("two beers for two bears"),
+                         [2.0, 2.0])
+        self.assertEqual(extract_numbers("twenty 20 twenty"),
+                         [20, 20, 20])
+        self.assertEqual(extract_numbers("twenty 20 22"),
+                         [20, 20, 22])
+        self.assertEqual(extract_numbers("twenty twenty two twenty"),
+                         [20, 22, 20])
+        self.assertEqual(extract_numbers("twenty 20 twenty 2"),
+                         [20, 20, 20, 2])
+        self.assertEqual(extract_numbers("third one"),
+                         [1 / 3, 1])
+        # NOTE ambiguous case, should return [3] or [3, 1] ?
+        self.assertEqual(extract_numbers("third one", ordinals=True),
+                         [3, 1])
+        self.assertEqual(extract_numbers("six trillion", short_scale=True),
+                         [6e12])
+        self.assertEqual(extract_numbers("six trillion", short_scale=False),
+                         [6e18])
+        self.assertEqual(extract_numbers("two pigs and six trillion bacteria",
+                                         short_scale=True), [2, 6e12])
+        # TODO case when pronounced/extracted number don't match
+        # fractional numbers often fail
+        # self.assertEqual(extract_numbers("this is a seven eight nine and a "
+        #                                 "half test"),
+        #                 [7.0, 8.0, 9.5])
+        # TODO pronounce number should accept short_scale flag
+        # self.assertEqual(extract_numbers("two pigs and six trillion
+        # bacteria", short_scale=False), [2, 6e18])
+        # TODO pronounce_number should accept ordinals flag
+        # self.assertEqual(extract_numbers("thirty second or first",
+        #                                 ordinals=True), [32, 1])
 
     def test_contractions(self):
         self.assertEqual(normalize("ain't"), "is not")

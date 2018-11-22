@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 import json
+import re
 from mycroft.util.parse import normalize
 
 
@@ -160,5 +161,6 @@ class Message(object):
         utt = normalize(self.data.get("utterance", ""))
         if utt and "__tags__" in self.data:
             for token in self.data["__tags__"]:
-                utt = utt.replace(token.get("key", ""), "")
+                # Substitute only whole words matching the token
+                utt = re.sub(r'\b' + token.get("key", "") + r"\b", "", utt)
         return normalize(utt)

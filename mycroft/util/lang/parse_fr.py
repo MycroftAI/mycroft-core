@@ -25,7 +25,9 @@
 
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from mycroft.util.lang.parse_common import is_numeric, look_for_fractions
+from mycroft.util.lang.parse_common import is_numeric, look_for_fractions, \
+    extract_numbers_generic
+from mycroft.util.lang.format_fr import pronounce_number_fr
 
 # Undefined articles ["un", "une"] cannot be supressed,
 # in French, "un cheval" means "a horse" or "one horse".
@@ -89,6 +91,7 @@ def number_parse_fr(words, i):
 
         Returns None if no number was found.
     """
+
     def cte_fr(i, s):
         # Check if string s is equal to words[i].
         # If it is return tuple with s, index of next word.
@@ -488,12 +491,12 @@ def extract_datetime_fr(string, currentDate, default_time):
 
     def date_found():
         return found or \
-            (
-                datestr != "" or
-                yearOffset != 0 or monthOffset != 0 or dayOffset or
-                (isTime and (hrAbs or minAbs)) or
-                hrOffset != 0 or minOffset != 0 or secOffset != 0
-            )
+               (
+                       datestr != "" or
+                       yearOffset != 0 or monthOffset != 0 or dayOffset or
+                       (isTime and (hrAbs or minAbs)) or
+                       hrOffset != 0 or minOffset != 0 or secOffset != 0
+               )
 
     if string == "" or not currentDate:
         return None
@@ -513,8 +516,8 @@ def extract_datetime_fr(string, currentDate, default_time):
 
     timeQualifiersList = ["matin", "après-midi", "soir", "nuit"]
     words_in = ["dans", "après"]
-    markers = ["à", "dès", "autour", "vers", "environs", "ce", "cette"] + \
-        words_in
+    markers = ["à", "dès", "autour", "vers", "environs", "ce",
+               "cette"] + words_in
     days = ["lundi", "mardi", "mercredi",
             "jeudi", "vendredi", "samedi", "dimanche"]
     months = ["janvier", "février", "mars", "avril", "mai", "juin",
@@ -780,7 +783,7 @@ def extract_datetime_fr(string, currentDate, default_time):
                             used = 1
                         else:
                             stage = 2
-                            if word[i:i+3] == "min":
+                            if word[i:i + 3] == "min":
                                 i += 1
                     elif stage == 2:
                         break
@@ -799,8 +802,8 @@ def extract_datetime_fr(string, currentDate, default_time):
                         word.isdigit() and
                         wordNext in ["heures", "heure"] and word != "0" and
                         (
-                            int(word) < 100 or
-                            int(word) > 2400
+                                int(word) < 100 or
+                                int(word) > 2400
                         )):
                     # "dans 3 heures", "à 3 heures"
                     if wordPrev in words_in:
@@ -893,10 +896,10 @@ def extract_datetime_fr(string, currentDate, default_time):
                         ampm = "pm"
                     else:
                         ampm = "am"
-            hrAbs = ((hrAbs or 0) + 12 if ampm == "pm" and
-                     (hrAbs or 0) < 12 else hrAbs)
-            hrAbs = ((hrAbs or 0) - 12 if ampm == "am" and
-                     (hrAbs or 0) >= 12 else hrAbs)
+            hrAbs = ((hrAbs or 0) + 12 if ampm == "pm" and (hrAbs or 0) < 12
+                     else hrAbs)
+            hrAbs = ((hrAbs or 0) - 12 if ampm == "am" and (hrAbs or 0) >= 12
+                     else hrAbs)
             if (hrAbs or 0) > 24 or ((minAbs or 0) > 59):
                 isTime = False
                 used = 0
@@ -986,8 +989,8 @@ def extract_datetime_fr(string, currentDate, default_time):
     if secOffset != 0:
         extractedDate = extractedDate + relativedelta(seconds=secOffset)
     for idx, word in enumerate(words):
-        if words[idx] == "et" and words[idx - 1] == "" and words[
-                idx + 1] == "":
+        if words[idx] == "et" and words[idx - 1] == "" and \
+                words[idx + 1] == "":
             words[idx] = ""
 
     resultStr = " ".join(words)
@@ -1062,3 +1065,21 @@ def normalize_fr(text, remove_articles):
         i += 1
 
     return normalized[1:]  # strip the initial space
+
+
+def extract_numbers_fr(text, short_scale=True, ordinals=False):
+    """
+        Takes in a string and extracts a list of numbers.
+
+    Args:
+        text (str): the string to extract a number from
+        short_scale (bool): Use "short scale" or "long scale" for large
+            numbers -- over a million.  The default is short scale, which
+            is now common in most English speaking countries.
+            See https://en.wikipedia.org/wiki/Names_of_large_numbers
+        ordinals (bool): consider ordinal numbers, e.g. third=3 instead of 1/3
+    Returns:
+        list: list of extracted numbers as floats
+    """
+    return extract_numbers_generic(text, pronounce_number_fr, extractnumber_fr,
+                                   short_scale=short_scale, ordinals=ordinals)

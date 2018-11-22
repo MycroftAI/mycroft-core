@@ -4,15 +4,36 @@ mycroft package
 .. toctree::
     mycroft.util
 
+.. toctree::
+    mycroft.util.parse
+
+mycroft.util.time - time handling functions
+-----------------
+.. automodule::
+    mycroft.util.time
+    :members:
+
 MycroftSkill class
 ------------------
 
 .. autoclass:: mycroft.MycroftSkill
     :members:
 
+CommonPlaySkill class
+-------------------
+.. autoclass:: mycroft.skills.common_play_skill.CommonPlaySkill
+    :show-inheritance:
+    :members:
+
 FallbackSkill class
 -------------------
 .. autoclass:: mycroft.FallbackSkill
+    :show-inheritance:
+    :members:
+
+AudioService class
+-------------------
+.. autoclass:: mycroft.skills.audioservice.AudioService
     :show-inheritance:
     :members:
 
