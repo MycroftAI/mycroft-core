@@ -175,6 +175,11 @@ class SkillManager(Thread):
     def schedule_now(self, message=None):
         self.next_download = time.time() - 1
 
+    @staticmethod
+    @property
+    def manifest_upload_allowed(self):
+        return Configuration.get()['skills'].get('upload_skill_manifest')
+
     @property
     def installed_skills_file(self):
         venv = dirname(dirname(sys.executable))
@@ -211,58 +216,56 @@ class SkillManager(Thread):
             return False
 
         installed_skills = self.load_installed_skills()
-        default_groups = dict(self.msm.repo.get_default_skill_names())
-        if self.msm.platform in default_groups:
-            platform_groups = default_groups[self.msm.platform]
-        else:
-            LOG.info('Platform defaults not found, using DEFAULT skills only')
-            platform_groups = []
-        default_names = set(chain(default_groups['default'], platform_groups))
-        default_skill_errored = False
+        msm = SkillManager.create_msm()
+        with msm.lock, self.thread_lock:
+            default_groups = dict(msm.repo.get_default_skill_names())
+            if msm.platform in default_groups:
+                platform_groups = default_groups[msm.platform]
+            else:
+                LOG.info('Platform defaults not found, using DEFAULT '
+                         'skills only')
+                platform_groups = []
+            default_names = set(chain(default_groups['default'],
+                                      platform_groups))
+            default_skill_errored = False
 
-        def get_skill_data(skill_name):
-            """ Get skill data structure from name. """
-            for e in self.msm.skills_data.get('skills', []):
-                if e.get('name') == skill_name:
-                    return e
-            # if skill isn't in the list return empty structure
-            return {}
+            def get_skill_data(skill_name):
+                """ Get skill data structure from name. """
+                for e in msm.skills_data.get('skills', []):
+                    if e.get('name') == skill_name:
+                        return e
+                # if skill isn't in the list return empty structure
+                return {}
 
-        def install_or_update(skill):
-            """Install missing defaults and update existing skills"""
-            if get_skill_data(skill.name).get('beta'):
-                skill.sha = None  # Will update to latest head
-            if skill.is_local:
-                skill.update()
-                if skill.name not in installed_skills:
-                    skill.update_deps()
-            elif skill.name in default_names:
-                try:
-                    self.msm.install(skill, origin='default')
-                except Exception:
-                    if skill.name in default_names:
-                        LOG.warning(
-                            'Failed to install default skill: ' + skill.name
-                        )
-                        nonlocal default_skill_errored
-                        default_skill_errored = True
-                    raise
-            installed_skills.add(skill.name)
+            def install_or_update(skill):
+                """Install missing defaults and update existing skills"""
+                if get_skill_data(skill.name).get('beta'):
+                    skill.sha = None  # Will update to latest head
+                if skill.is_local:
+                    skill.update()
+                    if skill.name not in installed_skills:
+                        skill.update_deps()
+                elif skill.name in default_names:
+                    try:
+                        msm.install(skill, origin='default')
+                    except Exception:
+                        if skill.name in default_names:
+                            LOG.warning('Failed to install default skill: ' +
+                                        skill.name)
+                            nonlocal default_skill_errored
+                            default_skill_errored = True
+                        raise
+                installed_skills.add(skill.name)
+            try:
+                msm.apply(install_or_update, msm.list())
+                if SkillManager.manifest_upload_allowed and is_paired():
+                    try:
+                        DeviceApi().upload_skills_data(msm.skills_data)
+                    except Exception:
+                        LOG.exception('Could not upload skill manifest')
 
-        try:
-            with self.msm.lock, self.thread_lock:
-                self.msm.skills_data = self.msm.load_skills_data()
-                self.msm.apply(install_or_update, self.msm.list())
-                self.msm.write_skills_data(self.msm.skills_data)
-            if (Configuration.get()['skills'].get('upload_skill_manifest') and
-                    is_paired()):
-                try:
-                    DeviceApi().upload_skills_data(self.msm.skills_data)
-                except Exception:
-                    LOG.exception('Could not upload skill manifest')
-
-        except MsmException as e:
-            LOG.error('Failed to update skills: {}'.format(repr(e)))
+            except MsmException as e:
+                LOG.error('Failed to update skills: {}'.format(repr(e)))
 
         self.save_installed_skills(installed_skills)
 
