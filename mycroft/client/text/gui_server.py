@@ -14,6 +14,7 @@
 #
 
 from os import getpid
+import json
 import websocket
 from threading import Thread, Lock
 
@@ -21,15 +22,20 @@ from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 
 
-log_message = None
 bus = None
+buffer = None       # content will show on the CLI "GUI" representation
+msgs = []
 
-def start_qml_gui(messagebus, debug_func):
-    global log_message
+skill = None
+page = None
+vars = {}
+
+def start_qml_gui(messagebus, output_buf):
     global bus
+    global buffer
 
     bus = messagebus
-    log_message = debug_func
+    buffer = output_buf
 
     # Initiate the QML GUI
     log_message("Announcing CLI GUI")
@@ -39,6 +45,31 @@ def start_qml_gui(messagebus, debug_func):
 
     log_message("Announced CLI GUI")
 
+
+def log_message(msg):
+    global msgs
+    msgs.append(msg)
+    if len(msgs) > 20:
+        del msgs[0]
+    build_output_buffer()
+
+
+def build_output_buffer():
+    global buffer
+    buffer.clear()
+    if skill:
+        buffer.append("Active Skill = "+str(skill))
+        buffer.append("Page = "+str(page))
+        buffer.append("vars = ")
+        for v in vars[skill]:
+            buffer.append("     "+str(v)+" : " + vars[skill][v])
+
+    buffer.append("     MONITOR")
+    buffer.append("-----------------")
+    for m in msgs:
+        if len(buffer) > 20:    # cap out at 20 lines total
+            return
+        buffer.append(m)
 
 def handle_gui_ready(msg):
     # Attempt to connect to the port
@@ -74,8 +105,26 @@ def on_gui_open(ws):
     log_message("GUI Opened")
 
 
-def on_gui_message(ws, msg):
-    log_message("GUI msg: "+str(msg))
+def on_gui_message(ws, payload):
+    try:
+        msg = json.loads(payload)
+        type = msg.get("type")
+        if type == "mycroft.session.set":
+            global vars
+            namespace = msg.get("namespace")
+            data = msg.get("data")
+            if not namespace in vars:
+                vars[namespace] = {}
+            for d in data:
+                vars[namespace][d] = data[d]
+        elif type == "mycroft.gui.show":
+            global skill
+            global page
+            skill = msg.get("namespace")
+            page = msg.get("gui_url")
+        build_output_buffer()
+    except Exception:
+        log_message("Invalid JSON: "+str(payload))
 
 
 def on_gui_close(ws):

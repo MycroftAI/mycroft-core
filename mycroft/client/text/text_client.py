@@ -53,6 +53,8 @@ auto_scroll = True
 # for debugging odd terminals
 last_key = ""
 show_last_key = False
+show_gui = None  # None = not initialized, else True/False
+gui_text = []
 
 log_lock = Lock()
 max_log_lines = 5000
@@ -408,6 +410,45 @@ def handle_message(msg):
     pass
 
 ##############################################################################
+# "Graphic primitives"
+
+def draw(x, y, msg, pad=None, pad_chr=None, clr=None):
+    """Draw a text to the screen
+
+    Args:
+        x (int): X coordinate (col), 0-based from upper-left
+        y (int): Y coordinate (row), 0-based from upper-left
+        msg (str): string to render to screen
+        pad (bool or int, optional): if int, pads/clips to given length, if
+                                     True use right edge of the screen.
+        pad_chr (char, optional): pad character, default is space
+        clr (int, optional): curses color, Defaults to CLR_LOG1.
+    """
+    if y < 0 or y > curses.LINES or x < 0 or x > curses.COLS:
+        return
+
+    if x + len(msg) > curses.COLS:
+        s = msg[:curses.COLS-x]
+    else:
+        s = msg
+        if pad:
+            ch = pad_chr or " "
+            if pad is True:
+                pad = curses.COLS  # pad to edge of screen
+                s += ch * (pad-x-len(msg))
+            else:
+                # pad to given length (or screen width)
+                if x+pad > curses.COLS:
+                    pad = curses.COLS-x
+                s += ch * (pad-len(msg))
+
+    if not clr:
+        clr = CLR_LOG1
+
+    scr.addstr(y,x, s, clr)
+
+
+##############################################################################
 # Screen handling
 
 
@@ -534,6 +575,22 @@ def _do_meter(height):
             scr.addstr(curses.LINES - 1 - i, curses.COLS - len(str_thresh) - 4,
                        "*", clr_bar)
 
+def _do_gui(gui_width):
+    clr = curses.color_pair(2)  # dark red
+    x = curses.COLS - gui_width
+    y = 3
+    draw(x,y, " "+make_titlebar("= GUI", gui_width-1)+" ", clr=CLR_HEADING)
+    cnt = len(gui_text)+1
+    if cnt > curses.LINES-15:
+        cnt = curses.LINES-15
+    for i in range(0, cnt):
+        draw(x, y+1+i, " !", clr=CLR_HEADING)
+        if i < len(gui_text):
+            draw(x+2, y+1+i, gui_text[i], pad=gui_width-3)
+        else:
+            draw(x+2, y+1+i, "*"*(gui_width-3))
+        draw(x+(gui_width-1), y+1+i, "!", clr=CLR_HEADING)
+    draw(x,y+cnt, " "+"-"*(gui_width-2)+" ", clr=CLR_HEADING)
 
 def set_screen_dirty():
     global is_screen_dirty
@@ -692,6 +749,9 @@ def do_draw_main(scr):
             clr = CLR_CHAT_QUERY
         scr.addstr(y, 1, handleNonAscii(txt), clr)
         y += 1
+
+    if show_gui and curses.COLS > 20 and curses.LINES > 20:
+        _do_gui(curses.COLS-20)
 
     # Command line at the bottom
     ln = line
@@ -1048,7 +1108,7 @@ def handle_cmd(cmd):
 
 def handle_is_connected(msg):
     add_log_message("Connected to Messagebus!")
-    # start_qml_gui(bus, add_log_message)
+    # start_qml_gui(bus, gui_text)
 
 
 def handle_reconnecting():
@@ -1065,6 +1125,7 @@ def gui_main(stdscr):
     global last_key
     global history
     global screen_lock
+    global show_gui
 
     scr = stdscr
     init_screen()
@@ -1245,10 +1306,12 @@ def gui_main(stdscr):
                 line = line[:-1]
             elif code == 6:  # Ctrl+F (Find)
                 line = ":find "
+            elif code == 7:  # Ctrl+G (start GUI)
+                if show_gui is None:
+                    start_qml_gui(bus, gui_text)
+                show_gui = not show_gui
             elif code == 18:  # Ctrl+R (Redraw)
                 scr.erase()
-            elif code == 23:  # Ctrl+W (start Window)
-                start_qml_gui(bus, add_log_message)
             elif code == 24:  # Ctrl+X (Exit)
                 if find_str:
                     # End the find session
