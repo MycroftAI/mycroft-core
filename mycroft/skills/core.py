@@ -246,7 +246,7 @@ class SkillGUI(object):
         """
 
         self.page = name
-
+        self.skill.log.debug(name)
         # Communicate with the enclosure process
 
         # First sync any data...
@@ -256,10 +256,11 @@ class SkillGUI(object):
         # TODO: Minimize by tracking data that has already been synched?
 
         # Convert page to full reference
-        page = self.skill.find_resource(self.page)
+        # use find_qml_resource instead of find_resource as find_resource was failing and not looking into the correct path
+        page = self.skill.find_qml_resource(self.page)
         if page:
-            page_url = "file://" + page
-
+            page_url = "file://" + str(page)
+            print(page_url)
             # Then request display of the correct page
             self.skill.bus.emit(Message("gui.page.show",
                                         {"page": page_url,
@@ -727,11 +728,20 @@ class MycroftSkill(object):
         # New scheme:  search for res_name under the 'locale' folder
         root_path = join(self.root_dir, 'locale', self.lang)
         for path, _, files in os.walk(root_path):
+            self.skill.log.debug(files)
             if res_name in files:
                 return join(path, res_name)
 
         # Not found
         return None
+
+    def find_qml_resource(self, res_name):
+        ui_folder = self.root_dir + "/ui"
+        for path, dirs, files in os.walk(ui_folder):
+            if res_name in files:
+                return join(ui_folder + "/" + res_name)
+            else:
+                return None
 
     def translate_namedvalues(self, name, delim=None):
         """ Load translation dict containing names and values.

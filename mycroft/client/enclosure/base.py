@@ -242,19 +242,38 @@ class GUIConnection(object):
         self.callback_disconnect(self.id)
 
     def set(self, namespace, name, value):
+        skillIdList = []
+        # hack to send active skills list before
+        if namespace in skillIdList:
+            print("skill already in skillIdList")
+        else:
+            skillIdList.append({'skill_id': str(namespace)})
+        sendlst = {"type": "mycroft.session.list.insert", 
+                    "namespace": "mycroft.system.active_skills",
+                    "position": 0,
+                    "data": skillIdList}
+        self.socket.send(sendlst)
+        # eoh
         if not namespace in self.datastore:
             self.datastore[namespace] = {}
         if self.datastore[namespace].get(name) != value:
             msg = { "type": "mycroft.session.set",
-                    "namespace": namespace,
+                    "namespace": str(namespace),
                     "data": { name: value}}
             self.socket.send(msg)
             self.datastore[namespace][name] = value
 
     def show(self, namespace, page):
+        # Hack to send gui urls in correct format, currently only sends single page of active skill
+        active_pages = []
+        if page in active_pages:
+            print("page already in active_pages")
+        else:
+            active_pages.append(page)
+        #eoh
         self.socket.send({"type": "mycroft.gui.show",
                           "namespace": namespace,
-                          "gui_url": page})
+                          "gui_urls": active_pages})
         self.current_namespace = namespace
         self.current_page = page
 
