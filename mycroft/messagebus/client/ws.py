@@ -14,11 +14,10 @@
 #
 import json
 import time
-from multiprocessing.pool import ThreadPool
 from threading import Event
 import traceback
 
-from pyee import EventEmitter
+from .threaded_event_emitter import ThreadedEventEmitter
 from websocket import (WebSocketApp, WebSocketConnectionClosedException,
                        WebSocketException)
 
@@ -41,9 +40,8 @@ class WebsocketClient:
         validate_param(route, "websocket.route")
 
         self.url = WebsocketClient.build_url(host, port, route, ssl)
-        self.emitter = EventEmitter()
+        self.emitter = ThreadedEventEmitter()
         self.client = self.create_client()
-        self.pool = ThreadPool(10)
         self.retry = 5
         self.connected_event = Event()
         self.started_running = False
@@ -93,10 +91,8 @@ class WebsocketClient:
             pass
 
     def on_message(self, ws, message):
-        self.emitter.emit('message', message)
         parsed_message = Message.deserialize(message)
-        self.pool.apply_async(
-            self.emitter.emit, (parsed_message.type, parsed_message))
+        self.emitter.emit(parsed_message.type, parsed_message)
 
     def emit(self, message):
         if not self.connected_event.wait(10):
