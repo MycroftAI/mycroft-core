@@ -58,17 +58,17 @@ class WebsocketClient:
                             on_open=self.on_open, on_close=self.on_close,
                             on_error=self.on_error, on_message=self.on_message)
 
-    def on_open(self, ws):
+    def on_open(self):
         LOG.info("Connected")
         self.connected_event.set()
         self.emitter.emit("open")
         # Restore reconnect timer to 5 seconds on sucessful connect
         self.retry = 5
 
-    def on_close(self, ws):
+    def on_close(self):
         self.emitter.emit("close")
 
-    def on_error(self, ws, error):
+    def on_error(self, error):
         """ On error start trying to reconnect to the websocket. """
         if isinstance(error, WebSocketConnectionClosedException):
             LOG.warning('Could not send message because connection has closed')
@@ -92,7 +92,7 @@ class WebsocketClient:
         except WebSocketException:
             pass
 
-    def on_message(self, ws, message):
+    def on_message(self, message):
         self.emitter.emit('message', message)
         parsed_message = Message.deserialize(message)
         self.pool.apply_async(
