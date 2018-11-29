@@ -25,7 +25,7 @@ fasteners==0.14.1
 
 msm==0.5.19
 msk==0.3.12
-adapt-parser==0.3.0
+adapt-parser==0.3.2
 padatious==0.4.5
 fann2==1.0.7
 padaos==0.1.7
