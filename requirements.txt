@@ -6,7 +6,7 @@ PyAudio==0.2.11
 pyee==5.0.0
 SpeechRecognition==3.8.1
 tornado==4.2.1
-websocket-client==0.32.0
+websocket-client==0.54.0
 requests-futures==0.9.5
 pyyaml==3.13
 pyalsaaudio==0.8.2
