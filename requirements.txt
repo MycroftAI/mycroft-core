@@ -1,7 +1,7 @@
 six==1.10.0
 requests==2.20.0
-gTTS==1.1.7
-gTTS-token==1.1.2
+gTTS==2.0.1
+gTTS-token==1.1.3
 PyAudio==0.2.11
 pyee==1.0.1
 SpeechRecognition==3.8.1
