@@ -64,7 +64,8 @@ def build_output_buffer():
         for v in vars[skill]:
             buffer.append("     "+str(v)+" : " + vars[skill][v])
 
-    buffer.append("     MONITOR")
+    buffer.append("-----------------")
+    buffer.append("MESSAGES")
     buffer.append("-----------------")
     for m in msgs:
         if len(buffer) > 20:    # cap out at 20 lines total
@@ -108,6 +109,7 @@ def on_gui_open(ws):
 def on_gui_message(ws, payload):
     try:
         msg = json.loads(payload)
+        log_message("Msg: "+str(payload))
         type = msg.get("type")
         if type == "mycroft.session.set":
             global vars
@@ -121,7 +123,7 @@ def on_gui_message(ws, payload):
             global skill
             global page
             skill = msg.get("namespace")
-            page = msg.get("gui_url")
+            page = msg.get("gui_urls")
         build_output_buffer()
     except Exception:
         log_message("Invalid JSON: "+str(payload))

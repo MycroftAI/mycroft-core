@@ -46,6 +46,7 @@ class Enclosure(object):
 
         # Listen for new GUI clients to announce themselves on the main bus
         self.GUIs = {}      # GUIs, either local or remote
+        self._active_namespaces = []
         self.bus.on("mycroft.gui.connected", self.on_gui_client_connected)
         self.register_gui_handlers()
 
@@ -64,9 +65,25 @@ class Enclosure(object):
     ######################################################################
     # GUI client API
 
+    def _gui_activate(self, namespace, move_to_top=False):
+        if not namespace:
+            return
+
+        if not namespace in self._active_namespaces:
+            if move_to_top:
+                self._active_namespaces.insert(0, namespace)
+            else:
+                self._active_namespaces.append(namespace)
+        elif move_to_top:
+            self._active_namespaces.remove(namespace)
+            self._active_namespaces.insert(0, namespace)
+        # TODO: Keep a timestamp and auto-cull?
+
+
     def on_gui_set_value(self, message):
         data = message.data
         namespace = data.get("__from", "")
+        self._gui_activate(namespace)
 
         # Pass these values on to the GUI renderers
         for id in self.GUIs:
@@ -79,6 +96,7 @@ class Enclosure(object):
         if not 'page' in data:
             return
         namespace = data.get("__from", "")
+        self._gui_activate(namespace, move_to_top=True)
 
         # Pass the request to the GUI(s) to pull up a page template
         for id in self.GUIs:
@@ -106,7 +124,7 @@ class Enclosure(object):
             # TODO: Close it?
             pass
         self.GUIs[gui_id] = GUIConnection(gui_id, self.global_config,
-                                          self.callback_disconnect)
+                                          self.callback_disconnect, self)
         DEBUG("Heard announcement from gui_id: "+str(gui_id))
 
         # Announce connection, the GUI should connect on it soon
@@ -182,11 +200,13 @@ class GUIConnection(object):
     last_used_port = 0
     server_thread = None
 
-    def __init__(self, id, config, callback_disconnect):
+    def __init__(self, id, config, callback_disconnect, enclosure):
         DEBUG("Creating GUIConnection")
         self.id = id
         self.socket = None
         self.callback_disconnect = callback_disconnect
+        self.enclosure = enclosure
+        self._active_namespaces = None
 
         # This datastore holds the data associated with the GUI provider.  Data
         # is stored in Namespaces, so you can have:
@@ -242,6 +262,8 @@ class GUIConnection(object):
         self.callback_disconnect(self.id)
 
     def set(self, namespace, name, value):
+        self.sync_active()
+
         if not namespace in self.datastore:
             self.datastore[namespace] = {}
         if self.datastore[namespace].get(name) != value:
@@ -252,11 +274,40 @@ class GUIConnection(object):
             self.datastore[namespace][name] = value
 
     def show(self, namespace, page):
+        self.sync_active()
+
         self.socket.send({"type": "mycroft.gui.show",
                           "namespace": namespace,
-                          "gui_url": page})
+                          "gui_urls": [page]})
         self.current_namespace = namespace
         self.current_page = page
+
+    def sync_active(self):
+        # The main Enclosure keeps a list of active skills.  Each GUI also
+        # has a list.  Synchronize when appropriate.
+        if self.enclosure._active_namespaces != self._active_namespaces:
+            # TODO: Optimize bandwidth using list.insert, etc.
+            #self.socket.send({"type": "mycroft.session.list.insert",
+            #            "namespace": "mycroft.system.active_skills",
+            ##            "position": 0,
+            #            "data": [{'skill_id': self.enclosure._active_namespaces[0] }]
+            #            })
+
+            # First, zap the old list
+            if self._active_namespaces:
+                self.socket.send({"type": "mycroft.session.list.remove",
+                                    "namespace": "mycroft.system.active_skills",
+                                    "position": 0,
+                                    "items_number": len(self._active_namespaces)})
+
+            # Now fill it back up
+            for ns in reversed(self.enclosure._active_namespaces):
+                self.socket.send({"type": "mycroft.session.list.insert",
+                                  "namespace": "mycroft.system.active_skills",
+                                  "position": 0,
+                                  "data": [{'skill_id': ns }]
+                                 })
+            self._active_namespaces = self.enclosure._active_namespaces.copy()
 
 
 class GUIWebsocketHandler(WebSocketHandler):
