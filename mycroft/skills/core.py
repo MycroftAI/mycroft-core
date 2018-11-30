@@ -256,7 +256,7 @@ class SkillGUI(object):
         # TODO: Minimize by tracking data that has already been synched?
 
         # Convert page to full reference
-        page = self.skill.find_resource(self.page)
+        page = self.skill.find_resource(self.page, 'ui')
         if page:
             page_url = "file://" + page
 
@@ -700,27 +700,35 @@ class MycroftSkill(object):
         """
         return self.dialog_renderer.render(text, data or {})
 
-    def find_resource(self, res_name, old_dirname=None):
-        """ Find a text resource file
+    def find_resource(self, res_name, res_dirname=None):
+        """ Find a resource file
 
-        Searches for the given filename in either the old-style directory
-        (e.g. "<root>/<old_dirname>/<lang>/<res_name>") or somewhere under the
-        new localization folder "<root>/locale/<lang>/*/<res_name>".  The new
-        method allows arbitrary organization, so the res_name would be found
-        at "<root>/locale/<lang>/<res_name>", or an arbitrary folder like
-        "<root>/locale/<lang>/somefolder/<res_name>".
+        Searches for the given filename using this scheme:
+        1) Search the resource lang directory:
+             <skill>/<res_dirname>/<lang>/<res_name>
+        2) Search the resource directory:
+             <skill>/<res_dirname>/<res_name>
+        3) Search the locale lang directory or other subdirectory:
+             <skill>/locale/<lang>/<res_name> or
+             <skill>/locale/<lang>/.../<res_name>
 
         Args:
             res_name (string): The resource name to be found
-            old_dirname (string, optional): Defaults to None. One of the old
-                               resource folders: 'dialog', 'vocab', or 'regex'
+            res_dirname (string, optional): A skill resource directory, such
+                                            'dialog', 'vocab', 'regex' or 'ui'.
+                                            Defaults to None.
 
         Returns:
-            string: The full path to the resource or None if not found
+            string: The full path to the resource file or None if not found
         """
-        if old_dirname:
-            # Try the old directory (dialog/vocab/regex)
-            path = join(self.root_dir, old_dirname, self.lang, res_name)
+        if res_dirname:
+            # Try the old translated directory (dialog/vocab/regex)
+            path = join(self.root_dir, res_dirname, self.lang, res_name)
+            if exists(path):
+                return path
+
+            # Try old-style non-translated resource
+            path = join(self.root_dir, res_dirname, res_name)
             if exists(path):
                 return path
 
