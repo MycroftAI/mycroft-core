@@ -18,6 +18,7 @@ from mycroft.util.log import LOG
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.configuration import Configuration, LocalConf, SYSTEM_CONFIG
 
+
 def main():
     # Read the system configuration
     system_config = LocalConf(SYSTEM_CONFIG)
@@ -32,9 +33,10 @@ def main():
         from mycroft.client.enclosure.mark2 import Enclosure_Mark2
         enclosure = Enclosure_Mark2()
     else:
-        LOG.debug("Creating generic enclosure (platform='{}')".format(platform))
+        LOG.debug("Creating generic enclosure, platform='{}'".format(platform))
 
-        # TODO: Mechanism to load from elsewhere?
+        # TODO: Mechanism to load from elsewhere.  E.g. read a script path from
+        # the mycroft.conf, then load/launch that script.
         from mycroft.client.enclosure.generic import Enclosure_Generic
         enclosure = Enclosure_Generic()
 
@@ -48,7 +50,6 @@ def main():
             sys.exit()
     else:
         LOG.debug("No enclosure available for this hardware, running headless")
-
 
 
 if __name__ == "__main__":

@@ -409,9 +409,9 @@ def handle_message(msg):
     # add_log_message(msg)
     pass
 
+
 ##############################################################################
 # "Graphic primitives"
-
 def draw(x, y, msg, pad=None, pad_chr=None, clr=None):
     """Draw a text to the screen
 
@@ -445,7 +445,7 @@ def draw(x, y, msg, pad=None, pad_chr=None, clr=None):
     if not clr:
         clr = CLR_LOG1
 
-    scr.addstr(y,x, s, clr)
+    scr.addstr(y, x, s, clr)
 
 
 ##############################################################################
@@ -575,11 +575,12 @@ def _do_meter(height):
             scr.addstr(curses.LINES - 1 - i, curses.COLS - len(str_thresh) - 4,
                        "*", clr_bar)
 
+
 def _do_gui(gui_width):
     clr = curses.color_pair(2)  # dark red
     x = curses.COLS - gui_width
     y = 3
-    draw(x,y, " "+make_titlebar("= GUI", gui_width-1)+" ", clr=CLR_HEADING)
+    draw(x, y, " "+make_titlebar("= GUI", gui_width-1)+" ", clr=CLR_HEADING)
     cnt = len(gui_text)+1
     if cnt > curses.LINES-15:
         cnt = curses.LINES-15
@@ -590,7 +591,8 @@ def _do_gui(gui_width):
         else:
             draw(x+2, y+1+i, "*"*(gui_width-3))
         draw(x+(gui_width-1), y+1+i, "!", clr=CLR_HEADING)
-    draw(x,y+cnt, " "+"-"*(gui_width-2)+" ", clr=CLR_HEADING)
+    draw(x, y+cnt, " "+"-"*(gui_width-2)+" ", clr=CLR_HEADING)
+
 
 def set_screen_dirty():
     global is_screen_dirty
@@ -998,7 +1000,7 @@ def _get_cmd_param(cmd, keyword):
     # Returns parameter to a command.  Will de-quote.
     # Ex: find 'abc def'   returns: abc def
     #    find abc def     returns: abc def
-    cmd = cmd.replace(keyword,"").strip()
+    cmd = cmd.replace(keyword, "").strip()
     if not cmd:
         return None
 

@@ -27,7 +27,8 @@ from mycroft.messagebus.message import Message
 
 
 def DEBUG(str):
-    print(str)
+    # print(str)
+    pass  # disable by default
 
 
 class Enclosure(object):
@@ -54,7 +55,6 @@ class Enclosure(object):
         self.bus.on("gui.value.set", self.on_gui_set_value)
         self.bus.on("gui.page.show", self.on_gui_show_page)
 
-
     def run(self):
         try:
             self.bus.run_forever()
@@ -69,7 +69,7 @@ class Enclosure(object):
         if not namespace:
             return
 
-        if not namespace in self._active_namespaces:
+        if namespace not in self._active_namespaces:
             if move_to_top:
                 self._active_namespaces.insert(0, namespace)
             else:
@@ -79,10 +79,10 @@ class Enclosure(object):
             self._active_namespaces.insert(0, namespace)
         # TODO: Keep a timestamp and auto-cull?
 
-
     def on_gui_set_value(self, message):
         data = message.data
         namespace = data.get("__from", "")
+
         self._gui_activate(namespace)
 
         # Pass these values on to the GUI renderers
@@ -93,7 +93,7 @@ class Enclosure(object):
 
     def on_gui_show_page(self, message):
         data = message.data
-        if not 'page' in data:
+        if 'page' not in data:
             return
         namespace = data.get("__from", "")
         self._gui_activate(namespace, move_to_top=True)
@@ -179,6 +179,7 @@ gui_app_settings = {
     'debug': True
 }
 
+
 class GUIConnection(object):
     """ A single GUIConnection exists per graphic interface.  This object
     maintains the socket used for communication and keeps the state of the
@@ -197,7 +198,7 @@ class GUIConnection(object):
     TODO: Implement data coming back from Qt to Mycroft
     """
 
-    last_used_port = 0
+    _last_idx = 0  # this is incremented by 1 for each open GUIConnection
     server_thread = None
 
     def __init__(self, id, config, callback_disconnect, enclosure):
@@ -223,8 +224,8 @@ class GUIConnection(object):
         websocket_config = config.get("gui_websocket")
         host = websocket_config.get("host")
         route = websocket_config.get("route")
-        self.port = websocket_config.get("base_port") + GUIConnection.last_used_port
-        GUIConnection.last_used_port += 1
+        self.port = websocket_config.get("base_port") + GUIConnection._last_idx
+        GUIConnection._last_idx += 1
 
         self.webapp = tornado.web.Application([
                                                (route, GUIWebsocketHandler)
@@ -235,8 +236,9 @@ class GUIConnection(object):
         # TODO: This might need to move up a level
         # Can't run two IOLoop's in the same process
         if not GUIConnection.server_thread:
-            GUIConnection.server_thread = create_daemon(ioloop.IOLoop.instance().start)
-        DEBUG("IOLoop started on ws://"+str(host)+":"+str(self.port)+str(route))
+            GUIConnection.server_thread = create_daemon(
+                ioloop.IOLoop.instance().start)
+        DEBUG("IOLoop started @ ws://"+str(host)+":"+str(self.port)+str(route))
 
     def on_connection_opened(self, socket_handler):
         DEBUG("on_connection_opened")
@@ -264,16 +266,17 @@ class GUIConnection(object):
     def set(self, namespace, name, value):
         self.sync_active()
 
-        if not namespace in self.datastore:
+        if namespace not in self.datastore:
             self.datastore[namespace] = {}
         if self.datastore[namespace].get(name) != value:
-            msg = { "type": "mycroft.session.set",
-                    "namespace": namespace,
-                    "data": { name: value}}
+            msg = {"type": "mycroft.session.set",
+                   "namespace": namespace,
+                   "data": {name: value}}
             self.socket.send(msg)
             self.datastore[namespace][name] = value
 
     def show(self, namespace, page):
+        DEBUG("GUIConnection activating: "+namespace)
         self.sync_active()
 
         self.socket.send({"type": "mycroft.gui.show",
@@ -286,27 +289,21 @@ class GUIConnection(object):
         # The main Enclosure keeps a list of active skills.  Each GUI also
         # has a list.  Synchronize when appropriate.
         if self.enclosure._active_namespaces != self._active_namespaces:
-            # TODO: Optimize bandwidth using list.insert, etc.
-            #self.socket.send({"type": "mycroft.session.list.insert",
-            #            "namespace": "mycroft.system.active_skills",
-            ##            "position": 0,
-            #            "data": [{'skill_id': self.enclosure._active_namespaces[0] }]
-            #            })
-
             # First, zap the old list
             if self._active_namespaces:
                 self.socket.send({"type": "mycroft.session.list.remove",
-                                    "namespace": "mycroft.system.active_skills",
-                                    "position": 0,
-                                    "items_number": len(self._active_namespaces)})
+                                  "namespace": "mycroft.system.active_skills",
+                                  "position": 0,
+                                  "items_number": len(self._active_namespaces)
+                                  })
 
             # Now fill it back up
             for ns in reversed(self.enclosure._active_namespaces):
                 self.socket.send({"type": "mycroft.session.list.insert",
                                   "namespace": "mycroft.system.active_skills",
                                   "position": 0,
-                                  "data": [{'skill_id': ns }]
-                                 })
+                                  "data": [{'skill_id': ns}]
+                                  })
             self._active_namespaces = self.enclosure._active_namespaces.copy()
 
 

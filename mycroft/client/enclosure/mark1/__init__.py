@@ -44,6 +44,7 @@ from queue import Queue
 # The Arduino can also send back notifications in response to either
 # pressing or turning a rotary encoder.
 
+
 class EnclosureReader(Thread):
     """
     Reads data from Serial port.
@@ -335,7 +336,7 @@ class Enclosure_Mark1(Enclosure):
                 url=self.port, baudrate=self.rate, timeout=self.timeout)
             LOG.info("Connected to: %s rate: %s timeout: %s" %
                      (self.port, self.rate, self.timeout))
-        except:
+        except except Exception:
             LOG.error("Impossible to connect to serial port: "+str(self.port))
             raise
 

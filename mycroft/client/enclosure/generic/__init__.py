@@ -36,6 +36,7 @@ class Enclosure_Generic(object):
     """
 
     _last_internet_notification = 0
+
     def __init__(self):
         super().__init__()
 

@@ -1,4 +1,4 @@
-# Copyright 2017 Mycroft AI Inc.
+# Copyright 2018 Mycroft AI Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ skill = None
 page = None
 vars = {}
 
+
 def start_qml_gui(messagebus, output_buf):
     global bus
     global buffer
@@ -41,8 +42,7 @@ def start_qml_gui(messagebus, output_buf):
     log_message("Announcing CLI GUI")
     bus.on('mycroft.gui.port', handle_gui_ready)
     bus.emit(Message("mycroft.gui.connected",
-                     {"gui_id" : "cli_" + str(getpid())}))
-
+                     {"gui_id": "cli_" + str(getpid())}))
     log_message("Announced CLI GUI")
 
 
@@ -72,6 +72,7 @@ def build_output_buffer():
             return
         buffer.append(m)
 
+
 def handle_gui_ready(msg):
     # Attempt to connect to the port
     gui_id = msg.data.get("gui_id")
@@ -83,11 +84,10 @@ def handle_gui_ready(msg):
     port = msg.data.get("port")
     if port:
         log_message("Connecting CLI GUI on "+str(port))
-        #ws = create_connection("ws://0.0.0.0:" + str(port) + "/gui",
         ws = websocket.WebSocketApp("ws://0.0.0.0:" + str(port) + "/gui",
-                               on_message=on_gui_message,
-                               on_error=on_gui_error,
-                               on_close=on_gui_close)
+                                    on_message=on_gui_message,
+                                    on_error=on_gui_error,
+                                    on_close=on_gui_close)
 
         log_message("WS = "+str(ws))
         event_thread = Thread(target=gui_connect, args=[ws])
@@ -115,7 +115,7 @@ def on_gui_message(ws, payload):
             global vars
             namespace = msg.get("namespace")
             data = msg.get("data")
-            if not namespace in vars:
+            if namespace not in vars:
                 vars[namespace] = {}
             for d in data:
                 vars[namespace][d] = data[d]

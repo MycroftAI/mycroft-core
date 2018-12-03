@@ -263,7 +263,7 @@ class SkillGUI(object):
             # Then request display of the correct page
             self.skill.bus.emit(Message("gui.page.show",
                                         {"page": page_url,
-                                        '__from': self.skill.skill_id}))
+                                         '__from': self.skill.skill_id}))
         else:
             self.skill.log.debug("Unable to find page: " + str(self.page))
 
