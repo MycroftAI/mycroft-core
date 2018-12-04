@@ -12,16 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from enum import Enum
+from enum import IntEnum
 from abc import ABC, abstractmethod
 from mycroft import MycroftSkill
 from mycroft.messagebus.message import Message
 
 
-class CQSMatchLevel(Enum):
+class CQSMatchLevel(IntEnum):
     EXACT = 1  # Skill could find a specific answer for the question
     CATEGORY = 2  # Skill could find an answer from a category in the query
     GENERAL = 3  # The query could be processed as a general quer
+
+
+# Copy of CQSMatchLevel to use if the skill returns visual media
+CQSVisualMatchLevel = IntEnum('CQSVisualMatchLevel',
+                              [e.name for e in CQSMatchLevel])
+
+
+def is_CQSVisualMatchLevel(match_level):
+    return isinstance(match_level, type(CQSVisualMatchLevel.EXACT))
+
+
+VISUAL_DEVICES = ['mycroft_mark_2']
+
+
+def handles_visuals(self, platform):
+    return platform in VISUAL_DEVICES
 
 
 class CommonQuerySkill(MycroftSkill, ABC):
@@ -69,12 +85,19 @@ class CommonQuerySkill(MycroftSkill, ABC):
         if consumed_pct > 1.0:
             consumed_pct = 1.0
 
-        if level == CQSMatchLevel.EXACT:
-            return 0.9 + (consumed_pct / 10)
-        elif level == CQSMatchLevel.CATEGORY:
-            return 0.6 + (consumed_pct / 10)
-        elif level == CQSMatchLevel.GENERAL:
-            return 0.5 + (consumed_pct / 10)
+        # Add bonus if match has visuals and the device supports them.
+        platform = self.config_core.get('encolsure', {}).get('platform')
+        if is_CQSVisualMatchLevel(level) and handles_visuals(platform):
+            bonus = 0.1
+        else:
+            bonus = 0
+
+        if int(level) == int(CQSMatchLevel.EXACT):
+            return 0.9 + (consumed_pct / 10) + bonus
+        elif int(level) == int(CQSMatchLevel.CATEGORY):
+            return 0.6 + (consumed_pct / 10) + bonus
+        elif int(level) == int(CQSMatchLevel.GENERAL):
+            return 0.5 + (consumed_pct / 10) + bonus
         else:
             return 0.0  # should never happen
 
