@@ -87,6 +87,12 @@ class Api(object):
                 })
                 IdentityManager.save(data, lock=False)
                 LOG.debug('Saved credentials')
+            except HTTPError as e:
+                if e.response.status_code == 401:
+                    LOG.error('Could not refresh token, invalid refresh code.')
+                else:
+                    raise
+
             finally:
                 identity_lock.release()
         else:  # Someone is updating the identity wait for release
