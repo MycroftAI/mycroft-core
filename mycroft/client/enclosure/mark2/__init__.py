@@ -15,7 +15,7 @@
 from mycroft.client.enclosure.base import Enclosure
 
 
-class Enclosure_Mark2(Enclosure):
+class EnclosureMark2(Enclosure):
 
     def __init__(self):
         super().__init__()

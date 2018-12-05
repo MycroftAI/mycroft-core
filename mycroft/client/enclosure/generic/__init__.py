@@ -28,7 +28,7 @@ from mycroft.util import connected
 from mycroft.util.log import LOG
 
 
-class Enclosure_Generic(object):
+class EnclosureGeneric:
     """
     Serves as a communication interface between a simple text frontend and
     Mycroft Core.  This is used for Picroft or other headless systems,
@@ -88,7 +88,7 @@ class Enclosure_Generic(object):
         self.bus.emit(Message("mycroft.mic.unmute"))
 
     def _do_net_check(self):
-        # TODO: This should live in the derived Enclosure, e.g. Enclosure_Mark1
+        # TODO: This should live in the derived Enclosure, e.g. EnclosureMark1
         LOG.info("Checking internet connection")
         if not connected():  # and self.conn_monitor is None:
             if has_been_paired():
@@ -100,7 +100,7 @@ class Enclosure_Generic(object):
                 # Begin the unit startup process, this is the first time it
                 # is being run with factory defaults.
 
-                # TODO: This logic should be in Enclosure_Mark1
+                # TODO: This logic should be in EnclosureMark1
                 # TODO: Enclosure/localization
 
                 # Don't listen to mic during this out-of-box experience

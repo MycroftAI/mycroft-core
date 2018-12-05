@@ -26,19 +26,19 @@ def main():
 
     if platform == "mycroft_mark_1":
         LOG.debug("Creating Mark I Enclosure")
-        from mycroft.client.enclosure.mark1 import Enclosure_Mark1
-        enclosure = Enclosure_Mark1()
+        from mycroft.client.enclosure.mark1 import EnclosureMark1
+        enclosure = EnclosureMark1()
     elif platform == "mycroft_mark_2":
         LOG.debug("Creating Mark II Enclosure")
-        from mycroft.client.enclosure.mark2 import Enclosure_Mark2
-        enclosure = Enclosure_Mark2()
+        from mycroft.client.enclosure.mark2 import EnclosureMark2
+        enclosure = EnclosureMark2()
     else:
         LOG.debug("Creating generic enclosure, platform='{}'".format(platform))
 
         # TODO: Mechanism to load from elsewhere.  E.g. read a script path from
         # the mycroft.conf, then load/launch that script.
-        from mycroft.client.enclosure.generic import Enclosure_Generic
-        enclosure = Enclosure_Generic()
+        from mycroft.client.enclosure.generic import EnclosureGeneric
+        enclosure = EnclosureGeneric()
 
     if enclosure:
         try:

@@ -207,34 +207,42 @@ def intent_file_handler(intent_file):
     return real_decorator
 
 
-#######################################################################
-# SkillGUI - Interface to the Graphical User Interface
-#######################################################################
 class SkillGUI(object):
+    """
+    SkillGUI - Interface to the Graphical User Interface
+
+    Values set in this object are synced to the GUI, accessible within QML
+    via the built-in sessionData mechanism.  For example, in Python you can
+    write in a skill:
+        self.gui['temp'] = 33
+        self.gui.show_page('Weather.qml')
+    Then in the Weather.qml you'd access the temp via code such as:
+        text: sessionData.time
+    """
 
     def __init__(self, skill):
-        self.__dict = {}
+        self.__session_data = {}  # synced to GUI for use by this skill's pages
         self.page = None    # the active GUI page (e.g. QML template) to show
         self.skill = skill
 
     def __setitem__(self, key, value):
-        self.__dict[key] = value
+        self.__session_data[key] = value
 
         if self.page:
             # emit notification
-            data = self.__dict.copy()
+            data = self.__session_data.copy()
             data.update({'__from': self.skill.skill_id})
             self.skill.bus.emit(Message("gui.value.set", data))
 
     def __getitem__(self, key):
-        try:
-            return self.__dict[key]
-        except Exception:
-            return None
+        return self.__session_data[key]
+
+    def __contains__(self, key):
+        return self.__session_data.__contains__(key)
 
     def clear(self):
         """ Reset the value dictionary """
-        self.__dict = {}
+        self.__session_data = {}
         self.page = None
 
     def show_page(self, name):
@@ -250,10 +258,10 @@ class SkillGUI(object):
         # Communicate with the enclosure process
 
         # First sync any data...
-        data = self.__dict.copy()
+        data = self.__session_data.copy()
         data.update({'__from': self.skill.skill_id})
         self.skill.bus.emit(Message("gui.value.set", data))
-        # TODO: Minimize by tracking data that has already been synched?
+        # TODO: Minimize by tracking data that has already been synced?
 
         # Convert page to full reference
         page = self.skill.find_resource(self.page, 'ui')
@@ -266,6 +274,52 @@ class SkillGUI(object):
                                          '__from': self.skill.skill_id}))
         else:
             self.skill.log.debug("Unable to find page: " + str(self.page))
+
+    def show_text(self, text, title=None):
+        """ Display a GUI page for viewing simple text
+
+        Arguments:
+            text (str): Main text content.  It will auto-paginate
+            title (str): A title to display above the text content.
+        """
+        self.clear()
+        self["text"] = text
+        self["title"] = title
+        self.show_page("SYSTEM_TEXTFRAME")
+
+    def show_image(self, url, caption=None, title=None):
+        """ Display a GUI page for viewing an image
+
+        Arguments:
+            url (str): Pointer to the image
+            caption (str): A caption to show under the image
+            title (str): A title to display above the image content
+        """
+        self.clear()
+        self["image"] = url
+        self["title"] = title
+        self["caption"] = caption
+        self.show_page("SYSTEM_IMAGEFRAME")
+
+    def show_html(self, html):
+        """ Display an HTML page in the GUI
+
+        Arguments:
+            html (str): HTML text to display
+        """
+        self.clear()
+        self["url"] = ""  # TODO: Save to a temp file... html
+        self.show_page("SYSTEM_HTMLFRAME")
+
+    def show_url(self, url):
+        """ Display an HTML page in the GUI
+
+        Arguments:
+            url (str): URL to render
+        """
+        self.clear()
+        self["url"] = url
+        self.show_page("SYSTEM_HTMLFRAME")
 
 
 #######################################################################
@@ -310,60 +364,6 @@ class MycroftSkill(object):
                       "from  __init__() to initialize() to correct this.")
             LOG.error(simple_trace(traceback.format_stack()))
             raise Exception("Accessed MycroftSkill.enclosure in __init__")
-
-    def show_page(self, name):
-        '''Display a GUI page, using any values which have been preset
-
-        Arguments:
-            name (str): name of (QML) page which defines the page
-        '''
-        self.gui.show_page(name)
-
-    def show_text(self, text, title=None):
-        '''Display a GUI page for viewing simple text
-
-        Arguments:
-            text (str): Main text content.  It will auto-paginate
-            title (str): A title to display above the text content.
-        '''
-        self.gui.clear()
-        self.gui["text"] = text
-        self.gui["title"] = title
-        self.gui.show_page("SYSTEM_TEXTFRAME")
-
-    def show_image(self, url, caption=None, title=None):
-        '''Display a GUI page for viewing an image
-
-        Arguments:
-            url (str): Pointer to the image
-            caption (str): A caption to show under the image
-            title (str): A title to display above the image content
-        '''
-        self.gui.clear()
-        self.gui["image"] = url
-        self.gui["title"] = title
-        self.gui["caption"] = caption
-        self.gui.show_page("SYSTEM_IMAGEFRAME")
-
-    def show_html(self, html):
-        '''Display an HTML page in the GUI
-
-        Arguments:
-            html (str): HTML text to display
-        '''
-        self.gui.clear()
-        self.gui["url"] = ""  # TODO: Save to a temp file... html
-        self.gui.show_page("SYSTEM_HTMLFRAME")
-
-    def show_url(self, url):
-        '''Display an HTML page in the GUI
-
-        Arguments:
-            url (str): URL to render
-        '''
-        self.gui.clear()
-        self.gui["url"] = url
-        self.gui.show_page("SYSTEM_HTMLFRAME")
 
     @property
     def bus(self):
