@@ -28,7 +28,7 @@ msk==0.3.12
 adapt-parser==0.3.0
 padatious==0.4.5
 fann2==1.0.7
-padaos==0.1.7
+padaos==0.1.8
 precise-runner==0.2.1
 petact==0.1.2
 
