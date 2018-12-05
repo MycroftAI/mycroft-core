@@ -16,6 +16,8 @@ import sys
 import io
 from math import ceil
 
+from .gui_server import start_qml_gui
+
 from mycroft.tts import TTS
 
 import os
@@ -38,6 +40,7 @@ preferred_encoding = locale.getpreferredencoding()
 
 bSimple = False
 bus = None  # Mycroft messagebus connection
+event_thread = None
 history = []
 chat = []   # chat history, oldest at the lowest index
 line = ""
@@ -50,6 +53,8 @@ auto_scroll = True
 # for debugging odd terminals
 last_key = ""
 show_last_key = False
+show_gui = None  # None = not initialized, else True/False
+gui_text = []
 
 log_lock = Lock()
 max_log_lines = 5000
@@ -360,7 +365,7 @@ def rebuild_filtered_log():
             else:
                 # Apply filters
                 for filtered_text in log_filters:
-                    if filtered_text in line:
+                    if filtered_text and filtered_text in line:
                         ignore = True
                         break
 
@@ -403,6 +408,45 @@ def handle_message(msg):
     # TODO: Think this thru a little bit -- remove this logging within core?
     # add_log_message(msg)
     pass
+
+
+##############################################################################
+# "Graphic primitives"
+def draw(x, y, msg, pad=None, pad_chr=None, clr=None):
+    """Draw a text to the screen
+
+    Args:
+        x (int): X coordinate (col), 0-based from upper-left
+        y (int): Y coordinate (row), 0-based from upper-left
+        msg (str): string to render to screen
+        pad (bool or int, optional): if int, pads/clips to given length, if
+                                     True use right edge of the screen.
+        pad_chr (char, optional): pad character, default is space
+        clr (int, optional): curses color, Defaults to CLR_LOG1.
+    """
+    if y < 0 or y > curses.LINES or x < 0 or x > curses.COLS:
+        return
+
+    if x + len(msg) > curses.COLS:
+        s = msg[:curses.COLS-x]
+    else:
+        s = msg
+        if pad:
+            ch = pad_chr or " "
+            if pad is True:
+                pad = curses.COLS  # pad to edge of screen
+                s += ch * (pad-x-len(msg))
+            else:
+                # pad to given length (or screen width)
+                if x+pad > curses.COLS:
+                    pad = curses.COLS-x
+                s += ch * (pad-len(msg))
+
+    if not clr:
+        clr = CLR_LOG1
+
+    scr.addstr(y, x, s, clr)
+
 
 ##############################################################################
 # Screen handling
@@ -530,6 +574,24 @@ def _do_meter(height):
                 clr_bar = curses.color_pair(5)   # dark blue for 'silent'
             scr.addstr(curses.LINES - 1 - i, curses.COLS - len(str_thresh) - 4,
                        "*", clr_bar)
+
+
+def _do_gui(gui_width):
+    clr = curses.color_pair(2)  # dark red
+    x = curses.COLS - gui_width
+    y = 3
+    draw(x, y, " "+make_titlebar("= GUI", gui_width-1)+" ", clr=CLR_HEADING)
+    cnt = len(gui_text)+1
+    if cnt > curses.LINES-15:
+        cnt = curses.LINES-15
+    for i in range(0, cnt):
+        draw(x, y+1+i, " !", clr=CLR_HEADING)
+        if i < len(gui_text):
+            draw(x+2, y+1+i, gui_text[i], pad=gui_width-3)
+        else:
+            draw(x+2, y+1+i, "*"*(gui_width-3))
+        draw(x+(gui_width-1), y+1+i, "!", clr=CLR_HEADING)
+    draw(x, y+cnt, " "+"-"*(gui_width-2)+" ", clr=CLR_HEADING)
 
 
 def set_screen_dirty():
@@ -690,6 +752,9 @@ def do_draw_main(scr):
         scr.addstr(y, 1, handleNonAscii(txt), clr)
         y += 1
 
+    if show_gui and curses.COLS > 20 and curses.LINES > 20:
+        _do_gui(curses.COLS-20)
+
     # Command line at the bottom
     ln = line
     if len(line) > 0 and line[0] == ":":
@@ -708,7 +773,7 @@ def do_draw_main(scr):
         scr.addstr(curses.LINES - 1, 0, ">", CLR_HEADING)
 
     _do_meter(cy_chat_area + 2)
-    scr.addstr(curses.LINES - 1, 2, ln, CLR_INPUT)
+    scr.addstr(curses.LINES - 1, 2, ln[-(curses.COLS - 3):], CLR_INPUT)
 
     # Curses doesn't actually update the display until refresh() is called
     scr.refresh()
@@ -931,11 +996,14 @@ def center(str_len):
 ##############################################################################
 # Main UI lopo
 
-def _get_cmd_param(cmd):
+def _get_cmd_param(cmd, keyword):
     # Returns parameter to a command.  Will de-quote.
     # Ex: find 'abc def'   returns: abc def
     #    find abc def     returns: abc def
-    cmd = cmd.strip()
+    cmd = cmd.replace(keyword, "").strip()
+    if not cmd:
+        return None
+
     last_char = cmd[-1]
     if last_char == '"' or last_char == "'":
         parts = cmd.split(last_char)
@@ -974,7 +1042,7 @@ def handle_cmd(cmd):
         elif "show" in cmd or "on" in cmd:
             show_meter = True
     elif "find" in cmd:
-        find_str = _get_cmd_param(cmd)
+        find_str = _get_cmd_param(cmd, "find")
         rebuild_filtered_log()
     elif "filter" in cmd:
         if "show" in cmd or "list" in cmd:
@@ -986,19 +1054,19 @@ def handle_cmd(cmd):
             log_filters = list(default_log_filters)
         else:
             # extract last word(s)
-            param = _get_cmd_param(cmd)
-
-            if "remove" in cmd and param in log_filters:
-                log_filters.remove(param)
-            else:
-                log_filters.append(param)
+            param = _get_cmd_param(cmd, "filter")
+            if param:
+                if "remove" in cmd and param in log_filters:
+                    log_filters.remove(param)
+                else:
+                    log_filters.append(param)
 
         rebuild_filtered_log()
         add_log_message("Filters: " + str(log_filters))
     elif "history" in cmd:
         # extract last word(s)
-        lines = int(_get_cmd_param(cmd))
-        if lines < 1:
+        lines = int(_get_cmd_param(cmd, "history"))
+        if not lines or lines < 1:
             lines = 1
         max_chat_area = curses.LINES - 7
         if lines > max_chat_area:
@@ -1040,6 +1108,15 @@ def handle_cmd(cmd):
     return 0  # do nothing upon return
 
 
+def handle_is_connected(msg):
+    add_log_message("Connected to Messagebus!")
+    # start_qml_gui(bus, gui_text)
+
+
+def handle_reconnecting():
+    add_log_message("Looking for Messagebus websocket...")
+
+
 def gui_main(stdscr):
     global scr
     global bus
@@ -1050,19 +1127,20 @@ def gui_main(stdscr):
     global last_key
     global history
     global screen_lock
+    global show_gui
 
     scr = stdscr
     init_screen()
     scr.keypad(1)
-    scr.notimeout(1)
+    scr.notimeout(True)
 
-    bus = WebsocketClient()  # Mycroft messagebus connection
     bus.on('speak', handle_speak)
     bus.on('message', handle_message)
     bus.on('recognizer_loop:utterance', handle_utterance)
-    event_thread = Thread(target=connect)
-    event_thread.setDaemon(True)
-    event_thread.start()
+    bus.on('connected', handle_is_connected)
+    bus.on('reconnecting', handle_reconnecting)
+
+    add_log_message("Establishing Mycroft Messagebus connection...")
 
     gui_thread = ScreenDrawThread()
     gui_thread.setDaemon(True)  # this thread won't prevent prog from exiting
@@ -1075,7 +1153,12 @@ def gui_main(stdscr):
             set_screen_dirty()
 
             try:
-                c = scr.get_wch()  # unicode char or int for special keys
+                # Don't block, this allows us to refresh the screen while
+                # waiting on initial messagebus connection, etc
+                scr.timeout(1)
+                c = scr.get_wch()   # unicode char or int for special keys
+                if c == -1:
+                    continue
             except KeyboardInterrupt:
                 # User hit Ctrl+C to quit
                 if find_str:
@@ -1115,7 +1198,6 @@ def gui_main(stdscr):
                         c2 = scr.getch()
                         if time.time()-start > 1:  # 1 second timeout
                             break  # 1 second timeout waiting for ESC code
-                    scr.timeout(-1)
 
                 if c1 == 79 and c2 == 120:
                     c = curses.KEY_UP
@@ -1147,6 +1229,7 @@ def gui_main(stdscr):
                 else:
                     last_key = str(code)
 
+            scr.timeout(-1)     # resume blocking
             if code == 27:    # Hitting ESC twice clears the entry line
                 hist_idx = -1
                 line = ""
@@ -1225,6 +1308,10 @@ def gui_main(stdscr):
                 line = line[:-1]
             elif code == 6:  # Ctrl+F (Find)
                 line = ":find "
+            elif code == 7:  # Ctrl+G (start GUI)
+                if show_gui is None:
+                    start_qml_gui(bus, gui_text)
+                show_gui = not show_gui
             elif code == 18:  # Ctrl+R (Redraw)
                 scr.erase()
             elif code == 24:  # Ctrl+X (Exit)
@@ -1245,13 +1332,9 @@ def gui_main(stdscr):
 
 
 def simple_cli():
-    global bus
     global bSimple
     bSimple = True
-    bus = WebsocketClient()  # Mycroft messagebus connection
-    event_thread = Thread(target=connect)
-    event_thread.setDaemon(True)
-    event_thread.start()
+
     bus.on('speak', handle_speak)
     try:
         while True:
@@ -1269,3 +1352,12 @@ def simple_cli():
         LOG.exception(e)
         event_thread.exit()
         sys.exit()
+
+
+def connect_to_messagebus():
+    global bus
+    bus = WebsocketClient()  # Mycroft messagebus connection
+
+    event_thread = Thread(target=connect)
+    event_thread.setDaemon(True)
+    event_thread.start()
