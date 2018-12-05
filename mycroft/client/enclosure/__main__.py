@@ -22,7 +22,7 @@ from mycroft.configuration import Configuration, LocalConf, SYSTEM_CONFIG
 def main():
     # Read the system configuration
     system_config = LocalConf(SYSTEM_CONFIG)
-    platform = system_config.get("enclosure").get("platform")
+    platform = system_config.get("enclosure", {}).get("platform")
 
     if platform == "mycroft_mark_1":
         LOG.debug("Creating Mark I Enclosure")
