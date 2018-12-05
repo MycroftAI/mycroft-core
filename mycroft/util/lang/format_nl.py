@@ -254,11 +254,11 @@ def pronounce_ordinal_nl(num):
         return num
     if num < 4:
         return ordinals[num]
-    if num < 8 :
+    if num < 8:
         return pronounce_number_nl(num) + "de"
-    if num < 9 :
+    if num < 9:
         return pronounce_number_nl(num) + "ste"
-    if num < 20 :
+    if num < 20:
         return pronounce_number_nl(num) + "de"
     return pronounce_number_nl(num) + "ste"
 
@@ -330,6 +330,7 @@ def nice_time_nl(dt, speech=True, use_24hour=False, use_ampm=False):
 
         return speak
 
+
 def nice_part_of_day_nl(dt):
     if dt.hour < 6:
         return " 's nachts"
@@ -340,6 +341,7 @@ def nice_part_of_day_nl(dt):
     if dt.hour < 24:
         return " 's avond"
     raise Exception('dt.hour is bigger than 24')
+
 
 def nice_response_nl(text):
     # check for months and call nice_ordinal_nl declension of ordinals
