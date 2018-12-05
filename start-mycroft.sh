@@ -205,6 +205,10 @@ case ${_opt} in
         source-venv
         pytest test/unittests/ --cov=mycroft "$@"
         ;;
+    "singleunittest")
+        source-venv
+        pytest "$@"
+        ;;
     "skillstest")
         source-venv
         pytest test/integrationtests/skills/discover_tests.py "$@"
