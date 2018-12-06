@@ -12,3 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from mycroft.client.enclosure.base import Enclosure
+
+
+class EnclosureMark2(Enclosure):
+
+    def __init__(self):
+        super().__init__()
+
+        # TODO: Any Mark II specific startup actions
