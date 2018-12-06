@@ -65,8 +65,11 @@ class LOG:
         confs = [SYSTEM_CONFIG, USER_CONFIG]
         config = {}
         for conf in confs:
-            merge_dict(config,
-                       load_commented_json(conf) if isfile(conf) else {})
+            try:
+                merge_dict(config,
+                           load_commented_json(conf) if isfile(conf) else {})
+            except Exception as e:
+                print('couldn\'t load {}: {}'.format(conf, str(e)))
 
         cls.level = logging.getLevelName(config.get('log_level', 'DEBUG'))
         fmt = '%(asctime)s.%(msecs)03d - ' \

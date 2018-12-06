@@ -1,11 +1,11 @@
 six==1.10.0
 requests==2.20.0
-gTTS==1.1.7
-gTTS-token==1.1.2
+gTTS==2.0.1
+gTTS-token==1.1.3
 PyAudio==0.2.11
 pyee==1.0.1
 SpeechRecognition==3.8.1
-tornado==4.2.1
+tornado==4.5.3
 websocket-client==0.32.0
 requests-futures==0.9.5
 pyyaml==3.13
@@ -23,12 +23,12 @@ pulsectl==17.7.4
 google-api-python-client==1.6.4
 fasteners==0.14.1
 
-msm==0.5.19
+msm==0.6.2
 msk==0.3.12
 adapt-parser==0.3.0
 padatious==0.4.5
 fann2==1.0.7
-padaos==0.1.7
+padaos==0.1.8
 precise-runner==0.2.1
 petact==0.1.2
 

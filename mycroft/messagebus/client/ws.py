@@ -86,6 +86,7 @@ class WebsocketClient(object):
         time.sleep(self.retry)
         self.retry = min(self.retry * 2, 60)
         try:
+            self.emitter.emit('reconnecting')
             self.client = self.create_client()
             self.run_forever()
         except WebSocketException:

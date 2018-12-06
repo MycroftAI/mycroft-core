@@ -207,6 +207,121 @@ def intent_file_handler(intent_file):
     return real_decorator
 
 
+class SkillGUI(object):
+    """
+    SkillGUI - Interface to the Graphical User Interface
+
+    Values set in this object are synced to the GUI, accessible within QML
+    via the built-in sessionData mechanism.  For example, in Python you can
+    write in a skill:
+        self.gui['temp'] = 33
+        self.gui.show_page('Weather.qml')
+    Then in the Weather.qml you'd access the temp via code such as:
+        text: sessionData.time
+    """
+
+    def __init__(self, skill):
+        self.__session_data = {}  # synced to GUI for use by this skill's pages
+        self.page = None    # the active GUI page (e.g. QML template) to show
+        self.skill = skill
+
+    def __setitem__(self, key, value):
+        self.__session_data[key] = value
+
+        if self.page:
+            # emit notification
+            data = self.__session_data.copy()
+            data.update({'__from': self.skill.skill_id})
+            self.skill.bus.emit(Message("gui.value.set", data))
+
+    def __getitem__(self, key):
+        return self.__session_data[key]
+
+    def __contains__(self, key):
+        return self.__session_data.__contains__(key)
+
+    def clear(self):
+        """ Reset the value dictionary """
+        self.__session_data = {}
+        self.page = None
+
+    def show_page(self, name):
+        """
+        Begin showing the page in the GUI
+
+        Args:
+            name (str): Name of page (e.g "mypage.qml") to display
+        """
+
+        self.page = name
+
+        # Communicate with the enclosure process
+
+        # First sync any data...
+        data = self.__session_data.copy()
+        data.update({'__from': self.skill.skill_id})
+        self.skill.bus.emit(Message("gui.value.set", data))
+        # TODO: Minimize by tracking data that has already been synced?
+
+        # Convert page to full reference
+        page = self.skill.find_resource(self.page, 'ui')
+        if page:
+            page_url = "file://" + page
+
+            # Then request display of the correct page
+            self.skill.bus.emit(Message("gui.page.show",
+                                        {"page": page_url,
+                                         '__from': self.skill.skill_id}))
+        else:
+            self.skill.log.debug("Unable to find page: " + str(self.page))
+
+    def show_text(self, text, title=None):
+        """ Display a GUI page for viewing simple text
+
+        Arguments:
+            text (str): Main text content.  It will auto-paginate
+            title (str): A title to display above the text content.
+        """
+        self.clear()
+        self["text"] = text
+        self["title"] = title
+        self.show_page("SYSTEM_TEXTFRAME")
+
+    def show_image(self, url, caption=None, title=None):
+        """ Display a GUI page for viewing an image
+
+        Arguments:
+            url (str): Pointer to the image
+            caption (str): A caption to show under the image
+            title (str): A title to display above the image content
+        """
+        self.clear()
+        self["image"] = url
+        self["title"] = title
+        self["caption"] = caption
+        self.show_page("SYSTEM_IMAGEFRAME")
+
+    def show_html(self, html):
+        """ Display an HTML page in the GUI
+
+        Arguments:
+            html (str): HTML text to display
+        """
+        self.clear()
+        self["url"] = ""  # TODO: Save to a temp file... html
+        self.show_page("SYSTEM_HTMLFRAME")
+
+    def show_url(self, url):
+        """ Display an HTML page in the GUI
+
+        Arguments:
+            url (str): URL to render
+        """
+        self.clear()
+        self["url"] = url
+        self.show_page("SYSTEM_HTMLFRAME")
+
+
 #######################################################################
 # MycroftSkill base class
 #######################################################################
@@ -221,6 +336,8 @@ class MycroftSkill(object):
         # Get directory of skill
         self._dir = dirname(abspath(sys.modules[self.__module__].__file__))
         self.settings = SkillSettings(self._dir, self.name)
+
+        self.gui = SkillGUI(self)
 
         self._bus = None
         self._enclosure = None
@@ -587,27 +704,35 @@ class MycroftSkill(object):
         """
         return self.dialog_renderer.render(text, data or {})
 
-    def find_resource(self, res_name, old_dirname=None):
-        """ Find a text resource file
+    def find_resource(self, res_name, res_dirname=None):
+        """ Find a resource file
 
-        Searches for the given filename in either the old-style directory
-        (e.g. "<root>/<old_dirname>/<lang>/<res_name>") or somewhere under the
-        new localization folder "<root>/locale/<lang>/*/<res_name>".  The new
-        method allows arbitrary organization, so the res_name would be found
-        at "<root>/locale/<lang>/<res_name>", or an arbitrary folder like
-        "<root>/locale/<lang>/somefolder/<res_name>".
+        Searches for the given filename using this scheme:
+        1) Search the resource lang directory:
+             <skill>/<res_dirname>/<lang>/<res_name>
+        2) Search the resource directory:
+             <skill>/<res_dirname>/<res_name>
+        3) Search the locale lang directory or other subdirectory:
+             <skill>/locale/<lang>/<res_name> or
+             <skill>/locale/<lang>/.../<res_name>
 
         Args:
             res_name (string): The resource name to be found
-            old_dirname (string, optional): Defaults to None. One of the old
-                               resource folders: 'dialog', 'vocab', or 'regex'
+            res_dirname (string, optional): A skill resource directory, such
+                                            'dialog', 'vocab', 'regex' or 'ui'.
+                                            Defaults to None.
 
         Returns:
-            string: The full path to the resource or None if not found
+            string: The full path to the resource file or None if not found
         """
-        if old_dirname:
-            # Try the old directory (dialog/vocab/regex)
-            path = join(self.root_dir, old_dirname, self.lang, res_name)
+        if res_dirname:
+            # Try the old translated directory (dialog/vocab/regex)
+            path = join(self.root_dir, res_dirname, self.lang, res_name)
+            if exists(path):
+                return path
+
+            # Try old-style non-translated resource
+            path = join(self.root_dir, res_dirname, res_name)
             if exists(path):
                 return path
 
