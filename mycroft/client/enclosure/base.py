@@ -27,8 +27,8 @@ from mycroft.messagebus.message import Message
 
 
 def DEBUG(str):
-    # print(str)
-    pass  # disable by default
+    print(str)
+    # pass  # disable by default
 
 
 class Enclosure(object):
@@ -93,14 +93,20 @@ class Enclosure(object):
 
     def on_gui_show_page(self, message):
         data = message.data
+
+        # Note:  'page' can be either a string or a list of strings
         if 'page' not in data:
             return
+        if 'index' in data:
+            index = data['index']
+        else:
+            index = 0
         namespace = data.get("__from", "")
         self._gui_activate(namespace, move_to_top=True)
 
         # Pass the request to the GUI(s) to pull up a page template
         for id in self.GUIs:
-            self.GUIs[id].show(namespace, data['page'])
+            self.GUIs[id].show(namespace, data['page'], index)
 
     ######################################################################
     # GUI client socket
@@ -217,7 +223,8 @@ class GUIConnection(object):
         self.datastore = {}
 
         self.current_namespace = None
-        self.current_page = None
+        self.current_pages = None
+        self.current_index = None
 
         # Each connection will run its own Tornado server.  If the
         # connection drops, the server is killed.
@@ -250,8 +257,9 @@ class GUIConnection(object):
                    "namespace": namespace,
                    "data": self.datastore[namespace]}
             self.socket.send_message(msg)
-        if self.current_page:
-            self.show(self.current_namespace, self.current_page)
+        if self.current_pages:
+            self.show(self.current_namespace, self.current_pages,
+                      self.current_index)
 
     def on_connection_closed(self, socket):
         # Self-destruct (can't reconnect on the same port)
@@ -275,36 +283,68 @@ class GUIConnection(object):
             self.socket.send(msg)
             self.datastore[namespace][name] = value
 
-    def show(self, namespace, page):
+    def show(self, namespace, page, index):
         DEBUG("GUIConnection activating: "+namespace)
-        self.sync_active()
 
+        pages = page if isinstance(page, list) else [page]
+
+        self.sync_active()
         self.socket.send({"type": "mycroft.gui.show",
                           "namespace": namespace,
-                          "gui_urls": [page]})
+                          "gui_urls": pages})
+        DEBUG("Sent: "+str(pages))
+        # TODO: Send index somehow?
+
         self.current_namespace = namespace
-        self.current_page = page
+        self.current_pages = pages
+        self.current_index = index
 
     def sync_active(self):
         # The main Enclosure keeps a list of active skills.  Each GUI also
         # has a list.  Synchronize when appropriate.
         if self.enclosure._active_namespaces != self._active_namespaces:
-            # First, zap the old list
-            if self._active_namespaces:
-                self.socket.send({"type": "mycroft.session.list.remove",
-                                  "namespace": "mycroft.system.active_skills",
-                                  "position": 0,
-                                  "items_number": len(self._active_namespaces)
-                                  })
 
-            # Now fill it back up
-            for ns in reversed(self.enclosure._active_namespaces):
-                self.socket.send({"type": "mycroft.session.list.insert",
-                                  "namespace": "mycroft.system.active_skills",
-                                  "position": 0,
-                                  "data": [{'skill_id': ns}]
-                                  })
-            self._active_namespaces = self.enclosure._active_namespaces.copy()
+            # First, zap any namespace not in the list anymore
+            if self._active_namespaces:
+                pos = len(self._active_namespaces) - 1
+                for ns in reversed(self._active_namespaces):
+                    if ns not in self.enclosure._active_namespaces:
+                        msg = {"type": "mycroft.session.list.remove",
+                               "namespace": "mycroft.system.active_skills",
+                               "position": pos,
+                               "items_number": 1
+                               }
+                        self.socket.send(msg)
+                        del self._active_namespaces[pos]
+                    pos -= 1
+
+            # Next, insert any missing items
+            if not self._active_namespaces:
+                self._active_namespaces = []
+            for ns in self.enclosure._active_namespaces:
+                if ns not in self._active_namespaces:
+                    msg = {"type": "mycroft.session.list.insert",
+                           "namespace": "mycroft.system.active_skills",
+                           "position": 0,
+                           "data": [{'skill_id': ns}]
+                           }
+                    self.socket.send(msg)
+                    self._active_namespaces.insert(0, ns)
+
+            # Finally, adjust orders to match
+            for idx in range(0, len(self.enclosure._active_namespaces)):
+                ns = self.enclosure._active_namespaces[idx]
+                idx_old = self._active_namespaces.index(ns)
+                if idx != idx_old:
+                    msg = {"type": "mycroft.session.list.move",
+                           "namespace": "mycroft.system.active_skills",
+                           "from": idx_old,
+                           "to": idx,
+                           "items_number": 1
+                           }
+                    self.socket.send(msg)
+                    del self._active_namespaces[idx_old]
+                    self._active_namespaces.insert(idx, ns)
 
 
 class GUIWebsocketHandler(WebSocketHandler):
