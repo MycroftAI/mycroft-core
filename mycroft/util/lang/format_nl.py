@@ -24,7 +24,7 @@ months = ['januari', 'februari', 'maart', 'april', 'mei', 'juni',
 
 NUM_STRING_NL = {
     0: 'nul',
-    1: 'een',  # ein Viertel etc., nicht eins Viertel
+    1: u'één',
     2: 'twee',
     3: 'drie',
     4: 'vier',
@@ -158,8 +158,8 @@ def pronounce_number_nl(num, places=2):
                 num -= hundreds * 100
         if num == 0:
             result += ''  # do nothing
-        elif num == 1:
-            result += u'één'  # need the s for the last digit
+        #elif num == 1:
+        #    result += u'één'
         elif num <= 20:
             result += NUM_STRING_NL[num]  # + EXTRA_SPACE
         elif num > 20:
@@ -214,7 +214,7 @@ def pronounce_number_nl(num, places=2):
             if scale_level >= 2:
                 # if EXTRA_SPACE == '':
                 #    result += " "
-                result += " " + NUM_POWERS_OF_TEN[scale_level]
+                result += " " + NUM_POWERS_OF_TEN[scale_level] + ' '
             if scale_level >= 2:
                 if scale_level % 2 == 0:
                     result += ""  # Miljioen
@@ -223,7 +223,7 @@ def pronounce_number_nl(num, places=2):
         num = floor(num / 1000)
         scale_level += 1
         return pronounce_whole_number_nl(num,
-                                         scale_level) + result  # + EXTRA_SPACE
+                                         scale_level) + result + ''
 
     result = ""
     if abs(num) >= 1000000000000000000000000:  # cannot do more than this
@@ -240,7 +240,7 @@ def pronounce_number_nl(num, places=2):
             fractional_part = num - whole_number_part
             result += pronounce_whole_number_nl(whole_number_part)
             if places > 0:
-                result += " comma"
+                result += " komma"
                 result += pronounce_fractional_nl(fractional_part, places)
             return result
 
@@ -307,22 +307,34 @@ def nice_time_nl(dt, speech=True, use_24hour=False, use_ampm=False):
         if dt.hour == 0 and dt.minute == 0:
             return "Middernacht"
         hour = dt.hour % 12
-
         if dt.minute == 0:
+            hour = fix_hour(hour)
             speak += pronounce_number_nl(hour)
             speak += " uur"
-        if dt.minute == 30:
-            speak += " half "
+        elif dt.minute == 30:
+            speak += "half "
             hour += 1
+            hour = fix_hour(hour)
+            speak += pronounce_number_nl(hour)
+        elif dt.minute == 15:
+            speak += "kwart over "
+            hour = fix_hour(hour)
+            speak += pronounce_number_nl(hour)
+        elif dt.minute == 45:
+            speak += "kwart voor "
+            hour += 1
+            hour = fix_hour(hour)
             speak += pronounce_number_nl(hour)
         elif dt.minute > 30:
             speak += pronounce_number_nl(60 - dt.minute)
             speak += " voor "
             hour += 1
+            hour = fix_hour(hour)
             speak += pronounce_number_nl(hour)
         else:
             speak += pronounce_number_nl(dt.minute)
             speak += " over "
+            hour = fix_hour(hour)
             speak += pronounce_number_nl(hour)
 
         if use_ampm:
@@ -330,6 +342,12 @@ def nice_time_nl(dt, speech=True, use_24hour=False, use_ampm=False):
 
         return speak
 
+
+def fix_hour(hour):
+    hour = hour % 12
+    if hour == 0:
+        hour = 12
+    return hour
 
 def nice_part_of_day_nl(dt):
     if dt.hour < 6:
@@ -339,7 +357,7 @@ def nice_part_of_day_nl(dt):
     if dt.hour < 18:
         return " 's middags"
     if dt.hour < 24:
-        return " 's avond"
+        return " 's avonds"
     raise Exception('dt.hour is bigger than 24')
 
 
@@ -364,4 +382,13 @@ def nice_ordinal_nl(text):
     # check for months for declension of ordinals before months
     # depending on articles/prepositions
     normalized_text = text
+    words = text.split()
+    for idx, word in enumerate(words):
+        wordNext = words[idx + 1] if idx + 1 < len(words) else ""
+        wordPrev = words[idx - 1] if idx > 0 else ""
+        if word[:-1].isdecimal():
+            if wordNext.lower() in months:
+                word = pronounce_number_nl(int(word))
+                words[idx] = word
+        normalized_text = " ".join(words)
     return normalized_text

@@ -26,6 +26,8 @@ from mycroft.util.lang.format_fr import nice_number_fr
 from mycroft.util.lang.format_fr import nice_time_fr
 from mycroft.util.lang.format_fr import pronounce_number_fr
 from mycroft.util.lang.format_nl import nice_time_nl
+from mycroft.util.lang.format_nl import pronounce_number_nl
+from mycroft.util.lang.format_nl import nice_number_nl
 
 from collections import namedtuple
 import json
@@ -227,6 +229,8 @@ def nice_number(number, lang="en-us", speech=True, denominators=None):
         return nice_number_de(number, speech, denominators)
     elif lang_lower.startswith("hu"):
         return nice_number_hu(number, speech, denominators)
+    elif lang_lower.startswith("nl"):
+        return nice_number_nl(number, speech, denominators)
 
     # Default to the raw number for unsupported languages,
     # hopefully the STT engine will pronounce understandably.
@@ -296,6 +300,8 @@ def pronounce_number(number, lang="en-us", places=2, short_scale=True,
         return pronounce_number_de(number, places=places)
     elif lang_lower.startswith("hu"):
         return pronounce_number_hu(number, places=places)
+    elif lang_lower.startswith("nl"):
+        return pronounce_number_nl(number, places=places)
 
     # Default to just returning the numeric value
     return str(number)
