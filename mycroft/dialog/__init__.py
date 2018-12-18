@@ -48,8 +48,9 @@ class MustacheDialogRenderer(object):
         with open(filename, 'r') as f:
             for line in f:
                 template_text = line.strip()
-                # Skip all lines starting with '#'
-                if not template_text.startswith('#'):
+                # Skip all lines starting with '#' and all empty lines
+                if (not template_text.startswith('#') and
+                        template_text != ''):
                     if template_name not in self.templates:
                         self.templates[template_name] = []
 
