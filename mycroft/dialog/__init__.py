@@ -13,8 +13,6 @@
 # limitations under the License.
 #
 import random
-from io import open
-
 import os
 import re
 from pathlib import Path
