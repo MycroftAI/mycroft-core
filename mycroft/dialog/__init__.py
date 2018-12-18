@@ -87,10 +87,10 @@ class MustacheDialogRenderer(object):
 
         template_functions = self.templates.get(template_name)
         if index is None:
-            index = random.randrange(len(template_functions))
+            line = random.choice(template_functions)
         else:
-            index %= len(template_functions)
-        line = template_functions[index]
+            line = template_functions[index % len(template_functions)]
+        # Replace {key} in line with matching values from context
         line = line.format(**context)
         return line
 
