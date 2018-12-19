@@ -71,7 +71,7 @@ FRACTION_STRING_IT = {
     20: 'ventesim'
 }
 
-#fonte: http://tulengua.es/numeros-texto/default.aspx
+# fonte: http://tulengua.es/numeros-texto/default.aspx
 LONG_SCALE_IT = collections.OrderedDict([
     (100, 'cento'),
     (1000, 'mila'),
