@@ -252,27 +252,7 @@ class SkillGUI(object):
         Args:
             name (str): Name of page (e.g "mypage.qml") to display
         """
-
-        self.page = name
-
-        # Communicate with the enclosure process
-
-        # First sync any data...
-        data = self.__session_data.copy()
-        data.update({'__from': self.skill.skill_id})
-        self.skill.bus.emit(Message("gui.value.set", data))
-
-        # Convert page to full reference
-        page = self.skill.find_resource(self.page, 'ui')
-        if page:
-            page_url = "file://" + page
-
-            # Then request display of the correct page
-            self.skill.bus.emit(Message("gui.page.show",
-                                        {"page": page_url,
-                                         '__from': self.skill.skill_id}))
-        else:
-            self.skill.log.debug("Unable to find page: " + str(self.page))
+        self.show_pages([name])
 
     def show_pages(self, page_names, index=0):
         """
