@@ -292,8 +292,6 @@ class SkillGUI(object):
                                      "index": index,
                                      "__from": self.skill.skill_id}))
 
-
-
     def show_text(self, text, title=None):
         """ Display a GUI page for viewing simple text
 
