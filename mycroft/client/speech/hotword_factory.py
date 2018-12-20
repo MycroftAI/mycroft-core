@@ -61,6 +61,14 @@ class HotWordEngine(object):
     def update(self, chunk):
         pass
 
+    def stop(self):
+        """ Perform any actions needed to shut down the hot word engine.
+
+            This may include things such as unload loaded data or shutdown
+            external processess.
+        """
+        pass
+
 
 class PocketsphinxHotWord(HotWordEngine):
     def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
@@ -221,6 +229,10 @@ class PreciseHotword(HotWordEngine):
             self.has_found = False
             return True
         return False
+
+    def stop(self):
+        if self.runner:
+            self.runner.stop()
 
 
 class SnowboyHotWord(HotWordEngine):

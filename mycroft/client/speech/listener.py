@@ -344,6 +344,7 @@ class RecognizerLoop(EventEmitter):
             Reload configuration and restart consumer and producer
         """
         self.stop()
+        self.wakeword_recognizer.stop()
         # load config
         self._load_config()
         # restart
