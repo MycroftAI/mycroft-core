@@ -27,7 +27,6 @@
     "default": "{year} {bc}",
     "bc": "d.c."
   },
-  +
     "date_format": {
     "date_full": "{weekday}, {day} {month}, {formatted_year}",
     "date_full_no_year": "{weekday}, {day} {month}",
