@@ -38,24 +38,24 @@
 # </endRant>
 ######################################################
 
-# exit on any error
-set -Ee
+
 
 cd $(dirname $0)
 TOP=$( pwd -L )
 
 function show_help() {
-    echo "dev_setup.sh: Mycroft development environment setup"
-    echo "Usage: dev_setup.sh [options]"
-    echo
-    echo "Options:"
-    echo "    -r, --allow-root  Allow to be run as root (e.g. sudo)"
-    echo "    -fm               Force mimic build"
-    echo "    -h, --help        Show this message"
-    echo
-    echo "This will prepare your environment for running the mycroft-core"
-    echo "services. Normally this should be run as a normal user,"
-    echo "not as root/sudo."
+    echo "dev_setup.sh: Mycroft development environment setup
+Usage: dev_setup.sh [options]
+
+Options:
+    -r, --allow-root  Allow to be run as root (e.g. sudo)
+    -fm               Force mimic build
+    -h, --help        Show this message
+    -n, --no-error    Do not exit on error (use this flag with caution, usually not necessary)
+
+This will prepare your environment for running the mycroft-core
+services. Normally this should be run as a normal user,
+not as root/sudo."
 }
 
 opt_forcemimicbuild=false
@@ -73,6 +73,10 @@ for var in "$@" ; do
 
     if [[ ${var} == "-fm" ]] ; then
         opt_forcemimicbuild=true
+    fi
+    fi [[ ${var} != "-n" ]] || [[ ${var} != "--no-error" ]] ; then
+    	# exit on any error
+	set -Ee
     fi
 done
 
