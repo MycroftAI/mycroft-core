@@ -3,32 +3,31 @@
     "1": {"match": "^\\d$", "format": "{x}"},
     "2": {"match": "^1\\d$", "format": "{xx}"},
     "3": {"match": "^\\d0$", "format": "{x0}"},
-    "4": {"match": "^[2-9]\\d$", "format": "{x0} {x}"},
+    "4": {"match": "^[2-9]\\d$", "format": "{x0}{x}"},
     "default": "{number}"
   },
     "hundreds_format": {
-    "1": {"match": "^\\d{3}$", "format": "{x_in_x00} hundred"},
+    "1": {"match": "^1\\d{2}$", "format": "cento"},
+    "2": {"match": "^\\d{3}$", "format": "{x_in_x00}cento"},  
     "default": "{number}"
   },
     "thousand_format": {
-    "1": {"match": "^\\d00\\d$", "format": "{x_in_x000} thousand"},
-    "2": {"match": "^1\\d00$", "format": "{xx_in_xx00} hundred"},
-    "3": {"match": "^\\d{2}00$", "format": "{x0_in_x000} {x_in_x00} hundred"},
-    "4": {"match": "^(1\\d{3})|(\\d0\\d{2})$", "format": "{xx_in_xx00}"},
-    "5": {"match": "^\\d{4}$", "format": "{x0_in_x000} {x_in_x00}"},
+    "1": {"match": "^1\\d{3}$", "format": "mille"},
+    "2": {"match": "^2\\d{3}$", "format": "duemila"},
+    "3": {"match": "^\\d{4}$", "format": "{x0_in_x000}mila"},
     "default": "{number}"
   },
     "year_format": {
     "1": {"match": "^\\d\\d?$", "format": "{formatted_decade} {bc}"},
     "2": {"match": "^\\d00$", "format": "{formatted_hundreds} {bc}"},
     "3": {"match": "^\\d{3}$", "format": "{formatted_hundreds} {formatted_decade} {bc}"},
-    "4": {"match": "^\\d{2}00$", "format": "{formatted_thousand} {bc}"},
-    "5": {"match": "^\\d00\\d$", "format": "{formatted_thousand} {formatted_decade} {bc}"},
-    "6": {"match": "^\\d{2}0\\d$", "format": "{formatted_thousand} oh {formatted_decade} {bc}"},
-    "7": {"match": "^\\d{4}$", "format": "{formatted_thousand} {formatted_decade} {bc}"},
+    "4": {"match": "^(1\\d00)|([2-9]000)$", "format": "{formatted_thousand} {bc}"},
+    "5": {"match": "^(1\\d{3})|(\\d0\\d{2})$", "format": "{formatted_thousand} e {formatted_decade} {bc}"},
+    "6": {"match": "^\\d{4}$", "format": "{formatted_thousand} {formatted_hundreds} {formatted_decade} {bc}"},
     "default": "{year} {bc}",
     "bc": "d.c."
   },
+  +
     "date_format": {
     "date_full": "{weekday}, {day} {month}, {formatted_year}",
     "date_full_no_year": "{weekday}, {day} {month}",
@@ -125,5 +124,8 @@
     "70": "settanta",
     "80": "ottanta",
     "90": "novanta"
+    "100": "cento"
+    "1000": "mille"
+    "2000": "duemila"
   }
 }
