@@ -30,15 +30,15 @@
     "bc": "d.c."
   },
     "date_format": {
-    "date_full": "{weekday}, {month} {day}, {formatted_year}",
-    "date_full_no_year": "{weekday}, {month} {day}",
+    "date_full": "{weekday}, {day} {month}, {formatted_year}",
+    "date_full_no_year": "{weekday}, {day} {month}",
     "date_full_no_year_month": "{weekday}, {day}",
     "today": "oggi",
     "tomorrow": "domani",
     "yesterday": "ieri"
   },
     "date_time_format": {
-    "date_time": "{formatted_date} at {formatted_time}"
+    "date_time": "{formatted_date} alle {formatted_time}"
   },
     "weekday": {
     "0": "lunedì",
