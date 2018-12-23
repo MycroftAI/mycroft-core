@@ -37,7 +37,7 @@
 # (as much as possible).
 # </endRant>
 ######################################################
-
+#exit on any error
 set -Ee
 
 cd $(dirname $0)
