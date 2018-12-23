@@ -38,7 +38,7 @@
 # </endRant>
 ######################################################
 
-
+set -Ee
 
 cd $(dirname $0)
 TOP=$( pwd -L )
@@ -74,9 +74,9 @@ for var in "$@" ; do
     if [[ ${var} == "-fm" ]] ; then
         opt_forcemimicbuild=true
     fi
-    fi [[ ${var} != "-n" ]] || [[ ${var} != "--no-error" ]] ; then
+    if [[ ${var} == "-n" ]] || [[ ${var} == "--no-error" ]] ; then
     	# exit on any error
-	set -Ee
+	set +Ee
     fi
 done
 
