@@ -121,7 +121,7 @@ class LocalConf(dict):
         """
         path = path or self.path
         with open(path, 'w') as f:
-            json.dump(self, f)
+            json.dump(self, f, indent=2)
 
     def merge(self, conf):
         merge_dict(self, conf)
