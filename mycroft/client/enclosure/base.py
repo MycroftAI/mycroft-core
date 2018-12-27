@@ -255,15 +255,16 @@ class GUIConnection(object):
         DEBUG("on_connection_opened")
         self.socket = socket_handler
 
+        # TODO REPLACE WITH CODE USING self.loaded
         # Synchronize existing datastore
-        for namespace in self.datastore:
-            msg = {"type": "mycroft.session.set",
-                   "namespace": namespace,
-                   "data": self.datastore[namespace]}
-            self.socket.send_message(msg)
-        if self.current_pages:
-            self.show(self.current_namespace, self.current_pages,
-                      self.current_index)
+        # for namespace in self.datastore:
+        #    msg = {"type": "mycroft.session.set",
+        #           "namespace": namespace,
+        #           "data": self.datastore[namespace]}
+        #    self.socket.send_message(msg)
+        # if self.current_pages:
+        #    self.show(self.current_namespace, self.current_pages,
+        #              self.current_index)
 
     def on_connection_closed(self, socket):
         # Self-destruct (can't reconnect on the same port)
@@ -315,7 +316,7 @@ class GUIConnection(object):
             index = 0
             namespace_found = False
 
-        # self.sync_active() # TODO: Fix sync
+        self.sync_active()
         print(namespace_found)
         if not namespace_found:
             # This namespace doesn't exist Batman! Insert them first so they're
