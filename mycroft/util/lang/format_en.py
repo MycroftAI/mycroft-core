@@ -224,7 +224,7 @@ def nice_number_en(number, speech, denominators):
 
 def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
     """
-    Convert a number to it's spoken equivalent
+    Convert a number to its spoken equivalent
 
     For example, '5.2' would return 'five point two'
 
@@ -271,7 +271,7 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
         # deal with 4 digits
         # usually if it's a 4 digit num it should be said like a date
         # i.e. 1972 => nineteen seventy two
-        if len(str(num)) == 4:
+        if len(str(num)) == 4 and isinstance(num, int):
             _num = str(num)
             # deal with 1000, 2000, 2001, 2100, 3123, etc
             # is skipped as the rest of the
