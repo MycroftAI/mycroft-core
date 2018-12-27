@@ -237,13 +237,14 @@ class GUIConnection(object):
         self.port = websocket_config.get("base_port") + GUIConnection._last_idx
         GUIConnection._last_idx += 1
 
-        self.webapp = tornado.web.Application([
-                                               (route, GUIWebsocketHandler)
-                                              ], **gui_app_settings)
-        self.webapp.gui = self  # Hacky way to associate socket with this
-        self.webapp.listen(self.port, host)
-
-        # TODO: This might need to move up a level
+        try:
+            self.webapp = tornado.web.Application([
+                                                   (route, GUIWebsocketHandler)
+                                                  ], **gui_app_settings)
+            self.webapp.gui = self  # Hacky way to associate socket with this
+            self.webapp.listen(self.port, host)
+        except Exception as e:
+            DEBUG('Error: {}'.format(repr(e)))
         # Can't run two IOLoop's in the same process
         if not GUIConnection.server_thread:
             GUIConnection.server_thread = create_daemon(
@@ -314,8 +315,8 @@ class GUIConnection(object):
             index = 0
             namespace_found = False
 
-        self.sync_active()
-
+        # self.sync_active() # TODO: Fix sync
+        print(namespace_found)
         if not namespace_found:
             # This namespace doesn't exist Batman! Insert them first so they're
             # shown.
@@ -326,6 +327,7 @@ class GUIConnection(object):
                               "position": 0,
                               "data": [{"skill_id": namespace}]
                               })
+            DEBUG("Inserting new page")
             self.socket.send({"type": "mycroft.gui.list.insert",
                               "namespace": namespace,
                               "position": 0,
@@ -348,6 +350,7 @@ class GUIConnection(object):
             # Find if any new pages needs to be inserted
             new_pages = [p for p in pages if p not in self.loaded[0][1]]
             if new_pages:
+                DEBUG("Inserting new pages")
                 # Not loaded pages exists, insert them
                 data = [{"url": p} for p in new_pages]
                 print("Not all pages are loaded so insert them")
@@ -362,6 +365,7 @@ class GUIConnection(object):
                     self.loaded[0][1].append(p)
             else:
                 # No new pages, just switch
+                DEBUG("Switching pages")
                 try:
                     num = self.loaded[0][1].index(pages[0])
                 except Exception as e:
