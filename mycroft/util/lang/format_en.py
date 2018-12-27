@@ -224,7 +224,7 @@ def nice_number_en(number, speech, denominators):
 
 def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
     """
-    Convert a number to it's spoken equivalent
+    Convert a number to its spoken equivalent
 
     For example, '5.2' would return 'five point two'
 
