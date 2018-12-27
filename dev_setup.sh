@@ -50,6 +50,7 @@ Usage: dev_setup.sh [options]
 Options:
     -r, --allow-root  Allow to be run as root (e.g. sudo)
     -fm               Force mimic build
+    -sm               Skip mimic build
     -h, --help        Show this message
     -n, --no-error    Do not exit on error (use this flag with caution, usually not necessary)
 
@@ -60,6 +61,7 @@ not as root/sudo."
 
 opt_forcemimicbuild=false
 opt_allowroot=false
+opt_skipmimicbuild=false
 
 for var in "$@" ; do
     if [[ ${var} == "-h" ]] || [[ ${var} == "--help" ]] ; then
@@ -77,6 +79,9 @@ for var in "$@" ; do
     if [[ ${var} == "-n" ]] || [[ ${var} == "--no-error" ]] ; then
     	# exit on any error
 	set +Ee
+    fi
+    if [[ ${var} == "-sm" ]] ; then
+        opt_skipmimicbuild=true
     fi
 done
 
@@ -208,7 +213,11 @@ else
     fi
 
     if [ "$has_mimic" == "" ]; then
-        build_mimic="y"
+        if [[ ${opt_skipmimicbuild} == true ]] ; then
+            build_mimic="n"
+        else
+            build_mimic="y"
+        fi
     fi
 fi
 
