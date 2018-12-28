@@ -31,7 +31,7 @@ def DEBUG(str):
     # pass  # disable by default
 
 
-class Enclosure(object):
+class Enclosure():
 
     def __init__(self):
         # Establish Enclosure's websocket connection to the messagebus
@@ -47,7 +47,7 @@ class Enclosure(object):
 
         # Listen for new GUI clients to announce themselves on the main bus
         self.GUIs = {}      # GUIs, either local or remote
-        self._active_namespaces = []
+        self.active_namespaces = []
         self.bus.on("mycroft.gui.connected", self.on_gui_client_connected)
         self.register_gui_handlers()
 
@@ -69,14 +69,14 @@ class Enclosure(object):
         if not namespace:
             return
 
-        if namespace not in self._active_namespaces:
+        if namespace not in self.active_namespaces:
             if move_to_top:
-                self._active_namespaces.insert(0, namespace)
+                self.active_namespaces.insert(0, namespace)
             else:
-                self._active_namespaces.append(namespace)
+                self.active_namespaces.append(namespace)
         elif move_to_top:
-            self._active_namespaces.remove(namespace)
-            self._active_namespaces.insert(0, namespace)
+            self.active_namespaces.remove(namespace)
+            self.active_namespaces.insert(0, namespace)
         # TODO: Keep a timestamp and auto-cull?
 
     def on_gui_set_value(self, message):
@@ -131,7 +131,7 @@ class Enclosure(object):
             pass
         self.GUIs[gui_id] = GUIConnection(gui_id, self.global_config,
                                           self.callback_disconnect, self)
-        DEBUG("Heard announcement from gui_id: "+str(gui_id))
+        DEBUG("Heard announcement from gui_id: {}".format(gui_id))
 
         # Announce connection, the GUI should connect on it soon
         self.bus.emit(Message("mycroft.gui.port",
@@ -186,7 +186,7 @@ gui_app_settings = {
 }
 
 
-class GUIConnection(object):
+class GUIConnection():
     """ A single GUIConnection exists per graphic interface.  This object
     maintains the socket used for communication and keeps the state of the
     Mycroft data in sync with the GUIs data.
@@ -214,7 +214,6 @@ class GUIConnection(object):
         self.callback_disconnect = callback_disconnect
         self.enclosure = enclosure
         self._active_namespaces = None
-        self.loaded = {}
 
         # This datastore holds the data associated with the GUI provider.  Data
         # is stored in Namespaces, so you can have:
@@ -227,6 +226,13 @@ class GUIConnection(object):
         self.current_pages = []
         self.current_index = None
 
+        # self.loaded is a list, each row in the list has two columns:
+        # [Namespace,    [List of loaded qml pages]]
+        #
+        # [
+        # ["SKILL_NAME", ["page1.qml, "page2.qml", ... , "pageN.qml"]
+        # [...]
+        # ]
         self.loaded = []  # list of lists in order.
 
         # Each connection will run its own Tornado server.  If the
@@ -249,7 +255,7 @@ class GUIConnection(object):
         if not GUIConnection.server_thread:
             GUIConnection.server_thread = create_daemon(
                 ioloop.IOLoop.instance().start)
-        DEBUG("IOLoop started @ ws://"+str(host)+":"+str(self.port)+str(route))
+        DEBUG("IOLoop started @ ws://{}:{}{}".format(host, self.port, route))
 
     def on_connection_opened(self, socket_handler):
         DEBUG("on_connection_opened")
@@ -270,7 +276,7 @@ class GUIConnection(object):
         # Self-destruct (can't reconnect on the same port)
         DEBUG("on_connection_closed")
         if self.socket:
-            DEBUG("Server stopped: "+str(self.socket))
+            DEBUG("Server stopped: {}".format(self.socket))
             # TODO: How to stop the webapp for this socket?
             # self.socket.stop()
             self.socket = None
@@ -388,13 +394,13 @@ class GUIConnection(object):
     def sync_active(self):
         # The main Enclosure keeps a list of active skills.  Each GUI also
         # has a list.  Synchronize when appropriate.
-        if self.enclosure._active_namespaces != self._active_namespaces:
+        if self.enclosure.active_namespaces != self._active_namespaces:
 
             # First, zap any namespace not in the list anymore
             if self._active_namespaces:
                 pos = len(self._active_namespaces) - 1
                 for ns in reversed(self._active_namespaces):
-                    if ns not in self.enclosure._active_namespaces:
+                    if ns not in self.enclosure.active_namespaces:
                         msg = {"type": "mycroft.session.list.remove",
                                "namespace": "mycroft.system.active_skills",
                                "position": pos,
@@ -407,7 +413,7 @@ class GUIConnection(object):
             # Next, insert any missing items
             if not self._active_namespaces:
                 self._active_namespaces = []
-            for ns in self.enclosure._active_namespaces:
+            for ns in self.enclosure.active_namespaces:
                 if ns not in self._active_namespaces:
                     msg = {"type": "mycroft.session.list.insert",
                            "namespace": "mycroft.system.active_skills",
@@ -418,8 +424,8 @@ class GUIConnection(object):
                     self._active_namespaces.insert(0, ns)
 
             # Finally, adjust orders to match
-            for idx in range(0, len(self.enclosure._active_namespaces)):
-                ns = self.enclosure._active_namespaces[idx]
+            for idx in range(0, len(self.enclosure.active_namespaces)):
+                ns = self.enclosure.active_namespaces[idx]
                 idx_old = self._active_namespaces.index(ns)
                 if idx != idx_old:
                     msg = {"type": "mycroft.session.list.move",
@@ -442,7 +448,7 @@ class GUIWebsocketHandler(WebSocketHandler):
         self.application.gui.on_connection_opened(self)
 
     def on_message(self, message):
-        DEBUG("Received: "+str(message))
+        DEBUG("Received: {}".format(message))
 
     def send_message(self, message):
         self.write_message(message.serialize())
