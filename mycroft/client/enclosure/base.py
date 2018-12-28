@@ -31,7 +31,7 @@ def DEBUG(str):
     # pass  # disable by default
 
 
-class Enclosure(object):
+class Enclosure():
 
     def __init__(self):
         # Establish Enclosure's websocket connection to the messagebus
@@ -131,7 +131,7 @@ class Enclosure(object):
             pass
         self.GUIs[gui_id] = GUIConnection(gui_id, self.global_config,
                                           self.callback_disconnect, self)
-        DEBUG("Heard announcement from gui_id: "+str(gui_id))
+        DEBUG("Heard announcement from gui_id: {}".format(gui_id))
 
         # Announce connection, the GUI should connect on it soon
         self.bus.emit(Message("mycroft.gui.port",
@@ -214,7 +214,6 @@ class GUIConnection(object):
         self.callback_disconnect = callback_disconnect
         self.enclosure = enclosure
         self._active_namespaces = None
-        self.loaded = {}
 
         # This datastore holds the data associated with the GUI provider.  Data
         # is stored in Namespaces, so you can have:
@@ -227,6 +226,13 @@ class GUIConnection(object):
         self.current_pages = []
         self.current_index = None
 
+        # self.loaded is a list, each row in the list has two columns:
+        # [Namespace,    [List of loaded qml pages]]
+        #
+        # [
+        # ["SKILL_NAME", ["page1.qml, "page2.qml", ... , "pageN.qml"]
+        # [...]
+        # ]
         self.loaded = []  # list of lists in order.
 
         # Each connection will run its own Tornado server.  If the
@@ -249,7 +255,7 @@ class GUIConnection(object):
         if not GUIConnection.server_thread:
             GUIConnection.server_thread = create_daemon(
                 ioloop.IOLoop.instance().start)
-        DEBUG("IOLoop started @ ws://"+str(host)+":"+str(self.port)+str(route))
+        DEBUG("IOLoop started @ ws://{}:{}{}".format(host, self.port, route))
 
     def on_connection_opened(self, socket_handler):
         DEBUG("on_connection_opened")
@@ -270,7 +276,7 @@ class GUIConnection(object):
         # Self-destruct (can't reconnect on the same port)
         DEBUG("on_connection_closed")
         if self.socket:
-            DEBUG("Server stopped: "+str(self.socket))
+            DEBUG("Server stopped: {}".format(self.socket))
             # TODO: How to stop the webapp for this socket?
             # self.socket.stop()
             self.socket = None
@@ -442,7 +448,7 @@ class GUIWebsocketHandler(WebSocketHandler):
         self.application.gui.on_connection_opened(self)
 
     def on_message(self, message):
-        DEBUG("Received: "+str(message))
+        DEBUG("Received: {}".format(message))
 
     def send_message(self, message):
         self.write_message(message.serialize())
