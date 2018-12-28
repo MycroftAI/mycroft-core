@@ -261,13 +261,13 @@ class GUIConnection(object):
         DEBUG("on_connection_opened")
         self.socket = socket_handler
 
-        # TODO REPLACE WITH CODE USING self.loaded
         # Synchronize existing datastore
-        # for namespace in self.datastore:
-        #    msg = {"type": "mycroft.session.set",
-        #           "namespace": namespace,
-        #           "data": self.datastore[namespace]}
-        #    self.socket.send_message(msg)
+        for namespace in self.datastore:
+            msg = {"type": "mycroft.session.set",
+                   "namespace": namespace,
+                   "data": self.datastore[namespace]}
+            self.socket.send_message(msg)
+        # TODO REPLACE WITH CODE USING self.loaded
         # if self.current_pages:
         #    self.show(self.current_namespace, self.current_pages,
         #              self.current_index)
@@ -294,97 +294,122 @@ class GUIConnection(object):
             self.socket.send(msg)
             self.datastore[namespace][name] = value
 
+    def __find_namespace(self, namespace):
+        for i, skill in enumerate(self.loaded):
+            if skill[0] == namespace:
+                return i
+        else:
+            return None
+
+    def __insert_pages(self, namespace, pages):
+        """ Insert pages into the """
+        DEBUG("Inserting new pages")
+        if not isinstance(pages, list):
+            raise ValueError('Argument must be list of pages')
+
+        self.socket.send({"type": "mycroft.gui.list.insert",
+                          "namespace": namespace,
+                          "position": len(self.loaded[0][1]),
+                          "data": [{"url": p} for p in pages]
+                          })
+
+        # append pages to local representation
+        for p in pages:
+            self.loaded[0][1].append(p)
+
+    def __insert_new_namespace(self, namespace, pages):
+        """ Insert new namespace and pages.
+
+            This first sends a message adding a new namespace at the
+            highest priority (position 0 in the namespace stack)
+
+            Arguments:
+                namespace:  The skill namespace to create
+                pages:      Pages to insert
+        """
+        DEBUG("Inserting new namespace")
+        self.socket.send({"type": "mycroft.session.list.insert",
+                          "namespace": "mycroft.system.active_skills",
+                          "position": 0,
+                          "data": [{"skill_id": namespace}]
+                          })
+        DEBUG("Inserting new page")
+        self.socket.send({"type": "mycroft.gui.list.insert",
+                          "namespace": namespace,
+                          "position": 0,
+                          "data": [{"url": p} for p in pages]
+                          })
+        # Make sure the local copy is updated
+        self.loaded.insert(0, [namespace, pages])
+
+    def __move_namespace(self, from_pos, to_pos):
+        """ Move an existing namespace to a new position in the stack.
+
+            Arguments:
+                from_pos: Position in the stack to move from
+                to_pos: Position to move to
+        """
+        DEBUG("Activating existing namespace")
+        self.socket.send({"type": "mycroft.session.list.move",
+                          "namespace": "mycroft.system.active_skills",
+                          "from": from_pos, "to": to_pos})
+        # Move the local representation of the skill from current
+        # position to position 0.
+        self.loaded.insert(to_pos, self.loaded.pop(from_pos))
+
+    def __switch_page(self, namespace, pages):
+        """ Switch page to an already loaded page.
+
+            Arguments:
+                pages:      pages to switch to
+                namespace:  skill namespace
+        """
+        try:
+            num = self.loaded[0][1].index(pages[0])
+        except Exception as e:
+            DEBUG(e)
+            num = 0
+
+        DEBUG("Switching to already loaded page at index {}".format(num))
+        self.socket.send({"type": "mycroft.events.triggered",
+                          "namespace": namespace,
+                          "event_name": "page_gained_focus",
+                          "data": {"number": num}})
+
     def show(self, namespace, page, index):
         """ Show a page and load it as needed.
 
-            TODO: - Update sync_active to match.
+            TODO: - Update sync to match.
                   - Separate into multiple functions/methods
         """
 
-        DEBUG("GUIConnection activating: "+namespace)
+        DEBUG("GUIConnection activating: " + namespace)
         pages = page if isinstance(page, list) else [page]
 
-        # self.loaded is a list, each row in the list has two columns:
-        # [Namespace,    [List of loaded qml pages]]
-        #
-        # [
-        # ["SKILL_NAME", ["page1.qml, "page2.qml", ... , "pageN.qml"]
-        # [...]
-        # ]
-
-        # find namespace among loaded namespaces
-        for i, skill in enumerate(self.loaded):
-            if skill[0] == namespace:
-                namespace_found = True
-                index = i
-                break
-        else:
-            index = 0
-            namespace_found = False
-
         self.sync_active()
-        print(namespace_found)
-        if not namespace_found:
-            # This namespace doesn't exist Batman! Insert them first so they're
-            # shown.
-            data = [{"url": p} for p in pages]
-            DEBUG("Inserting new namespace")
-            self.socket.send({"type": "mycroft.session.list.insert",
-                              "namespace": "mycroft.system.active_skills",
-                              "position": 0,
-                              "data": [{"skill_id": namespace}]
-                              })
-            DEBUG("Inserting new page")
-            self.socket.send({"type": "mycroft.gui.list.insert",
-                              "namespace": namespace,
-                              "position": 0,
-                              "data": data
-                              })
-            # Make sure the local copy is updated
-            self.loaded.insert(0, [namespace, pages])
-            return
-        else:  # Namespace exists
-            if index > 0:
-                # Namespace is inactive, activate it by moving it to position 0
-                DEBUG("Activating existing namespace")
-                self.socket.send({"type": "mycroft.session.list.move",
-                                  "namespace": "mycroft.system.active_skills",
-                                  "from": index, "to": 0})
-                # Move the local representation of the skill from current
-                # position to position 0.
-                self.loaded.insert(0, self.loaded.pop(index))
+        # find namespace among loaded namespaces
+        try:
+            index = self.__find_namespace(namespace)
+            if index is None:
+                # This namespace doesn't exist, insert them first so they're
+                # shown.
+                self.__insert_new_namespace(namespace, pages)
+                return
+            else:  # Namespace exists
+                if index > 0:
+                    # Namespace is inactive, activate it by moving it to
+                    # position 0
+                    self.__move_namespace(index, 0)
 
-            # Find if any new pages needs to be inserted
-            new_pages = [p for p in pages if p not in self.loaded[0][1]]
-            if new_pages:
-                DEBUG("Inserting new pages")
-                # Not loaded pages exists, insert them
-                data = [{"url": p} for p in new_pages]
-                print("Not all pages are loaded so insert them")
-                self.socket.send({"type": "mycroft.gui.list.insert",
-                                  "namespace": namespace,
-                                  "position": len(self.loaded[0][1]),
-                                  "data": data
-                                  })
-
-                # append pages to local representation
-                for p in new_pages:
-                    self.loaded[0][1].append(p)
-            else:
-                # No new pages, just switch
-                DEBUG("Switching pages")
-                try:
-                    num = self.loaded[0][1].index(pages[0])
-                except Exception as e:
-                    DEBUG(e)
-                    num = 0
-
-                DEBUG("Switching to already loaded page at index "
-                      "{}".format(num))
-                self.socket.send({"type": "mycroft.events.triggered",
-                                  "namespace": namespace,
-                                  "event_name": "page_gained_focus",
-                                  "data": {"number": num}})
+                # Find if any new pages needs to be inserted
+                new_pages = [p for p in pages if p not in self.loaded[0][1]]
+                if new_pages:
+                    self.__insert_pages(namespace, new_pages)
+                else:
+                    # No new pages, just switch
+                    self.__switch_page(namespace, pages)
+        except Exception as e:
+            DEBUG(repr(e))
 
         # TODO: Not quite sure this is needed or if self.loaded can be used
         self.current_namespace = namespace
