@@ -60,11 +60,11 @@ def build_output_buffer():
     buffer.clear()
     try:
         if skill:
-            buffer.append("Active Skill = "+str(skill))
-            buffer.append("Page = "+str(page))
-            buffer.append("vars = ")
+            buffer.append("Active Skill: {}".format(skill))
+            buffer.append("Page: {}".format(page))
+            buffer.append("vars: ")
             for v in vars[skill]:
-                buffer.append("     "+str(v)+" : " + vars[skill][v])
+                buffer.append("     {}: {}".format(v, vars[skill][v]))
     except Exception as e:
         buffer.append(repr(e))
     buffer.append("-----------------")
