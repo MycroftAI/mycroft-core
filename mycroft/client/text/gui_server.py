@@ -138,7 +138,7 @@ def on_gui_message(ws, payload):
         elif type == "mycroft.session.list.move":
             # Move the namespace at "pos" to the top of the stack
             pos = msg.get('from')
-            self.loaded.insert(0, self.loaded.pop(pos))
+            loaded.insert(0, loaded.pop(pos))
         elif type == "mycroft.events.triggered":
             # Switch selected page of namespace
             skill = msg['namespace']
