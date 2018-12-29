@@ -29,6 +29,7 @@ from mycroft.util.log import LOG
 bus = None  # Mycroft messagebus connection
 lock = Lock()
 loop = None
+config = None
 
 
 def handle_record_begin():
@@ -115,15 +116,17 @@ def handle_audio_start(event):
     """
         Mute recognizer loop
     """
-    loop.mute()
+    if config.get("listener").get("mute_during_output"):
+        loop.mute()
 
 
 def handle_audio_end(event):
     """
-        Request unmute, if more sources has requested the mic to be muted
+        Request unmute, if more sources have requested the mic to be muted
         it will remain muted.
     """
-    loop.unmute()  # restore
+    if config.get("listener").get("mute_during_output"):
+        loop.unmute()  # restore
 
 
 def handle_stop(event):
@@ -142,10 +145,12 @@ def handle_open():
 def main():
     global bus
     global loop
+    global config
     reset_sigint_handler()
     PIDLock("voice")
     bus = WebsocketClient()  # Mycroft messagebus, see mycroft.messagebus
     Configuration.init(bus)
+    config = Configuration.get()
 
     # Register handlers on internal RecognizerLoop bus
     loop = RecognizerLoop()
