@@ -82,13 +82,17 @@ function source-venv() {
 }
 
 first_time=true
-function launch-process() {
+function init-once() {
     if ($first_time) ; then
         echo "Initializing..."
         "${DIR}/scripts/prepare-msm.sh"
         source-venv
         first_time=false
     fi
+}
+
+function launch-process() {
+    init-once
 
     name-to-script-path ${1}
 
@@ -97,13 +101,16 @@ function launch-process() {
     python3 -m ${_module} $_params
 }
 
-function launch-background() {
-    if ($first_time) ; then
-        echo "Initializing..."
-        "${DIR}/scripts/prepare-msm.sh"
-        source-venv
-        first_time=false
+function require-process() {
+    name-to-script-path ${1}
+    if ! pgrep -f "python3 -m ${_module}" > /dev/null ; then
+        # Start required process
+        launch-background ${1}
     fi
+}
+
+function launch-background() {
+    init-once
 
     # Check if given module is running and start (or restart if running)
     name-to-script-path ${1}
@@ -143,15 +150,20 @@ function launch-all() {
 }
 
 function check-dependencies() {
+    if [ -f .dev_opts.json ] ; then
+        auto_update=$( jq -r ".auto_update" < .dev_opts.json 2> /dev/null)
+    else
+        auto_update="false"
+    fi
+    if [ "$auto_update" == "true" ] ; then
+        # Check github repo for updates (e.g. a new release)
+        git pull
+    fi
+
     if [ ! -f .installed ] || ! md5sum -c &> /dev/null < .installed ; then
         # Critical files have changed, dev_setup.sh should be run again
-        if [ -f .dev_opts.json ] ; then
-            auto_update=$( jq -r ".auto_update" < .dev_opts.json 2> /dev/null)
-        else
-            auto_update="false"
-        fi
-
         if [ "$auto_update" == "true" ] ; then
+            echo "Updating dependencies..."
             bash dev_setup.sh
         else
             echo "Please update dependencies by running ./dev_setup.sh again."
@@ -194,6 +206,8 @@ case ${_opt} in
         ;;
 
     "cli")
+        require-process bus
+        require-process skills
         launch-process ${_opt}
         ;;
 
