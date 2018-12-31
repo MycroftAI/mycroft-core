@@ -422,37 +422,21 @@ def normalize_it(text, remove_articles):
     return normalized[1:]
 
 
-def extract_datetime_it(string, currentDate, default_time):
+def extract_datetime_it(string, dateNow, default_time):
     def clean_string(s):
         """
             cleans the input string of unneeded punctuation and capitalization
             among other things.
             Normalize italian plurals
         """
-        symbols = [".", ",", ";", "?", "!", u"º", u"ª", u"°"]
+        symbols = [".", ",", ";", "?", "!", "º", "ª", "°"]
 
         for word in symbols:
             s = s.replace(word, "")
 
-        s = s.lower().replace(
-            u"á",
-            "a").replace(
-            u"à",
-            "a").replace(
-            u"è",
-            "e'").replace(
-            u"é",
-            "e'").replace(
-            u"ì",
-            "i").replace(
-            u"ù",
-            "u").replace(
-            u"ò",
-            "o").replace(
-            "-",
-            " ").replace(
-            "_",
-            "")
+        s = s.lower().replace("á", "a").replace("à", "a").replace("è", "e'")\
+            .replace("é", "e'").replace("ì", "i").replace("ù", "u")\
+            .replace("ò", "o").replace("-", " ").replace("_", "")
 
         noise_words = ["tra", "la", "del", "al", "il", "di",
                        "le", "per", "alle", "alla", "dai", "delle",
@@ -462,46 +446,23 @@ def extract_datetime_it(string, currentDate, default_time):
             s = s.replace(" " + word + " ", " ")
 
         # normalizza plurali per semplificare analisi
-        s = s.replace(
-            "secondi",
-            "secondo").replace(
-            "minuti",
-            "minuto").replace(
-            "ore",
-            "ora").replace(
-            "giorni",
-            "giorno").replace(
-            "settimane",
-            "settimana").replace(
-            "mesi",
-            "mese").replace(
-            "anni",
-            "anno").replace(
-            "mattino",
-            "mattina").replace(
-            "prossima",
-            "prossimo").replace(
-            "questa",
-            "questo").replace(
-            "quarti",
-            "quarto")
+        s = s.replace("secondi", "secondo").replace("minuti", "minuto")\
+            .replace("ore", "ora").replace("giorni", "giorno")\
+            .replace("settimane", "settimana").replace("mesi", "mese")\
+            .replace("anni", "anno").replace("mattino", "mattina")\
+            .replace("prossima", "prossimo").replace("questa", "questo")\
+            .replace("quarti", "quarto")
 
         wordList = s.split()
-        # print(wordList)  # debug only
-
         return wordList
 
     def date_found():
         return found or \
-               (
-                       datestr != "" or timeStr != "" or
-                       yearOffset != 0 or monthOffset != 0 or
-                       dayOffset is True or hrOffset != 0 or
-                       hrAbs or minOffset != 0 or
-                       minAbs or secOffset != 0
-               )
+            (datestr != "" or timeStr != "" or yearOffset != 0 or
+             monthOffset != 0 or dayOffset is True or hrOffset != 0 or
+             hrAbs or minOffset != 0 or minAbs or secOffset != 0)
 
-    if string == "" or not currentDate:
+    if string == "" or not dateNow:
         return None
 
     found = False
@@ -509,7 +470,6 @@ def extract_datetime_it(string, currentDate, default_time):
     dayOffset = False
     monthOffset = 0
     yearOffset = 0
-    dateNow = currentDate
     today = dateNow.strftime("%w")
     currentYear = dateNow.strftime("%Y")
     fromFlag = False
