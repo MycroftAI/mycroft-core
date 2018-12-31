@@ -179,8 +179,8 @@ Would you like this to be added to your PATH in the .profile?"
         echo "
 # WARNING: This file may be replaced in future, do not customize.
 # set path so it includes Mycroft utilities
-if [ -d \""${TOP}"/bin\" ] ; then
-    PATH=\"\$PATH:"${TOP}"/bin\"
+if [ -d \"${TOP}/bin\" ] ; then
+    PATH=\"\$PATH:${TOP}/bin\"
 fi" > ~/.profile_mycroft
         echo -e "Type ${CYAN}mycroft-help${RESET} to see available commands."
     else
