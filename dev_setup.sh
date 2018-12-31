@@ -67,106 +67,129 @@ if [ $(id -u) -eq 0 ] && [ "${opt_allowroot}" != true ] ; then
     exit 1
 fi
 
-CYAN="\e[36m"
-YELLOW="\e[33m"
-RESET="\e[0m"
-HIGHLIGHT=${YELLOW}
+function found_exe() {
+    hash "$1" 2>/dev/null
+}
+
+function get_YN() {
+    # Loop until the user hits the Y or the N key
+    echo -e -n "Choice [${CYAN}Y${RESET}/${CYAN}N${RESET}]: "
+    while true; do
+        read -N1 -s key
+        case $key in
+        [Yy])
+            return 0
+            ;;
+        [Nn])
+            return 1
+            ;;
+        esac
+    done
+}
+
+if found_exe tput ; then
+    GREEN="$(tput setaf 2)"
+    BLUE="$(tput setaf 4)"
+    CYAN="$(tput setaf 6)"
+    YELLOW="$(tput setaf 3)"
+    RESET="$(tput sgr0)"
+    HIGHLIGHT=${YELLOW}
+fi
 
 # Run a setup wizard the very first time that guides the user through some decisions
-if [ ! -f .dev_opts.json ] ; then
+if [[ ! -f .dev_opts.json ]] && [[ ${IS_TRAVIS} == "" ]] ; then
+    echo "
+${CYAN}                    Welcome to Mycroft!  ${RESET}"
     sleep 0.5
-    echo
-    echo -e "${CYAN}                    Welcome to Mycroft!  ${RESET}"
-    echo
+    echo "
+This script is designed to make working with Mycroft easy.  During this
+first run of dev_setup we will ask you a few questions to help setup
+your environment."
     sleep 0.5
-    echo "This script is designed to make working with Mycroft easy.  During this"
-    echo "first run of dev_setup we will ask you a few questions to help setup"
-    echo "your environment."
-    echo
-    sleep 0.5
-    echo "Do you want to run on 'master' or on the 'dev' branch?  Unless you are"
-    echo "a developer modifying mycroft-core itself, you should run on the"
-    echo "'master' branch.  It is updated bi-weekly with a stable release."
-    echo "  Y)es, run on the 'master' branch"
-    echo "  N)o, I want to run against the unstable 'dev' branch"
-    echo -e -n "Choice [${CYAN}Y${RESET}/${CYAN}N${RESET}]: "
-    while true; do
-        read -N1 -s key
-        case $key in
-        [Yy])
-            echo -e "${HIGHLIGHT} $key - using 'master' branch ${RESET}"
-            branch=master
-            break
-            ;;
-        [Nn])
-            echo -e "${HIGHLIGHT} $key - using 'dev' branch ${RESET}"
-            branch=dev
-            break
-            ;;
-        esac
-    done
-    git checkout ${branch}
+    echo "
+Do you want to run on 'master' or against a dev branch?  Unless you are
+a developer modifying mycroft-core itself, you should run on the
+'master' branch.  It is updated bi-weekly with a stable release.
+  Y)es, run on the stable 'master' branch
+  N)o, I want to run unstable branches"
+    if get_YN ; then
+        echo -e "${HIGHLIGHT} Y - using 'master' branch ${RESET}"
+        branch=master
+        git checkout ${branch}
+    else
+        echo -e "${HIGHLIGHT} N - using an unstable branch ${RESET}"
+        branch=dev
+    fi
 
     sleep 0.5
-    echo
-    echo "Mycroft is actively developed and constantly evolving.  It is recommended"
-    echo "that you update regularly.  Would you like to automatically update"
-    echo "whenever launching Mycroft?  This is highly recommended, especially for"
-    echo "those running against the 'master' branch."
-    echo "  Y)es, automatically check for updates"
-    echo "  N)o, I will be responsible for keeping Mycroft updated."
-    echo -e -n "Choice [${CYAN}Y${RESET}/${CYAN}N${RESET}]: "
-    while true; do
-        read -N1 -s key
-        case $key in
-        [Yy])
-            echo -e "${HIGHLIGHT} $key - update automatically ${RESET}"
-            autoupdate=true
-            break
-            ;;
-        [Nn])
-            echo -e "${HIGHLIGHT} $key - update manually using 'git pull' ${RESET}"
-            autoupdate=false
-            break
-            ;;
-        esac
-    done
+    echo "
+Mycroft is actively developed and constantly evolving.  It is recommended
+that you update regularly.  Would you like to automatically update
+whenever launching Mycroft?  This is highly recommended, especially for
+those running against the 'master' branch.
+  Y)es, automatically check for updates
+  N)o, I will be responsible for keeping Mycroft updated."
+    if get_YN ; then
+        echo -e "${HIGHLIGHT} Y - update automatically ${RESET}"
+        autoupdate=true
+    else
+        echo -e "${HIGHLIGHT} N - update manually using 'git pull' ${RESET}"
+        autoupdate=false
+    fi
 
     #  Pull down mimic source?  Most will be happy with just the package
     if [[ ${opt_forcemimicbuild} == false && ${opt_skipmimicbuild} == false ]] ; then
         sleep 0.5
-        echo
-        echo "Mycroft uses its Mimic technology to speak to you.  Mimic can run both"
-        echo "locally and from a server.  The local Mimic is more robotic, but always"
-        echo "available regardless of network connectivity.  It will act as a fallback"
-        echo "if unable to contact the Mimic server."
-        echo
-        echo "However, building the local Mimic is time consuming -- it can take hours"
-        echo "on slower machines.  This can be skipped, but Mycroft will be unable to"
-        echo "talk if you lose network connectivity.  Would you like to build Mimic"
-        echo "locally?"
-        echo -e -n "Choice [${CYAN}Y${RESET}/${CYAN}N${RESET}]: "
-        while true; do
-            read -N1 -s key
-            case $key in
-            [Yy])
-                echo -e "${HIGHLIGHT} $key - Mimic will be built ${RESET}"
-                break
-                ;;
-            [Nn])
-                echo -e "${HIGHLIGHT} $key - skip Mimic build ${RESET}"
-                opt_skipmimicbuild=true
-                break
-                ;;
-            esac
-        done
+        echo "
+Mycroft uses its Mimic technology to speak to you.  Mimic can run both
+locally and from a server.  The local Mimic is more robotic, but always
+available regardless of network connectivity.  It will act as a fallback
+if unable to contact the Mimic server.
+
+However, building the local Mimic is time consuming -- it can take hours
+on slower machines.  This can be skipped, but Mycroft will be unable to
+talk if you lose network connectivity.  Would you like to build Mimic
+locally?"
+        if get_YN ; then
+            echo -e "${HIGHLIGHT} Y - Mimic will be built ${RESET}"
+        else
+            echo -e "${HIGHLIGHT} N - skip Mimic build ${RESET}"
+            opt_skipmimicbuild=true
+        fi
+    fi
+
+    echo
+    # Add mycroft-core/bin to the .bashrc PATH?
+    sleep 0.5
+    echo "
+There are several Mycroft helper commands in the bin folder.  These
+can be added to your system PATH, making it simpler to use Mycroft.
+Would you like this to be added to your PATH in the .profile?"
+    if get_YN ; then
+        echo -e "${HIGHLIGHT} Y - Adding Mycroft commands to your PATH ${RESET}"
+
+        if [ ! -f ~/.profile_mycroft ] ; then
+            # Only add the following to the .profile if .profile_mycroft
+            # doesn't exist, indicating this script has not been run before
+            echo '' >> ~/.profile
+            echo '# include Mycroft commands' >> ~/.profile
+            echo 'source ~/.profile_mycroft' >> ~/.profile
+        fi
+
+        echo "
+# WARNING: This file may be replaced in future, do not customize.
+# set path so it includes Mycroft utilities
+if [ -d \""${TOP}"/bin\" ] ; then
+    PATH=\"\$PATH:"${TOP}"/bin\"
+fi" > ~/.profile_mycroft
+        echo -e "Type ${CYAN}mycroft-help${RESET} to see available commands."
+    else
+        echo -e "${HIGHLIGHT} N - PATH left unchanged ${RESET}"
     fi
 
     # Create a link to the 'skills' folder.
     sleep 0.5
-    echo
     echo "The standard location for Mycroft skills is under /opt/mycroft/skills."
-
     if [[ ! -d /opt/mycroft/skills ]] ; then
         echo "This script will create that folder for you.  This requires sudo"
         echo "permission and might ask you for a password..."
@@ -179,34 +202,6 @@ if [ ! -f .dev_opts.json ] ; then
         echo "For convenience, a soft link has been created called 'skills' which leads"
         echo "to /opt/mycroft/skills."
     fi
-
-    # Add mycroft-core/bin to the .bashrc PATH?
-    sleep 0.5
-    echo
-    echo "There are several Mycroft helper commands in the bin folder.  These"
-    echo "can be added to your system PATH, making it simpler to use Mycroft."
-    echo "Would you like this to be added to your PATH in the .profile?"
-    echo -e -n "Choice [${CYAN}Y${RESET}/${CYAN}N${RESET}]: "
-    while true; do
-        read -N1 -s key
-        case $key in
-        [Yy])
-            echo -e "${HIGHLIGHT} $key - Adding mycroft-core/bin to your PATH ${RESET}"
-            echo '' >> ~/.profile
-            echo '# set path so it includes Mycroft utilities' >> ~/.profile
-            echo 'if [ -d "'${TOP}'/bin" ] ; then' >> ~/.profile
-            echo '    PATH="'${TOP}'/bin:$PATH"' >> ~/.profile
-            echo 'fi' >> ~/.profile
-            echo -e "Type ${CYAN}mycroft-help${RESET} to see available commands."
-            break
-            ;;
-        [Nn])
-            echo -e "${HIGHLIGHT} $key - PATH left unchanged ${RESET}"
-            opt_skipmimicbuild=true
-            break
-            ;;
-        esac
-    done
 
     # Save options
     echo '{"use_branch": "'${branch}'", "auto_update": '${autoupdate}'}' > .dev_opts.json
@@ -223,10 +218,6 @@ function os_is() {
     [[ $(grep "^ID=" /etc/os-release | awk -F'=' '/^ID/ {print $2}' | sed 's/\"//g') == $1 ]]
 }
 
-function found_exe() {
-    hash "$1" 2>/dev/null
-}
-
 function redhat_common_install() {
     $SUDO yum install -y cmake gcc-c++ git python34 python34-devel libtool libffi-devel openssl-devel autoconf automake bison swig portaudio-devel mpg123 flac curl libicu-devel python34-pkgconfig libjpeg-devel fann-devel python34-libs pulseaudio
     git clone https://github.com/libfann/fann.git
@@ -238,6 +229,7 @@ function redhat_common_install() {
     rm -rf fann
 
 }
+
 function install_deps() {
     echo "Installing packages..."
     if found_exe sudo ; then
@@ -279,15 +271,10 @@ function install_deps() {
         # Fedora
         $SUDO dnf install -y git python3 python3-devel python3-pip python3-setuptools python3-virtualenv pygobject3-devel libtool libffi-devel openssl-devel autoconf bison swig glib2-devel portaudio-devel mpg123 mpg123-plugins-pulseaudio screen curl pkgconfig libicu-devel automake libjpeg-turbo-devel fann-devel gcc-c++ redhat-rpm-config jq
     else
-        if found_exe tput ; then
-			green="$(tput setaf 2)"
-			blue="$(tput setaf 4)"
-			reset="$(tput sgr0)"
-    	fi
     	echo
-        echo "${green}Could not find package manager"
-        echo "${green}Make sure to manually install:${blue} git python 2 python-setuptools python-virtualenv pygobject virtualenvwrapper libtool libffi openssl autoconf bison swig glib2.0 portaudio19 mpg123 flac curl fann g++"
-        echo $reset
+        echo "${GREEN}Could not find package manager"
+        echo "${GREEN}Make sure to manually install:${BLUE} git python 2 python-setuptools python-virtualenv pygobject virtualenvwrapper libtool libffi openssl autoconf bison swig glib2.0 portaudio19 mpg123 flac curl fann g++"
+        echo ${RESET}
     fi
 }
 
