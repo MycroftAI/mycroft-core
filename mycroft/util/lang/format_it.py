@@ -235,7 +235,7 @@ def nice_number_it(number, speech, denominators):
     return return_string
 
 
-def pronounce_number_it(num, places=2, short_scale=True, scientific=False):
+def pronounce_number_it(num, places=2, short_scale=False, scientific=False):
     """
     Convert a number to it's spoken equivalent
     adapted to italian fron en version
