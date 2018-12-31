@@ -189,6 +189,7 @@ fi" > ~/.profile_mycroft
 
     # Create a link to the 'skills' folder.
     sleep 0.5
+    echo
     echo "The standard location for Mycroft skills is under /opt/mycroft/skills."
     if [[ ! -d /opt/mycroft/skills ]] ; then
         echo "This script will create that folder for you.  This requires sudo"
