@@ -234,6 +234,7 @@ class GUIConnection():
         # [...]
         # ]
         self.loaded = []  # list of lists in order.
+        self.explicit_move = True  # Set to true to send reorder commands
 
         # Each connection will run its own Tornado server.  If the
         # connection drops, the server is killed.
@@ -283,16 +284,17 @@ class GUIConnection():
         self.callback_disconnect(self.id)
 
     def set(self, namespace, name, value):
-        self.sync_active()
-
         if namespace not in self.datastore:
             self.datastore[namespace] = {}
         if self.datastore[namespace].get(name) != value:
-            msg = {"type": "mycroft.session.set",
-                   "namespace": namespace,
-                   "data": {name: value}}
-            self.socket.send(msg)
             self.datastore[namespace][name] = value
+
+            # If the namespace is loaded send data to gui
+            if namespace in [l[0] for l in self.loaded]:
+                msg = {"type": "mycroft.session.set",
+                       "namespace": namespace,
+                       "data": {name: value}}
+                self.socket.send(msg)
 
     def __find_namespace(self, namespace):
         for i, skill in enumerate(self.loaded):
@@ -332,6 +334,15 @@ class GUIConnection():
                           "position": 0,
                           "data": [{"skill_id": namespace}]
                           })
+
+        # Load any already stored Data
+        data = self.datastore.get(namespace, {})
+        for key in data:
+            msg = {"type": "mycroft.session.set",
+                   "namespace": namespace,
+                   "data": {key: data[key]}}
+            self.socket.send(msg)
+
         DEBUG("Inserting new page")
         self.socket.send({"type": "mycroft.gui.list.insert",
                           "namespace": namespace,
@@ -349,9 +360,14 @@ class GUIConnection():
                 to_pos: Position to move to
         """
         DEBUG("Activating existing namespace")
-        self.socket.send({"type": "mycroft.session.list.move",
-                          "namespace": "mycroft.system.active_skills",
-                          "from": from_pos, "to": to_pos})
+        # Seems like the namespace is moved to the top automatically when
+        # a page change is done. Deactivating this for now.
+        if self.explicit_move:
+            DEBUG("move {} to {}".format(from_pos, to_pos))
+            self.socket.send({"type": "mycroft.session.list.move",
+                              "namespace": "mycroft.system.active_skills",
+                              "from": from_pos, "to": to_pos,
+                              "items_number": 1})
         # Move the local representation of the skill from current
         # position to position 0.
         self.loaded.insert(to_pos, self.loaded.pop(from_pos))
@@ -369,7 +385,8 @@ class GUIConnection():
             DEBUG(e)
             num = 0
 
-        DEBUG("Switching to already loaded page at index {}".format(num))
+        DEBUG("Switching to already loaded page at "
+              "index {} in namespace {}".format(num, namespace))
         self.socket.send({"type": "mycroft.events.triggered",
                           "namespace": namespace,
                           "event_name": "page_gained_focus",
@@ -385,7 +402,6 @@ class GUIConnection():
         DEBUG("GUIConnection activating: " + namespace)
         pages = page if isinstance(page, list) else [page]
 
-        self.sync_active()
         # find namespace among loaded namespaces
         try:
             index = self.__find_namespace(namespace)
@@ -414,53 +430,6 @@ class GUIConnection():
         self.current_namespace = namespace
         self.current_pages = pages
         self.current_index = index
-
-    def sync_active(self):
-        # The main Enclosure keeps a list of active skills.  Each GUI also
-        # has a list.  Synchronize when appropriate.
-        if self.enclosure.active_namespaces != self._active_namespaces:
-
-            # First, zap any namespace not in the list anymore
-            if self._active_namespaces:
-                pos = len(self._active_namespaces) - 1
-                for ns in reversed(self._active_namespaces):
-                    if ns not in self.enclosure.active_namespaces:
-                        msg = {"type": "mycroft.session.list.remove",
-                               "namespace": "mycroft.system.active_skills",
-                               "position": pos,
-                               "items_number": 1
-                               }
-                        self.socket.send(msg)
-                        del self._active_namespaces[pos]
-                    pos -= 1
-
-            # Next, insert any missing items
-            if not self._active_namespaces:
-                self._active_namespaces = []
-            for ns in self.enclosure.active_namespaces:
-                if ns not in self._active_namespaces:
-                    msg = {"type": "mycroft.session.list.insert",
-                           "namespace": "mycroft.system.active_skills",
-                           "position": 0,
-                           "data": [{'skill_id': ns}]
-                           }
-                    self.socket.send(msg)
-                    self._active_namespaces.insert(0, ns)
-
-            # Finally, adjust orders to match
-            for idx in range(0, len(self.enclosure.active_namespaces)):
-                ns = self.enclosure.active_namespaces[idx]
-                idx_old = self._active_namespaces.index(ns)
-                if idx != idx_old:
-                    msg = {"type": "mycroft.session.list.move",
-                           "namespace": "mycroft.system.active_skills",
-                           "from": idx_old,
-                           "to": idx,
-                           "items_number": 1
-                           }
-                    self.socket.send(msg)
-                    del self._active_namespaces[idx_old]
-                    self._active_namespaces.insert(idx, ns)
 
 
 class GUIWebsocketHandler(WebSocketHandler):
