@@ -242,9 +242,13 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
         n, power = number.replace("+", "").split("E")
         power = int(power)
         if power != 0:
-            return pronounce_number_en(float(n), places, short_scale, False) \
-                   + " times ten to the power of " + \
-                   pronounce_number_en(power, places, short_scale, False)
+            # This handles negatives of powers separately from the normal
+            # handling since each call disables the scientific flag
+            return '{}{} times ten to the power of {}{}'.format(
+                'negative ' if float(n) < 0 else '',
+                pronounce_number_en(abs(float(n)), places, short_scale, False),
+                'negative ' if power < 0 else '',
+                pronounce_number_en(abs(power), places, short_scale, False))
     if short_scale:
         number_names = NUM_STRING_EN.copy()
         number_names.update(SHORT_SCALE_EN)
@@ -264,7 +268,7 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
     # deal with negatives
     result = ""
     if num < 0:
-        result = "negative "
+        result = "negative " if scientific else "minus "
     num = abs(num)
 
     try:
