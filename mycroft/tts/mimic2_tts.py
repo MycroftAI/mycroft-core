@@ -257,7 +257,7 @@ class Mimic2(TTS):
             stf: normalized sentences to speak
         """
         try:
-            numbers = re.findall(r'\d+', sentence)
+            numbers = re.findall(r'-?\d+', sentence)
             normalized_num = [
                 (num, pronounce_number(int(num)))
                 for num in numbers

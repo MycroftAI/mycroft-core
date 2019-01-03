@@ -224,7 +224,7 @@ def nice_number_en(number, speech, denominators):
 
 def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
     """
-    Convert a number to it's spoken equivalent
+    Convert a number to its spoken equivalent
 
     For example, '5.2' would return 'five point two'
 
@@ -242,9 +242,13 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
         n, power = number.replace("+", "").split("E")
         power = int(power)
         if power != 0:
-            return pronounce_number_en(float(n), places, short_scale, False) \
-                   + " times ten to the power of " + \
-                   pronounce_number_en(power, places, short_scale, False)
+            # This handles negatives of powers separately from the normal
+            # handling since each call disables the scientific flag
+            return '{}{} times ten to the power of {}{}'.format(
+                'negative ' if float(n) < 0 else '',
+                pronounce_number_en(abs(float(n)), places, short_scale, False),
+                'negative ' if power < 0 else '',
+                pronounce_number_en(abs(power), places, short_scale, False))
     if short_scale:
         number_names = NUM_STRING_EN.copy()
         number_names.update(SHORT_SCALE_EN)
@@ -264,14 +268,14 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
     # deal with negatives
     result = ""
     if num < 0:
-        result = "negative "
+        result = "negative " if scientific else "minus "
     num = abs(num)
 
     try:
         # deal with 4 digits
         # usually if it's a 4 digit num it should be said like a date
         # i.e. 1972 => nineteen seventy two
-        if len(str(num)) == 4:
+        if len(str(num)) == 4 and isinstance(num, int):
             _num = str(num)
             # deal with 1000, 2000, 2001, 2100, 3123, etc
             # is skipped as the rest of the

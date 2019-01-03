@@ -45,6 +45,14 @@ installer_config = Configuration.get().get("SkillInstallerSkill")
 MINUTES = 60  # number of seconds in a minute (syntatic sugar)
 
 
+def ignored_file(f):
+    """ Checks if the file is valid file to require a reload. """
+    return (f.endswith('.pyc') or
+            f == 'settings.json' or
+            f.startswith('.') or
+            f.endswith('.qmlc'))
+
+
 def _get_last_modified_date(path):
     """
         Get last modified date excluding compiled python files, hidden
@@ -60,8 +68,7 @@ def _get_last_modified_date(path):
     for root_dir, dirs, files in os.walk(path):
         dirs[:] = [d for d in dirs if not d.startswith('.')]
         for f in files:
-            if (not f.endswith('.pyc') and f != 'settings.json' and
-                    not f.startswith('.')):
+            if not ignored_file(f):
                 all_files.append(join(root_dir, f))
     # check files of interest in the skill root directory
     return max(os.path.getmtime(f) for f in all_files)

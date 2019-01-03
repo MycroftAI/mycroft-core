@@ -1,0 +1,976 @@
+swagger: '2.0'
+info:
+  description: API used to communicate with Mycroft backend
+  version: '1'
+  title: Mycroft API
+host: api.mycroft.ai
+basePath: /v1
+tags:
+  - name: device
+    description: Operations about device
+schemes:
+  - https
+paths:
+  /auth/token:
+    get:
+      tags:
+        - device
+      summary: Gets a fresh login session from a refresh token
+      operationId: getRefreshToken
+      responses:
+        '200':
+          description: Login entity
+          schema:
+            $ref: '#/definitions/Login'
+      security:
+        - refresh_auth:
+            - 'refresh:token'
+  /device:
+    post:
+      tags:
+        - device
+      summary: Creates a device
+      operationId: createDevice
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: Device to be stored
+          required: true
+          schema:
+            $ref: '#/definitions/Device'
+      responses:
+        '200':
+          description: OK
+      security:
+        - device_auth:
+            - 'write:device'
+            - 'read:device'
+    put:
+      tags:
+        - device
+      summary: Updates an existent device
+      operationId: updateDevice
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: Device to be updated
+          required: true
+          schema:
+            $ref: '#/definitions/Device'
+      responses:
+        '200':
+          description: OK
+      security:
+        - device_auth:
+            - 'write:device'
+            - 'read:device'
+  /device/code:
+    get:
+      tags:
+        - device
+      summary: >-
+        Generates a pairing code and associates with the state string passed as
+        parameter
+      operationId: generatePairingCode
+      parameters:
+        - name: state
+          in: query
+          description: random string to be associated with pairing code
+          required: true
+          type: string
+      responses:
+        '200':
+          description: device pairing entity
+          schema:
+            $ref: '#/definitions/DevicePairing'
+  /device/activate:
+    post:
+      tags:
+        - device
+      summary: Activates a paired device
+      operationId: activateDevice
+      parameters:
+        - name: body
+          in: body
+          description: Device activation payload
+          required: true
+          schema:
+            $ref: '#/definitions/DeviceActivation'
+      responses:
+        '200':
+          description: OK
+  '/device/{uuid}':
+    get:
+      tags:
+        - device
+      summary: Finds device by uuid
+      operationId: findDeviceByUuid
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Device entity
+          schema:
+            $ref: '#/definitions/Device'
+        '404':
+          description: Device not found
+      parameters:
+        - name: uuid
+          in: path
+          type: string
+          format: uuid
+          required: true
+      security:
+        - device_auth:
+            - 'write:device'
+            - 'read:device'
+    patch:
+      tags:
+        - device
+      summary: Performs a partial update over a device
+      operationId: updateDevicePartial
+      consumes:
+        - application/json
+      parameters:
+        - name: uuid
+          description: Device uuid to update
+          in: path
+          type: string
+          format: uuid
+          required: true
+        - in: body
+          name: body
+          description: >-
+            Device to be updated. Only needs pass the fields that need be
+            changed
+          required: true
+          schema:
+            $ref: '#/definitions/Device'
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Device not found
+        '422':
+          description: Found validations error
+      security:
+        - device_auth:
+            - 'write:device'
+            - 'read:device'
+    delete:
+      tags:
+        - device
+      summary: Deletes a device
+      operationId: deleteDeviceByUuid
+      parameters:
+        - name: uuid
+          description: Device uuid to delete
+          in: path
+          type: string
+          format: uuid
+          required: true
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Device not found
+      security:
+        - device_auth:
+            - 'write:device'
+            - 'read:device'
+  '/device/{uuid}/setting':
+    get:
+      tags:
+        - device
+      summary: Finds the setting from a device
+      operationId: findDeviceSetting
+      parameters:
+        - name: uuid
+          description: Device uuid to find the setting
+          in: path
+          type: string
+          format: uuid
+          required: true
+        - name: If-None-Match
+          description: Etag for the device setting
+          in: header
+          type: string
+          required: false
+      responses:
+        '200':
+          description: Setting entity
+          schema:
+            $ref: '#/definitions/Setting'
+      security:
+        - device_auth:
+            - 'write:device'
+            - 'read:device'
+  '/device/{uuid}/subscription':
+    get:
+      tags:
+        - device
+      summary: Finds the subscription of the user associated with the device
+      operationId: findDeviceSubscription
+      parameters:
+        - name: uuid
+          description: Device uuid
+          in: path
+          type: string
+          format: uuid
+          required: true
+      responses:
+        '200':
+          description: Account entity
+          schema:
+            $ref: '#/definitions/Account'
+      security:
+        - device_auth:
+            - 'write:device'
+            - 'read:device'
+  '/device/{uuid}/location':
+    get:
+      tags:
+        - device
+      summary: Finds the device location
+      operationId: findDeviceLocation
+      parameters:
+        - name: uuid
+          description: Device uuid to find the location
+          in: path
+          type: string
+          format: uuid
+          required: true
+        - name: If-None-Match
+          description: Etag for the device location
+          in: header
+          type: string
+          required: false
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/Location'
+      security:
+        - device_auth:
+            - 'write:device'
+            - 'read:device'
+  '/device/{uuid}/skill':
+    get:
+      tags:
+        - device
+      summary: Finds all skill associated with a device
+      operationId: findDeviceSkills
+      parameters:
+        - name: uuid
+          description: Device uuid to find the skill
+          in: path
+          type: string
+          format: uuid
+          required: true
+        - name: If-None-Match
+          description: Etag for the device skill
+          in: header
+          type: string
+          required: false
+      responses:
+        '200':
+          description: Skills associated with the device
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Skill'
+      security:
+        - device_auth:
+            - 'write:device'
+            - 'read:device'
+    delete:
+      tags:
+        - device
+      summary: Deletes a skill from a device
+      operationId: deleteDeviceSkill
+      parameters:
+        - name: uuid
+          description: Device uuid to delete the skill
+          in: path
+          type: string
+          format: uuid
+          required: true
+        - name: body
+          description: Skill to remove from the device
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/Skill'
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Device not found
+      security:
+        - device_auth:
+            - 'write:device'
+            - 'read:device'
+    put:
+      tags:
+        - device
+      summary: Creates or updates a skill from a device
+      operationId: createUpdateDeviceSkill
+      parameters:
+        - name: uuid
+          description: Device uuid to create the skill
+          in: path
+          type: string
+          format: uuid
+          required: true
+        - name: body
+          description: Skill to upload and associate with a device
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/Skill'
+      responses:
+        '200':
+          description: OK
+      security:
+        - device_auth:
+            - 'write:device'
+            - 'read:device'
+  '/device/{uuid}/skillJson':
+    put:
+      tags:
+        - device
+      summary: Updates the skill json associated with the device
+      operationId: uptDeviceSkillJson
+      parameters:
+        - name: uuid
+          description: Device uuid to find the skill
+          in: path
+          type: string
+          format: uuid
+          required: true
+        - name: body
+          description: skills.json file
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/SkillJson'
+      responses:
+        '200':
+          description: ok
+      security:
+        - device_auth:
+            - 'write:device'
+            - 'read:device'
+  '/device/{uuid}/voice':
+    get:
+      tags:
+        - device
+      summary: Finds a link to download a premium voice if user has a paid account
+      operationId: getPremiumVoiceLink
+      parameters:
+        - name: uuid
+          description: Device uuid to fetch the premium voice link
+          in: path
+          type: string
+          format: uuid
+          required: true
+        - name: arch
+          description: Architecture to fetch the voice link
+          in: query
+          type: string
+          enum:
+            - arm
+            - x86_64
+          required: true
+      responses:
+        '200':
+          description: OK
+      security:
+        - device_auth:
+            - 'write:device'
+            - 'read:device'
+  '/device/{uuid}/metric':
+    post:
+      tags:
+        - device
+      summary: Pushes the metric passed as body to a metrics service
+      operationId: sendMetric
+      parameters:
+        - name: uuid
+          description: Device uuid that is sending the metric
+          in: path
+          type: string
+          format: uuid
+          required: true
+      responses:
+        '200':
+          description: OK
+      security:
+        - device_auth:
+            - 'write:device'
+            - 'read:device'
+  '/device/{uuid}/message':
+    put:
+      tags:
+        - device
+      summary: Sends an email to the user associated with the device
+      operationId: sendEmail
+      parameters:
+        - name: uuid
+          description: Device uuid that is sending the email
+          in: path
+          type: string
+          format: uuid
+          required: true
+        - name: body
+          in: body
+          description: payload with data to send the email
+          required: true
+          schema:
+            $ref: '#/definitions/SendEmail'
+      responses:
+        '200':
+          description: OK
+      security:
+        - device_auth:
+            - 'write:device'
+            - 'read:device'
+  '/device/{uuid}/userSkill':
+    get:
+      tags:
+        - device
+      summary: >-
+        For a given device, fetch all skills with a given identifier associated
+        with the user linked to the device
+      operationId: getUserSkillsByIdentifier
+      parameters:
+        - name: uuid
+          description: Device uuid
+          in: path
+          type: string
+          format: uuid
+          required: true
+        - name: identifier
+          description: Skill identifier
+          in: query
+          type: string
+          required: true
+        - name: If-None-Match
+          description: Etag for the user skills
+          in: header
+          type: string
+          required: false
+      responses:
+        '200':
+          description: OK
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Skill'
+      security:
+        - device_auth:
+            - 'write:device'
+            - 'read:device'
+securityDefinitions:
+  user_auth:
+    type: oauth2
+    authorizationUrl: 'https://api.mycroft.ai/v1/auth/login'
+    flow: implicit
+    scopes:
+      'write:user': modify user and entities associated with user
+      'read:user': read user and entities associated with user
+  device_auth:
+    type: oauth2
+    authorizationUrl: 'https://apy.mycroft.ai/v1/device/activate'
+    flow: implicit
+    scopes:
+      'write:device': modify device and entities associated with device
+      'read:device': read device  and entities associated with device
+  refresh_auth:
+    type: oauth2
+    authorizationUrl: 'https://api.mycroft.ai/v1/auth/login'
+    flow: implicit
+    scopes:
+      'refresh:token': get a new fresh token
+  basic_auth:
+    type: basic
+definitions:
+  Account:
+    type: object
+    properties:
+      uuid:
+        type: string
+        format: uuid
+        description: Entity id generated by application
+  PaidAccount:
+    allOf:
+      - $ref: '#/definitions/Account'
+      - type: object
+        properties:
+          '@type':
+            type: string
+            enum:
+              - monthly
+              - yearly
+          expiratesAt:
+            type: number
+            format: int64
+            description: timestamp in milliseconds when the account expirates
+          nextPayment:
+            type: number
+            format: int64
+            description: timestamp in millisecond of the next payment
+          lastPayment:
+            type: number
+            format: int64
+            description: timestamp in milliseconds of the last payment
+  FreeAccount:
+    allOf:
+      - $ref: '#/definitions/Account'
+      - type: object
+        properties:
+          '@type':
+            type: string
+            enum:
+              - free
+  Device:
+    type: object
+    properties:
+      uuid:
+        type: string
+        format: uuid
+        description: entity id generated by application
+      name:
+        type: string
+      description:
+        type: string
+      coreVersion:
+        type: string
+      enclosureVerion:
+        type: string
+      setting:
+        $ref: '#/definitions/Setting'
+      location:
+        $ref: '#/definitions/Location'
+      lastAccess:
+        type: number
+        format: int64
+  Setting:
+    type: object
+    properties:
+      uuid:
+        type: string
+        format: uuid
+        description: entity id generated by application
+      device:
+        $ref: '#/definitions/Device'
+      systemUnit:
+        type: string
+        enum:
+          - metric
+          - imperial
+      timeFormat:
+        type: string
+        enum:
+          - half
+          - full
+      dateFormat:
+        type: string
+        enum:
+          - DMY
+          - MDY
+      sttSettings:
+        type: array
+        items:
+          $ref: '#/definitions/STTSetting'
+      ttsSettings:
+        type: array
+        items:
+          $ref: '#/definitions/TTSSetting'
+      skillSetting:
+        $ref: '#/definitions/SkillsSetting'
+      listenerSetting:
+        $ref: '#/definitions/ListenerSetting'
+      enclosureSetting:
+        $ref: '#/definitions/EnclosureSetting'
+      optIn:
+        type: boolean
+        description: flag to store if user agrees in share his voice data with mycroft
+  STTSetting:
+    type: object
+    properties:
+      uuid:
+        type: string
+        format: uuid
+        description: entity id generated by application
+      '@type':
+        type: string
+        enum:
+          - mycroft
+          - google
+          - openstt
+          - ibm
+          - wit
+      active:
+        type: boolean
+      credential:
+        $ref: '#/definitions/Credential'
+  TTSSetting:
+    type: object
+    properties:
+      uuid:
+        type: string
+        format: uuid
+        description: entity id generated by application
+      '@type':
+        type: string
+        enum:
+          - mimic
+          - espeak
+          - google
+          - marytts
+          - fatts
+      activate:
+        type: boolean
+      voice:
+        type: string
+  Credential:
+    type: object
+    properties:
+      '@type':
+        type: string
+        enum:
+          - basic
+          - token
+  SkillsSetting:
+    type: object
+    properties:
+      uuid:
+        type: string
+        format: uuid
+        description: entity id generated by application
+      directory:
+        type: string
+      stopThreshold:
+        type: number
+        format: double
+  ListenerSetting:
+    type: object
+    properties:
+      uuid:
+        type: string
+        format: uuid
+        description: entity id generated by application
+      sampleRate:
+        type: number
+        format: int
+        enum:
+          - 8000
+          - 16000
+      channels:
+        type: number
+        format: int
+        enum:
+          - 1
+          - 2
+      wakeWord:
+        type: string
+      phonemes:
+        type: string
+      threshold:
+        type: number
+        format: double
+      multiplier:
+        type: number
+        format: double
+      energyRatio:
+        type: number
+        format: double
+  EnclosureSetting:
+    type: object
+    properties:
+      uuid:
+        type: string
+        format: uuid
+        description: entity id generated by application
+      path:
+        type: string
+      rate:
+        type: number
+        format: int32
+        enum:
+          - 9600
+      timeout:
+        type: number
+        format: double
+  Location:
+    type: object
+    properties:
+      uuid:
+        type: string
+        format: uuid
+        description: entity id generated by application
+      coordinate:
+        $ref: '#/definitions/Coordinate'
+      timezone:
+        $ref: '#/definitions/Timezone'
+      city:
+        $ref: '#/definitions/City'
+  Coordinate:
+    type: object
+    properties:
+      uuid:
+        type: string
+        format: uuid
+        description: entity id generated by application
+      latitude:
+        type: number
+        format: double
+        minimum: -90
+        maximum: 90
+      longitude:
+        type: number
+        format: double
+        minimum: -180
+        maximum: 180
+  Timezone:
+    type: object
+    properties:
+      uuid:
+        type: string
+        format: uuid
+        description: entity id generated by application
+      code:
+        type: string
+        description: >-
+          The UTC timezone code represented such as: UTC-N, UTC, UTC+M. Where N
+          is in between [01:00, 12:00] and M is in between [01:00, 14:00]
+      name:
+        type: string
+      offset:
+        type: number
+        format: int32
+        description: The UTC timezone offset in milliseconds
+      dstOffset:
+        type: number
+        format: int32
+        description: The UTC daylight saving offset in milliseconds
+  City:
+    type: object
+    properties:
+      uuid:
+        type: string
+        format: uuid
+        description: entity id generated by application
+      code:
+        type: string
+      name:
+        type: string
+      state:
+        $ref: '#/definitions/State'
+  State:
+    type: object
+    properties:
+      uuid:
+        type: string
+        format: uuid
+        description: entity id generated by application
+      code:
+        type: string
+      name:
+        type: string
+      country:
+        $ref: '#/definitions/Country'
+  Country:
+    type: object
+    properties:
+      uuid:
+        type: string
+        format: uuid
+        description: entity id generated by application
+      code:
+        type: string
+      name:
+        type: string
+  Skill:
+    type: object
+    properties:
+      uuid:
+        type: string
+        format: uuid
+        description: entity id generated by application
+      name:
+        type: string
+      description:
+        type: string
+      contributor:
+        type: string
+      icon:
+        type: string
+      identifier:
+        type: string
+      skillMetadata:
+        $ref: '#/definitions/SkillMetadata'
+  SkillMetadata:
+    type: object
+    properties:
+      uuid:
+        type: string
+        format: uuid
+        description: entity id generated by application
+      sections:
+        type: array
+        items:
+          $ref: '#/definitions/SkillMetadataSection'
+  SkillMetadataSection:
+    type: object
+    properties:
+      uuid:
+        type: string
+        format: uuid
+        description: entity id generated by application
+      name:
+        type: string
+      fields:
+        type: array
+        items:
+          $ref: '#/definitions/SkillMetadataField'
+  SkillMetadataField:
+    type: object
+    properties:
+      uuid:
+        type: string
+        format: uuid
+        description: entity id generated by application
+      name:
+        type: string
+      type:
+        type: string
+      label:
+        type: string
+      hint:
+        type: string
+      placeholder:
+        type: string
+      value:
+        type: string
+  SkillJson:
+    type: object
+    properties:
+      blacklist:
+        type: array
+        items:
+          type: string
+      skills:
+        type: array
+        items:
+          $ref: '#/definitions/SkillManifest'
+  SkillManifest:
+    type: object
+    properties:
+      uuid:
+        type: string
+        format: uuid
+        description: entity id generated by application
+      name:
+        type: string
+        description: skill's name
+      origin:
+        type: string
+        description: >-
+          "default" means the skill was installed when found on the
+          DEFAULT-SKILLS list; "marketplace" means the skill was installed from
+          a user action on a remote UI; "voice" means the skill was installed
+          from a device via voice; "cli" means the skill was installed from a
+          device via MSM command line; "non-msm" means the skill just appeared,
+          e.g. FTP, git or created on device
+      installation:
+        type: string
+        description: >-
+          This holds the installation status of the skill.  It can be one
+          of:"installed" fully installed; "installing" in the process of being
+          installed (transitory state) "uninstalling" in the process of removal
+          (transitory state); "failed" means an attempt was made to install the
+          skill but it failed
+      failure_message:
+        type: string
+        description: 'Optional error message, only meaningful when installation = "failed"'
+      status:
+        type: string
+        description: >-
+          "active" the normal state; "disabled" the user has temporarily
+          disabled this skill; "error" the skill failed to load
+      beta:
+        type: string
+        description: >-
+          True if running at the repo HEAD, otherwise running the registered
+          version This only has meaning for "remote" or "local" skills.
+      installed:
+        type: number
+        format: int64
+        description: >-
+          A simple UTC date/time of when the skill was created on the local
+          system
+      updated:
+        type: number
+        description: Last time the skill was updated from its source repo
+  SendEmail:
+    type: object
+    properties:
+      title:
+        type: string
+      body:
+        type: string
+        description: HTML message to be sent as body
+      sender:
+        type: string
+        description: skill that is sending the message
+  DevicePairing:
+    type: object
+    properties:
+      code:
+        type: string
+      state:
+        type: string
+      token:
+        type: string
+      expiration:
+        type: number
+        format: int64
+        description: pairing code expiration time in milliseconds
+  DeviceActivation:
+    type: object
+    properties:
+      state:
+        type: string
+      token:
+        type: string
+      coreVersion:
+        type: string
+      enclosureVersion:
+        type: string
+  Login:
+    type: object
+    properties:
+      uuid:
+        type: string
+        format: uuid
+        description: User uuid
+      accessToken:
+        type: string
+        description: User access token
+      refreshToken:
+        type: string
+        description: Token used to renew access and get a fresh token
+      expiration:
+        type: string
+        description: Token expiration time in milliseconds
+externalDocs:
+  description: Find out more about Swagger
+  url: 'http://swagger.io'

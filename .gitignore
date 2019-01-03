@@ -1,8 +1,10 @@
+.dev_opts.json
 .idea
 *.pyc
 *.swp
 *~
 mimic
+skills
 pocketsphinx-python
 *.egg-info/
 build

@@ -19,6 +19,7 @@ from alsaaudio import Mixer
 from threading import Thread, Timer
 
 import mycroft.dialog
+from mycroft.client.enclosure.base import Enclosure
 from mycroft.api import has_been_paired
 from mycroft.audio import wait_while_speaking
 from mycroft.enclosure.display_manager import \
@@ -28,7 +29,7 @@ from mycroft.util import connected
 from mycroft.util.log import LOG
 
 
-class EnclosureGeneric:
+class EnclosureGeneric(Enclosure):
     """
     Serves as a communication interface between a simple text frontend and
     Mycroft Core.  This is used for Picroft or other headless systems,

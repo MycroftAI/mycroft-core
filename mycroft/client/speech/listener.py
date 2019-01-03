@@ -308,7 +308,7 @@ class RecognizerLoop(EventEmitter):
 
     def force_unmute(self):
         """
-            Completely unmute mic dispite the number of calls to mute
+            Completely unmute mic regardless of the number of calls to mute
         """
         self.mute_calls = 0
         self.unmute()
