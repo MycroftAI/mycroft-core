@@ -993,7 +993,9 @@ class MycroftSkill(object):
 
         filename = self.find_resource(intent_file, 'vocab')
         if not filename:
-            raise FileNotFoundError('Unable to find "' + str(intent_file) + '"')
+            raise FileNotFoundError(
+                'Unable to find "' + str(intent_file) + '"'
+                )
 
         data = {
             "file_name": filename,
@@ -1025,10 +1027,9 @@ class MycroftSkill(object):
 
         filename = self.find_resource(entity_file + ".entity", 'vocab')
         if not filename:
-            raise FileNotFoundError('Unable to find "'
-                                    + entity_file
-                                    + '.entity"'
-                                    )
+            raise FileNotFoundError(
+                'Unable to find "' + entity_file + '.entity"'
+                )
         name = str(self.skill_id) + ':' + entity_file
 
         self.bus.emit(Message("padatious:register_entity", {
