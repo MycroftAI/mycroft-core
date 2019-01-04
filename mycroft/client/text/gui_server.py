@@ -14,6 +14,7 @@
 #
 
 from os import getpid
+from os.path import basename
 import json
 import websocket
 from threading import Thread, Lock
@@ -61,7 +62,7 @@ def build_output_buffer():
     try:
         if skill:
             buffer.append("Active Skill: {}".format(skill))
-            buffer.append("Page: {}".format(page))
+            buffer.append("Page: {}".format(basename(page)))
             buffer.append("vars: ")
             for v in vars[skill]:
                 buffer.append("     {}: {}".format(v, vars[skill][v]))
