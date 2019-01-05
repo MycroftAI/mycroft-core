@@ -27,7 +27,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from mycroft.util.lang.parse_common import is_numeric, look_for_fractions, \
     extract_numbers_generic
-from mycroft.util.lang.format_it import NUM_STRING_IT, pronounce_number_it
+from mycroft.util.lang.format_it import pronounce_number_it
 
 SHORT_ORDINAL_STRING_IT = {
     1: 'primo',
