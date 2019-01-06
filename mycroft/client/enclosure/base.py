@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import sys
+from collections import namedtuple
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus.client.ws import WebsocketClient
@@ -24,6 +24,9 @@ import json
 from tornado import autoreload, ioloop
 from tornado.websocket import WebSocketHandler
 from mycroft.messagebus.message import Message
+
+
+Namespace = namedtuple('Namespace', ['name', 'pages'])
 
 
 def DEBUG(str):
@@ -226,9 +229,13 @@ class GUIConnection():
         self.current_pages = []
         self.current_index = None
 
-        # self.loaded is a list, each row in the list has two columns:
-        # [Namespace,    [List of loaded qml pages]]
+        # self.loaded is a list, each element consists of a namespace named
+        # tuple.
+        # The namespace namedtuple has the properties "name" and "pages"
+        # The name contains the namespace name as a string and pages is a
+        # mutable list of loaded pages.
         #
+        # [Namespace name, [List of loaded qml pages]]
         # [
         # ["SKILL_NAME", ["page1.qml, "page2.qml", ... , "pageN.qml"]
         # [...]
@@ -290,7 +297,7 @@ class GUIConnection():
             self.datastore[namespace][name] = value
 
             # If the namespace is loaded send data to gui
-            if namespace in [l[0] for l in self.loaded]:
+            if namespace in [l.name for l in self.loaded]:
                 msg = {"type": "mycroft.session.set",
                        "namespace": namespace,
                        "data": {name: value}}
@@ -310,13 +317,13 @@ class GUIConnection():
 
         self.socket.send({"type": "mycroft.gui.list.insert",
                           "namespace": namespace,
-                          "position": len(self.loaded[0][1]),
+                          "position": len(self.loaded[0].pages),
                           "data": [{"url": p} for p in pages]
                           })
 
         # append pages to local representation
         for p in pages:
-            self.loaded[0][1].append(p)
+            self.loaded[0].pages.append(p)
 
     def __insert_new_namespace(self, namespace, pages):
         """ Insert new namespace and pages.
@@ -350,7 +357,7 @@ class GUIConnection():
                           "data": [{"url": p} for p in pages]
                           })
         # Make sure the local copy is updated
-        self.loaded.insert(0, [namespace, pages])
+        self.loaded.insert(0, Namespace(namespace, pages))
 
     def __move_namespace(self, from_pos, to_pos):
         """ Move an existing namespace to a new position in the stack.
@@ -380,7 +387,7 @@ class GUIConnection():
                 namespace:  skill namespace
         """
         try:
-            num = self.loaded[0][1].index(pages[0])
+            num = self.loaded[0].pages.index(pages[0])
         except Exception as e:
             DEBUG(e)
             num = 0
@@ -417,7 +424,7 @@ class GUIConnection():
                     self.__move_namespace(index, 0)
 
                 # Find if any new pages needs to be inserted
-                new_pages = [p for p in pages if p not in self.loaded[0][1]]
+                new_pages = [p for p in pages if p not in self.loaded[0].pages]
                 if new_pages:
                     self.__insert_pages(namespace, new_pages)
                 else:
