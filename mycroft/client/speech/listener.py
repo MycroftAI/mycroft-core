@@ -16,6 +16,8 @@ import time
 from threading import Thread
 import sys
 import speech_recognition as sr
+import pyaudio
+import re
 from pyee import EventEmitter
 from requests import RequestException, HTTPError
 from requests.exceptions import ConnectionError
@@ -225,11 +227,29 @@ class RecognizerLoop(EventEmitter):
         self.lang = config.get('lang')
         self.config = config.get('listener')
         rate = self.config.get('sample_rate')
+
         device_index = self.config.get('device_index')
+        if not device_index:
+            device_name = self.config.get('device_name')
+            if device_name:
+                # Search for an input matching given name/pattern
+                LOG.info('Searching for input device: '+str(device_name))
+                LOG.debug('Devices: ')
+                pa = pyaudio.PyAudio()
+                pattern = re.compile(device_name)
+                for i in range(pa.get_device_count()):
+                    dev = pa.get_device_info_by_index(i)
+                    LOG.debug('   '+str(dev['name']))
+                    if dev['maxInputChannels'] and pattern.match(dev['name']):
+                        LOG.debug('    ^-- matched')
+                        device_index = i
+                        break
+        LOG.debug('Using microphone (None = default): '+str(device_index))
 
         self.microphone = MutableMicrophone(device_index, rate,
                                             mute=self.mute_calls > 0)
-        # FIXME - channels are not been used
+        # TODO:19.02 - channels are not been used, remove from mycroft.conf
+        #              and from code.
         self.microphone.CHANNELS = self.config.get('channels')
         self.wakeword_recognizer = self.create_wake_word_recognizer()
         # TODO - localization
