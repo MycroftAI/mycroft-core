@@ -115,6 +115,26 @@ class AudioBackend:
         """
         pass
 
+    @abstractmethod
+    def seek_forward(self, seconds=1):
+        """
+        skip X seconds
+
+          Args:
+                seconds (int): number of seconds to seek, if negative rewind
+        """
+        pass
+
+    @abstractmethod
+    def seek_backward(self, seconds=1):
+        """
+        rewind X seconds
+
+          Args:
+                seconds (int): number of seconds to seek, if negative rewind
+        """
+        pass
+
     def track_info(self):
         """
             Fetch info about current playing track.

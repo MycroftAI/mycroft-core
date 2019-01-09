@@ -187,6 +187,8 @@ class AudioService:
         self.bus.on('mycroft.audio.service.next', self._next)
         self.bus.on('mycroft.audio.service.prev', self._prev)
         self.bus.on('mycroft.audio.service.track_info', self._track_info)
+        self.bus.on('mycroft.audio.service.seek_forward', self._seek_forward)
+        self.bus.on('mycroft.audio.service.seek_backward', self._seek_backward)
         self.bus.on('recognizer_loop:audio_output_start', self._lower_volume)
         self.bus.on('recognizer_loop:record_begin', self._lower_volume)
         self.bus.on('recognizer_loop:audio_output_end', self._restore_volume)
@@ -421,6 +423,28 @@ class AudioService:
         self.bus.emit(Message('mycroft.audio.service.track_info_reply',
                               data=track_info))
 
+    def _seek_forward(self, message):
+        """
+            Handle message bus command to skip X seconds
+
+            Args:
+                message: message bus message
+        """
+        seconds = message.data.get("seconds", 1)
+        if self.current:
+            self.current.seek_forward(seconds)
+
+    def _seek_backward(self, message):
+        """
+            Handle message bus command to rewind X seconds
+
+            Args:
+                message: message bus message
+        """
+        seconds = message.data.get("seconds", 1)
+        if self.current:
+            self.current.seek_backward(seconds)
+
     def setup_pulseaudio_handlers(self, pulse_choice=None):
         """
             Select functions for handling lower volume/restore of
@@ -455,6 +479,10 @@ class AudioService:
         self.bus.remove('mycroft.audio.service.next', self._next)
         self.bus.remove('mycroft.audio.service.prev', self._prev)
         self.bus.remove('mycroft.audio.service.track_info', self._track_info)
+        self.bus.remove('mycroft.audio.service.seek_forward',
+                        self._seek_forward)
+        self.bus.remove('mycroft.audio.service.seek_backward',
+                        self._seek_backward)
         self.bus.remove('recognizer_loop:audio_output_start',
                         self._lower_volume)
         self.bus.remove('recognizer_loop:record_begin', self._lower_volume)
