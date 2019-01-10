@@ -34,7 +34,7 @@ CORE_VERSION_TUPLE = (CORE_VERSION_MAJOR,
 CORE_VERSION_STR = '.'.join(map(str, CORE_VERSION_TUPLE))
 
 
-class VersionManager(object):
+class VersionManager:
     @staticmethod
     def get():
         data_dir = expanduser(Configuration.get()['data_dir'])

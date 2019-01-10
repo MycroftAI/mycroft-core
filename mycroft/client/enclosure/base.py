@@ -34,7 +34,7 @@ def DEBUG(str):
     # pass  # disable by default
 
 
-class Enclosure():
+class Enclosure:
 
     def __init__(self):
         # Establish Enclosure's websocket connection to the messagebus
@@ -189,7 +189,7 @@ gui_app_settings = {
 }
 
 
-class GUIConnection():
+class GUIConnection:
     """ A single GUIConnection exists per graphic interface.  This object
     maintains the socket used for communication and keeps the state of the
     Mycroft data in sync with the GUIs data.

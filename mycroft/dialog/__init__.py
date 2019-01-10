@@ -27,7 +27,7 @@ __doc__ = """
 """
 
 
-class MustacheDialogRenderer(object):
+class MustacheDialogRenderer:
     """
     A dialog template renderer based on the mustache templating language.
     """
@@ -93,7 +93,7 @@ class MustacheDialogRenderer(object):
         return line
 
 
-class DialogLoader(object):
+class DialogLoader:
     """
     Loads a collection of dialog files into a renderer implementation.
     """

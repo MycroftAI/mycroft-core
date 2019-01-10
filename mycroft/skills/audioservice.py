@@ -42,9 +42,9 @@ def ensure_uri(s):
         raise ValueError('Invalid track')
 
 
-class AudioService(object):
+class AudioService:
     """
-        AudioService object for interacting with the audio subsystem
+        AudioService class for interacting with the audio subsystem
 
         Arguments:
             bus: Mycroft messagebus connection

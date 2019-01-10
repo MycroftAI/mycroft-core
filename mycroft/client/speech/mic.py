@@ -43,7 +43,7 @@ from mycroft.util import (
 from mycroft.util.log import LOG
 
 
-class MutableStream(object):
+class MutableStream:
     def __init__(self, wrapped_stream, format, muted=False):
         assert wrapped_stream is not None
         self.wrapped_stream = wrapped_stream

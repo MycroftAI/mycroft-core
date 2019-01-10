@@ -43,7 +43,7 @@ class NoModelAvailable(Exception):
     pass
 
 
-class HotWordEngine(object):
+class HotWordEngine:
     def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
         self.key_phrase = str(key_phrase).lower()
         # rough estimate 1 phoneme per 2 chars
@@ -261,7 +261,7 @@ class SnowboyHotWord(HotWordEngine):
         return wake_word == 1
 
 
-class HotWordFactory(object):
+class HotWordFactory:
     CLASSES = {
         "pocketsphinx": PocketsphinxHotWord,
         "precise": PreciseHotword,

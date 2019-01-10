@@ -18,7 +18,7 @@ from os.path import exists
 from os import chmod
 
 
-class ComboLock():
+class ComboLock:
     """ A combined process and thread lock.
 
     Arguments:

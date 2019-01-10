@@ -154,7 +154,7 @@ class PlaybackThread(Thread):
         self.clear_queue()
 
 
-class TTS(object):
+class TTS:
     """
     TTS abstract class to be implemented by all TTS engines.
 
@@ -384,7 +384,7 @@ class TTS(object):
         self.playback.join()
 
 
-class TTSValidator(object):
+class TTSValidator:
     """
     TTS Validator abstract class to be implemented by all TTS engines.
 
@@ -433,7 +433,7 @@ class TTSValidator(object):
         pass
 
 
-class TTSFactory(object):
+class TTSFactory:
     from mycroft.tts.espeak_tts import ESpeak
     from mycroft.tts.fa_tts import FATTS
     from mycroft.tts.google_tts import GoogleTTS

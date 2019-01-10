@@ -174,7 +174,7 @@ class RemoteConf(LocalConf):
             self.load_local(cache)
 
 
-class Configuration(object):
+class Configuration:
     __config = {}  # Cached config
     __patch = {}  # Patch config that skills can update to override config
 

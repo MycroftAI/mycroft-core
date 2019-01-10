@@ -207,11 +207,11 @@ def intent_file_handler(intent_file):
     return real_decorator
 
 
-class SkillGUI(object):
+class SkillGUI:
     """
     SkillGUI - Interface to the Graphical User Interface
 
-    Values set in this object are synced to the GUI, accessible within QML
+    Values set in this class are synced to the GUI, accessible within QML
     via the built-in sessionData mechanism.  For example, in Python you can
     write in a skill:
         self.gui['temp'] = 33
@@ -342,7 +342,7 @@ class SkillGUI(object):
 #######################################################################
 # MycroftSkill base class
 #######################################################################
-class MycroftSkill(object):
+class MycroftSkill:
     """
     Abstract base class which provides common behaviour and parameters to all
     Skills implementation.
