@@ -128,11 +128,11 @@ def load_skill(skill_descriptor, bus, skill_id, BLACKLISTED_SKILLS=None):
                 callable(skill_module.create_skill)):
             # v2 skills framework
             skill = skill_module.create_skill()
+            skill.skill_id = skill_id
             skill.settings.allow_overwrite = True
             skill.settings.load_skill_settings_from_file()
             skill.bind(bus)
             try:
-                skill.skill_id = skill_id
                 skill.load_data_files(path)
                 # Set up intent handlers
                 skill._register_decorated()
@@ -228,6 +228,46 @@ class SkillGUI:
         self.__session_data = {}  # synced to GUI for use by this skill's pages
         self.page = None    # the active GUI page (e.g. QML template) to show
         self.skill = skill
+        self.on_gui_changed_callback = None
+
+    def build_message_type(self, event):
+        """ Builds a message matching the output from the enclosure. """
+        return '{}.{}'.format(self.skill.skill_id, event)
+
+    def setup_default_handlers(self):
+        """ Sets the handlers for the default messages. """
+        msg_type = self.build_message_type('set')
+        print("LISTENING FOR {}".format(msg_type))
+        self.skill.add_event(msg_type, self.gui_set)
+
+    def register_handler(self, event, handler):
+        """ Register a handler for gui events.
+
+            when using the triggerEvent method from Qt
+            triggerEvent("event", {"data": "cool"})
+
+            Arguments:
+                event (str):    event to catch
+                handler:        function to handle the event
+        """
+        msg_type = self.build_message_type(event)
+        self.skill.add_event(msg_type, handler)
+
+    def set_on_gui_changed(self, callback):
+        """ Registers a callback function to run when a value is
+            changed from the GUI.
+
+            Arguments:
+                callback:   Function to call when a value is changed
+        """
+        self.on_gui_changed_callback = callback
+
+    def gui_set(self, message):
+        for key in message.data:
+            print("SETTING {} TO {}".format(key, message.data[key]))
+            self[key] = message.data[key]
+        if self.on_gui_changed_callback:
+            self.on_gui_changed_callback()
 
     def __setitem__(self, key, value):
         self.__session_data[key] = value
@@ -457,6 +497,9 @@ class MycroftSkill:
             func = self.settings.run_poll
             bus.on(name, func)
             self.events.append((name, func))
+
+            # Intialize the SkillGui
+            self.gui.setup_default_handlers()
 
     def detach(self):
         for (name, intent) in self.registered_intents:

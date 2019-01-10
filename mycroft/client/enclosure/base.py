@@ -449,6 +449,10 @@ class GUIWebsocketHandler(WebSocketHandler):
 
     def on_message(self, message):
         DEBUG("Received: {}".format(message))
+        msg = json.loads(message)
+        msg_type = '{}.{}'.format(msg['namespace'], msg['event_name'])
+        msg_data = msg['parameters']
+        self.application.gui.enclosure.bus.emit(Message(msg_type, msg_data))
 
     def send_message(self, message):
         self.write_message(message.serialize())
