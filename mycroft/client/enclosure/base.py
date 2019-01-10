@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import sys
+from collections import namedtuple
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus.client.ws import WebsocketClient
@@ -24,6 +24,9 @@ import json
 from tornado import autoreload, ioloop
 from tornado.websocket import WebSocketHandler
 from mycroft.messagebus.message import Message
+
+
+Namespace = namedtuple('Namespace', ['name', 'pages'])
 
 
 def DEBUG(str):
@@ -226,14 +229,19 @@ class GUIConnection():
         self.current_pages = []
         self.current_index = None
 
-        # self.loaded is a list, each row in the list has two columns:
-        # [Namespace,    [List of loaded qml pages]]
+        # self.loaded is a list, each element consists of a namespace named
+        # tuple.
+        # The namespace namedtuple has the properties "name" and "pages"
+        # The name contains the namespace name as a string and pages is a
+        # mutable list of loaded pages.
         #
+        # [Namespace name, [List of loaded qml pages]]
         # [
         # ["SKILL_NAME", ["page1.qml, "page2.qml", ... , "pageN.qml"]
         # [...]
         # ]
         self.loaded = []  # list of lists in order.
+        self.explicit_move = True  # Set to true to send reorder commands
 
         # Each connection will run its own Tornado server.  If the
         # connection drops, the server is killed.
@@ -283,16 +291,17 @@ class GUIConnection():
         self.callback_disconnect(self.id)
 
     def set(self, namespace, name, value):
-        self.sync_active()
-
         if namespace not in self.datastore:
             self.datastore[namespace] = {}
         if self.datastore[namespace].get(name) != value:
-            msg = {"type": "mycroft.session.set",
-                   "namespace": namespace,
-                   "data": {name: value}}
-            self.socket.send(msg)
             self.datastore[namespace][name] = value
+
+            # If the namespace is loaded send data to gui
+            if namespace in [l.name for l in self.loaded]:
+                msg = {"type": "mycroft.session.set",
+                       "namespace": namespace,
+                       "data": {name: value}}
+                self.socket.send(msg)
 
     def __find_namespace(self, namespace):
         for i, skill in enumerate(self.loaded):
@@ -308,13 +317,13 @@ class GUIConnection():
 
         self.socket.send({"type": "mycroft.gui.list.insert",
                           "namespace": namespace,
-                          "position": len(self.loaded[0][1]),
+                          "position": len(self.loaded[0].pages),
                           "data": [{"url": p} for p in pages]
                           })
 
         # append pages to local representation
         for p in pages:
-            self.loaded[0][1].append(p)
+            self.loaded[0].pages.append(p)
 
     def __insert_new_namespace(self, namespace, pages):
         """ Insert new namespace and pages.
@@ -332,6 +341,15 @@ class GUIConnection():
                           "position": 0,
                           "data": [{"skill_id": namespace}]
                           })
+
+        # Load any already stored Data
+        data = self.datastore.get(namespace, {})
+        for key in data:
+            msg = {"type": "mycroft.session.set",
+                   "namespace": namespace,
+                   "data": {key: data[key]}}
+            self.socket.send(msg)
+
         DEBUG("Inserting new page")
         self.socket.send({"type": "mycroft.gui.list.insert",
                           "namespace": namespace,
@@ -339,7 +357,7 @@ class GUIConnection():
                           "data": [{"url": p} for p in pages]
                           })
         # Make sure the local copy is updated
-        self.loaded.insert(0, [namespace, pages])
+        self.loaded.insert(0, Namespace(namespace, pages))
 
     def __move_namespace(self, from_pos, to_pos):
         """ Move an existing namespace to a new position in the stack.
@@ -349,9 +367,14 @@ class GUIConnection():
                 to_pos: Position to move to
         """
         DEBUG("Activating existing namespace")
-        self.socket.send({"type": "mycroft.session.list.move",
-                          "namespace": "mycroft.system.active_skills",
-                          "from": from_pos, "to": to_pos})
+        # Seems like the namespace is moved to the top automatically when
+        # a page change is done. Deactivating this for now.
+        if self.explicit_move:
+            DEBUG("move {} to {}".format(from_pos, to_pos))
+            self.socket.send({"type": "mycroft.session.list.move",
+                              "namespace": "mycroft.system.active_skills",
+                              "from": from_pos, "to": to_pos,
+                              "items_number": 1})
         # Move the local representation of the skill from current
         # position to position 0.
         self.loaded.insert(to_pos, self.loaded.pop(from_pos))
@@ -364,12 +387,13 @@ class GUIConnection():
                 namespace:  skill namespace
         """
         try:
-            num = self.loaded[0][1].index(pages[0])
+            num = self.loaded[0].pages.index(pages[0])
         except Exception as e:
             DEBUG(e)
             num = 0
 
-        DEBUG("Switching to already loaded page at index {}".format(num))
+        DEBUG("Switching to already loaded page at "
+              "index {} in namespace {}".format(num, namespace))
         self.socket.send({"type": "mycroft.events.triggered",
                           "namespace": namespace,
                           "event_name": "page_gained_focus",
@@ -385,7 +409,6 @@ class GUIConnection():
         DEBUG("GUIConnection activating: " + namespace)
         pages = page if isinstance(page, list) else [page]
 
-        self.sync_active()
         # find namespace among loaded namespaces
         try:
             index = self.__find_namespace(namespace)
@@ -401,7 +424,7 @@ class GUIConnection():
                     self.__move_namespace(index, 0)
 
                 # Find if any new pages needs to be inserted
-                new_pages = [p for p in pages if p not in self.loaded[0][1]]
+                new_pages = [p for p in pages if p not in self.loaded[0].pages]
                 if new_pages:
                     self.__insert_pages(namespace, new_pages)
                 else:
@@ -414,53 +437,6 @@ class GUIConnection():
         self.current_namespace = namespace
         self.current_pages = pages
         self.current_index = index
-
-    def sync_active(self):
-        # The main Enclosure keeps a list of active skills.  Each GUI also
-        # has a list.  Synchronize when appropriate.
-        if self.enclosure.active_namespaces != self._active_namespaces:
-
-            # First, zap any namespace not in the list anymore
-            if self._active_namespaces:
-                pos = len(self._active_namespaces) - 1
-                for ns in reversed(self._active_namespaces):
-                    if ns not in self.enclosure.active_namespaces:
-                        msg = {"type": "mycroft.session.list.remove",
-                               "namespace": "mycroft.system.active_skills",
-                               "position": pos,
-                               "items_number": 1
-                               }
-                        self.socket.send(msg)
-                        del self._active_namespaces[pos]
-                    pos -= 1
-
-            # Next, insert any missing items
-            if not self._active_namespaces:
-                self._active_namespaces = []
-            for ns in self.enclosure.active_namespaces:
-                if ns not in self._active_namespaces:
-                    msg = {"type": "mycroft.session.list.insert",
-                           "namespace": "mycroft.system.active_skills",
-                           "position": 0,
-                           "data": [{'skill_id': ns}]
-                           }
-                    self.socket.send(msg)
-                    self._active_namespaces.insert(0, ns)
-
-            # Finally, adjust orders to match
-            for idx in range(0, len(self.enclosure.active_namespaces)):
-                ns = self.enclosure.active_namespaces[idx]
-                idx_old = self._active_namespaces.index(ns)
-                if idx != idx_old:
-                    msg = {"type": "mycroft.session.list.move",
-                           "namespace": "mycroft.system.active_skills",
-                           "from": idx_old,
-                           "to": idx,
-                           "items_number": 1
-                           }
-                    self.socket.send(msg)
-                    del self._active_namespaces[idx_old]
-                    self._active_namespaces.insert(idx, ns)
 
 
 class GUIWebsocketHandler(WebSocketHandler):
