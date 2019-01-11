@@ -16,7 +16,7 @@ import os
 from os.path import join, expanduser, isdir
 
 
-class FileSystemAccess(object):
+class FileSystemAccess:
     """
     A class for providing access to the mycroft FS sandbox. Intended to be
     attached to skills at initialization time to provide a skill-specific

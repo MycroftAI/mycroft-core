@@ -113,7 +113,7 @@ def _read_data():
     return data
 
 
-class DisplayManager():
+class DisplayManager:
     """ The Display manager handles the basic state of the display,
     be it a mark-1 or a mark-2 or even a future Mark-3.
     """

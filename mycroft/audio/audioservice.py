@@ -125,7 +125,7 @@ def load_services(config, bus, path=None):
     return service
 
 
-class AudioService(object):
+class AudioService:
     """ Audio Service class.
         Handles playback of audio and selecting proper backend for the uri
         to be played.

@@ -20,9 +20,9 @@ from mycroft.configuration import Configuration
 from mycroft.util.log import LOG
 
 
-class Session(object):
+class Session:
     """
-    An object representing a Mycroft Session Identifier
+    An class representing a Mycroft Session Identifier
     """
 
     def __init__(self, session_id, expiration_seconds=180):
@@ -50,10 +50,8 @@ class Session(object):
         return "{%s,%d}" % (str(self.session_id), self.touch_time)
 
 
-class SessionManager(object):
-    """
-    Keeps track of the current active session
-    """
+class SessionManager:
+    """ Keeps track of the current active session. """
     __current_session = None
     __lock = Lock()
 

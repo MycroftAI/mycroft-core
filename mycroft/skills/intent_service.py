@@ -45,7 +45,7 @@ def workaround_one_of_context(best_intent):
     return best_intent
 
 
-class ContextManager(object):
+class ContextManager:
     """
     ContextManager
     Use to track context throughout the course of a conversational session.
@@ -149,7 +149,7 @@ class ContextManager(object):
         return result
 
 
-class IntentService(object):
+class IntentService:
     def __init__(self, bus):
         self.config = Configuration.get().get('context', {})
         self.engine = IntentDeterminationEngine()

@@ -199,7 +199,7 @@ class AudioConsumer(Thread):
         self.emitter.emit("speak", payload)
 
 
-class RecognizerLoopState(object):
+class RecognizerLoopState:
     def __init__(self):
         self.running = False
         self.sleeping = False

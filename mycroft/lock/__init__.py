@@ -24,7 +24,7 @@ import os  # Operating System functions
 from mycroft.util import LOG
 
 
-class Signal(object):  # python 3+ class Signal
+class Signal:  # python 3+ class Signal
 
     """
     Capture and replace a signal handler with a user supplied function.
@@ -87,7 +87,7 @@ class Signal(object):  # python 3+ class Signal
 #
 # Create, delete and manipulate a PID file for this service
 # ------------------------------------------------------------------------------
-class Lock(object):  # python 3+ 'class Lock'
+class Lock:  # python 3+ 'class Lock'
 
     """
     Create and maintains the PID lock file for this application process.
