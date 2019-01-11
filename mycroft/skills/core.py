@@ -289,16 +289,17 @@ class SkillGUI:
         self.__session_data = {}
         self.page = None
 
-    def show_page(self, name):
+    def show_page(self, name, override_idle=None):
         """
         Begin showing the page in the GUI
 
         Args:
             name (str): Name of page (e.g "mypage.qml") to display
+            override_idle: If set will override the idle screen
         """
-        self.show_pages([name])
+        self.show_pages([name], 0, override_idle)
 
-    def show_pages(self, page_names, index=0):
+    def show_pages(self, page_names, index=0, override_idle=None):
         """
         Begin showing the list of pages in the GUI
 
@@ -307,6 +308,7 @@ class SkillGUI:
                                ["Weather.qml", "Forecast.qml", "Details.qml"]
             index (int): Page number (0-based) to show initially.  For the
                          above list a value of 1 would start on "Forecast.qml"
+            override_idle: If set will override the idle screen
         """
         if not isinstance(page_names, list):
             raise ValueError('page_names must be a list')
@@ -334,7 +336,8 @@ class SkillGUI:
         self.skill.bus.emit(Message("gui.page.show",
                                     {"page": page_urls,
                                      "index": index,
-                                     "__from": self.skill.skill_id}))
+                                     "__from": self.skill.skill_id,
+                                     "__idle": override_idle}))
 
     def show_text(self, text, title=None):
         """ Display a GUI page for viewing simple text
