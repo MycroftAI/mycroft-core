@@ -146,7 +146,12 @@ class Enclosure:
     def callback_disconnect(self, gui_id):
         DEBUG("Disconnecting!")
         # TODO: Whatever is needed to kill the websocket instance
-        del self.GUIs[gui_id]
+        LOG.info(self.GUIs.keys())
+        LOG.info('deleting: {}'.format(gui_id))
+        if gui_id in self.GUIs:
+            del self.GUIs[gui_id]
+        else:
+            LOG.warning('ID doesn\'t exist')
 
     def register_gui_handlers(self):
         # TODO: Register handlers for standard (Mark 1) events
@@ -462,7 +467,11 @@ class GUIWebsocketHandler(WebSocketHandler):
             super().write_message(*arg, **kwarg)
 
     def send_message(self, message):
-        self.write_message(message.serialize())
+        if isinstance(message, Message):
+            self.write_message(message.serialize())
+        else:
+            LOG.info('message: {}'.format(message))
+            self.write_message(str(message))
 
     def send(self, data):
         """Send the given data across the socket as JSON
