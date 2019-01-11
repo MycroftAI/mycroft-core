@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 from collections import namedtuple
+from threading import Lock
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus.client.ws import WebsocketClient
@@ -27,6 +28,7 @@ from mycroft.messagebus.message import Message
 
 
 Namespace = namedtuple('Namespace', ['name', 'pages'])
+write_lock = Lock()
 
 
 def DEBUG(str):
@@ -453,6 +455,11 @@ class GUIWebsocketHandler(WebSocketHandler):
         msg_type = '{}.{}'.format(msg['namespace'], msg['event_name'])
         msg_data = msg['parameters']
         self.application.gui.enclosure.bus.emit(Message(msg_type, msg_data))
+
+    def write_message(self, *arg, **kwarg):
+        """ Wraps WebSocketHandler.write_message() with a lock. """
+        with write_lock:
+            super().write_message(*arg, **kwarg)
 
     def send_message(self, message):
         self.write_message(message.serialize())
