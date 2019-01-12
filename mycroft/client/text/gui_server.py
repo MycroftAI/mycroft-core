@@ -14,6 +14,7 @@
 #
 
 from os import getpid
+from os.path import basename
 import json
 import websocket
 from threading import Thread, Lock
@@ -26,6 +27,7 @@ bus = None
 buffer = None       # content will show on the CLI "GUI" representation
 msgs = []
 
+loaded = []
 skill = None
 page = None
 vars = {}
@@ -57,13 +59,15 @@ def log_message(msg):
 def build_output_buffer():
     global buffer
     buffer.clear()
-    if skill:
-        buffer.append("Active Skill = "+str(skill))
-        buffer.append("Page = "+str(page))
-        buffer.append("vars = ")
-        for v in vars[skill]:
-            buffer.append("     "+str(v)+" : " + vars[skill][v])
-
+    try:
+        if skill:
+            buffer.append("Active Skill: {}".format(skill))
+            buffer.append("Page: {}".format(basename(page)))
+            buffer.append("vars: ")
+            for v in vars[skill]:
+                buffer.append("     {}: {}".format(v, vars[skill][v]))
+    except Exception as e:
+        buffer.append(repr(e))
     buffer.append("-----------------")
     buffer.append("MESSAGES")
     buffer.append("-----------------")
@@ -107,25 +111,46 @@ def on_gui_open(ws):
 
 
 def on_gui_message(ws, payload):
+    global loaded
+    global skill
+    global page
+    global vars
     try:
         msg = json.loads(payload)
         log_message("Msg: "+str(payload))
         type = msg.get("type")
         if type == "mycroft.session.set":
-            global vars
-            namespace = msg.get("namespace")
-            data = msg.get("data")
-            if namespace not in vars:
-                vars[namespace] = {}
-            for d in data:
-                vars[namespace][d] = data[d]
-        elif type == "mycroft.gui.show":
-            global skill
-            global page
             skill = msg.get("namespace")
-            page = msg.get("gui_urls")
+            data = msg.get("data")
+            if skill not in vars:
+                vars[skill] = {}
+            for d in data:
+                vars[skill][d] = data[d]
+        elif type == "mycroft.session.list.insert":
+            # Insert new namespace
+            skill = msg.get('data')[0]['skill_id']
+            loaded.insert(0, [skill, []])
+        elif type == "mycroft.gui.list.insert":
+            # Insert a page in an existing namespace
+            page = msg['data'][0]['url']
+            pos = msg.get('position')
+            loaded[0][1].insert(pos, page)
+            skill = loaded[0][0]
+        elif type == "mycroft.session.list.move":
+            # Move the namespace at "pos" to the top of the stack
+            pos = msg.get('from')
+            loaded.insert(0, loaded.pop(pos))
+        elif type == "mycroft.events.triggered":
+            # Switch selected page of namespace
+            skill = msg['namespace']
+            pos = msg['data']['number']
+            for n in loaded:
+                if n[0] == skill:
+                    page = n[1][pos]
+
         build_output_buffer()
-    except Exception:
+    except Exception as e:
+        log_message(repr(e))
         log_message("Invalid JSON: "+str(payload))
 
 

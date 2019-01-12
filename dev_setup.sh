@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+#
 # Copyright 2017 Mycroft AI Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,30 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-######################################################
-# @author sean.fitzgerald (aka clusterfudge)
-#
-# The purpose of this script is to create a self-
-# contained development environment using
-# virtualenv for python dependency sandboxing.
-# This script will create a virtualenv (using the
-# conventions set by virtualenv-wrapper for
-# location and naming) and install the requirements
-# laid out in requirements.txt, pocketsphinx, and
-# pygtk into the virtualenv. Mimic will be
-# installed and built from source inside the local
-# checkout.
-#
-# The goal of this script is to create a development
-# environment in user space that is fully functional.
-# It is expected (and even encouraged) for a developer
-# to work on multiple projects concurrently, and a
-# good OSS citizen respects that and does not pollute
-# a developers workspace with it's own dependencies
-# (as much as possible).
-# </endRant>
-######################################################
+##########################################################################
 
 # exit on any error
 set -Ee
@@ -45,22 +22,23 @@ cd $(dirname $0)
 TOP=$( pwd -L )
 
 function show_help() {
-    echo "dev_setup.sh: Mycroft development environment setup"
-    echo "Usage: dev_setup.sh [options]"
-    echo
-    echo "Options:"
-    echo "    -r, --allow-root  Allow to be run as root (e.g. sudo)"
-    echo "    -fm               Force mimic build"
-    echo "    -h, --help        Show this message"
-    echo
-    echo "This will prepare your environment for running the mycroft-core"
-    echo "services. Normally this should be run as a normal user,"
-    echo "not as root/sudo."
+    echo "
+Usage: dev_setup.sh [options]
+Prepare your environment for running the mycroft-core services.
+
+Options:
+    -h, --help        Show this message
+    -fm               Force mimic build
+    -n, --no-error    Do not exit on error (use with caution)
+    -r, --allow-root  Allow to be run as root (e.g. sudo)
+    -sm               Skip mimic build
+"
 }
 
+# Parse the command line
 opt_forcemimicbuild=false
 opt_allowroot=false
-
+opt_skipmimicbuild=false
 for var in "$@" ; do
     if [[ ${var} == "-h" ]] || [[ ${var} == "--help" ]] ; then
         show_help
@@ -74,35 +52,171 @@ for var in "$@" ; do
     if [[ ${var} == "-fm" ]] ; then
         opt_forcemimicbuild=true
     fi
+    if [[ ${var} == "-n" ]] || [[ ${var} == "--no-error" ]] ; then
+        # Do NOT exit on errors
+	set +Ee
+    fi
+    if [[ ${var} == "-sm" ]] ; then
+        opt_skipmimicbuild=true
+    fi
 done
 
 if [ $(id -u) -eq 0 ] && [ "${opt_allowroot}" != true ] ; then
     echo "This script should not be run as root or with sudo."
-    echo "To force, rerun with --allow-root"
+    echo "If you really need to for this, rerun with --allow-root"
     exit 1
 fi
 
-# TODO: Create a setup wizard that guides the user through some decisions
-# if [ ! -f .dev_opts.json ] ; then
-    # E.g.:
-    #  * Run on 'master' or on 'dev'?  Most users probably want 'master'
-    #  * Auto-update?  When on, it will pull and run dev_setup automatically
-    #  * Pull down mimic source?  Most will be happy with just the package
-    #  * Add mycroft-core/bin to the .bashrc PATH?
+function found_exe() {
+    hash "$1" 2>/dev/null
+}
 
-    # from Picroft's wizard:
-    #   echo '{"use_branch":"master", "auto_update": true}' > .dev_opts.json
-    # or
-    #   echo '{"use_branch":"dev", "auto_update": false}' > .dev_opts.json
-# fi
+function get_YN() {
+    # Loop until the user hits the Y or the N key
+    echo -e -n "Choice [${CYAN}Y${RESET}/${CYAN}N${RESET}]: "
+    while true; do
+        read -N1 -s key
+        case $key in
+        [Yy])
+            return 0
+            ;;
+        [Nn])
+            return 1
+            ;;
+        esac
+    done
+}
+
+if found_exe tput ; then
+    GREEN="$(tput setaf 2)"
+    BLUE="$(tput setaf 4)"
+    CYAN="$(tput setaf 6)"
+    YELLOW="$(tput setaf 3)"
+    RESET="$(tput sgr0)"
+    HIGHLIGHT=${YELLOW}
+fi
+
+# Run a setup wizard the very first time that guides the user through some decisions
+if [[ ! -f .dev_opts.json ]] && [[ ${IS_TRAVIS} == "" ]] ; then
+    echo "
+${CYAN}                    Welcome to Mycroft!  ${RESET}"
+    sleep 0.5
+    echo "
+This script is designed to make working with Mycroft easy.  During this
+first run of dev_setup we will ask you a few questions to help setup
+your environment."
+    sleep 0.5
+    echo "
+Do you want to run on 'master' or against a dev branch?  Unless you are
+a developer modifying mycroft-core itself, you should run on the
+'master' branch.  It is updated bi-weekly with a stable release.
+  Y)es, run on the stable 'master' branch
+  N)o, I want to run unstable branches"
+    if get_YN ; then
+        echo -e "${HIGHLIGHT} Y - using 'master' branch ${RESET}"
+        branch=master
+        git checkout ${branch}
+    else
+        echo -e "${HIGHLIGHT} N - using an unstable branch ${RESET}"
+        branch=dev
+    fi
+
+    sleep 0.5
+    echo "
+Mycroft is actively developed and constantly evolving.  It is recommended
+that you update regularly.  Would you like to automatically update
+whenever launching Mycroft?  This is highly recommended, especially for
+those running against the 'master' branch.
+  Y)es, automatically check for updates
+  N)o, I will be responsible for keeping Mycroft updated."
+    if get_YN ; then
+        echo -e "${HIGHLIGHT} Y - update automatically ${RESET}"
+        autoupdate=true
+    else
+        echo -e "${HIGHLIGHT} N - update manually using 'git pull' ${RESET}"
+        autoupdate=false
+    fi
+
+    #  Pull down mimic source?  Most will be happy with just the package
+    if [[ ${opt_forcemimicbuild} == false && ${opt_skipmimicbuild} == false ]] ; then
+        sleep 0.5
+        echo "
+Mycroft uses its Mimic technology to speak to you.  Mimic can run both
+locally and from a server.  The local Mimic is more robotic, but always
+available regardless of network connectivity.  It will act as a fallback
+if unable to contact the Mimic server.
+
+However, building the local Mimic is time consuming -- it can take hours
+on slower machines.  This can be skipped, but Mycroft will be unable to
+talk if you lose network connectivity.  Would you like to build Mimic
+locally?"
+        if get_YN ; then
+            echo -e "${HIGHLIGHT} Y - Mimic will be built ${RESET}"
+        else
+            echo -e "${HIGHLIGHT} N - skip Mimic build ${RESET}"
+            opt_skipmimicbuild=true
+        fi
+    fi
+
+    echo
+    # Add mycroft-core/bin to the .bashrc PATH?
+    sleep 0.5
+    echo "
+There are several Mycroft helper commands in the bin folder.  These
+can be added to your system PATH, making it simpler to use Mycroft.
+Would you like this to be added to your PATH in the .profile?"
+    if get_YN ; then
+        echo -e "${HIGHLIGHT} Y - Adding Mycroft commands to your PATH ${RESET}"
+
+        if [ ! -f ~/.profile_mycroft ] ; then
+            # Only add the following to the .profile if .profile_mycroft
+            # doesn't exist, indicating this script has not been run before
+            echo '' >> ~/.profile
+            echo '# include Mycroft commands' >> ~/.profile
+            echo 'source ~/.profile_mycroft' >> ~/.profile
+        fi
+
+        echo "
+# WARNING: This file may be replaced in future, do not customize.
+# set path so it includes Mycroft utilities
+if [ -d \"${TOP}/bin\" ] ; then
+    PATH=\"\$PATH:${TOP}/bin\"
+fi" > ~/.profile_mycroft
+        echo -e "Type ${CYAN}mycroft-help${RESET} to see available commands."
+    else
+        echo -e "${HIGHLIGHT} N - PATH left unchanged ${RESET}"
+    fi
+
+    # Create a link to the 'skills' folder.
+    sleep 0.5
+    echo
+    echo "The standard location for Mycroft skills is under /opt/mycroft/skills."
+    if [[ ! -d /opt/mycroft/skills ]] ; then
+        echo "This script will create that folder for you.  This requires sudo"
+        echo "permission and might ask you for a password..."
+        sudo mkdir -p /opt/mycroft/skills
+        sudo chown -R $USER:$USER /opt/mycroft
+        echo "Created!"
+    fi
+    if [[ ! -d skills ]] ; then
+        ln -s /opt/mycroft/skills skills
+        echo "For convenience, a soft link has been created called 'skills' which leads"
+        echo "to /opt/mycroft/skills."
+    fi
+
+    # Save options
+    echo '{"use_branch": "'${branch}'", "auto_update": '${autoupdate}'}' > .dev_opts.json
+
+    echo
+    echo "Interactive portion complete, now installing dependencies..."
+    echo
+    sleep 5
+fi
+
 
 
 function os_is() {
     [[ $(grep "^ID=" /etc/os-release | awk -F'=' '/^ID/ {print $2}' | sed 's/\"//g') == $1 ]]
-}
-
-function found_exe() {
-    hash "$1" 2>/dev/null
 }
 
 function redhat_common_install() {
@@ -116,6 +230,7 @@ function redhat_common_install() {
     rm -rf fann
 
 }
+
 function install_deps() {
     echo "Installing packages..."
     if found_exe sudo ; then
@@ -157,15 +272,10 @@ function install_deps() {
         # Fedora
         $SUDO dnf install -y git python3 python3-devel python3-pip python3-setuptools python3-virtualenv pygobject3-devel libtool libffi-devel openssl-devel autoconf bison swig glib2-devel portaudio-devel mpg123 mpg123-plugins-pulseaudio screen curl pkgconfig libicu-devel automake libjpeg-turbo-devel fann-devel gcc-c++ redhat-rpm-config jq
     else
-        if found_exe tput ; then
-			green="$(tput setaf 2)"
-			blue="$(tput setaf 4)"
-			reset="$(tput sgr0)"
-    	fi
     	echo
-        echo "${green}Could not find package manager"
-        echo "${green}Make sure to manually install:${blue} git python 2 python-setuptools python-virtualenv pygobject virtualenvwrapper libtool libffi openssl autoconf bison swig glib2.0 portaudio19 mpg123 flac curl fann g++"
-        echo $reset
+        echo "${GREEN}Could not find package manager"
+        echo "${GREEN}Make sure to manually install:${BLUE} git python 2 python-setuptools python-virtualenv pygobject virtualenvwrapper libtool libffi openssl autoconf bison swig glib2.0 portaudio19 mpg123 flac curl fann g++"
+        echo ${RESET}
     fi
 }
 
@@ -177,6 +287,8 @@ function install_venv() {
     # about this version.  Update whenever a new version is released and
     # verified functional.
     curl https://bootstrap.pypa.io/3.3/get-pip.py | "${VIRTUALENV_ROOT}/bin/python" - 'pip==18.0.0'
+    # Function status depending on if pip exists
+    [ -x "${VIRTUALENV_ROOT}/bin/pip" ]
 }
 
 install_deps
@@ -204,12 +316,19 @@ else
     fi
 
     if [ "$has_mimic" == "" ]; then
-        build_mimic="y"
+        if [[ ${opt_skipmimicbuild} == true ]] ; then
+            build_mimic="n"
+        else
+            build_mimic="y"
+        fi
     fi
 fi
 
 if [ ! -x "${VIRTUALENV_ROOT}/bin/activate" ] ; then
-    install_venv
+    if ! install_venv ; then
+        echo "Failed to set up virtualenv for mycroft, exiting setup."
+        exit 1
+    fi
 fi
 
 # Start the virtual environment

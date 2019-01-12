@@ -207,11 +207,11 @@ def intent_file_handler(intent_file):
     return real_decorator
 
 
-class SkillGUI(object):
+class SkillGUI:
     """
     SkillGUI - Interface to the Graphical User Interface
 
-    Values set in this object are synced to the GUI, accessible within QML
+    Values set in this class are synced to the GUI, accessible within QML
     via the built-in sessionData mechanism.  For example, in Python you can
     write in a skill:
         self.gui['temp'] = 33
@@ -229,7 +229,7 @@ class SkillGUI(object):
         self.__session_data[key] = value
 
         if self.page:
-            # emit notification
+            # emit notification (but not needed if page has not been shown yet)
             data = self.__session_data.copy()
             data.update({'__from': self.skill.skill_id})
             self.skill.bus.emit(Message("gui.value.set", data))
@@ -252,28 +252,45 @@ class SkillGUI(object):
         Args:
             name (str): Name of page (e.g "mypage.qml") to display
         """
+        self.show_pages([name])
 
-        self.page = name
+    def show_pages(self, page_names, index=0):
+        """
+        Begin showing the list of pages in the GUI
 
-        # Communicate with the enclosure process
+        Args:
+            page_names (list): List of page names (str) to display, such as
+                               ["Weather.qml", "Forecast.qml", "Details.qml"]
+            index (int): Page number (0-based) to show initially.  For the
+                         above list a value of 1 would start on "Forecast.qml"
+        """
+        if not isinstance(page_names, list):
+            raise ValueError('page_names must be a list')
+
+        if index > len(page_names):
+            raise ValueError('Default index is larger than page list length')
+
+        self.page = page_names[index]
 
         # First sync any data...
         data = self.__session_data.copy()
         data.update({'__from': self.skill.skill_id})
         self.skill.bus.emit(Message("gui.value.set", data))
-        # TODO: Minimize by tracking data that has already been synced?
 
-        # Convert page to full reference
-        page = self.skill.find_resource(self.page, 'ui')
-        if page:
-            page_url = "file://" + page
+        # Convert pages to full reference
+        page_urls = []
+        for name in page_names:
+            page = self.skill.find_resource(name, 'ui')
+            if page:
+                page_urls.append("file://" + page)
+            else:
+                self.skill.log.debug("Unable to find page: " + str(name))
+                return
 
-            # Then request display of the correct page
-            self.skill.bus.emit(Message("gui.page.show",
-                                        {"page": page_url,
-                                         '__from': self.skill.skill_id}))
-        else:
-            self.skill.log.debug("Unable to find page: " + str(self.page))
+        self.skill.bus.emit(Message("gui.page.show",
+                                    {"page": page_urls,
+                                     "index": index,
+                                     "__from": self.skill.skill_id}))
 
     def show_text(self, text, title=None):
         """ Display a GUI page for viewing simple text
@@ -325,7 +342,7 @@ class SkillGUI(object):
 #######################################################################
 # MycroftSkill base class
 #######################################################################
-class MycroftSkill(object):
+class MycroftSkill:
     """
     Abstract base class which provides common behaviour and parameters to all
     Skills implementation.

@@ -13,8 +13,6 @@
 # limitations under the License.
 #
 import random
-from io import open
-
 import os
 import re
 from pathlib import Path
@@ -29,7 +27,7 @@ __doc__ = """
 """
 
 
-class MustacheDialogRenderer(object):
+class MustacheDialogRenderer:
     """
     A dialog template renderer based on the mustache templating language.
     """
@@ -48,8 +46,9 @@ class MustacheDialogRenderer(object):
         with open(filename, 'r') as f:
             for line in f:
                 template_text = line.strip()
-                # Skip all lines starting with '#'
-                if not template_text.startswith('#'):
+                # Skip all lines starting with '#' and all empty lines
+                if (not template_text.startswith('#') and
+                        template_text != ''):
                     if template_name not in self.templates:
                         self.templates[template_name] = []
 
@@ -86,15 +85,15 @@ class MustacheDialogRenderer(object):
 
         template_functions = self.templates.get(template_name)
         if index is None:
-            index = random.randrange(len(template_functions))
+            line = random.choice(template_functions)
         else:
-            index %= len(template_functions)
-        line = template_functions[index]
+            line = template_functions[index % len(template_functions)]
+        # Replace {key} in line with matching values from context
         line = line.format(**context)
         return line
 
 
-class DialogLoader(object):
+class DialogLoader:
     """
     Loads a collection of dialog files into a renderer implementation.
     """

@@ -29,6 +29,7 @@ from mycroft.session import SessionManager
 from mycroft.stt import STTFactory
 from mycroft.util import connected
 from mycroft.util.log import LOG
+from mycroft.util import find_input_device
 from queue import Queue, Empty
 
 
@@ -198,7 +199,7 @@ class AudioConsumer(Thread):
         self.emitter.emit("speak", payload)
 
 
-class RecognizerLoopState(object):
+class RecognizerLoopState:
     def __init__(self):
         self.running = False
         self.sleeping = False
@@ -225,11 +226,18 @@ class RecognizerLoop(EventEmitter):
         self.lang = config.get('lang')
         self.config = config.get('listener')
         rate = self.config.get('sample_rate')
+
         device_index = self.config.get('device_index')
+        device_name = self.config.get('device_name')
+        if not device_index and device_name:
+            device_index = find_input_device(device_name)
+
+        LOG.debug('Using microphone (None = default): '+str(device_index))
 
         self.microphone = MutableMicrophone(device_index, rate,
                                             mute=self.mute_calls > 0)
-        # FIXME - channels are not been used
+        # TODO:19.02 - channels are not been used, remove from mycroft.conf
+        #              and from code.
         self.microphone.CHANNELS = self.config.get('channels')
         self.wakeword_recognizer = self.create_wake_word_recognizer()
         # TODO - localization
@@ -308,7 +316,7 @@ class RecognizerLoop(EventEmitter):
 
     def force_unmute(self):
         """
-            Completely unmute mic dispite the number of calls to mute
+            Completely unmute mic regardless of the number of calls to mute
         """
         self.mute_calls = 0
         self.unmute()

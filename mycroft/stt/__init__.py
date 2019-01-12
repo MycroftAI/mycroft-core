@@ -23,7 +23,7 @@ from mycroft.configuration import Configuration
 from mycroft.util.log import LOG
 
 
-class STT(object):
+class STT:
     __metaclass__ = ABCMeta
 
     def __init__(self):
@@ -222,7 +222,7 @@ class GoVivaceSTT(TokenSTT):
         return response.json()["result"]["hypotheses"][0]["transcript"]
 
 
-class STTFactory(object):
+class STTFactory:
     CLASSES = {
         "mycroft": MycroftSTT,
         "google": GoogleSTT,

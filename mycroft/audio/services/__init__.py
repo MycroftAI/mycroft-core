@@ -15,7 +15,7 @@
 from abc import ABCMeta, abstractmethod
 
 
-class AudioBackend():
+class AudioBackend:
     """
         Base class for all audio backend implementations.
 

@@ -29,7 +29,7 @@ def to_percent(val):
     return "{0:.2f}".format(100.0 * val) + "%"
 
 
-class FileStream(object):
+class FileStream:
     MIN_S_TO_DEBUG = 5.0
 
     # How long between printing debug info to screen
@@ -81,7 +81,7 @@ class FileMockMicrophone(AudioSource):
         self.stream.close()
 
 
-class AudioTester(object):
+class AudioTester:
     def __init__(self, samp_rate):
         print()  # Pad debug messages
         self.ww_recognizer = RecognizerLoop().create_mycroft_recognizer(

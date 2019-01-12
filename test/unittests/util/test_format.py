@@ -105,13 +105,13 @@ class TestPronounceNumber(unittest.TestCase):
         self.assertEqual(pronounce_number(33), "thirty three")
 
     def test_convert_negative_int(self):
-        self.assertEqual(pronounce_number(-1), "negative one")
-        self.assertEqual(pronounce_number(-10), "negative ten")
-        self.assertEqual(pronounce_number(-15), "negative fifteen")
-        self.assertEqual(pronounce_number(-20), "negative twenty")
-        self.assertEqual(pronounce_number(-27), "negative twenty seven")
-        self.assertEqual(pronounce_number(-30), "negative thirty")
-        self.assertEqual(pronounce_number(-33), "negative thirty three")
+        self.assertEqual(pronounce_number(-1), "minus one")
+        self.assertEqual(pronounce_number(-10), "minus ten")
+        self.assertEqual(pronounce_number(-15), "minus fifteen")
+        self.assertEqual(pronounce_number(-20), "minus twenty")
+        self.assertEqual(pronounce_number(-27), "minus twenty seven")
+        self.assertEqual(pronounce_number(-30), "minus thirty")
+        self.assertEqual(pronounce_number(-33), "minus thirty three")
 
     def test_convert_decimals(self):
         self.assertEqual(pronounce_number(1.234),
@@ -129,19 +129,19 @@ class TestPronounceNumber(unittest.TestCase):
         self.assertEqual(pronounce_number(21.234, places=5),
                          "twenty one point two three four")
         self.assertEqual(pronounce_number(-1.234),
-                         "negative one point two three")
+                         "minus one point two three")
         self.assertEqual(pronounce_number(-21.234),
-                         "negative twenty one point two three")
+                         "minus twenty one point two three")
         self.assertEqual(pronounce_number(-21.234, places=1),
-                         "negative twenty one point two")
+                         "minus twenty one point two")
         self.assertEqual(pronounce_number(-21.234, places=0),
-                         "negative twenty one")
+                         "minus twenty one")
         self.assertEqual(pronounce_number(-21.234, places=3),
-                         "negative twenty one point two three four")
+                         "minus twenty one point two three four")
         self.assertEqual(pronounce_number(-21.234, places=4),
-                         "negative twenty one point two three four")
+                         "minus twenty one point two three four")
         self.assertEqual(pronounce_number(-21.234, places=5),
-                         "negative twenty one point two three four")
+                         "minus twenty one point two three four")
 
     def test_convert_hundreds(self):
         self.assertEqual(pronounce_number(100), "one hundred")

@@ -121,7 +121,7 @@ class LocalConf(dict):
         """
         path = path or self.path
         with open(path, 'w') as f:
-            json.dump(self, f)
+            json.dump(self, f, indent=2)
 
     def merge(self, conf):
         merge_dict(self, conf)
@@ -174,7 +174,7 @@ class RemoteConf(LocalConf):
             self.load_local(cache)
 
 
-class Configuration(object):
+class Configuration:
     __config = {}  # Cached config
     __patch = {}  # Patch config that skills can update to override config
 
