@@ -120,6 +120,33 @@ class VlcService(AudioBackend):
         ret['name'] = t.get_meta(meta.Title)
         return ret
 
+    def seek_forward(self, seconds=1):
+        """
+        skip X seconds
+
+          Args:
+                seconds (int): number of seconds to seek, if negative rewind
+        """
+        seconds = seconds * 1000
+        new_time = self.player.get_time() + seconds
+        duration = self.player.get_length()
+        if new_time > duration:
+            new_time = duration
+        self.player.set_time(new_time)
+
+    def seek_backward(self, seconds=1):
+        """
+        rewind X seconds
+
+          Args:
+                seconds (int): number of seconds to seek, if negative rewind
+        """
+        seconds = seconds * 1000
+        new_time = self.player.get_time() - seconds
+        if new_time < 0:
+            new_time = 0
+        self.player.set_time(new_time)
+
 
 def load_service(base_config, bus):
     backends = base_config.get('backends', [])
