@@ -283,7 +283,9 @@ def pronounce_number(number, lang="en-us", places=2, short_scale=True,
                                    short_scale=short_scale,
                                    scientific=scientific)
     elif lang_lower.startswith("it"):
-        return pronounce_number_it(number, places=places)
+        return pronounce_number_it(number, places=places,
+                                   short_scale=short_scale,
+                                   scientific=scientific)
     elif lang_lower.startswith("fr"):
         return pronounce_number_fr(number, places=places)
     elif lang_lower.startswith("de"):

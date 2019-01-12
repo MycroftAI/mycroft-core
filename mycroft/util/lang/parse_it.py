@@ -29,6 +29,93 @@ from mycroft.util.lang.parse_common import is_numeric, look_for_fractions, \
     extract_numbers_generic
 from mycroft.util.lang.format_it import pronounce_number_it
 
+SHORT_ORDINAL_STRING_IT = {
+    1: 'primo',
+    2: 'secondo',
+    3: 'terzo',
+    4: 'quarto',
+    5: 'quinto',
+    6: 'sesto',
+    7: 'settimo',
+    8: 'ottavo',
+    9: 'nono',
+    10: 'decimo',
+    11: 'undicesimo',
+    12: 'dodicesimo',
+    13: 'tredicesimo',
+    14: 'quattordicesimo',
+    15: 'quindicesimo',
+    16: 'sedicesimo',
+    17: 'diciassettesimo',
+    18: 'diciottesimo',
+    19: 'diciannovesimo',
+    20: 'ventesimo',
+    30: 'trentesimo',
+    40: "quarantesimo",
+    50: "cinquantesimo",
+    60: "sessantesimo",
+    70: "settantesimo",
+    80: "ottantesimo",
+    90: "novantesimo",
+    1e2: "centesimo",
+    1e3: "millesimo",
+    1e6: "milionesimo",
+    1e9: "miliardesimo",
+    1e12: "trilionesimo",
+    1e15: "quadrilionesimo",
+    1e18: "quintilionesimo",
+    1e21: "sestilionesimo",
+    1e24: "settilionesimo",
+    1e27: "ottilionesimo",
+    1e30: "nonilionesimo",
+    1e33: "decilionesimo"
+    # TODO > 1e-33
+}
+
+#  per i > 10e12 modificata solo la desinenza: da sistemare a fine debug
+LONG_ORDINAL_STRING_IT = {
+    1: 'primo',
+    2: 'secondo',
+    3: 'terzo',
+    4: 'quarto',
+    5: 'quinto',
+    6: 'sesto',
+    7: 'settimo',
+    8: 'ottavo',
+    9: 'nono',
+    10: 'decimo',
+    11: 'undicesimo',
+    12: 'dodicesimo',
+    13: 'tredicesimo',
+    14: 'quattordicesimo',
+    15: 'quindicesimo',
+    16: 'sedicesimo',
+    17: 'diciassettesimo',
+    18: 'diciottesimo',
+    19: 'diciannovesimo',
+    20: 'ventesimo',
+    30: 'trentesimo',
+    40: "quarantesimo",
+    50: "cinquantesimo",
+    60: "sessantesimo",
+    70: "settantesimo",
+    80: "ottantesimo",
+    90: "novantesimo",
+    1e2: "centesimo",
+    1e3: "millesimo",
+    1e6: "milionesimo",
+    1e12: "billionesimo",
+    1e18: "trillionesimo",
+    1e24: "quadrillionesimo",
+    1e30: "quintillionesimo",
+    1e36: "sextillionesimo",
+    1e42: "septillionesimo",
+    1e48: "octillionesimo",
+    1e54: "nonillionesimo",
+    1e60: "decillionesimo"
+    # TODO > 1e60
+}
+
 # Undefined articles ["un", "una", "un'"] can not be supressed,
 # in Italian, "un cavallo" means "a horse" or "one horse".
 it_articles = ["il", "lo", "la", "i", "gli", "le"]
@@ -89,34 +176,36 @@ it_numbers = {
 }
 
 
-def isFractional_it(input_str):
+def isFractional_it(input_str, short_scale=False):
     """
     This function takes the given text and checks if it is a fraction.
-    E' la versione portoghese riadattata in italiano
+    Updated to italian from en version 18.8.9
 
     Args:
-        text (str): the string to check if fractional
+        input_str (str): the string to check if fractional
+        short_scale (bool): use short scale if True, long scale if False
     Returns:
         (bool) or (float): False if not a fraction, otherwise the fraction
 
-    TODO:  verificare la corretta gestione dei plurali
     """
+    input_str = input_str.lower()
+    if input_str.endswith('i', -1):
+        #  input_str = input_str[:len(input_str) - 1] + "o"  #  norm- plurali
+        input_str = input_str[:-1] + "o"  # normalizza plurali
 
-    aFrac = ["mezz", "terz", "quart", "quint", "sest", "settim", "ottav",
-             "non", "decim", "undicesim", "dodicesim", "tredicesim",
-             "quattrodicesim", "quindicesim", "sedicesim",
-             "diciasettesim", "diciottesim", "diciasettesim",
-             "diciannovesim"]
+    fracts_it = {"intero": 1, "mezza": 2, "mezzo": 2}
 
-    if input_str[:-1].lower() in aFrac:
-        return 1.0 / (aFrac.index(input_str[:-1]) + 2)
-    if input_str[:-1] == "ventesim":
-        return 1.0 / 20
-    if input_str[:-1] == "centesim":
-        return 1.0 / 100
-    if input_str[:-1] == "millesim":
-        return 1.0 / 1000
+    if short_scale:
+        for num in SHORT_ORDINAL_STRING_IT:
+            if num > 2:
+                fracts_it[SHORT_ORDINAL_STRING_IT[num]] = num
+    else:
+        for num in LONG_ORDINAL_STRING_IT:
+            if num > 2:
+                fracts_it[LONG_ORDINAL_STRING_IT[num]] = num
 
+    if input_str.lower() in fracts_it:
+        return 1.0 / fracts_it[input_str]
     return False
 
 
@@ -332,37 +421,21 @@ def normalize_it(text, remove_articles):
     return normalized[1:]
 
 
-def extract_datetime_it(string, currentDate, default_time):
+def extract_datetime_it(string, dateNow, default_time):
     def clean_string(s):
         """
             cleans the input string of unneeded punctuation and capitalization
             among other things.
             Normalize italian plurals
         """
-        symbols = [".", ",", ";", "?", "!", u"º", u"ª", u"°"]
+        symbols = [".", ",", ";", "?", "!", "º", "ª", "°"]
 
         for word in symbols:
             s = s.replace(word, "")
 
-        s = s.lower().replace(
-            u"á",
-            "a").replace(
-            u"à",
-            "a").replace(
-            u"è",
-            "e'").replace(
-            u"é",
-            "e'").replace(
-            u"ì",
-            "i").replace(
-            u"ù",
-            "u").replace(
-            u"ò",
-            "o").replace(
-            "-",
-            " ").replace(
-            "_",
-            "")
+        s = s.lower().replace("á", "a").replace("à", "a").replace("è", "e'")\
+            .replace("é", "e'").replace("ì", "i").replace("ù", "u")\
+            .replace("ò", "o").replace("-", " ").replace("_", "")
 
         noise_words = ["tra", "la", "del", "al", "il", "di",
                        "le", "per", "alle", "alla", "dai", "delle",
@@ -372,46 +445,23 @@ def extract_datetime_it(string, currentDate, default_time):
             s = s.replace(" " + word + " ", " ")
 
         # normalizza plurali per semplificare analisi
-        s = s.replace(
-            "secondi",
-            "secondo").replace(
-            "minuti",
-            "minuto").replace(
-            "ore",
-            "ora").replace(
-            "giorni",
-            "giorno").replace(
-            "settimane",
-            "settimana").replace(
-            "mesi",
-            "mese").replace(
-            "anni",
-            "anno").replace(
-            "mattino",
-            "mattina").replace(
-            "prossima",
-            "prossimo").replace(
-            "questa",
-            "questo").replace(
-            "quarti",
-            "quarto")
+        s = s.replace("secondi", "secondo").replace("minuti", "minuto")\
+            .replace("ore", "ora").replace("giorni", "giorno")\
+            .replace("settimane", "settimana").replace("mesi", "mese")\
+            .replace("anni", "anno").replace("mattino", "mattina")\
+            .replace("prossima", "prossimo").replace("questa", "questo")\
+            .replace("quarti", "quarto")
 
         wordList = s.split()
-        # print(wordList)  # debug only
-
         return wordList
 
     def date_found():
         return found or \
-               (
-                       datestr != "" or timeStr != "" or
-                       yearOffset != 0 or monthOffset != 0 or
-                       dayOffset is True or hrOffset != 0 or
-                       hrAbs or minOffset != 0 or
-                       minAbs or secOffset != 0
-               )
+            (datestr != "" or timeStr != "" or yearOffset != 0 or
+             monthOffset != 0 or dayOffset is True or hrOffset != 0 or
+             hrAbs or minOffset != 0 or minAbs or secOffset != 0)
 
-    if string == "" or not currentDate:
+    if string == "" or not dateNow:
         return None
 
     found = False
@@ -419,7 +469,6 @@ def extract_datetime_it(string, currentDate, default_time):
     dayOffset = False
     monthOffset = 0
     yearOffset = 0
-    dateNow = currentDate
     today = dateNow.strftime("%w")
     currentYear = dateNow.strftime("%Y")
     fromFlag = False
