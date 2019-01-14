@@ -330,8 +330,7 @@ class SkillGUI:
             if page:
                 page_urls.append("file://" + page)
             else:
-                self.skill.log.debug("Unable to find page: " + str(name))
-                return
+                raise FileNotFoundError("Unable to find page: {}".format(name))
 
         self.skill.bus.emit(Message("gui.page.show",
                                     {"page": page_urls,
