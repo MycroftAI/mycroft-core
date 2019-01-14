@@ -143,6 +143,11 @@ class PlaybackThread(Thread):
     def clear_visimes(self):
         self._clear_visimes = True
 
+    def clear(self):
+        """ Clear all pending actions for the TTS playback thread. """
+        self.clear_queue()
+        self.clear_visimes()
+
     def blink(self, rate=1.0):
         """ Blink mycroft's eyes """
         if self.enclosure and random.random() < rate:
