@@ -158,8 +158,6 @@ def pronounce_number_nl(num, places=2):
                 num -= hundreds * 100
         if num == 0:
             result += ''  # do nothing
-        #elif num == 1:
-        #    result += u'één'
         elif num <= 20:
             result += NUM_STRING_NL[num]  # + EXTRA_SPACE
         elif num > 20:
@@ -349,6 +347,7 @@ def fix_hour(hour):
         hour = 12
     return hour
 
+
 def nice_part_of_day_nl(dt):
     if dt.hour < 6:
         return " 's nachts"
@@ -388,7 +387,10 @@ def nice_ordinal_nl(text):
         wordPrev = words[idx - 1] if idx > 0 else ""
         if word[:-1].isdecimal():
             if wordNext.lower() in months:
-                word = pronounce_number_nl(int(word))
+                if wordPrev == 'de':
+                    word = pronounce_ordinal_nl(int(word))
+                else:
+                    word = pronounce_number_nl(int(word))
                 words[idx] = word
-        normalized_text = " ".join(words)
+    normalized_text = " ".join(words)
     return normalized_text

@@ -101,18 +101,15 @@ class TestNiceNumberFormat(unittest.TestCase):
 
 class TestPronounceOrdinal(unittest.TestCase):
     def test_convert_int_nl(self):
-        self.assertEqual(pronounce_ordinal_nl(0),
-            "nulste")
-        self.assertEqual(pronounce_ordinal_nl(1),
-            "eerste")
-        self.assertEqual(pronounce_ordinal_nl(3),
-            "derde")
-        self.assertEqual(pronounce_ordinal_nl(5),
-            "vijfde")
-        self.assertEqual(pronounce_ordinal_nl(1000),
-            u"éénduizendste")
-        self.assertEqual(pronounce_ordinal_nl(123456),
-            "éénhonderddrieentwintigduizendvierhonderdzesenvijftigste")
+        self.assertEqual(pronounce_ordinal_nl(0), "nulste")
+        self.assertEqual(pronounce_ordinal_nl(1), "eerste")
+        self.assertEqual(pronounce_ordinal_nl(3), "derde")
+        self.assertEqual(pronounce_ordinal_nl(5), "vijfde")
+        self.assertEqual(pronounce_ordinal_nl(1000), u"éénduizendste")
+        self.assertEqual(
+            pronounce_ordinal_nl(123456),
+            "éénhonderddrieentwintigduizendvierhonderdzesenvijftigste"
+        )
 
 
 # def pronounce_number(number, lang="nl-nl", places=2):
