@@ -452,9 +452,18 @@ class GUIWebsocketHandler(WebSocketHandler):
     def on_message(self, message):
         LOG.debug("Received: {}".format(message))
         msg = json.loads(message)
-        msg_type = '{}.{}'.format(msg['namespace'], msg['event_name'])
-        msg_data = msg['parameters']
-        self.application.gui.enclosure.bus.emit(Message(msg_type, msg_data))
+        if msg['event_name'] == 'page_gained_focus':
+            # System event, a page was changed
+            msg_data = {
+                'namespace': msg['namespace'],
+                'page_number': msg['parameters']['number']
+            }
+            message = Message('gui.page_interaction', msg_data)
+        else:
+            msg_type = '{}.{}'.format(msg['namespace'], msg['event_name'])
+            msg_data = msg['parameters']
+            message = Message(msg_type, msg_data)
+        self.application.gui.enclosure.bus.emit(message)
 
     def write_message(self, *arg, **kwarg):
         """ Wraps WebSocketHandler.write_message() with a lock. """
