@@ -452,17 +452,25 @@ class GUIWebsocketHandler(WebSocketHandler):
     def on_message(self, message):
         LOG.debug("Received: {}".format(message))
         msg = json.loads(message)
-        if msg['event_name'] == 'page_gained_focus':
+        if (msg.get('type') == "mycroft.events.triggered" and
+                msg.get('event_name') == 'page_gained_focus'):
             # System event, a page was changed
+            msg_type = 'gui.page_interaction'
             msg_data = {
                 'namespace': msg['namespace'],
                 'page_number': msg['parameters']['number']
             }
-            message = Message('gui.page_interaction', msg_data)
-        else:
+        elif msg.get('type') == "mycroft.events.triggered":
+            # A normal event was triggered
             msg_type = '{}.{}'.format(msg['namespace'], msg['event_name'])
             msg_data = msg['parameters']
-            message = Message(msg_type, msg_data)
+
+        elif msg.get('type') == 'mycroft.session.set':
+            # A value was changed send it back to the skill
+            msg_type = '{}.{}'.format(msg['namespace'], 'set')
+            msg_data = msg['data']
+
+        message = Message(msg_type, msg_data)
         self.application.gui.enclosure.bus.emit(message)
 
     def write_message(self, *arg, **kwarg):
