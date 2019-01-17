@@ -14,6 +14,7 @@
 #
 import sys
 import io
+import signal
 from math import ceil
 
 from .gui_server import start_qml_gui
@@ -100,10 +101,29 @@ CLR_LOG_CMDMESSAGE = 0
 CLR_METER_CUR = 0
 CLR_METER = 0
 
+# Allow Ctrl+C catching...
+ctrl_c_was_pressed = False
+
+
+def ctrl_c_handler(signum, frame):
+    global ctrl_c_was_pressed
+    ctrl_c_was_pressed = True
+
+
+def ctrl_c_pressed():
+    global ctrl_c_was_pressed
+    if ctrl_c_was_pressed:
+        ctrl_c_was_pressed = False
+        return True
+    else:
+        return False
+
+
+signal.signal(signal.SIGINT, ctrl_c_handler)
+
 
 ##############################################################################
 # Helper functions
-
 
 def clamp(n, smallest, largest):
     """ Force n to be between smallest and largest, inclusive """
@@ -1151,25 +1171,22 @@ def gui_main(stdscr):
     try:
         while True:
             set_screen_dirty()
+            c = 0
+            code = 0
 
             try:
-                # Don't block, this allows us to refresh the screen while
-                # waiting on initial messagebus connection, etc
-                scr.timeout(1)
-                c = scr.get_wch()   # unicode char or int for special keys
-                if c == -1:
-                    continue
-            except KeyboardInterrupt:
-                # User hit Ctrl+C to quit
-                if find_str:
-                    # End the find session
-                    find_str = None
-                    rebuild_filtered_log()
-                    continue  # Consumed the Ctrl+C, get next character
+                if ctrl_c_pressed():
+                    # User hit Ctrl+C. treat same as Ctrl+X
+                    c = 24
                 else:
-                    c = 24  # treat as Ctrl+X (Exit)
+                    # Don't block, this allows us to refresh the screen while
+                    # waiting on initial messagebus connection, etc
+                    scr.timeout(1)
+                    c = scr.get_wch()   # unicode char or int for special keys
+                    if c == -1:
+                        continue
             except curses.error:
-                # This happens in odd cases, such as when you Ctrl+Z suspend
+                # This happens in odd cases, such as when you Ctrl+Z
                 # the CLI and then resume.  Curses fails on get_wch().
                 continue
 
@@ -1319,7 +1336,11 @@ def gui_main(stdscr):
                     # End the find session
                     find_str = None
                     rebuild_filtered_log()
+                elif line.startswith(":"):
+                    # cancel command mode
+                    line = ""
                 else:
+                    # exit CLI
                     break
             elif code > 31 and isinstance(c, str):
                 # Accept typed character in the utterance
