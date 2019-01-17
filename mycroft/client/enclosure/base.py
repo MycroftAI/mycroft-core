@@ -91,7 +91,10 @@ class Enclosure:
     def send(self, *args, **kwargs):
         """ Send to all registered GUIs. """
         for gui in self.GUIs.values():
-            gui.socket.send(*args, **kwargs)
+            if gui.socket:
+                gui.socket.send(*args, **kwargs)
+            else:
+                LOG.error('GUI connection {} has no socket!'.format(gui))
 
     def on_gui_set_value(self, message):
         data = message.data
