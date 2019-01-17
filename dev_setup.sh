@@ -287,6 +287,8 @@ function install_venv() {
     # about this version.  Update whenever a new version is released and
     # verified functional.
     curl https://bootstrap.pypa.io/3.3/get-pip.py | "${VIRTUALENV_ROOT}/bin/python" - 'pip==18.0.0'
+    # Function status depending on if pip exists
+    [ -x "${VIRTUALENV_ROOT}/bin/pip" ]
 }
 
 install_deps
@@ -323,7 +325,10 @@ else
 fi
 
 if [ ! -x "${VIRTUALENV_ROOT}/bin/activate" ] ; then
-    install_venv
+    if ! install_venv ; then
+        echo "Failed to set up virtualenv for mycroft, exiting setup."
+        exit 1
+    fi
 fi
 
 # Start the virtual environment

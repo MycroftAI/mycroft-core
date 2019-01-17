@@ -25,6 +25,8 @@ echo "Mycroft-specific commands you can use from the Linux command prompt:"
 echo "  mycroft-cli-client       command line client, useful for debugging"
 echo "  mycroft-msm              Mycroft Skills Manager, to manage your Skills"
 echo "  mycroft-msk              Mycroft Skills Kit, create and share Skills"
+echo "  mycroft-start            Launch/restart Mycroft services"
+echo "  mycroft-stop             Stop Mycroft services"
 echo
 echo "Scripting Utilities:"
 echo "  mycroft-speak <phr>      have Mycroft speak a phrase to the user"

@@ -24,13 +24,11 @@ VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${DIR}/.venv"}
 
 function help() {
     echo "${script}:  Mycroft command/service launcher"
-    echo "usage: ${script} [command] [params]"
+    echo "usage: ${script} [COMMAND] [restart] [params]"
     echo
-    echo "Services:"
+    echo "Services COMMANDs:"
     echo "  all                      runs core services: bus, audio, skills, voice"
     echo "  debug                    runs core services, then starts the CLI"
-    echo
-    echo "Services:"
     echo "  audio                    the audio playback service"
     echo "  bus                      the messagebus service"
     echo "  skills                   the skill service"
@@ -38,18 +36,22 @@ function help() {
     # echo "  wifi                     wifi setup service"
     echo "  enclosure                mark_1 enclosure service"
     echo
-    echo "Tools:"
+    echo "Tool COMMANDs:"
     echo "  cli                      the Command Line Interface"
     echo "  unittest                 run mycroft-core unit tests (requires pytest)"
     echo "  skillstest               run the skill autotests for all skills (requires pytest)"
     echo
-    echo "Utils:"
+    echo "Util COMMANDs:"
     echo "  audiotest                attempt simple audio validation"
     echo "  audioaccuracytest        more complex audio validation"
     echo "  sdkdoc                   generate sdk documentation"
     echo
+    echo "Options:"
+    echo "  restart                  (optional) Force the service to restart if running"
+    echo
     echo "Examples:"
     echo "  ${script} all"
+    echo "  ${script} all restart"
     echo "  ${script} cli"
     echo "  ${script} unittest"
 
@@ -102,6 +104,7 @@ function launch-process() {
 }
 
 function require-process() {
+    # Launch process if not found
     name-to-script-path ${1}
     if ! pgrep -f "python3 -m ${_module}" > /dev/null ; then
         # Start required process
@@ -115,8 +118,13 @@ function launch-background() {
     # Check if given module is running and start (or restart if running)
     name-to-script-path ${1}
     if pgrep -f "python3 -m ${_module}" > /dev/null ; then
-        echo "Restarting: ${1}"
-        "${DIR}/stop-mycroft.sh" ${1}
+        if ($_force_restart) ; then
+            echo "Restarting: ${1}"
+            "${DIR}/stop-mycroft.sh" ${1}
+        else
+            # Already running, no need to restart
+            return
+        fi
     else
         echo "Starting background service $1"
     fi
@@ -138,15 +146,7 @@ function launch-all() {
     launch-background skills
     launch-background audio
     launch-background voice
-
-    # Determine platform type
-    if [[ -r /etc/mycroft/mycroft.conf ]] ; then
-        mycroft_platform=$( jq -r ".enclosure.platform" < /etc/mycroft/mycroft.conf )
-        if [[ $mycroft_platform = "mycroft_mark_1" ]] ; then
-            # running on a Mark 1, start enclosure service
-            launch-background enclosure
-        fi
-    fi
+    launch-background enclosure
 }
 
 function check-dependencies() {
@@ -177,7 +177,16 @@ function check-dependencies() {
 }
 
 _opt=$1
+_force_restart=false
 shift
+if [[ "${1}" == "restart" ]] || [[ "${_opt}" == "restart" ]] ; then
+    _force_restart=true
+    if [[ "${_opt}" == "restart" ]] ; then
+        # Support "start-mycroft.sh restart all" as well as "start-mycroft.sh all restart"
+        _opt=$1
+    fi
+    shift
+fi
 _params=$@
 
 check-dependencies
@@ -218,6 +227,10 @@ case ${_opt} in
     "unittest")
         source-venv
         pytest test/unittests/ --cov=mycroft "$@"
+        ;;
+    "singleunittest")
+        source-venv
+        pytest "$@"
         ;;
     "skillstest")
         source-venv

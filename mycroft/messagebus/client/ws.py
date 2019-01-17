@@ -28,7 +28,7 @@ from mycroft.util import validate_param, create_echo_function
 from mycroft.util.log import LOG
 
 
-class WebsocketClient(object):
+class WebsocketClient:
     def __init__(self, host=None, port=None, route=None, ssl=None):
 
         config = Configuration.get().get("websocket")

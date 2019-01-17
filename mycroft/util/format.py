@@ -25,6 +25,9 @@ from mycroft.util.lang.format_de import pronounce_number_de
 from mycroft.util.lang.format_fr import nice_number_fr
 from mycroft.util.lang.format_fr import nice_time_fr
 from mycroft.util.lang.format_fr import pronounce_number_fr
+from mycroft.util.lang.format_nl import nice_time_nl
+from mycroft.util.lang.format_nl import pronounce_number_nl
+from mycroft.util.lang.format_nl import nice_number_nl
 
 from collections import namedtuple
 import json
@@ -35,7 +38,7 @@ import re
 NUMBER_TUPLE = namedtuple(
     'number',
     ('x, xx, x0, x_in_x0, xxx, x00, x_in_x00, xx00, xx_in_xx00, x000, ' +
-     'x_in_x000, x0_in_x000'))
+     'x_in_x000, x0_in_x000, x_in_0x00'))
 
 
 class DateTimeFormat:
@@ -94,10 +97,12 @@ class DateTimeFormat:
             number % 10000 / 1000))) or str(int(number % 10000 / 1000))
         x0_in_x000 = self.lang_config[lang]['number'].get(str(int(
             number % 10000 / 1000)*10)) or str(int(number % 10000 / 1000)*10)
+        x_in_0x00 = self.lang_config[lang]['number'].get(str(int(
+            number % 1000 / 100)) or str(int(number % 1000 / 100)))
 
         return NUMBER_TUPLE(
             x, xx, x0, x_in_x0, xxx, x00, x_in_x00, xx00, xx_in_xx00, x000,
-            x_in_x000, x0_in_x000)
+            x_in_x000, x0_in_x000, x_in_0x00)
 
     def _format_string(self, number, format_section, lang):
         s = self.lang_config[lang][format_section]['default']
@@ -132,6 +137,7 @@ class DateTimeFormat:
                         x000=number_tuple.x000,
                         x_in_x000=number_tuple.x_in_x000,
                         x0_in_x000=number_tuple.x0_in_x000,
+                        x_in_0x00=number_tuple.x_in_0x00,
                         formatted_decade=formatted_decade,
                         formatted_hundreds=formatted_hundreds,
                         number=str(number % 10000))
@@ -223,6 +229,8 @@ def nice_number(number, lang="en-us", speech=True, denominators=None):
         return nice_number_de(number, speech, denominators)
     elif lang_lower.startswith("hu"):
         return nice_number_hu(number, speech, denominators)
+    elif lang_lower.startswith("nl"):
+        return nice_number_nl(number, speech, denominators)
 
     # Default to the raw number for unsupported languages,
     # hopefully the STT engine will pronounce understandably.
@@ -257,6 +265,8 @@ def nice_time(dt, lang="en-us", speech=True, use_24hour=False,
         return nice_time_de(dt, speech, use_24hour, use_ampm)
     elif lang_lower.startswith("hu"):
         return nice_time_hu(dt, speech, use_24hour, use_ampm)
+    elif lang_lower.startswith("nl"):
+        return nice_time_nl(dt, speech, use_24hour, use_ampm)
 
     # TODO: Other languages
     return str(dt)
@@ -283,13 +293,17 @@ def pronounce_number(number, lang="en-us", places=2, short_scale=True,
                                    short_scale=short_scale,
                                    scientific=scientific)
     elif lang_lower.startswith("it"):
-        return pronounce_number_it(number, places=places)
+        return pronounce_number_it(number, places=places,
+                                   short_scale=short_scale,
+                                   scientific=scientific)
     elif lang_lower.startswith("fr"):
         return pronounce_number_fr(number, places=places)
     elif lang_lower.startswith("de"):
         return pronounce_number_de(number, places=places)
     elif lang_lower.startswith("hu"):
         return pronounce_number_hu(number, places=places)
+    elif lang_lower.startswith("nl"):
+        return pronounce_number_nl(number, places=places)
 
     # Default to just returning the numeric value
     return str(number)

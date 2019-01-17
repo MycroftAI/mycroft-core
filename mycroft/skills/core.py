@@ -155,6 +155,10 @@ def load_skill(skill_descriptor, bus, skill_id, BLACKLISTED_SKILLS=None):
             return skill
         else:
             LOG.warning("Module {} does not appear to be skill".format(name))
+    except FileNotFoundError as e:
+        LOG.error(
+            'Failed to load {} due to a missing file: {}'.format(name, str(e))
+            )
     except Exception:
         LOG.exception("Failed to load skill: " + name)
     return None
@@ -207,11 +211,11 @@ def intent_file_handler(intent_file):
     return real_decorator
 
 
-class SkillGUI(object):
+class SkillGUI:
     """
     SkillGUI - Interface to the Graphical User Interface
 
-    Values set in this object are synced to the GUI, accessible within QML
+    Values set in this class are synced to the GUI, accessible within QML
     via the built-in sessionData mechanism.  For example, in Python you can
     write in a skill:
         self.gui['temp'] = 33
@@ -342,7 +346,7 @@ class SkillGUI(object):
 #######################################################################
 # MycroftSkill base class
 #######################################################################
-class MycroftSkill(object):
+class MycroftSkill:
     """
     Abstract base class which provides common behaviour and parameters to all
     Skills implementation.
@@ -989,7 +993,9 @@ class MycroftSkill(object):
 
         filename = self.find_resource(intent_file, 'vocab')
         if not filename:
-            raise ValueError('Unable to find "' + str(intent_file) + '"')
+            raise FileNotFoundError(
+                'Unable to find "' + str(intent_file) + '"'
+                )
 
         data = {
             "file_name": filename,
@@ -1021,7 +1027,9 @@ class MycroftSkill(object):
 
         filename = self.find_resource(entity_file + ".entity", 'vocab')
         if not filename:
-            raise ValueError('Unable to find "' + entity_file + '.entity"')
+            raise FileNotFoundError(
+                'Unable to find "' + entity_file + '.entity"'
+                )
         name = str(self.skill_id) + ':' + entity_file
 
         self.bus.emit(Message("padatious:register_entity", {

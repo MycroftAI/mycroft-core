@@ -16,6 +16,7 @@
 #
 
 from mycroft.util.lang.format_common import convert_to_mixed_fraction
+import collections
 
 NUM_STRING_IT = {
     0: 'zero',
@@ -69,6 +70,111 @@ FRACTION_STRING_IT = {
     19: 'diciannovesim',
     20: 'ventesim'
 }
+
+# fonte: http://tulengua.es/numeros-texto/default.aspx
+LONG_SCALE_IT = collections.OrderedDict([
+    (100, 'cento'),
+    (1000, 'mila'),
+    (1000000, 'milioni'),
+    (1e12, "miliardi"),
+    (1e18, 'trilioni'),
+    (1e24, "quadrilioni"),
+    (1e30, "quintilioni"),
+    (1e36, "sestilioni"),
+    (1e42, "settilioni"),
+    (1e48, "ottillioni"),
+    (1e54, "nonillioni"),
+    (1e60, "decemillioni"),
+    (1e66, "undicilione"),
+    (1e72, "dodicilione"),
+    (1e78, "tredicilione"),
+    (1e84, "quattordicilione"),
+    (1e90, "quindicilione"),
+    (1e96, "sedicilione"),
+    (1e102, "diciasettilione"),
+    (1e108, "diciottilione"),
+    (1e114, "dicianovilione"),
+    (1e120, "vintilione"),
+    (1e306, "unquinquagintillion"),
+    (1e312, "duoquinquagintillion"),
+    (1e336, "sesquinquagintillion"),
+    (1e366, "unsexagintillion")
+])
+
+
+SHORT_SCALE_IT = collections.OrderedDict([
+    (100, 'cento'),
+    (1000, 'mila'),
+    (1000000, 'milioni'),
+    (1e9, "miliardi"),
+    (1e12, 'bilioni'),
+    (1e15, "biliardi"),
+    (1e18, "trilioni"),
+    (1e21, "triliardi"),
+    (1e24, "quadrilioni"),
+    (1e27, "quadriliardi"),
+    (1e30, "quintilioni"),
+    (1e33, "quintiliardi"),
+    (1e36, "sestilioni"),
+    (1e39, "sestiliardi"),
+    (1e42, "settilioni"),
+    (1e45, "settiliardi"),
+    (1e48, "ottilioni"),
+    (1e51, "ottiliardi"),
+    (1e54, "nonilioni"),
+    (1e57, "noniliardi"),
+    (1e60, "decilioni"),
+    (1e63, "deciliardi"),
+    (1e66, "undicilioni"),
+    (1e69, "undiciliardi"),
+    (1e72, "dodicilioni"),
+    (1e75, "dodiciliardi"),
+    (1e78, "tredicilioni"),
+    (1e81, "trediciliardi"),
+    (1e84, "quattordicilioni"),
+    (1e87, "quattordiciliardi"),
+    (1e90, "quindicilioni"),
+    (1e93, "quindiciliardi"),
+    (1e96, "sedicilioni"),
+    (1e99, "sediciliardi"),
+    (1e102, "diciassettilioni"),
+    (1e105, "diciassettiliardi"),
+    (1e108, "diciottilioni"),
+    (1e111, "diciottiliardi"),
+    (1e114, "dicianovilioni"),
+    (1e117, "dicianoviliardi"),
+    (1e120, "vintilioni"),
+    (1e123, "vintiliardi"),
+    (1e153, "quinquagintillion"),
+    (1e183, "sexagintillion"),
+    (1e213, "septuagintillion"),
+    (1e243, "ottogintilioni"),
+    (1e273, "nonigintillioni"),
+    (1e303, "centilioni"),
+    (1e306, "uncentilioni"),
+    (1e309, "duocentilioni"),
+    (1e312, "trecentilioni"),
+    (1e333, "decicentilioni"),
+    (1e336, "undicicentilioni"),
+    (1e363, "viginticentilioni"),
+    (1e366, "unviginticentilioni"),
+    (1e393, "trigintacentilioni"),
+    (1e423, "quadragintacentillion"),
+    (1e453, "quinquagintacentillion"),
+    (1e483, "sexagintacentillion"),
+    (1e513, "septuagintacentillion"),
+    (1e543, "ctogintacentillion"),
+    (1e573, "nonagintacentillion"),
+    (1e603, "ducentillion"),
+    (1e903, "trecentillion"),
+    (1e1203, "quadringentillion"),
+    (1e1503, "quingentillion"),
+    (1e1803, "sescentillion"),
+    (1e2103, "septingentillion"),
+    (1e2403, "octingentillion"),
+    (1e2703, "nongentillion"),
+    (1e3003, "millinillion")
+])
 
 
 def nice_number_it(number, speech, denominators):
@@ -129,7 +235,7 @@ def nice_number_it(number, speech, denominators):
     return return_string
 
 
-def pronounce_number_it(num, places=2):
+def pronounce_number_it(num, places=2, short_scale=False, scientific=False):
     """
     Convert a number to it's spoken equivalent
     adapted to italian fron en version
@@ -139,36 +245,138 @@ def pronounce_number_it(num, places=2):
     Args:
         num(float or int): the number to pronounce (under 100)
         places(int): maximum decimal places to speak
+        short_scale (bool) : use short (True) or long scale (False)
+            https://en.wikipedia.org/wiki/Names_of_large_numbers
+        scientific (bool): pronounce in scientific notation
     Returns:
         (str): The pronounced number
     """
-    if abs(num) >= 100:
-        # TODO: Support for numbers over 100
-        return str(num)
+    if scientific:
+        number = '%E' % num
+        n, power = number.replace("+", "").split("E")
+        power = int(power)
+        if power != 0:
+            return pronounce_number_it(float(n), places, short_scale, False) \
+                   + " per dieci elevato alla " + \
+                   pronounce_number_it(power, places, short_scale, False)
 
+    if short_scale:
+        number_names = NUM_STRING_IT.copy()
+        number_names.update(SHORT_SCALE_IT)
+    else:
+        number_names = NUM_STRING_IT.copy()
+        number_names.update(LONG_SCALE_IT)
+
+    digits = [number_names[n] for n in range(0, 20)]
+
+    tens = [number_names[n] for n in range(10, 100, 10)]
+
+    if short_scale:
+        hundreds = [SHORT_SCALE_IT[n] for n in SHORT_SCALE_IT.keys()]
+    else:
+        hundreds = [LONG_SCALE_IT[n] for n in LONG_SCALE_IT.keys()]
+
+    # deal with negatives
     result = ""
     if num < 0:
         result = "meno "
     num = abs(num)
 
-    if num > 20:
-        tens = int(num-int(num) % 10)
-        ones = int(num - tens)
-        result += NUM_STRING_IT[tens]
-        if ones > 0:
-            if ones == 1 or ones == 8:
-                result = result[:-1]  # ventuno  ventotto
-            result += NUM_STRING_IT[ones]
-
+    # check for a direct match
+    if num in number_names:
+        if num > 90:
+            result += ""  # inizio stringa
+        result += number_names[num]
     else:
-        result += NUM_STRING_IT[int(num)]
+        def _sub_thousand(n):
+            assert 0 <= n <= 999
+            if n <= 19:
+                return digits[n]
+            elif n <= 99:
+                q, r = divmod(n, 10)
+                _deci = tens[q-1]
+                _unit = r
+                _partial = _deci
+                if _unit > 0:
+                    if _unit == 1 or _unit == 8:
+                        _partial = _partial[:-1]  # ventuno  ventotto
+                    _partial += number_names[_unit]
+                return _partial
+            else:
+                q, r = divmod(n, 100)
+                if q == 1:
+                    _partial = "cento"
+                else:
+                    _partial = digits[q] + "cento"
+                _partial += (
+                    " " + _sub_thousand(r) if r else "")  # separa centinaia
+                return _partial
+
+        def _short_scale(n):
+            if n >= max(SHORT_SCALE_IT.keys()):
+                return "infinito"
+            n = int(n)
+            assert 0 <= n
+            res = []
+            for i, z in enumerate(_split_by(n, 1000)):
+                if not z:
+                    continue
+                number = _sub_thousand(z)
+                if i:
+                    number += ""  # separa ordini grandezza
+                    number += hundreds[i]
+                res.append(number)
+
+            return ", ".join(reversed(res))
+
+        def _split_by(n, split=1000):
+            assert 0 <= n
+            res = []
+            while n:
+                n, r = divmod(n, split)
+                res.append(r)
+            return res
+
+        def _long_scale(n):
+            if n >= max(LONG_SCALE_IT.keys()):
+                return "infinito"
+            n = int(n)
+            assert 0 <= n
+            res = []
+            for i, z in enumerate(_split_by(n, 1000000)):
+                if not z:
+                    continue
+                number = pronounce_number_it(z, places, True, scientific)
+                # strip off the comma after the thousand
+                if i:
+                    # plus one as we skip 'thousand'
+                    # (and 'hundred', but this is excluded by index value)
+                    number = number.replace(',', '')
+                    number += " " + hundreds[i+1]
+                res.append(number)
+            return ", ".join(reversed(res))
+
+        if short_scale:
+            result += _short_scale(num)
+        else:
+            result += _long_scale(num)
+
+    # normalizza unità misura singole e 'ragionevoli' ed ad inizio stringa
+    if result == 'mila':
+        result = 'mille'
+    if result[0:7] == 'unomila':
+        result = result.replace('unomila', 'mille', 1)
+    if result[0:10] == 'unomilioni':
+        result = result.replace('unomilioni', 'un milione', 1)
+    if result[0:11] == 'unomiliardi':
+        result = result.replace('unomiliardi', 'un miliardo', 1)
 
     # Deal with fractional part
     if not num == int(num) and places > 0:
         result += " virgola"
         place = 10
-        while int(num*place) % 10 > 0 and places > 0:
-            result += " " + NUM_STRING_IT[int(num*place) % 10]
+        while int(num * place) % 10 > 0 and places > 0:
+            result += " " + number_names[int(num * place) % 10]
             place *= 10
             places -= 1
     return result

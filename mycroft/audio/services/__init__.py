@@ -15,7 +15,7 @@
 from abc import ABCMeta, abstractmethod
 
 
-class AudioBackend():
+class AudioBackend:
     """
         Base class for all audio backend implementations.
 
@@ -112,6 +112,26 @@ class AudioBackend():
     def restore_volume(self):
         """
             Restore normal volume.
+        """
+        pass
+
+    @abstractmethod
+    def seek_forward(self, seconds=1):
+        """
+        skip X seconds
+
+          Args:
+                seconds (int): number of seconds to seek, if negative rewind
+        """
+        pass
+
+    @abstractmethod
+    def seek_backward(self, seconds=1):
+        """
+        rewind X seconds
+
+          Args:
+                seconds (int): number of seconds to seek, if negative rewind
         """
         pass
 

@@ -17,7 +17,7 @@ import re
 from mycroft.util.parse import normalize
 
 
-class Message(object):
+class Message:
     """Holds and manipulates data sent over the websocket
 
         Message objects will be used to send information back and forth

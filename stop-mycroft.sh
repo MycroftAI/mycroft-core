@@ -31,7 +31,7 @@ function help() {
     echo "  audio     stop the audio playback service"
     echo "  skills    stop the skill service"
     echo "  voice     stop voice capture service"
-    echo "  enclosure stop mark_1 enclosure service"
+    echo "  enclosure stop enclosure (hardware/gui interface) service"
     echo
     echo "Examples:"
     echo "  ${script}"
@@ -50,8 +50,9 @@ function process-running() {
 
 function end-process() {
     if process-running $1 ; then
-        echo -n "Stopping $1..."
-        pid=$( pgrep -f "python3 -m mycroft.*${1}" )
+        # Find the process by name, only returning the oldest if it has children
+        pid=$( pgrep -o -f "python3 -m mycroft.*${1}" )
+        echo -n "Stopping $1 (${pid})..."
         kill -SIGINT ${pid}
 
         # Wait up to 5 seconds (50 * 0.1) for process to stop
@@ -67,7 +68,8 @@ function end-process() {
 
         if process-running $1 ; then
             echo "failed to stop."
-            echo -n "  Killing $1..."
+            pid=$( pgrep -o -f "python3 -m mycroft.*${1}" )            
+            echo -n "  Killing $1 (${pid})..."
             kill -9 ${pid}
             echo "killed."
             result=120
@@ -96,15 +98,7 @@ case ${OPT} in
         end-process skills
         end-process audio
         end-process speech
-
-        # determine platform type
-        if [[ -r /etc/mycroft/mycroft.conf ]] ; then
-            mycroft_platform=$( jq -r ".enclosure.platform" < /etc/mycroft/mycroft.conf )
-            if [[ $mycroft_platform == "mycroft_mark_1" ]] ; then
-                # running on a Mark 1, stop enclosure service
-                end-process enclosure
-            fi
-        fi
+        end-process enclosure
         ;;
     "bus")
         end-process messagebus.service

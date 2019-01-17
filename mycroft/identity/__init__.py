@@ -22,7 +22,7 @@ from mycroft.util.combo_lock import ComboLock
 identity_lock = ComboLock('/tmp/identity-lock')
 
 
-class DeviceIdentity(object):
+class DeviceIdentity:
     def __init__(self, **kwargs):
         self.uuid = kwargs.get("uuid", "")
         self.access = kwargs.get("access", "")
@@ -36,7 +36,7 @@ class DeviceIdentity(object):
         return self.refresh != ""
 
 
-class IdentityManager(object):
+class IdentityManager:
     __identity = None
 
     @staticmethod

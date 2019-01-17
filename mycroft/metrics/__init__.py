@@ -61,7 +61,7 @@ def report_timing(ident, system, timing, additional_data=None):
     report_metric('timing', report)
 
 
-class Stopwatch(object):
+class Stopwatch:
     """
         Simple time measuring class.
     """
@@ -110,7 +110,7 @@ class Stopwatch(object):
             return 'Not started'
 
 
-class MetricsAggregator(object):
+class MetricsAggregator:
     """
     MetricsAggregator is not threadsafe, and multiple clients writing the
     same metric "concurrently" may result in data loss.
@@ -167,7 +167,7 @@ class MetricsAggregator(object):
             threading.Thread(target=publish).start()
 
 
-class MetricsPublisher(object):
+class MetricsPublisher:
     def __init__(self, url=None, enabled=False):
         conf = Configuration().get()['server']
         self.url = url or conf['url']

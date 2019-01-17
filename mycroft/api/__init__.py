@@ -39,8 +39,8 @@ class InternetDown(RequestException):
     pass
 
 
-class Api(object):
-    """ Generic object to wrap web APIs """
+class Api:
+    """ Generic class to wrap web APIs """
     params_to_etag = {}
     etag_to_response = {}
 
