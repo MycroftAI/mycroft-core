@@ -242,7 +242,7 @@ class SkillSettings(dict):
         uuid_file = join(directory, 'uuid')
         uuid = None
         if isfile(uuid_file):
-            with open(uuid_file, 'r') as f:
+            with open(uuid_file, 'r', encoding='utf8') as f:
                 uuid = f.read()
         return uuid
 
@@ -256,7 +256,7 @@ class SkillSettings(dict):
         directory = join(directory, self.name)
         directory = expanduser(directory)
         uuid_file = join(directory, 'uuid')
-        with open(uuid_file, 'w') as f:
+        with open(uuid_file, 'w', encoding='utf8') as f:
             f.write(str(uuid))
 
     def _uuid_exist(self):
@@ -327,7 +327,7 @@ class SkillSettings(dict):
         directory = join(directory, self.name)
         directory = expanduser(directory)
         hash_file = join(directory, 'hash')
-        with open(hash_file, 'w') as f:
+        with open(hash_file, 'w', encoding='utf8') as f:
             f.write(hashed_meta)
 
     def _is_new_hash(self, hashed_meta):
@@ -346,7 +346,7 @@ class SkillSettings(dict):
         directory = expanduser(directory)
         hash_file = join(directory, 'hash')
         if isfile(hash_file):
-            with open(hash_file, 'r') as f:
+            with open(hash_file, 'r', encoding='utf8') as f:
                 current_hash = f.read()
             return False if current_hash == str(hashed_meta) else True
         return True
@@ -580,7 +580,7 @@ class SkillSettings(dict):
             force:  Force write despite no change
         """
         if force or not self._is_stored:
-            with open(self._settings_path, 'w') as f:
+            with open(self._settings_path, 'w', encoding='utf8') as f:
                 json.dump(self, f)
             self.loaded_hash = hash(json.dumps(self, sort_keys=True))
 

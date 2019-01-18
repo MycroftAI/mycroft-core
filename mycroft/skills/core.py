@@ -120,7 +120,7 @@ def load_skill(skill_descriptor, bus, skill_id, BLACKLISTED_SKILLS=None):
         return None
     main_file = join(path, MainModule + '.py')
     try:
-        with open(main_file, 'rb') as fp:
+        with open(main_file, 'rb', encoding='utf8') as fp:
             skill_module = imp.load_module(name.replace('.', '_'), fp,
                                            main_file, ('.py', 'rb',
                                            imp.PY_SOURCE))
