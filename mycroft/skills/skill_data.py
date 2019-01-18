@@ -35,7 +35,7 @@ def load_vocab_from_file(path, vocab_type, bus):
         skill_id(str):  skill id
     """
     if path.endswith('.voc'):
-        with open(path, 'r') as voc_file:
+        with open(path, 'r', encoding='utf8') as voc_file:
             for line in voc_file.readlines():
                 if line.startswith("#"):
                     continue
@@ -59,7 +59,7 @@ def load_regex_from_file(path, bus, skill_id):
         bus:        Mycroft messagebus connection
     """
     if path.endswith('.rx'):
-        with open(path, 'r') as reg_file:
+        with open(path, 'r', encoding='utf8') as reg_file:
             for line in reg_file.readlines():
                 if line.startswith("#"):
                     continue
