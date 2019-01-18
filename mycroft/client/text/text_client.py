@@ -169,7 +169,6 @@ def load_settings():
             show_meter = config["show_meter"]
     except Exception as e:
         LOG.info("Ignoring failed load of settings file")
-        LOG.exception(e)
 
 
 def save_settings():
