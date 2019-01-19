@@ -292,6 +292,46 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
     return val
 
 
+def extract_duration_en(text):
+    """ Convert an english phrase into a number of seconds
+
+    Convert things like:
+        "10 minute"
+        "2 and a half hours"
+        "3 days 8 hours 10 minutes and 49 seconds"
+    into an int, representing the total number of seconds.
+
+    The words used in the duration will be consumed, and
+    the remainder returned.
+
+    As an example, "set a timer for 5 minutes" would return
+    (300, "set a timer for").
+
+    Args:
+        text (str): string containing a duration
+
+    Returns:
+        [int, str]: An array containing the int and the remaining text
+                    not consumed in the parsing, or none if no duration
+                    related text was found.
+
+    """
+    if not text:
+        return None
+
+    time_unit_to_seconds_map = {
+        'second': 1,
+        'minute': 60,
+        'hour': 3600,
+        'day': 86400,
+        'week': 604800
+    }
+
+    num = extractnumber_en(text.replace("-", " "))
+
+
+    return num * unit
+
 def extract_datetime_en(string, dateNow, default_time):
     """ Convert a human date reference into an exact datetime
 

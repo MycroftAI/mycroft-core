@@ -31,7 +31,6 @@ from mycroft.util.lang.parse_fr import extract_numbers_fr
 from mycroft.util.lang.parse_fr import extract_datetime_fr
 from mycroft.util.lang.parse_fr import normalize_fr
 
-from mycroft.util.lang.parse_common import *
 from .log import LOG
 
 
@@ -134,6 +133,39 @@ def extract_number(text, short_scale=True, ordinals=False, lang="en-us"):
     LOG.warning('Language "{}" not recognized! Please make sure your '
                 'language is one of the following: '
                 'en, es, pt, it, fr, sv, de.'.format(lang_lower))
+    return text
+
+
+def extract_duration(text, lang="en-us"):
+    """ Convert an english phrase into a number of seconds
+
+    Convert things like:
+        "10 minute"
+        "2 and a half hours"
+        "3 days 8 hours 10 minutes and 49 seconds"
+    into an int, representing the total number of seconds.
+
+    The words used in the duration will be consumed, and
+    the remainder returned.
+
+    As an example, "set a timer for 5 minutes" would return
+    (300, "set a timer for").
+
+    Args:
+        text (str): string containing a duration
+        lang (str): the BCP-47 code for the language to use
+
+    Returns:
+        [int, str]: An array containing the int and the remaining text
+                    not consumed in the parsing, or none if no duration
+                    related text was found.
+
+    """
+    lang_lower = str(lang).lower()
+
+    if lang_lower.startswith("en"):
+        return extract_duration_en(text)
+    # TODO: extract_duration for other languages
     return text
 
 

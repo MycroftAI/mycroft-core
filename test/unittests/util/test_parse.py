@@ -18,6 +18,7 @@ import unittest
 from datetime import datetime
 
 from mycroft.util.parse import extract_datetime
+from mycroft.util.parse import extract_duration
 from mycroft.util.parse import extract_number, extract_numbers
 from mycroft.util.parse import fuzzy_match
 from mycroft.util.parse import get_gender
@@ -139,6 +140,12 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extract_number("a couple of beers"), 2)
         self.assertEqual(extract_number("a couple hundred beers"), 200)
         self.assertEqual(extract_number("a couple thousand beers"), 2000)
+
+
+    def test_extract_duration_en(self):
+        self.assertEqual(extract_duration("10 seconds"), [10, ""])
+        self.assertEqual(extract_duration("5 minutes"), [300, ""])
+        self.assertEqual(extract_duration("2 hours"), [7200, ""])
 
     def test_extractdatetime_en(self):
         def extractWithFormat(text):
