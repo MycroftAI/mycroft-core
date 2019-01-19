@@ -384,17 +384,23 @@ class GUIConnection:
         websocket_config = config.get("gui_websocket")
         host = websocket_config.get("host")
         route = websocket_config.get("route")
-        self.port = websocket_config.get("base_port") + GUIConnection._last_idx
-        GUIConnection._last_idx += 1
+        base_port = websocket_config.get("base_port")
 
-        try:
-            self.webapp = tornado.web.Application([
-                                                   (route, GUIWebsocketHandler)
-                                                  ], **gui_app_settings)
-            self.webapp.gui = self  # Hacky way to associate socket with this
-            self.webapp.listen(self.port, host)
-        except Exception as e:
-            LOG.debug('Error: {}'.format(repr(e)))
+        while True:
+            self.port = base_port + GUIConnection._last_idx
+            GUIConnection._last_idx += 1
+
+            try:
+                self.webapp = tornado.web.Application(
+                    [(route, GUIWebsocketHandler)], **gui_app_settings
+                )
+                # Hacky way to associate socket with this object:
+                self.webapp.gui = self
+                self.webapp.listen(self.port, host)
+            except Exception as e:
+                LOG.debug('Error: {}'.format(repr(e)))
+                continue
+            break
         # Can't run two IOLoop's in the same process
         if not GUIConnection.server_thread:
             GUIConnection.server_thread = create_daemon(
