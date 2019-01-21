@@ -421,5 +421,11 @@ if [[ ! -w /var/log/mycroft/ ]] ; then
     sudo chmod 777 /var/log/mycroft/
 fi
 
+# add bash aliases to start and stop mycroft
+echo "alias Mycroft-Start='~/mycroft-core/start-mycroft.sh all'" >> ~/.bashrc
+echo "alias Mycroft-Debug='~/mycroft-core/start-mycroft.sh debug'" >> ~.bashrc
+echo "alias Mycroft-Stop='~/mycroft-core/stop-mycroft.sh'" >> ~.bashrc
+
+
 #Store a fingerprint of setup
 md5sum requirements.txt test-requirements.txt dev_setup.sh > .installed
