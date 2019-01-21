@@ -491,11 +491,15 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(normalize("that's eighteen nineteen twenty"),
                          "that is 18 19 20")
         self.assertEqual(normalize("that's one nineteen twenty two"),
-                         "that is 1 19 22")
+                         "that is 1 19 20 2")
         self.assertEqual(normalize("that's one hundred"),
-                         "that is 100")
+                         "that is 1 hundred")
         self.assertEqual(normalize("that's one two twenty two"),
-                         "that is 1 2 22")
+                         "that is 1 2 20 2")
+        self.assertEqual(normalize("that's one and a half"),
+                         "that is 1 and half")
+        self.assertEqual(normalize("that's one and a half and five six"),
+                         "that is 1 and half and 5 6")
 
     def test_multiple_numbers(self):
         self.assertEqual(extract_numbers("this is a one two three  test"),
