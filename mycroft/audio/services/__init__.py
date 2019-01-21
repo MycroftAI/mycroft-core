@@ -150,3 +150,12 @@ class AudioBackend:
     def shutdown(self):
         """ perform clean shutdown """
         self.stop()
+
+
+class RemoteAudioBackend(AudioBackend):
+    """ Class used to identify remote audio backends.
+
+        These may be things like Chromecasts, mopidy servers, etc.
+
+    """
+    pass
