@@ -235,7 +235,7 @@ function install_deps() {
     echo "Installing packages..."
     if found_exe sudo ; then
         SUDO=sudo
-    else
+    elif [ "${opt_allowroot}" != true ]; then
         echo "This script requires \"sudo\" to install system packages. Please install it, then re-run this script."
         exit 1
     fi
