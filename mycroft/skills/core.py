@@ -128,11 +128,11 @@ def load_skill(skill_descriptor, bus, skill_id, BLACKLISTED_SKILLS=None):
                 callable(skill_module.create_skill)):
             # v2 skills framework
             skill = skill_module.create_skill()
+            skill.skill_id = skill_id
             skill.settings.allow_overwrite = True
             skill.settings.load_skill_settings_from_file()
             skill.bind(bus)
             try:
-                skill.skill_id = skill_id
                 skill.load_data_files(path)
                 # Set up intent handlers
                 skill._register_decorated()
@@ -228,6 +228,46 @@ class SkillGUI:
         self.__session_data = {}  # synced to GUI for use by this skill's pages
         self.page = None    # the active GUI page (e.g. QML template) to show
         self.skill = skill
+        self.on_gui_changed_callback = None
+
+    def build_message_type(self, event):
+        """ Builds a message matching the output from the enclosure. """
+        return '{}.{}'.format(self.skill.skill_id, event)
+
+    def setup_default_handlers(self):
+        """ Sets the handlers for the default messages. """
+        msg_type = self.build_message_type('set')
+        print("LISTENING FOR {}".format(msg_type))
+        self.skill.add_event(msg_type, self.gui_set)
+
+    def register_handler(self, event, handler):
+        """ Register a handler for gui events.
+
+            when using the triggerEvent method from Qt
+            triggerEvent("event", {"data": "cool"})
+
+            Arguments:
+                event (str):    event to catch
+                handler:        function to handle the event
+        """
+        msg_type = self.build_message_type(event)
+        self.skill.add_event(msg_type, handler)
+
+    def set_on_gui_changed(self, callback):
+        """ Registers a callback function to run when a value is
+            changed from the GUI.
+
+            Arguments:
+                callback:   Function to call when a value is changed
+        """
+        self.on_gui_changed_callback = callback
+
+    def gui_set(self, message):
+        for key in message.data:
+            print("SETTING {} TO {}".format(key, message.data[key]))
+            self[key] = message.data[key]
+        if self.on_gui_changed_callback:
+            self.on_gui_changed_callback()
 
     def __setitem__(self, key, value):
         self.__session_data[key] = value
@@ -249,16 +289,17 @@ class SkillGUI:
         self.__session_data = {}
         self.page = None
 
-    def show_page(self, name):
+    def show_page(self, name, override_idle=None):
         """
         Begin showing the page in the GUI
 
         Args:
             name (str): Name of page (e.g "mypage.qml") to display
+            override_idle: If set will override the idle screen
         """
-        self.show_pages([name])
+        self.show_pages([name], 0, override_idle)
 
-    def show_pages(self, page_names, index=0):
+    def show_pages(self, page_names, index=0, override_idle=None):
         """
         Begin showing the list of pages in the GUI
 
@@ -267,6 +308,7 @@ class SkillGUI:
                                ["Weather.qml", "Forecast.qml", "Details.qml"]
             index (int): Page number (0-based) to show initially.  For the
                          above list a value of 1 would start on "Forecast.qml"
+            override_idle: If set will override the idle screen
         """
         if not isinstance(page_names, list):
             raise ValueError('page_names must be a list')
@@ -288,13 +330,13 @@ class SkillGUI:
             if page:
                 page_urls.append("file://" + page)
             else:
-                self.skill.log.debug("Unable to find page: " + str(name))
-                return
+                raise FileNotFoundError("Unable to find page: {}".format(name))
 
         self.skill.bus.emit(Message("gui.page.show",
                                     {"page": page_urls,
                                      "index": index,
-                                     "__from": self.skill.skill_id}))
+                                     "__from": self.skill.skill_id,
+                                     "__idle": override_idle}))
 
     def show_text(self, text, title=None):
         """ Display a GUI page for viewing simple text
@@ -457,6 +499,9 @@ class MycroftSkill:
             func = self.settings.run_poll
             bus.on(name, func)
             self.events.append((name, func))
+
+            # Intialize the SkillGui
+            self.gui.setup_default_handlers()
 
     def detach(self):
         for (name, intent) in self.registered_intents:
