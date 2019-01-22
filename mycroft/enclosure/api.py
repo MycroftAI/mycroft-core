@@ -199,8 +199,20 @@ class EnclosureAPI:
         self.bus.emit(Message("enclosure.mouth.smile"))
         self.display_manager.set_active(self.name)
 
+    def mouth_viseme_list(self, start, viseme_pairs):
+        """ Send mouth visemes as a list in a single message.
+
+            Arguments:
+                start (int):    Timestamp for start of speech
+                viseme_pairs:   Pairs of viseme id and cumulative end times
+        """
+        self.bus.emit(Message("enclosure.mouth.viseme_list",
+                              {"start": start, "visemes": viseme_pairs}))
+
     def mouth_viseme(self, code, time_until=0):
         """Display a viseme mouth shape for synched speech
+
+        TODO: Remove in 19.02
         Args:
             code (int):  0 = shape for sounds like 'y' or 'aa'
                          1 = shape for sounds like 'aw'

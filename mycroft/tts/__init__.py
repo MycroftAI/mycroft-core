@@ -128,6 +128,10 @@ class PlaybackThread(Thread):
                 True if button has been pressed.
         """
         start = time()
+        if self.enclosure:
+            self.enclosure.mouth_viseme_list(start, pairs)
+
+        # TODO 19.02 Remove the one by one method below
         for code, duration in pairs:
             if self._clear_visimes:
                 self._clear_visimes = False
