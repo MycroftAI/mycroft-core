@@ -17,8 +17,12 @@ from mycroft.util.lang.format_en import *
 from mycroft.util.lang.format_pt import *
 from mycroft.util.lang.format_it import *
 from mycroft.util.lang.format_sv import *
+from mycroft.util.lang.format_da import *
 from mycroft.util.lang.format_hu import *
 
+from mycroft.util.lang.format_da import nice_number_da
+from mycroft.util.lang.format_da import nice_time_da
+from mycroft.util.lang.format_da import pronounce_number_da
 from mycroft.util.lang.format_de import nice_number_de
 from mycroft.util.lang.format_de import nice_time_de
 from mycroft.util.lang.format_de import pronounce_number_de
@@ -227,6 +231,8 @@ def nice_number(number, lang="en-us", speech=True, denominators=None):
         return nice_number_sv(number, speech, denominators)
     elif lang_lower.startswith("de"):
         return nice_number_de(number, speech, denominators)
+    elif lang_lower.startswith("da"):
+        return nice_number_da(number, speech, denominators)
     elif lang_lower.startswith("hu"):
         return nice_number_hu(number, speech, denominators)
     elif lang_lower.startswith("nl"):
@@ -263,6 +269,8 @@ def nice_time(dt, lang="en-us", speech=True, use_24hour=False,
         return nice_time_fr(dt, speech, use_24hour, use_ampm)
     elif lang_lower.startswith("de"):
         return nice_time_de(dt, speech, use_24hour, use_ampm)
+    elif lang_lower.startswith("da"):
+        return nice_time_da(dt, speech, use_24hour, use_ampm)
     elif lang_lower.startswith("hu"):
         return nice_time_hu(dt, speech, use_24hour, use_ampm)
     elif lang_lower.startswith("nl"):
@@ -300,6 +308,8 @@ def pronounce_number(number, lang="en-us", places=2, short_scale=True,
         return pronounce_number_fr(number, places=places)
     elif lang_lower.startswith("de"):
         return pronounce_number_de(number, places=places)
+    elif lang_lower.startswith("da"):
+        return pronounce_number_da(number, places=places)
     elif lang_lower.startswith("hu"):
         return pronounce_number_hu(number, places=places)
     elif lang_lower.startswith("nl"):
