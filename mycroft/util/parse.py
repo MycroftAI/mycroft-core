@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
 from difflib import SequenceMatcher
 from mycroft.util.time import now_local
 
@@ -22,6 +23,11 @@ from mycroft.util.lang.parse_pt import *
 from mycroft.util.lang.parse_es import *
 from mycroft.util.lang.parse_it import *
 from mycroft.util.lang.parse_sv import *
+from mycroft.util.lang.parse_da import *
+from mycroft.util.lang.parse_da import extractnumber_da
+from mycroft.util.lang.parse_da import extract_numbers_da
+from mycroft.util.lang.parse_da import extract_datetime_da
+from mycroft.util.lang.parse_da import normalize_da
 from mycroft.util.lang.parse_de import extractnumber_de
 from mycroft.util.lang.parse_de import extract_numbers_de
 from mycroft.util.lang.parse_de import extract_datetime_de
@@ -107,6 +113,8 @@ def extract_numbers(text, short_scale=True, ordinals=False, lang="en-us"):
         return extract_numbers_en(text, short_scale, ordinals)
     elif lang.startswith("de"):
         return extract_numbers_de(text, short_scale, ordinals)
+    elif lang.startswith("da"):
+        return extract_numbers_da(text, short_scale, ordinals)
     elif lang.startswith("fr"):
         return extract_numbers_fr(text, short_scale, ordinals)
     elif lang.startswith("it"):
@@ -144,6 +152,8 @@ def extract_number(text, short_scale=True, ordinals=False, lang="en-us"):
     elif lang_lower.startswith("sv"):
         return extractnumber_sv(text)
     elif lang_lower.startswith("de"):
+        return extractnumber_de(text)
+    elif lang_lower.startswith("da"):
         return extractnumber_de(text)
     # TODO: extractnumber_xx for other languages
     _log_unsupported_language(lang_lower,
@@ -256,6 +266,8 @@ def extract_datetime(text, anchorDate=None, lang="en-us", default_time=None):
         return extract_datetime_sv(text, anchorDate, default_time)
     elif lang_lower.startswith("de"):
         return extract_datetime_de(text, anchorDate, default_time)
+    elif lang_lower.startswith("da"):
+        return extract_datetime_da(text, anchorDate, default_time)
     # TODO: extract_datetime for other languages
     _log_unsupported_language(lang_lower,
                               ['en', 'es', 'pt', 'it', 'fr', 'sv', 'de'])
@@ -292,6 +304,8 @@ def normalize(text, lang="en-us", remove_articles=True):
         return normalize_sv(text, remove_articles)
     elif lang_lower.startswith("de"):
         return normalize_de(text, remove_articles)
+    elif lang_lower.startswith("da"):
+        return normalize_da(text, remove_articles)
     # TODO: Normalization for other languages
     _log_unsupported_language(lang_lower,
                               ['en', 'es', 'pt', 'it', 'fr', 'sv', 'de'])
