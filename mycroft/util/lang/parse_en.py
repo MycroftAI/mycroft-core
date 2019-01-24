@@ -20,94 +20,86 @@ from dateutil.relativedelta import relativedelta
 
 from mycroft.util.lang.parse_common import is_numeric, look_for_fractions, \
     extract_numbers_generic
-from mycroft.util.lang.format_en import NUM_STRING_EN, LONG_SCALE_EN, \
-    SHORT_SCALE_EN, pronounce_number_en
+from mycroft.util.lang.format_en import pronounce_number_en
+from mycroft.util.lang.common_data_en import NUM_STRING_EN, LONG_SCALE_EN, SHORT_SCALE_EN,\
+    SHORT_ORDINAL_STRING_EN, LONG_ORDINAL_STRING_EN
 
-SHORT_ORDINAL_STRING_EN = {
-    1: 'first',
-    2: 'second',
-    3: 'third',
-    4: 'fourth',
-    5: 'fifth',
-    6: 'sixth',
-    7: 'seventh',
-    8: 'eighth',
-    9: 'ninth',
-    10: 'tenth',
-    11: 'eleventh',
-    12: 'twelfth',
-    13: 'thirteenth',
-    14: 'fourteenth',
-    15: 'fifteenth',
-    16: 'sixteenth',
-    17: 'seventeenth',
-    18: 'eighteenth',
-    19: 'nineteenth',
-    20: 'twentieth',
-    30: 'thirtieth',
-    40: "fortieth",
-    50: "fiftieth",
-    60: "sixtieth",
-    70: "seventieth",
-    80: "eightieth",
-    90: "ninetieth",
-    10e3: "hundredth",
-    1e3: "thousandth",
-    1e6: "millionth",
-    1e9: "billionth",
-    1e12: "trillionth",
-    1e15: "quadrillionth",
-    1e18: "quintillionth",
-    1e21: "sextillionth",
-    1e24: "septillionth",
-    1e27: "octillionth",
-    1e30: "nonillionth",
-    1e33: "decillionth"
-    # TODO > 1e-33
-}
+# def extractnumber_en(text, short_scale=True, ordinals=False):
+#     """
+#     This function extracts a number from a text string,
+#     handles pronunciations in long scale and short scale
+#
+#     https://en.wikipedia.org/wiki/Names_of_large_numbers
+#
+#     Args:
+#         text (str): the string to normalize
+#         short_scale (bool): use short scale if True, long scale if False
+#         ordinals (bool): consider ordinal numbers, third=3 instead of 1/3
+#     Returns:
+#         (int) or (float) or False: The extracted number or False if no number
+#                                    was found
+#
+#     """
+#     return extractnumber_en(text, short_scale, ordinals)[0]
 
-LONG_ORDINAL_STRING_EN = {
-    1: 'first',
-    2: 'second',
-    3: 'third',
-    4: 'fourth',
-    5: 'fifth',
-    6: 'sixth',
-    7: 'seventh',
-    8: 'eighth',
-    9: 'ninth',
-    10: 'tenth',
-    11: 'eleventh',
-    12: 'twelfth',
-    13: 'thirteenth',
-    14: 'fourteenth',
-    15: 'fifteenth',
-    16: 'sixteenth',
-    17: 'seventeenth',
-    18: 'eighteenth',
-    19: 'nineteenth',
-    20: 'twentieth',
-    30: 'thirtieth',
-    40: "fortieth",
-    50: "fiftieth",
-    60: "sixtieth",
-    70: "seventieth",
-    80: "eightieth",
-    90: "ninetieth",
-    10e3: "hundredth",
-    1e3: "thousandth",
-    1e6: "millionth",
-    1e12: "billionth",
-    1e18: "trillionth",
-    1e24: "quadrillionth",
-    1e30: "quintillionth",
-    1e36: "sextillionth",
-    1e42: "septillionth",
-    1e48: "octillionth",
-    1e54: "nonillionth",
-    1e60: "decillionth"
-    # TODO > 1e60
-}
+def _invert_dict(original):
+    """
+    Produce a dictionary with the keys and values
+    inverted, relative to the dict passed in.
+
+    Args:
+        original dict: The dict like object to invert
+
+    Returns:
+        dict
+
+    """
+    return {value: key for key, value in original.items()}
+
+def _generate_plurals(originals):
+    """
+    Return a new set or dict containing the original values,
+    all with 's' appended to them.
+
+    Args:
+        originals set(str) or dict(str, any): values to pluralize
+
+    Returns:
+        set(str) or dict(str, any)
+
+    """
+    if type(originals) == dict:
+        return {key + 's': value for key, value in originals.items()}
+    return {value + "s" for value in originals}
+
+
+# negate next number (-2 = 0 - 2)
+_NEGATIVES = {"negative", "minus"}
+
+# sum the next number (twenty two = 20 + 2)
+_SUMS = {'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty',
+         'ninety'}
+
+_MULTIPLIES_LONG_SCALE_EN = set(LONG_SCALE_EN.values()) +\
+                            _generate_plurals(LONG_SCALE_EN.values())
+
+_MULTIPLIES_SHORT_SCALE_EN = set(SHORT_SCALE_EN.values()) +\
+                            _generate_plurals(SHORT_SCALE_EN.values())
+
+
+# split sentence parse separately and sum ( 2 and a half = 2 + 0.5 )
+_FRACTION_MARKER = {" and "}
+
+# decimal marker ( 1 point 5 = 1 + 0.5)
+_DECIMAL_MARKER = {" point ", " dot "}
+
+_STRING_NUM_EN = _invert_dict(NUM_STRING_EN)
+_STRING_NUM_EN.update(_generate_plurals(_STRING_NUM_EN))
+_STRING_NUM_EN.update({
+    "half": 0.5,
+    "halves": 0.5,
+    "couple": 2
+})
 
 
 def extractnumber_en(text, short_scale=True, ordinals=False):
@@ -122,75 +114,17 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
         short_scale (bool): use short scale if True, long scale if False
         ordinals (bool): consider ordinal numbers, third=3 instead of 1/3
     Returns:
-        (int) or (float) or False: The extracted number or False if no number
-                                   was found
+        (int, str) or (float, str)
+        None if no number is found.
 
     """
 
-    string_num_en = {
-        "half": 0.5,
-        "halves": 0.5,
-        "couple": 2,
-        "hundred": 100,
-        "hundreds": 100,
-        "thousand": 1000,
-        "thousands": 1000,
-        "million": 1000000,
-        'millions': 1000000}
-
-    string_num_ordinal_en = {}
-
-    for num in NUM_STRING_EN:
-        num_string = NUM_STRING_EN[num]
-        string_num_en[num_string] = num
-
-    # first, second...
-    if ordinals:
-        if short_scale:
-            for num in SHORT_ORDINAL_STRING_EN:
-                num_string = SHORT_ORDINAL_STRING_EN[num]
-                string_num_ordinal_en[num_string] = num
-                string_num_en[num_string] = num
-        else:
-            for num in LONG_ORDINAL_STRING_EN:
-                num_string = LONG_ORDINAL_STRING_EN[num]
-                string_num_ordinal_en[num_string] = num
-                string_num_en[num_string] = num
-
-    # negate next number (-2 = 0 - 2)
-    negatives = ["negative", "minus"]
-
-    # sum the next number (twenty two = 20 + 2)
-    sums = ['twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty',
-            'ninety']
-
     # multiply the previous number (one hundred = 1 * 100)
-    multiplies = ["hundred", "thousand", "hundreds", "thousands", "million",
-                  "millions"]
-
-    # split sentence parse separately and sum ( 2 and a half = 2 + 0.5 )
-    fraction_marker = [" and "]
-
-    # decimal marker ( 1 point 5 = 1 + 0.5)
-    decimal_marker = [" point ", " dot "]
-
-    if short_scale:
-        for num in SHORT_SCALE_EN:
-            num_string = SHORT_SCALE_EN[num]
-            string_num_en[num_string] = num
-            string_num_en[num_string + "s"] = num
-            multiplies.append(num_string)
-            multiplies.append(num_string + "s")
-    else:
-        for num in LONG_SCALE_EN:
-            num_string = LONG_SCALE_EN[num]
-            string_num_en[num_string] = num
-            string_num_en[num_string + "s"] = num
-            multiplies.append(num_string)
-            multiplies.append(num_string + "s")
+    multiplies = _MULTIPLIES_SHORT_SCALE_EN if short_scale \
+        else _MULTIPLIES_LONG_SCALE_EN
 
     # 2 and 3/4
-    for c in fraction_marker:
+    for c in _FRACTION_MARKER:
         components = text.split(c)
 
         if len(components) == 2:
@@ -202,7 +136,7 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
                 return num1 + num2
 
     # 2 point 5
-    for c in decimal_marker:
+    for c in _DECIMAL_MARKER:
         components = text.split(c)
         if len(components) == 2:
             number = extractnumber_en(components[0])
@@ -230,8 +164,22 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
             val = float(word)
 
         # is this word the name of a number ?
-        if word in string_num_en:
-            val = string_num_en[word]
+        if word in _STRING_NUM_EN:
+            val = _STRING_NUM_EN[word]
+
+        string_num_ordinal_en = {}
+        # first, second...
+        if ordinals:
+            if short_scale:
+                for num in SHORT_ORDINAL_STRING_EN:
+                    num_string = SHORT_ORDINAL_STRING_EN[num]
+                    string_num_ordinal_en[num_string] = num
+                    _STRING_NUM_EN[num_string] = num
+            else:
+                for num in LONG_ORDINAL_STRING_EN:
+                    num_string = LONG_ORDINAL_STRING_EN[num]
+                    string_num_ordinal_en[num_string] = num
+                    _STRING_NUM_EN[num_string] = num
 
         # is the prev word an ordinal number and current word is one?
         # second one, third one
@@ -240,7 +188,7 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
 
         # is the prev word a number and should we sum it?
         # twenty two, fifty six
-        if prev_word in sums and word in string_num_en:
+        if prev_word in _SUMS and word in _STRING_NUM_EN:
             if val and val < 10:
                 val = prev_val + val
 
@@ -265,7 +213,7 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
                 val = val * next_value
 
         # is this a negative number?
-        if val and prev_word and prev_word in negatives:
+        if val and prev_word and prev_word in _NEGATIVES:
             val = 0 - val
 
         # let's make sure it isn't a fraction
