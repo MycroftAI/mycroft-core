@@ -136,6 +136,7 @@ def load_skill(skill_descriptor, bus, skill_id, BLACKLISTED_SKILLS=None):
                 skill.load_data_files(path)
                 # Set up intent handlers
                 skill._register_decorated()
+                skill.register_resting_screen()
                 skill.initialize()
             except Exception as e:
                 # If an exception occurs, make sure to clean up the skill
@@ -385,6 +386,23 @@ class SkillGUI:
         self.show_page("SYSTEM_HTMLFRAME")
 
 
+def resting_screen_handler(name=None):
+    """ Decorator for adding a method as an resting screen handler.
+
+        If selected will be shown on screen when device enters idle mode
+    """
+    name = name or func.__self__.name
+
+    def real_decorator(func):
+        # Store the resting information inside the function
+        # This will be used later in register_resting_screen
+        if not hasattr(func, 'resting_handler'):
+            func.resting_handler = name
+        return func
+
+    return real_decorator
+
+
 #######################################################################
 # MycroftSkill base class
 #######################################################################
@@ -396,6 +414,7 @@ class MycroftSkill:
 
     def __init__(self, name=None, bus=None):
         self.name = name or self.__class__.__name__
+        self.resting_name = None
         # Get directory of skill
         self._dir = dirname(abspath(sys.modules[self.__module__].__file__))
         self.settings = SkillSettings(self._dir, self.name)
@@ -734,6 +753,43 @@ class MycroftSkill:
         """
         self.bus.emit(Message('active_skill_request',
                               {"skill_id": self.skill_id}))
+
+    def _handle_collect_resting(self, message=None):
+        """ Handler for collect resting screen messages.
+
+            Sends info on how to trigger this skills resting page.
+        """
+        self.log.info('Registering resting screen')
+        self.bus.emit(Message('mycroft.mark2.register_idle',
+                              data={'name': self.resting_name,
+                                    'id': self.skill_id}))
+
+    def register_resting_screen(self):
+        """ Registers resting screen from the resting_screen_handler decorator.
+
+            This only allows one screen and if two is registered only one
+            will be used.
+        """
+        attributes = [a for a in dir(self) if a != 'emitter']
+        for attr_name in attributes:
+            method = getattr(self, attr_name)
+
+            if hasattr(method, 'resting_handler'):
+                self.resting_name = method.resting_handler
+                self.log.info('Registering resting screen {} for {}.'.format(
+                              method, self.resting_name))
+
+                # Register for handling resting screen
+                msg_type = '{}.{}'.format(self.skill_id, 'idle')
+                self.add_event(msg_type, method)
+                # Register handler for resting screen collect message
+                self.add_event('mycroft.mark2.collect_idle',
+                               self._handle_collect_resting)
+
+                # Do a send at load to make sure the skill is registered
+                # if reloaded
+                self._handle_collect_resting()
+                return
 
     def _register_decorated(self):
         """ Register all intent handlers that are decorated with an intent.
