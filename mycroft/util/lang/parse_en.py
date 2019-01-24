@@ -80,10 +80,10 @@ _NEGATIVES = {"negative", "minus"}
 _SUMS = {'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty',
          'ninety'}
 
-_MULTIPLIES_LONG_SCALE_EN = set(LONG_SCALE_EN.values()) +\
+_MULTIPLIES_LONG_SCALE_EN = set(LONG_SCALE_EN.values()) |\
                             _generate_plurals(LONG_SCALE_EN.values())
 
-_MULTIPLIES_SHORT_SCALE_EN = set(SHORT_SCALE_EN.values()) +\
+_MULTIPLIES_SHORT_SCALE_EN = set(SHORT_SCALE_EN.values()) |\
                             _generate_plurals(SHORT_SCALE_EN.values())
 
 
@@ -101,6 +101,8 @@ _STRING_NUM_EN.update({
     "couple": 2
 })
 
+_STRING_SHORT_ORDINAL_EN = _invert_dict(SHORT_ORDINAL_STRING_EN)
+_STRING_LONG_ORDINAL_EN = _invert_dict(LONG_ORDINAL_STRING_EN)
 
 def extractnumber_en(text, short_scale=True, ordinals=False):
     """
@@ -122,6 +124,9 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
     # multiply the previous number (one hundred = 1 * 100)
     multiplies = _MULTIPLIES_SHORT_SCALE_EN if short_scale \
         else _MULTIPLIES_LONG_SCALE_EN
+
+    string_num_ordinal_en = _STRING_SHORT_ORDINAL_EN if short_scale \
+        else _STRING_LONG_ORDINAL_EN
 
     # 2 and 3/4
     for c in _FRACTION_MARKER:
@@ -166,20 +171,8 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
         # is this word the name of a number ?
         if word in _STRING_NUM_EN:
             val = _STRING_NUM_EN[word]
-
-        string_num_ordinal_en = {}
-        # first, second...
-        if ordinals:
-            if short_scale:
-                for num in SHORT_ORDINAL_STRING_EN:
-                    num_string = SHORT_ORDINAL_STRING_EN[num]
-                    string_num_ordinal_en[num_string] = num
-                    _STRING_NUM_EN[num_string] = num
-            else:
-                for num in LONG_ORDINAL_STRING_EN:
-                    num_string = LONG_ORDINAL_STRING_EN[num]
-                    string_num_ordinal_en[num_string] = num
-                    _STRING_NUM_EN[num_string] = num
+        elif ordinals and word in string_num_ordinal_en:
+            val = string_num_ordinal_en[word]
 
         # is the prev word an ordinal number and current word is one?
         # second one, third one
