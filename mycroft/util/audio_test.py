@@ -19,6 +19,7 @@ from contextlib import contextmanager
 from speech_recognition import Recognizer
 
 from mycroft.client.speech.mic import MutableMicrophone
+from mycroft.configuration import Configuration
 from mycroft.util import play_wav
 from mycroft.util.log import LOG
 import logging
@@ -80,6 +81,19 @@ def main():
         help="Add extra output regarding the recording")
     args = parser.parse_args()
 
+    config = Configuration.get()
+    if "device_name" in config["listener"]:
+        dev = config["listener"]["device_name"]
+    elif "device_index" in config["listenter"]:
+        dev = "Device at index {}".format(config["listener"]["device_index"])
+    else:
+        dev = "Default device"
+    samplerate = config["listener"]["sample_rate"]
+    play_cmd = config["play_wav_cmdline"].replace("%1", "WAV_FILE")
+    print(" ============================= Info ==============================")
+    print(" Input device: {} @ Sample rate: {} Hz".format(dev, samplerate))
+    print(" Playback commandline: {}".format(play_cmd))
+    print()
     print(" ===========================================================")
     print(" ==         STARTING TO RECORD, MAKE SOME NOISE!          ==")
     print(" ===========================================================")
