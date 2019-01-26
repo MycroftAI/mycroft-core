@@ -24,23 +24,6 @@ from mycroft.util.lang.format_en import pronounce_number_en
 from mycroft.util.lang.common_data_en import NUM_STRING_EN, LONG_SCALE_EN, SHORT_SCALE_EN,\
     SHORT_ORDINAL_STRING_EN, LONG_ORDINAL_STRING_EN
 
-# def extractnumber_en(text, short_scale=True, ordinals=False):
-#     """
-#     This function extracts a number from a text string,
-#     handles pronunciations in long scale and short scale
-#
-#     https://en.wikipedia.org/wiki/Names_of_large_numbers
-#
-#     Args:
-#         text (str): the string to normalize
-#         short_scale (bool): use short scale if True, long scale if False
-#         ordinals (bool): consider ordinal numbers, third=3 instead of 1/3
-#     Returns:
-#         (int) or (float) or False: The extracted number or False if no number
-#                                    was found
-#
-#     """
-#     return extractnumber_en(text, short_scale, ordinals)[0]
 
 def _invert_dict(original):
     """
@@ -194,10 +177,37 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
         short_scale (bool): use short scale if True, long scale if False
         ordinals (bool): consider ordinal numbers, third=3 instead of 1/3
     Returns:
+        (int) or (float) or False: The extracted number or False if no number
+                                   was found
+
+    """
+    return extractnumber_en_with_text(text, short_scale, ordinals)[0]
+
+
+def extractnumber_en_with_text(text, short_scale=True, ordinals=False):
+    """
+    This function extracts a number from a text string,
+    handles pronunciations in long scale and short scale
+
+    https://en.wikipedia.org/wiki/Names_of_large_numbers
+
+    Args:
+        text (str): the string to normalize
+        short_scale (bool): use short scale if True, long scale if False
+        ordinals (bool): consider ordinal numbers, third=3 instead of 1/3
+    Returns:
         (int, str) or (float, str)
         None if no number is found.
 
     """
+    fraction = _extract_fraction(text)
+    if fraction:
+        return fraction, text
+
+    decimal = _extract_decimal(text)
+    if decimal:
+        return decimal, text
+
 
     # multiply the previous number (one hundred = 1 * 100)
     multiplies = _MULTIPLIES_SHORT_SCALE_EN if short_scale \
@@ -210,23 +220,29 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
     string_num_scale_en = _invert_dict(string_num_scale_en)
     string_num_scale_en.update(_generate_plurals(string_num_scale_en))
 
-    fraction = _extract_fraction(text)
-    if fraction:
-        return fraction
-
-    decimal = _extract_decimal(text)
-    if decimal:
-        return decimal
-
     aWords = text.split()
-    aWords = [word for word in aWords if word not in ["the", "a", "an"]]
+    # aWords = [word for word in aWords if word not in ["the", "a", "an"]]
+    skip_words = {"the", "a", "an"}
+    number_words = []
     val = False
     prev_val = None
     to_sum = []
     for idx, word in enumerate(aWords):
-
         if not word:
             continue
+        if word in skip_words:
+            number_words.append(word)
+            continue
+
+        if word not in string_num_scale_en and word not in _STRING_NUM_EN and word not in _SUMS and word not in multiplies:
+            if number_words:
+                break
+            else:
+                continue
+        else:
+            number_words.append(word)
+
+
         prev_word = aWords[idx - 1] if idx > 0 else ""
         next_word = aWords[idx + 1] if idx + 1 < len(aWords) else ""
 
@@ -302,7 +318,7 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
     if val is not None:
         for v in to_sum:
             val = val + v
-    return val
+    return val, " ".join(number_words)
 
 
 def extract_duration_en(text):
