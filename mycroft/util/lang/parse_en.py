@@ -128,6 +128,10 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
     string_num_ordinal_en = _STRING_SHORT_ORDINAL_EN if short_scale \
         else _STRING_LONG_ORDINAL_EN
 
+    string_num_scale_en = SHORT_SCALE_EN if short_scale else LONG_SCALE_EN
+    string_num_scale_en = _invert_dict(string_num_scale_en)
+    string_num_scale_en.update(_generate_plurals(string_num_scale_en))
+
     # 2 and 3/4
     for c in _FRACTION_MARKER:
         components = text.split(c)
@@ -170,7 +174,9 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
 
         # is this word the name of a number ?
         if word in _STRING_NUM_EN:
-            val = _STRING_NUM_EN[word]
+            val = _STRING_NUM_EN.get(word)
+        elif word in string_num_scale_en:
+            val = string_num_scale_en.get(word)
         elif ordinals and word in string_num_ordinal_en:
             val = string_num_ordinal_en[word]
 
@@ -181,7 +187,10 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
 
         # is the prev word a number and should we sum it?
         # twenty two, fifty six
-        if prev_word in _SUMS and word in _STRING_NUM_EN:
+        if prev_word in _SUMS and (
+                word in _STRING_NUM_EN or
+                word in string_num_scale_en or
+                (ordinals and word in string_num_ordinal_en)):
             if val and val < 10:
                 val = prev_val + val
 
