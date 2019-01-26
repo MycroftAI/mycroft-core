@@ -126,7 +126,6 @@ def _extract_fraction(text):
         None if no fraction value is found.
 
     """
-    # 2 and 3/4
     for c in _FRACTION_MARKER:
         components = text.split(c)
 
@@ -153,6 +152,9 @@ def _extract_decimal(text):
         While this is a helper for extractnumber_en, it also depends on
         extractnumber_en, to parse out the components of the decimal.
 
+        This does not currently handle things like:
+            number dot number number number
+
     Args:
         text str: The text to parse.
 
@@ -168,7 +170,6 @@ def _extract_decimal(text):
         None if no decimal value is found.
 
     """
-    # 2 point 5
     for c in _DECIMAL_MARKER:
         components = text.split(c)
         if len(components) == 2:
