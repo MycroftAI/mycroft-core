@@ -253,8 +253,10 @@ def extractnumber_en_with_text(text, short_scale=True, ordinals=False):
 
         # is this word already a number ?
         if is_numeric(word):
-            # if word.isdigit():            # doesn't work with decimals
-            val = float(word)
+            if word.isdigit():            # doesn't work with decimals
+                val = int(word)
+            else:
+                val = float(word)
 
         # is this word the name of a number ?
         if word in _STRING_NUM_EN:
