@@ -20,7 +20,7 @@ from mycroft.util.lang.parse_common import is_numeric, look_for_fractions, \
     extract_numbers_generic
 from mycroft.util.lang.format_da import pronounce_number_da
 
-de_numbers = {
+da_numbers = {
     'nul': 0,
     'en': 1,
     'et': 1,
@@ -105,8 +105,8 @@ def extractnumber_da(text):
         elif isOrdinal_da(word):
             val = isOrdinal_da(word)
         else:
-            if word in de_numbers:
-                val = de_numbers[word]
+            if word in da_numbers:
+                val = da_numbers[word]
                 if count < (len(aWords) - 1):
                     wordNext = aWords[count + 1]
                 else:
@@ -823,8 +823,8 @@ def isFractional_da(input_str):
         return 1.0 / 3
     elif input_str.endswith('del'):
         input_str = input_str[:len(input_str) - 3]  # e.g. "fünftel"
-        if input_str.lower() in de_numbers:
-            return 1.0 / (de_numbers[input_str.lower()])
+        if input_str.lower() in da_numbers:
+            return 1.0 / (da_numbers[input_str.lower()])
 
     return False
 
@@ -841,7 +841,7 @@ def isOrdinal_da(input_str):
 
     ordinals for 1, 3, 7 and 8 are irregular
 
-    only works for ordinals corresponding to the numbers in de_numbers
+    only works for ordinals corresponding to the numbers in da_numbers
 
     """
 
@@ -861,24 +861,24 @@ def isOrdinal_da(input_str):
         return 6
     if lowerstr.startswith("elfte"):
         return 1
-    if lowerstr.startswith("tolfte"):
+    if lowerstr.startswith("tolvfte"):
         return 12
 
 
     if lowerstr[-3:] == "nde":  # from 20 suffix is -ste*
         lowerstr = lowerstr[:-3]
-        if lowerstr in de_numbers:
-            return de_numbers[lowerstr]
+        if lowerstr in da_numbers:
+            return da_numbers[lowerstr]
 
     if lowerstr[-4:] in ["ende"]:
         lowerstr = lowerstr[:-4]
-        if lowerstr in de_numbers:
-            return de_numbers[lowerstr]
+        if lowerstr in da_numbers:
+            return da_numbers[lowerstr]
 
     if lowerstr[-2:] == "te":  # below 20 suffix is -te*
         lowerstr = lowerstr[:-2]
-        if lowerstr in de_numbers:
-            return de_numbers[lowerstr]
+        if lowerstr in da_numbers:
+            return da_numbers[lowerstr]
 
     return False
 
@@ -895,8 +895,8 @@ def normalize_da(text, remove_articles):
 
         # Convert numbers into digits, e.g. "two" -> "2"
 
-        if word in de_numbers:
-            word = str(de_numbers[word])
+        if word in da_numbers:
+            word = str(da_numbers[word])
 
         normalized += " " + word
 
