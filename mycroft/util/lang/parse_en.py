@@ -233,8 +233,15 @@ def extractnumber_en_with_text(text, short_scale=True, ordinals=False):
             number_words.append(word)
             continue
 
-        if word not in string_num_scale_en and word not in _STRING_NUM_EN and word not in _SUMS and word not in multiplies:
-            if number_words:
+        if word not in string_num_scale_en and \
+                word not in _STRING_NUM_EN and \
+                word not in _SUMS and \
+                word not in multiplies and \
+                not (ordinals and word in string_num_ordinal_en) and \
+                not is_numeric(word) and \
+                not isFractional_en(word, short_scale=short_scale) and \
+                not look_for_fractions(word.split('/')):
+            if number_words and not all([w in skip_words for w in number_words]):
                 break
             else:
                 continue
@@ -316,6 +323,12 @@ def extractnumber_en_with_text(text, short_scale=True, ordinals=False):
     if val is not None:
         for v in to_sum:
             val = val + v
+
+    if number_words and number_words[0] in skip_words:
+        number_words.pop(0)
+    if number_words and number_words[-1] in skip_words:
+        number_words.pop()
+
     return val, " ".join(number_words)
 
 
