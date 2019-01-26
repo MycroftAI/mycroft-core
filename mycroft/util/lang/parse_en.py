@@ -104,6 +104,83 @@ _STRING_NUM_EN.update({
 _STRING_SHORT_ORDINAL_EN = _invert_dict(SHORT_ORDINAL_STRING_EN)
 _STRING_LONG_ORDINAL_EN = _invert_dict(LONG_ORDINAL_STRING_EN)
 
+
+def _extract_fraction(text):
+    """
+    Extract fraction numbers from a string.
+
+    This is a helper function for extractnumber_en. It is not intended
+    to be used on it's own.
+
+    This function handles text such as '2 and 3/4'.
+
+    Notes:
+        While this is a helper for extractnumber_en, it also depends on
+        extractnumber_en, to parse out the components of the fraction.
+
+    Args:
+        text str: The text to parse.
+
+    Returns:
+        int or float
+        None if no fraction value is found.
+
+    """
+    # 2 and 3/4
+    for c in _FRACTION_MARKER:
+        components = text.split(c)
+
+        if len(components) == 2:
+            # ensure first is not a fraction and second is a fraction
+            num1 = extractnumber_en(components[0])
+            num2 = extractnumber_en(components[1])
+            if num1 is not None and num2 is not None \
+                    and num1 >= 1 and 0 < num2 < 1:
+                return num1 + num2
+    return None
+
+
+def _extract_decimal(text):
+    """
+    Extract decimal numbers from a string.
+
+    This is a helper function for extractnumber_en. It is not intended
+    to be used on it's own.
+
+    This function handles text such as '2 point 5'.
+
+    Notes:
+        While this is a helper for extractnumber_en, it also depends on
+        extractnumber_en, to parse out the components of the decimal.
+
+    Args:
+        text str: The text to parse.
+
+    Returns:
+        int or float
+        None if no decimal value is found.
+
+    Args:
+        text str: The text to parse.
+
+    Returns:
+        float
+        None if no decimal value is found.
+
+    """
+    # 2 point 5
+    for c in _DECIMAL_MARKER:
+        components = text.split(c)
+        if len(components) == 2:
+            number = extractnumber_en(components[0])
+            decimal = extractnumber_en(components[1])
+            if number is not None and decimal is not None:
+                # TODO handle number dot number number number
+                if "." not in str(decimal):
+                    return number + float("0." + str(decimal))
+    return None
+
+
 def extractnumber_en(text, short_scale=True, ordinals=False):
     """
     This function extracts a number from a text string,
@@ -132,28 +209,13 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
     string_num_scale_en = _invert_dict(string_num_scale_en)
     string_num_scale_en.update(_generate_plurals(string_num_scale_en))
 
-    # 2 and 3/4
-    for c in _FRACTION_MARKER:
-        components = text.split(c)
+    fraction = _extract_fraction(text)
+    if fraction:
+        return fraction
 
-        if len(components) == 2:
-            # ensure first is not a fraction and second is a fraction
-            num1 = extractnumber_en(components[0])
-            num2 = extractnumber_en(components[1])
-            if num1 is not None and num2 is not None \
-                    and num1 >= 1 and 0 < num2 < 1:
-                return num1 + num2
-
-    # 2 point 5
-    for c in _DECIMAL_MARKER:
-        components = text.split(c)
-        if len(components) == 2:
-            number = extractnumber_en(components[0])
-            decimal = extractnumber_en(components[1])
-            if number is not None and decimal is not None:
-                # TODO handle number dot number number number
-                if "." not in str(decimal):
-                    return number + float("0." + str(decimal))
+    decimal = _extract_decimal(text)
+    if decimal:
+        return decimal
 
     aWords = text.split()
     aWords = [word for word in aWords if word not in ["the", "a", "an"]]
