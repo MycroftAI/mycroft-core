@@ -124,13 +124,14 @@ def nice_number_da(number, speech, denominators):
     den_str = FRACTION_STRING_DA[den]
     if whole == 0:
         if num == 1:
-            return_string = 'en {}'.format(den_str)
-        else:
             return_string = '{} {}'.format(num, den_str)
-    elif num == 1:
-        return_string = '{} og en {}'.format(whole, den_str)
+        else:
+            return_string = '{} {}e'.format(num, den_str)
     else:
-        return_string = '{} og {} {}'.format(whole, num, den_str)
+        if num == 1:
+            return_string = '{} og {} {}'.format(whole, num, den_str)
+        else:
+            return_string = '{} og {} {}e'.format(whole, num, den_str)
 
     return return_string
 
@@ -153,7 +154,10 @@ def pronounce_number_da(num, places=2):
         if num > 99:
             hundreds = floor(num / 100)
             if hundreds > 0:
-                result += NUM_STRING_DA[
+                if hundreds == 1:
+                    result += 'et' + 'hundrede' + EXTRA_SPACE
+                else:
+                    result += NUM_STRING_DA[
                               hundreds] + EXTRA_SPACE + 'hundrede' + EXTRA_SPACE
                 num -= hundreds * 100
         if num == 0:
@@ -168,9 +172,10 @@ def pronounce_number_da(num, places=2):
             if ones > 0:
                 result += NUM_STRING_DA[ones] + EXTRA_SPACE
                 if tens > 0:
-                    result += ' og ' + EXTRA_SPACE
+                    result += 'og' + EXTRA_SPACE
             if tens > 0:
                 result += NUM_STRING_DA[tens] + EXTRA_SPACE
+
         return result
 
     def pronounce_fractional_da(num,
@@ -196,7 +201,7 @@ def pronounce_number_da(num, places=2):
         if last_triplet == 1:
             if scale_level == 0:
                 if result != '':
-                    result += '' + 'en'
+                    result += '' + 'et'
                 else:
                     result += "en"
             elif scale_level == 1:
@@ -207,7 +212,7 @@ def pronounce_number_da(num, places=2):
             result += pronounce_triplet_da(last_triplet)
             if scale_level == 1:
                 # result += EXTRA_SPACE
-                result += 'tusinde og ' + EXTRA_SPACE
+                result += 'tusinde' + EXTRA_SPACE
             if scale_level >= 2:
                 # if EXTRA_SPACE == '':
                 #    result += " "
@@ -253,10 +258,20 @@ def pronounce_ordinal_da(num):
     # only for whole positive numbers including zero
     if num < 0 or num != int(num):
         return num
-    elif num < 9:
+    if num < 10:
         return ordinals[num]
+    if num < 30:
+        if pronounce_number_da(num)[-1:] == 'e':
+            return pronounce_number_da(num) + "nde"
+        else:
+            return pronounce_number_da(num) + "ende"
+    if num < 40:
+        return pronounce_number_da(num) + "fte"
     else:
-        return pronounce_number_da(num) + "nde"
+        if pronounce_number_da(num)[-1:] == 'e':
+            return pronounce_number_da(num) + "nde"
+        else:
+            return pronounce_number_da(num) + "ende"
 
 
 def nice_time_da(dt, speech=True, use_24hour=False, use_ampm=False):
@@ -284,8 +299,8 @@ def nice_time_da(dt, speech=True, use_24hour=False, use_ampm=False):
         else:
             # e.g. "3:01" or "2:22"
             string = dt.strftime("%I:%M")
-        if string[0] == '0':
-            string = string[1:]  # strip leading zeros
+        #if string[0] == '0':
+        #    string = string[1:]  # strip leading zeros
 
     if not speech:
         return string
@@ -297,8 +312,9 @@ def nice_time_da(dt, speech=True, use_24hour=False, use_ampm=False):
             speak += "et"  # 01:00 is "et" not "en"
         else:
             speak += pronounce_number_da(dt.hour)
-        if not dt.minute == 0:  # zero minutes are not pronounced, 13:00 is
-            # "13 Uhr" not "13 hundred hours"
+        if not dt.minute == 0:
+            if dt.minute < 10:
+                speak += ' nul'
             speak += " " + pronounce_number_da(dt.minute)
 
         return speak  # ampm is ignored when use_24hour is true
@@ -321,21 +337,23 @@ def nice_time_da(dt, speech=True, use_24hour=False, use_ampm=False):
             speak += pronounce_number_da(dt.hour - 12)
 
         if not dt.minute == 0:
+            if dt.minute < 10:
+                speak += ' nul'
             speak += " " + pronounce_number_da(dt.minute)
 
         if use_ampm:
             if dt.hour > 11:
                 if dt.hour < 18:
-                    speak += " eftermiddag"  # 12:01 - 17:59
+                    speak += " om eftermiddagen"  # 12:01 - 17:59
                     # nachmittags/afternoon
                 elif dt.hour < 22:
-                    speak += " aften"  # 18:00 - 21:59 abends/evening
+                    speak += " om aftenen"  # 18:00 - 21:59 abends/evening
                 else:
-                    speak += " nat"  # 22:00 - 23:59 nachts/at night
+                    speak += " om natten"  # 22:00 - 23:59 nachts/at night
             elif dt.hour < 3:
-                speak += " nat"  # 00:01 - 02:59 nachts/at night
+                speak += " om natten"  # 00:01 - 02:59 nachts/at night
             else:
-                speak += " morgenen"  # 03:00 - 11:59 morgens/in the morning
+                speak += " om morgenen"  # 03:00 - 11:59 morgens/in the morning
 
         return speak
 
