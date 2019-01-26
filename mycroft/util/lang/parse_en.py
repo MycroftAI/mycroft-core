@@ -114,12 +114,12 @@ def _extract_fraction(text):
 
         if len(components) == 2:
             # ensure first is not a fraction and second is a fraction
-            num1 = extractnumber_en(components[0])
-            num2 = extractnumber_en(components[1])
+            num1, str1 = extractnumber_en_with_text(components[0])
+            num2, str2 = extractnumber_en_with_text(components[1])
             if num1 is not None and num2 is not None \
                     and num1 >= 1 and 0 < num2 < 1:
-                return num1 + num2
-    return None
+                return num1 + num2, str1 + c + str2
+    return None, None
 
 
 def _extract_decimal(text):
@@ -156,13 +156,13 @@ def _extract_decimal(text):
     for c in _DECIMAL_MARKER:
         components = text.split(c)
         if len(components) == 2:
-            number = extractnumber_en(components[0])
-            decimal = extractnumber_en(components[1])
+            number, number_text = extractnumber_en_with_text(components[0])
+            decimal, decimal_text = extractnumber_en_with_text(components[1])
             if number is not None and decimal is not None:
                 # TODO handle number dot number number number
                 if "." not in str(decimal):
-                    return number + float("0." + str(decimal))
-    return None
+                    return number + float("0." + str(decimal)), number_text + c + decimal_text
+    return None, None
 
 
 def extractnumber_en(text, short_scale=True, ordinals=False):
@@ -200,14 +200,13 @@ def extractnumber_en_with_text(text, short_scale=True, ordinals=False):
         None if no number is found.
 
     """
-    fraction = _extract_fraction(text)
+    fraction, fraction_text = _extract_fraction(text)
     if fraction:
-        return fraction, text
+        return fraction, fraction_text
 
-    decimal = _extract_decimal(text)
+    decimal, decimal_text = _extract_decimal(text)
     if decimal:
-        return decimal, text
-
+        return decimal, decimal_text
 
     # multiply the previous number (one hundred = 1 * 100)
     multiplies = _MULTIPLIES_SHORT_SCALE_EN if short_scale \
@@ -241,7 +240,6 @@ def extractnumber_en_with_text(text, short_scale=True, ordinals=False):
                 continue
         else:
             number_words.append(word)
-
 
         prev_word = aWords[idx - 1] if idx > 0 else ""
         next_word = aWords[idx + 1] if idx + 1 < len(aWords) else ""
