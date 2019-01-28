@@ -262,6 +262,7 @@ def extractnumber_en_with_text(text, short_scale=True, ordinals=False):
             if number_words and not all([w in ARTICLES for w in number_words]):
                 break
             else:
+                number_words = []
                 continue
         else:
             number_words.append(word)
