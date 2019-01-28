@@ -17,6 +17,9 @@
 from collections import OrderedDict
 
 
+ARTICLES = {'a', 'an', 'the'}
+
+
 NUM_STRING_EN = {
     0: 'zero',
     1: 'one',

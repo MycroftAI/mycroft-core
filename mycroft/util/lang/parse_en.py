@@ -21,8 +21,11 @@ from dateutil.relativedelta import relativedelta
 from mycroft.util.lang.parse_common import is_numeric, look_for_fractions, \
     extract_numbers_generic
 from mycroft.util.lang.format_en import pronounce_number_en
-from mycroft.util.lang.common_data_en import NUM_STRING_EN, LONG_SCALE_EN, SHORT_SCALE_EN,\
-    SHORT_ORDINAL_STRING_EN, LONG_ORDINAL_STRING_EN
+from mycroft.util.lang.common_data_en import ARTICLES, NUM_STRING_EN, \
+    LONG_ORDINAL_STRING_EN, LONG_SCALE_EN, \
+    SHORT_SCALE_EN, SHORT_ORDINAL_STRING_EN
+
+import re
 
 
 def _invert_dict(original):
@@ -165,6 +168,33 @@ def _extract_decimal(text):
     return None, None
 
 
+def _initialize_number_data(short_scale):
+    """
+    Generate dictionaries of words to numbers, based on scale.
+
+    This is a helper function for extractnumber_en.
+
+    Args:
+        short_scale boolean:
+
+    Returns:
+        (dict, dict, dict)
+        multiplies, string_num_ordinal, string_num_scale
+
+    """
+    multiplies = _MULTIPLIES_SHORT_SCALE_EN if short_scale \
+        else _MULTIPLIES_LONG_SCALE_EN
+
+    string_num_ordinal_en = _STRING_SHORT_ORDINAL_EN if short_scale \
+        else _STRING_LONG_ORDINAL_EN
+
+    string_num_scale_en = SHORT_SCALE_EN if short_scale else LONG_SCALE_EN
+    string_num_scale_en = _invert_dict(string_num_scale_en)
+    string_num_scale_en.update(_generate_plurals(string_num_scale_en))
+
+    return multiplies, string_num_ordinal_en, string_num_scale_en
+
+
 def extractnumber_en(text, short_scale=True, ordinals=False):
     """
     This function extracts a number from a text string,
@@ -208,40 +238,28 @@ def extractnumber_en_with_text(text, short_scale=True, ordinals=False):
     if decimal:
         return decimal, decimal_text
 
-    # multiply the previous number (one hundred = 1 * 100)
-    multiplies = _MULTIPLIES_SHORT_SCALE_EN if short_scale \
-        else _MULTIPLIES_LONG_SCALE_EN
-
-    string_num_ordinal_en = _STRING_SHORT_ORDINAL_EN if short_scale \
-        else _STRING_LONG_ORDINAL_EN
-
-    string_num_scale_en = SHORT_SCALE_EN if short_scale else LONG_SCALE_EN
-    string_num_scale_en = _invert_dict(string_num_scale_en)
-    string_num_scale_en.update(_generate_plurals(string_num_scale_en))
+    multiplies, string_num_ordinal, string_num_scale = \
+        _initialize_number_data(short_scale)
 
     aWords = text.split()
-    # aWords = [word for word in aWords if word not in ["the", "a", "an"]]
-    skip_words = {"the", "a", "an"}
     number_words = []
     val = False
     prev_val = None
     to_sum = []
     for idx, word in enumerate(aWords):
-        if not word:
-            continue
-        if word in skip_words:
+        if word in ARTICLES:
             number_words.append(word)
             continue
 
-        if word not in string_num_scale_en and \
+        if word not in string_num_scale and \
                 word not in _STRING_NUM_EN and \
                 word not in _SUMS and \
                 word not in multiplies and \
-                not (ordinals and word in string_num_ordinal_en) and \
+                not (ordinals and word in string_num_ordinal) and \
                 not is_numeric(word) and \
                 not isFractional_en(word, short_scale=short_scale) and \
                 not look_for_fractions(word.split('/')):
-            if number_words and not all([w in skip_words for w in number_words]):
+            if number_words and not all([w in ARTICLES for w in number_words]):
                 break
             else:
                 continue
@@ -261,22 +279,22 @@ def extractnumber_en_with_text(text, short_scale=True, ordinals=False):
         # is this word the name of a number ?
         if word in _STRING_NUM_EN:
             val = _STRING_NUM_EN.get(word)
-        elif word in string_num_scale_en:
-            val = string_num_scale_en.get(word)
-        elif ordinals and word in string_num_ordinal_en:
-            val = string_num_ordinal_en[word]
+        elif word in string_num_scale:
+            val = string_num_scale.get(word)
+        elif ordinals and word in string_num_ordinal:
+            val = string_num_ordinal[word]
 
         # is the prev word an ordinal number and current word is one?
         # second one, third one
-        if ordinals and prev_word in string_num_ordinal_en and val is 1:
+        if ordinals and prev_word in string_num_ordinal and val is 1:
             val = prev_val
 
         # is the prev word a number and should we sum it?
         # twenty two, fifty six
         if prev_word in _SUMS and (
                 word in _STRING_NUM_EN or
-                word in string_num_scale_en or
-                (ordinals and word in string_num_ordinal_en)):
+                word in string_num_scale or
+                (ordinals and word in string_num_ordinal)):
             if val and val < 10:
                 val = prev_val + val
 
@@ -322,16 +340,29 @@ def extractnumber_en_with_text(text, short_scale=True, ordinals=False):
                 val = 0
                 prev_val = 0
 
-    if val is not None:
-        for v in to_sum:
-            val = val + v
-
-    if number_words and number_words[0] in skip_words:
-        number_words.pop(0)
-    if number_words and number_words[-1] in skip_words:
-        number_words.pop()
+    if val is not None and to_sum:
+        val += sum(to_sum)
 
     return val, " ".join(number_words)
+
+
+def extract_numbers_with_text(text, short_scale=True, ordinals=False):
+    pairs = []
+    while True:
+        number, string = extractnumber_en_with_text(text, short_scale, ordinals)
+        if not number:
+            break
+        pairs.append((number, string))
+        text = text.replace(string, '')
+    return pairs
+
+
+def convert_words_to_numbers(text, short_scale=True, ordinals=False):
+    pairs = extract_numbers_with_text(text, short_scale, ordinals)
+    pairs.sort(key=lambda x: len(x[1]), reverse=True)
+    for number, string in pairs:
+        text = text.replace(string, str(number))
+    return text
 
 
 def extract_duration_en(text):
@@ -353,9 +384,10 @@ def extract_duration_en(text):
         text (str): string containing a duration
 
     Returns:
-        [int, str]: An array containing the int and the remaining text
-                    not consumed in the parsing, or none if no duration
-                    related text was found.
+        (float, str): A tuple containing the duration and the remaining text
+                    not consumed in the parsing. The first value will
+                    be None if no duration is found. The text returned
+                    will have whitespace stripped from the ends.
 
     """
     if not text:
@@ -369,10 +401,22 @@ def extract_duration_en(text):
         'week': 604800
     }
 
-    num = extractnumber_en(text.replace("-", " "))
+    pattern = "(?P<value>\d+(?:\.?\d+)?)\s+{unit}s?"
+    text = convert_words_to_numbers(text)
 
+    pieces = []
+    for unit, value in time_unit_to_seconds_map.items():
+        unit_pattern = pattern.format(unit=unit)
+        matches = re.findall(unit_pattern, text)
+        matches = map(lambda s: float(s) * value, matches)
+        pieces += matches
+        text = re.sub(unit_pattern, '', text)
 
-    return num * unit
+    text = text.strip()
+    duration = sum(pieces)
+
+    return (duration, text) if pieces else (None, text)
+
 
 def extract_datetime_en(string, dateNow, default_time):
     """ Convert a human date reference into an exact datetime
