@@ -194,8 +194,8 @@ fi" > ~/.profile_mycroft
     if [[ ! -d /opt/mycroft/skills ]] ; then
         echo "This script will create that folder for you.  This requires sudo"
         echo "permission and might ask you for a password..."
-        sudo mkdir -p /opt/mycroft/skills
-        sudo chown -R $USER:$USER /opt/mycroft
+        $SUDO mkdir -p /opt/mycroft/skills
+        $SUDO chown -R $USER:$USER /opt/mycroft
         echo "Created!"
     fi
     if [[ ! -d skills ]] ; then
@@ -235,7 +235,7 @@ function install_deps() {
     echo "Installing packages..."
     if found_exe sudo ; then
         SUDO=sudo
-    else
+    elif [ "${opt_allowroot}" != true ]; then
         echo "This script requires \"sudo\" to install system packages. Please install it, then re-run this script."
         exit 1
     fi
@@ -416,9 +416,9 @@ if [[ ! -w /var/log/mycroft/ ]] ; then
     # Creating and setting permissions
     echo "Creating /var/log/mycroft/ directory"
     if [[ ! -d /var/log/mycroft/ ]] ; then
-        sudo mkdir /var/log/mycroft/
+        $SUDO mkdir /var/log/mycroft/
     fi
-    sudo chmod 777 /var/log/mycroft/
+    $SUDO chmod 777 /var/log/mycroft/
 fi
 
 #Store a fingerprint of setup
