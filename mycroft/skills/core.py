@@ -1621,7 +1621,7 @@ class FallbackSkill(MycroftSkill):
             return False
 
         self.instance_fallback_handlers.append(wrapper)
-        self._register_fallback(handler, priority)
+        self._register_fallback(wrapper, priority)
 
     @classmethod
     def remove_fallback(cls, handler_to_del):
