@@ -313,7 +313,8 @@ def _extract_number_with_text_en(tokens, short_scale=True, ordinals=False):
             else:
                 number_words = []
                 continue
-        elif prev_word not in multiplies \
+        elif word not in multiplies \
+                and prev_word not in multiplies \
                 and prev_word not in _SUMS \
                 and not (ordinals and prev_word in string_num_ordinal)\
                 and prev_word not in _NEGATIVES \
@@ -443,15 +444,17 @@ def extract_numbers_with_text(text, short_scale=True, ordinals=False):
                          string.
 
     """
-    pairs = []
+    results = []
     while True:
-        number, string = \
+        number, string, start_index, end_index = \
             extract_number_with_text_en(text, short_scale, ordinals)
         if not number:
             break
-        pairs.append((number, string))
-        text = text.replace(string, '')
-    return pairs
+        results.append((number, string, start_index, end_index))
+        words = text.split()
+        words = words[0:start_index] + words[end_index + 1:]
+        text = ' '.join(words)
+    return results
 
 
 def convert_words_to_numbers(text, short_scale=True, ordinals=False):
