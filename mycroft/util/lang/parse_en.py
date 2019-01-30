@@ -97,10 +97,10 @@ _MULTIPLIES_SHORT_SCALE_EN = set(SHORT_SCALE_EN.values()) |\
 
 
 # split sentence parse separately and sum ( 2 and a half = 2 + 0.5 )
-_FRACTION_MARKER = {" and "}
+_FRACTION_MARKER = {"and"}
 
 # decimal marker ( 1 point 5 = 1 + 0.5)
-_DECIMAL_MARKER = {" point ", " dot "}
+_DECIMAL_MARKER = {"point", "dot"}
 
 _STRING_NUM_EN = _invert_dict(NUM_STRING_EN)
 _STRING_NUM_EN.update(_generate_plurals(_STRING_NUM_EN))
@@ -112,6 +112,35 @@ _STRING_NUM_EN.update({
 
 _STRING_SHORT_ORDINAL_EN = _invert_dict(SHORT_ORDINAL_STRING_EN)
 _STRING_LONG_ORDINAL_EN = _invert_dict(LONG_ORDINAL_STRING_EN)
+
+
+def _partition_list(items, split_on):
+    """
+    Partition a list of items.
+
+    Works similarly to str.partition
+
+    Args:
+        items:
+        split_on callable:
+            Should return a boolean. Each item will be passed to
+            this callable in succession, and partitions will be
+            created any time it returns True.
+
+    Returns:
+
+    """
+    splits = []
+    current_split = []
+    for item in items:
+        if split_on(item):
+            splits.append(current_split)
+            splits.append([item])
+            current_split = []
+        else:
+            current_split.append(item)
+    splits.append(current_split)
+    return list(filter(lambda x: len(x) != 0, splits))
 
 
 def _extract_fraction(tokens):
@@ -131,21 +160,22 @@ def _extract_fraction(tokens):
         tokens [_Token]: words and their indexes in the original string.
 
     Returns:
-        int or float
-        None if no fraction value is found.
+        (int or float, [_Token])
+        The value found, and the list of relevant tokens.
+        (None, None) if no fraction value is found.
 
     """
-    if len(tokens) != 3 or tokens[1].word not in _FRACTION_MARKER:
-        return None, None
+    for c in _FRACTION_MARKER:
+        partitions = _partition_list(tokens, lambda t: t.word == c)
 
-    # ensure first is not a fraction and second is a fraction
-    num1, words1 = _extract_number_with_text_en(tokens[0])
-    num2, words2 = _extract_number_with_text_en(tokens[2])
-    if num1 is not None and num2 is not None \
-            and num1 >= 1 and 0 < num2 < 1:
-        return num1 + num2, tokens
-    else:
-        return None, None
+        if len(partitions) == 3:
+            # ensure first is not a fraction and second is a fraction
+            num1, tokens1 = _extract_number_with_text_en(partitions[0])
+            num2, tokens2 = _extract_number_with_text_en(partitions[2])
+            if num1 is not None and num2 is not None \
+                    and num1 >= 1 and 0 < num2 < 1:
+                return num1 + num2, tokens1 + partitions[1] + tokens2
+    return None, None
 
 
 def _extract_decimal(tokens):
@@ -165,30 +195,24 @@ def _extract_decimal(tokens):
             number dot number number number
 
     Args:
-        text str: The text to parse.
-
-    Returns:
-        int or float
-        None if no decimal value is found.
-
-    Args:
         tokens [_Token]: The text to parse.
 
     Returns:
-        float
-        None if no decimal value is found.
+        (float, [_Token])
+        The value found and relevant tokens.
+        (None, None) if no decimal value is found.
 
     """
-    if len(tokens) != 3 or tokens[1].word not in _DECIMAL_MARKER:
-        return None, None
-
-    number, number_text = _extract_number_with_text_en(tokens[0])
-    decimal, decimal_text = _extract_number_with_text_en(tokens[2])
-    if number is not None and decimal is not None:
-        # TODO handle number dot number number number
-        if "." not in str(decimal):
-            return number + float("0." + str(decimal)), tokens
-
+    for c in _DECIMAL_MARKER:
+        partitions = _partition_list(tokens, lambda t: t.word == c)
+        if len(partitions) == 3:
+            number, tokens1 = _extract_number_with_text_en(partitions[0])
+            decimal, tokens2 = _extract_number_with_text_en(partitions[2])
+            if number is not None and decimal is not None:
+                # TODO handle number dot number number number
+                if "." not in str(decimal):
+                    return number + float("0." + str(decimal)), \
+                           tokens1 + partitions[1] + tokens2
     return None, None
 
 
