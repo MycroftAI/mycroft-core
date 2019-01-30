@@ -178,7 +178,7 @@ def _initialize_number_data(short_scale):
         short_scale boolean:
 
     Returns:
-        (dict, dict, dict)
+        (set(str), dict(str, number), dict(str, number))
         multiplies, string_num_ordinal, string_num_scale
 
     """
