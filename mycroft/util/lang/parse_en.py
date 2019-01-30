@@ -276,6 +276,8 @@ def _extract_number_with_text_en(text, short_scale=True, ordinals=False):
                 and prev_word not in _NEGATIVES \
                 and prev_word not in ARTICLES:
             number_words = [word]
+        elif prev_word in _SUMS and word in _SUMS:
+            number_words = [word]
         else:
             number_words.append(word)
 
