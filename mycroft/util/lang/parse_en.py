@@ -247,9 +247,12 @@ def extractnumber_en_with_text(text, short_scale=True, ordinals=False):
     prev_val = None
     to_sum = []
     for idx, word in enumerate(aWords):
-        if word in ARTICLES:
+        if word in ARTICLES or word in _NEGATIVES:
             number_words.append(word)
             continue
+
+        prev_word = aWords[idx - 1] if idx > 0 else ""
+        next_word = aWords[idx + 1] if idx + 1 < len(aWords) else ""
 
         if word not in string_num_scale and \
                 word not in _STRING_NUM_EN and \
@@ -259,16 +262,20 @@ def extractnumber_en_with_text(text, short_scale=True, ordinals=False):
                 not is_numeric(word) and \
                 not isFractional_en(word, short_scale=short_scale) and \
                 not look_for_fractions(word.split('/')):
-            if number_words and not all([w in ARTICLES for w in number_words]):
+            if number_words and not all([w in ARTICLES | _NEGATIVES for w in number_words]):
                 break
             else:
                 number_words = []
                 continue
+        elif prev_word not in multiplies \
+                and prev_word not in _SUMS \
+                and not (ordinals and prev_word in string_num_ordinal)\
+                and prev_word not in _NEGATIVES \
+                and prev_word not in ARTICLES:
+            number_words = [word]
         else:
             number_words.append(word)
 
-        prev_word = aWords[idx - 1] if idx > 0 else ""
-        next_word = aWords[idx + 1] if idx + 1 < len(aWords) else ""
 
         # is this word already a number ?
         if is_numeric(word):

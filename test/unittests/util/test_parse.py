@@ -508,37 +508,37 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(normalize("that's one and a half and five six"),
                          "that is 1 and half and 5 6")
 
-    # def test_multiple_numbers(self):
-    #     self.assertEqual(extract_numbers("this is a one two three  test"),
-    #                      [1.0, 2.0, 3.0])
-    #     self.assertEqual(extract_numbers("it's  a four five six  test"),
-    #                      [4.0, 5.0, 6.0])
-    #     self.assertEqual(extract_numbers("this is a ten eleven twelve  test"),
-    #                      [10.0, 11.0, 12.0])
-    #     self.assertEqual(extract_numbers("this is a one twenty one  test"),
-    #                      [1.0, 21.0])
-    #     self.assertEqual(extract_numbers("1 dog, seven pigs, macdonald had a "
-    #                                      "farm, 3 times 5 macarena"),
-    #                      [1, 7, 3, 5])
-    #     self.assertEqual(extract_numbers("two beers for two bears"),
-    #                      [2.0, 2.0])
-    #     self.assertEqual(extract_numbers("twenty 20 twenty"),
-    #                      [20, 20, 20])
-    #     self.assertEqual(extract_numbers("twenty 20 22"),
-    #                      [20, 20, 22])
-    #     self.assertEqual(extract_numbers("twenty twenty two twenty"),
-    #                      [20, 22, 20])
-    #     self.assertEqual(extract_numbers("twenty 20 twenty 2"),
-    #                      [20, 20, 20, 2])
-    #     self.assertEqual(extract_numbers("third one"),
-    #                      [1 / 3, 1])
-    #     self.assertEqual(extract_numbers("third one", ordinals=True), [3])
-    #     self.assertEqual(extract_numbers("six trillion", short_scale=True),
-    #                      [6e12])
-    #     self.assertEqual(extract_numbers("six trillion", short_scale=False),
-    #                      [6e18])
-    #     self.assertEqual(extract_numbers("two pigs and six trillion bacteria",
-    #                                      short_scale=True), [2, 6e12])
+    def test_multiple_numbers(self):
+        self.assertEqual(extract_numbers("this is a one two three  test"),
+                         [1.0, 2.0, 3.0])
+        self.assertEqual(extract_numbers("it's  a four five six  test"),
+                         [4.0, 5.0, 6.0])
+        self.assertEqual(extract_numbers("this is a ten eleven twelve  test"),
+                         [10.0, 11.0, 12.0])
+        self.assertEqual(extract_numbers("this is a one twenty one  test"),
+                         [1.0, 21.0])
+        self.assertEqual(extract_numbers("1 dog, seven pigs, macdonald had a "
+                                         "farm, 3 times 5 macarena"),
+                         [1, 7, 3, 5])
+        self.assertEqual(extract_numbers("two beers for two bears"),
+                         [2.0, 2.0])
+        self.assertEqual(extract_numbers("twenty 20 twenty"),
+                         [20, 20, 20])
+        self.assertEqual(extract_numbers("twenty 20 22"),
+                         [20, 20, 22])
+        self.assertEqual(extract_numbers("twenty twenty two twenty"),
+                         [20, 22, 20])
+        self.assertEqual(extract_numbers("twenty 20 twenty 2"),
+                         [20, 20, 20, 2])
+        self.assertEqual(extract_numbers("third one"),
+                         [1 / 3, 1])
+        self.assertEqual(extract_numbers("third one", ordinals=True), [3])
+        self.assertEqual(extract_numbers("six trillion", short_scale=True),
+                         [6e12])
+        self.assertEqual(extract_numbers("six trillion", short_scale=False),
+                         [6e18])
+        self.assertEqual(extract_numbers("two pigs and six trillion bacteria",
+                                         short_scale=True), [2, 6e12])
         # TODO case when pronounced/extracted number don't match
         # fractional numbers often fail
         # self.assertEqual(extract_numbers("this is a seven eight nine and a "
