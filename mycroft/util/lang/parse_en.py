@@ -42,6 +42,7 @@ def _invert_dict(original):
     """
     return {value: key for key, value in original.items()}
 
+
 def _generate_plurals(originals):
     """
     Return a new set or dict containing the original values,
@@ -117,8 +118,8 @@ def _extract_fraction(text):
 
         if len(components) == 2:
             # ensure first is not a fraction and second is a fraction
-            num1, str1 = _extractnumber_en_with_text(components[0])
-            num2, str2 = _extractnumber_en_with_text(components[1])
+            num1, str1 = _extract_number_with_text_en(components[0])
+            num2, str2 = _extract_number_with_text_en(components[1])
             if num1 is not None and num2 is not None \
                     and num1 >= 1 and 0 < num2 < 1:
                 return num1 + num2, str1 + c + str2
@@ -159,12 +160,13 @@ def _extract_decimal(text):
     for c in _DECIMAL_MARKER:
         components = text.split(c)
         if len(components) == 2:
-            number, number_text = _extractnumber_en_with_text(components[0])
-            decimal, decimal_text = _extractnumber_en_with_text(components[1])
+            number, number_text = _extract_number_with_text_en(components[0])
+            decimal, decimal_text = _extract_number_with_text_en(components[1])
             if number is not None and decimal is not None:
                 # TODO handle number dot number number number
                 if "." not in str(decimal):
-                    return number + float("0." + str(decimal)), number_text + c + decimal_text
+                    return number + float("0." + str(decimal)), \
+                           number_text + c + decimal_text
     return None, None
 
 
@@ -211,10 +213,10 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
                                    was found
 
     """
-    return _extractnumber_en_with_text(text, short_scale, ordinals)[0]
+    return _extract_number_with_text_en(text, short_scale, ordinals)[0]
 
 
-def _extractnumber_en_with_text(text, short_scale=True, ordinals=False):
+def _extract_number_with_text_en(text, short_scale=True, ordinals=False):
     """
     This function extracts a number from a text string,
     handles pronunciations in long scale and short scale
@@ -262,7 +264,8 @@ def _extractnumber_en_with_text(text, short_scale=True, ordinals=False):
                 not is_numeric(word) and \
                 not isFractional_en(word, short_scale=short_scale) and \
                 not look_for_fractions(word.split('/')):
-            if number_words and not all([w in ARTICLES | _NEGATIVES for w in number_words]):
+            if number_words and not all([w in ARTICLES |
+                                         _NEGATIVES for w in number_words]):
                 break
             else:
                 number_words = []
@@ -275,7 +278,6 @@ def _extractnumber_en_with_text(text, short_scale=True, ordinals=False):
             number_words = [word]
         else:
             number_words.append(word)
-
 
         # is this word already a number ?
         if is_numeric(word):
@@ -353,7 +355,8 @@ def _extractnumber_en_with_text(text, short_scale=True, ordinals=False):
 
     return val, " ".join(number_words)
 
-def extractnumber_en_with_text(text, short_scale=True, ordinals=False):
+
+def extract_number_with_text_en(text, short_scale=True, ordinals=False):
     """
     This function extracts a number from a text string,
     handles pronunciations in long scale and short scale
@@ -369,7 +372,7 @@ def extractnumber_en_with_text(text, short_scale=True, ordinals=False):
         None if no number is found.
 
     """
-    number, text = _extractnumber_en_with_text(text, short_scale, ordinals)
+    number, text = _extract_number_with_text_en(text, short_scale, ordinals)
     words = text.split()
     while words and words[0] in ARTICLES:
         words.pop(0)
@@ -377,9 +380,25 @@ def extractnumber_en_with_text(text, short_scale=True, ordinals=False):
 
 
 def extract_numbers_with_text(text, short_scale=True, ordinals=False):
+    """
+    Extract all numbers from a string, with the words that represent them.
+
+    Args:
+        text str: The text to parse.
+        short_scale bool: True if short scale numbers should be used, False for
+                          long scale. True by default.
+        ordinals bool: True if ordinal words (first, second, third, etc) should
+                       be parsed.
+
+    Returns:
+        [(number, str)]: A list of tuples, each containing a number and a
+                         string.
+
+    """
     pairs = []
     while True:
-        number, string = _extractnumber_en_with_text(text, short_scale, ordinals)
+        number, string = \
+            _extract_number_with_text_en(text, short_scale, ordinals)
         if not number:
             break
         pairs.append((number, string))
