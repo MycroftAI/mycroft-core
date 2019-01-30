@@ -143,9 +143,9 @@ class TestNormalize(unittest.TestCase):
 
 
     def test_extract_duration_en(self):
-        self.assertEqual(extract_duration("10 seconds"), [10, ""])
-        self.assertEqual(extract_duration("5 minutes"), [300, ""])
-        self.assertEqual(extract_duration("2 hours"), [7200, ""])
+        self.assertEqual(extract_duration("10 seconds"), (10.0, ""))
+        self.assertEqual(extract_duration("5 minutes"), (300.0, ""))
+        self.assertEqual(extract_duration("2 hours"), (7200.0, ""))
 
     def test_extractdatetime_en(self):
         def extractWithFormat(text):
