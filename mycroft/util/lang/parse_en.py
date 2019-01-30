@@ -28,6 +28,28 @@ from mycroft.util.lang.common_data_en import ARTICLES, NUM_STRING_EN, \
 import re
 
 
+class _Token():
+
+    def __init__(self, word, index):
+        self.word = word
+        self.index = index
+
+    def __setattr__(self, key, value):
+        try:
+            getattr(self, key)
+        except AttributeError:
+            super().__setattr__(key, value)
+        else:
+            raise Exception("Immutable!")
+
+    def __str__(self):
+        return "({w}, {i})".format(w=self.word, i=self.index)
+
+    def __repr__(self):
+        return "{n}({w}, {i})".format(n=self.__class__.__name__,
+                                      w=self.word, i=self.index)
+
+
 def _invert_dict(original):
     """
     Produce a dictionary with the keys and values
@@ -92,7 +114,7 @@ _STRING_SHORT_ORDINAL_EN = _invert_dict(SHORT_ORDINAL_STRING_EN)
 _STRING_LONG_ORDINAL_EN = _invert_dict(LONG_ORDINAL_STRING_EN)
 
 
-def _extract_fraction(words):
+def _extract_fraction(tokens):
     """
     Extract fraction numbers from a string.
 
@@ -106,27 +128,27 @@ def _extract_fraction(words):
         extractnumber_en, to parse out the components of the fraction.
 
     Args:
-        words [(str, int)]: words and their indexes in the original string.
+        tokens [_Token]: words and their indexes in the original string.
 
     Returns:
         int or float
         None if no fraction value is found.
 
     """
-    if len(words) != 3 or words[1][1] not in _FRACTION_MARKER:
+    if len(tokens) != 3 or tokens[1].word not in _FRACTION_MARKER:
         return None, None
 
     # ensure first is not a fraction and second is a fraction
-    num1, words1 = _extract_number_with_text_en(words[0])
-    num2, words2 = _extract_number_with_text_en(words[2])
+    num1, words1 = _extract_number_with_text_en(tokens[0])
+    num2, words2 = _extract_number_with_text_en(tokens[2])
     if num1 is not None and num2 is not None \
             and num1 >= 1 and 0 < num2 < 1:
-        return num1 + num2, words
+        return num1 + num2, tokens
     else:
         return None, None
 
 
-def _extract_decimal(words):
+def _extract_decimal(tokens):
     """
     Extract decimal numbers from a string.
 
@@ -150,22 +172,22 @@ def _extract_decimal(words):
         None if no decimal value is found.
 
     Args:
-        text str: The text to parse.
+        tokens [_Token]: The text to parse.
 
     Returns:
         float
         None if no decimal value is found.
 
     """
-    if len(words) != 3 or words[1][1] not in _DECIMAL_MARKER:
+    if len(tokens) != 3 or tokens[1].word not in _DECIMAL_MARKER:
         return None, None
 
-    number, number_text = _extract_number_with_text_en(words[0])
-    decimal, decimal_text = _extract_number_with_text_en(words[2])
+    number, number_text = _extract_number_with_text_en(tokens[0])
+    decimal, decimal_text = _extract_number_with_text_en(tokens[2])
     if number is not None and decimal is not None:
         # TODO handle number dot number number number
         if "." not in str(decimal):
-            return number + float("0." + str(decimal)), words
+            return number + float("0." + str(decimal)), tokens
 
     return None, None
 
@@ -216,32 +238,41 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
     return extract_number_with_text_en(text, short_scale, ordinals)[0]
 
 
-def _extract_number_with_text_en(words, short_scale=True, ordinals=False):
+def _extract_number_with_text_en(tokens, short_scale=True, ordinals=False):
+    """
 
-    fraction, fraction_text = _extract_fraction(words)
+    Args:
+        tokens [_Token]:
+        short_scale boolean:
+        ordinals boolean:
+
+    Returns:
+
+    """
+
+    fraction, fraction_text = _extract_fraction(tokens)
     if fraction:
         return fraction, fraction_text
 
-    decimal, decimal_text = _extract_decimal(words)
+    decimal, decimal_text = _extract_decimal(tokens)
     if decimal:
         return decimal, decimal_text
 
     multiplies, string_num_ordinal, string_num_scale = \
         _initialize_number_data(short_scale)
 
-    number_words = []
+    number_words = []  # type: [_Token]
     val = False
     prev_val = None
     to_sum = []
-    for idx, word in enumerate(words):
-        original_index = word[0]
-        word = word[1]
+    for idx, token in enumerate(tokens):
+        word = token.word
         if word in ARTICLES or word in _NEGATIVES:
-            number_words.append((original_index, word))
+            number_words.append(token)
             continue
 
-        prev_word = words[idx - 1][1] if idx > 0 else ""
-        next_word = words[idx + 1][1] if idx + 1 < len(words) else ""
+        prev_word = tokens[idx - 1].word if idx > 0 else ""
+        next_word = tokens[idx + 1].word if idx + 1 < len(tokens) else ""
 
         if word not in string_num_scale and \
                 word not in _STRING_NUM_EN and \
@@ -251,7 +282,7 @@ def _extract_number_with_text_en(words, short_scale=True, ordinals=False):
                 not is_numeric(word) and \
                 not isFractional_en(word, short_scale=short_scale) and \
                 not look_for_fractions(word.split('/')):
-            words_only = [w for (w, i) in number_words]
+            words_only = [token.word for token in number_words]
             if number_words and not all([w in ARTICLES |
                                          _NEGATIVES for w in words_only]):
                 break
@@ -263,11 +294,11 @@ def _extract_number_with_text_en(words, short_scale=True, ordinals=False):
                 and not (ordinals and prev_word in string_num_ordinal)\
                 and prev_word not in _NEGATIVES \
                 and prev_word not in ARTICLES:
-            number_words = [(original_index, word)]
+            number_words = [token]
         elif prev_word in _SUMS and word in _SUMS:
-            number_words = [(original_index, word)]
+            number_words = [token]
         else:
-            number_words.append((original_index, word))
+            number_words.append(token)
 
         # is this word already a number ?
         if is_numeric(word):
@@ -362,13 +393,13 @@ def extract_number_with_text_en(text, short_scale=True, ordinals=False):
         None if no number is found.
 
     """
-    words = [(index, word) for index, word in enumerate(text.split())]
-    number, words = _extract_number_with_text_en(words, short_scale, ordinals)
-    while words and words[0][1] in ARTICLES:
-        words.pop(0)
-    start_index = words[0][0] if words else None
-    end_index = words[-1][0] if words else None
-    text = ' '.join([word for _, word in words])
+    tokens = [_Token(word, index) for index, word in enumerate(text.split())]
+    number, tokens = _extract_number_with_text_en(tokens, short_scale, ordinals)
+    while tokens and tokens[0].word in ARTICLES:
+        tokens.pop(0)
+    start_index = tokens[0].index if tokens else None
+    end_index = tokens[-1].index if tokens else None
+    text = ' '.join([token.word for token in tokens])
     return number, text, start_index, end_index
 
 
