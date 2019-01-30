@@ -1250,8 +1250,9 @@ def extract_numbers_en(text, short_scale=True, ordinals=False):
     Returns:
         list: list of extracted numbers as floats
     """
-    return extract_numbers_generic(text, pronounce_number_en, extractnumber_en,
-                                   short_scale=short_scale, ordinals=ordinals)
+    text = convert_words_to_numbers(text, short_scale, ordinals)
+    numbers = re.findall("(?P<value>\d+(?:\.?\d+)?)", text)
+    return [float(number) for number in numbers]
 
 
 def normalize_en(text, remove_articles):
