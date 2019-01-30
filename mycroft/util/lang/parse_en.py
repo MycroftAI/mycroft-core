@@ -117,8 +117,8 @@ def _extract_fraction(text):
 
         if len(components) == 2:
             # ensure first is not a fraction and second is a fraction
-            num1, str1 = extractnumber_en_with_text(components[0])
-            num2, str2 = extractnumber_en_with_text(components[1])
+            num1, str1 = _extractnumber_en_with_text(components[0])
+            num2, str2 = _extractnumber_en_with_text(components[1])
             if num1 is not None and num2 is not None \
                     and num1 >= 1 and 0 < num2 < 1:
                 return num1 + num2, str1 + c + str2
@@ -159,8 +159,8 @@ def _extract_decimal(text):
     for c in _DECIMAL_MARKER:
         components = text.split(c)
         if len(components) == 2:
-            number, number_text = extractnumber_en_with_text(components[0])
-            decimal, decimal_text = extractnumber_en_with_text(components[1])
+            number, number_text = _extractnumber_en_with_text(components[0])
+            decimal, decimal_text = _extractnumber_en_with_text(components[1])
             if number is not None and decimal is not None:
                 # TODO handle number dot number number number
                 if "." not in str(decimal):
@@ -211,10 +211,10 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
                                    was found
 
     """
-    return extractnumber_en_with_text(text, short_scale, ordinals)[0]
+    return _extractnumber_en_with_text(text, short_scale, ordinals)[0]
 
 
-def extractnumber_en_with_text(text, short_scale=True, ordinals=False):
+def _extractnumber_en_with_text(text, short_scale=True, ordinals=False):
     """
     This function extracts a number from a text string,
     handles pronunciations in long scale and short scale
@@ -353,11 +353,33 @@ def extractnumber_en_with_text(text, short_scale=True, ordinals=False):
 
     return val, " ".join(number_words)
 
+def extractnumber_en_with_text(text, short_scale=True, ordinals=False):
+    """
+    This function extracts a number from a text string,
+    handles pronunciations in long scale and short scale
+
+    https://en.wikipedia.org/wiki/Names_of_large_numbers
+
+    Args:
+        text (str): the string to normalize
+        short_scale (bool): use short scale if True, long scale if False
+        ordinals (bool): consider ordinal numbers, third=3 instead of 1/3
+    Returns:
+        (int, str) or (float, str)
+        None if no number is found.
+
+    """
+    number, text = _extractnumber_en_with_text(text, short_scale, ordinals)
+    words = text.split()
+    while words and words[0] in ARTICLES:
+        words.pop(0)
+    return number, ' '.join(words)
+
 
 def extract_numbers_with_text(text, short_scale=True, ordinals=False):
     pairs = []
     while True:
-        number, string = extractnumber_en_with_text(text, short_scale, ordinals)
+        number, string = _extractnumber_en_with_text(text, short_scale, ordinals)
         if not number:
             break
         pairs.append((number, string))
