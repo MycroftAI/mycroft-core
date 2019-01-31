@@ -27,11 +27,12 @@ Usage: dev_setup.sh [options]
 Prepare your environment for running the mycroft-core services.
 
 Options:
-    -h, --help        Show this message
-    -fm               Force mimic build
-    -n, --no-error    Do not exit on error (use with caution)
-    -r, --allow-root  Allow to be run as root (e.g. sudo)
-    -sm               Skip mimic build
+    -h, --help              Show this message
+    -fm                     Force mimic build
+    -n, --no-error          Do not exit on error (use with caution)
+    -p arg, --python arg    Sets the python version to use
+    -r, --allow-root        Allow to be run as root (e.g. sudo)
+    -sm                     Skip mimic build
 "
 }
 
@@ -39,7 +40,18 @@ Options:
 opt_forcemimicbuild=false
 opt_allowroot=false
 opt_skipmimicbuild=false
+opt_python=python3
+param=""
+
 for var in "$@" ; do
+    # Check if parameter should be read
+    if [[ ${param} == "python" ]] ; then
+        opt_python=${var}
+        param=""
+        continue
+    fi
+
+    # Check for options
     if [[ ${var} == "-h" ]] || [[ ${var} == "--help" ]] ; then
         show_help
         exit 0
@@ -58,6 +70,9 @@ for var in "$@" ; do
     fi
     if [[ ${var} == "-sm" ]] ; then
         opt_skipmimicbuild=true
+    fi
+    if [[ ${var} == "-p" ]] || [[ ${var} == "--python" ]] ; then
+        param="python"
     fi
 done
 
@@ -282,7 +297,7 @@ function install_deps() {
 VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${TOP}/.venv"}
 
 function install_venv() {
-    python3 -m venv "${VIRTUALENV_ROOT}/" --without-pip
+    ${opt_python} -m venv "${VIRTUALENV_ROOT}/" --without-pip
     # Force version of pip for reproducability, but there is nothing special
     # about this version.  Update whenever a new version is released and
     # verified functional.
