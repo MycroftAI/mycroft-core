@@ -18,9 +18,7 @@ from datetime import datetime
 
 from dateutil.relativedelta import relativedelta
 
-from mycroft.util.lang.parse_common import is_numeric, look_for_fractions, \
-    extract_numbers_generic
-from mycroft.util.lang.format_en import pronounce_number_en
+from mycroft.util.lang.parse_common import is_numeric, look_for_fractions
 from mycroft.util.lang.common_data_en import ARTICLES, NUM_STRING_EN, \
     LONG_ORDINAL_STRING_EN, LONG_SCALE_EN, \
     SHORT_SCALE_EN, SHORT_ORDINAL_STRING_EN
@@ -48,6 +46,40 @@ class _Token():
     def __repr__(self):
         return "{n}({w}, {i})".format(n=self.__class__.__name__,
                                       w=self.word, i=self.index)
+
+
+def _tokenize(text):
+    return [_Token(word, index) for index, word in enumerate(text.split())]
+
+
+class _ReplaceableNumber():
+
+    def __init__(self, value, word, start_index, end_index):
+        self.value = value
+        self.word = word
+        self.start_index = start_index
+        self.end_index = end_index
+
+    def __setattr__(self, key, value):
+        try:
+            getattr(self, key)
+        except AttributeError:
+            super().__setattr__(key, value)
+        else:
+            raise Exception("Immutable!")
+
+    def __str__(self):
+        return "({v}, {w}, {s}, {e})".format(v=self.value,
+                                             w=self.word,
+                                             s=self.start_index,
+                                             e=self.end_index)
+
+    def __repr__(self):
+        return "{n}({v}, {w}, {s}, {e})".format(n=self.__class__.__name__,
+                                                v=self.value,
+                                                w=self.word,
+                                                s=self.start_index,
+                                                e=self.end_index)
 
 
 def _invert_dict(original):
@@ -418,7 +450,7 @@ def extract_number_with_text_en(text, short_scale=True, ordinals=False):
         None if no number is found.
 
     """
-    tokens = [_Token(word, index) for index, word in enumerate(text.split())]
+    tokens = _tokenize(text)
     number, tokens = _extract_number_with_text_en(tokens, short_scale, ordinals)
     while tokens and tokens[0].word in ARTICLES:
         tokens.pop(0)
@@ -458,11 +490,24 @@ def extract_numbers_with_text(text, short_scale=True, ordinals=False):
 
 
 def convert_words_to_numbers(text, short_scale=True, ordinals=False):
-    pairs = extract_numbers_with_text(text, short_scale, ordinals)
-    pairs.sort(key=lambda x: len(x[1]), reverse=True)
-    for number, string in pairs:
-        text = text.replace(string, str(number))
-    return text
+    tokens = _tokenize(text)
+    numbers_to_replace = extract_numbers_with_text(text, short_scale, ordinals)
+    numbers_to_replace = [_ReplaceableNumber(*args)
+                          for args in numbers_to_replace]
+    numbers_to_replace.sort(key=lambda number: number.start_index)
+
+    results = []
+    for token in tokens:
+        if numbers_to_replace and token.index == numbers_to_replace[0].start_index:
+            results.append(str(numbers_to_replace[0].value))
+        elif numbers_to_replace and tokens.index == numbers_to_replace[0].end_index:
+            numbers_to_replace.pop(0)
+        elif numbers_to_replace and numbers_to_replace[0].start_index < token.index < numbers_to_replace[0].end_index:
+            continue
+        else:
+            results.append(token.word)
+
+    return ' '.join(results)
 
 
 def extract_duration_en(text):
