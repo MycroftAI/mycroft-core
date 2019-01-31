@@ -118,8 +118,8 @@ def _generate_plurals(originals):
 _NEGATIVES = {"negative", "minus"}
 
 # sum the next number (twenty two = 20 + 2)
-_SUMS = {'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty',
-         'ninety'}
+_SUMS = {'twenty', '20', 'thirty', '30', 'forty', '40', 'fifty', '50',
+         'sixty', '60', 'seventy', '70', 'eighty', '80', 'ninety', '90'}
 
 _MULTIPLIES_LONG_SCALE_EN = set(LONG_SCALE_EN.values()) |\
                             _generate_plurals(LONG_SCALE_EN.values())
