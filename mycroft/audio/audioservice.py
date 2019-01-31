@@ -23,6 +23,8 @@ from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
 
+from .services import RemoteAudioBackend
+
 try:
     import pulsectl
 except ImportError:
@@ -161,7 +163,12 @@ class AudioService:
             subsystem.
         """
 
-        self.service = load_services(self.config, self.bus)
+        services = load_services(self.config, self.bus)
+        # Sort services so local services are checked first
+        local = [s for s in services if not isinstance(s, RemoteAudioBackend)]
+        remote = [s for s in services if isinstance(s, RemoteAudioBackend)]
+        self.service = local + remote
+
         # Register end of track callback
         for s in self.service:
             s.set_track_start_callback(self.track_start)
