@@ -128,6 +128,10 @@ class PlaybackThread(Thread):
                 True if button has been pressed.
         """
         start = time()
+        if self.enclosure:
+            self.enclosure.mouth_viseme_list(start, pairs)
+
+        # TODO 19.02 Remove the one by one method below
         for code, duration in pairs:
             if self._clear_visimes:
                 self._clear_visimes = False
@@ -142,6 +146,11 @@ class PlaybackThread(Thread):
 
     def clear_visimes(self):
         self._clear_visimes = True
+
+    def clear(self):
+        """ Clear all pending actions for the TTS playback thread. """
+        self.clear_queue()
+        self.clear_visimes()
 
     def blink(self, rate=1.0):
         """ Blink mycroft's eyes """

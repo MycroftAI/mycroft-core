@@ -28,6 +28,7 @@ class EnclosureMouth:
         self.writer = writer
         self.is_timer_on = False
         self.__init_events()
+        self.showing_visemes = False
 
     def __init_events(self):
         self.bus.on('enclosure.mouth.reset', self.reset)
@@ -35,11 +36,12 @@ class EnclosureMouth:
         self.bus.on('enclosure.mouth.think', self.think)
         self.bus.on('enclosure.mouth.listen', self.listen)
         self.bus.on('enclosure.mouth.smile', self.smile)
-        self.bus.on('enclosure.mouth.viseme', self.viseme)
+        self.bus.on('enclosure.mouth.viseme_list', self.viseme_list)
         self.bus.on('enclosure.mouth.text', self.text)
         self.bus.on('enclosure.mouth.display', self.display)
         self.bus.on('enclosure.mouth.display_image', self.display_image)
         self.bus.on('enclosure.weather.display', self.display_weather)
+        self.bus.on('mycroft.stop', self.clear_visemes)
 
     def reset(self, event=None):
         self.writer.write("mouth.reset")
@@ -56,15 +58,21 @@ class EnclosureMouth:
     def smile(self, event=None):
         self.writer.write("mouth.smile")
 
-    def viseme(self, event=None):
+    def viseme_list(self, event=None):
         if event and event.data:
-            code = event.data.get("code")
-            time_until = event.data.get("until")
-            # Skip the viseme if the time has expired.  This helps when a
-            # system glitch overloads the bus and throws off the timing of
-            # the animation timing.
-            if code and (not time_until or time.time() < time_until):
-                self.writer.write("mouth.viseme=" + code)
+            start = event.data['start']
+            visemes = event.data['visemes']
+            self.showing_visemes = True
+            for code, end in visemes:
+                if not self.showing_visemes:
+                    break
+                if time.time() < start + end:
+                    self.writer.write('mouth.viseme=' + code)
+                    time.sleep(start + end - time.time())
+            self.reset()
+
+    def clear_visemes(self, event=None):
+        self.showing_visemes = False
 
     def text(self, event=None):
         text = ""

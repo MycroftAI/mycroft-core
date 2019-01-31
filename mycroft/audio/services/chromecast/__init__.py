@@ -17,12 +17,12 @@ from mimetypes import guess_type
 
 import pychromecast
 
-from mycroft.audio.services import AudioBackend
+from mycroft.audio.services import RemoteAudioBackend
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
 
 
-class ChromecastService(AudioBackend):
+class ChromecastService(RemoteAudioBackend):
     """
         Audio backend for playback on chromecast. Using the default media
         playback controller included in pychromecast.
