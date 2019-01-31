@@ -476,6 +476,7 @@ def extract_numbers_with_text(text, short_scale=True, ordinals=False):
                          string.
 
     """
+    placeholder = "<placeholder>"  # inserted to maintain correct indices
     results = []
     while True:
         number, string, start_index, end_index = \
@@ -483,8 +484,9 @@ def extract_numbers_with_text(text, short_scale=True, ordinals=False):
         if not number:
             break
         results.append((number, string, start_index, end_index))
-        words = text.split()
-        words = words[0:start_index] + words[end_index + 1:]
+        tokens = _tokenize(text)
+        words = [t.word if not start_index <= t.index <= end_index else \
+                     placeholder for t in tokens]
         text = ' '.join(words)
     return results
 
@@ -498,14 +500,14 @@ def convert_words_to_numbers(text, short_scale=True, ordinals=False):
 
     results = []
     for token in tokens:
-        if numbers_to_replace and token.index == numbers_to_replace[0].start_index:
-            results.append(str(numbers_to_replace[0].value))
-        elif numbers_to_replace and tokens.index == numbers_to_replace[0].end_index:
-            numbers_to_replace.pop(0)
-        elif numbers_to_replace and numbers_to_replace[0].start_index < token.index < numbers_to_replace[0].end_index:
-            continue
-        else:
+        if not numbers_to_replace or token.index < numbers_to_replace[0].start_index:
             results.append(token.word)
+        else:
+            if numbers_to_replace and token.index == numbers_to_replace[0].start_index:
+                results.append(str(numbers_to_replace[0].value))
+            if numbers_to_replace and token.index == numbers_to_replace[0].end_index:
+                numbers_to_replace.pop(0)
+
 
     return ' '.join(results)
 
