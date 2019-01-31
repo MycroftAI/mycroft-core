@@ -19,7 +19,7 @@ import curses
 from mycroft.util import get_ipc_directory
 from .text_client import (
         load_settings, save_settings, simple_cli, gui_main,
-        start_log_monitor, start_mic_monitor, connect_to_messagebus
+        start_log_monitor, start_mic_monitor, connect_to_mycroft
     )
 
 sys.stdout = io.StringIO()
@@ -47,7 +47,7 @@ def main():
     # Monitor IPC file containing microphone level info
     start_mic_monitor(os.path.join(get_ipc_directory(), "mic_level"))
 
-    connect_to_messagebus()
+    connect_to_mycroft()
     if '--simple' in sys.argv:
         sys.stdout = sys.__stdout__
         sys.stderr = sys.__stderr__

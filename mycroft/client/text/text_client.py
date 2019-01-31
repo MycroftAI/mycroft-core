@@ -32,6 +32,7 @@ from threading import Thread, Lock
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
+from mycroft.configuration import Configuration
 
 import locale
 # Curses uses LC_ALL to determine how to display chars set it to system
@@ -41,6 +42,7 @@ preferred_encoding = locale.getpreferredencoding()
 
 bSimple = False
 bus = None  # Mycroft messagebus connection
+config = {}  # Will be populated by the Mycroft configuration
 event_thread = None
 history = []
 chat = []   # chat history, oldest at the lowest index
@@ -145,6 +147,25 @@ def handleNonAscii(text):
 # Settings
 
 config_file = os.path.join(os.path.expanduser("~"), ".mycroft_cli.conf")
+
+
+def load_mycroft_config(bus):
+    """ Load the mycroft config and connect it to updates over the messagebus.
+    """
+    Configuration.init(bus)
+    return Configuration.get()
+
+
+def connect_to_mycroft():
+    """ Connect to the mycroft messagebus and load and register config
+        on the bus.
+
+        Sets the bus and config global variables
+    """
+    global bus
+    global config
+    bus = connect_to_messagebus()
+    config = load_mycroft_config(bus)
 
 
 def load_settings():
@@ -415,8 +436,12 @@ def handle_utterance(event):
     set_screen_dirty()
 
 
-def connect():
-    # Once the websocket has connected, just watch it for speak events
+def connect(bus):
+    """ Run the mycroft messagebus referenced by bus.
+
+        Arguments:
+            bus:    Mycroft messagebus instance
+    """
     bus.run_forever()
 
 
@@ -1147,6 +1172,7 @@ def gui_main(stdscr):
     global history
     global screen_lock
     global show_gui
+    global config
 
     scr = stdscr
     init_screen()
@@ -1274,7 +1300,7 @@ def gui_main(stdscr):
                     # Treat this as an utterance
                     bus.emit(Message("recognizer_loop:utterance",
                                      {'utterances': [line.strip()],
-                                      'lang': 'en-us'}))
+                                      'lang': config.get('lang', 'en-us')}))
                 hist_idx = -1
                 line = ""
             elif code == 16 or code == 545:  # Ctrl+P or Ctrl+Left (Previous)
@@ -1375,9 +1401,14 @@ def simple_cli():
 
 
 def connect_to_messagebus():
-    global bus
+    """ Connect to the mycroft messagebus and launch a thread handling the
+        connection.
+
+        Returns: WebsocketClient
+    """
     bus = WebsocketClient()  # Mycroft messagebus connection
 
-    event_thread = Thread(target=connect)
+    event_thread = Thread(target=connect, args=[bus])
     event_thread.setDaemon(True)
     event_thread.start()
+    return bus

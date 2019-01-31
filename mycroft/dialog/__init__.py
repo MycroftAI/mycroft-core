@@ -113,7 +113,7 @@ class DialogLoader:
         """
         directory = Path(dialog_dir)
         if not directory.exists() or not directory.is_dir():
-            LOG.warning("No dialog files found: " + dialog_dir)
+            LOG.warning("No dialog files found: {}".format(dialog_dir))
             return self.__renderer
 
         for path, _, files in os.walk(str(directory)):
@@ -147,7 +147,7 @@ def get(phrase, lang=None, context=None):
     filename = "text/" + lang.lower() + "/" + phrase + ".dialog"
     template = resolve_resource_file(filename)
     if not template:
-        LOG.debug("Resource file not found: " + filename)
+        LOG.debug("Resource file not found: {}".format(filename))
         return phrase
 
     stache = MustacheDialogRenderer()

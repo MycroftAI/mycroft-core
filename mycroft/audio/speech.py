@@ -55,6 +55,7 @@ def handle_speak(event):
     else:
         ident = 'unknown'
 
+    start = time.time()  # Time of speech request
     with lock:
         stopwatch = Stopwatch()
         stopwatch.start()
@@ -74,19 +75,21 @@ def handle_speak(event):
         # so we likely will want to get rid of this when not running on Mimic
         if (config.get('enclosure', {}).get('platform') != "picroft" and
                 len(re.findall('<[^>]*>', utterance)) == 0):
-            start = time.time()
             chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s',
                               utterance)
             for chunk in chunks:
+                # Check if somthing has aborted the speech
+                if (_last_stop_signal > start or
+                        check_for_signal('buttonPress')):
+                    # Clear any newly queued speech
+                    tts.playback.clear()
+                    break
                 try:
                     mute_and_speak(chunk, ident)
                 except KeyboardInterrupt:
                     raise
                 except Exception:
                     LOG.error('Error in mute_and_speak', exc_info=True)
-                if (_last_stop_signal > start or
-                        check_for_signal('buttonPress')):
-                    break
         else:
             mute_and_speak(utterance, ident)
 
@@ -143,8 +146,7 @@ def handle_stop(event):
     global _last_stop_signal
     if check_for_signal("isSpeaking", -1):
         _last_stop_signal = time.time()
-        tts.playback.clear_queue()
-        tts.playback.clear_visimes()
+        tts.playback.clear()  # Clear here to get instant stop
         bus.emit(Message("mycroft.stop.handled", {"by": "TTS"}))
 
 

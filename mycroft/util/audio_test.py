@@ -14,11 +14,13 @@
 #
 import argparse
 import os
+import pyaudio
 from contextlib import contextmanager
 
 from speech_recognition import Recognizer
 
 from mycroft.client.speech.mic import MutableMicrophone
+from mycroft.configuration import Configuration
 from mycroft.util import play_wav
 from mycroft.util.log import LOG
 import logging
@@ -78,8 +80,36 @@ def main():
     parser.add_argument(
         '-v', '--verbose', dest='verbose', action='store_true', default=False,
         help="Add extra output regarding the recording")
+    parser.add_argument(
+        '-l', '--list', dest='show_devices', action='store_true',
+        default=False, help="List all availabile input devices")
     args = parser.parse_args()
 
+    if args.show_devices:
+        print(" Initializing... ")
+        pa = pyaudio.PyAudio()
+
+        print(" ====================== Audio Devices ======================")
+        print("  Index    Device Name")
+        for device_index in range(pa.get_device_count()):
+            dev = pa.get_device_info_by_index(device_index)
+            if dev['maxInputChannels'] > 0:
+                print('   {}:       {}'.format(device_index, dev['name']))
+        print()
+
+    config = Configuration.get()
+    if "device_name" in config["listener"]:
+        dev = config["listener"]["device_name"]
+    elif "device_index" in config["listener"]:
+        dev = "Device at index {}".format(config["listener"]["device_index"])
+    else:
+        dev = "Default device"
+    samplerate = config["listener"]["sample_rate"]
+    play_cmd = config["play_wav_cmdline"].replace("%1", "WAV_FILE")
+    print(" ========================== Info ===========================")
+    print(" Input device: {} @ Sample rate: {} Hz".format(dev, samplerate))
+    print(" Playback commandline: {}".format(play_cmd))
+    print()
     print(" ===========================================================")
     print(" ==         STARTING TO RECORD, MAKE SOME NOISE!          ==")
     print(" ===========================================================")

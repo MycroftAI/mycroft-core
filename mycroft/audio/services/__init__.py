@@ -21,7 +21,7 @@ class AudioBackend:
 
         Args:
             config: configuration dict for the instance
-            bus:    mycroft messagebus emitter
+            bus:    Mycroft messagebus emitter
     """
     __metaclass__ = ABCMeta
 
@@ -118,9 +118,9 @@ class AudioBackend:
     @abstractmethod
     def seek_forward(self, seconds=1):
         """
-        skip X seconds
+            Skip X seconds
 
-          Args:
+            Args:
                 seconds (int): number of seconds to seek, if negative rewind
         """
         pass
@@ -128,9 +128,9 @@ class AudioBackend:
     @abstractmethod
     def seek_backward(self, seconds=1):
         """
-        rewind X seconds
+            Rewind X seconds
 
-          Args:
+            Args:
                 seconds (int): number of seconds to seek, if negative rewind
         """
         pass
@@ -148,5 +148,13 @@ class AudioBackend:
         return ret
 
     def shutdown(self):
-        """ perform clean shutdown """
+        """ Perform clean shutdown """
         self.stop()
+
+
+class RemoteAudioBackend(AudioBackend):
+    """ Base class for remote audio backends.
+
+        These may be things like Chromecasts, mopidy servers, etc.
+    """
+    pass

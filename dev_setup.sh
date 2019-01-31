@@ -27,11 +27,12 @@ Usage: dev_setup.sh [options]
 Prepare your environment for running the mycroft-core services.
 
 Options:
-    -h, --help        Show this message
-    -fm               Force mimic build
-    -n, --no-error    Do not exit on error (use with caution)
-    -r, --allow-root  Allow to be run as root (e.g. sudo)
-    -sm               Skip mimic build
+    -h, --help              Show this message
+    -fm                     Force mimic build
+    -n, --no-error          Do not exit on error (use with caution)
+    -p arg, --python arg    Sets the python version to use
+    -r, --allow-root        Allow to be run as root (e.g. sudo)
+    -sm                     Skip mimic build
 "
 }
 
@@ -39,7 +40,18 @@ Options:
 opt_forcemimicbuild=false
 opt_allowroot=false
 opt_skipmimicbuild=false
+opt_python=python3
+param=""
+
 for var in "$@" ; do
+    # Check if parameter should be read
+    if [[ ${param} == "python" ]] ; then
+        opt_python=${var}
+        param=""
+        continue
+    fi
+
+    # Check for options
     if [[ ${var} == "-h" ]] || [[ ${var} == "--help" ]] ; then
         show_help
         exit 0
@@ -58,6 +70,9 @@ for var in "$@" ; do
     fi
     if [[ ${var} == "-sm" ]] ; then
         opt_skipmimicbuild=true
+    fi
+    if [[ ${var} == "-p" ]] || [[ ${var} == "--python" ]] ; then
+        param="python"
     fi
 done
 
@@ -194,8 +209,8 @@ fi" > ~/.profile_mycroft
     if [[ ! -d /opt/mycroft/skills ]] ; then
         echo "This script will create that folder for you.  This requires sudo"
         echo "permission and might ask you for a password..."
-        sudo mkdir -p /opt/mycroft/skills
-        sudo chown -R $USER:$USER /opt/mycroft
+        $SUDO mkdir -p /opt/mycroft/skills
+        $SUDO chown -R $USER:$USER /opt/mycroft
         echo "Created!"
     fi
     if [[ ! -d skills ]] ; then
@@ -235,7 +250,7 @@ function install_deps() {
     echo "Installing packages..."
     if found_exe sudo ; then
         SUDO=sudo
-    else
+    elif [ "${opt_allowroot}" != true ]; then
         echo "This script requires \"sudo\" to install system packages. Please install it, then re-run this script."
         exit 1
     fi
@@ -282,7 +297,7 @@ function install_deps() {
 VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${TOP}/.venv"}
 
 function install_venv() {
-    python3 -m venv "${VIRTUALENV_ROOT}/" --without-pip
+    ${opt_python} -m venv "${VIRTUALENV_ROOT}/" --without-pip
     # Force version of pip for reproducability, but there is nothing special
     # about this version.  Update whenever a new version is released and
     # verified functional.
@@ -416,9 +431,9 @@ if [[ ! -w /var/log/mycroft/ ]] ; then
     # Creating and setting permissions
     echo "Creating /var/log/mycroft/ directory"
     if [[ ! -d /var/log/mycroft/ ]] ; then
-        sudo mkdir /var/log/mycroft/
+        $SUDO mkdir /var/log/mycroft/
     fi
-    sudo chmod 777 /var/log/mycroft/
+    $SUDO chmod 777 /var/log/mycroft/
 fi
 
 #Store a fingerprint of setup
