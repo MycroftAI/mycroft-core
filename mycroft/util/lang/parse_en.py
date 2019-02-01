@@ -500,6 +500,7 @@ def extract_numbers_with_text(text, short_scale=True, ordinals=False):
 
 
 def convert_words_to_numbers(text, short_scale=True, ordinals=False):
+    text = text.lower()
     tokens = _tokenize(text)
     numbers_to_replace = extract_numbers_with_text(text, short_scale, ordinals)
     numbers_to_replace = [_ReplaceableNumber(*args)
