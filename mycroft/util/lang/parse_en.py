@@ -175,7 +175,7 @@ def _partition_list(items, split_on):
     return list(filter(lambda x: len(x) != 0, splits))
 
 
-def _extract_fraction(tokens):
+def _extract_fraction(tokens, short_scale, ordinals):
     """
     Extract fraction numbers from a string.
 
@@ -202,7 +202,7 @@ def _extract_fraction(tokens):
 
         if len(partitions) == 3:
             text = ' '.join([t.word for t in partitions[0]])
-            numbers = extract_numbers_with_text(text)
+            numbers = extract_numbers_with_text(text, short_scale, ordinals)
             if len(numbers) > 1:
                 return None, None
             # ensure first is not a fraction and second is a fraction
@@ -214,7 +214,7 @@ def _extract_fraction(tokens):
     return None, None
 
 
-def _extract_decimal(tokens):
+def _extract_decimal(tokens, short_scale, ordinals):
     """
     Extract decimal numbers from a string.
 
@@ -314,11 +314,11 @@ def _extract_number_with_text_en(tokens, short_scale=True, ordinals=False):
 
     """
 
-    fraction, fraction_text = _extract_fraction(tokens)
+    fraction, fraction_text = _extract_fraction(tokens, short_scale, ordinals)
     if fraction:
         return fraction, fraction_text
 
-    decimal, decimal_text = _extract_decimal(tokens)
+    decimal, decimal_text = _extract_decimal(tokens, short_scale, ordinals)
     if decimal:
         return decimal, decimal_text
 
@@ -516,7 +516,6 @@ def convert_words_to_numbers(text, short_scale=True, ordinals=False):
                 results.append(str(numbers_to_replace[0].value))
             if numbers_to_replace and token.index == numbers_to_replace[0].end_index:
                 numbers_to_replace.pop(0)
-
 
     return ' '.join(results)
 
