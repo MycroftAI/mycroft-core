@@ -243,7 +243,7 @@ def _extract_decimal(tokens, short_scale, ordinals):
         partitions = _partition_list(tokens, lambda t: t.word == c)
         if len(partitions) == 3:
             text = ' '.join([t.word for t in partitions[0]])
-            numbers = extract_numbers_with_text(text)
+            numbers = extract_numbers_with_text(text, short_scale, ordinals)
             if len(numbers) > 1:
                 return None, None
             number, tokens1 = _extract_number_with_text_en(partitions[0])
