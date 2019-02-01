@@ -146,6 +146,16 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extract_duration("10 seconds"), (10.0, ""))
         self.assertEqual(extract_duration("5 minutes"), (300.0, ""))
         self.assertEqual(extract_duration("2 hours"), (7200.0, ""))
+        self.assertEqual(extract_duration("3 days"), (259200.0, ""))
+        self.assertEqual(extract_duration("25 weeks"), (15120000.0, ""))
+        self.assertEqual(extract_duration("seven hours"), (25200.0, ""))
+        self.assertEqual(extract_duration("7.5 seconds"), (7.5, ""))
+        self.assertEqual(extract_duration("eight and a half days thirty nine seconds"), (734439.0, ""))
+        self.assertEqual(extract_duration("Set a timer for 30 minutes"), (1800.0, "set a timer for"))
+        self.assertEqual(extract_duration("Four and a half minutes until sunset"), (270.0, "until sunset"))
+        self.assertEqual(extract_duration("Nineteen minutes past the hour"), (1140.0, "past the hour"))
+        self.assertEqual(extract_duration("wake me up in three weeks, four hundred ninety seven days, and three hundred 91.6 seconds"), (44755591.6, "wake me up in , , and"))
+        self.assertEqual(extract_duration("The movie is one hour, fifty seven and a half minutes long"), (7050.0, "the movie is ,  long"))
 
     def test_extractdatetime_en(self):
         def extractWithFormat(text):
