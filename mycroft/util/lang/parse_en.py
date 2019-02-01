@@ -496,6 +496,7 @@ def extract_numbers_with_text(text, short_scale=True, ordinals=False):
         words = [t.word if not start_index <= t.index <= end_index else \
                      placeholder for t in tokens]
         text = ' '.join(words)
+    results.sort(key=lambda n: n[2])  # sort by start_index
     return results
 
 
@@ -1356,9 +1357,8 @@ def extract_numbers_en(text, short_scale=True, ordinals=False):
     Returns:
         list: list of extracted numbers as floats
     """
-    text = convert_words_to_numbers(text, short_scale, ordinals)
-    numbers = re.findall("(?P<value>\d+(?:\.?\d+)?)", text)
-    return [float(number) for number in numbers]
+    results = extract_numbers_with_text(text, short_scale, ordinals)
+    return [float(result[0]) for result in results]
 
 
 def normalize_en(text, remove_articles):
