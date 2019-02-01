@@ -201,6 +201,10 @@ def _extract_fraction(tokens):
         partitions = _partition_list(tokens, lambda t: t.word == c)
 
         if len(partitions) == 3:
+            text = ' '.join([t.word for t in partitions[0]])
+            numbers = extract_numbers_with_text(text)
+            if len(numbers) > 1:
+                return None, None
             # ensure first is not a fraction and second is a fraction
             num1, tokens1 = _extract_number_with_text_en(partitions[0])
             num2, tokens2 = _extract_number_with_text_en(partitions[2])
@@ -238,6 +242,10 @@ def _extract_decimal(tokens):
     for c in _DECIMAL_MARKER:
         partitions = _partition_list(tokens, lambda t: t.word == c)
         if len(partitions) == 3:
+            text = ' '.join([t.word for t in partitions[0]])
+            numbers = extract_numbers_with_text(text)
+            if len(numbers) > 1:
+                return None, None
             number, tokens1 = _extract_number_with_text_en(partitions[0])
             decimal, tokens2 = _extract_number_with_text_en(partitions[2])
             if number is not None and decimal is not None:
