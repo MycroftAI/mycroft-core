@@ -377,6 +377,10 @@ def _extract_whole_number_with_text_en(tokens, short_scale, ordinals):
     next_val = None
     to_sum = []
     for idx, token in enumerate(tokens):
+        if next_val:
+            next_val = None
+            continue
+
         word = token.word
         if word in ARTICLES or word in _NEGATIVES:
             number_words.append(token)
@@ -455,11 +459,12 @@ def _extract_whole_number_with_text_en(tokens, short_scale, ordinals):
 
         # 2 fifths
         if not ordinals:
-            next_value = isFractional_en(next_word, short_scale=short_scale)
-            if next_value:
+            next_val = isFractional_en(next_word, short_scale=short_scale)
+            if next_val:
                 if not val:
                     val = 1
-                val = val * next_value
+                val = val * next_val
+                number_words.append(tokens[idx + 1])
 
         # is this a negative number?
         if val and prev_word and prev_word in _NEGATIVES:

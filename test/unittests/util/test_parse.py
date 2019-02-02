@@ -85,7 +85,7 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extract_number("1 cup and a half"), 1.5)
         self.assertEqual(extract_number("one cup and a half"), 1.5)
         self.assertEqual(extract_number("one and a half cups"), 1.5)
-        # self.assertEqual(extract_number("one and one half cups"), 1.5)
+        self.assertEqual(extract_number("one and one half cups"), 1.5)
         self.assertEqual(extract_number("three quarter cups"), 3.0 / 4.0)
         self.assertEqual(extract_number("three quarters cups"), 3.0 / 4.0)
         self.assertEqual(extract_number("twenty two"), 22)
