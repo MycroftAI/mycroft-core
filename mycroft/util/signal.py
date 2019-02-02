@@ -55,7 +55,10 @@ def ensure_directory_exists(directory, domain=None):
     """
     if domain:
         directory = os.path.join(directory, domain)
+
+    # Expand and normalize the path
     directory = os.path.normpath(directory)
+    directory = os.path.expanduser(directory)
 
     if not os.path.isdir(directory):
         try:
