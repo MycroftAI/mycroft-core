@@ -17,7 +17,8 @@
 
 from mycroft.util.lang.format_common import convert_to_mixed_fraction
 from mycroft.util.log import LOG
-from mycroft.util.lang.common_data_en import _NUM_STRING_EN, _FRACTION_STRING_EN, _LONG_SCALE_EN, _SHORT_SCALE_EN
+from mycroft.util.lang.common_data_en import _NUM_STRING_EN, \
+    _FRACTION_STRING_EN, _LONG_SCALE_EN, _SHORT_SCALE_EN
 
 
 def nice_number_en(number, speech, denominators):
