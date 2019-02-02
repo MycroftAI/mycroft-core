@@ -135,6 +135,10 @@ class SkillManager(Thread):
         repo_config = msm_config['repo']
         data_dir = expanduser(config['data_dir'])
         skills_dir = join(data_dir, msm_config['directory'])
+        # Try to create the skills directory if it doesn't exist
+        if not exists(skills_dir):
+            os.makedirs(skills_dir)
+
         repo_cache = join(data_dir, repo_config['cache'])
         platform = config['enclosure'].get('platform', 'default')
         return MycroftSkillsManager(
