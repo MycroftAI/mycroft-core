@@ -141,7 +141,6 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extract_number("a couple hundred beers"), 200)
         self.assertEqual(extract_number("a couple thousand beers"), 2000)
 
-
     def test_extract_duration_en(self):
         self.assertEqual(extract_duration("10 seconds"), (10.0, ""))
         self.assertEqual(extract_duration("5 minutes"), (300.0, ""))
@@ -150,12 +149,21 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extract_duration("25 weeks"), (15120000.0, ""))
         self.assertEqual(extract_duration("seven hours"), (25200.0, ""))
         self.assertEqual(extract_duration("7.5 seconds"), (7.5, ""))
-        self.assertEqual(extract_duration("eight and a half days thirty nine seconds"), (734439.0, ""))
-        self.assertEqual(extract_duration("Set a timer for 30 minutes"), (1800.0, "set a timer for"))
-        self.assertEqual(extract_duration("Four and a half minutes until sunset"), (270.0, "until sunset"))
-        self.assertEqual(extract_duration("Nineteen minutes past the hour"), (1140.0, "past the hour"))
-        self.assertEqual(extract_duration("wake me up in three weeks, four hundred ninety seven days, and three hundred 91.6 seconds"), (44755591.6, "wake me up in , , and"))
-        self.assertEqual(extract_duration("The movie is one hour, fifty seven and a half minutes long"), (7050.0, "the movie is ,  long"))
+        self.assertEqual(extract_duration("eight and a half days thirty"
+                                          " nine seconds"), (734439.0, ""))
+        self.assertEqual(extract_duration("Set a timer for 30 minutes"),
+                         (1800.0, "set a timer for"))
+        self.assertEqual(extract_duration("Four and a half minutes until"
+                                          " sunset"), (270.0, "until sunset"))
+        self.assertEqual(extract_duration("Nineteen minutes past the hour"),
+                         (1140.0, "past the hour"))
+        self.assertEqual(extract_duration("wake me up in three weeks, four"
+                                          " hundred ninety seven days, and"
+                                          " three hundred 91.6 seconds"),
+                         (44755591.6, "wake me up in , , and"))
+        self.assertEqual(extract_duration("The movie is one hour, fifty seven"
+                                          " and a half minutes long"),
+                         (7050.0, "the movie is ,  long"))
 
     def test_extractdatetime_en(self):
         def extractWithFormat(text):
@@ -554,10 +562,10 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extract_numbers("two pigs and six trillion bacteria",
                                          short_scale=False), [2, 6e18])
         self.assertEqual(extract_numbers("thirty second or first",
-                                        ordinals=True), [32, 1])
-        self.assertEqual(extract_numbers("this is a seven eight nine and a "
-                                        "half test"),
-                        [7.0, 8.0, 9.5])
+                                         ordinals=True), [32, 1])
+        self.assertEqual(extract_numbers("this is a seven eight nine and a"
+                                         " half test"),
+                         [7.0, 8.0, 9.5])
 
     def test_contractions(self):
         self.assertEqual(normalize("ain't"), "is not")

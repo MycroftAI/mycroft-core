@@ -161,9 +161,8 @@ class _ReplaceableNumber():
         return "({v}, {t})".format(v=self.value, t=self.tokens)
 
     def __repr__(self):
-        return "{n}({v}, {t})".format(n=self.__class__.__name__,
-                                                v=self.value,
-                                                t=self.tokens)
+        return "{n}({v}, {t})".format(n=self.__class__.__name__, v=self.value,
+                                      t=self.tokens)
 
 
 def _tokenize(text):
@@ -225,23 +224,28 @@ def convert_words_to_numbers(text, short_scale=True, ordinals=False):
     """
     text = text.lower()
     tokens = _tokenize(text)
-    numbers_to_replace = _extract_numbers_with_text(tokens, short_scale, ordinals)
+    numbers_to_replace = \
+        _extract_numbers_with_text(tokens, short_scale, ordinals)
     numbers_to_replace.sort(key=lambda number: number.start_index)
 
     results = []
     for token in tokens:
-        if not numbers_to_replace or token.index < numbers_to_replace[0].start_index:
+        if not numbers_to_replace or \
+                token.index < numbers_to_replace[0].start_index:
             results.append(token.word)
         else:
-            if numbers_to_replace and token.index == numbers_to_replace[0].start_index:
+            if numbers_to_replace and \
+                    token.index == numbers_to_replace[0].start_index:
                 results.append(str(numbers_to_replace[0].value))
-            if numbers_to_replace and token.index == numbers_to_replace[0].end_index:
+            if numbers_to_replace and \
+                    token.index == numbers_to_replace[0].end_index:
                 numbers_to_replace.pop(0)
 
     return ' '.join(results)
 
 
-def _extract_numbers_with_text(tokens, short_scale=True, ordinals=False, fractional_numbers=True):
+def _extract_numbers_with_text(tokens, short_scale=True,
+                               ordinals=False, fractional_numbers=True):
     """
     Extract all numbers from a list of _Tokens, with the words that
     represent them.
@@ -264,20 +268,26 @@ def _extract_numbers_with_text(tokens, short_scale=True, ordinals=False, fractio
     results = []
     while True:
         to_replace = \
-            _extract_number_with_text_en(tokens, short_scale, ordinals, fractional_numbers)
+            _extract_number_with_text_en(tokens, short_scale,
+                                         ordinals, fractional_numbers)
 
         if not to_replace:
             break
 
         results.append(to_replace)
 
-        tokens = [t if not to_replace.start_index <= t.index <= to_replace.end_index else \
-                     _Token(placeholder, t.index) for t in tokens]
+        tokens = [
+                    t if not
+                    to_replace.start_index <= t.index <= to_replace.end_index
+                    else
+                    _Token(placeholder, t.index) for t in tokens
+                  ]
     results.sort(key=lambda n: n.start_index)
     return results
 
 
-def _extract_number_with_text_en(tokens, short_scale=True, ordinals=False, fractional_numbers=True):
+def _extract_number_with_text_en(tokens, short_scale=True,
+                                 ordinals=False, fractional_numbers=True):
     """
     This function extracts a number from a list of _Tokens.
 
@@ -291,13 +301,17 @@ def _extract_number_with_text_en(tokens, short_scale=True, ordinals=False, fract
         _ReplaceableNumber
 
     """
-    number, tokens = _extract_number_with_text_en_helper(tokens, short_scale, ordinals, fractional_numbers)
+    number, tokens = \
+        _extract_number_with_text_en_helper(tokens, short_scale,
+                                            ordinals, fractional_numbers)
     while tokens and tokens[0].word in ARTICLES:
         tokens.pop(0)
     return _ReplaceableNumber(number, tokens)
 
 
-def _extract_number_with_text_en_helper(tokens, short_scale=True, ordinals=False, fractional_numbers=True):
+def _extract_number_with_text_en_helper(tokens,
+                                        short_scale=True, ordinals=False,
+                                        fractional_numbers=True):
     """
     Helber for _extract_number_with_text_en.
 
@@ -312,11 +326,13 @@ def _extract_number_with_text_en_helper(tokens, short_scale=True, ordinals=False
 
     """
     if fractional_numbers:
-        fraction, fraction_text = _extract_fraction_with_text_en(tokens, short_scale, ordinals)
+        fraction, fraction_text = \
+            _extract_fraction_with_text_en(tokens, short_scale, ordinals)
         if fraction:
             return fraction, fraction_text
 
-        decimal, decimal_text = _extract_decimal_with_text_en(tokens, short_scale, ordinals)
+        decimal, decimal_text = \
+            _extract_decimal_with_text_en(tokens, short_scale, ordinals)
         if decimal:
             return decimal, decimal_text
 
@@ -345,8 +361,12 @@ def _extract_fraction_with_text_en(tokens, short_scale, ordinals):
         partitions = _partition_list(tokens, lambda t: t.word == c)
 
         if len(partitions) == 3:
-            numbers1 = _extract_numbers_with_text(partitions[0], short_scale, ordinals, fractional_numbers=False)
-            numbers2 = _extract_numbers_with_text(partitions[2], short_scale, ordinals, fractional_numbers=True)
+            numbers1 = \
+                _extract_numbers_with_text(partitions[0], short_scale,
+                                           ordinals, fractional_numbers=False)
+            numbers2 = \
+                _extract_numbers_with_text(partitions[2], short_scale,
+                                           ordinals, fractional_numbers=True)
 
             if not numbers1 or not numbers2:
                 return None, None
@@ -389,14 +409,18 @@ def _extract_decimal_with_text_en(tokens, short_scale, ordinals):
         partitions = _partition_list(tokens, lambda t: t.word == c)
 
         if len(partitions) == 3:
-            numbers1 = _extract_numbers_with_text(partitions[0], short_scale, ordinals, fractional_numbers=False)
-            numbers2 = _extract_numbers_with_text(partitions[2], short_scale, ordinals, fractional_numbers=False)
+            numbers1 = \
+                _extract_numbers_with_text(partitions[0], short_scale,
+                                           ordinals, fractional_numbers=False)
+            numbers2 = \
+                _extract_numbers_with_text(partitions[2], short_scale,
+                                           ordinals, fractional_numbers=False)
 
             if not numbers1 or not numbers2:
                 return None, None
 
-            number = numbers1[-1]# type: _ReplaceableNumber
-            decimal = numbers2[0]  # type: _ReplaceableNumber
+            number = numbers1[-1]
+            decimal = numbers2[0]
 
             # TODO handle number dot number number number
             if "." not in str(decimal.text):
@@ -599,7 +623,8 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
                                    was found
 
     """
-    return _extract_number_with_text_en(_tokenize(text), short_scale, ordinals).value
+    return _extract_number_with_text_en(_tokenize(text),
+                                        short_scale, ordinals).value
 
 
 def extract_duration_en(text):
@@ -1439,7 +1464,8 @@ def extract_numbers_en(text, short_scale=True, ordinals=False):
     Returns:
         list: list of extracted numbers as floats
     """
-    results = _extract_numbers_with_text(_tokenize(text), short_scale, ordinals)
+    results = _extract_numbers_with_text(_tokenize(text),
+                                         short_scale, ordinals)
     return [float(result.value) for result in results]
 
 
