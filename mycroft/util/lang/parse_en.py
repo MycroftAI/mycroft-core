@@ -54,11 +54,24 @@ def _tokenize(text):
 
 class _ReplaceableNumber():
 
-    def __init__(self, value, word, start_index, end_index):
+    def __init__(self, value, tokens: [_Token]):
         self.value = value
-        self.word = word
-        self.start_index = start_index
-        self.end_index = end_index
+        self.tokens = tokens
+
+    def __bool__(self):
+        return bool(self.value is not None and self.value is not False)
+
+    @property
+    def start_index(self):
+        return self.tokens[0].index
+
+    @property
+    def end_index(self):
+        return self.tokens[-1].index
+
+    @property
+    def text(self):
+        return ' '.join([t.word for t in self.tokens])
 
     def __setattr__(self, key, value):
         try:
@@ -69,17 +82,12 @@ class _ReplaceableNumber():
             raise Exception("Immutable!")
 
     def __str__(self):
-        return "({v}, {w}, {s}, {e})".format(v=self.value,
-                                             w=self.word,
-                                             s=self.start_index,
-                                             e=self.end_index)
+        return "({v}, {t})".format(v=self.value, t=self.tokens)
 
     def __repr__(self):
-        return "{n}({v}, {w}, {s}, {e})".format(n=self.__class__.__name__,
+        return "{n}({v}, {t})".format(n=self.__class__.__name__,
                                                 v=self.value,
-                                                w=self.word,
-                                                s=self.start_index,
-                                                e=self.end_index)
+                                                t=self.tokens)
 
 
 def _invert_dict(original):
@@ -175,7 +183,104 @@ def _partition_list(items, split_on):
     return list(filter(lambda x: len(x) != 0, splits))
 
 
-def _extract_fraction(tokens, short_scale, ordinals):
+def convert_words_to_numbers(text, short_scale=True, ordinals=False):
+    text = text.lower()
+    tokens = _tokenize(text)
+    numbers_to_replace = _extract_numbers_with_text(tokens, short_scale, ordinals)
+    numbers_to_replace.sort(key=lambda number: number.start_index)
+
+    results = []
+    for token in tokens:
+        if not numbers_to_replace or token.index < numbers_to_replace[0].start_index:
+            results.append(token.word)
+        else:
+            if numbers_to_replace and token.index == numbers_to_replace[0].start_index:
+                results.append(str(numbers_to_replace[0].value))
+            if numbers_to_replace and token.index == numbers_to_replace[0].end_index:
+                numbers_to_replace.pop(0)
+
+    return ' '.join(results)
+
+
+def _extract_numbers_with_text(tokens, short_scale=True, ordinals=False, fractional_numbers=True):
+    """
+    Extract all numbers from a string, with the words that represent them.
+
+    Args:
+        text str: The text to parse.
+        short_scale bool: True if short scale numbers should be used, False for
+                          long scale. True by default.
+        ordinals bool: True if ordinal words (first, second, third, etc) should
+                       be parsed.
+
+    Returns:
+        [(number, str)]: A list of tuples, each containing a number and a
+                         string.
+
+    """
+    placeholder = "<placeholder>"  # inserted to maintain correct indices
+    results = []
+    while True:
+        to_replace = \
+            _extract_number_with_text_en(tokens, short_scale, ordinals, fractional_numbers)
+
+        if not to_replace:
+            break
+
+        results.append(to_replace)
+
+        tokens = [t if not to_replace.start_index <= t.index <= to_replace.end_index else \
+                     _Token(placeholder, t.index) for t in tokens]
+    results.sort(key=lambda n: n.start_index)
+    return results
+
+
+def _extract_number_with_text_en(tokens, short_scale=True, ordinals=False, fractional_numbers=True):
+    """
+    This function extracts a number from a text string,
+    handles pronunciations in long scale and short scale
+
+    https://en.wikipedia.org/wiki/Names_of_large_numbers
+
+    Args:
+        text (str): the string to normalize
+        short_scale (bool): use short scale if True, long scale if False
+        ordinals (bool): consider ordinal numbers, third=3 instead of 1/3
+    Returns:
+        (int, str) or (float, str)
+        None if no number is found.
+
+    """
+    number, tokens = _extract_number_with_text_en_helper(tokens, short_scale, ordinals, fractional_numbers)
+    while tokens and tokens[0].word in ARTICLES:
+        tokens.pop(0)
+    return _ReplaceableNumber(number, tokens)
+
+
+def _extract_number_with_text_en_helper(tokens, short_scale=True, ordinals=False, fractional_numbers=True):
+    """
+
+    Args:
+        tokens [_Token]:
+        short_scale boolean:
+        ordinals boolean:
+
+    Returns:
+
+    """
+    if fractional_numbers:
+        fraction, fraction_text = _extract_fraction_with_text_en(tokens, short_scale, ordinals)
+        if fraction:
+            return fraction, fraction_text
+
+        decimal, decimal_text = _extract_decimal_with_text_en(tokens, short_scale, ordinals)
+        if decimal:
+            return decimal, decimal_text
+
+    return _extract_whole_number_with_text_en(tokens, short_scale, ordinals)
+
+
+def _extract_fraction_with_text_en(tokens, short_scale, ordinals):
     """
     Extract fraction numbers from a string.
 
@@ -201,20 +306,23 @@ def _extract_fraction(tokens, short_scale, ordinals):
         partitions = _partition_list(tokens, lambda t: t.word == c)
 
         if len(partitions) == 3:
-            text = ' '.join([t.word for t in partitions[0]])
-            numbers = extract_numbers_with_text(text, short_scale, ordinals)
-            if len(numbers) > 1:
+            numbers1 = _extract_numbers_with_text(partitions[0], short_scale, ordinals, fractional_numbers=False)
+            numbers2 = _extract_numbers_with_text(partitions[2], short_scale, ordinals, fractional_numbers=True)
+
+            if not numbers1 or not numbers2:
                 return None, None
+
             # ensure first is not a fraction and second is a fraction
-            num1, tokens1 = _extract_number_with_text_en(partitions[0])
-            num2, tokens2 = _extract_number_with_text_en(partitions[2])
-            if num1 is not None and num2 is not None \
-                    and num1 >= 1 and 0 < num2 < 1:
-                return num1 + num2, tokens1 + partitions[1] + tokens2
+            num1 = numbers1[-1]
+            num2 = numbers2[0]
+            if num1.value >= 1 and 0 < num2.value < 1:
+                return num1.value + num2.value, \
+                       num1.tokens + partitions[1] + num2.tokens
+
     return None, None
 
 
-def _extract_decimal(tokens, short_scale, ordinals):
+def _extract_decimal_with_text_en(tokens, short_scale, ordinals):
     """
     Extract decimal numbers from a string.
 
@@ -241,93 +349,32 @@ def _extract_decimal(tokens, short_scale, ordinals):
     """
     for c in _DECIMAL_MARKER:
         partitions = _partition_list(tokens, lambda t: t.word == c)
+
         if len(partitions) == 3:
-            text = ' '.join([t.word for t in partitions[0]])
-            numbers = extract_numbers_with_text(text, short_scale, ordinals)
-            if len(numbers) > 1:
+            numbers1 = _extract_numbers_with_text(partitions[0], short_scale, ordinals, fractional_numbers=False)
+            numbers2 = _extract_numbers_with_text(partitions[2], short_scale, ordinals, fractional_numbers=False)
+
+            if not numbers1 or not numbers2:
                 return None, None
-            number, tokens1 = _extract_number_with_text_en(partitions[0])
-            decimal, tokens2 = _extract_number_with_text_en(partitions[2])
-            if number is not None and decimal is not None:
-                # TODO handle number dot number number number
-                if "." not in str(decimal):
-                    return number + float("0." + str(decimal)), \
-                           tokens1 + partitions[1] + tokens2
+
+            number = numbers1[-1]# type: _ReplaceableNumber
+            decimal = numbers2[0]  # type: _ReplaceableNumber
+
+            # TODO handle number dot number number number
+            if "." not in str(decimal.text):
+                return number.value + float('0.' + str(decimal.value)), \
+                        number.tokens + partitions[1] + decimal.tokens
     return None, None
 
 
-def _initialize_number_data(short_scale):
-    """
-    Generate dictionaries of words to numbers, based on scale.
-
-    This is a helper function for extractnumber_en.
-
-    Args:
-        short_scale boolean:
-
-    Returns:
-        (set(str), dict(str, number), dict(str, number))
-        multiplies, string_num_ordinal, string_num_scale
-
-    """
-    multiplies = _MULTIPLIES_SHORT_SCALE_EN if short_scale \
-        else _MULTIPLIES_LONG_SCALE_EN
-
-    string_num_ordinal_en = _STRING_SHORT_ORDINAL_EN if short_scale \
-        else _STRING_LONG_ORDINAL_EN
-
-    string_num_scale_en = SHORT_SCALE_EN if short_scale else LONG_SCALE_EN
-    string_num_scale_en = _invert_dict(string_num_scale_en)
-    string_num_scale_en.update(_generate_plurals(string_num_scale_en))
-
-    return multiplies, string_num_ordinal_en, string_num_scale_en
-
-
-def extractnumber_en(text, short_scale=True, ordinals=False):
-    """
-    This function extracts a number from a text string,
-    handles pronunciations in long scale and short scale
-
-    https://en.wikipedia.org/wiki/Names_of_large_numbers
-
-    Args:
-        text (str): the string to normalize
-        short_scale (bool): use short scale if True, long scale if False
-        ordinals (bool): consider ordinal numbers, third=3 instead of 1/3
-    Returns:
-        (int) or (float) or False: The extracted number or False if no number
-                                   was found
-
-    """
-    return extract_number_with_text_en(text, short_scale, ordinals)[0]
-
-
-def _extract_number_with_text_en(tokens, short_scale=True, ordinals=False):
-    """
-
-    Args:
-        tokens [_Token]:
-        short_scale boolean:
-        ordinals boolean:
-
-    Returns:
-
-    """
-
-    fraction, fraction_text = _extract_fraction(tokens, short_scale, ordinals)
-    if fraction:
-        return fraction, fraction_text
-
-    decimal, decimal_text = _extract_decimal(tokens, short_scale, ordinals)
-    if decimal:
-        return decimal, decimal_text
-
+def _extract_whole_number_with_text_en(tokens, short_scale, ordinals):
     multiplies, string_num_ordinal, string_num_scale = \
         _initialize_number_data(short_scale)
 
     number_words = []  # type: [_Token]
     val = False
     prev_val = None
+    next_val = None
     to_sum = []
     for idx, token in enumerate(tokens):
         word = token.word
@@ -356,7 +403,7 @@ def _extract_number_with_text_en(tokens, short_scale=True, ordinals=False):
         elif word not in multiplies \
                 and prev_word not in multiplies \
                 and prev_word not in _SUMS \
-                and not (ordinals and prev_word in string_num_ordinal)\
+                and not (ordinals and prev_word in string_num_ordinal) \
                 and prev_word not in _NEGATIVES \
                 and prev_word not in ARTICLES:
             number_words = [token]
@@ -442,7 +489,34 @@ def _extract_number_with_text_en(tokens, short_scale=True, ordinals=False):
     return val, number_words
 
 
-def extract_number_with_text_en(text, short_scale=True, ordinals=False):
+def _initialize_number_data(short_scale):
+    """
+    Generate dictionaries of words to numbers, based on scale.
+
+    This is a helper function for extractnumber_en.
+
+    Args:
+        short_scale boolean:
+
+    Returns:
+        (set(str), dict(str, number), dict(str, number))
+        multiplies, string_num_ordinal, string_num_scale
+
+    """
+    multiplies = _MULTIPLIES_SHORT_SCALE_EN if short_scale \
+        else _MULTIPLIES_LONG_SCALE_EN
+
+    string_num_ordinal_en = _STRING_SHORT_ORDINAL_EN if short_scale \
+        else _STRING_LONG_ORDINAL_EN
+
+    string_num_scale_en = SHORT_SCALE_EN if short_scale else LONG_SCALE_EN
+    string_num_scale_en = _invert_dict(string_num_scale_en)
+    string_num_scale_en.update(_generate_plurals(string_num_scale_en))
+
+    return multiplies, string_num_ordinal_en, string_num_scale_en
+
+
+def extractnumber_en(text, short_scale=True, ordinals=False):
     """
     This function extracts a number from a text string,
     handles pronunciations in long scale and short scale
@@ -454,71 +528,11 @@ def extract_number_with_text_en(text, short_scale=True, ordinals=False):
         short_scale (bool): use short scale if True, long scale if False
         ordinals (bool): consider ordinal numbers, third=3 instead of 1/3
     Returns:
-        (int, str) or (float, str)
-        None if no number is found.
+        (int) or (float) or False: The extracted number or False if no number
+                                   was found
 
     """
-    tokens = _tokenize(text)
-    number, tokens = _extract_number_with_text_en(tokens, short_scale, ordinals)
-    while tokens and tokens[0].word in ARTICLES:
-        tokens.pop(0)
-    start_index = tokens[0].index if tokens else None
-    end_index = tokens[-1].index if tokens else None
-    text = ' '.join([token.word for token in tokens])
-    return number, text, start_index, end_index
-
-
-def extract_numbers_with_text(text, short_scale=True, ordinals=False):
-    """
-    Extract all numbers from a string, with the words that represent them.
-
-    Args:
-        text str: The text to parse.
-        short_scale bool: True if short scale numbers should be used, False for
-                          long scale. True by default.
-        ordinals bool: True if ordinal words (first, second, third, etc) should
-                       be parsed.
-
-    Returns:
-        [(number, str)]: A list of tuples, each containing a number and a
-                         string.
-
-    """
-    placeholder = "<placeholder>"  # inserted to maintain correct indices
-    results = []
-    while True:
-        number, string, start_index, end_index = \
-            extract_number_with_text_en(text, short_scale, ordinals)
-        if not number:
-            break
-        results.append((number, string, start_index, end_index))
-        tokens = _tokenize(text)
-        words = [t.word if not start_index <= t.index <= end_index else \
-                     placeholder for t in tokens]
-        text = ' '.join(words)
-    results.sort(key=lambda n: n[2])  # sort by start_index
-    return results
-
-
-def convert_words_to_numbers(text, short_scale=True, ordinals=False):
-    text = text.lower()
-    tokens = _tokenize(text)
-    numbers_to_replace = extract_numbers_with_text(text, short_scale, ordinals)
-    numbers_to_replace = [_ReplaceableNumber(*args)
-                          for args in numbers_to_replace]
-    numbers_to_replace.sort(key=lambda number: number.start_index)
-
-    results = []
-    for token in tokens:
-        if not numbers_to_replace or token.index < numbers_to_replace[0].start_index:
-            results.append(token.word)
-        else:
-            if numbers_to_replace and token.index == numbers_to_replace[0].start_index:
-                results.append(str(numbers_to_replace[0].value))
-            if numbers_to_replace and token.index == numbers_to_replace[0].end_index:
-                numbers_to_replace.pop(0)
-
-    return ' '.join(results)
+    return _extract_number_with_text_en(_tokenize(text), short_scale, ordinals).value
 
 
 def extract_duration_en(text):
@@ -1357,8 +1371,8 @@ def extract_numbers_en(text, short_scale=True, ordinals=False):
     Returns:
         list: list of extracted numbers as floats
     """
-    results = extract_numbers_with_text(text, short_scale, ordinals)
-    return [float(result[0]) for result in results]
+    results = _extract_numbers_with_text(_tokenize(text), short_scale, ordinals)
+    return [float(result.value) for result in results]
 
 
 def normalize_en(text, remove_articles):
