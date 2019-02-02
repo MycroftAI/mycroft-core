@@ -19,9 +19,9 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 from mycroft.util.lang.parse_common import is_numeric, look_for_fractions
-from mycroft.util.lang.common_data_en import ARTICLES, NUM_STRING_EN, \
-    LONG_ORDINAL_STRING_EN, LONG_SCALE_EN, \
-    SHORT_SCALE_EN, SHORT_ORDINAL_STRING_EN
+from mycroft.util.lang.common_data_en import _ARTICLES, _NUM_STRING_EN, \
+    _LONG_ORDINAL_STRING_EN, _LONG_SCALE_EN, \
+    _SHORT_SCALE_EN, _SHORT_ORDINAL_STRING_EN
 
 import re
 
@@ -65,11 +65,11 @@ _NEGATIVES = {"negative", "minus"}
 _SUMS = {'twenty', '20', 'thirty', '30', 'forty', '40', 'fifty', '50',
          'sixty', '60', 'seventy', '70', 'eighty', '80', 'ninety', '90'}
 
-_MULTIPLIES_LONG_SCALE_EN = set(LONG_SCALE_EN.values()) | \
-                            _generate_plurals(LONG_SCALE_EN.values())
+_MULTIPLIES_LONG_SCALE_EN = set(_LONG_SCALE_EN.values()) | \
+                            _generate_plurals(_LONG_SCALE_EN.values())
 
-_MULTIPLIES_SHORT_SCALE_EN = set(SHORT_SCALE_EN.values()) | \
-                             _generate_plurals(SHORT_SCALE_EN.values())
+_MULTIPLIES_SHORT_SCALE_EN = set(_SHORT_SCALE_EN.values()) | \
+                             _generate_plurals(_SHORT_SCALE_EN.values())
 
 
 # split sentence parse separately and sum ( 2 and a half = 2 + 0.5 )
@@ -78,7 +78,7 @@ _FRACTION_MARKER = {"and"}
 # decimal marker ( 1 point 5 = 1 + 0.5)
 _DECIMAL_MARKER = {"point", "dot"}
 
-_STRING_NUM_EN = _invert_dict(NUM_STRING_EN)
+_STRING_NUM_EN = _invert_dict(_NUM_STRING_EN)
 _STRING_NUM_EN.update(_generate_plurals(_STRING_NUM_EN))
 _STRING_NUM_EN.update({
     "half": 0.5,
@@ -86,8 +86,8 @@ _STRING_NUM_EN.update({
     "couple": 2
 })
 
-_STRING_SHORT_ORDINAL_EN = _invert_dict(SHORT_ORDINAL_STRING_EN)
-_STRING_LONG_ORDINAL_EN = _invert_dict(LONG_ORDINAL_STRING_EN)
+_STRING_SHORT_ORDINAL_EN = _invert_dict(_SHORT_ORDINAL_STRING_EN)
+_STRING_LONG_ORDINAL_EN = _invert_dict(_LONG_ORDINAL_STRING_EN)
 
 
 class _Token():
@@ -208,7 +208,7 @@ def _partition_list(items, split_on):
     return list(filter(lambda x: len(x) != 0, splits))
 
 
-def convert_words_to_numbers(text, short_scale=True, ordinals=False):
+def _convert_words_to_numbers(text, short_scale=True, ordinals=False):
     """
     Convert words in a string into their equivalent numbers.
     Args:
@@ -304,7 +304,7 @@ def _extract_number_with_text_en(tokens, short_scale=True,
     number, tokens = \
         _extract_number_with_text_en_helper(tokens, short_scale,
                                             ordinals, fractional_numbers)
-    while tokens and tokens[0].word in ARTICLES:
+    while tokens and tokens[0].word in _ARTICLES:
         tokens.pop(0)
     return _ReplaceableNumber(number, tokens)
 
@@ -461,7 +461,7 @@ def _extract_whole_number_with_text_en(tokens, short_scale, ordinals):
             continue
 
         word = token.word
-        if word in ARTICLES or word in _NEGATIVES:
+        if word in _ARTICLES or word in _NEGATIVES:
             number_words.append(token)
             continue
 
@@ -477,7 +477,7 @@ def _extract_whole_number_with_text_en(tokens, short_scale, ordinals):
                 not isFractional_en(word, short_scale=short_scale) and \
                 not look_for_fractions(word.split('/')):
             words_only = [token.word for token in number_words]
-            if number_words and not all([w in ARTICLES |
+            if number_words and not all([w in _ARTICLES |
                                          _NEGATIVES for w in words_only]):
                 break
             else:
@@ -488,7 +488,7 @@ def _extract_whole_number_with_text_en(tokens, short_scale, ordinals):
                 and prev_word not in _SUMS \
                 and not (ordinals and prev_word in string_num_ordinal) \
                 and prev_word not in _NEGATIVES \
-                and prev_word not in ARTICLES:
+                and prev_word not in _ARTICLES:
             number_words = [token]
         elif prev_word in _SUMS and word in _SUMS:
             number_words = [token]
@@ -600,7 +600,7 @@ def _initialize_number_data(short_scale):
     string_num_ordinal_en = _STRING_SHORT_ORDINAL_EN if short_scale \
         else _STRING_LONG_ORDINAL_EN
 
-    string_num_scale_en = SHORT_SCALE_EN if short_scale else LONG_SCALE_EN
+    string_num_scale_en = _SHORT_SCALE_EN if short_scale else _LONG_SCALE_EN
     string_num_scale_en = _invert_dict(string_num_scale_en)
     string_num_scale_en.update(_generate_plurals(string_num_scale_en))
 
@@ -665,7 +665,7 @@ def extract_duration_en(text):
     }
 
     pattern = "(?P<value>\d+(?:\.?\d+)?)\s+{unit}s?"
-    text = convert_words_to_numbers(text)
+    text = _convert_words_to_numbers(text)
 
     pieces = []
     for unit, value in time_unit_to_seconds_map.items():
@@ -1437,13 +1437,13 @@ def isFractional_en(input_str, short_scale=True):
 
     fracts = {"whole": 1, "half": 2, "halve": 2, "quarter": 4}
     if short_scale:
-        for num in SHORT_ORDINAL_STRING_EN:
+        for num in _SHORT_ORDINAL_STRING_EN:
             if num > 2:
-                fracts[SHORT_ORDINAL_STRING_EN[num]] = num
+                fracts[_SHORT_ORDINAL_STRING_EN[num]] = num
     else:
-        for num in LONG_ORDINAL_STRING_EN:
+        for num in _LONG_ORDINAL_STRING_EN:
             if num > 2:
-                fracts[LONG_ORDINAL_STRING_EN[num]] = num
+                fracts[_LONG_ORDINAL_STRING_EN[num]] = num
 
     if input_str.lower() in fracts:
         return 1.0 / fracts[input_str.lower()]

@@ -17,10 +17,10 @@
 from collections import OrderedDict
 
 
-ARTICLES = {'a', 'an', 'the'}
+_ARTICLES = {'a', 'an', 'the'}
 
 
-NUM_STRING_EN = {
+_NUM_STRING_EN = {
     0: 'zero',
     1: 'one',
     2: 'two',
@@ -52,7 +52,7 @@ NUM_STRING_EN = {
 }
 
 
-FRACTION_STRING_EN = {
+_FRACTION_STRING_EN = {
     2: 'half',
     3: 'third',
     4: 'forth',
@@ -75,7 +75,7 @@ FRACTION_STRING_EN = {
 }
 
 
-LONG_SCALE_EN = OrderedDict([
+_LONG_SCALE_EN = OrderedDict([
     (100, 'hundred'),
     (1000, 'thousand'),
     (1000000, 'million'),
@@ -105,7 +105,7 @@ LONG_SCALE_EN = OrderedDict([
 ])
 
 
-SHORT_SCALE_EN = OrderedDict([
+_SHORT_SCALE_EN = OrderedDict([
     (100, 'hundred'),
     (1000, 'thousand'),
     (1000000, 'million'),
@@ -180,7 +180,7 @@ SHORT_SCALE_EN = OrderedDict([
 ])
 
 
-ORDINAL_STRING_BASE_EN = {
+_ORDINAL_STRING_BASE_EN = {
     1: 'first',
     2: 'second',
     3: 'third',
@@ -213,7 +213,7 @@ ORDINAL_STRING_BASE_EN = {
 }
 
 
-SHORT_ORDINAL_STRING_EN = {
+_SHORT_ORDINAL_STRING_EN = {
     1e6: "millionth",
     1e9: "billionth",
     1e12: "trillionth",
@@ -226,10 +226,10 @@ SHORT_ORDINAL_STRING_EN = {
     1e33: "decillionth"
     # TODO > 1e-33
 }
-SHORT_ORDINAL_STRING_EN.update(ORDINAL_STRING_BASE_EN)
+_SHORT_ORDINAL_STRING_EN.update(_ORDINAL_STRING_BASE_EN)
 
 
-LONG_ORDINAL_STRING_EN = {
+_LONG_ORDINAL_STRING_EN = {
     1e6: "millionth",
     1e12: "billionth",
     1e18: "trillionth",
@@ -242,4 +242,4 @@ LONG_ORDINAL_STRING_EN = {
     1e60: "decillionth"
     # TODO > 1e60
 }
-LONG_ORDINAL_STRING_EN.update(ORDINAL_STRING_BASE_EN)
+_LONG_ORDINAL_STRING_EN.update(_ORDINAL_STRING_BASE_EN)

@@ -17,7 +17,7 @@
 
 from mycroft.util.lang.format_common import convert_to_mixed_fraction
 from mycroft.util.log import LOG
-from mycroft.util.lang.common_data_en import NUM_STRING_EN, FRACTION_STRING_EN, LONG_SCALE_EN, SHORT_SCALE_EN
+from mycroft.util.lang.common_data_en import _NUM_STRING_EN, _FRACTION_STRING_EN, _LONG_SCALE_EN, _SHORT_SCALE_EN
 
 
 def nice_number_en(number, speech, denominators):
@@ -50,7 +50,7 @@ def nice_number_en(number, speech, denominators):
 
     if num == 0:
         return str(whole)
-    den_str = FRACTION_STRING_EN[den]
+    den_str = _FRACTION_STRING_EN[den]
     if whole == 0:
         if num == 1:
             return_string = 'a {}'.format(den_str)
@@ -93,20 +93,20 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
                 'negative ' if power < 0 else '',
                 pronounce_number_en(abs(power), places, short_scale, False))
     if short_scale:
-        number_names = NUM_STRING_EN.copy()
-        number_names.update(SHORT_SCALE_EN)
+        number_names = _NUM_STRING_EN.copy()
+        number_names.update(_SHORT_SCALE_EN)
     else:
-        number_names = NUM_STRING_EN.copy()
-        number_names.update(LONG_SCALE_EN)
+        number_names = _NUM_STRING_EN.copy()
+        number_names.update(_LONG_SCALE_EN)
 
     digits = [number_names[n] for n in range(0, 20)]
 
     tens = [number_names[n] for n in range(10, 100, 10)]
 
     if short_scale:
-        hundreds = [SHORT_SCALE_EN[n] for n in SHORT_SCALE_EN.keys()]
+        hundreds = [_SHORT_SCALE_EN[n] for n in _SHORT_SCALE_EN.keys()]
     else:
-        hundreds = [LONG_SCALE_EN[n] for n in LONG_SCALE_EN.keys()]
+        hundreds = [_LONG_SCALE_EN[n] for n in _LONG_SCALE_EN.keys()]
 
     # deal with negatives
     result = ""
@@ -166,7 +166,7 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
                     " and " + _sub_thousand(r) if r else "")
 
         def _short_scale(n):
-            if n >= max(SHORT_SCALE_EN.keys()):
+            if n >= max(_SHORT_SCALE_EN.keys()):
                 return "infinity"
             n = int(n)
             assert 0 <= n
@@ -191,7 +191,7 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
             return res
 
         def _long_scale(n):
-            if n >= max(LONG_SCALE_EN.keys()):
+            if n >= max(_LONG_SCALE_EN.keys()):
                 return "infinity"
             n = int(n)
             assert 0 <= n
