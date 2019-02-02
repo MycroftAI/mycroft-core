@@ -534,12 +534,14 @@ class TestNormalize(unittest.TestCase):
                          [2.0, 2.0])
         self.assertEqual(extract_numbers("twenty 20 twenty"),
                          [20, 20, 20])
-        # self.assertEqual(extract_numbers("twenty 20 22"),
-        #                  [20, 20, 22])
-        # self.assertEqual(extract_numbers("twenty twenty two twenty"),
-        #                  [20, 22, 20])
-        # self.assertEqual(extract_numbers("twenty 20 twenty 2"),
-        #                  [20, 20, 20, 2])
+        self.assertEqual(extract_numbers("twenty 20 22"),
+                         [20.0, 20.0, 22.0])
+        self.assertEqual(extract_numbers("twenty twenty two twenty"),
+                         [20, 22, 20])
+        self.assertEqual(extract_numbers("twenty 2"),
+                         [22.0])
+        self.assertEqual(extract_numbers("twenty 20 twenty 2"),
+                         [20, 20, 22])
         self.assertEqual(extract_numbers("third one"),
                          [1 / 3, 1])
         self.assertEqual(extract_numbers("third one", ordinals=True), [3])

@@ -377,6 +377,7 @@ def _extract_whole_number_with_text_en(tokens, short_scale, ordinals):
     next_val = None
     to_sum = []
     for idx, token in enumerate(tokens):
+        current_val = None
         if next_val:
             next_val = None
             continue
@@ -422,14 +423,18 @@ def _extract_whole_number_with_text_en(tokens, short_scale, ordinals):
                 val = int(word)
             else:
                 val = float(word)
+            current_val = val
 
         # is this word the name of a number ?
         if word in _STRING_NUM_EN:
             val = _STRING_NUM_EN.get(word)
+            current_val = val
         elif word in string_num_scale:
             val = string_num_scale.get(word)
+            current_val = val
         elif ordinals and word in string_num_ordinal:
             val = string_num_ordinal[word]
+            current_val = val
 
         # is the prev word an ordinal number and current word is one?
         # second one, third one
@@ -438,12 +443,8 @@ def _extract_whole_number_with_text_en(tokens, short_scale, ordinals):
 
         # is the prev word a number and should we sum it?
         # twenty two, fifty six
-        if prev_word in _SUMS and (
-                word in _STRING_NUM_EN or
-                word in string_num_scale or
-                (ordinals and word in string_num_ordinal)):
-            if val and val < 10:
-                val = prev_val + val
+        if prev_word in _SUMS and val and val < 10:
+            val = prev_val + val
 
         # is the prev word a number and should we multiply it?
         # twenty hundred, six hundred
@@ -456,6 +457,7 @@ def _extract_whole_number_with_text_en(tokens, short_scale, ordinals):
         # half cup
         if val is False:
             val = isFractional_en(word, short_scale=short_scale)
+            current_val = val
 
         # 2 fifths
         if not ordinals:
@@ -476,8 +478,14 @@ def _extract_whole_number_with_text_en(tokens, short_scale, ordinals):
             aPieces = word.split('/')
             if look_for_fractions(aPieces):
                 val = float(aPieces[0]) / float(aPieces[1])
+                current_val = val
 
         else:
+            if prev_word in _SUMS and word not in _SUMS and current_val >= 10:
+                # Backtrack - we've got numbers we can't sum.
+                number_words.pop()
+                val = prev_val
+                break
             prev_val = val
 
             # handle long numbers
