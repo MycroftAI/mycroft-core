@@ -26,70 +26,6 @@ from mycroft.util.lang.common_data_en import ARTICLES, NUM_STRING_EN, \
 import re
 
 
-class _Token():
-
-    def __init__(self, word, index):
-        self.word = word
-        self.index = index
-
-    def __setattr__(self, key, value):
-        try:
-            getattr(self, key)
-        except AttributeError:
-            super().__setattr__(key, value)
-        else:
-            raise Exception("Immutable!")
-
-    def __str__(self):
-        return "({w}, {i})".format(w=self.word, i=self.index)
-
-    def __repr__(self):
-        return "{n}({w}, {i})".format(n=self.__class__.__name__,
-                                      w=self.word, i=self.index)
-
-
-def _tokenize(text):
-    return [_Token(word, index) for index, word in enumerate(text.split())]
-
-
-class _ReplaceableNumber():
-
-    def __init__(self, value, tokens: [_Token]):
-        self.value = value
-        self.tokens = tokens
-
-    def __bool__(self):
-        return bool(self.value is not None and self.value is not False)
-
-    @property
-    def start_index(self):
-        return self.tokens[0].index
-
-    @property
-    def end_index(self):
-        return self.tokens[-1].index
-
-    @property
-    def text(self):
-        return ' '.join([t.word for t in self.tokens])
-
-    def __setattr__(self, key, value):
-        try:
-            getattr(self, key)
-        except AttributeError:
-            super().__setattr__(key, value)
-        else:
-            raise Exception("Immutable!")
-
-    def __str__(self):
-        return "({v}, {t})".format(v=self.value, t=self.tokens)
-
-    def __repr__(self):
-        return "{n}({v}, {t})".format(n=self.__class__.__name__,
-                                                v=self.value,
-                                                t=self.tokens)
-
-
 def _invert_dict(original):
     """
     Produce a dictionary with the keys and values
@@ -129,11 +65,11 @@ _NEGATIVES = {"negative", "minus"}
 _SUMS = {'twenty', '20', 'thirty', '30', 'forty', '40', 'fifty', '50',
          'sixty', '60', 'seventy', '70', 'eighty', '80', 'ninety', '90'}
 
-_MULTIPLIES_LONG_SCALE_EN = set(LONG_SCALE_EN.values()) |\
+_MULTIPLIES_LONG_SCALE_EN = set(LONG_SCALE_EN.values()) | \
                             _generate_plurals(LONG_SCALE_EN.values())
 
-_MULTIPLIES_SHORT_SCALE_EN = set(SHORT_SCALE_EN.values()) |\
-                            _generate_plurals(SHORT_SCALE_EN.values())
+_MULTIPLIES_SHORT_SCALE_EN = set(SHORT_SCALE_EN.values()) | \
+                             _generate_plurals(SHORT_SCALE_EN.values())
 
 
 # split sentence parse separately and sum ( 2 and a half = 2 + 0.5 )
@@ -154,6 +90,95 @@ _STRING_SHORT_ORDINAL_EN = _invert_dict(SHORT_ORDINAL_STRING_EN)
 _STRING_LONG_ORDINAL_EN = _invert_dict(LONG_ORDINAL_STRING_EN)
 
 
+class _Token():
+    """
+    Map a word to an index in a string.
+
+    This is intended to be used in the number processing functions in
+    this module. The parsing requires slicing and dividing of the original
+    text. To ensure things parse correctly, we need to know where text came
+    from in the original input, hence this class.
+    """
+
+    def __init__(self, word, index):
+        self.word = word
+        self.index = index
+
+    def __setattr__(self, key, value):
+        try:
+            getattr(self, key)
+        except AttributeError:
+            super().__setattr__(key, value)
+        else:
+            raise Exception("Immutable!")
+
+    def __str__(self):
+        return "({w}, {i})".format(w=self.word, i=self.index)
+
+    def __repr__(self):
+        return "{n}({w}, {i})".format(n=self.__class__.__name__,
+                                      w=self.word, i=self.index)
+
+
+class _ReplaceableNumber():
+    """
+    Similar to _Token, this class is used in number parsing.
+
+    Once we've found a number in a string, this class contains all
+    the info about the value, and where it came from in the original text.
+    In other words, it is the text, and the number that can replace it in
+    the string.
+    """
+
+    def __init__(self, value, tokens: [_Token]):
+        self.value = value
+        self.tokens = tokens
+
+    def __bool__(self):
+        return bool(self.value is not None and self.value is not False)
+
+    @property
+    def start_index(self):
+        return self.tokens[0].index
+
+    @property
+    def end_index(self):
+        return self.tokens[-1].index
+
+    @property
+    def text(self):
+        return ' '.join([t.word for t in self.tokens])
+
+    def __setattr__(self, key, value):
+        try:
+            getattr(self, key)
+        except AttributeError:
+            super().__setattr__(key, value)
+        else:
+            raise Exception("Immutable!")
+
+    def __str__(self):
+        return "({v}, {t})".format(v=self.value, t=self.tokens)
+
+    def __repr__(self):
+        return "{n}({v}, {t})".format(n=self.__class__.__name__,
+                                                v=self.value,
+                                                t=self.tokens)
+
+
+def _tokenize(text):
+    """
+    Generate a list of token object, given a string.
+    Args:
+        text str: Text to tokenize.
+
+    Returns:
+        [_Token]
+
+    """
+    return [_Token(word, index) for index, word in enumerate(text.split())]
+
+
 def _partition_list(items, split_on):
     """
     Partition a list of items.
@@ -168,6 +193,7 @@ def _partition_list(items, split_on):
             created any time it returns True.
 
     Returns:
+        [[any]]
 
     """
     splits = []
@@ -184,6 +210,19 @@ def _partition_list(items, split_on):
 
 
 def convert_words_to_numbers(text, short_scale=True, ordinals=False):
+    """
+    Convert words in a string into their equivalent numbers.
+    Args:
+        text str:
+        short_scale boolean: True if short scale numbers should be used.
+        ordinals boolean: True if ordinals (e.g. first, second, third) should
+                          be parsed to their number values (1, 2, 3...)
+
+    Returns:
+        str
+        The original text, with numbers subbed in where appropriate.
+
+    """
     text = text.lower()
     tokens = _tokenize(text)
     numbers_to_replace = _extract_numbers_with_text(tokens, short_scale, ordinals)
@@ -204,17 +243,20 @@ def convert_words_to_numbers(text, short_scale=True, ordinals=False):
 
 def _extract_numbers_with_text(tokens, short_scale=True, ordinals=False, fractional_numbers=True):
     """
-    Extract all numbers from a string, with the words that represent them.
+    Extract all numbers from a list of _Tokens, with the words that
+    represent them.
 
     Args:
-        text str: The text to parse.
+        [_Token]: The tokens to parse.
         short_scale bool: True if short scale numbers should be used, False for
                           long scale. True by default.
         ordinals bool: True if ordinal words (first, second, third, etc) should
                        be parsed.
+        fractional_numbers bool: True if we should look for fractions and
+                                 decimals.
 
     Returns:
-        [(number, str)]: A list of tuples, each containing a number and a
+        [_ReplaceableNumber]: A list of tuples, each containing a number and a
                          string.
 
     """
@@ -237,18 +279,16 @@ def _extract_numbers_with_text(tokens, short_scale=True, ordinals=False, fractio
 
 def _extract_number_with_text_en(tokens, short_scale=True, ordinals=False, fractional_numbers=True):
     """
-    This function extracts a number from a text string,
-    handles pronunciations in long scale and short scale
-
-    https://en.wikipedia.org/wiki/Names_of_large_numbers
+    This function extracts a number from a list of _Tokens.
 
     Args:
-        text (str): the string to normalize
+        tokens str: the string to normalize
         short_scale (bool): use short scale if True, long scale if False
         ordinals (bool): consider ordinal numbers, third=3 instead of 1/3
+        fractional_numbers (bool): True if we should look for fractions and
+                                   decimals.
     Returns:
-        (int, str) or (float, str)
-        None if no number is found.
+        _ReplaceableNumber
 
     """
     number, tokens = _extract_number_with_text_en_helper(tokens, short_scale, ordinals, fractional_numbers)
@@ -259,13 +299,16 @@ def _extract_number_with_text_en(tokens, short_scale=True, ordinals=False, fract
 
 def _extract_number_with_text_en_helper(tokens, short_scale=True, ordinals=False, fractional_numbers=True):
     """
+    Helber for _extract_number_with_text_en.
 
     Args:
         tokens [_Token]:
         short_scale boolean:
         ordinals boolean:
+        fractional_numbers boolean:
 
     Returns:
+        int or float, [_Tokens]
 
     """
     if fractional_numbers:
@@ -284,17 +327,13 @@ def _extract_fraction_with_text_en(tokens, short_scale, ordinals):
     """
     Extract fraction numbers from a string.
 
-    This is a helper function for extractnumber_en. It is not intended
-    to be used on it's own.
-
-    This function handles text such as '2 and 3/4'.
-
-    Notes:
-        While this is a helper for extractnumber_en, it also depends on
-        extractnumber_en, to parse out the components of the fraction.
+    This function handles text such as '2 and 3/4'. Note that "one half" or
+    similar will be parsed by the whole number function.
 
     Args:
         tokens [_Token]: words and their indexes in the original string.
+        short_scale boolean:
+        ordinals boolean:
 
     Returns:
         (int or float, [_Token])
@@ -326,9 +365,6 @@ def _extract_decimal_with_text_en(tokens, short_scale, ordinals):
     """
     Extract decimal numbers from a string.
 
-    This is a helper function for extractnumber_en. It is not intended
-    to be used on it's own.
-
     This function handles text such as '2 point 5'.
 
     Notes:
@@ -340,6 +376,8 @@ def _extract_decimal_with_text_en(tokens, short_scale, ordinals):
 
     Args:
         tokens [_Token]: The text to parse.
+        short_scale boolean:
+        ordinals boolean:
 
     Returns:
         (float, [_Token])
@@ -368,6 +406,22 @@ def _extract_decimal_with_text_en(tokens, short_scale, ordinals):
 
 
 def _extract_whole_number_with_text_en(tokens, short_scale, ordinals):
+    """
+    Handle numbers not handled by the decimal or fraction functions. This is
+    generally whole numbers. Note that phrases such as "one half" will be
+    handled by this function, while "one and a half" are handled by the
+    fraction function.
+
+    Args:
+        tokens [_Token]:
+        short_scale boolean:
+        ordinals boolean:
+
+    Returns:
+        int or float, [_Tokens]
+        The value parsed, and tokens that it corresponds to.
+
+    """
     multiplies, string_num_ordinal, string_num_scale = \
         _initialize_number_data(short_scale)
 
@@ -506,7 +560,7 @@ def _initialize_number_data(short_scale):
     """
     Generate dictionaries of words to numbers, based on scale.
 
-    This is a helper function for extractnumber_en.
+    This is a helper function for _extract_whole_number.
 
     Args:
         short_scale boolean:
@@ -549,7 +603,8 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
 
 
 def extract_duration_en(text):
-    """ Convert an english phrase into a number of seconds
+    """
+    Convert an english phrase into a number of seconds
 
     Convert things like:
         "10 minute"
