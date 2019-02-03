@@ -53,7 +53,7 @@ def _generate_plurals(originals):
         set(str) or dict(str, any)
 
     """
-    if type(originals) == dict:
+    if isinstance(originals, dict):
         return {key + 's': value for key, value in originals.items()}
     return {value + "s" for value in originals}
 
@@ -647,7 +647,8 @@ def extract_duration_en(text):
         text (str): string containing a duration
 
     Returns:
-        (float, str): A tuple containing the duration and the remaining text
+        (timedelta, str):
+                    A tuple containing the duration and the remaining text
                     not consumed in the parsing. The first value will
                     be None if no duration is found. The text returned
                     will have whitespace stripped from the ends.
