@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from dateutil.relativedelta import relativedelta
 
@@ -656,29 +656,30 @@ def extract_duration_en(text):
     if not text:
         return None
 
-    time_unit_to_seconds_map = {
-        'second': 1,
-        'minute': 60,
-        'hour': 3600,
-        'day': 86400,
-        'week': 604800
+    time_units = {
+        'microseconds': None,
+        'milliseconds': None,
+        'seconds': None,
+        'minutes': None,
+        'hours': None,
+        'days': None,
+        'weeks': None
     }
 
     pattern = r"(?P<value>\d+(?:\.?\d+)?)\s+{unit}s?"
     text = _convert_words_to_numbers(text)
 
-    pieces = []
-    for unit, value in time_unit_to_seconds_map.items():
-        unit_pattern = pattern.format(unit=unit)
+    for unit in time_units:
+        unit_pattern = pattern.format(unit=unit[:-1])  # remove 's' from unit
         matches = re.findall(unit_pattern, text)
-        matches = map(lambda s: float(s) * value, matches)
-        pieces += matches
+        value = sum(map(float, matches))
+        time_units[unit] = value
         text = re.sub(unit_pattern, '', text)
 
     text = text.strip()
-    duration = sum(pieces)
+    duration = timedelta(**time_units) if any(time_units.values()) else None
 
-    return (duration, text) if pieces else (None, text)
+    return (duration, text)
 
 
 def extract_datetime_en(string, dateNow, default_time):
