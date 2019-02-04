@@ -354,15 +354,19 @@ class SkillManager(Thread):
     def load_priority(self):
         skills = {skill.name: skill for skill in self.msm.list()}
         for skill_name in PRIORITY_SKILLS:
-            skill = skills[skill_name]
-            if not skill.is_local:
-                try:
-                    skill.install()
-                except Exception:
-                    LOG.exception('Downloading priority skill:' + skill.name)
-                    if not skill.is_local:
-                        continue
-            self._load_or_reload_skill(skill.path)
+            skill = skills.get(skill_name)
+            if skill:
+                if not skill.is_local:
+                    try:
+                        skill.install()
+                    except Exception:
+                        LOG.exception('Downloading priority skill: '
+                                      '{} failed'.format(skill.name))
+                        if not skill.is_local:
+                            continue
+                self._load_or_reload_skill(skill.path)
+            else:
+                LOG.error('Priority skill {} can\'t be found')
 
     def remove_git_locks(self):
         """If git gets killed from an abrupt shutdown it leaves lock files"""
