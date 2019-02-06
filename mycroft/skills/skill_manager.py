@@ -245,12 +245,15 @@ class SkillManager(Thread):
             data = {'utterance': dialog.get("skills updated")}
             self.bus.emit(Message("speak", data))
 
+        # Schedule retry in 5 minutes on failure, after 10 shorter periods
+        # Go back to 60 minutes wait
         if default_skill_errored and self.num_install_retries < 10:
             self.num_install_retries += 1
             self.next_download = time.time() + 5 * MINUTES
             return False
         self.num_install_retries = 0
 
+        # Update timestamp on .msm file to be used when system is restarted
         with open(self.dot_msm, 'a'):
             os.utime(self.dot_msm, None)
         self.next_download = time.time() + self.update_interval
@@ -285,10 +288,7 @@ class SkillManager(Thread):
         """
         skill_path = skill_path.rstrip('/')
         skill = self.loaded_skills.setdefault(skill_path, {})
-        skill.update({
-            "id": basename(skill_path),
-            "path": skill_path
-        })
+        skill.update({"id": basename(skill_path), "path": skill_path})
 
         # check if folder is a skill (must have __init__.py)
         if not MainModule + ".py" in os.listdir(skill_path):
