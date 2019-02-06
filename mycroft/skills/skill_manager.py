@@ -427,10 +427,14 @@ class SkillManager(Thread):
             skill_paths = glob(join(self.msm.skills_dir, '*/'))
             still_loading = False
             for skill_path in skill_paths:
-                still_loading = (
-                        self._load_or_reload_skill(skill_path) or
-                        still_loading
-                )
+                try:
+                    still_loading = (
+                            self._load_or_reload_skill(skill_path) or
+                            still_loading
+                    )
+                except Exception as e:
+                    LOG.error('(Re)loading of {} failed ({})'.format(
+                        skill_path, repr(e)))
             if not has_loaded and not still_loading and len(skill_paths) > 0:
                 has_loaded = True
                 self.bus.emit(Message('mycroft.skills.initialized'))
