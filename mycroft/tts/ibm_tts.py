@@ -29,7 +29,11 @@ class WatsonTTS(RemoteTTS):
         self.type = "wav"
         user = self.config.get("user") or self.config.get("username")
         password = self.config.get("password")
-        self.auth = HTTPBasicAuth(user, password)
+        api_key = self.config.get("apikey")
+        if api_key is None:
+            self.auth = HTTPBasicAuth(user, password)
+        else:
+            self.auth = HTTPBasicAuth("apikey", api_key)
 
     def build_request_params(self, sentence):
         params = self.PARAMS.copy()
