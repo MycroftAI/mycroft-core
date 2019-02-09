@@ -55,10 +55,11 @@ class WatsonTTSValidator(TTSValidator):
         config = Configuration.get().get("tts", {}).get("watson", {})
         user = config.get("user") or config.get("username")
         password = config.get("password")
-        if user and password:
+        apikey = config.get("apikey")
+        if user and password or apikey:
             return
         else:
-            raise ValueError('user and/or password for IBM tts is not defined')
+            raise ValueError('user/pass or apikey for IBM tts is not defined')
 
     def get_tts_class(self):
         return WatsonTTS
