@@ -227,9 +227,9 @@ class TestPronounceNumber(unittest.TestCase):
         self.assertEqual(
             pronounce_number(1000001, short_scale=True, lang="it"),
             "un milione, uno")
-        #self.assertEqual(
-        #    pronounce_number(1000000000, short_scale=False, lang="it"),
-        #    "un miliardo")
+        self.assertEqual(
+            pronounce_number(1000000000, short_scale=False, lang="it"),
+            "un miliardo")
         self.assertEqual(
             pronounce_number(1000000, short_scale=False, lang="it"),
             "un milione")
@@ -240,9 +240,6 @@ class TestPronounceNumber(unittest.TestCase):
             pronounce_number(1000900, short_scale=False, lang="it"),
             "uno milioni, novecento")
 
-# def nice_time(dt, lang="it-it", speech=True, use_24hour=False,
-#              use_ampm=False):
-class TestNiceDateFormat(unittest.TestCase):
     def test_convert_times(self):
         dt = datetime.datetime(2017, 1, 31, 13, 22, 3)
 
@@ -299,8 +296,7 @@ class TestNiceDateFormat(unittest.TestCase):
         self.assertEqual(nice_time(dt, lang="it", use_24hour=True,
                                    use_ampm=False), "tredici e zerozero")
 
-        dt = datetime.datetime(2017, 1, 31,
-                               13, 2, 3)
+        dt = datetime.datetime(2017, 1, 31, 13, 2, 3)
         self.assertEqual(nice_time(dt, lang="it", use_24hour=True),
                          "tredici e zero due")
         self.assertEqual(nice_time(dt, lang="it", use_ampm=True),
@@ -318,8 +314,7 @@ class TestNiceDateFormat(unittest.TestCase):
         self.assertEqual(nice_time(dt, lang="it", use_24hour=True,
                                    use_ampm=False), "tredici e zero due")
 
-        dt = datetime.datetime(2017, 1, 31,
-                               0, 2, 3)
+        dt = datetime.datetime(2017, 1, 31, 0, 2, 3)
         self.assertEqual(nice_time(dt, lang="it"),
                          "mezzanotte e zero due")
         self.assertEqual(nice_time(dt, lang="it", use_ampm=True),
