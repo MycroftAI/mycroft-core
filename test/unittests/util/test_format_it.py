@@ -195,7 +195,7 @@ class TestPronounceNumber(unittest.TestCase):
                                           scientific=True, lang="it"),
                          "meno uno virgola sei sette due per dieci elevato"
                          " alla meno ventisette")
-        
+
     def test_large_numbers(self):
         self.assertEqual(
             pronounce_number(299792458, short_scale=True, lang="it"),
