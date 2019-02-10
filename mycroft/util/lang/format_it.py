@@ -369,7 +369,7 @@ def pronounce_number_it(num, places=2, short_scale=False, scientific=False):
         else:
             result += _long_scale(num)
 
-   # normalizza unità misura singole e 'ragionevoli' ed ad inizio stringa
+    # normalizza unità misura singole e 'ragionevoli' ed ad inizio stringa
     if result == 'mila':
         result = 'mille'
     if result == 'milioni':
