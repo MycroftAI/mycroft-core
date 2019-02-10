@@ -369,15 +369,19 @@ def pronounce_number_it(num, places=2, short_scale=False, scientific=False):
         else:
             result += _long_scale(num)
 
-    # normalizza unità misura singole e 'ragionevoli' ed ad inizio stringa
+   # normalizza unità misura singole e 'ragionevoli' ed ad inizio stringa
     if result == 'mila':
         result = 'mille'
+    if result == 'milioni':
+        result = 'un milione'
+    if result == 'miliardi':
+        result = 'un miliardo'
     if result[0:7] == 'unomila':
         result = result.replace('unomila', 'mille', 1)
     if result[0:10] == 'unomilioni':
         result = result.replace('unomilioni', 'un milione', 1)
     # if result[0:11] == 'unomiliardi':
-    #    result = result.replace('unomiliardi', 'un miliardo', 1)
+    # result = result.replace('unomiliardi', 'un miliardo', 1)
 
     # Deal with fractional part
     if not num == int(num) and places > 0:
