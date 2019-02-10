@@ -256,7 +256,7 @@ def pronounce_number_it(num, places=2, short_scale=False, scientific=False):
         return "infinito"
     elif num == float("-inf"):
         return "meno infinito"
-    
+
     if scientific:
         number = '%E' % num
         n, power = number.replace("+", "").split("E")
@@ -267,7 +267,7 @@ def pronounce_number_it(num, places=2, short_scale=False, scientific=False):
                 pronounce_number_it(abs(float(n)), places, short_scale, False),
                 'meno ' if power < 0 else '',
                 pronounce_number_it(abs(power), places, short_scale, False))
-        
+
     if short_scale:
         number_names = NUM_STRING_IT.copy()
         number_names.update(SHORT_SCALE_IT)
