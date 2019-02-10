@@ -14,10 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import json
+
 import unittest
 import datetime
-import ast
 import sys
 from mycroft.util.format import nice_number
 from mycroft.util.format import nice_time
