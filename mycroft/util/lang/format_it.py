@@ -76,7 +76,8 @@ LONG_SCALE_IT = collections.OrderedDict([
     (100, 'cento'),
     (1000, 'mila'),
     (1000000, 'milioni'),
-    (1e12, "miliardi"),
+    (1e9, "miliardi"),
+    (1e12, "bilioni"),
     (1e18, 'trilioni'),
     (1e24, "quadrilioni"),
     (1e30, "quintilioni"),
@@ -95,10 +96,10 @@ LONG_SCALE_IT = collections.OrderedDict([
     (1e108, "diciottilione"),
     (1e114, "dicianovilione"),
     (1e120, "vintilione"),
-    (1e306, "unquinquagintillion"),
-    (1e312, "duoquinquagintillion"),
-    (1e336, "sesquinquagintillion"),
-    (1e366, "unsexagintillion")
+    (1e306, "unquinquagintilione"),
+    (1e312, "duoquinquagintilione"),
+    (1e336, "sesquinquagintilione"),
+    (1e366, "unsexagintilione")
 ])
 
 
@@ -200,7 +201,6 @@ def nice_number_it(number, speech, denominators):
 
     if not speech:
         if num == 0:
-            # TODO: Number grouping?  E.g. "1,000,000"
             return str(whole)
         else:
             return '{} {}/{}'.format(whole, num, den)
@@ -251,14 +251,22 @@ def pronounce_number_it(num, places=2, short_scale=False, scientific=False):
     Returns:
         (str): The pronounced number
     """
+    # gestione infinito
+    if num == float("inf"):
+        return "infinito"
+    elif num == float("-inf"):
+        return "meno infinito"
+
     if scientific:
         number = '%E' % num
         n, power = number.replace("+", "").split("E")
         power = int(power)
         if power != 0:
-            return pronounce_number_it(float(n), places, short_scale, False) \
-                   + " per dieci elevato alla " + \
-                   pronounce_number_it(power, places, short_scale, False)
+            return '{}{} per dieci elevato alla {}{}'.format(
+                'meno ' if float(n) < 0 else '',
+                pronounce_number_it(abs(float(n)), places, short_scale, False),
+                'meno ' if power < 0 else '',
+                pronounce_number_it(abs(power), places, short_scale, False))
 
     if short_scale:
         number_names = NUM_STRING_IT.copy()
@@ -314,7 +322,7 @@ def pronounce_number_it(num, places=2, short_scale=False, scientific=False):
 
         def _short_scale(n):
             if n >= max(SHORT_SCALE_IT.keys()):
-                return "infinito"
+                return "numero davvero enorme"
             n = int(n)
             assert 0 <= n
             res = []
@@ -339,7 +347,7 @@ def pronounce_number_it(num, places=2, short_scale=False, scientific=False):
 
         def _long_scale(n):
             if n >= max(LONG_SCALE_IT.keys()):
-                return "infinito"
+                return "numero davvero enorme"
             n = int(n)
             assert 0 <= n
             res = []
@@ -364,12 +372,16 @@ def pronounce_number_it(num, places=2, short_scale=False, scientific=False):
     # normalizza unità misura singole e 'ragionevoli' ed ad inizio stringa
     if result == 'mila':
         result = 'mille'
+    if result == 'milioni':
+        result = 'un milione'
+    if result == 'miliardi':
+        result = 'un miliardo'
     if result[0:7] == 'unomila':
         result = result.replace('unomila', 'mille', 1)
     if result[0:10] == 'unomilioni':
         result = result.replace('unomilioni', 'un milione', 1)
-    if result[0:11] == 'unomiliardi':
-        result = result.replace('unomiliardi', 'un miliardo', 1)
+    # if result[0:11] == 'unomiliardi':
+    # result = result.replace('unomiliardi', 'un miliardo', 1)
 
     # Deal with fractional part
     if not num == int(num) and places > 0:
@@ -423,7 +435,7 @@ def nice_time_it(dt, speech=True, use_24hour=False, use_ampm=False):
         elif string[0] == '0':
             speak += pronounce_number_it(int(string[0])) + " "
             if int(string[1]) == 1:
-                speak += "una"  # TODO: valutare forma "l'una"
+                speak = "una"
             else:
                 speak += pronounce_number_it(int(string[1]))
         else:
@@ -455,13 +467,17 @@ def nice_time_it(dt, speech=True, use_24hour=False, use_ampm=False):
         elif dt.hour > 13:  # era minore
             speak = pronounce_number_it(dt.hour-12)
         else:
-            speak = pronounce_number_it(dt.hour-12)
+            speak = pronounce_number_it(dt.hour)
 
         speak += " e"
         if dt.minute == 0:
             speak = speak[:-2]
             if not use_ampm:
                 speak += " in punto"
+        elif dt.minute == 15:
+            speak += " un quarto"
+        elif dt.minute == 45:
+            speak += " tre quarti"
         else:
             if dt.minute < 10:
                 speak += " zero"
@@ -471,12 +487,12 @@ def nice_time_it(dt, speech=True, use_24hour=False, use_ampm=False):
 
             if dt.hour < 4:
                 speak.strip()
-            elif dt.hour > 12:
-                speak += " del pomeriggio"
-            elif dt.hour > 17:
-                speak += " della sera"
             elif dt.hour > 20:
                 speak += " della notte"
+            elif dt.hour > 17:
+                speak += " della sera"
+            elif dt.hour > 12:
+                speak += " del pomeriggio"
             else:
                 speak += " della mattina"
 
