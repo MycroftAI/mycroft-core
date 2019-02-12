@@ -161,10 +161,10 @@ def pronounce_number_da(num, places=2):
             hundreds = floor(num / 100)
             if hundreds > 0:
                 if hundreds == 1:
-                    result += 'et' + 'hundrede' # + EXTRA_SPACE
+                    result += 'et' + 'hundrede'  # + EXTRA_SPACE
                 else:
                     result += NUM_STRING_DA[hundreds] + \
-                        'hundrede' # + EXTRA_SPACE
+                        'hundrede'   # + EXTRA_SPACE
 #                        EXTRA_SPACE + 'hundrede' + EXTRA_SPACE
                     num -= hundreds * 100
         if num == 0:
@@ -181,7 +181,7 @@ def pronounce_number_da(num, places=2):
                 if tens > 0:
                     result += 'og' + EXTRA_SPACE
             if tens > 0:
-                result += NUM_STRING_DA[tens]  + EXTRA_SPACE
+                result += NUM_STRING_DA[tens] + EXTRA_SPACE
 
         return result
 
