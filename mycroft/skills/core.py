@@ -339,6 +339,37 @@ class SkillGUI:
                                      "__from": self.skill.skill_id,
                                      "__idle": override_idle}))
 
+    def remove_page(self, page):
+        """ Remove a single page from the gui.
+
+            Args:
+                page (str): Page to remove from the GUI
+        """
+        return self.remove_pages([page])
+
+    def remove_pages(self, page_names):
+        """ Remove a list of pages in the GUI.
+
+            Args:
+                page_names (list): List of page names (str) to display, such as
+                                   ["Weather.qml", "Forecast.qml", "Other.qml"]
+        """
+        if not isinstance(page_names, list):
+            raise ValueError('page_names must be a list')
+
+        # Convert pages to full reference
+        page_urls = []
+        for name in page_names:
+            page = self.skill.find_resource(name, 'ui')
+            if page:
+                page_urls.append("file://" + page)
+            else:
+                raise FileNotFoundError("Unable to find page: {}".format(name))
+
+        self.skill.bus.emit(Message("gui.page.delete",
+                                    {"page": page_urls,
+                                     "__from": self.skill.skill_id}))
+
     def show_text(self, text, title=None):
         """ Display a GUI page for viewing simple text
 
