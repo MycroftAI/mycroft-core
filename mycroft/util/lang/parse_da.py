@@ -24,6 +24,7 @@ da_numbers = {
     'nul': 0,
     'en': 1,
     'et': 1,
+    'første': 1,
     'to': 2,
     'tre': 3,
     'fire': 4,
@@ -208,9 +209,17 @@ def extract_datetime_da(string, currentDate, default_time):
     hasYear = False
     timeQualifier = ""
 
-    timeQualifiersList = ['tidlig', 'morgen', 'morgenen', 'formidag', 'formidagen',
-                          'eftermiddag', 'eftermiddagen', 'aften', 'aftenen',
-                          'nat', 'natten']
+    timeQualifiersList = ['tidlig',
+                          'morgen',
+                          'morgenen',
+                          'formidag',
+                          'formidagen',
+                          'eftermiddag',
+                          'eftermiddagen',
+                          'aften',
+                          'aftenen',
+                          'nat',
+                          'natten']
     markers = ['i', 'om', 'på']
     days = ['mandag', 'tirsdag', 'onsdag',
             'torsdag', 'fredag', 'lørdag', 'søndag']
@@ -659,7 +668,8 @@ def extract_datetime_da(string, currentDate, default_time):
                         if wordNext[:10] == "eftermidag":
                             used += 1
                             remainder = "pm"
-                        elif wordNext == "om" and wordNextNext == "eftermiddanen":
+                        elif wordNext == "om" and \
+                                wordNextNext == "eftermiddanen":
                             used += 2
                             remainder = "pm"
                         elif wordNext[:5] == "aftenen":
@@ -864,8 +874,8 @@ def isOrdinal_da(input_str):
     if lowerstr.startswith("tolvfte"):
         return 12
 
-
-    if lowerstr[-3:] == "nde":  # from 20 suffix is -ste*
+    if lowerstr[-3:] == "nde":
+        # from 20 suffix is -ste*
         lowerstr = lowerstr[:-3]
         if lowerstr in da_numbers:
             return da_numbers[lowerstr]
@@ -891,7 +901,6 @@ def normalize_da(text, remove_articles):
     for word in words:
         if remove_articles and word in ["den", "det"]:
             continue
-
 
         # Convert numbers into digits, e.g. "two" -> "2"
 

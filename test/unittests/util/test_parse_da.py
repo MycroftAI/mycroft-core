@@ -30,14 +30,20 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(
             normalize("og endnu en test", lang="da-dk", remove_articles=True),
             "og endnu 1 test")
-        self.assertEqual(normalize("dette er en extra-test", lang="da-dk",remove_articles=False),
-            "dette er 1 extra-test")
+        self.assertEqual(normalize("dette er en extra-test",
+                                   lang="da-dk", remove_articles=False),
+                         "dette er 1 extra-test")
 
     def test_extract_number(self):
-        self.assertEqual(extract_number("dette er den 1. test", lang="da-dk"), 1)
-        self.assertEqual(extract_number("dette er første test", lang="da-dk"), 1)
-        self.assertEqual(extract_number("dette er den 2 test", lang="da-dk"), 2)
-        self.assertEqual(extract_number("dette er den anden test", lang="da-dk"), 2)
+        self.assertEqual(extract_number("dette er den 1 test", lang="da-dk"),
+                         1)
+        self.assertEqual(extract_number("første test", lang="da-dk"),
+                         1)
+        self.assertEqual(extract_number("dette er den 2 test", lang="da-dk"),
+                         2)
+        self.assertEqual(extract_number("dette er den anden test",
+                                        lang="da-dk"),
+                         2)
         self.assertEqual(
             extract_number("dette er den tredie test", lang="da-dk"), 3)
         self.assertEqual(
@@ -46,7 +52,8 @@ class TestNormalize(unittest.TestCase):
             extract_number("en trediedel af en kop", lang="da-dk"), 1.0 / 3.0)
         self.assertEqual(extract_number("tre kopper", lang="da-dk"), 3)
         self.assertEqual(extract_number("1/3 kop", lang="da-dk"), 1.0 / 3.0)
-        self.assertEqual(extract_number("en fjerdelel kop", lang="da-dk"), 0.25)
+        self.assertEqual(extract_number("en fjerdelel kop", lang="da-dk"),
+                         0.25)
         self.assertEqual(extract_number("1/4 kop", lang="da-dk"), 0.25)
         self.assertEqual(extract_number("kvart kop", lang="da-dk"), 0.25)
         self.assertEqual(extract_number("2/3 kop", lang="da-dk"), 2.0 / 3.0)
@@ -73,16 +80,16 @@ class TestNormalize(unittest.TestCase):
             self.assertEqual(res[0], expected_date)
             self.assertEqual(res[1], expected_leftover)
 
-        testExtract(u"setze den frisörtermin auf 5 tage von heute",
-                    "2017-07-02 00:00:00", u"setze frisörtermin")
-        testExtract(u"wie ist das wetter übermorgen?",
-                    "2017-06-29 00:00:00", "wie ist das wetter")
-        testExtract("erinnere mich um 10:45 abends",
+        testExtract("sæt frisøraftale på fredag",
+                    "2017-06-30 00:00:00", "sæt frisøraftale")
+        testExtract("hvordan er vejret i overmorgen?",
+                    "2017-06-29 00:00:00", "hvordan er vejret")
+        testExtract("mind mig om det 10:45 i aften",
                     "2017-06-27 22:45:00", "erinnere mich")
-        testExtract("was ist das Wetter am freitag morgen",
-                    "2017-06-30 08:00:00", "was ist das wetter")
-        testExtract("wie ist das wetter morgen",
-                    "2017-06-28 00:00:00", "wie ist das wetter")
+        testExtract("hvordan er vejret fredag morgen",
+                    "2017-06-30 08:00:00", "hvordan er vejret")
+        testExtract("hvordan er vejret i morgen",
+                    "2017-06-28 00:00:00", "hvordan er vejret")
         testExtract(
             "erinnere mich meine mutter anzurufen in 8 Wochen und 2 Tagen",
             "2017-08-24 00:00:00", "erinnere mich meine mutter anzurufen")
@@ -147,44 +154,32 @@ class TestNormalize(unittest.TestCase):
         testExtract("lass uns treffen um 8:00 abends",
                     "2017-06-27 20:00:00", "lass uns treffen")
 
-    def test_extractdatetime_default_de(self):
+    def test_extractdatetime_default_da(self):
         default = time(9, 0, 0)
         anchor = datetime(2017, 6, 27, 0, 0)
-        res = extract_datetime("lass uns treffen am freitag",
+        res = extract_datetime("lad os mødes på fredag klokken 9 om morgenen",
                                anchor, lang='da-dk', default_time=default)
         self.assertEqual(default, res[0].time())
 
     def test_spaces(self):
-        self.assertEqual(normalize("  dies   ist  ein    test", lang="da-dk"),
-                         "dies ist 1 test")
-        self.assertEqual(normalize("  dies   ist  ein    test  ",
-                                   lang="da-dk"), "dies ist 1 test")
+        self.assertEqual(normalize("  dette   er   en   test", lang="da-dk"),
+                         "dette er 1 test")
+        self.assertEqual(normalize("  dette   er  en   test  ",
+                                   lang="da-dk"), "dette er 1 test")
 
     def test_numbers(self):
         self.assertEqual(
-            normalize("dies ist eins zwei drei test", lang="da-dk"),
-            "dies ist 1 2 3 test")
+            normalize("dette er en to tre test", lang="da-dk"),
+            "dette er 1 2 3 test")
         self.assertEqual(
-            normalize(u"es ist vier fünf sechs test", lang="da-dk"),
-            "es ist 4 5 6 test")
+            normalize("dette er fire fem seks test", lang="da-dk"),
+            "dette er 4 5 6 test")
         self.assertEqual(
-            normalize("es ist sieben acht neun test", lang="da-dk"),
-            "es ist 7 8 9 test")
+            normalize("dette er syv otte ni test", lang="da-dk"),
+            "dette er 7 8 9 test")
         self.assertEqual(
-            normalize("es ist sieben acht neun test", lang="da-dk"),
-            "es ist 7 8 9 test")
-        self.assertEqual(
-            normalize(u"dies ist zehn elf zwölf test", lang="da-dk"),
-            "dies ist 10 11 12 test")
-        self.assertEqual(
-            normalize("dies ist dreizehn vierzehn test", lang="da-dk"),
-            "dies ist 13 14 test")
-        self.assertEqual(
-            normalize(u"dies ist fünfzehn sechzehn siebzehn", lang="da-dk"),
-            "dies ist 15 16 17")
-        self.assertEqual(
-            normalize("dies ist achtzehn neunzehn zwanzig", lang="da-dk"),
-            "dies ist 18 19 20")
+            normalize("dette er ti elve tolv test", lang="da-dk"),
+            "dette er 10 11 12 test")
 
 
 if __name__ == "__main__":

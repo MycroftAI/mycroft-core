@@ -60,7 +60,13 @@ NUM_STRING_DA = {
 
 
 NUM_POWERS_OF_TEN = [
-    'hundred', 'tusind', 'million', 'milliard', 'billion', 'billiard', 'trillion',
+    'hundred',
+    'tusind',
+    'million',
+    'milliard',
+    'billion',
+    'billiard',
+    'trillion',
     'trilliard'
 ]
 
@@ -157,9 +163,9 @@ def pronounce_number_da(num, places=2):
                 if hundreds == 1:
                     result += 'et' + 'hundrede' + EXTRA_SPACE
                 else:
-                    result += NUM_STRING_DA[
-                              hundreds] + EXTRA_SPACE + 'hundrede' + EXTRA_SPACE
-                num -= hundreds * 100
+                    result += NUM_STRING_DA[hundreds] + \
+                        EXTRA_SPACE + 'hundrede' + EXTRA_SPACE
+                    num -= hundreds * 100
         if num == 0:
             result += ''  # do nothing
         elif num == 1:
@@ -299,7 +305,7 @@ def nice_time_da(dt, speech=True, use_24hour=False, use_ampm=False):
         else:
             # e.g. "3:01" or "2:22"
             string = dt.strftime("%I:%M")
-        #if string[0] == '0':
+        # if string[0] == '0':
         #    string = string[1:]  # strip leading zeros
 
     if not speech:
@@ -370,8 +376,8 @@ def nice_response_da(text):
         if word == '^':
             wordNext = words[idx + 1] if idx + 1 < len(words) else ""
             if wordNext.isnumeric():
-                words[idx] = "hoch"
-                text = " ".join(words)
+                # words[idx] = "opløftet i"
+                text = " aaaa".join(words)
     return text
 
 
