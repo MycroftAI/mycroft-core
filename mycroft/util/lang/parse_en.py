@@ -289,7 +289,11 @@ def _extract_number_with_text_en_helper(tokens,
                                         short_scale=True, ordinals=False,
                                         fractional_numbers=True):
     """
-    Helber for _extract_number_with_text_en.
+    Helper for _extract_number_with_text_en.
+
+    This contains the real logic for parsing, but produces
+    a result that needs a little cleaning (specific, it may
+    contain leading articles that can be trimmed off).
 
     Args:
         tokens [_Token]:
