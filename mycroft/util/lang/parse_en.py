@@ -90,11 +90,13 @@ _STRING_NUM_EN.update({
 _STRING_SHORT_ORDINAL_EN = _invert_dict(_SHORT_ORDINAL_STRING_EN)
 _STRING_LONG_ORDINAL_EN = _invert_dict(_LONG_ORDINAL_STRING_EN)
 
+
 # _Token is intended to be used in the number processing functions in
 # this module. The parsing requires slicing and dividing of the original
 # text. To ensure things parse correctly, we need to know where text came
 # from in the original input, hence this nametuple.
 _Token = namedtuple('_Token', 'word index')
+
 
 class _ReplaceableNumber():
     """
