@@ -256,8 +256,12 @@ class SkillSettings(dict):
         directory = join(directory, self.name)
         directory = expanduser(directory)
         uuid_file = join(directory, 'uuid')
-        with open(uuid_file, 'w') as f:
-            f.write(str(uuid))
+        try:
+            with open(uuid_file, 'w') as f:
+                f.write(str(uuid))
+        except Exception:
+            LOG.exception('Failed to save settings to file ' + uuid_file)
+
 
     def _uuid_exist(self):
         """ Checks if there is an uuid file.
