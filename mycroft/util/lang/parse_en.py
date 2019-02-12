@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from collections import namedtuple
 from datetime import datetime, timedelta
 
 from dateutil.relativedelta import relativedelta
@@ -89,36 +90,11 @@ _STRING_NUM_EN.update({
 _STRING_SHORT_ORDINAL_EN = _invert_dict(_SHORT_ORDINAL_STRING_EN)
 _STRING_LONG_ORDINAL_EN = _invert_dict(_LONG_ORDINAL_STRING_EN)
 
-
-class _Token():
-    """
-    Map a word to an index in a string.
-
-    This is intended to be used in the number processing functions in
-    this module. The parsing requires slicing and dividing of the original
-    text. To ensure things parse correctly, we need to know where text came
-    from in the original input, hence this class.
-    """
-
-    def __init__(self, word, index):
-        self.word = word
-        self.index = index
-
-    def __setattr__(self, key, value):
-        try:
-            getattr(self, key)
-        except AttributeError:
-            super().__setattr__(key, value)
-        else:
-            raise Exception("Immutable!")
-
-    def __str__(self):
-        return "({w}, {i})".format(w=self.word, i=self.index)
-
-    def __repr__(self):
-        return "{n}({w}, {i})".format(n=self.__class__.__name__,
-                                      w=self.word, i=self.index)
-
+# _Token is intended to be used in the number processing functions in
+# this module. The parsing requires slicing and dividing of the original
+# text. To ensure things parse correctly, we need to know where text came
+# from in the original input, hence this nametuple.
+_Token = namedtuple('_Token', 'word index')
 
 class _ReplaceableNumber():
     """
