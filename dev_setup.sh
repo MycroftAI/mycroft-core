@@ -82,9 +82,19 @@ if [ $(id -u) -eq 0 ] && [ "${opt_allowroot}" != true ] ; then
     exit 1
 fi
 
+
 function found_exe() {
     hash "$1" 2>/dev/null
 }
+
+
+if found_exe sudo ; then
+    SUDO=sudo
+elif [ "${opt_allowroot}" != true ]; then
+    echo "This script requires \"sudo\" to install system packages. Please install it, then re-run this script."
+    exit 1
+fi
+
 
 function get_YN() {
     # Loop until the user hits the Y or the N key
@@ -248,13 +258,6 @@ function redhat_common_install() {
 
 function install_deps() {
     echo "Installing packages..."
-    if found_exe sudo ; then
-        SUDO=sudo
-    elif [ "${opt_allowroot}" != true ]; then
-        echo "This script requires \"sudo\" to install system packages. Please install it, then re-run this script."
-        exit 1
-    fi
-
     if found_exe zypper ; then
         # OpenSUSE
         $SUDO zypper install -y git python3 python3-devel libtool libffi-devel libopenssl-devel autoconf automake bison swig portaudio-devel mpg123 flac curl libicu-devel pkg-config libjpeg-devel libfann-devel python3-curses pulseaudio
