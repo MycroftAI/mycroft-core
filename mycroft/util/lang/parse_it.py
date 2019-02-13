@@ -694,8 +694,8 @@ def extract_datetime_it(string, dateNow, default_time):
             return [extracted_date, result_str]
 
         # un paio di  o  tra tre settimane --> secoli
-        elif extractnumber_it(word) and (word_next in year_multiples
-                                         or word_next in day_multiples):
+        elif extractnumber_it(word) and (word_next in year_multiples or
+                                         word_next in day_multiples):
             multiplier = int(extractnumber_it(word))
             used += 2
             if word_next == 'decenni':
