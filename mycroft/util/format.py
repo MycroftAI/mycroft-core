@@ -38,7 +38,7 @@ import datetime
 import re
 
 
-def _translate(name, lang):
+def _translate_word(name, lang):
     """ Helper to get word tranlations
 
     Args:
@@ -50,7 +50,7 @@ def _translate(name, lang):
     """
     from mycroft.util import resolve_resource_file
 
-    filename = resolve_resource_file(join("text", lang, name+".dialog"))
+    filename = resolve_resource_file(join("text", lang, name+".word"))
     if filename:
         # open the file
         try:
@@ -441,34 +441,34 @@ def nice_duration(duration, lang="en-us", speech=True):
         if days > 0:
             out += pronounce_number(days, lang) + " "
             if days == 1:
-                out += _translate("day", lang)
+                out += _translate_word("day", lang)
             else:
-                out += _translate("days", lang)
+                out += _translate_word("days", lang)
             out += " "
         if hours > 0:
             if out:
                 out += " "
             out += pronounce_number(hours, lang) + " "
             if hours == 1:
-                out += _translate("hour", lang)
+                out += _translate_word("hour", lang)
             else:
-                out += _translate("hours", lang)
+                out += _translate_word("hours", lang)
         if minutes > 0:
             if out:
                 out += " "
             out += pronounce_number(minutes, lang) + " "
             if minutes == 1:
-                out += _translate("minute", lang)
+                out += _translate_word("minute", lang)
             else:
-                out += _translate("minutes", lang)
+                out += _translate_word("minutes", lang)
         if seconds > 0:
             if out:
                 out += " "
             out += pronounce_number(seconds, lang) + " "
             if seconds == 1:
-                out += _translate("second", lang)
+                out += _translate_word("second", lang)
             else:
-                out += _translate("seconds", lang)
+                out += _translate_word("seconds", lang)
     else:
         # M:SS, MM:SS, H:MM:SS, Dd H:MM:SS format
         out = ""
@@ -511,4 +511,4 @@ def join_list(items, connector, sep=None, lang="en-us"):
     else:
         sep += " "
     return (sep.join(str(item) for item in items[:-1]) +
-            " " + _translate(connector, lang) + " " + items[-1])
+            " " + _translate_word(connector, lang) + " " + items[-1])
