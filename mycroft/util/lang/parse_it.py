@@ -19,6 +19,7 @@
 
 """
 
+import collections
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from mycroft.util.lang.parse_common import is_numeric, look_for_fractions, \
