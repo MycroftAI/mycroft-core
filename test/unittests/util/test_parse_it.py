@@ -19,7 +19,7 @@ from datetime import datetime, time
 
 from mycroft.util.parse import get_gender
 from mycroft.util.parse import extract_datetime
-from mycroft.util.parse import extract_number
+from mycroft.util.parse import extract_number, extract_numbers
 from mycroft.util.parse import normalize
 
 
