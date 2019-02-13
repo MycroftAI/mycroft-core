@@ -101,7 +101,9 @@ class SkillManager(Thread):
         self.update_interval = Configuration.get()['skills']['update_interval']
         self.update_interval = int(self.update_interval * 60 * MINUTES)
         self.dot_msm = join(self.msm.skills_dir, '.msm')
-        if exists(self.dot_msm):
+        # Update immediately if the .msm or installed skills file is missing
+        # otherwise according to timestamp on .msm
+        if exists(self.dot_msm) and exists(self.installed_skills_file):
             self.next_download = os.path.getmtime(self.dot_msm) + \
                                  self.update_interval
         else:
