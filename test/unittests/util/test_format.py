@@ -450,7 +450,7 @@ class TestNiceDateFormat(unittest.TestCase):
         self.assertEqual(join_list(["a", "b", "c"], "or"), "a, b or c")
         self.assertEqual(join_list(["a", "b", "c"], "or", ";"), "a; b or c")
         self.assertEqual(join_list(["a", "b", "c", "d"], "or"), "a, b, c or d")
-        
+
         self.assertEqual(join_list([1, "b", 3, "d"], "or"), "1, b, 3 or d")
 
 

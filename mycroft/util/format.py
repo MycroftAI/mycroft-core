@@ -504,11 +504,11 @@ def join_list(items, connector, sep=None, lang="en-us"):
     if not items:
         return ""
     if len(items) == 1:
-        return items[0]
+        return str(items[0])
 
     if not sep:
         sep = ", "
     else:
         sep += " "
-    return (sep.join(items[:-1]) +
+    return (sep.join(str(item) for item in items[:-1]) +
             " " + _translate(connector, lang) + " " + items[-1])
