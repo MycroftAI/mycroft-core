@@ -226,7 +226,7 @@ def extractnumber_long_it(word):
     valore intero. La versione precedente era limitata,
     ora copre da 0 a 999bilioni  0 -> 999999999999999
     per ora limitata a x e^12 ma predisposta per x e^63
-    ma chi pronuncerebbe numeri cosi lunghi ?     
+    ma chi pronuncerebbe numeri cosi lunghi ?
     args:
          text (str): la stringa da normalizzare
     Ritorna:
@@ -957,11 +957,11 @@ def extract_datetime_it(string, dateNow, default_time):
                     hr_abs = (hr_abs or 0) + 12
         # da verificare più a fondo
         elif word == 'presto':
-                hr_abs -= 1
-                used += 1
+            hr_abs -= 1
+            used += 1
         elif word == 'tardi':
-                hr_abs += 1
-                used += 1
+            hr_abs += 1
+            used += 1
         # un paio di minuti  tra cinque minuti tra 5 ore
         elif extractnumber_it(word) and (word_next in time_multiples):
             d_time = int(extractnumber_it(word))
@@ -987,7 +987,7 @@ def extract_datetime_it(string, dateNow, default_time):
             isTime = False
             hr_abs = -1
             min_abs = -1
-            #if word_prev == 'uno' or word_prev == 'una':
+            # if word_prev == 'uno' or word_prev == 'una':
             #    start -= 1
             #    used += 1
         elif extractnumber_it(word) and word_next and \
