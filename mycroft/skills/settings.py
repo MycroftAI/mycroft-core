@@ -262,7 +262,6 @@ class SkillSettings(dict):
         except Exception:
             LOG.exception('Failed to save settings to file ' + uuid_file)
 
-
     def _uuid_exist(self):
         """ Checks if there is an uuid file.
 
