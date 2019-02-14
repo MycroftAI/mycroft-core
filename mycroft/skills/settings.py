@@ -142,7 +142,10 @@ class SkillSettings(dict):
 
         self._device_identity = self.api.identity.uuid
         self._api_path = "/" + self._device_identity + "/skill"
-        self._user_identity = self.api.get()['user']['uuid']
+        try:
+            self._user_identity = self.api.get()['user']['uuid']
+        except RequestException:
+            return
 
         hashed_meta = self._get_meta_hash(settings_meta)
         skill_settings = self._request_other_settings(hashed_meta)
@@ -483,13 +486,14 @@ class SkillSettings(dict):
             skill_settings (dict or None): returns a dict if matches
         """
         settings = self._request_settings()
-        # this loads the settings into memory for use in self.store
-        for skill_settings in settings:
-            if skill_settings['identifier'] == identifier:
-                skill_settings = \
-                    self._type_cast(skill_settings, to_platform='core')
-                self._remote_settings = skill_settings
-                return skill_settings
+        if settings:
+            # this loads the settings into memory for use in self.store
+            for skill_settings in settings:
+                if skill_settings['identifier'] == identifier:
+                    skill_settings = \
+                        self._type_cast(skill_settings, to_platform='core')
+                    self._remote_settings = skill_settings
+                    return skill_settings
         return None
 
     def _request_settings(self):
@@ -498,10 +502,14 @@ class SkillSettings(dict):
         Returns:
             dict: dictionary with settings collected from the server.
         """
-        settings = self.api.request({
-            "method": "GET",
-            "path": self._api_path
-        })
+        try:
+            settings = self.api.request({
+                "method": "GET",
+                "path": self._api_path
+            })
+        except RequestException:
+            return None
+
         settings = [skills for skills in settings if skills is not None]
         return settings
 
