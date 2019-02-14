@@ -31,8 +31,23 @@ from mycroft.util.lang.parse_fr import extract_numbers_fr
 from mycroft.util.lang.parse_fr import extract_datetime_fr
 from mycroft.util.lang.parse_fr import normalize_fr
 
-from mycroft.util.lang.parse_common import *
 from .log import LOG
+
+
+def _log_unsupported_language(language, supported_languages):
+    """
+    Log a warning when a language is unsupported
+
+    Arguments:
+        language: str
+            The language that was supplied.
+        supported_languages: [str]
+            The list of supported languages.
+    """
+    supported = ' '.join(supported_languages)
+    LOG.warning('Language "{language}" not recognized! Please make sure your '
+                'language is one of the following: {supported}.'
+                .format(language=language, supported=supported))
 
 
 def fuzzy_match(x, against):
@@ -131,9 +146,42 @@ def extract_number(text, short_scale=True, ordinals=False, lang="en-us"):
     elif lang_lower.startswith("de"):
         return extractnumber_de(text)
     # TODO: extractnumber_xx for other languages
-    LOG.warning('Language "{}" not recognized! Please make sure your '
-                'language is one of the following: '
-                'en, es, pt, it, fr, sv, de.'.format(lang_lower))
+    _log_unsupported_language(lang_lower,
+                              ['en', 'es', 'pt', 'it', 'fr', 'sv', 'de'])
+    return text
+
+
+def extract_duration(text, lang="en-us"):
+    """ Convert an english phrase into a number of seconds
+
+    Convert things like:
+        "10 minute"
+        "2 and a half hours"
+        "3 days 8 hours 10 minutes and 49 seconds"
+    into an int, representing the total number of seconds.
+
+    The words used in the duration will be consumed, and
+    the remainder returned.
+
+    As an example, "set a timer for 5 minutes" would return
+    (300, "set a timer for").
+
+    Args:
+        text (str): string containing a duration
+        lang (str): the BCP-47 code for the language to use
+
+    Returns:
+        [int, str]: An array containing the int and the remaining text
+                    not consumed in the parsing, or none if no duration
+                    related text was found.
+
+    """
+    lang_lower = str(lang).lower()
+
+    if lang_lower.startswith("en"):
+        return extract_duration_en(text)
+    # TODO: extract_duration for other languages
+    _log_unsupported_language(lang_lower, ['en'])
     return text
 
 
@@ -209,9 +257,8 @@ def extract_datetime(text, anchorDate=None, lang="en-us", default_time=None):
     elif lang_lower.startswith("de"):
         return extract_datetime_de(text, anchorDate, default_time)
     # TODO: extract_datetime for other languages
-    LOG.warning('Language "{}" not recognized! Please make sure your '
-                'language is one of the following: '
-                'en, es, pt, it, fr, sv, de.'.format(lang_lower))
+    _log_unsupported_language(lang_lower,
+                              ['en', 'es', 'pt', 'it', 'fr', 'sv', 'de'])
     return text
     # ==============================================================
 
@@ -246,9 +293,8 @@ def normalize(text, lang="en-us", remove_articles=True):
     elif lang_lower.startswith("de"):
         return normalize_de(text, remove_articles)
     # TODO: Normalization for other languages
-    LOG.warning('Language "{}" not recognized! Please make sure your '
-                'language is one of the following: '
-                'en, es, pt, it, fr, sv, de.'.format(lang_lower))
+    _log_unsupported_language(lang_lower,
+                              ['en', 'es', 'pt', 'it', 'fr', 'sv', 'de'])
     return text
 
 

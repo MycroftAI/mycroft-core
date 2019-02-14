@@ -13,6 +13,8 @@
 # limitations under the License.
 #
 
+from os.path import join
+
 from mycroft.util.lang.format_en import *
 from mycroft.util.lang.format_pt import *
 from mycroft.util.lang.format_it import *
@@ -34,6 +36,34 @@ import json
 import os
 import datetime
 import re
+
+
+def _translate_word(name, lang):
+    """ Helper to get word tranlations
+
+    Args:
+        name (str): Word name. Returned as the default value if not translated.
+        lang (str): Language code, e.g. "en-us"
+
+    Returns:
+        str: translated version of resource name
+    """
+    from mycroft.util import resolve_resource_file
+
+    filename = resolve_resource_file(join("text", lang, name+".word"))
+    if filename:
+        # open the file
+        try:
+            with open(filename, 'r', encoding='utf8') as f:
+                for line in f:
+                    word = line.strip()
+                    if word.startswith("#"):
+                        continue  # skip comment lines
+                    return word
+        except Exception:
+            pass
+    return name  # use resource name as the word
+
 
 NUMBER_TUPLE = namedtuple(
     'number',
@@ -378,3 +408,107 @@ def nice_year(dt, lang='en-us', bc=False):
     date_time_format.cache(lang)
 
     return date_time_format.year_format(dt, lang, bc)
+
+
+def nice_duration(duration, lang="en-us", speech=True):
+    """ Convert duration in seconds to a nice spoken timespan
+
+    Examples:
+       duration = 60  ->  "1:00" or "one minute"
+       duration = 163  ->  "2:43" or "two minutes forty three seconds"
+
+    Args:
+        duration: time, in seconds
+        speech (bool): format for speech (True) or display (False)
+    Returns:
+        str: timespan as a string
+    """
+    if type(duration) is datetime.timedelta:
+        duration = duration.total_seconds()
+
+    # Do traditional rounding: 2.5->3, 3.5->4, plus this
+    # helps in a few cases of where calculations generate
+    # times like 2:59:59.9 instead of 3:00.
+    duration += 0.5
+
+    days = int(duration // 86400)
+    hours = int(duration // 3600 % 24)
+    minutes = int(duration // 60 % 60)
+    seconds = int(duration % 60)
+
+    if speech:
+        out = ""
+        if days > 0:
+            out += pronounce_number(days, lang) + " "
+            if days == 1:
+                out += _translate_word("day", lang)
+            else:
+                out += _translate_word("days", lang)
+            out += " "
+        if hours > 0:
+            if out:
+                out += " "
+            out += pronounce_number(hours, lang) + " "
+            if hours == 1:
+                out += _translate_word("hour", lang)
+            else:
+                out += _translate_word("hours", lang)
+        if minutes > 0:
+            if out:
+                out += " "
+            out += pronounce_number(minutes, lang) + " "
+            if minutes == 1:
+                out += _translate_word("minute", lang)
+            else:
+                out += _translate_word("minutes", lang)
+        if seconds > 0:
+            if out:
+                out += " "
+            out += pronounce_number(seconds, lang) + " "
+            if seconds == 1:
+                out += _translate_word("second", lang)
+            else:
+                out += _translate_word("seconds", lang)
+    else:
+        # M:SS, MM:SS, H:MM:SS, Dd H:MM:SS format
+        out = ""
+        if days > 0:
+            out = str(days) + "d "
+        if hours > 0 or days > 0:
+            out += str(hours) + ":"
+        if minutes < 10 and (hours > 0 or days > 0):
+            out += "0"
+        out += str(minutes)+":"
+        if seconds < 10:
+            out += "0"
+        out += str(seconds)
+
+    return out
+
+
+def join_list(items, connector, sep=None, lang="en-us"):
+    """ Join a list into a phrase using the given connector word
+
+    Examples:
+        join_list([1,2,3], "and") ->  "1, 2 and 3"
+        join_list([1,2,3], "and", ";") ->  "1; 2 and 3"
+
+    Args:
+        items(array): items to be joined
+        connector(str): connecting word (resource name), like "and" or "or"
+        sep(str, optional): separator character, default = ","
+    Returns:
+        str: the connected list phrase
+    """
+
+    if not items:
+        return ""
+    if len(items) == 1:
+        return str(items[0])
+
+    if not sep:
+        sep = ", "
+    else:
+        sep += " "
+    return (sep.join(str(item) for item in items[:-1]) +
+            " " + _translate_word(connector, lang) + " " + items[-1])
