@@ -239,7 +239,6 @@ fi" > ~/.profile_mycroft
 fi
 
 
-
 function os_is() {
     [[ $(grep "^ID=" /etc/os-release | awk -F'=' '/^ID/ {print $2}' | sed 's/\"//g') == $1 ]]
 }
@@ -352,6 +351,16 @@ fi
 # Start the virtual environment
 source "${VIRTUALENV_ROOT}/bin/activate"
 cd "${TOP}"
+
+# Install pep8 pre-commit hook
+HOOK_FILE="./.git/hooks/pre-commit"
+if [ ! -f ${HOOK_FILE} ] || grep -q "MYCROFT DEV SETUP" ${HOOK_FILE} ; then
+    echo "Installing PEP8 check as precommit-hook"
+    echo "#! $( which python )" > ${HOOK_FILE}
+    echo "# MYCROFT DEV SETUP" >> ${HOOK_FILE}
+    cat ./scripts/pre-commit >> ${HOOK_FILE}
+    chmod +x ${HOOK_FILE}
+fi
 
 PYTHON=$( python -c "import sys;print('python{}.{}'.format(sys.version_info[0], sys.version_info[1]))" )
 
