@@ -516,7 +516,7 @@ class SkillSettings(dict):
         path = \
             "/" + self._device_identity + "/userSkill?identifier=" + identifier
         try:
-            user_skill = self.api.request({ "method": "GET", "path": path })
+            user_skill = self.api.request({"method": "GET", "path": path})
         except RequestException:
             # Some kind of Timeout, connection HTTPError, etc.
             user_skill = None

@@ -295,7 +295,7 @@ class Mimic2(TTS):
                     f.write(audio)
         except (ReadTimeout, ConnectionError, ConnectTimeout, HTTPError):
             raise RemoteTTSTimeoutException(
-                "Mimic 2 server request timed out. Falling back to mimic" )
+                "Mimic 2 server request timed out. Falling back to mimic")
         return (wav_file, vis)
 
     def save_phonemes(self, key, phonemes):
