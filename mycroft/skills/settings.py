@@ -60,8 +60,10 @@
 
 import json
 import hashlib
+import os
 from threading import Timer
 from os.path import isfile, join, expanduser
+from requests.exceptions import RequestException
 
 from mycroft.api import DeviceApi, is_paired
 from mycroft.util.log import LOG
@@ -256,6 +258,7 @@ class SkillSettings(dict):
         directory = join(directory, self.name)
         directory = expanduser(directory)
         uuid_file = join(directory, 'uuid')
+        os.makedirs(directory, exist_ok=True)
         with open(uuid_file, 'w') as f:
             f.write(str(uuid))
 
@@ -327,6 +330,7 @@ class SkillSettings(dict):
         directory = join(directory, self.name)
         directory = expanduser(directory)
         hash_file = join(directory, 'hash')
+        os.makedirs(directory, exist_ok=True)
         with open(hash_file, 'w') as f:
             f.write(hashed_meta)
 
@@ -502,20 +506,21 @@ class SkillSettings(dict):
         return settings
 
     def _request_other_settings(self, identifier):
-        """ Retrieve user skill from other devices by identifier (hashed_meta)
+        """ Retrieve skill settings from other devices by identifier
 
         Args:
             identifier (str): identifier for this skill
         Returns:
-            settings (dict or None): returns the settings if true else None
+            settings (dict or None): the retrieved settings or None
         """
         path = \
             "/" + self._device_identity + "/userSkill?identifier=" + identifier
-        user_skill = self.api.request({
-            "method": "GET",
-            "path": path
-        })
-        if len(user_skill) == 0:
+        try:
+            user_skill = self.api.request({ "method": "GET", "path": path })
+        except RequestException:
+            # Some kind of Timeout, connection HTTPError, etc.
+            user_skill = None
+        if not user_skill:
             return None
         else:
             settings = self._type_cast(user_skill[0], to_platform='core')
