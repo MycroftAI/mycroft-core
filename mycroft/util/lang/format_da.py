@@ -24,7 +24,7 @@ months = ['januar', 'februar', 'märz', 'april', 'mai', 'juni',
 
 NUM_STRING_DA = {
     0: 'nul',
-    1: 'en',  # ein Viertel etc., nicht eins Viertel
+    1: 'en',
     2: 'to',
     3: 'tre',
     4: 'fire',
@@ -53,11 +53,6 @@ NUM_STRING_DA = {
     90: 'halvfems',
     100: 'hundrede'
 }
-
-# German uses "long scale" https://en.wikipedia.org/wiki/Long_and_short_scales
-# Currently, numbers are limited to 1000000000000000000000000,
-# but NUM_POWERS_OF_TEN can be extended to include additional number words
-
 
 NUM_POWERS_OF_TEN = [
     'hundred',
@@ -161,18 +156,17 @@ def pronounce_number_da(num, places=2):
             hundreds = floor(num / 100)
             if hundreds > 0:
                 if hundreds == 1:
-                    result += 'et' + 'hundrede'  # + EXTRA_SPACE
+                    result += 'et' + 'hundrede' + EXTRA_SPACE
                 else:
                     result += NUM_STRING_DA[hundreds] + \
-                        'hundrede'   # + EXTRA_SPACE
-#                        EXTRA_SPACE + 'hundrede' + EXTRA_SPACE
+                        'hundrede' + EXTRA_SPACE
                     num -= hundreds * 100
         if num == 0:
             result += ''  # do nothing
         elif num == 1:
-            result += 'et'  # need the s for the last digit
+            result += 'et'
         elif num <= 20:
-            result += NUM_STRING_DA[num]  # + EXTRA_SPACE
+            result += NUM_STRING_DA[num] + EXTRA_SPACE
         elif num > 20:
             ones = num % 10
             tens = num - ones
@@ -185,13 +179,12 @@ def pronounce_number_da(num, places=2):
 
         return result
 
-    def pronounce_fractional_da(num,
-                                places):  # fixed number of places even with
-        # trailing zeros
+    def pronounce_fractional_da(num, places):  # fixed number of places even with
+                                               # trailing zeros
         result = ""
         place = 10
         while places > 0:  # doesn't work with 1.0001 and places = 2: int(
-            # num*place) % 10 > 0 and places > 0:
+                           # num*place) % 10 > 0 and places > 0:
             result += " " + NUM_STRING_DA[int(num * place) % 10]
             place *= 10
             places -= 1
@@ -218,11 +211,8 @@ def pronounce_number_da(num, places=2):
         elif last_triplet > 1:
             result += pronounce_triplet_da(last_triplet)
             if scale_level == 1:
-                # result += EXTRA_SPACE
                 result += 'tusinde' + EXTRA_SPACE
             if scale_level >= 2:
-                # if EXTRA_SPACE == '':
-                #    result += " "
                 result += "og" + NUM_POWERS_OF_TEN[scale_level]
             if scale_level >= 2:
                 if scale_level % 2 == 0:
@@ -232,7 +222,7 @@ def pronounce_number_da(num, places=2):
         num = floor(num / 1000)
         scale_level += 1
         return pronounce_whole_number_da(num,
-                                         scale_level) + result  # + EXTRA_SPACE
+                                         scale_level) + result + EXTRA_SPACE
 
     result = ""
     if abs(num) >= 1000000000000000000000000:  # cannot do more than this
@@ -306,8 +296,6 @@ def nice_time_da(dt, speech=True, use_24hour=False, use_ampm=False):
         else:
             # e.g. "3:01" or "2:22"
             string = dt.strftime("%I:%M")
-        # if string[0] == '0':
-        #    string = string[1:]  # strip leading zeros
 
     if not speech:
         return string
@@ -336,7 +324,6 @@ def nice_time_da(dt, speech=True, use_24hour=False, use_ampm=False):
             speak += pronounce_number_da(12)
         elif dt.hour <= 13:
             if dt.hour == 1 or dt.hour == 13:  # 01:00 and 13:00 is "et"
-                # not "eins Uhr"
                 speak += 'et'
             else:
                 speak += pronounce_number_da(dt.hour)
@@ -352,7 +339,7 @@ def nice_time_da(dt, speech=True, use_24hour=False, use_ampm=False):
             if dt.hour > 11:
                 if dt.hour < 18:
                     speak += " om eftermiddagen"  # 12:01 - 17:59
-                    # nachmittags/afternoon
+                                                  # nachmittags/afternoon
                 elif dt.hour < 22:
                     speak += " om aftenen"  # 18:00 - 21:59 abends/evening
                 else:
@@ -377,8 +364,8 @@ def nice_response_da(text):
         if word == '^':
             wordNext = words[idx + 1] if idx + 1 < len(words) else ""
             if wordNext.isnumeric():
-                # words[idx] = "opløftet i"
-                text = " aaaa".join(words)
+                words[idx] = "opløftet i"
+                text = " ".join(words)
     return text
 
 
