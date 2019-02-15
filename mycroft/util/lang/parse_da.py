@@ -24,7 +24,6 @@ da_numbers = {
     'nul': 0,
     'en': 1,
     'et': 1,
-    'første': 1,
     'to': 2,
     'tre': 3,
     'fire': 4,
@@ -99,8 +98,8 @@ def extractnumber_da(text):
     while count < len(aWords):
         word = aWords[count]
         if is_numeric(word):
-            # if word.isdigit():            # doesn't work with decimals
-            val = float(word)
+            if word.isdigit():            # doesn't work with decimals
+                val = float(word)
         elif isFractional_da(word):
             val = isFractional_da(word)
         elif isOrdinal_da(word):
@@ -136,7 +135,7 @@ def extractnumber_da(text):
         aWords[count] = ""
 
         if and_pass:
-            aWords[count - 1] = ''  # remove "and"
+            aWords[count - 1] = ''  # remove "og"
             val += valPreAnd
         elif count + 1 < len(aWords) and aWords[count + 1] == 'og':
             and_pass = True
@@ -213,14 +212,14 @@ def extract_datetime_da(string, currentDate, default_time):
                           'morgen',
                           'morgenen',
                           'formidag',
-                          'formidagen',
+                          'formiddagen',
                           'eftermiddag',
                           'eftermiddagen',
                           'aften',
                           'aftenen',
                           'nat',
                           'natten']
-    markers = ['i', 'om', 'på']
+    markers = ['i', 'om', 'på', 'klokken', 'ved' ]
     days = ['mandag', 'tirsdag', 'onsdag',
             'torsdag', 'fredag', 'lørdag', 'søndag']
     months = ['januar', 'februar', 'marts', 'april', 'maj', 'juni',
@@ -252,7 +251,7 @@ def extract_datetime_da(string, currentDate, default_time):
         if word in timeQualifiersList:
             timeQualifier = word
             # parse today, tomorrow, day after tomorrow
-        elif word == "heute" and not fromFlag:
+        elif word == "dag" and not fromFlag:
             dayOffset = 0
             used += 1
         elif word == "morgen" and not fromFlag and wordPrev != "om" and \
@@ -269,7 +268,7 @@ def extract_datetime_da(string, currentDate, default_time):
                 dayOffset += int(wordPrev)
                 start -= 1
                 used = 2
-        elif word == "uge" and not fromFlag:
+        elif word == "uge" or word == "uger" and not fromFlag:
             if wordPrev[0].isdigit():
                 dayOffset += int(wordPrev) * 7
                 start -= 1
@@ -318,8 +317,8 @@ def extract_datetime_da(string, currentDate, default_time):
             used = 1
             if dayOffset < 0:
                 dayOffset += 7
-            if wordNext == "morgenen":  # morgen means morning if preceded by
-                # the day of the week
+            if wordNext == "morgen":  # morgen means morning if preceded by
+                                        # the day of the week
                 words[idx + 1] = "tidlig"
             if wordPrev[:6] == "næste":
                 dayOffset += 7
@@ -367,13 +366,14 @@ def extract_datetime_da(string, currentDate, default_time):
         # 2 months from July
 
         if (
-                word == "fra" or word == "nach" or word == "om") and wordNext \
+                word == "fra" or word == "til" or word == "om") and wordNext \
                 in validFollowups:
             used = 2
             fromFlag = True
-            if wordNext == "morgenen" and wordPrev != "am" and \
+            if wordNext == "morgenen" and \
+                    wordPrev != "am" and \
                     wordPrev not in days:  # morgen means tomorrow if not "am
-                #  Morgen" and not [day of the week] morgen:
+                                           #  Morgen" and not [day of the week] morgen:
                 dayOffset += 1
             elif wordNext in days:
                 d = days.index(wordNext)
@@ -440,7 +440,7 @@ def extract_datetime_da(string, currentDate, default_time):
             if not hrAbs:
                 hrAbs = 8
             used += 1
-        elif word[:10] == "eftermiddag":
+        elif word[:11] == "eftermiddag":
             if not hrAbs:
                 hrAbs = 15
             used += 1
@@ -505,13 +505,13 @@ def extract_datetime_da(string, currentDate, default_time):
                     elif wordNext == "om" and wordNextNext == "morgenen":
                         remainder = "am"
                         used += 2
-                    elif wordNext == "om" and wordNextNext == "eftermiddag":
+                    elif wordNext == "om" and wordNextNext == "eftermiddagen":
                         remainder = "pm"
                         used += 2
                     elif wordNext == "om" and wordNextNext == "aftenen":
                         remainder = "pm"
                         used += 2
-                    elif wordNext == "morgenen":
+                    elif wordNext == "morgen":
                         remainder = "am"
                         used += 1
                     elif wordNext == "eftermiddag":
@@ -520,13 +520,13 @@ def extract_datetime_da(string, currentDate, default_time):
                     elif wordNext == "aften":
                         remainder = "pm"
                         used += 1
-                    elif wordNext == "idag" and wordNextNext == "morgenen":
+                    elif wordNext == "i" and wordNextNext == "morgen":
                         remainder = "am"
                         used = 2
-                    elif wordNext == "idag" and wordNextNext == "eftermiddag":
+                    elif wordNext == "i" and wordNextNext == "eftermiddag":
                         remainder = "pm"
                         used = 2
-                    elif wordNext == "idag" and wordNextNext == "aften":
+                    elif wordNext == "i" and wordNextNext == "aften":
                         remainder = "pm"
                         used = 2
                     elif wordNext == "natten":
@@ -601,21 +601,21 @@ def extract_datetime_da(string, currentDate, default_time):
                         isTime = True
                         if wordNextNext == timeQualifier:
                             strMM = ""
-                            if wordNextNext[:10] == "eftermiddag":
+                            if wordNextNext[:11] == "eftermiddag":
                                 used += 1
                                 remainder = "pm"
                             elif wordNextNext == "om" and wordNextNextNext == \
-                                    "eftermidagen":
+                                    "eftermiddagen":
                                 used += 2
                                 remainder = "pm"
-                            elif wordNextNext[:5] == "aftenen":
+                            elif wordNextNext[:5] == "aften":
                                 used += 1
                                 remainder = "pm"
                             elif wordNextNext == "om" and wordNextNextNext == \
                                     "aftenen":
                                 used += 2
                                 remainder = "pm"
-                            elif wordNextNext[:7] == "morgenen":
+                            elif wordNextNext[:6] == "morgen":
                                 used += 1
                                 remainder = "am"
                             elif wordNextNext == "om" and wordNextNextNext == \
@@ -633,14 +633,14 @@ def extract_datetime_da(string, currentDate, default_time):
                             strMM = wordNextNext
                             used += 1
                             if wordNextNextNext == timeQualifier:
-                                if wordNextNextNext[:10] == "eftermidag":
+                                if wordNextNextNext[:11] == "eftermiddag":
                                     used += 1
                                     remainder = "pm"
                                 elif wordNextNextNext == "om" and \
-                                        wordNextNextNextNext == "eftermidagen":
+                                        wordNextNextNextNext == "eftermiddagen":
                                     used += 2
                                     remainder = "pm"
-                                elif wordNextNextNext[:5] == "natten":
+                                elif wordNextNextNext[:6] == "natten":
                                     used += 1
                                     remainder = "pm"
                                 elif wordNextNextNext == "am" and \
@@ -672,7 +672,7 @@ def extract_datetime_da(string, currentDate, default_time):
                                 wordNextNext == "eftermiddanen":
                             used += 2
                             remainder = "pm"
-                        elif wordNext[:5] == "aftenen":
+                        elif wordNext[:7] == "aftenen":
                             used += 1
                             remainder = "pm"
                         elif wordNext == "om" and wordNextNext == "aftenen":
