@@ -387,8 +387,6 @@ class SkillSettings(dict):
                 pass
             elif not self._complete_intialization:
                 self.initialize_remote_settings()
-                if not self._complete_intialization:
-                    return  # unable to do remote sync
             else:
                 self.update_remote()
 
@@ -396,8 +394,9 @@ class SkillSettings(dict):
             LOG.exception('Failed to fetch skill settings: {}'.format(repr(e)))
         finally:
             # Call callback for updated settings
-            if self.changed_callback and hash(str(self)) != original:
-                self.changed_callback()
+            if self._complete_intialization:
+                if self.changed_callback and hash(str(self)) != original:
+                    self.changed_callback()
 
         if self._poll_timer:
             self._poll_timer.cancel()
