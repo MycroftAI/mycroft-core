@@ -189,7 +189,7 @@ class SkillSettings(dict):
         """ Loads settings metadata from skills path. """
         if isfile(self._meta_path):
             try:
-                with open(self._meta_path) as f:
+                with open(self._meta_path, encoding='utf-8') as f:
                     data = json.load(f)
                 return data
             except Exception as e:
