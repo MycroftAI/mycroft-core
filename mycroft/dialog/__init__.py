@@ -19,6 +19,7 @@ from pathlib import Path
 from os.path import join
 
 from mycroft.util import resolve_resource_file
+from mycroft.util.format import expand_options
 from mycroft.util.log import LOG
 
 
@@ -90,6 +91,7 @@ class MustacheDialogRenderer:
             line = template_functions[index % len(template_functions)]
         # Replace {key} in line with matching values from context
         line = line.format(**context)
+        line = random.choice(expand_options(line))
         return line
 
 

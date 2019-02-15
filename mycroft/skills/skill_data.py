@@ -22,6 +22,7 @@ from os.path import splitext, join
 import re
 
 from mycroft.messagebus.message import Message
+from mycroft.util.format import expand_options
 
 
 def load_vocab_from_file(path, vocab_type, bus):
@@ -39,7 +40,7 @@ def load_vocab_from_file(path, vocab_type, bus):
             for line in voc_file.readlines():
                 if line.startswith("#"):
                     continue
-                parts = line.strip().split("|")
+                parts = expand_options(line)
                 entity = parts[0]
                 bus.emit(Message("register_vocab", {
                     'start': entity, 'end': vocab_type
