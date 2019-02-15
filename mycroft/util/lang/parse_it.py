@@ -632,7 +632,7 @@ def extract_datetime_it(string, dateNow, default_time):
                     word_list[idx] = str(num0) + ':' + str(num1)
                     word_list[idx+1] = ''
 
-        words = [x for x in word_list if x]
+        word_list = [x for x in word_list if x]
 
         return word_list
 
