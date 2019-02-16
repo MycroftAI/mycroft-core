@@ -52,7 +52,7 @@ def send_playback_metric(stopwatch, ident):
 class PlaybackThread(Thread):
     """
         Thread class for playing back tts audio and sending
-        visime data to enclosure.
+        viseme data to enclosure.
     """
 
     def __init__(self, queue):
@@ -77,12 +77,12 @@ class PlaybackThread(Thread):
 
     def run(self):
         """
-            Thread main loop. get audio and visime data from queue
+            Thread main loop. get audio and viseme data from queue
             and play.
         """
         while not self._terminated:
             try:
-                snd_type, data, visimes, ident = self.queue.get(timeout=2)
+                snd_type, data, visemes, ident = self.queue.get(timeout=2)
                 self.blink(0.5)
                 if not self._processing_queue:
                     self._processing_queue = True
@@ -95,8 +95,8 @@ class PlaybackThread(Thread):
                     elif snd_type == 'mp3':
                         self.p = play_mp3(data)
 
-                    if visimes:
-                        self.show_visimes(visimes)
+                    if visemes:
+                        self.show_visemes(visemes)
                     self.p.communicate()
                     self.p.wait()
                 send_playback_metric(stopwatch, ident)
@@ -113,9 +113,9 @@ class PlaybackThread(Thread):
                     self.tts.end_audio()
                     self._processing_queue = False
 
-    def show_visimes(self, pairs):
+    def show_visemes(self, pairs):
         """
-            Send visime data to enclosure
+            Send viseme data to enclosure
 
             Args:
                 pairs(list): Visime and timing pair
@@ -307,12 +307,12 @@ class TTS:
             if phonemes:
                 self.save_phonemes(key, phonemes)
 
-        vis = self.visime(phonemes)
+        vis = self.viseme(phonemes)
         self.queue.put((self.audio_ext, wav_file, vis, ident))
 
-    def visime(self, phonemes):
+    def viseme(self, phonemes):
         """
-            Create visimes from phonemes. Needs to be implemented for all
+            Create visemes from phonemes. Needs to be implemented for all
             tts backend
 
             Args:

@@ -225,7 +225,7 @@ class Mimic2(TTS):
                 reqs.append(self.session.get(req_route, timeout=5))
         return reqs
 
-    def visime(self, phonemes):
+    def viseme(self, phonemes):
         """maps phonemes to visemes encoding
 
         Args:
