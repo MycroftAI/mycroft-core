@@ -179,8 +179,8 @@ def pronounce_number_da(num, places=2):
 
         return result
 
-    def pronounce_fractional_da(num, places):  # fixed number of places even with
-                                               # trailing zeros
+    def pronounce_fractional_da(num, places):  # fixed number of places even
+                                               # with trailing zeros
         result = ""
         place = 10
         while places > 0:  # doesn't work with 1.0001 and places = 2: int(

@@ -126,7 +126,8 @@ class TestPronounceNumber(unittest.TestCase):
 #                         "firehundredeseksoghalvtresbillioner"
 #                         "syvhundredeogfirsmiliarder"
 #                         "ethundredetreogtyvemillioner"
-#                         "firehundredeseksoghalvtrestusindesyvhundredeniogfirs")
+#                         "firehundredeseksoghalvtrestusindesyvhundredeniog \
+#                          firs")
         self.assertEqual(pronounce_number(1, lang="da-dk"), "en")
         self.assertEqual(pronounce_number(10, lang="da-dk"), "ti")
         self.assertEqual(pronounce_number(15, lang="da-dk"), "femten")
