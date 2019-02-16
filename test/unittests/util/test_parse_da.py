@@ -35,12 +35,12 @@ class TestNormalize(unittest.TestCase):
                          "dette er 1 extra-test")
 
     def test_extract_number(self):
-        self.assertEqual(extract_number("dette er den 1 test", lang="da-dk"),
+        self.assertEqual(extract_number("dette er den 1. test", lang="da-dk"),
                          1)
 #        self.assertEqual(extract_number("dette er den første test",
 #                                        lang="da-dk"),
 #                         1)
-        self.assertEqual(extract_number("dette er den 2 test", lang="da-dk"),
+        self.assertEqual(extract_number("dette er den 2. test", lang="da-dk"),
                          2)
 #        self.assertEqual(extract_number("dette er den anden test",
 #                                        lang="da-dk"),
@@ -50,9 +50,11 @@ class TestNormalize(unittest.TestCase):
 #        self.assertEqual(
 #            extract_number("dette er test nummer fire", lang="da-dk"), 4)
 #        self.assertEqual(
-#            extract_number("en trediedel af en kop", lang="da-dk"), 1.0 / 3.0)
+#            extract_number("en trediedel af en kop", lang="da-dk"),
+#                           1.0 / 3.0)
 #        self.assertEqual(extract_number("tre kopper", lang="da-dk"), 3)
-#        self.assertEqual(extract_number("1/3 kop", lang="da-dk"), 1.0 / 3.0)
+#        self.assertEqual(extract_number("1/3 kop", lang="da-dk"),
+#                         1.0 / 3.0)
 #        self.assertEqual(extract_number("en fjerdelel kop", lang="da-dk"),
 #                         0.25)
 #        self.assertEqual(extract_number("1/4 kop", lang="da-dk"), 0.25)
@@ -60,7 +62,8 @@ class TestNormalize(unittest.TestCase):
 #        self.assertEqual(extract_number("2/3 kop", lang="da-dk"), 2.0 / 3.0)
 #        self.assertEqual(extract_number("3/4 kop", lang="da-dk"), 3.0 / 4.0)
 #        self.assertEqual(extract_number("1 og 3/4 kop", lang="da-dk"), 1.75)
-#        self.assertEqual(extract_number("1 og en halv kop", lang="da-dk"), 1.5)
+#        self.assertEqual(extract_number("1 og en halv kop", lang="da-dk"),
+#                         1.5)
 #        self.assertEqual(
 #            extract_number("en og en halv kop", lang="da-dk"), 1.5)
 #        self.assertEqual(extract_number("tre fjerdele kop", lang="da-dk"),
