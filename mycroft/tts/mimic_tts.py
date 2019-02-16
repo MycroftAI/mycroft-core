@@ -154,7 +154,6 @@ class Mimic(TTS):
             if len(pho_dur) == 2:
                 visemes.append((VISIMES.get(pho_dur[0], '4'),
                                 float(pho_dur[1])))
-        print(visemes)
         return visemes
 
 
