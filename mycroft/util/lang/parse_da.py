@@ -219,7 +219,7 @@ def extract_datetime_da(string, currentDate, default_time):
                           'aftenen',
                           'nat',
                           'natten']
-    markers = ['i', 'om', 'på', 'klokken', 'ved' ]
+    markers = ['i', 'om', 'på', 'klokken', 'ved']
     days = ['mandag', 'tirsdag', 'onsdag',
             'torsdag', 'fredag', 'lørdag', 'søndag']
     months = ['januar', 'februar', 'marts', 'april', 'maj', 'juni',
@@ -371,9 +371,10 @@ def extract_datetime_da(string, currentDate, default_time):
             used = 2
             fromFlag = True
             if wordNext == "morgenen" and \
-                    wordPrev != "am" and \
+                    wordPrev != "om" and \
                     wordPrev not in days:  # morgen means tomorrow if not "am
-                                           #  Morgen" and not [day of the week] morgen:
+                                           # Morgen" and not [day of the
+                                           # week] morgen:
                 dayOffset += 1
             elif wordNext in days:
                 d = days.index(wordNext)
