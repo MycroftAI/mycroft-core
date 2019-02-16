@@ -638,7 +638,8 @@ def extract_datetime_da(string, currentDate, default_time):
                                     used += 1
                                     remainder = "pm"
                                 elif wordNextNextNext == "om" and \
-                                        wordNextNextNextNext == "eftermiddagen":
+                                        wordNextNextNextNext == \
+                                           "eftermiddagen":
                                     used += 2
                                     remainder = "pm"
                                 elif wordNextNextNext[:6] == "natten":
