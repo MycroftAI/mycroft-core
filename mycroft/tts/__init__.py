@@ -60,7 +60,6 @@ class PlaybackThread(Thread):
         self.queue = queue
         self._terminated = False
         self._processing_queue = False
-        self._clear_visimes = False
 
     def init(self, tts):
         self.tts = tts
@@ -97,17 +96,14 @@ class PlaybackThread(Thread):
                         self.p = play_mp3(data)
 
                     if visimes:
-                        if self.show_visimes(visimes):
-                            self.clear_queue()
-                    else:
-                        self.p.communicate()
+                        self.show_visimes(visimes)
+                    self.p.communicate()
                     self.p.wait()
                 send_playback_metric(stopwatch, ident)
 
                 if self.queue.empty():
                     self.tts.end_audio()
                     self._processing_queue = False
-                    self._clear_visimes = False
                 self.blink(0.2)
             except Empty:
                 pass
@@ -127,30 +123,12 @@ class PlaybackThread(Thread):
             Returns:
                 True if button has been pressed.
         """
-        start = time()
         if self.enclosure:
-            self.enclosure.mouth_viseme_list(start, pairs)
-
-        # TODO 19.02 Remove the one by one method below
-        for code, duration in pairs:
-            if self._clear_visimes:
-                self._clear_visimes = False
-                return True
-            if self.enclosure:
-                # Include time stamp to assist with animation timing
-                self.enclosure.mouth_viseme(code, start + duration)
-            delta = time() - start
-            if delta < duration:
-                sleep(duration - delta)
-        return False
-
-    def clear_visimes(self):
-        self._clear_visimes = True
+            self.enclosure.mouth_viseme(time(), pairs)
 
     def clear(self):
         """ Clear all pending actions for the TTS playback thread. """
         self.clear_queue()
-        self.clear_visimes()
 
     def blink(self, rate=1.0):
         """ Blink mycroft's eyes """
