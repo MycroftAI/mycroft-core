@@ -372,9 +372,9 @@ def extract_datetime_da(string, currentDate, default_time):
             fromFlag = True
             if wordNext == "morgenen" and \
                     wordPrev != "om" and \
-                    wordPrev not in days:  # morgen means tomorrow if not "am
-                                           # Morgen" and not [day of the
-                                           # week] morgen:
+                    wordPrev not in days:
+                # morgen means tomorrow if not "am Morgen" and not
+                # [day of the week] morgen:
                 dayOffset += 1
             elif wordNext in days:
                 d = days.index(wordNext)

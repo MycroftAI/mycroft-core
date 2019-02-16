@@ -179,12 +179,13 @@ def pronounce_number_da(num, places=2):
 
         return result
 
-    def pronounce_fractional_da(num, places):  # fixed number of places even
-                                               # with trailing zeros
+    def pronounce_fractional_da(num, places):
+        # fixed number of places even with trailing zeros
         result = ""
         place = 10
-        while places > 0:  # doesn't work with 1.0001 and places = 2: int(
-                           # num*place) % 10 > 0 and places > 0:
+        while places > 0:
+            # doesn't work with 1.0001 and places = 2: int(
+            # num*place) % 10 > 0 and places > 0:
             result += " " + NUM_STRING_DA[int(num * place) % 10]
             place *= 10
             places -= 1
@@ -338,16 +339,20 @@ def nice_time_da(dt, speech=True, use_24hour=False, use_ampm=False):
         if use_ampm:
             if dt.hour > 11:
                 if dt.hour < 18:
-                    speak += " om eftermiddagen"  # 12:01 - 17:59
-                                                  # nachmittags/afternoon
+                    # 12:01 - 17:59 nachmittags/afternoon
+                    speak += " om eftermiddagen"
                 elif dt.hour < 22:
-                    speak += " om aftenen"  # 18:00 - 21:59 abends/evening
+                    # 18:00 - 21:59 abends/evening
+                    speak += " om aftenen"
                 else:
-                    speak += " om natten"  # 22:00 - 23:59 nachts/at night
+                    # 22:00 - 23:59 nachts/at night
+                    speak += " om natten"
             elif dt.hour < 3:
-                speak += " om natten"  # 00:01 - 02:59 nachts/at night
+                # 00:01 - 02:59 nachts/at night
+                speak += " om natten"
             else:
-                speak += " om morgenen"  # 03:00 - 11:59 morgens/in the morning
+                # 03:00 - 11:59 morgens/in the morning
+                speak += " om morgenen"
 
         return speak
 
