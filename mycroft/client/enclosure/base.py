@@ -101,6 +101,7 @@ class Enclosure:
         self.bus.on("gui.value.set", self.on_gui_set_value)
         self.bus.on("gui.page.show", self.on_gui_show_page)
         self.bus.on("gui.page.delete", self.on_gui_delete_page)
+        self.bus.on("gui.clear.namespace", self.on_gui_delete_namespace)
 
     def run(self):
         try:
@@ -151,6 +152,14 @@ class Enclosure:
         page, namespace, _ = _get_page_data(message)
         try:
             self.remove_pages(namespace, page)
+        except Exception as e:
+            LOG.exception(repr(e))
+
+    def on_gui_delete_namespace(self, message):
+        """ Bus handler for removing namespace. """
+        try:
+            namespace = message.data['__from']
+            self.remove_namespace(namespace)
         except Exception as e:
             LOG.exception(repr(e))
 
@@ -303,6 +312,25 @@ class Enclosure:
                     self.__switch_page(namespace, pages)
         except Exception as e:
             LOG.exception(repr(e))
+
+    def remove_namespace(self, namespace):
+        """ Remove namespace.
+
+            Arguments:
+                namespace (str):    namespace to remove
+        """
+        index = self.__find_namespace(namespace)
+        if index is None:
+            return
+        else:
+            LOG.debug("Removing namespace {} at {}".format(namespace, index))
+            self.send({"type": "mycroft.session.list.remove",
+                       "namespace": "mycroft.system.active_skills",
+                       "position": index,
+                       "items_number": 1
+                       })
+            # Remove namespace from loaded namespaces
+            self.loaded.pop(index)
 
     def remove_pages(self, namespace, pages):
         """ Remove the listed pages from the provided namespace.

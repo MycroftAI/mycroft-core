@@ -288,9 +288,11 @@ class SkillGUI:
         return self.__session_data.__contains__(key)
 
     def clear(self):
-        """ Reset the value dictionary """
+        """ Reset the value dictionary, and remove namespace from gui """
         self.__session_data = {}
         self.page = None
+        self.skill.bus.emit(Message("gui.clear.namespace",
+                                    {"__from": self.skill.skill_id}))
 
     def show_page(self, name, override_idle=None):
         """
@@ -1449,6 +1451,10 @@ class MycroftSkill:
         if exists(self._dir):
             self.settings.store()
             self.settings.stop_polling()
+
+        # Clear skill from gui
+        self.gui.clear()
+
         # removing events
         self.cancel_all_repeating_events()
         for e, f in self.events:
