@@ -229,6 +229,17 @@ fi" > ~/.profile_mycroft
         echo "to /opt/mycroft/skills."
     fi
 
+    # Add PEP8 pre-commit hook
+    sleep 0.5
+    echo "
+(Devloper) Do you want to automatically check code-style when submitting code.
+If unsure answer yes.
+"
+    if get_YN ; then
+        echo -e "Will install PEP8 pre-commit hook..."
+        INSTALL_PRECOMMIT_HOOK=true
+    fi
+
     # Save options
     echo '{"use_branch": "'${branch}'", "auto_update": '${autoupdate}'}' > .dev_opts.json
 
@@ -353,13 +364,15 @@ source "${VIRTUALENV_ROOT}/bin/activate"
 cd "${TOP}"
 
 # Install pep8 pre-commit hook
-HOOK_FILE="./.git/hooks/pre-commit"
-if [ ! -f ${HOOK_FILE} ] || grep -q "MYCROFT DEV SETUP" ${HOOK_FILE} ; then
-    echo "Installing PEP8 check as precommit-hook"
-    echo "#! $( which python )" > ${HOOK_FILE}
-    echo "# MYCROFT DEV SETUP" >> ${HOOK_FILE}
-    cat ./scripts/pre-commit >> ${HOOK_FILE}
-    chmod +x ${HOOK_FILE}
+if [ -z ${INSTALL_PRECOMMIT_HOOK} ] ; then
+    HOOK_FILE="./.git/hooks/pre-commit"
+    if [ ! -f ${HOOK_FILE} ] || grep -q "MYCROFT DEV SETUP" ${HOOK_FILE} ; then
+        echo "Installing PEP8 check as precommit-hook"
+        echo "#! $( which python )" > ${HOOK_FILE}
+        echo "# MYCROFT DEV SETUP" >> ${HOOK_FILE}
+        cat ./scripts/pre-commit >> ${HOOK_FILE}
+        chmod +x ${HOOK_FILE}
+    fi
 fi
 
 PYTHON=$( python -c "import sys;print('python{}.{}'.format(sys.version_info[0], sys.version_info[1]))" )
