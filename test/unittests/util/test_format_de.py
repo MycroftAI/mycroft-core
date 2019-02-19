@@ -22,6 +22,8 @@ from mycroft.util.format import nice_time
 from mycroft.util.format import pronounce_number
 from mycroft.util.lang.format_de import nice_response_de
 from mycroft.util.lang.format_de import pronounce_ordinal_de
+from mycroft.util.format import join_list
+
 
 # fractions are not capitalized for now
 NUMBERS_FIXTURE_DE = {
@@ -368,6 +370,16 @@ class TestNiceDateFormat_de(unittest.TestCase):
                                5, 30, 00)
         self.assertEqual(nice_time(dt, lang="de-de", use_ampm=True),
                          u"fünf Uhr dreißig morgens")
+
+
+class TestJoinList_de(unittest.TestCase):
+    def test_join_list_de(self):
+        self.assertEqual(join_list(['Hallo', 'Auf wieder Sehen'], 'and',
+                                   lang='de-de'),
+                         'Hallo und Auf wieder Sehen')
+
+        self.assertEqual(join_list(['A', 'B', 'C'], 'or', lang='de-de'),
+                         'A, B oder C')
 
 
 if __name__ == "__main__":
