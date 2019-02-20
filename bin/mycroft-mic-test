@@ -33,9 +33,6 @@ fi
 
 # Launch the standard audiotest
 "$DIR/../start-mycroft.sh" audiotest $@
-# Necessary for now, audiotest returns while still playing in background
-# TODO: Remove once audiotest has been corrected to wait on playback
-sleep 10
 
 
 if [ $restart -eq 1 ]
