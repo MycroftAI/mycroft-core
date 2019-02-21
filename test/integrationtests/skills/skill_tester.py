@@ -45,6 +45,7 @@ from mycroft.skills.core import create_skill_descriptor, load_skill, \
     MycroftSkill, FallbackSkill
 from mycroft.skills.settings import SkillSettings
 from mycroft.configuration import Configuration
+from mycroft.util.format import expand_options
 
 from logging import StreamHandler
 from io import StringIO
@@ -438,6 +439,32 @@ class SkillTest(object):
 HIDDEN_MESSAGES = ['skill.converse.request', 'skill.converse.response']
 
 
+def load_dialog_list(skill, dialog):
+    """ Load dialog from files into a single list.
+
+        Arguments:
+            skill (MycroftSkill): skill to load dialog from
+            dialog (list): List of dialogs to load
+
+        Returns:
+            List of expanded dialog strings
+    """
+    dialogs = []
+    try:
+        for d in dialog:
+            for e in skill.dialog_renderer.templates[d]:
+                dialogs += expand_options(e)
+    except Exception as template_load_exception:
+        print(color.FAIL +
+              "Failed to load dialog template " +
+              "'dialog/en-us/" + d + ".dialog'" +
+              color.RESET)
+        raise Exception("Can't load 'excepted_dialog': "
+                        "file '" + d + ".dialog'") \
+            from template_load_exception
+    return dialogs
+
+
 class EvaluationRule(object):
     """
         This class initially convert the test_case json file to internal rule
@@ -518,18 +545,7 @@ class EvaluationRule(object):
                 else:
                     dialog = test_case['expected_dialog']
                 # Extract dialog texts from skill
-                dialogs = []
-                try:
-                    for d in dialog:
-                        dialogs += skill.dialog_renderer.templates[d]
-                except Exception as template_load_exception:
-                    print(color.FAIL +
-                          "Failed to load dialog template " +
-                          "'dialog/en-us/" + d + ".dialog'" +
-                          color.RESET)
-                    raise Exception("Can't load 'expected_dialog': "
-                                    "file '" + d + ".dialog'") \
-                        from template_load_exception
+                dialogs = load_dialog_list(skill, dialog)
                 # Allow custom fields to be anything
                 d = [re.sub(r'{.*?\}', r'.*', t) for t in dialogs]
                 # Create rule allowing any of the sentences for that dialog
