@@ -16,7 +16,6 @@ from enum import IntEnum
 from abc import ABC, abstractmethod
 from mycroft import MycroftSkill
 from mycroft.messagebus.message import Message
-from multiprocessing.pool import ThreadPool
 
 
 class CQSMatchLevel(IntEnum):
@@ -42,7 +41,6 @@ def handles_visuals(self, platform):
 
 
 class CommonQuerySkill(MycroftSkill, ABC):
-    pool = ThreadPool(5)
 
     def __init__(self, name=None, bus=None):
         super().__init__(name, bus)
@@ -54,10 +52,6 @@ class CommonQuerySkill(MycroftSkill, ABC):
             self.add_event('question:action', self.__handle_query_action)
 
     def __handle_question_query(self, message):
-        CommonQuerySkill.pool.apply_async(self.__thread_question_query,
-                                          args=[message])
-
-    def __thread_question_query(self, message):
         search_phrase = message.data["phrase"]
 
         # First, notify the requestor that we are attempting to handle
