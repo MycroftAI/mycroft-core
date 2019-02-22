@@ -63,6 +63,8 @@ def resolve_resource_file(res_name):
 
     Args:
         res_name (str): a resource path/name
+    Returns:
+        str: path to resource or None if no resource found
     """
     config = mycroft.configuration.Configuration.get()
 
@@ -396,28 +398,59 @@ def wait_for_exit_signal():
         pass
 
 
+
+_log_all_bus_messages = False
 def create_echo_function(name, whitelist=None):
+    """ Standard logging mechanism for Mycroft processes.
+
+    This handles the setup of the basic logging for all Mycroft
+    messagebus-based processes.
+
+    Args:
+        name (str): Reference name of the process
+        whitelist (list, optional): List of "type" strings.  If defined, only
+                                    messages in this list will be logged.
+
+    Returns:
+        func: The echo function
+    """
+
     from mycroft.configuration import Configuration
     blacklist = Configuration.get().get("ignore_logs")
 
     def echo(message):
-        """Listen for messages and echo them for logging"""
+        global _log_all_bus_messages
         try:
-            js_msg = json.loads(message)
+            msg = json.loads(message)
 
-            if whitelist and js_msg.get("type") not in whitelist:
+            if whitelist and msg.get("type") not in whitelist:
                 return
 
-            if blacklist and js_msg.get("type") in blacklist:
+            if blacklist and msg.get("type") in blacklist:
                 return
 
-            if js_msg.get("type") == "registration":
+            if msg.get("type") == "mycroft.debug.log":
+                # Respond to requests to adjust the logger settings
+                lvl = msg["data"].get("level", "").upper()
+                if lvl in ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]:
+                    LOG(name).info("Changing log level to: "+lvl)
+                    LOG(name).setLevel(lvl)
+
+                # Allow enable/disable of messagebus traffic
+                log_bus = msg["data"].get("bus", None)
+                if not log_bus is None:
+                    LOG(name).info("Bus logging: "+str(log_bus))
+                    _log_all_bus_messages = log_bus
+            elif msg.get("type") == "registration":
                 # do not log tokens from registration messages
-                js_msg["data"]["token"] = None
-                message = json.dumps(js_msg)
+                msg["data"]["token"] = None
+                message = json.dumps(msg)
         except Exception:
             pass
-        LOG(name).debug(message)
+
+        if _log_all_bus_messages:
+            # Listen for messages and echo them for logging
+            LOG(name).debug(message)
     return echo
 
 

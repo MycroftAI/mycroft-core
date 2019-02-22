@@ -222,11 +222,17 @@ class LogMonitorThread(Thread):
 
                 # Check if file has been modified since last read
                 if not st_results.st_mtime == self.st_results.st_mtime:
-                    self.read_file_from(self.st_results.st_size)
+                    read_from = self.st_results.st_size
                     self.st_results = st_results
+                    if st_results.st_size < read_from:
+                        st
+                    self.read_file_from(self.st_results.st_size)
+
                     set_screen_dirty()
-            finally:
-                time.sleep(0.1)
+            except OSError:
+                # ignore any file IO exceptions, just try again
+                pass
+            time.sleep(0.1)
 
     def read_file_from(self, bytefrom):
         global meter_cur
@@ -856,7 +862,7 @@ help_struct = [
       (":meter (show|hide)",    "display the microphone level"),
       (":keycode (show|hide)",  "display typed key codes (mainly debugging)"),
       (":history (# lines)",    "set size of visible history buffer"),
-      (":clear log",            "flush the logs")
+      (":clear",                "flush the logs")
      ]
     ),
     (
@@ -866,7 +872,9 @@ help_struct = [
       (":filter remove 'STR'",  "removes a log filter"),
       (":filter (clear|reset)", "reset filters"),
       (":filter (show|list)",   "display current filters"),
-      (":find 'STR'",           "show logs containing 'str'")
+      (":find 'STR'",           "show logs containing 'str'"),
+      (":log level (debug|info|error)", "set logging level"),
+      (":log bus (on|off)",     "control logging of messagebus messages")
      ]
     ),
     (
@@ -1044,7 +1052,11 @@ def _get_cmd_param(cmd, keyword):
     # Returns parameter to a command.  Will de-quote.
     # Ex: find 'abc def'   returns: abc def
     #    find abc def     returns: abc def
-    cmd = cmd.replace(keyword, "").strip()
+    if type(keyword) is list:
+        for w in keyword:
+            cmd = cmd.replace(w, "").strip()
+    else:
+        cmd = cmd.replace(keyword, "").strip()
     if not cmd:
         return None
 
@@ -1071,8 +1083,6 @@ def handle_cmd(cmd):
         show_help()
     elif "exit" in cmd or "quit" in cmd:
         return 1
-    elif "clear" in cmd and "log" in cmd:
-        clear_log()
     elif "keycode" in cmd:
         # debugging keyboard
         if "hide" in cmd or "off" in cmd:
@@ -1107,6 +1117,19 @@ def handle_cmd(cmd):
 
         rebuild_filtered_log()
         add_log_message("Filters: " + str(log_filters))
+    elif "clear" in cmd:
+        clear_log()
+    elif "log" in cmd:
+        # Control logging behavior in all Mycroft processes
+        if "level" in cmd:
+            level = _get_cmd_param(cmd, ["log", "level"])
+            bus.emit(Message("mycroft.debug.log", data={'level': level}))
+        elif "bus" in cmd:
+            state = _get_cmd_param(cmd, ["log", "bus"]).lower()
+            if state in ["on", "true", "yes"]:
+                bus.emit(Message("mycroft.debug.log", data={'bus': True}))
+            elif state in ["off", "false", "no"]:
+                bus.emit(Message("mycroft.debug.log", data={'bus': False}))
     elif "history" in cmd:
         # extract last word(s)
         lines = int(_get_cmd_param(cmd, "history"))
