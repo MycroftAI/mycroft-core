@@ -398,7 +398,6 @@ def wait_for_exit_signal():
         pass
 
 
-
 _log_all_bus_messages = False
 def create_echo_function(name, whitelist=None):
     """ Standard logging mechanism for Mycroft processes.
@@ -438,7 +437,7 @@ def create_echo_function(name, whitelist=None):
 
                 # Allow enable/disable of messagebus traffic
                 log_bus = msg["data"].get("bus", None)
-                if not log_bus is None:
+                if log_bus is not None:
                     LOG(name).info("Bus logging: "+str(log_bus))
                     _log_all_bus_messages = log_bus
             elif msg.get("type") == "registration":
