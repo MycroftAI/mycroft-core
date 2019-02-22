@@ -235,7 +235,6 @@ def extractnumber_long_it(word):
     Returns:
          (bool) or (int): The extracted number or False if no number
                                    was found
-         
     """
 
     units = {'zero': 0, 'uno': 1, 'due': 2, 'tre': 3, 'quattro': 4,
