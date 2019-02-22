@@ -290,37 +290,35 @@ class MicMonitorThread(Thread):
     def __init__(self, filename):
         Thread.__init__(self)
         self.filename = filename
-        self.st_results = os.stat(filename)
+        self.st_results = None
 
     def run(self):
         while True:
             try:
                 st_results = os.stat(self.filename)
 
-                if (not st_results.st_ctime == self.st_results.st_ctime or
+                if (not self.st_results or
+                        not st_results.st_ctime == self.st_results.st_ctime or
                         not st_results.st_mtime == self.st_results.st_mtime):
-                    self.read_file_from(0)
+                    self.read_mic_level()
                     self.st_results = st_results
                     set_screen_dirty()
-            finally:
-                time.sleep(0.2)
+            except Exception:
+                # Ignore whatever failure happened and just try again later
+                pass
+            time.sleep(0.2)
 
-    def read_file_from(self, bytefrom):
+    def read_mic_level(self):
         global meter_cur
         global meter_thresh
 
         with io.open(self.filename, 'r') as fh:
-            fh.seek(bytefrom)
-            while True:
-                line = fh.readline()
-                if line == "":
-                    break
-
-                # Just adjust meter settings
-                # Ex:Energy:  cur=4 thresh=1.5
-                parts = line.split("=")
-                meter_thresh = float(parts[-1])
-                meter_cur = float(parts[-2].split(" ")[0])
+            line = fh.readline()
+            # Just adjust meter settings
+            # Ex:Energy:  cur=4 thresh=1.5
+            parts = line.split("=")
+            meter_thresh = float(parts[-1])
+            meter_cur = float(parts[-2].split(" ")[0])
 
 
 class ScreenDrawThread(Thread):
@@ -1271,7 +1269,7 @@ def gui_main(stdscr):
                 else:
                     last_key = str(code)
 
-            scr.timeout(-1)     # resume blocking
+            scr.timeout(-1)   # resume blocking
             if code == 27:    # Hitting ESC twice clears the entry line
                 hist_idx = -1
                 line = ""
