@@ -432,8 +432,8 @@ def create_echo_function(name, whitelist=None):
                 # Respond to requests to adjust the logger settings
                 lvl = msg["data"].get("level", "").upper()
                 if lvl in ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]:
-                    LOG(name).info("Changing log level to: "+lvl)
-                    LOG(name).setLevel(lvl)
+                    LOG.level = lvl
+                    LOG(name).info("Changing log level to: {}".format(lvl))
 
                 # Allow enable/disable of messagebus traffic
                 log_bus = msg["data"].get("bus", None)
