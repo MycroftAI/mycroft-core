@@ -222,11 +222,8 @@ class LogMonitorThread(Thread):
 
                 # Check if file has been modified since last read
                 if not st_results.st_mtime == self.st_results.st_mtime:
-                    read_from = self.st_results.st_size
-                    self.st_results = st_results
-                    if st_results.st_size < read_from:
-                        st
                     self.read_file_from(self.st_results.st_size)
+                    self.st_results = st_results
 
                     set_screen_dirty()
             except OSError:
@@ -873,7 +870,7 @@ help_struct = [
       (":filter (clear|reset)", "reset filters"),
       (":filter (show|list)",   "display current filters"),
       (":find 'STR'",           "show logs containing 'str'"),
-      (":log level (debug|info|error)", "set logging level"),
+      (":log level (DEBUG|INFO|ERROR)", "set logging level"),
       (":log bus (on|off)",     "control logging of messagebus messages")
      ]
     ),
@@ -1052,7 +1049,7 @@ def _get_cmd_param(cmd, keyword):
     # Returns parameter to a command.  Will de-quote.
     # Ex: find 'abc def'   returns: abc def
     #    find abc def     returns: abc def
-    if type(keyword) is list:
+    if isinstance(keyword, list):
         for w in keyword:
             cmd = cmd.replace(w, "").strip()
     else:

@@ -400,6 +400,8 @@ def wait_for_exit_signal():
 
 
 _log_all_bus_messages = False
+
+
 def create_echo_function(name, whitelist=None):
     """ Standard logging mechanism for Mycroft processes.
 
