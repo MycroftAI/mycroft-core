@@ -28,6 +28,7 @@ import os.path
 import psutil
 from stat import S_ISREG, ST_MTIME, ST_MODE, ST_SIZE
 import requests
+import logging
 
 import signal as sig
 
@@ -434,6 +435,10 @@ def create_echo_function(name, whitelist=None):
                 if lvl in ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]:
                     LOG.level = lvl
                     LOG(name).info("Changing log level to: {}".format(lvl))
+                    try:
+                        logging.getLogger('urllib3').setLevel(lvl)
+                    except Exception:
+                        pass  # We don't really care about if this fails...
 
                 # Allow enable/disable of messagebus traffic
                 log_bus = msg["data"].get("bus", None)
