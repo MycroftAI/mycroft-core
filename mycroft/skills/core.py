@@ -721,9 +721,22 @@ class MycroftSkill:
                 self.voc_match_cache[cache_key] = f.read().splitlines()
 
         # Check for match
-        if utt and any(i.strip() in utt
-                       for i in self.voc_match_cache[cache_key]):
-            return True
+        if utt:
+            words = utt.split()
+            for i in self.voc_match_cache[cache_key]:
+                term = i.strip()
+                if not term or term[0] is "#":  # ignore blanks and comments
+                    continue
+
+                if len(term.split() == 1):
+                    if term in words:
+                        return True  # Found a single word match!
+                else:
+                    # Has multiple words, just look for a substring
+                    # NOTE: Could catch "turn off" in "return office"
+                    if term in utt:
+                        return True
+
         return False
 
     def report_metric(self, name, data):
