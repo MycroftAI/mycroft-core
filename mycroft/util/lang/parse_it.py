@@ -222,17 +222,20 @@ def isFractional_it(input_str, short_scale=False):
 
 def extractnumber_long_it(word):
     """
-    Questa funzione converte un numero testuale lungo es.
-    milleventisette -> 1027  diecimilaquarantuno -> 10041 in
-    valore intero. La versione precedente era limitata,
-    ora copre da 0 a 999bilioni  0 -> 999999999999999
-    per ora limitata a x e^12 ma predisposta per x e^63
-    ma chi pronuncerebbe numeri cosi lunghi ?
-    args:
-         text (str): la stringa da normalizzare
-    Ritorna:
-         (int) : il valore del numero estratto usando tutta la parola
-         Falso : se la parola non è un numero es."qualcuno"
+     This function converts a long textual number like
+     milleventisette -> 1027 diecimila -> 10041 in
+     integer value, covers from  0 to 999999999999999
+     for now limited to 999_e12 but ready for 999_e63
+     example:
+        milleventisette -> 1027
+        diecimilaquarantuno-> 10041
+        centottomiladuecentotredici -> 108213
+    Args:
+         word (str): the word to convert in number
+    Returns:
+         (bool) or (int): The extracted number or False if no number
+                                   was found
+         
     """
 
     units = {'zero': 0, 'uno': 1, 'due': 2, 'tre': 3, 'quattro': 4,
@@ -1273,14 +1276,11 @@ def extract_datetime_it(string, dateNow, default_time):
 
 def get_gender_it(word, raw_string=""):
     """
-    Questa potrebbe non essere utile.
-    In italiano per definire il genere è necessario
-    analizzare l'articolo che la precede e non la lettera
-    con cui finisce la parola, ma sono presenti funzioni per
-    la rimozione degli articoli dalla frase per semplificarne
-    l'analisi
+    In Italian to define the grammatical gender of a word is necessary
+    analyze the article that precedes the word and not only the last
+    letter of the word.
 
-    TODO:  verificare se utile
+    TODO: check if useful
     """
 
     gender = False
