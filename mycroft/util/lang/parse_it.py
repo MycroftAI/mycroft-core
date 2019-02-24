@@ -225,7 +225,7 @@ def extractnumber_long_it(word):
      This function converts a long textual number like
      milleventisette -> 1027 diecimila -> 10041 in
      integer value, covers from  0 to 999999999999999
-     for now limited to 999_e12 but ready for 999_e63
+     for now limited to 999_e21 but ready for 999_e63
      example:
         milleventisette -> 1027
         diecimilaquarantuno-> 10041
@@ -266,12 +266,12 @@ def extractnumber_long_it(word):
         # (1e30, 'quintilioni'),
         # (1e27, 'quadriliardi'),
         # (1e24, 'quadrilioni'),    # yotta
-        # (1e21, 'triliardi'),      # zetta
-        # (1e18, 'trilioni'),       # exa
-        # (1e15, 'biliardi'),       # peta
-        (1e12, 'bilioni'),          # tera
-        (1e9, 'miliardi'),          # giga
-        (1e6, 'milioni')            # mega
+        (1e21, 'triliardi'),      # zetta
+        (1e18, 'trilioni'),       # exa
+        (1e15, 'biliardi'),       # peta
+        (1e12, 'bilioni'),        # tera
+        (1e9, 'miliardi'),        # giga
+        (1e6, 'milioni')          # mega
     ])
 
     multiplier = {}
@@ -282,7 +282,7 @@ def extractnumber_long_it(word):
             # plurali
             multiplier[multipli_it[num]] = int(num)
             # singolari - modificare per eccezioni *liardo
-            if num == 1000000000.0:
+            if multipli_it[num][-5:-1] == 'iard':
                 un_multiplier['un' + multipli_it[num][:-1] + 'o'] = int(num)
             else:
                 un_multiplier['un' + multipli_it[num][:-1] + 'e'] = int(num)
@@ -365,13 +365,20 @@ def extractnumber_long_it(word):
     if word.startswith('*'):
         word = word[1:]
 
-    try:
-        value = eval(word)
+    addends = word.split('+')
+    for c in range(len(addends)):
+        if '*' in addends[c]:
+            factors = addends[c].split('*')
+            result = int(factors[0]) * int(factors[1])
+            if len(factors) == 3:
+                result *= int(factors[2])
+            addends[c] = str(result)
 
-    except Exception as ex:
-        # print(ex)   # debug only
+    # check if all token are numbers
+    if all([s.isdecimal() for s in addends]):
+        value = sum([int(s) for s in addends])
+    else:
         value = False
-
     return value
 
 
