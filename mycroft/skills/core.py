@@ -26,6 +26,7 @@ from datetime import datetime, timedelta
 
 import abc
 import re
+from itertools import chain
 from adapt.intent import Intent, IntentBuilder
 from os.path import join, abspath, dirname, basename, exists
 from threading import Event, Timer
@@ -41,7 +42,8 @@ from mycroft.messagebus.message import Message
 from mycroft.metrics import report_metric, report_timing, Stopwatch
 from mycroft.skills.settings import SkillSettings
 from mycroft.skills.skill_data import (load_vocabulary, load_regex, to_alnum,
-                                       munge_regex, munge_intent_parser)
+                                       munge_regex, munge_intent_parser,
+                                       read_vocab_file)
 from mycroft.util import camel_case_split, resolve_resource_file
 from mycroft.util.log import LOG
 
@@ -716,15 +718,15 @@ class MycroftSkill:
             if not voc or not exists(voc):
                 raise FileNotFoundError(
                         'Could not find {}.voc file'.format(voc_filename))
-
-            with open(voc) as f:
-                self.voc_match_cache[cache_key] = f.read().splitlines()
-
-        # Check for match
-        if utt and any(i.strip() in utt
-                       for i in self.voc_match_cache[cache_key]):
-            return True
-        return False
+            # load vocab and flatten into a simple list
+            vocab = list(chain(*read_vocab_file(voc)))
+            self.voc_match_cache[cache_key] = vocab
+        if utt:
+            # Check for matches against complete words
+            return any([re.match(r'.*\b' + i + r'\b.*', utt)
+                        for i in self.voc_match_cache[cache_key]])
+        else:
+            return False
 
     def report_metric(self, name, data):
         """ Report a skill metric to the Mycroft servers

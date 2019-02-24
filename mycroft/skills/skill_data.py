@@ -25,6 +25,28 @@ from mycroft.messagebus.message import Message
 from mycroft.util.format import expand_options
 
 
+def read_vocab_file(path):
+    """ Read voc file.
+
+        This reads a .voc file, stripping out empty lines comments and expand
+        parentheses. It retruns each line as a list of all expanded
+        alternatives.
+
+        Arguments:
+            path (str): path to vocab file.
+
+        Returns:
+            List of Lists of strings.
+    """
+    vocab = []
+    with open(path, 'r', encoding='utf8') as voc_file:
+        for line in voc_file.readlines():
+            if line.startswith('#') or line.strip() == '':
+                continue
+            vocab.append(expand_options(line))
+    return vocab
+
+
 def load_vocab_from_file(path, vocab_type, bus):
     """Load Mycroft vocabulary from file
     The vocab is sent to the intent handler using the message bus
@@ -36,19 +58,15 @@ def load_vocab_from_file(path, vocab_type, bus):
         skill_id(str):  skill id
     """
     if path.endswith('.voc'):
-        with open(path, 'r', encoding='utf8') as voc_file:
-            for line in voc_file.readlines():
-                if line.startswith("#"):
-                    continue
-                parts = expand_options(line)
-                entity = parts[0]
+        for parts in read_vocab_file(path):
+            entity = parts[0]
+            bus.emit(Message("register_vocab", {
+                'start': entity, 'end': vocab_type
+            }))
+            for alias in parts[1:]:
                 bus.emit(Message("register_vocab", {
-                    'start': entity, 'end': vocab_type
+                    'start': alias, 'end': vocab_type, 'alias_of': entity
                 }))
-                for alias in parts[1:]:
-                    bus.emit(Message("register_vocab", {
-                        'start': alias, 'end': vocab_type, 'alias_of': entity
-                    }))
 
 
 def load_regex_from_file(path, bus, skill_id):
