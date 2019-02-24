@@ -49,24 +49,24 @@ SHORT_ORDINAL_STRING_IT = {
     19: 'diciannovesimo',
     20: 'ventesimo',
     30: 'trentesimo',
-    40: "quarantesimo",
-    50: "cinquantesimo",
-    60: "sessantesimo",
-    70: "settantesimo",
-    80: "ottantesimo",
-    90: "novantesimo",
-    1e2: "centesimo",
-    1e3: "millesimo",
-    1e6: "milionesimo",
-    1e9: "miliardesimo",
-    1e12: "trilionesimo",
-    1e15: "quadrilionesimo",
-    1e18: "quintilionesimo",
-    1e21: "sestilionesimo",
-    1e24: "settilionesimo",
-    1e27: "ottilionesimo",
-    1e30: "nonilionesimo",
-    1e33: "decilionesimo"
+    40: 'quarantesimo',
+    50: 'cinquantesimo',
+    60: 'sessantesimo',
+    70: 'settantesimo',
+    80: 'ottantesimo',
+    90: 'novantesimo',
+    1e2: 'centesimo',
+    1e3: 'millesimo',
+    1e6: 'milionesimo',
+    1e9: 'miliardesimo',
+    1e12: 'trilionesimo',
+    1e15: 'quadrilionesimo',
+    1e18: 'quintilionesim',
+    1e21: 'sestilionesimo',
+    1e24: 'settilionesimo',
+    1e27: 'ottilionesimo',
+    1e30: 'nonilionesimo',
+    1e33: 'decilionesimo'
     # TODO > 1e-33
 }
 
@@ -93,29 +93,29 @@ LONG_ORDINAL_STRING_IT = {
     19: 'diciannovesimo',
     20: 'ventesimo',
     30: 'trentesimo',
-    40: "quarantesimo",
-    50: "cinquantesimo",
-    60: "sessantesimo",
-    70: "settantesimo",
-    80: "ottantesimo",
-    90: "novantesimo",
-    1e2: "centesimo",
-    1e3: "millesimo",
-    1e6: "milionesimo",
-    1e12: "bilionesimo",
-    1e18: "trilionesimo",
-    1e24: "quadrilionesimo",
-    1e30: "quintilionesimo",
-    1e36: "sestilionesimo",
-    1e42: "settilionesimo",
-    1e48: "ottilionesimo",
-    1e54: "nonilionesimo",
-    1e60: "decilionesimo"
+    40: 'quarantesimo',
+    50: 'cinquantesimo',
+    60: 'sessantesimo',
+    70: 'settantesimo',
+    80: 'ottantesimo',
+    90: 'novantesimo',
+    1e2: 'centesimo',
+    1e3: 'millesimo',
+    1e6: 'milionesimo',
+    1e12: 'bilionesimo',
+    1e18: 'trilionesimo',
+    1e24: 'quadrilionesimo',
+    1e30: 'quintilionesimo',
+    1e36: 'sestilionesimo',
+    1e42: 'settilionesimo',
+    1e48: 'ottilionesimo',
+    1e54: 'nonilionesimo',
+    1e60: 'decilionesimo'
     # TODO > 1e60
 }
 
-# Undefined articles ["un", "una", "un'"] can not be supressed,
-# in Italian, "un cavallo" means "a horse" or "one horse".
+# Undefined articles ['un', 'una', 'un\''] can not be supressed,
+# in Italian, 'un cavallo' means 'a horse' or 'one horse'.
 ARTICLES_IT = ['il', 'lo', 'la', 'i', 'gli', 'le']
 
 STRING_NUM_ITA = {
@@ -201,7 +201,7 @@ def isFractional_it(input_str, short_scale=False):
 
     """
     input_str = input_str.lower()
-    if input_str.endswith('i', -1):
+    if input_str.endswith('i', -1) and len(input_str) > 2:
         input_str = input_str[:-1] + "o"  # normalizza plurali
 
     fracts_it = {"intero": 1, "mezza": 2, "mezzo": 2}
@@ -278,7 +278,7 @@ def extractnumber_long_it(word):
     un_multiplier = {}
 
     for num in multipli_it:
-        if num > 1000 and num <= 1e12:
+        if num > 1000 and num <= 1e21:
             # plurali
             multiplier[multipli_it[num]] = int(num)
             # singolari - modificare per eccezioni *liardo
@@ -362,7 +362,7 @@ def extractnumber_long_it(word):
             '*1000' + str(components[1])
 
     # gestione eccezioni
-    if word.startswith('*'):
+    if word.startswith('*') or word.startswith('+'):
         word = word[1:]
 
     addends = word.split('+')
@@ -1290,7 +1290,7 @@ def get_gender_it(word, raw_string=""):
     """
 
     gender = False
-    words = raw_string.split(" ")
+    words = raw_string.split(' ')
     for idx, w in enumerate(words):
         if w == word and idx != 0:
             previous = words[idx - 1]
@@ -1298,11 +1298,11 @@ def get_gender_it(word, raw_string=""):
             break
 
     if not gender:
-        if word[-1] == "a" or word[-1] == "e":
-            gender = "f"
-        if word[-1] == "o" or word[-1] == "n" \
-                or word[-1] == "l" or word[-1] == "i":
-            gender = "m"
+        if word[-1] == 'a' or word[-1] == 'e':
+            gender = 'f'
+        if word[-1] == 'o' or word[-1] == 'n' \
+                or word[-1] == 'l' or word[-1] == 'i':
+            gender = 'm'
 
     return gender
 
