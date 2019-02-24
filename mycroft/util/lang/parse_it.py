@@ -366,7 +366,7 @@ def extractnumber_long_it(word):
         word = word[1:]
 
     addends = word.split('+')
-    for c in range(len(addends)):
+    for c, _ in enumerate(addends):
         if '*' in addends[c]:
             factors = addends[c].split('*')
             result = int(factors[0]) * int(factors[1])
