@@ -75,18 +75,16 @@ class CommonIoTSkill(MycroftSkill, ABC):
         if bus:
             super().bind(bus)
             self.add_event(BusKeys.TRIGGER, self._handle_trigger)
-            self.add_event(BusKeys.RUN + self.skill_id, self._run_request)
+            self.add_event(BusKeys.RUN + self.skill_id, self.run_request)
 
     def _handle_trigger(self, message: Message):
         data = message.data
-        can_handle, callback_data = self.can_handle(message)
+        request = eval(data[IoTRequest.__name__])
+        can_handle, callback_data = self.can_handle(request)
         if can_handle:
             data.update({"skill_id": self.skill_id,
                          "callback_data": callback_data})
             self.bus.emit(message.response(data))
-
-    def _run_request(self, message: Message):
-        self.run_request(None, None)
 
 
     ######################################################################
@@ -94,9 +92,9 @@ class CommonIoTSkill(MycroftSkill, ABC):
     # All of the following must be implemented by a skill that wants to
     # act as a CommonPlay Skill
     @abstractmethod
-    def can_handle(self, message: Message):
+    def can_handle(self, request: IoTRequest):
         return False, None
 
     @abstractmethod
-    def run_request(self, request: IoTRequest, data: dict):
+    def run_request(self, message: Message):
         pass
