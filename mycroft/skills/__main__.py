@@ -94,8 +94,8 @@ def check_connection():
         config = Configuration.get()
         platform = config['enclosure'].get("platform", "unknown")
         if platform in ['mycroft_mark_1', 'picroft']:
-            bus.emit(Message("system.ntp.sync"))
-            time.sleep(15)  # TODO: Generate/listen for a message response...
+            bus.wait_for_response(Message('system.ntp.sync'),
+                                  'system.ntp.sync.complete', 15)
 
         # Check if the time skewed significantly.  If so, reboot
         skew = abs((time.monotonic() - start_ticks) -
