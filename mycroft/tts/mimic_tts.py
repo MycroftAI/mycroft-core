@@ -145,17 +145,16 @@ class Mimic(TTS):
                                                         '-t', sentence])
         return wav_file, phonemes.decode()
 
-    def visime(self, output):
-        visimes = []
+    def viseme(self, output):
+        visemes = []
         start = time()
         pairs = str(output).split(" ")
         for pair in pairs:
             pho_dur = pair.split(":")  # phoneme:duration
             if len(pho_dur) == 2:
-                visimes.append((VISIMES.get(pho_dur[0], '4'),
+                visemes.append((VISIMES.get(pho_dur[0], '4'),
                                 float(pho_dur[1])))
-        print(visimes)
-        return visimes
+        return visemes
 
 
 class MimicValidator(TTSValidator):

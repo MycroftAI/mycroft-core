@@ -75,7 +75,7 @@ def handle_speak(event):
         # so we likely will want to get rid of this when not running on Mimic
         if (config.get('enclosure', {}).get('platform') != "picroft" and
                 len(re.findall('<[^>]*>', utterance)) == 0):
-            chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s',
+            chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\;|\?)\s',
                               utterance)
             for chunk in chunks:
                 # Check if somthing has aborted the speech

@@ -435,7 +435,7 @@ def is_paired(ignore_errors=True):
         if e.response.status_code == 401:
             return False
     except Exception as e:
-        LOG.warning('Could not get device infO: ' + repr(e))
+        LOG.warning('Could not get device info: ' + repr(e))
     if ignore_errors:
         return False
     if connected():

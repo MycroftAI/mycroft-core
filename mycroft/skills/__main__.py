@@ -77,6 +77,19 @@ def _starting_up():
     check_connection()
 
 
+def try_update_system(platform):
+    bus.emit(Message('system.update'))
+    msg = Message('system.update', {
+        'paired': is_paired(),
+        'platform': platform
+    })
+    resp = bus.wait_for_response(msg, 'system.update.processing')
+
+    if resp and (resp.data or {}).get('processing', True):
+        bus.wait_for_response(Message('system.update.waiting'),
+                              'system.update.complete', 1000)
+
+
 def check_connection():
     """
         Check for network connection. If not paired trigger pairing.
@@ -94,8 +107,11 @@ def check_connection():
         config = Configuration.get()
         platform = config['enclosure'].get("platform", "unknown")
         if platform in ['mycroft_mark_1', 'picroft']:
-            bus.emit(Message("system.ntp.sync"))
-            time.sleep(15)  # TODO: Generate/listen for a message response...
+            bus.wait_for_response(Message('system.ntp.sync'),
+                                  'system.ntp.sync.complete', 15)
+
+        if not is_paired():
+            try_update_system(platform)
 
         # Check if the time skewed significantly.  If so, reboot
         skew = abs((time.monotonic() - start_ticks) -

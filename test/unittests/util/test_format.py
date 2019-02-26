@@ -25,8 +25,10 @@ from mycroft.util.format import nice_time
 from mycroft.util.format import nice_date
 from mycroft.util.format import nice_date_time
 from mycroft.util.format import nice_year
+from mycroft.util.format import nice_duration
 from mycroft.util.format import pronounce_number
 from mycroft.util.format import date_time_format
+from mycroft.util.format import join_list
 
 NUMBERS_FIXTURE_EN = {
     1.435634: '1.436',
@@ -415,8 +417,41 @@ class TestNiceDateFormat(unittest.TestCase):
                 self.assertTrue(len(nice_year(dt, lang=lang)) > 0)
                 # Looking through the date sequence can be helpful
 
-
 #                print(nice_year(dt, lang=lang))
+
+    def test_nice_duration(self):
+        self.assertEqual(nice_duration(1), "one second")
+        self.assertEqual(nice_duration(3), "three seconds")
+        self.assertEqual(nice_duration(1, speech=False), "0:01")
+        self.assertEqual(nice_duration(61), "one minute one second")
+        self.assertEqual(nice_duration(61, speech=False), "1:01")
+        self.assertEqual(nice_duration(5000),
+                         "one hour twenty three minutes twenty seconds")
+        self.assertEqual(nice_duration(5000, speech=False), "1:23:20")
+        self.assertEqual(nice_duration(50000),
+                         "thirteen hours fifty three minutes twenty seconds")
+        self.assertEqual(nice_duration(50000, speech=False), "13:53:20")
+        self.assertEqual(nice_duration(500000),
+                         "five days  eighteen hours fifty three minutes twenty seconds")  # nopep8
+        self.assertEqual(nice_duration(500000, speech=False), "5d 18:53:20")
+        self.assertEqual(nice_duration(datetime.timedelta(seconds=500000),
+                                       speech=False),
+                         "5d 18:53:20")
+
+    def test_join(self):
+        self.assertEqual(join_list(None, "and"), "")
+        self.assertEqual(join_list([], "and"), "")
+
+        self.assertEqual(join_list(["a"], "and"), "a")
+        self.assertEqual(join_list(["a", "b"], "and"), "a and b")
+        self.assertEqual(join_list(["a", "b"], "or"), "a or b")
+
+        self.assertEqual(join_list(["a", "b", "c"], "and"), "a, b and c")
+        self.assertEqual(join_list(["a", "b", "c"], "or"), "a, b or c")
+        self.assertEqual(join_list(["a", "b", "c"], "or", ";"), "a; b or c")
+        self.assertEqual(join_list(["a", "b", "c", "d"], "or"), "a, b, c or d")
+
+        self.assertEqual(join_list([1, "b", 3, "d"], "or"), "1, b, 3 or d")
 
 
 if __name__ == "__main__":

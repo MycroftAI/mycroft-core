@@ -22,12 +22,12 @@ pulsectl==17.7.4
 google-api-python-client==1.6.4
 fasteners==0.14.1
 
-msm==0.6.3
+msm==0.7.2
 msk==0.3.12
 adapt-parser==0.3.0
-padatious==0.4.5
+padatious==0.4.6
 fann2==1.0.7
-padaos==0.1.8
+padaos==0.1.9
 precise-runner==0.2.1
 petact==0.1.2
 
