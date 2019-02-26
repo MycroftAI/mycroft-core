@@ -25,8 +25,9 @@ from mycroft.util import (
     connected, wait_while_speaking, reset_sigint_handler,
     create_echo_function, create_daemon, wait_for_exit_signal
 )
+from mycroft.util.log import LOG
 
-from .skill_manager import SkillManager
+from .skill_manager import SkillManager, MsmException
 from .core import FallbackSkill
 from .event_scheduler import EventScheduler
 from .intent_service import IntentService
@@ -68,9 +69,20 @@ def _starting_up():
     event_scheduler = EventScheduler(bus)
 
     # Create a thread that monitors the loaded skills, looking for updates
-    skill_manager = SkillManager(bus)
+    try:
+        skill_manager = SkillManager(bus)
+    except MsmException:
+        # skill manager couldn't be created, wait for network connection and
+        # retry
+        LOG.info('Msm is uninitialized and requires network connection',
+                 'to fetch skill information\n'
+                 'Waiting for network connection...')
+        while not connected():
+            time.sleep(30)
+        skill_manager = SkillManager(bus)
+
     skill_manager.daemon = True
-    # Wait until skills have been loaded once before starting to check
+    # Wait until priority skills have been loaded before checking
     # network connection
     skill_manager.load_priority()
     skill_manager.start()

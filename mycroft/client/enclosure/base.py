@@ -34,6 +34,29 @@ write_lock = Lock()
 RESERVED_KEYS = ['__from', '__idle']
 
 
+def _get_page_data(message):
+    """ Extract page related data from a message.
+
+        Raises value error if value is missing.
+
+        Arguments:
+            message: messagebus message object
+
+        Returns: tuple (namespace, page)
+    """
+    data = message.data
+    # Note:  'page' can be either a string or a list of strings
+    if 'page' not in data:
+        raise ValueError("Page missing in data")
+    if 'index' in data:
+        index = data['index']
+    else:
+        index = 0
+    page = data.get("page", "")
+    namespace = data.get("__from", "")
+    return page, namespace, index
+
+
 class Enclosure:
     def __init__(self):
         # Establish Enclosure's websocket connection to the messagebus
@@ -77,6 +100,8 @@ class Enclosure:
         # First send any data:
         self.bus.on("gui.value.set", self.on_gui_set_value)
         self.bus.on("gui.page.show", self.on_gui_show_page)
+        self.bus.on("gui.page.delete", self.on_gui_delete_page)
+        self.bus.on("gui.clear.namespace", self.on_gui_delete_namespace)
 
     def run(self):
         try:
@@ -122,19 +147,26 @@ class Enclosure:
                        "data": {name: value}}
                 self.send(msg)
 
-    def on_gui_show_page(self, message):
-        data = message.data
-        # Note:  'page' can be either a string or a list of strings
-        if 'page' not in data:
-            return
-        if 'index' in data:
-            index = data['index']
-        else:
-            index = 0
-        page = data.get("page", "")
-        namespace = data.get("__from", "")
-        # Pass the request to the GUI(s) to pull up a page template
+    def on_gui_delete_page(self, message):
+        """ Bus handler for removing pages. """
+        page, namespace, _ = _get_page_data(message)
         try:
+            self.remove_pages(namespace, page)
+        except Exception as e:
+            LOG.exception(repr(e))
+
+    def on_gui_delete_namespace(self, message):
+        """ Bus handler for removing namespace. """
+        try:
+            namespace = message.data['__from']
+            self.remove_namespace(namespace)
+        except Exception as e:
+            LOG.exception(repr(e))
+
+    def on_gui_show_page(self, message):
+        try:
+            page, namespace, index = _get_page_data(message)
+            # Pass the request to the GUI(s) to pull up a page template
             self.show(namespace, page, index)
         except Exception as e:
             LOG.exception(repr(e))
@@ -157,9 +189,21 @@ class Enclosure:
                    "data": [{"url": p} for p in pages]
                    })
 
-        # append pages to local representation
-        for p in pages:
-            self.loaded[0].pages.append(p)
+    def __remove_page(self, namespace, pos):
+        """ Delete page.
+
+            Arguments:
+                namespace(str): Namespace to remove from
+                pos (int):      Page position to remove
+         """
+        LOG.debug("Deleting {} from {}".format(pos, namespace))
+        self.send({"type": "mycroft.gui.list.remove",
+                   "namespace": namespace,
+                   "position": pos,
+                   "items_number": 1
+                   })
+        # Remove the page from the local reprensentation as well.
+        self.loaded[0].pages.pop(pos)
 
     def __insert_new_namespace(self, namespace, pages):
         """ Insert new namespace and pages.
@@ -266,6 +310,48 @@ class Enclosure:
                 else:
                     # No new pages, just switch
                     self.__switch_page(namespace, pages)
+        except Exception as e:
+            LOG.exception(repr(e))
+
+    def remove_namespace(self, namespace):
+        """ Remove namespace.
+
+            Arguments:
+                namespace (str):    namespace to remove
+        """
+        index = self.__find_namespace(namespace)
+        if index is None:
+            return
+        else:
+            LOG.debug("Removing namespace {} at {}".format(namespace, index))
+            self.send({"type": "mycroft.session.list.remove",
+                       "namespace": "mycroft.system.active_skills",
+                       "position": index,
+                       "items_number": 1
+                       })
+            # Remove namespace from loaded namespaces
+            self.loaded.pop(index)
+
+    def remove_pages(self, namespace, pages):
+        """ Remove the listed pages from the provided namespace.
+
+            Arguments:
+                namespace (str):    The namespace that should be modified
+                pages (list):       List of pages to delete
+        """
+        try:
+            index = self.__find_namespace(namespace)
+            if index is None:
+                return
+            else:
+                # Remove any pages that doesn't exist in the namespace
+                pages = [p for p in pages if p in self.loaded[index].pages]
+                # Make sure to remove pages from the back
+                indexes = [self.loaded[index].pages.index(p) for p in pages]
+                indexes = sorted(indexes)
+                indexes.reverse()
+                for page_index in indexes:
+                    self.__remove_page(namespace, page_index)
         except Exception as e:
             LOG.exception(repr(e))
 
