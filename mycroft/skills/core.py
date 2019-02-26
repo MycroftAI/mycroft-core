@@ -1644,7 +1644,7 @@ class FallbackSkill(MycroftSkill):
                                                  'exception': warning}))
 
             # Send timing metric
-            if message.context and message.context['ident']:
+            if message.context.get('ident'):
                 ident = message.context['ident']
                 report_timing(ident, 'fallback_handler', stopwatch,
                               {'handler': handler_name})
