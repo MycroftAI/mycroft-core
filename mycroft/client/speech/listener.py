@@ -236,9 +236,7 @@ class RecognizerLoop(EventEmitter):
 
         self.microphone = MutableMicrophone(device_index, rate,
                                             mute=self.mute_calls > 0)
-        # TODO:19.02 - channels are not been used, remove from mycroft.conf
-        #              and from code.
-        self.microphone.CHANNELS = self.config.get('channels')
+
         self.wakeword_recognizer = self.create_wake_word_recognizer()
         # TODO - localization
         self.wakeup_recognizer = self.create_wakeup_recognizer()
