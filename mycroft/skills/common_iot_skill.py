@@ -24,6 +24,7 @@ from mycroft import MycroftSkill
 from mycroft.messagebus.message import Message
 from typing import Iterable, Iterator, Union
 
+
 class _BusKeys():
     """
     This class contains some strings used to identify
@@ -99,8 +100,8 @@ class IoTRequest():
     def __init__(self,
                  action: Action,
                  thing: Thing = None,
-                 entity: str=None,
-                 scene: str=None):
+                 entity: str = None,
+                 scene: str = None):
 
         if (not thing and not entity and not scene):
             raise Exception("At least one of thing,"
@@ -192,7 +193,6 @@ class CommonIoTSkill(MycroftSkill, ABC):
         callback_data = message.data["callback_data"]
         self.run_request(request, callback_data)
 
-
     def _register_words(self, words, type):
         """
         Helper for register_entities and register_scenes.
@@ -238,7 +238,6 @@ class CommonIoTSkill(MycroftSkill, ABC):
 
         """
         self._register_words(scenes, 'SCENE')
-
 
     @abstractmethod
     def can_handle(self, request: IoTRequest):
