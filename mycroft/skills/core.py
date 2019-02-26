@@ -238,7 +238,6 @@ class SkillGUI:
     def setup_default_handlers(self):
         """ Sets the handlers for the default messages. """
         msg_type = self.build_message_type('set')
-        print("LISTENING FOR {}".format(msg_type))
         self.skill.add_event(msg_type, self.gui_set)
 
     def register_handler(self, event, handler):
@@ -265,7 +264,6 @@ class SkillGUI:
 
     def gui_set(self, message):
         for key in message.data:
-            print("SETTING {} TO {}".format(key, message.data[key]))
             self[key] = message.data[key]
         if self.on_gui_changed_callback:
             self.on_gui_changed_callback()
