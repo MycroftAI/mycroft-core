@@ -14,12 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-""" 
+"""
 Format functions for castillian (es-es)
 
 """
 # TODO: Puntuación adecuada. Ahora construímos las decenas a partir de
-# la decena + la unidad, 
+# la decena + la unidad
 
 from mycroft.util.lang.format_common import convert_to_mixed_fraction
 
@@ -168,7 +168,7 @@ def pronounce_number_es(num, places=2):
     num = abs(num)
 
     # del 21 al 29 tienen una pronunciación especial
-    if 20 <= num <= 29: 
+    if 20 <= num <= 29:
         tens = int(num-int(num) % 10)
         ones = int(num - tens)
         result += NUM_STRING_ES[tens]
@@ -192,7 +192,7 @@ def pronounce_number_es(num, places=2):
         if ones > 0:
             result += " y " + NUM_STRING_ES[ones]
     else:
-        result += NUM_STRING_ES[int(num)]    
+        result += NUM_STRING_ES[int(num)]
 
     # Deal with decimal part, in spanish is commonly used the comma
     # instead the dot. Decimal part can be written both with comma
@@ -282,7 +282,7 @@ def nice_time_es(dt, speech=True, use_24hour=False, use_ampm=False):
         elif hour == 1 or hour == 13:
             speak += "la una"
         elif hour < 13:
-            speak = "las " + pronounce_number_es(hour) 
+            speak = "las " + pronounce_number_es(hour)
         else:
             speak = "las " + pronounce_number_es(hour-12)
 
@@ -294,12 +294,12 @@ def nice_time_es(dt, speech=True, use_24hour=False, use_ampm=False):
                 speak += " y media"
             elif minute == -15:
                 speak += " menos cuarto"
-            else: # seis y nueve. siete y veinticinco
+            else:  # seis y nueve. siete y veinticinco
                 if minute > 0:
                     speak += " y " + pronounce_number_es(minute)
-                else: # si son las siete menos veinte, no ponemos la "y"
+                else:  # si son las siete menos veinte, no ponemos la "y"
                     speak += " " + pronounce_number_es(minute)
-        
+
         # si no especificamos de la tarde, noche, mañana, etc
         if minute == 0 and not use_ampm:
             # 3:00

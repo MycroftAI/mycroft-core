@@ -99,9 +99,6 @@ class TestNiceNumberFormat_es(unittest.TestCase):
                                          speech=False)))
 
 
-
-
-# def pronounce_number(number, lang="es-es", places=2):
 class TestPronounceNumber(unittest.TestCase):
     def test_convert_int(self):
         self.assertEqual(pronounce_number(0, lang="es"), "cero")
@@ -115,7 +112,7 @@ class TestPronounceNumber(unittest.TestCase):
         self.assertEqual(pronounce_number(88, lang="es"), "ochenta y ocho")
         self.assertEqual(pronounce_number(46, lang="es"), "cuarenta y seis")
         self.assertEqual(pronounce_number(99, lang="es"), "noventa y nueve")
-       
+
     def test_convert_negative_int(self):
         self.assertEqual(pronounce_number(-1, lang="es"), "menos uno")
         self.assertEqual(pronounce_number(-10, lang="es"), "menos diez")
@@ -123,12 +120,17 @@ class TestPronounceNumber(unittest.TestCase):
         self.assertEqual(pronounce_number(-21, lang="es"), "menos veintiuno")
         self.assertEqual(pronounce_number(-27, lang="es"), "menos veintisiete")
         self.assertEqual(pronounce_number(-30, lang="es"), "menos treinta")
-        self.assertEqual(pronounce_number(-35, lang="es"), "menos treinta y cinco")
-        self.assertEqual(pronounce_number(-83, lang="es"), "menos ochenta y tres")
+        self.assertEqual(pronounce_number(-35, lang="es"),
+                         "menos treinta y cinco")
+        self.assertEqual(pronounce_number(-83, lang="es"),
+                         "menos ochenta y tres")
         self.assertEqual(pronounce_number(-19, lang="es"), "menos diecinueve")
-        self.assertEqual(pronounce_number(-88, lang="es"), "menos ochenta y ocho")
-        self.assertEqual(pronounce_number(-46, lang="es"), "menos cuarenta y seis")
-        self.assertEqual(pronounce_number(-99, lang="es"), "menos noventa y nueve")        
+        self.assertEqual(pronounce_number(-88, lang="es"),
+                         "menos ochenta y ocho")
+        self.assertEqual(pronounce_number(-46, lang="es"),
+                         "menos cuarenta y seis")
+        self.assertEqual(pronounce_number(-99, lang="es"),
+                         "menos noventa y nueve")
 
     def test_convert_decimals(self):
         self.assertEqual(pronounce_number(1.234, lang="es"),
@@ -226,7 +228,7 @@ class TestNiceDateFormat(unittest.TestCase):
         self.assertEqual(nice_time(dt, lang="es", use_ampm=True),
                          "las doce y dos de la madrugada")
         self.assertEqual(nice_time(dt, lang="es", use_24hour=True),
-                         "las cero cero dos")                         
+                         "las cero cero dos")
         self.assertEqual(nice_time(dt, lang="es", speech=False),
                          "12:02")
         self.assertEqual(nice_time(dt, lang="es", speech=False,
@@ -240,7 +242,7 @@ class TestNiceDateFormat(unittest.TestCase):
                                    use_ampm=True), "las cero cero dos")
         self.assertEqual(nice_time(dt, lang="es", use_24hour=True,
                                    use_ampm=False), "las cero cero dos")
-        
+
         dt = datetime.datetime(2017, 1, 31,
                                12, 15, 9)
         self.assertEqual(nice_time(dt, lang="es-es"),
@@ -264,7 +266,7 @@ class TestNiceDateFormat(unittest.TestCase):
         self.assertEqual(nice_time(dt, lang="es-es", use_24hour=True,
                                    use_ampm=False),
                          "las doce quince")
-        
+
         dt = datetime.datetime(2017, 1, 31,
                                19, 40, 49)
         self.assertEqual(nice_time(dt, lang="es-es"),
@@ -288,7 +290,7 @@ class TestNiceDateFormat(unittest.TestCase):
         self.assertEqual(nice_time(dt, lang="es-es", use_24hour=True,
                                    use_ampm=False),
                          "las diecinueve cuarenta")
-        
+
         dt = datetime.datetime(2017, 1, 31,
                                1, 15, 00)
         self.assertEqual(nice_time(dt, lang="es-es", use_24hour=True),
@@ -326,7 +328,8 @@ class TestNiceDateFormat(unittest.TestCase):
                          "las veintitrés quince")
         self.assertEqual(nice_time(dt, lang="es-es", use_24hour=False,
                                    use_ampm=True),
-                         "las once y cuarto de la noche")                         
+                         "las once y cuarto de la noche")
+
 
 if __name__ == "__main__":
     unittest.main()
