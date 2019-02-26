@@ -741,7 +741,7 @@ def extract_datetime_en(string, dateNow, default_time):
     timeQualifier = ""
 
     timeQualifiersAM = ['morning']
-    timeQualifiersPM = ['afternoon', 'evening', 'tonight', 'night']
+    timeQualifiersPM = ['afternoon', 'evening', 'night'] # 'tonight' not required here
     timeQualifiersList = set(timeQualifiersAM + timeQualifiersPM)
     markers = ['at', 'in', 'on', 'by', 'this', 'around', 'for', 'of', "within"]
     days = ['monday', 'tuesday', 'wednesday',
@@ -813,6 +813,9 @@ def extract_datetime_en(string, dateNow, default_time):
             timeQualifier = word
         # parse today, tomorrow, day after tomorrow
         elif word == "today" and not fromFlag:
+            dayOffset = 0
+            used += 1
+        elif word == "tonight" and not fromFlag:
             dayOffset = 0
             used += 1
         elif word == "tomorrow" and not fromFlag:
@@ -1164,6 +1167,14 @@ def extract_datetime_en(string, dateNow, default_time):
                         wordNext == "a.m."):
                     strHH = strNum
                     remainder = "am"
+                    used = 1
+                elif (
+                        remainder == "weekdays" or
+                        wordNext == "weekdays" or
+                        wordNextNext == "weekdays"):
+                    # we set strHH here to make sure isTime == True
+                    # when am or pm is not specified
+                    strHH = strNum
                     used = 1
                 else:
                     if (
