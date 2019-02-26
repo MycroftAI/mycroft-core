@@ -36,10 +36,9 @@ class Message:
         Message objects will be used to send information back and fourth
         bettween processes of mycroft service, voice, skill and cli
         """
-        data = data or {}
         self.type = type
-        self.data = data
-        self.context = context
+        self.data = data or {}
+        self.context = context or {}
 
     def serialize(self):
         """This returns a string of the message info.
@@ -73,7 +72,9 @@ class Message:
             value(str): This is the string received from the websocket
         """
         obj = json.loads(value)
-        return Message(obj.get('type'), obj.get('data'), obj.get('context'))
+        return Message(obj.get('type') or '',
+                       obj.get('data') or {},
+                       obj.get('context') or {})
 
     def reply(self, type, data=None, context=None):
         """Construct a reply message for a given message
@@ -98,7 +99,7 @@ class Message:
         data = data or {}
         context = context or {}
 
-        new_context = self.context if self.context else {}
+        new_context = self.context
         for key in context:
             new_context[key] = context[key]
         if 'target' in data:
@@ -138,7 +139,7 @@ class Message:
             Message: Message object to publish
         """
         context = context or {}
-        new_context = self.context.copy() if self.context else {}
+        new_context = self.context.copy()
         for key in context:
             new_context[key] = context[key]
 
