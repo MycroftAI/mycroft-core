@@ -12,19 +12,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+# THE CLASSES IN THIS FILE ARE STILL EXPERIMENTAL, AND ARE SUBJECT TO
+# CHANGES. IT IS PROVIDED NOW AS A PREVIEW, SO SKILL AUTHORS CAN GET
+# AN IDEA OF WHAT IS TO COME. YOU ARE FREE TO BEGIN EXPERIMENTING, BUT
+# BE WARNED THAT THE CLASSES, FUNCTIONS, ETC MAY CHANGE WITHOUT WARNING.
+
 from abc import ABC, abstractmethod
 from enum import Enum
 from mycroft import MycroftSkill
 from mycroft.messagebus.message import Message
+from typing import Iterable, Iterator, Union
 
-class BusKeys():
+class _BusKeys():
+    """
+    This class contains some strings used to identify
+    messages on the messagebus. They are used in in
+    CommonIoTSkill and the IoTController skill, but
+    are not intended to be used elsewhere.
+    """
     BASE = "iot"
     TRIGGER = BASE + ":trigger"
     RESPONSE = TRIGGER + ".response"
     RUN = BASE + ":run."  # Will have skill_id appened
+    REGISTER = BASE + "register"
 
 
 class Thing(Enum):
+    """
+    This class represents 'Things' which may be controlled
+    by IoT Skills. This is intended to be used with the
+    IoTRequest class. See that class for more details.
+    """
     LIGHT = 0
     THERMOSTAT = 1
     DOOR = 2
@@ -34,12 +53,48 @@ class Thing(Enum):
 
 
 class Action(Enum):
+    """
+    This class represents 'Actions' that can be applied to
+    'Things,' e.d. a LIGHT can be turned ON. It is intended
+    to be used with the IoTRequest class. See that class
+    for more details.
+    """
     ON = 0
     OFF = 1
     TOGGLE = 2
 
 
 class IoTRequest():
+    """
+    This class represents a request from a user to control
+    an IoT device. It contains all of the information an IoT
+    skill should need in order to determine if it can handle
+    a user's request. The information is supplied as properties
+    on the request. At present, those properties are:
+
+    action (see the Action enum above)
+    thing (see the Thing enum above)
+    entity
+    scene
+
+    The 'action' is mandatory, and will always be not None. The
+    other fields may be None.
+
+    The 'entity' is intended to be used for user-defined values
+    specific to a skill. For example, in a skill controlling Lights,
+    an 'entity' might represent a group of lights. For a smart-lock
+    skill, it might represent a specific lock, e.g. 'front door.'
+
+    The 'scene' value is also intended to to be used for user-defined
+    values. Skills that extend CommonIotSkill are expected to register
+    their own scenes. The controller skill will have the ability to
+    trigger multiple skills, so common scene names may trigger many
+    skills, for a coherent experience.
+
+    Skills that extend CommonIotSkill will be expected to register
+    their own entities. See the documentation in CommonIotSkill for
+    more details.
+    """
 
     def __init__(self,
                  action: Action,
@@ -57,27 +112,65 @@ class IoTRequest():
         self.scene = scene
 
     def __repr__(self):
-        template = "IoTRequest(thing={thing}, action={action}," \
-                   " entity={entity}, scene={scene})"
+        template = 'IoTRequest(thing={thing}, action={action},' \
+                   ' entity={entity}, scene={scene})'
         return template.format(
             thing=self.thing,
             action=self.action,
-            entity=self.entity,
-            scene=self.scene
+            entity='"{}"'.format(self.entity) if self.entity else None,
+            scene='"{}"'.format(self.scene) if self.scene else None
         )
 
 
 class CommonIoTSkill(MycroftSkill, ABC):
-    def __init__(self, name=None, bus=None):
-        super().__init__(name, bus)
+    """
+    Skills that want to work with the CommonIoT system should
+    extend this class. Subclasses will be expected to implement
+    two methods, `can_handle` and `run_request`. See the
+    documentation for those functions for more details on how
+    they are expected to behave.
+
+    Subclasses may also register their own entities and scenes.
+    See the register_entities and register_scenes methods for
+    details.
+
+    This class works in conjunction with a controller skill.
+    The controller registers vocabulary and intents to capture
+    IoT related requests. It then emits messages on the messagebus
+    that will be picked up by all skills that extend this class.
+    Each skill will have the opportunity to declare whether or not
+    it can handle the given request. Skills that acknowledge that
+    they are capable of handling the request will be considered
+    candidates, and after a short timeout, a winner, or winners,
+    will be chosen. With this setup, a user can have several IoT
+    systems, and control them all without worry that skills will
+    step on each other.
+    """
 
     def bind(self, bus):
+        """
+        Overrides MycroftSkill.bind.
+
+        This is called automatically during setup, and
+        need not otherwise be used.
+
+        Args:
+            bus:
+        """
         if bus:
             super().bind(bus)
-            self.add_event(BusKeys.TRIGGER, self._handle_trigger)
-            self.add_event(BusKeys.RUN + self.skill_id, self.run_request)
+            self.add_event(_BusKeys.TRIGGER, self._handle_trigger)
+            self.add_event(_BusKeys.RUN + self.skill_id, self._run_request)
 
     def _handle_trigger(self, message: Message):
+        """
+        Given a message, determines if this skill can
+        handle the request. If it can, it will emit
+        a message on the bus indicating that.
+
+        Args:
+            message: Message
+        """
         data = message.data
         request = eval(data[IoTRequest.__name__])
         can_handle, callback_data = self.can_handle(request)
@@ -86,15 +179,113 @@ class CommonIoTSkill(MycroftSkill, ABC):
                          "callback_data": callback_data})
             self.bus.emit(message.response(data))
 
+    def _run_request(self, message: Message):
+        """
+        Given a message, extracts the IoTRequest and
+        callback_data and sends them to the run_request
+        method.
 
-    ######################################################################
-    # Abstract methods
-    # All of the following must be implemented by a skill that wants to
-    # act as a CommonPlay Skill
+        Args:
+            message: Message
+        """
+        request = eval(message.data[IoTRequest.__name__])
+        callback_data = message.data["callback_data"]
+        self.run_request(request, callback_data)
+
+
+    def _register_words(self, words, type):
+        """
+        Helper for register_entities and register_scenes.
+
+        Emits a message on the bus containing the type and
+        the words. The message will be picked up by the
+        controller skill, and the vocabulary will be registered
+        to that skill.
+
+        Args:
+            words:
+            type:
+
+        Returns:
+
+        """
+        self.bus.emit(Message(_BusKeys.REGISTER,
+                              data={"type": type, "words": list(words)}))
+
+    def register_entities(self, entities: Union[Iterable[str], Iterator[str]]):
+        """
+        This method is intended to be called by subclasses, to register
+        custom entities. Skills should register things like group names,
+        or user aliases for specific devices, e.g. 'bedroom', 'lamp', 'front
+        door.'
+
+        Args:
+            entities: Iterable[str] | Iterator[str]
+                Note that this will be converted to a list, so should
+                safely fit in memory.
+        """
+        self._register_words(entities, 'ENTITY')
+
+    def register_scenes(self, scenes: Union[Iterable[str], Iterator[str]]):
+        """
+        This method is intended to be called by subclasses, to register
+        custom scenes, e.g. "relax," "movie time," etc.
+
+        Args:
+            scenes: Iterable[str] | Iterator[str]
+                Note that this will be converted to a list, so should
+                safely fit in memory.
+
+        """
+        self._register_words(scenes, 'SCENE')
+
+
     @abstractmethod
     def can_handle(self, request: IoTRequest):
+        """
+        Determine if an IoTRequest can be handled by this skill.
+
+        This method must be implemented by all subclasses.
+
+        An IoTRequest contains several properties (see the
+        documentation for that class). This method should return
+        True if and only if this skill can take the appropriate
+        'action' when considering _all other properties
+        of the request_. In other words, a partial match, one in which
+        any property of the IoTRequest is not known to this skill,
+        and is not None, this should return (False, None).
+
+        Args:
+            request: IoTRequest
+
+        Returns: (boolean, dict)
+            True if and only if this skill knows about all the
+            properties set on the IoTRequest, and a dict containing
+            callback_data. If this skill is chosen to handle the
+            request, this dict will be supplied to `run_request`.
+
+            Note that the dictionary will be sent over the bus, and thus
+            must be JSON serializable.
+
+        """
         return False, None
 
     @abstractmethod
-    def run_request(self, message: Message):
+    def run_request(self, request: IoTRequest, callback_data: dict):
+        """
+        Handle an IoT Request.
+
+        All subclasses must implement this method.
+
+        When this skill is chosen as a winner, this function will be called.
+        It will be passed an IoTRequest equivalent to the one that was
+        supplied to `can_handle`, as well as the `callback_data` returned by
+        `can_handle`.
+
+        Args:
+            request: IoTRequest
+            callback_data: dict
+
+
+        """
         pass
