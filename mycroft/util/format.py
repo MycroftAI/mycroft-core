@@ -36,6 +36,7 @@ from mycroft.util.lang.format_nl import pronounce_number_nl
 from mycroft.util.lang.format_nl import nice_number_nl
 
 from collections import namedtuple
+from padatious.util import expand_parentheses
 import json
 import os
 import datetime
@@ -522,3 +523,16 @@ def join_list(items, connector, sep=None, lang="en-us"):
         sep += " "
     return (sep.join(str(item) for item in items[:-1]) +
             " " + _translate_word(connector, lang) + " " + items[-1])
+
+
+def expand_options(parentheses_line: str) -> list:
+    """
+    Convert 'test (a|b)' -> ['test a', 'test b']
+    Args:
+        parentheses_line: Input line to expand
+    Returns:
+        List of expanded possibilities
+    """
+    # 'a(this|that)b' -> [['a', 'this', 'b'], ['a', 'that', 'b']]
+    options = expand_parentheses(re.split(r'([(|)])', parentheses_line))
+    return [re.sub(r'\s+', ' ', ' '.join(i)).strip() for i in options]

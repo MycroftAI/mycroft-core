@@ -277,7 +277,7 @@ class IntentService:
 
         NOTE: This only applies to those with Opt In.
         """
-        ident = context['ident'] if context else None
+        ident = context['ident'] if 'ident' in context else None
         if intent:
             # Recreate skill name from skill id
             parts = intent.get('intent_type', '').split(':')

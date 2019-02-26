@@ -225,7 +225,7 @@ class Mimic2(TTS):
                 reqs.append(self.session.get(req_route, timeout=5))
         return reqs
 
-    def visime(self, phonemes):
+    def viseme(self, phonemes):
         """maps phonemes to visemes encoding
 
         Args:
@@ -295,8 +295,7 @@ class Mimic2(TTS):
                     f.write(audio)
         except (ReadTimeout, ConnectionError, ConnectTimeout, HTTPError):
             raise RemoteTTSTimeoutException(
-                "Mimic 2 remote server request timedout. falling back to mimic"
-            )
+                "Mimic 2 server request timed out. Falling back to mimic")
         return (wav_file, vis)
 
     def save_phonemes(self, key, phonemes):
