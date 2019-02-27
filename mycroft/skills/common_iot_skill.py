@@ -240,7 +240,8 @@ class CommonIoTSkill(MycroftSkill, ABC):
         """
         if words:
             self.bus.emit(Message(_BusKeys.REGISTER,
-                                  data={"type": word_type,
+                                  data={"skill_id": self.skill_id,
+                                        "type": word_type,
                                         "words": list(words)}))
 
     def register_entities_and_scenes(self):
