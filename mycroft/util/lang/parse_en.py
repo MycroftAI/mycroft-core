@@ -741,7 +741,7 @@ def extract_datetime_en(string, dateNow, default_time):
     timeQualifier = ""
 
     timeQualifiersAM = ['morning']
-    timeQualifiersPM = ['afternoon', 'evening', 'night'] # 'tonight' not required here
+    timeQualifiersPM = ['afternoon', 'evening', 'night']
     timeQualifiersList = set(timeQualifiersAM + timeQualifiersPM)
     markers = ['at', 'in', 'on', 'by', 'this', 'around', 'for', 'of', "within"]
     days = ['monday', 'tuesday', 'wednesday',
@@ -1172,7 +1172,7 @@ def extract_datetime_en(string, dateNow, default_time):
                         remainder == "weekdays" or
                         wordNext == "weekdays" or
                         wordNextNext == "weekdays"):
-                    # we set strHH here to make sure isTime == True
+                    # Set strHH so that isTime == True
                     # when am or pm is not specified
                     strHH = strNum
                     used = 1
