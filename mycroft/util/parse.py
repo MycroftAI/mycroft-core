@@ -138,7 +138,8 @@ def extract_number(text, short_scale=True, ordinals=False, lang="en-us"):
     elif lang_lower.startswith("pt"):
         return extractnumber_pt(text)
     elif lang_lower.startswith("it"):
-        return extractnumber_it(text)
+        return extractnumber_it(text, short_scale=short_scale,
+                                ordinals=ordinals)
     elif lang_lower.startswith("fr"):
         return extractnumber_fr(text)
     elif lang_lower.startswith("sv"):
