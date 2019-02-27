@@ -1,4 +1,4 @@
-# Copyright 2018 Mycroft AI Inc.
+# Copyright 2019 Mycroft AI Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,10 +22,8 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from mycroft import MycroftSkill
 from mycroft.messagebus.message import Message
-from mycroft.util.log import getLogger
 
 
-LOGGER = getLogger(__name__)
 ENTITY = "ENTITY"
 SCENE = "SCENE"
 
