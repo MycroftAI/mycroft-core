@@ -462,7 +462,7 @@ class TestNormalize(unittest.TestCase):
         testExtract("for 8 tonight",
                     "2017-06-27 20:00:00", "")
         testExtract("for 8:30pm tonight",
-                    "2017-06-27 20:3:00", "")
+                    "2017-06-27 20:30:00", "")
         # Tests a specified time with : & without am/pm
         testExtract("remind me about the game tonight at 11:30",
                     "2017-06-27 23:30:00", "remind me about game")
