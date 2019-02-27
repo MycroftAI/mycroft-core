@@ -22,8 +22,10 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from mycroft import MycroftSkill
 from mycroft.messagebus.message import Message
+from mycroft.util.log import getLogger
 
 
+LOGGER = getLogger(__name__)
 ENTITY = "ENTITY"
 SCENE = "SCENE"
 
@@ -126,6 +128,22 @@ class IoTRequest():
             scene='"{}"'.format(self.scene) if self.scene else None
         )
 
+    def to_dict(self):
+        return {
+            'action': self.action.value,
+            'thing': self.thing.value if self.thing else None,
+            'entity': self.entity,
+            'scene': self.scene
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        data = data.copy()
+        data['action'] = Action(data['action'])
+        if data.get('thing') is not None:
+            data['thing'] = Thing(data['thing'])
+        return cls(**data)
+
 
 class CommonIoTSkill(MycroftSkill, ABC):
     """
@@ -179,7 +197,7 @@ class CommonIoTSkill(MycroftSkill, ABC):
             message: Message
         """
         data = message.data
-        request = eval(data[IoTRequest.__name__])
+        request = IoTRequest.from_dict(data[IoTRequest.__name__])
         can_handle, callback_data = self.can_handle(request)
         if can_handle:
             data.update({"skill_id": self.skill_id,
@@ -195,7 +213,7 @@ class CommonIoTSkill(MycroftSkill, ABC):
         Args:
             message: Message
         """
-        request = eval(message.data[IoTRequest.__name__])
+        request = IoTRequest.from_dict(message.data[IoTRequest.__name__])
         callback_data = message.data["callback_data"]
         self.run_request(request, callback_data)
 
@@ -208,7 +226,7 @@ class CommonIoTSkill(MycroftSkill, ABC):
         """
         self.register_entities_and_scenes()
 
-    def _register_words(self, words: [str], type: str):
+    def _register_words(self, words: [str], word_type: str):
         """
         Emit a message to the controller skill to register vocab.
 
@@ -219,12 +237,13 @@ class CommonIoTSkill(MycroftSkill, ABC):
 
         Args:
             words:
-            type:
+            word_type:
 
         """
         if words:
             self.bus.emit(Message(_BusKeys.REGISTER,
-                              data={"type": type, "words": list(words)}))
+                                  data={"type": word_type,
+                                        "words": list(words)}))
 
     def register_entities_and_scenes(self):
         """
@@ -269,7 +288,6 @@ class CommonIoTSkill(MycroftSkill, ABC):
 
         """
         return []
-
 
     @abstractmethod
     def can_handle(self, request: IoTRequest):
