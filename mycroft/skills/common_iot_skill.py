@@ -22,7 +22,10 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from mycroft import MycroftSkill
 from mycroft.messagebus.message import Message
-from typing import Iterable, Iterator, Union
+
+
+ENTITY = "ENTITY"
+SCENE = "SCENE"
 
 
 class _BusKeys():
@@ -37,6 +40,7 @@ class _BusKeys():
     RESPONSE = TRIGGER + ".response"
     RUN = BASE + ":run."  # Will have skill_id appened
     REGISTER = BASE + "register"
+    CALL_FOR_REGISTRATION = REGISTER + ".request"
 
 
 class Thing(Enum):
@@ -162,6 +166,8 @@ class CommonIoTSkill(MycroftSkill, ABC):
             super().bind(bus)
             self.add_event(_BusKeys.TRIGGER, self._handle_trigger)
             self.add_event(_BusKeys.RUN + self.skill_id, self._run_request)
+            self.add_event(_BusKeys.CALL_FOR_REGISTRATION,
+                           self._handle_call_for_registration)
 
     def _handle_trigger(self, message: Message):
         """
@@ -193,9 +199,18 @@ class CommonIoTSkill(MycroftSkill, ABC):
         callback_data = message.data["callback_data"]
         self.run_request(request, callback_data)
 
-    def _register_words(self, words, type):
+    def _handle_call_for_registration(self, _: Message):
         """
-        Helper for register_entities and register_scenes.
+        Register this skills scenes and entities when requested.
+        Args:
+            _: Message. This is ignored.
+
+        """
+        self.register_entities_and_scenes()
+
+    def _register_words(self, words: [str], type: str):
+        """
+        Emit a message to the controller skill to register vocab.
 
         Emits a message on the bus containing the type and
         the words. The message will be picked up by the
@@ -206,38 +221,55 @@ class CommonIoTSkill(MycroftSkill, ABC):
             words:
             type:
 
-        Returns:
-
         """
-        self.bus.emit(Message(_BusKeys.REGISTER,
+        if words:
+            self.bus.emit(Message(_BusKeys.REGISTER,
                               data={"type": type, "words": list(words)}))
 
-    def register_entities(self, entities: Union[Iterable[str], Iterator[str]]):
+    def register_entities_and_scenes(self):
         """
-        This method is intended to be called by subclasses, to register
-        custom entities. Skills should register things like group names,
-        or user aliases for specific devices, e.g. 'bedroom', 'lamp', 'front
-        door.'
+        This method will register this skills scenes and entities.
 
-        Args:
-            entities: Iterable[str] | Iterator[str]
-                Note that this will be converted to a list, so should
-                safely fit in memory.
-        """
-        self._register_words(entities, 'ENTITY')
-
-    def register_scenes(self, scenes: Union[Iterable[str], Iterator[str]]):
-        """
-        This method is intended to be called by subclasses, to register
-        custom scenes, e.g. "relax," "movie time," etc.
-
-        Args:
-            scenes: Iterable[str] | Iterator[str]
-                Note that this will be converted to a list, so should
-                safely fit in memory.
+        This should be called in the skills `initialize` method,
+        at some point after `get_entities` and `get_scenes` can
+        be expected to return correct results.
 
         """
-        self._register_words(scenes, 'SCENE')
+        self._register_words(self.get_entities(), ENTITY)
+        self._register_words(self.get_scenes(), SCENE)
+
+    def get_entities(self) -> [str]:
+        """
+        Get a list of custom entities.
+
+        This is intended to be overridden by subclasses, though it
+        it not required (the default implementation will return an
+        empty list).
+
+        The strings returned by this function will be registered
+        as ENTITY values with the intent parser. Skills should provide
+        group names, user aliases for specific devices, or anything
+        else that might represent a THING or a set of THINGs, e.g.
+        'bedroom', 'lamp', 'front door.' This allows commands that
+        don't explicitly include a THING to still be handled, e.g.
+       "bedroom off" as opposed to "bedroom lights off."
+
+        """
+        return []
+
+    def get_scenes(self) -> [str]:
+        """
+        Get a list of custom scenes.
+
+        This method is intended to be overridden by subclasses, though
+        it is not required. The strings returned by this function will
+        be registered as SCENE values with the intent parser. Skills
+        should provide user defined scene names that they are aware of
+        and capable of handling, e.g. "relax," "movie time," etc.
+
+        """
+        return []
+
 
     @abstractmethod
     def can_handle(self, request: IoTRequest):
