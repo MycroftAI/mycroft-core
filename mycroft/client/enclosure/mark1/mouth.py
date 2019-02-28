@@ -42,6 +42,16 @@ class EnclosureMouth:
         self.bus.on('enclosure.mouth.display_image', self.display_image)
         self.bus.on('enclosure.weather.display', self.display_weather)
         self.bus.on('mycroft.stop', self.clear_visemes)
+        self.bus.on('enclosure.mouth.events.activate',
+                    self._activate_visemes)
+        self.bus.on('enclosure.mouth.events.deactivate',
+                    self._deactivate_visemes)
+
+    def _activate_visemes(self, event=None):
+        self.bus.on('enclosure.mouth.viseme_list', self.viseme_list)
+
+    def _deactivate_visemes(self, event=None):
+        self.bus.remove('enclosure.mouth.viseme_list', self.viseme_list)
 
     def reset(self, event=None):
         self.writer.write("mouth.reset")
