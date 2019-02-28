@@ -240,7 +240,6 @@ class SkillGUI:
     def setup_default_handlers(self):
         """ Sets the handlers for the default messages. """
         msg_type = self.build_message_type('set')
-        print("LISTENING FOR {}".format(msg_type))
         self.skill.add_event(msg_type, self.gui_set)
 
     def register_handler(self, event, handler):
@@ -267,7 +266,6 @@ class SkillGUI:
 
     def gui_set(self, message):
         for key in message.data:
-            print("SETTING {} TO {}".format(key, message.data[key]))
             self[key] = message.data[key]
         if self.on_gui_changed_callback:
             self.on_gui_changed_callback()
@@ -288,9 +286,11 @@ class SkillGUI:
         return self.__session_data.__contains__(key)
 
     def clear(self):
-        """ Reset the value dictionary """
+        """ Reset the value dictionary, and remove namespace from gui """
         self.__session_data = {}
         self.page = None
+        self.skill.bus.emit(Message("gui.clear.namespace",
+                                    {"__from": self.skill.skill_id}))
 
     def show_page(self, name, override_idle=None):
         """
@@ -340,6 +340,37 @@ class SkillGUI:
                                      "index": index,
                                      "__from": self.skill.skill_id,
                                      "__idle": override_idle}))
+
+    def remove_page(self, page):
+        """ Remove a single page from the gui.
+
+            Args:
+                page (str): Page to remove from the GUI
+        """
+        return self.remove_pages([page])
+
+    def remove_pages(self, page_names):
+        """ Remove a list of pages in the GUI.
+
+            Args:
+                page_names (list): List of page names (str) to display, such as
+                                   ["Weather.qml", "Forecast.qml", "Other.qml"]
+        """
+        if not isinstance(page_names, list):
+            raise ValueError('page_names must be a list')
+
+        # Convert pages to full reference
+        page_urls = []
+        for name in page_names:
+            page = self.skill.find_resource(name, 'ui')
+            if page:
+                page_urls.append("file://" + page)
+            else:
+                raise FileNotFoundError("Unable to find page: {}".format(name))
+
+        self.skill.bus.emit(Message("gui.page.delete",
+                                    {"page": page_urls,
+                                     "__from": self.skill.skill_id}))
 
     def show_text(self, text, title=None):
         """ Display a GUI page for viewing simple text
@@ -1410,6 +1441,10 @@ class MycroftSkill:
         if exists(self._dir):
             self.settings.store()
             self.settings.stop_polling()
+
+        # Clear skill from gui
+        self.gui.clear()
+
         # removing events
         self.cancel_all_repeating_events()
         for e, f in self.events:
