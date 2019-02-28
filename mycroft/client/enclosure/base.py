@@ -42,7 +42,8 @@ def _get_page_data(message):
         Arguments:
             message: messagebus message object
 
-        Returns: tuple (namespace, page)
+        Returns:
+            tuple (page, namespace, index)
     """
     data = message.data
     # Note:  'page' can be either a string or a list of strings
