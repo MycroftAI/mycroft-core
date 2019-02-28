@@ -497,7 +497,7 @@ class MycroftSkill:
 
     @property
     def config(self):
-        """ Backwards compatibility. This is the same as self.bus.
+        """ Provide deprecation warning when accessing config.
         TODO: Remove in 19.08
         """
         self.log.warning('self.config is deprecated.  Switch to using '
