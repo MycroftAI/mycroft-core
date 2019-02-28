@@ -37,13 +37,12 @@ RESERVED_KEYS = ['__from', '__idle']
 def _get_page_data(message):
     """ Extract page related data from a message.
 
-        Raises value error if value is missing.
-
-        Arguments:
-            message: messagebus message object
-
-        Returns:
-            tuple (page, namespace, index)
+    Args:
+        message: messagebus message object
+    Returns:
+        tuple (page, namespace, index)
+    Raises:
+        ValueError if value is missing.
     """
     data = message.data
     # Note:  'page' can be either a string or a list of strings
@@ -179,7 +178,12 @@ class Enclosure:
         return None
 
     def __insert_pages(self, namespace, pages):
-        """ Insert pages into the """
+        """ Insert pages into the namespace
+        
+        Args:
+            namespace (str): Namespace to add to
+            pages (list):    Pages (str) to insert
+        """
         LOG.debug("Inserting new pages")
         if not isinstance(pages, list):
             raise ValueError('Argument must be list of pages')
@@ -193,10 +197,10 @@ class Enclosure:
     def __remove_page(self, namespace, pos):
         """ Delete page.
 
-            Arguments:
-                namespace(str): Namespace to remove from
-                pos (int):      Page position to remove
-         """
+        Args:
+            namespace (str): Namespace to remove from
+            pos (int):      Page position to remove
+        """
         LOG.debug("Deleting {} from {}".format(pos, namespace))
         self.send({"type": "mycroft.gui.list.remove",
                    "namespace": namespace,
@@ -209,12 +213,12 @@ class Enclosure:
     def __insert_new_namespace(self, namespace, pages):
         """ Insert new namespace and pages.
 
-            This first sends a message adding a new namespace at the
-            highest priority (position 0 in the namespace stack)
+        This first sends a message adding a new namespace at the
+        highest priority (position 0 in the namespace stack)
 
-            Arguments:
-                namespace:  The skill namespace to create
-                pages:      Pages to insert
+        Args:
+            namespace (str):  The skill namespace to create
+            pages (str):      Pages to insert (name matches QML)
         """
         LOG.debug("Inserting new namespace")
         self.send({"type": "mycroft.session.list.insert",
@@ -243,9 +247,9 @@ class Enclosure:
     def __move_namespace(self, from_pos, to_pos):
         """ Move an existing namespace to a new position in the stack.
 
-            Arguments:
-                from_pos: Position in the stack to move from
-                to_pos: Position to move to
+        Args:
+            from_pos (int): Position in the stack to move from
+            to_pos (int): Position to move to
         """
         LOG.debug("Activating existing namespace")
         # Seems like the namespace is moved to the top automatically when
@@ -263,9 +267,9 @@ class Enclosure:
     def __switch_page(self, namespace, pages):
         """ Switch page to an already loaded page.
 
-            Arguments:
-                pages:      pages to switch to
-                namespace:  skill namespace
+        Args:
+            pages (list): pages (str) to switch to
+            namespace (str):  skill namespace
         """
         try:
             num = self.loaded[0].pages.index(pages[0])
@@ -283,8 +287,13 @@ class Enclosure:
     def show(self, namespace, page, index):
         """ Show a page and load it as needed.
 
-            TODO: - Update sync to match.
-                  - Separate into multiple functions/methods
+        Args:
+            page (str or list): page(s) to show
+            namespace (str):  skill namespace
+            index (int): ??? TODO: Unused in code ???
+            
+        TODO: - Update sync to match.
+              - Separate into multiple functions/methods
         """
 
         LOG.debug("GUIConnection activating: " + namespace)
@@ -317,8 +326,8 @@ class Enclosure:
     def remove_namespace(self, namespace):
         """ Remove namespace.
 
-            Arguments:
-                namespace (str):    namespace to remove
+        Args:
+            namespace (str): namespace to remove
         """
         index = self.__find_namespace(namespace)
         if index is None:
@@ -336,9 +345,9 @@ class Enclosure:
     def remove_pages(self, namespace, pages):
         """ Remove the listed pages from the provided namespace.
 
-            Arguments:
-                namespace (str):    The namespace that should be modified
-                pages (list):       List of pages to delete
+        Args:
+            namespace (str):    The namespace to modify
+            pages (list):       List of page names (str) to delete
         """
         try:
             index = self.__find_namespace(namespace)
