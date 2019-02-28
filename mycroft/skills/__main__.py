@@ -151,6 +151,9 @@ def check_connection():
             bus.emit(Message("enclosure.mouth.reset"))
             time.sleep(0.5)
 
+        enclosure.eyes_color(189, 183, 107)  # dark khaki
+        enclosure.mouth_text(dialog.get("message_loading.skills"))
+
         bus.emit(Message('mycroft.internet.connected'))
         # check for pairing, if not automatically start pairing
         try:
