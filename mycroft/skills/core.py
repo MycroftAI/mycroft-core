@@ -464,14 +464,6 @@ class MycroftSkill:
             raise Exception("Accessed MycroftSkill.bus in __init__")
 
     @property
-    def emitter(self):
-        """ Backwards compatibility. This is the same as self.bus.
-        TODO: Remove in 19.02
-        """
-        self.log.warning('self.emitter is deprecated switch to "self.bus"')
-        return self._bus
-
-    @property
     def location(self):
         """ Get the JSON data struction holding location information. """
         # TODO: Allow Enclosure to override this for devices that
@@ -772,7 +764,7 @@ class MycroftSkill:
             This only allows one screen and if two is registered only one
             will be used.
         """
-        attributes = [a for a in dir(self) if a != 'emitter']
+        attributes = [a for a in dir(self)]
         for attr_name in attributes:
             method = getattr(self, attr_name)
 
@@ -799,7 +791,7 @@ class MycroftSkill:
         Looks for all functions that have been marked by a decorator
         and read the intent data from them
         """
-        attributes = [a for a in dir(self) if not a == 'emitter']
+        attributes = [a for a in dir(self)]
         for attr_name in attributes:
             method = getattr(self, attr_name)
 
