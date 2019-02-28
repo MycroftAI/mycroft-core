@@ -33,9 +33,9 @@ class PadatiousService(FallbackSkill):
         if not PadatiousService.instance:
             PadatiousService.instance = self
 
-        self.config = Configuration.get()['padatious']
+        self.padatious_config = Configuration.get()['padatious']
         self.service = service
-        intent_cache = expanduser(self.config['intent_cache'])
+        intent_cache = expanduser(self.padatious_config['intent_cache'])
 
         try:
             from padatious import IntentContainer
@@ -60,7 +60,7 @@ class PadatiousService(FallbackSkill):
         self.finished_training_event = Event()
         self.finished_initial_train = False
 
-        self.train_delay = self.config['train_delay']
+        self.train_delay = self.padatious_config['train_delay']
         self.train_time = get_time() + self.train_delay
 
         self.registered_intents = []
