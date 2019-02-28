@@ -459,7 +459,8 @@ class MycroftSkill:
         self.bind(bus)
         #: Mycroft global configuration. (dict)
         self.config_core = Configuration.get()
-        self.config = self.config_core.get(self.name) or {}
+        # TODO: 19.08 - Remove
+        self._config = self.config_core.get(self.name) or {}
         self.dialog_renderer = None
         self.root_dir = None  #: skill root directory
 
@@ -493,6 +494,15 @@ class MycroftSkill:
                       "from __init__() to initialize() to correct this.")
             LOG.error(simple_trace(traceback.format_stack()))
             raise Exception("Accessed MycroftSkill.bus in __init__")
+
+    @property
+    def config(self):
+        """ Provide deprecation warning when accessing config.
+        TODO: Remove in 19.08
+        """
+        self.log.warning('self.config is deprecated.  Switch to using '
+                         'self.setting["whatever"] within your skill.')
+        return self._config
 
     @property
     def location(self):
