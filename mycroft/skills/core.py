@@ -500,8 +500,12 @@ class MycroftSkill:
         """ Provide deprecation warning when accessing config.
         TODO: Remove in 19.08
         """
-        self.log.warning('self.config is deprecated.  Switch to using '
-                         'self.setting["whatever"] within your skill.')
+        stack = simple_trace(traceback.format_stack())
+        if (" _register_decorated" not in stack and
+                "register_resting_screen" not in stack):
+            LOG.warning('self.config is deprecated.  Switch to using '
+                        'self.setting["whatever"] within your skill.')
+            LOG.warning(stack)
         return self._config
 
     @property
