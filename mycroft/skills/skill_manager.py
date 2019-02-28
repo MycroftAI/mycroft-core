@@ -412,6 +412,7 @@ class SkillManager(Thread):
                         skill_path, repr(e)))
             if not has_loaded and not still_loading and len(skill_paths) > 0:
                 has_loaded = True
+                LOG.info("Skills all loaded!")
                 self.bus.emit(Message('mycroft.skills.initialized'))
 
             self._unload_removed(skill_paths)

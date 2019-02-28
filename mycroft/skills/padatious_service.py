@@ -77,7 +77,10 @@ class PadatiousService(FallbackSkill):
         LOG.info('Training complete.')
 
         self.finished_training_event.set()
-        self.finished_initial_train = True
+        if not self.finished_initial_train:
+            LOG.info("Mycroft is all loaded and ready to roll!")
+            self.bus.emit(Message('mycroft.ready'))
+            self.finished_initial_train = True
 
     def wait_and_train(self):
         if not self.finished_initial_train:
