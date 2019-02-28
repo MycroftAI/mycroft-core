@@ -217,10 +217,10 @@ class CommonIoTSkill(MycroftSkill, ABC):
 
     def _handle_call_for_registration(self, _: Message):
         """
-        Register this skills scenes and entities when requested.
+        Register this skill's scenes and entities when requested.
+
         Args:
             _: Message. This is ignored.
-
         """
         self.register_entities_and_scenes()
 
@@ -236,7 +236,6 @@ class CommonIoTSkill(MycroftSkill, ABC):
         Args:
             words:
             word_type:
-
         """
         if words:
             self.bus.emit(Message(_BusKeys.REGISTER,
@@ -246,9 +245,9 @@ class CommonIoTSkill(MycroftSkill, ABC):
 
     def register_entities_and_scenes(self):
         """
-        This method will register this skills scenes and entities.
+        This method will register this skill's scenes and entities.
 
-        This should be called in the skills `initialize` method,
+        This should be called in the skill's `initialize` method,
         at some point after `get_entities` and `get_scenes` can
         be expected to return correct results.
 
@@ -270,8 +269,7 @@ class CommonIoTSkill(MycroftSkill, ABC):
         else that might represent a THING or a set of THINGs, e.g.
         'bedroom', 'lamp', 'front door.' This allows commands that
         don't explicitly include a THING to still be handled, e.g.
-       "bedroom off" as opposed to "bedroom lights off."
-
+        "bedroom off" as opposed to "bedroom lights off."
         """
         return []
 
@@ -284,7 +282,6 @@ class CommonIoTSkill(MycroftSkill, ABC):
         be registered as SCENE values with the intent parser. Skills
         should provide user defined scene names that they are aware of
         and capable of handling, e.g. "relax," "movie time," etc.
-
         """
         return []
 
@@ -314,7 +311,6 @@ class CommonIoTSkill(MycroftSkill, ABC):
 
             Note that the dictionary will be sent over the bus, and thus
             must be JSON serializable.
-
         """
         return False, None
 
@@ -333,7 +329,5 @@ class CommonIoTSkill(MycroftSkill, ABC):
         Args:
             request: IoTRequest
             callback_data: dict
-
-
         """
         pass
