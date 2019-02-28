@@ -87,7 +87,7 @@ class CommonQuerySkill(MycroftSkill, ABC):
             consumed_pct = 1.0
 
         # Add bonus if match has visuals and the device supports them.
-        platform = self.config_core.get('encolsure', {}).get('platform')
+        platform = self.config_core.get('enclosure', {}).get('platform')
         if is_CQSVisualMatchLevel(level) and handles_visuals(platform):
             bonus = 0.1
         else:
