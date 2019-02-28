@@ -34,6 +34,29 @@ write_lock = Lock()
 RESERVED_KEYS = ['__from', '__idle']
 
 
+def _get_page_data(message):
+    """ Extract page related data from a message.
+
+    Args:
+        message: messagebus message object
+    Returns:
+        tuple (page, namespace, index)
+    Raises:
+        ValueError if value is missing.
+    """
+    data = message.data
+    # Note:  'page' can be either a string or a list of strings
+    if 'page' not in data:
+        raise ValueError("Page missing in data")
+    if 'index' in data:
+        index = data['index']
+    else:
+        index = 0
+    page = data.get("page", "")
+    namespace = data.get("__from", "")
+    return page, namespace, index
+
+
 class Enclosure:
     def __init__(self):
         # Establish Enclosure's websocket connection to the messagebus
@@ -77,6 +100,8 @@ class Enclosure:
         # First send any data:
         self.bus.on("gui.value.set", self.on_gui_set_value)
         self.bus.on("gui.page.show", self.on_gui_show_page)
+        self.bus.on("gui.page.delete", self.on_gui_delete_page)
+        self.bus.on("gui.clear.namespace", self.on_gui_delete_namespace)
 
     def run(self):
         try:
@@ -122,19 +147,26 @@ class Enclosure:
                        "data": {name: value}}
                 self.send(msg)
 
-    def on_gui_show_page(self, message):
-        data = message.data
-        # Note:  'page' can be either a string or a list of strings
-        if 'page' not in data:
-            return
-        if 'index' in data:
-            index = data['index']
-        else:
-            index = 0
-        page = data.get("page", "")
-        namespace = data.get("__from", "")
-        # Pass the request to the GUI(s) to pull up a page template
+    def on_gui_delete_page(self, message):
+        """ Bus handler for removing pages. """
+        page, namespace, _ = _get_page_data(message)
         try:
+            self.remove_pages(namespace, page)
+        except Exception as e:
+            LOG.exception(repr(e))
+
+    def on_gui_delete_namespace(self, message):
+        """ Bus handler for removing namespace. """
+        try:
+            namespace = message.data['__from']
+            self.remove_namespace(namespace)
+        except Exception as e:
+            LOG.exception(repr(e))
+
+    def on_gui_show_page(self, message):
+        try:
+            page, namespace, index = _get_page_data(message)
+            # Pass the request to the GUI(s) to pull up a page template
             self.show(namespace, page, index)
         except Exception as e:
             LOG.exception(repr(e))
@@ -146,7 +178,12 @@ class Enclosure:
         return None
 
     def __insert_pages(self, namespace, pages):
-        """ Insert pages into the """
+        """ Insert pages into the namespace
+
+        Args:
+            namespace (str): Namespace to add to
+            pages (list):    Pages (str) to insert
+        """
         LOG.debug("Inserting new pages")
         if not isinstance(pages, list):
             raise ValueError('Argument must be list of pages')
@@ -157,19 +194,31 @@ class Enclosure:
                    "data": [{"url": p} for p in pages]
                    })
 
-        # append pages to local representation
-        for p in pages:
-            self.loaded[0].pages.append(p)
+    def __remove_page(self, namespace, pos):
+        """ Delete page.
+
+        Args:
+            namespace (str): Namespace to remove from
+            pos (int):      Page position to remove
+        """
+        LOG.debug("Deleting {} from {}".format(pos, namespace))
+        self.send({"type": "mycroft.gui.list.remove",
+                   "namespace": namespace,
+                   "position": pos,
+                   "items_number": 1
+                   })
+        # Remove the page from the local reprensentation as well.
+        self.loaded[0].pages.pop(pos)
 
     def __insert_new_namespace(self, namespace, pages):
         """ Insert new namespace and pages.
 
-            This first sends a message adding a new namespace at the
-            highest priority (position 0 in the namespace stack)
+        This first sends a message adding a new namespace at the
+        highest priority (position 0 in the namespace stack)
 
-            Arguments:
-                namespace:  The skill namespace to create
-                pages:      Pages to insert
+        Args:
+            namespace (str):  The skill namespace to create
+            pages (str):      Pages to insert (name matches QML)
         """
         LOG.debug("Inserting new namespace")
         self.send({"type": "mycroft.session.list.insert",
@@ -198,9 +247,9 @@ class Enclosure:
     def __move_namespace(self, from_pos, to_pos):
         """ Move an existing namespace to a new position in the stack.
 
-            Arguments:
-                from_pos: Position in the stack to move from
-                to_pos: Position to move to
+        Args:
+            from_pos (int): Position in the stack to move from
+            to_pos (int): Position to move to
         """
         LOG.debug("Activating existing namespace")
         # Seems like the namespace is moved to the top automatically when
@@ -218,9 +267,9 @@ class Enclosure:
     def __switch_page(self, namespace, pages):
         """ Switch page to an already loaded page.
 
-            Arguments:
-                pages:      pages to switch to
-                namespace:  skill namespace
+        Args:
+            pages (list): pages (str) to switch to
+            namespace (str):  skill namespace
         """
         try:
             num = self.loaded[0].pages.index(pages[0])
@@ -238,8 +287,13 @@ class Enclosure:
     def show(self, namespace, page, index):
         """ Show a page and load it as needed.
 
-            TODO: - Update sync to match.
-                  - Separate into multiple functions/methods
+        Args:
+            page (str or list): page(s) to show
+            namespace (str):  skill namespace
+            index (int): ??? TODO: Unused in code ???
+
+        TODO: - Update sync to match.
+              - Separate into multiple functions/methods
         """
 
         LOG.debug("GUIConnection activating: " + namespace)
@@ -266,6 +320,48 @@ class Enclosure:
                 else:
                     # No new pages, just switch
                     self.__switch_page(namespace, pages)
+        except Exception as e:
+            LOG.exception(repr(e))
+
+    def remove_namespace(self, namespace):
+        """ Remove namespace.
+
+        Args:
+            namespace (str): namespace to remove
+        """
+        index = self.__find_namespace(namespace)
+        if index is None:
+            return
+        else:
+            LOG.debug("Removing namespace {} at {}".format(namespace, index))
+            self.send({"type": "mycroft.session.list.remove",
+                       "namespace": "mycroft.system.active_skills",
+                       "position": index,
+                       "items_number": 1
+                       })
+            # Remove namespace from loaded namespaces
+            self.loaded.pop(index)
+
+    def remove_pages(self, namespace, pages):
+        """ Remove the listed pages from the provided namespace.
+
+        Args:
+            namespace (str):    The namespace to modify
+            pages (list):       List of page names (str) to delete
+        """
+        try:
+            index = self.__find_namespace(namespace)
+            if index is None:
+                return
+            else:
+                # Remove any pages that doesn't exist in the namespace
+                pages = [p for p in pages if p in self.loaded[index].pages]
+                # Make sure to remove pages from the back
+                indexes = [self.loaded[index].pages.index(p) for p in pages]
+                indexes = sorted(indexes)
+                indexes.reverse()
+                for page_index in indexes:
+                    self.__remove_page(namespace, page_index)
         except Exception as e:
             LOG.exception(repr(e))
 

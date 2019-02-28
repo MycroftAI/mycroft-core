@@ -25,8 +25,9 @@ from mycroft.util import (
     connected, wait_while_speaking, reset_sigint_handler,
     create_echo_function, create_daemon, wait_for_exit_signal
 )
+from mycroft.util.log import LOG
 
-from .skill_manager import SkillManager
+from .skill_manager import SkillManager, MsmException
 from .core import FallbackSkill
 from .event_scheduler import EventScheduler
 from .intent_service import IntentService
@@ -68,13 +69,37 @@ def _starting_up():
     event_scheduler = EventScheduler(bus)
 
     # Create a thread that monitors the loaded skills, looking for updates
-    skill_manager = SkillManager(bus)
+    try:
+        skill_manager = SkillManager(bus)
+    except MsmException:
+        # skill manager couldn't be created, wait for network connection and
+        # retry
+        LOG.info('Msm is uninitialized and requires network connection',
+                 'to fetch skill information\n'
+                 'Waiting for network connection...')
+        while not connected():
+            time.sleep(30)
+        skill_manager = SkillManager(bus)
+
     skill_manager.daemon = True
-    # Wait until skills have been loaded once before starting to check
+    # Wait until priority skills have been loaded before checking
     # network connection
     skill_manager.load_priority()
     skill_manager.start()
     check_connection()
+
+
+def try_update_system(platform):
+    bus.emit(Message('system.update'))
+    msg = Message('system.update', {
+        'paired': is_paired(),
+        'platform': platform
+    })
+    resp = bus.wait_for_response(msg, 'system.update.processing')
+
+    if resp and (resp.data or {}).get('processing', True):
+        bus.wait_for_response(Message('system.update.waiting'),
+                              'system.update.complete', 1000)
 
 
 def check_connection():
@@ -94,8 +119,11 @@ def check_connection():
         config = Configuration.get()
         platform = config['enclosure'].get("platform", "unknown")
         if platform in ['mycroft_mark_1', 'picroft']:
-            bus.emit(Message("system.ntp.sync"))
-            time.sleep(15)  # TODO: Generate/listen for a message response...
+            bus.wait_for_response(Message('system.ntp.sync'),
+                                  'system.ntp.sync.complete', 15)
+
+        if not is_paired():
+            try_update_system(platform)
 
         # Check if the time skewed significantly.  If so, reboot
         skew = abs((time.monotonic() - start_ticks) -
@@ -122,6 +150,9 @@ def check_connection():
         else:
             bus.emit(Message("enclosure.mouth.reset"))
             time.sleep(0.5)
+
+        enclosure.eyes_color(189, 183, 107)  # dark khaki
+        enclosure.mouth_text(dialog.get("message_loading.skills"))
 
         bus.emit(Message('mycroft.internet.connected'))
         # check for pairing, if not automatically start pairing

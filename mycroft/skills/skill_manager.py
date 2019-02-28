@@ -101,7 +101,9 @@ class SkillManager(Thread):
         self.update_interval = Configuration.get()['skills']['update_interval']
         self.update_interval = int(self.update_interval * 60 * MINUTES)
         self.dot_msm = join(self.msm.skills_dir, '.msm')
-        if exists(self.dot_msm):
+        # Update immediately if the .msm or installed skills file is missing
+        # otherwise according to timestamp on .msm
+        if exists(self.dot_msm) and exists(self.installed_skills_file):
             self.next_download = os.path.getmtime(self.dot_msm) + \
                                  self.update_interval
         else:
@@ -135,6 +137,10 @@ class SkillManager(Thread):
         repo_config = msm_config['repo']
         data_dir = expanduser(config['data_dir'])
         skills_dir = join(data_dir, msm_config['directory'])
+        # Try to create the skills directory if it doesn't exist
+        if not exists(skills_dir):
+            os.makedirs(skills_dir)
+
         repo_cache = join(data_dir, repo_config['cache'])
         platform = config['enclosure'].get('platform', 'default')
         return MycroftSkillsManager(
@@ -143,41 +149,6 @@ class SkillManager(Thread):
                 repo_cache, repo_config['url'], repo_config['branch']
             ), versioned=msm_config['versioned']
         )
-
-    @staticmethod
-    def load_skills_data():
-        """ Backwards compatible skills_data read function.
-            Will return a format matching version 0 of skills_data.json
-
-            TODO: Remove in 19.02
-
-            Returns: dict with skill names as keys and their data as values
-        """
-        msm = SkillManager.create_msm()
-        with msm.lock, SkillManager.get_lock():
-            data = msm.load_skills_data()
-        return {s['name']: s for s in data['skills']}
-
-    @staticmethod
-    def write_skills_data(skills_data):
-        """ Backwards compatibility write function.
-
-            Converts the old style skill.json storage to new style storage.
-
-            TODO: Remove in 19.02
-        """
-        msm = SkillManager.create_msm()
-        with msm.lock, SkillManager.get_lock():
-            msm_data = msm.load_skills_data()
-            skills = []
-            for key in skills_data:
-                skills_data[key]['name'] = key
-                skills.append(skills_data[key])
-            msm_data['skills'] = skills
-            msm.skills_data_hash = ''  # Force write
-            msm.write_skills_data(msm_data)
-            if is_paired():
-                DeviceApi().upload_skills_data(msm_data)
 
     def schedule_now(self, message=None):
         self.next_download = time.time() - 1
@@ -280,12 +251,15 @@ class SkillManager(Thread):
             data = {'utterance': dialog.get("skills updated")}
             self.bus.emit(Message("speak", data))
 
+        # Schedule retry in 5 minutes on failure, after 10 shorter periods
+        # Go back to 60 minutes wait
         if default_skill_errored and self.num_install_retries < 10:
             self.num_install_retries += 1
             self.next_download = time.time() + 5 * MINUTES
             return False
         self.num_install_retries = 0
 
+        # Update timestamp on .msm file to be used when system is restarted
         with open(self.dot_msm, 'a'):
             os.utime(self.dot_msm, None)
         self.next_download = time.time() + self.update_interval
@@ -320,10 +294,7 @@ class SkillManager(Thread):
         """
         skill_path = skill_path.rstrip('/')
         skill = self.loaded_skills.setdefault(skill_path, {})
-        skill.update({
-            "id": basename(skill_path),
-            "path": skill_path
-        })
+        skill.update({"id": basename(skill_path), "path": skill_path})
 
         # check if folder is a skill (must have __init__.py)
         if not MainModule + ".py" in os.listdir(skill_path):
@@ -389,15 +360,19 @@ class SkillManager(Thread):
     def load_priority(self):
         skills = {skill.name: skill for skill in self.msm.list()}
         for skill_name in PRIORITY_SKILLS:
-            skill = skills[skill_name]
-            if not skill.is_local:
-                try:
-                    skill.install()
-                except Exception:
-                    LOG.exception('Downloading priority skill:' + skill.name)
-                    if not skill.is_local:
-                        continue
-            self._load_or_reload_skill(skill.path)
+            skill = skills.get(skill_name)
+            if skill:
+                if not skill.is_local:
+                    try:
+                        skill.install()
+                    except Exception:
+                        LOG.exception('Downloading priority skill: '
+                                      '{} failed'.format(skill.name))
+                        if not skill.is_local:
+                            continue
+                self._load_or_reload_skill(skill.path)
+            else:
+                LOG.error('Priority skill {} can\'t be found')
 
     def remove_git_locks(self):
         """If git gets killed from an abrupt shutdown it leaves lock files"""
@@ -427,12 +402,17 @@ class SkillManager(Thread):
             skill_paths = glob(join(self.msm.skills_dir, '*/'))
             still_loading = False
             for skill_path in skill_paths:
-                still_loading = (
-                        self._load_or_reload_skill(skill_path) or
-                        still_loading
-                )
+                try:
+                    still_loading = (
+                            self._load_or_reload_skill(skill_path) or
+                            still_loading
+                    )
+                except Exception as e:
+                    LOG.error('(Re)loading of {} failed ({})'.format(
+                        skill_path, repr(e)))
             if not has_loaded and not still_loading and len(skill_paths) > 0:
                 has_loaded = True
+                LOG.info("Skills all loaded!")
                 self.bus.emit(Message('mycroft.skills.initialized'))
 
             self._unload_removed(skill_paths)

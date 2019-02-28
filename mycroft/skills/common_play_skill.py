@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import re
 from enum import Enum
 from abc import ABC, abstractmethod
 from mycroft import MycroftSkill
@@ -33,6 +34,13 @@ class CommonPlaySkill(MycroftSkill, ABC):
         super().__init__(name, bus)
         self.audioservice = None
         self.play_service_string = None
+
+        # "MusicServiceSkill" -> "Music Service"
+        spoken = name or self.__class__.__name__
+        self.spoken_name = re.sub(r"([a-z])([A-Z])", r"\g<1> \g<2>",
+                                  spoken.replace("Skill", ""))
+        # NOTE: Derived skills will likely want to override self.spoken_name
+        # with a translatable name in their initialize() method.
 
     def bind(self, bus):
         if bus:
@@ -61,6 +69,7 @@ class CommonPlaySkill(MycroftSkill, ABC):
             self.bus.emit(message.response({"phrase": search_phrase,
                                             "skill_id": self.skill_id,
                                             "callback_data": callback,
+                                            "service_name": self.spoken_name,
                                             "conf": confidence}))
         else:
             # Signal we are done (can't handle it)
@@ -69,23 +78,31 @@ class CommonPlaySkill(MycroftSkill, ABC):
                                             "searching": False}))
 
     def __calc_confidence(self, match, phrase, level):
+        # "play pandora"
+        # "play pandora is my girlfriend"
+        # "play tom waits on pandora"
+
         # Assume the more of the words that get consumed, the better the match
         consumed_pct = len(match.split()) / len(phrase.split())
         if consumed_pct > 1.0:
-            consumed_pct = 1.0
+            consumed_pct = 1.0 / consumed_pct  # deal with over/under-matching
+
+        # We'll use this to modify the level, but don't want it to allow a
+        # match to jump to the next match level.  So bonus is 0 - 0.05 (1/20)
+        bonus = consumed_pct / 20.0
 
         if level == CPSMatchLevel.EXACT:
             return 1.0
         elif level == CPSMatchLevel.MULTI_KEY:
-            return 0.9 + (consumed_pct / 10)
+            return 0.9 + bonus
         elif level == CPSMatchLevel.TITLE:
-            return 0.8 + (consumed_pct / 10)
+            return 0.8 + bonus
         elif level == CPSMatchLevel.ARTIST:
-            return 0.7 + (consumed_pct / 10)
+            return 0.7 + bonus
         elif level == CPSMatchLevel.CATEGORY:
-            return 0.6 + (consumed_pct / 10)
+            return 0.6 + bonus
         elif level == CPSMatchLevel.GENERIC:
-            return 0.5 + (consumed_pct / 10)
+            return 0.5 + bonus
         else:
             return 0.0  # should never happen
 

@@ -455,6 +455,20 @@ class TestNormalize(unittest.TestCase):
                     "2017-07-08 10:00:00", "remind me to call mom")
         testExtract("remind me to call mom at 10am next saturday",
                     "2017-07-08 10:00:00", "remind me to call mom")
+        # Below two tests, ensure that time is picked
+        # even if no am/pm is specified
+        # in case of weekdays/tonight
+        testExtract("set alarm for 9 on weekdays",
+                    "2017-06-27 21:00:00", "set alarm weekdays")
+        testExtract("for 8 tonight",
+                    "2017-06-27 20:00:00", "")
+        testExtract("for 8:30pm tonight",
+                    "2017-06-27 20:30:00", "")
+        # Tests a time with ':' & without am/pm
+        testExtract("remind me about the game tonight at 11:30",
+                    "2017-06-27 23:30:00", "remind me about game")
+        testExtract("set alarm at 7:30 on weekdays",
+                    "2017-06-27 19:30:00", "set alarm on weekdays")
 
     def test_extract_ambiguous_time_en(self):
         morning = datetime(2017, 6, 27, 8, 1, 2)
