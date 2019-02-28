@@ -426,7 +426,8 @@ class MycroftSkill:
         self.bind(bus)
         #: Mycroft global configuration. (dict)
         self.config_core = Configuration.get()
-        self.config = self.config_core.get(self.name) or {}
+        # TODO: 19.08 - Remove
+        self._config = self.config_core.get(self.name) or {}
         self.dialog_renderer = None
         self.root_dir = None  #: skill root directory
 
@@ -468,6 +469,15 @@ class MycroftSkill:
         """
         self.log.warning('self.emitter is deprecated switch to "self.bus"')
         return self._bus
+
+    @property
+    def config(self):
+        """ Backwards compatibility. This is the same as self.bus.
+        TODO: Remove in 19.08
+        """
+        self.log.warning('self.config is deprecated.  Switch to using '
+                         'self.setting["whatever"] within your skill.')
+        return self._config
 
     @property
     def location(self):
