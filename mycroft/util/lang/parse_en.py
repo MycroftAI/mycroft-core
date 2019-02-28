@@ -634,7 +634,6 @@ def extract_duration_en(text):
                     not consumed in the parsing. The first value will
                     be None if no duration is found. The text returned
                     will have whitespace stripped from the ends.
-
     """
     if not text:
         return None
@@ -742,7 +741,7 @@ def extract_datetime_en(string, dateNow, default_time):
     timeQualifier = ""
 
     timeQualifiersAM = ['morning']
-    timeQualifiersPM = ['afternoon', 'evening', 'tonight', 'night']
+    timeQualifiersPM = ['afternoon', 'evening', 'night']
     timeQualifiersList = set(timeQualifiersAM + timeQualifiersPM)
     markers = ['at', 'in', 'on', 'by', 'this', 'around', 'for', 'of', "within"]
     days = ['monday', 'tuesday', 'wednesday',
@@ -750,6 +749,8 @@ def extract_datetime_en(string, dateNow, default_time):
     months = ['january', 'february', 'march', 'april', 'may', 'june',
               'july', 'august', 'september', 'october', 'november',
               'december']
+    recur_markers = days + [d+'s' for d in days] + ['weekend', 'weekday',
+                                                    'weekends', 'weekdays']
     monthsShort = ['jan', 'feb', 'mar', 'apr', 'may', 'june', 'july', 'aug',
                    'sept', 'oct', 'nov', 'dec']
     year_multiples = ["decade", "century", "millennium"]
@@ -814,6 +815,9 @@ def extract_datetime_en(string, dateNow, default_time):
             timeQualifier = word
         # parse today, tomorrow, day after tomorrow
         elif word == "today" and not fromFlag:
+            dayOffset = 0
+            used += 1
+        elif word == "tonight" and not fromFlag:
             dayOffset = 0
             used += 1
         elif word == "tomorrow" and not fromFlag:
@@ -1166,6 +1170,15 @@ def extract_datetime_en(string, dateNow, default_time):
                     strHH = strNum
                     remainder = "am"
                     used = 1
+                elif (
+                        remainder in recur_markers or
+                        wordNext in recur_markers or
+                        wordNextNext in recur_markers):
+                    # Ex: "7 on mondays" or "3 this friday"
+                    # Set strHH so that isTime == True
+                    # when am or pm is not specified
+                    strHH = strNum
+                    used = 1
                 else:
                     if (
                             int(strNum) > 100 and
@@ -1276,7 +1289,8 @@ def extract_datetime_en(string, dateNow, default_time):
                     ((not daySpecified) or dayOffset < 1)):
                 # ambiguous time, detect whether they mean this evening or
                 # the next morning based on whether it has already passed
-                if dateNow.hour < HH:
+                if dateNow.hour < HH or (dateNow.hour == HH and
+                                         dateNow.minute < MM):
                     pass  # No modification needed
                 elif dateNow.hour < HH + 12:
                     HH += 12

@@ -45,6 +45,7 @@ from mycroft.skills.core import create_skill_descriptor, load_skill, \
     MycroftSkill, FallbackSkill
 from mycroft.skills.settings import SkillSettings
 from mycroft.configuration import Configuration
+from mycroft.util.format import expand_options
 
 from logging import StreamHandler
 from io import StringIO
@@ -288,12 +289,13 @@ class SkillTest(object):
         self.failure_msg = None
 
     def run(self, loader):
-        """
-            Run a test for a skill. The skill, test_case_file and emitter is
-            already set up in the __init__ method
+        """ Execute the test
 
-            Args:
-                loader:  A list of loaded skills
+        Run a test for a skill. The skill, test_case_file and emitter is
+        already set up in the __init__ method
+
+        Args:
+            bool: Test results -- only True if all passed
         """
         s = [s for s in loader.skills if s and s.root_dir == self.skill]
         if s:
@@ -438,6 +440,32 @@ class SkillTest(object):
 HIDDEN_MESSAGES = ['skill.converse.request', 'skill.converse.response']
 
 
+def load_dialog_list(skill, dialog):
+    """ Load dialog from files into a single list.
+
+    Args:
+        skill (MycroftSkill): skill to load dialog from
+        dialog (list): Dialog names (str) to load
+
+    Returns:
+        list: Expanded dialog strings
+    """
+    dialogs = []
+    try:
+        for d in dialog:
+            for e in skill.dialog_renderer.templates[d]:
+                dialogs += expand_options(e)
+    except Exception as template_load_exception:
+        print(color.FAIL +
+              "Failed to load dialog template " +
+              "'dialog/en-us/" + d + ".dialog'" +
+              color.RESET)
+        raise Exception("Can't load 'excepted_dialog': "
+                        "file '" + d + ".dialog'") \
+            from template_load_exception
+    return dialogs
+
+
 class EvaluationRule(object):
     """
         This class initially convert the test_case json file to internal rule
@@ -454,9 +482,9 @@ class EvaluationRule(object):
     def __init__(self, test_case, skill=None):
         """ Convert test_case read from file to internal rule format
 
-            Args:
-                test_case:  The loaded test case
-                skill:      optional skill to test, used to fetch dialogs
+        Args:
+            test_case:  The loaded test case
+            skill:      optional skill to test, used to fetch dialogs
         """
         self.rule = []
 
@@ -518,18 +546,7 @@ class EvaluationRule(object):
                 else:
                     dialog = test_case['expected_dialog']
                 # Extract dialog texts from skill
-                dialogs = []
-                try:
-                    for d in dialog:
-                        dialogs += skill.dialog_renderer.templates[d]
-                except Exception as template_load_exception:
-                    print(color.FAIL +
-                          "Failed to load dialog template " +
-                          "'dialog/en-us/" + d + ".dialog'" +
-                          color.RESET)
-                    raise Exception("Can't load 'excepected_dialog': "
-                                    "file '" + d + ".dialog'") \
-                        from template_load_exception
+                dialogs = load_dialog_list(skill, dialog)
                 # Allow custom fields to be anything
                 d = [re.sub(r'{.*?\}', r'.*', t) for t in dialogs]
                 # Create rule allowing any of the sentences for that dialog
@@ -553,13 +570,13 @@ class EvaluationRule(object):
     def evaluate(self, msg):
         """ Main entry for evaluating a message against the rules.
 
-            The rules are prepared in the __init__
-            This method is usually called several times with different
-            messages using the same rule set. Each call contributing
-            to fulfilling all the rules
+        The rules are prepared in the __init__
+        This method is usually called several times with different
+        messages using the same rule set. Each call contributing
+        to fulfilling all the rules
 
-            Args:
-                msg:  The message event to evaluate
+        Args:
+            msg:  The message event to evaluate
         """
         if msg.get('__type__', '') not in HIDDEN_MESSAGES:
             print("\nEvaluating message: ", msg)
@@ -582,14 +599,14 @@ class EvaluationRule(object):
     def _partial_evaluate(self, rule, msg):
         """ Evaluate the message against a part of the rules
 
-            Recursive over rules
+        Recursive over rules
 
-            Args:
-                rule:  A rule or a part of the rules to be broken down further
-                msg:   The message event being evaluated
+        Args:
+            rule:  A rule or a part of the rules to be broken down further
+            msg:   The message event being evaluated
 
-            Returns:
-                 Bool: True if a partial evaluation succeeded
+        Returns:
+            Bool: True if a partial evaluation succeeded
         """
         if 'succeeded' in rule:  # Rule has already succeeded, test not needed
             return True
@@ -645,8 +662,8 @@ class EvaluationRule(object):
     def get_failure(self):
         """ Get the first rule which has not succeeded
 
-            Returns:
-                str: The failed rule
+        Returns:
+            str: The failed rule
         """
         for x in self.rule:
             if x[-1] != 'succeeded':
@@ -656,7 +673,7 @@ class EvaluationRule(object):
     def all_succeeded(self):
         """ Test if all rules succeeded
 
-            Returns:
-                bool: True if all rules succeeded
+        Returns:
+            bool: True if all rules succeeded
         """
         return len([x for x in self.rule if x[-1] != 'succeeded']) == 0
