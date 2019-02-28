@@ -501,11 +501,11 @@ class MycroftSkill:
         TODO: Remove in 19.08
         """
         stack = simple_trace(traceback.format_stack())
-        if (not " _register_decorated" in stack and
-            not "register_resting_screen" in stack):
-                LOG.warning('self.config is deprecated.  Switch to using '
-                                'self.setting["whatever"] within your skill.')
-                LOG.warning(stack)
+        if (" _register_decorated" not in stack and
+                "register_resting_screen" not in stack):
+            LOG.warning('self.config is deprecated.  Switch to using '
+                        'self.setting["whatever"] within your skill.')
+            LOG.warning(stack)
         return self._config
 
     @property
