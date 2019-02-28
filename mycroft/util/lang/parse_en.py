@@ -749,6 +749,8 @@ def extract_datetime_en(string, dateNow, default_time):
     months = ['january', 'february', 'march', 'april', 'may', 'june',
               'july', 'august', 'september', 'october', 'november',
               'december']
+    recur_markers = days + [d+'s' for d in days] + ['weekend', 'weekday',
+                                                    'weekends', 'weekdays']
     monthsShort = ['jan', 'feb', 'mar', 'apr', 'may', 'june', 'july', 'aug',
                    'sept', 'oct', 'nov', 'dec']
     year_multiples = ["decade", "century", "millennium"]
@@ -1169,9 +1171,10 @@ def extract_datetime_en(string, dateNow, default_time):
                     remainder = "am"
                     used = 1
                 elif (
-                        remainder == "weekdays" or
-                        wordNext == "weekdays" or
-                        wordNextNext == "weekdays"):
+                        remainder in recur_markers or
+                        wordNext in recur_markers or
+                        wordNextNext in recur_markers):
+                    # Ex: "7 on mondays" or "3 this friday"
                     # Set strHH so that isTime == True
                     # when am or pm is not specified
                     strHH = strNum
