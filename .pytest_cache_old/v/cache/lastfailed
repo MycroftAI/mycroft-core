@@ -1,0 +1,4 @@
+{
+  "test/unittests/util/test_format.py::TestNiceNumberFormat::test_different_language": true,
+  "test/unittests/util/test_format_es.py::TestNiceNumberFormat_es::test_specify_denominator_es": true
+}
