@@ -179,7 +179,7 @@ class Enclosure:
 
     def __insert_pages(self, namespace, pages):
         """ Insert pages into the namespace
-        
+
         Args:
             namespace (str): Namespace to add to
             pages (list):    Pages (str) to insert
@@ -291,7 +291,7 @@ class Enclosure:
             page (str or list): page(s) to show
             namespace (str):  skill namespace
             index (int): ??? TODO: Unused in code ???
-            
+
         TODO: - Update sync to match.
               - Separate into multiple functions/methods
         """
