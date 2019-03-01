@@ -634,6 +634,7 @@ def extract_duration_en(text):
                     not consumed in the parsing. The first value will
                     be None if no duration is found. The text returned
                     will have whitespace stripped from the ends.
+
     """
     if not text:
         return None
@@ -1275,8 +1276,7 @@ def extract_datetime_en(string, dateNow, default_time):
                     ((not daySpecified) or dayOffset < 1)):
                 # ambiguous time, detect whether they mean this evening or
                 # the next morning based on whether it has already passed
-                if dateNow.hour < HH or (dateNow.hour == HH and
-                                         dateNow.minute < MM):
+                if dateNow.hour < HH:
                     pass  # No modification needed
                 elif dateNow.hour < HH + 12:
                     HH += 12

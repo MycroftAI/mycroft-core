@@ -527,7 +527,7 @@ class EvaluationRule(object):
                           "Failed to load dialog template " +
                           "'dialog/en-us/" + d + ".dialog'" +
                           color.RESET)
-                    raise Exception("Can't load 'expected_dialog': "
+                    raise Exception("Can't load 'excepected_dialog': "
                                     "file '" + d + ".dialog'") \
                         from template_load_exception
                 # Allow custom fields to be anything

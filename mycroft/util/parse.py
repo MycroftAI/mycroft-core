@@ -171,20 +171,18 @@ def extract_duration(text, lang="en-us"):
         lang (str): the BCP-47 code for the language to use
 
     Returns:
-        (timedelta, str):
-                    A tuple containing the duration and the remaining text
-                    not consumed in the parsing. The first value will
-                    be None if no duration is found. The text returned
-                    will have whitespace stripped from the ends.
+        [int, str]: An array containing the int and the remaining text
+                    not consumed in the parsing, or none if no duration
+                    related text was found.
+
     """
     lang_lower = str(lang).lower()
 
     if lang_lower.startswith("en"):
         return extract_duration_en(text)
-
     # TODO: extract_duration for other languages
     _log_unsupported_language(lang_lower, ['en'])
-    return None
+    return text
 
 
 def extract_datetime(text, anchorDate=None, lang="en-us", default_time=None):

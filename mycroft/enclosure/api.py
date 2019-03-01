@@ -199,25 +199,33 @@ class EnclosureAPI:
         self.bus.emit(Message("enclosure.mouth.smile"))
         self.display_manager.set_active(self.name)
 
-    def mouth_viseme(self, start, viseme_pairs):
+    def mouth_viseme_list(self, start, viseme_pairs):
         """ Send mouth visemes as a list in a single message.
 
             Arguments:
                 start (int):    Timestamp for start of speech
                 viseme_pairs:   Pairs of viseme id and cumulative end times
-                                (code, end time)
-
-                                codes:
-                                 0 = shape for sounds like 'y' or 'aa'
-                                 1 = shape for sounds like 'aw'
-                                 2 = shape for sounds like 'uh' or 'r'
-                                 3 = shape for sounds like 'th' or 'sh'
-                                 4 = neutral shape for no sound
-                                 5 = shape for sounds like 'f' or 'v'
-                                 6 = shape for sounds like 'oy' or 'ao'
         """
         self.bus.emit(Message("enclosure.mouth.viseme_list",
                               {"start": start, "visemes": viseme_pairs}))
+
+    def mouth_viseme(self, code, time_until=0):
+        """Display a viseme mouth shape for synched speech
+
+        TODO: Remove in 19.02
+        Args:
+            code (int):  0 = shape for sounds like 'y' or 'aa'
+                         1 = shape for sounds like 'aw'
+                         2 = shape for sounds like 'uh' or 'r'
+                         3 = shape for sounds like 'th' or 'sh'
+                         4 = neutral shape for no sound
+                         5 = shape for sounds like 'f' or 'v'
+                         6 = shape for sounds like 'oy' or 'ao'
+            time_until (float): (optional) For timing, time.time() when this
+                         shape expires, or 0 for display regardles of time
+        """
+        self.bus.emit(Message("enclosure.mouth.viseme", {'code': code,
+                                                         'until': time_until}))
 
     def mouth_text(self, text=""):
         """Display text (scrolling as needed)

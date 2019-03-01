@@ -484,28 +484,6 @@ class MycroftSkillTest(unittest.TestCase):
             # handler
             self.assertTrue('A:sched_handler1' not in [e[0] for e in s.events])
 
-    def test_voc_match(self):
-        s = SimpleSkill1()
-        s.root_dir = abspath(dirname(__file__))
-
-        self.assertTrue(s.voc_match("turn off the lights", "turn_off_test"))
-        self.assertTrue(s.voc_match("would you please turn off the lights",
-                                    "turn_off_test"))
-        self.assertFalse(s.voc_match("return office", "turn_off_test"))
-        self.assertTrue(s.voc_match("switch off the lights", "turn_off_test"))
-        self.assertFalse(s.voc_match("", "turn_off_test"))
-        self.assertFalse(s.voc_match("switch", "turn_off_test"))
-        self.assertFalse(s.voc_match("My hovercraft is full of eels",
-                                     "turn_off_test"))
-
-        self.assertTrue(s.voc_match("turn off the lights", "turn_off2_test"))
-        self.assertFalse(s.voc_match("return office", "turn_off2_test"))
-        self.assertTrue(s.voc_match("switch off the lights", "turn_off2_test"))
-        self.assertFalse(s.voc_match("", "turn_off_test"))
-        self.assertFalse(s.voc_match("switch", "turn_off_test"))
-        self.assertFalse(s.voc_match("My hovercraft is full of eels",
-                                     "turn_off_test"))
-
 
 class _TestSkill(MycroftSkill):
     def __init__(self):

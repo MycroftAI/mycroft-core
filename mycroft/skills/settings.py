@@ -60,10 +60,8 @@
 
 import json
 import hashlib
-import os
 from threading import Timer
 from os.path import isfile, join, expanduser
-from requests.exceptions import RequestException
 
 from mycroft.api import DeviceApi, is_paired
 from mycroft.util.log import LOG
@@ -142,10 +140,7 @@ class SkillSettings(dict):
 
         self._device_identity = self.api.identity.uuid
         self._api_path = "/" + self._device_identity + "/skill"
-        try:
-            self._user_identity = self.api.get()['user']['uuid']
-        except RequestException:
-            return
+        self._user_identity = self.api.get()['user']['uuid']
 
         hashed_meta = self._get_meta_hash(settings_meta)
         skill_settings = self._request_other_settings(hashed_meta)
@@ -194,7 +189,7 @@ class SkillSettings(dict):
         """ Loads settings metadata from skills path. """
         if isfile(self._meta_path):
             try:
-                with open(self._meta_path, encoding='utf-8') as f:
+                with open(self._meta_path) as f:
                     data = json.load(f)
                 return data
             except Exception as e:
@@ -261,7 +256,6 @@ class SkillSettings(dict):
         directory = join(directory, self.name)
         directory = expanduser(directory)
         uuid_file = join(directory, 'uuid')
-        os.makedirs(directory, exist_ok=True)
         with open(uuid_file, 'w') as f:
             f.write(str(uuid))
 
@@ -333,7 +327,6 @@ class SkillSettings(dict):
         directory = join(directory, self.name)
         directory = expanduser(directory)
         hash_file = join(directory, 'hash')
-        os.makedirs(directory, exist_ok=True)
         with open(hash_file, 'w') as f:
             f.write(hashed_meta)
 
@@ -387,6 +380,8 @@ class SkillSettings(dict):
                 pass
             elif not self._complete_intialization:
                 self.initialize_remote_settings()
+                if not self._complete_intialization:
+                    return  # unable to do remote sync
             else:
                 self.update_remote()
 
@@ -394,9 +389,8 @@ class SkillSettings(dict):
             LOG.exception('Failed to fetch skill settings: {}'.format(repr(e)))
         finally:
             # Call callback for updated settings
-            if self._complete_intialization:
-                if self.changed_callback and hash(str(self)) != original:
-                    self.changed_callback()
+            if self.changed_callback and hash(str(self)) != original:
+                self.changed_callback()
 
         if self._poll_timer:
             self._poll_timer.cancel()
@@ -485,14 +479,13 @@ class SkillSettings(dict):
             skill_settings (dict or None): returns a dict if matches
         """
         settings = self._request_settings()
-        if settings:
-            # this loads the settings into memory for use in self.store
-            for skill_settings in settings:
-                if skill_settings['identifier'] == identifier:
-                    skill_settings = \
-                        self._type_cast(skill_settings, to_platform='core')
-                    self._remote_settings = skill_settings
-                    return skill_settings
+        # this loads the settings into memory for use in self.store
+        for skill_settings in settings:
+            if skill_settings['identifier'] == identifier:
+                skill_settings = \
+                    self._type_cast(skill_settings, to_platform='core')
+                self._remote_settings = skill_settings
+                return skill_settings
         return None
 
     def _request_settings(self):
@@ -501,33 +494,28 @@ class SkillSettings(dict):
         Returns:
             dict: dictionary with settings collected from the server.
         """
-        try:
-            settings = self.api.request({
-                "method": "GET",
-                "path": self._api_path
-            })
-        except RequestException:
-            return None
-
+        settings = self.api.request({
+            "method": "GET",
+            "path": self._api_path
+        })
         settings = [skills for skills in settings if skills is not None]
         return settings
 
     def _request_other_settings(self, identifier):
-        """ Retrieve skill settings from other devices by identifier
+        """ Retrieve user skill from other devices by identifier (hashed_meta)
 
         Args:
             identifier (str): identifier for this skill
         Returns:
-            settings (dict or None): the retrieved settings or None
+            settings (dict or None): returns the settings if true else None
         """
         path = \
             "/" + self._device_identity + "/userSkill?identifier=" + identifier
-        try:
-            user_skill = self.api.request({"method": "GET", "path": path})
-        except RequestException:
-            # Some kind of Timeout, connection HTTPError, etc.
-            user_skill = None
-        if not user_skill:
+        user_skill = self.api.request({
+            "method": "GET",
+            "path": path
+        })
+        if len(user_skill) == 0:
             return None
         else:
             settings = self._type_cast(user_skill[0], to_platform='core')

@@ -144,6 +144,41 @@ class SkillManager(Thread):
             ), versioned=msm_config['versioned']
         )
 
+    @staticmethod
+    def load_skills_data():
+        """ Backwards compatible skills_data read function.
+            Will return a format matching version 0 of skills_data.json
+
+            TODO: Remove in 19.02
+
+            Returns: dict with skill names as keys and their data as values
+        """
+        msm = SkillManager.create_msm()
+        with msm.lock, SkillManager.get_lock():
+            data = msm.load_skills_data()
+        return {s['name']: s for s in data['skills']}
+
+    @staticmethod
+    def write_skills_data(skills_data):
+        """ Backwards compatibility write function.
+
+            Converts the old style skill.json storage to new style storage.
+
+            TODO: Remove in 19.02
+        """
+        msm = SkillManager.create_msm()
+        with msm.lock, SkillManager.get_lock():
+            msm_data = msm.load_skills_data()
+            skills = []
+            for key in skills_data:
+                skills_data[key]['name'] = key
+                skills.append(skills_data[key])
+            msm_data['skills'] = skills
+            msm.skills_data_hash = ''  # Force write
+            msm.write_skills_data(msm_data)
+            if is_paired():
+                DeviceApi().upload_skills_data(msm_data)
+
     def schedule_now(self, message=None):
         self.next_download = time.time() - 1
 

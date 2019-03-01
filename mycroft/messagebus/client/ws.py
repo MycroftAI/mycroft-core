@@ -164,7 +164,7 @@ class WebsocketClient:
             else:
                 LOG.debug("Not able to find '"+str(event_name)+"'")
             self.emitter.remove_listener(event_name, func)
-        except ValueError:
+        except ValueError as e:
             LOG.warning('Failed to remove event {}: {}'.format(event_name,
                                                                str(func)))
             for line in traceback.format_stack():

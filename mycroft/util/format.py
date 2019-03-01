@@ -16,6 +16,7 @@
 from os.path import join
 
 from mycroft.util.lang.format_en import *
+from mycroft.util.lang.format_es import *
 from mycroft.util.lang.format_pt import *
 from mycroft.util.lang.format_it import *
 from mycroft.util.lang.format_sv import *
@@ -32,7 +33,6 @@ from mycroft.util.lang.format_nl import pronounce_number_nl
 from mycroft.util.lang.format_nl import nice_number_nl
 
 from collections import namedtuple
-from padatious.util import expand_parentheses
 import json
 import os
 import datetime
@@ -248,6 +248,8 @@ def nice_number(number, lang="en-us", speech=True, denominators=None):
     lang_lower = str(lang).lower()
     if lang_lower.startswith("en"):
         return nice_number_en(number, speech, denominators)
+    elif lang_lower.startswith("es"):
+        return nice_number_es(number, speech, denominators)
     elif lang_lower.startswith("pt"):
         return nice_number_pt(number, speech, denominators)
     elif lang_lower.startswith("it"):
@@ -288,6 +290,8 @@ def nice_time(dt, lang="en-us", speech=True, use_24hour=False,
     lang_lower = str(lang).lower()
     if lang_lower.startswith("en"):
         return nice_time_en(dt, speech, use_24hour, use_ampm)
+    elif lang_lower.startswith("es"):
+        return nice_time_es(dt, speech, use_24hour, use_ampm)
     elif lang_lower.startswith("it"):
         return nice_time_it(dt, speech, use_24hour, use_ampm)
     elif lang_lower.startswith("fr"):
@@ -327,6 +331,8 @@ def pronounce_number(number, lang="en-us", places=2, short_scale=True,
         return pronounce_number_it(number, places=places,
                                    short_scale=short_scale,
                                    scientific=scientific)
+    elif lang_lower.startswith("es"):
+        return pronounce_number_es(number, places=places)
     elif lang_lower.startswith("fr"):
         return pronounce_number_fr(number, places=places)
     elif lang_lower.startswith("de"):
@@ -513,16 +519,3 @@ def join_list(items, connector, sep=None, lang="en-us"):
         sep += " "
     return (sep.join(str(item) for item in items[:-1]) +
             " " + _translate_word(connector, lang) + " " + items[-1])
-
-
-def expand_options(parentheses_line: str) -> list:
-    """
-    Convert 'test (a|b)' -> ['test a', 'test b']
-    Args:
-        parentheses_line: Input line to expand
-    Returns:
-        List of expanded possibilities
-    """
-    # 'a(this|that)b' -> [['a', 'this', 'b'], ['a', 'that', 'b']]
-    options = expand_parentheses(re.split(r'([(|)])', parentheses_line))
-    return [re.sub(r'\s+', ' ', ' '.join(i)).strip() for i in options]

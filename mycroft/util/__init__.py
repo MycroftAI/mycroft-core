@@ -28,7 +28,6 @@ import os.path
 import psutil
 from stat import S_ISREG, ST_MTIME, ST_MODE, ST_SIZE
 import requests
-import logging
 
 import signal as sig
 
@@ -64,8 +63,6 @@ def resolve_resource_file(res_name):
 
     Args:
         res_name (str): a resource path/name
-    Returns:
-        str: path to resource or None if no resource found
     """
     config = mycroft.configuration.Configuration.get()
 
@@ -399,64 +396,28 @@ def wait_for_exit_signal():
         pass
 
 
-_log_all_bus_messages = False
-
-
 def create_echo_function(name, whitelist=None):
-    """ Standard logging mechanism for Mycroft processes.
-
-    This handles the setup of the basic logging for all Mycroft
-    messagebus-based processes.
-
-    Args:
-        name (str): Reference name of the process
-        whitelist (list, optional): List of "type" strings.  If defined, only
-                                    messages in this list will be logged.
-
-    Returns:
-        func: The echo function
-    """
-
     from mycroft.configuration import Configuration
     blacklist = Configuration.get().get("ignore_logs")
 
     def echo(message):
-        global _log_all_bus_messages
+        """Listen for messages and echo them for logging"""
         try:
-            msg = json.loads(message)
+            js_msg = json.loads(message)
 
-            if whitelist and msg.get("type") not in whitelist:
+            if whitelist and js_msg.get("type") not in whitelist:
                 return
 
-            if blacklist and msg.get("type") in blacklist:
+            if blacklist and js_msg.get("type") in blacklist:
                 return
 
-            if msg.get("type") == "mycroft.debug.log":
-                # Respond to requests to adjust the logger settings
-                lvl = msg["data"].get("level", "").upper()
-                if lvl in ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]:
-                    LOG.level = lvl
-                    LOG(name).info("Changing log level to: {}".format(lvl))
-                    try:
-                        logging.getLogger('urllib3').setLevel(lvl)
-                    except Exception:
-                        pass  # We don't really care about if this fails...
-
-                # Allow enable/disable of messagebus traffic
-                log_bus = msg["data"].get("bus", None)
-                if log_bus is not None:
-                    LOG(name).info("Bus logging: "+str(log_bus))
-                    _log_all_bus_messages = log_bus
-            elif msg.get("type") == "registration":
+            if js_msg.get("type") == "registration":
                 # do not log tokens from registration messages
-                msg["data"]["token"] = None
-                message = json.dumps(msg)
+                js_msg["data"]["token"] = None
+                message = json.dumps(js_msg)
         except Exception:
             pass
-
-        if _log_all_bus_messages:
-            # Listen for messages and echo them for logging
-            LOG(name).debug(message)
+        LOG(name).debug(message)
     return echo
 
 
