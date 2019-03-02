@@ -40,8 +40,8 @@ class TestNormalize(unittest.TestCase):
 #        self.assertEqual(extract_number("dette er den 1. test",
 #                                        lang="da-dk"),
 #                         1)
-        self.assertEqual(extract_number("dette er den anden test", lang="da-dk"),
-                         2)
+        self.assertEqual(extract_number("dette er den anden test",
+                         lang="da-dk"), 2)
 #        self.assertEqual(extract_number("dette er den 2. test",
 #                                        lang="da-dk"),
 #                         2)
