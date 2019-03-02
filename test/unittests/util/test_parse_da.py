@@ -35,8 +35,8 @@ class TestNormalize(unittest.TestCase):
                          "dette er 1 extra-test")
 
     def test_extract_number(self):
-        self.assertEqual(extract_number("dette er den første test", lang="da-dk"),
-                         1)
+        self.assertEqual(extract_number("dette er den første test",
+                         lang="da-dk"), 1)
 #        self.assertEqual(extract_number("dette er den 1. test",
 #                                        lang="da-dk"),
 #                         1)
