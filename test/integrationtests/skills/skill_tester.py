@@ -518,18 +518,7 @@ class EvaluationRule(object):
                 else:
                     dialog = test_case['expected_dialog']
                 # Extract dialog texts from skill
-                dialogs = []
-                try:
-                    for d in dialog:
-                        dialogs += skill.dialog_renderer.templates[d]
-                except Exception as template_load_exception:
-                    print(color.FAIL +
-                          "Failed to load dialog template " +
-                          "'dialog/en-us/" + d + ".dialog'" +
-                          color.RESET)
-                    raise Exception("Can't load 'excepected_dialog': "
-                                    "file '" + d + ".dialog'") \
-                        from template_load_exception
+                dialogs = load_dialog_list(skill, dialog) 
                 # Allow custom fields to be anything
                 d = [re.sub(r'{.*?\}', r'.*', t) for t in dialogs]
                 # Create rule allowing any of the sentences for that dialog
