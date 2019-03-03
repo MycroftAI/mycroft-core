@@ -4,6 +4,6 @@ mycroft: mejkråft
 open: åpen
 source: sårhse
 seksten: sejsten
-spotift: spåtifej
+spotify: spåtifej
 spot-ify: spåtifej
 chat: tjat
