@@ -50,8 +50,7 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(
             extract_number("dette er test nummer fire", lang="da-dk"), 4)
         self.assertEqual(
-            extract_number("en trediedel af en kop", lang="da-dk"),
-                           1.0 / 3.0)
+            extract_number("en trediedel af en kop", lang="da-dk"), 1.0 / 3.0)
         self.assertEqual(extract_number("tre kopper", lang="da-dk"), 3)
         self.assertEqual(extract_number("1/3 kop", lang="da-dk"),
                          1.0 / 3.0)

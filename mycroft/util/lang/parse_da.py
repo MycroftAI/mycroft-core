@@ -318,8 +318,8 @@ def extract_datetime_da(string, currentDate, default_time):
             if dayOffset < 0:
                 dayOffset += 7
             if wordNext == "morgen":
-            # morgen means morning if preceded by
-            # the day of the week
+                # morgen means morning if preceded by
+                # the day of the week
                 words[idx + 1] = "tidlig"
             if wordPrev[:6] == "næste":
                 dayOffset += 7
