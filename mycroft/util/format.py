@@ -252,7 +252,7 @@ def nice_number(number, lang="en-us", speech=True, denominators=None):
     if lang_lower.startswith("en"):
         return nice_number_en(number, speech, denominators)
     elif lang_lower.startswith("es"):
-        return nice_number_es(number, speech, denominators)    
+        return nice_number_es(number, speech, denominators)
     elif lang_lower.startswith("pt"):
         return nice_number_pt(number, speech, denominators)
     elif lang_lower.startswith("it"):
@@ -294,7 +294,7 @@ def nice_time(dt, lang="en-us", speech=True, use_24hour=False,
     if lang_lower.startswith("en"):
         return nice_time_en(dt, speech, use_24hour, use_ampm)
     elif lang_lower.startswith("es"):
-        return nice_time_es(dt, speech, use_24hour, use_ampm)    
+        return nice_time_es(dt, speech, use_24hour, use_ampm)
     elif lang_lower.startswith("it"):
         return nice_time_it(dt, speech, use_24hour, use_ampm)
     elif lang_lower.startswith("fr"):
@@ -335,7 +335,7 @@ def pronounce_number(number, lang="en-us", places=2, short_scale=True,
                                    short_scale=short_scale,
                                    scientific=scientific)
     elif lang_lower.startswith("es"):
-        return pronounce_number_es(number, places=places)    
+        return pronounce_number_es(number, places=places)
     elif lang_lower.startswith("fr"):
         return pronounce_number_fr(number, places=places)
     elif lang_lower.startswith("de"):
