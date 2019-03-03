@@ -105,6 +105,10 @@ class SkillSettings(dict):
         if isfile(self._meta_path):
             self._poll_skill_settings()
 
+    def __hash__(self):
+        """ Simple object unique hash. """
+        return hash(str(id(self)) + self.name)
+
     def run_poll(self, _=None):
         """Immediately poll the web for new skill settings"""
         if self._poll_timer:
