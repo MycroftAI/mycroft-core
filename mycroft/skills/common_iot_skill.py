@@ -49,6 +49,8 @@ class Thing(Enum):
     by IoT Skills. This is intended to be used with the
     IoTRequest class. See that class for more details.
     """
+    # THE ORDER OF THESE VALUES SHOULD NOT BE CHANGED. WHEN THEY
+    # ARE SERIALIZED, THE NUMERICAL VALUE IS USED.
     LIGHT = 0
     THERMOSTAT = 1
     DOOR = 2
@@ -64,9 +66,13 @@ class Action(Enum):
     to be used with the IoTRequest class. See that class
     for more details.
     """
+    # THE ORDER OF THESE VALUES SHOULD NOT BE CHANGED. WHEN THEY
+    # ARE SERIALIZED, THE NUMERICAL VALUE IS USED.
     ON = 0
     OFF = 1
     TOGGLE = 2
+    ADJUST = 3
+    SET = 4
 
 
 class IoTRequest():
@@ -111,6 +117,8 @@ class IoTRequest():
             raise Exception("At least one of thing,"
                             " entity, or scene must be present!")
 
+        # TODO - add "property" for things like brightness, color temp, etc?
+        #  This would be a property of the THING
         self.thing = thing
         self.action = action
         self.entity = entity
