@@ -22,7 +22,6 @@ from mycroft.util.lang.parse_pt import *
 from mycroft.util.lang.parse_es import *
 from mycroft.util.lang.parse_it import *
 from mycroft.util.lang.parse_sv import *
-from mycroft.util.lang.parse_da import *
 
 from mycroft.util.lang.parse_de import extractnumber_de
 from mycroft.util.lang.parse_de import extract_numbers_de

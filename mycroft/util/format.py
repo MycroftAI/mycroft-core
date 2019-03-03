@@ -20,7 +20,6 @@ from mycroft.util.lang.format_pt import *
 from mycroft.util.lang.format_it import *
 from mycroft.util.lang.format_sv import *
 from mycroft.util.lang.format_hu import *
-from mycroft.util.lang.format_da import *
 
 from mycroft.util.lang.format_de import nice_number_de
 from mycroft.util.lang.format_de import nice_time_de
