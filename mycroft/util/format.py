@@ -21,6 +21,9 @@ from mycroft.util.lang.format_it import *
 from mycroft.util.lang.format_sv import *
 from mycroft.util.lang.format_hu import *
 
+from mycroft.util.lang.format_es import nice_number_es
+from mycroft.util.lang.format_es import nice_time_es
+from mycroft.util.lang.format_es import pronounce_number_es
 from mycroft.util.lang.format_de import nice_number_de
 from mycroft.util.lang.format_de import nice_time_de
 from mycroft.util.lang.format_de import pronounce_number_de
@@ -248,6 +251,8 @@ def nice_number(number, lang="en-us", speech=True, denominators=None):
     lang_lower = str(lang).lower()
     if lang_lower.startswith("en"):
         return nice_number_en(number, speech, denominators)
+    elif lang_lower.startswith("es"):
+        return nice_number_es(number, speech, denominators)    
     elif lang_lower.startswith("pt"):
         return nice_number_pt(number, speech, denominators)
     elif lang_lower.startswith("it"):
@@ -288,6 +293,8 @@ def nice_time(dt, lang="en-us", speech=True, use_24hour=False,
     lang_lower = str(lang).lower()
     if lang_lower.startswith("en"):
         return nice_time_en(dt, speech, use_24hour, use_ampm)
+    elif lang_lower.startswith("es"):
+        return nice_time_es(dt, speech, use_24hour, use_ampm)    
     elif lang_lower.startswith("it"):
         return nice_time_it(dt, speech, use_24hour, use_ampm)
     elif lang_lower.startswith("fr"):
@@ -327,6 +334,8 @@ def pronounce_number(number, lang="en-us", places=2, short_scale=True,
         return pronounce_number_it(number, places=places,
                                    short_scale=short_scale,
                                    scientific=scientific)
+    elif lang_lower.startswith("es"):
+        return pronounce_number_es(number, places=places)    
     elif lang_lower.startswith("fr"):
         return pronounce_number_fr(number, places=places)
     elif lang_lower.startswith("de"):
