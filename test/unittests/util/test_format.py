@@ -88,13 +88,15 @@ class TestNiceNumberFormat(unittest.TestCase):
                          'should format 6.0 as 6 not {}'.format(
                              nice_number(6.0, speech=False)))
 
-    def test_different_language(self):
-        self.assertEqual(nice_number(5.5, lang="es-es"), '5 y medio',
-                         'should format 5.5 as 5 y medio not {}'.format(
-                             nice_number(5.5, lang="es-es")))
+    def test_unknown_language(self):
+        """ An unknown / unhandled language should return the string
+            representation of the input number.
+        """
+        self.assertEqual(nice_number(5.5, lang='as-fd'), '5.5',
+                         'should format 5.5 as 5.5 not {}'.format(
+                             nice_number(5.5, lang='as-df')))
 
 
-# def pronounce_number(number, lang="en-us", places=2):
 class TestPronounceNumber(unittest.TestCase):
     def test_convert_int(self):
         self.assertEqual(pronounce_number(0), "zero")
