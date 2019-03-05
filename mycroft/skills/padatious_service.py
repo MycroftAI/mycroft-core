@@ -56,7 +56,13 @@ class PadatiousService(FallbackSkill):
         self.bus.on('detach_intent', self.handle_detach_intent)
         self.bus.on('detach_skill', self.handle_detach_skill)
         self.bus.on('mycroft.skills.initialized', self.train)
+
+        # Call Padatious an an early fallback, looking for a high match intent
         self.register_fallback(self.handle_fallback, 5)
+
+        # Try loose Padatious intent match before going to fallback-unknown
+        self.register_fallback(self.handle_fallback_last_chance, 99)
+
         self.finished_training_event = Event()
         self.finished_initial_train = False
 
@@ -127,7 +133,7 @@ class PadatiousService(FallbackSkill):
     def register_entity(self, message):
         self._register_object(message, 'entity', self.container.load_entity)
 
-    def handle_fallback(self, message):
+    def handle_fallback(self, message, threshold=0.8):
         if not self.finished_training_event.is_set():
             LOG.debug('Waiting for Padatious training to finish...')
             return False
@@ -135,7 +141,7 @@ class PadatiousService(FallbackSkill):
         utt = message.data.get('utterance')
         LOG.debug("Padatious fallback attempt: " + utt)
         data = self.calc_intent(utt)
-        if data.conf < 0.5:
+        if data.conf < threshold:
             return False
 
         data.matches['utterance'] = utt
@@ -144,6 +150,9 @@ class PadatiousService(FallbackSkill):
 
         self.bus.emit(message.reply(data.name, data=data.matches))
         return True
+
+    def handle_fallback_last_chance(self, message):
+        return self.handle_fallback(message, 0.5)
 
     def calc_intent(self, utt):
         return self.container.calc_intent(utt)
