@@ -59,11 +59,11 @@ class Thing(Enum):
 
 
 @unique
-class Property(Enum):
+class Attribute(Enum):
     """
-    This class represents 'Properties' of 'Things'.
+    This class represents 'Attributes' of 'Things'.
 
-    This may also grow to accomodate states, e.g.
+    This may also grow to encompass states, e.g.
     'locked' or 'unlocked'.
     """
     BRIGHTNESS = auto()
@@ -121,7 +121,7 @@ class IoTRequest():
     def __init__(self,
                  action: Action,
                  thing: Thing = None,
-                 property: Property = None,
+                 attribute: Attribute = None,
                  entity: str = None,
                  scene: str = None):
 
@@ -131,7 +131,7 @@ class IoTRequest():
 
         self.action = action
         self.thing = thing
-        self.property = property
+        self.attribute = attribute
         self.entity = entity
         self.scene = scene
 
@@ -139,14 +139,14 @@ class IoTRequest():
         template = ('IoTRequest('
                     ' action={action},'
                     ' thing={thing},'
-                    ' property={property},'
+                    ' attribute={attribute},'
                     ' entity={entity},'
                     ' scene={scene}'
                     ')')
         return template.format(
             action=self.action,
             thing=self.thing,
-            property=self.property,
+            attribute=self.attribute,
             entity='"{}"'.format(self.entity) if self.entity else None,
             scene='"{}"'.format(self.scene) if self.scene else None
         )
@@ -155,7 +155,7 @@ class IoTRequest():
         return {
             'action': self.action.name,
             'thing': self.thing.name if self.thing else None,
-            'property': self.property.name if self.property else None,
+            'attribute': self.attribute.name if self.attribute else None,
             'entity': self.entity,
             'scene': self.scene
         }
@@ -166,9 +166,9 @@ class IoTRequest():
         data['action'] = Action[data['action']]
         if data.get('thing') not in (None, ''):
             data['thing'] = Thing[data['thing']]
-        if data.get('property') not in (None, ''):
-            data['property'] = Thing[data['property']]
-        
+        if data.get('attribute') not in (None, ''):
+            data['attribute'] = Thing[data['attribute']]
+
         return cls(**data)
 
 
@@ -326,7 +326,7 @@ class CommonIoTSkill(MycroftSkill, ABC):
         True if and only if this skill can take the appropriate
         'action' when considering _all other properties
         of the request_. In other words, a partial match, one in which
-        any property of the IoTRequest is not known to this skill,
+        any piece of the IoTRequest is not known to this skill,
         and is not None, this should return (False, None).
 
         Args:
