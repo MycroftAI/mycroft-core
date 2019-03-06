@@ -19,7 +19,7 @@
 # BE WARNED THAT THE CLASSES, FUNCTIONS, ETC MAY CHANGE WITHOUT WARNING.
 
 from abc import ABC, abstractmethod
-from enum import Enum
+from enum import Enum, unique, auto
 from mycroft import MycroftSkill
 from mycroft.messagebus.message import Message
 
@@ -43,20 +43,35 @@ class _BusKeys():
     CALL_FOR_REGISTRATION = REGISTER + ".request"
 
 
+@unique
 class Thing(Enum):
     """
     This class represents 'Things' which may be controlled
     by IoT Skills. This is intended to be used with the
     IoTRequest class. See that class for more details.
     """
-    LIGHT = 0
-    THERMOSTAT = 1
-    DOOR = 2
-    LOCK = 3
-    PLUG = 4
-    SWITCH = 5
+    LIGHT = auto()
+    THERMOSTAT = auto()
+    DOOR = auto()
+    LOCK = auto()
+    PLUG = auto()
+    SWITCH = auto()
 
 
+@unique
+class Property(Enum):
+    """
+    This class represents 'Properties' of 'Things'.
+
+    This may also grow to accomodate states, e.g.
+    'locked' or 'unlocked'.
+    """
+    BRIGHTNESS = auto()
+    COLOR = auto()
+    COLOR_TEMPERATURE = auto()
+
+
+@unique
 class Action(Enum):
     """
     This class represents 'Actions' that can be applied to
@@ -64,11 +79,11 @@ class Action(Enum):
     to be used with the IoTRequest class. See that class
     for more details.
     """
-    ON = 0
-    OFF = 1
-    TOGGLE = 2
-    ADJUST = 3
-    SET = 4
+    ON = auto()
+    OFF = auto()
+    TOGGLE = auto()
+    ADJUST = auto()
+    SET = auto()
 
 
 class IoTRequest():
@@ -106,6 +121,7 @@ class IoTRequest():
     def __init__(self,
                  action: Action,
                  thing: Thing = None,
+                 property: Property = None,
                  entity: str = None,
                  scene: str = None):
 
@@ -113,19 +129,24 @@ class IoTRequest():
             raise Exception("At least one of thing,"
                             " entity, or scene must be present!")
 
-        # TODO - add "property" for things like brightness, color temp, etc?
-        #  This would be a property of the THING
-        self.thing = thing
         self.action = action
+        self.thing = thing
+        self.property = property
         self.entity = entity
         self.scene = scene
 
     def __repr__(self):
-        template = 'IoTRequest(thing={thing}, action={action},' \
-                   ' entity={entity}, scene={scene})'
+        template = ('IoTRequest('
+                    ' action={action},'
+                    ' thing={thing},'
+                    ' property={property},'
+                    ' entity={entity},'
+                    ' scene={scene}'
+                    ')')
         return template.format(
-            thing=self.thing,
             action=self.action,
+            thing=self.thing,
+            property=self.property,
             entity='"{}"'.format(self.entity) if self.entity else None,
             scene='"{}"'.format(self.scene) if self.scene else None
         )
@@ -134,6 +155,7 @@ class IoTRequest():
         return {
             'action': self.action.name,
             'thing': self.thing.name if self.thing else None,
+            'property': self.property.name if self.property else None,
             'entity': self.entity,
             'scene': self.scene
         }
@@ -142,8 +164,11 @@ class IoTRequest():
     def from_dict(cls, data: dict):
         data = data.copy()
         data['action'] = Action[data['action']]
-        if data.get('thing') is not None:
+        if data.get('thing') not in (None, ''):
             data['thing'] = Thing[data['thing']]
+        if data.get('property') not in (None, ''):
+            data['property'] = Thing[data['property']]
+        
         return cls(**data)
 
 
