@@ -49,8 +49,6 @@ class Thing(Enum):
     by IoT Skills. This is intended to be used with the
     IoTRequest class. See that class for more details.
     """
-    # THE ORDER OF THESE VALUES SHOULD NOT BE CHANGED. WHEN THEY
-    # ARE SERIALIZED, THE NUMERICAL VALUE IS USED.
     LIGHT = 0
     THERMOSTAT = 1
     DOOR = 2
@@ -66,8 +64,6 @@ class Action(Enum):
     to be used with the IoTRequest class. See that class
     for more details.
     """
-    # THE ORDER OF THESE VALUES SHOULD NOT BE CHANGED. WHEN THEY
-    # ARE SERIALIZED, THE NUMERICAL VALUE IS USED.
     ON = 0
     OFF = 1
     TOGGLE = 2
@@ -136,8 +132,8 @@ class IoTRequest():
 
     def to_dict(self):
         return {
-            'action': self.action.value,
-            'thing': self.thing.value if self.thing else None,
+            'action': self.action.name,
+            'thing': self.thing.name if self.thing else None,
             'entity': self.entity,
             'scene': self.scene
         }
@@ -145,9 +141,9 @@ class IoTRequest():
     @classmethod
     def from_dict(cls, data: dict):
         data = data.copy()
-        data['action'] = Action(data['action'])
+        data['action'] = Action[data['action']]
         if data.get('thing') is not None:
-            data['thing'] = Thing(data['thing'])
+            data['thing'] = Thing[data['thing']]
         return cls(**data)
 
 
