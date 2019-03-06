@@ -15,6 +15,9 @@
 # limitations under the License.
 ##########################################################################
 
+# Set a default locale to handle output from commands reliably
+export LANG=C
+
 # exit on any error
 set -Ee
 
