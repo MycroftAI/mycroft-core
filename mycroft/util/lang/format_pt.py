@@ -16,31 +16,8 @@
 #
 
 from mycroft.util.lang.format_common import convert_to_mixed_fraction
-
-FRACTION_STRING_PT = {
-    2: 'meio',
-    3: u'terço',
-    4: 'quarto',
-    5: 'quinto',
-    6: 'sexto',
-    7: u'sétimo',
-    8: 'oitavo',
-    9: 'nono',
-    10: u'décimo',
-    11: 'onze avos',
-    12: 'doze avos',
-    13: 'treze avos',
-    14: 'catorze avos',
-    15: 'quinze avos',
-    16: 'dezasseis avos',
-    17: 'dezassete avos',
-    18: 'dezoito avos',
-    19: 'dezanove avos',
-    20: u'vigésimo',
-    30: u'trigésimo',
-    100: u'centésimo',
-    1000: u'milésimo'
-}
+from mycroft.util.lang.common_data_pt import _FRACTION_STRING_PT, \
+    _NUM_STRING_PT
 
 
 def nice_number_pt(number, speech, denominators):
@@ -74,7 +51,7 @@ def nice_number_pt(number, speech, denominators):
     if num == 0:
         return str(whole)
     # denominador
-    den_str = FRACTION_STRING_PT[den]
+    den_str = _FRACTION_STRING_PT[den]
     # fracções
     if whole == 0:
         if num == 1:
@@ -95,3 +72,152 @@ def nice_number_pt(number, speech, denominators):
     if num > 1:
         return_string += 's'
     return return_string
+
+
+def pronounce_number_pt(num, places=2):
+    """
+    Convert a number to it's spoken equivalent
+     For example, '5.2' would return 'cinco virgula dois'
+     Args:
+        num(float or int): the number to pronounce (under 100)
+        places(int): maximum decimal places to speak
+    Returns:
+        (str): The pronounced number
+    """
+    if abs(num) >= 100:
+        # TODO: Support n > 100
+        return str(num)
+
+    result = ""
+    if num < 0:
+        result = "menos "
+    num = abs(num)
+
+    if num >= 20:
+        tens = int(num - int(num) % 10)
+        ones = int(num - tens)
+        result += _NUM_STRING_PT[tens]
+        if ones > 0:
+            result += " e " + _NUM_STRING_PT[ones]
+    else:
+        result += _NUM_STRING_PT[int(num)]
+
+    # Deal with decimal part, in portuguese is commonly used the comma
+    # instead the dot. Decimal part can be written both with comma
+    # and dot, but when pronounced, its pronounced "virgula"
+    if not num == int(num) and places > 0:
+        result += " vírgula"
+        place = 10
+        while int(num * place) % 10 > 0 and places > 0:
+            result += " " + _NUM_STRING_PT[int(num * place) % 10]
+            place *= 10
+            places -= 1
+    return result
+
+
+def nice_time_pt(dt, speech=True, use_24hour=False, use_ampm=False):
+    """
+    Format a time to a comfortable human format
+     For example, generate 'cinco treinta' for speech or '5:30' for
+    text display.
+     Args:
+        dt (datetime): date to format (assumes already in local timezone)
+        speech (bool): format for speech (default/True) or display (False)=Fal
+        use_24hour (bool): output in 24-hour/military or 12-hour format
+        use_ampm (bool): include the am/pm for 12-hour format
+    Returns:
+        (str): The formatted time string
+    """
+    if use_24hour:
+        # e.g. "03:01" or "14:22"
+        string = dt.strftime("%H:%M")
+    else:
+        if use_ampm:
+            # e.g. "3:01 AM" or "2:22 PM"
+            string = dt.strftime("%I:%M %p")
+        else:
+            # e.g. "3:01" or "2:22"
+            string = dt.strftime("%I:%M")
+        if string[0] == '0':
+            string = string[1:]  # strip leading zeros
+
+    if not speech:
+        return string
+
+    # Generate a speakable version of the time
+    speak = ""
+    if use_24hour:
+        # simply speak the number
+        if dt.hour == 1:
+            speak += "uma"
+        else:
+            speak += pronounce_number_pt(dt.hour)
+
+        # equivalent to "quarter past ten"
+        if dt.minute > 0:
+            speak += " e " + pronounce_number_pt(dt.minute)
+
+    else:
+        # speak number and add daytime identifier
+        # (equivalent to "in the morning")
+        if dt.minute == 35:
+            minute = -25
+            hour = dt.hour + 1
+        elif dt.minute == 40:
+            minute = -20
+            hour = dt.hour + 1
+        elif dt.minute == 45:
+            minute = -15
+            hour = dt.hour + 1
+        elif dt.minute == 50:
+            minute = -10
+            hour = dt.hour + 1
+        elif dt.minute == 55:
+            minute = -5
+            hour = dt.hour + 1
+        else:
+            minute = dt.minute
+            hour = dt.hour
+
+        if hour == 0:
+            speak += "meia noite"
+        elif hour == 12:
+            speak += "meio dia"
+        # 1 and 2 are pronounced in female form when talking about hours
+        elif hour == 1 or hour == 13:
+            speak += "uma"
+        elif hour == 2 or hour == 14:
+            speak += "duas"
+        elif hour < 13:
+            speak = pronounce_number_pt(hour)
+        else:
+            speak = pronounce_number_pt(hour - 12)
+
+        if minute != 0:
+            if minute == 15:
+                speak += " e um quarto"
+            elif minute == 30:
+                speak += " e meia"
+            elif minute == -15:
+                speak += " menos um quarto"
+            else:
+                if minute > 0:
+                    speak += " e " + pronounce_number_pt(minute)
+                else:
+                    speak += " " + pronounce_number_pt(minute)
+
+        # exact time
+        if minute == 0 and not use_ampm:
+            # 3:00
+            speak += " em ponto"
+
+        if use_ampm:
+            if hour > 0 and hour < 6:
+                speak += " da madrugada"
+            elif hour >= 6 and hour < 12:
+                speak += " da manhã"
+            elif hour >= 13 and hour < 21:
+                speak += " da tarde"
+            elif hour != 0 and hour != 12:
+                speak += " da noite"
+    return speak
