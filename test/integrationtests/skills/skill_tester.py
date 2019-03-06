@@ -557,7 +557,7 @@ class EvaluationRule(object):
             ctx = test_case['changed_context']
             if isinstance(ctx, list):
                 for c in ctx:
-                    self.rule.append(['equal', 'context', str(c)])
+                    self.rule.append(['endsWith', 'context', str(c)])
             else:
                 self.rule.append(['equal', 'context', ctx])
 
