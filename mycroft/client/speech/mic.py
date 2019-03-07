@@ -47,16 +47,23 @@ class MutableStream:
     def __init__(self, wrapped_stream, format, muted=False):
         assert wrapped_stream is not None
         self.wrapped_stream = wrapped_stream
+
         self.muted = muted
+        if muted:
+            self.mute()
 
         self.SAMPLE_WIDTH = pyaudio.get_sample_size(format)
         self.muted_buffer = b''.join([b'\x00' * self.SAMPLE_WIDTH])
 
     def mute(self):
+        """ Stop the stream and set the muted flag """
         self.muted = True
+        self.wrapped_stream.stop_stream()
 
     def unmute(self):
+        """ Start the stream and clear the muted flag """
         self.muted = False
+        self.wrapped_stream.start_stream()
 
     def read(self, size, of_exc=False):
         """
@@ -73,6 +80,11 @@ class MutableStream:
         frames = collections.deque()
         remaining = size
         while remaining > 0:
+            # If muted during read return empty buffer. This ensures no
+            # reads occur while the stream is stopped
+            if self.muted:
+                return self.muted_buffer
+
             to_read = min(self.wrapped_stream.get_read_available(), remaining)
             if to_read == 0:
                 sleep(.01)
@@ -82,8 +94,6 @@ class MutableStream:
             frames.append(result)
             remaining -= to_read
 
-        if self.muted:
-            return self.muted_buffer
         input_latency = self.wrapped_stream.get_input_latency()
         if input_latency > 0.2:
             LOG.warning("High input latency: %f" % input_latency)
@@ -503,7 +513,9 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             file = resolve_resource_file(
                 self.config.get('sounds').get('start_listening'))
             if file:
-                play_wav(file)
+                source.mute()
+                play_wav(file).wait()
+                source.unmute()
 
         frame_data = self._record_phrase(source, sec_per_buffer)
         audio_data = self._create_audio_data(frame_data, source)
