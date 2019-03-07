@@ -17,7 +17,7 @@ from mycroft.tts import TTS, TTSValidator
 from mycroft.tts.remote_tts import RemoteTTSTimeoutException
 from mycroft.util.log import LOG
 from mycroft.util.format import pronounce_number
-from mycroft.util import play_wav, get_cache_directory, create_signal
+from mycroft.util import play_wav, get_cache_directory
 from requests_futures.sessions import FuturesSession
 from requests.exceptions import (
     ReadTimeout, ConnectionError, ConnectTimeout, HTTPError
@@ -27,22 +27,28 @@ from .mimic_tts import VISIMES
 import math
 import base64
 import os
-import hashlib
 import re
 import json
 
 
-max_sentence_size = 170
+# Heuristic value, caps character length of a chunk of text to be spoken as a
+# work around for current Mimic2 implementation limits.
+_max_sentence_size = 170
 
 
-def break_chunks(l, n):
-    """Yield successive n-sized chunks from l."""
+def _break_chunks(l, n):
+    """ Yield successive n-sized chunks
+
+    Args:
+        l (list): text (str) to split
+        chunk_size (int): chunk size
+    """
     for i in range(0, len(l), n):
         yield " ".join(l[i:i + n])
 
 
-def split_by_chunk_size(text, chunk_size):
-    """split text into word chunks by chunk_size size
+def _split_by_chunk_size(text, chunk_size):
+    """ Split text into word chunks by chunk_size size
 
     Args:
         text (str): text to split
@@ -57,67 +63,67 @@ def split_by_chunk_size(text, chunk_size):
         return [text]
 
     if chunk_size < len(text_list) < (chunk_size * 2):
-        return list(break_chunks(
+        return list(_break_chunks(
             text_list,
             int(math.ceil(len(text_list) / 2))
         ))
     elif (chunk_size * 2) < len(text_list) < (chunk_size * 3):
-        return list(break_chunks(
+        return list(_break_chunks(
             text_list,
             int(math.ceil(len(text_list) / 3))
         ))
     elif (chunk_size * 3) < len(text_list) < (chunk_size * 4):
-        return list(break_chunks(
+        return list(_break_chunks(
             text_list,
             int(math.ceil(len(text_list) / 4))
         ))
     else:
-        return list(break_chunks(
+        return list(_break_chunks(
             text_list,
             int(math.ceil(len(text_list) / 5))
         ))
 
 
-def split_by_punctuation(text, puncs):
+def _split_by_punctuation(chunks, puncs):
     """splits text by various punctionations
     e.g. hello, world => [hello, world]
 
     Args:
-        text (str): text to split
+        chunks (list): text (str) to split
         puncs (list): list of punctuations used to split text
 
     Returns:
         list: list with split text
     """
-    splits = text.split()
-    split_by_punc = False
+    out = chunks
     for punc in puncs:
-        if punc in text:
-            splits = text.split(punc)
-            split_by_punc = True
-            break
-    if split_by_punc:
-        return splits
-    else:
-        return [text]
+        splits = []
+        for t in out:
+            # Split text by punctuation, but not embedded punctuation.  E.g.
+            # Split:  "Short sentence.  Longer sentence."
+            # But not at: "I.B.M." or "3.424", "3,424" or "what's-his-name."
+            splits += re.split(r'(?<!\.\S)' + punc + r'\s', t)
+        out = splits
+    return [t.strip() for t in out]
 
 
-def add_punctuation(text):
-    """add punctuation at the end of each chunk. Mimic2
-    expects some form of punctuations
+def _add_punctuation(text):
+    """ Add punctuation at the end of each chunk.
+
+    Mimic2 expects some form of punctuation at the end of a sentence.
     """
-    punctuations = ['.', '?', '!']
-    if len(text) < 1:
+    punctuation = ['.', '?', '!', ';']
+    if len(text) >= 1 and text[-1] not in punctuation:
+        return text + '.'
+    else:
         return text
-    if text[-1] not in punctuations:
-        text += '.'
-    return text
 
 
-def sentence_chunker(text, chunk_size, split_by_punc=True):
-    """split sentences into chunks. if split_by_punc is True,
-        sentences will be split into chunks by punctuations first
-        then those chunks will be split by chunk size
+def _sentence_chunker(text):
+    """ Split text into smaller chunks for TTS generation.
+
+    NOTE: The smaller chunks are needed due to current Mimic2 TTS limitations.
+    This stage can be removed once Mimic2 can generate longer sentences.
 
     Args:
         text (str): text to split
@@ -127,50 +133,33 @@ def sentence_chunker(text, chunk_size, split_by_punc=True):
     Returns:
         list: list of text chunks
     """
-    if len(text) <= max_sentence_size:
-        return [add_punctuation(text)]
+    if len(text) <= _max_sentence_size:
+        return [_add_punctuation(text)]
 
-    # split text by punctuations if split_by_punc set to true
-    chunks = None
-    if split_by_punc:
-        # first split by "ending" punctuations
-        chunks = split_by_punctuation(
-            text.strip(),
-            puncs=['.', '!', '?', ':', '-', ';']
-        )
+    # first split by punctuations that are major pauses
+    first_splits = _split_by_punctuation(
+        [text],
+        puncs=[r'\.', r'\!', r'\?', r'\:', r'\;']
+    )
 
-        # if sentence is still to big, split by commas
-        second_splits = []
-        did_second_split = False
-        for sentence in chunks:
-            if len(sentence) > max_sentence_size:
-                comma_splits = split_by_punctuation(
-                    sentence.strip(), puncs=[',']
-                )
-                second_splits += comma_splits
-                did_second_split = True
-            else:
-                second_splits.append(sentence.strip())
+    # if chunks are too big, split by minor pauses (comma, hyphen)
+    second_splits = []
+    for chunk in first_splits:
+        if len(chunk) > _max_sentence_size:
+            second_splits += _split_by_punctuation(chunk,
+                                                   puncs=[r'\,', '--', '-'])
+        else:
+            second_splits += chunk
 
-        if did_second_split:
-            chunks = second_splits
+    # if chunks are still too big, chop into pieces of at most 20 words
+    third_splits = []
+    for chunk in second_splits:
+        if len(chunk) > _max_sentence_size:
+            third_splits += _split_by_chunk_size(chunk, 20)
+        else:
+            third_splits += chunk
 
-        # if sentence is still to big by 20 word chunks
-        third_splits = []
-        did_third_split = False
-        for sentence in chunks:
-            if len(sentence) > max_sentence_size:
-                chunk_split = split_by_chunk_size(sentence.strip(), 20)
-                third_splits += chunk_split
-                did_third_split = True
-            else:
-                third_splits.append(sentence.strip())
-
-        if did_third_split:
-            chunks = third_splits
-
-        chunks = [add_punctuation(chunk) for chunk in chunks]
-        return chunks
+    return [_add_punctuation(chunk) for chunk in third_splits]
 
 
 class Mimic2(TTS):
@@ -181,21 +170,18 @@ class Mimic2(TTS):
         )
         self.url = config['url']
         self.session = FuturesSession()
-        chunk_size = config.get('chunk_size')
-        self.chunk_size = \
-            chunk_size if chunk_size is not None else 10
 
     def _save(self, data):
-        """saves .wav files in tmp
+        """ Save WAV files in tmp
 
         Args:
-            data (byes): wav data
+            data (byes): WAV data
         """
         with open(self.filename, 'wb') as f:
             f.write(data)
 
     def _play(self, req):
-        """play wav file after saving to tmp
+        """ Play WAV file after saving to tmp
 
         Args:
             req (object): requests object
@@ -226,7 +212,7 @@ class Mimic2(TTS):
         return reqs
 
     def viseme(self, phonemes):
-        """maps phonemes to visemes encoding
+        """ Maps phonemes to appropriate viseme encoding
 
         Args:
             phonemes (list): list of tuples (phoneme, time_start)
@@ -248,35 +234,13 @@ class Mimic2(TTS):
             visemes.append((vis, vis_dur))
         return visemes
 
-    def _normalized_numbers(self, sentence):
-        """normalized numbers to word equivalent.
-
-        Args:
-            sentence (str): setence to speak
-
-        Returns:
-            stf: normalized sentences to speak
-        """
-        try:
-            numbers = re.findall(r'-?\d+', sentence)
-            normalized_num = [
-                (num, pronounce_number(int(num)))
-                for num in numbers
-            ]
-            for num, norm_num in normalized_num:
-                sentence = sentence.replace(num, norm_num, 1)
-        except TypeError:
-            LOG.exception("type error in mimic2_tts.py _normalized_numbers()")
-        return sentence
-
     def get_tts(self, sentence, wav_file):
-        """request and play mimic2 wav audio
+        """ Generate (remotely) and play mimic2 WAV audio
 
         Args:
-            sentence (str): sentence to synthesize from mimic2
-            ident (optional): Defaults to None.
+            sentence (str): Phrase to synthesize to audio with mimic2
+            wav_file (str): Location to write audio output
         """
-        sentence = self._normalized_numbers(sentence)
 
         # Use the phonetic_spelling mechanism from the TTS base class
         if self.phonetic_spelling:
@@ -285,9 +249,10 @@ class Mimic2(TTS):
                     sentence = sentence.replace(word,
                                                 self.spellings[word.lower()])
 
-        chunks = sentence_chunker(sentence, self.chunk_size)
+        chunks = _sentence_chunker(sentence)
+        LOG.debug("Generating Mimic2 TSS for: "+str(chunks))
         try:
-            for idx, req in enumerate(self._requests(chunks)):
+            for _, req in enumerate(self._requests(chunks)):
                 results = req.result().json()
                 audio = base64.b64decode(results['audio_base64'])
                 vis = results['visimes']
