@@ -143,17 +143,38 @@ class SimpleAudioService(AudioBackend):
             sleep(0.1)
         self._stop_signal = False
 
-    def pause(self):
-        if self.process and not self._paused:
-            # Suspend the playback process
-            self._paused = True
-            self.process.send_signal(signal.SIGSTOP)
+    def _pause(self):
+        """ Pauses playback if possible.
 
-    def resume(self):
-        if self.process and self._paused:
+            Returns: (bool) New paused status:
+        """
+        if self.process:
+            # Suspend the playback process
+            self.process.send_signal(signal.SIGSTOP)
+            return True  # After pause the service is paused
+        else:
+            return False
+
+    def pause(self):
+        if not self._paused:
+            self._paused = self._pause()
+
+    def _resume(self):
+        """ Resumes playback if possible.
+
+            Returns: (bool) New paused status:
+        """
+        if self.process:
             # Resume the playback process
             self.process.send_signal(signal.SIGCONT)
-            self._paused = False
+            return False  # After resume the service is no longer paused
+        else:
+            return True
+
+    def resume(self):
+        if self._paused:
+            # Resume the playback process
+            self._paused = self._resume()
 
     def next(self):
         # Terminate process to continue to next
@@ -163,10 +184,12 @@ class SimpleAudioService(AudioBackend):
         pass
 
     def lower_volume(self):
-        self.pause()  # poor-man's ducking
+        if not self._paused:
+            self._pause()  # poor-man's ducking
 
     def restore_volume(self):
-        self.resume()  # poor-man's unducking
+        if not self._paused:
+            self._resume()  # poor-man's unducking
 
 
 def load_service(base_config, bus):
