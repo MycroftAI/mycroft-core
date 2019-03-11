@@ -84,6 +84,8 @@ class Action(Enum):
     TOGGLE = auto()
     ADJUST = auto()
     SET = auto()
+    INCREASE = auto()
+    DECREASE = auto()
 
 
 class IoTRequest():
