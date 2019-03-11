@@ -127,7 +127,7 @@ class IoTRequest():
                  entity: str = None,
                  scene: str = None):
 
-        if (not thing and not entity and not scene):
+        if not thing and not entity and not scene:
             raise Exception("At least one of thing,"
                             " entity, or scene must be present!")
 
@@ -139,7 +139,7 @@ class IoTRequest():
 
     def __repr__(self):
         template = ('IoTRequest('
-                    ' action={action},'
+                    'action={action},'
                     ' thing={thing},'
                     ' attribute={attribute},'
                     ' entity={entity},'
@@ -169,7 +169,7 @@ class IoTRequest():
         if data.get('thing') not in (None, ''):
             data['thing'] = Thing[data['thing']]
         if data.get('attribute') not in (None, ''):
-            data['attribute'] = Thing[data['attribute']]
+            data['attribute'] = Attribute[data['attribute']]
 
         return cls(**data)
 
