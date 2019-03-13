@@ -22,7 +22,7 @@ pulsectl==17.7.4
 google-api-python-client==1.6.4
 fasteners==0.14.1
 
-msm==0.7.3
+msm==0.7.4
 msk==0.3.12
 adapt-parser==0.3.2
 padatious==0.4.6
