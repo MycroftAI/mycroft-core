@@ -549,6 +549,9 @@ class EvaluationRule(object):
                 dialogs = load_dialog_list(skill, dialog)
                 # Allow custom fields to be anything
                 d = [re.sub(r'{.*?\}', r'.*', t) for t in dialogs]
+                # Merge consequtive .*'s into a single .*
+                d = [re.sub(r'\.\*( \.\*)+', r'.*', t) for t in d]
+
                 # Create rule allowing any of the sentences for that dialog
                 rules = [['match', 'utterance', r] for r in d]
                 self.rule.append(['or'] + rules)
