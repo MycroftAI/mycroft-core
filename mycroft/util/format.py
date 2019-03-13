@@ -15,6 +15,8 @@
 
 from os.path import join
 
+from mycroft.util.lang import get_full_lang_code, get_primary_lang_code
+
 from mycroft.util.lang.format_en import *
 from mycroft.util.lang.format_pt import *
 from mycroft.util.lang.format_it import *
@@ -57,7 +59,9 @@ def _translate_word(name, lang):
     """
     from mycroft.util import resolve_resource_file
 
-    filename = resolve_resource_file(join("text", lang, name+".word"))
+    lang_code = get_full_lang_code(lang)
+
+    filename = resolve_resource_file(join("text", lang_code, name+".word"))
     if filename:
         # open the file
         try:
@@ -86,11 +90,13 @@ class DateTimeFormat:
     def cache(self, lang):
         if lang not in self.lang_config:
             try:
+                # Attempt to load the language-specific formatting data
                 with open(self.config_path + '/' + lang + '/date_time.json',
                           'r') as lang_config_file:
                     self.lang_config[lang] = json.loads(
                         lang_config_file.read())
             except FileNotFoundError:
+                # Fallback to English formatting
                 with open(self.config_path + '/en-us/date_time.json',
                           'r') as lang_config_file:
                     self.lang_config[lang] = json.loads(
@@ -237,7 +243,7 @@ date_time_format = DateTimeFormat(
     os.path.dirname(os.path.abspath(__file__)) + '/../res/text')
 
 
-def nice_number(number, lang="en-us", speech=True, denominators=None):
+def nice_number(number, lang=None, speech=True, denominators=None):
     """Format a float to human readable functions
 
     This function formats a float to human understandable functions. Like
@@ -251,26 +257,26 @@ def nice_number(number, lang="en-us", speech=True, denominators=None):
         (str): The formatted string.
     """
     # Convert to spoken representation in appropriate language
-    lang_lower = str(lang).lower()
-    if lang_lower.startswith("en"):
+    lang_code = get_primary_lang_code(lang)
+    if lang_code == "en":
         return nice_number_en(number, speech, denominators)
-    elif lang_lower.startswith("es"):
+    elif lang_code == "es":
         return nice_number_es(number, speech, denominators)
-    elif lang_lower.startswith("pt"):
+    elif lang_code == "pt":
         return nice_number_pt(number, speech, denominators)
-    elif lang_lower.startswith("it"):
+    elif lang_code == "it":
         return nice_number_it(number, speech, denominators)
-    elif lang_lower.startswith("fr"):
+    elif lang_code == "fr":
         return nice_number_fr(number, speech, denominators)
-    elif lang_lower.startswith("sv"):
+    elif lang_code == "sv":
         return nice_number_sv(number, speech, denominators)
-    elif lang_lower.startswith("de"):
+    elif lang_code == "de":
         return nice_number_de(number, speech, denominators)
-    elif lang_lower.startswith("hu"):
+    elif lang_code == "hu":
         return nice_number_hu(number, speech, denominators)
-    elif lang_lower.startswith("nl"):
+    elif lang_code == "nl":
         return nice_number_nl(number, speech, denominators)
-    elif lang_lower.startswith("da"):
+    elif lang_code == "da":
         return nice_number_da(number, speech, denominators)
 
     # Default to the raw number for unsupported languages,
@@ -278,7 +284,7 @@ def nice_number(number, lang="en-us", speech=True, denominators=None):
     return str(number)
 
 
-def nice_time(dt, lang="en-us", speech=True, use_24hour=False,
+def nice_time(dt, lang=None, speech=True, use_24hour=False,
               use_ampm=False):
     """
     Format a time to a comfortable human format
@@ -295,29 +301,29 @@ def nice_time(dt, lang="en-us", speech=True, use_24hour=False,
     Returns:
         (str): The formatted time string
     """
-    lang_lower = str(lang).lower()
-    if lang_lower.startswith("en"):
+    lang_code = get_primary_lang_code(lang)
+    if lang_code == "en":
         return nice_time_en(dt, speech, use_24hour, use_ampm)
-    elif lang_lower.startswith("es"):
+    elif lang_code == "es":
         return nice_time_es(dt, speech, use_24hour, use_ampm)
-    elif lang_lower.startswith("it"):
+    elif lang_code == "it":
         return nice_time_it(dt, speech, use_24hour, use_ampm)
-    elif lang_lower.startswith("fr"):
+    elif lang_code == "fr":
         return nice_time_fr(dt, speech, use_24hour, use_ampm)
-    elif lang_lower.startswith("de"):
+    elif lang_code == "de":
         return nice_time_de(dt, speech, use_24hour, use_ampm)
-    elif lang_lower.startswith("hu"):
+    elif lang_code == "hu":
         return nice_time_hu(dt, speech, use_24hour, use_ampm)
-    elif lang_lower.startswith("nl"):
+    elif lang_code == "nl":
         return nice_time_nl(dt, speech, use_24hour, use_ampm)
-    elif lang_lower.startswith("da"):
+    elif lang_code == "da":
         return nice_time_da(dt, speech, use_24hour, use_ampm)
 
     # TODO: Other languages
     return str(dt)
 
 
-def pronounce_number(number, lang="en-us", places=2, short_scale=True,
+def pronounce_number(number, lang=None, places=2, short_scale=True,
                      scientific=False):
     """
     Convert a number to it's spoken equivalent
@@ -332,33 +338,33 @@ def pronounce_number(number, lang="en-us", places=2, short_scale=True,
     Returns:
         (str): The pronounced number
     """
-    lang_lower = str(lang).lower()
-    if lang_lower.startswith("en"):
+    lang_code = get_primary_lang_code(lang)
+    if lang_code == "en":
         return pronounce_number_en(number, places=places,
                                    short_scale=short_scale,
                                    scientific=scientific)
-    elif lang_lower.startswith("it"):
+    elif lang_code == "it":
         return pronounce_number_it(number, places=places,
                                    short_scale=short_scale,
                                    scientific=scientific)
-    elif lang_lower.startswith("es"):
+    elif lang_code == "es":
         return pronounce_number_es(number, places=places)
-    elif lang_lower.startswith("fr"):
+    elif lang_code == "fr":
         return pronounce_number_fr(number, places=places)
-    elif lang_lower.startswith("de"):
+    elif lang_code == "de":
         return pronounce_number_de(number, places=places)
-    elif lang_lower.startswith("hu"):
+    elif lang_code == "hu":
         return pronounce_number_hu(number, places=places)
-    elif lang_lower.startswith("nl"):
+    elif lang_code == "nl":
         return pronounce_number_nl(number, places=places)
-    elif lang_lower.startswith("da"):
+    elif lang_code == "da":
         return pronounce_number_da(number, places=places)
 
     # Default to just returning the numeric value
     return str(number)
 
 
-def nice_date(dt, lang='en-us', now=None):
+def nice_date(dt, lang=None, now=None):
     """
     Format a datetime to a pronounceable date
 
@@ -374,13 +380,13 @@ def nice_date(dt, lang='en-us', now=None):
     Returns:
         (str): The formatted date string
     """
+    full_code = get_full_lang_code(lang)
+    date_time_format.cache(full_code)
 
-    date_time_format.cache(lang)
-
-    return date_time_format.date_format(dt, lang, now)
+    return date_time_format.date_format(dt, full_code, now)
 
 
-def nice_date_time(dt, lang='en-us', now=None, use_24hour=False,
+def nice_date_time(dt, lang=None, now=None, use_24hour=False,
                    use_ampm=False):
     """
         Format a datetime to a pronounceable date and time
@@ -402,13 +408,14 @@ def nice_date_time(dt, lang='en-us', now=None, use_24hour=False,
             (str): The formatted date time string
     """
 
-    date_time_format.cache(lang)
+    full_code = get_full_lang_code(lang)
+    date_time_format.cache(full_code)
 
-    return date_time_format.date_time_format(dt, lang, now, use_24hour,
+    return date_time_format.date_time_format(dt, full_code, now, use_24hour,
                                              use_ampm)
 
 
-def nice_year(dt, lang='en-us', bc=False):
+def nice_year(dt, lang=None, bc=False):
     """
         Format a datetime to a pronounceable year
 
@@ -424,12 +431,13 @@ def nice_year(dt, lang='en-us', bc=False):
             (str): The formatted year string
     """
 
-    date_time_format.cache(lang)
+    full_code = get_full_lang_code(lang)
+    date_time_format.cache(full_code)
 
-    return date_time_format.year_format(dt, lang, bc)
+    return date_time_format.year_format(dt, full_code, bc)
 
 
-def nice_duration(duration, lang="en-us", speech=True):
+def nice_duration(duration, lang=None, speech=True):
     """ Convert duration in seconds to a nice spoken timespan
 
     Examples:
@@ -438,6 +446,7 @@ def nice_duration(duration, lang="en-us", speech=True):
 
     Args:
         duration: time, in seconds
+        lang (str, optional): a BCP-47 language code, None for default
         speech (bool): format for speech (True) or display (False)
     Returns:
         str: timespan as a string
@@ -505,7 +514,7 @@ def nice_duration(duration, lang="en-us", speech=True):
     return out
 
 
-def join_list(items, connector, sep=None, lang="en-us"):
+def join_list(items, connector, sep=None, lang=None):
     """ Join a list into a phrase using the given connector word
 
     Examples:
@@ -530,7 +539,8 @@ def join_list(items, connector, sep=None, lang="en-us"):
     else:
         sep += " "
     return (sep.join(str(item) for item in items[:-1]) +
-            " " + _translate_word(connector, lang) + " " + items[-1])
+            " " + _translate_word(connector, get_full_lang_code(lang)) +
+            " " + items[-1])
 
 
 def expand_options(parentheses_line: str) -> list:

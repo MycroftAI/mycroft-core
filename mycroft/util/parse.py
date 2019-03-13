@@ -16,6 +16,7 @@
 #
 from difflib import SequenceMatcher
 from mycroft.util.time import now_local
+from mycroft.util.lang import get_primary_lang_code
 
 from mycroft.util.lang.parse_en import *
 from mycroft.util.lang.parse_pt import *
@@ -93,7 +94,7 @@ def match_one(query, choices):
         return best
 
 
-def extract_numbers(text, short_scale=True, ordinals=False, lang="en-us"):
+def extract_numbers(text, short_scale=True, ordinals=False, lang=None):
     """
         Takes in a string and extracts a list of numbers.
 
@@ -104,24 +105,25 @@ def extract_numbers(text, short_scale=True, ordinals=False, lang="en-us"):
             is now common in most English speaking countries.
             See https://en.wikipedia.org/wiki/Names_of_large_numbers
         ordinals (bool): consider ordinal numbers, e.g. third=3 instead of 1/3
-        lang (str): the BCP-47 code for the language to use
+        lang (str): the BCP-47 code for the language to use, None uses default
     Returns:
-        list: list of extracted numbers as floats
+        list: list of extracted numbers as floats, or empty list if none found
     """
-    if lang.startswith("en"):
+    lang_code = get_primary_lang_code(lang)
+    if lang_code == "en":
         return extract_numbers_en(text, short_scale, ordinals)
-    elif lang.startswith("de"):
+    elif lang_code == "de":
         return extract_numbers_de(text, short_scale, ordinals)
-    elif lang.startswith("fr"):
+    elif lang_code == "fr":
         return extract_numbers_fr(text, short_scale, ordinals)
-    elif lang.startswith("it"):
+    elif lang_code == "it":
         return extract_numbers_it(text, short_scale, ordinals)
-    elif lang.startswith("da"):
+    elif lang_code == "da":
         return extract_numbers_da(text, short_scale, ordinals)
     return []
 
 
-def extract_number(text, short_scale=True, ordinals=False, lang="en-us"):
+def extract_number(text, short_scale=True, ordinals=False, lang=None):
     """Takes in a string and extracts a number.
 
     Args:
@@ -131,29 +133,29 @@ def extract_number(text, short_scale=True, ordinals=False, lang="en-us"):
             is now common in most English speaking countries.
             See https://en.wikipedia.org/wiki/Names_of_large_numbers
         ordinals (bool): consider ordinal numbers, e.g. third=3 instead of 1/3
-        lang (str): the BCP-47 code for the language to use
+        lang (str): the BCP-47 code for the language to use, None uses default
     Returns:
         (int, float or False): The number extracted or False if the input
                                text contains no numbers
     """
-    lang_lower = str(lang).lower()
-    if lang_lower.startswith("en"):
+    lang_code = get_primary_lang_code(lang)
+    if lang_code == "en":
         return extractnumber_en(text, short_scale=short_scale,
                                 ordinals=ordinals)
-    elif lang_lower.startswith("es"):
+    elif lang_code == "es":
         return extractnumber_es(text)
-    elif lang_lower.startswith("pt"):
+    elif lang_code == "pt":
         return extractnumber_pt(text)
-    elif lang_lower.startswith("it"):
+    elif lang_code == "it":
         return extractnumber_it(text, short_scale=short_scale,
                                 ordinals=ordinals)
-    elif lang_lower.startswith("fr"):
+    elif lang_code == "fr":
         return extractnumber_fr(text)
-    elif lang_lower.startswith("sv"):
+    elif lang_code == "sv":
         return extractnumber_sv(text)
-    elif lang_lower.startswith("de"):
+    elif lang_code == "de":
         return extractnumber_de(text)
-    elif lang_lower.startswith("da"):
+    elif lang_code == "da":
         return extractnumber_da(text)
     # TODO: extractnumber_xx for other languages
     _log_unsupported_language(lang_lower,
@@ -161,7 +163,7 @@ def extract_number(text, short_scale=True, ordinals=False, lang="en-us"):
     return text
 
 
-def extract_duration(text, lang="en-us"):
+def extract_duration(text, lang=None):
     """ Convert an english phrase into a number of seconds
 
     Convert things like:
@@ -178,7 +180,7 @@ def extract_duration(text, lang="en-us"):
 
     Args:
         text (str): string containing a duration
-        lang (str): the BCP-47 code for the language to use
+        lang (str): the BCP-47 code for the language to use, None uses default
 
     Returns:
         (timedelta, str):
@@ -187,17 +189,17 @@ def extract_duration(text, lang="en-us"):
                     be None if no duration is found. The text returned
                     will have whitespace stripped from the ends.
     """
-    lang_lower = str(lang).lower()
+    lang_code = get_primary_lang_code(lang)
 
-    if lang_lower.startswith("en"):
+    if lang_code == "en":
         return extract_duration_en(text)
 
     # TODO: extract_duration for other languages
-    _log_unsupported_language(lang_lower, ['en'])
+    _log_unsupported_language(lang_code, ['en'])
     return None
 
 
-def extract_datetime(text, anchorDate=None, lang="en-us", default_time=None):
+def extract_datetime(text, anchorDate=None, lang=None, default_time=None):
     """
     Extracts date and time information from a sentence.  Parses many of the
     common ways that humans express dates and times, including relative dates
@@ -215,7 +217,7 @@ def extract_datetime(text, anchorDate=None, lang="en-us", default_time=None):
         anchorDate (:obj:`datetime`, optional): the date to be used for
             relative dating (for example, what does "tomorrow" mean?).
             Defaults to the current local date/time.
-        lang (string): the BCP-47 code for the language to use
+        lang (str): the BCP-47 code for the language to use, None uses default
         default_time (datetime.time): time to use if none was found in
             the input string.
 
@@ -249,79 +251,94 @@ def extract_datetime(text, anchorDate=None, lang="en-us", default_time=None):
         None
     """
 
-    lang_lower = str(lang).lower()
+    lang_code = get_primary_lang_code(lang)
 
     if not anchorDate:
         anchorDate = now_local()
 
-    if lang_lower.startswith("en"):
+    if lang_code == "en":
         return extract_datetime_en(text, anchorDate, default_time)
-    elif lang_lower.startswith("es"):
+    elif lang_code == "es":
         return extract_datetime_es(text, anchorDate, default_time)
-    elif lang_lower.startswith("pt"):
+    elif lang_code == "pt":
         return extract_datetime_pt(text, anchorDate, default_time)
-    elif lang_lower.startswith("it"):
+    elif lang_code == "it":
         return extract_datetime_it(text, anchorDate, default_time)
-    elif lang_lower.startswith("fr"):
+    elif lang_code == "fr":
         return extract_datetime_fr(text, anchorDate, default_time)
-    elif lang_lower.startswith("sv"):
+    elif lang_code == "sv":
         return extract_datetime_sv(text, anchorDate, default_time)
-    elif lang_lower.startswith("de"):
+    elif lang_code == "de":
         return extract_datetime_de(text, anchorDate, default_time)
-    elif lang_lower.startswith("da"):
+    elif lang_code == "da":
         return extract_datetime_da(text, anchorDate, default_time)
     # TODO: extract_datetime for other languages
-    _log_unsupported_language(lang_lower,
+    _log_unsupported_language(lang_code,
                               ['en', 'es', 'pt', 'it', 'fr', 'sv', 'de', 'da'])
     return text
-    # ==============================================================
 
 
-def normalize(text, lang="en-us", remove_articles=True):
+def normalize(text, lang=None, remove_articles=True):
     """Prepare a string for parsing
 
     This function prepares the given text for parsing by making
     numbers consistent, getting rid of contractions, etc.
+
     Args:
         text (str): the string to normalize
-        lang (str): the code for the language text is in
+        lang (str): the BCP-47 code for the language to use, None uses default
         remove_articles (bool): whether to remove articles (like 'a', or
                                 'the'). True by default.
+
     Returns:
         (str): The normalized string.
     """
 
-    lang_lower = str(lang).lower()
-    if lang_lower.startswith("en"):
+    lang_code = get_primary_lang_code(lang)
+
+    if lang_code == "en":
         return normalize_en(text, remove_articles)
-    elif lang_lower.startswith("es"):
+    elif lang_code == "es":
         return normalize_es(text, remove_articles)
-    elif lang_lower.startswith("pt"):
+    elif lang_code == "pt":
         return normalize_pt(text, remove_articles)
-    elif lang_lower.startswith("it"):
+    elif lang_code == "it":
         return normalize_it(text, remove_articles)
-    elif lang_lower.startswith("fr"):
+    elif lang_code == "fr":
         return normalize_fr(text, remove_articles)
-    elif lang_lower.startswith("sv"):
+    elif lang_code == "sv":
         return normalize_sv(text, remove_articles)
-    elif lang_lower.startswith("de"):
+    elif lang_code == "de":
         return normalize_de(text, remove_articles)
-    elif lang_lower.startswith("da"):
+    elif lang_code == "da":
         return normalize_da(text, remove_articles)
     # TODO: Normalization for other languages
-    _log_unsupported_language(lang_lower,
+    _log_unsupported_language(lang_code,
                               ['en', 'es', 'pt', 'it', 'fr', 'sv', 'de', 'da'])
     return text
 
 
-def get_gender(word, input_string="", lang="en-us"):
-    '''
-    guess gender of word, optionally use raw input text for context
-    returns "m" if the word is male, "f" if female, False if unknown
-    '''
-    if "pt" in lang or "es" in lang:
+def get_gender(word, context="", lang=None):
+    """ Guess the gender of a word
+
+    Some languages assign genders to specific words.  This method will attempt
+    to determine the gender, optionally using the provided context sentence.
+
+    Args:
+        word (str): The word to look up
+        context (str, optional): String containing word, for context
+        lang (str): the BCP-47 code for the language to use, None uses default
+
+    Returns:
+        str: The code "m" (male), "f" (female) or "n" (neutral) for the gender,
+             or None if unknown/or unused in the given language.
+    """
+
+    lang_code = get_primary_lang_code(lang)
+
+    if lang_code in ["pt", "es"]:
         # spanish follows same rules
-        return get_gender_pt(word, input_string)
-    elif "it" in lang:
-        return get_gender_it(word, input_string)
-    return False
+        return get_gender_pt(word, context)
+    elif lang_code == "it":
+        return get_gender_it(word, context)
+    return None

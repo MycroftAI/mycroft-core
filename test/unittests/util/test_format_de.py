@@ -17,6 +17,7 @@
 import unittest
 import datetime
 
+from mycroft.util.lang import get_active_lang, set_active_lang
 from mycroft.util.format import nice_number
 from mycroft.util.format import nice_time
 from mycroft.util.format import pronounce_number
@@ -72,33 +73,40 @@ class TestNiceResponse(unittest.TestCase):
 
 
 class TestNiceNumberFormat(unittest.TestCase):
+    def setUp(self):
+        self.old_lang = get_active_lang()
+        set_active_lang("de-de")
+
+    def tearDown(self):
+        set_active_lang(self.old_lang)
+
     def test_convert_float_to_nice_number(self):
         for number, number_str in NUMBERS_FIXTURE_DE.items():
-            self.assertEqual(nice_number(number, lang="de-de"), number_str,
+            self.assertEqual(nice_number(number), number_str,
                              'should format {} as {} and not {}'.format(
                                  number, number_str,
-                                 nice_number(number, lang="de-de")))
+                                 nice_number(number)))
 
     def test_specify_denominator(self):
-        self.assertEqual(nice_number(5.5, lang="de-de",
+        self.assertEqual(nice_number(5.5,
                                      denominators=[1, 2, 3]), '5 und ein halb',
                          'should format 5.5 as 5 und ein halb not {}'.format(
                              nice_number(5.5, denominators=[1, 2, 3])))
-        self.assertEqual(nice_number(2.333, lang="de-de", denominators=[1, 2]),
+        self.assertEqual(nice_number(2.333, denominators=[1, 2]),
                          '2,333',
                          'should format 2,333 as 2,333 not {}'.format(
-                             nice_number(2.333, lang="de-de",
+                             nice_number(2.333,
                                          denominators=[1, 2])))
 
     def test_no_speech(self):
         self.assertEqual(nice_number(6.777, speech=False),
                          '6 7/9',
                          'should format 6.777 as 6 7/9 not {}'.format(
-                             nice_number(6.777, lang="de-de", speech=False)))
+                             nice_number(6.777, speech=False)))
         self.assertEqual(nice_number(6.0, speech=False),
                          '6',
                          'should format 6.0 as 6 not {}'.format(
-                             nice_number(6.0, lang="de-de", speech=False)))
+                             nice_number(6.0, speech=False)))
 
 
 class TestPronounceOrdinal(unittest.TestCase):
@@ -120,265 +128,277 @@ class TestPronounceOrdinal(unittest.TestCase):
 
 # def pronounce_number(number, lang="de-de", places=2):
 class TestPronounceNumber(unittest.TestCase):
+    def setUp(self):
+        self.old_lang = mycroft.util.lang.active_lang
+        mycroft.util.lang.active_lang = "de-de"
+
+    def tearDown(self):
+        mycroft.util.lang.active_lang = self.old_lang
+
     def test_convert_int_de(self):
-        self.assertEqual(pronounce_number(123456789123456789, lang="de-de"),
+        self.assertEqual(pronounce_number(123456789123456789),
                          "einhundertdreiundzwanzig Billiarden "
                          "vierhundertsechsundfünfzig Billionen "
                          "siebenhundertneunundachtzig Milliarden "
                          "einhundertdreiundzwanzig Millionen "
                          "vierhundertsechsundfünfzigtausendsiebenhundert"
                          "neunundachtzig")
-        self.assertEqual(pronounce_number(1, lang="de-de"), "eins")
-        self.assertEqual(pronounce_number(10, lang="de-de"), "zehn")
-        self.assertEqual(pronounce_number(15, lang="de-de"), u"fünfzehn")
-        self.assertEqual(pronounce_number(20, lang="de-de"), "zwanzig")
-        self.assertEqual(pronounce_number(27, lang="de-de"),
-                         "siebenundzwanzig")
-        self.assertEqual(pronounce_number(30, lang="de-de"), u"dreißig")
-        self.assertEqual(pronounce_number(33, lang="de-de"), u"dreiunddreißig")
-        self.assertEqual(pronounce_number(71, lang="de-de"),
-                         "einundsiebzig")
-        self.assertEqual(pronounce_number(80, lang="de-de"), "achtzig")
-        self.assertEqual(pronounce_number(74, lang="de-de"),
-                         "vierundsiebzig")
-        self.assertEqual(pronounce_number(79, lang="de-de"),
-                         "neunundsiebzig")
-        self.assertEqual(pronounce_number(91, lang="de-de"),
-                         "einundneunzig")
-        self.assertEqual(pronounce_number(97, lang="de-de"),
-                         "siebenundneunzig")
-        self.assertEqual(pronounce_number(300, lang="de-de"), "dreihundert")
+        self.assertEqual(pronounce_number(1), "eins")
+        self.assertEqual(pronounce_number(10), "zehn")
+        self.assertEqual(pronounce_number(15), u"fünfzehn")
+        self.assertEqual(pronounce_number(20), "zwanzig")
+        self.assertEqual(pronounce_number(27), "siebenundzwanzig")
+        self.assertEqual(pronounce_number(30), u"dreißig")
+        self.assertEqual(pronounce_number(33), u"dreiunddreißig")
+
+        self.assertEqual(pronounce_number(71), "einundsiebzig")
+        self.assertEqual(pronounce_number(80), "achtzig")
+        self.assertEqual(pronounce_number(74), "vierundsiebzig")
+        self.assertEqual(pronounce_number(79), "neunundsiebzig")
+        self.assertEqual(pronounce_number(91), "einundneunzig")
+        self.assertEqual(pronounce_number(97), "siebenundneunzig")
+        self.assertEqual(pronounce_number(300), "dreihundert")
 
     def test_convert_negative_int_de(self):
-        self.assertEqual(pronounce_number(-1, lang="de-de"), "minus eins")
-        self.assertEqual(pronounce_number(-10, lang="de-de"), "minus zehn")
-        self.assertEqual(pronounce_number(-15, lang="de-de"),
-                         u"minus fünfzehn")
-        self.assertEqual(pronounce_number(-20, lang="de-de"), "minus zwanzig")
-        self.assertEqual(pronounce_number(-27, lang="de-de"),
-                         "minus siebenundzwanzig")
-        self.assertEqual(pronounce_number(-30, lang="de-de"), u"minus dreißig")
-        self.assertEqual(pronounce_number(-33, lang="de-de"),
-                         u"minus dreiunddreißig")
+        self.assertEqual(pronounce_number(-1), "minus eins")
+        self.assertEqual(pronounce_number(-10), "minus zehn")
+        self.assertEqual(pronounce_number(-15), u"minus fünfzehn")
+        self.assertEqual(pronounce_number(-20), "minus zwanzig")
+        self.assertEqual(pronounce_number(-27), "minus siebenundzwanzig")
+        self.assertEqual(pronounce_number(-30), u"minus dreißig")
+        self.assertEqual(pronounce_number(-33), u"minus dreiunddreißig")
 
     def test_convert_decimals_de(self):
-        self.assertEqual(pronounce_number(1.234, lang="de-de"),
+        self.assertEqual(pronounce_number(1.234),
                          "eins Komma zwei drei")
-        self.assertEqual(pronounce_number(21.234, lang="de-de"),
+        self.assertEqual(pronounce_number(21.234),
                          "einundzwanzig Komma zwei drei")
-        self.assertEqual(pronounce_number(21.234, lang="de-de", places=1),
+        self.assertEqual(pronounce_number(21.234, places=1),
                          "einundzwanzig Komma zwei")
-        self.assertEqual(pronounce_number(21.234, lang="de-de", places=0),
+        self.assertEqual(pronounce_number(21.234, places=0),
                          "einundzwanzig")
-        self.assertEqual(pronounce_number(21.234, lang="de-de", places=3),
+        self.assertEqual(pronounce_number(21.234, places=3),
                          "einundzwanzig Komma zwei drei vier")
-        self.assertEqual(pronounce_number(21.234, lang="de-de", places=4),
+        self.assertEqual(pronounce_number(21.234, places=4),
                          "einundzwanzig Komma zwei drei vier null")
-        self.assertEqual(pronounce_number(21.234, lang="de-de", places=5),
+        self.assertEqual(pronounce_number(21.234, places=5),
                          "einundzwanzig Komma zwei drei vier null null")
-        self.assertEqual(pronounce_number(-1.234, lang="de-de"),
+        self.assertEqual(pronounce_number(-1.234),
                          "minus eins Komma zwei drei")
-        self.assertEqual(pronounce_number(-21.234, lang="de-de"),
+        self.assertEqual(pronounce_number(-21.234),
                          "minus einundzwanzig Komma zwei drei")
-        self.assertEqual(pronounce_number(-21.234, lang="de-de", places=1),
+        self.assertEqual(pronounce_number(-21.234, places=1),
                          "minus einundzwanzig Komma zwei")
-        self.assertEqual(pronounce_number(-21.234, lang="de-de", places=0),
+        self.assertEqual(pronounce_number(-21.234, places=0),
                          "minus einundzwanzig")
-        self.assertEqual(pronounce_number(-21.234, lang="de-de", places=3),
+        self.assertEqual(pronounce_number(-21.234, places=3),
                          "minus einundzwanzig Komma zwei drei vier")
-        self.assertEqual(pronounce_number(-21.234, lang="de-de", places=4),
+        self.assertEqual(pronounce_number(-21.234, places=4),
                          "minus einundzwanzig Komma zwei drei vier null")
-        self.assertEqual(pronounce_number(-21.234, lang="de-de", places=5),
+        self.assertEqual(pronounce_number(-21.234, places=5),
                          "minus einundzwanzig Komma zwei drei vier null null")
 
 
 # def nice_time(dt, lang="de-de", speech=True, use_24hour=False,
 #              use_ampm=False):
 class TestNiceDateFormat_de(unittest.TestCase):
+    def setUp(self):
+        self.old_lang = get_active_lang()
+        set_active_lang("de-de")
+
+    def tearDown(self):
+        set_active_lang(self.old_lang)
+
     def test_convert_times_de(self):
         dt = datetime.datetime(2017, 1, 31,
                                13, 22, 3)
 
-        self.assertEqual(nice_time(dt, lang="de-de"),
+        self.assertEqual(nice_time(dt),
                          "ein Uhr zweiundzwanzig")
-        self.assertEqual(nice_time(dt, lang="de-de", use_ampm=True),
+        self.assertEqual(nice_time(dt, use_ampm=True),
                          "ein Uhr zweiundzwanzig nachmittags")
-        self.assertEqual(nice_time(dt, lang="de-de", speech=False),
+        self.assertEqual(nice_time(dt, speech=False),
                          "1:22")
-        self.assertEqual(nice_time(dt, lang="de-de", speech=False,
+        self.assertEqual(nice_time(dt, speech=False,
                                    use_ampm=True),
                          "1:22 PM")
-        self.assertEqual(nice_time(dt, lang="de-de", speech=False,
+        self.assertEqual(nice_time(dt, speech=False,
                                    use_24hour=True),
                          "13:22")
-        self.assertEqual(nice_time(dt, lang="de-de", speech=False,
+        self.assertEqual(nice_time(dt, speech=False,
                                    use_24hour=True, use_ampm=True),
                          "13:22")
-        self.assertEqual(nice_time(dt, lang="de-de", use_24hour=True,
+        self.assertEqual(nice_time(dt, use_24hour=True,
                                    use_ampm=True),
                          "dreizehn Uhr zweiundzwanzig")
-        self.assertEqual(nice_time(dt, lang="de-de", use_24hour=True,
+        self.assertEqual(nice_time(dt, use_24hour=True,
                                    use_ampm=False),
                          "dreizehn Uhr zweiundzwanzig")
 
         dt = datetime.datetime(2017, 1, 31,
                                13, 0, 3)
-        self.assertEqual(nice_time(dt, lang="de-de"),
+        self.assertEqual(nice_time(dt),
                          "ein Uhr")
-        self.assertEqual(nice_time(dt, lang="de-de", use_ampm=True),
+        self.assertEqual(nice_time(dt, use_ampm=True),
                          "ein Uhr nachmittags")
-        self.assertEqual(nice_time(dt, lang="de-de", speech=False),
+        self.assertEqual(nice_time(dt, speech=False),
                          "1:00")
-        self.assertEqual(nice_time(dt, lang="de-de", speech=False,
+        self.assertEqual(nice_time(dt, speech=False,
                                    use_ampm=True),
                          "1:00 PM")
-        self.assertEqual(nice_time(dt, lang="de-de", speech=False,
+        self.assertEqual(nice_time(dt, speech=False,
                                    use_24hour=True),
                          "13:00")
-        self.assertEqual(nice_time(dt, lang="de-de", speech=False,
+        self.assertEqual(nice_time(dt, speech=False,
                                    use_24hour=True, use_ampm=True),
                          "13:00")
-        self.assertEqual(nice_time(dt, lang="de-de", use_24hour=True,
+        self.assertEqual(nice_time(dt, use_24hour=True,
                                    use_ampm=True),
                          "dreizehn Uhr")
-        self.assertEqual(nice_time(dt, lang="de-de", use_24hour=True,
+        self.assertEqual(nice_time(dt, use_24hour=True,
                                    use_ampm=False),
                          "dreizehn Uhr")
 
         dt = datetime.datetime(2017, 1, 31,
                                13, 2, 3)
-        self.assertEqual(nice_time(dt, lang="de-de"),
+        self.assertEqual(nice_time(dt),
                          "ein Uhr zwei")
-        self.assertEqual(nice_time(dt, lang="de-de", use_ampm=True),
+        self.assertEqual(nice_time(dt, use_ampm=True),
                          "ein Uhr zwei nachmittags")
-        self.assertEqual(nice_time(dt, lang="de-de", speech=False),
+        self.assertEqual(nice_time(dt, speech=False),
                          "1:02")
-        self.assertEqual(nice_time(dt, lang="de-de", speech=False,
+        self.assertEqual(nice_time(dt, speech=False,
                                    use_ampm=True),
                          "1:02 PM")
-        self.assertEqual(nice_time(dt, lang="de-de", speech=False,
+        self.assertEqual(nice_time(dt, speech=False,
                                    use_24hour=True),
                          "13:02")
-        self.assertEqual(nice_time(dt, lang="de-de", speech=False,
+        self.assertEqual(nice_time(dt, speech=False,
                                    use_24hour=True, use_ampm=True),
                          "13:02")
-        self.assertEqual(nice_time(dt, lang="de-de", use_24hour=True,
+        self.assertEqual(nice_time(dt, use_24hour=True,
                                    use_ampm=True),
                          "dreizehn Uhr zwei")
-        self.assertEqual(nice_time(dt, lang="de-de", use_24hour=True,
+        self.assertEqual(nice_time(dt, use_24hour=True,
                                    use_ampm=False),
                          "dreizehn Uhr zwei")
 
         dt = datetime.datetime(2017, 1, 31,
                                0, 2, 3)
-        self.assertEqual(nice_time(dt, lang="de-de"),
+        self.assertEqual(nice_time(dt),
                          u"zwölf Uhr zwei")
-        self.assertEqual(nice_time(dt, lang="de-de", use_ampm=True),
+        self.assertEqual(nice_time(dt, use_ampm=True),
                          u"zwölf Uhr zwei nachts")
-        self.assertEqual(nice_time(dt, lang="de-de", speech=False),
+        self.assertEqual(nice_time(dt, speech=False),
                          "12:02")
-        self.assertEqual(nice_time(dt, lang="de-de", speech=False,
+        self.assertEqual(nice_time(dt, speech=False,
                                    use_ampm=True),
                          "12:02 AM")
-        self.assertEqual(nice_time(dt, lang="de-de", speech=False,
+        self.assertEqual(nice_time(dt, speech=False,
                                    use_24hour=True),
                          "00:02")
-        self.assertEqual(nice_time(dt, lang="de-de", speech=False,
+        self.assertEqual(nice_time(dt, speech=False,
                                    use_24hour=True, use_ampm=True),
                          "00:02")
-        self.assertEqual(nice_time(dt, lang="de-de", use_24hour=True,
+        self.assertEqual(nice_time(dt, use_24hour=True,
                                    use_ampm=True),
                          "null Uhr zwei")
-        self.assertEqual(nice_time(dt, lang="de-de", use_24hour=True,
+        self.assertEqual(nice_time(dt, use_24hour=True,
                                    use_ampm=False),
                          "null Uhr zwei")
 
         dt = datetime.datetime(2017, 1, 31,
                                12, 15, 9)
-        self.assertEqual(nice_time(dt, lang="de-de"),
+        self.assertEqual(nice_time(dt),
                          u"zwölf Uhr fünfzehn")
-        self.assertEqual(nice_time(dt, lang="de-de", use_ampm=True),
+        self.assertEqual(nice_time(dt, use_ampm=True),
                          u"zwölf Uhr fünfzehn nachmittags")
-        self.assertEqual(nice_time(dt, lang="de-de", speech=False),
+        self.assertEqual(nice_time(dt, speech=False),
                          "12:15")
-        self.assertEqual(nice_time(dt, lang="de-de", speech=False,
+        self.assertEqual(nice_time(dt, speech=False,
                                    use_ampm=True),
                          "12:15 PM")
-        self.assertEqual(nice_time(dt, lang="de-de", speech=False,
+        self.assertEqual(nice_time(dt, speech=False,
                                    use_24hour=True),
                          "12:15")
-        self.assertEqual(nice_time(dt, lang="de-de", speech=False,
+        self.assertEqual(nice_time(dt, speech=False,
                                    use_24hour=True, use_ampm=True),
                          "12:15")
-        self.assertEqual(nice_time(dt, lang="de-de", use_24hour=True,
+        self.assertEqual(nice_time(dt, use_24hour=True,
                                    use_ampm=True),
                          u"zwölf Uhr fünfzehn")
-        self.assertEqual(nice_time(dt, lang="de-de", use_24hour=True,
+        self.assertEqual(nice_time(dt, use_24hour=True,
                                    use_ampm=False),
                          u"zwölf Uhr fünfzehn")
 
         dt = datetime.datetime(2017, 1, 31,
                                19, 40, 49)
-        self.assertEqual(nice_time(dt, lang="de-de"),
+        self.assertEqual(nice_time(dt),
                          "sieben Uhr vierzig")
-        self.assertEqual(nice_time(dt, lang="de-de", use_ampm=True),
+        self.assertEqual(nice_time(dt, use_ampm=True),
                          "sieben Uhr vierzig abends")
-        self.assertEqual(nice_time(dt, lang="de-de", speech=False),
+        self.assertEqual(nice_time(dt, speech=False),
                          "7:40")
-        self.assertEqual(nice_time(dt, lang="de-de", speech=False,
+        self.assertEqual(nice_time(dt, speech=False,
                                    use_ampm=True),
                          "7:40 PM")
-        self.assertEqual(nice_time(dt, lang="de-de", speech=False,
+        self.assertEqual(nice_time(dt, speech=False,
                                    use_24hour=True),
                          "19:40")
-        self.assertEqual(nice_time(dt, lang="de-de", speech=False,
+        self.assertEqual(nice_time(dt, speech=False,
                                    use_24hour=True, use_ampm=True),
                          "19:40")
-        self.assertEqual(nice_time(dt, lang="de-de", use_24hour=True,
+        self.assertEqual(nice_time(dt, use_24hour=True,
                                    use_ampm=True),
                          "neunzehn Uhr vierzig")
-        self.assertEqual(nice_time(dt, lang="de-de", use_24hour=True,
+        self.assertEqual(nice_time(dt, use_24hour=True,
                                    use_ampm=False),
                          "neunzehn Uhr vierzig")
 
         dt = datetime.datetime(2017, 1, 31,
                                1, 15, 00)
-        self.assertEqual(nice_time(dt, lang="de-de", use_24hour=True),
+        self.assertEqual(nice_time(dt, use_24hour=True),
                          u"ein Uhr fünfzehn")
 
         dt = datetime.datetime(2017, 1, 31,
                                1, 35, 00)
-        self.assertEqual(nice_time(dt, lang="de-de"),
+        self.assertEqual(nice_time(dt),
                          u"ein Uhr fünfunddreißig")
 
         dt = datetime.datetime(2017, 1, 31,
                                1, 45, 00)
-        self.assertEqual(nice_time(dt, lang="de-de"),
+        self.assertEqual(nice_time(dt),
                          u"ein Uhr fünfundvierzig")
 
         dt = datetime.datetime(2017, 1, 31,
                                4, 50, 00)
-        self.assertEqual(nice_time(dt, lang="de-de"),
+        self.assertEqual(nice_time(dt),
                          u"vier Uhr fünfzig")
 
         dt = datetime.datetime(2017, 1, 31,
                                5, 55, 00)
-        self.assertEqual(nice_time(dt, lang="de-de"),
+        self.assertEqual(nice_time(dt),
                          u"fünf Uhr fünfundfünfzig")
 
         dt = datetime.datetime(2017, 1, 31,
                                5, 30, 00)
-        self.assertEqual(nice_time(dt, lang="de-de", use_ampm=True),
+        self.assertEqual(nice_time(dt, use_ampm=True),
                          u"fünf Uhr dreißig morgens")
 
 
 class TestJoinList_de(unittest.TestCase):
+    def setUp(self):
+        self.old_lang = get_active_lang()
+        set_active_lang("de-de")
+
+    def tearDown(self):
+        set_active_lang(self.old_lang)
+
     def test_join_list_de(self):
-        self.assertEqual(join_list(['Hallo', 'Auf wieder Sehen'], 'and',
-                                   lang='de-de'),
+        self.assertEqual(join_list(['Hallo', 'Auf wieder Sehen'], 'and'),
                          'Hallo und Auf wieder Sehen')
 
-        self.assertEqual(join_list(['A', 'B', 'C'], 'or', lang='de-de'),
+        self.assertEqual(join_list(['A', 'B', 'C'], 'or'),
                          'A, B oder C')
 
 
