@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 import subprocess
+import signal
 from time import sleep
 
 from mycroft.audio.services import AudioBackend
@@ -46,13 +47,14 @@ class SimpleAudioService(AudioBackend):
 
     def __init__(self, config, bus, name='simple'):
 
-        super(SimpleAudioService, self).__init__(config, bus)
+        super().__init__(config, bus)
         self.config = config
         self.process = None
         self.bus = bus
         self.name = name
         self._stop_signal = False
         self._is_playing = False
+        self._paused = False
         self.tracks = []
         self.index = 0
         self.supports_mime_hints = True
@@ -78,6 +80,7 @@ class SimpleAudioService(AudioBackend):
         LOG.info('SimpleAudioService._play')
         repeat = message.data.get('repeat', False)
         self._is_playing = True
+        self._paused = False
         if isinstance(self.tracks[self.index], list):
             track = self.tracks[self.index][0]
             mime = self.tracks[self.index][1]
@@ -114,6 +117,7 @@ class SimpleAudioService(AudioBackend):
             self.process.terminate()
             self.process = None
             self._is_playing = False
+            self._paused = False
             return
 
         self.index += 1
@@ -125,6 +129,7 @@ class SimpleAudioService(AudioBackend):
                                   {'repeat': repeat}))
         else:
             self._is_playing = False
+            self._paused = False
 
     def play(self, repeat=False):
         LOG.info('Call SimpleAudioServicePlay')
@@ -138,11 +143,38 @@ class SimpleAudioService(AudioBackend):
             sleep(0.1)
         self._stop_signal = False
 
+    def _pause(self):
+        """ Pauses playback if possible.
+
+            Returns: (bool) New paused status:
+        """
+        if self.process:
+            # Suspend the playback process
+            self.process.send_signal(signal.SIGSTOP)
+            return True  # After pause the service is paused
+        else:
+            return False
+
     def pause(self):
-        pass
+        if not self._paused:
+            self._paused = self._pause()
+
+    def _resume(self):
+        """ Resumes playback if possible.
+
+            Returns: (bool) New paused status:
+        """
+        if self.process:
+            # Resume the playback process
+            self.process.send_signal(signal.SIGCONT)
+            return False  # After resume the service is no longer paused
+        else:
+            return True
 
     def resume(self):
-        pass
+        if self._paused:
+            # Resume the playback process
+            self._paused = self._resume()
 
     def next(self):
         # Terminate process to continue to next
@@ -152,10 +184,12 @@ class SimpleAudioService(AudioBackend):
         pass
 
     def lower_volume(self):
-        pass
+        if not self._paused:
+            self._pause()  # poor-man's ducking
 
     def restore_volume(self):
-        pass
+        if not self._paused:
+            self._resume()  # poor-man's unducking
 
 
 def load_service(base_config, bus):

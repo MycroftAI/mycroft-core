@@ -26,6 +26,7 @@ from mycroft.util import (
     create_echo_function, create_daemon, wait_for_exit_signal
 )
 from mycroft.util.log import LOG
+from mycroft.util.lang import set_active_lang
 
 from .skill_manager import SkillManager, MsmException
 from .core import FallbackSkill
@@ -186,6 +187,9 @@ def main():
     # Connect this Skill management process to the Mycroft Messagebus
     bus = WebsocketClient()
     Configuration.init(bus)
+    config = Configuration.get()
+    # Set the active lang to match the configured one
+    set_active_lang(config.get('lang', 'en-us'))
 
     bus.on('message', create_echo_function('SKILLS'))
     # Startup will be called after the connection with the Messagebus is done
