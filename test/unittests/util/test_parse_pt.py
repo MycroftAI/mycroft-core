@@ -249,7 +249,7 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(get_gender("cavalo", lang="pt"), "m")
         self.assertEqual(get_gender("vacas", lang="pt"), "f")
         self.assertEqual(get_gender("boi", "o boi come erva", lang="pt"), "m")
-        self.assertEqual(get_gender("boi", lang="pt"), False)
+        self.assertEqual(get_gender("boi", lang="pt"), None)
         self.assertEqual(get_gender("homem", "estes homem come merda",
                                     lang="pt"), "m")
         self.assertEqual(get_gender("ponte", lang="pt"), "m")

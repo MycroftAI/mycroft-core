@@ -1185,7 +1185,7 @@ def pt_pruning(text, symbols=True, accents=True, agressive=True):
 
 def get_gender_pt(word, raw_string=""):
     word = word.rstrip("s")
-    gender = False
+    gender = None
     words = raw_string.split(" ")
     for idx, w in enumerate(words):
         if w == word and idx != 0:

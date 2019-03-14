@@ -584,7 +584,7 @@ class MycroftSkill:
         """
         return None
 
-    def converse(self, utterances, lang="en-us"):
+    def converse(self, utterances, lang=None):
         """ Handle conversation.
 
         This method gets a peek at utterances before the normal intent
@@ -595,7 +595,7 @@ class MycroftSkill:
 
         Args:
             utterances (list): The utterances from the user
-            lang:       language the utterance is in
+            lang:       language the utterance is in, None for default
 
         Returns:
             bool: True if an utterance was handled, otherwise False
@@ -610,7 +610,7 @@ class MycroftSkill:
         """
         event = Event()
 
-        def converse(utterances, lang="en-us"):
+        def converse(utterances, lang=None):
             converse.response = utterances[0] if utterances else None
             event.set()
             return True

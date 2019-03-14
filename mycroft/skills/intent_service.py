@@ -20,6 +20,7 @@ from adapt.intent import IntentBuilder
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import open_intent_envelope
+from mycroft.util.lang import set_active_lang
 from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
 from mycroft.metrics import report_timing, Stopwatch
@@ -208,6 +209,7 @@ class IntentService:
     def reset_converse(self, message):
         """Let skills know there was a problem with speech recognition"""
         lang = message.data.get('lang', "en-us")
+        set_active_lang(lang)
         for skill in self.active_skills:
             self.do_converse(None, skill[0], lang)
 
@@ -309,6 +311,7 @@ class IntentService:
         try:
             # Get language of the utterance
             lang = message.data.get('lang', "en-us")
+            set_active_lang(lang)
             utterances = message.data.get('utterances', '')
 
             stopwatch = Stopwatch()
