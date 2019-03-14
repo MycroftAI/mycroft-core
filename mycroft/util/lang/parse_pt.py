@@ -970,8 +970,8 @@ def extract_datetime_pt(input_str, currentDate, default_time):
                                 wordPrev == "zero"
                             )):
                         # 0800 hours (pronounced oh-eight-hundred)
-                        strHH = str(int(word) / 100)
-                        strMM = str(int(word) - int(strHH) * 100)
+                        strHH = str(int(word) // 100)
+                        strMM = str(int(word) % 100)
                         military = True
                         if wordNext == "hora":
                             used += 1
@@ -1005,8 +1005,8 @@ def extract_datetime_pt(input_str, currentDate, default_time):
                         hrAbs = -1
                         minAbs = -1
                     elif int(word) > 100:
-                        strHH = str(int(word) / 100)
-                        strMM = str(int(word) - int(strHH) * 100)
+                        strHH = str(int(word) // 100)
+                        strMM = str(int(word) % 100)
                         military = True
                         if wordNext == "hora":
                             used += 1
@@ -1042,10 +1042,8 @@ def extract_datetime_pt(input_str, currentDate, default_time):
 
             HH = int(strHH) if strHH else 0
             MM = int(strMM) if strMM else 0
-            HH = HH + 12 if (remainder == "pm" and
-                                   0 < HH < 12) else HH
-            HH = HH - 12 if (remainder == "am" and
-                                   0 < HH >= 12) else HH
+            HH = HH + 12 if (remainder == "pm" and 0 < HH < 12) else HH
+            HH = HH - 12 if (remainder == "am" and 0 < HH >= 12) else HH
             if HH > 24 or MM > 59:
                 isTime = False
                 used = 0

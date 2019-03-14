@@ -1033,8 +1033,8 @@ def extract_datetime_it(string, dateNow, default_time):
                 str_hh = str(int(word))
                 str_mm = '00'
             elif 100 <= int(word) <= 2400:
-                str_hh = int(word) / 100
-                str_mm = int(word) - str_hh * 100
+                str_hh = int(word) // 100
+                str_mm = int(word) % 100
                 military = True
                 isTime = False
             if extractnumber_it(word) and word_next \

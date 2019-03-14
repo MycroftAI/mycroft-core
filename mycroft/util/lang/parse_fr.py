@@ -877,8 +877,8 @@ def extract_datetime_fr(string, currentDate, default_time):
                     used = 2
                 elif int(word) > 100:
                     # format militaire
-                    hrAbs = int(word) / 100
-                    minAbs = int(word) - hrAbs * 100
+                    hrAbs = int(word) // 100
+                    minAbs = int(word) % 100
                     used = 1
                     if wordNext == "heures":
                         used += 1
