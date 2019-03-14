@@ -1139,7 +1139,7 @@ def extract_datetime_en(string, dateNow, default_time):
                             military = True
                             if strHH and int(strHH) <= 12 and \
                                     (timeQualifier in timeQualifiersPM):
-                                strHH += str(int(strHH) + 12)
+                                strHH = str(int(strHH) + 12)
             else:
                 # try to parse numbers without colons
                 # 5 hours, 10 minutes etc.

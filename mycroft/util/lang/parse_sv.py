@@ -474,17 +474,17 @@ def extract_datetime_sv(string, currentDate, default_time):
                         remainder = "pm"
                         used = 2
                     elif wordNext == "at" and wordNextNext == "night":
-                        if strHH > 5:
+                        if strHH and int(strHH) > 5:
                             remainder = "pm"
                         else:
                             remainder = "am"
                         used += 2
                     else:
                         if timeQualifier != "":
-                            if strHH <= 12 and \
+                            if strHH and int(strHH) <= 12 and \
                                     (timeQualifier == "evening" or
                                      timeQualifier == "afternoon"):
-                                strHH += 12
+                                strHH = str(int(strHH) + 12)
             else:
                 # try to parse # s without colons
                 # 5 hours, 10 minutes etc.
@@ -532,8 +532,8 @@ def extract_datetime_sv(string, currentDate, default_time):
                                 wordPrev == "oh"
                             )):
                         # 0800 hours (pronounced oh-eight-hundred)
-                        strHH = int(word) / 100
-                        strMM = int(word) - strHH * 100
+                        strHH = str(int(word) / 100)
+                        strMM = str(int(word) - int(strHH) * 100)
                         if wordNext == "hours":
                             used += 1
                     elif (
@@ -565,8 +565,8 @@ def extract_datetime_sv(string, currentDate, default_time):
                         hrAbs = -1
                         minAbs = -1
                     elif int(word) > 100:
-                        strHH = int(word) / 100
-                        strMM = int(word) - strHH * 100
+                        strHH = str(int(word) / 100)
+                        strMM = str(int(word) - int(strHH) * 100)
                         if wordNext == "hours":
                             used += 1
                     elif wordNext[0].isdigit():
@@ -585,7 +585,7 @@ def extract_datetime_sv(string, currentDate, default_time):
                                         )
                             )):
                         strHH = word
-                        strMM = 00
+                        strMM = "00"
                         if wordNext == "o'clock":
                             used += 1
                         if wordNext == "in" or wordNextNext == "in":
@@ -616,16 +616,16 @@ def extract_datetime_sv(string, currentDate, default_time):
                     else:
                         isTime = False
 
-            strHH = int(strHH) if strHH else 0
-            strMM = int(strMM) if strMM else 0
-            strHH = strHH + 12 if remainder == "pm" and strHH < 12 else strHH
-            strHH = strHH - 12 if remainder == "am" and strHH >= 12 else strHH
-            if strHH > 24 or strMM > 59:
+            HH = int(strHH) if strHH else 0
+            MM = int(strMM) if strMM else 0
+            HH = HH + 12 if remainder == "pm" and HH < 12 else HH
+            HH = HH - 12 if remainder == "am" and HH >= 12 else HH
+            if HH > 24 or MM > 59:
                 isTime = False
                 used = 0
             if isTime:
-                hrAbs = strHH * 1
-                minAbs = strMM * 1
+                hrAbs = HH
+                minAbs = MM
                 used += 1
         if used > 0:
             # removed parsed words from the sentence

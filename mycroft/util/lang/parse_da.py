@@ -532,17 +532,17 @@ def extract_datetime_da(string, currentDate, default_time):
                         remainder = "pm"
                         used = 2
                     elif wordNext == "natten":
-                        if strHH > 4:
+                        if strHH and int(strHH) > 4:
                             remainder = "pm"
                         else:
                             remainder = "am"
                         used += 1
                     else:
                         if timeQualifier != "":
-                            if strHH <= 12 and \
+                            if strHH and int(strHH) <= 12 and \
                                     (timeQualifier == "aftenen" or
                                      timeQualifier == "eftermiddagen"):
-                                strHH += 12  # what happens when strHH is 24?
+                                strHH = str(int(strHH) + 12)
             else:
                 # try to parse # s without colons
                 # 5 hours, 10 minutes etc.
@@ -666,7 +666,7 @@ def extract_datetime_da(string, currentDate, default_time):
 
                     elif wordNext == timeQualifier:
                         strHH = word
-                        strMM = 00
+                        strMM = "00"
                         isTime = True
                         if wordNext[:10] == "eftermidag":
                             used += 1
@@ -699,17 +699,20 @@ def extract_datetime_da(string, currentDate, default_time):
                 # else:
                 #     isTime = False
 
-            strHH = int(strHH) if strHH else 0
-            strMM = int(strMM) if strMM else 0
-            strHH = strHH + 12 if remainder == "pm" and strHH < 12 else strHH
-            strHH = strHH - 12 if remainder == "am" and strHH >= 12 else strHH
-            if strHH > 24 or strMM > 59:
+            HH = int(strHH) if strHH else 0
+            MM = int(strMM) if strMM else 0
+            if remainder == "pm" and HH < 12:
+                HH += 12
+            if remainder == "am" and HH >= 12:
+                HH -= 12
+            if HH > 24 or MM > 59:
                 isTime = False
                 used = 0
             if isTime:
-                hrAbs = strHH * 1
-                minAbs = strMM * 1
+                hrAbs = HH
+                minAbs = MM
                 used += 1
+
         if used > 0:
             # removed parsed words from the sentence
             for i in range(used):

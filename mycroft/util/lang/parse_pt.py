@@ -914,10 +914,10 @@ def extract_datetime_pt(input_str, currentDate, default_time):
                     else:
                         if timeQualifier != "":
                             military = True
-                            if strHH <= 12 and \
+                            if strHH and int(strHH) <= 12 and \
                                     (timeQualifier == "manha" or
                                      timeQualifier == "tarde"):
-                                strHH += 12
+                                strHH = str(int(strHH) + 12)
 
             else:
                 # try to parse # s without colons
@@ -970,8 +970,8 @@ def extract_datetime_pt(input_str, currentDate, default_time):
                                 wordPrev == "zero"
                             )):
                         # 0800 hours (pronounced oh-eight-hundred)
-                        strHH = int(word) / 100
-                        strMM = int(word) - strHH * 100
+                        strHH = str(int(word) / 100)
+                        strMM = str(int(word) - int(strHH) * 100)
                         military = True
                         if wordNext == "hora":
                             used += 1
@@ -1005,8 +1005,8 @@ def extract_datetime_pt(input_str, currentDate, default_time):
                         hrAbs = -1
                         minAbs = -1
                     elif int(word) > 100:
-                        strHH = int(word) / 100
-                        strMM = int(word) - strHH * 100
+                        strHH = str(int(word) / 100)
+                        strMM = str(int(word) - int(strHH) * 100)
                         military = True
                         if wordNext == "hora":
                             used += 1
@@ -1014,7 +1014,7 @@ def extract_datetime_pt(input_str, currentDate, default_time):
                     elif wordNext == "" or (
                             wordNext == "em" and wordNextNext == "ponto"):
                         strHH = word
-                        strMM = 00
+                        strMM = "00"
                         if wordNext == "em" and wordNextNext == "ponto":
                             used += 2
                             if wordNextNextNext == "tarde":
@@ -1040,18 +1040,18 @@ def extract_datetime_pt(input_str, currentDate, default_time):
                     else:
                         isTime = False
 
-            strHH = int(strHH) if strHH else 0
-            strMM = int(strMM) if strMM else 0
-            strHH = strHH + 12 if (remainder == "pm" and
-                                   0 < strHH < 12) else strHH
-            strHH = strHH - 12 if (remainder == "am" and
-                                   0 < strHH >= 12) else strHH
-            if strHH > 24 or strMM > 59:
+            HH = int(strHH) if strHH else 0
+            MM = int(strMM) if strMM else 0
+            HH = HH + 12 if (remainder == "pm" and
+                                   0 < HH < 12) else HH
+            HH = HH - 12 if (remainder == "am" and
+                                   0 < HH >= 12) else HH
+            if HH > 24 or MM > 59:
                 isTime = False
                 used = 0
             if isTime:
-                hrAbs = strHH * 1
-                minAbs = strMM * 1
+                hrAbs = HH
+                minAbs = MM
                 used += 1
 
         if used > 0:
