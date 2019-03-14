@@ -539,7 +539,7 @@ def join_list(items, connector, sep=None, lang=None):
     else:
         sep += " "
     return (sep.join(str(item) for item in items[:-1]) +
-            " " + _translate_word(connector, get_full_lang_code(lang)) +
+            " " + _translate_word(connector, lang) +
             " " + items[-1])
 
 

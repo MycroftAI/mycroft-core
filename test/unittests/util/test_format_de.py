@@ -129,11 +129,11 @@ class TestPronounceOrdinal(unittest.TestCase):
 # def pronounce_number(number, lang="de-de", places=2):
 class TestPronounceNumber(unittest.TestCase):
     def setUp(self):
-        self.old_lang = mycroft.util.lang.active_lang
-        mycroft.util.lang.active_lang = "de-de"
+        self.old_lang = get_active_lang()
+        set_active_lang("de-de")
 
     def tearDown(self):
-        mycroft.util.lang.active_lang = self.old_lang
+        set_active_lang(self.old_lang)
 
     def test_convert_int_de(self):
         self.assertEqual(pronounce_number(123456789123456789),
