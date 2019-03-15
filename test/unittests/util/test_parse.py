@@ -747,7 +747,7 @@ class TestNormalize(unittest.TestCase):
 
     def test_gender(self):
         self.assertEqual(get_gender("person"),
-                         False)
+                         None)
 
 
 if __name__ == "__main__":

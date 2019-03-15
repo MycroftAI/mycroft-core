@@ -396,7 +396,7 @@ class TestNormalize_fr(unittest.TestCase):
 
     def test_gender_fr(self):
         self.assertEqual(get_gender("personne", lang="fr-fr"),
-                         False)
+                         None)
 
 
 if __name__ == "__main__":

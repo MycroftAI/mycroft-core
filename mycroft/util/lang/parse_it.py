@@ -1289,7 +1289,7 @@ def get_gender_it(word, raw_string=""):
     TODO: check if useful
     """
 
-    gender = False
+    gender = None
     words = raw_string.split(' ')
     for idx, w in enumerate(words):
         if w == word and idx != 0:
