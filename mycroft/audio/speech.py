@@ -168,7 +168,6 @@ def init(messagebus):
     global tts
     global tts_hash
     global config
-    #global mimic_fallback_obj
 
     bus = messagebus
     Configuration.init(bus)
@@ -182,7 +181,6 @@ def init(messagebus):
     tts.init(bus)
     tts_hash = config.get('tts')
 
-    #mimic_fallback_obj = None
 
 def shutdown():
     if tts:
