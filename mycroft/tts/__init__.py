@@ -156,6 +156,8 @@ class TTS:
         ssml_tags (list): Supported ssml properties. Ex. ['speak', 'prosody']
     """
     __metaclass__ = ABCMeta
+    queue = None
+    playback = None
 
     def __init__(self, lang, config, validator, audio_ext='wav',
                  phonetic_spelling=True, ssml_tags=None):
@@ -172,9 +174,11 @@ class TTS:
         self.filename = '/tmp/tts.wav'
         self.enclosure = None
         random.seed()
-        self.queue = Queue()
-        self.playback = PlaybackThread(self.queue)
-        self.playback.start()
+        if not self.queue:
+            self.queue = Queue()
+        if not self.playback:
+            self.playback = PlaybackThread(self.queue)
+            self.playback.start()
         self.clear_cache()
         self.spellings = self.load_spellings()
 
@@ -221,6 +225,7 @@ class TTS:
         Arguments:
             bus:    Mycroft messagebus connection
         """
+
         self.bus = bus
         self.playback.init(self)
         self.enclosure = EnclosureAPI(self.bus)
@@ -306,7 +311,6 @@ class TTS:
             wav_file, phonemes = self.get_tts(sentence, wav_file)
             if phonemes:
                 self.save_phonemes(key, phonemes)
-
         vis = self.viseme(phonemes)
         self.queue.put((self.audio_ext, wav_file, vis, ident))
 

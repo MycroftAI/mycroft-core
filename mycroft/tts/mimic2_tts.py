@@ -250,7 +250,7 @@ class Mimic2(TTS):
                                                 self.spellings[word.lower()])
 
         chunks = _sentence_chunker(sentence)
-        LOG.debug("Generating Mimic2 TSS for: "+str(chunks))
+        LOG.debug("Generating Mimic2 TTS for: "+str(chunks))
         try:
             for _, req in enumerate(self._requests(chunks)):
                 results = req.result().json()
