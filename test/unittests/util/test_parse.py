@@ -304,10 +304,8 @@ class TestNormalize(unittest.TestCase):
                     "2017-06-29 07:00:00", "remind me to call mom")
         testExtract("remind me to call mom at 7:00 Thursday morning",
                     "2017-06-29 07:00:00", "remind me to call mom")
-        # TODO: This test is imperfect due to the "at 7:00" still in the
-        #       remainder.  But let it pass for now since time is correct
         testExtract("remind me to call mom at 7:00 Thursday evening",
-                    "2017-06-29 19:00:00", "remind me to call mom at 7:00")
+                    "2017-06-29 19:00:00", "remind me to call mom")
         testExtract("remind me to call mom at 8 Wednesday evening",
                     "2017-06-28 20:00:00", "remind me to call mom")
         testExtract("remind me to call mom at 8 Wednesday in the evening",
@@ -418,10 +416,8 @@ class TestNormalize(unittest.TestCase):
                     "2017-06-27 19:00:00", "set alarm")
         testExtract("set an alarm for this evening at 7 o'clock",
                     "2017-06-27 19:00:00", "set alarm")
-        # TODO: This test is imperfect due to the "at 7:00" still in the
-        #       remainder.  But let it pass for now since time is correct
         testExtract("set an alarm for this evening at 7:00",
-                    "2017-06-27 19:00:00", "set alarm at 7:00")
+                    "2017-06-27 19:00:00", "set alarm")
         testExtract("on the evening of june 5th 2017 remind me to" +
                     " call my mother",
                     "2017-06-05 19:00:00", "remind me to call my mother")
