@@ -292,6 +292,19 @@ class SkillGUI:
         self.skill.bus.emit(Message("gui.clear.namespace",
                                     {"__from": self.skill.skill_id}))
 
+    def send_event(self, event_name, params={}):
+        """ Trigger a gui event.
+
+        Arguments:
+            event_name (str): name of event to be triggered
+            params: json serializable object containing any parameters that
+                    should be sent along with the request.
+        """
+        self.skill.bus.emit(Message("gui.event.send",
+                                    {"__from": self.skill.skill_id,
+                                     "event_name": event_name,
+                                     "params": params}))
+
     def show_page(self, name, override_idle=None):
         """
         Begin showing the page in the GUI
