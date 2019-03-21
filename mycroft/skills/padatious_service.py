@@ -28,6 +28,9 @@ from mycroft.util.log import LOG
 class PadatiousService(FallbackSkill):
     instance = None
 
+    fallback_tight_match = 5   # Fallback priority for the conf > 0.8 match
+    fallback_loose_match = 89  # Fallback priority for the conf > 0.5 match
+
     def __init__(self, bus, service):
         FallbackSkill.__init__(self)
         if not PadatiousService.instance:
@@ -58,10 +61,12 @@ class PadatiousService(FallbackSkill):
         self.bus.on('mycroft.skills.initialized', self.train)
 
         # Call Padatious an an early fallback, looking for a high match intent
-        self.register_fallback(self.handle_fallback, 5)
+        self.register_fallback(self.handle_fallback,
+                               PadatiousService.fallback_tight_match)
 
         # Try loose Padatious intent match before going to fallback-unknown
-        self.register_fallback(self.handle_fallback_last_chance, 99)
+        self.register_fallback(self.handle_fallback_last_chance,
+                               PadatiousService.fallback_loose_match)
 
         self.finished_training_event = Event()
         self.finished_initial_train = False
