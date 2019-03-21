@@ -299,9 +299,13 @@ class IntentService:
 
         Utterances then work through this sequence to be handled:
         1) Active skills attempt to handle using converse()
-        2) Adapt intent handlers
-        3) Padatious intent handlers
-        4) Other fallbacks
+        2) Padatious high match intents (conf > 0.95)
+        3) Adapt intent handlers
+        5) Fallbacks:
+           - Padatious near match intents (conf > 0.8)
+           - General fallbacks
+           - Padatious loose match intents (conf > 0.5)
+           - Unknown intent handler
 
         Args:
             message (Message): The messagebus data
