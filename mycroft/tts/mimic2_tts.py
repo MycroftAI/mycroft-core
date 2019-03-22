@@ -198,7 +198,7 @@ class Mimic2(TTS):
                 '%s Http Error: %s for url: %s' %
                 (req.status_code, req.reason, req.url))
 
-    def _requests(self, chunks):
+    def _requests(self, sentence):
         """create asynchronous request list
 
         Args:
@@ -207,13 +207,9 @@ class Mimic2(TTS):
         Returns:
             list: list of FutureSession objects
         """
-        reqs = []
-        for chunk in chunks:
-            if len(chunk) > 0:
-                url = self.url + parse.quote(chunk)
-                req_route = url + "&visimes=True"
-                reqs.append(self.session.get(req_route, timeout=5))
-        return reqs
+        url = self.url + parse.quote(sentence)
+        req_route = url + "&visimes=True"
+        return self.session.get(req_route, timeout=5)
 
     def viseme(self, phonemes):
         """ Maps phonemes to appropriate viseme encoding
@@ -238,6 +234,10 @@ class Mimic2(TTS):
             visemes.append((vis, vis_dur))
         return visemes
 
+    def _prepocess_sentence(sentence):
+        """ Split sentence in chunks better suited for mimic2. """
+        return _sentence_chunker(sentence)
+
     def get_tts(self, sentence, wav_file):
         """ Generate (remotely) and play mimic2 WAV audio
 
@@ -245,23 +245,14 @@ class Mimic2(TTS):
             sentence (str): Phrase to synthesize to audio with mimic2
             wav_file (str): Location to write audio output
         """
-
-        # Use the phonetic_spelling mechanism from the TTS base class
-        if self.phonetic_spelling:
-            for word in re.findall(r"[\w']+", sentence):
-                if word.lower() in self.spellings:
-                    sentence = sentence.replace(word,
-                                                self.spellings[word.lower()])
-
-        chunks = _sentence_chunker(sentence)
-        LOG.debug("Generating Mimic2 TSS for: "+str(chunks))
+        LOG.debug("Generating Mimic2 TSS for: " + str(sentence))
         try:
-            for _, req in enumerate(self._requests(chunks)):
-                results = req.result().json()
-                audio = base64.b64decode(results['audio_base64'])
-                vis = results['visimes']
-                with open(wav_file, 'wb') as f:
-                    f.write(audio)
+            req = self._requests(sentence)
+            results = req.result().json()
+            audio = base64.b64decode(results['audio_base64'])
+            vis = results['visimes']
+            with open(wav_file, 'wb') as f:
+                f.write(audio)
         except (ReadTimeout, ConnectionError, ConnectTimeout, HTTPError):
             raise RemoteTTSTimeoutException(
                 "Mimic 2 server request timed out. Falling back to mimic")

@@ -275,6 +275,20 @@ class TTS:
         # return text with supported ssml tags only
         return utterance.replace("  ", " ")
 
+    def _preprocess_sentence(self, sentence):
+        """ Default preprocessing is no preprocessing.
+
+        This method can be overridden to create chunks suitable to the
+        TTS engine in question.
+
+        Arguments:
+            sentence (str): sentence to preprocess
+
+        Returns:
+            list: list of sentence parts
+        """
+        return [sentence]
+
     def execute(self, sentence, ident=None):
         """
             Convert sentence to speech, preprocessing out unsupported ssml
@@ -295,20 +309,23 @@ class TTS:
                     sentence = sentence.replace(word,
                                                 self.spellings[word.lower()])
 
-        key = str(hashlib.md5(sentence.encode('utf-8', 'ignore')).hexdigest())
-        wav_file = os.path.join(mycroft.util.get_cache_directory("tts"),
-                                key + '.' + self.audio_ext)
+        chunks = self._preprocess_sentence(sentence)
+        for sentence in chunks:
+            key = str(hashlib.md5(
+                sentence.encode('utf-8', 'ignore')).hexdigest())
+            wav_file = os.path.join(mycroft.util.get_cache_directory("tts"),
+                                    key + '.' + self.audio_ext)
 
-        if os.path.exists(wav_file):
-            LOG.debug("TTS cache hit")
-            phonemes = self.load_phonemes(key)
-        else:
-            wav_file, phonemes = self.get_tts(sentence, wav_file)
-            if phonemes:
-                self.save_phonemes(key, phonemes)
+            if os.path.exists(wav_file):
+                LOG.debug("TTS cache hit")
+                phonemes = self.load_phonemes(key)
+            else:
+                wav_file, phonemes = self.get_tts(sentence, wav_file)
+                if phonemes:
+                    self.save_phonemes(key, phonemes)
 
-        vis = self.viseme(phonemes)
-        self.queue.put((self.audio_ext, wav_file, vis, ident))
+            vis = self.viseme(phonemes)
+            self.queue.put((self.audio_ext, wav_file, vis, ident))
 
     def viseme(self, phonemes):
         """
