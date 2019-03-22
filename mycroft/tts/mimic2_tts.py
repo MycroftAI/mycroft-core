@@ -89,13 +89,17 @@ def _split_by_punctuation(chunks, puncs):
     e.g. hello, world => [hello, world]
 
     Args:
-        chunks (list): text (str) to split
+        chunks (list or str): text (str) to split
         puncs (list): list of punctuations used to split text
 
     Returns:
         list: list with split text
     """
-    out = chunks
+    if isinstance(chunks, str):
+        out = [chunks]
+    else:
+        out = chunks
+
     for punc in puncs:
         splits = []
         for t in out:
@@ -138,7 +142,7 @@ def _sentence_chunker(text):
 
     # first split by punctuations that are major pauses
     first_splits = _split_by_punctuation(
-        [text],
+        text,
         puncs=[r'\.', r'\!', r'\?', r'\:', r'\;']
     )
 
@@ -149,7 +153,7 @@ def _sentence_chunker(text):
             second_splits += _split_by_punctuation(chunk,
                                                    puncs=[r'\,', '--', '-'])
         else:
-            second_splits += chunk
+            second_splits.append(chunk)
 
     # if chunks are still too big, chop into pieces of at most 20 words
     third_splits = []
@@ -157,7 +161,7 @@ def _sentence_chunker(text):
         if len(chunk) > _max_sentence_size:
             third_splits += _split_by_chunk_size(chunk, 20)
         else:
-            third_splits += chunk
+            third_splits.append(chunk)
 
     return [_add_punctuation(chunk) for chunk in third_splits]
 
