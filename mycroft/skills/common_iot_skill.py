@@ -19,7 +19,18 @@
 # BE WARNED THAT THE CLASSES, FUNCTIONS, ETC MAY CHANGE WITHOUT WARNING.
 
 from abc import ABC, abstractmethod
-from enum import Enum, unique, auto
+from enum import Enum, unique  # , auto
+try:
+    from enum import auto
+except ImportError:
+    __my_enum_auto_id = 0
+
+    def auto() -> int:
+        global __my_enum_auto_id
+        i = __my_enum_auto_id
+        __my_enum_auto_id += 1
+        return i
+
 from mycroft import MycroftSkill
 from mycroft.messagebus.message import Message
 
