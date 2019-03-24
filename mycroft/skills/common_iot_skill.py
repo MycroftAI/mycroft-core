@@ -19,13 +19,28 @@
 # BE WARNED THAT THE CLASSES, FUNCTIONS, ETC MAY CHANGE WITHOUT WARNING.
 
 from abc import ABC, abstractmethod
-from enum import Enum, unique, auto
+from enum import Enum, unique
+from itertools import count
+
 from mycroft import MycroftSkill
 from mycroft.messagebus.message import Message
 
 
 ENTITY = "ENTITY"
 SCENE = "SCENE"
+
+
+_counter = count()
+
+
+def auto():
+    """
+    Indefinitely return the next number in sequence from 0.
+
+    This can be replaced with enum.auto when we no longer
+    need to support python3.4.
+    """
+    return next(_counter)
 
 
 class _BusKeys():
