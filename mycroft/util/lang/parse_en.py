@@ -1279,7 +1279,8 @@ def extract_datetime_en(string, dateNow, default_time):
                                 remainder = "am"
                                 used += 1
                             else:
-                                used += 1  # TODO: Unsure if this is 100% accurate
+                                # TODO: Unsure if this is 100% accurate
+                                used += 1
                                 military = True
                     else:
                         isTime = False
