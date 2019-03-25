@@ -741,7 +741,7 @@ def extract_datetime_en(string, dateNow, default_time):
     timeQualifier = ""
 
     timeQualifiersAM = ['morning']
-    timeQualifiersPM = ['afternoon', 'evening', 'night']
+    timeQualifiersPM = ['afternoon', 'evening', 'night', 'tonight']
     timeQualifiersList = set(timeQualifiersAM + timeQualifiersPM)
     markers = ['at', 'in', 'on', 'by', 'this', 'around', 'for', 'of', "within"]
     days = ['monday', 'tuesday', 'wednesday',
@@ -815,9 +815,6 @@ def extract_datetime_en(string, dateNow, default_time):
             timeQualifier = word
         # parse today, tomorrow, day after tomorrow
         elif word == "today" and not fromFlag:
-            dayOffset = 0
-            used += 1
-        elif word == "tonight" and not fromFlag:
             dayOffset = 0
             used += 1
         elif word == "tomorrow" and not fromFlag:
@@ -1092,7 +1089,9 @@ def extract_datetime_en(string, dateNow, default_time):
                     if nextWord == "am" or nextWord == "pm":
                         remainder = nextWord
                         used += 1
-                    elif nextWord == "tonight":
+                    elif nextWord == "tonight" or wordNextNext == "tonight"\
+                            or wordPrev == "tonight"\
+                            or wordPrevPrev == "tonight":
                         remainder = "pm"
                         used += 1
                     elif wordNext == "in" and wordNextNext == "the" and \
@@ -1250,7 +1249,8 @@ def extract_datetime_en(string, dateNow, default_time):
                                             wordNextNext == "the" or
                                             wordNextNext == timeQualifier
                                     )
-                            )):
+                            ) or wordNext == 'tonight'
+                            or wordNextNext == 'tonight'):
                         strHH = strNum
                         strMM = "00"
                         if wordNext == "o'clock":
@@ -1272,8 +1272,15 @@ def extract_datetime_en(string, dateNow, default_time):
                                     remainder = "am"
                                     used += 1
                         if timeQualifier != "":
-                            used += 1  # TODO: Unsure if this is 100% accurate
-                            military = True
+                            if timeQualifier in timeQualifiersPM:
+                                remainder = "pm"
+                                used += 1
+                            elif timeQualifier in timeQualifiersAM:
+                                remainder = "am"
+                                used += 1
+                            else:
+                                used += 1  # TODO: Unsure if this is 100% accurate
+                                military = True
                     else:
                         isTime = False
 
@@ -1337,7 +1344,6 @@ def extract_datetime_en(string, dateNow, default_time):
 
             idx += used - 1
             found = True
-
     # check that we found a date
     if not date_found:
         return None
