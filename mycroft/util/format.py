@@ -40,7 +40,7 @@ from mycroft.util.lang.format_da import nice_time_da
 from mycroft.util.lang.format_da import pronounce_number_da
 
 from collections import namedtuple
-#from padatious.util import expand_parentheses
+from padatious.util import expand_parentheses
 import json
 import os
 import datetime
