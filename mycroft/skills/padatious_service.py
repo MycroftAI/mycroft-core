@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from functools import lru_cache
 from subprocess import call
 from threading import Event
 from time import time as get_time, sleep
@@ -145,19 +146,28 @@ class PadatiousService(FallbackSkill):
 
         utt = message.data.get('utterance')
         LOG.debug("Padatious fallback attempt: " + utt)
-        data = self.calc_intent(utt)
-        if data.conf < threshold:
+        intent = self.calc_intent(utt)
+
+        if not intent or intent.conf < threshold:
+            # Attempt to use normalized() version
+            norm = message.data.get('norm_utt')
+            if norm != utt:
+                LOG.debug("               alt attempt: " + norm)
+                intent = self.calc_intent(norm)
+                utt = norm
+        if not intent or intent.conf < threshold:
             return False
 
-        data.matches['utterance'] = utt
-
-        self.service.add_active_skill(data.name.split(':')[0])
-
-        self.bus.emit(message.reply(data.name, data=data.matches))
+        intent.matches['utterance'] = utt
+        self.service.add_active_skill(intent.name.split(':')[0])
+        self.bus.emit(message.reply(intent.name, data=intent.matches))
         return True
 
     def handle_fallback_last_chance(self, message):
         return self.handle_fallback(message, 0.5)
 
+    # NOTE: This cache will keep a reference to this calss (PadatiousService),
+    # but we can live with that since it is used as a singleton.
+    @lru_cache(maxsize=2)   # 2 catches both raw and normalized utts in cache
     def calc_intent(self, utt):
         return self.container.calc_intent(utt)
