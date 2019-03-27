@@ -1249,7 +1249,7 @@ def extract_datetime_en(string, dateNow, default_time):
                                             wordNextNext == "the" or
                                             wordNextNext == timeQualifier
                                     )
-                            ) or wordNext == 'tonight'or
+                            ) or wordNext == 'tonight' or
                             wordNextNext == 'tonight'):
                         strHH = strNum
                         strMM = "00"
