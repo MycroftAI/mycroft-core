@@ -30,6 +30,7 @@ config = None
 tts = None
 tts_hash = None
 lock = Lock()
+mimic_fallback_obj = None
 
 _last_stop_signal = 0
 
@@ -130,11 +131,15 @@ def mute_and_speak(utterance, ident):
 
 
 def mimic_fallback_tts(utterance, ident):
+    global mimic_fallback_obj
     # fallback if connection is lost
     config = Configuration.get()
     tts_config = config.get('tts', {}).get("mimic", {})
     lang = config.get("lang", "en-us")
-    tts = Mimic(lang, tts_config)
+    if not mimic_fallback_obj:
+        mimic_fallback_obj = Mimic(lang, tts_config)
+    tts = mimic_fallback_obj
+    LOG.debug("Mimic fallback, utterance : " + str(utterance))
     tts.init(bus)
     tts.execute(utterance, ident)
 
