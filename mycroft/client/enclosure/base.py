@@ -152,7 +152,7 @@ class Enclosure:
         if self.datastore[namespace].get(name) != value:
             self.datastore[namespace][name] = value
 
-            # If the namespace is loaded send data to gui
+            # If the namespace is loaded send data to GUI
             if namespace in [l.name for l in self.loaded]:
                 msg = {"type": "mycroft.session.set",
                        "namespace": namespace,
