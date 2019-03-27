@@ -123,7 +123,7 @@ class Enclosure:
                 LOG.error('GUI connection {} has no socket!'.format(gui))
 
     def on_gui_send_event(self, message):
-        """ Send an event to the guis. """
+        """ Send an event to the GUIs. """
         try:
             data = {'type': 'mycroft.events.triggered',
                     'namespace': message.data.get('__from'),
