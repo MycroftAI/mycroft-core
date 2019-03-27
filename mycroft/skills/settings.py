@@ -64,7 +64,7 @@ import os
 import time
 import copy
 from threading import Timer
-from os.path import isfile, join, expanduser
+from os.path import isfile, join, expanduser, abspath, dirname
 from requests.exceptions import RequestException
 from msm import MycroftSkillsManager, SkillEntry
 
@@ -147,7 +147,9 @@ class SkillSettings(dict):
         if isfile(self._meta_path):
             self._poll_skill_settings()
         # if not disallowed by user upload an entry for all skills installed
-        elif self.config['skills']['upload_skill_manifest']:
+        # also skip anything located in the skills directory (padatious)
+        elif (self.config['skills']['upload_skill_manifest'] and
+                not abspath(directory) == abspath(dirname(__file__))):
             self._blank_poll_timer = Timer(1, self._init_blank_meta)
             self._blank_poll_timer.daemon = True
             self._blank_poll_timer.start()
