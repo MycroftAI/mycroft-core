@@ -243,7 +243,7 @@ class SkillGUI:
         self.skill.add_event(msg_type, self.gui_set)
 
     def register_handler(self, event, handler):
-        """ Register a handler for gui events.
+        """ Register a handler for GUI events.
 
             when using the triggerEvent method from Qt
             triggerEvent("event", {"data": "cool"})
@@ -286,11 +286,24 @@ class SkillGUI:
         return self.__session_data.__contains__(key)
 
     def clear(self):
-        """ Reset the value dictionary, and remove namespace from gui """
+        """ Reset the value dictionary, and remove namespace from GUI """
         self.__session_data = {}
         self.page = None
         self.skill.bus.emit(Message("gui.clear.namespace",
                                     {"__from": self.skill.skill_id}))
+
+    def send_event(self, event_name, params={}):
+        """ Trigger a gui event.
+
+        Arguments:
+            event_name (str): name of event to be triggered
+            params: json serializable object containing any parameters that
+                    should be sent along with the request.
+        """
+        self.skill.bus.emit(Message("gui.event.send",
+                                    {"__from": self.skill.skill_id,
+                                     "event_name": event_name,
+                                     "params": params}))
 
     def show_page(self, name, override_idle=None):
         """
@@ -342,7 +355,7 @@ class SkillGUI:
                                      "__idle": override_idle}))
 
     def remove_page(self, page):
-        """ Remove a single page from the gui.
+        """ Remove a single page from the GUI.
 
             Args:
                 page (str): Page to remove from the GUI

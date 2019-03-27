@@ -102,6 +102,7 @@ class Enclosure:
         self.bus.on("gui.page.show", self.on_gui_show_page)
         self.bus.on("gui.page.delete", self.on_gui_delete_page)
         self.bus.on("gui.clear.namespace", self.on_gui_delete_namespace)
+        self.bus.on("gui.event.send", self.on_gui_send_event)
 
     def run(self):
         try:
@@ -120,6 +121,17 @@ class Enclosure:
                 gui.socket.send(*args, **kwargs)
             else:
                 LOG.error('GUI connection {} has no socket!'.format(gui))
+
+    def on_gui_send_event(self, message):
+        """ Send an event to the GUIs. """
+        try:
+            data = {'type': 'mycroft.events.triggered',
+                    'namespace': message.data.get('__from'),
+                    'event_name': message.data.get('event_name'),
+                    'params': message.data.get('params')}
+            self.send(data)
+        except Exception as e:
+            LOG.error('Could not send event ({})'.format(repr(e)))
 
     def on_gui_set_value(self, message):
         data = message.data
@@ -140,7 +152,7 @@ class Enclosure:
         if self.datastore[namespace].get(name) != value:
             self.datastore[namespace][name] = value
 
-            # If the namespace is loaded send data to gui
+            # If the namespace is loaded send data to GUI
             if namespace in [l.name for l in self.loaded]:
                 msg = {"type": "mycroft.session.set",
                        "namespace": namespace,
