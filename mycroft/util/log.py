@@ -71,7 +71,7 @@ class LOG:
             except Exception as e:
                 print('couldn\'t load {}: {}'.format(conf, str(e)))
 
-        cls.level = logging.getLevelName(config.get('log_level', 'DEBUG'))
+        cls.level = logging.getLevelName(config.get('log_level', 'INFO'))
         fmt = '%(asctime)s.%(msecs)03d - ' \
               '%(name)s - %(levelname)s - %(message)s'
         datefmt = '%H:%M:%S'
