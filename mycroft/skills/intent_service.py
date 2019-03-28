@@ -440,7 +440,6 @@ class IntentService:
                     context_manager=self.context_manager)]
                 if intents:
                     take_best(intents[0], utt)
-                LOG.exception(e)
 
                 # Also test the normalized version, but set the utternace to
                 # the raw version so skill has access to original STT
