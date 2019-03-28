@@ -607,7 +607,11 @@ class MycroftSkill:
         indicate that the utterance has been handled.
 
         Args:
-            utterances (list): The utterances from the user
+            utterances (list): The utterances from the user.  If there are
+                               multiple utterances, consider them all to be
+                               transcription possibilities.  Commonly, the
+                               first entry is the user utt and the second
+                               is normalized() version of the first utterance
             lang:       language the utterance is in, None for default
 
         Returns:
