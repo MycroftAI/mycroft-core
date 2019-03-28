@@ -441,7 +441,8 @@ class IntentService:
                 if intent:
                     take_best(intent, utt)
 
-                # Also test the normalized version
+                # Also test the normalized version, but set the utternace to
+                # the raw version so skill has access to original STT
                 norm_intent = next(self.engine.determine_intent(
                     norm_utt[idx], 100,
                     include_tags=True,

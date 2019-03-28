@@ -144,13 +144,13 @@ class PadatiousService(FallbackSkill):
             LOG.debug('Waiting for Padatious training to finish...')
             return False
 
-        utt = message.data.get('utterance')
+        utt = message.data.get('utterance', '')
         LOG.debug("Padatious fallback attempt: " + utt)
         intent = self.calc_intent(utt)
 
         if not intent or intent.conf < threshold:
             # Attempt to use normalized() version
-            norm = message.data.get('norm_utt')
+            norm = message.data.get('norm_utt', '')
             if norm != utt:
                 LOG.debug("               alt attempt: " + norm)
                 intent = self.calc_intent(norm)
