@@ -434,27 +434,24 @@ class IntentService:
 
         for idx, utt in enumerate(raw_utt):
             try:
-                intent = next(self.engine.determine_intent(
+                intents = [i for i in self.engine.determine_intent(
                     utt, 100,
                     include_tags=True,
-                    context_manager=self.context_manager))
-                if intent:
-                    take_best(intent, utt)
+                    context_manager=self.context_manager)]
+                if intents:
+                    take_best(intents[0], utt)
+                LOG.exception(e)
 
                 # Also test the normalized version, but set the utternace to
                 # the raw version so skill has access to original STT
-                norm_intent = next(self.engine.determine_intent(
+                norm_intents = [i for i in self.engine.determine_intent(
                     norm_utt[idx], 100,
                     include_tags=True,
-                    context_manager=self.context_manager))
-                if norm_intent:
-                    take_best(norm_intent, utt)
-            except StopIteration:
-                # don't show error in log
-                continue
+                    context_manager=self.context_manager)]
+                if norm_intents:
+                    take_best(norm_intents[0], utt)
             except Exception as e:
                 LOG.exception(e)
-                continue
         return best_intent
 
     def handle_register_vocab(self, message):
