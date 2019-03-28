@@ -184,3 +184,6 @@ def shutdown():
     if tts:
         tts.playback.stop()
         tts.playback.join()
+    if mimic_fallback_obj:
+        mimic_fallback_obj.playback.stop()
+        mimic_fallback_obj.playback.join()
