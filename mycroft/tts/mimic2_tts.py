@@ -266,8 +266,7 @@ class Mimic2(TTS):
                 key:        Hash key for the sentence
                 phonemes:   phoneme string to save
         """
-
-        cache_dir = get_cache_directory("tts")
+        cache_dir = get_cache_directory("tts/" + self.tts_name)
         pho_file = os.path.join(cache_dir, key + ".pho")
         try:
             with open(pho_file, "w") as cachefile:
@@ -282,7 +281,8 @@ class Mimic2(TTS):
             Args:
                 Key:    Key identifying phoneme cache
         """
-        pho_file = os.path.join(get_cache_directory("tts"), key + ".pho")
+        pho_file = os.path.join(get_cache_directory("tts/" + self.tts_name),
+                                key + ".pho")
         if os.path.exists(pho_file):
             try:
                 with open(pho_file, "r") as cachefile:
