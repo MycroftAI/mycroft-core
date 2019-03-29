@@ -153,9 +153,13 @@ class PreciseHotword(HotWordEngine):
         def on_activation():
             self.has_found = True
 
+        trigger_level = self.config.get('trigger_level', 3)
+        sensitivity = self.config.get('sensitivity', 0.5)
+
         self.runner = PreciseRunner(
             PreciseEngine(precise_exe, self.precise_model),
-            stream=self.stream, on_activation=on_activation
+            trigger_level, sensitivity,
+            stream=self.stream, on_activation=on_activation,
         )
         self.runner.start()
 

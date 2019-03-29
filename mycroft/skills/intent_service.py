@@ -301,9 +301,13 @@ class IntentService:
 
         Utterances then work through this sequence to be handled:
         1) Active skills attempt to handle using converse()
-        2) Adapt intent handlers
-        3) Padatious intent handlers
-        4) Other fallbacks
+        2) Padatious high match intents (conf > 0.95)
+        3) Adapt intent handlers
+        5) Fallbacks:
+           - Padatious near match intents (conf > 0.8)
+           - General fallbacks
+           - Padatious loose match intents (conf > 0.5)
+           - Unknown intent handler
 
         Args:
             message (Message): The messagebus data
@@ -312,35 +316,69 @@ class IntentService:
             # Get language of the utterance
             lang = message.data.get('lang', "en-us")
             set_active_lang(lang)
-            utterances = message.data.get('utterances', '')
+
+            utterances = message.data.get('utterances', [])
+            # normalize() changes "it's a boy" to "it is a boy", etc.
+            norm_utterances = [normalize(u.lower(), remove_articles=False)
+                               for u in utterances]
+
+            # Build list with raw utterance(s) first, then optionally a
+            # normalized version following.
+            combined = utterances + list(set(norm_utterances) -
+                                         set(utterances))
+            LOG.debug("Utterances: {}".format(combined))
 
             stopwatch = Stopwatch()
+            intent = None
+            padatious_intent = None
             with stopwatch:
                 # Give active skills an opportunity to handle the utterance
-                converse = self._converse(utterances, lang)
+                converse = self._converse(combined, lang)
 
                 if not converse:
                     # No conversation, use intent system to handle utterance
-                    intent = self._adapt_intent_match(utterances, lang)
-                    padatious_intent = PadatiousService.instance.calc_intent(
-                                        utterances[0])
+                    intent = self._adapt_intent_match(utterances,
+                                                      norm_utterances, lang)
+                    for utt in combined:
+                        _intent = PadatiousService.instance.calc_intent(utt)
+                        if _intent:
+                            best = padatious_intent.conf if padatious_intent\
+                                        else 0.0
+                            if best < _intent.conf:
+                                padatious_intent = _intent
+                    LOG.debug("Padatious intent: {}".format(padatious_intent))
+                    LOG.debug("    Adapt intent: {}".format(intent))
 
             if converse:
                 # Report that converse handled the intent and return
+                LOG.debug("Handled in converse()")
                 ident = message.context['ident'] if message.context else None
                 report_timing(ident, 'intent_service', stopwatch,
                               {'intent_type': 'converse'})
                 return
-            elif intent and not (padatious_intent and
-                                 padatious_intent.conf >= 0.95):
+            elif (intent and intent.get('confidence', 0.0) > 0.0 and
+                    not (padatious_intent and padatious_intent.conf >= 0.95)):
                 # Send the message to the Adapt intent's handler unless
                 # Padatious is REALLY sure it was directed at it instead.
+                self.update_context(intent)
+                # update active skills
+                skill_id = intent['intent_type'].split(":")[0]
+                self.add_active_skill(skill_id)
+                # Adapt doesn't handle context injection for one_of keywords
+                # correctly. Workaround this issue if possible.
+                try:
+                    intent = workaround_one_of_context(intent)
+                except LookupError:
+                    LOG.error('Error during workaround_one_of_context')
                 reply = message.reply(intent.get('intent_type'), intent)
             else:
                 # Allow fallback system to handle utterance
-                # NOTE: Padatious intents are handled this way, too
+                # NOTE: A matched padatious_intent is handled this way, too
+                # TODO: Need to redefine intent_failure when STT can return
+                #       multiple hypothesis -- i.e. len(utterances) > 1
                 reply = message.reply('intent_failure',
                                       {'utterance': utterances[0],
+                                       'norm_utt': norm_utterances[0],
                                        'lang': lang})
             self.bus.emit(reply)
             self.send_metrics(intent, message.context, stopwatch)
@@ -372,45 +410,48 @@ class IntentService:
                 return True
         return False
 
-    def _adapt_intent_match(self, utterances, lang):
+    def _adapt_intent_match(self, raw_utt, norm_utt, lang):
         """ Run the Adapt engine to search for an matching intent
 
         Args:
-            utterances (list):  list of utterances
-            lang (string):      4 letter ISO language code
+            raw_utt (list):  list of utterances
+            norm_utt (list): same list of utterances, normalized
+            lang (string):   language code, e.g "en-us"
 
         Returns:
             Intent structure, or None if no match was found.
         """
         best_intent = None
-        for utterance in utterances:
+
+        def take_best(intent, utt):
+            nonlocal best_intent
+            best = best_intent.get('confidence', 0.0) if best_intent else 0.0
+            conf = intent.get('confidence', 0.0)
+            if conf > best:
+                best_intent = intent
+                # TODO - Shouldn't Adapt do this?
+                best_intent['utterance'] = utt
+
+        for idx, utt in enumerate(raw_utt):
             try:
-                # normalize() changes "it's a boy" to "it is boy", etc.
-                best_intent = next(self.engine.determine_intent(
-                    normalize(utterance, lang), 100,
+                intents = [i for i in self.engine.determine_intent(
+                    utt, 100,
                     include_tags=True,
-                    context_manager=self.context_manager))
-                # TODO - Should Adapt handle this?
-                best_intent['utterance'] = utterance
-            except StopIteration:
-                # don't show error in log
-                continue
+                    context_manager=self.context_manager)]
+                if intents:
+                    take_best(intents[0], utt)
+
+                # Also test the normalized version, but set the utternace to
+                # the raw version so skill has access to original STT
+                norm_intents = [i for i in self.engine.determine_intent(
+                    norm_utt[idx], 100,
+                    include_tags=True,
+                    context_manager=self.context_manager)]
+                if norm_intents:
+                    take_best(norm_intents[0], utt)
             except Exception as e:
                 LOG.exception(e)
-                continue
-
-        if best_intent and best_intent.get('confidence', 0.0) > 0.0:
-            self.update_context(best_intent)
-            # update active skills
-            skill_id = best_intent['intent_type'].split(":")[0]
-            self.add_active_skill(skill_id)
-            # adapt doesn't handle context injection for one_of keywords
-            # correctly. Workaround this issue if possible.
-            try:
-                best_intent = workaround_one_of_context(best_intent)
-            except LookupError:
-                LOG.error('Error during workaround_one_of_context')
-            return best_intent
+        return best_intent
 
     def handle_register_vocab(self, message):
         start_concept = message.data.get('start')

@@ -318,6 +318,8 @@ def nice_time(dt, lang=None, speech=True, use_24hour=False,
         return nice_time_nl(dt, speech, use_24hour, use_ampm)
     elif lang_code == "da":
         return nice_time_da(dt, speech, use_24hour, use_ampm)
+    elif lang_code == "pt":
+        return nice_time_pt(dt, speech, use_24hour, use_ampm)
 
     # TODO: Other languages
     return str(dt)
@@ -359,6 +361,8 @@ def pronounce_number(number, lang=None, places=2, short_scale=True,
         return pronounce_number_nl(number, places=places)
     elif lang_code == "da":
         return pronounce_number_da(number, places=places)
+    elif lang_code == "pt":
+        return pronounce_number_pt(number, places=places)
 
     # Default to just returning the numeric value
     return str(number)

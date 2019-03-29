@@ -111,7 +111,12 @@ def play_wav(uri):
     for index, cmd in enumerate(play_wav_cmd):
         if cmd == "%1":
             play_wav_cmd[index] = (get_http(uri))
-    return subprocess.Popen(play_wav_cmd)
+    try:
+        return subprocess.Popen(play_wav_cmd)
+    except Exception as e:
+        LOG.error("Failed to launch WAV: {}".format(play_wav_cmd))
+        LOG.debug("Error: {}".format(repr(e)), exc_info=True)
+        return None
 
 
 def play_mp3(uri):
@@ -132,7 +137,12 @@ def play_mp3(uri):
     for index, cmd in enumerate(play_mp3_cmd):
         if cmd == "%1":
             play_mp3_cmd[index] = (get_http(uri))
-    return subprocess.Popen(play_mp3_cmd)
+    try:
+        return subprocess.Popen(play_mp3_cmd)
+    except Exception as e:
+        LOG.error("Failed to launch MP3: {}".format(play_mp3_cmd))
+        LOG.debug("Error: {}".format(repr(e)), exc_info=True)
+        return None
 
 
 def play_ogg(uri):
@@ -153,7 +163,12 @@ def play_ogg(uri):
     for index, cmd in enumerate(play_ogg_cmd):
         if cmd == "%1":
             play_ogg_cmd[index] = (get_http(uri))
-    return subprocess.Popen(play_ogg_cmd)
+    try:
+        return subprocess.Popen(play_ogg_cmd)
+    except Exception as e:
+        LOG.error("Failed to launch OGG: {}".format(play_ogg_cmd))
+        LOG.debug("Error: {}".format(repr(e)), exc_info=True)
+        return None
 
 
 def record(file_path, duration, rate, channels):

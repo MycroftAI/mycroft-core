@@ -243,7 +243,7 @@ class SkillGUI:
         self.skill.add_event(msg_type, self.gui_set)
 
     def register_handler(self, event, handler):
-        """ Register a handler for gui events.
+        """ Register a handler for GUI events.
 
             when using the triggerEvent method from Qt
             triggerEvent("event", {"data": "cool"})
@@ -286,11 +286,24 @@ class SkillGUI:
         return self.__session_data.__contains__(key)
 
     def clear(self):
-        """ Reset the value dictionary, and remove namespace from gui """
+        """ Reset the value dictionary, and remove namespace from GUI """
         self.__session_data = {}
         self.page = None
         self.skill.bus.emit(Message("gui.clear.namespace",
                                     {"__from": self.skill.skill_id}))
+
+    def send_event(self, event_name, params={}):
+        """ Trigger a gui event.
+
+        Arguments:
+            event_name (str): name of event to be triggered
+            params: json serializable object containing any parameters that
+                    should be sent along with the request.
+        """
+        self.skill.bus.emit(Message("gui.event.send",
+                                    {"__from": self.skill.skill_id,
+                                     "event_name": event_name,
+                                     "params": params}))
 
     def show_page(self, name, override_idle=None):
         """
@@ -342,7 +355,7 @@ class SkillGUI:
                                      "__idle": override_idle}))
 
     def remove_page(self, page):
-        """ Remove a single page from the gui.
+        """ Remove a single page from the GUI.
 
             Args:
                 page (str): Page to remove from the GUI
@@ -594,7 +607,11 @@ class MycroftSkill:
         indicate that the utterance has been handled.
 
         Args:
-            utterances (list): The utterances from the user
+            utterances (list): The utterances from the user.  If there are
+                               multiple utterances, consider them all to be
+                               transcription possibilities.  Commonly, the
+                               first entry is the user utt and the second
+                               is normalized() version of the first utterance
             lang:       language the utterance is in, None for default
 
         Returns:
@@ -1637,10 +1654,26 @@ class MycroftSkill:
 #######################################################################
 class FallbackSkill(MycroftSkill):
     """
-        FallbackSkill is used to declare a fallback to be called when
-        no skill is matching an intent. The fallbackSkill implements a
-        number of fallback handlers to be called in an order determined
-        by their priority.
+        Fallbacks come into play when no skill matches an Adapt or closely with
+        a Padatious intent.  All Fallback skills work together to give them a
+        view of the user's utterance.  Fallback handlers are called in an order
+        determined the priority provided when the the handler is registered.
+
+        Priority   Who?            Purpose
+        --------  --------    ------------------------------------------------
+           1-4    RESERVED    Unused for now, slot for pre-Padatious if needed
+             5    MYCROFT     Padatious near match (conf > 0.8)
+          6-88    USER        General
+            89    MYCROFT     Padatious loose match (conf > 0.5)
+         90-99    USER        Uncaught intents
+           100+   MYCROFT     Fallback Unknown or other future use
+
+        Handlers with the numerically lowest priority are invoked first.
+        Multiple fallbacks can exist at the same priority, but no order is
+        guaranteed.
+
+        A Fallback can either observe or consume an utterance. A consumed
+        utterance will not be see by any other Fallback handlers.
     """
     fallback_handlers = {}
 

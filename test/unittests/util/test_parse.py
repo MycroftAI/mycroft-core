@@ -465,6 +465,13 @@ class TestNormalize(unittest.TestCase):
         testExtract("for 8:30pm tonight",
                     "2017-06-27 20:30:00", "")
         # Tests a time with ':' & without am/pm
+        testExtract("set an alarm for tonight 9:30",
+                    "2017-06-27 21:30:00", "set alarm")
+        testExtract("set an alarm at 9:00 for tonight",
+                    "2017-06-27 21:00:00", "set alarm")
+        # Check if it picks the intent irrespective of correctness
+        testExtract("set an alarm at 9 o'clock for tonight",
+                    "2017-06-27 21:00:00", "set alarm")
         testExtract("remind me about the game tonight at 11:30",
                     "2017-06-27 23:30:00", "remind me about game")
         testExtract("set alarm at 7:30 on weekdays",

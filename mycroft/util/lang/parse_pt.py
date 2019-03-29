@@ -24,69 +24,8 @@
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from mycroft.util.lang.parse_common import is_numeric, look_for_fractions
-
-
-# Undefined articles ["um", "uma", "uns", "umas"] can not be supressed,
-# in PT, "um cavalo" means "a horse" or "one horse".
-pt_articles = ["o", "a", "os", "as"]
-
-pt_numbers = {
-    "zero": 0,
-    "um": 1,
-    "uma": 1,
-    "uns": 1,
-    "umas": 1,
-    "primeiro": 1,
-    "segundo": 2,
-    "terceiro": 3,
-    "dois": 2,
-    "duas": 2,
-    "tres": 3,
-    u"três": 3,
-    "quatro": 4,
-    "cinco": 5,
-    "seis": 6,
-    "sete": 7,
-    "oito": 8,
-    "nove": 9,
-    "dez": 10,
-    "onze": 11,
-    "doze": 12,
-    "treze": 13,
-    "catorze": 14,
-    "quinze": 15,
-    "dezasseis": 16,
-    "dezassete": 17,
-    "dezoito": 18,
-    "dezanove": 19,
-    "vinte": 20,
-    "trinta": 30,
-    "quarenta": 40,
-    "cinquenta": 50,
-    "sessenta": 60,
-    "setenta": 70,
-    "oitenta": 80,
-    "noventa": 90,
-    "cem": 100,
-    "cento": 100,
-    "duzentos": 200,
-    "duzentas": 200,
-    "trezentos": 300,
-    "trezentas": 300,
-    "quatrocentos": 400,
-    "quatrocentas": 400,
-    "quinhentos": 500,
-    "quinhentas": 500,
-    "seiscentos": 600,
-    "seiscentas": 600,
-    "setecentos": 700,
-    "setecentas": 700,
-    "oitocentos": 800,
-    "oitocentas": 800,
-    "novecentos": 900,
-    "novecentas": 900,
-    "mil": 1000,
-    u"milhï¿½o": 1000000}
+from mycroft.util.lang.common_data_pt import _FRACTION_STRING_PT, \
+    _PT_ARTICLES, _PT_NUMBERS
 
 
 def isFractional_pt(input_str):
@@ -147,8 +86,8 @@ def extractnumber_pt(text):
             next_word = None
 
         # is current word a number?
-        if word in pt_numbers:
-            val = pt_numbers[word]
+        if word in _PT_NUMBERS:
+            val = _PT_NUMBERS[word]
         elif word.isdigit():  # doesn't work with decimals
             val = int(word)
         elif is_numeric(word):
@@ -219,7 +158,7 @@ def extractnumber_pt(text):
                     result += afterAndVal
                     break
 
-        decimals = ["ponto", "virgula", u"vï¿½rgula", ".", ","]
+        decimals = ["ponto", "virgula", "vírgula", ".", ","]
         if next_word in decimals:
             zeros = 0
             newWords = aWords[count + 2:]
@@ -261,7 +200,7 @@ def pt_number_parse(words, i):
 
     def pt_number_word(i, mi, ma):
         if i < len(words):
-            v = pt_numbers.get(words[i])
+            v = _PT_NUMBERS.get(words[i])
             if v and v >= mi and v <= ma:
                 return v, i + 1
         return None
@@ -342,7 +281,7 @@ def normalize_pt(text, remove_articles):
     while i < len(words):
         word = words[i]
         # remove articles
-        if remove_articles and word in pt_articles:
+        if remove_articles and word in _PT_ARTICLES:
             i += 1
             continue
 
@@ -354,8 +293,8 @@ def normalize_pt(text, remove_articles):
             continue
 
         # NOTE temporary , handle some numbers above >999
-        if word in pt_numbers:
-            word = str(pt_numbers[word])
+        if word in _PT_NUMBERS:
+            word = str(_PT_NUMBERS[word])
         # end temporary
 
         normalized += " " + word
@@ -422,13 +361,13 @@ def extract_datetime_pt(input_str, currentDate, default_time):
 
     def date_found():
         return found or \
-            (
-                datestr != "" or timeStr != "" or
-                yearOffset != 0 or monthOffset != 0 or
-                dayOffset is True or hrOffset != 0 or
-                hrAbs or minOffset != 0 or
-                minAbs or secOffset != 0
-            )
+               (
+                       datestr != "" or timeStr != "" or
+                       yearOffset != 0 or monthOffset != 0 or
+                       dayOffset is True or hrOffset != 0 or
+                       hrAbs or minOffset != 0 or
+                       minAbs or secOffset != 0
+               )
 
     if input_str == "" or not currentDate:
         return None
@@ -525,8 +464,8 @@ def extract_datetime_pt(input_str, currentDate, default_time):
                     start -= 1
                     used += 1
             elif (wordPrev and wordPrev[0].isdigit() and
-                    wordNext not in months and
-                    wordNext not in monthsShort):
+                  wordNext not in months and
+                  wordNext not in monthsShort):
                 dayOffset += int(wordPrev)
                 start -= 1
                 used += 2
@@ -838,7 +777,7 @@ def extract_datetime_pt(input_str, currentDate, default_time):
         # parse half an hour, quarter hour
         elif word == "hora" and \
                 (wordPrev in time_indicators or wordPrevPrev in
-                    time_indicators):
+                 time_indicators):
             if wordPrev == "meia":
                 minOffset = 30
             elif wordPrev == "quarto":
@@ -964,11 +903,11 @@ def extract_datetime_pt(input_str, currentDate, default_time):
                         remainder = "am"
                         used = 1
                     elif (int(word) > 100 and
-                            (
-                                wordPrev == "o" or
-                                wordPrev == "oh" or
-                                wordPrev == "zero"
-                            )):
+                          (
+                                  wordPrev == "o" or
+                                  wordPrev == "oh" or
+                                  wordPrev == "zero"
+                          )):
                         # 0800 hours (pronounced oh-eight-hundred)
                         strHH = int(word) / 100
                         strMM = int(word) - strHH * 100
@@ -979,8 +918,8 @@ def extract_datetime_pt(input_str, currentDate, default_time):
                             wordNext == "hora" and
                             word[0] != '0' and
                             (
-                                int(word) < 100 and
-                                int(word) > 2400
+                                    int(word) < 100 and
+                                    int(word) > 2400
                             )):
                         # ignores military time
                         # "in 3 hours"

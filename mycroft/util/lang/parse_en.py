@@ -741,7 +741,7 @@ def extract_datetime_en(string, dateNow, default_time):
     timeQualifier = ""
 
     timeQualifiersAM = ['morning']
-    timeQualifiersPM = ['afternoon', 'evening', 'night']
+    timeQualifiersPM = ['afternoon', 'evening', 'night', 'tonight']
     timeQualifiersList = set(timeQualifiersAM + timeQualifiersPM)
     markers = ['at', 'in', 'on', 'by', 'this', 'around', 'for', 'of', "within"]
     days = ['monday', 'tuesday', 'wednesday',
@@ -815,9 +815,6 @@ def extract_datetime_en(string, dateNow, default_time):
             timeQualifier = word
         # parse today, tomorrow, day after tomorrow
         elif word == "today" and not fromFlag:
-            dayOffset = 0
-            used += 1
-        elif word == "tonight" and not fromFlag:
             dayOffset = 0
             used += 1
         elif word == "tomorrow" and not fromFlag:
@@ -1064,6 +1061,22 @@ def extract_datetime_en(string, dateNow, default_time):
             strHH = ""
             strMM = ""
             remainder = ""
+            wordNextNextNext = words[idx + 3] \
+                if idx + 3 < len(words) else ""
+            if wordNext == "tonight" or wordNextNext == "tonight" or \
+                    wordPrev == "tonight" or wordPrevPrev == "tonight" or \
+                    wordNextNextNext == "tonight":
+                remainder = "pm"
+                used += 1
+                if wordPrev == "tonight":
+                    words[idx - 1] = ""
+                if wordPrevPrev == "tonight":
+                    words[idx - 2] = ""
+                if wordNextNext == "tonight":
+                    used += 1
+                if wordNextNextNext == "tonight":
+                    used += 1
+
             if ':' in word:
                 # parse colons
                 # "3:00 in the morning"
@@ -1092,9 +1105,7 @@ def extract_datetime_en(string, dateNow, default_time):
                     if nextWord == "am" or nextWord == "pm":
                         remainder = nextWord
                         used += 1
-                    elif nextWord == "tonight":
-                        remainder = "pm"
-                        used += 1
+
                     elif wordNext == "in" and wordNextNext == "the" and \
                             words[idx + 3] == "morning":
                         remainder = "am"
@@ -1134,12 +1145,14 @@ def extract_datetime_en(string, dateNow, default_time):
                         else:
                             remainder = "am"
                         used += 2
+
                     else:
                         if timeQualifier != "":
                             military = True
                             if strHH and int(strHH) <= 12 and \
                                     (timeQualifier in timeQualifiersPM):
                                 strHH += str(int(strHH) + 12)
+
             else:
                 # try to parse numbers without colons
                 # 5 hours, 10 minutes etc.
@@ -1250,11 +1263,14 @@ def extract_datetime_en(string, dateNow, default_time):
                                             wordNextNext == "the" or
                                             wordNextNext == timeQualifier
                                     )
-                            )):
+                            ) or wordNext == 'tonight' or
+                            wordNextNext == 'tonight'):
+
                         strHH = strNum
                         strMM = "00"
                         if wordNext == "o'clock":
                             used += 1
+
                         if wordNext == "in" or wordNextNext == "in":
                             used += (1 if wordNext == "in" else 2)
                             wordNextNextNext = words[idx + 3] \
@@ -1271,12 +1287,21 @@ def extract_datetime_en(string, dateNow, default_time):
                                         wordNextNextNext in timeQualifiersAM):
                                     remainder = "am"
                                     used += 1
+
                         if timeQualifier != "":
-                            used += 1  # TODO: Unsure if this is 100% accurate
-                            military = True
+                            if timeQualifier in timeQualifiersPM:
+                                remainder = "pm"
+                                used += 1
+
+                            elif timeQualifier in timeQualifiersAM:
+                                remainder = "am"
+                                used += 1
+                            else:
+                                # TODO: Unsure if this is 100% accurate
+                                used += 1
+                                military = True
                     else:
                         isTime = False
-
             HH = int(strHH) if strHH else 0
             MM = int(strMM) if strMM else 0
             HH = HH + 12 if remainder == "pm" and HH < 12 else HH
@@ -1308,6 +1333,7 @@ def extract_datetime_en(string, dateNow, default_time):
                 hrAbs = HH
                 minAbs = MM
                 used += 1
+
         if used > 0:
             # removed parsed words from the sentence
             for i in range(used):
@@ -1337,7 +1363,6 @@ def extract_datetime_en(string, dateNow, default_time):
 
             idx += used - 1
             found = True
-
     # check that we found a date
     if not date_found:
         return None

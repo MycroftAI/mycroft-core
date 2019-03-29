@@ -23,7 +23,8 @@ from requests import RequestException
 from mycroft.util.json_helper import load_commented_json, merge_dict
 from mycroft.util.log import LOG
 
-from .locations import DEFAULT_CONFIG, SYSTEM_CONFIG, USER_CONFIG
+from .locations import (DEFAULT_CONFIG, SYSTEM_CONFIG, USER_CONFIG,
+                        WEB_CONFIG_CACHE)
 
 
 def is_remote_list(values):
@@ -134,7 +135,7 @@ class RemoteConf(LocalConf):
     def __init__(self, cache=None):
         super(RemoteConf, self).__init__(None)
 
-        cache = cache or '/var/tmp/mycroft_web_cache.json'
+        cache = cache or WEB_CONFIG_CACHE
         from mycroft.api import is_paired
         if not is_paired():
             self.load_local(cache)

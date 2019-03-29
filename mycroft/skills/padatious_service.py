@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from functools import lru_cache
 from subprocess import call
 from threading import Event
 from time import time as get_time, sleep
@@ -27,6 +28,9 @@ from mycroft.util.log import LOG
 
 class PadatiousService(FallbackSkill):
     instance = None
+
+    fallback_tight_match = 5   # Fallback priority for the conf > 0.8 match
+    fallback_loose_match = 89  # Fallback priority for the conf > 0.5 match
 
     def __init__(self, bus, service):
         FallbackSkill.__init__(self)
@@ -58,10 +62,12 @@ class PadatiousService(FallbackSkill):
         self.bus.on('mycroft.skills.initialized', self.train)
 
         # Call Padatious an an early fallback, looking for a high match intent
-        self.register_fallback(self.handle_fallback, 5)
+        self.register_fallback(self.handle_fallback,
+                               PadatiousService.fallback_tight_match)
 
         # Try loose Padatious intent match before going to fallback-unknown
-        self.register_fallback(self.handle_fallback_last_chance, 99)
+        self.register_fallback(self.handle_fallback_last_chance,
+                               PadatiousService.fallback_loose_match)
 
         self.finished_training_event = Event()
         self.finished_initial_train = False
@@ -138,21 +144,30 @@ class PadatiousService(FallbackSkill):
             LOG.debug('Waiting for Padatious training to finish...')
             return False
 
-        utt = message.data.get('utterance')
+        utt = message.data.get('utterance', '')
         LOG.debug("Padatious fallback attempt: " + utt)
-        data = self.calc_intent(utt)
-        if data.conf < threshold:
+        intent = self.calc_intent(utt)
+
+        if not intent or intent.conf < threshold:
+            # Attempt to use normalized() version
+            norm = message.data.get('norm_utt', '')
+            if norm != utt:
+                LOG.debug("               alt attempt: " + norm)
+                intent = self.calc_intent(norm)
+                utt = norm
+        if not intent or intent.conf < threshold:
             return False
 
-        data.matches['utterance'] = utt
-
-        self.service.add_active_skill(data.name.split(':')[0])
-
-        self.bus.emit(message.reply(data.name, data=data.matches))
+        intent.matches['utterance'] = utt
+        self.service.add_active_skill(intent.name.split(':')[0])
+        self.bus.emit(message.reply(intent.name, data=intent.matches))
         return True
 
     def handle_fallback_last_chance(self, message):
         return self.handle_fallback(message, 0.5)
 
+    # NOTE: This cache will keep a reference to this calss (PadatiousService),
+    # but we can live with that since it is used as a singleton.
+    @lru_cache(maxsize=2)   # 2 catches both raw and normalized utts in cache
     def calc_intent(self, utt):
         return self.container.calc_intent(utt)

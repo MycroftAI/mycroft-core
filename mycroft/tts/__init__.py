@@ -177,6 +177,7 @@ class TTS:
         self.playback.start()
         self.clear_cache()
         self.spellings = self.load_spellings()
+        self.tts_name = type(self).__name__
 
     def load_spellings(self):
         """Load phonetic spellings of words as dictionary"""
@@ -209,7 +210,7 @@ class TTS:
 
         self.bus.emit(Message("recognizer_loop:audio_output_end"))
         # Clean the cache as needed
-        cache_dir = mycroft.util.get_cache_directory("tts")
+        cache_dir = mycroft.util.get_cache_directory("tts/" + self.tts_name)
         mycroft.util.curate_cache(cache_dir, min_free_percent=100)
 
         # This check will clear the "signal"
@@ -275,6 +276,20 @@ class TTS:
         # return text with supported ssml tags only
         return utterance.replace("  ", " ")
 
+    def _preprocess_sentence(self, sentence):
+        """ Default preprocessing is no preprocessing.
+
+        This method can be overridden to create chunks suitable to the
+        TTS engine in question.
+
+        Arguments:
+            sentence (str): sentence to preprocess
+
+        Returns:
+            list: list of sentence parts
+        """
+        return [sentence]
+
     def execute(self, sentence, ident=None):
         """
             Convert sentence to speech, preprocessing out unsupported ssml
@@ -295,20 +310,24 @@ class TTS:
                     sentence = sentence.replace(word,
                                                 self.spellings[word.lower()])
 
-        key = str(hashlib.md5(sentence.encode('utf-8', 'ignore')).hexdigest())
-        wav_file = os.path.join(mycroft.util.get_cache_directory("tts"),
-                                key + '.' + self.audio_ext)
+        chunks = self._preprocess_sentence(sentence)
+        for sentence in chunks:
+            key = str(hashlib.md5(
+                sentence.encode('utf-8', 'ignore')).hexdigest())
+            wav_file = os.path.join(
+                mycroft.util.get_cache_directory("tts/" + self.tts_name),
+                key + '.' + self.audio_ext)
 
-        if os.path.exists(wav_file):
-            LOG.debug("TTS cache hit")
-            phonemes = self.load_phonemes(key)
-        else:
-            wav_file, phonemes = self.get_tts(sentence, wav_file)
-            if phonemes:
-                self.save_phonemes(key, phonemes)
+            if os.path.exists(wav_file):
+                LOG.debug("TTS cache hit")
+                phonemes = self.load_phonemes(key)
+            else:
+                wav_file, phonemes = self.get_tts(sentence, wav_file)
+                if phonemes:
+                    self.save_phonemes(key, phonemes)
 
-        vis = self.viseme(phonemes)
-        self.queue.put((self.audio_ext, wav_file, vis, ident))
+            vis = self.viseme(phonemes)
+            self.queue.put((self.audio_ext, wav_file, vis, ident))
 
     def viseme(self, phonemes):
         """
@@ -324,11 +343,16 @@ class TTS:
         """ Remove all cached files. """
         if not os.path.exists(mycroft.util.get_cache_directory('tts')):
             return
-        for f in os.listdir(mycroft.util.get_cache_directory("tts")):
-            file_path = os.path.join(mycroft.util.get_cache_directory("tts"),
-                                     f)
-            if os.path.isfile(file_path):
-                os.unlink(file_path)
+        for d in os.listdir(mycroft.util.get_cache_directory("tts")):
+            dir_path = os.path.join(mycroft.util.get_cache_directory("tts"), d)
+            if os.path.isdir(dir_path):
+                for f in os.listdir(dir_path):
+                    file_path = os.path.join(dir_path, f)
+                    if os.path.isfile(file_path):
+                        os.unlink(file_path)
+            # If no sub-folders are present, check if it is a file & clear it
+            elif os.path.isfile(dir_path):
+                os.unlink(dir_path)
 
     def save_phonemes(self, key, phonemes):
         """
@@ -338,8 +362,7 @@ class TTS:
                 key:        Hash key for the sentence
                 phonemes:   phoneme string to save
         """
-
-        cache_dir = mycroft.util.get_cache_directory("tts")
+        cache_dir = mycroft.util.get_cache_directory("tts/" + self.tts_name)
         pho_file = os.path.join(cache_dir, key + ".pho")
         try:
             with open(pho_file, "w") as cachefile:
@@ -355,8 +378,9 @@ class TTS:
             Args:
                 Key:    Key identifying phoneme cache
         """
-        pho_file = os.path.join(mycroft.util.get_cache_directory("tts"),
-                                key + ".pho")
+        pho_file = os.path.join(
+            mycroft.util.get_cache_directory("tts/" + self.tts_name),
+            key + ".pho")
         if os.path.exists(pho_file):
             try:
                 with open(pho_file, "r") as cachefile:

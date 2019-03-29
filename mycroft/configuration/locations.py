@@ -11,9 +11,28 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from os.path import join, dirname, expanduser
+import os
+from os.path import join, dirname, expanduser, exists
 
 DEFAULT_CONFIG = join(dirname(__file__), 'mycroft.conf')
-SYSTEM_CONFIG = '/etc/mycroft/mycroft.conf'
+SYSTEM_CONFIG = os.environ.get('MYCROFT_SYSTEM_CONFIG',
+                               '/etc/mycroft/mycroft.conf')
 USER_CONFIG = join(expanduser('~'), '.mycroft/mycroft.conf')
 REMOTE_CONFIG = "mycroft.ai"
+WEB_CONFIG_CACHE = os.environ.get('MYCROFT_WEB_CACHE',
+                                  '/var/tmp/mycroft_web_cache.json')
+
+
+def __ensure_folder_exists(path):
+    """ Make sure the directory for the specified path exists.
+
+        Arguments:
+            path (str): path to config file
+     """
+    directory = dirname(path)
+    if not exists(directory):
+        os.makedirs(directory)
+
+
+__ensure_folder_exists(WEB_CONFIG_CACHE)
+__ensure_folder_exists(USER_CONFIG)
