@@ -9,7 +9,6 @@ from mycroft.configuration import Configuration
 from mycroft.skills.skill_manager import SkillManager
 
 BASE_CONF = base_config()
-BASE_CONF['data_dir'] = tempfile.mkdtemp()
 BASE_CONF['skills'] = {
     'msm': {
         'directory': 'skills',
@@ -56,13 +55,15 @@ class MycroftSkillTest(unittest.TestCase):
         self.emitter.reset()
         self.temp_dir = tempfile.mkdtemp()
 
-    @mock.patch.dict(Configuration._Configuration__config, BASE_CONF)
     def test_create_manager(self):
         """ Verify that the skill manager and msm loads as expected and
             that the skills dir is created as needed.
         """
-        SkillManager(self.emitter)
-        self.assertTrue(exists(join(BASE_CONF['data_dir'], 'skills')))
+        BASE_CONF['data_dir'] = tempfile.mkdtemp()
+        with mock.patch.dict(Configuration._Configuration__config,
+                             BASE_CONF):
+            SkillManager(self.emitter)
+            self.assertTrue(exists(join(BASE_CONF['data_dir'], 'skills')))
 
     @classmethod
     def tearDownClass(cls):
