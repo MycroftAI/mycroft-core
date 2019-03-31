@@ -130,12 +130,9 @@ def build_global_id(directory, config):
 
     s = SkillEntry.from_folder(directory, msm)
     if s.meta_info != {}:
-        name = s.meta_info['name']  # Name from skill's metadata
-        branch = s.msm.repo.branch  # Branch from the currently configured
-        return "{}-{}".format(name, branch)
+        return s.meta_info['skill_gid']
     else:  # No skills meta data available, local or unsubmitted skill
-        return "@{}_{}-{}".format(DeviceApi().identity.uuid, s.name,
-                                  msm.repo.branch)
+        return "@{}_{}".format(DeviceApi().identity.uuid, s.name)
 
 
 class SkillSettings(dict):
