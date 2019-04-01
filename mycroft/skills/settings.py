@@ -295,7 +295,11 @@ class SkillSettings(dict):
         data['skill_gid'] = skill_gid
         data['title'] = (title or data.get('name') or
                          camel_case_split(self.name))
-        print('>>>>>>>> {}'.format(data['title']))
+
+        # Backwards compatibility:
+        if 'name' not in data:
+            data['name'] = data['title']
+
         return data
 
     def _send_settings_meta(self, settings_meta):
