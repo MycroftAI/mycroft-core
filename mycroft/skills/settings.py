@@ -70,6 +70,7 @@ from msm import MycroftSkillsManager, SkillEntry, SkillRepo
 
 from mycroft.api import DeviceApi, is_paired
 from mycroft.util.log import LOG
+from mycroft.util import camel_case_split
 from mycroft.configuration import ConfigurationManager
 
 
@@ -77,7 +78,6 @@ from mycroft.configuration import ConfigurationManager
 # To this a global id is added
 # TODO reduce the needed boilerplate here
 BLANK_META = {
-    "name": "No-skill",
     "skillMetadata": {
         "sections": [
             {
@@ -130,9 +130,9 @@ def build_global_id(directory, config):
 
     s = SkillEntry.from_folder(directory, msm)
     if s.meta_info != {}:
-        return s.meta_info['skill_gid']
+        return s.meta_info['skill_gid'], s.meta_info['title']
     else:  # No skills meta data available, local or unsubmitted skill
-        return "@{}_{}".format(DeviceApi().identity.uuid, s.name)
+        return "@{}_{}".format(DeviceApi().identity.uuid, s.name), None
 
 
 class SkillSettings(dict):
@@ -291,8 +291,11 @@ class SkillSettings(dict):
 
         # Add Information extracted from the skills-meta.json entry for the
         # skill.
-        data['skill_gid'] = build_global_id(self._directory, self.config)
-
+        skill_gid, title = build_global_id(self._directory, self.config)
+        data['skill_gid'] = skill_gid
+        data['title'] = (title or data.get('name') or
+                         camel_case_split(self.name))
+        print('>>>>>>>> {}'.format(data['title']))
         return data
 
     def _send_settings_meta(self, settings_meta):
