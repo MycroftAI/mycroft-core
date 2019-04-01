@@ -16,7 +16,7 @@ BASE_CONF['skills'] = {
         'repo': {
             'cache': '.skills-repo',
             'url': 'https://github.com/MycroftAI/mycroft-skills',
-            'branch': '18.08'
+            'branch': '19.02'
         }
     },
     'update_interval': 3600,
