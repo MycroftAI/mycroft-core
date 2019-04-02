@@ -63,6 +63,7 @@ import hashlib
 import os
 import time
 import copy
+import re
 from threading import Timer
 from os.path import isfile, join, expanduser
 from requests.exceptions import RequestException
@@ -130,9 +131,15 @@ def build_global_id(directory, config):
 
     s = SkillEntry.from_folder(directory, msm)
     if s.meta_info != {}:
-        return s.meta_info['skill_gid'], s.meta_info['title']
+        return s.meta_info['skill_gid'], s.meta_info['display_name']
     else:  # No skills meta data available, local or unsubmitted skill
         return "@{}_{}".format(DeviceApi().identity.uuid, s.name), None
+
+
+def display_name(name):
+    """ Splits camelcase and removes leading/trailing Skill. """
+    name = re.sub(r'(^[Ss]kill|[Ss]kill$)', '', name)
+    return camel_case_split(name)
 
 
 class SkillSettings(dict):
@@ -291,14 +298,14 @@ class SkillSettings(dict):
 
         # Add Information extracted from the skills-meta.json entry for the
         # skill.
-        skill_gid, title = build_global_id(self._directory, self.config)
+        skill_gid, display_name = build_global_id(self._directory, self.config)
         data['skill_gid'] = skill_gid
-        data['title'] = (title or data.get('name') or
-                         camel_case_split(self.name))
+        data['display_name'] = (display_name or data.get('name') or
+                                display_name(name))
 
         # Backwards compatibility:
         if 'name' not in data:
-            data['name'] = data['title']
+            data['name'] = data['display_name']
 
         return data
 
