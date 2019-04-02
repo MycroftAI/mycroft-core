@@ -1,5 +1,6 @@
 import unittest
 import mock
+import copy
 import tempfile
 from os.path import exists, join
 from shutil import rmtree
@@ -59,12 +60,12 @@ class MycroftSkillTest(unittest.TestCase):
         """ Verify that the skill manager and msm loads as expected and
             that the skills dir is created as needed.
         """
-        BASE_CONF['data_dir'] = tempfile.mkdtemp()
+        conf = copy.deepcopy(BASE_CONF)
+        conf['data_dir'] = self.temp_dir
         with mock.patch.dict(Configuration._Configuration__config,
                              BASE_CONF):
             SkillManager(self.emitter)
             self.assertTrue(exists(join(BASE_CONF['data_dir'], 'skills')))
 
-    @classmethod
-    def tearDownClass(cls):
-        rmtree(BASE_CONF['data_dir'])
+    def tearDown(self):
+        rmtree(self.temp_dir)

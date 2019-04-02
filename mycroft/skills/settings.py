@@ -67,13 +67,14 @@ import re
 from threading import Timer
 from os.path import isfile, join, expanduser
 from requests.exceptions import RequestException
-from msm import MycroftSkillsManager, SkillEntry, SkillRepo
+from msm import SkillEntry
 
 from mycroft.api import DeviceApi, is_paired
 from mycroft.util.log import LOG
 from mycroft.util import camel_case_split
 from mycroft.configuration import ConfigurationManager
 
+from .msm_wrapper import create_msm
 
 # This is the base needed for sending a blank settings meta entry (Tartarus)
 # To this a global id is added
@@ -97,20 +98,6 @@ BLANK_META = {
 
 msm = None
 msm_creation_time = 0
-
-
-def create_msm(config):
-    """ Create msm object from config. """
-    msm_config = config['skills']['msm']
-    repo_config = msm_config['repo']
-    data_dir = expanduser(config['data_dir'])
-    skills_dir = join(data_dir, msm_config['directory'])
-    repo_cache = join(data_dir, repo_config['cache'])
-    platform = config['enclosure'].get('platform', 'default')
-    return MycroftSkillsManager(
-        platform=platform, skills_dir=skills_dir,
-        repo=SkillRepo(repo_cache, repo_config['url'], repo_config['branch']),
-        versioned=msm_config['versioned'])
 
 
 def build_global_id(directory, config):
@@ -147,8 +134,10 @@ class SkillSettings(dict):
         also syncs to the backend for skill settings
 
     Args:
-        directory (str): Path to storage directory
-        name (str):      user readable name associated with the settings
+        directory (str):  Path to storage directory
+        name (str):       user readable name associated with the settings
+        no_upload (bool): True if the upload to mycroft servers should be
+                          disabled.
     """
 
     def __init__(self, directory, name):
