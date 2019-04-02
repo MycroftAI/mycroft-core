@@ -61,13 +61,72 @@
 import json
 import hashlib
 import os
+import time
+import copy
+import re
 from threading import Timer
 from os.path import isfile, join, expanduser
 from requests.exceptions import RequestException
+from msm import SkillEntry
 
 from mycroft.api import DeviceApi, is_paired
 from mycroft.util.log import LOG
+from mycroft.util import camel_case_split
 from mycroft.configuration import ConfigurationManager
+
+from .msm_wrapper import create_msm
+
+# This is the base needed for sending a blank settings meta entry (Tartarus)
+# To this a global id is added
+# TODO reduce the needed boilerplate here
+BLANK_META = {
+    "skillMetadata": {
+        "sections": [
+            {
+                "name": "",
+                "fields": [
+                    {
+                        "type": "label",
+                        "label": ""
+                    }
+                ]
+            }
+        ]
+    }
+}
+
+
+msm = None
+msm_creation_time = 0
+
+
+def build_global_id(directory, config):
+    """ Create global id for the skill.
+
+    TODO: Handle dirty skill
+
+    Arguments:
+        directory:  skill directory
+        config:     config for the device to fetch msm setup
+     """
+    # Update the msm object if it's more than an hour old
+    global msm
+    global msm_creation_time
+    if msm is None or time.time() - msm_creation_time > 60 * 60:
+        msm_creation_time = time.time()
+        msm = create_msm(config)
+
+    s = SkillEntry.from_folder(directory, msm)
+    if s.meta_info != {}:
+        return s.meta_info['skill_gid'], s.meta_info['display_name']
+    else:  # No skills meta data available, local or unsubmitted skill
+        return "@{}_{}".format(DeviceApi().identity.uuid, s.name), None
+
+
+def display_name(name):
+    """ Splits camelcase and removes leading/trailing Skill. """
+    name = re.sub(r'(^[Ss]kill|[Ss]kill$)', '', name)
+    return camel_case_split(name)
 
 
 class SkillSettings(dict):
@@ -75,8 +134,10 @@ class SkillSettings(dict):
         also syncs to the backend for skill settings
 
     Args:
-        directory (str): Path to storage directory
-        name (str):      user readable name associated with the settings
+        directory (str):  Path to storage directory
+        name (str):       user readable name associated with the settings
+        no_upload (bool): True if the upload to mycroft servers should be
+                          disabled.
     """
 
     def __init__(self, directory, name):
@@ -93,6 +154,8 @@ class SkillSettings(dict):
         # set file paths
         self._settings_path = join(directory, 'settings.json')
         self._meta_path = join(directory, 'settingsmeta.json')
+        self._directory = directory
+
         self.is_alive = True
         self.loaded_hash = hash(json.dumps(self, sort_keys=True))
         self._complete_intialization = False
@@ -101,11 +164,17 @@ class SkillSettings(dict):
         self._user_identity = None
         self.changed_callback = None
         self._poll_timer = None
+        self._blank_poll_timer = None
         self._is_alive = True
 
         # if settingsmeta exist
         if isfile(self._meta_path):
             self._poll_skill_settings()
+        # if not disallowed by user upload an entry for all skills installed
+        elif self.config['skills']['upload_skill_manifest']:
+            self._blank_poll_timer = Timer(1, self._init_blank_meta)
+            self._blank_poll_timer.daemon = True
+            self._blank_poll_timer.start()
 
     def __hash__(self):
         """ Simple object unique hash. """
@@ -121,6 +190,8 @@ class SkillSettings(dict):
         self._is_alive = False
         if self._poll_timer:
             self._poll_timer.cancel()
+        if self._blank_poll_timer:
+            self._blank_poll_timer.cancel()
 
     def set_changed_callback(self, callback):
         """ Set callback to perform when server settings have changed.
@@ -195,18 +266,37 @@ class SkillSettings(dict):
             return super(SkillSettings, self).__setitem__(key, value)
 
     def _load_settings_meta(self):
-        """ Loads settings metadata from skills path. """
+        """ Load settings metadata from the skill folder.
+
+        If no settingsmeta exists a basic settingsmeta will be created
+        containing a basic identifier.
+
+        Returns:
+            (dict) settings meta
+        """
         if isfile(self._meta_path):
             try:
                 with open(self._meta_path, encoding='utf-8') as f:
                     data = json.load(f)
-                return data
             except Exception as e:
-                LOG.error("Failed to load setting file: "+self._meta_path)
+                LOG.error("Failed to load setting file: " + self._meta_path)
                 LOG.error(repr(e))
                 return None
         else:
-            return None
+            data = copy.copy(BLANK_META)
+
+        # Add Information extracted from the skills-meta.json entry for the
+        # skill.
+        skill_gid, display_name = build_global_id(self._directory, self.config)
+        data['skill_gid'] = skill_gid
+        data['display_name'] = (display_name or data.get('name') or
+                                display_name(name))
+
+        # Backwards compatibility:
+        if 'name' not in data:
+            data['name'] = data['display_name']
+
+        return data
 
     def _send_settings_meta(self, settings_meta):
         """ Send settingsmeta.json to the server.
@@ -379,6 +469,18 @@ class SkillSettings(dict):
         else:
             settings_meta = self._load_settings_meta()
             self._upload_meta(settings_meta, hashed_meta)
+
+    def _init_blank_meta(self):
+        """ Send blank settingsmeta to remote. """
+        try:
+            if not is_paired() and self.is_alive:
+                self._blank_poll_timer = Timer(60, self._init_blank_meta)
+                self._blank_poll_timer.daemon = True
+                self._blank_poll_timer.start()
+            else:
+                self.initialize_remote_settings()
+        except Exception as e:
+            LOG.exception('Failed to send blank meta: {}'.format(repr(e)))
 
     def _poll_skill_settings(self):
         """ If identifier exists for this skill poll to backend to
