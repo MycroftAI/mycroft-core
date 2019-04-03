@@ -120,7 +120,7 @@ def build_global_id(directory, config):
     if s.meta_info != {}:
         return s.meta_info['skill_gid'], s.meta_info['display_name']
     else:  # No skills meta data available, local or unsubmitted skill
-        return "@{}_{}".format(DeviceApi().identity.uuid, s.name), None
+        return "@{}|{}".format(DeviceApi().identity.uuid, s.name), None
 
 
 def display_name(name):
