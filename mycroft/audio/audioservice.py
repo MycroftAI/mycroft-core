@@ -496,4 +496,3 @@ class AudioService:
         self.bus.remove('recognizer_loop:audio_output_end',
                         self._restore_volume)
         self.bus.remove('recognizer_loop:record_end', self._restore_volume)
-        self.bus.remove('mycroft.stop', self._stop)
