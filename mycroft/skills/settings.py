@@ -287,10 +287,10 @@ class SkillSettings(dict):
 
         # Add Information extracted from the skills-meta.json entry for the
         # skill.
-        skill_gid, display_name = build_global_id(self._directory, self.config)
+        skill_gid, disp_name = build_global_id(self._directory, self.config)
         data['skill_gid'] = skill_gid
-        data['display_name'] = (display_name or data.get('name') or
-                                display_name(name))
+        data['display_name'] = (disp_name or data.get('name') or
+                                display_name(self.name))
 
         # Backwards compatibility:
         if 'name' not in data:
