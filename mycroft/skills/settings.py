@@ -76,26 +76,6 @@ from mycroft.configuration import ConfigurationManager
 
 from .msm_wrapper import create_msm
 
-# This is the base needed for sending a blank settings meta entry (Tartarus)
-# To this a global id is added
-# TODO reduce the needed boilerplate here
-BLANK_META = {
-    "skillMetadata": {
-        "sections": [
-            {
-                "name": "",
-                "fields": [
-                    {
-                        "type": "label",
-                        "label": ""
-                    }
-                ]
-            }
-        ]
-    }
-}
-
-
 msm = None
 msm_creation_time = 0
 
@@ -233,7 +213,8 @@ class SkillSettings(dict):
                 # another device. If a skill settings doesn't have
                 # not_owner, then the skill is created from that device
                 self['not_owner'] = True
-                self.save_skill_settings(skill_settings)
+                if 'skillMetadata' in skill_settings:
+                    self.save_skill_settings(skill_settings)
             else:  # upload skill settings if
                 uuid = self._load_uuid()
                 if uuid is not None:
@@ -242,7 +223,8 @@ class SkillSettings(dict):
         else:  # hash is not new
             if skill_settings is not None:
                 self['not_owner'] = True
-                self.save_skill_settings(skill_settings)
+                if 'skillMetadata' in skill_settings:
+                    self.save_skill_settings(skill_settings)
             else:
                 settings = self._request_my_settings(hashed_meta)
                 if settings is None:
@@ -283,7 +265,7 @@ class SkillSettings(dict):
                 LOG.error(repr(e))
                 return None
         else:
-            data = copy.copy(BLANK_META)
+            data = {}
 
         # Add Information extracted from the skills-meta.json entry for the
         # skill.
@@ -375,6 +357,10 @@ class SkillSettings(dict):
         """ sync settings.json and settingsmeta.json in memory """
         meta = settings_meta.copy()
         self.load_skill_settings_from_file()
+
+        if 'skillMetadata' not in meta:
+            return meta
+
         sections = meta['skillMetadata']['sections']
         for i, section in enumerate(sections):
             for j, field in enumerate(section['fields']):
@@ -463,7 +449,8 @@ class SkillSettings(dict):
             skills_settings = self._request_other_settings(hashed_meta)
         if not skills_settings:
             skills_settings = self._request_my_settings(hashed_meta)
-        if skills_settings is not None:
+
+        if skills_settings is not None and 'skillMetadata' in skills_settings:
             self.save_skill_settings(skills_settings)
             self.store()
         else:
@@ -546,6 +533,9 @@ class SkillSettings(dict):
             dict: skills object
         """
         meta = settings_meta.copy()
+        if 'skillMetadata' not in meta:
+            return meta
+
         sections = meta['skillMetadata']['sections']
 
         for i, section in enumerate(sections):
