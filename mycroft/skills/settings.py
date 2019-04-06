@@ -409,7 +409,7 @@ class SkillSettings(dict):
             return
 
         # continues to poll settings every minute
-        self._poll_timer = Timer(60, self._poll_skill_settings)
+        self._poll_timer = Timer(5 * 60, self._poll_skill_settings)
         self._poll_timer.daemon = True
         self._poll_timer.start()
 
