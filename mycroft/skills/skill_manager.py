@@ -33,7 +33,7 @@ from mycroft.util.log import LOG
 from mycroft.api import DeviceApi, is_paired
 
 from .core import load_skill, create_skill_descriptor, MainModule
-from .msm_wrapper import create_msm as msm_creator
+
 
 DEBUG = Configuration.get().get("debug", False)
 skills_config = Configuration.get().get("skills")
@@ -132,7 +132,23 @@ class SkillManager(Thread):
 
     @staticmethod
     def create_msm():
-        return msm_creator(Configuration.get())
+        config = Configuration.get()
+        msm_config = config['skills']['msm']
+        repo_config = msm_config['repo']
+        data_dir = expanduser(config['data_dir'])
+        skills_dir = join(data_dir, msm_config['directory'])
+        # Try to create the skills directory if it doesn't exist
+        if not exists(skills_dir):
+            os.makedirs(skills_dir)
+
+        repo_cache = join(data_dir, repo_config['cache'])
+        platform = config['enclosure'].get('platform', 'default')
+        return MycroftSkillsManager(
+            platform=platform, skills_dir=skills_dir,
+            repo=SkillRepo(
+                repo_cache, repo_config['url'], repo_config['branch']
+            ), versioned=msm_config['versioned']
+        )
 
     def schedule_now(self, message=None):
         self.next_download = time.time() - 1
