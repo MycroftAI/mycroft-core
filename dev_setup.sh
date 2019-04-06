@@ -35,6 +35,7 @@ Options:
     -n, --no-error          Do not exit on error (use with caution)
     -p arg, --python arg    Sets the python version to use
     -r, --allow-root        Allow to be run as root (e.g. sudo)
+    --no-venv               Install with no venv
     -sm                     Skip mimic build
 "
 }
@@ -44,6 +45,7 @@ opt_forcemimicbuild=false
 opt_allowroot=false
 opt_skipmimicbuild=false
 opt_python=python3
+venv=true
 param=""
 
 for var in "$@" ; do
@@ -76,6 +78,9 @@ for var in "$@" ; do
     fi
     if [[ ${var} == "-p" ]] || [[ ${var} == "--python" ]] ; then
         param="python"
+    fi
+    if [[ ${var} == "--no-venv" ]] ; then
+        venv=false
     fi
 done
 
@@ -355,15 +360,18 @@ else
     fi
 fi
 
-if [ ! -x "${VIRTUALENV_ROOT}/bin/activate" ] ; then
+if [[ $venv == true ]] && [ ! -x "${VIRTUALENV_ROOT}/bin/activate" ] ; then
     if ! install_venv ; then
         echo "Failed to set up virtualenv for mycroft, exiting setup."
         exit 1
     fi
 fi
 
-# Start the virtual environment
-source "${VIRTUALENV_ROOT}/bin/activate"
+if [[ $venv == true ]] ; then
+    # Start the virtual environment
+    # shellcheck source=/dev/null
+    source "${VIRTUALENV_ROOT}/bin/activate"
+fi
 cd "${TOP}"
 
 # Install pep8 pre-commit hook
@@ -371,33 +379,36 @@ if [ -z ${INSTALL_PRECOMMIT_HOOK} ] ; then
     HOOK_FILE="./.git/hooks/pre-commit"
     if [ ! -f ${HOOK_FILE} ] || grep -q "MYCROFT DEV SETUP" ${HOOK_FILE} ; then
         echo "Installing PEP8 check as precommit-hook"
-        echo "#! $( which python )" > ${HOOK_FILE}
+        echo "#! $( which python3 )" > ${HOOK_FILE}
         echo "# MYCROFT DEV SETUP" >> ${HOOK_FILE}
         cat ./scripts/pre-commit >> ${HOOK_FILE}
         chmod +x ${HOOK_FILE}
     fi
 fi
 
-PYTHON=$( python -c "import sys;print('python{}.{}'.format(sys.version_info[0], sys.version_info[1]))" )
+PYTHON=$( python3 -c "import sys;print('python{}.{}'.format(sys.version_info[0], sys.version_info[1]))" )
 
-# Add mycroft-core to the virtualenv path
-# (This is equivalent to typing 'add2virtualenv $TOP', except
-# you can't invoke that shell function from inside a script)
-VENV_PATH_FILE="${VIRTUALENV_ROOT}/lib/$PYTHON/site-packages/_virtualenv_path_extensions.pth"
-if [ ! -f "$VENV_PATH_FILE" ] ; then
-    echo "import sys; sys.__plen = len(sys.path)" > "$VENV_PATH_FILE" || return 1
-    echo "import sys; new=sys.path[sys.__plen:]; del sys.path[sys.__plen:]; p=getattr(sys,'__egginsert',0); sys.path[p:p]=new; sys.__egginsert = p+len(new)" >> "$VENV_PATH_FILE" || return 1
-fi
 
-if ! grep -q "$TOP" $VENV_PATH_FILE ; then
-    echo "Adding mycroft-core to virtualenv path"
-    sed -i.tmp '1 a\
-'"$TOP"'
-' "${VENV_PATH_FILE}"
+if [[ $venv == true ]] ; then
+    # Add mycroft-core to the virtualenv path
+    # (This is equivalent to typing 'add2virtualenv $TOP', except
+    # you can't invoke that shell function from inside a script)
+    VENV_PATH_FILE="${VIRTUALENV_ROOT}/lib/$PYTHON/site-packages/_virtualenv_path_extensions.pth"
+    if [ ! -f "$VENV_PATH_FILE" ] ; then
+        echo "import sys; sys.__plen = len(sys.path)" > "$VENV_PATH_FILE" || return 1
+        echo "import sys; new=sys.path[sys.__plen:]; del sys.path[sys.__plen:]; p=getattr(sys,'__egginsert',0); sys.path[p:p]=new; sys.__egginsert = p+len(new)" >> "$VENV_PATH_FILE" || return 1
+    fi
+
+    if ! grep -q "$TOP" $VENV_PATH_FILE ; then
+        echo "Adding mycroft-core to virtualenv path"
+        sed -i.tmp '1 a\
+    '"$TOP"'
+    ' "${VENV_PATH_FILE}"
+    fi
 fi
 
 # install required python modules
-if ! pip install -r requirements.txt ; then
+if ! pip3 install -r requirements.txt ; then
     echo "Warning: Failed to install all requirements. Continue? y/N"
     read -n1 continue
     if [[ "$continue" != "y" ]] ; then
@@ -405,7 +416,7 @@ if ! pip install -r requirements.txt ; then
     fi
 fi
 
-if ! pip install -r test-requirements.txt ; then
+if ! pip3 install -r test-requirements.txt ; then
     echo "Warning test requirements wasn't installed, Note: normal operation should still work fine..."
 fi
 
