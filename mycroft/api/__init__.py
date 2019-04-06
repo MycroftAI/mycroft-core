@@ -364,10 +364,17 @@ class DeviceApi(Api):
         Arguments:
              data: dictionary with skills data from msm
         """
+        # Strip the skills.json down to the bare essentials
+        to_send = {}
+        to_send['blacklist'] = data['blacklist']
+        # Make sure skills doesn't contain duplicates (keep only last)
+        skills = {s['name']: s for s in data['skills']}
+        to_send['skills'] = [skills[key] for key in skills]
+
         self.request({
             "method": "PUT",
             "path": "/" + self.identity.uuid + "/skillJson",
-            "json": data
+            "json": to_send
             })
 
 
