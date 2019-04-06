@@ -37,6 +37,7 @@ Options:
     -r, --allow-root        Allow to be run as root (e.g. sudo)
     --no-venv               Install with no venv
     -sm                     Skip mimic build
+    -y, --accept-defaults   Accept Defaults
 "
 }
 
@@ -47,6 +48,7 @@ opt_skipmimicbuild=false
 opt_python=python3
 venv=true
 param=""
+accept_defaults=false
 
 for var in "$@" ; do
     # Check if parameter should be read
@@ -82,6 +84,9 @@ for var in "$@" ; do
     if [[ ${var} == "--no-venv" ]] ; then
         venv=false
     fi
+    if [[ ${var} == "-y" ]] || [[ ${var} == "--accept-defaults" ]] ; then
+        accept_defaults=true
+    fi
 done
 
 if [ $(id -u) -eq 0 ] && [ "${opt_allowroot}" != true ] ; then
@@ -106,6 +111,9 @@ fi
 
 function get_YN() {
     # Loop until the user hits the Y or the N key
+    if [[ $accept_defaults == true ]]; then
+        return 0
+    fi
     echo -e -n "Choice [${CYAN}Y${RESET}/${CYAN}N${RESET}]: "
     while true; do
         read -N1 -s key
