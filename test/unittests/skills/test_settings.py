@@ -14,16 +14,11 @@
 #
 import json
 import unittest
-from mock import MagicMock
 
 from os import remove
 from os.path import join, dirname
 
 from mycroft.skills.settings import SkillSettings
-
-
-SkillSettings._poll_skill_settings = MagicMock()
-SkillSettings._init_blank_meta = MagicMock()
 
 
 class SkillSettingsTest(unittest.TestCase):
