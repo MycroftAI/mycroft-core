@@ -85,6 +85,10 @@ class Attribute(Enum):
     COLOR = auto()
     COLOR_TEMPERATURE = auto()
 
+    TEMPERATURE = auto()  # Control desired high and low temperatures
+    HEAT = auto()  # Control desired low temperature
+    AIR_CONDITIONING = auto()  # Control desired high temperature
+
 
 @unique
 class Action(Enum):
