@@ -78,25 +78,6 @@ from mycroft.configuration import ConfigurationManager
 
 from .msm_wrapper import create_msm
 
-# This is the base needed for sending a blank settings meta entry (Tartarus)
-# To this a global id is added
-# TODO reduce the needed boilerplate here
-BLANK_META = {
-    "skillMetadata": {
-        "sections": [
-            {
-                "name": "",
-                "fields": [
-                    {
-                        "type": "label",
-                        "label": ""
-                    }
-                ]
-            }
-        ]
-    }
-}
-
 
 msm = None
 msm_creation_time = 0
@@ -173,6 +154,12 @@ class SkillSettings(dict):
         self._poll_timer = None
         self._blank_poll_timer = None
         self._is_alive = True
+
+        # Add Information extracted from the skills-meta.json entry for the
+        # skill.
+        skill_gid, disp_name = build_global_id(self._directory, self.config)
+        self.skill_gid = skill_gid
+        self.display_name = disp_name
 
         # if settingsmeta exist
         if self._meta_path:
@@ -296,13 +283,11 @@ class SkillSettings(dict):
                 LOG.error(repr(e))
                 data = copy.copy(BLANK_META)
         else:
-            data = copy.copy(BLANK_META)
+            data = {}
 
-        # Add Information extracted from the skills-meta.json entry for the
-        # skill.
-        skill_gid, disp_name = build_global_id(self._directory, self.config)
-        data['skill_gid'] = skill_gid
-        data['display_name'] = (disp_name or data.get('name') or
+        # Insert skill_gid and display_name
+        data['skill_gid'] = self.skill_gid
+        data['display_name'] = (self.display_name or data.get('name') or
                                 display_name(self.name))
 
         # Backwards compatibility:
@@ -341,12 +326,13 @@ class SkillSettings(dict):
         if self._is_new_hash(skill_settings['identifier']):
             self._save_uuid(skill_settings['uuid'])
             self._save_hash(skill_settings['identifier'])
-        sections = skill_settings['skillMetadata']['sections']
-        for section in sections:
-            for field in section["fields"]:
-                if "name" in field and "value" in field:
-                    self[field['name']] = field['value']
-        self.store()
+        if 'skillMetadata' in skill_settings:
+            sections = skill_settings['skillMetadata']['sections']
+            for section in sections:
+                for field in section["fields"]:
+                    if "name" in field and "value" in field:
+                        self[field['name']] = field['value']
+            self.store()
 
     def _load_uuid(self):
         """ Loads uuid
@@ -393,6 +379,8 @@ class SkillSettings(dict):
     def _migrate_settings(self, settings_meta):
         """ sync settings.json and settingsmeta in memory """
         meta = settings_meta.copy()
+        if 'skillMetadata' not in meta:
+            return meta
         self.load_skill_settings_from_file()
         sections = meta['skillMetadata']['sections']
         for i, section in enumerate(sections):
@@ -568,6 +556,9 @@ class SkillSettings(dict):
             dict: skills object
         """
         meta = settings_meta.copy()
+        if 'skillMetadata' not in settings_meta:
+            return meta
+
         sections = meta['skillMetadata']['sections']
 
         for i, section in enumerate(sections):
