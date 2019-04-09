@@ -3,20 +3,20 @@
 {
 // C-style comment
   "lang": "en-us",
-  
-  // Comment spaced out  
+
+  // Comment spaced out
   "system_unit": "metric",
-  
+
     // Comment tabbed out
-    
+
   "time_format": "half",
-  
+
     // comment and // another inside
   "date_format": "MDY",
-  
+
   // Comment with " inside it
   "confirm_listening": true,
-  
+
   # Python-style comment
   "sounds": {
 # Commment with no space
@@ -54,8 +54,7 @@
     }
   },
   "skills": {
-    "directory": "~/.mycroft/skills",
-    "stop_threshold": 2.0
+    "directory": "~/.mycroft/skills"
   },
   "server": {
     "url": "https://api.mycroft.ai",
@@ -103,12 +102,12 @@
       "voice": "m1"
     }
   },
-  
+
   // Mixture
   # of types
   // of comments
-  
-  
+
+
   "wifi": {
     "setup": false
   },
