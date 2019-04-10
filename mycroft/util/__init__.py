@@ -465,12 +465,19 @@ def create_echo_function(name, whitelist=None):
     from mycroft.configuration import Configuration
     blacklist = Configuration.get().get("ignore_logs")
 
+    # Make sure whitelisting doesn't remove the log level setting command
+    if whitelist:
+        whitelist.append('mycroft.debug.log')
+
     def echo(message):
         global _log_all_bus_messages
         try:
             msg = json.loads(message)
-
-            if whitelist and msg.get("type") not in whitelist:
+            # Whitelist match beginning of message
+            # i.e 'mycroft.audio.service' will allow the message
+            # 'mycroft.audio.service.play' for example
+            if whitelist and not any([msg.get("type", "").startswith(e)
+                                     for e in whitelist]):
                 return
 
             if blacklist and msg.get("type") in blacklist:
@@ -490,7 +497,7 @@ def create_echo_function(name, whitelist=None):
                 # Allow enable/disable of messagebus traffic
                 log_bus = msg["data"].get("bus", None)
                 if log_bus is not None:
-                    LOG(name).info("Bus logging: "+str(log_bus))
+                    LOG(name).info("Bus logging: ".format(log_bus))
                     _log_all_bus_messages = log_bus
             elif msg.get("type") == "registration":
                 # do not log tokens from registration messages
