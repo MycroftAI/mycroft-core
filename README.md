@@ -33,7 +33,7 @@ Mycroft is a hackable open source voice assistant.
 First, get the code on your system!  The simplest method is via git ([git installation instructions](https://gist.github.com/derhuerst/1b15ff4652a867391f03)):
 - `cd ~/`
 - `git clone https://github.com/muhareb/mycroft-core-arabic.git`
-- `cd mycroft-core`
+- `cd mycroft-core-arabic`
 - `bash dev_setup.sh`
 
 
