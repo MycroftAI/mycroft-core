@@ -205,6 +205,8 @@ class Enclosure:
                    "position": len(self.loaded[0].pages),
                    "data": [{"url": p} for p in pages]
                    })
+        # Insert the pages into local reprensentation as well.
+        self.loaded[0].pages += pages
 
     def __remove_page(self, namespace, pos):
         """ Delete page.
