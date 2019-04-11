@@ -52,7 +52,7 @@ def send_playback_metric(stopwatch, ident):
 class PlaybackThread(Thread):
     """
         Thread class for playing back tts audio and sending
-        viseme data to enclosure.
+        visime data to enclosure.
     """
 
     def __init__(self, queue):
@@ -60,6 +60,7 @@ class PlaybackThread(Thread):
         self.queue = queue
         self._terminated = False
         self._processing_queue = False
+        self._clear_visimes = False
 
     def init(self, tts):
         self.tts = tts
@@ -77,12 +78,12 @@ class PlaybackThread(Thread):
 
     def run(self):
         """
-            Thread main loop. get audio and viseme data from queue
+            Thread main loop. get audio and visime data from queue
             and play.
         """
         while not self._terminated:
             try:
-                snd_type, data, visemes, ident = self.queue.get(timeout=2)
+                snd_type, data, visimes, ident = self.queue.get(timeout=2)
                 self.blink(0.5)
                 if not self._processing_queue:
                     self._processing_queue = True
@@ -95,15 +96,18 @@ class PlaybackThread(Thread):
                     elif snd_type == 'mp3':
                         self.p = play_mp3(data)
 
-                    if visemes:
-                        self.show_visemes(visemes)
-                    self.p.communicate()
+                    if visimes:
+                        if self.show_visimes(visimes):
+                            self.clear_queue()
+                    else:
+                        self.p.communicate()
                     self.p.wait()
                 send_playback_metric(stopwatch, ident)
 
                 if self.queue.empty():
                     self.tts.end_audio()
                     self._processing_queue = False
+                    self._clear_visimes = False
                 self.blink(0.2)
             except Empty:
                 pass
@@ -113,9 +117,9 @@ class PlaybackThread(Thread):
                     self.tts.end_audio()
                     self._processing_queue = False
 
-    def show_visemes(self, pairs):
+    def show_visimes(self, pairs):
         """
-            Send viseme data to enclosure
+            Send visime data to enclosure
 
             Args:
                 pairs(list): Visime and timing pair
@@ -123,12 +127,30 @@ class PlaybackThread(Thread):
             Returns:
                 True if button has been pressed.
         """
+        start = time()
         if self.enclosure:
-            self.enclosure.mouth_viseme(time(), pairs)
+            self.enclosure.mouth_viseme_list(start, pairs)
+
+        # TODO 19.02 Remove the one by one method below
+        for code, duration in pairs:
+            if self._clear_visimes:
+                self._clear_visimes = False
+                return True
+            if self.enclosure:
+                # Include time stamp to assist with animation timing
+                self.enclosure.mouth_viseme(code, start + duration)
+            delta = time() - start
+            if delta < duration:
+                sleep(duration - delta)
+        return False
+
+    def clear_visimes(self):
+        self._clear_visimes = True
 
     def clear(self):
         """ Clear all pending actions for the TTS playback thread. """
         self.clear_queue()
+        self.clear_visimes()
 
     def blink(self, rate=1.0):
         """ Blink mycroft's eyes """
@@ -177,7 +199,6 @@ class TTS:
         self.playback.start()
         self.clear_cache()
         self.spellings = self.load_spellings()
-        self.tts_name = type(self).__name__
 
     def load_spellings(self):
         """Load phonetic spellings of words as dictionary"""
@@ -210,7 +231,7 @@ class TTS:
 
         self.bus.emit(Message("recognizer_loop:audio_output_end"))
         # Clean the cache as needed
-        cache_dir = mycroft.util.get_cache_directory("tts/" + self.tts_name)
+        cache_dir = mycroft.util.get_cache_directory("tts")
         mycroft.util.curate_cache(cache_dir, min_free_percent=100)
 
         # This check will clear the "signal"
@@ -276,20 +297,6 @@ class TTS:
         # return text with supported ssml tags only
         return utterance.replace("  ", " ")
 
-    def _preprocess_sentence(self, sentence):
-        """ Default preprocessing is no preprocessing.
-
-        This method can be overridden to create chunks suitable to the
-        TTS engine in question.
-
-        Arguments:
-            sentence (str): sentence to preprocess
-
-        Returns:
-            list: list of sentence parts
-        """
-        return [sentence]
-
     def execute(self, sentence, ident=None):
         """
             Convert sentence to speech, preprocessing out unsupported ssml
@@ -310,28 +317,24 @@ class TTS:
                     sentence = sentence.replace(word,
                                                 self.spellings[word.lower()])
 
-        chunks = self._preprocess_sentence(sentence)
-        for sentence in chunks:
-            key = str(hashlib.md5(
-                sentence.encode('utf-8', 'ignore')).hexdigest())
-            wav_file = os.path.join(
-                mycroft.util.get_cache_directory("tts/" + self.tts_name),
-                key + '.' + self.audio_ext)
+        key = str(hashlib.md5(sentence.encode('utf-8', 'ignore')).hexdigest())
+        wav_file = os.path.join(mycroft.util.get_cache_directory("tts"),
+                                key + '.' + self.audio_ext)
 
-            if os.path.exists(wav_file):
-                LOG.debug("TTS cache hit")
-                phonemes = self.load_phonemes(key)
-            else:
-                wav_file, phonemes = self.get_tts(sentence, wav_file)
-                if phonemes:
-                    self.save_phonemes(key, phonemes)
+        if os.path.exists(wav_file):
+            LOG.debug("TTS cache hit")
+            phonemes = self.load_phonemes(key)
+        else:
+            wav_file, phonemes = self.get_tts(sentence, wav_file)
+            if phonemes:
+                self.save_phonemes(key, phonemes)
 
-            vis = self.viseme(phonemes)
-            self.queue.put((self.audio_ext, wav_file, vis, ident))
+        vis = self.visime(phonemes)
+        self.queue.put((self.audio_ext, wav_file, vis, ident))
 
-    def viseme(self, phonemes):
+    def visime(self, phonemes):
         """
-            Create visemes from phonemes. Needs to be implemented for all
+            Create visimes from phonemes. Needs to be implemented for all
             tts backend
 
             Args:
@@ -343,16 +346,11 @@ class TTS:
         """ Remove all cached files. """
         if not os.path.exists(mycroft.util.get_cache_directory('tts')):
             return
-        for d in os.listdir(mycroft.util.get_cache_directory("tts")):
-            dir_path = os.path.join(mycroft.util.get_cache_directory("tts"), d)
-            if os.path.isdir(dir_path):
-                for f in os.listdir(dir_path):
-                    file_path = os.path.join(dir_path, f)
-                    if os.path.isfile(file_path):
-                        os.unlink(file_path)
-            # If no sub-folders are present, check if it is a file & clear it
-            elif os.path.isfile(dir_path):
-                os.unlink(dir_path)
+        for f in os.listdir(mycroft.util.get_cache_directory("tts")):
+            file_path = os.path.join(mycroft.util.get_cache_directory("tts"),
+                                     f)
+            if os.path.isfile(file_path):
+                os.unlink(file_path)
 
     def save_phonemes(self, key, phonemes):
         """
@@ -362,7 +360,8 @@ class TTS:
                 key:        Hash key for the sentence
                 phonemes:   phoneme string to save
         """
-        cache_dir = mycroft.util.get_cache_directory("tts/" + self.tts_name)
+
+        cache_dir = mycroft.util.get_cache_directory("tts")
         pho_file = os.path.join(cache_dir, key + ".pho")
         try:
             with open(pho_file, "w") as cachefile:
@@ -378,9 +377,8 @@ class TTS:
             Args:
                 Key:    Key identifying phoneme cache
         """
-        pho_file = os.path.join(
-            mycroft.util.get_cache_directory("tts/" + self.tts_name),
-            key + ".pho")
+        pho_file = os.path.join(mycroft.util.get_cache_directory("tts"),
+                                key + ".pho")
         if os.path.exists(pho_file):
             try:
                 with open(pho_file, "r") as cachefile:
@@ -453,6 +451,7 @@ class TTSFactory:
     from mycroft.tts.spdsay_tts import SpdSay
     from mycroft.tts.bing_tts import BingTTS
     from mycroft.tts.ibm_tts import WatsonTTS
+    from mycroft.tts.kacst_tts import KACSTTTS
     from mycroft.tts.responsive_voice_tts import ResponsiveVoice
     from mycroft.tts.mimic2_tts import Mimic2
 
@@ -465,6 +464,7 @@ class TTSFactory:
         "espeak": ESpeak,
         "spdsay": SpdSay,
         "watson": WatsonTTS,
+        "kacst": KACSTTTS,
         "bing": BingTTS,
         "responsive_voice": ResponsiveVoice
     }

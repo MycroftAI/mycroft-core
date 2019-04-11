@@ -13,40 +13,52 @@
 # limitations under the License.
 #
 
+import os, requests, time
 from mycroft.tts import TTS, TTSValidator
 from mycroft.configuration import Configuration
-
 
 class BingTTS(TTS):
     def __init__(self, lang, config):
         super(BingTTS, self).__init__(lang, config, BingTTSValidator(self))
         self.type = 'wav'
-        from bingtts import Translator
         self.config = Configuration.get().get("tts", {}).get("bing", {})
         api = self.config.get("api_key")
-        self.bing = Translator(api)
-        self.gender = self.config.get("gender", "Male")
-        self.format = self.config.get("format", "riff-16khz-16bit-mono-pcm")
+        self.subscription_key = self.config.get("api_key")
+        self.access_token = None
 
     def get_tts(self, sentence, wav_file):
-        output = self.bing.speak(sentence, self.lang, self.gender,
-                                 self.format)
-        with open(wav_file, "w") as f:
-            f.write(output)
-        return (wav_file, None)  # No phonemes
+        fetch_token_url = "https://westus.api.cognitive.microsoft.com/sts/v1.0/issueToken"
+        headers = {
+            'Ocp-Apim-Subscription-Key': self.subscription_key
+        }
+        response = requests.post(fetch_token_url, headers=headers)
+        self.access_token = str(response.text)
 
+        base_url = 'https://westus.tts.speech.microsoft.com/'
+        path = 'cognitiveservices/v1'
+        constructed_url = base_url + path
+        headers = {
+            'Authorization': 'Bearer ' + self.access_token,
+            'Content-Type': 'application/ssml+xml',
+            'X-Microsoft-OutputFormat': 'riff-24khz-16bit-mono-pcm',
+            'User-Agent': 'aiam-test',
+            'cache-control': 'no-cache'
+        }
+        body = "<speak version='1.0' xml:lang='ar-SA'><voice xml:lang='ar-SA' xml:gender='Male' name='Microsoft Server Speech Text to Speech Voice (ar-SA, Naayf)'>" + sentence + "</voice></speak>"
+        #body = "<speak version='1.0' xml:lang='ar-EG'><voice xml:lang='ar-EG' xml:gender='Female' name='Microsoft Server Speech Text to Speech Voice (ar-EG, Hoda)'>" + sentence + "</voice></speak>"
+
+        response = requests.post(constructed_url, headers=headers, data=body.encode('utf-8'))
+
+        with open(wav_file, 'wb') as audio:
+            audio.write(response.content)
+        return (wav_file, None)  # No phonemes
 
 class BingTTSValidator(TTSValidator):
     def __init__(self, tts):
         super(BingTTSValidator, self).__init__(tts)
 
     def validate_dependencies(self):
-        try:
-            from bingtts import Translator
-        except ImportError:
-            raise Exception(
-                'BingTTS dependencies not installed, please run pip install '
-                'git+https://github.com/westparkcom/Python-Bing-TTS.git ')
+        pass
 
     def validate_lang(self):
         # TODO
