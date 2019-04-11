@@ -32,7 +32,7 @@ Mycroft is a hackable open source voice assistant.
 
 First, get the code on your system!  The simplest method is via git ([git installation instructions](https://gist.github.com/derhuerst/1b15ff4652a867391f03)):
 - `cd ~/`
-- `git clone https://github.com/MycroftAI/mycroft-core.git`
+- `git clone https://github.com/muhareb/mycroft-core-arabic.git`
 - `cd mycroft-core`
 - `bash dev_setup.sh`
 
@@ -46,7 +46,7 @@ NOTE: The default branch for this repository is 'dev', which should be considere
 # Running Mycroft
 
 Mycroft provides `start-mycroft.sh` to perform common tasks. This script uses a virtualenv created by `dev_setup.sh`.  Assuming you installed mycroft-core in your home directory run:
-- `cd ~/mycroft-core`
+- `cd ~/mycroft-core-arabic`
 - `./start-mycroft.sh debug`
 
 The "debug" command will start the background services (microphone listener, skill, messagebus, and audio subsystems) as well as bringing up a text-based Command Line Interface (CLI) you can use to interact with Mycroft and see the contents of the various logs. Alternatively you can run `./start-mycroft.sh all` to begin the services without the command line interface.  Later you can bring up the CLI using `./start-mycroft.sh cli`.
@@ -115,7 +115,7 @@ If you are using Mycroft behind a proxy without authentication, add the followin
 
 ```bash
 $ export http_proxy=http://proxy_hostname.com:proxy_port
-$ export https_port=http://proxy_hostname.com:proxy_port
+$ export https_proxy=http://proxy_hostname.com:proxy_port
 $ export no_proxy="localhost,127.0.0.1,localaddress,.localdomain.com,0.0.0.0,::1"
 ```
 
@@ -125,7 +125,7 @@ If  you are behind a proxy which requires authentication, add the following envi
 
 ```bash
 $ export http_proxy=http://user:password@proxy_hostname.com:proxy_port
-$ export https_port=http://user:password@proxy_hostname.com:proxy_port
+$ export https_proxy=http://user:password@proxy_hostname.com:proxy_port
 $ export no_proxy="localhost,127.0.0.1,localaddress,.localdomain.com,0.0.0.0,::1"
 ```
 
