@@ -1665,9 +1665,7 @@ class MycroftSkill:
             return
 
         process = play_audio_file(file)
-        if process:
-            process.wait()
-        else:
+        if not process:
             LOG.warning("Unable to play 'acknowledge' audio file!")
 
 
