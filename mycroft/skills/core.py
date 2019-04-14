@@ -1657,14 +1657,14 @@ class MycroftSkill:
         require a verbal response. This is intended to provide simple feedback
         to the user that their request was handled successfully.
         """
-        file = resolve_resource_file(
+        audio_file = resolve_resource_file(
             self.config_core.get('sounds').get('acknowledge'))
 
-        if not file:
+        if not audio_file:
             LOG.warning("Could not find 'acknowledge' audio file!")
             return
 
-        process = play_audio_file(file)
+        process = play_audio_file(audio_file)
         if not process:
             LOG.warning("Unable to play 'acknowledge' audio file!")
 
