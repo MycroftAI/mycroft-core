@@ -375,22 +375,20 @@ class SkillTest(object):
         # Emit an utterance, just like the STT engine does.  This sends the
         # provided text to the skill engine for intent matching and it then
         # invokes the skill.
-        utt = test_case.get('utterance', None)
-        play_utt = test_case.get('play_query', None)
-        play_start = test_case.get('play_start', None)
-        if utt:
+        if 'utterance' in test_case:
+            utt = test_case['utterance']
             print("UTTERANCE:", color.USER_UTT + utt + color.RESET)
-            self.emitter.emit(
-                'recognizer_loop:utterance',
-                Message('recognizer_loop:utterance',
-                        {'utterances': [utt]}))
-        elif play_utt:
-            print('PLAY QUERY', color.USER_UTT + play_utt + color.RESET)
+            self.emitter.emit('recognizer_loop:utterance',
+                              Message('recognizer_loop:utterance',
+                                      {'utterances': [utt]}))
+        elif 'play_query' in test_case:
+            play_query = test_case['play_query']
+            print('PLAY QUERY', color.USER_UTT + play_query + color.RESET)
             self.emitter.emit('play:query', Message('play:query:',
-                                                    {'phrase': play_utt}))
-        elif play_start:
+                                                    {'phrase': play_query}))
+        elif 'play_start' in test_case:
             print('PLAY START')
-            callback_data = play_start
+            callback_data = test_case['play_start']
             callback_data['skill_id'] = s.skill_id
             self.emitter.emit('play:start',
                               Message('play:start', callback_data))
