@@ -392,6 +392,11 @@ class SkillTest(object):
             callback_data['skill_id'] = s.skill_id
             self.emitter.emit('play:start',
                               Message('play:start', callback_data))
+        elif 'question' in test_case:
+            print("QUESTION: {}".format(test_case['question']))
+            callback_data = {'phrase': test_case['question']}
+            self.emitter.emit('question:query',
+                              Message('question:query', data=callback_data))
         else:
             raise SkillTestError('No input utterance provided')
 
@@ -500,13 +505,19 @@ class EvaluationRule(object):
 
         if 'play_query_match' in test_case:
             match = test_case['play_query_match']
-            print(test_case)
             phrase = match.get('phrase', test_case.get('play_query'))
             _d = ['and']
             _d.append(['equal', '__type__', 'query'])
             _d.append(['equal', 'skill_id', skill.skill_id])
             _d.append(['equal', 'phrase', phrase])
             _d.append(['gt', 'conf', match.get('confidence_threshold', 0.5)])
+            self.rule.append(_d)
+        elif 'expected_answer' in test_case:
+            _d = ['and']
+            _d.append(['equal', '__type__', 'query.response'])
+            _d.append(['equal', 'skill_id', skill.skill_id])
+            _d.append(['equal', 'phrase', test_case['question']])
+            _d.append(['match', 'answer', test_case['expected_answer']])
             self.rule.append(_d)
 
         # Check for expected data structure
