@@ -92,6 +92,7 @@ class WebsocketClient:
 
     def on_message(self, message):
         parsed_message = Message.deserialize(message)
+        self.emitter.emit('message', message)
         self.emitter.emit(parsed_message.type, parsed_message)
 
     def emit(self, message):
