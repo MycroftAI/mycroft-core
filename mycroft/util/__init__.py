@@ -18,7 +18,7 @@ import socket
 import subprocess
 import pyaudio
 
-from os.path import join, expanduser
+from os.path import join, expanduser, splitext
 
 from threading import Thread
 from time import sleep
@@ -91,6 +91,36 @@ def resolve_resource_file(res_name):
         return filename
 
     return None  # Resource cannot be resolved
+
+
+def play_audio_file(uri: str):
+    """ Play an audio file.
+
+    This wraps the other play_* functions, choosing the correct one based on
+    the file extension. The function will return directly and play the file
+    in the background.
+
+    Arguments:
+        uri:    uri to play
+
+    Returns: subprocess.Popen object. None if the format is not supported or
+             an error occurs playing the file.
+
+    """
+    extension_to_function = {
+        '.wav': play_wav,
+        '.mp3': play_mp3,
+        '.ogg': play_ogg
+    }
+    _, extension = splitext(uri)
+    play_function = extension_to_function.get(extension.lower())
+    if play_function:
+        return play_function(uri)
+    else:
+        LOG.error("Could not find a function capable of playing {uri}."
+                  " Supported formats are {keys}."
+                  .format(uri=uri, keys=list(extension_to_function.keys())))
+        return None
 
 
 def play_wav(uri):

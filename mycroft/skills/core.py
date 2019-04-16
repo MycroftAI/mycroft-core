@@ -44,7 +44,9 @@ from mycroft.skills.settings import SkillSettings
 from mycroft.skills.skill_data import (load_vocabulary, load_regex, to_alnum,
                                        munge_regex, munge_intent_parser,
                                        read_vocab_file)
-from mycroft.util import camel_case_split, resolve_resource_file
+from mycroft.util import (camel_case_split,
+                          resolve_resource_file,
+                          play_audio_file)
 from mycroft.util.log import LOG
 
 MainModule = '__init__'
@@ -1647,6 +1649,24 @@ class MycroftSkill:
         #       in cancel_scheduled_event().
         for e in list(self.scheduled_repeats):
             self.cancel_scheduled_event(e)
+
+    def acknowledge(self):
+        """ Acknowledge a successful request.
+
+        This method plays a sound to acknowledge a request that does not
+        require a verbal response. This is intended to provide simple feedback
+        to the user that their request was handled successfully.
+        """
+        audio_file = resolve_resource_file(
+            self.config_core.get('sounds').get('acknowledge'))
+
+        if not audio_file:
+            LOG.warning("Could not find 'acknowledge' audio file!")
+            return
+
+        process = play_audio_file(audio_file)
+        if not process:
+            LOG.warning("Unable to play 'acknowledge' audio file!")
 
 
 #######################################################################
