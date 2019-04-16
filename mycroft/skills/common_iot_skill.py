@@ -104,6 +104,7 @@ class Action(Enum):
     SET = auto()
     INCREASE = auto()
     DECREASE = auto()
+    TRIGGER = auto()
 
 
 class IoTRequest():
