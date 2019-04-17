@@ -490,6 +490,7 @@ def create_echo_function(name, whitelist=None):
                     LOG.level = lvl
                     LOG(name).info("Changing log level to: {}".format(lvl))
                     try:
+                        logging.getLogger().setLevel(lvl)
                         logging.getLogger('urllib3').setLevel(lvl)
                     except Exception:
                         pass  # We don't really care about if this fails...

@@ -78,14 +78,15 @@ class LOG:
         formatter = logging.Formatter(fmt, datefmt)
         cls.handler = logging.StreamHandler(sys.stdout)
         cls.handler.setFormatter(formatter)
-        cls.create_logger('')  # Enables logging in external modules
+
+        # Enable logging in external modules
+        cls.create_logger('').setLevel(cls.level)
 
     @classmethod
     def create_logger(cls, name):
         logger = logging.getLogger(name)
         logger.propagate = False
         logger.addHandler(cls.handler)
-        logger.setLevel(cls.level)
         return logger
 
     def __init__(self, name):
