@@ -292,7 +292,10 @@ class SkillTest(object):
         """ Execute the test
 
         Run a test for a skill. The skill, test_case_file and emitter is
-        already set up in the __init__ method
+        already set up in the __init__ method.
+
+        This method does all the preparation and cleanup and calls
+        self.execute_test() to perform the actual test.
 
         Args:
             bool: Test results -- only True if all passed
@@ -309,6 +312,23 @@ class SkillTest(object):
 
             raise SkillTestError('Skill couldn\'t be loaded')
 
+        orig_get_response = s.get_response
+        original_settings = s.settings
+        try:
+            return self.execute_test(s)
+        finally:
+            s.get_response = orig_get_response
+            s.settings = original_settings
+
+    def execute_test(self, s):
+        """ Execute test case.
+
+        Arguments:
+            s (MycroftSkill): mycroft skill to test
+
+        Returns:
+            (bool) True if the test succeeded completely.
+        """
         print("")
         print(color.HEADER + "="*20 + " RUNNING TEST " + "="*20 + color.RESET)
         print('Test file: ', self.test_case_file)
@@ -316,9 +336,7 @@ class SkillTest(object):
             test_case = json.load(f)
         print('Test:', json.dumps(test_case, indent=4, sort_keys=False))
 
-        original_settings = None
         if 'settings' in test_case:
-            original_settings = s.settings
             s.settings = TestSettings('/tmp/', self.test_case_file)
             for key in test_case['settings']:
                 s.settings[key] = test_case['settings'][key]
@@ -337,6 +355,7 @@ class SkillTest(object):
                 print("SENDING RESPONSE:",
                       color.USER_UTT + response + color.RESET)
                 return response
+
             s.get_response = get_response
 
         # If we keep track of test status for the entire skill, then
@@ -431,8 +450,6 @@ class SkillTest(object):
             print(color.FAIL + "Failure:", self.failure_msg + color.RESET)
             return False
 
-        if original_settings:
-            s.settings = original_settings
         return True
 
 
