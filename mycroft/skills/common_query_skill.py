@@ -41,11 +41,23 @@ def handles_visuals(self, platform):
 
 
 class CommonQuerySkill(MycroftSkill, ABC):
+    """ Question answering skills should be based on this class. The skill
+    author needs to implement `CQS_match_query_phrase` returning an answer
+    and can optionally implement `CQS_action` to perform additional actions
+    if the skill's answer is selected.
 
+    This class works in conjunction with skill-query which collects
+    answers from several skills presenting the best one available.
+    """
     def __init__(self, name=None, bus=None):
         super().__init__(name, bus)
 
     def bind(self, bus):
+        """ Overrides the default bind method of MycroftSkill.
+
+        This registers messagebus handlers for the skill during startup
+        but is nothing the skill author needs to consider.
+        """
         if bus:
             super().bind(bus)
             self.add_event('question:query', self.__handle_question_query)
