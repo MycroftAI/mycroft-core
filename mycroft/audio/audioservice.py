@@ -194,6 +194,7 @@ class AudioService:
         self.bus.on('mycroft.audio.service.next', self._next)
         self.bus.on('mycroft.audio.service.prev', self._prev)
         self.bus.on('mycroft.audio.service.track_info', self._track_info)
+        self.bus.on('mycroft.audio.service.list_backends', self._list_backends)
         self.bus.on('mycroft.audio.service.seek_forward', self._seek_forward)
         self.bus.on('mycroft.audio.service.seek_backward', self._seek_backward)
         self.bus.on('recognizer_loop:audio_output_start', self._lower_volume)
@@ -430,6 +431,18 @@ class AudioService:
         self.bus.emit(Message('mycroft.audio.service.track_info_reply',
                               data=track_info))
 
+    def _list_backends(self, message):
+        """ Return a dict of available backends. """
+        data = {}
+        for s in self.service:
+            info = {
+                'supported_uris': s.supported_uris(),
+                'default': s == self.default,
+                'remote': isinstance(s, RemoteAudioBackend)
+            }
+            data[s.name] = info
+        self.bus.emit(message.response(data))
+
     def _seek_forward(self, message):
         """
             Handle message bus command to skip X seconds
@@ -496,4 +509,3 @@ class AudioService:
         self.bus.remove('recognizer_loop:audio_output_end',
                         self._restore_volume)
         self.bus.remove('recognizer_loop:record_end', self._restore_volume)
-        self.bus.remove('mycroft.stop', self._stop)
