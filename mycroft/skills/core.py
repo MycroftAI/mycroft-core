@@ -735,9 +735,9 @@ class MycroftSkill:
         resp = self.get_response(dialog=prompt, data=data)
 
         if self.voc_match(resp, 'yes'):
-            return 'yes'
+            return 'نعم'
         elif self.voc_match(resp, 'no'):
-            return 'no'
+            return 'لا'
         else:
             return resp
 
