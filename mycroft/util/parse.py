@@ -23,6 +23,7 @@ from mycroft.util.lang.parse_pt import *
 from mycroft.util.lang.parse_es import *
 from mycroft.util.lang.parse_it import *
 from mycroft.util.lang.parse_sv import *
+from mycroft.util.lang.parse_ar import *
 
 from mycroft.util.lang.parse_de import extractnumber_de
 from mycroft.util.lang.parse_de import extract_numbers_de
@@ -272,6 +273,8 @@ def extract_datetime(text, anchorDate=None, lang=None, default_time=None):
         return extract_datetime_de(text, anchorDate, default_time)
     elif lang_code == "da":
         return extract_datetime_da(text, anchorDate, default_time)
+    elif lang_code == "ar":
+        return extract_datetime_ar(text, anchorDate, default_time)
     # TODO: extract_datetime for other languages
     _log_unsupported_language(lang_code,
                               ['en', 'es', 'pt', 'it', 'fr', 'sv', 'de', 'da'])
