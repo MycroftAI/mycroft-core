@@ -235,7 +235,7 @@ class SkillGUI:
         self.skill = skill
         self.on_gui_changed_callback = None
         self.config_core = Configuration.get()
-        
+
     @property
     def remote_url(self):
         return self.config_core.get('remote-server')
