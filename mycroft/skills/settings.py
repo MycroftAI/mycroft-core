@@ -311,7 +311,8 @@ class SkillSettings(dict):
         Args:
             skill_settings (dict): skill
         """
-        self._save_uuid(skill_settings['uuid'])
+        if 'uuid' in skill_settings:
+            self._save_uuid(skill_settings['uuid'])
         if 'skillMetadata' in skill_settings:
             sections = skill_settings['skillMetadata']['sections']
             for section in sections:
@@ -624,7 +625,8 @@ class SkillSettings(dict):
     @property
     def _should_upload_from_change(self):
         changed = False
-        if hasattr(self, '_remote_settings'):
+        if (hasattr(self, '_remote_settings') and
+                'skillMetadata' in self._remote_settings):
             sections = self._remote_settings['skillMetadata']['sections']
             for i, section in enumerate(sections):
                 for j, field in enumerate(section['fields']):
