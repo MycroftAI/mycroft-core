@@ -217,11 +217,16 @@ class SkillSettings(dict):
         except RequestException:
             return
 
-        settings = self._request_other_settings(self.skill_gid)
+        settings = (self._request_my_settings(self.skill_gid) or
+                    self._request_other_settings(self.skill_gid))
         if settings:
             self.save_skill_settings(settings)
 
         # Always try to upload settingsmeta on startup
+        uuid = self._load_uuid()
+        if uuid is not None:
+            self._delete_metadata(uuid)
+
         self._upload_meta(settings_meta, self.skill_gid)
 
         self._complete_intialization = True
@@ -306,6 +311,7 @@ class SkillSettings(dict):
         Args:
             skill_settings (dict): skill
         """
+        self._save_uuid(skill_settings['uuid'])
         if 'skillMetadata' in skill_settings:
             sections = skill_settings['skillMetadata']['sections']
             for section in sections:
@@ -385,6 +391,10 @@ class SkillSettings(dict):
         meta = self._migrate_settings(settings_meta)
         meta['identifier'] = identifier
         response = self._send_settings_meta(meta)
+        if response and 'uuid' in response:
+            self._save_uuid(response['uuid'])
+            if 'not_owner' in self:
+                del self['not_owner']
 
     def hash(self, string):
         """ md5 hasher for consistency across cpu architectures """
@@ -395,12 +405,12 @@ class SkillSettings(dict):
         settings_meta = self._load_settings_meta()
         if settings_meta is None:
             return
-        skills_settings = (self._request_other_settings(self.skill_gid) or
-                           self._request_my_settings(self.skill_gid))
+        # Get settings
+        skills_settings = (self._request_my_settings(self.skill_gid) or
+                           self._request_other_settings(self.skill_gid))
 
         if skills_settings is not None:
             self.save_skill_settings(skills_settings)
-            self.store()
         else:
             # Settings meta doesn't exist on server push them
             settings_meta = self._load_settings_meta()
@@ -644,6 +654,9 @@ class SkillSettings(dict):
 
         if self._should_upload_from_change:
             settings_meta = self._load_settings_meta()
+            uuid = self._load_uuid()
+            if uuid is not None:
+                self._delete_metadata(uuid)
             self._upload_meta(settings_meta, self.skill_gid)
 
 
