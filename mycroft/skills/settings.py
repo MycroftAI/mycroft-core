@@ -395,7 +395,9 @@ class SkillSettings(dict):
         settings_meta = self._load_settings_meta()
         if settings_meta is None:
             return
-        skills_settings = self._request_other_settings(self.skill_gid)
+        skills_settings = (self._request_other_settings(self.skill_gid) or
+                           self._request_my_settings(self.skill_gid))
+
         if skills_settings is not None:
             self.save_skill_settings(skills_settings)
             self.store()
@@ -520,6 +522,25 @@ class SkillSettings(dict):
 
         meta['skillMetadata']['sections'] = sections
         return meta
+
+    def _request_my_settings(self, identifier):
+        """ Get skill settings for this device associated
+            with the identifier
+        Args:
+            identifier (str): a hashed_meta
+        Returns:
+            skill_settings (dict or None): returns a dict if matches
+        """
+        settings = self._request_settings()
+        if settings:
+            # this loads the settings into memory for use in self.store
+            for skill_settings in settings:
+                if skill_settings['identifier'] == identifier:
+                    skill_settings = \
+                        self._type_cast(skill_settings, to_platform='core')
+                    self._remote_settings = skill_settings
+                    return skill_settings
+        return None
 
     def _request_other_settings(self, identifier):
         """ Retrieve skill settings from other devices by identifier
