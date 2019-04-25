@@ -222,8 +222,10 @@ fi" > ~/.profile_mycroft
     if [[ ! -d /opt/mycroft/skills ]] ; then
         echo "This script will create that folder for you.  This requires sudo"
         echo "permission and might ask you for a password..."
+        setup_user=$USER
+        setup_group=$( id -gn $USER )
         $SUDO mkdir -p /opt/mycroft/skills
-        $SUDO chown -R $USER:$USER /opt/mycroft
+        $SUDO chown -R ${setup_user}:${setup_group} /opt/mycroft
         echo "Created!"
     fi
     if [[ ! -d skills ]] ; then

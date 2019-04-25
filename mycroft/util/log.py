@@ -71,21 +71,22 @@ class LOG:
             except Exception as e:
                 print('couldn\'t load {}: {}'.format(conf, str(e)))
 
-        cls.level = logging.getLevelName(config.get('log_level', 'DEBUG'))
+        cls.level = logging.getLevelName(config.get('log_level', 'INFO'))
         fmt = '%(asctime)s.%(msecs)03d - ' \
               '%(name)s - %(levelname)s - %(message)s'
         datefmt = '%H:%M:%S'
         formatter = logging.Formatter(fmt, datefmt)
         cls.handler = logging.StreamHandler(sys.stdout)
         cls.handler.setFormatter(formatter)
-        cls.create_logger('')  # Enables logging in external modules
+
+        # Enable logging in external modules
+        cls.create_logger('').setLevel(cls.level)
 
     @classmethod
     def create_logger(cls, name):
         logger = logging.getLogger(name)
         logger.propagate = False
         logger.addHandler(cls.handler)
-        logger.setLevel(cls.level)
         return logger
 
     def __init__(self, name):

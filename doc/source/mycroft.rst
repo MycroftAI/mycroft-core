@@ -13,15 +13,36 @@ mycroft.util.time - time handling functions
     mycroft.util.time
     :members:
 
-MycroftSkill class
+Api class
+---------
+.. autoclass:: mycroft.Api
+    :members:
+
+
+mycroft.skills
+==============
+
+MycroftSkill class - base class for all Mycroft skills
 ------------------
 
 .. autoclass:: mycroft.MycroftSkill
     :members:
 
+CommonIoTSkill class
+-------------------
+.. autoclass:: mycroft.skills.common_iot_skill.CommonIoTSkill
+    :show-inheritance:
+    :members:
+
 CommonPlaySkill class
 -------------------
 .. autoclass:: mycroft.skills.common_play_skill.CommonPlaySkill
+    :show-inheritance:
+    :members:
+
+CommonQuerySkill class
+-------------------
+.. autoclass:: mycroft.skills.common_query_skill.CommonQuerySkill
     :show-inheritance:
     :members:
 
@@ -35,11 +56,6 @@ AudioService class
 -------------------
 .. autoclass:: mycroft.skills.audioservice.AudioService
     :show-inheritance:
-    :members:
-
-Api class
----------
-.. autoclass:: mycroft.Api
     :members:
 
 intent_handler decorator

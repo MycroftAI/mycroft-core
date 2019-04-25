@@ -510,11 +510,11 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         # If enabled, play a wave file with a short sound to audibly
         # indicate recording has begun.
         if self.config.get('confirm_listening'):
-            file = resolve_resource_file(
+            audio_file = resolve_resource_file(
                 self.config.get('sounds').get('start_listening'))
-            if file:
+            if audio_file:
                 source.mute()
-                play_wav(file).wait()
+                play_wav(audio_file).wait()
                 source.unmute()
 
         frame_data = self._record_phrase(source, sec_per_buffer)
