@@ -234,11 +234,12 @@ class SkillGUI:
         self.page = None    # the active GUI page (e.g. QML template) to show
         self.skill = skill
         self.on_gui_changed_callback = None
-        self.config_core = Configuration.get()
+        self.config = Configuration.get()
 
     @property
     def remote_url(self):
-        return self.config_core.get('remote-server')
+        """ Returns configuration value for url of remote-server. """
+        return self.config.get('remote-server')
 
     def build_message_type(self, event):
         """ Builds a message matching the output from the enclosure. """
@@ -351,7 +352,7 @@ class SkillGUI:
         for name in page_names:
             page = self.skill.find_resource(name, 'ui')
             if page:
-                if self.config_core.get('remote') is True:
+                if self.config.get('remote') is True:
                     page_urls.append(self.remote_url + "/" + page)
                 else:
                     page_urls.append("file://" + page)
