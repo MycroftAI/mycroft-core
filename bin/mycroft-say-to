@@ -21,5 +21,8 @@ DIR="$( pwd )"
 # Enter the Mycroft venv
 source "$DIR/../venv-activate.sh" -q
 
+# Sets var 1 to stdin if no args were given
+set -- "${@:-$(</dev/stdin)}"
+
 # Send a message to be spoken
-output=$(python -m mycroft.messagebus.send "recognizer_loop:utterance"  "{\"utterances\": [\"$@\"], \"lang\": \"en-us\"}")
+output=$(python -m mycroft.messagebus.send "recognizer_loop:utterance"  "{\"utterances\": [\"$1\"], \"lang\": \"en-us\"}")
