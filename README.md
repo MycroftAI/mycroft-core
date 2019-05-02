@@ -140,7 +140,7 @@ Join the [Mycroft Forum](https://community.mycroft.ai/) for questions and answer
 # Links
 * [Creating a Skill](https://docs.mycroft.ai/skill.creation)
 * [Documentation](https://docs.mycroft.ai)
-* [Skill Writer API Docs](https://readthedocs.org/projects/mycroft-core/)
+* [Skill Writer API Docs](https://mycroft-core.readthedocs.io/en/master/)
 * [Release Notes](https://github.com/MycroftAI/mycroft-core/releases)
 * [Mycroft Chat](https://chat.mycroft.ai)
 * [Mycroft Forum](https://community.mycroft.ai)
