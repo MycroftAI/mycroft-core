@@ -572,12 +572,13 @@ class GUIWebsocketHandler(WebSocketHandler):
         LOG.debug("Received: {}".format(message))
         msg = json.loads(message)
         if (msg.get('type') == "mycroft.events.triggered" and
-                msg.get('event_name') == 'page_gained_focus'):
+                (msg.get('event_name') == 'page_gained_focus' or
+                    msg.get('event_name') == 'system.gui.user.interaction')):
             # System event, a page was changed
             msg_type = 'gui.page_interaction'
             msg_data = {
                 'namespace': msg['namespace'],
-                'page_number': msg['parameters']['number']
+                'page_number': msg['parameters'].get('number')
             }
         elif msg.get('type') == "mycroft.events.triggered":
             # A normal event was triggered
