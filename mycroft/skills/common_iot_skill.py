@@ -129,6 +129,12 @@ class IoTRequestVersion(Enum):
     know anything about). To avoid any possibility of
     false negatives, however, skills should always try to
     support the latest version.
+
+    Version to supported fields (provided only for reference - always use the
+    latest version available, and account for all fields):
+
+    V1 = {'action', 'thing', 'attribute', 'entity', 'scene'}
+    V2 = V1 | {'value'}
     """
     def __lt__(self, other):
         return self.name < other.name
@@ -208,7 +214,7 @@ class IoTRequest():
             attribute=self.attribute,
             entity='"{}"'.format(self.entity) if self.entity else None,
             scene='"{}"'.format(self.scene) if self.scene else None,
-            value='"{}"'.format(self.value) if self.value else None
+            value='"{}"'.format(self.value) if self.value is not None else None
         )
 
     @property
@@ -362,6 +368,11 @@ class CommonIoTSkill(MycroftSkill, ABC):
 
         By default, this returns IoTRequestVersion.V1. Subclasses
         should override this to indicate higher levels of support.
+
+        The documentation for IoTRequestVersion provides a reference
+        indicating which fields are included in each version. Note
+        that you should always take the latest, and account for all
+        request fields.
         """
         return IoTRequestVersion.V1
 
