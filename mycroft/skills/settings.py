@@ -113,7 +113,8 @@ class SkillSettings(dict):
         """ Simple object unique hash. """
         return hash(str(id(self)) + self.name)
 
-    def _get_meta_path(self, base_directory):
+    @staticmethod
+    def _get_meta_path(base_directory):
         json_path = join(base_directory, 'settingsmeta.json')
         yaml_path = join(base_directory, 'settingsmeta.yaml')
         if isfile(json_path):

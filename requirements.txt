@@ -21,6 +21,7 @@ python-vlc==1.1.2
 pulsectl==17.7.4
 google-api-python-client==1.6.4
 fasteners==0.14.1
+PyYAML==3.13
 
 msm==0.7.3
 msk==0.3.12
