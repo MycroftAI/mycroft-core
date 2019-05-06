@@ -206,7 +206,8 @@ class Enclosure:
                    "data": [{"url": p} for p in pages]
                    })
         # Insert the pages into local reprensentation as well.
-        self.loaded[0].pages += pages
+        updated = Namespace(self.loaded[0].name, self.loaded[0].pages + pages)
+        self.loaded[0] = updated
 
     def __remove_page(self, namespace, pos):
         """ Delete page.
