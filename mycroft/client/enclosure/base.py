@@ -29,7 +29,7 @@ from mycroft.messagebus.message import Message
 
 Namespace = namedtuple('Namespace', ['name', 'pages'])
 write_lock = Lock()
-
+namespace_lock = Lock()
 
 RESERVED_KEYS = ['__from', '__idle']
 
@@ -163,7 +163,8 @@ class Enclosure:
         """ Bus handler for removing pages. """
         page, namespace, _ = _get_page_data(message)
         try:
-            self.remove_pages(namespace, page)
+            with namespace_lock:
+                self.remove_pages(namespace, page)
         except Exception as e:
             LOG.exception(repr(e))
 
@@ -171,7 +172,8 @@ class Enclosure:
         """ Bus handler for removing namespace. """
         try:
             namespace = message.data['__from']
-            self.remove_namespace(namespace)
+            with namespace_lock:
+                self.remove_namespace(namespace)
         except Exception as e:
             LOG.exception(repr(e))
 
@@ -179,7 +181,8 @@ class Enclosure:
         try:
             page, namespace, index = _get_page_data(message)
             # Pass the request to the GUI(s) to pull up a page template
-            self.show(namespace, page, index)
+            with namespace_lock:
+                self.show(namespace, page, index)
         except Exception as e:
             LOG.exception(repr(e))
 
