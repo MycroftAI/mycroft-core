@@ -63,11 +63,16 @@ import hashlib
 import os
 from threading import Timer
 from os.path import isfile, join, expanduser
-from requests.exceptions import RequestException
+from requests.exceptions import RequestException, HTTPError
 
 from mycroft.api import DeviceApi, is_paired
 from mycroft.util.log import LOG
 from mycroft.configuration import ConfigurationManager
+
+
+class DelayRequest(Exception):
+    """ Indicate that the next request should be delayed. """
+    pass
 
 
 class SkillSettings(dict):
@@ -219,6 +224,12 @@ class SkillSettings(dict):
         try:
             uuid = self._put_metadata(settings_meta)
             return uuid
+        except HTTPError as e:
+            if e.response.status_code in [422, 500, 501]:
+                raise DelayRequest
+            else:
+                LOG.error(e)
+                return None
         except Exception as e:
             LOG.error(e)
             return None
@@ -385,6 +396,7 @@ class SkillSettings(dict):
             request settings and store it if it changes
             TODO: implement as websocket
         """
+        delay = 1
         original = hash(str(self))
         try:
             if not is_paired():
@@ -393,7 +405,9 @@ class SkillSettings(dict):
                 self.initialize_remote_settings()
             else:
                 self.update_remote()
-
+        except DelayRequest:
+            LOG.info('{}: Delaying next settings fetch'.format(self.name))
+            delay = 5
         except Exception as e:
             LOG.exception('Failed to fetch skill settings: {}'.format(repr(e)))
         finally:
@@ -409,7 +423,7 @@ class SkillSettings(dict):
             return
 
         # continues to poll settings every minute
-        self._poll_timer = Timer(1 * 60, self._poll_skill_settings)
+        self._poll_timer = Timer(delay * 60, self._poll_skill_settings)
         self._poll_timer.daemon = True
         self._poll_timer.start()
 
