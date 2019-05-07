@@ -20,6 +20,7 @@
 
 from abc import ABC, abstractmethod
 from enum import Enum, unique
+from functools import total_ordering
 from itertools import count
 
 from mycroft import MycroftSkill
@@ -107,6 +108,41 @@ class Action(Enum):
     TRIGGER = auto()
 
 
+@total_ordering
+class IoTRequestVersion(Enum):
+    """
+    Enum indicating support IoTRequest fields
+
+    This class allows us to extend the request without
+    requiring that all existing skills are updated to
+    handle the new fields. Skills will simply not respond
+    to requests that contain fields they are not aware of.
+
+    CommonIoTSkill subclasses should override
+    CommonIoTSkill.supported_request_version to indicate
+    their level of support. For backward compatibility,
+    the default is V1.
+
+    Note that this is an attempt to avoid false positive
+    matches (i.e. prevent skills from reporting that they
+    can handle a request that contains fields they don't
+    know anything about). To avoid any possibility of
+    false negatives, however, skills should always try to
+    support the latest version.
+
+    Version to supported fields (provided only for reference - always use the
+    latest version available, and account for all fields):
+
+    V1 = {'action', 'thing', 'attribute', 'entity', 'scene'}
+    V2 = V1 | {'value'}
+    """
+    def __lt__(self, other):
+        return self.name < other.name
+
+    V1 = {'action', 'thing', 'attribute', 'entity', 'scene'}
+    V2 = V1 | {'value'}
+
+
 class IoTRequest():
     """
     This class represents a request from a user to control
@@ -119,6 +155,7 @@ class IoTRequest():
     thing (see the Thing enum above)
     entity
     scene
+    value
 
     The 'action' is mandatory, and will always be not None. The
     other fields may be None.
@@ -134,6 +171,10 @@ class IoTRequest():
     trigger multiple skills, so common scene names may trigger many
     skills, for a coherent experience.
 
+    The 'value' property will be a number value. This is intended to
+    be used for requests such as "set the heat to 70 degrees" and
+    "set the lights to 50% brightness."
+
     Skills that extend CommonIotSkill will be expected to register
     their own entities. See the documentation in CommonIotSkill for
     more details.
@@ -144,7 +185,8 @@ class IoTRequest():
                  thing: Thing = None,
                  attribute: Attribute = None,
                  entity: str = None,
-                 scene: str = None):
+                 scene: str = None,
+                 value: int = None):
 
         if not thing and not entity and not scene:
             raise Exception("At least one of thing,"
@@ -155,6 +197,7 @@ class IoTRequest():
         self.attribute = attribute
         self.entity = entity
         self.scene = scene
+        self.value = value
 
     def __repr__(self):
         template = ('IoTRequest('
@@ -162,15 +205,23 @@ class IoTRequest():
                     ' thing={thing},'
                     ' attribute={attribute},'
                     ' entity={entity},'
-                    ' scene={scene}'
+                    ' scene={scene},'
+                    ' value={value}'
                     ')')
         return template.format(
             action=self.action,
             thing=self.thing,
             attribute=self.attribute,
             entity='"{}"'.format(self.entity) if self.entity else None,
-            scene='"{}"'.format(self.scene) if self.scene else None
+            scene='"{}"'.format(self.scene) if self.scene else None,
+            value='"{}"'.format(self.value) if self.value is not None else None
         )
+
+    @property
+    def version(self):
+        if self.value is not None:
+            return IoTRequestVersion.V2
+        return IoTRequestVersion.V1
 
     def to_dict(self):
         return {
@@ -178,7 +229,8 @@ class IoTRequest():
             'thing': self.thing.name if self.thing else None,
             'attribute': self.attribute.name if self.attribute else None,
             'entity': self.entity,
-            'scene': self.scene
+            'scene': self.scene,
+            'value': self.value
         }
 
     @classmethod
@@ -246,6 +298,10 @@ class CommonIoTSkill(MycroftSkill, ABC):
         """
         data = message.data
         request = IoTRequest.from_dict(data[IoTRequest.__name__])
+
+        if request.version > self.supported_request_version:
+            return
+
         can_handle, callback_data = self.can_handle(request)
         if can_handle:
             data.update({"skill_id": self.skill_id,
@@ -304,6 +360,21 @@ class CommonIoTSkill(MycroftSkill, ABC):
         """
         self._register_words(self.get_entities(), ENTITY)
         self._register_words(self.get_scenes(), SCENE)
+
+    @property
+    def supported_request_version(self) -> IoTRequestVersion:
+        """
+        Get the supported IoTRequestVersion
+
+        By default, this returns IoTRequestVersion.V1. Subclasses
+        should override this to indicate higher levels of support.
+
+        The documentation for IoTRequestVersion provides a reference
+        indicating which fields are included in each version. Note
+        that you should always take the latest, and account for all
+        request fields.
+        """
+        return IoTRequestVersion.V1
 
     def get_entities(self) -> [str]:
         """
