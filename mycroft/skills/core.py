@@ -313,7 +313,10 @@ class SkillGUI:
 
         Args:
             name (str): Name of page (e.g "mypage.qml") to display
-            override_idle: If set will override the idle screen
+            override_idle (boolean, int):
+                True: Takes over the resting page indefinitely
+                (int): Delays resting page for the specified number of
+                       seconds.
         """
         self.show_pages([name], 0, override_idle)
 
@@ -326,7 +329,10 @@ class SkillGUI:
                                ["Weather.qml", "Forecast.qml", "Details.qml"]
             index (int): Page number (0-based) to show initially.  For the
                          above list a value of 1 would start on "Forecast.qml"
-            override_idle: If set will override the idle screen
+            override_idle (boolean, int):
+                True: Takes over the resting page indefinitely
+                (int): Delays resting page for the specified number of
+                       seconds.
         """
         if not isinstance(page_names, list):
             raise ValueError('page_names must be a list')
