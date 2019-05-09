@@ -18,7 +18,7 @@ cd -P "$( dirname "$SOURCE" )"
 DIR="$( pwd )"
 
 # Sets var 1 to stdin if no args were given
-set -- ${@:-$(</dev/stdin)}
+set -- "${1:-$(</dev/stdin)}" "${@:2}"
 
 # Enter the Mycroft venv
 source "$DIR/../venv-activate.sh" -q
