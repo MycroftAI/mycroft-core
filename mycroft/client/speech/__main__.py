@@ -60,7 +60,8 @@ def handle_wakeword(event):
 
 def handle_utterance(event):
     LOG.info("Utterance: " + str(event['utterances']))
-    context = {'client_name': 'mycroft_listener'}
+    context = {'client_name': 'mycroft_listener',
+               'destination': 'audio'}
     if 'ident' in event:
         ident = event.pop('ident')
         context['ident'] = ident
