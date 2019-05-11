@@ -25,4 +25,5 @@ source "$DIR/../venv-activate.sh" -q
 set -- "${1:-$(</dev/stdin)}" "${@:2}"
 
 # Send a message to be spoken
-output=$(python -m mycroft.messagebus.send "recognizer_loop:utterance"  "{\"utterances\": [\"$1\"], \"lang\": \"en-us\"}")
+data="$@"
+output=$(python -m mycroft.messagebus.send "recognizer_loop:utterance"  "{\"utterances\": [\"$data\"], \"lang\": \"en-us\"}")

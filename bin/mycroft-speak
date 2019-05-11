@@ -19,9 +19,9 @@ DIR="$( pwd )"
 
 # Sets var 1 to stdin if no args were given
 set -- "${1:-$(</dev/stdin)}" "${@:2}"
-
 # Enter the Mycroft venv
 source "$DIR/../venv-activate.sh" -q
 
 # Send a message to be spoken
-output=$(python -m mycroft.messagebus.send "speak"  "{\"utterance\": \"$1\"}")
+data="$@"
+output=$(python -m mycroft.messagebus.send "speak"  "{\"utterance\": \"$data\"}")
