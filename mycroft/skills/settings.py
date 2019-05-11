@@ -94,7 +94,7 @@ class SkillSettings(dict):
         self.name = name
         # set file paths
         self._settings_path = join(directory, 'settings.json')
-        self._meta_path = self._get_meta_path(directory)
+        self._meta_path = _get_meta_path(directory)
         self.is_alive = True
         self.loaded_hash = hash(json.dumps(self, sort_keys=True))
         self._complete_intialization = False
@@ -112,16 +112,6 @@ class SkillSettings(dict):
     def __hash__(self):
         """ Simple object unique hash. """
         return hash(str(id(self)) + self.name)
-
-    @staticmethod
-    def _get_meta_path(base_directory):
-        json_path = join(base_directory, 'settingsmeta.json')
-        yaml_path = join(base_directory, 'settingsmeta.yaml')
-        if isfile(json_path):
-            return json_path
-        if isfile(yaml_path):
-            return yaml_path
-        return None
 
     def run_poll(self, _=None):
         """Immediately poll the web for new skill settings"""
@@ -625,3 +615,13 @@ class SkillSettings(dict):
             if uuid is not None:
                 self._delete_metadata(uuid)
             self._upload_meta(settings_meta, hashed_meta)
+
+
+def _get_meta_path(base_directory):
+    json_path = join(base_directory, 'settingsmeta.json')
+    yaml_path = join(base_directory, 'settingsmeta.yaml')
+    if isfile(json_path):
+        return json_path
+    if isfile(yaml_path):
+        return yaml_path
+    return None
