@@ -81,13 +81,34 @@ class Thing(Enum):
 class Attribute(Enum):
     """
     This class represents 'Attributes' of 'Things'.
-
-    This may also grow to encompass states, e.g.
-    'locked' or 'unlocked'.
     """
     BRIGHTNESS = auto()
     COLOR = auto()
     COLOR_TEMPERATURE = auto()
+
+
+@unique
+class State(Enum):
+    """
+    This class represents 'States' of 'Things'.
+
+    These are generally intended to handle binary
+    queries, such as "is the door locked?" or
+    "is the heat on?" where 'locked' and 'on'
+    are the state values. The special value
+    'STATE' can be used for more general queries
+    capable of providing more detailed in formation,
+    for example, "what is the state of the lamp?"
+    could produce state information that includes
+    brightness or color.
+    """
+    STATE = auto()
+    ON = auto()
+    OFF = auto()
+    LOCKED = auto()
+    UNLOCKED = auto()
+    OCCUPIED = auto()
+    UNOCCUPIED = auto()
 
 
 @unique
@@ -106,6 +127,7 @@ class Action(Enum):
     INCREASE = auto()
     DECREASE = auto()
     TRIGGER = auto()
+    QUERY = auto()
 
 
 @total_ordering
@@ -135,12 +157,14 @@ class IoTRequestVersion(Enum):
 
     V1 = {'action', 'thing', 'attribute', 'entity', 'scene'}
     V2 = V1 | {'value'}
+    V3 = V2 | {'state'}
     """
     def __lt__(self, other):
         return self.name < other.name
 
     V1 = {'action', 'thing', 'attribute', 'entity', 'scene'}
     V2 = V1 | {'value'}
+    V3 = V2 | {'state'}
 
 
 class IoTRequest():
@@ -151,11 +175,13 @@ class IoTRequest():
     a user's request. The information is supplied as properties
     on the request. At present, those properties are:
 
-    action (see the Action enum above)
-    thing (see the Thing enum above)
+    action (see the Action enum)
+    thing (see the Thing enum)
+    state (see the State enum)
+    attribute (see the Attribute enum)
+    value
     entity
     scene
-    value
 
     The 'action' is mandatory, and will always be not None. The
     other fields may be None.
@@ -186,7 +212,8 @@ class IoTRequest():
                  attribute: Attribute = None,
                  entity: str = None,
                  scene: str = None,
-                 value: int = None):
+                 value: int = None,
+                 state: State = None):
 
         if not thing and not entity and not scene:
             raise Exception("At least one of thing,"
@@ -198,6 +225,7 @@ class IoTRequest():
         self.entity = entity
         self.scene = scene
         self.value = value
+        self.state = state
 
     def __repr__(self):
         template = ('IoTRequest('
@@ -206,7 +234,8 @@ class IoTRequest():
                     ' attribute={attribute},'
                     ' entity={entity},'
                     ' scene={scene},'
-                    ' value={value}'
+                    ' value={value},'
+                    ' state={state}'
                     ')')
         return template.format(
             action=self.action,
@@ -214,11 +243,14 @@ class IoTRequest():
             attribute=self.attribute,
             entity='"{}"'.format(self.entity) if self.entity else None,
             scene='"{}"'.format(self.scene) if self.scene else None,
-            value='"{}"'.format(self.value) if self.value is not None else None
+            value='"{}"'.format(self.value) if self.value is not None else None,
+            state=self.state
         )
 
     @property
     def version(self):
+        if self.state is not None:
+            return IoTRequestVersion.V3
         if self.value is not None:
             return IoTRequestVersion.V2
         return IoTRequestVersion.V1
@@ -230,7 +262,8 @@ class IoTRequest():
             'attribute': self.attribute.name if self.attribute else None,
             'entity': self.entity,
             'scene': self.scene,
-            'value': self.value
+            'value': self.value,
+            'state': self.state.name if self.state else None
         }
 
     @classmethod
@@ -241,6 +274,8 @@ class IoTRequest():
             data['thing'] = Thing[data['thing']]
         if data.get('attribute') not in (None, ''):
             data['attribute'] = Attribute[data['attribute']]
+        if data.get('state') not in (None, ''):
+            data['state'] = State[data['state']]
 
         return cls(**data)
 
