@@ -65,7 +65,7 @@ def generate_cache_text(cache_audio_dir, cache_text_file):
             LOG.debug("Completed generating cache")
         else:
             LOG.debug("Cache file 'cache_text.txt' already exists")
-    except:
+    except Exception:
         LOG.error("Could not open text file to write cache")
 
 
@@ -86,7 +86,7 @@ def write_cache_text(cache_path, f):
                             # ex : <<< LOADING <<<
                             # should not be considered
                             f.write(each.strip() + '\n')
-        except:
+        except Exception:
             # LOG.debug("Dialog Skipped")
             pass
 
@@ -122,7 +122,7 @@ def download_audio(cache_audio_dir, cache_text_file):
                         vis = results['visimes']
                         if audio:
                             with open(wav_file, 'wb') as audiofile:
-                                    audiofile.write(audio)
+                                audiofile.write(audio)
                         if vis:
                             pho_file = os.path.join(cache_audio_dir,
                                                     key + ".pho")
@@ -133,7 +133,6 @@ def download_audio(cache_audio_dir, cache_text_file):
                         # Skip this dialog and continue
                         LOG.error("Unable to get pre-loaded cache "
                                   "due to ({})".format(repr(e)))
-                        pass
 
             LOG.debug("Completed getting cache for {}".format(TTS))
 
