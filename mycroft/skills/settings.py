@@ -20,10 +20,11 @@
     settings.
 
     The GUI for the setting is described by a file in the skill's root
-    directory called settingsmeta.json.  The "name" is associates the
-    user-interface field with the setting name in the dictionary.  For
-    example, you might have a setting['username'].  In the settingsmeta
-    you can describe the interface you want to edit that value with:
+    directory called settingsmeta.json (or settingsmeta.yaml, if you
+    prefer working with yaml). The "name" associates the user-interface
+    field with the setting name in the dictionary. For example, you
+    might have a setting['username'].  In the settingsmeta you can
+    describe the interface you want to edit that value with:
         ...
         "fields": [
                {
@@ -61,6 +62,7 @@
 import json
 import hashlib
 import os
+import yaml
 from threading import Timer
 from os.path import isfile, join, expanduser
 from requests.exceptions import RequestException, HTTPError
@@ -97,7 +99,7 @@ class SkillSettings(dict):
         self.name = name
         # set file paths
         self._settings_path = join(directory, 'settings.json')
-        self._meta_path = join(directory, 'settingsmeta.json')
+        self._meta_path = _get_meta_path(directory)
         self.is_alive = True
         self.loaded_hash = hash(json.dumps(self, sort_keys=True))
         self._complete_intialization = False
@@ -109,7 +111,7 @@ class SkillSettings(dict):
         self._is_alive = True
 
         # if settingsmeta exist
-        if isfile(self._meta_path):
+        if self._meta_path:
             self._poll_skill_settings()
 
     def __hash__(self):
@@ -138,7 +140,7 @@ class SkillSettings(dict):
     # TODO: break this up into two classes
     def initialize_remote_settings(self):
         """ initializes the remote settings to the server """
-        # if settingsmeta.json exists (and is valid)
+        # if the settingsmeta file exists (and is valid)
         # this block of code is a control flow for
         # different scenarios that may arises with settingsmeta
         self.load_skill_settings_from_file()  # loads existing settings.json
@@ -201,20 +203,26 @@ class SkillSettings(dict):
 
     def _load_settings_meta(self):
         """ Loads settings metadata from skills path. """
-        if isfile(self._meta_path):
-            try:
-                with open(self._meta_path, encoding='utf-8') as f:
+        if not self._meta_path:
+            return None
+
+        _, ext = os.path.splitext(self._meta_path)
+        json_file = True if ext.lower() == ".json" else False
+
+        try:
+            with open(self._meta_path, encoding='utf-8') as f:
+                if json_file:
                     data = json.load(f)
-                return data
-            except Exception as e:
-                LOG.error("Failed to load setting file: "+self._meta_path)
-                LOG.error(repr(e))
-                return None
-        else:
+                else:
+                    data = yaml.load(f)
+            return data
+        except Exception as e:
+            LOG.error("Failed to load setting file: " + self._meta_path)
+            LOG.error(repr(e))
             return None
 
     def _send_settings_meta(self, settings_meta):
-        """ Send settingsmeta.json to the server.
+        """ Send settingsmeta to the server.
 
         Args:
             settings_meta (dict): dictionary of the current settings meta
@@ -293,7 +301,7 @@ class SkillSettings(dict):
         return isfile(uuid_file)
 
     def _migrate_settings(self, settings_meta):
-        """ sync settings.json and settingsmeta.json in memory """
+        """ sync settings.json and settingsmeta in memory """
         meta = settings_meta.copy()
         self.load_skill_settings_from_file()
         sections = meta['skillMetadata']['sections']
@@ -310,7 +318,7 @@ class SkillSettings(dict):
         """ uploads the new meta data to settings with settings migration
 
         Args:
-            settings_meta (dict): settingsmeta.json
+            settings_meta (dict): from settingsmeta.json or settingsmeta.yaml
             hashed_meta (str): {skill-folder}-settinsmeta.json
         """
         meta = self._migrate_settings(settings_meta)
@@ -621,3 +629,13 @@ class SkillSettings(dict):
             if uuid is not None:
                 self._delete_metadata(uuid)
             self._upload_meta(settings_meta, hashed_meta)
+
+
+def _get_meta_path(base_directory):
+    json_path = join(base_directory, 'settingsmeta.json')
+    yaml_path = join(base_directory, 'settingsmeta.yaml')
+    if isfile(json_path):
+        return json_path
+    if isfile(yaml_path):
+        return yaml_path
+    return None
