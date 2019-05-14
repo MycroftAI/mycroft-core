@@ -235,6 +235,7 @@ class SkillGUI:
         self.skill = skill
         self.on_gui_changed_callback = None
         self.config = Configuration.get()
+        self._dir = dirname(abspath(sys.modules[self.__module__].__file__))
 
     @property
     def remote_url(self):
@@ -350,7 +351,10 @@ class SkillGUI:
         # Convert pages to full reference
         page_urls = []
         for name in page_names:
-            page = self.skill.find_resource(name, 'ui')
+            if name.startswith("SYSTEM"):
+                page = (self._dir + "/ui/{}").format(name)
+            else:
+                page = self.skill.find_resource(name, 'ui')
             if page:
                 if self.config.get('remote') is True:
                     page_urls.append(self.remote_url + "/" + page)
@@ -406,7 +410,7 @@ class SkillGUI:
         self.clear()
         self["text"] = text
         self["title"] = title
-        self.show_page("SYSTEM_TEXTFRAME")
+        self.show_page("SYSTEM_TextFrame.qml")
 
     def show_image(self, url, caption=None, title=None):
         """ Display a GUI page for viewing an image
@@ -420,7 +424,7 @@ class SkillGUI:
         self["image"] = url
         self["title"] = title
         self["caption"] = caption
-        self.show_page("SYSTEM_IMAGEFRAME")
+        self.show_page("SYSTEM_ImageFrame.qml")
 
     def show_html(self, html):
         """ Display an HTML page in the GUI
