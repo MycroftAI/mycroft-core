@@ -418,7 +418,7 @@ class SkillGUI:
             url (str): Pointer to the image
             caption (str): A caption to show under the image
             title (str): A title to display above the image content
-            fill (str): Fill type supports 'PreserveAspectFit', 
+            fill (str): Fill type supports 'PreserveAspectFit',
             'PreserveAspectCrop', 'Stretch'
         """
         self.clear()
