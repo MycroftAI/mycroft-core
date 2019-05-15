@@ -411,7 +411,7 @@ class SkillGUI:
         self["title"] = title
         self.show_page("SYSTEM_TextFrame.qml")
 
-    def show_image(self, url, caption=None, title=None):
+    def show_image(self, url, caption=None, title=None, fill=None):
         """ Display a GUI page for viewing an image
 
         Arguments:
