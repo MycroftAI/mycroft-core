@@ -20,7 +20,7 @@ install:
  - pip install -r test-requirements.txt
 # command to run tests
 script:
- - pep8 mycroft test
+ - pycodestyle mycroft test
  - ./start-mycroft.sh unittest
 env:
  - IS_TRAVIS=true
