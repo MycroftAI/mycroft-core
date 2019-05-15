@@ -37,7 +37,7 @@ class MopidyService(RemoteAudioBackend):
             url = self.config.get('url', url)
         try:
             self.mopidy = Mopidy(url)
-        except:
+        except Exception:
             if self.connection_attempts < 1:
                 LOG.debug('Could not connect to server, will retry quietly')
             self.connection_attempts += 1

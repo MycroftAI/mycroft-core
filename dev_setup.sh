@@ -369,8 +369,8 @@ source "${VIRTUALENV_ROOT}/bin/activate"
 cd "${TOP}"
 
 # Install pep8 pre-commit hook
-if [ -z ${INSTALL_PRECOMMIT_HOOK} ] ; then
-    HOOK_FILE="./.git/hooks/pre-commit"
+HOOK_FILE="./.git/hooks/pre-commit"
+if [ ! -z ${INSTALL_PRECOMMIT_HOOK+x} ] || grep -q "MYCROFT DEV SETUP" ${HOOK_FILE}; then
     if [ ! -f ${HOOK_FILE} ] || grep -q "MYCROFT DEV SETUP" ${HOOK_FILE} ; then
         echo "Installing PEP8 check as precommit-hook"
         echo "#! $( which python )" > ${HOOK_FILE}

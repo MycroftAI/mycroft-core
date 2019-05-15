@@ -44,7 +44,7 @@ class TestTTS(unittest.TestCase):
                            "a lower pitch preferable?"
         sentence_bad_ssml = "<foo_invalid>" + sentence + \
                             "</foo_invalid end=whatever>"
-        sentence_extra_ssml = "<whispered>whisper tts<\whispered>"
+        sentence_extra_ssml = "<whispered>whisper tts<\\whispered>"
 
         # test valid ssml
         tts = TestTTS("en-US", {}, TestTTSValidator(None),

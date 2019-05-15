@@ -171,7 +171,7 @@ class Api:
     def get_data(self, response):
         try:
             return response.json()
-        except:
+        except Exception:
             return response.text
 
     def build_headers(self, params):
@@ -331,7 +331,7 @@ class DeviceApi(Api):
         """
         try:
             return self.get_subscription().get('@type') != 'free'
-        except:
+        except Exception:
             # If can't retrieve, assume not paired and not a subscriber yet
             return False
 
