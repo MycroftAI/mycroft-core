@@ -10,7 +10,7 @@ Mycroft.Delegate {
     skillBackgroundColorOverlay: "#000000"
     property bool hasTitle: sessionData.title.length > 0 ? true : false
     property bool hasCaption: sessionData.caption.length > 0 ? true : false
-        
+            
     ColumnLayout {
         id: systemImageFrameLayout
         anchors.fill: parent
@@ -35,7 +35,22 @@ Mycroft.Delegate {
             Layout.fillWidth: true
             Layout.fillHeight: true
             source: sessionData.image
-            fillMode: Image.PreserveAspectCrop
+            property var fill: sessionData.fill
+            
+            onFillChanged: {
+                console.log(fill)
+                if(fill == "PreserveAspectCrop"){
+                    systemImageDisplay.fillMode = 2
+                } else if (fill == "PreserveAspectFit"){
+                    console.log("inFit")
+                    systemImageDisplay.fillMode = 1
+                } else if (fill == "Stretch"){
+                    systemImageDisplay.fillMode = 0
+                } else {
+                    systemImageDisplay.fillMode = 0
+                }
+            }
+            
             
             Rectangle {
                 id: systemImageCaptionBox
