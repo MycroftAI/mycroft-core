@@ -28,8 +28,8 @@ class MaryTTS(RemoteTTS):
         'OUTPUT_TYPE': 'AUDIO'
     }
 
-    def __init__(self, lang, config):
-        super(MaryTTS, self).__init__(lang, config, '/process',
+    def __init__(self, lang, config, url="http://localhost:59125"):
+        super(MaryTTS, self).__init__(lang, config, url, '/process',
                                       MaryTTSValidator(self))
 
     def build_request_params(self, sentence):
