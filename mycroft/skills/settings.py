@@ -100,10 +100,8 @@ def build_global_id(directory, config):
         msm = create_msm(config)
 
     s = SkillEntry.from_folder(directory, msm)
-    if s.meta_info != {}:
-        return s.meta_info['skill_gid'], s.meta_info['display_name']
-    else:  # No skills meta data available, local or unsubmitted skill
-        return "@{}|{}".format(DeviceApi().identity.uuid, s.name), None
+    # If modified prepend the device uuid
+    return s.skill_gid, s.meta_info.get('display_name')
 
 
 def display_name(name):
@@ -159,7 +157,7 @@ class SkillSettings(dict):
         # Add Information extracted from the skills-meta.json entry for the
         # skill.
         skill_gid, disp_name = build_global_id(self._directory, self.config)
-        self.skill_gid = skill_gid
+        self.__skill_gid = skill_gid
         self.display_name = disp_name
 
         # if settingsmeta exist
@@ -170,6 +168,15 @@ class SkillSettings(dict):
             self._blank_poll_timer = Timer(1, self._init_blank_meta)
             self._blank_poll_timer.daemon = True
             self._blank_poll_timer.start()
+
+    @property
+    def skill_gid(self):
+        """ Finalizes the skill gid to include device uuid if needed. """
+        if is_paired():
+            return self.__skill_gid.replace('@|', '@{}|'.format(
+                DeviceApi().identity.uuid))
+        else:
+            return self.__skill_gid
 
     def __hash__(self):
         """ Simple object unique hash. """
@@ -389,6 +396,7 @@ class SkillSettings(dict):
             settings_meta (dict): settingsmeta.json or settingsmeta.yaml
             identifier (str): identifier for skills meta data
         """
+        LOG.debug('Uploading settings meta for {}'.format(identifier))
         meta = self._migrate_settings(settings_meta)
         meta['identifier'] = identifier
         response = self._send_settings_meta(meta)
@@ -413,6 +421,7 @@ class SkillSettings(dict):
         if skills_settings is not None:
             self.save_skill_settings(skills_settings)
         else:
+            LOG.debug("No Settings on server for {}".format(self.skill_gid))
             # Settings meta doesn't exist on server push them
             settings_meta = self._load_settings_meta()
             self._upload_meta(settings_meta, self.skill_gid)
@@ -547,6 +556,7 @@ class SkillSettings(dict):
             # this loads the settings into memory for use in self.store
             for skill_settings in settings:
                 if skill_settings['identifier'] == identifier:
+                    LOG.debug("Fetched settings for {}".format(identifier))
                     skill_settings = \
                         self._type_cast(skill_settings, to_platform='core')
                     self._remote_settings = skill_settings

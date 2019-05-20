@@ -23,7 +23,7 @@ google-api-python-client==1.6.4
 fasteners==0.14.1
 PyYAML==3.13
 
-msm==0.7.4
+msm==0.7.5
 msk==0.3.12
 adapt-parser==0.3.2
 padatious==0.4.6
