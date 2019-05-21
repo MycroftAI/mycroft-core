@@ -229,11 +229,10 @@ class SkillSettings(dict):
         if settings:
             self.save_skill_settings(settings)
 
-        # Always try to upload settingsmeta on startup
-        uuid = self._load_uuid()
-        if uuid is not None:
-            self._delete_metadata(uuid)
+        # TODO if this skill_gid is not a modified version check if a modified
+        # version exists on the server and delete it
 
+        # Always try to upload settingsmeta on startup
         self._upload_meta(settings_meta, self.skill_gid)
 
         self._complete_intialization = True
@@ -318,8 +317,6 @@ class SkillSettings(dict):
         Args:
             skill_settings (dict): skill
         """
-        if 'uuid' in skill_settings:
-            self._save_uuid(skill_settings['uuid'])
         if 'skillMetadata' in skill_settings:
             sections = skill_settings['skillMetadata']['sections']
             for section in sections:
@@ -330,48 +327,6 @@ class SkillSettings(dict):
                         super(SkillSettings, self).__setitem__(field['name'],
                                                                field['value'])
             self.store()
-
-    def _load_uuid(self):
-        """ Loads uuid
-
-        Returns:
-            str: uuid of the previous settingsmeta
-        """
-        directory = self.config.get("skills")["directory"]
-        directory = join(directory, self.name)
-        directory = expanduser(directory)
-        uuid_file = join(directory, 'uuid')
-        uuid = None
-        if isfile(uuid_file):
-            with open(uuid_file, 'r') as f:
-                uuid = f.read()
-        return uuid
-
-    def _save_uuid(self, uuid):
-        """ Saves uuid.
-
-        Args:
-            uuid (str): uuid, unique id of new settingsmeta
-        """
-        directory = self.config.get("skills")["directory"]
-        directory = join(directory, self.name)
-        directory = expanduser(directory)
-        uuid_file = join(directory, 'uuid')
-        os.makedirs(directory, exist_ok=True)
-        with open(uuid_file, 'w') as f:
-            f.write(str(uuid))
-
-    def _uuid_exist(self):
-        """ Checks if there is an uuid file.
-
-        Returns:
-            bool: True if uuid file exist False otherwise
-        """
-        directory = self.config.get("skills")["directory"]
-        directory = join(directory, self.name)
-        directory = expanduser(directory)
-        uuid_file = join(directory, 'uuid')
-        return isfile(uuid_file)
 
     def _migrate_settings(self, settings_meta):
         """ sync settings.json and settingsmeta in memory """
@@ -400,10 +355,6 @@ class SkillSettings(dict):
         meta = self._migrate_settings(settings_meta)
         meta['identifier'] = identifier
         response = self._send_settings_meta(meta)
-        if response and 'uuid' in response:
-            self._save_uuid(response['uuid'])
-            if 'not_owner' in self:
-                del self['not_owner']
 
     def hash(self, string):
         """ md5 hasher for consistency across cpu architectures """
@@ -617,6 +568,7 @@ class SkillSettings(dict):
     def _delete_metadata(self, uuid):
         """ Delete the current skill metadata
 
+            TODO: UPDATE FOR NEW BACKEND
         Args:
             uuid (str): unique id of the skill
         """
@@ -666,9 +618,6 @@ class SkillSettings(dict):
 
         if self._should_upload_from_change:
             settings_meta = self._load_settings_meta()
-            uuid = self._load_uuid()
-            if uuid is not None:
-                self._delete_metadata(uuid)
             self._upload_meta(settings_meta, self.skill_gid)
 
 
