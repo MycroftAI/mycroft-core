@@ -371,6 +371,11 @@ class DeviceApi(Api):
         skills = {s['name']: s for s in data['skills']}
         to_send['skills'] = [skills[key] for key in skills]
 
+        # Finalize skill_gid with uuid if needed
+        for s in to_send['skills']:
+            s['skill_gid'] = s.get('skill_gid', '').replace(
+                '@|', '@{}|'.format(self.identity.uuid))
+
         self.request({
             "method": "PUT",
             "path": "/" + self.identity.uuid + "/skillJson",

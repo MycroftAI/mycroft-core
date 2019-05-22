@@ -1,5 +1,6 @@
 import unittest
 import mock
+import copy
 import tempfile
 from os.path import exists, join
 from shutil import rmtree
@@ -9,7 +10,6 @@ from mycroft.configuration import Configuration
 from mycroft.skills.skill_manager import SkillManager
 
 BASE_CONF = base_config()
-BASE_CONF['data_dir'] = tempfile.mkdtemp()
 BASE_CONF['skills'] = {
     'msm': {
         'directory': 'skills',
@@ -17,7 +17,7 @@ BASE_CONF['skills'] = {
         'repo': {
             'cache': '.skills-repo',
             'url': 'https://github.com/MycroftAI/mycroft-skills',
-            'branch': '18.08'
+            'branch': '19.02'
         }
     },
     'update_interval': 3600,
@@ -56,14 +56,16 @@ class MycroftSkillTest(unittest.TestCase):
         self.emitter.reset()
         self.temp_dir = tempfile.mkdtemp()
 
-    @mock.patch.dict(Configuration._Configuration__config, BASE_CONF)
     def test_create_manager(self):
         """ Verify that the skill manager and msm loads as expected and
             that the skills dir is created as needed.
         """
-        SkillManager(self.emitter)
-        self.assertTrue(exists(join(BASE_CONF['data_dir'], 'skills')))
+        conf = copy.deepcopy(BASE_CONF)
+        conf['data_dir'] = self.temp_dir
+        with mock.patch.dict(Configuration._Configuration__config,
+                             BASE_CONF):
+            SkillManager(self.emitter)
+            self.assertTrue(exists(join(BASE_CONF['data_dir'], 'skills')))
 
-    @classmethod
-    def tearDownClass(cls):
-        rmtree(BASE_CONF['data_dir'])
+    def tearDown(self):
+        rmtree(self.temp_dir)
