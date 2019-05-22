@@ -20,10 +20,11 @@
     settings.
 
     The GUI for the setting is described by a file in the skill's root
-    directory called settingsmeta.json.  The "name" is associates the
-    user-interface field with the setting name in the dictionary.  For
-    example, you might have a setting['username'].  In the settingsmeta
-    you can describe the interface you want to edit that value with:
+    directory called settingsmeta.json (or settingsmeta.yaml, if you
+    prefer working with yaml). The "name" associates the user-interface
+    field with the setting name in the dictionary. For example, you
+    might have a setting['username'].  In the settingsmeta you can
+    describe the interface you want to edit that value with:
         ...
         "fields": [
                {
@@ -61,13 +62,52 @@
 import json
 import hashlib
 import os
+import yaml
+import time
+import copy
+import re
 from threading import Timer
 from os.path import isfile, join, expanduser
 from requests.exceptions import RequestException, HTTPError
+from msm import SkillEntry
 
 from mycroft.api import DeviceApi, is_paired
 from mycroft.util.log import LOG
+from mycroft.util import camel_case_split
 from mycroft.configuration import ConfigurationManager
+
+from .msm_wrapper import create_msm
+
+
+msm = None
+msm_creation_time = 0
+
+
+def build_global_id(directory, config):
+    """ Create global id for the skill.
+
+    TODO: Handle dirty skill
+
+    Arguments:
+        directory:  skill directory
+        config:     config for the device to fetch msm setup
+     """
+    # Update the msm object if it's more than an hour old
+    global msm
+    global msm_creation_time
+    if msm is None or time.time() - msm_creation_time > 60 * 60:
+        msm_creation_time = time.time()
+        msm = create_msm(config)
+
+    s = SkillEntry.from_folder(directory, msm)
+    # If modified prepend the device uuid
+    return s.skill_gid, s.meta_info.get('display_name')
+
+
+def display_name(name):
+    """ Splits camelcase and removes leading/trailing Skill. """
+    name = re.sub(r'(^[Ss]kill|[Ss]kill$)', '', name)
+    return camel_case_split(name)
 
 
 class DelayRequest(Exception):
@@ -80,8 +120,10 @@ class SkillSettings(dict):
         also syncs to the backend for skill settings
 
     Args:
-        directory (str): Path to storage directory
-        name (str):      user readable name associated with the settings
+        directory (str):  Path to storage directory
+        name (str):       user readable name associated with the settings
+        no_upload (bool): True if the upload to mycroft servers should be
+                          disabled.
     """
 
     def __init__(self, directory, name):
@@ -97,7 +139,9 @@ class SkillSettings(dict):
         self.name = name
         # set file paths
         self._settings_path = join(directory, 'settings.json')
-        self._meta_path = join(directory, 'settingsmeta.json')
+        self._meta_path = _get_meta_path(directory)
+        self._directory = directory
+
         self.is_alive = True
         self.loaded_hash = hash(json.dumps(self, sort_keys=True))
         self._complete_intialization = False
@@ -106,11 +150,33 @@ class SkillSettings(dict):
         self._user_identity = None
         self.changed_callback = None
         self._poll_timer = None
+        self._blank_poll_timer = None
         self._is_alive = True
+        self._meta_upload = True  # Flag allowing upload of settings meta
+
+        # Add Information extracted from the skills-meta.json entry for the
+        # skill.
+        skill_gid, disp_name = build_global_id(self._directory, self.config)
+        self.__skill_gid = skill_gid
+        self.display_name = disp_name
 
         # if settingsmeta exist
-        if isfile(self._meta_path):
+        if self._meta_path:
             self._poll_skill_settings()
+        # if not disallowed by user upload an entry for all skills installed
+        elif self.config['skills']['upload_skill_manifest']:
+            self._blank_poll_timer = Timer(1, self._init_blank_meta)
+            self._blank_poll_timer.daemon = True
+            self._blank_poll_timer.start()
+
+    @property
+    def skill_gid(self):
+        """ Finalizes the skill gid to include device uuid if needed. """
+        if is_paired():
+            return self.__skill_gid.replace('@|', '@{}|'.format(
+                DeviceApi().identity.uuid))
+        else:
+            return self.__skill_gid
 
     def __hash__(self):
         """ Simple object unique hash. """
@@ -126,6 +192,8 @@ class SkillSettings(dict):
         self._is_alive = False
         if self._poll_timer:
             self._poll_timer.cancel()
+        if self._blank_poll_timer:
+            self._blank_poll_timer.cancel()
 
     def set_changed_callback(self, callback):
         """ Set callback to perform when server settings have changed.
@@ -138,7 +206,7 @@ class SkillSettings(dict):
     # TODO: break this up into two classes
     def initialize_remote_settings(self):
         """ initializes the remote settings to the server """
-        # if settingsmeta.json exists (and is valid)
+        # if the settingsmeta file exists (and is valid)
         # this block of code is a control flow for
         # different scenarios that may arises with settingsmeta
         self.load_skill_settings_from_file()  # loads existing settings.json
@@ -156,34 +224,17 @@ class SkillSettings(dict):
         except RequestException:
             return
 
-        hashed_meta = self._get_meta_hash(settings_meta)
-        skill_settings = self._request_other_settings(hashed_meta)
-        # if hash is new then there is a diff version of settingsmeta
-        if self._is_new_hash(hashed_meta):
-            # first look at all other devices on user account to see
-            # if the settings exist. if it does then sync with device
-            if skill_settings:
-                # not_owner flags that this settings is loaded from
-                # another device. If a skill settings doesn't have
-                # not_owner, then the skill is created from that device
-                self['not_owner'] = True
-                self.save_skill_settings(skill_settings)
-            else:  # upload skill settings if
-                uuid = self._load_uuid()
-                if uuid is not None:
-                    self._delete_metadata(uuid)
-                self._upload_meta(settings_meta, hashed_meta)
-        else:  # hash is not new
-            if skill_settings is not None:
-                self['not_owner'] = True
-                self.save_skill_settings(skill_settings)
-            else:
-                settings = self._request_my_settings(hashed_meta)
-                if settings is None:
-                    # metadata got deleted from Home, send up
-                    self._upload_meta(settings_meta, hashed_meta)
-                else:
-                    self.save_skill_settings(settings)
+        settings = (self._request_my_settings(self.skill_gid) or
+                    self._request_other_settings(self.skill_gid))
+        if settings:
+            self.save_skill_settings(settings)
+
+        # TODO if this skill_gid is not a modified version check if a modified
+        # version exists on the server and delete it
+
+        # Always try to upload settingsmeta on startup
+        self._upload_meta(settings_meta, self.skill_gid)
+
         self._complete_intialization = True
 
     @property
@@ -200,39 +251,65 @@ class SkillSettings(dict):
             return super(SkillSettings, self).__setitem__(key, value)
 
     def _load_settings_meta(self):
-        """ Loads settings metadata from skills path. """
-        if isfile(self._meta_path):
+        """ Load settings metadata from the skill folder.
+
+        If no settingsmeta exists a basic settingsmeta will be created
+        containing a basic identifier.
+
+        Returns:
+            (dict) settings meta
+        """
+        if self._meta_path and os.path.isfile(self._meta_path):
+            _, ext = os.path.splitext(self._meta_path)
+            json_file = True if ext.lower() == ".json" else False
+
             try:
                 with open(self._meta_path, encoding='utf-8') as f:
-                    data = json.load(f)
-                return data
+                    if json_file:
+                        data = json.load(f)
+                    else:
+                        data = yaml.load(f)
             except Exception as e:
-                LOG.error("Failed to load setting file: "+self._meta_path)
+                LOG.error("Failed to load setting file: " + self._meta_path)
                 LOG.error(repr(e))
-                return None
+                data = copy.copy(BLANK_META)
         else:
-            return None
+            data = {}
+
+        # Insert skill_gid and display_name
+        data['skill_gid'] = self.skill_gid
+        data['display_name'] = (self.display_name or data.get('name') or
+                                display_name(self.name))
+
+        # Backwards compatibility:
+        if 'name' not in data:
+            data['name'] = data['display_name']
+
+        return data
 
     def _send_settings_meta(self, settings_meta):
-        """ Send settingsmeta.json to the server.
+        """ Send settingsmeta to the server.
 
         Args:
             settings_meta (dict): dictionary of the current settings meta
         Returns:
             dict: uuid, a unique id for the setting meta data
         """
-        try:
-            uuid = self._put_metadata(settings_meta)
-            return uuid
-        except HTTPError as e:
-            if e.response.status_code in [422, 500, 501]:
-                raise DelayRequest
-            else:
+        if self._meta_upload:
+            try:
+                uuid = self._put_metadata(settings_meta)
+                return uuid
+            except HTTPError as e:
+                if e.response.status_code in [422, 500, 501]:
+                    self._meta_upload = False
+                    raise DelayRequest
+                else:
+                    LOG.error(e)
+                    return None
+
+            except Exception as e:
                 LOG.error(e)
                 return None
-        except Exception as e:
-            LOG.error(e)
-            return None
 
     def save_skill_settings(self, skill_settings):
         """ Takes skill object and save onto self
@@ -240,61 +317,22 @@ class SkillSettings(dict):
         Args:
             skill_settings (dict): skill
         """
-        if self._is_new_hash(skill_settings['identifier']):
-            self._save_uuid(skill_settings['uuid'])
-            self._save_hash(skill_settings['identifier'])
-        sections = skill_settings['skillMetadata']['sections']
-        for section in sections:
-            for field in section["fields"]:
-                if "name" in field and "value" in field:
-                    self[field['name']] = field['value']
-        self.store()
-
-    def _load_uuid(self):
-        """ Loads uuid
-
-        Returns:
-            str: uuid of the previous settingsmeta
-        """
-        directory = self.config.get("skills")["directory"]
-        directory = join(directory, self.name)
-        directory = expanduser(directory)
-        uuid_file = join(directory, 'uuid')
-        uuid = None
-        if isfile(uuid_file):
-            with open(uuid_file, 'r') as f:
-                uuid = f.read()
-        return uuid
-
-    def _save_uuid(self, uuid):
-        """ Saves uuid.
-
-        Args:
-            uuid (str): uuid, unique id of new settingsmeta
-        """
-        directory = self.config.get("skills")["directory"]
-        directory = join(directory, self.name)
-        directory = expanduser(directory)
-        uuid_file = join(directory, 'uuid')
-        os.makedirs(directory, exist_ok=True)
-        with open(uuid_file, 'w') as f:
-            f.write(str(uuid))
-
-    def _uuid_exist(self):
-        """ Checks if there is an uuid file.
-
-        Returns:
-            bool: True if uuid file exist False otherwise
-        """
-        directory = self.config.get("skills")["directory"]
-        directory = join(directory, self.name)
-        directory = expanduser(directory)
-        uuid_file = join(directory, 'uuid')
-        return isfile(uuid_file)
+        if 'skillMetadata' in skill_settings:
+            sections = skill_settings['skillMetadata']['sections']
+            for section in sections:
+                for field in section["fields"]:
+                    if "name" in field and "value" in field:
+                        # Bypass the change lock to allow server to update
+                        # during skill init
+                        super(SkillSettings, self).__setitem__(field['name'],
+                                                               field['value'])
+            self.store()
 
     def _migrate_settings(self, settings_meta):
-        """ sync settings.json and settingsmeta.json in memory """
+        """ sync settings.json and settingsmeta in memory """
         meta = settings_meta.copy()
+        if 'skillMetadata' not in meta:
+            return meta
         self.load_skill_settings_from_file()
         sections = meta['skillMetadata']['sections']
         for i, section in enumerate(sections):
@@ -306,90 +344,50 @@ class SkillSettings(dict):
         meta['skillMetadata']['sections'] = sections
         return meta
 
-    def _upload_meta(self, settings_meta, hashed_meta):
+    def _upload_meta(self, settings_meta, identifier):
         """ uploads the new meta data to settings with settings migration
 
         Args:
-            settings_meta (dict): settingsmeta.json
-            hashed_meta (str): {skill-folder}-settinsmeta.json
+            settings_meta (dict): settingsmeta.json or settingsmeta.yaml
+            identifier (str): identifier for skills meta data
         """
+        LOG.debug('Uploading settings meta for {}'.format(identifier))
         meta = self._migrate_settings(settings_meta)
-        meta['identifier'] = str(hashed_meta)
+        meta['identifier'] = identifier
         response = self._send_settings_meta(meta)
-        if response and 'uuid' in response:
-            self._save_uuid(response['uuid'])
-            if 'not_owner' in self:
-                del self['not_owner']
-        self._save_hash(hashed_meta)
 
     def hash(self, string):
         """ md5 hasher for consistency across cpu architectures """
         return hashlib.md5(bytes(string, 'utf-8')).hexdigest()
 
-    def _get_meta_hash(self, settings_meta):
-        """ Gets the hash of skill
-
-        Args:
-            settings_meta (dict): settingsmeta object
-        Returns:
-            _hash (str): hashed to identify skills
-        """
-        _hash = self.hash(json.dumps(settings_meta, sort_keys=True) +
-                          self._user_identity)
-        return "{}--{}".format(self.name, _hash)
-
-    def _save_hash(self, hashed_meta):
-        """ Saves hashed_meta to settings directory.
-
-        Args:
-            hashed_meta (str): hash of new settingsmeta
-        """
-        directory = self.config.get("skills")["directory"]
-        directory = join(directory, self.name)
-        directory = expanduser(directory)
-        hash_file = join(directory, 'hash')
-        os.makedirs(directory, exist_ok=True)
-        with open(hash_file, 'w') as f:
-            f.write(hashed_meta)
-
-    def _is_new_hash(self, hashed_meta):
-        """ Check if stored hash is the same as current.
-
-        If the hashed file does not exist, usually in the
-        case of first load, then the create it and return True
-
-        Args:
-            hashed_meta (str): hash of metadata and uuid of device
-        Returns:
-            bool: True if hash is new, otherwise False
-        """
-        directory = self.config.get("skills")["directory"]
-        directory = join(directory, self.name)
-        directory = expanduser(directory)
-        hash_file = join(directory, 'hash')
-        if isfile(hash_file):
-            with open(hash_file, 'r') as f:
-                current_hash = f.read()
-            return False if current_hash == str(hashed_meta) else True
-        return True
-
     def update_remote(self):
         """ update settings state from server """
-        skills_settings = None
         settings_meta = self._load_settings_meta()
         if settings_meta is None:
             return
-        hashed_meta = self._get_meta_hash(settings_meta)
-        if self.get('not_owner'):
-            skills_settings = self._request_other_settings(hashed_meta)
-        if not skills_settings:
-            skills_settings = self._request_my_settings(hashed_meta)
+        # Get settings
+        skills_settings = (self._request_my_settings(self.skill_gid) or
+                           self._request_other_settings(self.skill_gid))
+
         if skills_settings is not None:
             self.save_skill_settings(skills_settings)
-            self.store()
         else:
+            LOG.debug("No Settings on server for {}".format(self.skill_gid))
+            # Settings meta doesn't exist on server push them
             settings_meta = self._load_settings_meta()
-            self._upload_meta(settings_meta, hashed_meta)
+            self._upload_meta(settings_meta, self.skill_gid)
+
+    def _init_blank_meta(self):
+        """ Send blank settingsmeta to remote. """
+        try:
+            if not is_paired() and self.is_alive:
+                self._blank_poll_timer = Timer(60, self._init_blank_meta)
+                self._blank_poll_timer.daemon = True
+                self._blank_poll_timer.start()
+            else:
+                self.initialize_remote_settings()
+        except Exception as e:
+            LOG.exception('Failed to send blank meta: {}'.format(repr(e)))
 
     def _poll_skill_settings(self):
         """ If identifier exists for this skill poll to backend to
@@ -458,6 +456,9 @@ class SkillSettings(dict):
             dict: skills object
         """
         meta = settings_meta.copy()
+        if 'skillMetadata' not in settings_meta:
+            return meta
+
         sections = meta['skillMetadata']['sections']
 
         for i, section in enumerate(sections):
@@ -496,7 +497,6 @@ class SkillSettings(dict):
     def _request_my_settings(self, identifier):
         """ Get skill settings for this device associated
             with the identifier
-
         Args:
             identifier (str): a hashed_meta
         Returns:
@@ -507,11 +507,32 @@ class SkillSettings(dict):
             # this loads the settings into memory for use in self.store
             for skill_settings in settings:
                 if skill_settings['identifier'] == identifier:
+                    LOG.debug("Fetched settings for {}".format(identifier))
                     skill_settings = \
                         self._type_cast(skill_settings, to_platform='core')
                     self._remote_settings = skill_settings
                     return skill_settings
         return None
+
+    def _request_other_settings(self, identifier):
+        """ Retrieve skill settings from other devices by identifier
+        Args:
+            identifier (str): identifier for this skill
+        Returns:
+            settings (dict or None): the retrieved settings or None
+        """
+        path = \
+            "/" + self._device_identity + "/userSkill?identifier=" + identifier
+        try:
+            user_skill = self.api.request({"method": "GET", "path": path})
+        except RequestException:
+            # Some kind of Timeout, connection HTTPError, etc.
+            user_skill = None
+        if not user_skill or not user_skill[0]:
+            return None
+        else:
+            settings = self._type_cast(user_skill[0], to_platform='core')
+        return settings
 
     def _request_settings(self):
         """ Get all skill settings for this device from server.
@@ -530,27 +551,6 @@ class SkillSettings(dict):
         settings = [skills for skills in settings if skills is not None]
         return settings
 
-    def _request_other_settings(self, identifier):
-        """ Retrieve skill settings from other devices by identifier
-
-        Args:
-            identifier (str): identifier for this skill
-        Returns:
-            settings (dict or None): the retrieved settings or None
-        """
-        path = \
-            "/" + self._device_identity + "/userSkill?identifier=" + identifier
-        try:
-            user_skill = self.api.request({"method": "GET", "path": path})
-        except RequestException:
-            # Some kind of Timeout, connection HTTPError, etc.
-            user_skill = None
-        if not user_skill:
-            return None
-        else:
-            settings = self._type_cast(user_skill[0], to_platform='core')
-            return settings
-
     def _put_metadata(self, settings_meta):
         """ PUT settingsmeta to backend to be configured in server.
             used in place of POST and PATCH.
@@ -568,6 +568,7 @@ class SkillSettings(dict):
     def _delete_metadata(self, uuid):
         """ Delete the current skill metadata
 
+            TODO: UPDATE FOR NEW BACKEND
         Args:
             uuid (str): unique id of the skill
         """
@@ -586,7 +587,8 @@ class SkillSettings(dict):
     @property
     def _should_upload_from_change(self):
         changed = False
-        if hasattr(self, '_remote_settings'):
+        if (hasattr(self, '_remote_settings') and
+                'skillMetadata' in self._remote_settings):
             sections = self._remote_settings['skillMetadata']['sections']
             for i, section in enumerate(sections):
                 for j, field in enumerate(section['fields']):
@@ -616,8 +618,14 @@ class SkillSettings(dict):
 
         if self._should_upload_from_change:
             settings_meta = self._load_settings_meta()
-            hashed_meta = self._get_meta_hash(settings_meta)
-            uuid = self._load_uuid()
-            if uuid is not None:
-                self._delete_metadata(uuid)
-            self._upload_meta(settings_meta, hashed_meta)
+            self._upload_meta(settings_meta, self.skill_gid)
+
+
+def _get_meta_path(base_directory):
+    json_path = join(base_directory, 'settingsmeta.json')
+    yaml_path = join(base_directory, 'settingsmeta.yaml')
+    if isfile(json_path):
+        return json_path
+    if isfile(yaml_path):
+        return yaml_path
+    return None

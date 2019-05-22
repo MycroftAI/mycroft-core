@@ -72,7 +72,7 @@ class PlaybackThread(Thread):
             self.queue.get()
         try:
             self.p.terminate()
-        except:
+        except Exception:
             pass
 
     def run(self):
@@ -386,7 +386,7 @@ class TTS:
                 with open(pho_file, "r") as cachefile:
                     phonemes = cachefile.read().strip()
                 return phonemes
-            except:
+            except Exception:
                 LOG.debug("Failed to read .PHO from cache")
         return None
 

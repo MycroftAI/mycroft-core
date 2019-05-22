@@ -234,6 +234,12 @@ class SkillGUI:
         self.page = None    # the active GUI page (e.g. QML template) to show
         self.skill = skill
         self.on_gui_changed_callback = None
+        self.config = Configuration.get()
+
+    @property
+    def remote_url(self):
+        """ Returns configuration value for url of remote-server. """
+        return self.config.get('remote-server')
 
     def build_message_type(self, event):
         """ Builds a message matching the output from the enclosure. """
@@ -344,9 +350,15 @@ class SkillGUI:
         # Convert pages to full reference
         page_urls = []
         for name in page_names:
-            page = self.skill.find_resource(name, 'ui')
+            if name.startswith("SYSTEM"):
+                page = resolve_resource_file(join('ui', name))
+            else:
+                page = self.skill.find_resource(name, 'ui')
             if page:
-                page_urls.append("file://" + page)
+                if self.config.get('remote') is True:
+                    page_urls.append(self.remote_url + "/" + page)
+                else:
+                    page_urls.append("file://" + page)
             else:
                 raise FileNotFoundError("Unable to find page: {}".format(name))
 
@@ -397,21 +409,24 @@ class SkillGUI:
         self.clear()
         self["text"] = text
         self["title"] = title
-        self.show_page("SYSTEM_TEXTFRAME")
+        self.show_page("SYSTEM_TextFrame.qml")
 
-    def show_image(self, url, caption=None, title=None):
+    def show_image(self, url, caption=None, title=None, fill=None):
         """ Display a GUI page for viewing an image
 
         Arguments:
             url (str): Pointer to the image
             caption (str): A caption to show under the image
             title (str): A title to display above the image content
+            fill (str): Fill type supports 'PreserveAspectFit',
+            'PreserveAspectCrop', 'Stretch'
         """
         self.clear()
         self["image"] = url
         self["title"] = title
         self["caption"] = caption
-        self.show_page("SYSTEM_IMAGEFRAME")
+        self["fill"] = fill
+        self.show_page("SYSTEM_ImageFrame.qml")
 
     def show_html(self, html):
         """ Display an HTML page in the GUI

@@ -17,6 +17,7 @@ from mycroft.tts import TTS, TTSValidator
 from mycroft.tts.remote_tts import RemoteTTSTimeoutException
 from mycroft.util.log import LOG
 from mycroft.util.format import pronounce_number
+from mycroft.tts import cache_handler
 from mycroft.util import play_wav, get_cache_directory
 from requests_futures.sessions import FuturesSession
 from requests.exceptions import (
@@ -172,6 +173,13 @@ class Mimic2(TTS):
         super(Mimic2, self).__init__(
             lang, config, Mimic2Validator(self)
         )
+        try:
+            LOG.info("Getting Pre-loaded cache")
+            cache_handler.main(config['preloaded_cache'])
+            LOG.info("Successfully downloaded Pre-loaded cache")
+        except Exception as e:
+            LOG.error("Could not get the pre-loaded cache ({})"
+                      .format(repr(e)))
         self.url = config['url']
         self.session = FuturesSession()
 
