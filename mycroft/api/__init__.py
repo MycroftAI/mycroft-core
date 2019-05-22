@@ -82,7 +82,8 @@ class Api:
                 data = self.send({
                     "path": "auth/token",
                     "headers": {
-                        "Authorization": "Bearer " + self.identity.refresh
+                        "Authorization": "Bearer " + self.identity.refresh,
+                        "Device": self.identity.uuid
                     }
                 })
                 IdentityManager.save(data, lock=False)
