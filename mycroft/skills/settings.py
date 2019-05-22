@@ -268,7 +268,7 @@ class SkillSettings(dict):
                     if json_file:
                         data = json.load(f)
                     else:
-                        data = yaml.load(f)
+                        data = yaml.safe_load(f)
             except Exception as e:
                 LOG.error("Failed to load setting file: " + self._meta_path)
                 LOG.error(repr(e))
