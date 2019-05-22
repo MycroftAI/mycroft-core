@@ -121,8 +121,6 @@ class PocketsphinxHotWord(HotWordEngine):
 
 
 class PreciseHotword(HotWordEngine):
-    CHUNK_SIZE = 2048
-
     def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
         super(PreciseHotword, self).__init__(key_phrase, config, lang)
         from precise_runner import (
@@ -150,7 +148,7 @@ class PreciseHotword(HotWordEngine):
             ).replace('.tar.gz', '.pb')
 
         self.has_found = False
-        self.stream = ReadWriteStream(chop_samples=self.CHUNK_SIZE * 3)
+        self.stream = ReadWriteStream()
 
         def on_activation():
             self.has_found = True
@@ -159,7 +157,7 @@ class PreciseHotword(HotWordEngine):
         sensitivity = self.config.get('sensitivity', 0.5)
 
         self.runner = PreciseRunner(
-            PreciseEngine(precise_exe, self.precise_model, self.CHUNK_SIZE),
+            PreciseEngine(precise_exe, self.precise_model),
             trigger_level, sensitivity,
             stream=self.stream, on_activation=on_activation,
         )
