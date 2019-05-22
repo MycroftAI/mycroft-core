@@ -311,7 +311,7 @@ elif [ "${change_to}" == "stable" ] ; then
 
         if [ -f /etc/init.d/mycroft-skills.original ] ; then
             restore_init_scripts
-            sudo chmod -x /etc/cron.hourly/mycroft-core # Enable updates
+            sudo chmod +x /etc/cron.hourly/mycroft-core # Enable updates
 
             # Reboot since the audio input won't work for some reason
             sudo reboot
