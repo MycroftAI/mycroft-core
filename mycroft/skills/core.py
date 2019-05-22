@@ -111,6 +111,8 @@ def load_skill(skill_descriptor, bus, skill_id, BLACKLISTED_SKILLS=None):
         skill_descriptor: descriptor of skill to load
         bus:              Mycroft messagebus connection
         skill_id:         id number for skill
+        use_settings:     (default True) selects if the skill should create
+                          a settings object.
 
     Returns:
         MycroftSkill: the loaded skill or None on failure
@@ -475,12 +477,15 @@ class MycroftSkill:
     Skills implementation.
     """
 
-    def __init__(self, name=None, bus=None):
+    def __init__(self, name=None, bus=None, use_settings=True):
         self.name = name or self.__class__.__name__
         self.resting_name = None
         # Get directory of skill
         self._dir = dirname(abspath(sys.modules[self.__module__].__file__))
-        self.settings = SkillSettings(self._dir, self.name)
+        if use_settings:
+            self.settings = SkillSettings(self._dir, self.name)
+        else:
+            self.settings = None
 
         self.gui = SkillGUI(self)
 
@@ -1714,8 +1719,8 @@ class FallbackSkill(MycroftSkill):
     """
     fallback_handlers = {}
 
-    def __init__(self, name=None, bus=None):
-        MycroftSkill.__init__(self, name, bus)
+    def __init__(self, name=None, bus=None, use_settings=True):
+        MycroftSkill.__init__(self, name, bus, use_settings)
 
         #  list of fallback handlers registered by this instance
         self.instance_fallback_handlers = []
