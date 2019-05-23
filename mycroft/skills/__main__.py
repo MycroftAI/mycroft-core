@@ -64,9 +64,12 @@ def _starting_up():
 
     # Create the Intent manager, which converts utterances to intents
     # This is the heart of the voice invoked skill system
-
     service = IntentService(bus)
-    PadatiousService(bus, service)
+    try:
+        PadatiousService(bus, service)
+    except Exception as e:
+        LOG.exception('Failed to create padatious handlers '
+                      '({})'.format(repr(e)))
     event_scheduler = EventScheduler(bus)
 
     # Create a thread that monitors the loaded skills, looking for updates
