@@ -413,7 +413,9 @@ class SkillGUI:
         self["title"] = title
         self.show_page("SYSTEM_TextFrame.qml", override_idle)
 
-    def show_image(self, url, caption=None, title=None, fill=None, override_idle=None):
+    def show_image(self, url, caption=None,
+                   title=None, fill=None,
+                   override_idle=None):
         """ Display a GUI page for viewing an image
 
         Arguments:
@@ -452,8 +454,8 @@ class SkillGUI:
 
     def write_html_to_temp(self, html):
         """ Writes html from a skill to temp file in system /tmp location """
-        fname = '/tmp/tempfile.html'
-        f = open(fname,'w')
+        fname = "/tmp/tempfile.html"
+        f = open(fname, 'w')
         wrapper = html
         f.write(wrapper)
         f.close()
