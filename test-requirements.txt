@@ -1,4 +1,4 @@
-pep8==1.7.0
+pycodestyle===2.5.0
 coveralls==1.5.0
 pytest==3.5.0
 pytest-cov==2.5.1

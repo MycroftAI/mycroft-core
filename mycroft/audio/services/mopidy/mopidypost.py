@@ -53,11 +53,11 @@ class Mopidy:
         d['method'] = 'core.library.search'
         d['params'] = {'album': [album]}
         r = requests.post(self.url, data=json.dumps(d))
-        l = [res['albums'] for res in r.json()['result'] if 'albums' in res]
+        lst = [res['albums'] for res in r.json()['result'] if 'albums' in res]
         if filter is None:
-            return l
+            return lst
         else:
-            return [i for sl in l for i in sl if filter + ':' in i['uri']]
+            return [i for sl in lst for i in sl if filter + ':' in i['uri']]
 
     def find_exact(self, uris='null'):
         d = copy(_base_dict)

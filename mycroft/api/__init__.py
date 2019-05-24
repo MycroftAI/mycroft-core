@@ -82,7 +82,8 @@ class Api:
                 data = self.send({
                     "path": "auth/token",
                     "headers": {
-                        "Authorization": "Bearer " + self.identity.refresh
+                        "Authorization": "Bearer " + self.identity.refresh,
+                        "Device": self.identity.uuid
                     }
                 })
                 IdentityManager.save(data, lock=False)
@@ -171,7 +172,7 @@ class Api:
     def get_data(self, response):
         try:
             return response.json()
-        except:
+        except Exception:
             return response.text
 
     def build_headers(self, params):
@@ -331,7 +332,7 @@ class DeviceApi(Api):
         """
         try:
             return self.get_subscription().get('@type') != 'free'
-        except:
+        except Exception:
             # If can't retrieve, assume not paired and not a subscriber yet
             return False
 
@@ -370,6 +371,11 @@ class DeviceApi(Api):
         # Make sure skills doesn't contain duplicates (keep only last)
         skills = {s['name']: s for s in data['skills']}
         to_send['skills'] = [skills[key] for key in skills]
+
+        # Finalize skill_gid with uuid if needed
+        for s in to_send['skills']:
+            s['skill_gid'] = s.get('skill_gid', '').replace(
+                '@|', '@{}|'.format(self.identity.uuid))
 
         self.request({
             "method": "PUT",

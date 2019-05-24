@@ -13,7 +13,7 @@ import tempfile
 # don't fill in both of these
 select_codes = []
 ignore_codes = ["E121", "E122", "E123", "E124", "E125", "E126", "E127", "E128",
-                "E129", "E501", "E722", "E226"]
+                "E129", "E501", "E722", "E226", "W504"]
 # Add things like "--max-line-length=120" below
 overrides = []
 
@@ -40,7 +40,10 @@ def main():
         with open(filename, 'w') as f:
             system('git', 'show', ':' + name, stdout=f)
 
-    args = ['pep8']
+    checker_path = os.path.join(os.path.dirname(__file__),
+                                 '..', '..', '.venv', 'bin', 'pycodestyle')
+    checker_path = os.path.abspath(checker_path)
+    args = [checker_path]
     if select_codes and ignore_codes:
         print(u'Error: select and ignore codes are mutually exclusive')
         sys.exit(1)

@@ -132,7 +132,7 @@ class MycroftSTT(STT):
         try:
             return self.api.stt(audio.get_flac_data(convert_rate=16000),
                                 self.lang, 1)[0]
-        except:
+        except Exception:
             return self.api.stt(audio.get_flac_data(), self.lang, 1)[0]
 
 
@@ -179,7 +179,7 @@ class KaldiSTT(STT):
         try:
             hypotheses = response.json()["hypotheses"]
             return re.sub(r'\s*\[noise\]\s*', '', hypotheses[0]["utterance"])
-        except:
+        except Exception:
             return None
 
 

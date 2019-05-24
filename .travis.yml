@@ -6,6 +6,7 @@ before_install:
  - sudo apt-get install -qq mpg123 portaudio19-dev libglib2.0-dev swig bison libtool autoconf libglib2.0-dev libicu-dev libfann-dev realpath
  - sudo apt-get install -y gcc-4.8 g++-4.8
  - export CC="gcc-4.8"
+ - export TMPDIR="/tmp/${TRAVIS_PYTHON_VERSION}"
 python:
   - "3.4"
   - "3.5"
@@ -15,12 +16,15 @@ python:
 cache: pocketsphinx-python
 # command to install dependencies
 install:
+ - rm -rf ${TMPDIR}
+ - mkdir ${TMPDIR}
+ - echo ${TMPDIR}
  - VIRTUALENV_ROOT=${VIRTUAL_ENV} ./dev_setup.sh
  - pip install -r requirements.txt
  - pip install -r test-requirements.txt
 # command to run tests
 script:
- - pep8 mycroft test
+ - pycodestyle mycroft test
  - ./start-mycroft.sh unittest
 env:
  - IS_TRAVIS=true

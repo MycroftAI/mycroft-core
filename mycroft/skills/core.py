@@ -111,6 +111,8 @@ def load_skill(skill_descriptor, bus, skill_id, BLACKLISTED_SKILLS=None):
         skill_descriptor: descriptor of skill to load
         bus:              Mycroft messagebus connection
         skill_id:         id number for skill
+        use_settings:     (default True) selects if the skill should create
+                          a settings object.
 
     Returns:
         MycroftSkill: the loaded skill or None on failure
@@ -350,7 +352,10 @@ class SkillGUI:
         # Convert pages to full reference
         page_urls = []
         for name in page_names:
-            page = self.skill.find_resource(name, 'ui')
+            if name.startswith("SYSTEM"):
+                page = resolve_resource_file(join('ui', name))
+            else:
+                page = self.skill.find_resource(name, 'ui')
             if page:
                 if self.config.get('remote') is True:
                     page_urls.append(self.remote_url + "/" + page)
@@ -406,21 +411,24 @@ class SkillGUI:
         self.clear()
         self["text"] = text
         self["title"] = title
-        self.show_page("SYSTEM_TEXTFRAME")
+        self.show_page("SYSTEM_TextFrame.qml")
 
-    def show_image(self, url, caption=None, title=None):
+    def show_image(self, url, caption=None, title=None, fill=None):
         """ Display a GUI page for viewing an image
 
         Arguments:
             url (str): Pointer to the image
             caption (str): A caption to show under the image
             title (str): A title to display above the image content
+            fill (str): Fill type supports 'PreserveAspectFit',
+            'PreserveAspectCrop', 'Stretch'
         """
         self.clear()
         self["image"] = url
         self["title"] = title
         self["caption"] = caption
-        self.show_page("SYSTEM_IMAGEFRAME")
+        self["fill"] = fill
+        self.show_page("SYSTEM_ImageFrame.qml")
 
     def show_html(self, html):
         """ Display an HTML page in the GUI
@@ -469,12 +477,15 @@ class MycroftSkill:
     Skills implementation.
     """
 
-    def __init__(self, name=None, bus=None):
+    def __init__(self, name=None, bus=None, use_settings=True):
         self.name = name or self.__class__.__name__
         self.resting_name = None
         # Get directory of skill
         self._dir = dirname(abspath(sys.modules[self.__module__].__file__))
-        self.settings = SkillSettings(self._dir, self.name)
+        if use_settings:
+            self.settings = SkillSettings(self._dir, self.name)
+        else:
+            self.settings = None
 
         self.gui = SkillGUI(self)
 
@@ -1708,8 +1719,8 @@ class FallbackSkill(MycroftSkill):
     """
     fallback_handlers = {}
 
-    def __init__(self, name=None, bus=None):
-        MycroftSkill.__init__(self, name, bus)
+    def __init__(self, name=None, bus=None, use_settings=True):
+        MycroftSkill.__init__(self, name, bus, use_settings)
 
         #  list of fallback handlers registered by this instance
         self.instance_fallback_handlers = []

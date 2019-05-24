@@ -33,7 +33,7 @@ class PadatiousService(FallbackSkill):
     fallback_loose_match = 89  # Fallback priority for the conf > 0.5 match
 
     def __init__(self, bus, service):
-        FallbackSkill.__init__(self)
+        FallbackSkill.__init__(self, use_settings=False)
         if not PadatiousService.instance:
             PadatiousService.instance = self
 
