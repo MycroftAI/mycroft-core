@@ -280,7 +280,7 @@ class PorcupineHotWord(HotWordEngine):
         sys.path.append(bindings_path)
         try:
             from porcupine import Porcupine
-        except:
+        except ModuleNotFoundError:
             raise Exception(
                 "Python bindings for Porcupine not found. "
                 "Please use --porcupine-path to set Porcupine base path")
