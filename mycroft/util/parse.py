@@ -194,6 +194,8 @@ def extract_duration(text, lang=None):
 
     if lang_code == "en":
         return extract_duration_en(text)
+    elif lang_code == "ar":
+        return extract_duration_ar(text) 
 
     # TODO: extract_duration for other languages
     _log_unsupported_language(lang_code, ['en'])
