@@ -663,6 +663,87 @@ def extract_duration_en(text):
 
     return (duration, text)
 
+def extract_duration_ar(text):
+    """
+    Convert an arabic phrase into a number of seconds
+
+    """
+    if not text:
+        return None
+
+    time_units = {
+        'microseconds': 0,
+        'milliseconds': 0,
+        'seconds': 0,
+        'minutes': 0,
+        'hours': 0,
+        'days': 0,
+        'weeks': 0
+    }
+
+
+    text = text.lstrip()
+    words = text.split()
+    
+
+    for idx, word in enumerate(words):
+
+        wordPrevPrev = words[idx - 2] if idx > 1 else ""
+
+        wordPrev = words[idx - 1] if idx > 0 else ""
+
+        if word == "ساعه":
+            if wordPrev and wordPrev == "نص":
+                time_units['minutes'] = 30
+            elif wordPrev and wordPrev == "ربع":
+                time_units['mintues'] = 15
+            elif wordPrev and wordPrev != "ربع" and wordPrev !="نص":
+                time_units['hours'] = int(normalize_ar(wordPrev))
+            else:
+                time_units['minutes'] = 60
+        elif word == "ساعات":
+            if wordPrev:
+                time_units['hours'] = int(normalize_ar(wordPrev))
+
+        # parse minute, 2 minutes
+        elif word == "دقيقه":
+            if wordPrev:
+                if wordPrevPrev:
+                    time_units['minutes'] = int(normalize_ar(wordPrevPrev+' '+wordPrev))
+                else:
+                    time_units['minutes'] = int(normalize_ar(wordPrev))
+            else:
+                time_units['minutes'] = 1 
+
+        elif word == "دقيقتين":
+                time_units['minutes'] = 2
+
+        elif word == "دقايق":
+            if wordPrev:
+                time_units['minutes'] = int(normalize_ar(wordPrev))
+
+        # parse second, 2 seconds
+        elif word == "ثانيه":
+            if wordPrev:
+                if wordPrevPrev:
+                    time_units['seconds'] = int(normalize_ar(wordPrevPrev+' '+wordPrev))
+                else:
+                    time_units['seconds'] = int(normalize_ar(wordPrev))
+            else:
+                time_units['seconds'] = 1 
+
+        elif word == "ثانيتين":
+                time_units['seconds'] = 2
+
+        elif word == "ثواني":
+            if wordPrev:
+                time_units['seconds'] = int(normalize_ar(wordPrev))
+
+
+    duration = timedelta(**time_units) if any(time_units.values()) else None
+
+    return (duration, text)
+
 
 def extract_datetime_ar(string, dateNow, default_time):
     """ Convert a human date reference into an exact datetime
@@ -839,7 +920,10 @@ def extract_datetime_ar(string, dateNow, default_time):
         # parse minute, 2 minutes
         elif word == "دقيقه":
             if wordPrev:
-                minOffset = int(normalize_ar(wordPrev))
+                if wordPrevPrev:
+                    minOffset = int(normalize_ar(wordPrevPrev+' '+wordPrev))
+                else:
+                    minOffset = int(normalize_ar(wordPrev))
             else:
                 minOffset = 1 
 
@@ -853,7 +937,10 @@ def extract_datetime_ar(string, dateNow, default_time):
         # parse second, 2 seconds
         elif word == "ثانيه":
             if wordPrev:
-                secOffset = int(wordPrev)
+                if wordPrevPrev:
+                    secOffset = int(normalize_ar(wordPrevPrev+' '+wordPrev))
+                else:
+                    secOffset = int(normalize_ar(wordPrev))
             else:
                 secOffset = 1 
 
@@ -1042,25 +1129,22 @@ def extract_numbers_en(text, short_scale=True, ordinals=False):
 def normalize_ar(text):
     """ English string normalization """
 
-    words = text.split()  # this also removed extra spaces
-    normalized = ""
-    for word in words:
 
         # Convert numbers into digits, e.g. "two" -> "2"
-        textNumbers1 = ["صفر", "واحد", "اثنين", "ثلاثه", "اربعه", "خمسه", "سته",
+    textNumbers1 = ["صفر", "واحد", "اثنين", "ثلاثه", "اربعه", "خمسه", "سته",
                        "سبعه", "ثمانيه", "تسعه", "عشره", "احدعش", "اثنعش",
                        "ثلاثطعش", "اربعطعش", "خمسطعش", "ستطعش",
-                       "سبعطس", "ثمانطعش", "تسعطعش", "عشرين"]
+                       "سبعطس", "ثمانطعش", "تسعطعش", "عشرين","واحد وعشرين","اثنين وعشرين","ثلاث وعشرين","اربع وعشرين","خمس وعشرين","ست وعشرين","سبعه وعشرين","ثمانيه وعشرين","تسعه وعشرين","ثلاثين","واحد وثلاثين","اثنين وثلاثين","ثلاث وثلاثين","اربع وثلاثين","خمس وثلاثين","ست وثلاثين","سبعه وثلاثين","ثمانيه وثلاثين","تسعه وثلاثين","اربعين","واحر واربعين","اثنين واربعين","ثلاث واربعين","اربعه واربعين","خمسه واربعين","سته واربعين","سبعه واربعين","ثمانيه واربعين","تسعه واربعين","خمسين","واحد وخمسين","اثنين وخمسين","ثلاثه وخمسين","اربعه وخمسين","خمسه وخمسين","سته وخمسين","سبعه وخمسين","ثمانيه وخمسين","تسعه وخمسين","ستين"]
 
-        textNumbers2 = ["صفر", ",وحده", "ثنتين", "ثلاث", "اربع", "خمس", "ست",
+    textNumbers2 = ["صفر", ",وحده", "ثنتين", "ثلاث", "اربع", "خمس", "ست",
                        "سبع", "ثمان", "تسع", "عشر"]
 
-        if word in textNumbers1:
-            word = str(textNumbers1.index(word))
-        elif word in textNumbers2:
-            word = str(textNumbers2.index(word))
+    if text in textNumbers1:
+        word = str(textNumbers1.index(text))
+    elif text in textNumbers2:
+        word = str(textNumbers2.index(text))
 
 
-        normalized += " " + word
+    
 
-    return normalized[1:]  # strip the initial space
+    return word  # strip the initial space
