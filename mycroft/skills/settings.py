@@ -386,6 +386,12 @@ class SkillSettings(dict):
                 self._blank_poll_timer.start()
             else:
                 self.initialize_remote_settings()
+        except DelayRequest:
+            # Delay 5 minutes and retry
+            self._blank_poll_timer = Timer(60 * 5,
+                                           self._init_blank_meta)
+            self._blank_poll_timer.daemon = True
+            self._blank_poll_timer.start()
         except Exception as e:
             LOG.exception('Failed to send blank meta: {}'.format(repr(e)))
 
