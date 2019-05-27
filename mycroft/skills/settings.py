@@ -297,7 +297,8 @@ class SkillSettings(dict):
         """
         if self._meta_upload:
             try:
-                uuid = self._put_metadata(settings_meta)
+                uuid = self.api.upload_skill_metadata(
+                    self._type_cast(settings_meta, to_platform='web'))
                 return uuid
             except HTTPError as e:
                 if e.response.status_code in [422, 500, 501]:
@@ -547,48 +548,12 @@ class SkillSettings(dict):
             dict: dictionary with settings collected from the server.
         """
         try:
-            settings = self.api.request({
-                "method": "GET",
-                "path": self._api_path
-            })
+            settings = self.api.get_skill_settings()
         except RequestException:
             return None
 
         settings = [skills for skills in settings if skills is not None]
         return settings
-
-    def _put_metadata(self, settings_meta):
-        """ PUT settingsmeta to backend to be configured in server.
-            used in place of POST and PATCH.
-
-        Args:
-            settings_meta (dict): dictionary of the current settings meta data
-        """
-        settings_meta = self._type_cast(settings_meta, to_platform='web')
-        return self.api.request({
-            "method": "PUT",
-            "path": self._api_path,
-            "json": settings_meta
-        })
-
-    def _delete_metadata(self, uuid):
-        """ Delete the current skill metadata
-
-            TODO: UPDATE FOR NEW BACKEND
-        Args:
-            uuid (str): unique id of the skill
-        """
-        try:
-            LOG.debug("deleting metadata")
-            self.api.request({
-                "method": "DELETE",
-                "path": self._api_path + "/{}".format(uuid)
-            })
-        except Exception as e:
-            LOG.error(e)
-            LOG.error(
-                "cannot delete metadata because this"
-                "device is not original uploader of skill")
 
     @property
     def _should_upload_from_change(self):

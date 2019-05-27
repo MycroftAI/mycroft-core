@@ -358,8 +358,45 @@ class DeviceApi(Api):
             "path": "/" + self.identity.uuid + "/token/" + str(dev_cred)
         })
 
+    def get_skill_settings(self):
+        """ Fetch all skill settings. """
+        return self.request({
+            "method": "GET",
+            "path": "/" + self.identity.uuid + "/skill"
+        })
+
+    def upload_skill_metadata(self, settings_meta):
+        """ Upload skill metadata.
+
+        Arguments:
+            settings_meta (dict): settings_meta typecasted to suite the backend
+        """
+        return self.request({
+            "method": "PUT",
+            "path": "/" + self.identity.uuid + "/skill",
+            "json": settings_meta
+        })
+
+    def delete_skill_metadata(self, uuid):
+        """ Delete the current skill metadata from backend
+
+            TODO: Real implementation when method exists on backend
+        Args:
+            uuid (str): unique id of the skill
+        """
+        try:
+            LOG.debug("Deleting remote metadata for {}".format(skill_gid))
+            self.request({
+                "method": "DELETE",
+                "path": ("/" + self.identity.uuid + "/skill" +
+                         "/{}".format(skill_gid))
+            })
+        except Exception as e:
+            LOG.error("{} cannot delete metadata because this".format(e))
+
     def upload_skills_data(self, data):
-        """ Upload skills.json file.
+        """ Upload skills.json file. This file contains a manifest of installed
+        and failed installations for use with the Marketplace.
 
         Arguments:
              data: dictionary with skills data from msm
