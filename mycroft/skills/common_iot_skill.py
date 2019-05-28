@@ -30,7 +30,7 @@ from mycroft.messagebus.message import Message
 
 ENTITY = "ENTITY"
 SCENE = "SCENE"
-IOT_REQUEST_ID = "iot_request_id"  #TODO make the id a property of the request
+IOT_REQUEST_ID = "iot_request_id"  # TODO make the id a property of the request
 
 
 _counter = count()
@@ -88,6 +88,7 @@ class Attribute(Enum):
     BRIGHTNESS = auto()
     COLOR = auto()
     COLOR_TEMPERATURE = auto()
+    TEMPERATURE = auto()
 
 
 @unique
@@ -106,8 +107,8 @@ class State(Enum):
     brightness or color.
     """
     STATE = auto()
-    ON = auto()
-    OFF = auto()
+    POWERED = auto()
+    UNPOWERED = auto()
     LOCKED = auto()
     UNLOCKED = auto()
     OCCUPIED = auto()
@@ -130,7 +131,8 @@ class Action(Enum):
     INCREASE = auto()
     DECREASE = auto()
     TRIGGER = auto()
-    QUERY = auto()
+    BINARY_QUERY = auto()  # yes/no answer
+    INFORMATION_QUERY = auto()  # detailed answer
 
 
 @total_ordering
@@ -369,7 +371,6 @@ class CommonIoTSkill(MycroftSkill, ABC):
         self._current_iot_request = id
         yield id
         self._current_iot_request = None
-
 
     @_track_request
     def _handle_trigger(self, message: Message):
