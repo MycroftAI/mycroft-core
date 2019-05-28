@@ -19,6 +19,7 @@ import requests
 from requests import HTTPError, RequestException
 import os
 import time
+from threading import Lock
 
 from mycroft.configuration import Configuration
 from mycroft.configuration.config import DEFAULT_CONFIG, SYSTEM_CONFIG, \
@@ -217,6 +218,8 @@ class Api:
 
 class DeviceApi(Api):
     """ Web API wrapper for obtaining device-level information """
+    _skill_settings_lock = Lock()
+    _skill_settings = None
 
     def __init__(self):
         super(DeviceApi, self).__init__("device")
@@ -360,10 +363,17 @@ class DeviceApi(Api):
 
     def get_skill_settings(self):
         """ Fetch all skill settings. """
-        return self.request({
-            "method": "GET",
-            "path": "/" + self.identity.uuid + "/skill"
-        })
+        with DeviceApi._skill_settings_lock:
+            if (DeviceApi._skill_settings is None or
+                    time.monotonic() > DeviceApi._skill_settings[0] + 30):
+                DeviceApi._skill_settings = (
+                    time.monotonic(),
+                    self.request({
+                        "method": "GET",
+                        "path": "/" + self.identity.uuid + "/skill"
+                        })
+                )
+            return DeviceApi._skill_settings[1]
 
     def upload_skill_metadata(self, settings_meta):
         """ Upload skill metadata.
