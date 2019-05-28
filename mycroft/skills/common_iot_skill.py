@@ -19,8 +19,9 @@
 # BE WARNED THAT THE CLASSES, FUNCTIONS, ETC MAY CHANGE WITHOUT WARNING.
 
 from abc import ABC, abstractmethod
+from contextlib import contextmanager
 from enum import Enum, unique
-from functools import total_ordering
+from functools import total_ordering, wraps
 from itertools import count
 
 from mycroft import MycroftSkill
@@ -29,6 +30,7 @@ from mycroft.messagebus.message import Message
 
 ENTITY = "ENTITY"
 SCENE = "SCENE"
+IOT_REQUEST_ID = "iot_request_id"  #TODO make the id a property of the request
 
 
 _counter = count()
@@ -57,6 +59,7 @@ class _BusKeys():
     RUN = BASE + ":run."  # Will have skill_id appened
     REGISTER = BASE + "register"
     CALL_FOR_REGISTRATION = REGISTER + ".request"
+    SPEAK = BASE + ":speak"
 
 
 @unique
@@ -280,6 +283,33 @@ class IoTRequest():
         return cls(**data)
 
 
+def _track_request(func):
+    """
+    Used within the CommonIoT skill to track IoT requests.
+
+    The primary purpose of tracking the reqeust is determining
+    if the skill is currently handling an IoT request, or is
+    running a standard intent. While running IoT requests, certain
+    methods defined on MycroftSkill should behave differently than
+    under normal circumstances. In particular, speech related methods
+    should not actually trigger speech, but instead pass the message
+    to the IoT control skill, which will handle deconfliction (in the
+    event multiple skills want to respond verbally to the same request).
+
+    Args:
+        func: Callable
+
+    Returns:
+        Callable
+
+    """
+    @wraps(func)
+    def tracking_function(self, message: Message):
+        with self._current_request(message.data.get(IOT_REQUEST_ID)):
+            func(self, message)
+    return tracking_function
+
+
 class CommonIoTSkill(MycroftSkill, ABC):
     """
     Skills that want to work with the CommonIoT system should
@@ -305,12 +335,20 @@ class CommonIoTSkill(MycroftSkill, ABC):
     step on each other.
     """
 
+    @wraps(MycroftSkill.__init__)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._current_iot_request = None
+
     def bind(self, bus):
         """
         Overrides MycroftSkill.bind.
 
         This is called automatically during setup, and
         need not otherwise be used.
+
+        Subclasses that override this method must call this
+        via super in their implementation.
 
         Args:
             bus:
@@ -322,6 +360,18 @@ class CommonIoTSkill(MycroftSkill, ABC):
             self.add_event(_BusKeys.CALL_FOR_REGISTRATION,
                            self._handle_call_for_registration)
 
+    @contextmanager
+    def _current_request(self, id: str):
+        # Multiple simultaneous requests may interfere with each other as they
+        # would overwrite this value, however, this seems unlikely to cause
+        # any real world issues and tracking multiple requests seems as
+        # likely to cause issues as to solve them.
+        self._current_iot_request = id
+        yield id
+        self._current_iot_request = None
+
+
+    @_track_request
     def _handle_trigger(self, message: Message):
         """
         Given a message, determines if this skill can
@@ -343,6 +393,7 @@ class CommonIoTSkill(MycroftSkill, ABC):
                          "callback_data": callback_data})
             self.bus.emit(message.response(data))
 
+    @_track_request
     def _run_request(self, message: Message):
         """
         Given a message, extracts the IoTRequest and
@@ -355,6 +406,17 @@ class CommonIoTSkill(MycroftSkill, ABC):
         request = IoTRequest.from_dict(message.data[IoTRequest.__name__])
         callback_data = message.data["callback_data"]
         self.run_request(request, callback_data)
+
+    def speak(self, utterance, *args, **kwargs):
+        if self._current_iot_request:
+            self.bus.emit(Message(_BusKeys.SPEAK,
+                              data={"skill_id": self.skill_id,
+                                    IOT_REQUEST_ID: self._current_iot_request,
+                                    "speak_args": args,
+                                    "speak_kwargs": kwargs,
+                                    "speak": utterance}))
+        else:
+            super().speak(utterance, *args, **kwargs)
 
     def _handle_call_for_registration(self, _: Message):
         """
