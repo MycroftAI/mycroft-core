@@ -477,7 +477,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                         module = self.wake_word_recognizer.__class__.__name__
 
                         fn = join(self.saved_wake_words_dir,
-                                  '.'.join(metadata) + '.wav')
+                                  '.'.join([v for v in metadata.values()])
+                                  + '.wav')
                         with open(fn, 'wb') as f:
                             f.write(audio.get_wav_data())
 
