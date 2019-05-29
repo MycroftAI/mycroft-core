@@ -224,8 +224,7 @@ class SkillSettings(dict):
         except RequestException:
             return
 
-        settings = (self._request_my_settings(self.skill_gid) or
-                    self._request_other_settings(self.skill_gid))
+        settings = self._request_my_settings(self.skill_gid)
         if settings:
             self.save_skill_settings(settings)
 
@@ -367,8 +366,7 @@ class SkillSettings(dict):
         if settings_meta is None:
             return
         # Get settings
-        skills_settings = (self._request_my_settings(self.skill_gid) or
-                           self._request_other_settings(self.skill_gid))
+        skills_settings = self._request_my_settings(self.skill_gid)
 
         if skills_settings is not None:
             self.save_skill_settings(skills_settings)
@@ -520,26 +518,6 @@ class SkillSettings(dict):
                     self._remote_settings = skill_settings
                     return skill_settings
         return None
-
-    def _request_other_settings(self, identifier):
-        """ Retrieve skill settings from other devices by identifier
-        Args:
-            identifier (str): identifier for this skill
-        Returns:
-            settings (dict or None): the retrieved settings or None
-        """
-        path = \
-            "/" + self._device_identity + "/userSkill?identifier=" + identifier
-        try:
-            user_skill = self.api.request({"method": "GET", "path": path})
-        except RequestException:
-            # Some kind of Timeout, connection HTTPError, etc.
-            user_skill = None
-        if not user_skill or not user_skill[0]:
-            return None
-        else:
-            settings = self._type_cast(user_skill[0], to_platform='core')
-        return settings
 
     def _request_settings(self):
         """ Get all skill settings for this device from server.
