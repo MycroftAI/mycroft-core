@@ -432,14 +432,16 @@ class SkillGUI:
         self["fill"] = fill
         self.show_page("SYSTEM_ImageFrame.qml", override_idle)
 
-    def show_html(self, html, override_idle=None):
+    def show_html(self, html, resource_url=None, override_idle=None):
         """ Display an HTML page in the GUI
 
         Arguments:
             html (str): HTML text to display
+            resource_url (str): Pointer to HTML resources
         """
         self.clear()
-        self["url"] = self.write_html_to_temp(html)
+        self["html"] = html
+        self["resourceLocation"] = resource_url
         self.show_page("SYSTEM_HtmlFrame", override_idle)
 
     def show_url(self, url, override_idle=None):
@@ -450,16 +452,7 @@ class SkillGUI:
         """
         self.clear()
         self["url"] = url
-        self.show_page("SYSTEM_HtmlFrame", override_idle)
-
-    def write_html_to_temp(self, html):
-        """ Writes html from a skill to temp file in system /tmp location """
-        fname = "/tmp/tempfile.html"
-        f = open(fname, 'w')
-        wrapper = html
-        f.write(wrapper)
-        f.close()
-        return fname
+        self.show_page("SYSTEM_UrlFrame", override_idle)
 
 
 def resting_screen_handler(name=None):

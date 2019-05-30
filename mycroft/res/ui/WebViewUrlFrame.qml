@@ -6,10 +6,12 @@ import org.kde.kirigami 2.4 as Kirigami
 
 Item {
     id: root
-    property var pageUrl: systemHtmlFrame.pageUrl
+    property var pageUrl: webViewUrlLoader.pageUrl
     
     onPageUrlChanged: {
-        webview.url = pageUrl
+        if(typeof pageUrl !== "undefined" || typeof pageUrl !== null){
+            webview.url = pageUrl
+        }
     }
     
     WebEngineView {

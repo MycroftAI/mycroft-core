@@ -6,15 +6,14 @@ import org.kde.kirigami 2.4 as Kirigami
 import Mycroft 1.0 as Mycroft
 
 Mycroft.Delegate {
-    id: systemHtmlFrame
+    id: systemUrlFrame
     skillBackgroundColorOverlay: "#000000"
         
     Loader {
-        id: webViewHtmlLoader
-        source: "WebViewHtmlFrame.qml"
+        id: webViewUrlLoader
+        source: "WebViewUrlFrame.qml"
         anchors.fill: parent
-        property var pageHtml: sessionData.html
-        property var resourceLocation: sessionData.resourceLocation
+        property var pageUrl: sessionData.url
     }
 }
  
