@@ -271,7 +271,7 @@ class SkillSettings(dict):
             except Exception as e:
                 LOG.error("Failed to load setting file: " + self._meta_path)
                 LOG.error(repr(e))
-                data = copy.copy(BLANK_META)
+                data = {}
         else:
             data = {}
 
