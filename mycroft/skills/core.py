@@ -442,7 +442,7 @@ class SkillGUI:
         self.clear()
         self["html"] = html
         self["resourceLocation"] = resource_url
-        self.show_page("SYSTEM_HtmlFrame", override_idle)
+        self.show_page("SYSTEM_HtmlFrame.qml", override_idle)
 
     def show_url(self, url, override_idle=None):
         """ Display an HTML page in the GUI
@@ -452,7 +452,7 @@ class SkillGUI:
         """
         self.clear()
         self["url"] = url
-        self.show_page("SYSTEM_UrlFrame", override_idle)
+        self.show_page("SYSTEM_UrlFrame.qml", override_idle)
 
 
 def resting_screen_handler(name=None):
