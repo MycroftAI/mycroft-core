@@ -471,13 +471,13 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                     if self.save_wake_words:
                         # Save wake word locally
                         audio = self._create_audio_data(byte_data, source)
-                        metadata = self._compile_metadata()
+                        meta = self._compile_metadata()
                         if not isdir(self.saved_wake_words_dir):
                             os.mkdir(self.saved_wake_words_dir)
                         module = self.wake_word_recognizer.__class__.__name__
 
                         fn = join(self.saved_wake_words_dir,
-                                  '.'.join([v for v in metadata.values()])
+                                  '_'.join([meta[k] for k in sorted(meta)])
                                   + '.wav')
                         with open(fn, 'wb') as f:
                             f.write(audio.get_wav_data())
@@ -488,7 +488,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                             target=self._upload_wake_word, daemon=True,
                             args=[audio or
                                   self._create_audio_data(byte_data, source),
-                                  metadata]
+                                  meta]
                         ).start()
 
     @staticmethod
