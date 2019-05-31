@@ -407,7 +407,7 @@ class SkillGUI:
                                     {"page": page_urls,
                                      "__from": self.skill.skill_id}))
 
-    def show_text(self, text, title=None):
+    def show_text(self, text, title=None, override_idle=None):
         """ Display a GUI page for viewing simple text
 
         Arguments:
@@ -417,9 +417,11 @@ class SkillGUI:
         self.clear()
         self["text"] = text
         self["title"] = title
-        self.show_page("SYSTEM_TextFrame.qml")
+        self.show_page("SYSTEM_TextFrame.qml", override_idle)
 
-    def show_image(self, url, caption=None, title=None, fill=None):
+    def show_image(self, url, caption=None,
+                   title=None, fill=None,
+                   override_idle=None):
         """ Display a GUI page for viewing an image
 
         Arguments:
@@ -434,19 +436,21 @@ class SkillGUI:
         self["title"] = title
         self["caption"] = caption
         self["fill"] = fill
-        self.show_page("SYSTEM_ImageFrame.qml")
+        self.show_page("SYSTEM_ImageFrame.qml", override_idle)
 
-    def show_html(self, html):
+    def show_html(self, html, resource_url=None, override_idle=None):
         """ Display an HTML page in the GUI
 
         Arguments:
             html (str): HTML text to display
+            resource_url (str): Pointer to HTML resources
         """
         self.clear()
-        self["url"] = ""  # TODO: Save to a temp file... html
-        self.show_page("SYSTEM_HTMLFRAME")
+        self["html"] = html
+        self["resourceLocation"] = resource_url
+        self.show_page("SYSTEM_HtmlFrame.qml", override_idle)
 
-    def show_url(self, url):
+    def show_url(self, url, override_idle=None):
         """ Display an HTML page in the GUI
 
         Arguments:
@@ -454,7 +458,7 @@ class SkillGUI:
         """
         self.clear()
         self["url"] = url
-        self.show_page("SYSTEM_HTMLFRAME")
+        self.show_page("SYSTEM_UrlFrame.qml", override_idle)
 
 
 def resting_screen_handler(name=None):
