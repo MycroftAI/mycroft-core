@@ -468,6 +468,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 # Save positive wake words as appropriate
                 if said_wake_word:
                     audio = None
+                    mtd = None
                     if self.save_wake_words:
                         # Save wake word locally
                         audio = self._create_audio_data(byte_data, source)
@@ -488,7 +489,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                             target=self._upload_wake_word, daemon=True,
                             args=[audio or
                                   self._create_audio_data(byte_data, source),
-                                  mtd]
+                                  mtd or self._compile_metadata()]
                         ).start()
 
     @staticmethod
