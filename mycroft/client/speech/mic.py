@@ -19,6 +19,7 @@ import collections
 import datetime
 import json
 import os
+from os.path import isdir, join
 import pyaudio
 import requests
 import speech_recognition
@@ -29,6 +30,7 @@ from speech_recognition import (
     AudioSource,
     AudioData
 )
+from tempfile import gettempdir
 from threading import Thread, Lock
 
 from mycroft.api import DeviceApi
@@ -204,6 +206,10 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         else:
             self.save_utterances = listener_config.get('save_utterances',
                                                        False)
+
+        self.save_wake_words = listener_config.get('record_wake_words')
+        self.saved_wake_words_dir = join(gettempdir(), 'mycroft_wake_words')
+
         self.upload_lock = Lock()
         self.filenames_to_upload = []
         self.mic_level_file = os.path.join(get_ipc_directory(), "mic_level")
@@ -347,7 +353,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         """
         self._stop_signaled = True
 
-    def _upload_wake_word(self, audio):
+    def _compile_metadata(self):
         ww_module = self.wake_word_recognizer.__class__.__name__
         if ww_module == 'PreciseHotword':
             model_path = self.wake_word_recognizer.precise_model
@@ -356,7 +362,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         else:
             model_hash = '0'
 
-        metadata = {
+        return {
             'name': self.wake_word_name.replace(' ', '-'),
             'engine': md5(ww_module.encode('utf-8')).hexdigest(),
             'time': str(int(1000 * get_time())),
@@ -364,6 +370,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             'accountId': self.account_id,
             'model': str(model_hash)
         }
+
+    def _upload_wake_word(self, audio, metadata):
         requests.post(
             self.upload_url, files={
                 'audio': BytesIO(audio.get_wav_data()),
@@ -456,13 +464,33 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 audio_data = chopped + silence
                 said_wake_word = \
                     self.wake_word_recognizer.found_wake_word(audio_data)
-                # if a wake word is success full then upload wake word
-                if said_wake_word and self.config['opt_in'] and not \
-                        self.upload_disabled:
-                    Thread(
-                        target=self._upload_wake_word, daemon=True,
-                        args=[self._create_audio_data(byte_data, source)]
-                    ).start()
+
+                # Save positive wake words as appropriate
+                if said_wake_word:
+                    audio = None
+                    mtd = None
+                    if self.save_wake_words:
+                        # Save wake word locally
+                        audio = self._create_audio_data(byte_data, source)
+                        mtd = self._compile_metadata()
+                        if not isdir(self.saved_wake_words_dir):
+                            os.mkdir(self.saved_wake_words_dir)
+                        module = self.wake_word_recognizer.__class__.__name__
+
+                        fn = join(self.saved_wake_words_dir,
+                                  '_'.join([str(mtd[k]) for k in sorted(mtd)])
+                                  + '.wav')
+                        with open(fn, 'wb') as f:
+                            f.write(audio.get_wav_data())
+
+                    if self.config['opt_in'] and not self.upload_disabled:
+                        # Upload wake word for opt_in people
+                        Thread(
+                            target=self._upload_wake_word, daemon=True,
+                            args=[audio or
+                                  self._create_audio_data(byte_data, source),
+                                  mtd or self._compile_metadata()]
+                        ).start()
 
     @staticmethod
     def _create_audio_data(raw_data, source):

@@ -224,8 +224,7 @@ class SkillSettings(dict):
         except RequestException:
             return
 
-        settings = (self._request_my_settings(self.skill_gid) or
-                    self._request_other_settings(self.skill_gid))
+        settings = self._request_my_settings(self.skill_gid)
         if settings:
             self.save_skill_settings(settings)
 
@@ -268,11 +267,11 @@ class SkillSettings(dict):
                     if json_file:
                         data = json.load(f)
                     else:
-                        data = yaml.load(f)
+                        data = yaml.safe_load(f)
             except Exception as e:
                 LOG.error("Failed to load setting file: " + self._meta_path)
                 LOG.error(repr(e))
-                data = copy.copy(BLANK_META)
+                data = {}
         else:
             data = {}
 
@@ -297,7 +296,8 @@ class SkillSettings(dict):
         """
         if self._meta_upload:
             try:
-                uuid = self._put_metadata(settings_meta)
+                uuid = self.api.upload_skill_metadata(
+                    self._type_cast(settings_meta, to_platform='web'))
                 return uuid
             except HTTPError as e:
                 if e.response.status_code in [422, 500, 501]:
@@ -366,8 +366,7 @@ class SkillSettings(dict):
         if settings_meta is None:
             return
         # Get settings
-        skills_settings = (self._request_my_settings(self.skill_gid) or
-                           self._request_other_settings(self.skill_gid))
+        skills_settings = self._request_my_settings(self.skill_gid)
 
         if skills_settings is not None:
             self.save_skill_settings(skills_settings)
@@ -386,6 +385,12 @@ class SkillSettings(dict):
                 self._blank_poll_timer.start()
             else:
                 self.initialize_remote_settings()
+        except DelayRequest:
+            # Delay 5 minutes and retry
+            self._blank_poll_timer = Timer(60 * 5,
+                                           self._init_blank_meta)
+            self._blank_poll_timer.daemon = True
+            self._blank_poll_timer.start()
         except Exception as e:
             LOG.exception('Failed to send blank meta: {}'.format(repr(e)))
 
@@ -514,26 +519,6 @@ class SkillSettings(dict):
                     return skill_settings
         return None
 
-    def _request_other_settings(self, identifier):
-        """ Retrieve skill settings from other devices by identifier
-        Args:
-            identifier (str): identifier for this skill
-        Returns:
-            settings (dict or None): the retrieved settings or None
-        """
-        path = \
-            "/" + self._device_identity + "/userSkill?identifier=" + identifier
-        try:
-            user_skill = self.api.request({"method": "GET", "path": path})
-        except RequestException:
-            # Some kind of Timeout, connection HTTPError, etc.
-            user_skill = None
-        if not user_skill or not user_skill[0]:
-            return None
-        else:
-            settings = self._type_cast(user_skill[0], to_platform='core')
-        return settings
-
     def _request_settings(self):
         """ Get all skill settings for this device from server.
 
@@ -541,48 +526,12 @@ class SkillSettings(dict):
             dict: dictionary with settings collected from the server.
         """
         try:
-            settings = self.api.request({
-                "method": "GET",
-                "path": self._api_path
-            })
+            settings = self.api.get_skill_settings()
         except RequestException:
             return None
 
         settings = [skills for skills in settings if skills is not None]
         return settings
-
-    def _put_metadata(self, settings_meta):
-        """ PUT settingsmeta to backend to be configured in server.
-            used in place of POST and PATCH.
-
-        Args:
-            settings_meta (dict): dictionary of the current settings meta data
-        """
-        settings_meta = self._type_cast(settings_meta, to_platform='web')
-        return self.api.request({
-            "method": "PUT",
-            "path": self._api_path,
-            "json": settings_meta
-        })
-
-    def _delete_metadata(self, uuid):
-        """ Delete the current skill metadata
-
-            TODO: UPDATE FOR NEW BACKEND
-        Args:
-            uuid (str): unique id of the skill
-        """
-        try:
-            LOG.debug("deleting metadata")
-            self.api.request({
-                "method": "DELETE",
-                "path": self._api_path + "/{}".format(uuid)
-            })
-        except Exception as e:
-            LOG.error(e)
-            LOG.error(
-                "cannot delete metadata because this"
-                "device is not original uploader of skill")
 
     @property
     def _should_upload_from_change(self):

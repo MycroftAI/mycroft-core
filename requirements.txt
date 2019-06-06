@@ -24,8 +24,8 @@ fasteners==0.14.1
 PyYAML==3.13
 
 msm==0.7.6
-msk==0.3.12
-adapt-parser==0.3.2
+msk==0.3.13
+adapt-parser==0.3.3
 padatious==0.4.6
 fann2==1.0.7
 padaos==0.1.9
