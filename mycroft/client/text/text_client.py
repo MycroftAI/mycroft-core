@@ -416,6 +416,11 @@ def rebuild_filtered_log():
 
 def handle_speak(event):
     global chat
+    # if the message is targeted and cli is not the target ignore utterance
+    if (event.context and 'destination' in event.context and
+            event.context['destination'] and
+            'cli' not in event.context['destination']):
+        return
     utterance = event.data.get('utterance')
     utterance = TTS.remove_ssml(utterance)
     if bSimple:
@@ -429,6 +434,11 @@ def handle_utterance(event):
     global chat
     global history
     utterance = event.data.get('utterances')[0]
+    # if the message is targeted and cli is not the target ignore utterance
+    if (event.context and 'destination' in event.context and
+            event.context['destination'] and
+            'cli' not in event.context['destination']):
+        return
     history.append(utterance)
     chat.append(utterance)
     set_screen_dirty()
@@ -1319,7 +1329,11 @@ def gui_main(stdscr):
                     # Treat this as an utterance
                     bus.emit(Message("recognizer_loop:utterance",
                                      {'utterances': [line.strip()],
-                                      'lang': config.get('lang', 'en-us')}))
+                                      'lang': config.get('lang', 'en-us')},
+                                     {'client_name': 'mycroft_cli',
+                                      'source': 'cli',
+                                      'destination': ["skills"]}
+                                     ))
                 hist_idx = -1
                 line = ""
             elif code == 16 or code == 545:  # Ctrl+P or Ctrl+Left (Previous)
@@ -1409,7 +1423,10 @@ def simple_cli():
             print("Input (Ctrl+C to quit):")
             line = sys.stdin.readline()
             bus.emit(Message("recognizer_loop:utterance",
-                             {'utterances': [line.strip()]}))
+                             {'utterances': [line.strip()]},
+                             {'client_name': 'mycroft_simple_cli',
+                              'source': 'cli',
+                              'destination': ["skills"]}))
     except KeyboardInterrupt as e:
         # User hit Ctrl+C to quit
         print("")
