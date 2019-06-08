@@ -133,6 +133,7 @@ class Action(Enum):
     TRIGGER = auto()
     BINARY_QUERY = auto()  # yes/no answer
     INFORMATION_QUERY = auto()  # detailed answer
+    LOCATE = auto()
 
 
 @total_ordering
