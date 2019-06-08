@@ -243,13 +243,16 @@ class IoTRequest():
                     ' value={value},'
                     ' state={state}'
                     ')')
+        entity = '"{}"'.format(self.entity) if self.entity else None
+        scene = '"{}"'.format(self.scene) if self.scene else None
+        value = '"{}"'.format(self.value) if self.value is not None else None
         return template.format(
             action=self.action,
             thing=self.thing,
             attribute=self.attribute,
-            entity='"{}"'.format(self.entity) if self.entity else None,
-            scene='"{}"'.format(self.scene) if self.scene else None,
-            value='"{}"'.format(self.value) if self.value is not None else None,
+            entity=entity,
+            scene=scene,
+            value=value,
             state=self.state
         )
 
@@ -412,11 +415,12 @@ class CommonIoTSkill(MycroftSkill, ABC):
     def speak(self, utterance, *args, **kwargs):
         if self._current_iot_request:
             self.bus.emit(Message(_BusKeys.SPEAK,
-                              data={"skill_id": self.skill_id,
-                                    IOT_REQUEST_ID: self._current_iot_request,
-                                    "speak_args": args,
-                                    "speak_kwargs": kwargs,
-                                    "speak": utterance}))
+                                  data={"skill_id": self.skill_id,
+                                        IOT_REQUEST_ID:
+                                            self._current_iot_request,
+                                        "speak_args": args,
+                                        "speak_kwargs": kwargs,
+                                        "speak": utterance}))
         else:
             super().speak(utterance, *args, **kwargs)
 
