@@ -17,6 +17,8 @@ import json
 from abc import ABCMeta, abstractmethod
 from requests import post, put, exceptions
 from speech_recognition import Recognizer
+from queue import Queue
+from threading import Thread
 
 from mycroft.api import STTApi
 from mycroft.configuration import Configuration
@@ -176,6 +178,68 @@ class DeepSpeechServerSTT(STT):
         return response.text
 
 
+class StreamThread(Thread):
+    def __init__(self, url, queue):
+        super().__init__()
+        self.url = url
+        self.queue = queue
+        self.response = None
+
+    def _get_data(self):
+        while True:
+            d = self.queue.get()
+            if d is None:
+                break
+            yield d
+            self.queue.task_done()
+
+    def run(self):
+        self.response = post(self.url, data=self._get_data(), stream=True)
+
+
+class DeepSpeechStreamServerSTT(DeepSpeechServerSTT):
+    """
+        Streaming STT interface for the deepspeech-server:
+        https://github.com/JPEWdev/deep-dregs
+        use this if you want to host DeepSpeech yourself
+    """
+    def __init__(self):
+        super().__init__()
+        self.stream = None
+        self.can_stream = self.config.get('stream_uri') is not None
+
+    def execute(self, audio, language=None):
+        if self.stream is None:
+            return super().execute(audio, language)
+        return self.stream_stop()
+
+    def stream_stop(self):
+        if self.stream is not None:
+            self.queue.put(None)
+            self.stream.join()
+
+            response = self.stream.response
+
+            self.stream = None
+            self.queue = None
+            if response is None:
+                return None
+            return response.text
+        return None
+
+    def stream_data(self, data):
+        self.queue.put(data)
+
+    def stream_start(self, language=None):
+        self.stream_stop()
+        language = language or self.lang
+        if not language.startswith("en"):
+            raise ValueError("Deepspeech is currently english only")
+        self.queue = Queue()
+        self.stream = StreamThread(self.config.get("stream_uri"), self.queue)
+        self.stream.start()
+
+
 class KaldiSTT(STT):
     def __init__(self):
         super(KaldiSTT, self).__init__()
@@ -244,6 +308,7 @@ class STTFactory:
         "govivace": GoVivaceSTT,
         "houndify": HoundifySTT,
         "deepspeech_server": DeepSpeechServerSTT,
+        "deepspeech_stream_server": DeepSpeechStreamServerSTT,
         "mycroft_deepspeech": MycroftDeepSpeechSTT
     }
 
