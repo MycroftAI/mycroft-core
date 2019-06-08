@@ -32,6 +32,25 @@ from mycroft.util.log import LOG
 from mycroft.util import find_input_device
 from queue import Queue, Empty
 
+AUDIO_DATA = 0
+STREAM_START = 1
+STREAM_DATA = 2
+STREAM_STOP = 3
+
+
+class AudioStreamHandler(object):
+    def __init__(self, queue):
+        self.queue = queue
+
+    def stream_start(self):
+        self.queue.put((STREAM_START, None))
+
+    def stream_chunk(self, chunk):
+        self.queue.put((STREAM_DATA, chunk))
+
+    def stream_stop(self):
+        self.queue.put((STREAM_STOP, None))
+
 
 class AudioProducer(Thread):
     """
@@ -40,7 +59,7 @@ class AudioProducer(Thread):
     mic for potential speech chunks and pushes them onto the queue.
     """
 
-    def __init__(self, state, queue, mic, recognizer, emitter):
+    def __init__(self, state, queue, mic, recognizer, emitter, stream_handler):
         super(AudioProducer, self).__init__()
         self.daemon = True
         self.state = state
@@ -48,14 +67,16 @@ class AudioProducer(Thread):
         self.mic = mic
         self.recognizer = recognizer
         self.emitter = emitter
+        self.stream_handler = stream_handler
 
     def run(self):
         with self.mic as source:
             self.recognizer.adjust_for_ambient_noise(source)
             while self.state.running:
                 try:
-                    audio = self.recognizer.listen(source, self.emitter)
-                    self.queue.put(audio)
+                    audio = self.recognizer.listen(source, self.emitter,
+                                                   self.stream_handler)
+                    self.queue.put((AUDIO_DATA, audio))
                 except IOError as e:
                     # NOTE: Audio stack on raspi is slightly different, throws
                     # IOError every other listen, almost like it can't handle
@@ -63,6 +84,9 @@ class AudioProducer(Thread):
                     # The internet was not helpful.
                     # http://stackoverflow.com/questions/10733903/pyaudio-input-overflowed
                     self.emitter.emit("recognizer_loop:ioerror", e)
+                finally:
+                    if self.stream_handler is not None:
+                        self.stream_handler.stream_stop()
 
     def stop(self):
         """
@@ -99,17 +123,28 @@ class AudioConsumer(Thread):
 
     def read(self):
         try:
-            audio = self.queue.get(timeout=0.5)
+            message = self.queue.get(timeout=0.5)
         except Empty:
             return
 
-        if audio is None:
+        if message is None:
             return
 
-        if self.state.sleeping:
-            self.wake_up(audio)
+        tag, data = message
+
+        if tag == AUDIO_DATA:
+            if self.state.sleeping:
+                self.wake_up(data)
+            else:
+                self.process(data)
+        elif tag == STREAM_START:
+            self.stt.stream_start()
+        elif tag == STREAM_DATA:
+            self.stt.stream_data(data)
+        elif tag == STREAM_STOP:
+            self.stt.stream_stop()
         else:
-            self.process(audio)
+            LOG.error("Unknown audio queue type %r" % audio)
 
     # TODO: Localization
     def wake_up(self, audio):
@@ -275,13 +310,17 @@ class RecognizerLoop(EventEmitter):
             Start consumer and producer threads
         """
         self.state.running = True
+        stt = STTFactory.create()
         queue = Queue()
+        stream_handler = None
+        if stt.can_stream:
+            stream_handler = AudioStreamHandler(queue)
         self.producer = AudioProducer(self.state, queue, self.microphone,
-                                      self.responsive_recognizer, self)
+                                      self.responsive_recognizer, self,
+                                      stream_handler)
         self.producer.start()
         self.consumer = AudioConsumer(self.state, queue, self,
-                                      STTFactory.create(),
-                                      self.wakeup_recognizer,
+                                      stt, self.wakeup_recognizer,
                                       self.wakeword_recognizer)
         self.consumer.start()
 

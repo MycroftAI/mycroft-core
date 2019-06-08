@@ -33,6 +33,7 @@ class STT:
         self.config = config_stt.get(config_stt.get("module"), {})
         self.credential = self.config.get("credential", {})
         self.recognizer = Recognizer()
+        self.can_stream = False
 
     @staticmethod
     def init_language(config_core):
@@ -44,6 +45,15 @@ class STT:
 
     @abstractmethod
     def execute(self, audio, language=None):
+        pass
+
+    def stream_start(self):
+        pass
+
+    def stream_data(self, data):
+        pass
+
+    def stream_stop(self):
         pass
 
 
