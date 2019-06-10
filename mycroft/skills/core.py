@@ -1563,8 +1563,8 @@ class MycroftSkill:
 
             Args:
                 handler:               method to be called
-                when (datetime/int):   datetime (in system timezone) or number
-                                       of seconds in the future when the
+                when (datetime/int/float):   datetime (in system timezone) or
+                                       number of seconds in the future when the
                                        handler should be called
                 data (dict, optional): data to send when the handler is called
                 name (str, optional):  reference name
@@ -1573,7 +1573,7 @@ class MycroftSkill:
                                        name.
         """
         data = data or {}
-        if isinstance(when, int):
+        if isinstance(when, (int, float)):
             when = datetime.now() + timedelta(seconds=when)
         self._schedule_event(handler, when, data, name)
 
