@@ -20,6 +20,9 @@ from speech_recognition import Recognizer
 from queue import Queue
 from threading import Thread
 
+from google.cloud import speech
+from google.oauth2 import service_account
+
 from mycroft.api import STTApi
 from mycroft.configuration import Configuration
 from mycroft.util.log import LOG
@@ -240,6 +243,100 @@ class DeepSpeechStreamServerSTT(DeepSpeechServerSTT):
         self.stream.start()
 
 
+class GoogleStreamThread(Thread):
+    def __init__(self, queue, lang, client, streaming_config):
+        super().__init__()
+        LOG.info('WAGNER Thread init')
+        self.lang = lang
+        self.client = client
+        self.streaming_config = streaming_config
+        self.queue = queue
+        self.response = None
+        self.text = ''
+
+    def _get_data(self):
+        LOG.info('WAGNER Thread get_data init')
+        while True:
+            d = self.queue.get()
+            if d is None:
+                break
+            LOG.info('WAGNER Thread get_data yield d')
+            yield d
+            self.queue.task_done()
+
+    def run(self):
+        LOG.info('WAGNER RUN!')
+        audio = self._get_data()
+        req = (speech.types.StreamingRecognizeRequest(audio_content=x) for x in audio)
+        responses = self.client.streaming_recognize(self.streaming_config, req)
+        for res in responses:
+            LOG.info('WAGNER -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=')
+            LOG.info(res)
+            LOG.info('WAGNER -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=')
+            if res.results and res.results[0].is_final:
+                self.text = res.results[0].alternatives[0].transcript
+
+
+class GoogleCloudStreamingSTT(GoogleJsonSTT):
+    def __init__(self):
+        super(GoogleCloudStreamingSTT, self).__init__()
+        # override language with module specific language selection
+        self.lang = self.config.get('lang') or self.lang
+
+        self.stream = None
+        self.can_stream = True
+
+        credentials = service_account.Credentials.from_service_account_info(
+            self.credential.get('json')
+        )
+
+        self.client = speech.SpeechClient(credentials=credentials)
+        recognition_config = speech.types.RecognitionConfig(
+            encoding=speech.enums.RecognitionConfig.AudioEncoding.LINEAR16,
+            sample_rate_hertz=16000,
+            language_code=self.lang,
+            model='command_and_search',
+            max_alternatives=1,
+        )
+        self.streaming_config = speech.types.StreamingRecognitionConfig(
+            config=recognition_config,
+            interim_results=True,
+            single_utterance=True,
+        )
+
+    def execute(self, audio, language=None):
+        #if self.stream is None:
+        #    return super().execute(audio, language)
+        return self.stream_stop()
+
+    def stream_stop(self):
+        LOG.info('WAGNER STOP')
+        if self.stream is not None:
+            self.queue.put(None)
+            self.stream.join()
+
+            text = self.stream.text
+
+            self.stream = None
+            self.queue = None
+            if not text:
+                return None
+            return text
+        return None
+
+    def stream_data(self, data):
+        LOG.info('WAGNER data! {} {}'.format(type(data), len(data)))
+        self.queue.put(data)
+
+    def stream_start(self, language=None):
+        LOG.info('WAGNER START')
+        self.lang = language or self.lang
+        self.stream_stop()
+        self.queue = Queue()
+        self.stream = GoogleStreamThread(self.queue, self.lang, self.client, self.streaming_config)
+        self.stream.start()
+
+
 class KaldiSTT(STT):
     def __init__(self):
         super(KaldiSTT, self).__init__()
@@ -301,6 +398,7 @@ class STTFactory:
         "mycroft": MycroftSTT,
         "google": GoogleSTT,
         "google_cloud": GoogleCloudSTT,
+        "google_cloud_streaming": GoogleCloudStreamingSTT,
         "wit": WITSTT,
         "ibm": IBMSTT,
         "kaldi": KaldiSTT,

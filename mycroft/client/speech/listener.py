@@ -74,6 +74,7 @@ class AudioProducer(Thread):
             self.recognizer.adjust_for_ambient_noise(source)
             while self.state.running:
                 try:
+                    LOG.info('WAGNER listen')
                     audio = self.recognizer.listen(source, self.emitter,
                                                    self.stream_handler)
                     self.queue.put((AUDIO_DATA, audio))
@@ -132,6 +133,8 @@ class AudioConsumer(Thread):
 
         tag, data = message
 
+        LOG.info('WAGNER MESSAGE TAG {}'.format(tag))
+
         if tag == AUDIO_DATA:
             if self.state.sleeping:
                 self.wake_up(data)
@@ -144,7 +147,7 @@ class AudioConsumer(Thread):
         elif tag == STREAM_STOP:
             self.stt.stream_stop()
         else:
-            LOG.error("Unknown audio queue type %r" % audio)
+            LOG.error("Unknown audio queue type %r" % tag)
 
     # TODO: Localization
     def wake_up(self, audio):
