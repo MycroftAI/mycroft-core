@@ -449,10 +449,21 @@ class MycroftSkillTest(unittest.TestCase):
         emitter = mock.MagicMock()
         s = SimpleSkill1()
         s.bind(emitter)
-        s.schedule_event(s.handler, datetime.now(), name='sched_handler1')
+
+        s.schedule_event(s.handler, datetime.now(), name='datetime_handler')
         # Check that the handler was registered with the emitter
-        self.assertEqual(emitter.once.call_args[0][0], 'A:sched_handler1')
-        self.assertTrue('A:sched_handler1' in [e[0] for e in s.events])
+        self.assertEqual(emitter.once.call_args[0][0], 'A:datetime_handler')
+        self.assertTrue('A:datetime_handler' in [e[0] for e in s.events])
+
+        s.schedule_event(s.handler, 1, name='int_handler')
+        # Check that the handler was registered with the emitter
+        self.assertEqual(emitter.once.call_args[0][0], 'A:int_handler')
+        self.assertTrue('A:int_handler' in [e[0] for e in s.events])
+
+        s.schedule_event(s.handler, .5, name='float_handler')
+        # Check that the handler was registered with the emitter
+        self.assertEqual(emitter.once.call_args[0][0], 'A:float_handler')
+        self.assertTrue('A:float_handler' in [e[0] for e in s.events])
 
     @mock.patch.dict(Configuration._Configuration__config, BASE_CONF)
     def test_remove_scheduled_event(self):
