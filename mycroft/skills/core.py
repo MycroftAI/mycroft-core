@@ -24,7 +24,6 @@ import traceback
 from inspect import signature
 from datetime import datetime, timedelta
 
-import abc
 import re
 from itertools import chain
 from adapt.intent import Intent, IntentBuilder
@@ -1478,7 +1477,6 @@ class MycroftSkill:
             LOG.error("Failed to stop skill: {}".format(self.name),
                       exc_info=True)
 
-    @abc.abstractmethod
     def stop(self):
         pass
 
