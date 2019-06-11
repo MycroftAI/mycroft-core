@@ -62,6 +62,11 @@ class _BusKeys():
     SPEAK = BASE + ":speak"
 
 
+####################################################################
+# When adding a new Thing, Attribute, etc, be sure to also add the #
+# corresponding voc files to the skill-iot-control.                #
+####################################################################
+
 @unique
 class Thing(Enum):
     """
@@ -134,6 +139,8 @@ class Action(Enum):
     BINARY_QUERY = auto()  # yes/no answer
     INFORMATION_QUERY = auto()  # detailed answer
     LOCATE = auto()
+    LOCK = auto()
+    UNLOCK = auto()
 
 
 @total_ordering
