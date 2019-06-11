@@ -74,7 +74,6 @@ class AudioProducer(Thread):
             self.recognizer.adjust_for_ambient_noise(source)
             while self.state.running:
                 try:
-                    LOG.info('WAGNER listen')
                     audio = self.recognizer.listen(source, self.emitter,
                                                    self.stream_handler)
                     self.queue.put((AUDIO_DATA, audio))
@@ -132,8 +131,6 @@ class AudioConsumer(Thread):
             return
 
         tag, data = message
-
-        LOG.info('WAGNER MESSAGE TAG {}'.format(tag))
 
         if tag == AUDIO_DATA:
             if self.state.sleeping:
