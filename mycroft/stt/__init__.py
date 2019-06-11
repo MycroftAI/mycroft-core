@@ -232,14 +232,27 @@ class StreamingSTT(STT):
     @abstractmethod
     def create_streaming_thread(self):
         pass
+
+class DeepSpeechStreamThread(StreamThread):
+    def __init__(self, queue, language, url):
         if not language.startswith("en"):
             raise ValueError("Deepspeech is currently english only")
+        super().__init__(queue, language)
+        self.url = url
+
+    def handle_audio_stream(self, audio):
+        self.response = post(self.url, data=audio, stream=True)
+        return self.response.text if self.response else None
+
+class DeepSpeechStreamServerSTT(StreamingSTT):
+    def create_streaming_thread(self):
         self.queue = Queue()
-        self.stream = StreamThread(self.config.get("stream_uri"), self.queue)
-        self.stream.start()
-
-
-class GoogleStreamThread(Thread):
+        return DeepSpeechStreamThread(
+            self.queue,
+            self.lang,
+            self.config.get('stream_uri')
+        )
+    
     def __init__(self, queue, lang, client, streaming_config):
         super().__init__()
         LOG.info('WAGNER Thread init')
