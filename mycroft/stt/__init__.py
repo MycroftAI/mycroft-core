@@ -20,8 +20,8 @@ from speech_recognition import Recognizer
 from queue import Queue
 from threading import Thread
 
-from google.cloud import speech
-from google.oauth2 import service_account
+from google.cloud.speech import SpeechClient, types, enums
+from google.oauth2.service_account import Credentials
 
 from mycroft.api import STTApi
 from mycroft.configuration import Configuration
