@@ -52,16 +52,6 @@ class STT:
     def execute(self, audio, language=None):
         pass
 
-    def stream_start(self):
-        pass
-
-    def stream_data(self, data):
-        pass
-
-    def stream_stop(self):
-        pass
-
-
 class TokenSTT(STT):
     __metaclass__ = ABCMeta
 
@@ -182,11 +172,12 @@ class DeepSpeechServerSTT(STT):
 
 
 class StreamThread(Thread):
-    def __init__(self, url, queue):
+    __metaclass__ = ABCMeta
+
+    def __init__(self, queue, language):
         super().__init__()
-        self.url = url
+        self.language = language
         self.queue = queue
-        self.response = None
 
     def _get_data(self):
         while True:
@@ -197,45 +188,50 @@ class StreamThread(Thread):
             self.queue.task_done()
 
     def run(self):
-        self.response = post(self.url, data=self._get_data(), stream=True)
+        return self.handle_audio_stream(self._get_data(), self.language)
 
+    @abstractmethod
+    def handle_audio_stream(self, audio, language):
+        pass
 
-class DeepSpeechStreamServerSTT(DeepSpeechServerSTT):
-    """
-        Streaming STT interface for the deepspeech-server:
-        https://github.com/JPEWdev/deep-dregs
-        use this if you want to host DeepSpeech yourself
-    """
+class StreamingSTT(STT):
+    __metaclass__ = ABCMeta
+
     def __init__(self):
         super().__init__()
         self.stream = None
-        self.can_stream = self.config.get('stream_uri') is not None
+        self.can_stream = True
 
-    def execute(self, audio, language=None):
-        if self.stream is None:
-            return super().execute(audio, language)
-        return self.stream_stop()
+    def stream_start(self, language=None):
+        self.stream_stop()
+        language = language or self.lang
+        self.queue = Queue()
+        self.stream = self.create_streaming_thread()
+        self.stream.start()
+
+    def stream_data(self, data):
+        self.queue.put(data)
 
     def stream_stop(self):
         if self.stream is not None:
             self.queue.put(None)
             self.stream.join()
 
-            response = self.stream.response
+            text = self.stream.text
 
             self.stream = None
             self.queue = None
-            if response is None:
-                return None
-            return response.text
+            return text
         return None
 
-    def stream_data(self, data):
-        self.queue.put(data)
+    def execute(self, audio, language=None):
+        if self.stream is None and self.fallback_stt:
+            return self.fallback_stt.execute(audio, language)
+        return self.stream_stop()
 
-    def stream_start(self, language=None):
-        self.stream_stop()
-        language = language or self.lang
+    @abstractmethod
+    def create_streaming_thread(self):
+        pass
         if not language.startswith("en"):
             raise ValueError("Deepspeech is currently english only")
         self.queue = Queue()
