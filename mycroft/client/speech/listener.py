@@ -144,7 +144,7 @@ class AudioConsumer(Thread):
         elif tag == STREAM_STOP:
             self.stt.stream_stop()
         else:
-            LOG.error("Unknown audio queue type %r" % audio)
+            LOG.error("Unknown audio queue type %r" % message)
 
     # TODO: Localization
     def wake_up(self, audio):
