@@ -194,6 +194,7 @@ class StreamThread(Thread):
     def handle_audio_stream(self, audio, language):
         pass
 
+
 class StreamingSTT(STT):
     __metaclass__ = ABCMeta
 
@@ -225,13 +226,12 @@ class StreamingSTT(STT):
         return None
 
     def execute(self, audio, language=None):
-        if self.stream is None and self.fallback_stt:
-            return self.fallback_stt.execute(audio, language)
         return self.stream_stop()
 
     @abstractmethod
     def create_streaming_thread(self):
         pass
+
 
 class DeepSpeechStreamThread(StreamThread):
     def __init__(self, queue, language, url):
@@ -244,6 +244,7 @@ class DeepSpeechStreamThread(StreamThread):
         self.response = post(self.url, data=audio, stream=True)
         return self.response.text if self.response else None
 
+
 class DeepSpeechStreamServerSTT(StreamingSTT):
     def create_streaming_thread(self):
         self.queue = Queue()
@@ -252,6 +253,7 @@ class DeepSpeechStreamServerSTT(StreamingSTT):
             self.lang,
             self.config.get('stream_uri')
         )
+
     
 class GoogleStreamThread(StreamThread):
     def __init__(self, queue, lang, client, streaming_config):
@@ -266,6 +268,7 @@ class GoogleStreamThread(StreamThread):
             if res.results and res.results[0].is_final:
                 return res.results[0].alternatives[0].transcript
         return None
+
 
 class GoogleCloudStreamingSTT(StreamingSTT):
     def __init__(self):
