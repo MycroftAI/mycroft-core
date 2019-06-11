@@ -254,7 +254,7 @@ class DeepSpeechStreamServerSTT(StreamingSTT):
             self.config.get('stream_uri')
         )
 
-    
+
 class GoogleStreamThread(StreamThread):
     def __init__(self, queue, lang, client, streaming_config):
         super().__init__(queue, lang)
