@@ -20,9 +20,6 @@ from speech_recognition import Recognizer
 from queue import Queue
 from threading import Thread
 
-from google.cloud.speech import SpeechClient, types, enums
-from google.oauth2.service_account import Credentials
-
 from mycroft.api import STTApi
 from mycroft.configuration import Configuration
 from mycroft.util.log import LOG
@@ -274,6 +271,10 @@ class GoogleStreamThread(StreamThread):
 
 class GoogleCloudStreamingSTT(StreamingSTT):
     def __init__(self):
+        global SpeechClient, types, enums, Credentials
+        from google.cloud.speech import SpeechClient, types, enums
+        from google.oauth2.service_account import Credentials
+
         super(GoogleCloudStreamingSTT, self).__init__()
         # override language with module specific language selection
         self.language = self.config.get('lang') or self.lang
