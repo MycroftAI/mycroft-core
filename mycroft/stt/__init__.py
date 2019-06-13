@@ -49,6 +49,7 @@ class STT:
     def execute(self, audio, language=None):
         pass
 
+
 class TokenSTT(STT):
     __metaclass__ = ABCMeta
 
