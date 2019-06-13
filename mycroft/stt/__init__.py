@@ -178,6 +178,7 @@ class StreamThread(Thread):
         super().__init__()
         self.language = language
         self.queue = queue
+        self.text = None
 
     def _get_data(self):
         while True:
@@ -240,9 +241,10 @@ class DeepSpeechStreamThread(StreamThread):
         super().__init__(queue, language)
         self.url = url
 
-    def handle_audio_stream(self, audio):
+    def handle_audio_stream(self, audio, language):
         self.response = post(self.url, data=audio, stream=True)
-        return self.response.text if self.response else None
+        self.text = self.response.text if self.response else None
+        return self.text
 
 
 class DeepSpeechStreamServerSTT(StreamingSTT):
@@ -261,13 +263,13 @@ class GoogleStreamThread(StreamThread):
         self.client = client
         self.streaming_config = streaming_config
 
-    def handle_audio_stream(self, audio):
+    def handle_audio_stream(self, audio, language):
         req = (types.StreamingRecognizeRequest(audio_content=x) for x in audio)
         responses = self.client.streaming_recognize(self.streaming_config, req)
         for res in responses:
             if res.results and res.results[0].is_final:
-                return res.results[0].alternatives[0].transcript
-        return None
+                self.text = res.results[0].alternatives[0].transcript
+        return self.text
 
 
 class GoogleCloudStreamingSTT(StreamingSTT):
