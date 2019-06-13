@@ -108,8 +108,9 @@ class AudioConsumerTest(unittest.TestCase):
 
     @unittest.skip('Disabled while unittests are brought upto date')
     def test_wakeword_in_beginning(self):
-        self.queue.put((AUDIO_DATA,
-                        self.__create_sample_from_test_file('weather_mycroft')))
+        tag = AUDIO_DATA
+        data = self.__create_sample_from_test_file('weather_mycroft')
+        self.queue.put((tag, data))
         self.recognizer.set_transcriptions(["what's the weather next week"])
         monitor = {}
 
@@ -158,8 +159,9 @@ class AudioConsumerTest(unittest.TestCase):
         self.assertTrue(self.loop.state.sleeping)
 
     def test_wakeup(self):
-        self.queue.put((AUDIO_DATA,
-                        self.__create_sample_from_test_file('mycroft_wakeup')))
+        tag = AUDIO_DATA
+        data = self.__create_sample_from_test_file('mycroft_wakeup')
+        self.queue.put((tag, data))
         self.loop.sleep()
         self.consumer.read()
         self.assertFalse(self.loop.state.sleeping)
