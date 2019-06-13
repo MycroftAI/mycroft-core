@@ -170,6 +170,9 @@ class DeepSpeechServerSTT(STT):
 
 
 class StreamThread(Thread):
+    """
+        ABC class to be used with StreamingSTT class implementations.
+    """
     __metaclass__ = ABCMeta
 
     def __init__(self, queue, language):
@@ -195,6 +198,9 @@ class StreamThread(Thread):
 
 
 class StreamingSTT(STT):
+    """
+        ABC class for threaded streaming STT implemenations.
+    """
     __metaclass__ = ABCMeta
 
     def __init__(self):
@@ -246,6 +252,18 @@ class DeepSpeechStreamThread(StreamThread):
 
 
 class DeepSpeechStreamServerSTT(StreamingSTT):
+    """
+        Streaming STT interface for the deepspeech-server:
+        https://github.com/JPEWdev/deep-dregs
+        use this if you want to host DeepSpeech yourself
+        STT config will look like this:
+
+        "stt": {
+            "module": "deepspeech_stream_server",
+            "deepspeech_stream_server": {
+                "stream_uri": "http://localhost:8080/stt?format=16K_PCM16"
+        ...
+    """
     def create_streaming_thread(self):
         self.queue = Queue()
         return DeepSpeechStreamThread(
@@ -271,6 +289,22 @@ class GoogleStreamThread(StreamThread):
 
 
 class GoogleCloudStreamingSTT(StreamingSTT):
+    """
+        Streaming STT interface for Google Cloud Speech-To-Text
+        To use pip install google-cloud-speech and add the
+        Google API key to local mycroft.conf file. The STT config
+        will look like this:
+
+        "stt": {
+            "module": "google_cloud_streaming",
+            "google_cloud_streaming": {
+                "credential": {
+                    "json": {
+                        # Paste Google API JSON here
+        ...
+
+    """
+
     def __init__(self):
         global SpeechClient, types, enums, Credentials
         from google.cloud.speech import SpeechClient, types, enums
