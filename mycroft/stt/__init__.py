@@ -25,9 +25,8 @@ from mycroft.configuration import Configuration
 from mycroft.util.log import LOG
 
 
-class STT:
-    __metaclass__ = ABCMeta
-
+class STT(metaclass=ABCMeta):
+    """ STT Base class, all  STT backends derives from this one. """
     def __init__(self):
         config_core = Configuration.get()
         self.lang = str(self.init_language(config_core))
@@ -50,24 +49,19 @@ class STT:
         pass
 
 
-class TokenSTT(STT):
-    __metaclass__ = ABCMeta
-
+class TokenSTT(STT, metaclass=ABCMeta):
     def __init__(self):
         super(TokenSTT, self).__init__()
         self.token = str(self.credential.get("token"))
 
 
-class GoogleJsonSTT(STT):
-    __metaclass__ = ABCMeta
-
+class GoogleJsonSTT(STT, metaclass=ABCMeta):
     def __init__(self):
         super(GoogleJsonSTT, self).__init__()
         self.json_credentials = json.dumps(self.credential.get("json"))
 
 
-class BasicSTT(STT):
-    __metaclass__ = ABCMeta
+class BasicSTT(STT, metaclass=ABCMeta):
 
     def __init__(self):
         super(BasicSTT, self).__init__()
@@ -75,8 +69,7 @@ class BasicSTT(STT):
         self.password = str(self.credential.get("password"))
 
 
-class KeySTT(STT):
-    __metaclass__ = ABCMeta
+class KeySTT(STT, metaclass=ABCMeta):
 
     def __init__(self):
         super(KeySTT, self).__init__()
@@ -169,11 +162,10 @@ class DeepSpeechServerSTT(STT):
         return response.text
 
 
-class StreamThread(Thread):
+class StreamThread(Thread, metaclass=ABCMeta):
     """
         ABC class to be used with StreamingSTT class implementations.
     """
-    __metaclass__ = ABCMeta
 
     def __init__(self, queue, language):
         super().__init__()
@@ -197,12 +189,10 @@ class StreamThread(Thread):
         pass
 
 
-class StreamingSTT(STT):
+class StreamingSTT(STT, metaclass=ABCMeta):
     """
         ABC class for threaded streaming STT implemenations.
     """
-    __metaclass__ = ABCMeta
-
     def __init__(self):
         super().__init__()
         self.stream = None

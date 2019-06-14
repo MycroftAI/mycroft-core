@@ -15,7 +15,7 @@
 from abc import ABCMeta, abstractmethod
 
 
-class AudioBackend:
+class AudioBackend(metaclass=ABCMeta):
     """
         Base class for all audio backend implementations.
 
@@ -23,7 +23,6 @@ class AudioBackend:
             config: configuration dict for the instance
             bus:    Mycroft messagebus emitter
     """
-    __metaclass__ = ABCMeta
 
     def __init__(self, config, bus):
         self._track_start_callback = None
