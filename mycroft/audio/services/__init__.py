@@ -114,7 +114,6 @@ class AudioBackend(metaclass=ABCMeta):
         """
         pass
 
-    @abstractmethod
     def seek_forward(self, seconds=1):
         """
             Skip X seconds
@@ -124,7 +123,6 @@ class AudioBackend(metaclass=ABCMeta):
         """
         pass
 
-    @abstractmethod
     def seek_backward(self, seconds=1):
         """
             Rewind X seconds
