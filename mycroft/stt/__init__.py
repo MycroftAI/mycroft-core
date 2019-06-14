@@ -49,15 +49,6 @@ class STT:
     def execute(self, audio, language=None):
         pass
 
-    def stream_start(self):
-        pass
-
-    def stream_data(self, data):
-        pass
-
-    def stream_stop(self):
-        pass
-
 
 class TokenSTT(STT):
     __metaclass__ = ABCMeta
@@ -179,11 +170,16 @@ class DeepSpeechServerSTT(STT):
 
 
 class StreamThread(Thread):
-    def __init__(self, url, queue):
+    """
+        ABC class to be used with StreamingSTT class implementations.
+    """
+    __metaclass__ = ABCMeta
+
+    def __init__(self, queue, language):
         super().__init__()
-        self.url = url
+        self.language = language
         self.queue = queue
-        self.response = None
+        self.text = None
 
     def _get_data(self):
         while True:
@@ -194,50 +190,155 @@ class StreamThread(Thread):
             self.queue.task_done()
 
     def run(self):
-        self.response = post(self.url, data=self._get_data(), stream=True)
+        return self.handle_audio_stream(self._get_data(), self.language)
+
+    @abstractmethod
+    def handle_audio_stream(self, audio, language):
+        pass
 
 
-class DeepSpeechStreamServerSTT(DeepSpeechServerSTT):
+class StreamingSTT(STT):
     """
-        Streaming STT interface for the deepspeech-server:
-        https://github.com/JPEWdev/deep-dregs
-        use this if you want to host DeepSpeech yourself
+        ABC class for threaded streaming STT implemenations.
     """
+    __metaclass__ = ABCMeta
+
     def __init__(self):
         super().__init__()
         self.stream = None
-        self.can_stream = self.config.get('stream_uri') is not None
+        self.can_stream = True
 
-    def execute(self, audio, language=None):
-        if self.stream is None:
-            return super().execute(audio, language)
-        return self.stream_stop()
+    def stream_start(self, language=None):
+        self.stream_stop()
+        language = language or self.lang
+        self.queue = Queue()
+        self.stream = self.create_streaming_thread()
+        self.stream.start()
+
+    def stream_data(self, data):
+        self.queue.put(data)
 
     def stream_stop(self):
         if self.stream is not None:
             self.queue.put(None)
             self.stream.join()
 
-            response = self.stream.response
+            text = self.stream.text
 
             self.stream = None
             self.queue = None
-            if response is None:
-                return None
-            return response.text
+            return text
         return None
 
-    def stream_data(self, data):
-        self.queue.put(data)
+    def execute(self, audio, language=None):
+        return self.stream_stop()
 
-    def stream_start(self, language=None):
-        self.stream_stop()
-        language = language or self.lang
+    @abstractmethod
+    def create_streaming_thread(self):
+        pass
+
+
+class DeepSpeechStreamThread(StreamThread):
+    def __init__(self, queue, language, url):
         if not language.startswith("en"):
             raise ValueError("Deepspeech is currently english only")
+        super().__init__(queue, language)
+        self.url = url
+
+    def handle_audio_stream(self, audio, language):
+        self.response = post(self.url, data=audio, stream=True)
+        self.text = self.response.text if self.response else None
+        return self.text
+
+
+class DeepSpeechStreamServerSTT(StreamingSTT):
+    """
+        Streaming STT interface for the deepspeech-server:
+        https://github.com/JPEWdev/deep-dregs
+        use this if you want to host DeepSpeech yourself
+        STT config will look like this:
+
+        "stt": {
+            "module": "deepspeech_stream_server",
+            "deepspeech_stream_server": {
+                "stream_uri": "http://localhost:8080/stt?format=16K_PCM16"
+        ...
+    """
+    def create_streaming_thread(self):
         self.queue = Queue()
-        self.stream = StreamThread(self.config.get("stream_uri"), self.queue)
-        self.stream.start()
+        return DeepSpeechStreamThread(
+            self.queue,
+            self.lang,
+            self.config.get('stream_uri')
+        )
+
+
+class GoogleStreamThread(StreamThread):
+    def __init__(self, queue, lang, client, streaming_config):
+        super().__init__(queue, lang)
+        self.client = client
+        self.streaming_config = streaming_config
+
+    def handle_audio_stream(self, audio, language):
+        req = (types.StreamingRecognizeRequest(audio_content=x) for x in audio)
+        responses = self.client.streaming_recognize(self.streaming_config, req)
+        for res in responses:
+            if res.results and res.results[0].is_final:
+                self.text = res.results[0].alternatives[0].transcript
+        return self.text
+
+
+class GoogleCloudStreamingSTT(StreamingSTT):
+    """
+        Streaming STT interface for Google Cloud Speech-To-Text
+        To use pip install google-cloud-speech and add the
+        Google API key to local mycroft.conf file. The STT config
+        will look like this:
+
+        "stt": {
+            "module": "google_cloud_streaming",
+            "google_cloud_streaming": {
+                "credential": {
+                    "json": {
+                        # Paste Google API JSON here
+        ...
+
+    """
+
+    def __init__(self):
+        global SpeechClient, types, enums, Credentials
+        from google.cloud.speech import SpeechClient, types, enums
+        from google.oauth2.service_account import Credentials
+
+        super(GoogleCloudStreamingSTT, self).__init__()
+        # override language with module specific language selection
+        self.language = self.config.get('lang') or self.lang
+        credentials = Credentials.from_service_account_info(
+            self.credential.get('json')
+        )
+
+        self.client = SpeechClient(credentials=credentials)
+        recognition_config = types.RecognitionConfig(
+            encoding=enums.RecognitionConfig.AudioEncoding.LINEAR16,
+            sample_rate_hertz=16000,
+            language_code=self.language,
+            model='command_and_search',
+            max_alternatives=1,
+        )
+        self.streaming_config = types.StreamingRecognitionConfig(
+            config=recognition_config,
+            interim_results=True,
+            single_utterance=True,
+        )
+
+    def create_streaming_thread(self):
+        self.queue = Queue()
+        return GoogleStreamThread(
+            self.queue,
+            self.language,
+            self.client,
+            self.streaming_config
+        )
 
 
 class KaldiSTT(STT):
@@ -301,6 +402,7 @@ class STTFactory:
         "mycroft": MycroftSTT,
         "google": GoogleSTT,
         "google_cloud": GoogleCloudSTT,
+        "google_cloud_streaming": GoogleCloudStreamingSTT,
         "wit": WITSTT,
         "ibm": IBMSTT,
         "kaldi": KaldiSTT,
