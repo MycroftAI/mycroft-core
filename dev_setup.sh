@@ -317,7 +317,7 @@ function install_deps() {
     else
     	echo
         echo "${GREEN}Could not find package manager"
-        echo "${GREEN}Make sure to manually install:${BLUE} git python 2 python-setuptools python-virtualenv pygobject virtualenvwrapper libtool libffi openssl autoconf bison swig glib2.0 portaudio19 mpg123 flac curl fann g++"
+        echo "${GREEN}Make sure to manually install:${BLUE} git python3 python-setuptools python-venv pygobject libtool libffi libjpg openssl autoconf bison swig glib2.0 portaudio19 mpg123 flac curl fann g++ jq"
         echo ${RESET}
     fi
 }
