@@ -22,7 +22,7 @@ export LANG=C
 set -Ee
 
 cd $(dirname $0)
-TOP=$( pwd -L )
+TOP=$(pwd -L)
 
 function show_help() {
     echo "
@@ -55,31 +55,31 @@ for var in "$@" ; do
     fi
 
     # Check for options
-    if [[ ${var} == "-h" ]] || [[ ${var} == "--help" ]] ; then
+    if [[ ${var} == "-h" || ${var} == "--help" ]] ; then
         show_help
         exit 0
     fi
 
-    if [[ ${var} == "-r" ]] || [[ ${var} == "--allow-root" ]] ; then
+    if [[ ${var} == "-r" || ${var} == "--allow-root" ]] ; then
         opt_allowroot=true
     fi
 
     if [[ ${var} == "-fm" ]] ; then
         opt_forcemimicbuild=true
     fi
-    if [[ ${var} == "-n" ]] || [[ ${var} == "--no-error" ]] ; then
+    if [[ ${var} == "-n" || ${var} == "--no-error" ]] ; then
         # Do NOT exit on errors
 	set +Ee
     fi
     if [[ ${var} == "-sm" ]] ; then
         opt_skipmimicbuild=true
     fi
-    if [[ ${var} == "-p" ]] || [[ ${var} == "--python" ]] ; then
+    if [[ ${var} == "-p" || ${var} == "--python" ]] ; then
         param="python"
     fi
 done
 
-if [ $(id -u) -eq 0 ] && [ "${opt_allowroot}" != true ] ; then
+if [[ $(id -u) -eq 0 && ${opt_allowroot} != true ]] ; then
     echo "This script should not be run as root or with sudo."
     echo "If you really need to for this, rerun with --allow-root"
     exit 1
@@ -93,7 +93,7 @@ function found_exe() {
 
 if found_exe sudo ; then
     SUDO=sudo
-elif [ "${opt_allowroot}" != true ]; then
+elif [[ ${opt_allowroot} != true ]]; then
     echo "This script requires \"sudo\" to install system packages. Please install it, then re-run this script."
     exit 1
 fi
@@ -125,7 +125,7 @@ if found_exe tput ; then
 fi
 
 # Run a setup wizard the very first time that guides the user through some decisions
-if [[ ! -f .dev_opts.json ]] && [[ ${IS_TRAVIS} == "" ]] ; then
+if [[ ! -f .dev_opts.json && -z ${IS_TRAVIS} ]] ; then
     echo "
 ${CYAN}                    Welcome to Mycroft!  ${RESET}"
     sleep 0.5
@@ -196,7 +196,7 @@ Would you like this to be added to your PATH in the .profile?"
     if get_YN ; then
         echo -e "${HIGHLIGHT} Y - Adding Mycroft commands to your PATH ${RESET}"
 
-        if [ ! -f ~/.profile_mycroft ] ; then
+        if [[ ! -f ~/.profile_mycroft ]] ; then
             # Only add the following to the .profile if .profile_mycroft
             # doesn't exist, indicating this script has not been run before
             echo '' >> ~/.profile
@@ -223,7 +223,7 @@ fi" > ~/.profile_mycroft
         echo "This script will create that folder for you.  This requires sudo"
         echo "permission and might ask you for a password..."
         setup_user=$USER
-        setup_group=$( id -gn $USER )
+        setup_group=$(id -gn $USER)
         $SUDO mkdir -p /opt/mycroft/skills
         $SUDO chown -R ${setup_user}:${setup_group} /opt/mycroft
         echo "Created!"
@@ -321,7 +321,7 @@ function install_venv() {
     # verified functional.
     curl https://bootstrap.pypa.io/3.3/get-pip.py | "${VIRTUALENV_ROOT}/bin/python" - 'pip==18.0.0'
     # Function status depending on if pip exists
-    [ -x "${VIRTUALENV_ROOT}/bin/pip" ]
+    [[ -x ${VIRTUALENV_ROOT}/bin/pip ]]
 }
 
 install_deps
@@ -338,17 +338,17 @@ else
     # first, look for a build of mimic in the folder
     has_mimic=""
     if [[ -f ${TOP}/mimic/bin/mimic ]] ; then
-        has_mimic=$( ${TOP}/mimic/bin/mimic -lv | grep Voice ) || true
+        has_mimic=$(${TOP}/mimic/bin/mimic -lv | grep Voice) || true
     fi
 
     # in not, check the system path
-    if [ "$has_mimic" == "" ] ; then
-        if [ -x "$(command -v mimic)" ] ; then
-            has_mimic="$( mimic -lv | grep Voice )" || true
+    if [[ -z $has_mimic ]] ; then
+        if [[ -x "$(command -v mimic)" ]] ; then
+            has_mimic="$(mimic -lv | grep Voice)" || true
         fi
     fi
 
-    if [ "$has_mimic" == "" ]; then
+    if [[ -z $has_mimic ]]; then
         if [[ ${opt_skipmimicbuild} == true ]] ; then
             build_mimic="n"
         else
@@ -357,7 +357,7 @@ else
     fi
 fi
 
-if [ ! -x "${VIRTUALENV_ROOT}/bin/activate" ] ; then
+if [[ ! -x ${VIRTUALENV_ROOT}/bin/activate ]] ; then
     if ! install_venv ; then
         echo "Failed to set up virtualenv for mycroft, exiting setup."
         exit 1
@@ -370,23 +370,23 @@ cd "${TOP}"
 
 # Install pep8 pre-commit hook
 HOOK_FILE="./.git/hooks/pre-commit"
-if [ ! -z ${INSTALL_PRECOMMIT_HOOK+x} ] || grep -q "MYCROFT DEV SETUP" ${HOOK_FILE}; then
-    if [ ! -f ${HOOK_FILE} ] || grep -q "MYCROFT DEV SETUP" ${HOOK_FILE} ; then
+if [[ -n ${INSTALL_PRECOMMIT_HOOK} ]] || grep -q "MYCROFT DEV SETUP" ${HOOK_FILE}; then
+    if [[ ! -f ${HOOK_FILE} ]] || grep -q "MYCROFT DEV SETUP" ${HOOK_FILE} ; then
         echo "Installing PEP8 check as precommit-hook"
-        echo "#! $( which python )" > ${HOOK_FILE}
+        echo "#! $(which python)" > ${HOOK_FILE}
         echo "# MYCROFT DEV SETUP" >> ${HOOK_FILE}
         cat ./scripts/pre-commit >> ${HOOK_FILE}
         chmod +x ${HOOK_FILE}
     fi
 fi
 
-PYTHON=$( python -c "import sys;print('python{}.{}'.format(sys.version_info[0], sys.version_info[1]))" )
+PYTHON=$(python -c "import sys;print('python{}.{}'.format(sys.version_info[0], sys.version_info[1]))")
 
 # Add mycroft-core to the virtualenv path
 # (This is equivalent to typing 'add2virtualenv $TOP', except
 # you can't invoke that shell function from inside a script)
 VENV_PATH_FILE="${VIRTUALENV_ROOT}/lib/$PYTHON/site-packages/_virtualenv_path_extensions.pth"
-if [ ! -f "$VENV_PATH_FILE" ] ; then
+if [[ ! -f $VENV_PATH_FILE ]] ; then
     echo "import sys; sys.__plen = len(sys.path)" > "$VENV_PATH_FILE" || return 1
     echo "import sys; new=sys.path[sys.__plen:]; del sys.path[sys.__plen:]; p=getattr(sys,'__egginsert',0); sys.path[p:p]=new; sys.__egginsert = p+len(new)" >> "$VENV_PATH_FILE" || return 1
 fi
@@ -402,7 +402,7 @@ fi
 if ! pip install -r requirements.txt ; then
     echo "Warning: Failed to install all requirements. Continue? y/N"
     read -n1 continue
-    if [[ "$continue" != "y" ]] ; then
+    if [[ $continue != "y" ]] ; then
         exit 1
     fi
 fi
@@ -411,10 +411,10 @@ if ! pip install -r test-requirements.txt ; then
     echo "Warning test requirements wasn't installed, Note: normal operation should still work fine..."
 fi
 
-SYSMEM=$( free | awk '/^Mem:/ { print $2 }' )
+SYSMEM=$(free | awk '/^Mem:/ { print $2 }')
 MAXCORES=$(($SYSMEM / 512000))
 MINCORES=1
-CORES=$( nproc )
+CORES=$(nproc)
 
 # ensure MAXCORES is > 0
 if [[ ${MAXCORES} -lt 1 ]] ; then
@@ -436,7 +436,7 @@ echo "Building with $CORES cores."
 #build and install mimic
 cd "${TOP}"
 
-if [[ "$build_mimic" == "y" ]] || [[ "$build_mimic" == "Y" ]] ; then
+if [[ $build_mimic == "y" || $build_mimic == "Y" ]] ; then
     echo "WARNING: The following can take a long time to run!"
     "${TOP}/scripts/install-mimic.sh" " ${CORES}"
 else
