@@ -290,7 +290,7 @@ function install_deps() {
         redhat_common_install
     elif found_exe apt-get ; then
         # Debian / Ubuntu
-        $SUDO apt-get install -y git python3 python3-dev python-setuptools python-gobject-2-dev libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config automake libjpeg-dev libfann-dev build-essential jq
+        $SUDO apt-get install -y git python3 python3-dev python3-setuptools python3-gi libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config libjpeg-dev libfann-dev build-essential jq
     elif found_exe pacman; then
         # Arch Linux
         $SUDO pacman -S --needed --noconfirm git python python-pip python-setuptools python-virtualenv python-gobject python-virtualenvwrapper libffi swig portaudio mpg123 screen flac curl icu libjpeg-turbo base-devel jq pulseaudio pulseaudio-alsa
