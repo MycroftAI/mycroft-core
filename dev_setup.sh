@@ -279,17 +279,17 @@ function install_deps() {
     echo "Installing packages..."
     if found_exe zypper ; then
         # OpenSUSE
-        echo ${YELLOW} Installing packages for OpenSUSE...${RESET}
+        echo ${GREEN} Installing packages for OpenSUSE...${RESET}
         $SUDO zypper install -y git python3 python3-devel libtool libffi-devel libopenssl-devel autoconf automake bison swig portaudio-devel mpg123 flac curl libicu-devel pkg-config libjpeg-devel libfann-devel python3-curses pulseaudio
         $SUDO zypper install -y -t pattern devel_C_C++
     elif found_exe yum && os_is centos ; then
         # CentOS
-        echo ${YELLOW} Installing packages for Centos...${RESET}
+        echo ${GREEN} Installing packages for Centos...${RESET}
         $SUDO yum install epel-release
         redhat_common_install
     elif found_exe yum && os_is rhel ; then
         # Redhat Enterprise Linux
-        echo ${YELLOW} Installing packages for Red Hat...${RESET}
+        echo ${GREEN} Installing packages for Red Hat...${RESET}
         $SUDO yum install -y wget
         wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
         $SUDO yum install -y epel-release-latest-7.noarch.rpm
@@ -297,15 +297,15 @@ function install_deps() {
         redhat_common_install
     elif os_is_like debian ; then
         # Debian / Ubuntu
-        echo ${YELLOW} Installing packages for Debian/Ubuntu...${RESET}
+        echo ${GREEN} Installing packages for Debian/Ubuntu...${RESET}
         $SUDO apt-get install -y git python3 python3-dev python-setuptools python-gobject-2-dev libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config automake libjpeg-dev libfann-dev build-essential jq
     elif os_is_like fedora ; then
-        echo ${YELLOW} Installing packages for Fedora...${RESET}
+        echo ${GREEN} Installing packages for Fedora...${RESET}
         # Fedora
         $SUDO dnf install -y git python3 python3-devel python3-pip python3-setuptools python3-virtualenv pygobject3-devel libtool libffi-devel openssl-devel autoconf bison swig glib2-devel portaudio-devel mpg123 mpg123-plugins-pulseaudio screen curl pkgconfig libicu-devel automake libjpeg-turbo-devel fann-devel gcc-c++ redhat-rpm-config jq
     elif found_exe pacman; then
         # Arch Linux
-        echo ${YELLOW} Installing packages for Arch...${RESET}
+        echo ${GREEN} Installing packages for Arch...${RESET}
         $SUDO pacman -S --needed --noconfirm git python python-pip python-setuptools python-virtualenv python-gobject python-virtualenvwrapper libffi swig portaudio mpg123 screen flac curl icu libjpeg-turbo base-devel jq pulseaudio pulseaudio-alsa
         pacman -Qs "^fann$" &> /dev/null || (
             git clone  https://aur.archlinux.org/fann.git
@@ -316,8 +316,8 @@ function install_deps() {
         )
     else
     	echo
-        echo "${GREEN}Could not find package manager"
-        echo "${GREEN}Make sure to manually install:${BLUE} git python3 python-setuptools python-venv pygobject libtool libffi libjpg openssl autoconf bison swig glib2.0 portaudio19 mpg123 flac curl fann g++ jq"
+        echo "${YELLOW}Could not find package manager"
+        echo "${YELLOW}Make sure to manually install:${BLUE} git python3 python-setuptools python-venv pygobject libtool libffi libjpg openssl autoconf bison swig glib2.0 portaudio19 mpg123 flac curl fann g++ jq"
         echo ${RESET}
     fi
 }
