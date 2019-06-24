@@ -457,7 +457,8 @@ class SkillTest(object):
 
 
 # Messages that should not print debug info
-HIDDEN_MESSAGES = ['skill.converse.request', 'skill.converse.response']
+HIDDEN_MESSAGES = ['skill.converse.request', 'skill.converse.response',
+                   'gui.page.show', 'gui.value.set']
 
 
 def load_dialog_list(skill, dialog):
