@@ -193,10 +193,19 @@ class AudioConsumer(Thread):
                            'stt': self.stt.__class__.__name__})
 
     def transcribe(self, audio):
+        def send_unknown_intent():
+            """ Send message that nothing was transcribed. """
+            self.emitter.emit('recognizer_loop:speech.recognition.unknown')
+
         try:
             # Invoke the STT engine on the audio clip
-            text = self.stt.execute(audio).lower().strip()
-            LOG.debug("STT: " + text)
+            text = self.stt.execute(audio)
+            if text is not None:
+                text = text.lower().strip()
+                LOG.debug("STT: " + text)
+            else:
+                send_unknown_intent()
+                LOG.info('no words were transcribed')
             return text
         except sr.RequestError as e:
             LOG.error("Could not request Speech Recognition {0}".format(e))
@@ -213,13 +222,11 @@ class AudioConsumer(Thread):
         except RequestException as e:
             LOG.error(e.__class__.__name__ + ': ' + str(e))
         except Exception as e:
-            self.emitter.emit('recognizer_loop:speech.recognition.unknown')
-            if isinstance(e, IndexError):
-                LOG.info('no words were transcribed')
-            else:
-                LOG.error(e)
+            send_unknown_intent()
+            LOG.error(e)
             LOG.error("Speech Recognition could not understand audio")
             return None
+
         if connected():
             dialog_name = 'backend.down'
         else:

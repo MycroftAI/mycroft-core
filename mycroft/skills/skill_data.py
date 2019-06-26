@@ -43,7 +43,7 @@ def read_vocab_file(path):
         for line in voc_file.readlines():
             if line.startswith('#') or line.strip() == '':
                 continue
-            vocab.append(expand_options(line))
+            vocab.append(expand_options(line.lower()))
     return vocab
 
 
