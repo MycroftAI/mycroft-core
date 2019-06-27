@@ -493,6 +493,7 @@ class SkillGUI:
                                      "current_value": setting_value,
                                      "method": "update"}))
 
+
 def resting_screen_handler(name=None):
     """ Decorator for adding a method as an resting screen handler.
 
