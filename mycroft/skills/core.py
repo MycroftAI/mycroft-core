@@ -459,6 +459,39 @@ class SkillGUI:
         self["url"] = url
         self.show_page("SYSTEM_UrlFrame.qml", override_idle)
 
+    def show_config(self, setting_key, setting_type, setting_value,
+                    available_values=None):
+        """ Display requested skill setting configuration in GUI
+
+        Arguments:
+            setting_key (str): Description of setting
+            setting_type (str): Type of setting (select, bool)
+            current_value (str): Current value of setting
+            available_values (str): Available value incase of selection
+        """
+        skill_id = self.skill.skill_id
+        self.skill.bus.emit(Message("gui.skill.settings.show",
+                                    {"skill_id": skill_id,
+                                     "setting_key": setting_key,
+                                     "setting_type": setting_type,
+                                     "current_value": setting_value,
+                                     "available_values": available_values,
+                                     "method": "set"}))
+
+    def update_config(self, setting_key, setting_value):
+        """ Update requested skill setting configuration in GUI
+
+        Arguments:
+            setting_key (str): Description of setting
+            current_value (str): Current value of setting
+        """
+        skill_id = self.skill.skill_id
+        print(setting_key, setting_value, skill_id)
+        self.skill.bus.emit(Message("gui.skill.settings.show",
+                                    {"skill_id": skill_id,
+                                     "setting_key": setting_key,
+                                     "current_value": setting_value,
+                                     "method": "update"}))
 
 def resting_screen_handler(name=None):
     """ Decorator for adding a method as an resting screen handler.
