@@ -24,7 +24,6 @@ import traceback
 from inspect import signature
 from datetime import datetime, timedelta
 
-import abc
 import re
 from itertools import chain
 from adapt.intent import Intent, IntentBuilder
@@ -321,7 +320,10 @@ class SkillGUI:
 
         Args:
             name (str): Name of page (e.g "mypage.qml") to display
-            override_idle: If set will override the idle screen
+            override_idle (boolean, int):
+                True: Takes over the resting page indefinitely
+                (int): Delays resting page for the specified number of
+                       seconds.
         """
         self.show_pages([name], 0, override_idle)
 
@@ -334,7 +336,10 @@ class SkillGUI:
                                ["Weather.qml", "Forecast.qml", "Details.qml"]
             index (int): Page number (0-based) to show initially.  For the
                          above list a value of 1 would start on "Forecast.qml"
-            override_idle: If set will override the idle screen
+            override_idle (boolean, int):
+                True: Takes over the resting page indefinitely
+                (int): Delays resting page for the specified number of
+                       seconds.
         """
         if not isinstance(page_names, list):
             raise ValueError('page_names must be a list')
@@ -401,7 +406,7 @@ class SkillGUI:
                                     {"page": page_urls,
                                      "__from": self.skill.skill_id}))
 
-    def show_text(self, text, title=None):
+    def show_text(self, text, title=None, override_idle=None):
         """ Display a GUI page for viewing simple text
 
         Arguments:
@@ -411,9 +416,11 @@ class SkillGUI:
         self.clear()
         self["text"] = text
         self["title"] = title
-        self.show_page("SYSTEM_TextFrame.qml")
+        self.show_page("SYSTEM_TextFrame.qml", override_idle)
 
-    def show_image(self, url, caption=None, title=None, fill=None):
+    def show_image(self, url, caption=None,
+                   title=None, fill=None,
+                   override_idle=None):
         """ Display a GUI page for viewing an image
 
         Arguments:
@@ -428,19 +435,21 @@ class SkillGUI:
         self["title"] = title
         self["caption"] = caption
         self["fill"] = fill
-        self.show_page("SYSTEM_ImageFrame.qml")
+        self.show_page("SYSTEM_ImageFrame.qml", override_idle)
 
-    def show_html(self, html):
+    def show_html(self, html, resource_url=None, override_idle=None):
         """ Display an HTML page in the GUI
 
         Arguments:
             html (str): HTML text to display
+            resource_url (str): Pointer to HTML resources
         """
         self.clear()
-        self["url"] = ""  # TODO: Save to a temp file... html
-        self.show_page("SYSTEM_HTMLFRAME")
+        self["html"] = html
+        self["resourceLocation"] = resource_url
+        self.show_page("SYSTEM_HtmlFrame.qml", override_idle)
 
-    def show_url(self, url):
+    def show_url(self, url, override_idle=None):
         """ Display an HTML page in the GUI
 
         Arguments:
@@ -448,7 +457,7 @@ class SkillGUI:
         """
         self.clear()
         self["url"] = url
-        self.show_page("SYSTEM_HTMLFRAME")
+        self.show_page("SYSTEM_UrlFrame.qml", override_idle)
 
 
 def resting_screen_handler(name=None):
@@ -1468,7 +1477,6 @@ class MycroftSkill:
             LOG.error("Failed to stop skill: {}".format(self.name),
                       exc_info=True)
 
-    @abc.abstractmethod
     def stop(self):
         pass
 
@@ -1553,8 +1561,8 @@ class MycroftSkill:
 
             Args:
                 handler:               method to be called
-                when (datetime/int):   datetime (in system timezone) or number
-                                       of seconds in the future when the
+                when (datetime/int/float):   datetime (in system timezone) or
+                                       number of seconds in the future when the
                                        handler should be called
                 data (dict, optional): data to send when the handler is called
                 name (str, optional):  reference name
@@ -1563,7 +1571,7 @@ class MycroftSkill:
                                        name.
         """
         data = data or {}
-        if isinstance(when, int):
+        if isinstance(when, (int, float)):
             when = datetime.now() + timedelta(seconds=when)
         self._schedule_event(handler, when, data, name)
 

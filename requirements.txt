@@ -16,7 +16,7 @@ pocketsphinx==0.1.0
 inflection==0.3.1
 pillow==4.1.1
 python-dateutil==2.6.0
-pychromecast==0.7.7
+pychromecast==3.2.2
 python-vlc==1.1.2
 pulsectl==17.7.4
 google-api-python-client==1.6.4
@@ -25,7 +25,7 @@ PyYAML==3.13
 
 msm==0.7.6
 msk==0.3.13
-adapt-parser==0.3.2
+adapt-parser==0.3.3
 padatious==0.4.6
 fann2==1.0.7
 padaos==0.1.9

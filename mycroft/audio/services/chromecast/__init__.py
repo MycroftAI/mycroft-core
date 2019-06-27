@@ -89,14 +89,18 @@ class ChromecastService(RemoteAudioBackend):
 
         TODO: add playlist support and repeat
         """
+        self.cast.wait()  # Make sure the device is ready to receive command
         self.cast.quit_app()
+        while self.cast.status.status_text != '':
+            time.sleep(1)
 
         track = self.tracklist[0]
         # Report start of playback to audioservice
         if self._track_start_callback:
             self._track_start_callback(track)
-        LOG.debug('track: {}, type: {}'.format(track, guess_type(track)))
+        LOG.debug('track: {}, type: {}'.format(track, guess_type(track)[0]))
         mime = guess_type(track)[0] or 'audio/mp3'
+        self.cast.wait()  # Make sure the device is ready to receive command
         self.cast.play_media(track, mime)
 
     def stop(self):
