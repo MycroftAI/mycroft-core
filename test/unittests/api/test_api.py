@@ -351,7 +351,7 @@ class TestApi(unittest.TestCase):
     @mock.patch('mycroft.api._paired_cache', False)
     @mock.patch('mycroft.api.IdentityManager.get')
     @mock.patch('mycroft.api.requests.request')
-    def test_is_paired_false(self, mock_request, mock_identity_get):
+    def test_is_paired_false_local(self, mock_request, mock_identity_get):
         mock_request.return_value = create_response(200)
         mock_identity = mock.MagicMock()
         mock_identity.is_expired.return_value = False
@@ -360,4 +360,16 @@ class TestApi(unittest.TestCase):
 
         self.assertFalse(mycroft.api.is_paired())
         mock_identity.uuid = None
+        self.assertFalse(mycroft.api.is_paired())
+
+    @mock.patch('mycroft.api._paired_cache', False)
+    @mock.patch('mycroft.api.IdentityManager.get')
+    @mock.patch('mycroft.api.requests.request')
+    def test_is_paired_false_remote(self, mock_request, mock_identity_get):
+        mock_request.return_value = create_response(401)
+        mock_identity = mock.MagicMock()
+        mock_identity.is_expired.return_value = False
+        mock_identity.uuid = '1234'
+        mock_identity_get.return_value = mock_identity
+
         self.assertFalse(mycroft.api.is_paired())
