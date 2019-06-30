@@ -31,6 +31,7 @@ from mycroft.util import connected
 from mycroft.util.log import LOG
 from mycroft.util import find_input_device
 from queue import Queue, Empty
+import json
 
 AUDIO_DATA = 0
 STREAM_START = 1
@@ -247,6 +248,17 @@ class RecognizerLoopState:
         self.sleeping = False
 
 
+def recognizer_conf_hash(config):
+    """ Hash of the values important to the listener. """
+    c = {
+        'listener': config.get('listener'),
+        'hotwords': config.get('hotwords'),
+        'stt': config.get('stt'),
+        'opt_in': config.get('opt_in', False)
+    }
+    return hash(json.dumps(c, sort_keys=True))
+
+
 class RecognizerLoop(EventEmitter):
     """
         EventEmitter loop running speech recognition. Local wake word
@@ -264,7 +276,7 @@ class RecognizerLoop(EventEmitter):
         """
         config = Configuration.get()
         self.config_core = config
-        self._config_hash = hash(str(config))
+        self._config_hash = recognizer_conf_hash(config)
         self.lang = config.get('lang')
         self.config = config.get('listener')
         rate = self.config.get('sample_rate')
@@ -382,8 +394,9 @@ class RecognizerLoop(EventEmitter):
         while self.state.running:
             try:
                 time.sleep(1)
-                if self._config_hash != hash(
-                        str(Configuration().get())):
+                current_hash = recognizer_conf_hash(Configuration().get())
+                if current_hash != self._config_hash:
+                    self._config_hash = current_hash
                     LOG.debug('Config has changed, reloading...')
                     self.reload()
             except KeyboardInterrupt as e:
