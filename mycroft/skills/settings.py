@@ -152,7 +152,6 @@ class SkillSettings(dict):
         self._poll_timer = None
         self._blank_poll_timer = None
         self._is_alive = True
-        self._meta_upload = True  # Flag allowing upload of settings meta
 
         # Add Information extracted from the skills-meta.json entry for the
         # skill.
@@ -294,22 +293,21 @@ class SkillSettings(dict):
         Returns:
             dict: uuid, a unique id for the setting meta data
         """
-        if self._meta_upload:
-            try:
-                uuid = self.api.upload_skill_metadata(
-                    self._type_cast(settings_meta, to_platform='web'))
-                return uuid
-            except HTTPError as e:
-                if e.response.status_code in [422, 500, 501]:
-                    self._meta_upload = False
-                    raise DelayRequest
-                else:
-                    LOG.error(e)
-                    return None
-
-            except Exception as e:
+        try:
+            uuid = self.api.upload_skill_metadata(
+                self._type_cast(settings_meta, to_platform='web'))
+            return uuid
+        except HTTPError as e:
+            if e.response.status_code in [422, 500, 501]:
+                LOG.info(e.response.status_code)
+                raise DelayRequest
+            else:
                 LOG.error(e)
                 return None
+
+        except Exception as e:
+            LOG.error(e)
+            return None
 
     def save_skill_settings(self, skill_settings):
         """ Takes skill object and save onto self
