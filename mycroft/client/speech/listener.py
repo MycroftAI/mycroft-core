@@ -32,6 +32,7 @@ from mycroft.util.log import LOG
 from mycroft.util import find_input_device
 from queue import Queue, Empty
 import json
+from copy import deepcopy
 
 AUDIO_DATA = 0
 STREAM_START = 1
@@ -305,7 +306,11 @@ class RecognizerLoop(EventEmitter):
         # TODO remove this, only for server settings compatibility
         phonemes = self.config.get("phonemes")
         thresh = self.config.get("threshold")
-        config = self.config_core.get("hotwords", {word: {}})
+
+        # Since we're editing it for server backwards compatibility
+        # use a copy so we don't alter the hash of the config and
+        # trigger a reload.
+        config = deepcopy(self.config_core.get("hotwords", {word: {}}))
 
         if word not in config:
             config[word] = {'module': 'precise'}
