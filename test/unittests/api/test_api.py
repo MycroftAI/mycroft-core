@@ -19,7 +19,6 @@ import mock
 
 import mycroft.api
 import mycroft.configuration
-from mycroft.util.log import LOG
 
 from test.util import base_config
 CONFIG = base_config()
@@ -265,6 +264,30 @@ class TestApi(unittest.TestCase):
 
         mock_request.return_value = create_response(200, {'@type': 'yearly'})
         self.assertTrue(device.is_subscriber)
+
+    @mock.patch('mycroft.api.IdentityManager.get')
+    @mock.patch('mycroft.api.requests.request')
+    def test_device_upload_skills_data(self, mock_request, mock_identity_get):
+        mock_request.return_value = create_response(200)
+        mock_identity = mock.MagicMock()
+        mock_identity.is_expired.return_value = False
+        mock_identity.uuid = '1234'
+        mock_identity_get.return_value = mock_identity
+        device = mycroft.api.DeviceApi()
+        device.upload_skills_data({})
+        url = mock_request.call_args[0][1]
+        data = mock_request.call_args[1]['json']
+
+        # Check that the correct url is called
+        self.assertEquals(
+            url, 'https://api-test.mycroft.ai/v1/device/1234/skillJson')
+
+        # Check that the correct data is sent as json
+        self.assertTrue('blacklist' in data)
+        self.assertTrue('skills' in data)
+
+        with self.assertRaises(ValueError):
+            device.upload_skills_data('This isn\'t right at all')
 
     @mock.patch('mycroft.api.IdentityManager.get')
     @mock.patch('mycroft.api.requests.request')

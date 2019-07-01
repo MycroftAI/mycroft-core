@@ -24,7 +24,6 @@ import traceback
 from inspect import signature
 from datetime import datetime, timedelta
 
-import abc
 import re
 from itertools import chain
 from adapt.intent import Intent, IntentBuilder
@@ -483,8 +482,15 @@ def resting_screen_handler(name=None):
 #######################################################################
 class MycroftSkill:
     """
-    Abstract base class which provides common behaviour and parameters to all
-    Skills implementation.
+    Base class for mycroft skills providing common behaviour and parameters to
+    all Skill implementations.
+
+    For information on how to get started with creating mycroft skills see
+    https://https://mycroft.ai/documentation/skills/introduction-developing-skills/
+
+    Arguments:
+        name (str): skill name
+        bus (MycroftWebsocketClient): Optional bus connection
     """
 
     def __init__(self, name=None, bus=None, use_settings=True):
@@ -1478,7 +1484,6 @@ class MycroftSkill:
             LOG.error("Failed to stop skill: {}".format(self.name),
                       exc_info=True)
 
-    @abc.abstractmethod
     def stop(self):
         pass
 
@@ -1563,8 +1568,8 @@ class MycroftSkill:
 
             Args:
                 handler:               method to be called
-                when (datetime/int):   datetime (in system timezone) or number
-                                       of seconds in the future when the
+                when (datetime/int/float):   datetime (in system timezone) or
+                                       number of seconds in the future when the
                                        handler should be called
                 data (dict, optional): data to send when the handler is called
                 name (str, optional):  reference name
@@ -1573,7 +1578,7 @@ class MycroftSkill:
                                        name.
         """
         data = data or {}
-        if isinstance(when, int):
+        if isinstance(when, (int, float)):
             when = datetime.now() + timedelta(seconds=when)
         self._schedule_event(handler, when, data, name)
 

@@ -234,7 +234,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
     def calc_energy(sound_chunk, sample_width):
         return audioop.rms(sound_chunk, sample_width)
 
-    def _record_phrase(self, source, sec_per_buffer):
+    def _record_phrase(self, source, sec_per_buffer, stream=None):
         """Record an entire spoken phrase.
 
         Essentially, this code waits for a period of silence and then returns
@@ -244,6 +244,9 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         Args:
             source (AudioSource):  Source producing the audio chunks
             sec_per_buffer (float):  Fractional number of seconds in each chunk
+            stream (AudioStreamHandler): Stream target that will receive chunks
+                                         of the utterance audio while it is
+                                         being recorded
 
         Returns:
             bytearray: complete audio buffer recorded, including any
@@ -282,11 +285,17 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         # bytearray to store audio in
         byte_data = get_silence(source.SAMPLE_WIDTH)
 
+        if stream:
+            stream.stream_start()
+
         phrase_complete = False
         while num_chunks < max_chunks and not phrase_complete:
             chunk = self.record_sound_chunk(source)
             byte_data += chunk
             num_chunks += 1
+
+            if stream:
+                stream.stream_chunk(chunk)
 
             energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
             test_threshold = self.energy_threshold * self.multiplier
@@ -500,7 +509,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         """
         return AudioData(raw_data, source.SAMPLE_RATE, source.SAMPLE_WIDTH)
 
-    def listen(self, source, emitter):
+    def listen(self, source, emitter, stream=None):
         """Listens for chunks of audio that Mycroft should perform STT on.
 
         This will listen continuously for a wake-up-word, then return the
@@ -511,6 +520,9 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             source (AudioSource):  Source producing the audio chunks
             emitter (EventEmitter): Emitter for notifications of when recording
                                     begins and ends.
+            stream (AudioStreamHandler): Stream target that will receive chunks
+                                         of the utterance audio while it is
+                                         being recorded
 
         Returns:
             AudioData: audio with the user's utterance, minus the wake-up-word
@@ -545,7 +557,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 play_wav(audio_file).wait()
                 source.unmute()
 
-        frame_data = self._record_phrase(source, sec_per_buffer)
+        frame_data = self._record_phrase(source, sec_per_buffer, stream)
         audio_data = self._create_audio_data(frame_data, source)
         emitter.emit("recognizer_loop:record_end")
         if self.save_utterances:

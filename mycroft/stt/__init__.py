@@ -17,15 +17,16 @@ import json
 from abc import ABCMeta, abstractmethod
 from requests import post, put, exceptions
 from speech_recognition import Recognizer
+from queue import Queue
+from threading import Thread
 
 from mycroft.api import STTApi
 from mycroft.configuration import Configuration
 from mycroft.util.log import LOG
 
 
-class STT:
-    __metaclass__ = ABCMeta
-
+class STT(metaclass=ABCMeta):
+    """ STT Base class, all  STT backends derives from this one. """
     def __init__(self):
         config_core = Configuration.get()
         self.lang = str(self.init_language(config_core))
@@ -33,6 +34,7 @@ class STT:
         self.config = config_stt.get(config_stt.get("module"), {})
         self.credential = self.config.get("credential", {})
         self.recognizer = Recognizer()
+        self.can_stream = False
 
     @staticmethod
     def init_language(config_core):
@@ -47,24 +49,19 @@ class STT:
         pass
 
 
-class TokenSTT(STT):
-    __metaclass__ = ABCMeta
-
+class TokenSTT(STT, metaclass=ABCMeta):
     def __init__(self):
         super(TokenSTT, self).__init__()
         self.token = str(self.credential.get("token"))
 
 
-class GoogleJsonSTT(STT):
-    __metaclass__ = ABCMeta
-
+class GoogleJsonSTT(STT, metaclass=ABCMeta):
     def __init__(self):
         super(GoogleJsonSTT, self).__init__()
         self.json_credentials = json.dumps(self.credential.get("json"))
 
 
-class BasicSTT(STT):
-    __metaclass__ = ABCMeta
+class BasicSTT(STT, metaclass=ABCMeta):
 
     def __init__(self):
         super(BasicSTT, self).__init__()
@@ -72,8 +69,7 @@ class BasicSTT(STT):
         self.password = str(self.credential.get("password"))
 
 
-class KeySTT(STT):
-    __metaclass__ = ABCMeta
+class KeySTT(STT, metaclass=ABCMeta):
 
     def __init__(self):
         super(KeySTT, self).__init__()
@@ -166,6 +162,175 @@ class DeepSpeechServerSTT(STT):
         return response.text
 
 
+class StreamThread(Thread, metaclass=ABCMeta):
+    """
+        ABC class to be used with StreamingSTT class implementations.
+    """
+
+    def __init__(self, queue, language):
+        super().__init__()
+        self.language = language
+        self.queue = queue
+        self.text = None
+
+    def _get_data(self):
+        while True:
+            d = self.queue.get()
+            if d is None:
+                break
+            yield d
+            self.queue.task_done()
+
+    def run(self):
+        return self.handle_audio_stream(self._get_data(), self.language)
+
+    @abstractmethod
+    def handle_audio_stream(self, audio, language):
+        pass
+
+
+class StreamingSTT(STT, metaclass=ABCMeta):
+    """
+        ABC class for threaded streaming STT implemenations.
+    """
+    def __init__(self):
+        super().__init__()
+        self.stream = None
+        self.can_stream = True
+
+    def stream_start(self, language=None):
+        self.stream_stop()
+        language = language or self.lang
+        self.queue = Queue()
+        self.stream = self.create_streaming_thread()
+        self.stream.start()
+
+    def stream_data(self, data):
+        self.queue.put(data)
+
+    def stream_stop(self):
+        if self.stream is not None:
+            self.queue.put(None)
+            self.stream.join()
+
+            text = self.stream.text
+
+            self.stream = None
+            self.queue = None
+            return text
+        return None
+
+    def execute(self, audio, language=None):
+        return self.stream_stop()
+
+    @abstractmethod
+    def create_streaming_thread(self):
+        pass
+
+
+class DeepSpeechStreamThread(StreamThread):
+    def __init__(self, queue, language, url):
+        if not language.startswith("en"):
+            raise ValueError("Deepspeech is currently english only")
+        super().__init__(queue, language)
+        self.url = url
+
+    def handle_audio_stream(self, audio, language):
+        self.response = post(self.url, data=audio, stream=True)
+        self.text = self.response.text if self.response else None
+        return self.text
+
+
+class DeepSpeechStreamServerSTT(StreamingSTT):
+    """
+        Streaming STT interface for the deepspeech-server:
+        https://github.com/JPEWdev/deep-dregs
+        use this if you want to host DeepSpeech yourself
+        STT config will look like this:
+
+        "stt": {
+            "module": "deepspeech_stream_server",
+            "deepspeech_stream_server": {
+                "stream_uri": "http://localhost:8080/stt?format=16K_PCM16"
+        ...
+    """
+    def create_streaming_thread(self):
+        self.queue = Queue()
+        return DeepSpeechStreamThread(
+            self.queue,
+            self.lang,
+            self.config.get('stream_uri')
+        )
+
+
+class GoogleStreamThread(StreamThread):
+    def __init__(self, queue, lang, client, streaming_config):
+        super().__init__(queue, lang)
+        self.client = client
+        self.streaming_config = streaming_config
+
+    def handle_audio_stream(self, audio, language):
+        req = (types.StreamingRecognizeRequest(audio_content=x) for x in audio)
+        responses = self.client.streaming_recognize(self.streaming_config, req)
+        for res in responses:
+            if res.results and res.results[0].is_final:
+                self.text = res.results[0].alternatives[0].transcript
+        return self.text
+
+
+class GoogleCloudStreamingSTT(StreamingSTT):
+    """
+        Streaming STT interface for Google Cloud Speech-To-Text
+        To use pip install google-cloud-speech and add the
+        Google API key to local mycroft.conf file. The STT config
+        will look like this:
+
+        "stt": {
+            "module": "google_cloud_streaming",
+            "google_cloud_streaming": {
+                "credential": {
+                    "json": {
+                        # Paste Google API JSON here
+        ...
+
+    """
+
+    def __init__(self):
+        global SpeechClient, types, enums, Credentials
+        from google.cloud.speech import SpeechClient, types, enums
+        from google.oauth2.service_account import Credentials
+
+        super(GoogleCloudStreamingSTT, self).__init__()
+        # override language with module specific language selection
+        self.language = self.config.get('lang') or self.lang
+        credentials = Credentials.from_service_account_info(
+            self.credential.get('json')
+        )
+
+        self.client = SpeechClient(credentials=credentials)
+        recognition_config = types.RecognitionConfig(
+            encoding=enums.RecognitionConfig.AudioEncoding.LINEAR16,
+            sample_rate_hertz=16000,
+            language_code=self.language,
+            model='command_and_search',
+            max_alternatives=1,
+        )
+        self.streaming_config = types.StreamingRecognitionConfig(
+            config=recognition_config,
+            interim_results=True,
+            single_utterance=True,
+        )
+
+    def create_streaming_thread(self):
+        self.queue = Queue()
+        return GoogleStreamThread(
+            self.queue,
+            self.language,
+            self.client,
+            self.streaming_config
+        )
+
+
 class KaldiSTT(STT):
     def __init__(self):
         super(KaldiSTT, self).__init__()
@@ -227,6 +392,7 @@ class STTFactory:
         "mycroft": MycroftSTT,
         "google": GoogleSTT,
         "google_cloud": GoogleCloudSTT,
+        "google_cloud_streaming": GoogleCloudStreamingSTT,
         "wit": WITSTT,
         "ibm": IBMSTT,
         "kaldi": KaldiSTT,
@@ -234,6 +400,7 @@ class STTFactory:
         "govivace": GoVivaceSTT,
         "houndify": HoundifySTT,
         "deepspeech_server": DeepSpeechServerSTT,
+        "deepspeech_stream_server": DeepSpeechStreamServerSTT,
         "mycroft_deepspeech": MycroftDeepSpeechSTT
     }
 

@@ -412,15 +412,31 @@ class DeviceApi(Api):
         Arguments:
              data: dictionary with skills data from msm
         """
+        if not isinstance(data, dict):
+            raise ValueError('data must be of type dict')
+
         # Strip the skills.json down to the bare essentials
         to_send = {}
-        to_send['blacklist'] = data['blacklist']
-        # Make sure skills doesn't contain duplicates (keep only last)
-        skills = {s['name']: s for s in data['skills']}
-        to_send['skills'] = [skills[key] for key in skills]
+        if 'blacklist' in data:
+            to_send['blacklist'] = data['blacklist']
+        else:
+            LOG.warning('skills manifest lacks blacklist entry')
+            to_send['blacklist'] = []
 
-        # Finalize skill_gid with uuid if needed
+        # Make sure skills doesn't contain duplicates (keep only last)
+        if 'skills' in data:
+            skills = {s['name']: s for s in data['skills']}
+            to_send['skills'] = [skills[key] for key in skills]
+        else:
+            LOG.warning('skills manifest lacks skills entry')
+            to_send['skills'] = []
+
         for s in to_send['skills']:
+            # Remove optional fields backend objects to
+            if 'update' in s:
+                s.pop('update')
+
+            # Finalize skill_gid with uuid if needed
             s['skill_gid'] = s.get('skill_gid', '').replace(
                 '@|', '@{}|'.format(self.identity.uuid))
 

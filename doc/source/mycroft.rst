@@ -1,28 +1,10 @@
 mycroft package
 ===============
 
-.. toctree::
-    mycroft.util
-
-.. toctree::
-    mycroft.util.parse
-
-mycroft.util.time - time handling functions
------------------
-.. automodule::
-    mycroft.util.time
-    :members:
-
-Api class
----------
-.. autoclass:: mycroft.Api
-    :members:
-
-
 mycroft.skills
 ==============
 
-MycroftSkill class - base class for all Mycroft skills
+MycroftSkill class - Base class for all Mycroft skills
 ------------------
 
 .. autoclass:: mycroft.MycroftSkill
@@ -74,3 +56,25 @@ removes_context decorator
 -------------------------
 .. autofunction:: mycroft.removes_context
 
+
+mycroft.util
+===============
+
+.. toctree::
+    mycroft.util
+
+.. toctree::
+    mycroft.util.parse
+Parsing functions for extracting data from natural speech.
+
+.. toctree::
+    mycroft.util.format
+Formatting functions for producing natural speech from common datatypes such as numbers, dates and times.
+
+.. toctree::
+    mycroft.util.time
+A collection of functions for handling local, system and global times.
+
+-----------------
+.. automodule::
+    mycroft.util.time
