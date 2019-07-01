@@ -482,8 +482,15 @@ def resting_screen_handler(name=None):
 #######################################################################
 class MycroftSkill:
     """
-    Abstract base class which provides common behaviour and parameters to all
-    Skills implementation.
+    Base class for mycroft skills providing common behaviour and parameters to
+    all Skill implementations.
+
+    For information on how to get started with creating mycroft skills see
+    https://https://mycroft.ai/documentation/skills/introduction-developing-skills/
+
+    Arguments:
+        name (str): skill name
+        bus (MycroftWebsocketClient): Optional bus connection
     """
 
     def __init__(self, name=None, bus=None, use_settings=True):

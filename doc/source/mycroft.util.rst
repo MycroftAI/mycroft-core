@@ -1,6 +1,14 @@
 mycroft.util package
 ====================
 
+The mycroft.util package includes functions for common operations such as
+playing audio files, parsting and creating natural text as well as many
+components used internally in Mycroft such as cache directory lookup,
+path resolution. etc.
+
+Below _some_ of the functions that are of interest to skill developers are
+listed.
+
 LOG
 ---
 .. autofunction:: mycroft.util.LOG
