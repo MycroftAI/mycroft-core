@@ -431,8 +431,12 @@ class DeviceApi(Api):
             LOG.warning('skills manifest lacks skills entry')
             to_send['skills'] = []
 
-        # Finalize skill_gid with uuid if needed
         for s in to_send['skills']:
+            # Remove optional fields backend objects to
+            if 'update' in s:
+                s.pop('update')
+
+            # Finalize skill_gid with uuid if needed
             s['skill_gid'] = s.get('skill_gid', '').replace(
                 '@|', '@{}|'.format(self.identity.uuid))
 
