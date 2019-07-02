@@ -161,7 +161,7 @@ class SkillManager(Thread):
         with open(self.installed_skills_file, 'w') as f:
             f.write('\n'.join(skill_names))
 
-    def download_skills(self, speak=False):
+    def download_skills(self, speak=False, quick=False):
         """ Invoke MSM to install default skills and/or update installed skills
 
             Args:
@@ -218,7 +218,11 @@ class SkillManager(Thread):
                         raise
                 installed_skills.add(skill.name)
             try:
-                msm.apply(install_or_update, msm.list())
+                # If defaults are installed
+                defaults = all([s.is_local for s in msm.list_defaults()])
+                num_threads = 20 if not defaults or quick else 2
+                msm.apply(install_or_update, msm.list(),
+                          max_threads=num_threads)
                 if SkillManager.manifest_upload_allowed and is_paired():
                     try:
                         DeviceApi().upload_skills_data(msm.skills_data)
