@@ -14,6 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
+"""
+The mycroft.util.parse module provides various parsing functions for
+things like numbers, times, durations etc.
+The focus of these parsing functions is to extract data from natural speech
+and to allow localization.
+"""
+
 from difflib import SequenceMatcher
 from mycroft.util.time import now_local
 from mycroft.util.lang import get_primary_lang_code
