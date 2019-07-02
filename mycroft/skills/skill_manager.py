@@ -15,6 +15,7 @@
 import gc
 import sys
 import time
+from datetime import datetime
 from glob import glob
 from itertools import chain
 
@@ -103,9 +104,13 @@ class SkillManager(Thread):
         # Update immediately if the .msm or installed skills file is missing
         # otherwise according to timestamp on .msm
         if exists(self.dot_msm) and exists(self.installed_skills_file):
-            self.next_download = os.path.getmtime(self.dot_msm) + \
-                                 self.update_interval
+            mtime = os.path.getmtime(self.dot_msm)
+            self.next_download = mtime + self.update_interval
+            self.last_download = datetime.fromtimestamp(mtime)
         else:
+            # Last update can't be found or the requirements don't seem to be
+            # installed trigger update before skill loading
+            self.last_download = None
             self.next_download = time.time() - 1
 
         # Conversation management
@@ -380,10 +385,6 @@ class SkillManager(Thread):
         # Scan the file folder that contains Skills.  If a Skill is updated,
         # unload the existing version from memory and reload from the disk.
         while not self._stop_event.is_set():
-            # Update skills once an hour if update is enabled
-            if time.time() >= self.next_download and update:
-                self.download_skills()
-
             # Look for recently changed skill(s) needing a reload
             # checking skills dir and getting all skills there
             skill_paths = glob(join(self.msm.skills_dir, '*/'))
@@ -405,6 +406,10 @@ class SkillManager(Thread):
             self._unload_removed(skill_paths)
             # Pause briefly before beginning next scan
             time.sleep(2)
+
+            # Update skills once an hour if update is enabled
+            if time.time() >= self.next_download and update:
+                self.download_skills()
 
     def send_skill_list(self, message=None):
         """
