@@ -13,7 +13,6 @@
 # limitations under the License.
 #
 import gc
-import json
 import sys
 import time
 from glob import glob
@@ -23,7 +22,7 @@ import os
 from os.path import exists, join, basename, dirname, expanduser, isfile
 from threading import Thread, Event, Lock
 
-from msm import MycroftSkillsManager, SkillRepo, MsmException
+from msm import MsmException
 from mycroft import dialog
 from mycroft.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
