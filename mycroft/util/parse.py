@@ -213,10 +213,6 @@ def extract_datetime(text, anchorDate=None, lang=None, default_time=None):
     common ways that humans express dates and times, including relative dates
     like "5 days from today", "tomorrow', and "Tuesday".
 
-    The "next" instance of a day or weekend is considered to be no earlier than
-    48 hours in the future. On Friday, "next Monday" would be in 3 days.
-    On Saturday, "next Monday" would be in 9 days.
-
     Vague terminology are given arbitrary values, like:
         - morning = 8 AM
         - afternoon = 3 PM
