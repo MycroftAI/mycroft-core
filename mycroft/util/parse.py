@@ -14,15 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-"""
-The mycroft.util.parse module provides various parsing functions for
-things like numbers, times, durations etc.
-
-The focus of these parsing functions is to extract data from natural speech
-and to allow localization.
-"""
-
 from difflib import SequenceMatcher
 from mycroft.util.time import now_local
 from mycroft.util.lang import get_primary_lang_code
@@ -213,6 +204,10 @@ def extract_datetime(text, anchorDate=None, lang=None, default_time=None):
     Extracts date and time information from a sentence.  Parses many of the
     common ways that humans express dates and times, including relative dates
     like "5 days from today", "tomorrow', and "Tuesday".
+
+    The "next" instance of a day or weekend is considered to be no earlier than
+    48 hours in the future. On Friday, "next Monday" would be in 3 days.
+    On Saturday, "next Monday" would be in 9 days.
 
     Vague terminology are given arbitrary values, like:
         - morning = 8 AM
