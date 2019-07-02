@@ -18,6 +18,7 @@
 """
 The mycroft.util.parse module provides various parsing functions for
 things like numbers, times, durations etc.
+
 The focus of these parsing functions is to extract data from natural speech
 and to allow localization.
 """
