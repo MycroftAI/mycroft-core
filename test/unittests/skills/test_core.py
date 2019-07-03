@@ -27,7 +27,7 @@ from mycroft.messagebus.message import Message
 from mycroft.skills.skill_data import load_regex_from_file, load_regex, \
     load_vocab_from_file, load_vocabulary
 from mycroft.skills.core import MycroftSkill, load_skill, \
-    create_skill_descriptor, open_intent_envelope
+    create_skill_descriptor, open_intent_envelope, resting_screen_handler
 
 from test.util import base_config
 
@@ -54,6 +54,21 @@ class MockEmitter(object):
     def reset(self):
         self.types = []
         self.results = []
+
+
+class FunctionTest(unittest.TestCase):
+    def test_resting_screen_handler(self):
+        class T(MycroftSkill):
+            def __init__(self):
+                self.name = 'TestObject'
+
+            @resting_screen_handler('humbug')
+            def f(self):
+                pass
+
+        test_class = T()
+        self.assertTrue('resting_handler' in dir(test_class.f))
+        self.assertEquals(test_class.f.resting_handler, 'humbug')
 
 
 class MycroftSkillTest(unittest.TestCase):
