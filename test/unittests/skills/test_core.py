@@ -365,6 +365,8 @@ class MycroftSkillTest(unittest.TestCase):
                      'name': str(s.skill_id) + ':test.intent'}]
 
         self.check_register_decorators(expected)
+        # Restore sys.path
+        sys.path = path_orig
 
     def test_failing_set_context(self):
         s = SimpleSkill1()
