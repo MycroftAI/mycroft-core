@@ -22,6 +22,7 @@ from mycroft.util.lang.format_pt import *
 from mycroft.util.lang.format_it import *
 from mycroft.util.lang.format_sv import *
 from mycroft.util.lang.format_hu import *
+from mycroft.util.lang.format_ar import *
 
 from mycroft.util.lang.format_es import nice_number_es
 from mycroft.util.lang.format_es import nice_time_es
@@ -186,7 +187,7 @@ class DateTimeFormat:
                         number=str(number % 10000))
 
     def date_format(self, dt, lang, now):
-        format_str = 'date_full'
+        '''format_str = 'date_full'
         if now:
             if dt.year == now.year:
                 format_str = 'date_full_no_year'
@@ -206,14 +207,44 @@ class DateTimeFormat:
             weekday=self.lang_config[lang]['weekday'][str(dt.weekday())],
             month=self.lang_config[lang]['month'][str(dt.month)],
             day=self.lang_config[lang]['date'][str(dt.day)],
-            formatted_year=self.year_format(dt, lang, False))
+            formatted_year=self.year_format(dt, lang, False))'''
+        days = {
+    7: 'الأحد',
+    1: 'الاثنين',
+    2: 'الثلاثاء',
+    3: 'الأربعاء',
+    4: 'الخميس',
+    5: 'الجمعة',
+    6: 'السبت'
+   }
+
+        months = ['جانيوري', 'فبراير', 'مارس', 'أبريل', 'ماي', 'جون','جولاي', 'أوقست', 'سبتمبر', 'أكتوبر', 'نوفمبر','ديسمبر']
+        year = str(dt.year)[2:]
+        if now:
+
+            tomorrow = now + datetime.timedelta(days=1)
+            yesterday = now - datetime.timedelta(days=1)
+
+            if tomorrow.date() == dt.date():
+                return 'غداً'
+            elif now.date() == dt.date():
+                return 'اليوم'
+            elif yesterday.date() == dt.date():
+                return 'أمس'
+            if dt.year == now.year:
+                return days[dt.weekday()+1] + " "+ pronounce_number(dt.day, lang) + " " +months[dt.month-1]
+                
+
+            return days[dt.weekday()+1] + " "+ pronounce_number(dt.day, lang) + " " +months[dt.month-1] + " ألفين و" + pronounce_number(int(year), lang)
+
+
 
     def date_time_format(self, dt, lang, now, use_24hour, use_ampm):
         date_str = self.date_format(dt, lang, now)
         time_str = nice_time(dt, lang, use_24hour=use_24hour,
                              use_ampm=use_ampm)
-        return self.lang_config[lang]['date_time_format']['date_time'].format(
-            formatted_date=date_str, formatted_time=time_str)
+        date_time = date_str + " "+ time_str
+        return date_time
 
     def year_format(self, dt, lang, bc):
         number_tuple = self._number_strings(dt.year, lang)
@@ -320,6 +351,8 @@ def nice_time(dt, lang=None, speech=True, use_24hour=False,
         return nice_time_da(dt, speech, use_24hour, use_ampm)
     elif lang_code == "pt":
         return nice_time_pt(dt, speech, use_24hour, use_ampm)
+    elif lang_code == "ar":
+        return nice_time_ar(dt, speech, use_24hour, use_ampm)
 
     # TODO: Other languages
     return str(dt)
@@ -363,6 +396,8 @@ def pronounce_number(number, lang=None, places=2, short_scale=True,
         return pronounce_number_da(number, places=places)
     elif lang_code == "pt":
         return pronounce_number_pt(number, places=places)
+    elif lang_code == "ar":
+        return pronounce_number_ar(number, places=places)
 
     # Default to just returning the numeric value
     return str(number)
@@ -472,35 +507,60 @@ def nice_duration(duration, lang=None, speech=True):
         out = ""
         if days > 0:
             out += pronounce_number(days, lang) + " "
+
             if days == 1:
-                out += _translate_word("day", lang)
+                out = _translate_word("يوم", lang)
+            elif days == 2:
+                out = _translate_word("يومان", lang)
+            elif days >2 and days <11:
+                out += _translate_word("أيام", lang)
             else:
-                out += _translate_word("days", lang)
-            out += " "
+                out += _translate_word("يوم", lang)
+            
         if hours > 0:
             if out:
                 out += " "
             out += pronounce_number(hours, lang) + " "
+
             if hours == 1:
-                out += _translate_word("hour", lang)
+                out = _translate_word("ساعة", lang)
+            elif hours == 2:
+                out = _translate_word("ساعتان", lang)
+            elif hours >2 and hours <11:
+                out += _translate_word("ساعات", lang)
             else:
-                out += _translate_word("hours", lang)
+                out += _translate_word("ساعة", lang)
+            
+
         if minutes > 0:
             if out:
                 out += " "
             out += pronounce_number(minutes, lang) + " "
+
             if minutes == 1:
-                out += _translate_word("minute", lang)
+                out = _translate_word("دقيقة", lang)
+            elif minutes == 2:
+                out = _translate_word("دقيقتان", lang)
+            elif minutes >2 and minutes <11:
+                out+= _translate_word("دقائق", lang)
             else:
-                out += _translate_word("minutes", lang)
+                out+= _translate_word("دقيقة", lang)
+            
+
         if seconds > 0:
             if out:
                 out += " "
             out += pronounce_number(seconds, lang) + " "
+
             if seconds == 1:
-                out += _translate_word("second", lang)
+                out = _translate_word("ثانية", lang)
+            elif seconds == 2:
+                out = _translate_word("ثانيتين", lang)
+            elif seconds >2 and seconds <11:
+                out+= _translate_word("ثواني", lang)
             else:
-                out += _translate_word("seconds", lang)
+                out+= _translate_word("ثانية", lang)
+            
     else:
         # M:SS, MM:SS, H:MM:SS, Dd H:MM:SS format
         out = ""
