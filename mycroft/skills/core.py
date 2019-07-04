@@ -460,13 +460,11 @@ class SkillGUI:
         self.show_page("SYSTEM_UrlFrame.qml", override_idle)
 
 
-def resting_screen_handler(name=None):
+def resting_screen_handler(name):
     """ Decorator for adding a method as an resting screen handler.
 
         If selected will be shown on screen when device enters idle mode
     """
-    name = name or func.__self__.name
-
     def real_decorator(func):
         # Store the resting information inside the function
         # This will be used later in register_resting_screen
