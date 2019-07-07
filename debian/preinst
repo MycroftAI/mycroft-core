@@ -1,0 +1,3 @@
+#!/bin/bash
+
+snap disable mycroft

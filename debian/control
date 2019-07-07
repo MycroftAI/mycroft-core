@@ -1,0 +1,17 @@
+Source: mycroft-core
+Section: productivity
+Priority: standard
+Maintainer: ${maintainer}
+Build-Depends: debhelper (>= 11), git, python3, python3-dev, libtool, libffi-dev, libssl-dev, autoconf, automake, bison, swig, libglib2.0-dev, portaudio19-dev, curl, libicu-dev, pkg-config, libjpeg-dev, libfann-dev, build-essential
+Homepage: https://github.com/MycroftAI/mycroft-core
+Vcs-Browser: https://github.com/MycroftAI/mycroft-core
+Vcs-Git: https://github.com/MycroftAI/mycroft-core.git
+
+Package: mycroft
+Architecture: all
+Depends: ${depends-runtime-python}, ${depends-runtime-native}
+Essential: yes
+Description: Mycroft Voice Assistant
+ An open-source and hackable alternative to Microsoft Cortana, Amazon Echo, Google Assistant, Apple Siri and many more
+Version: ${version}
+

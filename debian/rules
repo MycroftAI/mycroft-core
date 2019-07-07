@@ -1,0 +1,12 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+install:
+	mkdir -p debian/mycroft/opt/mycroft debian/mycroft/bin
+	cd debian && bash debian/patch_python_deps.sh && cd ../
+	cp -r mycroft-core debian/mycroft/opt/mycroft
+	cp debian/requirements.txt debian/mycroft/opt/mycroft/mycroft-core/requirements.txt
+	rm debian/mycroft/opt/mycroft/mycroft-core/dev_setup.sh
+	

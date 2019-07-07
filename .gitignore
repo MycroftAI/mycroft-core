@@ -28,3 +28,7 @@ doc/_build/
 test/unittests/skills/test_skill/settings.json
 test_conf.json
 .pytest_cache/
+
+
+# Debian build
+debian/mycroft

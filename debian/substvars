@@ -1,0 +1,11 @@
+depends-runtime-python=python3-six(>=1.10.0), python3-cryptography(2.6.1), python3-requests(>=2.20.0), python3-pyaudio(>=0.2.11), python3-tornado4(>=4.5.3), python3-requests-futures(>=0.9.5), python3-serial(>=3.0), python3-psutil(>=5.2.1), python3-pocketsphinx(>=0.1.0), python3-inflection(>=0.3.1), python3-dateutil(>=2.6.0), python3-vlc(>=1.1.2), python3-yaml(>=3.13), python3-fann2(1:1.0.7)
+
+depends-runtime-native=bash, python3.7, portaudio, mpg123, screen, flac, curl, jq, python3.7-venv
+
+depends-build=debhelper (>= 11), binutils
+
+maintainer=Aurora of Earth<auroraofearth@ya.ru>
+
+suggests=python3-pytest-cov(>=2.5.1), python3-pytest(>=3.5.0), python3-cov-core(>=1.15.0), python3-mock(>=2.0.0), python3-sphinx(>=1.8.2), python3-sphinx-rtd-theme(>=0.4.2)
+
+version=19.2.13

@@ -1,0 +1,28 @@
+#!/bin/bash
+
+MYCROFT=/opt/mycroft
+MYCROFT_LOG=/var/log/mycroft
+MYCROFT_BIN=/opt/mycroft/mycroft-core/bin
+
+mkdir -p $M/skills $MYCROFT_LOG /etc/mycroft
+chown -R root:root $MYCROFT
+chmod -R 777 $MYCROFT_LOG
+
+ln -S MYCROFT_BIN/mycroft-help /bin/mycroft-help
+ln -S $MYCROFT_BIN/mycroft-cli-client /bin/mycroft-cli-client
+ln -S MYCROFT_BIN/mycroft-mic-test /bin/mycroft-mic-test
+ln -S MYCROFT_BIN/mycroft-msk /bin/mycroft-msk
+ln -S MYCROFT_BIN/mycroft-msm /bin/mycroft-msm
+ln -S MYCROFT_BIN/mycroft-pip /bin/mycroft-pip
+ln -S MYCROFT_BIN/mycroft-say-to /bin/mycroft-say-to
+ln -S MYCROFT_BIN/mycroft-skill-testrunner /bin/mycroft-skill-testrunner
+ln -S MYCROFT_BIN/mycroft-speak /bin/mycroft-speak
+ln -S MYCROFT_BIN/mycroft-stop /bin/mycroft-stop
+ln -S MYCROFT_BIN/mycroft-start /bin/mycroft-start
+
+cd /opt/mycroft/mycroft-core
+source venv-activate.sh
+pip3.7 --quiet install -r requirements.txt
+
+
+exit 0
