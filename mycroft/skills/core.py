@@ -1100,7 +1100,8 @@ class MycroftSkill:
                 context = message.context
                 if context and 'ident' in context:
                     report_timing(context['ident'], 'skill_handler', stopwatch,
-                                  {'handler': handler.__name__})
+                                  {'handler': handler.__name__,
+                                   'skill_id': self.skill_id})
 
         if handler:
             if once:
