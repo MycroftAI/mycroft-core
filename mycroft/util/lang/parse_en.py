@@ -929,7 +929,9 @@ def extract_datetime_en(string, dateNow, default_time):
                     hasYear = False
 
             # if no date indicators found, it may not be the month of May
-            elif word == 'may' and wordNext == 'i':
+            # may "i/we" ...
+            # "... may be"
+            elif word == 'may' and wordNext in ['i', 'we', 'be']:
                 datestr = ""
 
         # parse 5 days from tomorrow, 10 weeks from next thursday,
