@@ -491,6 +491,19 @@ class TestNormalize(unittest.TestCase):
             extract_datetime('feed fish at 10 o\'clock', evening)[0],
             datetime(2017, 6, 27, 22, 0, 0))
 
+    def test_extract_date_with_may_I_en(self):
+        now = datetime(2019, 7, 4, 8, 1, 2)
+        may_date = datetime(2019, 5, 2, 10, 11, 20)
+        self.assertEqual(
+            extract_datetime('May I know what time it is tomorrow', now)[0],
+            datetime(2019, 7, 5, 0, 0, 0))
+        self.assertEqual(
+            extract_datetime('May I when 10 o\'clock is', now)[0],
+            datetime(2019, 7, 4, 10, 0, 0))
+        self.assertEqual(
+            extract_datetime('On 24th of may I want a reminder', may_date)[0],
+            datetime(2019, 5, 24, 0, 0, 0))
+
     def test_extract_relativedatetime_en(self):
         def extractWithFormat(text):
             date = datetime(2017, 6, 27, 10, 1, 2)
