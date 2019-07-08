@@ -126,6 +126,7 @@ class SkillManager(Thread):
         bus.on('skillmanager.deactivate', self.deactivate_skill)
         bus.on('skillmanager.keep', self.deactivate_except)
         bus.on('skillmanager.activate', self.activate_skill)
+        bus.on('mycroft.paired', self.handle_paired)
 
     @staticmethod
     def get_lock():
@@ -140,6 +141,10 @@ class SkillManager(Thread):
 
     def schedule_now(self, message=None):
         self.next_download = time.time() - 1
+
+    def handle_paired(self, message):
+        """ Trigger upload of skills manifest after pairing. """
+        self.post_manifest(self.create_msm())
 
     @staticmethod
     @property
@@ -165,6 +170,13 @@ class SkillManager(Thread):
     def save_installed_skills(self, skill_names):
         with open(self.installed_skills_file, 'w') as f:
             f.write('\n'.join(skill_names))
+
+    def post_manifest(self, msm):
+        if SkillManager.manifest_upload_allowed and is_paired():
+            try:
+                DeviceApi().upload_skills_data(msm.skills_data)
+            except Exception:
+                LOG.exception('Could not upload skill manifest')
 
     def download_skills(self, speak=False, quick=False):
         """ Invoke MSM to install default skills and/or update installed skills
@@ -228,11 +240,7 @@ class SkillManager(Thread):
                 num_threads = 20 if not defaults or quick else 2
                 msm.apply(install_or_update, msm.list(),
                           max_threads=num_threads)
-                if SkillManager.manifest_upload_allowed and is_paired():
-                    try:
-                        DeviceApi().upload_skills_data(msm.skills_data)
-                    except Exception:
-                        LOG.exception('Could not upload skill manifest')
+                self.post_manifest(msm)
 
             except MsmException as e:
                 LOG.error('Failed to update skills: {}'.format(repr(e)))

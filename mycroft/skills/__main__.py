@@ -17,7 +17,7 @@ import datetime as dt
 from threading import Timer
 import mycroft.lock
 from mycroft import dialog
-from mycroft.api import is_paired, BackendDown
+from mycroft.api import is_paired, BackendDown, DeviceApi
 from mycroft.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
 from mycroft.messagebus.client.ws import WebsocketClient
@@ -92,12 +92,13 @@ def _starting_up():
     skill_manager.load_priority()
 
     # If device has been offline for more than 2 weeks or
-    # skill state is in a limbo
+    # skill state is in a limbo do a quick update
     update_limit = dt.datetime.now() - dt.timedelta(days=14)
     if (not skill_manager.last_download or
             skill_manager.last_download < update_limit):
         skill_manager.download_skills(quick=True)
-
+    else:  # Just post the skills manifest
+        skill_manager.post_manifest(skill_manager.msm)
     skill_manager.start()
     check_connection()
 
@@ -177,7 +178,6 @@ def check_connection():
                 }
                 bus.emit(Message("recognizer_loop:utterance", payload))
             else:
-                from mycroft.api import DeviceApi
                 api = DeviceApi()
                 api.update_version()
         except BackendDown:
