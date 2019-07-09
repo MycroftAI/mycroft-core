@@ -14,7 +14,6 @@
 #
 import time
 from threading import Thread
-import sys
 import speech_recognition as sr
 from pyee import EventEmitter
 from requests import RequestException, HTTPError
