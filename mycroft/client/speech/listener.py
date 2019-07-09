@@ -187,12 +187,13 @@ class AudioConsumer(Thread):
                 }
                 self.emitter.emit("recognizer_loop:utterance", payload)
                 self.metrics.attr('utterances', [transcription])
+
+                # Report timing metrics
+                report_timing(ident, 'stt', stopwatch,
+                              {'transcription': transcription,
+                               'stt': self.stt.__class__.__name__})
             else:
                 ident = str(stopwatch.timestamp)
-            # Report timing metrics
-            report_timing(ident, 'stt', stopwatch,
-                          {'transcription': transcription,
-                           'stt': self.stt.__class__.__name__})
 
     def transcribe(self, audio):
         def send_unknown_intent():
