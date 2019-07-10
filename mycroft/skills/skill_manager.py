@@ -13,9 +13,9 @@
 # limitations under the License.
 #
 import gc
-import json
 import sys
 import time
+from datetime import datetime
 from glob import glob
 from itertools import chain
 
@@ -23,7 +23,7 @@ import os
 from os.path import exists, join, basename, dirname, expanduser, isfile
 from threading import Thread, Event, Lock
 
-from msm import MycroftSkillsManager, SkillRepo, MsmException
+from msm import MsmException
 from mycroft import dialog
 from mycroft.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
@@ -104,9 +104,13 @@ class SkillManager(Thread):
         # Update immediately if the .msm or installed skills file is missing
         # otherwise according to timestamp on .msm
         if exists(self.dot_msm) and exists(self.installed_skills_file):
-            self.next_download = os.path.getmtime(self.dot_msm) + \
-                                 self.update_interval
+            mtime = os.path.getmtime(self.dot_msm)
+            self.next_download = mtime + self.update_interval
+            self.last_download = datetime.fromtimestamp(mtime)
         else:
+            # Last update can't be found or the requirements don't seem to be
+            # installed trigger update before skill loading
+            self.last_download = None
             self.next_download = time.time() - 1
 
         # Conversation management
@@ -122,6 +126,7 @@ class SkillManager(Thread):
         bus.on('skillmanager.deactivate', self.deactivate_skill)
         bus.on('skillmanager.keep', self.deactivate_except)
         bus.on('skillmanager.activate', self.activate_skill)
+        bus.on('mycroft.paired', self.handle_paired)
 
     @staticmethod
     def get_lock():
@@ -136,6 +141,10 @@ class SkillManager(Thread):
 
     def schedule_now(self, message=None):
         self.next_download = time.time() - 1
+
+    def handle_paired(self, message):
+        """ Trigger upload of skills manifest after pairing. """
+        self.post_manifest(self.create_msm())
 
     @staticmethod
     @property
@@ -162,7 +171,14 @@ class SkillManager(Thread):
         with open(self.installed_skills_file, 'w') as f:
             f.write('\n'.join(skill_names))
 
-    def download_skills(self, speak=False):
+    def post_manifest(self, msm):
+        if SkillManager.manifest_upload_allowed and is_paired():
+            try:
+                DeviceApi().upload_skills_data(msm.skills_data)
+            except Exception:
+                LOG.exception('Could not upload skill manifest')
+
+    def download_skills(self, speak=False, quick=False):
         """ Invoke MSM to install default skills and/or update installed skills
 
             Args:
@@ -219,12 +235,12 @@ class SkillManager(Thread):
                         raise
                 installed_skills.add(skill.name)
             try:
-                msm.apply(install_or_update, msm.list())
-                if SkillManager.manifest_upload_allowed and is_paired():
-                    try:
-                        DeviceApi().upload_skills_data(msm.skills_data)
-                    except Exception:
-                        LOG.exception('Could not upload skill manifest')
+                # If defaults are installed
+                defaults = all([s.is_local for s in msm.list_defaults()])
+                num_threads = 20 if not defaults or quick else 2
+                msm.apply(install_or_update, msm.list(),
+                          max_threads=num_threads)
+                self.post_manifest(msm)
 
             except MsmException as e:
                 LOG.error('Failed to update skills: {}'.format(repr(e)))
@@ -377,10 +393,6 @@ class SkillManager(Thread):
         # Scan the file folder that contains Skills.  If a Skill is updated,
         # unload the existing version from memory and reload from the disk.
         while not self._stop_event.is_set():
-            # Update skills once an hour if update is enabled
-            if time.time() >= self.next_download and update:
-                self.download_skills()
-
             # Look for recently changed skill(s) needing a reload
             # checking skills dir and getting all skills there
             skill_paths = glob(join(self.msm.skills_dir, '*/'))
@@ -402,6 +414,10 @@ class SkillManager(Thread):
             self._unload_removed(skill_paths)
             # Pause briefly before beginning next scan
             time.sleep(2)
+
+            # Update skills once an hour if update is enabled
+            if time.time() >= self.next_download and update:
+                self.download_skills()
 
     def send_skill_list(self, message=None):
         """

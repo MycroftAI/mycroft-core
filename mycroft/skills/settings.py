@@ -66,7 +66,7 @@ import yaml
 import time
 import copy
 import re
-from threading import Timer
+from threading import Timer, Thread
 from os.path import isfile, join, expanduser
 from requests.exceptions import RequestException, HTTPError
 from msm import SkillEntry
@@ -161,7 +161,9 @@ class SkillSettings(dict):
 
         # if settingsmeta exist
         if self._meta_path:
-            self._poll_skill_settings()
+            t = Thread(target=self._poll_skill_settings)
+            t.daemon = True
+            t.start()
         # if not disallowed by user upload an entry for all skills installed
         elif self.config['skills']['upload_skill_manifest']:
             self._blank_poll_timer = Timer(1, self._init_blank_meta)
