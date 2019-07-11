@@ -64,6 +64,9 @@ mycroft.util
     mycroft.util
 
 .. toctree::
+    mycroft.util.log
+
+.. toctree::
     mycroft.util.parse
 Parsing functions for extracting data from natural speech.
 
