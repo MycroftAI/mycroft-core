@@ -21,6 +21,7 @@ from .text_client import (
         load_settings, save_settings, simple_cli, gui_main,
         start_log_monitor, start_mic_monitor, connect_to_mycroft
     )
+from mycroft.configuration import Configuration
 
 sys.stdout = io.StringIO()
 sys.stderr = io.StringIO()
@@ -38,11 +39,14 @@ sys.excepthook = custom_except_hook  # noqa
 
 def main():
     # Monitor system logs
-    start_log_monitor("/var/log/mycroft/skills.log")
-    start_log_monitor("/var/log/mycroft/voice.log")
-    # logs when using Debian package   TODO: Unify all
-    start_log_monitor("/var/log/mycroft-skills.log")
-    start_log_monitor("/var/log/mycroft-speech-client.log")
+    config = Configuration.get()
+    if 'log_dir' in config:
+        log_dir = os.path.expanduser(config['log_dir'])
+        start_log_monitor(os.path.join(log_dir, 'skills.log'))
+        start_log_monitor(os.path.join(log_dir, 'voice.log'))
+    else:
+        start_log_monitor("/var/log/mycroft/skills.log")
+        start_log_monitor("/var/log/mycroft/voice.log")
 
     # Monitor IPC file containing microphone level info
     start_mic_monitor(os.path.join(get_ipc_directory(), "mic_level"))
