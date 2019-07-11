@@ -149,33 +149,6 @@ function launch-all() {
     launch-background enclosure
 }
 
-function check-dependencies() {
-    if [ -f .dev_opts.json ] ; then
-        auto_update=$( jq -r ".auto_update" < .dev_opts.json 2> /dev/null)
-    else
-        auto_update="false"
-    fi
-    if [ "$auto_update" == "true" ] ; then
-        # Check github repo for updates (e.g. a new release)
-        git pull
-    fi
-
-    if [ ! -f .installed ] || ! md5sum -c &> /dev/null < .installed ; then
-        # Critical files have changed, dev_setup.sh should be run again
-        if [ "$auto_update" == "true" ] ; then
-            echo "Updating dependencies..."
-            bash dev_setup.sh
-        else
-            echo "Please update dependencies by running ./dev_setup.sh again."
-            if command -v notify-send >/dev/null ; then
-                # Generate a desktop notification (ArchLinux)
-                notify-send "Mycroft Dependencies Outdated" "Run ./dev_setup.sh again"
-            fi
-            exit 1
-        fi
-    fi
-}
-
 _opt=$1
 _force_restart=false
 shift
@@ -188,8 +161,6 @@ if [[ "${1}" == "restart" ]] || [[ "${_opt}" == "restart" ]] ; then
     shift
 fi
 _params=$@
-
-check-dependencies
 
 case ${_opt} in
     "all")

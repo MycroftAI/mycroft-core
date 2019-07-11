@@ -1,0 +1,8 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+install:
+	mkdir -p debian/mycroft/opt/mycroft/mycroft-core
+	cp -r bin mycroft requirements.txt scripts *.sh debian/mycroft/opt/mycroft/mycroft-core

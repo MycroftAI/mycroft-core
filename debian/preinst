@@ -1,0 +1,13 @@
+#!/bin/bash
+
+if [ -x "$(command -v snap)" ]; then
+    sudo snap disable mycroft > /dev/null 2>&1
+    exit
+fi
+
+if [ -x "$(command -v pip3)" ]; then
+    sudo pip3 uninstall mycroft-core > /dev/null 2>&1
+    exit
+fi
+
+exit 0
