@@ -3,10 +3,12 @@
 MYCROFT=/opt/mycroft
 MYCROFT_LOG=/var/log/mycroft
 MYCROFT_BIN=/opt/mycroft/mycroft-core/bin
+SKILLS=$MYCROFT/skills
 
 mkdir -p $M/skills $MYCROFT_LOG /etc/mycroft
 chown -R root:root $MYCROFT
 chmod -R 777 $MYCROFT_LOG
+chmod 777 -R $SKILLS
 
 ln -S $MYCROFT_BIN/mycroft-help /bin/mycroft-help
 ln -S $MYCROFT_BIN/mycroft-cli-client /bin/mycroft-cli
