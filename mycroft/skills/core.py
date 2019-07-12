@@ -602,13 +602,27 @@ class MycroftSkill:
                            self.handle_set_cross_context)
             self.add_event("mycroft.skill.remove_cross_context",
                            self.handle_remove_cross_context)
-            name = 'mycroft.skills.settings.update'
-            func = self.settings.run_poll
-            bus.on(name, func)
-            self.events.append((name, func))
+
+            # Trigger settings update if requested
+            self._add_light_event('mycroft.skills.settings.update',
+                                  self.settings.run_poll)
+            # Trigger Settings meta upload on pairing complete
+            self._add_light_event('mycroft.paired', self.settings.run_poll)
 
             # Intialize the SkillGui
             self.gui.setup_default_handlers()
+
+    def _add_light_event(self, msg_type, func):
+        """ This adds an event handler that will automatically be unregistered
+        when the skill shutsdown but none of the metrics or error feedback will
+        be triggered.
+
+        Arguments:
+            msg_tupe (str): Message type
+            func (Function): function to be invoked
+        """
+        self.bus.on(msg_type, func)
+        self.events.append((msg_type, func))
 
     def detach(self):
         for (name, intent) in self.registered_intents:
