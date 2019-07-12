@@ -2,7 +2,7 @@
 
 MYCROFT=/opt/mycroft
 MYCROFT_LOG=/var/log/mycroft
-MYCROFT_BIN=/opt/mycroft/mycroft-core/bin
+MYCROFT_BIN=$MYCROFT/mycroft-core/bin
 SKILLS=$MYCROFT/skills
 
 mkdir -p $M/skills $MYCROFT_LOG /etc/mycroft
