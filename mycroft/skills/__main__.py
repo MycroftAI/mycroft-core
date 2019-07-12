@@ -132,7 +132,7 @@ def check_connection():
         # Force a sync of the local clock with the internet
         config = Configuration.get()
         platform = config['enclosure'].get("platform", "unknown")
-        if platform in ['mycroft_mark_1', 'picroft']:
+        if platform in ['mycroft_mark_1', 'picroft', 'mycroft_mark_2pi']:
             bus.wait_for_response(Message('system.ntp.sync'),
                                   'system.ntp.sync.complete', 15)
 
