@@ -293,9 +293,9 @@ function install_deps() {
         $SUDO yum install -y epel-release-latest-7.noarch.rpm
         rm epel-release-latest-7.noarch.rpm
         redhat_common_install
-    elif os_is_like debian || os_is debian ; then
-        # Debian / Ubuntu
-        echo "$GREEN Installing packages for Debian/Ubuntu...$RESET"
+    elif os_is_like debian || os_is debian || os_is_like ubuntu || os_is ubuntu || os_is linuxmint; then
+        # Debian / Ubuntu / Mint
+        echo "$GREEN Installing packages for Debian/Ubuntu/Mint...$RESET"
         $SUDO apt-get install -y git python3 python3-dev python3-setuptools libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config libjpeg-dev libfann-dev build-essential jq
     elif os_is_like fedora ; then
         echo "$GREEN Installing packages for Fedora...$RESET"
@@ -316,6 +316,13 @@ function install_deps() {
     	echo
         echo -e "${YELLOW}Could not find package manager
 ${YELLOW}Make sure to manually install:$BLUE git python3 python-setuptools python-venv pygobject libtool libffi libjpg openssl autoconf bison swig glib2.0 portaudio19 mpg123 flac curl fann g++ jq\n$RESET"
+
+        echo 'Warning: Failed to install all dependencies. Continue? y/N'
+        read -n1 continue
+        if [[ $continue != 'y' ]] ; then
+            exit 1
+        fi
+
     fi
 }
 
