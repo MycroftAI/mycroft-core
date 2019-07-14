@@ -293,7 +293,7 @@ function install_deps() {
         $SUDO yum install -y epel-release-latest-7.noarch.rpm
         rm epel-release-latest-7.noarch.rpm
         redhat_common_install
-    elif os_is_like debian || os_is debian ; then
+    elif os_is_like debian || os_is debian || os_is_like ubuntu; then
         # Debian / Ubuntu
         echo "$GREEN Installing packages for Debian/Ubuntu...$RESET"
         $SUDO apt-get install -y git python3 python3-dev python3-setuptools libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config libjpeg-dev libfann-dev build-essential jq
