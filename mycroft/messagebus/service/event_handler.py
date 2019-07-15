@@ -12,27 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""Define the web socket event handler for the message bus."""
 import json
 import sys
 import traceback
 
-import tornado.websocket
+from tornado.websocket import WebSocketHandler
 from pyee import EventEmitter
 
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
 
-
-EventBusEmitter = EventEmitter()
-
 client_connections = []
 
 
-class WebsocketEventHandler(tornado.websocket.WebSocketHandler):
+class MessageBusEventHandler(WebSocketHandler):
     def __init__(self, application, request, **kwargs):
-        tornado.websocket.WebSocketHandler.__init__(
-            self, application, request, **kwargs)
-        self.emitter = EventBusEmitter
+        super(MessageBusEventHandler, self).__init__(
+            application,
+            request,
+            **kwargs
+        )
+        self.emitter = EventEmitter()
 
     def on(self, event_name, handler):
         self.emitter.on(event_name, handler)

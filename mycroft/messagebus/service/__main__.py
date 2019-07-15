@@ -12,47 +12,70 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+""" Message bus service for mycroft-core
+
+The message bus facilitates inter-process communication between mycroft-core
+processes. It implements a websocket server so can also be used by external
+systems to integrate with the Mycroft system.
+"""
 from tornado import autoreload, web, ioloop
 
 from mycroft.configuration import Configuration
 from mycroft.lock import Lock  # creates/supports PID locking file
-from mycroft.messagebus.service.ws import WebsocketEventHandler
-from mycroft.util import validate_param, reset_sigint_handler, create_daemon, \
+from mycroft.messagebus.service.event_handler import MessageBusEventHandler
+from mycroft.util import (
+    reset_sigint_handler,
+    create_daemon,
     wait_for_exit_signal
+)
+from mycroft.util.log import LOG
 
-settings = {
-    'debug': True
-}
+
+def _load_message_bus_configs():
+    LOG.info('Loading message bus configs')
+    config = Configuration.get()
+
+    try:
+        websocket_configs = config['websocket']
+    except KeyError as ke:
+        LOG.error('No websocket configs found')
+        LOG.exception(ke)
+        raise
+    else:
+        try:
+            host = websocket_configs['host']
+            port = websocket_configs['port']
+            route = websocket_configs['route']
+        except KeyError as ke:
+            LOG.error('Missing one or more websocket configs')
+            LOG.exception(ke)
+            raise
+    LOG.info(
+        'Config values loaded: \n\thost: {}\n\tport: {}\n\troute: {}'.format(
+            host, port, route
+        )
+    )
+    return host, port, route
 
 
 def main():
     import tornado.options
+    LOG.info('Starting message bus service...')
     reset_sigint_handler()
     lock = Lock("service")
     tornado.options.parse_command_line()
 
     def reload_hook():
-        """ Hook to release lock when autoreload is triggered. """
+        """ Hook to release lock when auto reload is triggered. """
         lock.delete()
 
     autoreload.add_reload_hook(reload_hook)
-
-    config = Configuration.get().get("websocket")
-
-    host = config.get("host")
-    port = config.get("port")
-    route = config.get("route")
-    validate_param(host, "websocket.host")
-    validate_param(port, "websocket.port")
-    validate_param(route, "websocket.route")
-
-    routes = [
-        (route, WebsocketEventHandler)
-    ]
-    application = web.Application(routes, **settings)
+    host, port, route = _load_message_bus_configs()
+    routes = [(route, MessageBusEventHandler)]
+    application = web.Application(routes, debug=True)
     application.listen(port, host)
     create_daemon(ioloop.IOLoop.instance().start)
-
+    LOG.info('Message bus service started!')
     wait_for_exit_signal()
 
 
