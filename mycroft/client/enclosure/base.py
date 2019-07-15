@@ -16,7 +16,7 @@ from collections import namedtuple
 from threading import Lock
 
 from mycroft.configuration import Configuration
-from mycroft.messagebus.client.ws import WebsocketClient
+from mycroft.messagebus.client.client import MessageBusClient
 from mycroft.util import create_daemon
 from mycroft.util.log import LOG
 
@@ -60,7 +60,7 @@ def _get_page_data(message):
 class Enclosure:
     def __init__(self):
         # Establish Enclosure's websocket connection to the messagebus
-        self.bus = WebsocketClient()
+        self.bus = MessageBusClient()
 
         # Load full config
         Configuration.init(self.bus)

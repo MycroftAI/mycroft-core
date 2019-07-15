@@ -29,7 +29,7 @@ import textwrap
 import json
 import mycroft.version
 from threading import Thread, Lock
-from mycroft.messagebus.client.ws import WebsocketClient
+from mycroft.messagebus.client import MessageBusClient
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
 from mycroft.configuration import Configuration
@@ -1429,7 +1429,7 @@ def connect_to_messagebus():
 
         Returns: WebsocketClient
     """
-    bus = WebsocketClient()  # Mycroft messagebus connection
+    bus = MessageBusClient()  # Mycroft messagebus connection
 
     event_thread = Thread(target=connect, args=[bus])
     event_thread.setDaemon(True)

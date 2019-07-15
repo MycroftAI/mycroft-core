@@ -18,7 +18,7 @@ import json
 from websocket import create_connection
 
 from mycroft.configuration import ConfigurationManager
-from mycroft.messagebus.client.ws import WebsocketClient
+from mycroft.messagebus.client import MessageBusClient
 from mycroft.messagebus.message import Message
 
 
@@ -67,7 +67,7 @@ def send(message_to_send, data_to_send=None):
 
     # Calculate the standard Mycroft messagebus websocket address
     config = ConfigurationManager.get().get("websocket")
-    url = WebsocketClient.build_url(
+    url = MessageBusClient.build_url(
         config.get("host"),
         config.get("port"),
         config.get("route"),

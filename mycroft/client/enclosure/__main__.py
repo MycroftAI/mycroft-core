@@ -15,7 +15,7 @@
 import sys
 
 from mycroft.util.log import LOG
-from mycroft.messagebus.client.ws import WebsocketClient
+from mycroft.messagebus.client import MessageBusClient
 from mycroft.configuration import Configuration, LocalConf, SYSTEM_CONFIG
 
 

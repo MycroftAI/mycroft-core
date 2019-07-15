@@ -14,47 +14,46 @@
 #
 import json
 import time
-from threading import Event
 import traceback
+from threading import Event
 
-from .threaded_event_emitter import ThreadedEventEmitter
-from websocket import (WebSocketApp, WebSocketConnectionClosedException,
-                       WebSocketException)
+from websocket import (
+    WebSocketApp,
+    WebSocketConnectionClosedException,
+    WebSocketException
+)
 
-from mycroft.configuration import Configuration
+from mycroft.messagebus.load_config import load_message_bus_config
 from mycroft.messagebus.message import Message
-from mycroft.util import validate_param, create_echo_function
+from mycroft.util import create_echo_function
 from mycroft.util.log import LOG
+from .threaded_event_emitter import ThreadedEventEmitter
 
 
-class WebsocketClient:
+class MessageBusClient(object):
     def __init__(self, host=None, port=None, route=None, ssl=None):
-
-        config = Configuration.get().get("websocket")
-        host = host or config.get("host")
-        port = port or config.get("port")
-        route = route or config.get("route")
-        ssl = ssl or config.get("ssl")
-        validate_param(host, "websocket.host")
-        validate_param(port, "websocket.port")
-        validate_param(route, "websocket.route")
-
-        self.url = WebsocketClient.build_url(host, port, route, ssl)
+        config_overrides = dict(host=host, port=port, route=route, ssl=ssl)
+        self.config = load_message_bus_config(**config_overrides)
         self.emitter = ThreadedEventEmitter()
         self.client = self.create_client()
         self.retry = 5
         self.connected_event = Event()
         self.started_running = False
 
-    @staticmethod
-    def build_url(host, port, route, ssl):
-        scheme = "wss" if ssl else "ws"
-        return scheme + "://" + host + ":" + str(port) + route
-
     def create_client(self):
-        return WebSocketApp(self.url,
-                            on_open=self.on_open, on_close=self.on_close,
-                            on_error=self.on_error, on_message=self.on_message)
+        url = '{scheme}://{host}:{port}{route}'.format(
+            scheme='wss' if self.config.ssl else 'ws',
+            host=self.config.host,
+            port=str(self.config.port),
+            route=self.config.route
+        )
+        return WebSocketApp(
+            url,
+            on_open=self.on_open,
+            on_close=self.on_close,
+            on_error=self.on_error,
+            on_message=self.on_message
+        )
 
     def on_open(self):
         LOG.info("Connected")
@@ -202,15 +201,15 @@ class WebsocketClient:
 
 
 def echo():
-    ws = WebsocketClient()
+    message_bus_client = MessageBusClient()
 
     def repeat_utterance(message):
         message.type = 'speak'
-        ws.emit(message)
+        message_bus_client.emit(message)
 
-    ws.on('message', create_echo_function(None))
-    ws.on('recognizer_loop:utterance', repeat_utterance)
-    ws.run_forever()
+    message_bus_client.on('message', create_echo_function(None))
+    message_bus_client.on('recognizer_loop:utterance', repeat_utterance)
+    message_bus_client.run_forever()
 
 
 if __name__ == "__main__":

@@ -23,7 +23,7 @@ import unittest
 from subprocess import Popen, call
 from threading import Thread
 
-from mycroft.messagebus.client.ws import WebsocketClient
+from mycroft.messagebus.client import MessageBusClient
 from mycroft.messagebus.message import Message
 
 
@@ -45,8 +45,8 @@ class TestMessagebusMethods(unittest.TestCase):
         # start the mycroft service. and get the pid of the script.
         self.pid = Popen(["python", "mycroft/messagebus/service/main.py"]).pid
         # Create the two web clients
-        self.ws1 = WebsocketClient()
-        self.ws2 = WebsocketClient()
+        self.ws1 = MessageBusClient()
+        self.ws2 = MessageBusClient()
         # init the flags for handler's
         self.handle1 = False
         self.handle2 = False

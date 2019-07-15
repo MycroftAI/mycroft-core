@@ -15,8 +15,8 @@
 """Mycroft core message bus service."""
 from tornado import autoreload, web, ioloop
 
-from mycroft.configuration import Configuration
 from mycroft.lock import Lock  # creates/supports PID locking file
+from mycroft.messagebus.load_config import load_message_bus_config
 from mycroft.messagebus.service.event_handler import MessageBusEventHandler
 from mycroft.util import (
     reset_sigint_handler,
@@ -24,33 +24,6 @@ from mycroft.util import (
     wait_for_exit_signal
 )
 from mycroft.util.log import LOG
-
-
-def _load_message_bus_configs():
-    LOG.info('Loading message bus configs')
-    config = Configuration.get()
-
-    try:
-        websocket_configs = config['websocket']
-    except KeyError as ke:
-        LOG.error('No websocket configs found')
-        LOG.exception(ke)
-        raise
-    else:
-        try:
-            host = websocket_configs['host']
-            port = websocket_configs['port']
-            route = websocket_configs['route']
-        except KeyError as ke:
-            LOG.error('Missing one or more websocket configs')
-            LOG.exception(ke)
-            raise
-    LOG.info(
-        'Config values loaded: \n\thost: {}\n\tport: {}\n\troute: {}'.format(
-            host, port, route
-        )
-    )
-    return host, port, route
 
 
 def main():
@@ -65,10 +38,10 @@ def main():
         lock.delete()
 
     autoreload.add_reload_hook(reload_hook)
-    host, port, route = _load_message_bus_configs()
-    routes = [(route, MessageBusEventHandler)]
+    config = load_message_bus_config()
+    routes = [(config.route, MessageBusEventHandler)]
     application = web.Application(routes, debug=True)
-    application.listen(port, host)
+    application.listen(config.port, config.host)
     create_daemon(ioloop.IOLoop.instance().start)
     LOG.info('Message bus service started!')
     wait_for_exit_signal()
