@@ -20,7 +20,7 @@ from mycroft.client.speech.listener import RecognizerLoop
 from mycroft.configuration import Configuration
 from mycroft.identity import IdentityManager
 from mycroft.lock import Lock as PIDLock  # Create/Support PID locking file
-from mycroft.messagebus.client.ws import WebsocketClient
+from mycroft.messagebus.client import MessageBusClient
 from mycroft.messagebus.message import Message
 from mycroft.util import create_daemon, wait_for_exit_signal, \
     reset_sigint_handler, create_echo_function
@@ -148,7 +148,7 @@ def main():
     global config
     reset_sigint_handler()
     PIDLock("voice")
-    bus = WebsocketClient()  # Mycroft messagebus, see mycroft.messagebus
+    bus = MessageBusClient()  # Mycroft messagebus, see mycroft.messagebus
     Configuration.init(bus)
     config = Configuration.get()
 

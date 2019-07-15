@@ -12,6 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""Daemon launched at startup to handle skill activities.
+
+In this repo, you will not find an entry called mycroft-skills in the bin
+directory.  The executable gets added to the bin directory when installed
+(see setup.py)
+"""
 import time
 import datetime as dt
 from threading import Timer
@@ -20,7 +26,7 @@ from mycroft import dialog
 from mycroft.api import is_paired, BackendDown, DeviceApi
 from mycroft.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
-from mycroft.messagebus.client.ws import WebsocketClient
+from mycroft.messagebus.client import MessageBusClient
 from mycroft.messagebus.message import Message
 from mycroft.util import (
     connected, wait_while_speaking, reset_sigint_handler,
@@ -60,7 +66,6 @@ def _starting_up():
         - padatious intent service
     """
     global bus, skill_manager, event_scheduler
-
     bus.on('intent_failure', FallbackSkill.make_intent_failure_handler(bus))
 
     # Create the Intent manager, which converts utterances to intents
@@ -197,7 +202,7 @@ def main():
     # Create PID file, prevent multiple instancesof this service
     mycroft.lock.Lock('skills')
     # Connect this Skill management process to the Mycroft Messagebus
-    bus = WebsocketClient()
+    bus = MessageBusClient()
     Configuration.init(bus)
     config = Configuration.get()
     # Set the active lang to match the configured one

@@ -19,7 +19,7 @@ import json
 import websocket
 from threading import Thread, Lock
 
-from mycroft.messagebus.client.ws import WebsocketClient
+from mycroft.messagebus.client import MessageBusClient
 from mycroft.messagebus.message import Message
 
 
