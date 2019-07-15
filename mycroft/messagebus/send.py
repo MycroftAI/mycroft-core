@@ -14,29 +14,30 @@
 #
 import sys
 import json
+
+from websocket import create_connection
+
+from mycroft.configuration import ConfigurationManager
 from mycroft.messagebus.client.ws import WebsocketClient
 from mycroft.messagebus.message import Message
-from mycroft.configuration import ConfigurationManager
-from websocket import create_connection
 
 
 def main():
-    """
-        Main function, will run if executed from command line.
+    """Main function, will run if executed from command line.
 
-        Sends parameters from commandline.
+    Sends parameters from commandline.
 
-        Param 1:    message string
-        Param 2:    data (json string)
+    Param 1:    message string
+    Param 2:    data (json string)
     """
     # Parse the command line
     if len(sys.argv) == 2:
-        messageToSend = sys.argv[1]
-        dataToSend = {}
+        message_to_send = sys.argv[1]
+        data_to_send = {}
     elif len(sys.argv) == 3:
-        messageToSend = sys.argv[1]
+        message_to_send = sys.argv[1]
         try:
-            dataToSend = json.loads(sys.argv[2])
+            data_to_send = json.loads(sys.argv[2])
         except BaseException:
             print("Second argument must be a JSON string")
             print("Ex: python -m mycroft.messagebus.send speak "
@@ -51,30 +52,31 @@ def main():
               "'{\"utterance\" : \"hello\"}'")
         exit()
 
-    send(messageToSend, dataToSend)
+    send(message_to_send, data_to_send)
 
 
-def send(messageToSend, dataToSend=None):
+def send(message_to_send, data_to_send=None):
+    """Send a single message over the websocket.
+
+    Args:
+        message_to_send (str): Message to send
+        data_to_send (dict): data structure to go along with the
+            message, defaults to empty dict.
     """
-        Send a single message over the websocket.
-
-        Args:
-            messageToSend (str):    Message to send
-            dataToSend (dict):      data structure to go along with the
-                                    message, defaults to empty dict.
-    """
-    dataToSend = dataToSend or {}
+    data_to_send = data_to_send or {}
 
     # Calculate the standard Mycroft messagebus websocket address
     config = ConfigurationManager.get().get("websocket")
-    url = WebsocketClient.build_url(config.get("host"),
-                                    config.get("port"),
-                                    config.get("route"),
-                                    config.get("ssl"))
+    url = WebsocketClient.build_url(
+        config.get("host"),
+        config.get("port"),
+        config.get("route"),
+        config.get("ssl")
+    )
 
     # Send the provided message/data
     ws = create_connection(url)
-    packet = Message(messageToSend, dataToSend).serialize()
+    packet = Message(message_to_send, data_to_send).serialize()
     ws.send(packet)
     ws.close()
 
