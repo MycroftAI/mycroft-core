@@ -14,10 +14,11 @@
 #
 import json
 import re
+
 from mycroft.util.parse import normalize
 
 
-class Message:
+class Message(object):
     """Holds and manipulates data sent over the websocket
 
         Message objects will be used to send information back and forth
@@ -30,13 +31,13 @@ class Message:
             destination or domain.
     """
 
-    def __init__(self, type, data=None, context=None):
+    def __init__(self, msg_type, data=None, context=None):
         """Used to construct a message object
 
         Message objects will be used to send information back and fourth
         bettween processes of mycroft service, voice, skill and cli
         """
-        self.type = type
+        self.type = msg_type
         self.data = data or {}
         self.context = context or {}
 
@@ -49,11 +50,11 @@ class Message:
         Returns:
             str: a json string representation of the message.
         """
-        return json.dumps({
-            'type': self.type,
-            'data': self.data,
-            'context': self.context
-        })
+        return json.dumps(dict(
+            type=self.type,
+            data=self.data,
+            context=self.context
+        ))
 
     @staticmethod
     def deserialize(value):
@@ -76,7 +77,7 @@ class Message:
                        obj.get('data') or {},
                        obj.get('context') or {})
 
-    def reply(self, type, data=None, context=None):
+    def reply(self, msg_type, data=None, context=None):
         """Construct a reply message for a given message
 
         This will take the same parameters as a message object but use
@@ -89,9 +90,9 @@ class Message:
         new context generated.
 
         Args:
-            type (str): type of message
+            msg_type (str): type of message
             data (dict): data for message
-            context: intented context for new message
+            context: intended context for new message
 
         Returns:
             Message: Message object to be used on the reply to the message
@@ -106,7 +107,7 @@ class Message:
             new_context['target'] = data['target']
         elif 'client_name' in context:
             context['target'] = context['client_name']
-        return Message(type, data, context=new_context)
+        return Message(msg_type, data, context=new_context)
 
     def response(self, data=None, context=None):
         """Construct a response message for the message
@@ -124,14 +125,14 @@ class Message:
         response_message.type += '.response'
         return response_message
 
-    def publish(self, type, data, context=None):
+    def publish(self, msg_type, data, context=None):
         """
         Copy the original context and add passed in context.  Delete
         any target in the new context. Return a new message object with
         passed in data and new context.  Type remains unchanged.
 
         Args:
-            type (str): type of message
+            msg_type (str): type of message
             data (dict): date to send with message
             context: context added to existing context
 
@@ -146,7 +147,7 @@ class Message:
         if 'target' in new_context:
             del new_context['target']
 
-        return Message(type, data, context=new_context)
+        return Message(msg_type, data, context=new_context)
 
     def utterance_remainder(self):
         """
