@@ -5,5 +5,5 @@
 from .client import MessageBusClient
 
 
-class WebSocketClient(MessageBusClient):
+class WebsocketClient(MessageBusClient):
     pass
