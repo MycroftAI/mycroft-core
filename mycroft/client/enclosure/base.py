@@ -16,7 +16,7 @@ from collections import namedtuple
 from threading import Lock
 
 from mycroft.configuration import Configuration
-from mycroft.messagebus.client.client import MessageBusClient
+from mycroft.messagebus.client import MessageBusClient
 from mycroft.util import create_daemon
 from mycroft.util.log import LOG
 
