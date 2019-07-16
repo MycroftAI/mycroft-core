@@ -67,7 +67,6 @@ def _starting_up():
         - padatious intent service
     """
     global bus, skill_manager, event_scheduler
-    bus = MessageBusClient()
     bus.on('intent_failure', FallbackSkill.make_intent_failure_handler(bus))
 
     # Create the Intent manager, which converts utterances to intents
