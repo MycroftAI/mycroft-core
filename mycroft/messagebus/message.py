@@ -30,14 +30,15 @@ class Message(object):
         context: info about the message not part of data such as source,
             destination or domain.
     """
-
-    def __init__(self, msg_type, data=None, context=None):
+    # TODO: For 119.08, change the name of the "type" argument to msg_type
+    # The name "type" shadows a Python built-in name
+    def __init__(self, type, data=None, context=None):
         """Used to construct a message object
 
         Message objects will be used to send information back and fourth
         bettween processes of mycroft service, voice, skill and cli
         """
-        self.type = msg_type
+        self.type = type
         self.data = data or {}
         self.context = context or {}
 
