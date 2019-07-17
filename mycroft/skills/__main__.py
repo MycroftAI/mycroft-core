@@ -50,11 +50,6 @@ start_ticks = time.monotonic()
 start_clock = time.time()
 
 
-def connect():
-    global bus
-    bus.run_forever()
-
-
 def _starting_up():
     """
         Start loading skills.
