@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""Message bus configuration loader.
+
+The message bus event handler and client use basically the same configuration.
+This code is re-used in both to load config values.
+"""
 from collections import namedtuple
 
 from mycroft.configuration import Configuration
