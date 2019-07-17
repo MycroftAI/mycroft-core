@@ -12,7 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-"""Mycroft core message bus service."""
+""" Message bus service for mycroft-core
+
+The message bus facilitates inter-process communication between mycroft-core
+processes. It implements a websocket server so can also be used by external
+systems to integrate with the Mycroft system.
+"""
 from tornado import autoreload, web, ioloop
 
 from mycroft.lock import Lock  # creates/supports PID locking file
