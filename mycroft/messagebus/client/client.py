@@ -79,7 +79,9 @@ class MessageBusClient(object):
         except Exception as e:
             LOG.error('Exception closing websocket: ' + repr(e))
 
-        LOG.warning("WS Client will reconnect in %d seconds." % self.retry)
+        LOG.warning(
+            "Message Bus Client will reconnect in %d seconds." % self.retry
+        )
         time.sleep(self.retry)
         self.retry = min(self.retry * 2, 60)
         try:
