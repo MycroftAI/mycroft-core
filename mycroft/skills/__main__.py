@@ -14,10 +14,9 @@
 #
 """Daemon launched at startup to handle skill activities.
 
-Service definition found in /etc/init.d/mycroft-skills. Launches executable
-found in /opt/mycroft/venvs/mycroft-core/bin/mycroft-skills.  In this repo,
-you will not find an entry called mycroft-skills in the bin directory.  The
-executable gets added to the bin directory when installed (see setup.py)
+In this repo, you will not find an entry called mycroft-skills in the bin
+directory.  The executable gets added to the bin directory when installed
+(see setup.py)
 """
 import time
 import datetime as dt
