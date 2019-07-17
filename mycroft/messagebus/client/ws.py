@@ -17,8 +17,13 @@
 # This is a backport for any skills using the message bus client.
 
 # TODO: remove as part of 19.08
+from mycroft.util.log import LOG
 from .client import MessageBusClient
 
 
 class WebsocketClient(MessageBusClient):
-    pass
+    def __init__(self):
+        super().__init__()
+        LOG.warning(
+            "WebsocketClient is deprecated, use MessageBusClient instead"
+        )
