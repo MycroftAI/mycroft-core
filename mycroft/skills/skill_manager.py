@@ -157,10 +157,10 @@ class SkillManager(Thread):
     def create_msm():
         return msm_creator(Configuration.get())
 
-    def schedule_now(self, message=None):
+    def schedule_now(self, _):
         self.next_download = time.time() - 1
 
-    def handle_paired(self, message):
+    def handle_paired(self, _):
         """ Trigger upload of skills manifest after pairing. """
         self.post_manifest(self.create_msm())
 
@@ -172,17 +172,16 @@ class SkillManager(Thread):
         return os.path.expanduser('~/.mycroft/.mycroft-skills')
 
     def load_installed_skills(self) -> set:
-        skills_file = self.installed_skills_file
-        if not os.path.isfile(skills_file):
+        if not os.path.isfile(self.installed_skills_file):
             return set()
-        with open(skills_file) as f:
+        with open(self.installed_skills_file) as skills_file:
             return {
-                i.strip() for i in f.read().split('\n') if i.strip()
+                i.strip() for i in skills_file.read().split('\n') if i.strip()
             }
 
     def save_installed_skills(self, skill_names):
-        with open(self.installed_skills_file, 'w') as f:
-            f.write('\n'.join(skill_names))
+        with open(self.installed_skills_file, 'w') as skills_file:
+            skills_file.write('\n'.join(skill_names))
 
     def post_manifest(self, msm):
         upload_allowed = self.skills_config.get('upload_skill_manifest')
@@ -435,7 +434,7 @@ class SkillManager(Thread):
             if time.time() >= self.next_download and update:
                 self.download_skills()
 
-    def send_skill_list(self, message=None):
+    def send_skill_list(self, _):
         """Send list of loaded skills."""
         try:
             info = {}
