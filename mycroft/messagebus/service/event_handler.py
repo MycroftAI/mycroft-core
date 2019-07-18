@@ -28,11 +28,7 @@ client_connections = []
 
 class MessageBusEventHandler(WebSocketHandler):
     def __init__(self, application, request, **kwargs):
-        super(MessageBusEventHandler, self).__init__(
-            application,
-            request,
-            **kwargs
-        )
+        super().__init__(application, request, **kwargs)
         self.emitter = EventEmitter()
 
     def on(self, event_name, handler):
