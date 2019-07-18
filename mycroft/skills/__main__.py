@@ -290,13 +290,11 @@ def main():
 def startup():
     global bus, skill_service
     config_manager = Configuration()
-    # config_manager.set_config_update_handlers(bus)
     config_manager.set_config_update_handlers(bus)
     config = config_manager.get()
     set_active_lang(config.get('lang', 'en-us'))
     skill_service = SkillService(bus, config)
     skill_service.start()
-    # check_connection()
     _prepare_device(config)
     LOG.info('Completed skill service startup!')
 
