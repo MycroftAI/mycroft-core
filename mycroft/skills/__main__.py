@@ -103,8 +103,8 @@ class SkillService(object):
             # self.skill_manager = SkillManager(self.bus, self.config)
             self.skill_manager = SkillManager(self.bus)
         except MsmException:
-            # skill manager couldn't be created, wait for network connection and
-            # retry
+            # skill manager couldn't be created, wait for network connection
+            # and retry
             LOG.error(
                 'Msm is uninitialized and requires network connection to fetch'
                 'skill information\n Waiting for network connection...'
