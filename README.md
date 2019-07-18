@@ -93,6 +93,8 @@ The place to insert the API key looks like the following:
 
 Put a relevant key inside the quotes and mycroft-core should begin to use the key immediately.
 
+You may also want to explore the [Personal Mycroft Backend](https://github.com/MycroftAI/personal-backend) project.
+
 ## API Key Services
 
 These are the keys currently used in Mycroft Core:
