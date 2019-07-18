@@ -78,11 +78,10 @@ class SkillManager(Thread):
             bus (event emitter): Mycroft messagebus connection
         """
         super(SkillManager, self).__init__()
+        self.bus = bus
         self._stop_event = Event()
         self._connected_event = Event()
-
         self.loaded_skills = {}
-        self.bus = bus
         self.enclosure = EnclosureAPI(bus)
 
         # Schedule install/update of default skill
@@ -91,10 +90,9 @@ class SkillManager(Thread):
         self.num_install_retries = 0
         self.last_download, self.next_download = self._init_download_times()
 
-        self.update_interval = self.skills_config['update_interval']
-        self.update_interval = int(self.update_interval * 60 * MINUTES)
+        update_interval = self.skills_config['update_interval']
+        self.update_interval = int(update_interval) * 60 * MINUTES
         self.dot_msm = os.path.join(self.msm.skills_dir, '.msm')
-
         self._define_message_bus_events()
 
     def _init_download_times(self):
