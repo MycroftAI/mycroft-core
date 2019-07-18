@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""Load, update and manage skills on this device."""
 import gc
 import os
 import sys
@@ -33,7 +34,7 @@ from mycroft.api import DeviceApi, is_paired
 from .core import load_skill, create_skill_descriptor, MainModule
 from .msm_wrapper import create_msm as msm_creator
 
-MINUTES = 60  # number of seconds in a minute (syntatic sugar)
+MINUTES = 60  # number of seconds in a minute (syntactic sugar)
 
 
 def ignored_file(f):
@@ -45,15 +46,16 @@ def ignored_file(f):
 
 
 def _get_last_modified_date(path):
-    """
-        Get last modified date excluding compiled python files, hidden
-        directories and the settings.json file.
+    """Get the last modified date of the most recently updated file in a path.
 
-        Args:
-            path:   skill directory to check
+    Exclude compiled python files, hidden directories and the settings.json
+    file.
 
-        Returns:
-            int: time of last change
+    Arguments:
+        path: skill directory to check
+
+    Returns:
+        int: time of last change
     """
     all_files = []
     for root_dir, dirs, files in os.walk(path):
@@ -69,13 +71,12 @@ MSM_LOCK = None
 
 
 class SkillManager(Thread):
-    """ Load, update and manage instances of Skill on this system.
-
-    Arguments:
-        bus (eventemitter): Mycroft messagebus connection
-    """
-
     def __init__(self, bus):
+        """Constructor
+
+        Arguments:
+            bus (event emitter): Mycroft messagebus connection
+        """
         super(SkillManager, self).__init__()
         self._stop_event = Event()
         self._connected_event = Event()
@@ -298,11 +299,10 @@ class SkillManager(Thread):
             self.loaded_skills.pop(s)
 
     def _load_or_reload_skill(self, skill_path):
-        """
-            Check if unloaded skill or changed skill needs reloading
-            and perform loading if necessary.
+        """Reload unloaded/changed needs if necessary.
 
-            Returns True if the skill was loaded/reloaded
+        Returns:
+             bool: if the skill was loaded/reloaded
         """
         skill_path = skill_path.rstrip('/')
         skill = self.loaded_skills.setdefault(skill_path, {})
@@ -390,13 +390,13 @@ class SkillManager(Thread):
                 LOG.error('Priority skill {} can\'t be found')
 
     def remove_git_locks(self):
-        """If git gets killed from an abrupt shutdown it leaves lock files"""
+        """If git gets killed from an abrupt shutdown it leaves lock files."""
         for i in glob(os.path.join(self.msm.skills_dir, '*/.git/index.lock')):
             LOG.warning('Found and removed git lock file: ' + i)
             os.remove(i)
 
     def run(self):
-        """ Load skills and update periodically from disk and internet """
+        """Load skills and update periodically from disk and internet."""
 
         self.remove_git_locks()
         self._connected_event.wait()
@@ -435,9 +435,7 @@ class SkillManager(Thread):
                 self.download_skills()
 
     def send_skill_list(self, message=None):
-        """
-            Send list of loaded skills.
-        """
+        """Send list of loaded skills."""
         try:
             info = {}
             for s in self.loaded_skills:
@@ -464,7 +462,7 @@ class SkillManager(Thread):
             LOG.error('Couldn\'t deactivate skill, {}'.format(repr(e)))
 
     def deactivate_skill(self, message):
-        """ Deactivate a skill. """
+        """Deactivate a skill."""
         try:
             skill = message.data['skill']
             if skill in [os.path.basename(s) for s in self.loaded_skills]:
@@ -473,7 +471,7 @@ class SkillManager(Thread):
             LOG.error('Couldn\'t deactivate skill, {}'.format(repr(e)))
 
     def deactivate_except(self, message):
-        """ Deactivate all skills except the provided. """
+        """Deactivate all skills except the provided."""
         try:
             skill_to_keep = message.data['skill']
             LOG.info('DEACTIVATING ALL SKILLS EXCEPT {}'.format(skill_to_keep))
@@ -495,7 +493,7 @@ class SkillManager(Thread):
             self.loaded_skills[skill]['active'] = True
 
     def activate_skill(self, message):
-        """ Activate a deactivated skill. """
+        """Activate a deactivated skill."""
         try:
             skill = message.data['skill']
             if skill == 'all':
@@ -511,7 +509,7 @@ class SkillManager(Thread):
             LOG.error('Couldn\'t activate skill, {}'.format(repr(e)))
 
     def stop(self):
-        """ Tell the manager to shutdown """
+        """Tell the manager to shutdown."""
         self._stop_event.set()
 
         # Do a clean shutdown of all skills
@@ -524,7 +522,7 @@ class SkillManager(Thread):
                     LOG.exception('Shutting down skill: ' + name)
 
     def handle_converse_request(self, message):
-        """ Check if the targeted skill id can handle conversation
+        """Check if the targeted skill id can handle conversation
 
         If supported, the conversation is invoked.
         """
