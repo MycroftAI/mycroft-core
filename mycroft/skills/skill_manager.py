@@ -88,11 +88,11 @@ class SkillManager(Thread):
         self.msm = self.create_msm()
         self.thread_lock = self.get_lock()
         self.num_install_retries = 0
-        self.last_download, self.next_download = self._init_download_times()
 
         update_interval = self.skills_config['update_interval']
         self.update_interval = int(update_interval) * 60 * MINUTES
         self.dot_msm = os.path.join(self.msm.skills_dir, '.msm')
+        self.last_download, self.next_download = self._init_download_times()
         self._define_message_bus_events()
 
     def _init_download_times(self):
