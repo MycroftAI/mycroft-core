@@ -13,14 +13,12 @@
 # limitations under the License.
 #
 import gc
+import os
 import sys
 import time
 from datetime import datetime
 from glob import glob
 from itertools import chain
-
-import os
-from os.path import exists, join, basename, dirname, expanduser, isfile
 from threading import Thread, Event, Lock
 
 from msm import MsmException
@@ -69,7 +67,7 @@ def _get_last_modified_date(path):
         dirs[:] = [d for d in dirs if not d.startswith('.')]
         for f in files:
             if not ignored_file(f):
-                all_files.append(join(root_dir, f))
+                all_files.append(os.path.join(root_dir, f))
     # check files of interest in the skill root directory
     return max(os.path.getmtime(f) for f in all_files)
 
@@ -100,10 +98,14 @@ class SkillManager(Thread):
 
         self.update_interval = Configuration.get()['skills']['update_interval']
         self.update_interval = int(self.update_interval * 60 * MINUTES)
-        self.dot_msm = join(self.msm.skills_dir, '.msm')
+        self.dot_msm = os.path.join(self.msm.skills_dir, '.msm')
         # Update immediately if the .msm or installed skills file is missing
         # otherwise according to timestamp on .msm
-        if exists(self.dot_msm) and exists(self.installed_skills_file):
+        msm_files_exist = (
+            os.path.exists(self.dot_msm) and
+            os.path.exists(self.installed_skills_file)
+        )
+        if msm_files_exist:
             mtime = os.path.getmtime(self.dot_msm)
             self.next_download = mtime + self.update_interval
             self.last_download = datetime.fromtimestamp(mtime)
@@ -153,14 +155,14 @@ class SkillManager(Thread):
 
     @property
     def installed_skills_file(self):
-        venv = dirname(dirname(sys.executable))
+        venv = os.path.dirname(os.path.dirname(sys.executable))
         if os.access(venv, os.W_OK | os.R_OK | os.X_OK):
-            return join(venv, '.mycroft-skills')
-        return expanduser('~/.mycroft/.mycroft-skills')
+            return os.path.join(venv, '.mycroft-skills')
+        return os.path.expanduser('~/.mycroft/.mycroft-skills')
 
     def load_installed_skills(self) -> set:
         skills_file = self.installed_skills_file
-        if not isfile(skills_file):
+        if not os.path.isfile(skills_file):
             return set()
         with open(skills_file) as f:
             return {
@@ -294,7 +296,7 @@ class SkillManager(Thread):
         """
         skill_path = skill_path.rstrip('/')
         skill = self.loaded_skills.setdefault(skill_path, {})
-        skill.update({"id": basename(skill_path), "path": skill_path})
+        skill.update({"id": os.path.basename(skill_path), "path": skill_path})
 
         # check if folder is a skill (must have __init__.py)
         if not MainModule + ".py" in os.listdir(skill_path):
@@ -315,7 +317,7 @@ class SkillManager(Thread):
                     not skill.get('active', True)):
                 return False
 
-            LOG.debug("Reloading Skill: " + basename(skill_path))
+            LOG.debug("Reloading Skill: " + os.path.basename(skill_path))
             # removing listeners and stopping threads
             try:
                 skill["instance"].default_shutdown()
@@ -376,7 +378,7 @@ class SkillManager(Thread):
 
     def remove_git_locks(self):
         """If git gets killed from an abrupt shutdown it leaves lock files"""
-        for i in glob(join(self.msm.skills_dir, '*/.git/index.lock')):
+        for i in glob(os.path.join(self.msm.skills_dir, '*/.git/index.lock')):
             LOG.warning('Found and removed git lock file: ' + i)
             os.remove(i)
 
@@ -395,7 +397,7 @@ class SkillManager(Thread):
         while not self._stop_event.is_set():
             # Look for recently changed skill(s) needing a reload
             # checking skills dir and getting all skills there
-            skill_paths = glob(join(self.msm.skills_dir, '*/'))
+            skill_paths = glob(os.path.join(self.msm.skills_dir, '*/'))
             still_loading = False
             for skill_path in skill_paths:
                 try:
@@ -428,7 +430,7 @@ class SkillManager(Thread):
             for s in self.loaded_skills:
                 is_active = (self.loaded_skills[s].get('active', True) and
                              self.loaded_skills[s].get('instance') is not None)
-                info[basename(s)] = {
+                info[os.path.basename(s)] = {
                     'active': is_active,
                     'id': self.loaded_skills[s]['id']
                 }
@@ -452,7 +454,7 @@ class SkillManager(Thread):
         """ Deactivate a skill. """
         try:
             skill = message.data['skill']
-            if skill in [basename(s) for s in self.loaded_skills]:
+            if skill in [os.path.basename(s) for s in self.loaded_skills]:
                 self.__deactivate_skill(skill)
         except Exception as e:
             LOG.error('Couldn\'t deactivate skill, {}'.format(repr(e)))
@@ -462,9 +464,12 @@ class SkillManager(Thread):
         try:
             skill_to_keep = message.data['skill']
             LOG.info('DEACTIVATING ALL SKILLS EXCEPT {}'.format(skill_to_keep))
-            if skill_to_keep in [basename(i) for i in self.loaded_skills]:
+            loaded_skill_file_names = [
+                os.path.basename(i) for i in self.loaded_skills
+            ]
+            if skill_to_keep in loaded_skill_file_names:
                 for skill in self.loaded_skills:
-                    if basename(skill) != skill_to_keep:
+                    if os.path.basename(skill) != skill_to_keep:
                         self.__deactivate_skill(skill)
             else:
                 LOG.info('Couldn\'t find skill')
