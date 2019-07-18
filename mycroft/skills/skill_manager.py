@@ -125,7 +125,7 @@ class SkillManager(Thread):
         # Update on initial connection
         self.bus.on(
             'mycroft.internet.connected',
-            lambda: self._connected_event.set()
+            lambda x: self._connected_event.set()
         )
 
         # Update upon request
@@ -151,8 +151,9 @@ class SkillManager(Thread):
             MSM_LOCK = Lock()
         return MSM_LOCK
 
-    def create_msm(self):
-        return msm_creator(self.config)
+    @staticmethod
+    def create_msm():
+        return msm_creator(Configuration.get())
 
     def schedule_now(self, message=None):
         self.next_download = time.time() - 1
