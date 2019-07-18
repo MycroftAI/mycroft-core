@@ -38,11 +38,13 @@ MINUTES = 60  # number of seconds in a minute (syntactic sugar)
 
 
 def ignored_file(f):
-    """ Checks if the file is valid file to require a reload. """
-    return (f.endswith('.pyc') or
-            f == 'settings.json' or
-            f.startswith('.') or
-            f.endswith('.qmlc'))
+    """Checks if the file is valid file to require a reload."""
+    return (
+        f.endswith('.pyc') or
+        f == 'settings.json' or
+        f.startswith('.') or
+        f.endswith('.qmlc')
+    )
 
 
 def _get_last_modified_date(path):
