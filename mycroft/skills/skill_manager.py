@@ -88,29 +88,38 @@ class SkillManager(Thread):
         self.msm = self.create_msm()
         self.thread_lock = self.get_lock()
         self.num_install_retries = 0
+        self.last_download, self.next_download = self._init_download_times()
 
         self.update_interval = self.skills_config['update_interval']
         self.update_interval = int(self.update_interval * 60 * MINUTES)
         self.dot_msm = os.path.join(self.msm.skills_dir, '.msm')
-        # Update immediately if the .msm or installed skills file is missing
-        # otherwise according to timestamp on .msm
+
+        self._define_message_bus_events()
+
+    def _init_download_times(self):
+        """Determine the initial values of the next/last download times.
+
+        Update immediately if the .msm or installed skills file is missing
+        otherwise use the timestamp on .msm as a basis.
+        """
         msm_files_exist = (
             os.path.exists(self.dot_msm) and
             os.path.exists(self.installed_skills_file)
         )
         if msm_files_exist:
             mtime = os.path.getmtime(self.dot_msm)
-            self.next_download = mtime + self.update_interval
-            self.last_download = datetime.fromtimestamp(mtime)
+            next_download = mtime + self.update_interval
+            last_download = datetime.fromtimestamp(mtime)
         else:
             # Last update can't be found or the requirements don't seem to be
             # installed trigger update before skill loading
-            self.last_download = None
-            self.next_download = time.time() - 1
+            last_download = None
+            next_download = time.time() - 1
 
-        self._define_message_bus_events()
+        return last_download, next_download
 
     def _define_message_bus_events(self):
+        """Define message bus events with handlers defined in this class."""
         # Conversation management
         self.bus.on('skill.converse.request', self.handle_converse_request)
 
