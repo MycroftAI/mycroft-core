@@ -40,11 +40,11 @@ from mycroft.util import (
 from mycroft.util.lang import set_active_lang
 from mycroft.util.log import LOG
 
-from .skill_manager import SkillManager, MsmException
 from .core import FallbackSkill
 from .event_scheduler import EventScheduler
 from .intent_service import IntentService
 from .padatious_service import PadatiousService
+from .skill_manager import SkillManager, MsmException
 
 RASPBERRY_PI_PLATFORMS = ('mycroft_mark_1', 'picroft', 'mycroft_mark_2pi')
 ONE_HOUR = 3600
