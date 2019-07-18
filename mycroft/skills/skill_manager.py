@@ -108,20 +108,25 @@ class SkillManager(Thread):
             self.last_download = None
             self.next_download = time.time() - 1
 
+        self._define_message_bus_events()
+
+    def _define_message_bus_events(self):
         # Conversation management
-        bus.on('skill.converse.request', self.handle_converse_request)
+        self.bus.on('skill.converse.request', self.handle_converse_request)
 
         # Update on initial connection
-        bus.on('mycroft.internet.connected',
-               lambda x: self._connected_event.set())
+        self.bus.on(
+            'mycroft.internet.connected',
+            lambda: self._connected_event.set()
+        )
 
         # Update upon request
-        bus.on('skillmanager.update', self.schedule_now)
-        bus.on('skillmanager.list', self.send_skill_list)
-        bus.on('skillmanager.deactivate', self.deactivate_skill)
-        bus.on('skillmanager.keep', self.deactivate_except)
-        bus.on('skillmanager.activate', self.activate_skill)
-        bus.on('mycroft.paired', self.handle_paired)
+        self.bus.on('skillmanager.update', self.schedule_now)
+        self.bus.on('skillmanager.list', self.send_skill_list)
+        self.bus.on('skillmanager.deactivate', self.deactivate_skill)
+        self.bus.on('skillmanager.keep', self.deactivate_except)
+        self.bus.on('skillmanager.activate', self.activate_skill)
+        self.bus.on('mycroft.paired', self.handle_paired)
 
     @property
     def config(self):
