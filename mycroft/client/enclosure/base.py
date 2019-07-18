@@ -63,7 +63,7 @@ class Enclosure:
         self.bus = MessageBusClient()
 
         # Load full config
-        Configuration.init(self.bus)
+        Configuration.set_config_update_handlers(self.bus)
         config = Configuration.get()
 
         self.lang = config['lang']
