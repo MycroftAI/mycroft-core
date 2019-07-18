@@ -62,7 +62,6 @@
 import json
 import hashlib
 import os
-import yaml
 import time
 import copy
 import re
@@ -259,6 +258,8 @@ class SkillSettings(dict):
         Returns:
             (dict) settings meta
         """
+        # Imported here do handle issue with readthedocs build
+        import yaml
         if self._meta_path and os.path.isfile(self._meta_path):
             _, ext = os.path.splitext(self._meta_path)
             json_file = True if ext.lower() == ".json" else False
