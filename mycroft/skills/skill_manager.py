@@ -33,13 +33,6 @@ from mycroft.api import DeviceApi, is_paired
 from .core import load_skill, create_skill_descriptor, MainModule
 from .msm_wrapper import create_msm as msm_creator
 
-DEBUG = Configuration.get().get("debug", False)
-skills_config = Configuration.get().get("skills")
-BLACKLISTED_SKILLS = skills_config.get("blacklisted_skills", [])
-PRIORITY_SKILLS = skills_config.get("priority_skills", [])
-
-installer_config = Configuration.get().get("SkillInstallerSkill")
-
 MINUTES = 60  # number of seconds in a minute (syntatic sugar)
 
 
@@ -96,7 +89,7 @@ class SkillManager(Thread):
         self.thread_lock = self.get_lock()
         self.num_install_retries = 0
 
-        self.update_interval = Configuration.get()['skills']['update_interval']
+        self.update_interval = self.skills_config['update_interval']
         self.update_interval = int(self.update_interval * 60 * MINUTES)
         self.dot_msm = os.path.join(self.msm.skills_dir, '.msm')
         # Update immediately if the .msm or installed skills file is missing
@@ -130,6 +123,14 @@ class SkillManager(Thread):
         bus.on('skillmanager.activate', self.activate_skill)
         bus.on('mycroft.paired', self.handle_paired)
 
+    @property
+    def config(self):
+        return Configuration.get()
+
+    @property
+    def skills_config(self):
+        return Configuration.get()['skills']
+
     @staticmethod
     def get_lock():
         global MSM_LOCK
@@ -137,9 +138,8 @@ class SkillManager(Thread):
             MSM_LOCK = Lock()
         return MSM_LOCK
 
-    @staticmethod
-    def create_msm():
-        return msm_creator(Configuration.get())
+    def create_msm(self):
+        return msm_creator(self.config)
 
     def schedule_now(self, message=None):
         self.next_download = time.time() - 1
@@ -147,11 +147,6 @@ class SkillManager(Thread):
     def handle_paired(self, message):
         """ Trigger upload of skills manifest after pairing. """
         self.post_manifest(self.create_msm())
-
-    @staticmethod
-    @property
-    def manifest_upload_allowed(self):
-        return Configuration.get()['skills'].get('upload_skill_manifest')
 
     @property
     def installed_skills_file(self):
@@ -174,7 +169,8 @@ class SkillManager(Thread):
             f.write('\n'.join(skill_names))
 
     def post_manifest(self, msm):
-        if SkillManager.manifest_upload_allowed and is_paired():
+        upload_allowed = self.skills_config.get('upload_skill_manifest')
+        if upload_allowed and is_paired():
             try:
                 DeviceApi().upload_skills_data(msm.skills_data)
             except Exception:
@@ -325,7 +321,8 @@ class SkillManager(Thread):
                 LOG.exception("An error occured while shutting down {}"
                               .format(skill["instance"].name))
 
-            if DEBUG:
+            debug = self.config.get("debug", False)
+            if debug:
                 gc.collect()  # Collect garbage to remove false references
                 # Remove two local references that are known
                 refs = sys.getrefcount(skill["instance"]) - 2
@@ -341,9 +338,10 @@ class SkillManager(Thread):
 
         skill["loaded"] = True
         desc = create_skill_descriptor(skill_path)
+        blacklisted_skills = self.skills_config.get("blacklisted_skills", [])
         skill["instance"] = load_skill(desc,
                                        self.bus, skill["id"],
-                                       BLACKLISTED_SKILLS)
+                                       blacklisted_skills)
 
         skill["last_modified"] = modified
         if skill['instance'] is not None:
@@ -361,7 +359,8 @@ class SkillManager(Thread):
 
     def load_priority(self):
         skills = {skill.name: skill for skill in self.msm.list()}
-        for skill_name in PRIORITY_SKILLS:
+        priority_skills = self.skills_config.get("priority_skills", [])
+        for skill_name in priority_skills:
             skill = skills.get(skill_name)
             if skill:
                 if not skill.is_local:
@@ -390,7 +389,7 @@ class SkillManager(Thread):
         has_loaded = False
 
         # check if skill updates are enabled
-        update = Configuration.get()["skills"]["auto_update"]
+        update = self.skills_config["auto_update"]
 
         # Scan the file folder that contains Skills.  If a Skill is updated,
         # unload the existing version from memory and reload from the disk.
