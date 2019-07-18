@@ -13,7 +13,6 @@
 # limitations under the License.
 #
 import time
-import datetime as dt
 from threading import Timer
 import mycroft.lock
 from mycroft import dialog
@@ -91,14 +90,6 @@ def _starting_up():
     # network connection
     skill_manager.load_priority()
 
-    # If device has been offline for more than 2 weeks or
-    # skill state is in a limbo do a quick update
-    update_limit = dt.datetime.now() - dt.timedelta(days=14)
-    if (not skill_manager.last_download or
-            skill_manager.last_download < update_limit):
-        skill_manager.download_skills(quick=True)
-    else:  # Just post the skills manifest
-        skill_manager.post_manifest(skill_manager.msm)
     skill_manager.start()
     check_connection()
 

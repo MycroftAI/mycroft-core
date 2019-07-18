@@ -15,7 +15,7 @@
 import gc
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from glob import glob
 from itertools import chain
 
@@ -385,6 +385,15 @@ class SkillManager(Thread):
 
         self.remove_git_locks()
         self._connected_event.wait()
+
+        # If device has been offline for more than 2 weeks or
+        # skill state is in a limbo do a quick update
+        update_limit = datetime.now() - timedelta(days=14)
+        if (not self.last_download or self.last_download < update_limit):
+            self.download_skills(quick=True)
+        else:  # Just post the skills manifest
+            self.post_manifest(self.msm)
+
         has_loaded = False
 
         # check if skill updates are enabled
