@@ -5,7 +5,9 @@ from time import time
 from unittest import TestCase
 from unittest.mock import Mock, patch, PropertyMock
 
-from mycroft.skills.skill_manager import SkillManager
+from pathlib import Path
+
+from mycroft.skills.skill_manager import _get_last_modified_date, SkillManager
 
 MOCK_PACKAGE = 'mycroft.skills.skill_manager.'
 
@@ -72,6 +74,14 @@ class MycroftSkillTest(TestCase):
 
     def tearDown(self):
         rmtree(self.temp_dir)
+
+    def test_get_last_modified_date(self):
+        for file_name in ('foo.txt', 'bar.py', '.foobar', 'bar.pyc'):
+            file_path = path.join(self.temp_dir, file_name)
+            Path(file_path).touch()
+        last_modified_date = _get_last_modified_date(self.temp_dir)
+        expected_result = path.getmtime(path.join(self.temp_dir, 'bar.py'))
+        self.assertEqual(last_modified_date, expected_result)
 
     def test_instantiate(self):
         sm = SkillManager(self.message_bus)
