@@ -35,6 +35,7 @@ from .core import load_skill, create_skill_descriptor, MainModule
 from .msm_wrapper import create_msm as msm_creator
 
 MINUTES = 60  # number of seconds in a minute (syntactic sugar)
+MSM_LOCK = None
 
 
 def _get_last_modified_date(path):
@@ -61,11 +62,9 @@ def _get_last_modified_date(path):
             )
             if not ignore_file:
                 all_files.append(os.path.join(root_dir, f))
+
     # check files of interest in the skill root directory
     return max(os.path.getmtime(f) for f in all_files)
-
-
-MSM_LOCK = None
 
 
 class SkillManager(Thread):
@@ -199,9 +198,11 @@ class SkillManager(Thread):
         if not connected():
             LOG.error('msm failed, network connection not available')
             if speak:
-                self.bus.emit(Message("speak", {
-                    'utterance': dialog.get(
-                        "not connected to the internet")}))
+                message = Message(
+                    "speak",
+                    dict(utterance=dialog.get('not connected to the internet'))
+                )
+                self.bus.emit(message)
             self.next_download = time.time() + 5 * MINUTES
             return False
 
@@ -212,11 +213,13 @@ class SkillManager(Thread):
             if msm.platform in default_groups:
                 platform_groups = default_groups[msm.platform]
             else:
-                LOG.info('Platform defaults not found, using DEFAULT '
-                         'skills only')
+                LOG.info(
+                    'Platform defaults not found, using DEFAULT skills only'
+                )
                 platform_groups = []
-            default_names = set(chain(default_groups['default'],
-                                      platform_groups))
+            default_names = set(
+                chain(default_groups['default'], platform_groups)
+            )
             default_skill_errored = False
 
             def get_skill_data(skill_name):
@@ -250,8 +253,11 @@ class SkillManager(Thread):
                 # If defaults are installed
                 defaults = all([s.is_local for s in msm.list_defaults()])
                 num_threads = 20 if not defaults or quick else 2
-                msm.apply(install_or_update, msm.list(),
-                          max_threads=num_threads)
+                msm.apply(
+                    install_or_update,
+                    msm.list(),
+                    max_threads=num_threads
+                )
                 self.post_manifest(msm)
 
             except MsmException as e:
@@ -260,8 +266,8 @@ class SkillManager(Thread):
         self.save_installed_skills(installed_skills)
 
         if speak:
-            data = {'utterance': dialog.get("skills updated")}
-            self.bus.emit(Message("speak", data))
+            data = {'utterance': dialog.get('skills updated')}
+            self.bus.emit(Message('speak', data))
 
         # Schedule retry in 5 minutes on failure, after 10 shorter periods
         # Go back to 60 minutes wait
