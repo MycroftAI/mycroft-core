@@ -37,16 +37,6 @@ from .msm_wrapper import create_msm as msm_creator
 MINUTES = 60  # number of seconds in a minute (syntactic sugar)
 
 
-def ignored_file(f):
-    """Checks if the file is valid file to require a reload."""
-    return (
-        f.endswith('.pyc') or
-        f == 'settings.json' or
-        f.startswith('.') or
-        f.endswith('.qmlc')
-    )
-
-
 def _get_last_modified_date(path):
     """Get the last modified date of the most recently updated file in a path.
 
@@ -63,7 +53,13 @@ def _get_last_modified_date(path):
     for root_dir, dirs, files in os.walk(path):
         dirs[:] = [d for d in dirs if not d.startswith('.')]
         for f in files:
-            if not ignored_file(f):
+            ignore_file = (
+                    f.endswith('.pyc') or
+                    f == 'settings.json' or
+                    f.startswith('.') or
+                    f.endswith('.qmlc')
+            )
+            if not ignore_file:
                 all_files.append(os.path.join(root_dir, f))
     # check files of interest in the skill root directory
     return max(os.path.getmtime(f) for f in all_files)
@@ -194,10 +190,11 @@ class SkillManager(Thread):
                 LOG.exception('Could not upload skill manifest')
 
     def download_skills(self, speak=False, quick=False):
-        """ Invoke MSM to install default skills and/or update installed skills
+        """Invoke MSM to install default skills and/or update installed skills
 
-            Args:
-                speak (bool, optional): Speak the result? Defaults to False
+        Args:
+            speak (bool): Speak the result?
+            quick (bool): Expedite the download by running with more threads?
         """
         if not connected():
             LOG.error('msm failed, network connection not available')
