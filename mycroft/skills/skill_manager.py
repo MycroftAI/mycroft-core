@@ -181,13 +181,15 @@ class SkillManager(Thread):
 
     def save_installed_skills(self, skill_names):
         with open(self.installed_skills_file, 'w') as skills_file:
-            skills_file.write('\n'.join(skill_names))
+            for skill_name in skill_names:
+                skills_file.write(skill_name + '\n')
 
     def post_manifest(self, msm):
         upload_allowed = self.skills_config.get('upload_skill_manifest')
         if upload_allowed and is_paired():
             try:
-                DeviceApi().upload_skills_data(msm.skills_data)
+                device_api = DeviceApi()
+                device_api.upload_skills_data(msm.skills_data)
             except Exception:
                 LOG.exception('Could not upload skill manifest')
 
@@ -376,18 +378,19 @@ class SkillManager(Thread):
         priority_skills = self.skills_config.get("priority_skills", [])
         for skill_name in priority_skills:
             skill = skills.get(skill_name)
-            if skill:
+            if skill is not None:
                 if not skill.is_local:
                     try:
                         skill.install()
                     except Exception:
-                        LOG.exception('Downloading priority skill: '
-                                      '{} failed'.format(skill.name))
-                        if not skill.is_local:
-                            continue
+                        log_msg = 'Downloading priority skill: {} failed'
+                        LOG.exception(log_msg.format(skill_name))
+                        continue
                 self._load_or_reload_skill(skill.path)
             else:
-                LOG.error('Priority skill {} can\'t be found')
+                LOG.error(
+                    'Priority skill {} can\'t be found'.format(skill_name)
+                )
 
     def remove_git_locks(self):
         """If git gets killed from an abrupt shutdown it leaves lock files."""
