@@ -50,7 +50,7 @@ class FallbackSkill(MycroftSkill):
     fallback_handlers = {}
 
     def __init__(self, name=None, bus=None, use_settings=True):
-        MycroftSkill.__init__(self, name, bus, use_settings)
+        super().__init__(name, bus, use_settings)
 
         #  list of fallback handlers registered by this instance
         self.instance_fallback_handlers = []
