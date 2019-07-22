@@ -49,11 +49,12 @@ class SkillUpdater:
         update_interval = self.config['skills']['update_interval']
         self.update_interval = int(update_interval) * ONE_HOUR
         self.dot_msm_path = os.path.join(self.msm.skills_dir, '.msm')
-        self.last_download, self.next_download = self._init_download_times()
+        self.next_download = self._determine_next_download_time()
+        self._log_next_download_time()
         self.installed_skills = set()
         self.default_skill_install_error = False
 
-    def _init_download_times(self):
+    def _determine_next_download_time(self):
         """Determine the initial values of the next/last download times.
 
         Update immediately if the .msm or installed skills file is missing
@@ -66,14 +67,12 @@ class SkillUpdater:
         if msm_files_exist:
             mtime = os.path.getmtime(self.dot_msm_path)
             next_download = mtime + self.update_interval
-            last_download = datetime.fromtimestamp(mtime)
         else:
             # Last update can't be found or the requirements don't seem to be
             # installed trigger update before skill loading
-            last_download = None
             next_download = time() - 1
 
-        return last_download, next_download
+        return next_download
 
     @property
     def config(self):
@@ -132,6 +131,7 @@ class SkillUpdater:
             speak (bool): Speak the result?
             quick (bool): Expedite the download by running with more threads?
         """
+        LOG.info('Beginning skill update...')
         success = True
         if connected():
             self._load_installed_skills()
@@ -150,6 +150,9 @@ class SkillUpdater:
         else:
             self.handle_not_connected(speak)
             success = False
+
+        if success:
+            LOG.info('Skill update complete')
 
         return success
 
@@ -205,8 +208,9 @@ class SkillUpdater:
                 self.msm.install(skill, origin='default')
             except Exception:
                 if skill.name in self.default_skill_names:
-                    LOG.warning('Failed to install default skill: ' +
-                                skill.name)
+                    LOG.warning(
+                        'Failed to install default skill: ' + skill.name
+                    )
                     self.default_skill_install_error = True
                 raise
         self.installed_skills.add(skill.name)
@@ -230,6 +234,7 @@ class SkillUpdater:
         """Schedule the next skill update in the event of a failure."""
         self.install_retries += 1
         self.next_download = time() + FIVE_MINUTES
+        self._log_next_download_time()
         self.default_skill_install_error = False
 
     def _update_download_time(self):
@@ -237,3 +242,10 @@ class SkillUpdater:
         with open(self.dot_msm_path, 'a'):
             os.utime(self.dot_msm_path, None)
         self.next_download = time() + self.update_interval
+        self._log_next_download_time()
+
+    def _log_next_download_time(self):
+        LOG.info(
+            'Next scheduled skill update: ' +
+            str(datetime.fromtimestamp(self.next_download))
+        )
