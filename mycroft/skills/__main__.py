@@ -19,7 +19,6 @@ directory.  The executable gets added to the bin directory when installed
 (see setup.py)
 """
 import time
-from datetime import datetime, timedelta
 from threading import Timer
 
 from mycroft import dialog
