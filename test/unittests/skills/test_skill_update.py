@@ -149,7 +149,6 @@ class TestSkillUpdater(TestCase):
             path.join(self.temp_dir, '.msm')
         )
         self.assertFalse(path.exists(updater.dot_msm_path))
-        self.assertIsNone(updater.last_download)
         self.assertLess(updater.next_download, time())
 
     def test_load_installed_skills(self):
