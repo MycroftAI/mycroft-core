@@ -21,6 +21,8 @@ directory.  The executable gets added to the bin directory when installed
 import time
 from threading import Timer
 
+from msm.exceptions import MsmException
+
 from mycroft import dialog
 from mycroft.api import is_paired, BackendDown, DeviceApi
 from mycroft.audio import wait_while_speaking
@@ -43,7 +45,7 @@ from .core import FallbackSkill
 from .event_scheduler import EventScheduler
 from .intent_service import IntentService
 from .padatious_service import PadatiousService
-from .skill_manager import SkillManager, MsmException
+from .skill_manager import SkillManager
 
 RASPBERRY_PI_PLATFORMS = ('mycroft_mark_1', 'picroft', 'mycroft_mark_2pi')
 ONE_HOUR = 3600
