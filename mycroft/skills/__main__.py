@@ -99,7 +99,6 @@ class SkillService(object):
         LOG.info('Starting the skill manager...')
         # TODO: if this needs an internet connection, don't start it so soon
         try:
-            # self.skill_manager = SkillManager(self.bus, self.config)
             self.skill_manager = SkillManager(self.bus)
         except MsmException:
             # skill manager couldn't be created, wait for network connection
@@ -110,7 +109,6 @@ class SkillService(object):
             )
             while not connected():
                 time.sleep(30)
-            # self.skill_manager = SkillManager(self.bus, self.config)
             self.skill_manager = SkillManager(self.bus)
 
         self.skill_manager.daemon = True
