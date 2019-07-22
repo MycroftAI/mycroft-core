@@ -30,7 +30,7 @@ from mycroft.util.log import LOG
 from .threaded_event_emitter import ThreadedEventEmitter
 
 
-class MessageBusClient(object):
+class MessageBusClient:
     def __init__(self, host=None, port=None, route=None, ssl=None):
         config_overrides = dict(host=host, port=port, route=route, ssl=ssl)
         self.config = load_message_bus_config(**config_overrides)
