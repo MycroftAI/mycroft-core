@@ -170,7 +170,7 @@ class SkillGUI:
             else:
                 page = self.skill.find_resource(name, 'ui')
             if page:
-                if self.config.get('remote') is True:
+                if self.config.get('remote'):
                     page_urls.append(self.remote_url + "/" + page)
                 else:
                     page_urls.append("file://" + page)
