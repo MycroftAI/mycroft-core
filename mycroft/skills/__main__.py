@@ -19,7 +19,6 @@ directory.  The executable gets added to the bin directory when installed
 (see setup.py)
 """
 import time
-from datetime import datetime, timedelta
 from threading import Timer
 
 from mycroft import dialog
@@ -100,7 +99,6 @@ class SkillService(object):
         LOG.info('Starting the skill manager...')
         # TODO: if this needs an internet connection, don't start it so soon
         try:
-            # self.skill_manager = SkillManager(self.bus, self.config)
             self.skill_manager = SkillManager(self.bus)
         except MsmException:
             # skill manager couldn't be created, wait for network connection
@@ -111,23 +109,13 @@ class SkillService(object):
             )
             while not connected():
                 time.sleep(30)
-            # self.skill_manager = SkillManager(self.bus, self.config)
             self.skill_manager = SkillManager(self.bus)
 
         self.skill_manager.daemon = True
 
-        # TODO: do this before connection check but handle a failure before?!?
         # Wait until priority skills have been loaded before checking
         # network connection
         self.skill_manager.load_priority()
-        # If device has been offline for more than 2 weeks or
-        # skill state is in a limbo do a quick update
-        update_limit = datetime.now() - timedelta(days=14)
-        if (not self.skill_manager.last_download or
-                self.skill_manager.last_download < update_limit):
-            self.skill_manager.download_skills(quick=True)
-        else:  # Just post the skills manifest
-            self.skill_manager.post_manifest(self.skill_manager.msm)
         self.skill_manager.start()
 
 
