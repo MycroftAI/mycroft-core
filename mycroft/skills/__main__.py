@@ -116,18 +116,9 @@ class SkillService(object):
 
         self.skill_manager.daemon = True
 
-        # TODO: do this before connection check but handle a failure before?!?
         # Wait until priority skills have been loaded before checking
         # network connection
         self.skill_manager.load_priority()
-        # If device has been offline for more than 2 weeks or
-        # skill state is in a limbo do a quick update
-        update_limit = datetime.now() - timedelta(days=14)
-        if (not self.skill_manager.last_download or
-                self.skill_manager.last_download < update_limit):
-            self.skill_manager.download_skills(quick=True)
-        else:  # Just post the skills manifest
-            self.skill_manager.post_manifest(self.skill_manager.msm)
         self.skill_manager.start()
 
 
