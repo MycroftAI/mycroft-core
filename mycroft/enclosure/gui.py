@@ -21,8 +21,7 @@ from mycroft.util import resolve_resource_file
 
 
 class SkillGUI:
-    """
-    SkillGUI - Interface to the Graphical User Interface
+    """SkillGUI - Interface to the Graphical User Interface
 
     Values set in this class are synced to the GUI, accessible within QML
     via the built-in sessionData mechanism.  For example, in Python you can
@@ -42,47 +41,53 @@ class SkillGUI:
 
     @property
     def remote_url(self):
-        """ Returns configuration value for url of remote-server. """
+        """Returns configuration value for url of remote-server."""
         return self.config.get('remote-server')
 
     def build_message_type(self, event):
-        """ Builds a message matching the output from the enclosure. """
+        """Builds a message matching the output from the enclosure."""
         return '{}.{}'.format(self.skill.skill_id, event)
 
     def setup_default_handlers(self):
-        """ Sets the handlers for the default messages. """
+        """Sets the handlers for the default messages."""
         msg_type = self.build_message_type('set')
         self.skill.add_event(msg_type, self.gui_set)
 
     def register_handler(self, event, handler):
-        """ Register a handler for GUI events.
+        """Register a handler for GUI events.
 
-            when using the triggerEvent method from Qt
-            triggerEvent("event", {"data": "cool"})
+        When using the triggerEvent method from Qt
+        triggerEvent("event", {"data": "cool"})
 
-            Arguments:
-                event (str):    event to catch
-                handler:        function to handle the event
+        Arguments:
+            event (str):    event to catch
+            handler:        function to handle the event
         """
         msg_type = self.build_message_type(event)
         self.skill.add_event(msg_type, handler)
 
     def set_on_gui_changed(self, callback):
-        """ Registers a callback function to run when a value is
-            changed from the GUI.
+        """Registers a callback function to run when a value is
+        changed from the GUI.
 
-            Arguments:
-                callback:   Function to call when a value is changed
+        Arguments:
+            callback:   Function to call when a value is changed
         """
         self.on_gui_changed_callback = callback
 
     def gui_set(self, message):
+        """Handler catching variable changes from the GUI.
+
+        Arguments:
+            message: Messagebus message
+        """
         for key in message.data:
             self[key] = message.data[key]
         if self.on_gui_changed_callback:
             self.on_gui_changed_callback()
 
     def __setitem__(self, key, value):
+        """Implements set part of dict-like behaviour with named keys."""
         self.__session_data[key] = value
 
         if self.page:
@@ -92,20 +97,22 @@ class SkillGUI:
             self.skill.bus.emit(Message("gui.value.set", data))
 
     def __getitem__(self, key):
+        """Implements get part of dict-like behaviour with named keys."""
         return self.__session_data[key]
 
     def __contains__(self, key):
+        """Implements the "in" operation."""
         return self.__session_data.__contains__(key)
 
     def clear(self):
-        """ Reset the value dictionary, and remove namespace from GUI """
+        """Reset the value dictionary, and remove namespace from GUI."""
         self.__session_data = {}
         self.page = None
         self.skill.bus.emit(Message("gui.clear.namespace",
                                     {"__from": self.skill.skill_id}))
 
     def send_event(self, event_name, params={}):
-        """ Trigger a gui event.
+        """Trigger a gui event.
 
         Arguments:
             event_name (str): name of event to be triggered
@@ -118,10 +125,9 @@ class SkillGUI:
                                      "params": params}))
 
     def show_page(self, name, override_idle=None):
-        """
-        Begin showing the page in the GUI
+        """Begin showing the page in the GUI
 
-        Args:
+        Arguments:
             name (str): Name of page (e.g "mypage.qml") to display
             override_idle (boolean, int):
                 True: Takes over the resting page indefinitely
@@ -131,10 +137,9 @@ class SkillGUI:
         self.show_pages([name], 0, override_idle)
 
     def show_pages(self, page_names, index=0, override_idle=None):
-        """
-        Begin showing the list of pages in the GUI
+        """Begin showing the list of pages in the GUI.
 
-        Args:
+        Arguments:
             page_names (list): List of page names (str) to display, such as
                                ["Weather.qml", "Forecast.qml", "Details.qml"]
             index (int): Page number (0-based) to show initially.  For the
@@ -179,19 +184,19 @@ class SkillGUI:
                                      "__idle": override_idle}))
 
     def remove_page(self, page):
-        """ Remove a single page from the GUI.
+        """Remove a single page from the GUI.
 
-            Args:
-                page (str): Page to remove from the GUI
+        Arguments:
+            page (str): Page to remove from the GUI
         """
         return self.remove_pages([page])
 
     def remove_pages(self, page_names):
-        """ Remove a list of pages in the GUI.
+        """Remove a list of pages in the GUI.
 
-            Args:
-                page_names (list): List of page names (str) to display, such as
-                                   ["Weather.qml", "Forecast.qml", "Other.qml"]
+        Arguments:
+            page_names (list): List of page names (str) to display, such as
+                               ["Weather.qml", "Forecast.qml", "Other.qml"]
         """
         if not isinstance(page_names, list):
             raise ValueError('page_names must be a list')
@@ -210,7 +215,7 @@ class SkillGUI:
                                      "__from": self.skill.skill_id}))
 
     def show_text(self, text, title=None, override_idle=None):
-        """ Display a GUI page for viewing simple text
+        """Display a GUI page for viewing simple text.
 
         Arguments:
             text (str): Main text content.  It will auto-paginate
@@ -224,7 +229,7 @@ class SkillGUI:
     def show_image(self, url, caption=None,
                    title=None, fill=None,
                    override_idle=None):
-        """ Display a GUI page for viewing an image
+        """Display a GUI page for viewing an image.
 
         Arguments:
             url (str): Pointer to the image
@@ -241,7 +246,7 @@ class SkillGUI:
         self.show_page("SYSTEM_ImageFrame.qml", override_idle)
 
     def show_html(self, html, resource_url=None, override_idle=None):
-        """ Display an HTML page in the GUI
+        """Display an HTML page in the GUI.
 
         Arguments:
             html (str): HTML text to display
@@ -253,7 +258,7 @@ class SkillGUI:
         self.show_page("SYSTEM_HtmlFrame.qml", override_idle)
 
     def show_url(self, url, override_idle=None):
-        """ Display an HTML page in the GUI
+        """Display an HTML page in the GUI.
 
         Arguments:
             url (str): URL to render

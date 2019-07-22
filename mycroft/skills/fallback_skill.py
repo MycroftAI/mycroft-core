@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-""" The fallback skill implements a special type of skill handling
+"""The fallback skill implements a special type of skill handling
 utterances not handled by the intent system.
 """
 import operator
@@ -24,29 +24,28 @@ from .mycroft_skill import MycroftSkill, get_handler_name
 
 
 class FallbackSkill(MycroftSkill):
-    """
-        Fallbacks come into play when no skill matches an Adapt or closely with
-        a Padatious intent.  All Fallback skills work together to give them a
-        view of the user's utterance.  Fallback handlers are called in an order
-        determined the priority provided when the the handler is registered.
+    """Fallbacks come into play when no skill matches an Adapt or closely with
+    a Padatious intent.  All Fallback skills work together to give them a
+    view of the user's utterance.  Fallback handlers are called in an order
+    determined the priority provided when the the handler is registered.
 
-        ========   ========   ================================================
-        Priority   Who?       Purpose
-        ========   ========   ================================================
-           1-4     RESERVED   Unused for now, slot for pre-Padatious if needed
-             5     MYCROFT    Padatious near match (conf > 0.8)
-          6-88     USER       General
-            89     MYCROFT    Padatious loose match (conf > 0.5)
-         90-99     USER       Uncaught intents
-           100+    MYCROFT    Fallback Unknown or other future use
-        ========   ========   ================================================
+    ========   ========   ================================================
+    Priority   Who?       Purpose
+    ========   ========   ================================================
+       1-4     RESERVED   Unused for now, slot for pre-Padatious if needed
+         5     MYCROFT    Padatious near match (conf > 0.8)
+      6-88     USER       General
+        89     MYCROFT    Padatious loose match (conf > 0.5)
+     90-99     USER       Uncaught intents
+       100+    MYCROFT    Fallback Unknown or other future use
+    ========   ========   ================================================
 
-        Handlers with the numerically lowest priority are invoked first.
-        Multiple fallbacks can exist at the same priority, but no order is
-        guaranteed.
+    Handlers with the numerically lowest priority are invoked first.
+    Multiple fallbacks can exist at the same priority, but no order is
+    guaranteed.
 
-        A Fallback can either observe or consume an utterance. A consumed
-        utterance will not be see by any other Fallback handlers.
+    A Fallback can either observe or consume an utterance. A consumed
+    utterance will not be see by any other Fallback handlers.
     """
     fallback_handlers = {}
 
@@ -100,8 +99,7 @@ class FallbackSkill(MycroftSkill):
 
     @classmethod
     def _register_fallback(cls, handler, priority):
-        """
-        Register a function to be called as a general info fallback
+        """Register a function to be called as a general info fallback
         Fallback should receive message and return
         a boolean (True if succeeded or False if failed)
 
@@ -114,9 +112,8 @@ class FallbackSkill(MycroftSkill):
         cls.fallback_handlers[priority] = handler
 
     def register_fallback(self, handler, priority):
-        """
-            register a fallback with the list of fallback handlers
-            and with the list of handlers registered by this instance
+        """Register a fallback with the list of fallback handlers and with the
+        list of handlers registered by this instance
         """
 
         def wrapper(*args, **kwargs):
@@ -130,11 +127,10 @@ class FallbackSkill(MycroftSkill):
 
     @classmethod
     def remove_fallback(cls, handler_to_del):
-        """
-            Remove a fallback handler
+        """Remove a fallback handler.
 
-            Args:
-                handler_to_del: reference to handler
+        Arguments:
+            handler_to_del: reference to handler
         """
         for priority, handler in cls.fallback_handlers.items():
             if handler == handler_to_del:
@@ -143,16 +139,12 @@ class FallbackSkill(MycroftSkill):
         LOG.warning('Could not remove fallback!')
 
     def remove_instance_handlers(self):
-        """
-            Remove all fallback handlers registered by the fallback skill.
-        """
+        """Remove all fallback handlers registered by the fallback skill."""
         while len(self.instance_fallback_handlers):
             handler = self.instance_fallback_handlers.pop()
             self.remove_fallback(handler)
 
     def default_shutdown(self):
-        """
-            Remove all registered handlers and perform skill shutdown.
-        """
+        """Remove all registered handlers and perform skill shutdown."""
         self.remove_instance_handlers()
         super(FallbackSkill, self).default_shutdown()
