@@ -24,6 +24,8 @@ from threading import Event
 import mycroft.lock
 from msm.exceptions import MsmException
 
+from msm.exceptions import MsmException
+
 from mycroft import dialog
 from mycroft.api import is_paired, BackendDown, DeviceApi
 from mycroft.audio import wait_while_speaking
