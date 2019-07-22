@@ -106,11 +106,9 @@ class SkillManager(Thread):
         if exists(self.dot_msm) and exists(self.installed_skills_file):
             mtime = os.path.getmtime(self.dot_msm)
             self.next_download = mtime + self.update_interval
-            self.last_download = datetime.fromtimestamp(mtime)
         else:
             # Last update can't be found or the requirements don't seem to be
             # installed trigger update before skill loading
-            self.last_download = None
             self.next_download = time.time() - 1
 
         # Conversation management
@@ -386,13 +384,7 @@ class SkillManager(Thread):
         self.remove_git_locks()
         self._connected_event.wait()
 
-        # If device has been offline for more than 2 weeks or
-        # skill state is in a limbo do a quick update
-        update_limit = datetime.now() - timedelta(days=14)
-        if (not self.last_download or self.last_download < update_limit):
-            self.download_skills(quick=True)
-        else:  # Just post the skills manifest
-            self.post_manifest(self.msm)
+        self.post_manifest(self.msm)
 
         has_loaded = False
 
