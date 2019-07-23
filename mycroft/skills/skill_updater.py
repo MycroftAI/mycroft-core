@@ -20,8 +20,10 @@ from time import time
 
 from msm import MsmException
 
+from mycroft import dialog
 from mycroft.api import DeviceApi, is_paired
 from mycroft.configuration import Configuration
+from mycroft.messagebus.message import Message
 from mycroft.util import connected
 from mycroft.util.combo_lock import ComboLock
 from mycroft.util.log import LOG
@@ -122,19 +124,21 @@ class SkillUpdater:
             for skill_name in self.installed_skills:
                 skills_file.write(skill_name + '\n')
 
-    def update_skills(self, quick=False):
+    def download_skills(self, speak=False, quick=False):
         """Invoke MSM to install default skills and/or update installed skills
 
         Args:
+            speak (bool): Speak the result?
             quick (bool): Expedite the download by running with more threads?
         """
         LOG.info('Beginning skill update...')
         success = True
         if connected():
             self._load_installed_skills()
-            with self.msm_lock, self.msm.lock:
+            with self.msm.lock:
                 self._apply_install_or_update(quick)
             self._save_installed_skills()
+            self._speak_skill_updated(speak)
             # Schedule retry in 5 minutes on failure, after 10 shorter periods
             # Go back to 60 minutes wait
             if self.default_skill_install_error and self.install_retries < 10:
@@ -144,7 +148,7 @@ class SkillUpdater:
                 self.install_retries = 0
                 self._update_download_time()
         else:
-            self.handle_not_connected()
+            self.handle_not_connected(speak)
             success = False
 
         if success:
@@ -152,9 +156,15 @@ class SkillUpdater:
 
         return success
 
-    def handle_not_connected(self):
+    def handle_not_connected(self, speak):
         """Notifications of the device not being connected to the internet"""
         LOG.error('msm failed, network connection not available')
+        if speak:
+            message = Message(
+                "speak",
+                dict(utterance=dialog.get('not connected to the internet'))
+            )
+            self.bus.emit(message)
         self.next_download = time() + FIVE_MINUTES
 
     def _apply_install_or_update(self, quick):
@@ -213,6 +223,12 @@ class SkillUpdater:
                 skill_data = msm_skill_data
 
         return skill_data
+
+    def _speak_skill_updated(self, speak):
+        """Emit a "speak" event to the bus to tell user skills updated."""
+        if speak:
+            data = {'utterance': dialog.get('skills updated')}
+            self.bus.emit(Message('speak', data))
 
     def _schedule_retry(self):
         """Schedule the next skill update in the event of a failure."""
