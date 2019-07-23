@@ -128,6 +128,8 @@ class SkillManager(Thread):
         bus.on('skillmanager.activate', self.activate_skill)
         bus.on('mycroft.paired', self.handle_paired)
 
+        self.daemon = True
+
     @staticmethod
     def get_lock():
         global MSM_LOCK
