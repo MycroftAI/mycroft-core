@@ -53,7 +53,7 @@ class TestApi(unittest.TestCase):
                              return_value=CONFIG)
         self.mock_config_get = patcher.start()
         self.addCleanup(patcher.stop)
-        super(TestApi, self).setUp()
+        super().setUp()
 
     @mock.patch('mycroft.api.IdentityManager.get')
     def test_init(self, mock_identity_get):
@@ -330,9 +330,18 @@ class TestApi(unittest.TestCase):
         mock_identity.uuid = "1234"
         self.assertTrue(mycroft.api.has_been_paired())
 
-    @mock.patch('mycroft.api._paired_cache', False)
-    @mock.patch('mycroft.api.IdentityManager.get')
-    @mock.patch('mycroft.api.requests.request')
+
+@mock.patch('mycroft.api._paired_cache', False)
+@mock.patch('mycroft.api.IdentityManager.get')
+@mock.patch('mycroft.api.requests.request')
+class TestIsPaired(unittest.TestCase):
+    def setUp(self):
+        patcher = mock.patch('mycroft.configuration.Configuration.get',
+                             return_value=CONFIG)
+        self.mock_config_get = patcher.start()
+        self.addCleanup(patcher.stop)
+        super().setUp()
+
     def test_is_paired_true(self, mock_request, mock_identity_get):
         mock_request.return_value = create_response(200)
         mock_identity = mock.MagicMock()
@@ -348,9 +357,6 @@ class TestApi(unittest.TestCase):
         url = mock_request.call_args[0][1]
         self.assertEquals(url, 'https://api-test.mycroft.ai/v1/device/1234')
 
-    @mock.patch('mycroft.api._paired_cache', False)
-    @mock.patch('mycroft.api.IdentityManager.get')
-    @mock.patch('mycroft.api.requests.request')
     def test_is_paired_false_local(self, mock_request, mock_identity_get):
         mock_request.return_value = create_response(200)
         mock_identity = mock.MagicMock()
@@ -362,9 +368,6 @@ class TestApi(unittest.TestCase):
         mock_identity.uuid = None
         self.assertFalse(mycroft.api.is_paired())
 
-    @mock.patch('mycroft.api._paired_cache', False)
-    @mock.patch('mycroft.api.IdentityManager.get')
-    @mock.patch('mycroft.api.requests.request')
     def test_is_paired_false_remote(self, mock_request, mock_identity_get):
         mock_request.return_value = create_response(401)
         mock_identity = mock.MagicMock()
@@ -373,3 +376,15 @@ class TestApi(unittest.TestCase):
         mock_identity_get.return_value = mock_identity
 
         self.assertFalse(mycroft.api.is_paired())
+
+    def test_is_paired_error_remote(self, mock_request, mock_identity_get):
+        mock_request.return_value = create_response(500)
+        mock_identity = mock.MagicMock()
+        mock_identity.is_expired.return_value = False
+        mock_identity.uuid = '1234'
+        mock_identity_get.return_value = mock_identity
+
+        self.assertFalse(mycroft.api.is_paired())
+
+        with self.assertRaises(mycroft.api.BackendDown):
+            mycroft.api.is_paired(ignore_errors=False)
