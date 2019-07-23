@@ -124,7 +124,7 @@ class SkillUpdater:
             for skill_name in self.installed_skills:
                 skills_file.write(skill_name + '\n')
 
-    def download_skills(self, speak=False, quick=False):
+    def update_skills(self, speak=False, quick=False):
         """Invoke MSM to install default skills and/or update installed skills
 
         Args:

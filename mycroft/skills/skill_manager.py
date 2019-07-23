@@ -228,19 +228,11 @@ class SkillManager(Thread):
                     'Priority skill {} can\'t be found'.format(skill_name)
                 )
 
-    def remove_git_locks(self):
-        """If git gets killed from an abrupt shutdown it leaves lock files."""
-        for i in glob(os.path.join(self.msm.skills_dir, '*/.git/index.lock')):
-            LOG.warning('Found and removed git lock file: ' + i)
-            os.remove(i)
-
     def run(self):
         """Load skills and update periodically from disk and internet."""
-
-        self.remove_git_locks()
+        self._remove_git_locks()
         self._connected_event.wait()
         has_loaded = False
-        updates_enabled = self.skills_config["auto_update"]
 
         # Scan the file folder that contains Skills.  If a Skill is updated,
         # unload the existing version from memory and reload from the disk.
@@ -264,16 +256,23 @@ class SkillManager(Thread):
                 self.bus.emit(Message('mycroft.skills.initialized'))
 
             self._unload_removed(skill_paths)
-            # Pause briefly before beginning next scan
-            time.sleep(2)
+            time.sleep(2)  # Pause briefly before beginning next scan
+            self._update_skills()
 
-            # Update skills once an hour if update is enabled
-            do_skill_update = (
-                time.time() >= self.skill_updater.next_download and
-                updates_enabled
-            )
-            if do_skill_update:
-                self.skill_updater.download_skills()
+    def _remove_git_locks(self):
+        """If git gets killed from an abrupt shutdown it leaves lock files."""
+        for i in glob(os.path.join(self.msm.skills_dir, '*/.git/index.lock')):
+            LOG.warning('Found and removed git lock file: ' + i)
+            os.remove(i)
+
+    def _update_skills(self):
+        """Update skills once an hour if update is enabled"""
+        do_skill_update = (
+            time.time() >= self.skill_updater.next_download and
+            self.skills_config["auto_update"]
+        )
+        if do_skill_update:
+            self.skill_updater.update_skills()
 
     def send_skill_list(self, _):
         """Send list of loaded skills."""
