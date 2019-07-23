@@ -258,7 +258,7 @@ class TestSkillUpdater(TestCase):
                 time_mock.return_value = 100
                 with patch(MOCK_PACKAGE + 'dialog.get') as dialog_mock:
                     sm = SkillUpdater(self.message_bus)
-                    result = sm.download_skills(speak=True)
+                    result = sm.update_skills(speak=True)
                     dialog_mock.assert_called_once_with(
                         'not connected to the internet'
                     )

@@ -129,7 +129,7 @@ class MycroftSkillTest(TestCase):
         with open(git_lock_file_path, 'w') as git_lock_file:
             git_lock_file.write('foo')
 
-        SkillManager(self.message_bus).remove_git_locks()
+        SkillManager(self.message_bus)._remove_git_locks()
 
         self.assertFalse(path.exists(git_lock_file_path))
 
