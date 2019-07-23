@@ -25,7 +25,7 @@ from msm.skill_repo import SkillRepo
 from msm.util import MsmProcessLock
 from pathlib import Path
 
-from mycroft.skills.skill_update import SkillUpdater
+from mycroft.skills.skill_updater import SkillUpdater
 
 MOCK_PACKAGE = 'mycroft.skills.skill_update.'
 

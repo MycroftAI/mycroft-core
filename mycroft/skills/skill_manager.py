@@ -26,7 +26,7 @@ from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
 from .core import load_skill, create_skill_descriptor, MainModule
 from .msm_wrapper import create_msm as msm_creator
-from .skill_update import SkillUpdater
+from .skill_updater import SkillUpdater
 
 
 def _get_last_modified_date(path):
