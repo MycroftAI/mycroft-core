@@ -27,7 +27,7 @@ from pathlib import Path
 
 from mycroft.skills.skill_updater import SkillUpdater
 
-MOCK_PACKAGE = 'mycroft.skills.skill_update.'
+MOCK_PACKAGE = 'mycroft.skills.skill_updater.'
 
 
 class MockMessageBus:
