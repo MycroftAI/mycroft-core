@@ -79,6 +79,8 @@ class SkillManager(Thread):
         self._define_message_bus_events()
         self.skill_updater = SkillUpdater(self.bus)
 
+        self.daemon = True
+
     def _define_message_bus_events(self):
         """Define message bus events with handlers defined in this class."""
         # Conversation management
