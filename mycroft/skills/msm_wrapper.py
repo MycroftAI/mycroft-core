@@ -17,13 +17,23 @@ import os
 from os.path import join, expanduser, exists
 
 from msm import MycroftSkillsManager, SkillRepo
-from mycroft.util.combo_lock import ComboLock
 
-mycroft_msm_lock = ComboLock('/tmp/mycroft-msm.lck')
+from mycroft.util.combo_lock import ComboLock
+from mycroft.util.log import LOG
+
+mycroft_msm_lock = None
 
 
 def create_msm(config):
     """ Create msm object from config. """
+    global mycroft_msm_lock
+    if mycroft_msm_lock is None:
+        try:
+            mycroft_msm_lock = ComboLock('/tmp/mycroft-msm.lck')
+            LOG.debug('mycroft-msm combo lock created')
+        except Exception as e:
+            LOG.error('Failed to create msm lock ({})'.format(repr(e)))
+
     msm_config = config['skills']['msm']
     repo_config = msm_config['repo']
     data_dir = expanduser(config['data_dir'])

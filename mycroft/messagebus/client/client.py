@@ -40,11 +40,19 @@ class MessageBusClient:
         self.connected_event = Event()
         self.started_running = False
 
+    @staticmethod
+    def build_url(host, port, route, ssl):
+        return '{scheme}://{host}:{port}{route}'.format(
+            scheme='wss' if ssl else 'ws',
+            host=host,
+            port=str(port),
+            route=route)
+
     def create_client(self):
-        url = '{scheme}://{host}:{port}{route}'.format(
-            scheme='wss' if self.config.ssl else 'ws',
+        url = MessageBusClient.build_url(
+            ssl=self.config.ssl,
             host=self.config.host,
-            port=str(self.config.port),
+            port=self.config.port,
             route=self.config.route
         )
         return WebSocketApp(
