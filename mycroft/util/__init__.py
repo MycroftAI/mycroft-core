@@ -378,11 +378,6 @@ def get_cache_directory(domain=None):
     return ensure_directory_exists(dir, domain)
 
 
-def validate_param(value, name):
-    if not value:
-        raise ValueError("Missing or empty %s in mycroft.conf " % name)
-
-
 def is_speaking():
     """Determine if Text to Speech is occurring
 

@@ -12,14 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""Daemon launched at startup to handle skill activities.
+
+In this repo, you will not find an entry called mycroft-skills in the bin
+directory.  The executable gets added to the bin directory when installed
+(see setup.py)
+"""
 import time
 from threading import Timer
 import mycroft.lock
 from mycroft import dialog
-from mycroft.api import is_paired, BackendDown
+from mycroft.api import is_paired, BackendDown, DeviceApi
 from mycroft.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
-from mycroft.messagebus.client.ws import WebsocketClient
+from mycroft.messagebus.client import MessageBusClient
 from mycroft.messagebus.message import Message
 from mycroft.util import (
     connected, wait_while_speaking, reset_sigint_handler,
@@ -59,7 +65,6 @@ def _starting_up():
         - padatious intent service
     """
     global bus, skill_manager, event_scheduler
-
     bus.on('intent_failure', FallbackSkill.make_intent_failure_handler(bus))
 
     # Create the Intent manager, which converts utterances to intents
@@ -89,6 +94,7 @@ def _starting_up():
     # Wait until priority skills have been loaded before checking
     # network connection
     skill_manager.load_priority()
+
     skill_manager.start()
     check_connection()
 
@@ -122,7 +128,7 @@ def check_connection():
         # Force a sync of the local clock with the internet
         config = Configuration.get()
         platform = config['enclosure'].get("platform", "unknown")
-        if platform in ['mycroft_mark_1', 'picroft']:
+        if platform in ['mycroft_mark_1', 'picroft', 'mycroft_mark_2pi']:
             bus.wait_for_response(Message('system.ntp.sync'),
                                   'system.ntp.sync.complete', 15)
 
@@ -168,7 +174,6 @@ def check_connection():
                 }
                 bus.emit(Message("recognizer_loop:utterance", payload))
             else:
-                from mycroft.api import DeviceApi
                 api = DeviceApi()
                 api.update_version()
         except BackendDown:
@@ -188,7 +193,7 @@ def main():
     # Create PID file, prevent multiple instancesof this service
     mycroft.lock.Lock('skills')
     # Connect this Skill management process to the Mycroft Messagebus
-    bus = WebsocketClient()
+    bus = MessageBusClient()
     Configuration.init(bus)
     config = Configuration.get()
     # Set the active lang to match the configured one

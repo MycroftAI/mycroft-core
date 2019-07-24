@@ -12,6 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
+
+"""
+Mycroft Logging module.
+
+This module provides the LOG pseudo function quickly creating a logger instance
+for use.
+
+The default log level of the logger created here can ONLY be set in
+/etc/mycroft/mycroft.conf or ~/.mycroft/mycroft.conf
+
+The default log level can also be programatically be changed by setting the
+LOG.level parameter.
+"""
+
 import inspect
 import logging
 import sys
@@ -62,6 +77,13 @@ class LOG:
 
     @classmethod
     def init(cls):
+        """ Initializes the class, sets the default log level and creates
+        the required handlers.
+        """
+
+        # Check configs manually, the Mycroft configuration system can't be
+        # used since it uses the LOG system and would cause horrible cyclic
+        # dependencies.
         confs = [SYSTEM_CONFIG, USER_CONFIG]
         config = {}
         for conf in confs:

@@ -182,7 +182,7 @@ def init(messagebus):
 
     tts = TTSFactory.create()
     tts.init(bus)
-    tts_hash = config.get('tts')
+    tts_hash = hash(str(config.get('tts', '')))
 
 
 def shutdown():
