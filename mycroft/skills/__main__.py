@@ -21,12 +21,12 @@ directory.  The executable gets added to the bin directory when installed
 import time
 from threading import Event
 
+import mycroft.lock
 from mycroft import dialog
 from mycroft.api import is_paired, BackendDown, DeviceApi
 from mycroft.audio import wait_while_speaking
 from mycroft.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
-from mycroft.lock import Lock
 from mycroft.messagebus.client import MessageBusClient
 from mycroft.messagebus.message import Message
 from mycroft.util import (
@@ -206,9 +206,11 @@ class DevicePrimer(object):
 def main():
     reset_sigint_handler()
     # Create PID file, prevent multiple instances of this service
-    Lock('skills')
+    mycroft.lock.Lock('skills')
     # Connect this Skill management process to the Mycroft message bus
     config = Configuration.get()
+    # Set the active lang to match the configured one
+    set_active_lang(config.get('lang', 'en-us'))
     bus = _start_message_bus_client(config)
     _register_intent_services(bus)
     event_scheduler = EventScheduler(bus)
@@ -227,8 +229,6 @@ def _start_message_bus_client(config):
     """Start the bus client daemon and wait for connection."""
     bus = MessageBusClient()
     Configuration.set_config_update_handlers(bus)
-    # Set the active lang to match the configured one
-    set_active_lang(config.get('lang', 'en-us'))
     bus_connected = Event()
     bus.on('message', create_echo_function('SKILLS'))
     # Set the bus connected event when connection is established
