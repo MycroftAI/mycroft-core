@@ -211,7 +211,7 @@ def main():
     config = Configuration.get()
     # Set the active lang to match the configured one
     set_active_lang(config.get('lang', 'en-us'))
-    bus = _start_message_bus_client(config)
+    bus = _start_message_bus_client()
     _register_intent_services(bus)
     event_scheduler = EventScheduler(bus)
     skill_manager = _initialize_skill_manager(bus)
@@ -225,7 +225,7 @@ def main():
     shutdown(skill_manager, event_scheduler)
 
 
-def _start_message_bus_client(config):
+def _start_message_bus_client():
     """Start the bus client daemon and wait for connection."""
     bus = MessageBusClient()
     Configuration.set_config_update_handlers(bus)
