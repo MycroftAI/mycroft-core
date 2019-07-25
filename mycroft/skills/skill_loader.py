@@ -69,6 +69,7 @@ class SkillLoader:
             if reload_allowed:
                 LOG.debug('Shutting down skill in ' + self.skill_directory)
                 self._shutdown()
+                self.loaded = False
             else:
                 log_msg = 'Reloading blocked for skill in {} - aborting.'
                 LOG.debug(log_msg.format(self.skill_directory))
