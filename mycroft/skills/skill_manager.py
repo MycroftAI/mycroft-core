@@ -13,9 +13,7 @@
 # limitations under the License.
 #
 """Load, update and manage skills on this device."""
-import gc
 import os
-import sys
 import time
 from glob import glob
 from threading import Thread, Event
@@ -24,7 +22,7 @@ from mycroft.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
-from .core import load_skill, create_skill_descriptor, MainModule
+from .core import MainModule
 from .msm_wrapper import create_msm as msm_creator
 from .skill_loader import SkillLoader
 from .skill_updater import SkillUpdater
