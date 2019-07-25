@@ -115,14 +115,9 @@ class TestSkillManager(MycroftUnitTestBase):
 
         return skill, skill_list_func
 
-    # def test_no_skill_in_skill_dir(self):
-    #     skill_dir = str(self.temp_dir.joinpath('path/to/skill/test_skill'))
-    #     makedirs(skill_dir)
-    #     manager = SkillManager(self.message_bus_mock)
-    #     manager.skill_loaders = {skill_dir: {}}
-    #     skill_loading = manager._load_or_reload_skill(skill_dir)
-    #     self.assertFalse(skill_loading)
-    #     self.assertDictEqual(
-    #         dict(id='test_skill', path=skill_dir),
-    #         manager.skill_loaders[skill_dir]
-    #     )
+    def test_no_skill_in_skill_dir(self):
+        skill_dir = self.temp_dir.joinpath('path/to/skill/test_skill')
+        skill_dir.mkdir(parents=True)
+        manager = SkillManager(self.message_bus_mock)
+        skill_directories = manager._get_skill_directories()
+        self.assertListEqual([], skill_directories)
