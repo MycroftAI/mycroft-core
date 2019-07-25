@@ -129,9 +129,7 @@ def nice_number_sv(number, speech, denominators):
         return_string = '{} och en {}'.format(whole, den_str)
     else:
         return_string = '{} och {} {}'.format(whole, num, den_str)
-    if num == 2:
-        return_string += 'a'
-    if num > 2:
+    if num > 1:
         return_string += 'ar'
     return return_string
 
@@ -250,13 +248,23 @@ def pronounce_ordinal_sv(num):
     ordinals = ["noll", "första", "andra", "tredje", "fjärde", "femte",
                 "sjätte", "sjunde", "åttonde", "nionde", "tionde"]
 
-    # only for whole positive numbers including zero
+    tens = int(floor(num / 10.0)) * 10
+    ones = num % 10
+
     if num < 0 or num != int(num):
         return num
-    if num < 10:
+    if num == 0:
         return ordinals[num]
+
+    result = ""
+    if num > 10:
+        result += pronounce_number_sv(tens)
+    if ones > 0:
+        result += ordinals[ones] + EXTRA_SPACE
     else:
-        return pronounce_number_sv(num) + "nde"
+        result += 'de'
+
+    return result
 
 
 def nice_time_sv(dt, speech=True, use_24hour=False, use_ampm=False):
@@ -356,17 +364,17 @@ def nice_time_sv(dt, speech=True, use_24hour=False, use_ampm=False):
             speak += pronounce_number_sv(hour - 12)
 
         if use_ampm:
-            if hour > 11:
-                if hour < 18:
+            if dt.hour > 11:
+                if dt.hour < 18:
                     # 12:01 - 17:59 nachmittags/afternoon
                     speak += " på eftermiddagen"
-                elif hour < 22:
+                elif dt.hour < 22:
                     # 18:00 - 21:59 abends/evening
                     speak += " på kvällen"
                 else:
                     # 22:00 - 23:59 nachts/at night
                     speak += " på natten"
-            elif hour < 3:
+            elif dt.hour < 3:
                 # 00:01 - 02:59 nachts/at night
                 speak += " på natten"
             else:
