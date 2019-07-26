@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import time
-from time import sleep
-
+from time import time, sleep
 import os
 import platform
 import posixpath
@@ -23,10 +21,10 @@ import requests
 from contextlib import suppress
 from glob import glob
 from os.path import dirname, exists, join, abspath, expanduser, isfile, isdir
-from petact import install_package
-from shutil import rmtree
 from threading import Timer, Event, Thread
 from urllib.error import HTTPError
+
+from petact import install_package
 
 from mycroft.configuration import Configuration, LocalConf, USER_CONFIG
 from mycroft.util.log import LOG
@@ -71,8 +69,13 @@ class HotWordEngine:
 
 
 class PocketsphinxHotWord(HotWordEngine):
+    """Hotword engine using PocketSphinx.
+
+    PocketSphinx is very general purpose but has a somewhat high error rate.
+    The key advantage is to be able to specify the wakeword with phonemes.
+    """
     def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
-        super(PocketsphinxHotWord, self).__init__(key_phrase, config, lang)
+        super().__init__(key_phrase, config, lang)
         # Hotword module imports
         from pocketsphinx import Decoder
         # Hotword module params
@@ -107,12 +110,12 @@ class PocketsphinxHotWord(HotWordEngine):
         return config
 
     def transcribe(self, byte_data, metrics=None):
-        start = time.time()
+        start = time()
         self.decoder.start_utt()
         self.decoder.process_raw(byte_data, False, False)
         self.decoder.end_utt()
         if metrics:
-            metrics.timer("mycroft.stt.local.time_s", time.time() - start)
+            metrics.timer("mycroft.stt.local.time_s", time() - start)
         return self.decoder.hyp()
 
     def found_wake_word(self, frame_data):
@@ -121,14 +124,19 @@ class PocketsphinxHotWord(HotWordEngine):
 
 
 class PreciseHotword(HotWordEngine):
+    """Precice is the default wakeword engine for mycroft.
+
+    Precise is developed by Mycroft AI and produces quite good wake word
+    spotting when trained on a decent dataset.
+    """
     def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
-        super(PreciseHotword, self).__init__(key_phrase, config, lang)
+        super().__init__(key_phrase, config, lang)
         from precise_runner import (
             PreciseRunner, PreciseEngine, ReadWriteStream
         )
         local_conf = LocalConf(USER_CONFIG)
-        if local_conf.get('precise', {}).get('dist_url') == \
-                'http://bootstrap.mycroft.ai/artifacts/static/daily/':
+        if (local_conf.get('precise', {}).get('dist_url') ==
+                'http://bootstrap.mycroft.ai/artifacts/static/daily/'):
             del local_conf['precise']['dist_url']
             local_conf.store()
             Configuration.updated(None)
@@ -240,8 +248,11 @@ class PreciseHotword(HotWordEngine):
 
 
 class SnowboyHotWord(HotWordEngine):
+    """Snowboy is a thirdparty hotword engine providing an easy training and
+    testing interface.
+    """
     def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
-        super(SnowboyHotWord, self).__init__(key_phrase, config, lang)
+        super().__init__(key_phrase, config, lang)
         # Hotword module imports
         from snowboydecoder import HotwordDetector
         # Hotword module config
