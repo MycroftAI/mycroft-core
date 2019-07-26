@@ -97,9 +97,10 @@ class SkillManager(Thread):
                 if not skill.is_local:
                     try:
                         skill.install()
-                    except Exception:
+                    except Exception as e:
                         log_msg = 'Downloading priority skill: {} failed'
-                        LOG.exception(log_msg.format(skill_name))
+                        LOG.error(log_msg.format(skill_name))
+                        LOG.exception(e)
                         continue
                 self._load_skill(skill.path)
             else:
@@ -206,9 +207,9 @@ class SkillManager(Thread):
         try:
             message_data = {}
             for skill_dir, skill_loader in self.skill_loaders.items():
-                message_data[skill_loader.id] = dict(
+                message_data[skill_loader.skill_id] = dict(
                     active=skill_loader.active and skill_loader.loaded,
-                    id=skill_loader.id
+                    id=skill_loader.skill_id
                 )
             self.bus.emit(Message('mycroft.skills.list', data=message_data))
         except Exception as e:
@@ -218,7 +219,7 @@ class SkillManager(Thread):
         """Deactivate a skill."""
         try:
             for skill_loader in self.skill_loaders.values():
-                if message.data['skill'] == skill_loader.id:
+                if message.data['skill'] == skill_loader.skill_id:
                     skill_loader.active = False
                     skill_loader.instance.default_shutdown()
                     break
@@ -249,7 +250,7 @@ class SkillManager(Thread):
         """Activate a deactivated skill."""
         try:
             for skill_loader in self.skill_loaders.values():
-                if message.data['skill'] in ('all', skill_loader.id):
+                if message.data['skill'] in ('all', skill_loader.skill_id):
                     skill_loader.loaded = False
                     skill_loader.active = True
         except Exception as e:
@@ -264,8 +265,11 @@ class SkillManager(Thread):
             if skill_loader.instance is not None:
                 try:
                     skill_loader.instance.default_shutdown()
-                except Exception:
-                    LOG.exception('Shutting down skill: ' + skill_loader.id)
+                except Exception as e:
+                    LOG.error(
+                        'Failed to shut down skill: ' + skill_loader.skill_id
+                    )
+                    LOG.exception(e)
 
     def handle_converse_request(self, message):
         """Check if the targeted skill id can handle conversation
@@ -277,7 +281,7 @@ class SkillManager(Thread):
         # loop trough skills list and call converse for skill with skill_id
         skill_found = False
         for skill_loader in self.skill_loaders.values():
-            if skill_loader.id == skill_id:
+            if skill_loader.skill_id == skill_id:
                 skill_found = True
                 if not skill_loader.loaded:
                     error_message = 'converse requested but skill not loaded'
@@ -285,7 +289,8 @@ class SkillManager(Thread):
                     break
                 try:
                     self._emit_converse_response(message, skill_loader)
-                except BaseException:
+                except BaseException as e:
+                    LOG.exception(e)
                     error_message = 'exception in converse method'
                     self._emit_converse_error(message, skill_id, error_message)
                 finally:
@@ -308,6 +313,6 @@ class SkillManager(Thread):
         result = skill_loader.instance.converse(utterances, lang)
         reply = message.reply(
             'skill.converse.response',
-            data=dict(skill_id=skill_loader.id, result=result)
+            data=dict(skill_id=skill_loader.skill_id, result=result)
         )
         self.bus.emit(reply)
