@@ -145,7 +145,8 @@ class PreciseHotword(HotWordEngine):
 
         self.show_download_progress = Timer(0, lambda: None)
         precise_config = Configuration.get()['precise']
-        precise_exe = self.install_exe(precise_config['dist_url'])
+
+        precise_exe = self.update_precise(precise_config)
 
         local_model = self.config.get('local_model_file')
         if local_model:
@@ -171,9 +172,31 @@ class PreciseHotword(HotWordEngine):
         )
         self.runner.start()
 
+    def update_precise(self, precise_config):
+        """Continously try to download precise until successful"""
+        precise_exe = None
+        while not precise_exe:
+            try:
+                precise_exe = self.install_exe(precise_config['dist_url'])
+            except TriggerReload:
+                raise
+            except Exception as e:
+                LOG.error(
+                    'Precise could not be downloaded({})'.format(repr(e)))
+                if exists(self.install_destination):
+                    precise_exe = self.install_destination
+                else:
+                    # Wait one minute before retrying
+                    sleep(60)
+        return precise_exe
+
     @property
     def folder(self):
         return join(expanduser('~'), '.mycroft', 'precise')
+
+    @property
+    def install_destination(self):
+        return join(self.folder, 'precise-engine', 'precise-engine')
 
     def install_exe(self, url: str) -> str:
         url = url.format(arch=platform.machine())
@@ -184,7 +207,7 @@ class PreciseHotword(HotWordEngine):
                 on_download=self.on_download, on_complete=self.on_complete
         ):
             raise TriggerReload
-        return join(self.folder, 'precise-engine', 'precise-engine')
+        return self.install_destination
 
     def install_model(self, url: str, wake_word: str) -> str:
         model_url = url.format(wake_word=wake_word)
