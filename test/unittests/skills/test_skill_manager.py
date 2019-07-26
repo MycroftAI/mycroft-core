@@ -1,6 +1,7 @@
 from os import path
 from unittest.mock import Mock, patch
 
+from mycroft.skills.skill_loader import SkillLoader
 from mycroft.skills.skill_manager import SkillManager
 from ..base import MycroftUnitTestBase
 from ..mocks import mock_msm
@@ -13,6 +14,8 @@ class TestSkillManager(MycroftUnitTestBase):
     def setUp(self):
         super().setUp()
         self._mock_skill_updater()
+        self.skill_manager = SkillManager(self.message_bus_mock)
+        self._mock_skill_loader_instance()
 
     def _mock_msm(self):
         if self.use_msm_mock:
@@ -30,9 +33,22 @@ class TestSkillManager(MycroftUnitTestBase):
         self.addCleanup(skill_updater_patch.stop)
         self.skill_updater_mock = skill_updater_patch.start()
 
+    def _mock_skill_loader_instance(self):
+        self.skill_dir = self.temp_dir.joinpath('test_skill')
+        self.skill_loader_mock = Mock(spec=SkillLoader)
+        self.skill_loader_mock.instance = Mock()
+        self.skill_loader_mock.instance.default_shutdown = Mock()
+        self.skill_loader_mock.instance.converse = Mock()
+        self.skill_loader_mock.id = 'test_skill'
+        self.skill_manager.skill_loaders = {
+            str(self.skill_dir): self.skill_loader_mock
+        }
+
     def test_instantiate(self):
-        manager = SkillManager(self.message_bus_mock)
-        self.assertEqual(manager.config['data_dir'], str(self.temp_dir))
+        self.assertEqual(
+            self.skill_manager.config['data_dir'],
+            str(self.temp_dir)
+        )
         expected_result = [
             'skill.converse.request',
             'mycroft.internet.connected',
@@ -55,50 +71,46 @@ class TestSkillManager(MycroftUnitTestBase):
         with open(git_lock_file_path, 'w') as git_lock_file:
             git_lock_file.write('foo')
 
-        SkillManager(self.message_bus_mock)._remove_git_locks()
+        self.skill_manager._remove_git_locks()
 
         self.assertFalse(path.exists(git_lock_file_path))
 
     def test_load_priority(self):
-        manager = SkillManager(self.message_bus_mock)
         load_mock = Mock()
-        manager._load_skill = load_mock
-        skill, manager.msm.list = self._build_mock_msm_skill_list()
-        manager.load_priority()
+        self.skill_manager._load_skill = load_mock
+        skill, self.skill_manager.msm.list = self._build_mock_msm_skill_list()
+        self.skill_manager.load_priority()
 
         self.assertFalse(skill.install.called)
         load_mock.assert_called_once_with(skill.path)
 
     def test_install_priority(self):
-        manager = SkillManager(self.message_bus_mock)
         load_mock = Mock()
-        manager._load_skill = load_mock
-        skill, manager.msm.list = self._build_mock_msm_skill_list()
+        self.skill_manager._load_skill = load_mock
+        skill, self.skill_manager.msm.list = self._build_mock_msm_skill_list()
         skill.is_local = False
-        manager.load_priority()
+        self.skill_manager.load_priority()
 
         self.assertTrue(skill.install.called)
         load_mock.assert_called_once_with(skill.path)
 
     def test_priority_skill_not_recognized(self):
-        sm = SkillManager(self.message_bus_mock)
         load_or_reload_mock = Mock()
-        sm._load_or_reload_skill = load_or_reload_mock
-        skill, sm.msm.list = self._build_mock_msm_skill_list()
+        self.skill_manager._load_or_reload_skill = load_or_reload_mock
+        skill, self.skill_manager.msm.list = self._build_mock_msm_skill_list()
         skill.name = 'barfoo'
-        sm.load_priority()
+        self.skill_manager.load_priority()
 
         self.assertFalse(skill.install.called)
         self.assertFalse(load_or_reload_mock.called)
 
     def test_priority_skill_install_failed(self):
-        sm = SkillManager(self.message_bus_mock)
         load_or_reload_mock = Mock()
-        sm._load_or_reload_skill = load_or_reload_mock
-        skill, sm.msm.list = self._build_mock_msm_skill_list()
+        self.skill_manager._load_or_reload_skill = load_or_reload_mock
+        skill, self.skill_manager.msm.list = self._build_mock_msm_skill_list()
         skill.is_local = False
         skill.install.side_effect = ValueError
-        sm.load_priority()
+        self.skill_manager.load_priority()
 
         self.assertRaises(ValueError, skill.install)
         self.assertFalse(load_or_reload_mock.called)
@@ -116,8 +128,183 @@ class TestSkillManager(MycroftUnitTestBase):
         return skill, skill_list_func
 
     def test_no_skill_in_skill_dir(self):
-        skill_dir = self.temp_dir.joinpath('path/to/skill/test_skill')
-        skill_dir.mkdir(parents=True)
-        manager = SkillManager(self.message_bus_mock)
-        skill_directories = manager._get_skill_directories()
+        self.skill_dir.mkdir(parents=True)
+        skill_directories = self.skill_manager._get_skill_directories()
         self.assertListEqual([], skill_directories)
+
+    def test_get_skill_directories(self):
+        self.skill_dir.mkdir(parents=True)
+        self.skill_dir.joinpath('__init__.py').touch()
+        skill_directories = self.skill_manager._get_skill_directories()
+
+        self.assertListEqual([str(self.skill_dir)], skill_directories)
+
+    def test_unload_removed_skills(self):
+        self.skill_manager._unload_removed_skills()
+
+        self.assertDictEqual({}, self.skill_manager.skill_loaders)
+        self.skill_loader_mock.instance.default_shutdown.assert_called_once()
+
+    def test_send_skill_list(self):
+        self.skill_loader_mock.active = True
+        self.skill_loader_mock.loaded = True
+        self.skill_manager.send_skill_list(None)
+
+        self.assertListEqual(
+            ['mycroft.skills.list'],
+            self.message_bus_mock.message_types
+        )
+        message_data = self.message_bus_mock.message_data[0]
+        self.assertIn('test_skill', message_data.keys())
+        skill_data = message_data['test_skill']
+        self.assertDictEqual(dict(active=True, id='test_skill'), skill_data)
+
+    def test_stop(self):
+        self.skill_manager.stop()
+
+        self.assertTrue(self.skill_manager._stop_event.is_set())
+        self.skill_loader_mock.instance.default_shutdown.assert_called_once()
+
+    def test_handle_converse_request(self):
+        message = Mock()
+        message.data = dict(skill_id='test_skill')
+        self.skill_loader_mock.loaded = True
+        converse_response_mock = Mock()
+        self.skill_manager._emit_converse_response = converse_response_mock
+        converse_error_mock = Mock()
+        self.skill_manager._emit_converse_error = converse_error_mock
+        self.skill_manager.handle_converse_request(message)
+
+        converse_response_mock.assert_called_once_with(
+            message,
+            self.skill_loader_mock
+        )
+        converse_error_mock.assert_not_called()
+
+    def test_converse_request_missing_skill(self):
+        message = Mock()
+        message.data = dict(skill_id='foo')
+        self.skill_loader_mock.loaded = True
+        converse_response_mock = Mock()
+        self.skill_manager._emit_converse_response = converse_response_mock
+        converse_error_mock = Mock()
+        self.skill_manager._emit_converse_error = converse_error_mock
+        self.skill_manager.handle_converse_request(message)
+
+        converse_response_mock.assert_not_called()
+        converse_error_mock.assert_called_once_with(
+            message,
+            'foo',
+            'skill id does not exist'
+        )
+
+    def test_converse_request_skill_not_loaded(self):
+        message = Mock()
+        message.data = dict(skill_id='test_skill')
+        self.skill_loader_mock.loaded = False
+        converse_response_mock = Mock()
+        self.skill_manager._emit_converse_response = converse_response_mock
+        converse_error_mock = Mock()
+        self.skill_manager._emit_converse_error = converse_error_mock
+        self.skill_manager.handle_converse_request(message)
+
+        converse_response_mock.assert_not_called()
+        converse_error_mock.assert_called_once_with(
+            message,
+            'test_skill',
+            'converse requested but skill not loaded'
+        )
+
+    def test_schedule_now(self):
+        with patch(self.mock_package + 'time') as time_mock:
+            time_mock.return_value = 100
+            self.skill_updater_mock.next_download = 0
+            self.skill_manager.schedule_now(None)
+        self.assertEqual(99, self.skill_manager.skill_updater.next_download)
+
+    def test_handle_paired(self):
+        self.skill_updater_mock.next_download = 0
+        self.skill_manager.handle_paired(None)
+        self.skill_manager.skill_updater.post_manifest.assert_called_once()
+
+    def test_deactivate_skill(self):
+        message = Mock()
+        message.data = dict(skill='test_skill')
+        self.skill_manager.deactivate_skill(message)
+        self.assertFalse(self.skill_loader_mock.active)
+        self.skill_loader_mock.instance.default_shutdown.assert_called_once()
+
+    def test_deactivate_except(self):
+        message = Mock()
+        message.data = dict(skill='test_skill')
+        self.skill_loader_mock.active = True
+        foo_skill_loader = Mock(spec=SkillLoader)
+        foo_skill_loader.instance = Mock()
+        foo_skill_loader.instance.default_shutdown = Mock()
+        foo_skill_loader.id = 'foo'
+        foo_skill_loader.active = True
+        self.skill_manager.skill_loaders['foo'] = foo_skill_loader
+
+        self.skill_manager.deactivate_except(message)
+        self.assertTrue(self.skill_loader_mock.active)
+        self.skill_loader_mock.instance.default_shutdown.assert_not_called()
+        self.assertFalse(foo_skill_loader.active)
+        foo_skill_loader.instance.default_shutdown.assert_called_once()
+
+    def test_activate_skill(self):
+        message = Mock()
+        message.data = dict(skill='test_skill')
+        self.skill_loader_mock.active = False
+        self.skill_loader_mock.loaded = True
+        self.skill_manager.activate_skill(message)
+        self.assertTrue(self.skill_loader_mock.active)
+        self.assertFalse(self.skill_loader_mock.loaded)
+
+    def test_load_on_startup(self):
+        self.skill_dir.mkdir(parents=True)
+        self.skill_dir.joinpath('__init__.py').touch()
+        patch_obj = self.mock_package + 'SkillLoader'
+        self.skill_manager.skill_loaders = {}
+        with patch(patch_obj, spec=True) as loader_mock:
+            self.skill_manager._load_on_startup()
+            loader_mock.load.assert_called_once()
+            self.assertEqual(
+                loader_mock.return_value,
+                self.skill_manager.skill_loaders[str(self.skill_dir)]
+            )
+        self.assertTrue(self.skill_manager.initial_load_complete)
+        self.assertListEqual(
+            ['mycroft.skills.initialized'],
+            self.message_bus_mock.message_types
+        )
+
+    def test_reload_modified_new_skill(self):
+        self.skill_dir.mkdir(parents=True)
+        self.skill_dir.joinpath('__init__.py').touch()
+        patch_obj = self.mock_package + 'SkillLoader'
+        self.skill_manager.skill_loaders = {}
+        with patch(patch_obj, spec=True) as loader_mock:
+            self.skill_manager._reload_modified_skills()
+            loader_mock.load.assert_called_once()
+            self.assertEqual(
+                loader_mock.return_value,
+                self.skill_manager.skill_loaders[str(self.skill_dir)]
+            )
+
+    def test_reload_modified(self):
+        self.skill_dir.mkdir(parents=True)
+        self.skill_dir.joinpath('__init__.py').touch()
+        self.skill_manager._reload_modified_skills()
+        self.skill_loader_mock.load.assert_called_once()
+        self.assertEqual(
+            self.skill_loader_mock,
+            self.skill_manager.skill_loaders[str(self.skill_dir)]
+        )
+
+    def test_update_skills(self):
+        updater_mock = Mock()
+        updater_mock.update_skills = Mock()
+        updater_mock.next_download = 0
+        self.skill_manager.skill_updater = updater_mock
+        self.skill_manager._update_skills()
+        updater_mock.update_skills.assert_called_once()

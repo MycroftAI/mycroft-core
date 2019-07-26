@@ -14,9 +14,9 @@
 #
 """Load, update and manage skills on this device."""
 import os
-import time
 from glob import glob
 from threading import Thread, Event
+from time import sleep, time
 
 from mycroft.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
@@ -82,26 +82,11 @@ class SkillManager(Thread):
         return msm_creator(Configuration.get())
 
     def schedule_now(self, _):
-        self.skill_updater.next_download = time.time() - 1
+        self.skill_updater.next_download = time() - 1
 
     def handle_paired(self, _):
         """Trigger upload of skills manifest after pairing."""
         self.skill_updater.post_manifest()
-
-    def _unload_removed_skills(self):
-        """Shutdown removed skills."""
-        paths = self._get_skill_directories()
-        skills = self.skill_loaders
-        # Find loaded skills that doesn't exist on disk
-        removed_skills = [str(s) for s in skills.keys() if str(s) not in paths]
-        for s in removed_skills:
-            LOG.info('removing {}'.format(s))
-            try:
-                LOG.debug('Removing: {}'.format(skills[s]))
-                skills[s]['instance'].default_shutdown()
-            except Exception as e:
-                LOG.exception(e)
-            self.skill_loaders.pop(s)
 
     def load_priority(self):
         skills = {skill.name: skill for skill in self.msm.list()}
@@ -134,7 +119,7 @@ class SkillManager(Thread):
             self._reload_modified_skills()
             self._unload_removed_skills()
             self._update_skills()
-            time.sleep(2)  # Pause briefly before beginning next scan
+            sleep(2)  # Pause briefly before beginning next scan
 
     def _remove_git_locks(self):
         """If git gets killed from an abrupt shutdown it leaves lock files."""
@@ -152,16 +137,21 @@ class SkillManager(Thread):
                     self._load_skill(skill_dir)
                 if len(self.skill_loaders) == len(skill_dirs):
                     self.initial_load_complete = True
-            time.sleep(2)
+            sleep(2)
 
         LOG.info("Skills all loaded!")
         self.bus.emit(Message('mycroft.skills.initialized'))
 
     def _reload_modified_skills(self):
         """Handle reload of recently changed skill(s)"""
-        LOG.debug('Checking for modified skills')
         for skill_dir in self._get_skill_directories():
-            self._load_skill(skill_dir)
+            skill_loader = self.skill_loaders.get(skill_dir)
+            if skill_loader is None:
+                # Skill installed since initial load
+                self._load_skill(skill_dir)
+            else:
+                # Existing skill changed
+                skill_loader.load()
 
     def _load_skill(self, skill_directory):
         try:
@@ -181,13 +171,31 @@ class SkillManager(Thread):
             # check if folder is a skill (must have __init__.py)
             if SKILL_MAIN_MODULE in os.listdir(skill_dir):
                 skill_directories.append(skill_dir.rstrip('/'))
+            else:
+                LOG.debug('Found skills directory with no skill: ' + skill_dir)
 
         return skill_directories
+
+    def _unload_removed_skills(self):
+        """Shutdown removed skills."""
+        skill_dirs = self._get_skill_directories()
+        # Find loaded skills that don't exist on disk
+        removed_skills = [
+            s for s in self.skill_loaders.keys() if s not in skill_dirs
+        ]
+        for skill_dir in removed_skills:
+            skill = self.skill_loaders[skill_dir]
+            LOG.info('removing {}'.format(skill.id))
+            try:
+                skill.instance.default_shutdown()
+            except Exception as e:
+                LOG.exception(e)
+            del self.skill_loaders[skill_dir]
 
     def _update_skills(self):
         """Update skills once an hour if update is enabled"""
         do_skill_update = (
-            time.time() >= self.skill_updater.next_download and
+            time() >= self.skill_updater.next_download and
             self.skills_config["auto_update"]
         )
         if do_skill_update:
@@ -196,74 +204,54 @@ class SkillManager(Thread):
     def send_skill_list(self, _):
         """Send list of loaded skills."""
         try:
-            info = {}
-            for s in self.skill_loaders:
-                is_active = (self.skill_loaders[s].get('active', True) and
-                             self.skill_loaders[s].get('instance') is not None)
-                info[os.path.basename(s)] = {
-                    'active': is_active,
-                    'id': self.skill_loaders[s]['id']
-                }
-            self.bus.emit(Message('mycroft.skills.list', data=info))
+            message_data = {}
+            for skill_dir, skill_loader in self.skill_loaders.items():
+                message_data[skill_loader.id] = dict(
+                    active=skill_loader.active and skill_loader.loaded,
+                    id=skill_loader.id
+                )
+            self.bus.emit(Message('mycroft.skills.list', data=message_data))
         except Exception as e:
             LOG.exception(e)
-
-    def __deactivate_skill(self, skill):
-        """ Deactivate a skill. """
-        for s in self.skill_loaders:
-            if skill in s:
-                skill = s
-                break
-        try:
-            self.skill_loaders[skill]['active'] = False
-            self.skill_loaders[skill]['instance'].default_shutdown()
-        except Exception as e:
-            LOG.error('Couldn\'t deactivate skill, {}'.format(repr(e)))
 
     def deactivate_skill(self, message):
         """Deactivate a skill."""
         try:
-            skill = message.data['skill']
-            if skill in [os.path.basename(s) for s in self.skill_loaders]:
-                self.__deactivate_skill(skill)
+            for skill_loader in self.skill_loaders.values():
+                if message.data['skill'] == skill_loader.id:
+                    skill_loader.active = False
+                    skill_loader.instance.default_shutdown()
+                    break
         except Exception as e:
-            LOG.error('Couldn\'t deactivate skill, {}'.format(repr(e)))
+            LOG.error('Failed to deactivate ' + message.data['skill'])
+            LOG.exception(e)
 
     def deactivate_except(self, message):
         """Deactivate all skills except the provided."""
         try:
             skill_to_keep = message.data['skill']
-            LOG.info('DEACTIVATING ALL SKILLS EXCEPT {}'.format(skill_to_keep))
+            LOG.info('Deactivating all skills except {}'.format(skill_to_keep))
             loaded_skill_file_names = [
-                os.path.basename(i) for i in self.skill_loaders
+                os.path.basename(skill_dir) for skill_dir in self.skill_loaders
             ]
             if skill_to_keep in loaded_skill_file_names:
-                for skill in self.skill_loaders:
-                    if os.path.basename(skill) != skill_to_keep:
-                        self.__deactivate_skill(skill)
+                for skill in self.skill_loaders.values():
+                    if skill.id != skill_to_keep:
+                        skill.active = False
+                        skill.instance.default_shutdown()
             else:
-                LOG.info('Couldn\'t find skill')
+                LOG.info('Couldn\'t find skill ' + message.data['skill'])
         except Exception as e:
-            LOG.error('Error during skill removal, {}'.format(repr(e)))
-
-    def __activate_skill(self, skill):
-        if not self.skill_loaders[skill].get('active', True):
-            self.skill_loaders[skill]['loaded'] = False
-            self.skill_loaders[skill]['active'] = True
+            LOG.error('An error occurred during skill deactivation!')
+            LOG.exception(e)
 
     def activate_skill(self, message):
         """Activate a deactivated skill."""
         try:
-            skill = message.data['skill']
-            if skill == 'all':
-                for s in self.skill_loaders:
-                    self.__activate_skill(s)
-            else:
-                for s in self.skill_loaders:
-                    if skill in s:
-                        skill = s
-                        break
-                self.__activate_skill(skill)
+            for skill_loader in self.skill_loaders.values():
+                if message.data['skill'] in ('all', skill_loader.id):
+                    skill_loader.loaded = False
+                    skill_loader.active = True
         except Exception as e:
             LOG.error('Couldn\'t activate skill, {}'.format(repr(e)))
 
@@ -272,47 +260,54 @@ class SkillManager(Thread):
         self._stop_event.set()
 
         # Do a clean shutdown of all skills
-        for name, skill_info in self.skill_loaders.items():
-            instance = skill_info.get('instance')
-            if instance:
+        for skill_loader in self.skill_loaders.values():
+            if skill_loader.instance is not None:
                 try:
-                    instance.default_shutdown()
+                    skill_loader.instance.default_shutdown()
                 except Exception:
-                    LOG.exception('Shutting down skill: ' + name)
+                    LOG.exception('Shutting down skill: ' + skill_loader.id)
 
     def handle_converse_request(self, message):
         """Check if the targeted skill id can handle conversation
 
         If supported, the conversation is invoked.
         """
-
-        skill_id = message.data["skill_id"]
-        utterances = message.data["utterances"]
-        lang = message.data["lang"]
+        skill_id = message.data['skill_id']
 
         # loop trough skills list and call converse for skill with skill_id
-        for skill in self.skill_loaders:
-            if self.skill_loaders[skill]["id"] == skill_id:
-                instance = self.skill_loaders[skill].get("instance")
-                if instance is None:
-                    self.bus.emit(message.reply("skill.converse.error",
-                                                {"skill_id": skill_id,
-                                                 "error": "converse requested"
-                                                          " but skill not "
-                                                          "loaded"}))
-                    return
+        skill_found = False
+        for skill_loader in self.skill_loaders.values():
+            if skill_loader.id == skill_id:
+                skill_found = True
+                if not skill_loader.loaded:
+                    error_message = 'converse requested but skill not loaded'
+                    self._emit_converse_error(message, skill_id, error_message)
+                    break
                 try:
-                    result = instance.converse(utterances, lang)
-                    self.bus.emit(message.reply("skill.converse.response", {
-                        "skill_id": skill_id, "result": result}))
-                    return
+                    self._emit_converse_response(message, skill_loader)
                 except BaseException:
-                    self.bus.emit(message.reply("skill.converse.error",
-                                                {"skill_id": skill_id,
-                                                 "error": "exception in "
-                                                          "converse method"}))
-                    return
+                    error_message = 'exception in converse method'
+                    self._emit_converse_error(message, skill_id, error_message)
+                finally:
+                    break
 
-        self.bus.emit(message.reply("skill.converse.error",
-                                    {"skill_id": skill_id,
-                                     "error": "skill id does not exist"}))
+        if not skill_found:
+            error_message = 'skill id does not exist'
+            self._emit_converse_error(message, skill_id, error_message)
+
+    def _emit_converse_error(self, message, skill_id, error_msg):
+        reply = message.reply(
+            'skill.converse.error',
+            data=dict(skill_id=skill_id, error=error_msg)
+        )
+        self.bus.emit(reply)
+
+    def _emit_converse_response(self, message, skill_loader):
+        utterances = message.data['utterances']
+        lang = message.data['lang']
+        result = skill_loader.instance.converse(utterances, lang)
+        reply = message.reply(
+            'skill.converse.response',
+            data=dict(skill_id=skill_loader.id, result=result)
+        )
+        self.bus.emit(reply)
