@@ -14,8 +14,7 @@
 
 from enum import IntEnum
 from abc import ABC, abstractmethod
-from mycroft import MycroftSkill
-from mycroft.messagebus.message import Message
+from .mycroft_skill import MycroftSkill
 
 
 class CQSMatchLevel(IntEnum):

@@ -243,8 +243,7 @@ class Configuration:
     def init(ws):
         """Duplicate of set_config_update_handlers to be deprecated in 19.08"""
         # TODO: deprecate this method in 19.08
-        ws.on("configuration.updated", Configuration.updated)
-        ws.on("configuration.patch", Configuration.patch)
+        Configuration.set_config_update_handlers(ws)
 
     @staticmethod
     def updated(message):
