@@ -63,7 +63,11 @@ class SkillLoader:
         """
         self.last_modified = _get_last_modified_date(self.skill_directory)
         modified = self.last_modified > self.last_loaded
-        reload_allowed = self.active and self.instance.reload_skill
+        reload_allowed = (
+            self.loaded and
+            self.active and
+            self.instance.reload_skill
+        )
         if self.loaded and modified and reload_allowed:
             LOG.debug('Attempting to reload skill in ' + self.skill_directory)
             if reload_allowed:
