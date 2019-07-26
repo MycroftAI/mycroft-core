@@ -152,7 +152,7 @@ config_file = os.path.join(os.path.expanduser("~"), ".mycroft_cli.conf")
 def load_mycroft_config(bus):
     """ Load the mycroft config and connect it to updates over the messagebus.
     """
-    Configuration.init(bus)
+    Configuration.set_config_update_handlers(bus)
     return Configuration.get()
 
 

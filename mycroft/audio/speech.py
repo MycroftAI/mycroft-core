@@ -47,7 +47,7 @@ def handle_speak(event):
         Handle "speak" message
     """
     config = Configuration.get()
-    Configuration.init(bus)
+    Configuration.set_config_update_handlers(bus)
     global _last_stop_signal
 
     # Get conversation ID
@@ -173,7 +173,7 @@ def init(messagebus):
     global config
 
     bus = messagebus
-    Configuration.init(bus)
+    Configuration.set_config_update_handlers(bus)
     config = Configuration.get()
     bus.on('mycroft.stop', handle_stop)
     bus.on('mycroft.audio.speech.stop', handle_stop)

@@ -32,7 +32,7 @@ def main():
     reset_sigint_handler()
     check_for_signal("isSpeaking")
     bus = MessageBusClient()  # Connect to the Mycroft Messagebus
-    Configuration.init(bus)
+    Configuration.set_config_update_handlers(bus)
     speech.init(bus)
 
     LOG.info("Starting Audio Services")
