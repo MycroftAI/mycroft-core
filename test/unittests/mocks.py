@@ -3,8 +3,11 @@ from unittest.mock import Mock
 from msm import MycroftSkillsManager
 from msm.skill_repo import SkillRepo
 
+from mycroft.messagebus import MessageBusClient
+
 
 def mock_msm(temp_dir):
+    """Mock the MycroftSkillsManager because it reaches out to the internet."""
     msm_mock = Mock(spec=MycroftSkillsManager)
     msm_mock.skills_dir = temp_dir
     msm_mock.platform = 'test_platform'
@@ -27,7 +30,9 @@ def mock_msm(temp_dir):
 
 
 def mock_config(temp_dir):
-    return dict(
+    """Supply a reliable return value for the Configuration.get() method."""
+    get_config_mock = Mock()
+    get_config_mock.return_value = dict(
         skills=dict(
             msm=dict(
                 directory='skills',
@@ -47,8 +52,15 @@ def mock_config(temp_dir):
         data_dir=str(temp_dir)
     )
 
+    return get_config_mock
+
 
 class MessageBusMock:
+    """Replaces actual message bus calls in unit tests.
+
+    The message bus should not be running during unit tests so mock it
+    out in a way that makes it easy to test code that calls it.
+    """
     def __init__(self):
         self.message_types = []
         self.message_data = []
