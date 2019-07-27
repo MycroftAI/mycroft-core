@@ -17,6 +17,7 @@ class MycroftUnitTestBase(TestCase):
         self.message_bus_mock = MessageBusMock()
         self._mock_msm()
         self._mock_config()
+        self._mock_log()
 
     def _mock_msm(self):
         if self.use_msm_mock:
@@ -30,9 +31,12 @@ class MycroftUnitTestBase(TestCase):
         config_mgr_patch = patch(self.mock_package + 'Configuration')
         self.addCleanup(config_mgr_patch.stop)
         self.config_mgr_mock = config_mgr_patch.start()
-        get_config_mock = Mock()
-        get_config_mock.return_value = mock_config(self.temp_dir)
-        self.config_mgr_mock.get = get_config_mock
+        self.config_mgr_mock.get = mock_config(self.temp_dir)
+
+    def _mock_log(self):
+        log_patch = patch(self.mock_package + 'LOG')
+        self.addCleanup(log_patch.stop)
+        self.log_mock = log_patch.start()
 
     def tearDown(self):
         rmtree(str(self.temp_dir))
