@@ -1,7 +1,8 @@
+"""Unit tests for the SkillLoader class."""
 from time import time
-from unittest.mock import Mock, patch
+from unittest.mock import call, Mock, patch
 
-from mycroft.skills.skill_loader import _get_last_modified_date, SkillLoader
+from mycroft.skills.skill_loader import _get_last_modified_time, SkillLoader
 from ..base import MycroftUnitTestBase
 
 ONE_MINUTE = 60
@@ -17,149 +18,121 @@ class TestSkillLoader(MycroftUnitTestBase):
             self.message_bus_mock,
             str(self.skill_directory)
         )
-        self._mock_load_skill()
+        self._mock_skill_instance()
+        # TODO: un-mock these when they are more testable
+        self.loader._load_skill_source = Mock(
+            return_value=Mock()
+        )
+        self.loader._check_for_first_run = Mock()
 
     def _load_skill_directory(self):
+        """The skill loader expects certain things in a skill directory."""
         skill_directory = self.temp_dir.joinpath('test_skill')
         skill_directory.mkdir()
-        for file_name in ('foo.txt', 'bar.py', '.foobar', 'bar.pyc'):
+        for file_name in ('__init__.py', 'bar.py', '.foobar', 'bar.pyc'):
             skill_directory.joinpath(file_name).touch()
 
         return skill_directory
 
-    def _mock_load_skill(self):
-        load_skill_patch = patch(self.mock_package + 'load_skill')
-        self.addCleanup(load_skill_patch.stop)
-        self.load_skill_mock = load_skill_patch.start()
+    def _mock_skill_instance(self):
+        """Mock the skill instance, we are not testing skill functionality."""
+        skill_instance = Mock()
+        skill_instance.name = 'test_skill'
+        skill_instance.reload_skill = True
+        skill_instance.default_shutdown = Mock()
+        skill_instance.settings = Mock()
+        self.skill_instance_mock = skill_instance
 
     def test_get_last_modified_date(self):
-        last_modified_date = _get_last_modified_date(str(self.skill_directory))
+        """Get the last modified time of files in a path"""
+        last_modified_date = _get_last_modified_time(str(self.skill_directory))
+
         file_path = self.skill_directory.joinpath('bar.py')
         expected_result = file_path.stat().st_mtime
         self.assertEqual(last_modified_date, expected_result)
 
-    def test_instantiate(self):
-        """Test class instantiation results
-
-        Every test will instantiate SkillLoader; check instantiation
-        results once.
-        """
-        self.assertEqual(self.message_bus_mock, self.loader.bus)
-        self.assertEqual(
-            str(self.skill_directory),
-            self.loader.skill_directory
-        )
-        self.assertFalse(self.loader.load_attempted)
-        self.assertFalse(self.loader.loaded)
-        self.assertEqual(0, self.loader.last_modified)
-        self.assertEqual(0, self.loader.last_loaded)
-        self.assertIsNone(self.loader.instance)
-        self.assertTrue(self.loader.active)
-        self.assertFalse(self.loader.load_attempted)
-        self.assertEqual(self.config_mgr_mock.get(), self.loader.config)
-
     def test_skill_already_loaded(self):
-        self._build_skill_instance_mock()
+        """The loader should take to action for an already loaded skill."""
+        self.loader.instance = Mock
+        self.loader.instance.reload_skill = True
         self.loader.loaded = True
         self.loader.last_loaded = time() + ONE_MINUTE
-        self.loader.load()
+        self.loader.reload()
 
         self.assertFalse(self.loader.load_attempted)
-        self.loader.instance.default_shutdown.assert_not_called()
-        self.load_skill_mock.assert_not_called()
-        self.assertListEqual([], self.message_bus_mock.message_types)
 
     def test_skill_reloading_blocked(self):
-        self._build_skill_instance_mock()
+        """The loader should skip reloads for skill that doesn't allow it."""
+        self.loader.instance = Mock()
         self.loader.instance.reload_skill = False
         self.loader.active = False
         self.loader.loaded = True
-        self.loader.load()
+        self.loader.reload()
 
         self.assertFalse(self.loader.load_attempted)
-        self.assertTrue(self.loader.loaded)
-        self.loader.instance.default_shutdown.assert_not_called()
-        self.load_skill_mock.assert_not_called()
-        self.assertListEqual([], self.message_bus_mock.message_types)
+        log_messages = [
+            call.info('Reloading blocked for skill test_skill - aborting.')
+        ]
+        self.assertListEqual(log_messages, self.log_mock.method_calls)
 
     def test_skill_reload(self):
-        self._build_skill_instance_mock()
-        self.load_skill_mock.return_value = self.loader.instance
-        self.loader.active = True
+        """Test reloading a skill that was modified."""
+        self.loader.instance = Mock()
         self.loader.loaded = True
-        self.loader.last_modified = 0
-        self.loader.id = 'test_skill'
-        with patch(self.mock_package + 'create_skill_descriptor') as csd_mock:
-            self.loader.load()
-            csd_mock.assert_called_once_with(str(self.skill_directory))
-            self.load_skill_mock.assert_called_once_with(
-                csd_mock.return_value,
-                self.message_bus_mock,
-                'test_skill',
-                []
-            )
+        self.loader.last_loaded = 0
+
+        with patch(self.mock_package + 'time') as time_mock:
+            time_mock.return_value = 100
+            self.loader.reload()
 
         self.assertTrue(self.loader.load_attempted)
         self.assertTrue(self.loader.loaded)
-        self.assertLess(0, self.loader.last_loaded)
-        self.loader.instance.default_shutdown.assert_called_once()
-        self.assertIn(
-            'mycroft.skills.shutdown',
+        self.assertEqual(100, self.loader.last_loaded)
+        self.assertListEqual(
+            ['mycroft.skills.shutdown', 'mycroft.skills.loaded'],
             self.message_bus_mock.message_types
         )
-        self.assertIn(
-            'mycroft.skills.loaded',
-            self.message_bus_mock.message_types
-        )
+        log_messages = [
+            call.info('ATTEMPTING TO RELOAD SKILL: test_skill'),
+            call.info('Skill test_skill shut down successfully'),
+            call.info('Skill test_skill loaded successfully')
+        ]
+        self.assertListEqual(log_messages, self.log_mock.method_calls)
 
     def test_skill_load(self):
-        self._build_skill_instance_mock()
-        self.load_skill_mock.return_value = self.loader.instance
-        self.loader.active = True
-        self.loader.loaded = False
-        self.loader.id = 'test_skill'
-        with patch(self.mock_package + 'create_skill_descriptor') as csd_mock:
+        with patch(self.mock_package + 'time') as time_mock:
+            time_mock.return_value = 100
             self.loader.load()
-            csd_mock.assert_called_once_with(str(self.skill_directory))
-            self.load_skill_mock.assert_called_once_with(
-                csd_mock.return_value,
-                self.message_bus_mock,
-                'test_skill',
-                []
-            )
 
         self.assertTrue(self.loader.load_attempted)
         self.assertTrue(self.loader.loaded)
-        self.assertLess(0, self.loader.last_loaded)
-        self.loader.instance.default_shutdown.assert_not_called()
+        self.assertEqual(100, self.loader.last_loaded)
         self.assertListEqual(
             ['mycroft.skills.loaded'],
             self.message_bus_mock.message_types
         )
+        log_messages = [
+            call.info('ATTEMPTING TO LOAD SKILL: test_skill'),
+            call.info('Skill test_skill loaded successfully')
+        ]
+        self.assertListEqual(log_messages, self.log_mock.method_calls)
 
-    def test_skill_load_failure(self):
-        self._build_skill_instance_mock()
-        self.load_skill_mock.return_value = None
-        with patch(self.mock_package + 'create_skill_descriptor') as csd_mock:
-            self.loader.load()
-            csd_mock.assert_called_once_with(str(self.skill_directory))
-            self.load_skill_mock.assert_called_once_with(
-                csd_mock.return_value,
-                self.message_bus_mock,
-                'test_skill',
-                []
-            )
+    def test_skill_load_blacklisted(self):
+        """Skill should not be loaded if it is blacklisted"""
+        self.loader.config['skills']['blacklisted_skills'] = ['test_skill']
+        self.loader.load()
 
         self.assertTrue(self.loader.load_attempted)
         self.assertFalse(self.loader.loaded)
-        self.assertEqual(0, self.loader.last_loaded)
         self.assertListEqual(
             ['mycroft.skills.loading_failure'],
             self.message_bus_mock.message_types
         )
-
-    def _build_skill_instance_mock(self):
-        self.loader.instance = Mock()
-        self.loader.instance.name = 'TestSkill'
-        self.loader.instance.reload_skill = True
-        self.loader.instance.default_shutdown = Mock()
+        log_messages = [
+            call.info('ATTEMPTING TO LOAD SKILL: test_skill'),
+            call.info(
+                'Skill test_skill is blacklisted - it will not be loaded'
+            ),
+            call.error('Skill test_skill failed to load')
+        ]
+        self.assertListEqual(log_messages, self.log_mock.method_calls)

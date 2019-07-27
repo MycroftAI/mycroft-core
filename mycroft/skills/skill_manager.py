@@ -22,12 +22,11 @@ from mycroft.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
-from .core import MainModule
 from .msm_wrapper import create_msm as msm_creator
 from .skill_loader import SkillLoader
 from .skill_updater import SkillUpdater
 
-SKILL_MAIN_MODULE = MainModule + '.py'
+SKILL_MAIN_MODULE = '__init__.py'
 
 
 class SkillManager(Thread):
@@ -118,6 +117,7 @@ class SkillManager(Thread):
         # unload the existing version from memory and reload from the disk.
         while not self._stop_event.is_set():
             self._reload_modified_skills()
+            self._load_new_skills()
             self._unload_removed_skills()
             self._update_skills()
             sleep(2)  # Pause briefly before beginning next scan
@@ -147,12 +147,14 @@ class SkillManager(Thread):
         """Handle reload of recently changed skill(s)"""
         for skill_dir in self._get_skill_directories():
             skill_loader = self.skill_loaders.get(skill_dir)
-            if skill_loader is None:
-                # Skill installed since initial load
+            if skill_loader is not None:
+                skill_loader.reload()
+
+    def _load_new_skills(self):
+        """Handle load of skills installed since startup."""
+        for skill_dir in self._get_skill_directories():
+            if skill_dir not in self.skill_loaders:
                 self._load_skill(skill_dir)
-            else:
-                # Existing skill changed
-                skill_loader.load()
 
     def _load_skill(self, skill_directory):
         try:

@@ -1,16 +1,17 @@
 import gc
+import imp
 import os
 import sys
 from time import time
 
-
 from mycroft.configuration import Configuration
 from mycroft.messagebus import Message
 from mycroft.util.log import LOG
-from .core import create_skill_descriptor, load_skill
+
+SKILL_MAIN_MODULE = '__init__.py'
 
 
-def _get_last_modified_date(path):
+def _get_last_modified_time(path):
     """Get the last modified date of the most recently updated file in a path.
 
     Exclude compiled python files, hidden directories and the settings.json
@@ -55,46 +56,63 @@ class SkillLoader:
     def config(self):
         return Configuration.get()
 
-    def load(self):
-        """Reload unloaded/changed needs if necessary.
+    @property
+    def is_blacklisted(self):
+        """Boolean value representing whether or not a skill is blacklisted."""
+        blacklist = self.config['skills'].get('blacklisted_skills', [])
+        if self.skill_id in blacklist:
+            return True
+        else:
+            return False
+
+    def reload(self):
+        """Load an unloaded skill or reload unloaded/changed needs if necessary.
 
         Returns:
              bool: if the skill was loaded/reloaded
         """
-        self.last_modified = _get_last_modified_date(self.skill_directory)
+        self.last_modified = _get_last_modified_time(self.skill_directory)
         modified = self.last_modified > self.last_loaded
         reload_allowed = (
-            self.loaded and
-            self.active and
-            self.instance.reload_skill
+                self.loaded and
+                self.active and
+                self.instance.reload_skill
         )
-        if self.loaded and modified and reload_allowed:
-            LOG.debug('Attempting to reload skill in ' + self.skill_directory)
+        if self.loaded and modified:
             if reload_allowed:
-                LOG.debug('Shutting down skill in ' + self.skill_directory)
-                self._shutdown()
-                self.loaded = False
+                LOG.info('ATTEMPTING TO RELOAD SKILL: ' + self.skill_id)
+                self._unload()
+                self._load()
             else:
-                log_msg = 'Reloading blocked for skill in {} - aborting.'
-                LOG.debug(log_msg.format(self.skill_directory))
+                log_msg = 'Reloading blocked for skill {} - aborting.'
+                LOG.info(log_msg.format(self.skill_id))
 
-        if not self.loaded or (self.loaded and modified and reload_allowed):
-            self.load_attempted = True
-            LOG.debug('Loading skill in ' + self.skill_directory)
-            self._load_skill()
-            self._communicate_load_status()
+    def load(self):
+        LOG.info('ATTEMPTING TO LOAD SKILL: ' + self.skill_id)
+        self._load()
 
-    def _shutdown(self):
+    def _unload(self):
         """Remove listeners and stop threads before loading"""
+        self._execute_instance_shutdown()
+        self._garbage_collect()
+        self.loaded = False
+        self._emit_skill_shutdown_event()
+
+    def _execute_instance_shutdown(self):
+        """Call the shutdown method of the skill being reloaded."""
         try:
             self.instance.default_shutdown()
         except Exception as e:
             log_msg = 'An error occurred while shutting down {}'
             LOG.error(log_msg.format(self.instance.name))
             LOG.exception(e)
+        else:
+            LOG.info('Skill {} shut down successfully'.format(self.skill_id))
 
+    def _garbage_collect(self):
+        """Invoke Python garbage collector to remove false references"""
         if self.config.get("debug", False):
-            gc.collect()  # Collect garbage to remove false references
+            gc.collect()
             # Remove two local references that are known
             refs = sys.getrefcount(self.instance) - 2
             if refs > 0:
@@ -103,25 +121,97 @@ class SkillLoader:
                     "remaining. The skill won't be cleaned from memory."
                 )
                 LOG.warning(log_msg.format(self.instance.name, refs))
+
+    def _emit_skill_shutdown_event(self):
         message = Message(
             "mycroft.skills.shutdown",
             data=dict(path=self.skill_directory, id=self.skill_id)
         )
         self.bus.emit(message)
 
-    def _load_skill(self):
+    def _load(self):
+        self._prepare_for_load()
+        if self.is_blacklisted:
+            self._skip_load()
+        else:
+            skill_module = self._load_skill_source()
+            if skill_module is not None:
+                self._create_skill_instance(skill_module)
+                self._check_for_first_run()
+        self._communicate_load_status()
+
+    def _prepare_for_load(self):
+        self.load_attempted = True
         self.loaded = False
-        descriptor = create_skill_descriptor(self.skill_directory)
-        blacklisted = self.config['skills'].get('blacklisted_skills', [])
-        self.instance = load_skill(
-            descriptor,
-            self.bus,
-            self.skill_id,
-            blacklisted
+        self.instance = None
+
+    def _skip_load(self):
+        log_msg = 'Skill {} is blacklisted - it will not be loaded'
+        LOG.info(log_msg.format(self.skill_id))
+
+    def _load_skill_source(self):
+        """Use Python's import library to load a skill's source code."""
+        # TODO: Replace the deprecated "imp" library with the newer "importlib"
+        module_name = self.skill_id.replace('.', '_')
+        main_file_path = os.path.join(self.skill_directory, SKILL_MAIN_MODULE)
+        try:
+            with open(main_file_path, 'rb') as main_file:
+                skill_module = imp.load_module(
+                    module_name,
+                    main_file,
+                    main_file_path,
+                    ('.py', 'rb', imp.PY_SOURCE)
+                )
+        except FileNotFoundError as f:
+            error_msg = 'Failed to load {} due to a missing file.'
+            LOG.error(error_msg.format(self.skill_id))
+            LOG.exception(f)
+        except Exception as e:
+            LOG.error("Failed to load skill: " + self.skill_id)
+            LOG.exception(e)
+
+        module_is_skill = (
+            hasattr(skill_module, 'create_skill') and
+            callable(skill_module.create_skill)
         )
-        if self.instance is not None:
-            self.loaded = True
-            self.last_loaded = time()
+        if module_is_skill:
+            return skill_module
+
+    def _create_skill_instance(self, skill_module):
+        """Use v2 skills framework to create the skill."""
+        self.instance = skill_module.create_skill()
+        self.instance.skill_id = self.skill_id
+        self.instance.settings.allow_overwrite = True
+        self.instance.settings.load_skill_settings_from_file()
+        self.instance.bind(self.bus)
+        try:
+            self.instance.load_data_files(self.skill_directory)
+            # Set up intent handlers
+            # TODO: can this be a public method?
+            self.instance._register_decorated()
+            self.instance.register_resting_screen()
+            self.instance.initialize()
+        except Exception:
+            # If an exception occurs, make sure to clean up the skill
+            self.instance.default_shutdown()
+            raise
+
+        self.loaded = True
+        self.last_loaded = time()
+
+    def _check_for_first_run(self):
+        """The very first time a skill is run, speak the intro."""
+        first_run = self.instance.settings.get(
+            "__mycroft_skill_firstrun",
+            True
+        )
+        if first_run:
+            LOG.info("First run of " + self.skill_id)
+            self.instance.settings["__mycroft_skill_firstrun"] = False
+            self.instance.settings.store()
+            intro = self.instance.get_intro_message()
+            if intro:
+                self.instance.speak(intro)
 
     def _communicate_load_status(self):
         if self.loaded:
@@ -135,10 +225,11 @@ class SkillLoader:
                 )
             )
             self.bus.emit(message)
-            self.skill_was_loaded = True
+            LOG.info('Skill {} loaded successfully'.format(self.skill_id))
         else:
             message = Message(
                 'mycroft.skills.loading_failure',
                 data=dict(path=self.skill_directory, id=self.skill_id)
             )
             self.bus.emit(message)
+            LOG.error('Skill {} failed to load'.format(self.skill_id))
