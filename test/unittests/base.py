@@ -2,7 +2,7 @@ import tempfile
 from pathlib import Path
 from shutil import rmtree
 from unittest import TestCase
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from .mocks import mock_msm, mock_config, MessageBusMock
 
