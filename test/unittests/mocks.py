@@ -3,6 +3,8 @@ from unittest.mock import Mock
 from msm import MycroftSkillsManager
 from msm.skill_repo import SkillRepo
 
+from mycroft.messagebus import MessageBusClient
+
 
 def mock_msm(temp_dir):
     """Mock the MycroftSkillsManager because it reaches out to the internet."""
