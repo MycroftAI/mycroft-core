@@ -57,12 +57,12 @@ NUM_STRING_SV = {
 NUM_POWERS_OF_TEN = [
     'hundra',
     'tusen',
-    'million',
-    'milliard',
-    'billion',
-    'billiard',
-    'trillion',
-    'trilliard'
+    'miljon',
+    'miljard',
+    'biljon',
+    'biljard',
+    'triljon',
+    'triljard'
 ]
 
 FRACTION_STRING_SV = {
@@ -87,7 +87,7 @@ FRACTION_STRING_SV = {
     20: 'tjugondel'
 }
 
-EXTRA_SPACE = ""
+EXTRA_SPACE = " "
 
 
 def nice_number_sv(number, speech, denominators):
@@ -149,28 +149,31 @@ def pronounce_number_sv(num, places=2):
     def pronounce_triplet_sv(num):
         result = ""
         num = floor(num)
+
         if num > 99:
             hundreds = floor(num / 100)
             if hundreds > 0:
                 if hundreds == 1:
-                    result += 'ett' + 'hundra' + EXTRA_SPACE
+                    result += 'ett' + 'hundra'
                 else:
-                    result += NUM_STRING_SV[hundreds] + \
-                        'hundra' + EXTRA_SPACE
-                    num -= hundreds * 100
+                    result += NUM_STRING_SV[hundreds] + 'hundra'
+
+                num -= hundreds * 100
+
         if num == 0:
             result += ''  # do nothing
         elif num == 1:
             result += 'ett'
         elif num <= 20:
-            result += NUM_STRING_SV[num] + EXTRA_SPACE
+            result += NUM_STRING_SV[num]
         elif num > 20:
             tens = num % 10
             ones = num - tens
+
             if ones > 0:
-                result += NUM_STRING_SV[ones] + EXTRA_SPACE
+                result += NUM_STRING_SV[ones]
             if tens > 0:
-                result += NUM_STRING_SV[tens] + EXTRA_SPACE
+                result += NUM_STRING_SV[tens]
 
         return result
 
@@ -199,26 +202,23 @@ def pronounce_number_sv(num, places=2):
                 if result != '':
                     result += '' + 'ett'
                 else:
-                    result += "en"
+                    result += 'en'
             elif scale_level == 1:
-                result += 'ett' + EXTRA_SPACE + 'tusen' + EXTRA_SPACE
+                result += 'ettusen' + EXTRA_SPACE
             else:
-                result += "en " + NUM_POWERS_OF_TEN[scale_level] + ' '
+                result += 'en ' + NUM_POWERS_OF_TEN[scale_level] + EXTRA_SPACE
         elif last_triplet > 1:
             result += pronounce_triplet_sv(last_triplet)
             if scale_level == 1:
                 result += 'tusen' + EXTRA_SPACE
             if scale_level >= 2:
-                result += "och" + NUM_POWERS_OF_TEN[scale_level]
+                result += NUM_POWERS_OF_TEN[scale_level]
             if scale_level >= 2:
-                if scale_level % 2 == 0:
-                    result += "er"  # MillionER
-                result += "er "  # MilliardER, MillioneER
+                result += 'er' + EXTRA_SPACE  # MiljonER
 
         num = floor(num / 1000)
         scale_level += 1
-        return pronounce_whole_number_sv(num,
-                                         scale_level) + result + EXTRA_SPACE
+        return pronounce_whole_number_sv(num, scale_level) + result
 
     result = ""
     if abs(num) >= 1000000000000000000000000:  # cannot do more than this
@@ -258,9 +258,10 @@ def pronounce_ordinal_sv(num):
 
     result = ""
     if num > 10:
-        result += pronounce_number_sv(tens)
+        result += pronounce_number_sv(tens).rstrip()
+
     if ones > 0:
-        result += ordinals[ones] + EXTRA_SPACE
+        result += ordinals[ones]
     else:
         result += 'de'
 

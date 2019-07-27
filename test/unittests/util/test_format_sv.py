@@ -59,13 +59,13 @@ NUMBERS_FIXTURE_sv = {
 
 # class TestNiceResponse(unittest.TestCase):
 #    def test_replace_ordinal(self):
-#        self.assertEqual(nice_response_da("det er den 31. maj"),
+#        self.assertEqual(nice_response_sv("det er den 31. maj"),
 #                                          "det er den enogtredifte maj")
-#        self.assertEqual(nice_response_da("Det begynder den 31. maj"),
+#        self.assertEqual(nice_response_sv("Det begynder den 31. maj"),
 #                                          "Det begynder den enogtrefte maj")
-#        self.assertEqual(nice_response_da("den 31. mai"),
+#        self.assertEqual(nice_response_sv("den 31. mai"),
 #                                         "den enogtrefte maj")
-#        self.assertEqual(nice_response_da("10 ^ 2"), "ti to")
+#        self.assertEqual(nice_response_sv("10 ^ 2"), "ti to")
 
 
 class TestNiceNumberFormat(unittest.TestCase):
@@ -99,7 +99,7 @@ class TestNiceNumberFormat(unittest.TestCase):
 
 
 class TestPronounceOrdinal(unittest.TestCase):
-    def test_convert_int_da(self):
+    def test_convert_int_sv(self):
         self.assertEqual(pronounce_ordinal_sv(0),
                          "noll")
         self.assertEqual(pronounce_ordinal_sv(1),
@@ -113,21 +113,21 @@ class TestPronounceOrdinal(unittest.TestCase):
         self.assertEqual(pronounce_ordinal_sv(2000),
                          "tvåtusende")
         self.assertEqual(pronounce_ordinal_sv(1000),
-                         "etttusende")
-#         self.assertEqual(pronounce_ordinal_da(123456),
+                         "ettusende")
+#         self.assertEqual(pronounce_ordinal_sv(123456),
 #                         "ethundredetreogtyvetusindefirehundredeseksog\
 #                          halvtresende")
 
 
 class TestPronounceNumber(unittest.TestCase):
-    def test_convert_int_da(self):
-        # self.assertEqual(pronounce_number(123456789123456789, lang="sv-se"),
-        #                 "ethundredetreogtyvebilliarder"
-        #                 "firehundredeseksoghalvtresbillioner"
-        #                 "syvhundredeogfirsmiliarder"
-        #                 "ethundredetreogtyvemillioner"
-        #                 "firehundredeseksoghalvtrestusindesyvhundredeniog \
-        #                  firs")
+    def test_convert_int_sv(self):
+        self.assertEqual(pronounce_number(123456789123456789, lang="sv-se"),
+                         "etthundratjugotrebiljarder "
+                         "fyrahundrafemtiosexbiljoner "
+                         "sjuhundraåttioniomiljarder "
+                         "etthundratjugotremiljoner "
+                         "fyrahundrafemtiosextusen "
+                         "sjuhundraåttionio")
         self.assertEqual(pronounce_number(1, lang="sv-se"), "en")
         self.assertEqual(pronounce_number(10, lang="sv-se"), "tio")
         self.assertEqual(pronounce_number(15, lang="sv-se"), "femton")
@@ -142,8 +142,10 @@ class TestPronounceNumber(unittest.TestCase):
         self.assertEqual(pronounce_number(91, lang="sv-se"), "nittioen")
         self.assertEqual(pronounce_number(97, lang="sv-se"), "nittiosju")
         self.assertEqual(pronounce_number(300, lang="sv-se"), "trehundra")
+        self.assertEqual(pronounce_number(10000001, lang="sv-se"),
+                         "tiomiljoner en")
 
-    def test_convert_negative_int_da(self):
+    def test_convert_negative_int_sv(self):
         self.assertEqual(pronounce_number(-1, lang="sv-se"),
                          "minus en")
         self.assertEqual(pronounce_number(-10, lang="sv-se"),
@@ -159,7 +161,9 @@ class TestPronounceNumber(unittest.TestCase):
         self.assertEqual(pronounce_number(-33, lang="sv-se"),
                          "minus trettiotre")
 
-    def test_convert_dacimals_da(self):
+    def test_convert_dacimals_sv(self):
+        self.assertEqual(pronounce_number(1.1, lang="sv-se", places=1),
+                         "en komma en")
         self.assertEqual(pronounce_number(1.234, lang="sv-se"),
                          "en komma två tre")
         self.assertEqual(pronounce_number(21.234, lang="sv-se"),
@@ -192,8 +196,8 @@ class TestPronounceNumber(unittest.TestCase):
 
 # def nice_time(dt, lang="sv-se", speech=True, use_24hour=False,
 #              use_ampm=False):
-class TestNiceDateFormat_da(unittest.TestCase):
-    def test_convert_times_da(self):
+class TestNiceDateFormat_sv(unittest.TestCase):
+    def test_convert_times_sv(self):
         dt = datetime.datetime(2017, 1, 31, 13, 22, 3)
 
         self.assertEqual(nice_time(dt, lang="sv-se"),
