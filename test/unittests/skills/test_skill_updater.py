@@ -17,13 +17,10 @@ import tempfile
 from os import path
 from shutil import rmtree
 from time import sleep, time
-from unittest import TestCase
 from unittest.mock import Mock, patch, PropertyMock
 
-from msm import MycroftSkillsManager
-from msm.skill_repo import SkillRepo
-from msm.util import MsmProcessLock
 from pathlib import Path
+from ..base import MycroftUnitTestBase
 
 from mycroft.skills.skill_updater import SkillUpdater
 
@@ -44,72 +41,13 @@ class MockMessageBus:
         self.event_handlers.append(event)
 
 
-class TestSkillUpdater(TestCase):
+class TestSkillUpdater(MycroftUnitTestBase):
     def setUp(self):
         self.message_bus = MockMessageBus()
         self.temp_dir = tempfile.mkdtemp()
-        self._mock_msm()
-        self._mock_config()
         self._mock_time()
         self._mock_connected()
         self._mock_dialog()
-
-    def _mock_msm(self):
-        """Define a mock object representing the MycroftSkillsManager."""
-        msm_patch = patch(MOCK_PACKAGE + 'create_msm')
-        self.addCleanup(msm_patch.stop)
-        self.create_msm_mock = msm_patch.start()
-        self.msm_mock = Mock(spec=MycroftSkillsManager)
-        self.msm_mock.skills_dir = self.temp_dir
-        self.msm_mock.platform = 'test_platform'
-        self.msm_mock.lock = MsmProcessLock()
-        self.msm_mock.repo = Mock(spec=SkillRepo)
-        self.msm_mock.repo.get_default_skill_names = Mock(
-            return_value=[
-                ('default', ['time', 'weather']),
-                ('test_platform', ['test_skill'])
-            ]
-        )
-        self.msm_mock.skills_data = dict(
-            skills=[
-                dict(name='test_skill', beta=False)
-            ]
-        )
-        skill = Mock()
-        skill.is_local = True
-        self.msm_mock.list_defaults.return_value = [skill]
-        self.create_msm_mock.return_value = self.msm_mock
-
-    def _mock_config(self):
-        """Define a mock object representing the device configuration."""
-        config_mgr_patch = patch(MOCK_PACKAGE + 'Configuration')
-        self.addCleanup(config_mgr_patch.stop)
-        self.config_mgr_mock = config_mgr_patch.start()
-        get_config_mock = Mock()
-        get_config_mock.return_value = self._build_config()
-        self.config_mgr_mock.get = get_config_mock
-
-    def _build_config(self):
-        """Build a dictionary representing device configs needed to test."""
-        return dict(
-            skills=dict(
-                msm=dict(
-                    directory='skills',
-                    versioned=True,
-                    repo=dict(
-                        cache='.skills-repo',
-                        url='https://github.com/MycroftAI/mycroft-skills',
-                        branch='19.02'
-                    )
-                ),
-                update_interval=1.0,
-                auto_update=False,
-                blacklisted_skills=[],
-                priority_skills=['foobar'],
-                upload_skill_manifest=True
-            ),
-            data_dir=self.temp_dir
-        )
 
     def _mock_connected(self):
         """Define a mock object representing the connected() function."""
