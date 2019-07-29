@@ -39,7 +39,7 @@ class TestSkillManager(MycroftUnitTestBase):
         self.skill_loader_mock.instance = Mock()
         self.skill_loader_mock.instance.default_shutdown = Mock()
         self.skill_loader_mock.instance.converse = Mock()
-        self.skill_loader_mock.id = 'test_skill'
+        self.skill_loader_mock.skill_id = 'test_skill'
         self.skill_manager.skill_loaders = {
             str(self.skill_dir): self.skill_loader_mock
         }
@@ -241,7 +241,7 @@ class TestSkillManager(MycroftUnitTestBase):
         foo_skill_loader = Mock(spec=SkillLoader)
         foo_skill_loader.instance = Mock()
         foo_skill_loader.instance.default_shutdown = Mock()
-        foo_skill_loader.id = 'foo'
+        foo_skill_loader.skill_id = 'foo'
         foo_skill_loader.active = True
         self.skill_manager.skill_loaders['foo'] = foo_skill_loader
 
@@ -278,13 +278,13 @@ class TestSkillManager(MycroftUnitTestBase):
             self.message_bus_mock.message_types
         )
 
-    def test_reload_modified_new_skill(self):
+    def test_load_newly_installed_skill(self):
         self.skill_dir.mkdir(parents=True)
         self.skill_dir.joinpath('__init__.py').touch()
         patch_obj = self.mock_package + 'SkillLoader'
         self.skill_manager.skill_loaders = {}
         with patch(patch_obj, spec=True) as loader_mock:
-            self.skill_manager._reload_modified_skills()
+            self.skill_manager._load_new_skills()
             loader_mock.load.assert_called_once()
             self.assertEqual(
                 loader_mock.return_value,

@@ -96,10 +96,9 @@ class SkillManager(Thread):
                 if not skill.is_local:
                     try:
                         skill.install()
-                    except Exception as e:
+                    except Exception:
                         log_msg = 'Downloading priority skill: {} failed'
-                        LOG.error(log_msg.format(skill_name))
-                        LOG.exception(e)
+                        LOG.exception(log_msg.format(skill_name))
                         continue
                 self._load_skill(skill.path)
             else:
@@ -161,9 +160,8 @@ class SkillManager(Thread):
             skill_loader = SkillLoader(self.bus, skill_directory)
             skill_loader.load()
             self.skill_loaders[skill_directory] = skill_loader
-        except Exception as e:
-            LOG.error('Load of skill {} failed!'.format(skill_directory))
-            LOG.exception(e)
+        except Exception:
+            LOG.exception('Load of skill {} failed!'.format(skill_directory))
 
     def _get_skill_directories(self):
         skill_glob = glob(os.path.join(self.msm.skills_dir, '*/'))
@@ -188,11 +186,11 @@ class SkillManager(Thread):
         ]
         for skill_dir in removed_skills:
             skill = self.skill_loaders[skill_dir]
-            LOG.info('removing {}'.format(skill.id))
+            LOG.info('removing {}'.format(skill.skill_id))
             try:
                 skill.instance.default_shutdown()
-            except Exception as e:
-                LOG.exception(e)
+            except Exception:
+                LOG.exception('Failed to shutdown skill ' + skill.id)
             del self.skill_loaders[skill_dir]
 
     def _update_skills(self):
@@ -214,8 +212,8 @@ class SkillManager(Thread):
                     id=skill_loader.skill_id
                 )
             self.bus.emit(Message('mycroft.skills.list', data=message_data))
-        except Exception as e:
-            LOG.exception(e)
+        except Exception:
+            LOG.exception('Failed to send skill list')
 
     def deactivate_skill(self, message):
         """Deactivate a skill."""
@@ -225,9 +223,8 @@ class SkillManager(Thread):
                     skill_loader.active = False
                     skill_loader.instance.default_shutdown()
                     break
-        except Exception as e:
-            LOG.error('Failed to deactivate ' + message.data['skill'])
-            LOG.exception(e)
+        except Exception:
+            LOG.exception('Failed to deactivate ' + message.data['skill'])
 
     def deactivate_except(self, message):
         """Deactivate all skills except the provided."""
@@ -239,14 +236,13 @@ class SkillManager(Thread):
             ]
             if skill_to_keep in loaded_skill_file_names:
                 for skill in self.skill_loaders.values():
-                    if skill.id != skill_to_keep:
+                    if skill.skill_id != skill_to_keep:
                         skill.active = False
                         skill.instance.default_shutdown()
             else:
                 LOG.info('Couldn\'t find skill ' + message.data['skill'])
-        except Exception as e:
-            LOG.error('An error occurred during skill deactivation!')
-            LOG.exception(e)
+        except Exception:
+            LOG.exception('An error occurred during skill deactivation!')
 
     def activate_skill(self, message):
         """Activate a deactivated skill."""
@@ -255,8 +251,8 @@ class SkillManager(Thread):
                 if message.data['skill'] in ('all', skill_loader.skill_id):
                     skill_loader.loaded = False
                     skill_loader.active = True
-        except Exception as e:
-            LOG.error('Couldn\'t activate skill, {}'.format(repr(e)))
+        except Exception:
+            LOG.exception('Couldn\'t activate skill')
 
     def stop(self):
         """Tell the manager to shutdown."""
@@ -267,11 +263,10 @@ class SkillManager(Thread):
             if skill_loader.instance is not None:
                 try:
                     skill_loader.instance.default_shutdown()
-                except Exception as e:
-                    LOG.error(
+                except Exception:
+                    LOG.exception(
                         'Failed to shut down skill: ' + skill_loader.skill_id
                     )
-                    LOG.exception(e)
 
     def handle_converse_request(self, message):
         """Check if the targeted skill id can handle conversation
@@ -292,8 +287,8 @@ class SkillManager(Thread):
                 try:
                     self._emit_converse_response(message, skill_loader)
                 except BaseException as e:
-                    LOG.exception(e)
                     error_message = 'exception in converse method'
+                    LOG.exception(error_message)
                     self._emit_converse_error(message, skill_id, error_message)
                 finally:
                     break
