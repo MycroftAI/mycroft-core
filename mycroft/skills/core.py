@@ -17,10 +17,6 @@
 This file is now depricated and skill should now import directly from
 mycroft.skills.
 """
-import imp
-from os.path import basename, join
-from mycroft.util.log import LOG
-
 # Import moved methods for backwards compatibility
 # This will need to remain here for quite some time since removing it
 # would break most of the skills out there.
