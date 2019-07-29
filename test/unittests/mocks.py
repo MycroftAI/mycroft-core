@@ -7,7 +7,7 @@ from msm.skill_repo import SkillRepo
 def mock_msm(temp_dir):
     """Mock the MycroftSkillsManager because it reaches out to the internet."""
     msm_mock = Mock(spec=MycroftSkillsManager)
-    msm_mock.skills_dir = temp_dir
+    msm_mock.skills_dir = str(temp_dir)
     msm_mock.platform = 'test_platform'
     msm_mock.lock = Mock()
     msm_mock.repo = Mock(spec=SkillRepo)
