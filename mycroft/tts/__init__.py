@@ -448,6 +448,8 @@ class TTSFactory:
     from mycroft.tts.google_tts import GoogleTTS
     from mycroft.tts.mary_tts import MaryTTS
     from mycroft.tts.mimic_tts import Mimic
+#    from mycroft.tts.flite_tts import Flite
+    from mycroft.tts.arabic_tts import ArabicTTS
     from mycroft.tts.spdsay_tts import SpdSay
     from mycroft.tts.bing_tts import BingTTS
     from mycroft.tts.ibm_tts import WatsonTTS
@@ -457,6 +459,8 @@ class TTSFactory:
 
     CLASSES = {
         "mimic": Mimic,
+#        "flite": Flite,
+        "arabic": ArabicTTS,
         "mimic2": Mimic2,
         "google": GoogleTTS,
         "marytts": MaryTTS,
