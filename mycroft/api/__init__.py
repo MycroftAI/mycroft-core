@@ -486,7 +486,7 @@ def has_been_paired():
 
 
 def is_paired(ignore_errors=True):
-    """ Determine if this device is actively paired with a web backend
+    """Determine if this device is actively paired with a web backend
 
     Determines if the installation of Mycroft has been paired by the user
     with the backend system, and if that pairing is still active.
@@ -501,19 +501,40 @@ def is_paired(ignore_errors=True):
         # The Mark 1 does perform a restart on RESET.
         return True
 
+    api = DeviceApi()
+    _paired_cache = api.identity.uuid and check_remote_pairing(ignore_errors)
+
+    return _paired_cache
+
+
+def check_remote_pairing(ignore_errors):
+    """Check that a basic backend endpoint accepts our pairing.
+
+    Arguments:
+        ignore_errors (bool): True if errors should be ignored when
+
+    Returns:
+        True if pairing checks out, otherwise False.
+    """
     try:
-        api = DeviceApi()
-        device = api.get()
-        _paired_cache = api.identity.uuid is not None and \
-            api.identity.uuid != ""
-        return _paired_cache
+        DeviceApi().get()
+        return True
     except HTTPError as e:
         if e.response.status_code == 401:
             return False
+        error = e
     except Exception as e:
-        LOG.warning('Could not get device info: ' + repr(e))
+        error = e
+
+    LOG.warning('Could not get device info: {}'.format(repr(error)))
+
     if ignore_errors:
         return False
-    if connected():
-        raise BackendDown
-    raise InternetDown
+
+    if isinstance(error, HTTPError):
+        if connected():
+            raise BackendDown from error
+        else:
+            raise InternetDown from error
+    else:
+        raise error
