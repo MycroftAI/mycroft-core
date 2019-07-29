@@ -120,8 +120,7 @@ class SkillLoader:
             self.instance.default_shutdown()
         except Exception as e:
             log_msg = 'An error occurred while shutting down {}'
-            LOG.error(log_msg.format(self.instance.name))
-            LOG.exception(e)
+            LOG.exception(log_msg.format(self.instance.name))
         else:
             LOG.info('Skill {} shut down successfully'.format(self.skill_id))
 
@@ -179,11 +178,9 @@ class SkillLoader:
                 )
         except FileNotFoundError as f:
             error_msg = 'Failed to load {} due to a missing file.'
-            LOG.error(error_msg.format(self.skill_id))
-            LOG.exception(f)
+            LOG.exception(error_msg.format(self.skill_id))
         except Exception as e:
-            LOG.error("Failed to load skill: " + self.skill_id)
-            LOG.exception(e)
+            LOG.exception("Failed to load skill: " + self.skill_id)
 
         module_is_skill = (
             hasattr(skill_module, 'create_skill') and
