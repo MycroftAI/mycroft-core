@@ -1,3 +1,18 @@
+# Copyright 2019 Mycroft AI Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+"""Periodically run by skill manager to load skills into memory."""
 import gc
 import imp
 import os
@@ -94,7 +109,8 @@ class SkillLoader:
     def _unload(self):
         """Remove listeners and stop threads before loading"""
         self._execute_instance_shutdown()
-        self._garbage_collect()
+        if self.config.get("debug", False):
+            self._garbage_collect()
         self.loaded = False
         self._emit_skill_shutdown_event()
 
@@ -111,16 +127,15 @@ class SkillLoader:
 
     def _garbage_collect(self):
         """Invoke Python garbage collector to remove false references"""
-        if self.config.get("debug", False):
-            gc.collect()
-            # Remove two local references that are known
-            refs = sys.getrefcount(self.instance) - 2
-            if refs > 0:
-                log_msg = (
-                    "After shutdown of {} there are still {} references "
-                    "remaining. The skill won't be cleaned from memory."
-                )
-                LOG.warning(log_msg.format(self.instance.name, refs))
+        gc.collect()
+        # Remove two local references that are known
+        refs = sys.getrefcount(self.instance) - 2
+        if refs > 0:
+            log_msg = (
+                "After shutdown of {} there are still {} references "
+                "remaining. The skill won't be cleaned from memory."
+            )
+            LOG.warning(log_msg.format(self.instance.name, refs))
 
     def _emit_skill_shutdown_event(self):
         message = Message(
