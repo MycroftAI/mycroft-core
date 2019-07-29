@@ -48,7 +48,7 @@ class ArabicTTS(TTS):
     @property
     def args(self):
         """ Build ArabicTTS arguments. """
-        args = [BIN, '-v', VOICE, DIAC, '-vol', VOL, '-s', SPEED]
+        args = [BIN, '-v', VOICE, '-d', DIAC, '-vol', VOL, '-s', SPEED]
         return args
 
     def get_tts(self, sentence, wav_file):
