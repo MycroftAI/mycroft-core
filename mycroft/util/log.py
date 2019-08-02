@@ -94,10 +94,12 @@ class LOG:
                 print('couldn\'t load {}: {}'.format(conf, str(e)))
 
         cls.level = logging.getLevelName(config.get('log_level', 'INFO'))
-        fmt = '%(asctime)s.%(msecs)03d - ' \
-              '%(name)s - %(levelname)s - %(message)s'
-        datefmt = '%H:%M:%S'
-        formatter = logging.Formatter(fmt, datefmt)
+        log_message_format = (
+            '{asctime} | {levelname:8} | {process:5} | {name} | {message}'
+        )
+
+        formatter = logging.Formatter(log_message_format, style='{')
+        formatter.default_msec_format = '%s.%03d'
         cls.handler = logging.StreamHandler(sys.stdout)
         cls.handler.setFormatter(formatter)
 
