@@ -22,6 +22,8 @@ import time
 from threading import Event
 
 import mycroft.lock
+from msm.exceptions import MsmException
+
 from mycroft import dialog
 from mycroft.api import is_paired, BackendDown, DeviceApi
 from mycroft.audio import wait_while_speaking
@@ -42,19 +44,13 @@ from .core import FallbackSkill
 from .event_scheduler import EventScheduler
 from .intent_service import IntentService
 from .padatious_service import PadatiousService
-from .skill_manager import SkillManager, MsmException
+from .skill_manager import SkillManager
 
 RASPBERRY_PI_PLATFORMS = ('mycroft_mark_1', 'picroft', 'mycroft_mark_2pi')
 ONE_HOUR = 3600
 
 
 class DevicePrimer(object):
-    """Container handling the device preparation.
-
-    Arguments:
-        message_bus_client: Bus client used to interact with the system
-        config (dict): Mycroft configuraion
-    """
     def __init__(self, message_bus_client, config):
         self.bus = message_bus_client
         self.platform = config['enclosure'].get("platform", "unknown")
@@ -213,25 +209,20 @@ def main():
     reset_sigint_handler()
     # Create PID file, prevent multiple instances of this service
     mycroft.lock.Lock('skills')
+    # Connect this Skill management process to the Mycroft message bus
     config = Configuration.get()
     # Set the active lang to match the configured one
     set_active_lang(config.get('lang', 'en-us'))
-
-    # Connect this process to the Mycroft message bus
     bus = _start_message_bus_client()
     _register_intent_services(bus)
     event_scheduler = EventScheduler(bus)
     skill_manager = _initialize_skill_manager(bus)
-
     _wait_for_internet_connection()
-
     if skill_manager is None:
         skill_manager = _initialize_skill_manager(bus)
-
     device_primer = DevicePrimer(bus, config)
     device_primer.prepare_device()
     skill_manager.start()
-
     wait_for_exit_signal()
     shutdown(skill_manager, event_scheduler)
 
@@ -271,10 +262,10 @@ def _register_intent_services(bus):
 
 
 def _initialize_skill_manager(bus):
-    """Create skill manager monitoring skills and load priority skills.
+    """Create a thread that monitors the loaded skills, looking for updates
 
     Returns:
-        SkillManager instance or None if it couldn't be initialized
+        SkillManager instance
     """
     try:
         skill_manager = SkillManager(bus)

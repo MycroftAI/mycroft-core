@@ -24,10 +24,17 @@ from datetime import datetime
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
-from mycroft.skills.skill_data import load_regex_from_file, load_regex, \
-    load_vocab_from_file, load_vocabulary
-from mycroft.skills.core import MycroftSkill, load_skill, \
-    create_skill_descriptor, open_intent_envelope, resting_screen_handler
+from mycroft.skills.skill_data import (
+    load_regex_from_file,
+    load_regex,
+    load_vocab_from_file,
+    load_vocabulary
+)
+from mycroft.skills.core import (
+    MycroftSkill,
+    open_intent_envelope,
+    resting_screen_handler
+)
 
 from test.util import base_config
 
@@ -212,14 +219,6 @@ class MycroftSkillTest(unittest.TestCase):
         m = Message("register_intent", intent.__dict__)
         unpacked_intent = open_intent_envelope(m)
         self.assertEqual(intent.__dict__, unpacked_intent.__dict__)
-
-    def test_load_skill(self):
-        """ Verify skill load function. """
-        e_path = join(dirname(__file__), 'test_skill')
-        s = load_skill(create_skill_descriptor(e_path), MockEmitter(), 847)
-        self.assertEqual(s._dir, e_path)
-        self.assertEqual(s.skill_id, 847)
-        self.assertEqual(s.name, 'LoadTestSkill')
 
     def check_detach_intent(self):
         self.assertTrue(len(self.emitter.get_types()) > 0)
