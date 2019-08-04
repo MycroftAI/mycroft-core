@@ -186,28 +186,9 @@ class DateTimeFormat:
                         formatted_hundreds=formatted_hundreds,
                         number=str(number % 10000))
 
+    """convert date to spoken Arabic format"""
     def date_format(self, dt, lang, now):
-        '''format_str = 'date_full'
-        if now:
-            if dt.year == now.year:
-                format_str = 'date_full_no_year'
-                if dt.month == now.month and dt.day > now.day:
-                    format_str = 'date_full_no_year_month'
-
-            tomorrow = now + datetime.timedelta(days=1)
-            yesterday = now - datetime.timedelta(days=1)
-            if tomorrow.date() == dt.date():
-                format_str = 'tomorrow'
-            elif now.date() == dt.date():
-                format_str = 'today'
-            elif yesterday.date() == dt.date():
-                format_str = 'yesterday'
-
-        return self.lang_config[lang]['date_format'][format_str].format(
-            weekday=self.lang_config[lang]['weekday'][str(dt.weekday())],
-            month=self.lang_config[lang]['month'][str(dt.month)],
-            day=self.lang_config[lang]['date'][str(dt.day)],
-            formatted_year=self.year_format(dt, lang, False))'''
+        """initialize arrays of the Arabic days and months"""
         days = {
     7: 'الأحد',
     1: 'الاثنين',
@@ -221,10 +202,11 @@ class DateTimeFormat:
         months = ['جانيوري', 'فبراير', 'مارس', 'أبريل', 'ماي', 'جون','جولاي', 'أوقست', 'سبتمبر', 'أكتوبر', 'نوفمبر','ديسمبر']
         year = str(dt.year)[2:]
         if now:
-
+            """save tomorrow and yesteday dates"""
             tomorrow = now + datetime.timedelta(days=1)
             yesterday = now - datetime.timedelta(days=1)
 
+            """now we check, if the given date is tomorrow then we retrieve غداً and so on"""
             if tomorrow.date() == dt.date():
                 return 'غداً'
             elif now.date() == dt.date():
@@ -234,11 +216,11 @@ class DateTimeFormat:
             if dt.year == now.year:
                 return days[dt.weekday()+1] + " "+ pronounce_number(dt.day, lang) + " " +months[dt.month-1]
                 
-
+            """if the given date is not today or tomorrow or yesteday, then we need to generate a date using the bellow line of code"""
             return days[dt.weekday()+1] + " "+ pronounce_number(dt.day, lang) + " " +months[dt.month-1] + " ألفين و" + pronounce_number(int(year), lang)
 
 
-
+    """Convert date and time into Arabic spoken format; it will concatenate the output of the two function (nice_time and date_format together)"""
     def date_time_format(self, dt, lang, now, use_24hour, use_ampm):
         date_str = self.date_format(dt, lang, now)
         time_str = nice_time(dt, lang, use_24hour=use_24hour,
@@ -314,9 +296,9 @@ def nice_number(number, lang=None, speech=True, denominators=None):
     # hopefully the STT engine will pronounce understandably.
     return str(number)
 
-
+"""convert time to spoken Arabic format"""
 def nice_time(dt, lang=None, speech=True, use_24hour=False,
-              use_ampm=False):
+              use_ampm=True):
     """
     Format a time to a comfortable human format
 
@@ -402,7 +384,7 @@ def pronounce_number(number, lang=None, places=2, short_scale=True,
     # Default to just returning the numeric value
     return str(number)
 
-
+"""convert date to spoken Arabic format"""
 def nice_date(dt, lang=None, now=None):
     """
     Format a datetime to a pronounceable date
@@ -424,13 +406,13 @@ def nice_date(dt, lang=None, now=None):
 
     return date_time_format.date_format(dt, full_code, now)
 
-
+"""convert date and time to spoken Arabic format"""
 def nice_date_time(dt, lang=None, now=None, use_24hour=False,
                    use_ampm=False):
     """
         Format a datetime to a pronounceable date and time
 
-        For example, generate 'tuesday, june the fifth, 2018 at five thirty'
+        For example, generate 'الثلاثاء ثمانية أكتوبر الساعة السابعة مساءً'
 
         Args:
             dt (datetime): date to format (assumes already in local timezone)
@@ -449,7 +431,7 @@ def nice_date_time(dt, lang=None, now=None, use_24hour=False,
 
     full_code = get_full_lang_code(lang)
     date_time_format.cache(full_code)
-
+    """it will be redirected to the function date_time_format"""
     return date_time_format.date_time_format(dt, full_code, now, use_24hour,
                                              use_ampm)
 
@@ -475,13 +457,13 @@ def nice_year(dt, lang=None, bc=False):
 
     return date_time_format.year_format(dt, full_code, bc)
 
-
+"""Convert duration to spoken Arabic words"""
 def nice_duration(duration, lang=None, speech=True):
     """ Convert duration in seconds to a nice spoken timespan
 
     Examples:
-       duration = 60  ->  "1:00" or "one minute"
-       duration = 163  ->  "2:43" or "two minutes forty three seconds"
+       duration = 60  ->  "1:00" or "دقيقة"
+       duration = 27  ->  "0:27" or "سبعة وعشرون ثانية"
 
     Args:
         duration: time, in seconds
@@ -490,33 +472,41 @@ def nice_duration(duration, lang=None, speech=True):
     Returns:
         str: timespan as a string
     """
+
+    
     if type(duration) is datetime.timedelta:
+        """convert the duration value to seconds"""
         duration = duration.total_seconds()
 
     # Do traditional rounding: 2.5->3, 3.5->4, plus this
     # helps in a few cases of where calculations generate
     # times like 2:59:59.9 instead of 3:00.
     duration += 0.5
-
+    
+    """after getting the duration in seconds, now it needs to be divided; sometimes the duration will be tranformed to one day and some hours and some minutes .. or it will be just hours or just 
+    or just minutes and so on i.e. 60 is only 1 minute so it will be دقيقة or 3660 is an hour and minute so it will be ساعة و دقيقة"""
     days = int(duration // 86400)
     hours = int(duration // 3600 % 24)
     minutes = int(duration // 60 % 60)
     seconds = int(duration % 60)
 
+    
     if speech:
         out = ""
+        """if duration has days, then we need to see how many days it has been converted to i.e. 3 then get its prounouncable number i.e. ثلاثة"""
         if days > 0:
             out += pronounce_number(days, lang) + " "
-
+            """if the duration is only one day them immidiatly just say يوم"""
             if days == 1:
                 out = _translate_word("يوم", lang)
+            #if the duration is only one day them immidiatly just say يومان
             elif days == 2:
                 out = _translate_word("يومان", lang)
             elif days >2 and days <11:
                 out += _translate_word("أيام", lang)
             else:
                 out += _translate_word("يوم", lang)
-            
+        """if duration has hours, then we need to see how many hours it has to i.e. 3 then get its prounouncable number i.e. ثلاثة"""
         if hours > 0:
             if out:
                 out += " "
@@ -560,7 +550,7 @@ def nice_duration(duration, lang=None, speech=True):
                 out+= _translate_word("ثواني", lang)
             else:
                 out+= _translate_word("ثانية", lang)
-            
+    #if we do not need mycroft to speak the duration to the user then just display it in it standard format      
     else:
         # M:SS, MM:SS, H:MM:SS, Dd H:MM:SS format
         out = ""
