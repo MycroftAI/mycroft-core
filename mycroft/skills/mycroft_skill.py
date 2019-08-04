@@ -175,6 +175,15 @@ class MycroftSkill:
         bus (MycroftWebsocketClient): Optional bus connection
         use_settings (bool): Set to false to not use skill settings at all
     """
+    properties = (
+        'enclosure',
+        'bus',
+        'config',
+        'location',
+        'location_pretty',
+        'location_timezone',
+        'lang'
+    )
 
     def __init__(self, name=None, bus=None, use_settings=True):
         self.name = name or self.__class__.__name__
@@ -563,24 +572,25 @@ class MycroftSkill:
         """
         attributes = [a for a in dir(self)]
         for attr_name in attributes:
-            method = getattr(self, attr_name)
+            if attr_name not in self.properties:
+                method = getattr(self, attr_name)
 
-            if hasattr(method, 'resting_handler'):
-                self.resting_name = method.resting_handler
-                self.log.info('Registering resting screen {} for {}.'.format(
-                              method, self.resting_name))
+                if hasattr(method, 'resting_handler'):
+                    self.resting_name = method.resting_handler
+                    self.log.info('Registering resting screen {} for {}.'.format(
+                                  method, self.resting_name))
 
-                # Register for handling resting screen
-                msg_type = '{}.{}'.format(self.skill_id, 'idle')
-                self.add_event(msg_type, method)
-                # Register handler for resting screen collect message
-                self.add_event('mycroft.mark2.collect_idle',
-                               self._handle_collect_resting)
+                    # Register for handling resting screen
+                    msg_type = '{}.{}'.format(self.skill_id, 'idle')
+                    self.add_event(msg_type, method)
+                    # Register handler for resting screen collect message
+                    self.add_event('mycroft.mark2.collect_idle',
+                                   self._handle_collect_resting)
 
-                # Do a send at load to make sure the skill is registered
-                # if reloaded
-                self._handle_collect_resting()
-                return
+                    # Do a send at load to make sure the skill is registered
+                    # if reloaded
+                    self._handle_collect_resting()
+                    return
 
     def _register_decorated(self):
         """Register all intent handlers that are decorated with an intent.
@@ -590,15 +600,16 @@ class MycroftSkill:
         """
         attributes = [a for a in dir(self)]
         for attr_name in attributes:
-            method = getattr(self, attr_name)
+            if attr_name not in self.properties:
+                method = getattr(self, attr_name)
 
-            if hasattr(method, 'intents'):
-                for intent in getattr(method, 'intents'):
-                    self.register_intent(intent, method)
+                if hasattr(method, 'intents'):
+                    for intent in getattr(method, 'intents'):
+                        self.register_intent(intent, method)
 
-            if hasattr(method, 'intent_files'):
-                for intent_file in getattr(method, 'intent_files'):
-                    self.register_intent_file(intent_file, method)
+                if hasattr(method, 'intent_files'):
+                    for intent_file in getattr(method, 'intent_files'):
+                        self.register_intent_file(intent_file, method)
 
     def translate(self, text, data=None):
         """Load a translatable single string resource
