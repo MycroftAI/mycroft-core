@@ -69,7 +69,7 @@ def pronounce_number_ar(num, places=2, short_scale=True, scientific=False):
     """
     Convert a number to its spoken equivalent
 
-    For example, '5.2' would return 'five point two'
+    For example, '28' would return 'ثمانية وعشرون'
 
     Args:
         num(float or int): the number to pronounce (under 100)
@@ -223,6 +223,7 @@ def pronounce_number_ar(num, places=2, short_scale=True, scientific=False):
             place *= 10
             places -= 1
 
+    """if not أحد عشر، اثنا عشر then they must be two words which need to be conctenated with و i.e. تسعة (و) عشرون"""
     if result:
         splitted = result.split()
         if(len(splitted) >1):
@@ -231,11 +232,11 @@ def pronounce_number_ar(num, places=2, short_scale=True, scientific=False):
     return result
 
 
-def nice_time_ar(dt, speech=True, use_24hour=False, use_ampm=False):
+def nice_time_ar(dt, speech=True, use_24hour=False, use_ampm=True):
     """
-    Format a time to a comfortable human format
+    Format a time to a comfortable spoken format
 
-    For example, generate 'five thirty' for speech or '5:30' for
+    For example, generate 'السابعة وثلاثة عشر دقيقة' for speech or '7:13' for
     text display.
 
     Args:
@@ -283,13 +284,17 @@ def nice_time_ar(dt, speech=True, use_24hour=False, use_ampm=False):
             else:
                 speak += pronounce_number_ar(int(string[3:5]))
         return speak
-    else:
+    #In our version we do not use 24hours, but we can change it, so we will us this part of the code
+    else: 
+        """check if the given time is zeros, 00:00, then it is 12 a.m"""
         if dt.hour == 0 and dt.minute == 0:
             return "الساعة الثانية عشر صباحاً"
+        """check if the given time is 12:00, then it is 12 pm"""
         if dt.hour == 12 and dt.minute == 0:
             return "الساعة الثانية عشر ظهراً"
-        # TODO: "half past 3", "a quarter of 4" and other idiomatic times
-
+       
+         #else (having another cases than the above), then first check the hours, and based on its value send it the pronounce hour function to return the number in digit and concatenate it 
+         #with الساعة i.e. if hours = 11, then it will be الساعة الحادية عشر
         if dt.hour == 0:
             speak = "الساعة "+ pronounce_hour_ar(12)
         elif dt.hour < 13:
@@ -297,6 +302,7 @@ def nice_time_ar(dt, speech=True, use_24hour=False, use_ampm=False):
         else:
             speak = "الساعة "+ pronounce_hour_ar(dt.hour - 12)
 
+        """now complete checking the minutes, we might have minutes vaue as well, do the same thing and concatente it with the previous value, i.e. it will be الساعة الحادية عشر ودقيقتان"""
         if dt.minute == 0:
             if not use_ampm:
                 return speak 
@@ -306,22 +312,22 @@ def nice_time_ar(dt, speech=True, use_24hour=False, use_ampm=False):
                     speak += " و دقيقة"
                 if dt.minute ==2:
                     speak += " و دقيقتان"
-                else:
+                elif dt.minute >2 and dt.minute < 11:
                     speak += " و" + pronounce_number_ar(dt.minute) + "دقائق"
             else:
                 speak += " و" + pronounce_number_ar(dt.minute) + " دقيقة "
 
                 
-
+        """when complete converting the hours and minutes to spoken form, now we need to indicate if it is a.m or p.m and add to the string مساءً - صباحاً"""
         if use_ampm:
             if dt.hour > 11:
-                speak += "مساءً"
+                speak += " "+"مساءً"
             else:
-                speak += "صباحاً"
+                speak += " "+"صباحاً"
 
         return speak
 
-
+"""Hours in Arabic have differend prnouncation i.e. الثانية instead of اثنين"""
 def pronounce_hour_ar (num):
 
     hour_names = _NUM_HOUR_AR.copy()
