@@ -25,7 +25,7 @@ from mycroft.configuration import Configuration
 from mycroft.util import connected
 from mycroft.util.combo_lock import ComboLock
 from mycroft.util.log import LOG
-from .msm_wrapper import create_msm
+from .msm_wrapper import build_msm_config, create_msm
 
 ONE_HOUR = 3600
 FIVE_MINUTES = 300  # number of seconds in a minute
@@ -33,15 +33,14 @@ FIVE_MINUTES = 300  # number of seconds in a minute
 
 class SkillUpdater:
     _installed_skills_file_path = None
+    _msm = None
 
-    def __init__(self, bus):
+    def __init__(self):
         """Constructor
 
         Arguments
             bus (MessageBusClient): Used to communicate events to the bus.
         """
-        self.bus = bus
-        self.msm = create_msm(self.config)
         self.msm_lock = ComboLock('/tmp/mycroft-msm.lck')
         self.install_retries = 0
         update_interval = self.config['skills']['update_interval']
@@ -93,6 +92,14 @@ class SkillUpdater:
                 )
 
         return self._installed_skills_file_path
+
+    @property
+    def msm(self):
+        if self._msm is None:
+            msm_config = build_msm_config(self.config)
+            self._msm = create_msm(msm_config)
+
+        return self._msm
 
     @property
     def default_skill_names(self) -> tuple:
@@ -167,7 +174,7 @@ class SkillUpdater:
             num_threads = 20 if not defaults or quick else 2
             self.msm.apply(
                 self.install_or_update,
-                self.msm.list(),
+                self.msm.all_skills,
                 max_threads=num_threads
             )
             self.post_manifest()
