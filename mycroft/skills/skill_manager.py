@@ -22,7 +22,7 @@ from mycroft.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
-from .msm_wrapper import create_msm as msm_creator
+from .msm_wrapper import create_msm as msm_creator, build_msm_config
 from .skill_loader import SkillLoader
 from .skill_updater import SkillUpdater
 
@@ -30,6 +30,8 @@ SKILL_MAIN_MODULE = '__init__.py'
 
 
 class SkillManager(Thread):
+    _msm = None
+
     def __init__(self, bus):
         """Constructor
 
@@ -43,10 +45,9 @@ class SkillManager(Thread):
         self.skill_loaders = {}
         self.enclosure = EnclosureAPI(bus)
         self.initial_load_complete = False
-        self.msm = self.create_msm()
         self.num_install_retries = 0
         self._define_message_bus_events()
-        self.skill_updater = SkillUpdater(self.bus)
+        self.skill_updater = SkillUpdater()
         self.daemon = True
 
     def _define_message_bus_events(self):
@@ -76,9 +77,21 @@ class SkillManager(Thread):
     def skills_config(self):
         return Configuration.get()['skills']
 
+    @property
+    def msm(self):
+        if self._msm is None:
+            msm_config = build_msm_config(self.config)
+            self._msm = msm_creator(msm_config)
+
+        return self._msm
+
     @staticmethod
     def create_msm():
-        return msm_creator(Configuration.get())
+        LOG.debug('instantiating msm via static method...')
+        msm_config = build_msm_config(Configuration.get())
+        msm_instance = msm_creator(msm_config)
+
+        return msm_instance
 
     def schedule_now(self, _):
         self.skill_updater.next_download = time() - 1
@@ -88,7 +101,7 @@ class SkillManager(Thread):
         self.skill_updater.post_manifest()
 
     def load_priority(self):
-        skills = {skill.name: skill for skill in self.msm.list()}
+        skills = {skill.name: skill for skill in self.msm.skill_list}
         priority_skills = self.skills_config.get("priority_skills", [])
         for skill_name in priority_skills:
             skill = skills.get(skill_name)
