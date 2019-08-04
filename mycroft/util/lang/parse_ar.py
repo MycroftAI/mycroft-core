@@ -609,64 +609,13 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
                                         short_scale, ordinals).value
 
 
-def extract_duration_en(text):
-    """
-    Convert an english phrase into a number of seconds
 
-    Convert things like:
-        "10 minute"
-        "2 and a half hours"
-        "3 days 8 hours 10 minutes and 49 seconds"
-    into an int, representing the total number of seconds.
-
-    The words used in the duration will be consumed, and
-    the remainder returned.
-
-    As an example, "set a timer for 5 minutes" would return
-    (300, "set a timer for").
-
-    Args:
-        text (str): string containing a duration
-
-    Returns:
-        (timedelta, str):
-                    A tuple containing the duration and the remaining text
-                    not consumed in the parsing. The first value will
-                    be None if no duration is found. The text returned
-                    will have whitespace stripped from the ends.
-    """
-    if not text:
-        return None
-
-    time_units = {
-        'microseconds': None,
-        'milliseconds': None,
-        'seconds': None,
-        'minutes': None,
-        'hours': None,
-        'days': None,
-        'weeks': None
-    }
-
-    pattern = r"(?P<value>\d+(?:\.?\d+)?)\s+{unit}s?"
-    text = _convert_words_to_numbers(text)
-
-    for unit in time_units:
-        unit_pattern = pattern.format(unit=unit[:-1])  # remove 's' from unit
-        matches = re.findall(unit_pattern, text)
-        value = sum(map(float, matches))
-        time_units[unit] = value
-        text = re.sub(unit_pattern, '', text)
-
-    text = text.strip()
-    duration = timedelta(**time_units) if any(time_units.values()) else None
-
-    return (duration, text)
 
 def extract_duration_ar(text):
     """
-    Convert an arabic phrase into a number of seconds
-
+    Convert an arabic phrase (duration in spoken format) into a duration in a format of (number of seconds)
+    i.e.ابدأ المؤقت لمدة سبعة وعشرين دقيقة 
+    will be extracted as 27 minutes and then converted to 1620 seconds
     """
     if not text:
         return None
@@ -681,31 +630,44 @@ def extract_duration_ar(text):
         'weeks': 0
     }
 
-
+    """Remove white spaces from the given text"""
     text = text.lstrip()
+    """Split the text into array of words"""
     words = text.split()
-    
 
+    """Replace Haa and Alef letters to one format to easily deal with it i.e. ساعة to ساعه and أربع to اربع"""
+    for i, word in enumerate(words):
+        word = word.replace('ة','ه')
+        word = word.replace('أ','ا')
+        word = word.replace('إ','ا')
+        word = word.replace('آ','ا')
+        words[i] = word
+    
+    """Iterate over the array and extract the duration then parse it to seconds and return back the value"""
     for idx, word in enumerate(words):
 
         wordPrevPrev = words[idx - 2] if idx > 1 else ""
 
         wordPrev = words[idx - 1] if idx > 0 else ""
 
+        # parse ساعه، ساعتين، اربع ساعات، نص - ربع ساعه
         if word == "ساعه":
-            if wordPrev and wordPrev == "نص":
+            if wordPrev and (wordPrev == "نص" or wordPrev == "نصف"):
                 time_units['minutes'] = 30
             elif wordPrev and wordPrev == "ربع":
                 time_units['mintues'] = 15
-            elif wordPrev and wordPrev != "ربع" and wordPrev !="نص":
+            elif wordPrev and wordPrev != "ربع" and (wordPrev !="نص" or word != "نصف"):
+                """the wordPrev might not be نص أو ربع it might be أربع، خمس ....so it needs to be sent to the normalize function to return its value in digit i.e. أربع to 4"""
                 time_units['hours'] = int(normalize_ar(wordPrev))
             else:
                 time_units['minutes'] = 60
+        elif word == "ساعتين":
+            time_units['minutes'] = 120
         elif word == "ساعات":
             if wordPrev:
                 time_units['hours'] = int(normalize_ar(wordPrev))
 
-        # parse minute, 2 minutes
+        # parse دقيقه، دقيقتين، خمس دقايق
         elif word == "دقيقه":
             if wordPrev:
                 if wordPrevPrev:
@@ -718,11 +680,11 @@ def extract_duration_ar(text):
         elif word == "دقيقتين":
                 time_units['minutes'] = 2
 
-        elif word == "دقايق":
+        elif word == "دقايق" or word == "دقائق":
             if wordPrev:
                 time_units['minutes'] = int(normalize_ar(wordPrev))
 
-        # parse second, 2 seconds
+        # parse ثانيه، ثانيتين، اربع ثواني
         elif word == "ثانيه":
             if wordPrev:
                 if wordPrevPrev:
@@ -739,32 +701,24 @@ def extract_duration_ar(text):
             if wordPrev:
                 time_units['seconds'] = int(normalize_ar(wordPrev))
 
-
+    """When the duration ectracted as number of hours or minutes or seconds, this function will be used to convert the duration to seconds"""
     duration = timedelta(**time_units) if any(time_units.values()) else None
 
     return (duration, text)
 
 
 def extract_datetime_ar(string, dateNow, default_time):
-    """ Convert a human date reference into an exact datetime
+    """ Convert a human date or datetime into an exact datetime
 
-    Convert things like
-        "today"
-        "tomorrow afternoon"
-        "next Tuesday at 4pm"
-        "August 3rd"
-    into a datetime.  If a reference date is not provided, the current
-    local time is used.  Also consumes the words used to define the date
-    returning the remaining string.  For example, the string
-       "what is Tuesday's weather forecast"
-    returns the date for the forthcoming Tuesday relative to the reference
-    date and the remainder string
-       "what is weather forecast".
+    Convert things like: اليوم - بكره - الأحد الجاي - الساعة أربعة العصر اليوم - سبعة الليل بتاريخ ثمانية أكتوبر
+
+    into a datetime format 2019 10 08:07 00 00.  If a reference date is not provided, the current
+    local date is used i.e. ذكرني أروح الساعة أربعه العصر it will set the date to today at 4:00 pm or if the time is passed then it will be tomorrow at 4:00. 
 
     Args:
-        string (str): string containing date words
+        string (str): string containing datetime words
         dateNow (datetime): A reference date/time for "tommorrow", etc
-        default_time (time): Time to set if no time was found in the string
+        default_time (time): Time to set if no time was found in the string (we can use a defualt time also along with the default date)
 
     Returns:
         [datetime, str]: An array containing the datetime and the remaining
@@ -773,7 +727,7 @@ def extract_datetime_ar(string, dateNow, default_time):
     """
 
 
-
+    """this function will be used after extracting the datetime from the given text, to check if we found a datetime, then we complete to parse it the datetime format, if not then return ZEROs"""
     def date_found():
         return found or \
                (
@@ -786,7 +740,10 @@ def extract_datetime_ar(string, dateNow, default_time):
 
     if string == "" or not dateNow:
         return None
+
+
     
+    """Initializing variables"""
     found = False
     daySpecified = False
     dayOffset = False
@@ -798,23 +755,34 @@ def extract_datetime_ar(string, dateNow, default_time):
     datestr = ""
     hasYear = False
     timeQualifier = ""
-
-    timeQualifiersAM = ['الصباح','الفجر']
-    timeQualifiersPM = ['الظهر', 'العصر', 'المغرب','الليل']
+    timeQualifiersAM = ['فجرا','صباحا','الصباح','الفجر','الصبح']
+    timeQualifiersPM = ['الظهر', 'العصر', 'المغرب','الليل','ظهرا','عصرا','ليلا']
     timeQualifiersList = set(timeQualifiersAM + timeQualifiersPM)
     days = ['الاحد', 'الاثنين', 'الثلاثاء','الاربعاء', 'الخميس', 'الجمعه','السبت']
     ArabicMonths = ['جانيوري', 'فبراير', 'مارس', 'ابريل', 'ماي', 'جون','جولاي', 'اوقست', 'سبتمبر', 'اكتوبر', 'نوفمبر','ديسمبر']
     months = ['january', 'february', 'march', 'april', 'may', 'june','july', 'august', 'september', 'october',  'november','december']
-    monthsShort = ['','']
     todayWords = ['اليوم','الليله']
     tomorrowWords = ['غدا','بكره']
     
 
-    
+
+    """Remove white spaces from the given text"""
     string = string.lstrip()
+    """Split the text into array of words"""
     words = string.split()
     
-
+    """Replace Haa and Alef letters to one format to easily deal with it i.e. ساعة to ساعه and أربع to اربع"""
+    for i, word in enumerate(words):
+        word = word.replace('ة','ه')
+        word = word.replace('أ','ا')
+        word = word.replace('إ','ا')
+        word = word.replace('آ','ا')
+        words[i] = word
+        
+        
+    """Iterate through the array and extract the date from the given text (we did not parse it yet, just extract it and save its value in the variables; consider it as a preparation phase before 
+    the real parsing"""
+    # parse date
     for idx, word in enumerate(words):
         if word == "":
             continue
@@ -827,7 +795,8 @@ def extract_datetime_ar(string, dateNow, default_time):
         used = 0
 
 
-        # parse today, tomorrow, day after tomorrow
+        # parse اليوم، بكره
+        """If the word is today, then the dayOffset is Zero, it means to need to increment the date"""
         if word in todayWords and not fromFlag:
             dayOffset = 0
             used += 1
@@ -835,33 +804,33 @@ def extract_datetime_ar(string, dateNow, default_time):
             dayOffset = 1
             used += 1
               
-        # parse Monday, Tuesday, etc., and next Monday,
-        # last Tuesday, etc.
+        # parse الأحد، الاثنين،... الجمعة
+        #If the day is a weekday, then get its index from the array of the days and subtract it from today i.e. if the day is today then 0-0=0 it will be today, if tomorrow then, 1-0=0
         elif word in days and not fromFlag:
             d = days.index(word)
             dayOffset = (d) - int(today)
-            totest = dayOffset
             used = 1
+            """if for example today is tuesday ( index 2) and the day is next sunday (index 0), then the dayOffset is 0-2 = -2 (to solve that we add 7 to it)"""
             if dayOffset <= 0:
                 dayOffset += 7
 
-         # parse 15 of July, June 20th, Feb 18, 19 of February
+         # parse ثمانية أكتوبر
+        #if the word is a month i.e. اكتوبر then we rteieve its index from the array, then we get the English word from from the other array (because the parsin function can only work with the 
+        #English monoths
         elif word in ArabicMonths and not fromFlag:
 
             m = ArabicMonths.index(word)
-
             datestr = months[m]
             if wordPrev:
+                """if there is a number before the month, then get its digit format from the normalize function and concatenating them together"""
                 number=normalize_ar(wordPrev)
                 datestr += " "+ number
                 used += 1
                 start -= 1
 
-
-
-
-       
-
+     
+    """Iterate through the array and extract the time from the given text (we did not parse it yet, just extract it and save its value in the variables; consider it as a preparation phase before 
+    the real parsing"""
     # parse time
     hrOffset = 0
     minOffset = 0
@@ -879,46 +848,51 @@ def extract_datetime_ar(string, dateNow, default_time):
         wordNext = words[idx + 1] if idx + 1 < len(words) else ""
         wordNextNext = words[idx + 2] if idx + 2 < len(words) else ""
         
-        # parse noon, midnight, morning, afternoon, evening
+        # parse الظهر، الصباح، العصر، الليل
         used = 0
+        
         if word in timeQualifiersAM:
+            """if we say ذكرني اروح الساعه سبعه الصباح it will convert the previous word of الصباح to 7"""
             if wordPrev and not ':' in wordPrev:
                 hrAbs = int(normalize_ar(wordPrev))
                 used += 1
+            #if we say ذكرني اروح على الصباح it will convert the previous word of الصباح to 8 the defualt value, becaue the user did not specify exact time
+            elif word == "الصباح" or word == "صباحا" or word == "الصبح":
+                if hrAbs is None:
+                    hrAbs = 8
+                used += 1
         elif word in timeQualifiersPM:
+            """if we say ذكرني اروح الساعه سبعه الليل it will convert the previous word of الليل to 7+12 = 19"""
             if wordPrev and not ':' in wordPrev:
                 hrAbs = int(normalize_ar(wordPrev))+12
                 used += 1
+            #if we say ذكرني اروح على الظهر - العصر it will convert the previous word of الظهر to 12 the defualt value, becaue the user did not specify exact time
+            elif word == "الظهر" or word == "ظهرا":
+                hrAbs = 12
+                used += 1
+            elif word == "العصر" or word == "عصرا":
+                if hrAbs is None:
+                    hrAbs = 16
+                used += 1
+            elif word == "الليل" or word == "ليلا":
+                if hrAbs is None:
+                    hrAbs = 20
+                used += 1
 
-        # parse noon, midnight, morning, afternoon, evening
-        used = 0
-        if word == "الظهر":
-            hrAbs = 12
-            used += 1
-        elif word == "الصباح":
-            if hrAbs is None:
-                hrAbs = 8
-            used += 1
-        elif word == "العصر":
-            if hrAbs is None:
-                hrAbs = 15
-            used += 1
-        elif word == "الليل":
-            if hrAbs is None:
-                hrAbs = 19
-            used += 1
        
-        # parse half an hour, quarter hour
-        elif word == "ساعه":
-            if wordPrev and wordPrev == "نص":
+        # parse نص ساعة، ربع ساعة
+        if word == "ساعه":
+            """if it iterate over the array and find the word ساعه then it will see its previous word, if it is نص the minutesOffset will be 30 and so on"""
+            if wordPrev and (wordPrev == "نص" or wordPrev =="نصف"):
                 minOffset = 30
             elif wordPrev and wordPrev == "ربع":
                 minOffset = 15
             else:
                 minOffset = 60
 
-        # parse minute, 2 minutes
+        # parse دقيقة، دقيقتين، أربع دقايق
         elif word == "دقيقه":
+            """if it iterate over the array and find the word دقيقه then it will see its previous word i.e. ثلاث the minutesOffset will be given the normalized format of it (digit)"""
             if wordPrev:
                 if wordPrevPrev:
                     minOffset = int(normalize_ar(wordPrevPrev+' '+wordPrev))
@@ -930,11 +904,11 @@ def extract_datetime_ar(string, dateNow, default_time):
         elif word == "دقيقتين":
                 minOffset = 2
 
-        elif word == "دقايق":
+        elif word == "دقايق" or word =="دقائق":
             if wordPrev:
                 minOffset = int(normalize_ar(wordPrev))
 
-        # parse second, 2 seconds
+        # parse ثانية، ثانيتين، خمس ثواني
         elif word == "ثانيه":
             if wordPrev:
                 if wordPrevPrev:
@@ -952,49 +926,8 @@ def extract_datetime_ar(string, dateNow, default_time):
                 secOffset = int(normalize_ar(wordPrev))
 
   
-            # parse 5:00 am, 12:00 p.m., etc
-
-        elif word[0].isdigit():
-            isTime = True
-            strHH = ""
-            strMM = ""
-            if ':' in word:
-                # parse colons
-                # "3:00 in the morning"
-                stage = 0
-                length = len(word)
-                for i in range(length):
-                    if stage == 0:
-                        if word[i].isdigit():
-                            strHH += word[i]
-                        elif word[i] == ":":
-                            stage = 1
-
-                    elif stage == 1:
-                        if word[i].isdigit():
-                            strMM += word[i]
-
-
-                if wordNext in timeQualifiersPM:
-                    if(strHH != 12 and wordNext != "الظهر"):
-                        strHH = int(strHH)+12
-                        used += 1
-
-            else:
-               isTime=false
-
-
-            HH = int(strHH) if strHH else 0
-            MM = int(strMM) if strMM else 0
-
-  
-            if isTime:
-                hrAbs = HH
-                minAbs = MM
-                used += 1
-
-       
-
+      
+    """after extracting the date and time and preparing them and storing into the variable, now the real parsing will start here"""
     # check that we found a date
     if not date_found:
         return None
@@ -1127,22 +1060,33 @@ def extract_numbers_en(text, short_scale=True, ordinals=False):
 
 
 def normalize_ar(text):
-    """ English string normalization """
+    """ Arabic string normalization, convert the spoken number to digit format, i.e. سبعة وعشرين to 27"""
 
+    """numers in الفصحى"""
+    Standard1 = ["صفر", "الواحده", "الثانيه", "الثالثه", "الرابعه", "الخامسه", "السادسه", "السابعه", "الثامنه", "التاسعه", "العاشره", "الحاديه عشر", "الثانيه عشر", "ثلاثه عشر", "اربعه عشر", "خمسه عشر", "سته عشر",
+                       "سبعه عشر", "ثمانيه عشر", "تسعه عشر", "عشرون","واحد وعشرون","اثنان وعشرون","ثلاثه وعشرون","اربعه وعشرون","خمسه وعشرون","سته وعشرون","سبعه وعشرون","ثمانيه وعشرون","تسعه وعشرون","ثلاثين","واحد وثلاثون","اثنان وثلاثون","ثلاثه وثلاثون","اربعه وثلاثون","خمسه وثلاثون","سته وثلاثون","سبعه وثلاثون","ثمانيه وثلاثون","تسعه وثلاثون","اربعون","واحد واربعون","اثنان واربعون","ثلاثه واربعون","اربعه واربعون","خمسه واربعون","سته واربعون","سبعه واربعون","ثمانيه واربعون","تسعه واربعون","خمسون","واحد وخمسون","اثنان وخمسون","ثلاثه وخمسون","اربعه وخمسون","خمسه وخمسون","سته وخمسون","سبعه وخمسون","ثمانيه وخمسون","تسعه وخمسون","ستون"]
+   
+    Standard2 = ["احد عشر","اثنا عشر"]
 
-        # Convert numbers into digits, e.g. "two" -> "2"
-    textNumbers1 = ["صفر", "واحد", "اثنين", "ثلاثه", "اربعه", "خمسه", "سته",
-                       "سبعه", "ثمانيه", "تسعه", "عشره", "احدعش", "اثنعش",
-                       "ثلاثطعش", "اربعطعش", "خمسطعش", "ستطعش",
-                       "سبعطس", "ثمانطعش", "تسعطعش", "عشرين","واحد وعشرين","اثنين وعشرين","ثلاث وعشرين","اربع وعشرين","خمس وعشرين","ست وعشرين","سبعه وعشرين","ثمانيه وعشرين","تسعه وعشرين","ثلاثين","واحد وثلاثين","اثنين وثلاثين","ثلاث وثلاثين","اربع وثلاثين","خمس وثلاثين","ست وثلاثين","سبعه وثلاثين","ثمانيه وثلاثين","تسعه وثلاثين","اربعين","واحر واربعين","اثنين واربعين","ثلاث واربعين","اربعه واربعين","خمسه واربعين","سته واربعين","سبعه واربعين","ثمانيه واربعين","تسعه واربعين","خمسين","واحد وخمسين","اثنين وخمسين","ثلاثه وخمسين","اربعه وخمسين","خمسه وخمسين","سته وخمسين","سبعه وخمسين","ثمانيه وخمسين","تسعه وخمسين","ستين"]
+    """numers in العامية"""
+    Dialect = ["صفر", "وحده", "ثنتين", "ثلاثه", "اربعه", "خمسه", "سته", "سبعه", "ثمانيه", "تسعه", "عشره", "احدعش", "اثنعش", "ثلاث طعش", "اربع طعش", "خمس طعش", "ست طعش",
+                       "سبع طش", "ثمان طعش", "تسع طعش", "عشرين","واحد وعشرين","اثنين وعشرين","ثلاثه وعشرين","اربعه وعشرين","خمسه وعشرين","سته وعشرين","سبعه وعشرين","ثمانيه وعشرين","تسعه وعشرين","ثلاثين","واحد وثلاثين","اثنين وثلاثين","ثلاثه وثلاثين","اربعه وثلاثين","خمسه وثلاثين","سته وثلاثين","سبعه وثلاثين","ثمانيه وثلاثين","تسعه وثلاثين","اربعين","واحد واربعين","اثنين واربعين","ثلاثه واربعين","اربعه واربعين","خمسه واربعين","سته واربعين","سبعه واربعين","ثمانيه واربعين","تسعه واربعين","خمسين","واحد وخمسين","اثنين وخمسين","ثلاثه وخمسين","اربعه وخمسين","خمسه وخمسين","سته وخمسين","سبعه وخمسين","ثمانيه وخمسين","تسعه وخمسين","ستين"]
+    """some numbers can say by the user without Haa letter"""
+    NormalizedDialect = ["صفر", "واحد", "اثنين", "ثلاث", "اربع", "خمس", "ست", "سبع", "ثمان", "تسع", "عشر"]
 
-    textNumbers2 = ["صفر", ",وحده", "ثنتين", "ثلاث", "اربع", "خمس", "ست",
-                       "سبع", "ثمان", "تسع", "عشر"]
+    
 
-    if text in textNumbers1:
-        word = str(textNumbers1.index(text))
-    elif text in textNumbers2:
-        word = str(textNumbers2.index(text))
+    """the given text (number) will be searched over these arrays, if the number is found, then the index of it will be return (which represent the number in digit"""
+    if text in Standard1:
+        word = str(Standard1.index(text))
+    elif text in Standard2:
+        word = str(Standard1.index(text)+10)
+    elif text in Dialect:
+        word = str(Dialect.index(text))
+    elif text in NormalizedDialect:
+        word = str(NormalizedDialect.index(text))
+    else:
+        word = text
 
 
     
