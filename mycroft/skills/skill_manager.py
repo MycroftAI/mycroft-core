@@ -101,7 +101,7 @@ class SkillManager(Thread):
         self.skill_updater.post_manifest()
 
     def load_priority(self):
-        skills = {skill.name: skill for skill in self.msm.skill_list}
+        skills = {skill.name: skill for skill in self.msm.all_skills}
         priority_skills = self.skills_config.get("priority_skills", [])
         for skill_name in priority_skills:
             skill = skills.get(skill_name)
