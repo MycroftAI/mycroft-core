@@ -169,7 +169,7 @@ class SkillUpdater:
         try:
             # Determine if all defaults are installed
             defaults = all(
-                [s.is_local for s in self.msm.list_defaults()]
+                [s.is_local for s in self.msm.default_skills.values()]
             )
             num_threads = 20 if not defaults or quick else 2
             self.msm.apply(
