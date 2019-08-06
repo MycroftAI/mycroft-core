@@ -220,7 +220,7 @@ class MycroftSkill:
         # TODO: 19.08 - Remove
         self._config = self.config_core.get(self.name) or {}
         self.dialog_renderer = None
-        self.root_dir = None  #: skill root directory
+        self.root_dir = self._dir  #: skill root directory
 
         #: Filesystem access to skill specific folder.
         #: See mycroft.filesystem for details.
