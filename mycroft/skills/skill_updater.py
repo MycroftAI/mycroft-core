@@ -188,13 +188,13 @@ class SkillUpdater:
         if upload_allowed and is_paired():
             try:
                 device_api = DeviceApi()
-                device_api.upload_skills_data(self.msm.skills_data)
+                device_api.upload_skills_data(self.msm.device_skill_state)
             except Exception:
                 LOG.exception('Could not upload skill manifest')
 
     def install_or_update(self, skill):
         """Install missing defaults and update existing skills"""
-        if self._get_skill_data(skill.name).get('beta', False):
+        if self._get_device_skill_state(skill.name).get('beta', False):
             skill.sha = None  # Will update to latest head
         if skill.is_local:
             skill.update()
@@ -212,14 +212,14 @@ class SkillUpdater:
                 raise
         self.installed_skills.add(skill.name)
 
-    def _get_skill_data(self, skill_name):
+    def _get_device_skill_state(self, skill_name):
         """Get skill data structure from name."""
-        skill_data = {}
-        for msm_skill_data in self.msm.skills_data.get('skills', []):
-            if msm_skill_data.get('name') == skill_name:
-                skill_data = msm_skill_data
+        device_skill_state = {}
+        for msm_skill_state in self.msm.device_skill_state.get('skills', []):
+            if msm_skill_state.get('name') == skill_name:
+                device_skill_state = msm_skill_state
 
-        return skill_data
+        return device_skill_state
 
     def _schedule_retry(self):
         """Schedule the next skill update in the event of a failure."""
