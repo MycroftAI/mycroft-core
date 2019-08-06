@@ -180,13 +180,13 @@ class TestSkillUpdater(MycroftUnitTestBase):
     def test_get_skill_data(self):
         """Test invoking MSM to retrieve skill data."""
         updater = SkillUpdater(self.message_bus_mock)
-        skill_data = updater._get_skill_data('test_skill')
+        skill_data = updater._get_device_skill_state('test_skill')
         self.assertDictEqual(dict(name='test_skill', beta=False), skill_data)
 
     def test_get_skill_data_not_found(self):
         """Test invoking MSM to retrieve unknown skill data."""
         updater = SkillUpdater(self.message_bus_mock)
-        skill_data = updater._get_skill_data('foo')
+        skill_data = updater._get_device_skill_state('foo')
         self.assertDictEqual({}, skill_data)
 
     def test_install_or_update_beta(self):
