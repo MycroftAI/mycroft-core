@@ -498,7 +498,7 @@ def _extract_whole_number_with_text_en(tokens, short_scale, ordinals):
 
         # is the prev word an ordinal number and current word is one?
         # second one, third one
-        if ordinals and prev_word in string_num_ordinal and val is 1:
+        if ordinals and prev_word in string_num_ordinal and val == 1:
             val = prev_val
 
         # is the prev word a number and should we sum it?
