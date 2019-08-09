@@ -151,10 +151,11 @@ class MycroftSkill:
     def __init__(self, name=None, bus=None, use_settings=True):
         self.name = name or self.__class__.__name__
         self.resting_name = None
+        self.skill_id = ''  # will be set from the path, so guaranteed unique
         # Get directory of skill
-        self._dir = dirname(abspath(sys.modules[self.__module__].__file__))
+        self.root_dir = dirname(abspath(sys.modules[self.__module__].__file__))
         if use_settings:
-            self.settings = SkillSettings(self._dir, self.name)
+            self.settings = SkillSettings(self.root_dir, self.name)
         else:
             self.settings = None
 
@@ -168,7 +169,6 @@ class MycroftSkill:
         # TODO: 19.08 - Remove
         self._config = self.config_core.get(self.name) or {}
         self.dialog_renderer = None
-        self.root_dir = self._dir  #: skill root directory
 
         #: Filesystem access to skill specific folder.
         #: See mycroft.filesystem for details.
@@ -177,7 +177,6 @@ class MycroftSkill:
         self.log = LOG.create_logger(self.name)  #: Skill logger instance
         self.reload_skill = True  #: allow reloading (default True)
         self.events = []
-        self.skill_id = ''  # will be set from the path, so guaranteed unique
         self.voc_match_cache = {}
 
         # Delegator classes
@@ -1118,13 +1117,13 @@ class MycroftSkill:
         else:
             LOG.debug('No dialog loaded')
 
-    def load_data_files(self, root_directory):
+    def load_data_files(self, root_directory=None):
         """Load data files (intents, dialogs, etc).
 
         Arguments:
             root_directory (str): root folder to use when loading files.
         """
-        self.root_dir = root_directory
+        root_directory = root_directory or self.root_dir
         self.init_dialog(root_directory)
         self.load_vocab_files(root_directory)
         self.load_regex_files(root_directory)
@@ -1202,7 +1201,7 @@ class MycroftSkill:
             LOG.error('Skill specific shutdown function encountered '
                       'an error: {}'.format(repr(e)))
         # Store settings
-        if exists(self._dir):
+        if exists(self.root_dir):
             self.settings.store()
             self.settings.stop_polling()
 
