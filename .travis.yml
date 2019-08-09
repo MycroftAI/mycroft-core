@@ -18,7 +18,9 @@ python:
   - "3.6"
   - "3.7"
 # don't rebuild pocketsphinx for every build
-cache: pocketsphinx-python
+cache:
+  - pip
+  - pocketsphinx-python
 # command to install dependencies
 install:
  - rm -rf ${TMPDIR}
