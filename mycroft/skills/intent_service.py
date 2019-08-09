@@ -15,11 +15,10 @@
 import time
 from adapt.context import ContextManagerFrame
 from adapt.engine import IntentDeterminationEngine
-from adapt.intent import IntentBuilder
+from adapt.intent import IntentBuilder, Intent
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
-from mycroft.skills.core import open_intent_envelope
 from mycroft.util.lang import set_active_lang
 from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
@@ -515,3 +514,12 @@ class IntentService:
     def handle_clear_context(self, message):
         """ Clears all keywords from context """
         self.context_manager.clear_context()
+
+
+def open_intent_envelope(message):
+    """Convert dictionary received over messagebus to Intent."""
+    intent_dict = message.data
+    return Intent(intent_dict.get('name'),
+                  intent_dict.get('requires'),
+                  intent_dict.get('at_least_one'),
+                  intent_dict.get('optional'))

@@ -24,17 +24,12 @@ from datetime import datetime
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
-from mycroft.skills.skill_data import (
-    load_regex_from_file,
-    load_regex,
-    load_vocab_from_file,
-    load_vocabulary
-)
-from mycroft.skills.core import (
-    MycroftSkill,
-    open_intent_envelope,
-    resting_screen_handler
-)
+from mycroft.skills.skill_data import (load_regex_from_file, load_regex,
+                                       load_vocab_from_file, load_vocabulary)
+from mycroft.skills.core import (MycroftSkill, load_skill,
+                                 create_skill_descriptor,
+                                 resting_screen_handler)
+from mycroft.skills.intent_service import open_intent_envelope
 
 from test.util import base_config
 

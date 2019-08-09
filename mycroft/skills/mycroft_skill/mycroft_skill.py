@@ -89,15 +89,6 @@ def get_non_properties(obj):
     return set(check_class(obj.__class__))
 
 
-def open_intent_envelope(message):
-    """Convert dictionary received over messagebus to Intent."""
-    intent_dict = message.data
-    return Intent(intent_dict.get('name'),
-                  intent_dict.get('requires'),
-                  intent_dict.get('at_least_one'),
-                  intent_dict.get('optional'))
-
-
 def dig_for_message():
     """Dig Through the stack for message."""
     stack = inspect.stack()
