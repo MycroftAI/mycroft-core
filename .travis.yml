@@ -31,8 +31,6 @@ install:
 script:
  - pycodestyle mycroft test
  - ./start-mycroft.sh unittest
-env:
- - IS_TRAVIS=true
 
 after_success:
   coveralls
