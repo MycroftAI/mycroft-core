@@ -41,10 +41,11 @@ from mycroft.util import (camel_case_split,
                           resolve_resource_file,
                           play_audio_file)
 from mycroft.util.log import LOG
-from .settings import SkillSettings
-from .skill_data import (load_vocabulary, load_regex, to_alnum,
-                         munge_regex, munge_intent_parser, read_vocab_file)
-from .event_scheduler import EventSchedulerInterface
+
+from ..settings import SkillSettings
+from ..skill_data import (load_vocabulary, load_regex, to_alnum,
+                          munge_regex, munge_intent_parser, read_vocab_file)
+from ..event_scheduler import EventSchedulerInterface
 
 
 def simple_trace(stack_trace):
@@ -88,6 +89,15 @@ def get_non_properties(obj):
     return set(check_class(obj.__class__))
 
 
+def open_intent_envelope(message):
+    """Convert dictionary received over messagebus to Intent."""
+    intent_dict = message.data
+    return Intent(intent_dict.get('name'),
+                  intent_dict.get('requires'),
+                  intent_dict.get('at_least_one'),
+                  intent_dict.get('optional'))
+
+
 def dig_for_message():
     """Dig Through the stack for message."""
     stack = inspect.stack()
@@ -120,15 +130,6 @@ def unmunge_message(message, skill_id):
     return message
 
 
-def open_intent_envelope(message):
-    """Convert dictionary received over messagebus to Intent."""
-    intent_dict = message.data
-    return Intent(intent_dict.get('name'),
-                  intent_dict.get('requires'),
-                  intent_dict.get('at_least_one'),
-                  intent_dict.get('optional'))
-
-
 def get_handler_name(handler):
     """Name (including class if available) of handler function.
 
@@ -142,49 +143,6 @@ def get_handler_name(handler):
         return handler.__self__.name + '.' + handler.__name__
     else:
         return handler.__name__
-
-
-def intent_handler(intent_parser):
-    """Decorator for adding a method as an intent handler."""
-
-    def real_decorator(func):
-        # Store the intent_parser inside the function
-        # This will be used later to call register_intent
-        if not hasattr(func, 'intents'):
-            func.intents = []
-        func.intents.append(intent_parser)
-        return func
-
-    return real_decorator
-
-
-def intent_file_handler(intent_file):
-    """Decorator for adding a method as an intent file handler."""
-
-    def real_decorator(func):
-        # Store the intent_file inside the function
-        # This will be used later to call register_intent_file
-        if not hasattr(func, 'intent_files'):
-            func.intent_files = []
-        func.intent_files.append(intent_file)
-        return func
-
-    return real_decorator
-
-
-def resting_screen_handler(name):
-    """Decorator for adding a method as an resting screen handler.
-
-    If selected will be shown on screen when device enters idle mode.
-    """
-    def real_decorator(func):
-        # Store the resting information inside the function
-        # This will be used later in register_resting_screen
-        if not hasattr(func, 'resting_handler'):
-            func.resting_handler = name
-        return func
-
-    return real_decorator
 
 
 class MycroftSkill:
