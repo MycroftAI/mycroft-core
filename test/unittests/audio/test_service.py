@@ -52,7 +52,7 @@ class TestService(unittest.TestCase):
     def test_load(self):
         services = audio_service.load_services({}, TestService.emitter,
                                                TestService.service_path)
-        self.assertEquals(len(services), 1)
+        self.assertEqual(len(services), 1)
 
 
 if __name__ == "__main__":

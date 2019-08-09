@@ -1,4 +1,4 @@
-six==1.10.0
+six==1.13.0
 cryptography==2.6.1
 requests==2.20.0
 gTTS==2.0.4

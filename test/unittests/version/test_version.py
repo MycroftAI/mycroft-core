@@ -55,11 +55,11 @@ class TestVersion(unittest.TestCase):
         mock_exists.return_value = True
 
         version = mycroft.version.VersionManager.get()
-        self.assertEquals(version['coreVersion'], "1505203453")
-        self.assertEquals(version['enclosureVersion'], "1.0.0")
+        self.assertEqual(version['coreVersion'], "1505203453")
+        self.assertEqual(version['enclosureVersion'], "1.0.0")
 
         # Check file not existing case
         mock_exists.return_value = False
         version = mycroft.version.VersionManager.get()
-        self.assertEquals(version['coreVersion'], None)
-        self.assertEquals(version['enclosureVersion'], None)
+        self.assertEqual(version['coreVersion'], None)
+        self.assertEqual(version['enclosureVersion'], None)

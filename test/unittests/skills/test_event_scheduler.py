@@ -26,7 +26,7 @@ class TestEventScheduler(unittest.TestCase):
         emitter = MagicMock()
         es = EventScheduler(emitter)
         es.shutdown()
-        self.assertEquals(mock_json_dump.call_args[0][0], {})
+        self.assertEqual(mock_json_dump.call_args[0][0], {})
 
     @patch('threading.Thread')
     @patch('json.load')
@@ -78,8 +78,8 @@ class TestEventScheduler(unittest.TestCase):
         es.shutdown()
 
         # Make sure the dump method wasn't called with test-repeat
-        self.assertEquals(mock_dump.call_args[0][0],
-                          {'test': [(900000000000, None, {})]})
+        self.assertEqual(mock_dump.call_args[0][0],
+                         {'test': [(900000000000, None, {})]})
 
     @patch('threading.Thread')
     @patch('json.load')
@@ -98,8 +98,8 @@ class TestEventScheduler(unittest.TestCase):
         es.schedule_event('test', time.time(), None)
 
         es.check_state()
-        self.assertEquals(emitter.emit.call_args[0][0].msg_type, 'test')
-        self.assertEquals(emitter.emit.call_args[0][0].data, {})
+        self.assertEqual(emitter.emit.call_args[0][0].msg_type, 'test')
+        self.assertEqual(emitter.emit.call_args[0][0].data, {})
         es.shutdown()
 
 
