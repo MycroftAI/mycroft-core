@@ -17,6 +17,7 @@ times.
 """
 import json
 import time
+from datetime import datetime, timedelta
 from threading import Thread, Lock
 from os.path import isfile, join, expanduser
 
@@ -250,3 +251,163 @@ class EventScheduler(Thread):
         self.clear_empty()
         # Store all pending scheduled events
         self.store()
+
+
+class EventSchedulerInterface:
+    """Skill interface for accessing the event scheduler."""
+    def __init__(self, skill):
+        self.skill = skill
+        self.scheduled_repeats = []
+
+    def _unique_name(self, name):
+        """Return a name unique to this skill using the format
+        [skill_id]:[name].
+
+        Arguments:
+            name:   Name to use internally
+
+        Returns:
+            str: name unique to this skill
+        """
+        return str(self.skill.skill_id) + ':' + (name or '')
+
+    def _schedule_event(self, handler, when, data=None, name=None,
+                        repeat=None):
+        """Underlying method for schedule_event and schedule_repeating_event.
+
+        Takes scheduling information and sends it off on the message bus.
+        """
+        if not name:
+            name = self.skill.name + handler.__name__
+        unique_name = self._unique_name(name)
+        if repeat:
+            self.scheduled_repeats.append(name)  # store "friendly name"
+
+        data = data or {}
+        self.skill.add_event(unique_name, handler, once=not repeat)
+        event_data = {}
+        event_data['time'] = time.mktime(when.timetuple())
+        event_data['event'] = unique_name
+        event_data['repeat'] = repeat
+        event_data['data'] = data
+        self.skill.bus.emit(Message('mycroft.scheduler.schedule_event',
+                                    data=event_data))
+
+    def schedule_event(self, handler, when, data=None, name=None):
+        """Schedule a single-shot event.
+
+        Arguments:
+            handler:               method to be called
+            when (datetime/int/float):   datetime (in system timezone) or
+                                   number of seconds in the future when the
+                                   handler should be called
+            data (dict, optional): data to send when the handler is called
+            name (str, optional):  reference name
+                                   NOTE: This will not warn or replace a
+                                   previously scheduled event of the same
+                                   name.
+        """
+        data = data or {}
+        if isinstance(when, (int, float)):
+            when = datetime.now() + timedelta(seconds=when)
+        self._schedule_event(handler, when, data, name)
+
+    def schedule_repeating_event(self, handler, when, frequency,
+                                 data=None, name=None):
+        """Schedule a repeating event.
+
+        Arguments:
+            handler:                method to be called
+            when (datetime):        time (in system timezone) for first
+                                    calling the handler, or None to
+                                    initially trigger <frequency> seconds
+                                    from now
+            frequency (float/int):  time in seconds between calls
+            data (dict, optional):  data to send when the handler is called
+            name (str, optional):   reference name, must be unique
+        """
+        # Do not schedule if this event is already scheduled by the skill
+        if name not in self.scheduled_repeats:
+            data = data or {}
+            if not when:
+                when = datetime.now() + timedelta(seconds=frequency)
+            self._schedule_event(handler, when, data, name, frequency)
+        else:
+            LOG.debug('The event is already scheduled, cancel previous '
+                      'event if this scheduling should replace the last.')
+
+    def update_scheduled_event(self, name, data=None):
+        """Change data of event.
+
+        Arguments:
+            name (str): reference name of event (from original scheduling)
+        """
+        data = data or {}
+        data = {
+            'event': self._unique_name(name),
+            'data': data
+        }
+        self.skill.bus.emit(Message('mycroft.schedule.update_event',
+                                    data=data))
+
+    def cancel_scheduled_event(self, name):
+        """Cancel a pending event. The event will no longer be scheduled
+        to be executed
+
+        Arguments:
+            name (str): reference name of event (from original scheduling)
+        """
+        unique_name = self._unique_name(name)
+        data = {'event': unique_name}
+        if name in self.scheduled_repeats:
+            self.scheduled_repeats.remove(name)
+        if self.skill.remove_event(unique_name):
+            self.skill.bus.emit(Message('mycroft.scheduler.remove_event',
+                                        data=data))
+
+    def get_scheduled_event_status(self, name):
+        """Get scheduled event data and return the amount of time left
+
+        Arguments:
+            name (str): reference name of event (from original scheduling)
+
+        Returns:
+            int: the time left in seconds
+
+        Raises:
+            Exception: Raised if event is not found
+        """
+        event_name = self._unique_name(name)
+        data = {'name': event_name}
+
+        # making event_status an object so it's refrence can be changed
+        event_status = None
+        finished_callback = False
+
+        def callback(message):
+            nonlocal event_status
+            nonlocal finished_callback
+            if message.data is not None:
+                event_time = int(message.data[0][0])
+                current_time = int(time.time())
+                time_left_in_seconds = event_time - current_time
+                event_status = time_left_in_seconds
+            finished_callback = True
+
+        emitter_name = 'mycroft.event_status.callback.{}'.format(event_name)
+        self.skill.bus.once(emitter_name, callback)
+        self.skill.bus.emit(Message('mycroft.scheduler.get_event', data=data))
+
+        start_wait = time.time()
+        while finished_callback is False and time.time() - start_wait < 3.0:
+            time.sleep(0.1)
+        if time.time() - start_wait > 3.0:
+            raise Exception("Event Status Messagebus Timeout")
+        return event_status
+
+    def cancel_all_repeating_events(self):
+        """Cancel any repeating events started by the skill."""
+        # NOTE: Gotta make a copy of the list due to the removes that happen
+        #       in cancel_scheduled_event().
+        for e in list(self.scheduled_repeats):
+            self.cancel_scheduled_event(e)
