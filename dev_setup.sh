@@ -128,7 +128,7 @@ if found_exe tput ; then
 fi
 
 # Run a setup wizard the very first time that guides the user through some decisions
-if [[ ! -f .dev_opts.json && -z $IS_TRAVIS ]] ; then
+if [[ ! -f .dev_opts.json && -z $CI ]] ; then
     echo "
 $CYAN                    Welcome to Mycroft!  $RESET"
     sleep 0.5
