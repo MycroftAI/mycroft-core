@@ -30,7 +30,10 @@ def intent_handler(intent_parser):
 
 
 def intent_file_handler(intent_file):
-    """Decorator for adding a method as an intent file handler."""
+    """Decorator for adding a method as an intent file handler.
+
+    This decorator is deprecated, use intent_handler for the same effect.
+    """
 
     def real_decorator(func):
         # Store the intent_file inside the function

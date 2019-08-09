@@ -804,25 +804,37 @@ class MycroftSkill:
             self.bus.remove_all_listeners(name)
         return removed
 
-    def register_intent(self, intent_parser, handler):
-        """Register an Intent with the intent service.
+    def _register_adapt_intent(self, intent_parser, handler):
+        """Register an adapt intent.
 
         Arguments:
-            intent_parser: Intent or IntentBuilder object to parse
-                           utterance for the handler.
+            intent_parser: Intent object to parse utterance for the handler.
             handler (func): function to register with intent
         """
-        if isinstance(intent_parser, IntentBuilder):
-            intent_parser = intent_parser.build()
-        elif not isinstance(intent_parser, Intent):
-            raise ValueError('"' + str(intent_parser) + '" is not an Intent')
-
         # Default to the handler's function name if none given
         name = intent_parser.name or handler.__name__
         munge_intent_parser(intent_parser, name, self.skill_id)
         self.bus.emit(Message("register_intent", intent_parser.__dict__))
         self.registered_intents.append((name, intent_parser))
         self.add_event(intent_parser.name, handler, 'mycroft.skill.handler')
+
+    def register_intent(self, intent_parser, handler):
+        """Register an Intent with the intent service.
+
+        Arguments:
+            intent_parser: Intent, IntentBuilder object or padatious intent
+                           file to parse utterance for the handler.
+            handler (func): function to register with intent
+        """
+        if isinstance(intent_parser, IntentBuilder):
+            intent_parser = intent_parser.build()
+        if (isinstance(intent_parser, str) and
+                intent_parser.endswith('.intent')):
+            return self.register_intent_file(intent_parser, handler)
+        elif not isinstance(intent_parser, Intent):
+            raise ValueError('"' + str(intent_parser) + '" is not an Intent')
+
+        return self._register_adapt_intent(intent_parser, handler)
 
     def register_intent_file(self, intent_file, handler):
         """Register an Intent file with the intent service.

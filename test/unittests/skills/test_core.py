@@ -307,7 +307,13 @@ class MycroftSkillTest(unittest.TestCase):
         self.emitter.reset()
 
     def test_register_intent_file(self):
-        s = SimpleSkill4()
+        self._test_intent_file(SimpleSkill4())
+
+    def test_register_intent_intent_file(self):
+        """Test register intent files using register_intent."""
+        self._test_intent_file(SimpleSkill6())
+
+    def _test_intent_file(self, s):
         s.root_dir = abspath(join(dirname(__file__), 'intent_file'))
         s.bind(self.emitter)
         s.initialize()
@@ -593,4 +599,16 @@ class SimpleSkill4(_TestSkill):
         pass
 
     def stop(self):
+        pass
+
+
+class SimpleSkill6(_TestSkill):
+    """ Test skill for padatious intent """
+    skill_id = 'A'
+
+    def initialize(self):
+        self.register_intent('test.intent', self.handler)
+        self.register_entity_file('test_ent.entity')
+
+    def handler(self, message):
         pass
