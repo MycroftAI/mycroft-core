@@ -250,24 +250,29 @@ class MycroftSkill:
         if bus:
             self._bus = bus
             self._enclosure = EnclosureAPI(bus, self.name)
-            self.add_event('mycroft.stop', self.__handle_stop)
-            self.add_event('mycroft.skill.enable_intent',
-                           self.handle_enable_intent)
-            self.add_event('mycroft.skill.disable_intent',
-                           self.handle_disable_intent)
-            self.add_event("mycroft.skill.set_cross_context",
-                           self.handle_set_cross_context)
-            self.add_event("mycroft.skill.remove_cross_context",
-                           self.handle_remove_cross_context)
-
-            # Trigger settings update if requested
-            self._add_light_event('mycroft.skills.settings.update',
-                                  self.settings.run_poll)
-            # Trigger Settings meta upload on pairing complete
-            self._add_light_event('mycroft.paired', self.settings.run_poll)
-
+            self._register_system_event_handlers()
             # Intialize the SkillGui
             self.gui.setup_default_handlers()
+
+    def _register_system_event_handlers(self):
+        """Add all events allowing the standard interaction with the Mycroft
+        system.
+        """
+        self.add_event('mycroft.stop', self.__handle_stop)
+        self.add_event('mycroft.skill.enable_intent',
+                       self.handle_enable_intent)
+        self.add_event('mycroft.skill.disable_intent',
+                       self.handle_disable_intent)
+        self.add_event("mycroft.skill.set_cross_context",
+                       self.handle_set_cross_context)
+        self.add_event("mycroft.skill.remove_cross_context",
+                       self.handle_remove_cross_context)
+
+        # Trigger settings update if requested
+        self._add_light_event('mycroft.skills.settings.update',
+                              self.settings.run_poll)
+        # Trigger Settings meta upload on pairing complete
+        self._add_light_event('mycroft.paired', self.settings.run_poll)
 
     def _add_light_event(self, msg_type, func):
         """This adds an event handler that will automatically be unregistered
@@ -283,7 +288,7 @@ class MycroftSkill:
 
     def detach(self):
         for (name, intent) in self.registered_intents:
-            name = str(self.skill_id) + ':' + name
+            name = '{}:{}'.format(self.skill_id, name)
             self.bus.emit(Message("detach_intent", {"intent_name": name}))
 
     def initialize(self):
@@ -495,7 +500,7 @@ class MycroftSkill:
             name (str): Name of metric. Must use only letters and hyphens
             data (dict): JSON dictionary to report. Must be valid JSON
         """
-        report_metric(basename(self.root_dir) + ':' + name, data)
+        report_metric('{}:{}'.format(basename(self.root_dir), name), data)
 
     def send_email(self, title, body):
         """Send an email to the registered user's email.
@@ -863,18 +868,14 @@ class MycroftSkill:
                          '.intent'
             handler:     function to register with intent
         """
-        name = str(self.skill_id) + ':' + intent_file
+        name = '{}:{}'.format(self.skill_id, intent_file)
 
         filename = self.find_resource(intent_file, 'vocab')
         if not filename:
-            raise FileNotFoundError(
-                'Unable to find "' + str(intent_file) + '"'
-                )
+            raise FileNotFoundError('Unable to find "{}"'.format(intent_file))
 
-        data = {
-            "file_name": filename,
-            "name": name
-        }
+        data = {"file_name": filename,
+                "name": name}
         self.bus.emit(Message("padatious:register_intent", data))
         self.registered_intents.append((intent_file, data))
         self.add_event(name, handler, 'mycroft.skill.handler')
@@ -901,10 +902,9 @@ class MycroftSkill:
 
         filename = self.find_resource(entity_file + ".entity", 'vocab')
         if not filename:
-            raise FileNotFoundError(
-                'Unable to find "' + entity_file + '.entity"'
-                )
-        name = str(self.skill_id) + ':' + entity_file
+            raise FileNotFoundError('Unable to find "{}"'.format(entity_file))
+
+        name = '{}:{}'.format(self.skill_id, entity_file)
 
         self.bus.emit(Message("padatious:register_entity", {
             "file_name": filename,
@@ -939,12 +939,12 @@ class MycroftSkill:
         names = [intent_tuple[0] for intent_tuple in self.registered_intents]
         if intent_name in names:
             LOG.debug('Disabling intent ' + intent_name)
-            name = str(self.skill_id) + ':' + intent_name
+            name = '{}:{}'.format(self.skill_id, intent_name)
             self.bus.emit(Message("detach_intent", {"intent_name": name}))
             return True
 
-        LOG.error('Could not disable ' + intent_name +
-                  ', it hasn\'t been registered.')
+        LOG.error('Could not disable '
+                  '{}, it hasn\'t been registered.'.format(intent_name))
         return False
 
     def enable_intent(self, intent_name):
@@ -966,14 +966,14 @@ class MycroftSkill:
             else:
                 intent.name = intent_name
                 self.register_intent(intent, None)
-            LOG.debug('Enabling intent ' + intent_name)
+            LOG.debug('Enabling intent {}'.format(intent_name))
             return True
 
-        LOG.error('Could not enable ' + intent_name + ', it hasn\'t been '
-                                                      'registered.')
+        LOG.error('Could not enable '
+                  '{}, it hasn\'t been registered.'.format(intent_name))
         return False
 
-    def set_context(self, context, word='', origin=None):
+    def set_context(self, context, word='', origin=''):
         """Add context to intent service
 
         Arguments:
@@ -981,11 +981,10 @@ class MycroftSkill:
             word:       word connected to keyword
         """
         if not isinstance(context, str):
-            raise ValueError('context should be a string')
+            raise ValueError('Context should be a string')
         if not isinstance(word, str):
-            raise ValueError('word should be a string')
+            raise ValueError('Word should be a string')
 
-        origin = origin or ''
         context = to_alnum(self.skill_id) + context
         self.bus.emit(Message('add_context',
                               {'context': context, 'word': word,
@@ -1089,6 +1088,24 @@ class MycroftSkill:
         self.speak(self.dialog_renderer.render(key, data),
                    expect_response, wait)
 
+    def acknowledge(self):
+        """Acknowledge a successful request.
+
+        This method plays a sound to acknowledge a request that does not
+        require a verbal response. This is intended to provide simple feedback
+        to the user that their request was handled successfully.
+        """
+        audio_file = resolve_resource_file(
+            self.config_core.get('sounds').get('acknowledge'))
+
+        if not audio_file:
+            LOG.warning("Could not find 'acknowledge' audio file!")
+            return
+
+        process = play_audio_file(audio_file)
+        if not process:
+            LOG.warning("Unable to play 'acknowledge' audio file!")
+
     def init_dialog(self, root_directory):
         # If "<skill>/dialog/<lang>" exists, load from there.  Otherwise
         # load dialog from "<skill>/locale/<lang>"
@@ -1154,7 +1171,7 @@ class MycroftSkill:
         try:
             if self.stop():
                 self.bus.emit(Message("mycroft.stop.handled",
-                                      {"by": "skill:"+str(self.skill_id)}))
+                                      {"by": "skill:" + self.skill_id}))
             timer.cancel()
         except Exception:
             timer.cancel()
@@ -1274,21 +1291,3 @@ class MycroftSkill:
     def cancel_all_repeating_events(self):
         """Cancel any repeating events started by the skill."""
         return self.event_scheduler.cancel_all_repeating_events()
-
-    def acknowledge(self):
-        """Acknowledge a successful request.
-
-        This method plays a sound to acknowledge a request that does not
-        require a verbal response. This is intended to provide simple feedback
-        to the user that their request was handled successfully.
-        """
-        audio_file = resolve_resource_file(
-            self.config_core.get('sounds').get('acknowledge'))
-
-        if not audio_file:
-            LOG.warning("Could not find 'acknowledge' audio file!")
-            return
-
-        process = play_audio_file(audio_file)
-        if not process:
-            LOG.warning("Unable to play 'acknowledge' audio file!")
