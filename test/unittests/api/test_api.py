@@ -331,6 +331,88 @@ class TestApi(unittest.TestCase):
         self.assertTrue(mycroft.api.has_been_paired())
 
 
+@mock.patch('mycroft.api.IdentityManager.get')
+@mock.patch('mycroft.api.requests.request')
+class TestSettingsMeta(unittest.TestCase):
+    def setUp(self):
+        patcher = mock.patch('mycroft.configuration.Configuration.get',
+                             return_value=CONFIG)
+        self.mock_config_get = patcher.start()
+        self.addCleanup(patcher.stop)
+        super().setUp()
+
+    def test_upload_meta(self, mock_request, mock_identity_get):
+        mock_request.return_value = create_response(200, {})
+        mock_identity = mock.MagicMock()
+        mock_identity.is_expired.return_value = False
+        mock_identity.uuid = '1234'
+        mock_identity_get.return_value = mock_identity
+        device = mycroft.api.DeviceApi()
+
+        settings_meta = {
+            'name': 'TestMeta',
+            "skill_gid": 'test_skill|19.02',
+            'skillMetadata': {
+                'sections': [
+                    {
+                        'name': 'Settings',
+                        'fields': [
+                            {
+                                'name': 'Set me',
+                                'type': 'number',
+                                'value': 4
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+        device.upload_skill_metadata(settings_meta)
+        url = mock_request.call_args[0][1]
+        method = mock_request.call_args[0][0]
+        params = mock_request.call_args[1]
+
+        content_type = params['headers']['Content-Type']
+        self.assertEquals(content_type, 'application/json')
+        self.assertEquals(method, 'PUT')
+        self.assertEquals(params['json'], settings_meta)
+        self.assertEquals(
+            url, 'https://api-test.mycroft.ai/v1/device/1234/skill')
+
+    def test_get_skill_settings(self, mock_request, mock_identity_get):
+        mock_request.return_value = create_response(200, {})
+        mock_identity = mock.MagicMock()
+        mock_identity.is_expired.return_value = False
+        mock_identity.uuid = '1234'
+        mock_identity_get.return_value = mock_identity
+        device = mycroft.api.DeviceApi()
+        device.get_skill_settings()
+        method = mock_request.call_args[0][0]
+        url = mock_request.call_args[0][1]
+        params = mock_request.call_args[1]
+
+        self.assertEquals(method, 'GET')
+        self.assertEquals(
+            url, 'https://api-test.mycroft.ai/v1/device/1234/skill')
+
+    def test_delete_meta(self, mock_request, mock_identity_get):
+        mock_request.return_value = create_response(200, {})
+        mock_identity = mock.MagicMock()
+        mock_identity.is_expired.return_value = False
+        mock_identity.uuid = '1234'
+        mock_identity_get.return_value = mock_identity
+        device = mycroft.api.DeviceApi()
+        device.delete_skill_metadata('testgid')
+        method = mock_request.call_args[0][0]
+        url = mock_request.call_args[0][1]
+        params = mock_request.call_args[1]
+
+        content_type = params['headers']['Content-Type']
+        self.assertEquals(method, 'DELETE')
+        self.assertEquals(
+            url, 'https://api-test.mycroft.ai/v1/device/1234/skill/testgid')
+
+
 @mock.patch('mycroft.api._paired_cache', False)
 @mock.patch('mycroft.api.IdentityManager.get')
 @mock.patch('mycroft.api.requests.request')
