@@ -388,12 +388,12 @@ class DeviceApi(Api):
             "json": settings_meta
         })
 
-    def delete_skill_metadata(self, uuid):
+    def delete_skill_metadata(self, skill_gid):
         """ Delete the current skill metadata from backend
 
             TODO: Real implementation when method exists on backend
         Args:
-            uuid (str): unique id of the skill
+            skill_gid (str): skill_gid identifying the skill
         """
         try:
             LOG.debug("Deleting remote metadata for {}".format(skill_gid))
