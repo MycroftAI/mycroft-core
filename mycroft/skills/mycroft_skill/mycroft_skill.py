@@ -18,7 +18,6 @@ import sys
 import re
 import traceback
 import inspect
-from inspect import ismethod, signature
 import collections
 import csv
 from itertools import chain
@@ -36,16 +35,16 @@ from mycroft.configuration import Configuration
 from mycroft.dialog import DialogLoader
 from mycroft.filesystem import FileSystemAccess
 from mycroft.messagebus.message import Message
-from mycroft.metrics import report_metric, report_timing, Stopwatch
-from mycroft.util import (camel_case_split,
-                          resolve_resource_file,
-                          play_audio_file)
+from mycroft.metrics import report_metric
+from mycroft.util import (resolve_resource_file, play_audio_file,
+                          camel_case_split)
 from mycroft.util.log import LOG
 
 from ..settings import SkillSettings
 from ..skill_data import (load_vocabulary, load_regex, to_alnum,
                           munge_regex, munge_intent_parser, read_vocab_file)
 from ..event_scheduler import EventSchedulerInterface
+from .event_container import EventContainer, create_wrapper
 
 
 def simple_trace(stack_trace):
@@ -100,42 +99,6 @@ def dig_for_message():
             return l['message']
 
 
-def unmunge_message(message, skill_id):
-    """Restore message keywords by removing the Letterified skill ID.
-
-    Arguments:
-        message (Message): Intent result message
-        skill_id (str): skill identifier
-
-    Returns:
-        Message without clear keywords
-    """
-    if isinstance(message, Message) and isinstance(message.data, dict):
-        skill_id = to_alnum(skill_id)
-        for key in list(message.data.keys()):
-            if key.startswith(skill_id):
-                # replace the munged key with the real one
-                new_key = key[len(skill_id):]
-                message.data[new_key] = message.data.pop(key)
-
-    return message
-
-
-def get_handler_name(handler):
-    """Name (including class if available) of handler function.
-
-    Arguments:
-        handler (function): Function to be named
-
-    Returns:
-        string: handler name as string
-    """
-    if '__self__' in dir(handler) and 'name' in dir(handler.__self__):
-        return handler.__self__.name + '.' + handler.__name__
-    else:
-        return handler.__name__
-
-
 class MycroftSkill:
     """Base class for mycroft skills providing common behaviour and parameters
     to all Skill implementations.
@@ -176,7 +139,7 @@ class MycroftSkill:
         self.registered_intents = []
         self.log = LOG.create_logger(self.name)  #: Skill logger instance
         self.reload_skill = True  #: allow reloading (default True)
-        self.events = []
+        self.events = EventContainer(bus)
         self.voc_match_cache = {}
 
         # Delegator classes
@@ -248,6 +211,7 @@ class MycroftSkill:
         """
         if bus:
             self._bus = bus
+            self.events.set_bus(bus)
             self._enclosure = EnclosureAPI(bus, self.name)
             self._register_system_event_handlers()
             # Intialize the SkillGui
@@ -268,22 +232,10 @@ class MycroftSkill:
                        self.handle_remove_cross_context)
 
         # Trigger settings update if requested
-        self._add_light_event('mycroft.skills.settings.update',
-                              self.settings.run_poll)
+        self.events.add('mycroft.skills.settings.update',
+                        self.settings.run_poll)
         # Trigger Settings meta upload on pairing complete
-        self._add_light_event('mycroft.paired', self.settings.run_poll)
-
-    def _add_light_event(self, msg_type, func):
-        """This adds an event handler that will automatically be unregistered
-        when the skill shutsdown but none of the metrics or error feedback will
-        be triggered.
-
-        Arguments:
-            msg_tupe (str): Message type
-            func (Function): function to be invoked
-        """
-        self.bus.on(msg_type, func)
-        self.events.append((msg_type, func))
+        self.events.add('mycroft.paired', self.settings.run_poll)
 
     def detach(self):
         for (name, intent) in self.registered_intents:
@@ -728,57 +680,17 @@ class MycroftSkill:
                                    been run once.
         """
 
-        def wrapper(message):
-            skill_data = {'name': get_handler_name(handler)}
-            stopwatch = Stopwatch()
-            try:
-                message = unmunge_message(message, self.skill_id)
-                # Indicate that the skill handler is starting
-                if handler_info:
-                    # Indicate that the skill handler is starting if requested
-                    msg_type = handler_info + '.start'
-                    self.bus.emit(message.reply(msg_type, skill_data))
+        def on_error(e):
+            # Convert "MyFancySkill" to "My Fancy Skill" for speaking
+            handler_name = camel_case_split(self.name)
+            msg_data = {'skill': handler_name}
+            msg = dialog.get('skill.error', self.lang, msg_data)
+            self.speak(msg)
+            LOG.exception(msg)
 
-                if once:
-                    # Remove registered one-time handler before invoking,
-                    # allowing them to re-schedule themselves.
-                    self.remove_event(name)
-
-                with stopwatch:
-                    if len(signature(handler).parameters) == 0:
-                        handler()
-                    else:
-                        handler(message)
-                    self.settings.store()  # Store settings if they've changed
-
-            except Exception as e:
-                # Convert "MyFancySkill" to "My Fancy Skill" for speaking
-                handler_name = camel_case_split(self.name)
-                msg_data = {'skill': handler_name}
-                msg = dialog.get('skill.error', self.lang, msg_data)
-                self.speak(msg)
-                LOG.exception(msg)
-                # append exception information in message
-                skill_data['exception'] = repr(e)
-            finally:
-                # Indicate that the skill handler has completed
-                if handler_info:
-                    msg_type = handler_info + '.complete'
-                    self.bus.emit(message.reply(msg_type, skill_data))
-
-                # Send timing metrics
-                context = message.context
-                if context and 'ident' in context:
-                    report_timing(context['ident'], 'skill_handler', stopwatch,
-                                  {'handler': handler.__name__,
-                                   'skill_id': self.skill_id})
-
-        if handler:
-            if once:
-                self.bus.once(name, wrapper)
-            else:
-                self.bus.on(name, wrapper)
-            self.events.append((name, wrapper))
+        wrapper = create_wrapper(self, name, handler, handler_info,
+                                 on_error, once)
+        return self.events.add(name, wrapper, once)
 
     def remove_event(self, name):
         """Removes an event from bus emitter and events list.
@@ -788,25 +700,7 @@ class MycroftSkill:
         Returns:
             bool: True if found and removed, False if not found
         """
-        removed = False
-        for _name, _handler in list(self.events):
-            if name == _name:
-                try:
-                    self.events.remove((_name, _handler))
-                except ValueError:
-                    pass
-                removed = True
-
-        # Because of function wrappers, the emitter doesn't always directly
-        # hold the _handler function, it sometimes holds something like
-        # 'wrapper(_handler)'.  So a call like:
-        #     self.bus.remove(_name, _handler)
-        # will not find it, leaving an event handler with that name left behind
-        # waiting to fire if it is ever re-installed and triggered.
-        # Remove all handlers with the given name, regardless of handler.
-        if removed:
-            self.bus.remove_all_listeners(name)
-        return removed
+        return self.events.remove(name)
 
     def _register_adapt_intent(self, intent_parser, handler):
         """Register an adapt intent.
@@ -1210,9 +1104,7 @@ class MycroftSkill:
 
         # removing events
         self.cancel_all_repeating_events()
-        for e, f in self.events:
-            self.bus.remove(e, f)
-        self.events = []  # Remove reference to wrappers
+        self.events.clear()
 
         self.bus.emit(
             Message("detach_skill", {"skill_id": str(self.skill_id) + ":"}))
