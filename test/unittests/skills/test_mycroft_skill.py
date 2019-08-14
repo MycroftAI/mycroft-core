@@ -21,14 +21,13 @@ from adapt.intent import IntentBuilder
 from os.path import join, dirname, abspath
 from re import error
 from datetime import datetime
+import json
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.skills.skill_data import (load_regex_from_file, load_regex,
-                                       load_vocab_from_file, load_vocabulary)
-from mycroft.skills.core import (MycroftSkill, load_skill,
-                                 create_skill_descriptor,
-                                 resting_screen_handler)
+                                       load_vocabulary, read_vocab_file)
+from mycroft.skills.core import MycroftSkill, resting_screen_handler
 from mycroft.skills.intent_service import open_intent_envelope
 
 from test.util import base_config
@@ -58,6 +57,10 @@ class MockEmitter(object):
         self.results = []
 
 
+def vocab_base_path():
+    return join(dirname(__file__), '..', 'vocab_test')
+
+
 class FunctionTest(unittest.TestCase):
     def test_resting_screen_handler(self):
         class T(MycroftSkill):
@@ -81,28 +84,28 @@ class MycroftSkillTest(unittest.TestCase):
     def setUp(self):
         self.emitter.reset()
 
-    def check_vocab_from_file(self, filename, vocab_type=None,
-                              result_list=None):
-        result_list = result_list or []
-        load_vocab_from_file(join(self.vocab_path, filename), vocab_type,
-                             self.emitter)
-        self.check_emitter(result_list)
+    def check_vocab(self, filename, results=None):
+        results = results or {}
+        intents = load_vocabulary(join(self.vocab_path, filename), 'A')
+        self.compare_dicts(intents, results)
 
     def check_regex_from_file(self, filename, result_list=None):
         result_list = result_list or []
         regex_file = join(self.regex_path, filename)
-        load_regex_from_file(regex_file, self.emitter, 'A')
-        self.check_emitter(result_list)
+        self.assertEqual(sorted(load_regex_from_file(regex_file, 'A')),
+                         sorted(result_list))
 
-    def check_vocab(self, path, result_list=None):
-        result_list = result_list or []
-        load_vocabulary(path, self.emitter, 'A')
-        self.check_emitter(result_list)
+    def compare_dicts(self, d1, d2):
+        self.assertEqual(json.dumps(d1, sort_keys=True),
+                         json.dumps(d2, sort_keys=True))
+
+    def check_read_vocab_file(self, path, result_list=None):
+        resultlist = result_list or []
+        self.assertEqual(sorted(read_vocab_file(path)), sorted(result_list))
 
     def check_regex(self, path, result_list=None):
         result_list = result_list or []
-        load_regex(path, self.emitter, 'A')
-        self.check_emitter(result_list)
+        self.assertEqual(sorted(load_regex(path, 'A')), sorted(result_list))
 
     def check_emitter(self, result_list):
         for type in self.emitter.get_types():
@@ -114,12 +117,12 @@ class MycroftSkillTest(unittest.TestCase):
 
     def test_load_regex_from_file_single(self):
         self.check_regex_from_file('valid/single.rx',
-                                   [{'regex': '(?P<ASingleTest>.*)'}])
+                                   ['(?P<ASingleTest>.*)'])
 
     def test_load_regex_from_file_multiple(self):
         self.check_regex_from_file('valid/multiple.rx',
-                                   [{'regex': '(?P<AMultipleTest1>.*)'},
-                                    {'regex': '(?P<AMultipleTest2>.*)'}])
+                                   ['(?P<AMultipleTest1>.*)',
+                                    '(?P<AMultipleTest2>.*)'])
 
     def test_load_regex_from_file_none(self):
         self.check_regex_from_file('invalid/none.rx')
@@ -134,68 +137,48 @@ class MycroftSkillTest(unittest.TestCase):
 
     def test_load_regex_full(self):
         self.check_regex(join(self.regex_path, 'valid'),
-                         [{'regex': '(?P<AMultipleTest1>.*)'},
-                          {'regex': '(?P<AMultipleTest2>.*)'},
-                          {'regex': '(?P<ASingleTest>.*)'}])
+                         ['(?P<AMultipleTest1>.*)',
+                          '(?P<AMultipleTest2>.*)',
+                          '(?P<ASingleTest>.*)'])
 
     def test_load_regex_empty(self):
-        self.check_regex(join(dirname(__file__),
-                              'empty_dir'))
+        self.check_regex(join(dirname(__file__), 'empty_dir'))
 
     def test_load_regex_fail(self):
         try:
-            self.check_regex(join(dirname(__file__),
-                                  'regex_test_fail'))
+            self.check_regex(join(dirname(__file__), 'regex_test_fail'))
         except OSError as e:
             self.assertEqual(e.strerror, 'No such file or directory')
 
-    def test_load_vocab_from_file_single(self):
-        self.check_vocab_from_file('valid/single.voc', 'test_type',
-                                   [{'start': 'test', 'end': 'test_type'}])
+    def test_load_vocab_file_single(self):
+        self.check_read_vocab_file(join(vocab_base_path(), 'valid/single.voc'),
+                                   [['test']])
 
     def test_load_vocab_from_file_single_alias(self):
-        self.check_vocab_from_file('valid/singlealias.voc', 'test_type',
-                                   [{'start': 'water', 'end': 'test_type'},
-                                    {'start': 'watering', 'end': 'test_type',
-                                     'alias_of': 'water'}])
-
-    def test_load_vocab_from_file_multiple(self):
-        self.check_vocab_from_file('valid/multiple.voc', 'test_type',
-                                   [{'start': 'animal', 'end': 'test_type'},
-                                    {'start': 'animals', 'end': 'test_type'}])
+        self.check_read_vocab_file(join(vocab_base_path(),
+                                        'valid/singlealias.voc'),
+                                   [['water', 'watering']])
 
     def test_load_vocab_from_file_multiple_alias(self):
-        self.check_vocab_from_file('valid/multiplealias.voc', 'test_type',
-                                   [{'start': 'chair', 'end': 'test_type'},
-                                    {'start': 'chairs', 'end': 'test_type',
-                                     'alias_of': 'chair'},
-                                    {'start': 'table', 'end': 'test_type'},
-                                    {'start': 'tables', 'end': 'test_type',
-                                     'alias_of': 'table'}])
-
-    def test_load_vocab_from_file_none(self):
-        self.check_vocab_from_file('none.voc')
+        self.check_read_vocab_file(join(vocab_base_path(),
+                                        'valid/multiplealias.voc'),
+                                   [['chair', 'chairs'], ['table', 'tables']])
 
     def test_load_vocab_from_file_does_not_exist(self):
         try:
-            self.check_vocab_from_file('does_not_exist.voc')
+            self.check_read_vocab_file('does_not_exist.voc')
         except IOError as e:
             self.assertEqual(e.strerror, 'No such file or directory')
 
     def test_load_vocab_full(self):
         self.check_vocab(join(self.vocab_path, 'valid'),
-                         [{'start': 'test', 'end': 'Asingle'},
-                          {'start': 'water', 'end': 'Asinglealias'},
-                          {'start': 'watering', 'end': 'Asinglealias',
-                           'alias_of': 'water'},
-                          {'start': 'animal', 'end': 'Amultiple'},
-                          {'start': 'animals', 'end': 'Amultiple'},
-                          {'start': 'chair', 'end': 'Amultiplealias'},
-                          {'start': 'chairs', 'end': 'Amultiplealias',
-                           'alias_of': 'chair'},
-                          {'start': 'table', 'end': 'Amultiplealias'},
-                          {'start': 'tables', 'end': 'Amultiplealias',
-                           'alias_of': 'table'}])
+                         {
+                             'Asingle': [['test']],
+                             'Asinglealias': [['water', 'watering']],
+                             'Amultiple': [['animal'], ['animals']],
+                             'Amultiplealias': [['chair', 'chairs'],
+                                                ['table', 'tables']]
+                        })
 
     def test_load_vocab_empty(self):
         self.check_vocab(join(dirname(__file__), 'empty_dir'))

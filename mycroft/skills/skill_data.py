@@ -13,8 +13,8 @@
 # limitations under the License.
 #
 
-"""Module containing methods needed to load skill
-data such as dialogs, intents and regular expressions.
+"""Module containing methods needed to load skill data such as intents and
+regular expressions.
 """
 
 from os import walk
@@ -47,64 +47,49 @@ def read_vocab_file(path):
     return vocab
 
 
-def load_vocab_from_file(path, vocab_type, bus):
-    """Load Mycroft vocabulary from file
-    The vocab is sent to the intent handler using the message bus
-
-    Args:
-        path:           path to vocabulary file (*.voc)
-        vocab_type:     keyword name
-        bus:            Mycroft messagebus connection
-        skill_id(str):  skill id
-    """
-    if path.endswith('.voc'):
-        for parts in read_vocab_file(path):
-            entity = parts[0]
-            bus.emit(Message("register_vocab", {
-                'start': entity, 'end': vocab_type
-            }))
-            for alias in parts[1:]:
-                bus.emit(Message("register_vocab", {
-                    'start': alias, 'end': vocab_type, 'alias_of': entity
-                }))
-
-
-def load_regex_from_file(path, bus, skill_id):
+def load_regex_from_file(path, skill_id):
     """Load regex from file
     The regex is sent to the intent handler using the message bus
 
     Args:
         path:       path to vocabulary file (*.voc)
-        bus:        Mycroft messagebus connection
+        skill_id:   skill_id to the regex is tied to
     """
+    regexes = []
     if path.endswith('.rx'):
         with open(path, 'r', encoding='utf8') as reg_file:
             for line in reg_file.readlines():
                 if line.startswith("#"):
                     continue
-                re.compile(munge_regex(line.strip(), skill_id))
-                bus.emit(
-                    Message("register_vocab",
-                            {'regex': munge_regex(line.strip(), skill_id)}))
+                regex = munge_regex(line.strip(), skill_id)
+                # Raise error if regex can't be compiled
+                re.compile(regex)
+                regexes.append(regex)
+
+    return regexes
 
 
-def load_vocabulary(basedir, bus, skill_id):
+def load_vocabulary(basedir, skill_id):
     """Load vocabulary from all files in the specified directory.
 
-    Args:
+    Arguments:
         basedir (str): path of directory to load from (will recurse)
-        bus (messagebus emitter): messagebus instance used to send the vocab to
-                                  the intent service
         skill_id: skill the data belongs to
+    Returns:
+        dict with intent_type as keys and list of list of lists as value.
     """
+    vocabs = {}
     for path, _, files in walk(basedir):
         for f in files:
             if f.endswith(".voc"):
                 vocab_type = to_alnum(skill_id) + splitext(f)[0]
-                load_vocab_from_file(join(path, f), vocab_type, bus)
+                vocs = read_vocab_file(join(path, f))
+                if vocs:
+                    vocabs[vocab_type] = vocs
+    return vocabs
 
 
-def load_regex(basedir, bus, skill_id):
+def load_regex(basedir, skill_id):
     """Load regex from all files in the specified directory.
 
     Args:
@@ -113,10 +98,12 @@ def load_regex(basedir, bus, skill_id):
                                   the intent service
         skill_id (str): skill identifier
     """
+    regexes = []
     for path, _, files in walk(basedir):
         for f in files:
             if f.endswith(".rx"):
-                load_regex_from_file(join(path, f), bus, skill_id)
+                regexes += load_regex_from_file(join(path, f), skill_id)
+    return regexes
 
 
 def to_alnum(skill_id):

@@ -18,9 +18,9 @@ import sys
 import re
 import traceback
 import inspect
+from itertools import chain
 import collections
 import csv
-from itertools import chain
 from adapt.intent import Intent, IntentBuilder
 from os import walk
 from os.path import join, abspath, dirname, basename, exists
@@ -44,6 +44,7 @@ from ..settings import SkillSettings
 from ..skill_data import (load_vocabulary, load_regex, to_alnum,
                           munge_regex, munge_intent_parser, read_vocab_file)
 from ..event_scheduler import EventSchedulerInterface
+from ..intent_service_interface import IntentServiceInterface
 from .event_container import EventContainer, create_wrapper
 
 
@@ -144,6 +145,7 @@ class MycroftSkill:
 
         # Delegator classes
         self.event_scheduler = EventSchedulerInterface(self)
+        self.intent_service = IntentServiceInterface()
 
     @property
     def enclosure(self):
@@ -212,6 +214,7 @@ class MycroftSkill:
         if bus:
             self._bus = bus
             self.events.set_bus(bus)
+            self.intent_service.set_bus(bus)
             self._enclosure = EnclosureAPI(bus, self.name)
             self._register_system_event_handlers()
             # Intialize the SkillGui
@@ -435,8 +438,8 @@ class MycroftSkill:
                 raise FileNotFoundError(
                         'Could not find {}.voc file'.format(voc_filename))
             # load vocab and flatten into a simple list
-            vocab = list(chain(*read_vocab_file(voc)))
-            self.voc_match_cache[cache_key] = vocab
+            vocab = read_vocab_file(voc)
+            self.voc_match_cache[cache_key] = list(chain(*vocab))
         if utt:
             # Check for matches against complete words
             return any([re.match(r'.*\b' + i + r'\b.*', utt)
@@ -712,7 +715,7 @@ class MycroftSkill:
         # Default to the handler's function name if none given
         name = intent_parser.name or handler.__name__
         munge_intent_parser(intent_parser, name, self.skill_id)
-        self.bus.emit(Message("register_intent", intent_parser.__dict__))
+        self.intent_service.register_adapt_intent(intent_parser)
         self.registered_intents.append((name, intent_parser))
         self.add_event(intent_parser.name, handler, 'mycroft.skill.handler')
 
@@ -833,7 +836,7 @@ class MycroftSkill:
         if intent_name in names:
             LOG.debug('Disabling intent ' + intent_name)
             name = '{}:{}'.format(self.skill_id, intent_name)
-            self.bus.emit(Message("detach_intent", {"intent_name": name}))
+            self.intent_service.detach_intent(name)
             return True
 
         LOG.error('Could not disable '
@@ -879,9 +882,7 @@ class MycroftSkill:
             raise ValueError('Word should be a string')
 
         context = to_alnum(self.skill_id) + context
-        self.bus.emit(Message('add_context',
-                              {'context': context, 'word': word,
-                               'origin': origin}))
+        self.intent_service.set_adapt_context(context, word, origin)
 
     def handle_set_cross_context(self, message):
         """Add global context to intent service."""
@@ -919,7 +920,7 @@ class MycroftSkill:
         if not isinstance(context, str):
             raise ValueError('context should be a string')
         context = to_alnum(self.skill_id) + context
-        self.bus.emit(Message('remove_context', {'context': context}))
+        self.intent_service.remove_adapt_context(context)
 
     def register_vocabulary(self, entity, entity_type):
         """ Register a word to a keyword
@@ -939,7 +940,7 @@ class MycroftSkill:
         """
         regex = munge_regex(regex_str, self.skill_id)
         re.compile(regex)  # validate regex
-        self.bus.emit(Message('register_vocab', {'regex': regex}))
+        self.intent_service.register_adapt_regex(regex)
 
     def speak(self, utterance, expect_response=False, wait=False):
         """Speak a sentence.
@@ -1028,27 +1029,41 @@ class MycroftSkill:
         Arguments:
             root_directory (str): root folder to use when loading files
         """
+        keywords = []
         vocab_dir = join(root_directory, 'vocab', self.lang)
+        locale_dir = join(root_directory, 'locale', self.lang)
         if exists(vocab_dir):
-            load_vocabulary(vocab_dir, self.bus, self.skill_id)
-        elif exists(join(root_directory, 'locale', self.lang)):
-            load_vocabulary(join(root_directory, 'locale', self.lang),
-                            self.bus, self.skill_id)
+            keywords = load_vocabulary(vocab_dir, self.skill_id)
+        elif exists(locale_dir):
+            keywords = load_vocabulary(locale_dir, self.skill_id)
         else:
             LOG.debug('No vocab loaded')
 
+        # For each found intent register the default along with any aliases
+        for vocab_type in keywords:
+            for line in keywords[vocab_type]:
+                entity = line[0]
+                aliases = line[1:]
+                self.intent_service.register_adapt_keyword(vocab_type,
+                                                           entity,
+                                                           aliases)
+
     def load_regex_files(self, root_directory):
-        """ Load regex files found under root_directory.
+        """ Load regex files found under the skill directory.
 
         Arguments:
             root_directory (str): root folder to use when loading files
         """
+        regexes = []
         regex_dir = join(root_directory, 'regex', self.lang)
+        locale_dir = join(root_directory, 'locale', self.lang)
         if exists(regex_dir):
-            load_regex(regex_dir, self.bus, self.skill_id)
-        elif exists(join(root_directory, 'locale', self.lang)):
-            load_regex(join(root_directory, 'locale', self.lang),
-                       self.bus, self.skill_id)
+            regexes = load_regex(regex_dir, self.skill_id)
+        elif exists(locale_dir):
+            regexes = load_regex(locale_dir, self.skill_id)
+
+        for regex in regexes:
+            self.intent_service.register_adapt_regex(regex)
 
     def __handle_stop(self, event):
         """Handler for the "mycroft.stop" signal. Runs the user defined
