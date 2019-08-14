@@ -38,6 +38,13 @@ CONFIG.merge(
 mycroft.api.requests.post = mock.MagicMock()
 
 
+def create_identity(uuid, expired=False):
+    mock_identity = mock.MagicMock()
+    mock_identity.is_expired.return_value = expired
+    mock_identity.uuid = uuid
+    return mock_identity
+
+
 def create_response(status, json=None, url='', data=''):
     json = json or {}
     response = mock.MagicMock()
@@ -53,14 +60,11 @@ class TestApi(unittest.TestCase):
                              return_value=CONFIG)
         self.mock_config_get = patcher.start()
         self.addCleanup(patcher.stop)
-        super(TestApi, self).setUp()
+        super().setUp()
 
     @mock.patch('mycroft.api.IdentityManager.get')
     def test_init(self, mock_identity_get):
-        mock_identity = mock.MagicMock()
-        mock_identity.is_expired.return_value = False
-        mock_identity.uuid = '1234'
-        mock_identity_get.return_value = mock_identity
+        mock_identity_get.return_value = create_identity('1234')
         a = mycroft.api.Api('test-path')
         self.assertEquals(a.url, 'https://api-test.mycroft.ai')
         self.assertEquals(a.version, 'v1')
@@ -101,15 +105,21 @@ class TestApi(unittest.TestCase):
         a.send(req)
         self.assertTrue(mycroft.api.IdentityManager.save.called)
 
+
+class TestDeviceApi(unittest.TestCase):
+    def setUp(self):
+        patcher = mock.patch('mycroft.configuration.Configuration.get',
+                             return_value=CONFIG)
+        self.mock_config_get = patcher.start()
+        self.addCleanup(patcher.stop)
+        super().setUp()
+
     @mock.patch('mycroft.api.IdentityManager.get')
     @mock.patch('mycroft.api.requests.request')
-    def test_device(self, mock_request, mock_identity_get):
+    def test_init(self, mock_request, mock_identity_get):
         mock_request.return_value = create_response(200)
-        mock_identity = mock.MagicMock()
-        mock_identity.is_expired.return_value = False
-        mock_identity.uuid = '1234'
-        mock_identity_get.return_value = mock_identity
-        # Test init
+        mock_identity_get.return_value = create_identity('1234')
+
         device = mycroft.api.DeviceApi()
         self.assertEquals(device.identity.uuid, '1234')
         self.assertEquals(device.path, 'device')
@@ -118,10 +128,7 @@ class TestApi(unittest.TestCase):
     @mock.patch('mycroft.api.requests.request')
     def test_device_activate(self, mock_request, mock_identity_get):
         mock_request.return_value = create_response(200)
-        mock_identity = mock.MagicMock()
-        mock_identity.is_expired.return_value = False
-        mock_identity.uuid = '1234'
-        mock_identity_get.return_value = mock_identity
+        mock_identity_get.return_value = create_identity('1234')
         # Test activate
         device = mycroft.api.DeviceApi()
         device.activate('state', 'token')
@@ -133,10 +140,7 @@ class TestApi(unittest.TestCase):
     @mock.patch('mycroft.api.requests.request')
     def test_device_get(self, mock_request, mock_identity_get):
         mock_request.return_value = create_response(200)
-        mock_identity = mock.MagicMock()
-        mock_identity.is_expired.return_value = False
-        mock_identity.uuid = '1234'
-        mock_identity_get.return_value = mock_identity
+        mock_identity_get.return_value = create_identity('1234')
         # Test get
         device = mycroft.api.DeviceApi()
         device.get()
@@ -149,10 +153,7 @@ class TestApi(unittest.TestCase):
     def test_device_get_code(self, mock_request, mock_identity_get,
                              mock_identit_update):
         mock_request.return_value = create_response(200, '123ABC')
-        mock_identity = mock.MagicMock()
-        mock_identity.is_expired.return_value = False
-        mock_identity.uuid = '1234'
-        mock_identity_get.return_value = mock_identity
+        mock_identity_get.return_value = create_identity('1234')
         device = mycroft.api.DeviceApi()
         ret = device.get_code('state')
         self.assertEquals(ret, '123ABC')
@@ -164,10 +165,7 @@ class TestApi(unittest.TestCase):
     @mock.patch('mycroft.api.requests.request')
     def test_device_get_settings(self, mock_request, mock_identity_get):
         mock_request.return_value = create_response(200, {})
-        mock_identity = mock.MagicMock()
-        mock_identity.is_expired.return_value = False
-        mock_identity.uuid = '1234'
-        mock_identity_get.return_value = mock_identity
+        mock_identity_get.return_value = create_identity('1234')
         device = mycroft.api.DeviceApi()
         device.get_settings()
         url = mock_request.call_args[0][1]
@@ -178,10 +176,7 @@ class TestApi(unittest.TestCase):
     @mock.patch('mycroft.api.requests.request')
     def test_device_report_metric(self, mock_request, mock_identity_get):
         mock_request.return_value = create_response(200, {})
-        mock_identity = mock.MagicMock()
-        mock_identity.is_expired.return_value = False
-        mock_identity.uuid = '1234'
-        mock_identity_get.return_value = mock_identity
+        mock_identity_get.return_value = create_identity('1234')
         device = mycroft.api.DeviceApi()
         device.report_metric('mymetric', {'data': 'mydata'})
         url = mock_request.call_args[0][1]
@@ -198,10 +193,7 @@ class TestApi(unittest.TestCase):
     @mock.patch('mycroft.api.requests.request')
     def test_device_send_email(self, mock_request, mock_identity_get):
         mock_request.return_value = create_response(200, {})
-        mock_identity = mock.MagicMock()
-        mock_identity.is_expired.return_value = False
-        mock_identity.uuid = '1234'
-        mock_identity_get.return_value = mock_identity
+        mock_identity_get.return_value = create_identity('1234')
         device = mycroft.api.DeviceApi()
         device.send_email('title', 'body', 'sender')
         url = mock_request.call_args[0][1]
@@ -218,10 +210,7 @@ class TestApi(unittest.TestCase):
     @mock.patch('mycroft.api.requests.request')
     def test_device_get_oauth_token(self, mock_request, mock_identity_get):
         mock_request.return_value = create_response(200, {})
-        mock_identity = mock.MagicMock()
-        mock_identity.is_expired.return_value = False
-        mock_identity.uuid = '1234'
-        mock_identity_get.return_value = mock_identity
+        mock_identity_get.return_value = create_identity('1234')
         device = mycroft.api.DeviceApi()
         device.get_oauth_token(1)
         url = mock_request.call_args[0][1]
@@ -233,10 +222,7 @@ class TestApi(unittest.TestCase):
     @mock.patch('mycroft.api.requests.request')
     def test_device_get_location(self, mock_request, mock_identity_get):
         mock_request.return_value = create_response(200, {})
-        mock_identity = mock.MagicMock()
-        mock_identity.is_expired.return_value = False
-        mock_identity.uuid = '1234'
-        mock_identity_get.return_value = mock_identity
+        mock_identity_get.return_value = create_identity('1234')
         device = mycroft.api.DeviceApi()
         device.get_location()
         url = mock_request.call_args[0][1]
@@ -247,9 +233,7 @@ class TestApi(unittest.TestCase):
     @mock.patch('mycroft.api.requests.request')
     def test_device_get_subscription(self, mock_request, mock_identity_get):
         mock_request.return_value = create_response(200, {})
-        mock_identity = mock.MagicMock()
-        mock_identity.uuid = '1234'
-        mock_identity_get.return_value = mock_identity
+        mock_identity_get.return_value = create_identity('1234')
         device = mycroft.api.DeviceApi()
         device.get_subscription()
         url = mock_request.call_args[0][1]
@@ -269,10 +253,7 @@ class TestApi(unittest.TestCase):
     @mock.patch('mycroft.api.requests.request')
     def test_device_upload_skills_data(self, mock_request, mock_identity_get):
         mock_request.return_value = create_response(200)
-        mock_identity = mock.MagicMock()
-        mock_identity.is_expired.return_value = False
-        mock_identity.uuid = '1234'
-        mock_identity_get.return_value = mock_identity
+        mock_identity_get.return_value = create_identity('1234')
         device = mycroft.api.DeviceApi()
         device.upload_skills_data({})
         url = mock_request.call_args[0][1]
@@ -293,9 +274,7 @@ class TestApi(unittest.TestCase):
     @mock.patch('mycroft.api.requests.request')
     def test_stt(self, mock_request, mock_identity_get):
         mock_request.return_value = create_response(200, {})
-        mock_identity = mock.MagicMock()
-        mock_identity.uuid = '1234'
-        mock_identity_get.return_value = mock_identity
+        mock_identity_get.return_value = create_identity('1234')
         stt = mycroft.api.STTApi('stt')
         self.assertEquals(stt.path, 'stt')
 
@@ -303,9 +282,7 @@ class TestApi(unittest.TestCase):
     @mock.patch('mycroft.api.requests.request')
     def test_stt_stt(self, mock_request, mock_identity_get):
         mock_request.return_value = create_response(200, {})
-        mock_identity = mock.MagicMock()
-        mock_identity.uuid = '1234'
-        mock_identity_get.return_value = mock_identity
+        mock_identity_get.return_value = create_identity('1234')
         stt = mycroft.api.STTApi('stt')
         stt.stt('La la la', 'en-US', 1)
         url = mock_request.call_args[0][1]
@@ -330,9 +307,91 @@ class TestApi(unittest.TestCase):
         mock_identity.uuid = "1234"
         self.assertTrue(mycroft.api.has_been_paired())
 
-    @mock.patch('mycroft.api._paired_cache', False)
-    @mock.patch('mycroft.api.IdentityManager.get')
-    @mock.patch('mycroft.api.requests.request')
+
+@mock.patch('mycroft.api.IdentityManager.get')
+@mock.patch('mycroft.api.requests.request')
+class TestSettingsMeta(unittest.TestCase):
+    def setUp(self):
+        patcher = mock.patch('mycroft.configuration.Configuration.get',
+                             return_value=CONFIG)
+        self.mock_config_get = patcher.start()
+        self.addCleanup(patcher.stop)
+        super().setUp()
+
+    def test_upload_meta(self, mock_request, mock_identity_get):
+        mock_request.return_value = create_response(200, {})
+        mock_identity_get.return_value = create_identity('1234')
+        device = mycroft.api.DeviceApi()
+
+        settings_meta = {
+            'name': 'TestMeta',
+            "skill_gid": 'test_skill|19.02',
+            'skillMetadata': {
+                'sections': [
+                    {
+                        'name': 'Settings',
+                        'fields': [
+                            {
+                                'name': 'Set me',
+                                'type': 'number',
+                                'value': 4
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+        device.upload_skill_metadata(settings_meta)
+        url = mock_request.call_args[0][1]
+        method = mock_request.call_args[0][0]
+        params = mock_request.call_args[1]
+
+        content_type = params['headers']['Content-Type']
+        self.assertEquals(content_type, 'application/json')
+        self.assertEquals(method, 'PUT')
+        self.assertEquals(params['json'], settings_meta)
+        self.assertEquals(
+            url, 'https://api-test.mycroft.ai/v1/device/1234/skill')
+
+    def test_get_skill_settings(self, mock_request, mock_identity_get):
+        mock_request.return_value = create_response(200, {})
+        mock_identity_get.return_value = create_identity('1234')
+        device = mycroft.api.DeviceApi()
+        device.get_skill_settings()
+        method = mock_request.call_args[0][0]
+        url = mock_request.call_args[0][1]
+        params = mock_request.call_args[1]
+
+        self.assertEquals(method, 'GET')
+        self.assertEquals(
+            url, 'https://api-test.mycroft.ai/v1/device/1234/skill')
+
+    def test_delete_meta(self, mock_request, mock_identity_get):
+        mock_request.return_value = create_response(200, {})
+        mock_identity_get.return_value = create_identity('1234')
+        device = mycroft.api.DeviceApi()
+        device.delete_skill_metadata('testgid')
+        method = mock_request.call_args[0][0]
+        url = mock_request.call_args[0][1]
+        params = mock_request.call_args[1]
+
+        content_type = params['headers']['Content-Type']
+        self.assertEquals(method, 'DELETE')
+        self.assertEquals(
+            url, 'https://api-test.mycroft.ai/v1/device/1234/skill/testgid')
+
+
+@mock.patch('mycroft.api._paired_cache', False)
+@mock.patch('mycroft.api.IdentityManager.get')
+@mock.patch('mycroft.api.requests.request')
+class TestIsPaired(unittest.TestCase):
+    def setUp(self):
+        patcher = mock.patch('mycroft.configuration.Configuration.get',
+                             return_value=CONFIG)
+        self.mock_config_get = patcher.start()
+        self.addCleanup(patcher.stop)
+        super().setUp()
+
     def test_is_paired_true(self, mock_request, mock_identity_get):
         mock_request.return_value = create_response(200)
         mock_identity = mock.MagicMock()
@@ -348,10 +407,7 @@ class TestApi(unittest.TestCase):
         url = mock_request.call_args[0][1]
         self.assertEquals(url, 'https://api-test.mycroft.ai/v1/device/1234')
 
-    @mock.patch('mycroft.api._paired_cache', False)
-    @mock.patch('mycroft.api.IdentityManager.get')
-    @mock.patch('mycroft.api.requests.request')
-    def test_is_paired_false(self, mock_request, mock_identity_get):
+    def test_is_paired_false_local(self, mock_request, mock_identity_get):
         mock_request.return_value = create_response(200)
         mock_identity = mock.MagicMock()
         mock_identity.is_expired.return_value = False
@@ -361,3 +417,24 @@ class TestApi(unittest.TestCase):
         self.assertFalse(mycroft.api.is_paired())
         mock_identity.uuid = None
         self.assertFalse(mycroft.api.is_paired())
+
+    def test_is_paired_false_remote(self, mock_request, mock_identity_get):
+        mock_request.return_value = create_response(401)
+        mock_identity = mock.MagicMock()
+        mock_identity.is_expired.return_value = False
+        mock_identity.uuid = '1234'
+        mock_identity_get.return_value = mock_identity
+
+        self.assertFalse(mycroft.api.is_paired())
+
+    def test_is_paired_error_remote(self, mock_request, mock_identity_get):
+        mock_request.return_value = create_response(500)
+        mock_identity = mock.MagicMock()
+        mock_identity.is_expired.return_value = False
+        mock_identity.uuid = '1234'
+        mock_identity_get.return_value = mock_identity
+
+        self.assertFalse(mycroft.api.is_paired())
+
+        with self.assertRaises(mycroft.api.BackendDown):
+            mycroft.api.is_paired(ignore_errors=False)

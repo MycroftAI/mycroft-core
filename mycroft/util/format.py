@@ -285,6 +285,8 @@ def nice_number(number, lang=None, speech=True, denominators=None):
         return nice_number_nl(number, speech, denominators)
     elif lang_code == "da":
         return nice_number_da(number, speech, denominators)
+    elif lang_code == "sv":
+        return nice_number_sv(number, speech, denominators)
 
     # Default to the raw number for unsupported languages,
     # hopefully the STT engine will pronounce understandably.
@@ -327,6 +329,8 @@ def nice_time(dt, lang=None, speech=True, use_24hour=False,
         return nice_time_da(dt, speech, use_24hour, use_ampm)
     elif lang_code == "pt":
         return nice_time_pt(dt, speech, use_24hour, use_ampm)
+    elif lang_code == "sv":
+        return nice_time_sv(dt, speech, use_24hour, use_ampm)
 
     # TODO: Other languages
     return str(dt)
@@ -370,6 +374,8 @@ def pronounce_number(number, lang=None, places=2, short_scale=True,
         return pronounce_number_da(number, places=places)
     elif lang_code == "pt":
         return pronounce_number_pt(number, places=places)
+    elif lang_code == "sv":
+        return pronounce_number_sv(number, places=places)
 
     # Default to just returning the numeric value
     return str(number)

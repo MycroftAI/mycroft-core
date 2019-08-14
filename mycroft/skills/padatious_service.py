@@ -106,8 +106,14 @@ class PadatiousService(FallbackSkill):
             self.train()
 
     def __detach_intent(self, intent_name):
-        self.registered_intents.remove(intent_name)
-        self.container.remove_intent(intent_name)
+        """ Remove an intent if it has been registered.
+
+        Arguments:
+            intent_name (str): intent identifier
+        """
+        if intent_name in self.registered_intents:
+            self.registered_intents.remove(intent_name)
+            self.container.remove_intent(intent_name)
 
     def handle_detach_intent(self, message):
         self.__detach_intent(message.data.get('intent_name'))
