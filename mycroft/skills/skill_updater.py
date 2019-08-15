@@ -132,7 +132,7 @@ class SkillUpdater:
         success = True
         if connected():
             self._load_installed_skills()
-            with self.msm.lock:
+            with self.msm_lock, self.msm.lock:
                 self._apply_install_or_update(quick)
             self._save_installed_skills()
             # Schedule retry in 5 minutes on failure, after 10 shorter periods
