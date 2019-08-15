@@ -51,6 +51,12 @@ ONE_HOUR = 3600
 
 
 class DevicePrimer(object):
+    """Container handling the device preparation.
+
+    Arguments:
+        message_bus_client: Bus client used to interact with the system
+        config (dict): Mycroft configuration
+    """
     def __init__(self, message_bus_client, config):
         self.bus = message_bus_client
         self.platform = config['enclosure'].get("platform", "unknown")
@@ -207,10 +213,10 @@ def main():
     reset_sigint_handler()
     # Create PID file, prevent multiple instances of this service
     mycroft.lock.Lock('skills')
-    # Connect this Skill management process to the Mycroft message bus
     config = Configuration.get()
     # Set the active lang to match the configured one
     set_active_lang(config.get('lang', 'en-us'))
+    # Connect this process to the Mycroft message bus
     bus = _start_message_bus_client()
     _register_intent_services(bus)
     event_scheduler = EventScheduler(bus)
