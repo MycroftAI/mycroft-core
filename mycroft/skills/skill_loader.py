@@ -81,7 +81,7 @@ class SkillLoader:
             return False
 
     def reload(self):
-        """Load an unloaded skill or reload unloaded/changed needs if necessary.
+        """Load an unloaded skill or reload unloaded/changed skill.
 
         Returns:
              bool: if the skill was loaded/reloaded
