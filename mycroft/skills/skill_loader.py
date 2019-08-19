@@ -116,6 +116,19 @@ class SkillLoader:
         self.loaded = False
         self._emit_skill_shutdown_event()
 
+    def unload(self):
+        if self.instance:
+            self._execute_instance_shutdown()
+        self.loaded = False
+
+    def activate(self):
+        self.active = True
+        self.load()
+
+    def deactivate(self):
+        self.active = False
+        self.unload()
+
     def _execute_instance_shutdown(self):
         """Call the shutdown method of the skill being reloaded."""
         try:

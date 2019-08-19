@@ -181,7 +181,7 @@ class SkillManager(Thread):
             skill = self.skill_loaders[skill_dir]
             LOG.info('removing {}'.format(skill.skill_id))
             try:
-                skill.instance.default_shutdown()
+                skill.unload()
             except Exception:
                 LOG.exception('Failed to shutdown skill ' + skill.id)
             del self.skill_loaders[skill_dir]
@@ -213,9 +213,7 @@ class SkillManager(Thread):
         try:
             for skill_loader in self.skill_loaders.values():
                 if message.data['skill'] == skill_loader.skill_id:
-                    skill_loader.active = False
-                    skill_loader.instance.default_shutdown()
-                    break
+                    skill_loader.deactivate()
         except Exception:
             LOG.exception('Failed to deactivate ' + message.data['skill'])
 
@@ -230,8 +228,7 @@ class SkillManager(Thread):
             if skill_to_keep in loaded_skill_file_names:
                 for skill in self.skill_loaders.values():
                     if skill.skill_id != skill_to_keep:
-                        skill.active = False
-                        skill.instance.default_shutdown()
+                        skill.deactivate()
             else:
                 LOG.info('Couldn\'t find skill ' + message.data['skill'])
         except Exception:
@@ -241,9 +238,9 @@ class SkillManager(Thread):
         """Activate a deactivated skill."""
         try:
             for skill_loader in self.skill_loaders.values():
-                if message.data['skill'] in ('all', skill_loader.skill_id):
-                    skill_loader.active = True
-                    skill_loader.load()
+                if (message.data['skill'] in ('all', skill_loader.skill_id) and
+                        not skill_loader.active):
+                    skill_loader.activate()
         except Exception:
             LOG.exception('Couldn\'t activate skill')
 
