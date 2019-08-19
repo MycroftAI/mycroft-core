@@ -130,15 +130,7 @@ class SkillManager(Thread):
     def _load_on_startup(self):
         """Handle initial skill load."""
         LOG.info('Loading installed skills...')
-        while not self.initial_load_complete:
-            skill_dirs = self._get_skill_directories()
-            if skill_dirs:
-                for skill_dir in skill_dirs:
-                    self._load_skill(skill_dir)
-                if len(self.skill_loaders) == len(skill_dirs):
-                    self.initial_load_complete = True
-            sleep(2)
-
+        self._load_new_skills()
         LOG.info("Skills all loaded!")
         self.bus.emit(Message('mycroft.skills.initialized'))
 
