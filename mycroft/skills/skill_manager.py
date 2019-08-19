@@ -146,7 +146,7 @@ class SkillManager(Thread):
         """Handle reload of recently changed skill(s)"""
         for skill_dir in self._get_skill_directories():
             skill_loader = self.skill_loaders.get(skill_dir)
-            if skill_loader is not None:
+            if skill_loader is not None and skill_loader.reload_needed():
                 skill_loader.reload()
 
     def _load_new_skills(self):
@@ -159,9 +159,10 @@ class SkillManager(Thread):
         try:
             skill_loader = SkillLoader(self.bus, skill_directory)
             skill_loader.load()
-            self.skill_loaders[skill_directory] = skill_loader
         except Exception:
             LOG.exception('Load of skill {} failed!'.format(skill_directory))
+        finally:
+            self.skill_loaders[skill_directory] = skill_loader
 
     def _get_skill_directories(self):
         skill_glob = glob(os.path.join(self.msm.skills_dir, '*/'))

@@ -57,9 +57,8 @@ class TestSkillLoader(MycroftUnitTestBase):
         self.loader.instance.reload_skill = True
         self.loader.loaded = True
         self.loader.last_loaded = time() + ONE_MINUTE
-        self.loader.reload()
 
-        self.assertFalse(self.loader.load_attempted)
+        self.assertFalse(self.loader.reload_needed())
 
     def test_skill_reloading_blocked(self):
         """The loader should skip reloads for skill that doesn't allow it."""
@@ -67,13 +66,7 @@ class TestSkillLoader(MycroftUnitTestBase):
         self.loader.instance.reload_skill = False
         self.loader.active = False
         self.loader.loaded = True
-        self.loader.reload()
-
-        self.assertFalse(self.loader.load_attempted)
-        log_messages = [
-            call.info('Reloading blocked for skill test_skill - aborting.')
-        ]
-        self.assertListEqual(log_messages, self.log_mock.method_calls)
+        self.assertFalse(self.loader.reload_needed())
 
     def test_skill_reload(self):
         """Test reloading a skill that was modified."""

@@ -80,7 +80,7 @@ class SkillLoader:
         else:
             return False
 
-    def reload(self):
+    def reload_needed(self):
         """Load an unloaded skill or reload unloaded/changed skill.
 
         Returns:
@@ -88,19 +88,21 @@ class SkillLoader:
         """
         self.last_modified = _get_last_modified_time(self.skill_directory)
         modified = self.last_modified > self.last_loaded
+
+        # create local reference to avoid threading issues
+        instance = self.instance
+
         reload_allowed = (
-                self.loaded and
                 self.active and
-                self.instance.reload_skill
+                instance is None or instance.reload_skill
         )
-        if self.loaded and modified:
-            if reload_allowed:
-                LOG.info('ATTEMPTING TO RELOAD SKILL: ' + self.skill_id)
-                self._unload()
-                self._load()
-            else:
-                log_msg = 'Reloading blocked for skill {} - aborting.'
-                LOG.info(log_msg.format(self.skill_id))
+        return modified and reload_allowed
+
+    def reload(self):
+        LOG.info('ATTEMPTING TO RELOAD SKILL: ' + self.skill_id)
+        if self.instance:
+            self._unload()
+        self._load()
 
     def load(self):
         LOG.info('ATTEMPTING TO LOAD SKILL: ' + self.skill_id)
@@ -152,6 +154,8 @@ class SkillLoader:
             if skill_module is not None:
                 self._create_skill_instance(skill_module)
                 self._check_for_first_run()
+
+        self.last_loaded = time()
         self._communicate_load_status()
 
     def _prepare_for_load(self):
@@ -180,14 +184,16 @@ class SkillLoader:
             error_msg = 'Failed to load {} due to a missing file.'
             LOG.exception(error_msg.format(self.skill_id))
         except Exception as e:
-            LOG.exception("Failed to load skill: " + self.skill_id)
-
-        module_is_skill = (
-            hasattr(skill_module, 'create_skill') and
-            callable(skill_module.create_skill)
-        )
-        if module_is_skill:
-            return skill_module
+            LOG.exception('Failed to load skill: '
+                          '{} ({})'.format(self.skill_id, repr(e)))
+        else:
+            module_is_skill = (
+                hasattr(skill_module, 'create_skill') and
+                callable(skill_module.create_skill)
+            )
+            if module_is_skill:
+                return skill_module
+        return None  # Module wasn't loaded
 
     def _create_skill_instance(self, skill_module):
         """Use v2 skills framework to create the skill."""
@@ -209,7 +215,6 @@ class SkillLoader:
             raise
 
         self.loaded = True
-        self.last_loaded = time()
 
     def _check_for_first_run(self):
         """The very first time a skill is run, speak the intro."""
