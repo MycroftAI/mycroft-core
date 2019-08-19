@@ -250,8 +250,8 @@ class SkillManager(Thread):
         try:
             for skill_loader in self.skill_loaders.values():
                 if message.data['skill'] in ('all', skill_loader.skill_id):
-                    skill_loader.loaded = False
                     skill_loader.active = True
+                    skill_loader.load()
         except Exception:
             LOG.exception('Couldn\'t activate skill')
 
