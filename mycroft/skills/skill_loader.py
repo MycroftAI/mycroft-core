@@ -164,9 +164,9 @@ class SkillLoader:
             self._skip_load()
         else:
             skill_module = self._load_skill_source()
-            if skill_module is not None:
-                self._create_skill_instance(skill_module)
+            if skill_module and self._create_skill_instance(skill_module):
                 self._check_for_first_run()
+                self.loaded = True
 
         self.last_loaded = time()
         self._communicate_load_status()
@@ -210,24 +210,33 @@ class SkillLoader:
 
     def _create_skill_instance(self, skill_module):
         """Use v2 skills framework to create the skill."""
-        self.instance = skill_module.create_skill()
-        self.instance.skill_id = self.skill_id
-        self.instance.settings.allow_overwrite = True
-        self.instance.settings.load_skill_settings_from_file()
-        self.instance.bind(self.bus)
         try:
-            self.instance.load_data_files(self.skill_directory)
-            # Set up intent handlers
-            # TODO: can this be a public method?
-            self.instance._register_decorated()
-            self.instance.register_resting_screen()
-            self.instance.initialize()
-        except Exception:
-            # If an exception occurs, make sure to clean up the skill
-            self.instance.default_shutdown()
-            raise
+            self.instance = skill_module.create_skill()
+        except Exception as e:
+            log_msg = 'Skill __init__ failed with {}'
+            LOG.exception(log_msg.format(repr(e)))
+            self.instance = None
 
-        self.loaded = True
+        if self.instance:
+            self.instance.skill_id = self.skill_id
+            self.instance.settings.allow_overwrite = True
+            self.instance.settings.load_skill_settings_from_file()
+            self.instance.bind(self.bus)
+            try:
+                self.instance.load_data_files(self.skill_directory)
+                # Set up intent handlers
+                # TODO: can this be a public method?
+                self.instance._register_decorated()
+                self.instance.register_resting_screen()
+                self.instance.initialize()
+            except Exception as e:
+                # If an exception occurs, make sure to clean up the skill
+                self.instance.default_shutdown()
+                self.instane = None
+                log_msg = 'Skill initialization failed with {}'
+                LOG.exception(log_msg.format(repr(e)))
+
+        return self.instance is not None
 
     def _check_for_first_run(self):
         """The very first time a skill is run, speak the intro."""
