@@ -143,7 +143,7 @@ class TestSkillManager(MycroftUnitTestBase):
         self.skill_manager._unload_removed_skills()
 
         self.assertDictEqual({}, self.skill_manager.skill_loaders)
-        self.skill_loader_mock.instance.default_shutdown.assert_called_once()
+        self.skill_loader_mock.unload.assert_called_once_with()
 
     def test_send_skill_list(self):
         self.skill_loader_mock.active = True
@@ -163,7 +163,8 @@ class TestSkillManager(MycroftUnitTestBase):
         self.skill_manager.stop()
 
         self.assertTrue(self.skill_manager._stop_event.is_set())
-        self.skill_loader_mock.instance.default_shutdown.assert_called_once()
+        instance = self.skill_loader_mock.instance
+        instance.default_shutdown.assert_called_once_with()
 
     def test_handle_converse_request(self):
         message = Mock()
@@ -225,7 +226,9 @@ class TestSkillManager(MycroftUnitTestBase):
     def test_handle_paired(self):
         self.skill_updater_mock.next_download = 0
         self.skill_manager.handle_paired(None)
-        self.skill_manager.skill_updater.post_manifest.assert_called_once_with()
+
+        updater = self.skill_manager.skill_updater
+        updater.post_manifest.assert_called_once_with()
 
     def test_deactivate_skill(self):
         message = Mock()
@@ -273,12 +276,11 @@ class TestSkillManager(MycroftUnitTestBase):
         self.skill_manager.skill_loaders = {}
         with patch(patch_obj, spec=True) as loader_mock:
             self.skill_manager._load_on_startup()
-            loader_mock.load.assert_called_once()
+            loader_mock.return_value.load.assert_called_once_with()
             self.assertEqual(
                 loader_mock.return_value,
                 self.skill_manager.skill_loaders[str(self.skill_dir)]
             )
-        self.assertTrue(self.skill_manager.initial_load_complete)
         self.assertListEqual(
             ['mycroft.skills.initialized'],
             self.message_bus_mock.message_types
@@ -289,9 +291,10 @@ class TestSkillManager(MycroftUnitTestBase):
         self.skill_dir.joinpath('__init__.py').touch()
         patch_obj = self.mock_package + 'SkillLoader'
         self.skill_manager.skill_loaders = {}
+
         with patch(patch_obj, spec=True) as loader_mock:
             self.skill_manager._load_new_skills()
-            loader_mock.load.assert_called_once()
+            loader_mock.return_value.load.assert_called_once_with()
             self.assertEqual(
                 loader_mock.return_value,
                 self.skill_manager.skill_loaders[str(self.skill_dir)]
@@ -300,8 +303,9 @@ class TestSkillManager(MycroftUnitTestBase):
     def test_reload_modified(self):
         self.skill_dir.mkdir(parents=True)
         self.skill_dir.joinpath('__init__.py').touch()
+        self.skill_loader_mock.reload_needed.return_value = True
         self.skill_manager._reload_modified_skills()
-        self.skill_loader_mock.load.assert_called_once()
+        self.skill_loader_mock.reload.assert_called_once_with()
         self.assertEqual(
             self.skill_loader_mock,
             self.skill_manager.skill_loaders[str(self.skill_dir)]
@@ -313,4 +317,4 @@ class TestSkillManager(MycroftUnitTestBase):
         updater_mock.next_download = 0
         self.skill_manager.skill_updater = updater_mock
         self.skill_manager._update_skills()
-        updater_mock.update_skills.assert_called_once()
+        updater_mock.update_skills.assert_called_once_with()

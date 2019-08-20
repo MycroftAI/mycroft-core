@@ -42,7 +42,7 @@ def mock_config(temp_dir):
                 )
             ),
             update_interval=1.0,
-            auto_update=False,
+            auto_update=True,
             blacklisted_skills=[],
             priority_skills=['foobar'],
             upload_skill_manifest=True

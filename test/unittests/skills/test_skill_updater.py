@@ -175,7 +175,8 @@ class TestSkillUpdater(MycroftUnitTestBase):
                 SkillUpdater(self.message_bus_mock).post_manifest()
                 api_instance = api_mock.return_value
                 api_instance.upload_skills_data.assert_called_once_with('foo')
-            paired_mock.assert_called_once()
+            print(paired_mock.called)
+            paired_mock.assert_called_once_with()
 
     def test_get_skill_data(self):
         """Test invoking MSM to retrieve skill data."""
@@ -205,8 +206,8 @@ class TestSkillUpdater(MycroftUnitTestBase):
         updater = SkillUpdater(self.message_bus_mock)
         updater.install_or_update(skill)
         self.assertIn('foobar', updater.installed_skills)
-        skill.update.assert_called_once()
-        skill.update_deps.assert_called_once()
+        skill.update.assert_called_once_with()
+        skill.update_deps.assert_called_once_with()
         self.msm_mock.install.assert_not_called()
 
     def test_install_or_update_default(self):
@@ -217,7 +218,7 @@ class TestSkillUpdater(MycroftUnitTestBase):
         updater = SkillUpdater(self.message_bus_mock)
         updater.install_or_update(skill)
         self.assertIn('test_skill', updater.installed_skills)
-        skill.update.assert_not_once()
+        self.assertTrue(not skill.update.called)
         self.msm_mock.install.assert_called_once_with(skill, origin='default')
 
     def test_install_or_update_default_fail(self):
@@ -230,7 +231,7 @@ class TestSkillUpdater(MycroftUnitTestBase):
         with self.assertRaises(ValueError):
             updater.install_or_update(skill)
         self.assertNotIn('test_skill', updater.installed_skills)
-        skill.update.assert_not_once()
+        self.assertTrue(not skill.update.called)
         self.msm_mock.install.assert_called_once_with(skill, origin='default')
         self.assertTrue(updater.default_skill_install_error)
 
