@@ -153,5 +153,5 @@ class EventContainer:
         events.
         """
         for e, f in self.events:
-            self.bus.remove_all_listeners(e, f)
+            self.bus.remove_all_listeners(e)
         self.events = []  # Remove reference to wrappers
