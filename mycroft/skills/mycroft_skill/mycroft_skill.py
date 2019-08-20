@@ -137,9 +137,10 @@ class MycroftSkill:
         #: Filesystem access to skill specific folder.
         #: See mycroft.filesystem for details.
         self.file_system = FileSystemAccess(join('skills', self.name))
-        self.registered_intents = []
+
         self.log = LOG.create_logger(self.name)  #: Skill logger instance
         self.reload_skill = True  #: allow reloading (default True)
+
         self.events = EventContainer(bus)
         self.voc_match_cache = {}
 
@@ -243,7 +244,7 @@ class MycroftSkill:
     def detach(self):
         for (name, intent) in self.registered_intents:
             name = '{}:{}'.format(self.skill_id, name)
-            self.bus.emit(Message("detach_intent", {"intent_name": name}))
+            self.intent_service.detach_intent(name)
 
     def initialize(self):
         """Perform any final setup needed for the skill.
@@ -715,9 +716,10 @@ class MycroftSkill:
         # Default to the handler's function name if none given
         name = intent_parser.name or handler.__name__
         munge_intent_parser(intent_parser, name, self.skill_id)
-        self.intent_service.register_adapt_intent(intent_parser)
-        self.registered_intents.append((name, intent_parser))
-        self.add_event(intent_parser.name, handler, 'mycroft.skill.handler')
+        self.intent_service.register_adapt_intent(name, intent_parser)
+        if handler:
+            self.add_event(intent_parser.name, handler,
+                           'mycroft.skill.handler')
 
     def register_intent(self, intent_parser, handler):
         """Register an Intent with the intent service.
@@ -765,15 +767,8 @@ class MycroftSkill:
             handler:     function to register with intent
         """
         name = '{}:{}'.format(self.skill_id, intent_file)
-
         filename = self.find_resource(intent_file, 'vocab')
-        if not filename:
-            raise FileNotFoundError('Unable to find "{}"'.format(intent_file))
-
-        data = {"file_name": filename,
-                "name": name}
-        self.bus.emit(Message("padatious:register_intent", data))
-        self.registered_intents.append((intent_file, data))
+        self.intent_service.register_padatious_intent(name, filename)
         self.add_event(name, handler, 'mycroft.skill.handler')
 
     def register_entity_file(self, entity_file):
@@ -795,17 +790,10 @@ class MycroftSkill:
         """
         if entity_file.endswith('.entity'):
             entity_file = entity_file.replace('.entity', '')
-
         filename = self.find_resource(entity_file + ".entity", 'vocab')
-        if not filename:
-            raise FileNotFoundError('Unable to find "{}"'.format(entity_file))
 
         name = '{}:{}'.format(self.skill_id, entity_file)
-
-        self.bus.emit(Message("padatious:register_entity", {
-            "file_name": filename,
-            "name": name
-        }))
+        self.intent_service.register_padatious_entity(name, filename)
 
     def handle_enable_intent(self, message):
         """Listener to enable a registered intent if it belongs to this skill.
@@ -832,16 +820,15 @@ class MycroftSkill:
         Returns:
                 bool: True if disabled, False if it wasn't registered
         """
-        names = [intent_tuple[0] for intent_tuple in self.registered_intents]
-        if intent_name in names:
+        if intent_name in self.intent_service:
             LOG.debug('Disabling intent ' + intent_name)
             name = '{}:{}'.format(self.skill_id, intent_name)
             self.intent_service.detach_intent(name)
             return True
-
-        LOG.error('Could not disable '
-                  '{}, it hasn\'t been registered.'.format(intent_name))
-        return False
+        else:
+            LOG.error('Could not disable '
+                      '{}, it hasn\'t been registered.'.format(intent_name))
+            return False
 
     def enable_intent(self, intent_name):
         """(Re)Enable a registered intent if it belongs to this skill.
@@ -852,11 +839,8 @@ class MycroftSkill:
         Returns:
             bool: True if enabled, False if it wasn't registered
         """
-        names = [intent[0] for intent in self.registered_intents]
-        intents = [intent[1] for intent in self.registered_intents]
-        if intent_name in names:
-            intent = intents[names.index(intent_name)]
-            self.registered_intents.remove((intent_name, intent))
+        intent = self.intent_service.get_intent(intent_name)
+        if intent:
             if ".intent" in intent_name:
                 self.register_intent_file(intent_name, None)
             else:
@@ -864,10 +848,10 @@ class MycroftSkill:
                 self.register_intent(intent, None)
             LOG.debug('Enabling intent {}'.format(intent_name))
             return True
-
-        LOG.error('Could not enable '
-                  '{}, it hasn\'t been registered.'.format(intent_name))
-        return False
+        else:
+            LOG.error('Could not enable '
+                      '{}, it hasn\'t been registered.'.format(intent_name))
+            return False
 
     def set_context(self, context, word='', origin=''):
         """Add context to intent service

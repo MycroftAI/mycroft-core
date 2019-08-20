@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from os.path import exists
 
 from adapt.intent import Intent
 
@@ -22,6 +23,7 @@ from mycroft.util.log import LOG
 class IntentServiceInterface:
     def __init__(self, bus=None):
         self.bus = bus
+        self.registered_intents = []
 
     def set_bus(self, bus):
         self.bus = bus
@@ -38,8 +40,9 @@ class IntentServiceInterface:
     def register_adapt_regex(self, regex):
         self.bus.emit(Message("register_vocab", {'regex': regex}))
 
-    def register_adapt_intent(self, intent_parser):
+    def register_adapt_intent(self, name, intent_parser):
         self.bus.emit(Message("register_intent", intent_parser.__dict__))
+        self.registered_intents.append((name, intent_parser))
 
     def detach_intent(self, name):
         self.bus.emit(Message("detach_intent", {"intent_name": name}))
@@ -51,6 +54,38 @@ class IntentServiceInterface:
 
     def remove_adapt_context(self, context):
         self.bus.emit(Message('remove_context', {'context': context}))
+
+    def register_padatious_intent(self, name, filename):
+        if not filename:
+            raise FileNotFoundError('Unable to find "{}"'.format(filename))
+
+        data = {"file_name": filename,
+                "name": name}
+        self.bus.emit(Message("padatious:register_intent", data))
+        self.registered_intents.append((name, data))
+
+    def register_padatious_entity(self, name, filename):
+        if not filename or not exists(filename):
+            raise FileNotFoundError('Unable to find "{}"'.format(filename))
+
+        self.bus.emit(Message("padatious:register_entity", {
+            "file_name": filename,
+            "name": name
+        }))
+
+    def __iter__(self):
+        return iter(self.registered_intents)
+
+    def __contains__(self, val):
+        return val in [i[0] for i in self.registered_intents]
+
+    def get_intent(self, intent_name):
+        names = [intent[0] for intent in self]
+        intents = [intent[1] for intent in self]
+        if intent_name in names:
+            return intents[names.index(intent_name)]
+        else:
+            return None
 
 
 def open_intent_envelope(message):

@@ -318,7 +318,6 @@ class MycroftSkillTest(unittest.TestCase):
                 'name': str(s.skill_id) + ':test_ent'
             }
         ]
-
         self.check_register_object_file(expected_types, expected_results)
 
     def check_register_decorators(self, result_list):
