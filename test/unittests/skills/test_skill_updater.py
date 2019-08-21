@@ -70,7 +70,7 @@ class TestSkillUpdater(MycroftUnitTestBase):
     def test_apply_install_or_update(self):
         """Test invoking MSM to install or update skills"""
         skill = self._build_mock_msm_skill_list()
-        self.msm_mock.list_defaults.return_value = [skill]
+        self.msm_mock.list_all_defaults.return_value = [skill]
         updater = SkillUpdater(self.message_bus_mock)
         updater._apply_install_or_update(quick=False)
 
@@ -83,7 +83,7 @@ class TestSkillUpdater(MycroftUnitTestBase):
     def test_apply_install_or_update_quick(self):
         """Test invoking MSM to install or update skills quickly"""
         skill = self._build_mock_msm_skill_list()
-        self.msm_mock.list_defaults.return_value = [skill]
+        self.msm_mock.list_all_defaults.return_value = [skill]
         updater = SkillUpdater(self.message_bus_mock)
         updater._apply_install_or_update(quick=True)
 
@@ -97,7 +97,7 @@ class TestSkillUpdater(MycroftUnitTestBase):
         """Test invoking MSM to install missing default skills"""
         skill = self._build_mock_msm_skill_list()
         skill.is_local = False
-        self.msm_mock.list_defaults.return_value = [skill]
+        self.msm_mock.list_all_defaults.return_value = [skill]
         updater = SkillUpdater(self.message_bus_mock)
         updater._apply_install_or_update(quick=True)
 
@@ -168,7 +168,7 @@ class TestSkillUpdater(MycroftUnitTestBase):
 
     def test_post_manifest_allowed(self):
         """Test calling the skill manifest API endpoint"""
-        self.msm_mock.skills_data = 'foo'
+        self.msm_mock.device_skill_state = 'foo'
         with patch(self.mock_package + 'is_paired') as paired_mock:
             paired_mock.return_value = True
             with patch(self.mock_package + 'DeviceApi', spec=True) as api_mock:
@@ -177,21 +177,9 @@ class TestSkillUpdater(MycroftUnitTestBase):
                 api_instance.upload_skills_data.assert_called_once_with('foo')
             paired_mock.assert_called_once_with()
 
-    def test_get_skill_data(self):
-        """Test invoking MSM to retrieve skill data."""
-        updater = SkillUpdater(self.message_bus_mock)
-        skill_data = updater._get_skill_data('test_skill')
-        self.assertDictEqual(dict(name='test_skill', beta=False), skill_data)
-
-    def test_get_skill_data_not_found(self):
-        """Test invoking MSM to retrieve unknown skill data."""
-        updater = SkillUpdater(self.message_bus_mock)
-        skill_data = updater._get_skill_data('foo')
-        self.assertDictEqual({}, skill_data)
-
     def test_install_or_update_beta(self):
         """Test calling install_or_update with a beta skill."""
-        self.msm_mock.skills_data['skills'][0]['beta'] = True
+        self.msm_mock.device_skill_state['skills'][0]['beta'] = True
         skill = self._build_mock_msm_skill_list()
         skill.is_local = False
         updater = SkillUpdater(self.message_bus_mock)

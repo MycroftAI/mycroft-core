@@ -1,4 +1,4 @@
-from unittest.mock import Mock
+from unittest.mock import Mock, PropertyMock
 
 from msm import MycroftSkillsManager
 from msm.skill_repo import SkillRepo
@@ -15,14 +15,16 @@ def mock_msm(temp_dir):
         ('default', ['time', 'weather']),
         ('test_platform', ['test_skill'])
     ])
-    msm_mock.skills_data = dict(
+    msm_mock.device_skill_state = dict(
         skills=[
             dict(name='test_skill', beta=False)
         ]
     )
     skill = Mock()
     skill.is_local = True
-    msm_mock.list_defaults.return_value = [skill]
+    msm_mock.list_all_defaults.return_value = [skill]
+    msm_mock.default_skills = dict(test_skill=skill)
+    msm_mock.all_skills = [skill]
 
     return msm_mock
 
@@ -47,7 +49,8 @@ def mock_config(temp_dir):
             priority_skills=['foobar'],
             upload_skill_manifest=True
         ),
-        data_dir=str(temp_dir)
+        data_dir=str(temp_dir),
+        enclosure=dict()
     )
 
     return get_config_mock
