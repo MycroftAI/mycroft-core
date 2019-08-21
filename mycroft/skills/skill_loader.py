@@ -80,27 +80,29 @@ class SkillLoader:
         else:
             return False
 
-    def reload(self):
-        """Load an unloaded skill or reload unloaded/changed needs if necessary.
-
+    def reload_needed(self):
+        """Load an unloaded skill or reload unloaded/changed skill.
+        
         Returns:
              bool: if the skill was loaded/reloaded
         """
         self.last_modified = _get_last_modified_time(self.skill_directory)
         modified = self.last_modified > self.last_loaded
+
+        # create local reference to avoid threading issues
+        instance = self.instance
+
         reload_allowed = (
-                self.loaded and
                 self.active and
-                self.instance.reload_skill
+                instance is None or instance.reload_skill
         )
-        if self.loaded and modified:
-            if reload_allowed:
-                LOG.info('ATTEMPTING TO RELOAD SKILL: ' + self.skill_id)
-                self._unload()
-                self._load()
-            else:
-                log_msg = 'Reloading blocked for skill {} - aborting.'
-                LOG.info(log_msg.format(self.skill_id))
+        return modified and reload_allowed
+
+    def reload(self):
+        LOG.info('ATTEMPTING TO RELOAD SKILL: ' + self.skill_id)
+        if self.instance:
+            self._unload()
+        self._load()
 
     def load(self):
         LOG.info('ATTEMPTING TO LOAD SKILL: ' + self.skill_id)
@@ -113,6 +115,19 @@ class SkillLoader:
             self._garbage_collect()
         self.loaded = False
         self._emit_skill_shutdown_event()
+
+    def unload(self):
+        if self.instance:
+            self._execute_instance_shutdown()
+        self.loaded = False
+
+    def activate(self):
+        self.active = True
+        self.load()
+
+    def deactivate(self):
+        self.active = False
+        self.unload()
 
     def _execute_instance_shutdown(self):
         """Call the shutdown method of the skill being reloaded."""
@@ -149,9 +164,11 @@ class SkillLoader:
             self._skip_load()
         else:
             skill_module = self._load_skill_source()
-            if skill_module is not None:
-                self._create_skill_instance(skill_module)
+            if skill_module and self._create_skill_instance(skill_module):
                 self._check_for_first_run()
+                self.loaded = True
+
+        self.last_loaded = time()
         self._communicate_load_status()
 
     def _prepare_for_load(self):
@@ -181,35 +198,44 @@ class SkillLoader:
             LOG.exception(error_msg.format(self.skill_id))
         except Exception as e:
             LOG.exception("Failed to load skill: " + self.skill_id)
-
-        module_is_skill = (
-            hasattr(skill_module, 'create_skill') and
-            callable(skill_module.create_skill)
-        )
-        if module_is_skill:
-            return skill_module
+        else:
+            module_is_skill = (
+                hasattr(skill_module, 'create_skill') and
+                callable(skill_module.create_skill)
+            )
+            if module_is_skill:
+                return skill_module
+        return None  # Module wasn't loaded
 
     def _create_skill_instance(self, skill_module):
         """Use v2 skills framework to create the skill."""
-        self.instance = skill_module.create_skill()
-        self.instance.skill_id = self.skill_id
-        self.instance.settings.allow_overwrite = True
-        self.instance.settings.load_skill_settings_from_file()
-        self.instance.bind(self.bus)
         try:
-            self.instance.load_data_files(self.skill_directory)
-            # Set up intent handlers
-            # TODO: can this be a public method?
-            self.instance._register_decorated()
-            self.instance.register_resting_screen()
-            self.instance.initialize()
-        except Exception:
-            # If an exception occurs, make sure to clean up the skill
-            self.instance.default_shutdown()
-            raise
+            self.instance = skill_module.create_skill()
+        except Exception as e:
+            log_msg = 'Skill __init__ failed with {}'
+            LOG.exception(log_msg.format(repr(e)))
+            self.instance = None
 
-        self.loaded = True
-        self.last_loaded = time()
+        if self.instance:
+            self.instance.skill_id = self.skill_id
+            self.instance.settings.allow_overwrite = True
+            self.instance.settings.load_skill_settings_from_file()
+            self.instance.bind(self.bus)
+            try:
+                self.instance.load_data_files(self.skill_directory)
+                # Set up intent handlers
+                # TODO: can this be a public method?
+                self.instance._register_decorated()
+                self.instance.register_resting_screen()
+                self.instance.initialize()
+            except Exception as e:
+                # If an exception occurs, make sure to clean up the skill
+                self.instance.default_shutdown()
+                self.instane = None
+                log_msg = 'Skill initialization failed with {}'
+                LOG.exception(log_msg.format(repr(e)))
+
+        return self.instance is not None
 
     def _check_for_first_run(self):
         """The very first time a skill is run, speak the intro."""

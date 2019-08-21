@@ -143,15 +143,7 @@ class SkillManager(Thread):
     def _load_on_startup(self):
         """Handle initial skill load."""
         LOG.info('Loading installed skills...')
-        while not self.initial_load_complete:
-            skill_dirs = self._get_skill_directories()
-            if skill_dirs:
-                for skill_dir in skill_dirs:
-                    self._load_skill(skill_dir)
-                if len(self.skill_loaders) == len(skill_dirs):
-                    self.initial_load_complete = True
-            sleep(2)
-
+        self._load_new_skills()
         LOG.info("Skills all loaded!")
         self.bus.emit(Message('mycroft.skills.initialized'))
 
@@ -159,7 +151,7 @@ class SkillManager(Thread):
         """Handle reload of recently changed skill(s)"""
         for skill_dir in self._get_skill_directories():
             skill_loader = self.skill_loaders.get(skill_dir)
-            if skill_loader is not None:
+            if skill_loader is not None and skill_loader.reload_needed():
                 skill_loader.reload()
 
     def _load_new_skills(self):
@@ -172,9 +164,10 @@ class SkillManager(Thread):
         try:
             skill_loader = SkillLoader(self.bus, skill_directory)
             skill_loader.load()
-            self.skill_loaders[skill_directory] = skill_loader
         except Exception:
             LOG.exception('Load of skill {} failed!'.format(skill_directory))
+        finally:
+            self.skill_loaders[skill_directory] = skill_loader
 
     def _get_skill_directories(self):
         skill_glob = glob(os.path.join(self.msm.skills_dir, '*/'))
@@ -201,7 +194,7 @@ class SkillManager(Thread):
             skill = self.skill_loaders[skill_dir]
             LOG.info('removing {}'.format(skill.skill_id))
             try:
-                skill.instance.default_shutdown()
+                skill.unload()
             except Exception:
                 LOG.exception('Failed to shutdown skill ' + skill.id)
             del self.skill_loaders[skill_dir]
@@ -233,9 +226,7 @@ class SkillManager(Thread):
         try:
             for skill_loader in self.skill_loaders.values():
                 if message.data['skill'] == skill_loader.skill_id:
-                    skill_loader.active = False
-                    skill_loader.instance.default_shutdown()
-                    break
+                    skill_loader.deactivate()
         except Exception:
             LOG.exception('Failed to deactivate ' + message.data['skill'])
 
@@ -250,8 +241,7 @@ class SkillManager(Thread):
             if skill_to_keep in loaded_skill_file_names:
                 for skill in self.skill_loaders.values():
                     if skill.skill_id != skill_to_keep:
-                        skill.active = False
-                        skill.instance.default_shutdown()
+                        skill.deactivate()
             else:
                 LOG.info('Couldn\'t find skill ' + message.data['skill'])
         except Exception:
@@ -261,9 +251,9 @@ class SkillManager(Thread):
         """Activate a deactivated skill."""
         try:
             for skill_loader in self.skill_loaders.values():
-                if message.data['skill'] in ('all', skill_loader.skill_id):
-                    skill_loader.loaded = False
-                    skill_loader.active = True
+                if (message.data['skill'] in ('all', skill_loader.skill_id) and
+                        not skill_loader.active):
+                    skill_loader.activate()
         except Exception:
             LOG.exception('Couldn\'t activate skill')
 
