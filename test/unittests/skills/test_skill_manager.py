@@ -228,7 +228,6 @@ class TestSkillManager(MycroftUnitTestBase):
     def test_handle_paired(self):
         self.skill_updater_mock.next_download = 0
         self.skill_manager.handle_paired(None)
-
         updater = self.skill_manager.skill_updater
         updater.post_manifest.assert_called_once_with()
 
@@ -260,7 +259,6 @@ class TestSkillManager(MycroftUnitTestBase):
     def test_activate_skill(self):
         message = Mock()
         message.data = dict(skill='test_skill')
-
         test_skill_loader = Mock(spec=SkillLoader)
         test_skill_loader.skill_id = 'test_skill'
         test_skill_loader.active = False
@@ -293,7 +291,6 @@ class TestSkillManager(MycroftUnitTestBase):
         self.skill_dir.joinpath('__init__.py').touch()
         patch_obj = self.mock_package + 'SkillLoader'
         self.skill_manager.skill_loaders = {}
-
         with patch(patch_obj, spec=True) as loader_mock:
             self.skill_manager._load_new_skills()
             loader_mock.return_value.load.assert_called_once_with()

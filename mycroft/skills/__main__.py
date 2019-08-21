@@ -215,25 +215,20 @@ def main():
     reset_sigint_handler()
     # Create PID file, prevent multiple instances of this service
     mycroft.lock.Lock('skills')
+    # Connect this Skill management process to the Mycroft message bus
     config = Configuration.get()
     # Set the active lang to match the configured one
     set_active_lang(config.get('lang', 'en-us'))
-
-    # Connect this process to the Mycroft message bus
     bus = _start_message_bus_client()
     _register_intent_services(bus)
     event_scheduler = EventScheduler(bus)
     skill_manager = _initialize_skill_manager(bus)
-
     _wait_for_internet_connection()
-
     if skill_manager is None:
         skill_manager = _initialize_skill_manager(bus)
-
     device_primer = DevicePrimer(bus, config)
     device_primer.prepare_device()
     skill_manager.start()
-
     wait_for_exit_signal()
     shutdown(skill_manager, event_scheduler)
 
@@ -276,7 +271,7 @@ def _initialize_skill_manager(bus):
     """Create a thread that monitors the loaded skills, looking for updates
 
     Returns:
-        SkillManager instance or None if it couldn't be initialized
+        SkillManager instance
     """
     try:
         skill_manager = SkillManager(bus)

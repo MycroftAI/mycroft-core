@@ -82,7 +82,7 @@ class SkillLoader:
 
     def reload_needed(self):
         """Load an unloaded skill or reload unloaded/changed skill.
-
+        
         Returns:
              bool: if the skill was loaded/reloaded
         """
@@ -197,8 +197,7 @@ class SkillLoader:
             error_msg = 'Failed to load {} due to a missing file.'
             LOG.exception(error_msg.format(self.skill_id))
         except Exception as e:
-            LOG.exception('Failed to load skill: '
-                          '{} ({})'.format(self.skill_id, repr(e)))
+            LOG.exception("Failed to load skill: " + self.skill_id)
         else:
             module_is_skill = (
                 hasattr(skill_module, 'create_skill') and
