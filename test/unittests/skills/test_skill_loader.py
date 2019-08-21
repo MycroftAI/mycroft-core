@@ -64,8 +64,16 @@ class TestSkillLoader(MycroftUnitTestBase):
         """The loader should skip reloads for skill that doesn't allow it."""
         self.loader.instance = MagicMock()
         self.loader.instance.reload_skill = False
-        self.loader.active = False
+        self.loader.active = True
         self.loader.loaded = True
+        self.assertFalse(self.loader.reload_needed())
+
+    def test_skill_reloading_deactivated(self):
+        """The loader should skip reloads for skill that aren't active."""
+        self.loader.instance = MagicMock()
+        self.loader.instance.reload_skill = True
+        self.loader.active = False
+        self.loader.loaded = False
         self.assertFalse(self.loader.reload_needed())
 
     def test_skill_reload(self):
