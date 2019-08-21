@@ -79,6 +79,7 @@ class TestSkillManager(MycroftUnitTestBase):
         load_mock = Mock()
         self.skill_manager._load_skill = load_mock
         skill, self.skill_manager.msm.list = self._build_mock_msm_skill_list()
+        self.msm_mock.all_skills = [skill]
         self.skill_manager.load_priority()
 
         self.assertFalse(skill.install.called)
@@ -89,6 +90,7 @@ class TestSkillManager(MycroftUnitTestBase):
         self.skill_manager._load_skill = load_mock
         skill, self.skill_manager.msm.list = self._build_mock_msm_skill_list()
         skill.is_local = False
+        self.msm_mock.all_skills = [skill]
         self.skill_manager.load_priority()
 
         self.assertTrue(skill.install.called)
