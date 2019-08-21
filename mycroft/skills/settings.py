@@ -491,7 +491,7 @@ class SkillSettings(dict):
                     value = field.get('value')
 
                     if to_platform == 'core':
-                        if "." in value:
+                        if "." in str(value):
                             sections[i]['fields'][j]['value'] = float(value)
                         else:
                             sections[i]['fields'][j]['value'] = int(value)
