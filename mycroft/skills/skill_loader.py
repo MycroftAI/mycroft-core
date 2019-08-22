@@ -94,7 +94,7 @@ class SkillLoader:
 
         reload_allowed = (
                 self.active and
-                instance is None or instance.reload_skill
+                (instance is None or instance.reload_skill)
         )
         return modified and reload_allowed
 
