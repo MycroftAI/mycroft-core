@@ -115,6 +115,36 @@ function get_YN() {
     done
 }
 
+function os_is() {
+    [[ $(grep "^ID=" /etc/os-release | awk -F'=' '/^ID/ {print $2}' | sed 's/\"//g') == $1 ]]
+}
+
+function os_is_like() {
+    [[ $(grep "^ID_LIKE=" /etc/os-release | awk -F'=' '/^ID_LIKE/ {print $2}' | sed 's/\"//g') == $1 ]]
+}
+
+if os_is_like debian || os_is debian || os_is_like ubuntu || os_is ubuntu || os_is linuxmint; then
+    if dpkg -V libjack-jackd2-0 > /dev/null 2>&1 ; then
+        echo "
+We have detected that your computer has the libjack-jackd2-0 package installed.
+This is often required by programs like WINE. Due to a conflict with another
+package, continuing the installation may uninstall libjack-jackd2-0, and any
+programs that rely on it, including WINE.
+
+It is strongly recommended that you cancel this installation.
+
+    Would you like to cancel the installation.
+    Y)es, cancel installation
+    N)o, I want to continue and understand the risks"
+        if get_YN ; then
+            echo -e "$HIGHLIGHT Y - cancelling install $RESET"
+            exit 1
+        else
+            echo -e "$HIGHLIGHT N - continuing to install $RESET"
+        fi
+    fi
+fi
+
 # If tput is available and can handle multiple colors
 if found_exe tput ; then
     if [[ $(tput colors) != "-1" ]]; then
@@ -255,14 +285,6 @@ If unsure answer yes.
     sleep 5
 fi
 
-
-function os_is() {
-    [[ $(grep "^ID=" /etc/os-release | awk -F'=' '/^ID/ {print $2}' | sed 's/\"//g') == $1 ]]
-}
-
-function os_is_like() {
-    [[ $(grep "^ID_LIKE=" /etc/os-release | awk -F'=' '/^ID_LIKE/ {print $2}' | sed 's/\"//g') == $1 ]]
-}
 
 function redhat_common_install() {
     $SUDO yum install -y cmake gcc-c++ git python34 python34-devel libtool libffi-devel openssl-devel autoconf automake bison swig portaudio-devel mpg123 flac curl libicu-devel python34-pkgconfig libjpeg-devel fann-devel python34-libs pulseaudio
