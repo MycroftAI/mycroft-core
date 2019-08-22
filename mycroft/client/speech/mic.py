@@ -322,7 +322,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 with open(self.mic_level_file, 'w') as f:
                     f.write("Energy:  cur=" + str(energy) + " thresh=" +
                             str(self.energy_threshold))
-                f.close()
 
             was_loud_enough = num_loud_chunks > min_loud_chunks
 
@@ -469,7 +468,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 with open(self.mic_level_file, 'w') as f:
                     f.write("Energy:  cur=" + str(energy) + " thresh=" +
                             str(self.energy_threshold))
-                f.close()
             counter += 1
 
             # At first, the buffer is empty and must fill up.  After that
