@@ -322,7 +322,7 @@ function install_deps() {
         # Debian / Ubuntu / Mint
         echo "$GREEN Installing packages for Debian/Ubuntu/Mint...$RESET"
         $SUDO apt-get install -y git python3 python3-dev python3-setuptools libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config libjpeg-dev libfann-dev build-essential jq
-    elif os_is_like fedora ; then
+    elif os_is_like fedora || os_is fedora; then
         echo "$GREEN Installing packages for Fedora...$RESET"
         # Fedora
         $SUDO dnf install -y git python3 python3-devel python3-pip python3-setuptools python3-virtualenv pygobject3-devel libtool libffi-devel openssl-devel autoconf bison swig glib2-devel portaudio-devel mpg123 mpg123-plugins-pulseaudio screen curl pkgconfig libicu-devel automake libjpeg-turbo-devel fann-devel gcc-c++ redhat-rpm-config jq
