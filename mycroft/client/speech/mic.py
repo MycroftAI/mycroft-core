@@ -500,9 +500,10 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                             os.mkdir(self.saved_wake_words_dir)
                         module = self.wake_word_recognizer.__class__.__name__
 
-                        fn = join(self.saved_wake_words_dir,
-                                  '_'.join([str(mtd[k]) for k in sorted(mtd)])
-                                  + '.wav')
+                        fn = join(
+                            self.saved_wake_words_dir,
+                            '_'.join(str(mtd[k]) for k in sorted(mtd)) + '.wav'
+                        )
                         with open(fn, 'wb') as f:
                             f.write(audio.get_wav_data())
 
