@@ -41,6 +41,10 @@ class NoModelAvailable(Exception):
     pass
 
 
+class PreciseUnavailable(Exception):
+    pass
+
+
 class HotWordEngine:
     def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
         self.key_phrase = str(key_phrase).lower()
@@ -135,6 +139,8 @@ class PreciseHotword(HotWordEngine):
             PreciseRunner, PreciseEngine, ReadWriteStream
         )
         local_conf = LocalConf(USER_CONFIG)
+        if not local_conf.get('precise', {}).get('use_precise', True):
+            raise PreciseUnavailable
         if (local_conf.get('precise', {}).get('dist_url') ==
                 'http://bootstrap.mycroft.ai/artifacts/static/daily/'):
             del local_conf['precise']['dist_url']
@@ -325,6 +331,9 @@ class HotWordFactory:
                 LOG.warning('Could not found find model for {} on {}.'.format(
                     hotword, module
                 ))
+                instance = None
+            except PreciseUnavailable:
+                LOG.warning('Settings prevent Precise Engine use, falling back to default.')
                 instance = None
             except Exception:
                 LOG.exception(

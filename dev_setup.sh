@@ -137,6 +137,22 @@ This script is designed to make working with Mycroft easy.  During this
 first run of dev_setup we will ask you a few questions to help setup
 your environment.'
     sleep 0.5
+    if ! grep -q avx /proc/cpuinfo; then
+      echo "
+The Precise Wake Word Engine requires the AVX instruction set, which is
+not supported on your CPU. Do you want to fall back to the PocketSphinx
+engine? Advanced users can build the precise engine with an older
+version of TensorFlow (v1.13) if desired and change use_precise to true
+in mycroft.conf.
+  Y)es, I want to use the PocketSphinx engine or my own.
+  N)o, stop the installation."
+      if get_YN ; then
+        sed -i "s/\"use_precise\": true/\"use_precise\": false/" config/
+      else
+        echo -e "$HIGHLIGHT N - quit the installation $RESET"
+        exit 1
+      fi
+    fi
     echo "
 Do you want to run on 'master' or against a dev branch?  Unless you are
 a developer modifying mycroft-core itself, you should run on the
