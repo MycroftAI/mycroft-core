@@ -1,3 +1,17 @@
+# Copyright 2019 Mycroft AI Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 from os import path
 from unittest.mock import Mock, patch
 
@@ -79,6 +93,7 @@ class TestSkillManager(MycroftUnitTestBase):
         load_mock = Mock()
         self.skill_manager._load_skill = load_mock
         skill, self.skill_manager.msm.list = self._build_mock_msm_skill_list()
+        self.msm_mock.all_skills = [skill]
         self.skill_manager.load_priority()
 
         self.assertFalse(skill.install.called)
@@ -89,6 +104,7 @@ class TestSkillManager(MycroftUnitTestBase):
         self.skill_manager._load_skill = load_mock
         skill, self.skill_manager.msm.list = self._build_mock_msm_skill_list()
         skill.is_local = False
+        self.msm_mock.all_skills = [skill]
         self.skill_manager.load_priority()
 
         self.assertTrue(skill.install.called)
@@ -226,7 +242,6 @@ class TestSkillManager(MycroftUnitTestBase):
     def test_handle_paired(self):
         self.skill_updater_mock.next_download = 0
         self.skill_manager.handle_paired(None)
-
         updater = self.skill_manager.skill_updater
         updater.post_manifest.assert_called_once_with()
 
@@ -258,7 +273,6 @@ class TestSkillManager(MycroftUnitTestBase):
     def test_activate_skill(self):
         message = Mock()
         message.data = dict(skill='test_skill')
-
         test_skill_loader = Mock(spec=SkillLoader)
         test_skill_loader.skill_id = 'test_skill'
         test_skill_loader.active = False
@@ -291,7 +305,6 @@ class TestSkillManager(MycroftUnitTestBase):
         self.skill_dir.joinpath('__init__.py').touch()
         patch_obj = self.mock_package + 'SkillLoader'
         self.skill_manager.skill_loaders = {}
-
         with patch(patch_obj, spec=True) as loader_mock:
             self.skill_manager._load_new_skills()
             loader_mock.return_value.load.assert_called_once_with()

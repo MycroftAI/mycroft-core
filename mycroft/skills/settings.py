@@ -62,20 +62,19 @@
 import json
 import hashlib
 import os
-import time
-import copy
 import re
-from threading import Timer, Thread
-from os.path import isfile, join, expanduser
+import time
+from os.path import isfile, join
 from requests.exceptions import RequestException, HTTPError
+from threading import Timer, Thread
+
 from msm import SkillEntry
 
 from mycroft.api import DeviceApi, is_paired
 from mycroft.util.log import LOG
 from mycroft.util import camel_case_split
 from mycroft.configuration import ConfigurationManager
-
-from .msm_wrapper import create_msm
+from .msm_wrapper import build_msm_config, create_msm
 
 
 msm = None
@@ -96,11 +95,15 @@ def build_global_id(directory, config):
     global msm_creation_time
     if msm is None or time.time() - msm_creation_time > 60 * 60:
         msm_creation_time = time.time()
-        msm = create_msm(config)
+        LOG.info('instantiating msm...')
+        msm_config = build_msm_config(config)
+        msm = create_msm(msm_config)
+        LOG.info('msm instantiation complete')
 
-    s = SkillEntry.from_folder(directory, msm)
+    skill = SkillEntry.from_folder(directory, msm)
     # If modified prepend the device uuid
-    return s.skill_gid, s.meta_info.get('display_name')
+    LOG.info('building skill gid for ' + skill.name)
+    return skill.skill_gid, skill.meta_info.get('display_name')
 
 
 def display_name(name):
@@ -121,8 +124,6 @@ class SkillSettings(dict):
     Args:
         directory (str):  Path to storage directory
         name (str):       user readable name associated with the settings
-        no_upload (bool): True if the upload to mycroft servers should be
-                          disabled.
     """
 
     def __init__(self, directory, name):

@@ -1,3 +1,17 @@
+# Copyright 2019 Mycroft AI Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 from unittest.mock import Mock
 
 from msm import MycroftSkillsManager
@@ -15,14 +29,16 @@ def mock_msm(temp_dir):
         ('default', ['time', 'weather']),
         ('test_platform', ['test_skill'])
     ])
-    msm_mock.skills_data = dict(
+    msm_mock.device_skill_state = dict(
         skills=[
             dict(name='test_skill', beta=False)
         ]
     )
     skill = Mock()
     skill.is_local = True
-    msm_mock.list_defaults.return_value = [skill]
+    msm_mock.list_all_defaults.return_value = [skill]
+    msm_mock.default_skills = dict(test_skill=skill)
+    msm_mock.all_skills = [skill]
 
     return msm_mock
 
@@ -47,7 +63,8 @@ def mock_config(temp_dir):
             priority_skills=['foobar'],
             upload_skill_manifest=True
         ),
-        data_dir=str(temp_dir)
+        data_dir=str(temp_dir),
+        enclosure=dict()
     )
 
     return get_config_mock
