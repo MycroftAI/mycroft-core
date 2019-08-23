@@ -32,15 +32,17 @@ FIVE_MINUTES = 300  # number of seconds in a minute
 
 
 class SkillUpdater:
+    """Class facilitating skill update / install actions.
+
+    Arguments
+        bus (MessageBusClient): Optional bus emitter Used to communicate
+                                with the mycroft core system and handle
+                                commands.
+    """
     _installed_skills_file_path = None
     _msm = None
 
-    def __init__(self, bus):
-        """Constructor
-
-        Arguments
-            bus (MessageBusClient): Used to communicate events to the bus.
-        """
+    def __init__(self, bus=None):
         self.msm_lock = ComboLock('/tmp/mycroft-msm.lck')
         self.install_retries = 0
         update_interval = self.config['skills']['update_interval']
@@ -50,6 +52,12 @@ class SkillUpdater:
         self._log_next_download_time()
         self.installed_skills = set()
         self.default_skill_install_error = False
+
+        if bus:
+            self._register_bus_handlers()
+
+    def _register_bus_handlers(self):
+        """TODO: Register bus handlers for triggering updates and such."""
 
     def _determine_next_download_time(self):
         """Determine the initial values of the next/last download times.
