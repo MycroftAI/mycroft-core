@@ -115,36 +115,6 @@ function get_YN() {
     done
 }
 
-function os_is() {
-    [[ $(grep "^ID=" /etc/os-release | awk -F'=' '/^ID/ {print $2}' | sed 's/\"//g') == $1 ]]
-}
-
-function os_is_like() {
-    [[ $(grep "^ID_LIKE=" /etc/os-release | awk -F'=' '/^ID_LIKE/ {print $2}' | sed 's/\"//g') == $1 ]]
-}
-
-if os_is_like debian || os_is debian || os_is_like ubuntu || os_is ubuntu || os_is linuxmint; then
-    if dpkg -V libjack-jackd2-0 > /dev/null 2>&1 ; then
-        echo "
-We have detected that your computer has the libjack-jackd2-0 package installed.
-This is often required by programs like WINE. Due to a conflict with another
-package, continuing the installation may uninstall libjack-jackd2-0, and any
-programs that rely on it, including WINE.
-
-It is strongly recommended that you cancel this installation.
-
-    Would you like to cancel the installation.
-    Y)es, cancel installation
-    N)o, I want to continue and understand the risks"
-        if get_YN ; then
-            echo -e "$HIGHLIGHT Y - cancelling install $RESET"
-            exit 1
-        else
-            echo -e "$HIGHLIGHT N - continuing to install $RESET"
-        fi
-    fi
-fi
-
 # If tput is available and can handle multiple colors
 if found_exe tput ; then
     if [[ $(tput colors) != "-1" ]]; then
@@ -285,6 +255,13 @@ If unsure answer yes.
     sleep 5
 fi
 
+function os_is() {
+    [[ $(grep "^ID=" /etc/os-release | awk -F'=' '/^ID/ {print $2}' | sed 's/\"//g') == $1 ]]
+}
+
+function os_is_like() {
+    [[ $(grep "^ID_LIKE=" /etc/os-release | awk -F'=' '/^ID_LIKE/ {print $2}' | sed 's/\"//g') == $1 ]]
+}
 
 function redhat_common_install() {
     $SUDO yum install -y cmake gcc-c++ git python34 python34-devel libtool libffi-devel openssl-devel autoconf automake bison swig portaudio-devel mpg123 flac curl libicu-devel python34-pkgconfig libjpeg-devel fann-devel python34-libs pulseaudio
@@ -321,7 +298,17 @@ function install_deps() {
     elif os_is_like debian || os_is debian || os_is_like ubuntu || os_is ubuntu || os_is linuxmint; then
         # Debian / Ubuntu / Mint
         echo "$GREEN Installing packages for Debian/Ubuntu/Mint...$RESET"
-        $SUDO apt-get install -y git python3 python3-dev python3-setuptools libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config libjpeg-dev libfann-dev build-essential jq
+        if dpkg -V libjack-jackd2-0 > /dev/null 2>&1 ; then
+            echo "
+We have detected that your computer has the libjack-jackd2-0 package installed.
+Mycroft requires a conflicting package, and will likely uninstall this package.
+On some systems, this can cause other programs to be marked for removal.
+Please review the following package changes carefully."
+            read -p "Press enter to continue"
+            $SUDO apt-get install git python3 python3-dev python3-setuptools libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config libjpeg-dev libfann-dev build-essential jq
+        else
+            $SUDO apt-get install -y git python3 python3-dev python3-setuptools libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config libjpeg-dev libfann-dev build-essential jq
+        fi
     elif os_is_like fedora || os_is fedora; then
         echo "$GREEN Installing packages for Fedora...$RESET"
         # Fedora
