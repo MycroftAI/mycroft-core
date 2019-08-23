@@ -333,7 +333,8 @@ class HotWordFactory:
                 ))
                 instance = None
             except PreciseUnavailable:
-                LOG.warning('Settings prevent Precise Engine use, falling back to default.')
+                LOG.warning('Settings prevent Precise Engine use,
+                            falling back to default.')
                 instance = None
             except Exception:
                 LOG.exception(
