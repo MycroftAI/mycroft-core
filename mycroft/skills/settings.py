@@ -100,8 +100,7 @@ def build_global_id(directory, config):
         msm = create_msm(msm_config)
         LOG.info('msm instantiation complete')
 
-    skills = {skill.path: skill for skill in msm.local_skills.values()}
-    skill = skills[directory]
+    skill = SkillEntry.from_folder(directory, msm)
     # If modified prepend the device uuid
     LOG.info('building skill gid for ' + skill.name)
     return skill.skill_gid, skill.meta_info.get('display_name')
