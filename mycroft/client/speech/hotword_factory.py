@@ -124,7 +124,7 @@ class PocketsphinxHotWord(HotWordEngine):
 
 
 class PreciseHotword(HotWordEngine):
-    """Precice is the default wakeword engine for mycroft.
+    """Precise is the default wakeword engine for mycroft.
 
     Precise is developed by Mycroft AI and produces quite good wake word
     spotting when trained on a decent dataset.
