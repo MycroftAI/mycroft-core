@@ -260,7 +260,7 @@ class MycroftSkill:
         """
         LOG.warning('self.config is deprecated.  Switch to using '
                     'self.setting["whatever"] within your skill.')
-        LOG.warning(stack)
+        LOG.warning(simple_trace(traceback.format_stack()))
         return self._config
 
     @property
