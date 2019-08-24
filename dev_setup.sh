@@ -137,7 +137,7 @@ This script is designed to make working with Mycroft easy.  During this
 first run of dev_setup we will ask you a few questions to help setup
 your environment.'
     sleep 0.5
-    if ! grep -q avx /proc/cpuinfo; then
+    if ! grep -q avx /proc/cpuinfo && [[ ! $(uname -m) == 'arm'* ]]; then
       echo "
 The Precise Wake Word Engine requires the AVX instruction set, which is
 not supported on your CPU. Do you want to fall back to the PocketSphinx
