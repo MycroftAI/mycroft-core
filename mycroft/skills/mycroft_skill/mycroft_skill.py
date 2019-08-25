@@ -337,10 +337,7 @@ class MycroftSkill:
         """
         data = data or {}
 
-        def get_announcement():
-            return self.dialog_renderer.render(dialog, data)
-
-        if not get_announcement():
+        if not self.dialog_renderer.render(dialog, data):
             raise ValueError('dialog message required')
 
         def on_fail_default(utterance):
@@ -349,7 +346,7 @@ class MycroftSkill:
             if on_fail:
                 return self.dialog_renderer.render(on_fail, fail_data)
             else:
-                return get_announcement()
+                return self.dialog_renderer.render(dialog, data)
 
         def is_cancel(utterance):
             return self.voc_match(utterance, 'cancel')
@@ -358,10 +355,25 @@ class MycroftSkill:
             # accept anything except 'cancel'
             return not is_cancel(utterance)
 
-        validator = validator or validator_default
         on_fail_fn = on_fail if callable(on_fail) else on_fail_default
+        validator = validator or validator_default
 
-        self.speak(get_announcement(), expect_response=True, wait=True)
+        # Speak query and wait for user response
+        self.speak(self.dialog_renderer.render(dialog, data),
+                   expect_response=True, wait=True)
+        return self._wait_response(is_cancel, validator, on_fail_fn,
+                                   num_retries)
+
+    def _wait_response(self, is_cancel, validator, on_fail, num_retries):
+        """Loop until a valid response is received from the user or the retry
+        limit is reached.
+
+        Arguments:
+            is_cancel (callable): function checking cancel criteria
+            validator (callbale): function checking for a valid response
+            on_fail (callable): function handling retries
+
+        """
         num_fails = 0
         while True:
             response = self.__get_response()
@@ -383,7 +395,7 @@ class MycroftSkill:
             if 0 < num_retries < num_fails:
                 return None
 
-            line = on_fail_fn(response)
+            line = on_fail(response)
             self.speak(line, expect_response=True)
 
     def ask_yesno(self, prompt, data=None):
