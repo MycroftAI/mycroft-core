@@ -19,8 +19,6 @@ import re
 import traceback
 import inspect
 from itertools import chain
-import collections
-import csv
 from adapt.intent import Intent, IntentBuilder
 from os import walk
 from os.path import join, abspath, dirname, basename, exists
@@ -42,7 +40,8 @@ from mycroft.util.log import LOG
 
 from ..settings import SkillSettings
 from ..skill_data import (load_vocabulary, load_regex, to_alnum,
-                          munge_regex, munge_intent_parser, read_vocab_file)
+                          munge_regex, munge_intent_parser, read_vocab_file,
+                          read_value_file, read_translated_file)
 from ..event_scheduler import EventSchedulerInterface
 from ..intent_service_interface import IntentServiceInterface
 from .event_container import EventContainer, create_wrapper
@@ -615,25 +614,13 @@ class MycroftSkill:
         """
 
         delim = delim or ','
-        result = collections.OrderedDict()
         if not name.endswith(".value"):
             name += ".value"
 
         try:
             filename = self.find_resource(name, 'dialog')
-            if filename:
-                with open(filename) as f:
-                    reader = csv.reader(f, delimiter=delim)
-                    for row in reader:
-                        # skip blank or comment lines
-                        if not row or row[0].startswith("#"):
-                            continue
-                        if len(row) != 2:
-                            continue
+            return read_value_file(filename, delim)
 
-                        result[row[0]] = row[1]
-
-            return result
         except Exception:
             return {}
 
@@ -677,12 +664,7 @@ class MycroftSkill:
     def __translate_file(self, name, data):
         """Load and render lines from dialog/<lang>/<name>"""
         filename = self.find_resource(name, 'dialog')
-        if filename:
-            with open(filename) as f:
-                text = f.read().replace('{{', '{').replace('}}', '}')
-                return text.format(**data or {}).rstrip('\n').split('\n')
-        else:
-            return None
+        return read_translated_file(filename, data)
 
     def add_event(self, name, handler, handler_info=None, once=False):
         """Create event handler for executing intent or other event.

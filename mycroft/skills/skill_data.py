@@ -20,6 +20,8 @@ regular expressions.
 from os import walk
 from os.path import splitext, join
 import re
+import csv
+import collections
 
 from mycroft.messagebus.message import Message
 from mycroft.util.format import expand_options
@@ -180,3 +182,49 @@ def munge_intent_parser(intent_parser, name, skill_id):
         element = [skill_id + e.replace(skill_id, '') for e in i]
         at_least_one.append(tuple(element))
     intent_parser.at_least_one = at_least_one
+
+
+def read_value_file(filename, delim):
+    """Read value file.
+
+    The value file is a simple csv structure with a key and value.
+
+    Arguments:
+        filename (str): file to read
+        delim (str): csv delimiter
+
+    Returns:
+        OrderedDict with results.
+    """
+    result = collections.OrderedDict()
+
+    if filename:
+        with open(filename) as f:
+            reader = csv.reader(f, delimiter=delim)
+            for row in reader:
+                # skip blank or comment lines
+                if not row or row[0].startswith("#"):
+                    continue
+                if len(row) != 2:
+                    continue
+
+                result[row[0]] = row[1]
+    return result
+
+
+def read_translated_file(filename, data):
+    """Read a file inserting data.
+
+    Arguments:
+        filename (str): file to read
+        data (dict): dictionary with data to insert into file
+
+    Returns:
+        list of lines.
+    """
+    if filename:
+        with open(filename) as f:
+            text = f.read().replace('{{', '{').replace('}}', '}')
+            return text.format(**data or {}).rstrip('\n').split('\n')
+    else:
+        return None
