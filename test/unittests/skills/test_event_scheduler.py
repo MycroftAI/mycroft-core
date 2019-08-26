@@ -13,7 +13,7 @@ class TestEventScheduler(unittest.TestCase):
     @patch('threading.Thread')
     @patch('json.load')
     @patch('json.dump')
-    @patch('mycroft.skills.event_scheduler.open')
+    @patch('builtins.open')
     def test_create(self, mock_open, mock_json_dump, mock_load, mock_thread):
         """
             Test creating and shutting down event_scheduler.
@@ -28,7 +28,7 @@ class TestEventScheduler(unittest.TestCase):
     @patch('threading.Thread')
     @patch('json.load')
     @patch('json.dump')
-    @patch('mycroft.skills.event_scheduler.open')
+    @patch('builtins.open')
     def test_add_remove(self, mock_open, mock_json_dump,
                         mock_load, mock_thread):
         """
@@ -57,7 +57,7 @@ class TestEventScheduler(unittest.TestCase):
     @patch('threading.Thread')
     @patch('json.load')
     @patch('json.dump')
-    @patch('mycroft.skills.event_scheduler.open')
+    @patch('builtins.open')
     def test_save(self, mock_open, mock_dump, mock_load, mock_thread):
         """
             Test save functionality.
@@ -81,7 +81,7 @@ class TestEventScheduler(unittest.TestCase):
     @patch('threading.Thread')
     @patch('json.load')
     @patch('json.dump')
-    @patch('mycroft.skills.event_scheduler.open')
+    @patch('builtins.open')
     def test_send_event(self, mock_open, mock_dump, mock_load, mock_thread):
         """
             Test save functionality.
