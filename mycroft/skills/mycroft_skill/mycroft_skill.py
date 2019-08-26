@@ -442,7 +442,7 @@ class MycroftSkill:
         if cache_key not in self.voc_match_cache:
             # Check for both skill resources and mycroft-core resources
             voc = self.find_resource(voc_filename + '.voc', 'vocab')
-            if not voc:
+            if not voc:  # Check for vocab in mycroft core resources
                 voc = resolve_resource_file(join('text', lang,
                                                  voc_filename + '.voc'))
 
@@ -598,7 +598,7 @@ class MycroftSkill:
         # Not found
         return None
 
-    def translate_namedvalues(self, name, delim=None):
+    def translate_namedvalues(self, name, delim=','):
         """Load translation dict containing names and values.
 
         This loads a simple CSV from the 'dialog' folders.
@@ -613,7 +613,6 @@ class MycroftSkill:
             dict: name and value dictionary, or empty dict if load fails
         """
 
-        delim = delim or ','
         if not name.endswith(".value"):
             name += ".value"
 
@@ -936,10 +935,9 @@ class MycroftSkill:
         data = {'utterance': utterance,
                 'expect_response': expect_response}
         message = dig_for_message()
-        if message:
-            self.bus.emit(message.reply("speak", data))
-        else:
-            self.bus.emit(Message("speak", data))
+        m = message.reply("speak", data) if message else Message("speak", data)
+        self.bus.emit(m)
+
         if wait:
             wait_while_speaking()
 
