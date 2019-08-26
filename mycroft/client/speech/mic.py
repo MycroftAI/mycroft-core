@@ -561,8 +561,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             return
 
         LOG.debug("Recording...")
-        emitter.emit("recognizer_loop:record_begin")
-
         # If enabled, play a wave file with a short sound to audibly
         # indicate recording has begun.
         if self.config.get('confirm_listening'):
@@ -575,6 +573,9 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 # Clear frames from wakeword detctions since they're
                 # irrelevant after mute - play wav - unmute sequence
                 ww_frames = None
+
+        # Notify system of recording start
+        emitter.emit("recognizer_loop:record_begin")
 
         frame_data = self._record_phrase(
             source,
