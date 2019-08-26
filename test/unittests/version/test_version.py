@@ -14,7 +14,7 @@
 #
 import unittest
 
-import mock
+from unittest.mock import mock_open, patch
 
 import mycroft.version
 
@@ -27,7 +27,7 @@ VERSION_INFO = """
 
 
 class TestVersion(unittest.TestCase):
-    @mock.patch('mycroft.version.CORE_VERSION_TUPLE', (0, 8, 20))
+    @patch('mycroft.version.CORE_VERSION_TUPLE', (0, 8, 20))
     def test_get_version(self):
         """
             Tests for mycroft.version.get_version()
@@ -41,10 +41,10 @@ class TestVersion(unittest.TestCase):
         self.assertFalse(mycroft.version.check_version('0.9.12'))
         self.assertFalse(mycroft.version.check_version('1.0.2'))
 
-    @mock.patch('mycroft.version.isfile')
-    @mock.patch('mycroft.version.exists')
-    @mock.patch('mycroft.version.open',
-                mock.mock_open(read_data=VERSION_INFO), create=True)
+    @patch('mycroft.version.isfile')
+    @patch('mycroft.version.exists')
+    @patch('mycroft.version.open',
+           mock_open(read_data=VERSION_INFO), create=True)
     def test_version_manager(self, mock_exists, mock_isfile):
         """
             Test mycroft.version.VersionManager.get()
