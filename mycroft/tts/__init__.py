@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from copy import deepcopy
 import hashlib
 import os
 import random
@@ -34,6 +35,10 @@ from mycroft.util import (
 )
 from mycroft.util.log import LOG
 from queue import Queue, Empty
+
+
+_TTS_ENV = deepcopy(os.environ)
+_TTS_ENV['PULSE_PROP'] = 'media.role=phone'
 
 
 def send_playback_metric(stopwatch, ident):
@@ -60,6 +65,11 @@ class PlaybackThread(Thread):
         self.queue = queue
         self._terminated = False
         self._processing_queue = False
+        # Check if the tts shall have a ducking role set
+        if Configuration.get().get('tts', {}).get('pulse_duck'):
+            self.pulse_env = _TTS_ENV
+        else:
+            self.pulse_env = None
 
     def init(self, tts):
         self.tts = tts
@@ -91,9 +101,9 @@ class PlaybackThread(Thread):
                 stopwatch = Stopwatch()
                 with stopwatch:
                     if snd_type == 'wav':
-                        self.p = play_wav(data)
+                        self.p = play_wav(data, environment=self.pulse_env)
                     elif snd_type == 'mp3':
-                        self.p = play_mp3(data)
+                        self.p = play_mp3(data, environment=self.pulse_env)
 
                     if visemes:
                         self.show_visemes(visemes)
