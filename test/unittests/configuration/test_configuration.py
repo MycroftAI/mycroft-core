@@ -1,4 +1,4 @@
-import mock
+from unittest.mock import MagicMock, patch
 from unittest import TestCase
 import mycroft.configuration
 
@@ -19,11 +19,11 @@ class TestConfiguration(TestCase):
         self.assertEquals(d['b']['d'], d2['b']['d'])
         self.assertEquals(d['b']['c'], d1['b']['c'])
 
-    @mock.patch('mycroft.api.DeviceApi')
+    @patch('mycroft.api.DeviceApi')
     def test_remote(self, mock_api):
         remote_conf = {'TestConfig': True, 'uuid': 1234}
         remote_location = {'city': {'name': 'Stockholm'}}
-        dev_api = mock.MagicMock()
+        dev_api = MagicMock()
         dev_api.get_settings.return_value = remote_conf
         dev_api.get_location.return_value = remote_location
         mock_api.return_value = dev_api
@@ -32,10 +32,10 @@ class TestConfiguration(TestCase):
         self.assertTrue(rc['test_config'])
         self.assertEquals(rc['location']['city']['name'], 'Stockholm')
 
-    @mock.patch('json.dump')
-    @mock.patch('mycroft.configuration.config.exists')
-    @mock.patch('mycroft.configuration.config.isfile')
-    @mock.patch('mycroft.configuration.config.load_commented_json')
+    @patch('json.dump')
+    @patch('mycroft.configuration.config.exists')
+    @patch('mycroft.configuration.config.isfile')
+    @patch('mycroft.configuration.config.load_commented_json')
     def test_local(self, mock_json_loader, mock_isfile, mock_exists,
                    mock_json_dump):
         local_conf = {'answer': 42, 'falling_objects': ['flower pot', 'whale']}
@@ -64,8 +64,8 @@ class TestConfiguration(TestCase):
         lc = mycroft.configuration.LocalConf('test')
         self.assertEquals(lc, {})
 
-    @mock.patch('mycroft.configuration.config.RemoteConf')
-    @mock.patch('mycroft.configuration.config.LocalConf')
+    @patch('mycroft.configuration.config.RemoteConf')
+    @patch('mycroft.configuration.config.LocalConf')
     def test_update(self, mock_remote, mock_local):
         mock_remote.return_value = {}
         mock_local.return_value = {'a': 1}

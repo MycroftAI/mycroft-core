@@ -14,7 +14,7 @@
 #
 import json
 import unittest
-from mock import MagicMock
+from unittest.mock import MagicMock
 
 from os import remove
 from os.path import join, dirname
