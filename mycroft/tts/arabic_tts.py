@@ -29,16 +29,15 @@ from mycroft.util.download import download
 from mycroft.util.log import LOG
 
 config = Configuration.get().get("tts").get("arabic")
-
 BIN = './tts.sh'
-PATH = config.get("path")
-VOICE = config.get("voice")
-DIAC = config.get("diac")
-VOL = config.get("vol")
-SPEED = config.get("speed")
 
 class ArabicTTS(TTS):
     def __init__(self, lang, config):
+        self.PATH = config.get("path")
+        self.VOICE = config.get("voice")
+        self.DIAC = config.get("diac")
+        self.VOL = config.get("vol")
+        self.SPEED = config.get("speed")
         super(ArabicTTS, self).__init__(
             lang, config, ArabicTTSValidator(self), 'wav'
         )
@@ -48,18 +47,19 @@ class ArabicTTS(TTS):
     @property
     def args(self):
         """ Build ArabicTTS arguments. """
-        args = [BIN, '-v', VOICE, '-d', DIAC, '-vol', VOL, '-s', SPEED]
+        args = [BIN, '-v', self.VOICE, '-d', self.DIAC, '-vol', self.VOL, '-s', self.SPEED]
         return args
 
     def get_tts(self, sentence, wav_file):
         #  Generate WAV and phonemes
         phonemes = subprocess.check_output(self.args + ['-o', wav_file,
-                                                        '-i', sentence], cwd=PATH)
+                                                        '-i', sentence], cwd=self.PATH)
         return wav_file, phonemes
 
 
 class ArabicTTSValidator(TTSValidator):
     def __init__(self, tts):
+        self.PATH = config.get("path")
         super(ArabicTTSValidator, self).__init__(tts)
 
     def validate_lang(self):
@@ -68,9 +68,9 @@ class ArabicTTSValidator(TTSValidator):
 
     def validate_connection(self):
         try:
-            subprocess.call([PATH+'/'+BIN])
+            subprocess.call([self.PATH+'/'+BIN])
         except:
-            LOG.info("Failed to find " + BIN + " at: " + PATH)
+            LOG.info("Failed to find " + BIN + " at: " + self.PATH)
             raise Exception(
                 'ArabicTTS was not found.')
 
