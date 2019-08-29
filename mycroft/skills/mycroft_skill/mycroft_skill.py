@@ -761,6 +761,8 @@ class MycroftSkill:
         """
         name = '{}:{}'.format(self.skill_id, intent_file)
         filename = self.find_resource(intent_file, 'vocab')
+        if not filename:
+            raise FileNotFoundError('Unable to find "{}"'.format(intent_file))
         self.intent_service.register_padatious_intent(name, filename)
         self.add_event(name, handler, 'mycroft.skill.handler')
 
@@ -784,6 +786,8 @@ class MycroftSkill:
         if entity_file.endswith('.entity'):
             entity_file = entity_file.replace('.entity', '')
         filename = self.find_resource(entity_file + ".entity", 'vocab')
+        if not filename:
+            raise FileNotFoundError('Unable to find "{}"'.format(entity_file))
 
         name = '{}:{}'.format(self.skill_id, entity_file)
         self.intent_service.register_padatious_entity(name, filename)
