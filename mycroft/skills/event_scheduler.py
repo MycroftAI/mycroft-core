@@ -389,30 +389,18 @@ class EventSchedulerInterface:
         event_name = self._create_unique_name(name)
         data = {'name': event_name}
 
-        # making event_status an object so it's refrence can be changed
-        event_status = None
-        finished_callback = False
+        reply_name = 'mycroft.event_status.callback.{}'.format(event_name)
+        msg = Message('mycroft.scheduler.get_event', data=data)
+        status = self.skill.bus.wait_for_response(msg, reply_type=reply_name)
 
-        def callback(message):
-            nonlocal event_status
-            nonlocal finished_callback
-            if message.data is not None:
-                event_time = int(message.data[0][0])
-                current_time = int(time.time())
-                time_left_in_seconds = event_time - current_time
-                event_status = time_left_in_seconds
-            finished_callback = True
-
-        emitter_name = 'mycroft.event_status.callback.{}'.format(event_name)
-        self.skill.bus.once(emitter_name, callback)
-        self.skill.bus.emit(Message('mycroft.scheduler.get_event', data=data))
-
-        start_wait = time.time()
-        while finished_callback is False and time.time() - start_wait < 3.0:
-            time.sleep(0.1)
-        if time.time() - start_wait > 3.0:
+        if status:
+            event_time = int(status.data[0][0])
+            current_time = int(time.time())
+            time_left_in_seconds = event_time - current_time
+            LOG.info(time_left_in_seconds)
+            return time_left_in_seconds
+        else:
             raise Exception("Event Status Messagebus Timeout")
-        return event_status
 
     def cancel_all_repeating_events(self):
         """Cancel any repeating events started by the skill."""
