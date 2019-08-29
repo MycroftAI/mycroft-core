@@ -41,47 +41,43 @@ def get_handler_name(handler):
         return handler.__name__
 
 
-def create_wrapper(skill, name, handler, handler_info, on_error, once):
+def create_wrapper(handler, skill_id, on_start, on_end, on_error):
+    """Create the default skill handler wrapper.
+
+    This wrapper handles things like metrics, reporting handler start/stop
+    and errors.
+        handler (callable): method/function to call
+        skill_id: skill_id for associated skill
+        on_start (function): function to call before executing the handler
+        on_end (function): function to call after executing the handler
+        on_error (function): function to call for error reporting
+    """
     def wrapper(message):
-        skill_data = {'name': get_handler_name(handler)}
         stopwatch = Stopwatch()
         try:
-            message = unmunge_message(message, skill.skill_id)
-            # Indicate that the skill handler is starting
-            if handler_info:
-                # Indicate that the skill handler is starting if requested
-                msg_type = handler_info + '.start'
-                skill.bus.emit(message.reply(msg_type, skill_data))
-
-            if once:
-                # Remove registered one-time handler before invoking,
-                # allowing them to re-schedule themselves.
-                skill.remove_event(name)
+            message = unmunge_message(message, skill_id)
+            if on_start:
+                on_start(message)
 
             with stopwatch:
                 if len(signature(handler).parameters) == 0:
                     handler()
                 else:
                     handler(message)
-                skill.settings.store()  # Store settings if they've changed
 
         except Exception as e:
             if on_error:
                 on_error(e)
-            # append exception information in message
-            skill_data['exception'] = repr(e)
         finally:
-            # Indicate that the skill handler has completed
-            if handler_info:
-                msg_type = handler_info + '.complete'
-                skill.bus.emit(message.reply(msg_type, skill_data))
+            if on_end:
+                on_end(message)
 
             # Send timing metrics
             context = message.context
             if context and 'ident' in context:
                 report_timing(context['ident'], 'skill_handler', stopwatch,
                               {'handler': handler.__name__,
-                               'skill_id': skill.skill_id})
+                               'skill_id': skill_id})
     return wrapper
 
 
@@ -107,10 +103,15 @@ class EventContainer:
             once (bool, optional): Event handler will be removed after it has
                                    been run once.
         """
+        def once_wrapper(message):
+            # Remove registered one-time handler before invoking,
+            # allowing them to re-schedule themselves.
+            handler(message)
+            self.remove(name)
 
         if handler:
             if once:
-                self.bus.once(name, handler)
+                self.bus.once(name, once_wrapper)
             else:
                 self.bus.on(name, handler)
             self.events.append((name, handler))

@@ -44,7 +44,7 @@ from ..skill_data import (load_vocabulary, load_regex, to_alnum,
                           read_value_file, read_translated_file)
 from ..event_scheduler import EventSchedulerInterface
 from ..intent_service_interface import IntentServiceInterface
-from .event_container import EventContainer, create_wrapper
+from .event_container import EventContainer, create_wrapper, get_handler_name
 
 
 def simple_trace(stack_trace):
@@ -676,17 +676,35 @@ class MycroftSkill:
             once (bool, optional): Event handler will be removed after it has
                                    been run once.
         """
+        skill_data = {'name': get_handler_name(handler)}
 
         def on_error(e):
+            """Speak and log the error."""
             # Convert "MyFancySkill" to "My Fancy Skill" for speaking
             handler_name = camel_case_split(self.name)
             msg_data = {'skill': handler_name}
             msg = dialog.get('skill.error', self.lang, msg_data)
             self.speak(msg)
             LOG.exception(msg)
+            # append exception information in message
+            skill_data['exception'] = repr(e)
 
-        wrapper = create_wrapper(self, name, handler, handler_info,
-                                 on_error, once)
+        def on_start(message):
+            """Indicate that the skill handler is starting."""
+            if handler_info:
+                # Indicate that the skill handler is starting if requested
+                msg_type = handler_info + '.start'
+                self.bus.emit(message.reply(msg_type, skill_data))
+
+        def on_end(message):
+            """Store settings and indicate that the skill handler has completed
+            """
+            self.settings.store()  # Store settings if they've changed
+            if handler_info:
+                msg_type = handler_info + '.complete'
+                self.bus.emit(message.reply(msg_type, skill_data))
+
+        wrapper = create_wrapper(handler, on_start, on_end, on_error)
         return self.events.add(name, wrapper, once)
 
     def remove_event(self, name):
