@@ -147,7 +147,13 @@ in mycroft.conf.
   Y)es, I want to use the PocketSphinx engine or my own.
   N)o, stop the installation."
       if get_YN ; then
-        sed -i "s/\"use_precise\": true/\"use_precise\": false/" config/
+        if [[ ! -f /etc/mycroft/mycroft.conf ]]; then
+          if [[ ! -e /etc/mycroft/ ]]; then
+            $SUDO mkdir /etc/mycroft
+          fi
+          $SUDO cp $TOP/mycroft/configuration/mycroft.conf /etc/mycroft/
+        fi
+        sed -i "s/\"use_precise\": true/\"use_precise\": false/" /etc/mycroft/mycroft.conf
       else
         echo -e "$HIGHLIGHT N - quit the installation $RESET"
         exit 1
