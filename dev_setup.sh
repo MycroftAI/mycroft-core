@@ -153,7 +153,7 @@ in mycroft.conf.
           fi
           $SUDO cp $TOP/mycroft/configuration/mycroft.conf /etc/mycroft/
         fi
-        sed -i "s/\"use_precise\": true/\"use_precise\": false/" /etc/mycroft/mycroft.conf
+        $SUDO sed -i "s/\"use_precise\": true/\"use_precise\": false/" /etc/mycroft/mycroft.conf
       else
         echo -e "$HIGHLIGHT N - quit the installation $RESET"
         exit 1
