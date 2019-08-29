@@ -18,7 +18,7 @@ import sys
 import re
 import traceback
 import inspect
-from inspect import signature
+from inspect import ismethod, signature
 import collections
 import time
 from datetime import datetime, timedelta
@@ -62,6 +62,31 @@ def simple_trace(stack_trace):
         if line.strip():
             tb += line
     return tb
+
+
+def get_non_properties(obj):
+    """Get attibutes that are not properties from object.
+
+    Will return members of object class along with bases down to MycroftSkill.
+
+    Arguments:
+        obj:    object to scan
+
+    Returns:
+        Set of attributes that are not a property.
+    """
+
+    def check_class(cls):
+        """Find all non-properties in a class."""
+        # Current class
+        d = cls.__dict__
+        np = [k for k in d if not isinstance(d[k], property)]
+        # Recurse through base classes excluding MycroftSkill and object
+        for b in [b for b in cls.__bases__ if b not in (object, MycroftSkill)]:
+            np += check_class(b)
+        return np
+
+    return set(check_class(obj.__class__))
 
 
 def dig_for_message():
@@ -175,7 +200,6 @@ class MycroftSkill:
         bus (MycroftWebsocketClient): Optional bus connection
         use_settings (bool): Set to false to not use skill settings at all
     """
-
     def __init__(self, name=None, bus=None, use_settings=True):
         self.name = name or self.__class__.__name__
         self.resting_name = None
@@ -234,12 +258,9 @@ class MycroftSkill:
         """Provide deprecation warning when accessing config.
         TODO: Remove in 19.08
         """
-        stack = simple_trace(traceback.format_stack())
-        if (" _register_decorated" not in stack and
-                "register_resting_screen" not in stack):
-            LOG.warning('self.config is deprecated.  Switch to using '
-                        'self.setting["whatever"] within your skill.')
-            LOG.warning(stack)
+        LOG.warning('self.config is deprecated.  Switch to using '
+                    'self.setting["whatever"] within your skill.')
+        LOG.warning(simple_trace(traceback.format_stack()))
         return self._config
 
     @property
@@ -561,10 +582,8 @@ class MycroftSkill:
         This only allows one screen and if two is registered only one
         will be used.
         """
-        attributes = [a for a in dir(self)]
-        for attr_name in attributes:
+        for attr_name in get_non_properties(self):
             method = getattr(self, attr_name)
-
             if hasattr(method, 'resting_handler'):
                 self.resting_name = method.resting_handler
                 self.log.info('Registering resting screen {} for {}.'.format(
@@ -580,18 +599,18 @@ class MycroftSkill:
                 # Do a send at load to make sure the skill is registered
                 # if reloaded
                 self._handle_collect_resting()
-                return
+                break
 
     def _register_decorated(self):
         """Register all intent handlers that are decorated with an intent.
 
         Looks for all functions that have been marked by a decorator
-        and read the intent data from them
+        and read the intent data from them.  The intent handlers aren't the
+        only decorators used.  Skip properties as calling getattr on them
+        executes the code which may have unintended side-effects
         """
-        attributes = [a for a in dir(self)]
-        for attr_name in attributes:
+        for attr_name in get_non_properties(self):
             method = getattr(self, attr_name)
-
             if hasattr(method, 'intents'):
                 for intent in getattr(method, 'intents'):
                     self.register_intent(intent, method)

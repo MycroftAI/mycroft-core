@@ -41,9 +41,9 @@ from os.path import join, isdir, basename
 from pyee import EventEmitter
 from numbers import Number
 from mycroft.messagebus.message import Message
-from mycroft.skills.core import create_skill_descriptor, load_skill, \
-    MycroftSkill, FallbackSkill
+from mycroft.skills.core import MycroftSkill, FallbackSkill
 from mycroft.skills.settings import SkillSettings
+from mycroft.skills.skill_loader import SkillLoader
 from mycroft.configuration import Configuration
 from mycroft.util.format import expand_options
 
@@ -118,6 +118,10 @@ def temporary_handler(log, handler):
     log.handler = old_handler
 
 
+def create_skill_descriptor(skill_path):
+    return {"path": skill_path}
+
+
 def get_skills(skills_folder):
     """Find skills in the skill folder or sub folders.
 
@@ -172,7 +176,10 @@ def load_skills(emitter, skills_root):
         from mycroft.skills.core import LOG as skills_log
         buf = StringIO()
         with temporary_handler(skills_log, StreamHandler(buf)):
-            skill_list.append(load_skill(skill, emitter, skill_id))
+            skill_loader = SkillLoader(emitter, path)
+            skill_loader.skill_id = skill_id
+            skill_loader.load()
+            skill_list.append(skill_loader.instance)
         log[path] = buf.getvalue()
 
     return skill_list, log

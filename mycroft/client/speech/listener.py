@@ -16,7 +16,7 @@ import time
 from threading import Thread
 import speech_recognition as sr
 from pyee import EventEmitter
-from requests import RequestException, HTTPError
+from requests import RequestException
 from requests.exceptions import ConnectionError
 
 from mycroft import dialog
@@ -77,7 +77,10 @@ class AudioProducer(Thread):
                 try:
                     audio = self.recognizer.listen(source, self.emitter,
                                                    self.stream_handler)
-                    self.queue.put((AUDIO_DATA, audio))
+                    if audio is not None:
+                        self.queue.put((AUDIO_DATA, audio))
+                    else:
+                        LOG.warning("Audio contains no data.")
                 except IOError as e:
                     # NOTE: Audio stack on raspi is slightly different, throws
                     # IOError every other listen, almost like it can't handle
@@ -134,10 +137,11 @@ class AudioConsumer(Thread):
         tag, data = message
 
         if tag == AUDIO_DATA:
-            if self.state.sleeping:
-                self.wake_up(data)
-            else:
-                self.process(data)
+            if data is not None:
+                if self.state.sleeping:
+                    self.wake_up(data)
+                else:
+                    self.process(data)
         elif tag == STREAM_START:
             self.stt.stream_start()
         elif tag == STREAM_DATA:
@@ -169,9 +173,7 @@ class AudioConsumer(Thread):
         }
         self.emitter.emit("recognizer_loop:wakeword", payload)
 
-        if self._audio_length(audio) < self.MIN_AUDIO_SIZE:
-            LOG.warning("Audio too short to be processed")
-        else:
+        if self._audio_length(audio) >= self.MIN_AUDIO_SIZE:
             stopwatch = Stopwatch()
             with stopwatch:
                 transcription = self.transcribe(audio)
@@ -193,6 +195,8 @@ class AudioConsumer(Thread):
                                'stt': self.stt.__class__.__name__})
             else:
                 ident = str(stopwatch.timestamp)
+        else:
+            LOG.warning("Audio too short to be processed")
 
     def transcribe(self, audio):
         def send_unknown_intent():
@@ -215,12 +219,6 @@ class AudioConsumer(Thread):
             LOG.error("Connection Error: {0}".format(e))
 
             self.emitter.emit("recognizer_loop:no_internet")
-        except HTTPError as e:
-            if e.response.status_code == 401:
-                LOG.warning("Access Denied at mycroft.ai")
-                return "pair my device"  # phrase to start the pairing process
-            else:
-                LOG.error(e.__class__.__name__ + ': ' + str(e))
         except RequestException as e:
             LOG.error(e.__class__.__name__ + ': ' + str(e))
         except Exception as e:

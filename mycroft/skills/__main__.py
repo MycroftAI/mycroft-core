@@ -22,6 +22,8 @@ import time
 from threading import Event
 
 import mycroft.lock
+from msm.exceptions import MsmException
+
 from mycroft import dialog
 from mycroft.api import is_paired, BackendDown, DeviceApi
 from mycroft.audio import wait_while_speaking
@@ -42,7 +44,7 @@ from .core import FallbackSkill
 from .event_scheduler import EventScheduler
 from .intent_service import IntentService
 from .padatious_service import PadatiousService
-from .skill_manager import SkillManager, MsmException
+from .skill_manager import SkillManager
 
 RASPBERRY_PI_PLATFORMS = ('mycroft_mark_1', 'picroft', 'mycroft_mark_2pi')
 ONE_HOUR = 3600
@@ -53,7 +55,7 @@ class DevicePrimer(object):
 
     Arguments:
         message_bus_client: Bus client used to interact with the system
-        config (dict): Mycroft configuraion
+        config (dict): Mycroft configuration
     """
     def __init__(self, message_bus_client, config):
         self.bus = message_bus_client
@@ -79,18 +81,20 @@ class DevicePrimer(object):
         """Internet dependent updates of various aspects of the device."""
         self._get_pairing_status()
         self._update_system_clock()
-        update_attempted = self._update_system()
-        if not update_attempted:
-            if self.time_skew_threshold_exceeded:
-                self._reboot()
+        if self.time_skew_threshold_exceeded:
+            self._reboot()
+        else:
+            self._update_system()
+            # Above will block during update process and kill this instance if
+            # new software is installed
+
+            if self.backend_down:
+                self._notify_backend_down()
             else:
-                if self.backend_down:
-                    self._notify_backend_down()
-                else:
-                    self._display_skill_loading_notification()
-                    self.bus.emit(Message('mycroft.internet.connected'))
-                    self._ensure_device_is_paired()
-                    self._update_device_attributes_on_backend()
+                self._display_skill_loading_notification()
+                self.bus.emit(Message('mycroft.internet.connected'))
+                self._ensure_device_is_paired()
+                self._update_device_attributes_on_backend()
 
     def _get_pairing_status(self):
         """Set an instance attribute indicating the device's pairing status"""
@@ -182,7 +186,6 @@ class DevicePrimer(object):
 
     def _update_system(self):
         """Emit an update event that will be handled by the admin service."""
-        update_attempted = False
         if not self.is_paired:
             LOG.info('Attempting system update...')
             self.bus.emit(Message('system.update'))
@@ -198,9 +201,6 @@ class DevicePrimer(object):
                     'system.update.complete',
                     1000
                 )
-                update_attempted = True
-
-        return update_attempted
 
     def _speak_dialog(self, dialog_id, wait=False):
         data = {'utterance': dialog.get(dialog_id)}
@@ -271,7 +271,7 @@ def _register_intent_services(bus):
 
 
 def _initialize_skill_manager(bus):
-    """Create skill manager monitoring skills and load priority skills.
+    """Create a thread that monitors the loaded skills, looking for updates
 
     Returns:
         SkillManager instance or None if it couldn't be initialized

@@ -16,7 +16,7 @@ import signal
 import unittest
 from shutil import rmtree
 
-import mock
+from unittest.mock import patch
 import os
 from os.path import exists, isfile
 
@@ -38,7 +38,7 @@ class TestLock(unittest.TestCase):
         l1.delete()
         self.assertFalse(isfile('/tmp/mycroft/test.pid'))
 
-    @mock.patch('os.kill')
+    @patch('os.kill')
     def test_existing_lock(self, mock_kill):
         """ Test that an existing lock will kill the old pid. """
         l1 = Lock('test')
