@@ -254,12 +254,12 @@ class EventScheduler(Thread):
 
 
 class EventSchedulerInterface:
-    """Skill interface for accessing the event scheduler."""
+    """Interface for accessing the event scheduler over the message bus."""
     def __init__(self, skill):
         self.skill = skill
         self.scheduled_repeats = []
 
-    def _unique_name(self, name):
+    def _create_unique_name(self, name):
         """Return a name unique to this skill using the format
         [skill_id]:[name].
 
@@ -271,25 +271,36 @@ class EventSchedulerInterface:
         """
         return str(self.skill.skill_id) + ':' + (name or '')
 
-    def _schedule_event(self, handler, when, data=None, name=None,
-                        repeat=None):
+    def _schedule_event(self, handler, when, data, name, repeat_interval=None):
         """Underlying method for schedule_event and schedule_repeating_event.
 
         Takes scheduling information and sends it off on the message bus.
+
+        Arguments:
+            handler:                method to be called
+            when (datetime):        time (in system timezone) for first
+                                    calling the handler, or None to
+                                    initially trigger <frequency> seconds
+                                    from now
+            data (dict, optional):  data to send when the handler is called
+            name (str, optional):   reference name, must be unique
+            repeat_interval (float/int):  time in seconds between calls
+
         """
+        if isinstance(when, (int, float)) and when >= 0:
+            when = datetime.now() + timedelta(seconds=when)
         if not name:
             name = self.skill.name + handler.__name__
-        unique_name = self._unique_name(name)
-        if repeat:
+        unique_name = self._create_unique_name(name)
+        if repeat_interval:
             self.scheduled_repeats.append(name)  # store "friendly name"
 
         data = data or {}
-        self.skill.add_event(unique_name, handler, once=not repeat)
-        event_data = {}
-        event_data['time'] = time.mktime(when.timetuple())
-        event_data['event'] = unique_name
-        event_data['repeat'] = repeat
-        event_data['data'] = data
+        self.skill.add_event(unique_name, handler, once=not repeat_interval)
+        event_data = {'time': time.mktime(when.timetuple()),
+                      'event': unique_name,
+                      'repeat': repeat_interval,
+                      'data': data}
         self.skill.bus.emit(Message('mycroft.scheduler.schedule_event',
                                     data=event_data))
 
@@ -307,12 +318,9 @@ class EventSchedulerInterface:
                                    previously scheduled event of the same
                                    name.
         """
-        data = data or {}
-        if isinstance(when, (int, float)):
-            when = datetime.now() + timedelta(seconds=when)
         self._schedule_event(handler, when, data, name)
 
-    def schedule_repeating_event(self, handler, when, frequency,
+    def schedule_repeating_event(self, handler, when, interval,
                                  data=None, name=None):
         """Schedule a repeating event.
 
@@ -322,16 +330,17 @@ class EventSchedulerInterface:
                                     calling the handler, or None to
                                     initially trigger <frequency> seconds
                                     from now
-            frequency (float/int):  time in seconds between calls
+            interval (float/int):   time in seconds between calls
             data (dict, optional):  data to send when the handler is called
             name (str, optional):   reference name, must be unique
         """
         # Do not schedule if this event is already scheduled by the skill
         if name not in self.scheduled_repeats:
-            data = data or {}
+            # If only interval is given set to trigger in [interval] seconds
+            # from now.
             if not when:
-                when = datetime.now() + timedelta(seconds=frequency)
-            self._schedule_event(handler, when, data, name, frequency)
+                when = datetime.now() + timedelta(seconds=interval)
+            self._schedule_event(handler, when, data, name, interval)
         else:
             LOG.debug('The event is already scheduled, cancel previous '
                       'event if this scheduling should replace the last.')
@@ -344,7 +353,7 @@ class EventSchedulerInterface:
         """
         data = data or {}
         data = {
-            'event': self._unique_name(name),
+            'event': self._create_unique_name(name),
             'data': data
         }
         self.skill.bus.emit(Message('mycroft.schedule.update_event',
@@ -357,7 +366,7 @@ class EventSchedulerInterface:
         Arguments:
             name (str): reference name of event (from original scheduling)
         """
-        unique_name = self._unique_name(name)
+        unique_name = self._create_unique_name(name)
         data = {'event': unique_name}
         if name in self.scheduled_repeats:
             self.scheduled_repeats.remove(name)
@@ -377,7 +386,7 @@ class EventSchedulerInterface:
         Raises:
             Exception: Raised if event is not found
         """
-        event_name = self._unique_name(name)
+        event_name = self._create_unique_name(name)
         data = {'name': event_name}
 
         # making event_status an object so it's refrence can be changed
