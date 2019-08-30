@@ -24,6 +24,7 @@ from os.path import isfile, join, expanduser
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
+from .mycroft_skill.event_container import EventContainer
 
 
 def repeat_time(sched_time, repeat):
@@ -255,9 +256,20 @@ class EventScheduler(Thread):
 
 class EventSchedulerInterface:
     """Interface for accessing the event scheduler over the message bus."""
-    def __init__(self, skill):
-        self.skill = skill
+    def __init__(self, name, sched_id=None, bus=None):
+        self.name = name
+        self.sched_id = sched_id
+        self.bus = bus
+        self.events = EventContainer(bus)
+
         self.scheduled_repeats = []
+
+    def set_bus(self, bus):
+        self.bus = bus
+        self.events.set_bus(bus)
+
+    def set_id(self, sched_id):
+        self.sched_id = sched_id
 
     def _create_unique_name(self, name):
         """Return a name unique to this skill using the format
@@ -269,7 +281,7 @@ class EventSchedulerInterface:
         Returns:
             str: name unique to this skill
         """
-        return str(self.skill.skill_id) + ':' + (name or '')
+        return str(self.sched_id) + ':' + (name or '')
 
     def _schedule_event(self, handler, when, data, name, repeat_interval=None):
         """Underlying method for schedule_event and schedule_repeating_event.
@@ -290,19 +302,19 @@ class EventSchedulerInterface:
         if isinstance(when, (int, float)) and when >= 0:
             when = datetime.now() + timedelta(seconds=when)
         if not name:
-            name = self.skill.name + handler.__name__
+            name = self.name + handler.__name__
         unique_name = self._create_unique_name(name)
         if repeat_interval:
             self.scheduled_repeats.append(name)  # store "friendly name"
 
         data = data or {}
-        self.skill.add_event(unique_name, handler, once=not repeat_interval)
+        self.events.add(unique_name, handler, once=not repeat_interval)
         event_data = {'time': time.mktime(when.timetuple()),
                       'event': unique_name,
                       'repeat': repeat_interval,
                       'data': data}
-        self.skill.bus.emit(Message('mycroft.scheduler.schedule_event',
-                                    data=event_data))
+        self.bus.emit(Message('mycroft.scheduler.schedule_event',
+                              data=event_data))
 
     def schedule_event(self, handler, when, data=None, name=None):
         """Schedule a single-shot event.
@@ -356,8 +368,8 @@ class EventSchedulerInterface:
             'event': self._create_unique_name(name),
             'data': data
         }
-        self.skill.bus.emit(Message('mycroft.schedule.update_event',
-                                    data=data))
+        self.bus.emit(Message('mycroft.schedule.update_event',
+                              data=data))
 
     def cancel_scheduled_event(self, name):
         """Cancel a pending event. The event will no longer be scheduled
@@ -370,9 +382,9 @@ class EventSchedulerInterface:
         data = {'event': unique_name}
         if name in self.scheduled_repeats:
             self.scheduled_repeats.remove(name)
-        if self.skill.remove_event(unique_name):
-            self.skill.bus.emit(Message('mycroft.scheduler.remove_event',
-                                        data=data))
+        if self.events.remove(unique_name):
+            self.bus.emit(Message('mycroft.scheduler.remove_event',
+                                  data=data))
 
     def get_scheduled_event_status(self, name):
         """Get scheduled event data and return the amount of time left
@@ -391,7 +403,7 @@ class EventSchedulerInterface:
 
         reply_name = 'mycroft.event_status.callback.{}'.format(event_name)
         msg = Message('mycroft.scheduler.get_event', data=data)
-        status = self.skill.bus.wait_for_response(msg, reply_type=reply_name)
+        status = self.bus.wait_for_response(msg, reply_type=reply_name)
 
         if status:
             event_time = int(status.data[0][0])
@@ -408,3 +420,8 @@ class EventSchedulerInterface:
         #       in cancel_scheduled_event().
         for e in list(self.scheduled_repeats):
             self.cancel_scheduled_event(e)
+
+    def shutdown(self):
+        """Shutdown the interface unregistering any event handlers."""
+        self.cancel_all_repeating_events()
+        self.events.clear()

@@ -144,7 +144,7 @@ class MycroftSkill:
         self.voc_match_cache = {}
 
         # Delegator classes
-        self.event_scheduler = EventSchedulerInterface(self)
+        self.event_scheduler = EventSchedulerInterface(self.name)
         self.intent_service = IntentServiceInterface()
 
     @property
@@ -215,6 +215,8 @@ class MycroftSkill:
             self._bus = bus
             self.events.set_bus(bus)
             self.intent_service.set_bus(bus)
+            self.event_scheduler.set_bus(bus)
+            self.event_scheduler.set_id(self.skill_id)
             self._enclosure = EnclosureAPI(bus, self.name)
             self._register_system_event_handlers()
             # Intialize the SkillGui
@@ -704,7 +706,8 @@ class MycroftSkill:
                 msg_type = handler_info + '.complete'
                 self.bus.emit(message.reply(msg_type, skill_data))
 
-        wrapper = create_wrapper(handler, on_start, on_end, on_error)
+        wrapper = create_wrapper(handler, self.skill_id, on_start, on_end,
+                                 on_error)
         return self.events.add(name, wrapper, once)
 
     def remove_event(self, name):
@@ -1116,7 +1119,7 @@ class MycroftSkill:
         self.gui.clear()
 
         # removing events
-        self.cancel_all_repeating_events()
+        self.event_scheduler.shutdown()
         self.events.clear()
 
         self.bus.emit(
