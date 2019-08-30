@@ -232,7 +232,7 @@ class SkillLoader:
             except Exception as e:
                 # If an exception occurs, make sure to clean up the skill
                 self.instance.default_shutdown()
-                self.instane = None
+                self.instance = None
                 log_msg = 'Skill initialization failed with {}'
                 LOG.exception(log_msg.format(repr(e)))
 
