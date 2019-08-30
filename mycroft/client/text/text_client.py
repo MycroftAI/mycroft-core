@@ -696,7 +696,6 @@ def do_draw_main(scr):
     scr.addstr(1, curses.COLS-1-len(ver), ver, CLR_HEADING)
 
     y = 2
-    len_line = 0
     for i in range(start, end):
         if i >= cLogs - 1:
             log = '   ^--- NEWEST ---^ '
@@ -704,15 +703,15 @@ def do_draw_main(scr):
             log = filteredLog[i]
         logid = log[0]
         if len(log) > 25 and log[5] == '-' and log[8] == '-':
-            log = log[27:]  # skip logid & date/time at the front of log line
+            log = log[11:]  # skip logid & date at the front of log line
         else:
             log = log[1:]   # just skip the logid
 
         # Categorize log line
-        if " - DEBUG - " in log:
+        if "| DEBUG    |" in log:
             log = log.replace("Skills ", "")
             clr = CLR_LOG_DEBUG
-        elif " - ERROR - " in log:
+        elif "| ERROR    |" in log:
             clr = CLR_LOG_ERROR
         else:
             if logid == "1":
