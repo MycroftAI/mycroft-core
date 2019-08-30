@@ -6,7 +6,6 @@ from pathlib import Path
 BOOT_START_MESSAGE = 'Starting message bus service...'
 BOOT_END_MESSAGE = 'Skills all loaded!'
 NOT_FOUND = -1
-
 TIME_FORMAT = '%Y-%m-%d %H:%M:%S{}%f'.format(localeconv()['decimal_point'])
 
 
