@@ -212,6 +212,9 @@ class InterceptEmitter(object):
             self.q.put(event)
         self.emitter.emit(event_name, event, *args, **kwargs)
 
+    def wait_for_response(self, event, *args, **kwargs):
+        return None
+
     def once(self, event, f):
         self.emitter.once(event, f)
 
