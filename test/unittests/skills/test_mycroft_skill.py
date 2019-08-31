@@ -264,6 +264,25 @@ class MycroftSkillTest(unittest.TestCase):
         s.enable_intent('a')
         self.check_register_intent(expected)
 
+    def test_enable_disable_intent_handlers(self):
+        """Test disable/enable intent."""
+        # Setup basic test
+        s = SimpleSkill1()
+        s.bind(self.emitter)
+        s.initialize()
+        expected = [{'at_least_one': [],
+                     'name': 'A:a',
+                     'optional': [],
+                     'requires': [('AKeyword', 'AKeyword')]}]
+        self.check_register_intent(expected)
+
+        # Test disable/enable cycle
+        msg = Message('test.msg', data={'intent_name': 'a'})
+        s.handle_disable_intent(msg)
+        self.check_detach_intent()
+        s.handle_enable_intent(msg)
+        self.check_register_intent(expected)
+
     def test_register_vocab(self):
         """Test disable/enable intent."""
         # Setup basic test
