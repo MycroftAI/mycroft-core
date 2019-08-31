@@ -243,7 +243,7 @@ class MycroftSkill:
         self.events.add('mycroft.paired', self.settings.run_poll)
 
     def detach(self):
-        for (name, intent) in self.registered_intents:
+        for (name, _) in self.intent_service:
             name = '{}:{}'.format(self.skill_id, name)
             self.intent_service.detach_intent(name)
 
@@ -407,6 +407,7 @@ class MycroftSkill:
 
         Args:
               prompt (str): a dialog id or string to read
+              data (dict): response data
         Returns:
               string:  'yes', 'no' or whatever the user response if not
                        one of those, including None
@@ -489,15 +490,17 @@ class MycroftSkill:
         self.bus.emit(Message('active_skill_request',
                               {"skill_id": self.skill_id}))
 
-    def _handle_collect_resting(self, message=None):
+    def _handle_collect_resting(self, _=None):
         """Handler for collect resting screen messages.
 
         Sends info on how to trigger this skills resting page.
         """
         self.log.info('Registering resting screen')
-        self.bus.emit(Message('mycroft.mark2.register_idle',
-                              data={'name': self.resting_name,
-                                    'id': self.skill_id}))
+        message = Message(
+            'mycroft.mark2.register_idle',
+            data={'name': self.resting_name, 'id': self.skill_id}
+        )
+        self.bus.emit(message)
 
     def register_resting_screen(self):
         """Registers resting screen from the resting_screen_handler decorator.
@@ -817,7 +820,7 @@ class MycroftSkill:
         """Listener to enable a registered intent if it belongs to this skill.
         """
         intent_name = message.data["intent_name"]
-        for (name, intent) in self.registered_intents:
+        for (name, _) in self.intent_service:
             if name == intent_name:
                 return self.enable_intent(intent_name)
 
@@ -825,7 +828,7 @@ class MycroftSkill:
         """Listener to disable a registered intent if it belongs to this skill.
         """
         intent_name = message.data["intent_name"]
-        for (name, intent) in self.registered_intents:
+        for (name, _) in self.intent_service:
             if name == intent_name:
                 return self.disable_intent(intent_name)
 
@@ -877,6 +880,7 @@ class MycroftSkill:
         Arguments:
             context:    Keyword
             word:       word connected to keyword
+            origin:     origin of context
         """
         if not isinstance(context, str):
             raise ValueError('Context should be a string')
@@ -1066,7 +1070,7 @@ class MycroftSkill:
         for regex in regexes:
             self.intent_service.register_adapt_regex(regex)
 
-    def __handle_stop(self, event):
+    def __handle_stop(self, _):
         """Handler for the "mycroft.stop" signal. Runs the user defined
         `stop()` method.
         """
@@ -1169,6 +1173,7 @@ class MycroftSkill:
 
         Arguments:
             name (str): reference name of event (from original scheduling)
+            data (dict): event data
         """
         return self.event_scheduler.update_scheduled_event(name, data)
 
