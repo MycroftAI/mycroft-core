@@ -281,6 +281,17 @@ class MockSkillsLoader(object):
         unload_skills(self.skills)
 
 
+def load_test_case_file(test_case_file):
+    """Load a test case to run."""
+    print("")
+    print(color.HEADER + "="*20 + " RUNNING TEST " + "="*20 + color.RESET)
+    print('Test file: ', test_case_file)
+    with open(test_case_file, 'r') as f:
+        test_case = json.load(f)
+    print('Test:', json.dumps(test_case, indent=4, sort_keys=False))
+    return test_case
+
+
 class SkillTest(object):
     """
         This class is instantiated for each skill being tested. It holds the
@@ -330,6 +341,92 @@ class SkillTest(object):
             s.get_response = orig_get_response
             s.settings = original_settings
 
+    def send_play_query(self, s, test_case):
+        """Emit an event triggering the a check for playback possibilities."""
+        play_query = test_case['play_query']
+        print('PLAY QUERY', color.USER_UTT + play_query + color.RESET)
+        self.emitter.emit('play:query', Message('play:query:',
+                                                {'phrase': play_query}))
+
+    def send_play_start(self, s, test_case):
+        """Emit an event starting playback from the skill."""
+        print('PLAY START')
+        callback_data = test_case['play_start']
+        callback_data['skill_id'] = s.skill_id
+        self.emitter.emit('play:start',
+                          Message('play:start', callback_data))
+
+    def send_question(self, test_case):
+        """Emit a Question to the loaded skills."""
+        print("QUESTION: {}".format(test_case['question']))
+        callback_data = {'phrase': test_case['question']}
+        self.emitter.emit('question:query',
+                          Message('question:query', data=callback_data))
+
+    def send_utterance(self, test_case):
+        """Emit an utterance to the loaded skills."""
+        utt = test_case['utterance']
+        print("UTTERANCE:", color.USER_UTT + utt + color.RESET)
+        self.emitter.emit('recognizer_loop:utterance',
+                          Message('recognizer_loop:utterance',
+                                  {'utterances': [utt]}))
+
+    def apply_test_settings(self, s, test_case):
+        """Replace the skills settings with settings from the test_case."""
+        s.settings = TestSettings('/tmp/', self.test_case_file)
+        for key in test_case['settings']:
+            s.settings[key] = test_case['settings'][key]
+        print(color.YELLOW, 'will run test with custom settings:',
+                            '\n{}'.format(s.settings), color.RESET)
+
+    def setup_get_response(self, s, test_case):
+        """Setup interception of get_response calls."""
+        def get_response(dialog='', data=None, announcement='',
+                         validator=None, on_fail=None, num_retries=-1):
+            data = data or {}
+            utt = announcement or s.dialog_renderer.render(dialog, data)
+            print(color.MYCROFT + ">> " + utt + color.RESET)
+            s.speak(utt)
+
+            response = test_case['responses'].pop(0)
+            print("SENDING RESPONSE:",
+                  color.USER_UTT + response + color.RESET)
+            return response
+
+        s.get_response = get_response
+
+    def remove_context(self, s, cxt):
+        """remove an adapt context."""
+        if isinstance(cxt, list):
+            for x in cxt:
+                MycroftSkill.remove_context(s, x)
+        else:
+            MycroftSkill.remove_context(s, cxt)
+
+    def set_context(self, s, cxt):
+        """Set an adapt context."""
+        for key, value in cxt.items():
+            MycroftSkill.set_context(s, key, value)
+
+    def send_test_input(self, s, test_case):
+        """Emit an utterance, just like the STT engine does. This sends the
+        provided text to the skill engine for intent matching and it then
+        invokes the skill.
+
+        It also handles some special cases for common play skills and common
+        query skills.
+        """
+        if 'utterance' in test_case:
+            self.send_utterance(test_case)
+        elif 'play_query' in test_case:
+            self.send_play_query(s, test_case)
+        elif 'play_start' in test_case:
+            self.send_play_start(s, test_case)
+        elif 'question' in test_case:
+            self.send_question(test_case)
+        else:
+            raise SkillTestError('No input provided in test case')
+
     def execute_test(self, s):
         """ Execute test case.
 
@@ -339,34 +436,13 @@ class SkillTest(object):
         Returns:
             (bool) True if the test succeeded completely.
         """
-        print("")
-        print(color.HEADER + "="*20 + " RUNNING TEST " + "="*20 + color.RESET)
-        print('Test file: ', self.test_case_file)
-        with open(self.test_case_file, 'r') as f:
-            test_case = json.load(f)
-        print('Test:', json.dumps(test_case, indent=4, sort_keys=False))
+        test_case = load_test_case_file(self.test_case_file)
 
         if 'settings' in test_case:
-            s.settings = TestSettings('/tmp/', self.test_case_file)
-            for key in test_case['settings']:
-                s.settings[key] = test_case['settings'][key]
-            print(color.YELLOW, 'will run test with custom settings:',
-                  '\n{}'.format(s.settings), color.RESET)
+            self.apply_test_settings(s, test_case)
 
         if 'responses' in test_case:
-            def get_response(dialog='', data=None, announcement='',
-                             validator=None, on_fail=None, num_retries=-1):
-                data = data or {}
-                utt = announcement or s.dialog_renderer.render(dialog, data)
-                print(color.MYCROFT + ">> " + utt + color.RESET)
-                s.speak(utt)
-
-                response = test_case['responses'].pop(0)
-                print("SENDING RESPONSE:",
-                      color.USER_UTT + response + color.RESET)
-                return response
-
-            s.get_response = get_response
+            self.setup_get_response(s, test_case)
 
         # If we keep track of test status for the entire skill, then
         # get all intents from the skill, and mark current intent
@@ -390,73 +466,67 @@ class SkillTest(object):
         # between test_cases
         cxt = test_case.get('remove_context', None)
         if cxt:
-            if isinstance(cxt, list):
-                for x in cxt:
-                    MycroftSkill.remove_context(s, x)
-            else:
-                MycroftSkill.remove_context(s, cxt)
+            self.remove_context(s, cxt)
 
         cxt = test_case.get('set_context', None)
         if cxt:
-            for key, value in cxt.items():
-                MycroftSkill.set_context(s, key, value)
+            self.set_context(s, cxt)
 
-        # Emit an utterance, just like the STT engine does.  This sends the
-        # provided text to the skill engine for intent matching and it then
-        # invokes the skill.
-        if 'utterance' in test_case:
-            utt = test_case['utterance']
-            print("UTTERANCE:", color.USER_UTT + utt + color.RESET)
-            self.emitter.emit('recognizer_loop:utterance',
-                              Message('recognizer_loop:utterance',
-                                      {'utterances': [utt]}))
-        elif 'play_query' in test_case:
-            play_query = test_case['play_query']
-            print('PLAY QUERY', color.USER_UTT + play_query + color.RESET)
-            self.emitter.emit('play:query', Message('play:query:',
-                                                    {'phrase': play_query}))
-        elif 'play_start' in test_case:
-            print('PLAY START')
-            callback_data = test_case['play_start']
-            callback_data['skill_id'] = s.skill_id
-            self.emitter.emit('play:start',
-                              Message('play:start', callback_data))
-        elif 'question' in test_case:
-            print("QUESTION: {}".format(test_case['question']))
-            callback_data = {'phrase': test_case['question']}
-            self.emitter.emit('question:query',
-                              Message('question:query', data=callback_data))
-        else:
-            raise SkillTestError('No input utterance provided')
-
+        self.send_test_input(s, test_case)
         # Wait up to X seconds for the test_case to complete
-        timeout = time.time() + int(test_case.get('evaluation_timeout')) \
-            if test_case.get('evaluation_timeout', None) and \
-            isinstance(test_case['evaluation_timeout'], int) \
-            else time.time() + DEFAULT_EVALUAITON_TIMEOUT
-        while not evaluation_rule.all_succeeded():
-            try:
-                event = q.get(timeout=1)
-                if ':' in event.type:
-                    event.data['__type__'] = event.type.split(':')[1]
-                else:
-                    event.data['__type__'] = event.type
+        timeout = self.get_timeout(test_case)
 
-                evaluation_rule.evaluate(event.data)
-                if event.type == 'mycroft.skill.handler.complete':
-                    break
-            except Empty:
-                pass
-            if time.time() > timeout:
+        while not evaluation_rule.all_succeeded():
+            # Process the queue until a skill handler sends a complete message
+            if self.check_queue(q, evaluation_rule) or time.time() > timeout:
                 break
 
-        # Stop emmiter from sending on queue
+        self.shutdown_emitter(s)
+
+        # Report test result if failed
+        return self.results(evaluation_rule)
+
+    def get_timeout(self, test_case):
+        """Find any timeout specified in test case.
+
+        If no timeout is specified return the default.
+        """
+        if (test_case.get('evaluation_timeout', None) and
+                isinstance(test_case['evaluation_timeout'], int)):
+            return time.time() + int(test_case.get('evaluation_timeout'))
+        else:
+            return time.time() + DEFAULT_EVALUAITON_TIMEOUT
+
+    def check_queue(self, q, evaluation_rule):
+        """Check the queue for events.
+
+        If event indicating skill completion is found returns True, else False.
+        """
+        try:
+            event = q.get(timeout=1)
+            if ':' in event.type:
+                event.data['__type__'] = event.type.split(':')[1]
+            else:
+                event.data['__type__'] = event.type
+
+            evaluation_rule.evaluate(event.data)
+            if event.type == 'mycroft.skill.handler.complete':
+                return True
+        except Empty:
+            pass
+        return False
+
+    def shutdown_emitter(self, s):
+        """Shutdown the skill connection to the bus."""
+        # Stop emiter from sending on queue
         s.bus.q = None
 
         # remove the skill which is not responding
         self.emitter.remove_all_listeners('speak')
         self.emitter.remove_all_listeners('mycroft.skill.handler.complete')
-        # Report test result if failed
+
+    def results(self, evaluation_rule):
+        """Display and report the results."""
         if not evaluation_rule.all_succeeded():
             self.failure_msg = str(evaluation_rule.get_failure())
             print(color.FAIL + "Evaluation failed" + color.RESET)
@@ -497,7 +567,7 @@ def load_dialog_list(skill, dialog):
     return dialogs
 
 
-class EvaluationRule(object):
+class EvaluationRule:
     """
         This class initially convert the test_case json file to internal rule
         format, which is stored throughout the testcase run. All Messages on
