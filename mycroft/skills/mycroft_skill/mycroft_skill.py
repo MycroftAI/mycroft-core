@@ -243,7 +243,7 @@ class MycroftSkill:
         self.events.add('mycroft.paired', self.settings.run_poll)
 
     def detach(self):
-        for (name, intent) in self.intent_service.registered_intents:
+        for (name, _) in self.intent_service:
             name = '{}:{}'.format(self.skill_id, name)
             self.intent_service.detach_intent(name)
 
@@ -820,7 +820,7 @@ class MycroftSkill:
         """Listener to enable a registered intent if it belongs to this skill.
         """
         intent_name = message.data["intent_name"]
-        for (name, intent) in self.intent_service.registered_intents:
+        for (name, _) in self.intent_service:
             if name == intent_name:
                 return self.enable_intent(intent_name)
 
@@ -828,7 +828,7 @@ class MycroftSkill:
         """Listener to disable a registered intent if it belongs to this skill.
         """
         intent_name = message.data["intent_name"]
-        for (name, intent) in self.intent_service.registered_intents:
+        for (name, _) in self.intent_service:
             if name == intent_name:
                 return self.disable_intent(intent_name)
 
