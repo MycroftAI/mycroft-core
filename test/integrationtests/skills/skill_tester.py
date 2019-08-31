@@ -173,7 +173,7 @@ def load_skills(emitter, skills_root):
         skill_id = 'test-' + basename(path)
 
         # Catch the logs during skill loading
-        from mycroft.skills.core import LOG as skills_log
+        from mycroft.util.log import LOG as skills_log
         buf = StringIO()
         with temporary_handler(skills_log, StreamHandler(buf)):
             skill_loader = SkillLoader(emitter, path)
