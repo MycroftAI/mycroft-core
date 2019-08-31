@@ -811,7 +811,7 @@ class MycroftSkill:
             if handler_info:
                 # Indicate that the skill handler is starting if requested
                 msg_type = handler_info + '.start'
-                self.bus.emit(message.reply(msg_type, skill_data))
+                self.bus.emit(message.forward(msg_type, skill_data))
 
         def on_end(message):
             """Store settings and indicate that the skill handler has completed
@@ -821,7 +821,7 @@ class MycroftSkill:
                 self._initial_settings = self.settings
             if handler_info:
                 msg_type = handler_info + '.complete'
-                self.bus.emit(message.reply(msg_type, skill_data))
+                self.bus.emit(message.forward(msg_type, skill_data))
 
         wrapper = create_wrapper(handler, self.skill_id, on_start, on_end,
                                  on_error)
@@ -1080,7 +1080,8 @@ class MycroftSkill:
         data = {'utterance': utterance,
                 'expect_response': expect_response}
         message = dig_for_message()
-        m = message.reply("speak", data) if message else Message("speak", data)
+        m = message.forward("speak", data) if message \
+            else Message("speak", data)
         self.bus.emit(m)
 
         if wait:
