@@ -45,11 +45,15 @@ from mycroft.skills.core import MycroftSkill, FallbackSkill
 from mycroft.skills.settings import SkillSettings
 from mycroft.skills.skill_loader import SkillLoader
 from mycroft.configuration import Configuration
-from mycroft.util.format import expand_options
 
 from logging import StreamHandler
 from io import StringIO
 from contextlib import contextmanager
+
+from .colors import color
+from .rules import (intent_type_check, play_query_check, question_check,
+                    expected_data_check, expected_dialog_check,
+                    changed_context_check)
 
 MainModule = '__init__'
 
@@ -61,47 +65,6 @@ Configuration.get()['test_env'] = True
 
 class SkillTestError(Exception):
     pass
-
-
-# Easy way to show colors on terminals
-class clr:
-    PINK = '\033[95m'
-    BLUE = '\033[94m'
-    CYAN = '\033[96m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    DKGRAY = '\033[90m'
-    # Classes
-    USER_UTT = '\033[96m'  # cyan
-    MYCROFT = '\033[33m'   # bright yellow
-    HEADER = '\033[94m'    # blue
-    WARNING = '\033[93m'   # yellow
-    FAIL = '\033[91m'      # red
-    RESET = '\033[0m'
-
-
-class no_clr:
-    PINK = ''
-    BLUE = ''
-    CYAN = ''
-    GREEN = ''
-    YELLOW = ''
-    RED = ''
-    DKGRAY = ''
-    USER_UTT = ''
-    MYCROFT = ''
-    HEADER = ''
-    WARNING = ''
-    FAIL = ''
-    RESET = ''
-
-
-# MST as in Mycroft Skill Tester
-if 'MST_NO_COLOR' not in os.environ:
-    color = clr
-else:
-    color = no_clr
 
 
 @contextmanager
@@ -541,32 +504,6 @@ HIDDEN_MESSAGES = ['skill.converse.request', 'skill.converse.response',
                    'gui.page.show', 'gui.value.set']
 
 
-def load_dialog_list(skill, dialog):
-    """ Load dialog from files into a single list.
-
-    Args:
-        skill (MycroftSkill): skill to load dialog from
-        dialog (list): Dialog names (str) to load
-
-    Returns:
-        list: Expanded dialog strings
-    """
-    dialogs = []
-    try:
-        for d in dialog:
-            for e in skill.dialog_renderer.templates[d]:
-                dialogs += expand_options(e)
-    except Exception as template_load_exception:
-        print(color.FAIL +
-              "Failed to load dialog template " +
-              "'dialog/en-us/" + d + ".dialog'" +
-              color.RESET)
-        raise Exception("Can't load 'excepted_dialog': "
-                        "file '" + d + ".dialog'") \
-            from template_load_exception
-    return dialogs
-
-
 class EvaluationRule:
     """
         This class initially convert the test_case json file to internal rule
@@ -592,9 +529,7 @@ class EvaluationRule:
         _x = ['and']
         if 'utterance' in test_case and 'intent_type' in test_case:
             intent_type = str(test_case['intent_type'])
-            _x.append(['or'] +
-                      [['endsWith', 'intent_type', intent_type]] +
-                      [['endsWith', '__type__', intent_type]])
+            _x.append(intent_type_check(intent_type))
 
         # Check for adapt intent info
         if test_case.get('intent', None):
@@ -604,26 +539,16 @@ class EvaluationRule:
         if 'play_query_match' in test_case:
             match = test_case['play_query_match']
             phrase = match.get('phrase', test_case.get('play_query'))
-            _d = ['and']
-            _d.append(['equal', '__type__', 'query'])
-            _d.append(['equal', 'skill_id', skill.skill_id])
-            _d.append(['equal', 'phrase', phrase])
-            _d.append(['gt', 'conf', match.get('confidence_threshold', 0.5)])
-            self.rule.append(_d)
+            self.rule.append(play_query_check(skill, match, phrase))
         elif 'expected_answer' in test_case:
-            _d = ['and']
-            _d.append(['equal', '__type__', 'query.response'])
-            _d.append(['equal', 'skill_id', skill.skill_id])
-            _d.append(['equal', 'phrase', test_case['question']])
-            _d.append(['match', 'answer', test_case['expected_answer']])
-            self.rule.append(_d)
+            question = test_case['question']
+            expected_answer = test_case['expected_answer']
+            self.rule.append(question_check(skill, question, expected_answer))
 
         # Check for expected data structure
         if test_case.get('expected_data'):
-            _d = ['and']
-            for item in test_case['expected_data'].items():
-                _d.append(['equal', item[0], item[1]])
-            self.rule.append(_d)
+            expected_items = test_case['expected_data'].items()
+            self.rule.append(expected_data_check(expected_items))
 
         if _x != ['and']:
             self.rule.append(_x)
@@ -647,29 +572,15 @@ class EvaluationRule:
                       'Skill is missing, can\'t run expected_dialog test' +
                       color.RESET)
             else:
-                # Check that expected dialog file is used
-                if isinstance(test_case['expected_dialog'], str):
-                    dialog = [test_case['expected_dialog']]  # Make list
-                else:
-                    dialog = test_case['expected_dialog']
-                # Extract dialog texts from skill
-                dialogs = load_dialog_list(skill, dialog)
-                # Allow custom fields to be anything
-                d = [re.sub(r'{.*?\}', r'.*', t) for t in dialogs]
-                # Merge consequtive .*'s into a single .*
-                d = [re.sub(r'\.\*( \.\*)+', r'.*', t) for t in d]
-
-                # Create rule allowing any of the sentences for that dialog
-                rules = [['match', 'utterance', r] for r in d]
-                self.rule.append(['or'] + rules)
+                expected_dialog = test_case['expected_dialog']
+                self.rule.append(['or'] +
+                                 expected_dialog_check(expected_dialog,
+                                                       skill))
 
         if test_case.get('changed_context', None):
             ctx = test_case['changed_context']
-            if isinstance(ctx, list):
-                for c in ctx:
-                    self.rule.append(['endsWith', 'context', str(c)])
-            else:
-                self.rule.append(['equal', 'context', ctx])
+            for c in changed_context_check(ctx):
+                self.rule.append(c)
 
         if test_case.get('assert', None):
             for _x in ast.literal_eval(test_case['assert']):
