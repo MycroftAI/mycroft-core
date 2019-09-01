@@ -45,6 +45,7 @@ class SkillUpdater:
     def __init__(self, bus=None):
         self.msm_lock = ComboLock('/tmp/mycroft-msm.lck')
         self.install_retries = 0
+        self.config = Configuration.get()
         update_interval = self.config['skills']['update_interval']
         self.update_interval = int(update_interval) * ONE_HOUR
         self.dot_msm_path = os.path.join(self.msm.skills_dir, '.msm')
@@ -78,11 +79,6 @@ class SkillUpdater:
             next_download = time() - 1
 
         return next_download
-
-    @property
-    def config(self):
-        """Property representing the device configuration."""
-        return Configuration.get()
 
     @property
     def installed_skills_file_path(self):

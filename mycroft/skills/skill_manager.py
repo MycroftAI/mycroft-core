@@ -42,6 +42,8 @@ class SkillManager(Thread):
         self.bus = bus
         self._stop_event = Event()
         self._connected_event = Event()
+        self.config = Configuration.get()
+
         self.skill_loaders = {}
         self.enclosure = EnclosureAPI(bus)
         self.initial_load_complete = False
@@ -70,12 +72,8 @@ class SkillManager(Thread):
         self.bus.on('mycroft.paired', self.handle_paired)
 
     @property
-    def config(self):
-        return Configuration.get()
-
-    @property
     def skills_config(self):
-        return Configuration.get()['skills']
+        return self.config['skills']
 
     @property
     def msm(self):
