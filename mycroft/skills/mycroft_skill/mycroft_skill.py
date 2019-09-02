@@ -776,7 +776,8 @@ class MycroftSkill:
         if not filename:
             raise FileNotFoundError('Unable to find "{}"'.format(intent_file))
         self.intent_service.register_padatious_intent(name, filename)
-        self.add_event(name, handler, 'mycroft.skill.handler')
+        if handler:
+            self.add_event(name, handler, 'mycroft.skill.handler')
 
     def register_entity_file(self, entity_file):
         """Register an Entity file with the intent service.

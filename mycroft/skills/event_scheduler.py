@@ -24,7 +24,7 @@ from os.path import isfile, join, expanduser
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
-from .mycroft_skill.event_container import EventContainer
+from .mycroft_skill.event_container import EventContainer, create_basic_wrapper
 
 
 def repeat_time(sched_time, repeat):
@@ -308,7 +308,13 @@ class EventSchedulerInterface:
             self.scheduled_repeats.append(name)  # store "friendly name"
 
         data = data or {}
-        self.events.add(unique_name, handler, once=not repeat_interval)
+
+        def on_error(e):
+            LOG.exception('An error occured executing the scheduled event '
+                          '{}'.format(repr(e)))
+
+        wrapped = create_basic_wrapper(handler, on_error)
+        self.events.add(unique_name, wrapped, once=not repeat_interval)
         event_data = {'time': time.mktime(when.timetuple()),
                       'event': unique_name,
                       'repeat': repeat_interval,

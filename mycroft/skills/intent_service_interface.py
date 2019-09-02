@@ -112,7 +112,7 @@ class IntentServiceInterface:
         data = {"file_name": filename,
                 "name": intent_name}
         self.bus.emit(Message("padatious:register_intent", data))
-        self.registered_intents.append((intent_name, data))
+        self.registered_intents.append((intent_name.split(':')[-1], data))
 
     def register_padatious_entity(self, entity_name, filename):
         """Register a padatious entity file with Padatious.
