@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from copy import deepcopy
 import hashlib
 import os
 import random
 import re
-import sys
 from abc import ABCMeta, abstractmethod
 from threading import Thread
-from time import time, sleep
+from time import time
 
 import os.path
 from os.path import dirname, exists, isdir, join
@@ -36,10 +36,12 @@ from mycroft.util.log import LOG
 from queue import Queue, Empty
 
 
+_TTS_ENV = deepcopy(os.environ)
+_TTS_ENV['PULSE_PROP'] = 'media.role=phone'
+
+
 def send_playback_metric(stopwatch, ident):
-    """
-        Send playback metrics in a background thread
-    """
+    """Send playback metrics in a background thread."""
 
     def do_send(stopwatch, ident):
         report_timing(ident, 'speech_playback', stopwatch)
@@ -50,9 +52,8 @@ def send_playback_metric(stopwatch, ident):
 
 
 class PlaybackThread(Thread):
-    """
-        Thread class for playing back tts audio and sending
-        viseme data to enclosure.
+    """Thread class for playing back tts audio and sending
+    viseme data to enclosure.
     """
 
     def __init__(self, queue):
@@ -60,14 +61,17 @@ class PlaybackThread(Thread):
         self.queue = queue
         self._terminated = False
         self._processing_queue = False
+        # Check if the tts shall have a ducking role set
+        if Configuration.get().get('tts', {}).get('pulse_duck'):
+            self.pulse_env = _TTS_ENV
+        else:
+            self.pulse_env = None
 
     def init(self, tts):
         self.tts = tts
 
     def clear_queue(self):
-        """
-            Remove all pending playbacks.
-        """
+        """Remove all pending playbacks."""
         while not self.queue.empty():
             self.queue.get()
         try:
@@ -76,10 +80,7 @@ class PlaybackThread(Thread):
             pass
 
     def run(self):
-        """
-            Thread main loop. get audio and viseme data from queue
-            and play.
-        """
+        """Thread main loop. get audio and viseme data from queue and play."""
         while not self._terminated:
             try:
                 snd_type, data, visemes, ident = self.queue.get(timeout=2)
@@ -91,9 +92,9 @@ class PlaybackThread(Thread):
                 stopwatch = Stopwatch()
                 with stopwatch:
                     if snd_type == 'wav':
-                        self.p = play_wav(data)
+                        self.p = play_wav(data, environment=self.pulse_env)
                     elif snd_type == 'mp3':
-                        self.p = play_mp3(data)
+                        self.p = play_mp3(data, environment=self.pulse_env)
 
                     if visemes:
                         self.show_visemes(visemes)
@@ -114,41 +115,39 @@ class PlaybackThread(Thread):
                     self._processing_queue = False
 
     def show_visemes(self, pairs):
-        """
-            Send viseme data to enclosure
+        """Send viseme data to enclosure
 
-            Args:
-                pairs(list): Visime and timing pair
+        Arguments:
+            pairs(list): Visime and timing pair
 
-            Returns:
-                True if button has been pressed.
+        Returns:
+            True if button has been pressed.
         """
         if self.enclosure:
             self.enclosure.mouth_viseme(time(), pairs)
 
     def clear(self):
-        """ Clear all pending actions for the TTS playback thread. """
+        """Clear all pending actions for the TTS playback thread."""
         self.clear_queue()
 
     def blink(self, rate=1.0):
-        """ Blink mycroft's eyes """
+        """Blink mycroft's eyes"""
         if self.enclosure and random.random() < rate:
             self.enclosure.eyes_blink("b")
 
     def stop(self):
-        """ Stop thread """
+        """Stop thread"""
         self._terminated = True
         self.clear_queue()
 
 
 class TTS(metaclass=ABCMeta):
-    """
-    TTS abstract class to be implemented by all TTS engines.
+    """TTS abstract class to be implemented by all TTS engines.
 
     It aggregates the minimum required parameters and exposes
     ``execute(sentence)`` and ``validate_ssml(sentence)`` functions.
 
-    Args:
+    Arguments:
         lang (str):
         config (dict): Configuration for this specific tts engine
         validator (TTSValidator): Used to verify proper installation
@@ -198,12 +197,11 @@ class TTS(metaclass=ABCMeta):
         self.bus.emit(Message("recognizer_loop:audio_output_start"))
 
     def end_audio(self):
-        """
-            Helper function for child classes to call in execute().
+        """Helper function for child classes to call in execute().
 
-            Sends the recognizer_loop:audio_output_end message, indicating
-            that speaking is done for the moment. It also checks if cache
-            directory needs cleaning to free up disk space.
+        Sends the recognizer_loop:audio_output_end message, indicating
+        that speaking is done for the moment. It also checks if cache
+        directory needs cleaning to free up disk space.
         """
 
         self.bus.emit(Message("recognizer_loop:audio_output_end"))
@@ -215,7 +213,7 @@ class TTS(metaclass=ABCMeta):
         check_for_signal("isSpeaking")
 
     def init(self, bus):
-        """ Performs intial setup of TTS object.
+        """Performs intial setup of TTS object.
 
         Arguments:
             bus:    Mycroft messagebus connection
@@ -226,16 +224,16 @@ class TTS(metaclass=ABCMeta):
         self.playback.enclosure = self.enclosure
 
     def get_tts(self, sentence, wav_file):
-        """
-            Abstract method that a tts implementation needs to implement.
-            Should get data from tts.
+        """Abstract method that a tts implementation needs to implement.
 
-            Args:
-                sentence(str): Sentence to synthesize
-                wav_file(str): output file
+        Should get data from tts.
 
-            Returns:
-                tuple: (wav_file, phoneme)
+        Arguments:
+            sentence(str): Sentence to synthesize
+            wav_file(str): output file
+
+        Returns:
+            tuple: (wav_file, phoneme)
         """
         pass
 
@@ -248,14 +246,15 @@ class TTS(metaclass=ABCMeta):
         return re.sub('<[^>]*>', '', text).replace('  ', ' ')
 
     def validate_ssml(self, utterance):
-        """
-            Check if engine supports ssml, if not remove all tags
-            Remove unsupported / invalid tags
+        """Check if engine supports ssml, if not remove all tags.
 
-            Args:
-                utterance(str): Sentence to validate
+        Remove unsupported / invalid tags
 
-            Returns: validated_sentence (str)
+        Arguments:
+            utterance(str): Sentence to validate
+
+        Returns:
+            validated_sentence (str)
         """
         # if ssml is not supported by TTS engine remove all tags
         if not self.ssml_tags:
@@ -275,7 +274,7 @@ class TTS(metaclass=ABCMeta):
         return utterance.replace("  ", " ")
 
     def _preprocess_sentence(self, sentence):
-        """ Default preprocessing is no preprocessing.
+        """Default preprocessing is no preprocessing.
 
         This method can be overridden to create chunks suitable to the
         TTS engine in question.
@@ -289,8 +288,7 @@ class TTS(metaclass=ABCMeta):
         return [sentence]
 
     def execute(self, sentence, ident=None):
-        """
-            Convert sentence to speech, preprocessing out unsupported ssml
+        """Convert sentence to speech, preprocessing out unsupported ssml
 
             The method caches results if possible using the hash of the
             sentence.
@@ -328,17 +326,16 @@ class TTS(metaclass=ABCMeta):
             self.queue.put((self.audio_ext, wav_file, vis, ident))
 
     def viseme(self, phonemes):
-        """
-            Create visemes from phonemes. Needs to be implemented for all
-            tts backend
+        """Create visemes from phonemes. Needs to be implemented for all
+            tts backends.
 
-            Args:
+            Arguments:
                 phonemes(str): String with phoneme data
         """
         return None
 
     def clear_cache(self):
-        """ Remove all cached files. """
+        """Remove all cached files."""
         if not os.path.exists(mycroft.util.get_cache_directory('tts')):
             return
         for d in os.listdir(mycroft.util.get_cache_directory("tts")):
@@ -353,12 +350,11 @@ class TTS(metaclass=ABCMeta):
                 os.unlink(dir_path)
 
     def save_phonemes(self, key, phonemes):
-        """
-            Cache phonemes
+        """Cache phonemes
 
-            Args:
-                key:        Hash key for the sentence
-                phonemes:   phoneme string to save
+        Arguments:
+            key:        Hash key for the sentence
+            phonemes:   phoneme string to save
         """
         cache_dir = mycroft.util.get_cache_directory("tts/" + self.tts_name)
         pho_file = os.path.join(cache_dir, key + ".pho")
@@ -370,11 +366,10 @@ class TTS(metaclass=ABCMeta):
             pass
 
     def load_phonemes(self, key):
-        """
-            Load phonemes from cache file.
+        """Load phonemes from cache file.
 
-            Args:
-                Key:    Key identifying phoneme cache
+        Arguments:
+            Key:    Key identifying phoneme cache
         """
         pho_file = os.path.join(
             mycroft.util.get_cache_directory("tts/" + self.tts_name),
@@ -394,8 +389,7 @@ class TTS(metaclass=ABCMeta):
 
 
 class TTSValidator(metaclass=ABCMeta):
-    """
-    TTS Validator abstract class to be implemented by all TTS engines.
+    """TTS Validator abstract class to be implemented by all TTS engines.
 
     It exposes and implements ``validate(tts)`` function as a template to
     validate the TTS engines.
@@ -467,8 +461,7 @@ class TTSFactory:
 
     @staticmethod
     def create():
-        """
-        Factory method to create a TTS engine based on configuration.
+        """Factory method to create a TTS engine based on configuration.
 
         The configuration file ``mycroft.conf`` contains a ``tts`` section with
         the name of a TTS module to be read by this method.
