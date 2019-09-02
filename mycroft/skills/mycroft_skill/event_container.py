@@ -81,6 +81,32 @@ def create_wrapper(handler, skill_id, on_start, on_end, on_error):
     return wrapper
 
 
+def create_basic_wrapper(handler, on_error=None):
+    """Create the default skill handler wrapper.
+
+    This wrapper handles things like metrics, reporting handler start/stop
+    and errors.
+
+    Arguments:
+        handler (callable): method/function to call
+        on_error (function): function to call to report error.
+
+    Returns:
+        Wrapped callable
+    """
+    def wrapper(message):
+        try:
+            if len(signature(handler).parameters) == 0:
+                handler()
+            else:
+                handler(message)
+        except Exception as e:
+            if on_error:
+                on_error(e)
+
+    return wrapper
+
+
 class EventContainer:
     """Container tracking messagbus handlers.
 
