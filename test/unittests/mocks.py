@@ -82,7 +82,7 @@ class MessageBusMock:
         self.event_handlers = []
 
     def emit(self, message):
-        self.message_types.append(message.type)
+        self.message_types.append(message.msg_type)
         self.message_data.append(message.data)
 
     def on(self, event, _):

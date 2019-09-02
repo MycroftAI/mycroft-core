@@ -240,12 +240,6 @@ class Configuration:
         bus.on("configuration.patch", Configuration.patch)
 
     @staticmethod
-    def init(ws):
-        """Duplicate of set_config_update_handlers to be deprecated in 19.08"""
-        # TODO: deprecate this method in 19.08
-        Configuration.set_config_update_handlers(ws)
-
-    @staticmethod
     def updated(message):
         """
             handler for configuration.updated, triggers an update

@@ -40,7 +40,7 @@ class MockEmitter(object):
         self.reset()
 
     def emit(self, message):
-        self.types.append(message.type)
+        self.types.append(message.msg_type)
         self.results.append(message.data)
 
     def get_types(self):
@@ -108,8 +108,8 @@ class MycroftSkillTest(unittest.TestCase):
         self.assertEqual(sorted(load_regex(path, 'A')), sorted(result_list))
 
     def check_emitter(self, result_list):
-        for type in self.emitter.get_types():
-            self.assertEqual(type, 'register_vocab')
+        for msg_type in self.emitter.get_types():
+            self.assertEqual(msg_type, 'register_vocab')
         self.assertEqual(sorted(self.emitter.get_results(),
                                 key=lambda d: sorted(d.items())),
                          sorted(result_list, key=lambda d: sorted(d.items())))
@@ -205,15 +205,15 @@ class MycroftSkillTest(unittest.TestCase):
         self.emitter.reset()
 
     def check_register_intent(self, result_list):
-        for type in self.emitter.get_types():
-            self.assertEqual(type, 'register_intent')
+        for msg_type in self.emitter.get_types():
+            self.assertEqual(msg_type, 'register_intent')
         self.assertEqual(sorted(self.emitter.get_results()),
                          sorted(result_list))
         self.emitter.reset()
 
     def check_register_vocabulary(self, result_list):
-        for type in self.emitter.get_types():
-            self.assertEqual(type, 'register_vocab')
+        for msg_type in self.emitter.get_types():
+            self.assertEqual(msg_type, 'register_vocab')
         self.assertEqual(sorted(self.emitter.get_results()),
                          sorted(result_list))
         self.emitter.reset()
@@ -381,8 +381,8 @@ class MycroftSkillTest(unittest.TestCase):
 
     def test_set_context(self):
         def check_set_context(result_list):
-            for type in self.emitter.get_types():
-                self.assertEqual(type, 'add_context')
+            for msg_type in self.emitter.get_types():
+                self.assertEqual(msg_type, 'add_context')
             self.assertEqual(sorted(self.emitter.get_results()),
                              sorted(result_list))
             self.emitter.reset()

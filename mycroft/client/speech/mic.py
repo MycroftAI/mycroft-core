@@ -200,12 +200,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.energy_ratio = listener_config.get('energy_ratio')
         # check the config for the flag to save wake words.
 
-        if 'record_utterances' in listener_config:
-            # TODO: 19.08 remove this backwards compatibility
-            self.save_utterances = listener_config.get('record_utterances')
-        else:
-            self.save_utterances = listener_config.get('save_utterances',
-                                                       False)
+        self.save_utterances = listener_config.get('save_utterances', False)
 
         self.save_wake_words = listener_config.get('record_wake_words')
         self.saved_wake_words_dir = join(gettempdir(), 'mycroft_wake_words')
