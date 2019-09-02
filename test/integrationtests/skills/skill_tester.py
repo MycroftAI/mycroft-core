@@ -170,7 +170,7 @@ class InterceptEmitter(object):
         self.emitter.on(event, f)
 
     def emit(self, event, *args, **kwargs):
-        event_name = event.type
+        event_name = event.msg_type
         if self.q:
             self.q.put(event)
         self.emitter.emit(event_name, event, *args, **kwargs)
@@ -467,13 +467,13 @@ class SkillTest(object):
         """
         try:
             event = q.get(timeout=1)
-            if ':' in event.type:
-                event.data['__type__'] = event.type.split(':')[1]
+            if ':' in event.msg_type:
+                event.data['__type__'] = event.msg_type.split(':')[1]
             else:
-                event.data['__type__'] = event.type
+                event.data['__type__'] = event.msg_type
 
             evaluation_rule.evaluate(event.data)
-            if event.type == 'mycroft.skill.handler.complete':
+            if event.msg_type == 'mycroft.skill.handler.complete':
                 return True
         except Empty:
             pass

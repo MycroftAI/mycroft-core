@@ -95,6 +95,6 @@ class TestEventScheduler(unittest.TestCase):
         es.schedule_event('test', time.time(), None)
 
         es.check_state()
-        self.assertEquals(emitter.emit.call_args[0][0].type, 'test')
+        self.assertEquals(emitter.emit.call_args[0][0].msg_type, 'test')
         self.assertEquals(emitter.emit.call_args[0][0].data, {})
         es.shutdown()

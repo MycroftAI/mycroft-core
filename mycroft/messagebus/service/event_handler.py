@@ -42,7 +42,8 @@ class MessageBusEventHandler(WebSocketHandler):
             return
 
         try:
-            self.emitter.emit(deserialized_message.type, deserialized_message)
+            self.emitter.emit(deserialized_message.msg_type,
+                              deserialized_message)
         except Exception as e:
             LOG.exception(e)
             traceback.print_exc(file=sys.stdout)

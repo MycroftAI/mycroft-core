@@ -102,7 +102,7 @@ class MessageBusClient:
     def on_message(self, message):
         parsed_message = Message.deserialize(message)
         self.emitter.emit('message', message)
-        self.emitter.emit(parsed_message.type, parsed_message)
+        self.emitter.emit(parsed_message.msg_type, parsed_message)
 
     def emit(self, message):
         if not self.connected_event.wait(10):
@@ -118,7 +118,7 @@ class MessageBusClient:
                 self.client.send(json.dumps(message.__dict__))
         except WebSocketConnectionClosedException:
             LOG.warning('Could not send {} message because connection '
-                        'has been closed'.format(message.type))
+                        'has been closed'.format(message.msg_type))
 
     def wait_for_response(self, message, reply_type=None, timeout=None):
         """Send a message and wait for a response.
@@ -126,7 +126,7 @@ class MessageBusClient:
         Args:
             message (Message): message to send
             reply_type (str): the message type of the expected reply.
-                              Defaults to "<message.type>.response".
+                              Defaults to "<message.msg_type>.response".
             timeout: seconds to wait before timeout, defaults to 3
         Returns:
             The received message or None if the response timed out
@@ -138,7 +138,7 @@ class MessageBusClient:
             response.append(message)
 
         # Setup response handler
-        self.once(reply_type or message.type + '.response', handler)
+        self.once(reply_type or message.msg_type + '.response', handler)
         # Send request
         self.emit(message)
         # Wait for response
@@ -214,7 +214,7 @@ def echo():
     message_bus_client = MessageBusClient()
 
     def repeat_utterance(message):
-        message.type = 'speak'
+        message.msg_type = 'speak'
         message_bus_client.emit(message)
 
     message_bus_client.on('message', create_echo_function(None))
