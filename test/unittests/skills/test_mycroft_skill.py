@@ -61,7 +61,7 @@ def vocab_base_path():
     return join(dirname(__file__), '..', 'vocab_test')
 
 
-class FunctionTest(unittest.TestCase):
+class TestFunction(unittest.TestCase):
     def test_resting_screen_handler(self):
         class T(MycroftSkill):
             def __init__(self):
@@ -76,13 +76,24 @@ class FunctionTest(unittest.TestCase):
         self.assertEquals(test_class.f.resting_handler, 'humbug')
 
 
-class MycroftSkillTest(unittest.TestCase):
+class TestMycroftSkill(unittest.TestCase):
     emitter = MockEmitter()
     regex_path = abspath(join(dirname(__file__), '../regex_test'))
     vocab_path = abspath(join(dirname(__file__), '../vocab_test'))
 
     def setUp(self):
         self.emitter.reset()
+        self.local_settings_mock = self._mock_local_settings()
+
+    def _mock_local_settings(self):
+        local_settings_patch = patch(
+            'mycroft.skills.mycroft_skill.mycroft_skill.get_local_settings'
+        )
+        self.addCleanup(local_settings_patch.stop)
+        local_settings_mock = local_settings_patch.start()
+        local_settings_mock.return_value = True
+
+        return local_settings_mock
 
     def check_vocab(self, filename, results=None):
         results = results or {}

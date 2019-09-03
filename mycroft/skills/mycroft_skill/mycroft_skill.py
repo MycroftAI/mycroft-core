@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-""" Collection of functions relating to the implementation of mycroft skills.
-"""
+"""Common functionality relating to the implementation of mycroft skills."""
+import inspect
 import sys
 import re
 import traceback
-import inspect
 from itertools import chain
-from adapt.intent import Intent, IntentBuilder
 from os import walk
 from os.path import join, abspath, dirname, basename, exists
 from threading import Event, Timer
+
+from adapt.intent import Intent, IntentBuilder
 
 from mycroft import dialog
 from mycroft.api import DeviceApi
@@ -34,17 +34,27 @@ from mycroft.dialog import DialogLoader
 from mycroft.filesystem import FileSystemAccess
 from mycroft.messagebus.message import Message
 from mycroft.metrics import report_metric
-from mycroft.util import (resolve_resource_file, play_audio_file,
-                          camel_case_split)
+from mycroft.util import (
+    resolve_resource_file,
+    play_audio_file,
+    camel_case_split
+)
 from mycroft.util.log import LOG
 
-from ..settings import SkillSettings
-from ..skill_data import (load_vocabulary, load_regex, to_alnum,
-                          munge_regex, munge_intent_parser, read_vocab_file,
-                          read_value_file, read_translated_file)
+from .event_container import EventContainer, create_wrapper, get_handler_name
 from ..event_scheduler import EventSchedulerInterface
 from ..intent_service_interface import IntentServiceInterface
-from .event_container import EventContainer, create_wrapper, get_handler_name
+from ..settings import get_local_settings, save_settings
+from ..skill_data import (
+    load_vocabulary,
+    load_regex,
+    to_alnum,
+    munge_regex,
+    munge_intent_parser,
+    read_vocab_file,
+    read_value_file,
+    read_translated_file
+)
 
 
 def simple_trace(stack_trace):
@@ -56,7 +66,7 @@ def simple_trace(stack_trace):
     Returns: (str) Simplified stack trace.
     """
     stack_trace = stack_trace[:-1]
-    tb = "Traceback:\n"
+    tb = 'Traceback:\n'
     for line in stack_trace:
         if line.strip():
             tb += line
@@ -115,12 +125,14 @@ class MycroftSkill:
         self.name = name or self.__class__.__name__
         self.resting_name = None
         self.skill_id = ''  # will be set from the path, so guaranteed unique
+        self.skill_gid = None  # set when skill is loaded in SkillLoader
         # Get directory of skill
         self.root_dir = dirname(abspath(sys.modules[self.__module__].__file__))
         if use_settings:
-            self.settings = SkillSettings(self.root_dir, self.name)
+            self.settings = get_local_settings(self.root_dir, self.name)
         else:
             self.settings = None
+        self.settings_change_callback = None
 
         self.gui = SkillGUI(self)
 
@@ -150,20 +162,20 @@ class MycroftSkill:
         if self._enclosure:
             return self._enclosure
         else:
-            LOG.error("Skill not fully initialized. Move code " +
-                      "from  __init__() to initialize() to correct this.")
+            LOG.error('Skill not fully initialized. Move code ' +
+                      'from  __init__() to initialize() to correct this.')
             LOG.error(simple_trace(traceback.format_stack()))
-            raise Exception("Accessed MycroftSkill.enclosure in __init__")
+            raise Exception('Accessed MycroftSkill.enclosure in __init__')
 
     @property
     def bus(self):
         if self._bus:
             return self._bus
         else:
-            LOG.error("Skill not fully initialized. Move code " +
-                      "from __init__() to initialize() to correct this.")
+            LOG.error('Skill not fully initialized. Move code ' +
+                      'from __init__() to initialize() to correct this.')
             LOG.error(simple_trace(traceback.format_stack()))
-            raise Exception("Accessed MycroftSkill.bus in __init__")
+            raise Exception('Accessed MycroftSkill.bus in __init__')
 
     @property
     def location(self):
@@ -176,16 +188,16 @@ class MycroftSkill:
     def location_pretty(self):
         """Get a more 'human' version of the location as a string."""
         loc = self.location
-        if type(loc) is dict and loc["city"]:
-            return loc["city"]["name"]
+        if type(loc) is dict and loc['city']:
+            return loc['city']['name']
         return None
 
     @property
     def location_timezone(self):
         """Get the timezone code, such as 'America/Los_Angeles'"""
         loc = self.location
-        if type(loc) is dict and loc["timezone"]:
-            return loc["timezone"]["code"]
+        if type(loc) is dict and loc['timezone']:
+            return loc['timezone']['code']
         return None
 
     @property
@@ -207,7 +219,7 @@ class MycroftSkill:
             self.event_scheduler.set_id(self.skill_id)
             self._enclosure = EnclosureAPI(bus, self.name)
             self._register_system_event_handlers()
-            # Intialize the SkillGui
+            # Initialize the SkillGui
             self.gui.setup_default_handlers()
 
     def _register_system_event_handlers(self):
@@ -215,20 +227,44 @@ class MycroftSkill:
         system.
         """
         self.add_event('mycroft.stop', self.__handle_stop)
-        self.add_event('mycroft.skill.enable_intent',
-                       self.handle_enable_intent)
-        self.add_event('mycroft.skill.disable_intent',
-                       self.handle_disable_intent)
-        self.add_event("mycroft.skill.set_cross_context",
-                       self.handle_set_cross_context)
-        self.add_event("mycroft.skill.remove_cross_context",
-                       self.handle_remove_cross_context)
+        self.add_event(
+            'mycroft.skill.enable_intent',
+            self.handle_enable_intent
+        )
+        self.add_event(
+            'mycroft.skill.disable_intent',
+            self.handle_disable_intent
+        )
+        self.add_event(
+            'mycroft.skill.set_cross_context',
+            self.handle_set_cross_context
+        )
+        self.add_event(
+            'mycroft.skill.remove_cross_context',
+            self.handle_remove_cross_context
+        )
+        self.events.add(
+            'mycroft.skills.settings.changed',
+            self.handle_settings_change
+        )
 
-        # Trigger settings update if requested
-        self.events.add('mycroft.skills.settings.update',
-                        self.settings.run_poll)
-        # Trigger Settings meta upload on pairing complete
-        self.events.add('mycroft.paired', self.settings.run_poll)
+    def handle_settings_change(self, message):
+        """Update settings if the remote settings changes apply to this skill.
+
+        The skill settings downloader uses a single API call to retrieve the
+        settings for all skills.  This is done to limit the number API calls.
+        A "mycroft.skills.settings.changed" event is emitted for each skill
+        that had their settings changed.  Only update this skill's settings
+        if its remote settings were among those changed
+        """
+        if self.skill_gid is None:
+            LOG.error('The skill_gid was not set when this skill was loaded!')
+        else:
+            remote_settings = message.data.get(self.skill_gid)
+            if remote_settings is not None:
+                self.settings.update(**remote_settings)
+                if self.settings_change_callback is not None:
+                    self.settings_change_callback()
 
     def detach(self):
         for (name, _) in self.intent_service:
@@ -476,7 +512,7 @@ class MycroftSkill:
         used in last 5 minutes.
         """
         self.bus.emit(Message('active_skill_request',
-                              {"skill_id": self.skill_id}))
+                              {'skill_id': self.skill_id}))
 
     def _handle_collect_resting(self, _=None):
         """Handler for collect resting screen messages.
@@ -606,8 +642,8 @@ class MycroftSkill:
             dict: name and value dictionary, or empty dict if load fails
         """
 
-        if not name.endswith(".value"):
-            name += ".value"
+        if not name.endswith('.value'):
+            name += '.value'
 
         try:
             filename = self.find_resource(name, 'dialog')
@@ -692,7 +728,7 @@ class MycroftSkill:
         def on_end(message):
             """Store settings and indicate that the skill handler has completed
             """
-            self.settings.store()  # Store settings if they've changed
+            save_settings(self.root_dir, self.settings)
             if handler_info:
                 msg_type = handler_info + '.complete'
                 self.bus.emit(message.reply(msg_type, skill_data))
@@ -808,7 +844,7 @@ class MycroftSkill:
     def handle_enable_intent(self, message):
         """Listener to enable a registered intent if it belongs to this skill.
         """
-        intent_name = message.data["intent_name"]
+        intent_name = message.data['intent_name']
         for (name, _) in self.intent_service:
             if name == intent_name:
                 return self.enable_intent(intent_name)
@@ -816,7 +852,7 @@ class MycroftSkill:
     def handle_disable_intent(self, message):
         """Listener to disable a registered intent if it belongs to this skill.
         """
-        intent_name = message.data["intent_name"]
+        intent_name = message.data['intent_name']
         for (name, _) in self.intent_service:
             if name == intent_name:
                 return self.disable_intent(intent_name)
@@ -881,15 +917,15 @@ class MycroftSkill:
 
     def handle_set_cross_context(self, message):
         """Add global context to intent service."""
-        context = message.data.get("context")
-        word = message.data.get("word")
-        origin = message.data.get("origin")
+        context = message.data.get('context')
+        word = message.data.get('word')
+        origin = message.data.get('origin')
 
         self.set_context(context, word, origin)
 
     def handle_remove_cross_context(self, message):
         """Remove global context from intent service."""
-        context = message.data.get("context")
+        context = message.data.get('context')
         self.remove_context(context)
 
     def set_cross_skill_context(self, context, word=''):
@@ -899,16 +935,16 @@ class MycroftSkill:
             context:    Keyword
             word:       word connected to keyword
         """
-        self.bus.emit(Message("mycroft.skill.set_cross_context",
-                              {"context": context, "word": word,
-                               "origin": self.skill_id}))
+        self.bus.emit(Message('mycroft.skill.set_cross_context',
+                              {'context': context, 'word': word,
+                               'origin': self.skill_id}))
 
     def remove_cross_skill_context(self, context):
         """Tell all skills to remove a keyword from the context manager."""
         if not isinstance(context, str):
             raise ValueError('context should be a string')
-        self.bus.emit(Message("mycroft.skill.remove_cross_context",
-                              {"context": context}))
+        self.bus.emit(Message('mycroft.skill.remove_cross_context',
+                              {'context': context}))
 
     def remove_context(self, context):
         """Remove a keyword from the context manager."""
@@ -1066,8 +1102,8 @@ class MycroftSkill:
 
         def __stop_timeout():
             # The self.stop() call took more than 100ms, assume it handled Stop
-            self.bus.emit(Message("mycroft.stop.handled",
-                                  {"skill_id": str(self.skill_id) + ":"}))
+            self.bus.emit(Message('mycroft.stop.handled',
+                                  {'skill_id': str(self.skill_id) + ':'}))
 
         timer = Timer(0.1, __stop_timeout)  # set timer for 100ms
         try:
@@ -1077,7 +1113,7 @@ class MycroftSkill:
             timer.cancel()
         except Exception:
             timer.cancel()
-            LOG.error("Failed to stop skill: {}".format(self.name),
+            LOG.error('Failed to stop skill: {}'.format(self.name),
                       exc_info=True)
 
     def stop(self):
@@ -1105,8 +1141,7 @@ class MycroftSkill:
                       'an error: {}'.format(repr(e)))
         # Store settings
         if exists(self.root_dir):
-            self.settings.store()
-            self.settings.stop_polling()
+            save_settings(self.root_dir, self.settings)
 
         # Clear skill from gui
         self.gui.clear()
@@ -1116,11 +1151,11 @@ class MycroftSkill:
         self.events.clear()
 
         self.bus.emit(
-            Message("detach_skill", {"skill_id": str(self.skill_id) + ":"}))
+            Message('detach_skill', {'skill_id': str(self.skill_id) + ':'}))
         try:
             self.stop()
         except Exception:
-            LOG.error("Failed to stop skill: {}".format(self.name),
+            LOG.error('Failed to stop skill: {}'.format(self.name),
                       exc_info=True)
 
     def schedule_event(self, handler, when, data=None, name=None):
@@ -1153,9 +1188,13 @@ class MycroftSkill:
             data (dict, optional):  data to send when the handler is called
             name (str, optional):   reference name, must be unique
         """
-        return self.event_scheduler.schedule_repeating_event(handler, when,
-                                                             frequency, data,
-                                                             name)
+        return self.event_scheduler.schedule_repeating_event(
+            handler,
+            when,
+            frequency,
+            data,
+            name
+        )
 
     def update_scheduled_event(self, name, data=None):
         """Change data of event.

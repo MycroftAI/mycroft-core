@@ -28,6 +28,7 @@ class TestSkillManager(MycroftUnitTestBase):
     def setUp(self):
         super().setUp()
         self._mock_skill_updater()
+        self._mock_skill_settings_downloader()
         self.skill_manager = SkillManager(self.message_bus_mock)
         self._mock_skill_loader_instance()
 
@@ -38,6 +39,14 @@ class TestSkillManager(MycroftUnitTestBase):
             self.create_msm_mock = msm_patch.start()
             self.msm_mock = mock_msm(str(self.temp_dir))
             self.create_msm_mock.return_value = self.msm_mock
+
+    def _mock_skill_settings_downloader(self):
+        settings_download_patch = patch(
+            self.mock_package + 'SkillSettingsDownloader',
+            spec=True
+        )
+        self.addCleanup(settings_download_patch.stop)
+        self.settings_download_mock = settings_download_patch.start()
 
     def _mock_skill_updater(self):
         skill_updater_patch = patch(
@@ -73,7 +82,8 @@ class TestSkillManager(MycroftUnitTestBase):
             'skillmanager.activate',
             'mycroft.paired',
             'mycroft.skills.is_alive',
-            'mycroft.skills.all_loaded'
+            'mycroft.skills.all_loaded',
+            'mycroft.skills.settings.update'
         ]
         self.assertListEqual(
             expected_result,

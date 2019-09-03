@@ -12,571 +12,353 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-"""
-    SkillSettings is a simple extension of a Python dict which enables
-    simplified storage of settings.  Values stored into the dict will
-    automatically persist locally.  Additionally, it can interact with
-    a backend system to provide a GUI interface for some or all of the
-    settings.
+"""Keep the settingsmeta.json and settings.json files in sync with the backend.
 
-    The GUI for the setting is described by a file in the skill's root
-    directory called settingsmeta.json (or settingsmeta.yaml, if you
-    prefer working with yaml). The "name" associates the user-interface
-    field with the setting name in the dictionary. For example, you
-    might have a setting['username'].  In the settingsmeta you can
-    describe the interface you want to edit that value with:
-        ...
-        "fields": [
-               {
-                   "name": "username",
-                   "type": "email",
-                   "label": "Email address to associate",
-                   "placeholder": "example@mail.com",
-                   "value": ""
-               }]
-        ...
-    When the user changes the setting via the web UI, it will be sent
-    down to all the devices and automatically placed into the
-    settings['username'].  Any local changes made to the value (e.g.
-    via a verbal interaction) will also be synched to the server to show
-    on the web interface.
+The SkillSettingsMeta and SkillSettings classes run a synchronization every
+minute to ensure the device and the server have the same values.
 
-    NOTE: As it stands today, this functions seamlessly with a single
-    device.  With multiple devices there are a few hitches that are being
-    worked out.  The first device where a skill is installed creates the
-    setting and values are sent down to any other devices that install the
-    same skill.  However only the original device can make changes locally
-    for synching to the web.  This limitation is temporary and will be
-    removed soon.
+The settingsmeta.json file (or settingsmeta.yaml, if you prefer working with
+yaml) in the skill's root directory contains instructions for the Selene UI on
+how to display and update a skill's settings, if there are any.
 
+For example, you might have a setting named "username".  In the settingsmeta
+you can describe the interface to edit that value with:
+    ...
+    "fields": [
+        {
+            "name": "username",
+            "type": "email",
+            "label": "Email address to associate",
+            "placeholder": "example@mail.com",
+            "value": ""
+        }
+    ]
+    ...
 
-    Usage Example:
-        from mycroft.skill.settings import SkillSettings
+When the user changes the setting via the web UI, it will be sent down to all
+the devices related to an account and automatically placed into
+settings['username'].  Any local changes made to the value (e.g. via a verbal
+interaction) will also be synchronized to the server to show on the web
+interface.
+
+The settings.json file contains name/value pairs for each setting.  There can
+be entries in settings.json that are not related to those the user can
+manipulate on the web.  There is logic in the SkillSettings class to ensure
+these "hidden" settings are not affected when the synchronization occurs.  A
+skill can define a function that will be called when any settings change.
+
+SkillSettings Usage Example:
+    from mycroft.skill.settings import SkillSettings
 
         s = SkillSettings('./settings.json', 'ImportantSettings')
-        s['meaning of life'] = 42
-        s['flower pot sayings'] = 'Not again...'
-        s.store()  # This happens automagically in a MycroftSkill
+        s.skill_settings['meaning of life'] = 42
+        s.skill_settings['flower pot sayings'] = 'Not again...'
+        s.save_settings()  # This happens automagically in a MycroftSkill
 """
-
 import json
-import hashlib
 import os
 import re
-import time
-from os.path import isfile, join
-from requests.exceptions import RequestException, HTTPError
-from threading import Timer, Thread
-
-from msm import SkillEntry
+from pathlib import Path
+from threading import Timer
 
 from mycroft.api import DeviceApi, is_paired
-from mycroft.util.log import LOG
+from mycroft.configuration import Configuration
+from mycroft.messagebus.message import Message
 from mycroft.util import camel_case_split
-from mycroft.configuration import ConfigurationManager
+from mycroft.util.log import LOG
 from .msm_wrapper import build_msm_config, create_msm
 
-
-msm = None
-msm_creation_time = 0
+ONE_MINUTE = 60
 
 
-def build_global_id(directory, config):
-    """ Create global id for the skill.
+def get_local_settings(skill_dir, skill_name) -> dict:
+    """Build a dictionary using the JSON string stored in settings.json."""
+    settings_path = Path(skill_dir).joinpath('settings.json')
+    with open(str(settings_path)) as settings_file:
+        try:
+            skill_settings = json.load(settings_file)
+        # TODO change to check for JSONDecodeError in 19.08
+        except Exception:
+            log_msg = 'Failed to load {} settings from settings.json'
+            LOG.exception(log_msg.format(skill_name))
+            skill_settings = {}
 
-    TODO: Handle dirty skill
-
-    Arguments:
-        directory:  skill directory
-        config:     config for the device to fetch msm setup
-     """
-    # Update the msm object if it's more than an hour old
-    global msm
-    global msm_creation_time
-    if msm is None or time.time() - msm_creation_time > 60 * 60:
-        msm_creation_time = time.time()
-        LOG.info('instantiating msm...')
-        msm_config = build_msm_config(config)
-        msm = create_msm(msm_config)
-        LOG.info('msm instantiation complete')
-
-    skill = SkillEntry.from_folder(directory, msm)
-    # If modified prepend the device uuid
-    LOG.info('building skill gid for ' + skill.name)
-    return skill.skill_gid, skill.meta_info.get('display_name')
+    return skill_settings
 
 
-def display_name(name):
-    """ Splits camelcase and removes leading/trailing Skill. """
-    name = re.sub(r'(^[Ss]kill|[Ss]kill$)', '', name)
-    return camel_case_split(name)
+def save_settings(skill_dir, skill_settings):
+    """Save skill settings to file."""
+    settings_path = Path(skill_dir).joinpath('settings.json')
+    with open(str(settings_path), 'w') as settings_file:
+        json.dump(skill_settings, settings_file)
 
 
-class DelayRequest(Exception):
-    """ Indicate that the next request should be delayed. """
-    pass
+def get_display_name(skill_name: str):
+    """Splits camelcase and removes leading/trailing "skill"."""
+    skill_name = re.sub(r'(^[Ss]kill|[Ss]kill$)', '', skill_name)
+    return camel_case_split(skill_name)
 
 
-class SkillSettings(dict):
-    """ Dictionary that can easily be saved to a file, serialized as json. It
-        also syncs to the backend for skill settings
+def _extract_settings_from_meta(settings_meta: dict) -> dict:
+    """Extract the skill setting name/value pairs from settingsmeta.json
 
     Args:
-        directory (str):  Path to storage directory
-        name (str):       user readable name associated with the settings
+        settings_meta: contents of the settingsmeta.json
+
+    Returns:
+        Dictionary of settings keyed by name
     """
+    fields = {}
+    try:
+        sections = settings_meta['skillMetadata']['sections']
+    except KeyError:
+        pass
+    else:
+        for section in sections:
+            for field in section.get('fields', []):
+                fields[field['name']] = field['value']
 
-    def __init__(self, directory, name):
-        super(SkillSettings, self).__init__()
-        # when skills try to instantiate settings
-        # in __init__, it can erase the settings saved
-        # on disk (settings.json). So this prevents that
-        # This is set to true in core.py after skill init
-        self.allow_overwrite = False
+    return fields
 
+
+class SettingsMetaUploader:
+    """Synchronize the contents of the settingsmeta.json file with the backend.
+
+    The settingsmeta.json (or settingsmeta.yaml) file is defined by the skill
+    author.  It defines the user-configurable settings for a skill and contains
+    instructions for how to display the skill's settings in the Selene web
+    application (https://account.mycroft.ai).
+    """
+    _msm_skill_display_name = None
+    _settings_meta_path = None
+
+    def __init__(self, skill_directory: str, skill_name: str):
+        self.skill_directory = Path(skill_directory)
+        self.skill_name = skill_name
+        self.json_path = self.skill_directory.joinpath('settingsmeta.json')
+        self.yaml_path = self.skill_directory.joinpath('settingsmeta.yaml')
+        self.config = Configuration.get()
+        self.settings_meta = {}
         self.api = DeviceApi()
-        self.config = ConfigurationManager.get()
-        self.name = name
-        # set file paths
-        self._settings_path = join(directory, 'settings.json')
-        self._meta_path = _get_meta_path(directory)
-        self._directory = directory
+        self.upload_timer = None
 
-        self.is_alive = True
-        self.loaded_hash = hash(json.dumps(self, sort_keys=True))
-        self._complete_intialization = False
-        self._device_identity = None
-        self._api_path = None
-        self._user_identity = None
-        self.changed_callback = None
-        self._poll_timer = None
-        self._blank_poll_timer = None
-        self._is_alive = True
+        # Property placeholders
+        self._msm = None
+        self._skill_gid = None
 
-        # Add Information extracted from the skills-meta.json entry for the
-        # skill.
-        skill_gid, disp_name = build_global_id(self._directory, self.config)
-        self.__skill_gid = skill_gid
-        self.display_name = disp_name
+    @property
+    def msm(self):
+        """Instance of the Mycroft Skills Manager"""
+        if self._msm is None:
+            msm_config = build_msm_config(self.config)
+            self._msm = create_msm(msm_config)
 
-        # if settingsmeta exist
-        if self._meta_path:
-            t = Thread(target=self._poll_skill_settings)
-            t.daemon = True
-            t.start()
-        # if not disallowed by user upload an entry for all skills installed
-        elif self.config['skills']['upload_skill_manifest']:
-            self._blank_poll_timer = Timer(1, self._init_blank_meta)
-            self._blank_poll_timer.daemon = True
-            self._blank_poll_timer.start()
+        return self._msm
 
     @property
     def skill_gid(self):
-        """ Finalizes the skill gid to include device uuid if needed. """
-        if is_paired():
-            return self.__skill_gid.replace('@|', '@{}|'.format(
-                DeviceApi().identity.uuid))
-        else:
-            return self.__skill_gid
+        """Skill identifier recognized by backend and core.
 
-    def __hash__(self):
-        """ Simple object unique hash. """
-        return hash(str(id(self)) + self.name)
+        The skill_gid contains the device ID if the skill has been modified
+        on that device.  MSM does not know the ID of the device.  So, if it
+        finds a modified skill, it prepends the skill name portion of the ID
+        with "@|".
 
-    def run_poll(self, _=None):
-        """Immediately poll the web for new skill settings"""
-        if self._poll_timer:
-            self._poll_timer.cancel()
-            self._poll_skill_settings()
-
-    def stop_polling(self):
-        self._is_alive = False
-        if self._poll_timer:
-            self._poll_timer.cancel()
-        if self._blank_poll_timer:
-            self._blank_poll_timer.cancel()
-
-    def set_changed_callback(self, callback):
-        """ Set callback to perform when server settings have changed.
-
-        Args:
-            callback: function/method to call when settings have changed
+        The device ID is known to this class.  To "finalize" the skill_gid,
+        insert the device ID between the "@" and the "|"
         """
-        self.changed_callback = callback
+        skills = {
+            skill.path: skill for skill in
+            self.msm.local_skills.values()
+        }
+        skill = skills[str(self.skill_directory)]
+        # If modified prepend the device uuid
+        self._skill_gid = skill.skill_gid.replace(
+            '@|',
+            '@{}|'.format(self.api.identity.uuid)
+        )
 
-    # TODO: break this up into two classes
-    def initialize_remote_settings(self):
-        """ initializes the remote settings to the server """
-        # if the settingsmeta file exists (and is valid)
-        # this block of code is a control flow for
-        # different scenarios that may arises with settingsmeta
-        self.load_skill_settings_from_file()  # loads existing settings.json
-        settings_meta = self._load_settings_meta()
-        if not settings_meta:
-            return
-
-        if not is_paired():
-            return
-
-        self._device_identity = self.api.identity.uuid
-        self._api_path = "/" + self._device_identity + "/skill"
-        try:
-            self._user_identity = self.api.get()['user']['uuid']
-        except RequestException:
-            return
-
-        settings = self._request_my_settings(self.skill_gid)
-        if settings:
-            self.save_skill_settings(settings)
-
-        # TODO if this skill_gid is not a modified version check if a modified
-        # version exists on the server and delete it
-
-        # Always try to upload settingsmeta on startup
-        self._upload_meta(settings_meta, self.skill_gid)
-
-        self._complete_intialization = True
+        return self._skill_gid
 
     @property
-    def _is_stored(self):
-        return hash(json.dumps(self, sort_keys=True)) == self.loaded_hash
+    def msm_skill_display_name(self):
+        """Display name defined in MSM for use in settings meta."""
+        if self._msm_skill_display_name is None:
+            skills = {
+                skill.path: skill for skill in self.msm.local_skills.values()
+            }
+            skill = skills[str(self.skill_directory)]
+            self._msm_skill_display_name = skill.meta_info.get('display_name')
 
-    def __getitem__(self, key):
-        """ Get key """
-        return super(SkillSettings, self).__getitem__(key)
+        return self._msm_skill_display_name
 
-    def __setitem__(self, key, value):
-        """ Add/Update key. """
-        if self.allow_overwrite or key not in self:
-            return super(SkillSettings, self).__setitem__(key, value)
+    @property
+    def settings_meta_path(self):
+        """Fully qualified path to the settingsmeta file."""
+        if self._settings_meta_path is None:
+            if self.yaml_path.is_file():
+                self._settings_meta_path = self.yaml_path
+            else:
+                self._settings_meta_path = self.json_path
 
-    def _load_settings_meta(self):
-        """ Load settings metadata from the skill folder.
+        return self._settings_meta_path
 
-        If no settingsmeta exists a basic settingsmeta will be created
-        containing a basic identifier.
+    def upload(self):
+        """Upload the contents of the settingsmeta file to Mycroft servers.
 
-        Returns:
-            (dict) settings meta
+        The settingsmeta file does not change often, if at all.  Only perform
+        the upload if a change in the file is detected.
         """
+        synced = False
+        if is_paired():
+            settings_meta_file_exists = (
+                self.json_path.is_file() or
+                self.yaml_path.is_file()
+            )
+            if settings_meta_file_exists:
+                self._load_settings_meta_file()
+
+            self._update_settings_meta()
+            LOG.debug('Uploading settings meta for ' + self.skill_gid)
+            synced = self._issue_api_call()
+        else:
+            LOG.debug('settingsmeta.json not uploaded - device is not paired')
+
+        if not synced:
+            self.upload_timer = Timer(ONE_MINUTE, self.upload)
+            self.upload_timer.daemon = True
+            self.upload_timer.start()
+
+    def _load_settings_meta_file(self):
+        """Read the contents of the settingsmeta file into memory."""
         # Imported here do handle issue with readthedocs build
         import yaml
-        if self._meta_path and os.path.isfile(self._meta_path):
-            _, ext = os.path.splitext(self._meta_path)
-            json_file = True if ext.lower() == ".json" else False
+        _, ext = os.path.splitext(self.settings_meta_path)
+        is_json_file = self.settings_meta_path.suffix == ".json"
+        try:
+            with open(str(self.settings_meta_path)) as meta_file:
+                if is_json_file:
+                    self.settings_meta = json.load(meta_file)
+                else:
+                    self.settings_meta = yaml.safe_load(meta_file)
+        except Exception:
+            log_msg = "Failed to load settingsmeta file: "
+            LOG.exception(log_msg + str(self.settings_meta_path))
 
-            try:
-                with open(self._meta_path, encoding='utf-8') as f:
-                    if json_file:
-                        data = json.load(f)
-                    else:
-                        data = yaml.safe_load(f)
-            except Exception as e:
-                LOG.error("Failed to load setting file: " + self._meta_path)
-                LOG.error(repr(e))
-                data = {}
-        else:
-            data = {}
+    def _update_settings_meta(self):
+        """Make sure the skill gid and name are included in settings meta.
 
+        Even if a skill does not have a settingsmeta file, we will upload
+        settings meta JSON containing a skill gid and name
+        """
         # Insert skill_gid and display_name
-        data['skill_gid'] = self.skill_gid
-        data['display_name'] = (self.display_name or data.get('name') or
-                                display_name(self.name))
-
+        self.settings_meta.update(
+            skill_gid=self.skill_gid,
+            display_name=(
+                self.msm_skill_display_name or
+                self.settings_meta.get('name') or
+                get_display_name(self.skill_name)
+            )
+        )
         # Backwards compatibility:
-        if 'name' not in data:
-            data['name'] = data['display_name']
+        if 'name' not in self.settings_meta:
+            self.settings_meta.update(name=self.settings_meta['display_name'])
 
-        return data
-
-    def _send_settings_meta(self, settings_meta):
-        """ Send settingsmeta to the server.
-
-        Args:
-            settings_meta (dict): dictionary of the current settings meta
-        Returns:
-            dict: uuid, a unique id for the setting meta data
-        """
+    def _issue_api_call(self):
+        """Use the API to send the settings meta to the server."""
         try:
-            uuid = self.api.upload_skill_metadata(
-                self._type_cast(settings_meta, to_platform='web'))
-            return uuid
-        except HTTPError as e:
-            if e.response.status_code in [422, 500, 501]:
-                LOG.info(e.response.status_code)
-                raise DelayRequest
-            else:
-                LOG.error(e)
-                return None
-
-        except Exception as e:
-            LOG.error(e)
-            return None
-
-    def save_skill_settings(self, skill_settings):
-        """ Takes skill object and save onto self
-
-        Args:
-            skill_settings (dict): skill
-        """
-        if 'skillMetadata' in skill_settings:
-            sections = skill_settings['skillMetadata']['sections']
-            for section in sections:
-                for field in section["fields"]:
-                    if "name" in field and "value" in field:
-                        # Bypass the change lock to allow server to update
-                        # during skill init
-                        super(SkillSettings, self).__setitem__(field['name'],
-                                                               field['value'])
-            self.store()
-
-    def _migrate_settings(self, settings_meta):
-        """ sync settings.json and settingsmeta in memory """
-        meta = settings_meta.copy()
-        if 'skillMetadata' not in meta:
-            return meta
-        self.load_skill_settings_from_file()
-        sections = meta['skillMetadata']['sections']
-        for i, section in enumerate(sections):
-            for j, field in enumerate(section['fields']):
-                if 'name' in field:
-                    if field["name"] in self:
-                        sections[i]['fields'][j]['value'] = \
-                            str(self.__getitem__(field['name']))
-        meta['skillMetadata']['sections'] = sections
-        return meta
-
-    def _upload_meta(self, settings_meta, identifier):
-        """ uploads the new meta data to settings with settings migration
-
-        Args:
-            settings_meta (dict): settingsmeta.json or settingsmeta.yaml
-            identifier (str): identifier for skills meta data
-        """
-        LOG.debug('Uploading settings meta for {}'.format(identifier))
-        meta = self._migrate_settings(settings_meta)
-        meta['identifier'] = identifier
-        response = self._send_settings_meta(meta)
-
-    def hash(self, string):
-        """ md5 hasher for consistency across cpu architectures """
-        return hashlib.md5(bytes(string, 'utf-8')).hexdigest()
-
-    def update_remote(self):
-        """ update settings state from server """
-        settings_meta = self._load_settings_meta()
-        if settings_meta is None:
-            return
-        # Get settings
-        skills_settings = self._request_my_settings(self.skill_gid)
-
-        if skills_settings is not None:
-            self.save_skill_settings(skills_settings)
+            self.api.upload_skill_metadata(self.settings_meta)
+        except Exception:
+            LOG.exception('Failed to upload skill settings meta')
+            success = False
         else:
-            LOG.debug("No Settings on server for {}".format(self.skill_gid))
-            # Settings meta doesn't exist on server push them
-            settings_meta = self._load_settings_meta()
-            self._upload_meta(settings_meta, self.skill_gid)
+            success = True
 
-    def _init_blank_meta(self):
-        """ Send blank settingsmeta to remote. """
-        try:
-            if not is_paired() and self.is_alive:
-                self._blank_poll_timer = Timer(60, self._init_blank_meta)
-                self._blank_poll_timer.daemon = True
-                self._blank_poll_timer.start()
-            else:
-                self.initialize_remote_settings()
-        except DelayRequest:
-            # Delay 5 minutes and retry
-            self._blank_poll_timer = Timer(60 * 5,
-                                           self._init_blank_meta)
-            self._blank_poll_timer.daemon = True
-            self._blank_poll_timer.start()
-        except Exception as e:
-            LOG.exception('Failed to send blank meta: {}'.format(repr(e)))
+        return success
 
-    def _poll_skill_settings(self):
-        """ If identifier exists for this skill poll to backend to
-            request settings and store it if it changes
-            TODO: implement as websocket
-        """
-        delay = 1
-        original = hash(str(self))
-        try:
-            if not is_paired():
-                pass
-            elif not self._complete_intialization:
-                self.initialize_remote_settings()
-            else:
-                self.update_remote()
-        except DelayRequest:
-            LOG.info('{}: Delaying next settings fetch'.format(self.name))
-            delay = 5
-        except Exception as e:
-            LOG.exception('Failed to fetch skill settings: {}'.format(repr(e)))
-        finally:
-            # Call callback for updated settings
-            if self._complete_intialization:
-                if self.changed_callback and hash(str(self)) != original:
-                    self.changed_callback()
 
-        if self._poll_timer:
-            self._poll_timer.cancel()
+class SkillSettingsDownloader:
+    """Manages the contents of the settings.json file.
 
-        if not self._is_alive:
-            return
+    The settings.json file contains a set of name/value pairs representing
+    the values of the settings defined in settingsmeta.json
+    """
 
-        # continues to poll settings every minute
-        self._poll_timer = Timer(delay * 60, self._poll_skill_settings)
-        self._poll_timer.daemon = True
-        self._poll_timer.start()
+    def __init__(self, bus):
+        self.bus = bus
+        self.continue_downloading = True
+        self.changed_callback = None
+        self.settings_meta_fields = None
+        self.last_download_result = None
+        self.remote_settings = None
+        self.settings_changed = False
+        self.api = DeviceApi()
+        self.download_timer = None
 
-    def load_skill_settings_from_file(self):
-        """ If settings.json exist, open and read stored values into self """
-        if isfile(self._settings_path):
-            with open(self._settings_path) as f:
-                try:
-                    json_data = json.load(f)
-                    for key in json_data:
-                        self[key] = json_data[key]
-                except Exception as e:
-                    # TODO: Show error on webUI.  Dev will have to fix
-                    # metadata to be able to edit later.
-                    LOG.error(e)
+    def stop_downloading(self):
+        """Stop synchronizing backend and core."""
+        self.continue_downloading = False
+        if self.download_timer:
+            self.download_timer.cancel()
 
-    def _type_cast(self, settings_meta, to_platform):
-        """ Tranform data type to be compatible with Home and/or Core.
+    # TODO: implement as websocket
+    def download(self):
+        """Download the settings stored on the backend and check for changes"""
+        if is_paired():
+            download_success = self._get_remote_settings()
+            if download_success:
+                self.settings_changed = (
+                    self.last_download_result != self.remote_settings
+                )
+                if self.settings_changed:
+                    LOG.debug('Skill settings changed since last download')
+                    self._emit_settings_change_events()
+                    self.last_download_result = self.remote_settings
+                else:
+                    LOG.debug('No skill settings changes since last download')
+        else:
+            LOG.debug('Settings not downloaded - device is not paired')
 
-        e.g.
-        Web to core
-        "true" => True, "1.4" =>  1.4
+        # If this method is called outside of the timer loop, ensure the
+        # existing timer is canceled before starting a new one.
+        if self.download_timer:
+            self.download_timer.cancel()
 
-        core to Web
-        False => "false'
+        if self.continue_downloading:
+            self.download_timer = Timer(ONE_MINUTE, self.download)
+            self.download_timer.daemon = True
+            self.download_timer.start()
 
-        Args:
-            settings_meta (dict): skills object
-            to_platform (str): platform to convert
-                               compatible data types to
-        Returns:
-            dict: skills object
-        """
-        meta = settings_meta.copy()
-        if 'skillMetadata' not in settings_meta:
-            return meta
+    def _get_remote_settings(self):
+        """Get the settings for this skill from the server
 
-        sections = meta['skillMetadata']['sections']
-
-        for i, section in enumerate(sections):
-            for j, field in enumerate(section.get('fields', [])):
-                _type = field.get('type')
-                if _type == 'checkbox':
-                    value = field.get('value')
-
-                    if to_platform == 'web':
-                        if value is True or value == 'True':
-                            sections[i]['fields'][j]['value'] = 'true'
-                        elif value is False or value == 'False':
-                            sections[i]['fields'][j]['value'] = 'false'
-
-                    elif to_platform == 'core':
-                        if value == 'true' or value == 'True':
-                            sections[i]['fields'][j]['value'] = True
-                        elif value == 'false' or value == 'False':
-                            sections[i]['fields'][j]['value'] = False
-
-                elif _type == 'number':
-                    value = field.get('value')
-
-                    if to_platform == 'core':
-                        if "." in str(value):
-                            sections[i]['fields'][j]['value'] = float(value)
-                        else:
-                            sections[i]['fields'][j]['value'] = int(value)
-
-                    elif to_platform == 'web':
-                        sections[i]['fields'][j]['value'] = str(value)
-
-        meta['skillMetadata']['sections'] = sections
-        return meta
-
-    def _request_my_settings(self, identifier):
-        """ Get skill settings for this device associated
-            with the identifier
-        Args:
-            identifier (str): a hashed_meta
         Returns:
             skill_settings (dict or None): returns a dict if matches
         """
-        settings = self._request_settings()
-        if settings:
-            # this loads the settings into memory for use in self.store
-            for skill_settings in settings:
-                if skill_settings['identifier'] == identifier:
-                    LOG.debug("Fetched settings for {}".format(identifier))
-                    skill_settings = \
-                        self._type_cast(skill_settings, to_platform='core')
-                    self._remote_settings = skill_settings
-                    return skill_settings
-        return None
-
-    def _request_settings(self):
-        """ Get all skill settings for this device from server.
-
-        Returns:
-            dict: dictionary with settings collected from the server.
-        """
         try:
-            settings = self.api.get_skill_settings()
-        except RequestException:
-            return None
+            remote_settings = self.api.get_skill_settings()
+        except Exception:
+            LOG.exception('Failed to download remote settings from server.')
+            success = False
+        else:
+            self.remote_settings = remote_settings
+            success = True
 
-        settings = [skills for skills in settings if skills is not None]
-        return settings
+        return success
 
-    @property
-    def _should_upload_from_change(self):
-        changed = False
-        if (hasattr(self, '_remote_settings') and
-                'skillMetadata' in self._remote_settings):
-            sections = self._remote_settings['skillMetadata']['sections']
-            for i, section in enumerate(sections):
-                for j, field in enumerate(section['fields']):
-                    if 'name' in field:
-                        # Ensure that the field exists in settings and that
-                        # it has a value to compare
-                        if (field["name"] in self and
-                                'value' in sections[i]['fields'][j]):
-                            remote_val = sections[i]['fields'][j]["value"]
-                            self_val = self.get(field['name'])
-                            if str(remote_val) != str(self_val):
-                                changed = True
-        if self.get('not_owner'):
-            changed = False
-        return changed
-
-    def store(self, force=False):
-        """ Store dictionary to file if a change has occured.
-
-        Args:
-            force:  Force write despite no change
-        """
-        if force or not self._is_stored:
-            with open(self._settings_path, 'w') as f:
-                json.dump(self, f)
-            self.loaded_hash = hash(json.dumps(self, sort_keys=True))
-
-        if self._should_upload_from_change:
-            settings_meta = self._load_settings_meta()
-            self._upload_meta(settings_meta, self.skill_gid)
-
-
-def _get_meta_path(base_directory):
-    json_path = join(base_directory, 'settingsmeta.json')
-    yaml_path = join(base_directory, 'settingsmeta.yaml')
-    if isfile(json_path):
-        return json_path
-    if isfile(yaml_path):
-        return yaml_path
-    return None
+    def _emit_settings_change_events(self):
+        for skill_gid, remote_settings in self.remote_settings.items():
+            settings_changed = False
+            try:
+                previous_settings = self.last_download_result[skill_gid]
+            except KeyError:
+                settings_changed = True
+            else:
+                if previous_settings != remote_settings:
+                    settings_changed = True
+            if settings_changed:
+                message = Message(
+                    'mycroft.skills.settings.changed',
+                    data={skill_gid: remote_settings}
+                )
+                self.bus.emit(message)
