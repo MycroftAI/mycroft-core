@@ -13,13 +13,15 @@
 # limitations under the License.
 #
 import json
-from unittest.mock import call, Mock, patch
-from os import remove
+import tempfile
 from pathlib import Path
+from unittest import TestCase
+from unittest.mock import call, Mock, patch
 
 from mycroft.skills.settings import (
     SkillSettingsDownloader,
-    SettingsMetaUploader
+    SettingsMetaUploader,
+    Settings
 )
 from ..base import MycroftUnitTestBase
 
@@ -286,4 +288,56 @@ class TestSettingsDownloader(MycroftUnitTestBase):
         self.assertListEqual(
             [remote_skill_settings],
             self.message_bus_mock.message_data
+        )
+
+
+class TestSettings(TestCase):
+    def setUp(self) -> None:
+        temp_dir = tempfile.mkdtemp()
+        self.temp_dir = Path(temp_dir)
+        self.skill_mock = Mock()
+        self.skill_mock.root_dir = str(self.temp_dir)
+        self.skill_mock.name = 'test_skill'
+
+    def test_empty_settings(self):
+        settings = Settings(self.skill_mock)
+        self.assertDictEqual(settings._settings, {})
+
+    def test_settings_file_exists(self):
+        settings_path = self.temp_dir.joinpath('settings.json')
+        with open(settings_path, 'w') as settings_file:
+            settings_file.write('{"foo": "bar"}\n')
+
+        settings = Settings(self.skill_mock)
+        self.assertDictEqual(settings._settings, {'foo': 'bar'})
+        self.assertEqual(settings['foo'], 'bar')
+        self.assertNotIn('store', settings)
+        self.assertIn('foo', settings)
+
+    def test_change_settings(self):
+        settings = Settings(self.skill_mock)
+        settings['foo'] = 'bar'
+        self.assertDictEqual(settings._settings, {'foo': 'bar'})
+        self.assertIn('foo', settings)
+
+    def test_store_settings(self):
+        settings = Settings(self.skill_mock)
+        settings['foo'] = 'bar'
+        settings.store()
+        settings_path = self.temp_dir.joinpath('settings.json')
+        with open(settings_path) as settings_file:
+            file_contents = settings_file.read()
+
+        self.assertEqual(file_contents, '{"foo": "bar"}')
+
+    def test_set_changed_callback(self):
+        def test_callback():
+            pass
+
+        settings = Settings(self.skill_mock)
+        settings.set_changed_callback(test_callback)
+
+        self.assertEqual(
+            self.skill_mock.settings_change_callback,
+            test_callback
         )
