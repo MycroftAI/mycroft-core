@@ -44,7 +44,7 @@ from mycroft.util.log import LOG
 from .event_container import EventContainer, create_wrapper, get_handler_name
 from ..event_scheduler import EventSchedulerInterface
 from ..intent_service_interface import IntentServiceInterface
-from ..settings import save_settings, Settings
+from ..settings import get_local_settings, save_settings, Settings
 from ..skill_data import (
     load_vocabulary,
     load_regex,
@@ -129,6 +129,10 @@ class MycroftSkill:
         # Get directory of skill
         self.root_dir = dirname(abspath(sys.modules[self.__module__].__file__))
         if use_settings:
+            self._initial_settings = get_local_settings(
+                self.root_dir,
+                self.name
+            )
             self.settings = Settings(self)
         else:
             self.settings = None
@@ -263,6 +267,7 @@ class MycroftSkill:
             remote_settings = message.data.get(self.skill_gid)
             if remote_settings is not None:
                 self.settings.update(**remote_settings)
+                save_settings(self.root_dir, self.settings)
                 if self.settings_change_callback is not None:
                     self.settings_change_callback()
 
@@ -728,7 +733,9 @@ class MycroftSkill:
         def on_end(message):
             """Store settings and indicate that the skill handler has completed
             """
-            save_settings(self.root_dir, self.settings)
+            if self.settings != self._initial_settings:
+                save_settings(self.root_dir, self.settings)
+                self._initial_settings = self.settings
             if handler_info:
                 msg_type = handler_info + '.complete'
                 self.bus.emit(message.reply(msg_type, skill_data))
@@ -1140,7 +1147,7 @@ class MycroftSkill:
             LOG.error('Skill specific shutdown function encountered '
                       'an error: {}'.format(repr(e)))
         # Store settings
-        if exists(self.root_dir):
+        if self.settings != self._initial_settings:
             save_settings(self.root_dir, self.settings)
 
         # Clear skill from gui
