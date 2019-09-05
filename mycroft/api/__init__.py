@@ -12,14 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from copy import copy
-
-import json
-import requests
-from requests import HTTPError, RequestException
 import os
 import time
-from threading import Lock
+from copy import copy
+
+import requests
+from requests import HTTPError, RequestException
 
 from mycroft.configuration import Configuration
 from mycroft.configuration.config import DEFAULT_CONFIG, SYSTEM_CONFIG, \
@@ -219,8 +217,6 @@ class Api:
 
 class DeviceApi(Api):
     """ Web API wrapper for obtaining device-level information """
-    _skill_settings_lock = Lock()
-    _skill_settings = None
 
     def __init__(self):
         super(DeviceApi, self).__init__("device")
@@ -363,21 +359,14 @@ class DeviceApi(Api):
         })
 
     def get_skill_settings(self):
-        """ Fetch all skill settings. """
-        with DeviceApi._skill_settings_lock:
-            if (DeviceApi._skill_settings is None or
-                    time.monotonic() > DeviceApi._skill_settings[0] + 30):
-                DeviceApi._skill_settings = (
-                    time.monotonic(),
-                    self.request({
-                        "method": "GET",
-                        "path": "/" + self.identity.uuid + "/skill"
-                        })
-                )
-            return DeviceApi._skill_settings[1]
+        """Get the remote skill settings for all skills on this device."""
+        return self.request({
+            "method": "GET",
+            "path": "/" + self.identity.uuid + "/skill/settings",
+        })
 
     def upload_skill_metadata(self, settings_meta):
-        """ Upload skill metadata.
+        """Upload skill metadata.
 
         Arguments:
             settings_meta (dict): skill info and settings in JSON format

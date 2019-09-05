@@ -364,7 +364,7 @@ class TestSettingsMeta(unittest.TestCase):
 
         self.assertEquals(method, 'GET')
         self.assertEquals(
-            url, 'https://api-test.mycroft.ai/v1/device/1234/skill')
+            url, 'https://api-test.mycroft.ai/v1/device/1234/skill/settings')
 
 
 @patch('mycroft.api._paired_cache', False)
