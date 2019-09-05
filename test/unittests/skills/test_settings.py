@@ -103,7 +103,7 @@ class TestSettingsMetaUploader(MycroftUnitTestBase):
         )
 
     def test_json_settingsmeta(self):
-        json_path = self.temp_dir.joinpath('settingsmeta.json')
+        json_path = str(self.temp_dir.joinpath('settingsmeta.json'))
         with open(json_path, 'w') as json_file:
             json.dump(self.skill_metadata, json_file)
 
@@ -121,7 +121,7 @@ class TestSettingsMetaUploader(MycroftUnitTestBase):
             'skillMetadata:\n  sections:\n    - name: "Test Section"\n      '
             'fields:\n      - type: "label"\n        label: "Test Field"'
         )
-        yaml_path = self.temp_dir.joinpath('settingsmeta.yaml')
+        yaml_path = str(self.temp_dir.joinpath('settingsmeta.yaml'))
         with open(yaml_path, 'w') as yaml_file:
             yaml_file.write(skill_metadata)
 
@@ -304,7 +304,7 @@ class TestSettings(TestCase):
         self.assertDictEqual(settings._settings, {})
 
     def test_settings_file_exists(self):
-        settings_path = self.temp_dir.joinpath('settings.json')
+        settings_path = str(self.temp_dir.joinpath('settings.json'))
         with open(settings_path, 'w') as settings_file:
             settings_file.write('{"foo": "bar"}\n')
 
@@ -324,7 +324,7 @@ class TestSettings(TestCase):
         settings = Settings(self.skill_mock)
         settings['foo'] = 'bar'
         settings.store()
-        settings_path = self.temp_dir.joinpath('settings.json')
+        settings_path = str(self.temp_dir.joinpath('settings.json'))
         with open(settings_path) as settings_file:
             file_contents = settings_file.read()
 

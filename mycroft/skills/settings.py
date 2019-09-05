@@ -236,7 +236,7 @@ class SettingsMetaUploader:
         """Read the contents of the settingsmeta file into memory."""
         # Imported here do handle issue with readthedocs build
         import yaml
-        _, ext = os.path.splitext(self.settings_meta_path)
+        _, ext = os.path.splitext(str(self.settings_meta_path))
         is_json_file = self.settings_meta_path.suffix == ".json"
         try:
             with open(str(self.settings_meta_path)) as meta_file:

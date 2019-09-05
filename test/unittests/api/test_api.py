@@ -351,7 +351,7 @@ class TestSettingsMeta(unittest.TestCase):
         self.assertEquals(method, 'PUT')
         self.assertEquals(params['json'], settings_meta)
         self.assertEquals(
-            url, 'https://api-test.mycroft.ai/v1/device/1234/skill')
+            url, 'https://api-test.mycroft.ai/v1/device/1234/settingsMeta')
 
     def test_get_skill_settings(self, mock_request, mock_identity_get):
         mock_request.return_value = create_response(200, {})
@@ -365,20 +365,6 @@ class TestSettingsMeta(unittest.TestCase):
         self.assertEquals(method, 'GET')
         self.assertEquals(
             url, 'https://api-test.mycroft.ai/v1/device/1234/skill')
-
-    def test_delete_meta(self, mock_request, mock_identity_get):
-        mock_request.return_value = create_response(200, {})
-        mock_identity_get.return_value = create_identity('1234')
-        device = mycroft.api.DeviceApi()
-        device.delete_skill_metadata('testgid')
-        method = mock_request.call_args[0][0]
-        url = mock_request.call_args[0][1]
-        params = mock_request.call_args[1]
-
-        content_type = params['headers']['Content-Type']
-        self.assertEquals(method, 'DELETE')
-        self.assertEquals(
-            url, 'https://api-test.mycroft.ai/v1/device/1234/skill/testgid')
 
 
 @patch('mycroft.api._paired_cache', False)
