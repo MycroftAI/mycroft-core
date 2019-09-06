@@ -18,6 +18,8 @@ The message bus facilitates inter-process communication between mycroft-core
 processes. It implements a websocket server so can also be used by external
 systems to integrate with the Mycroft system.
 """
+import sys
+
 from tornado import autoreload, web, ioloop
 
 from mycroft.lock import Lock  # creates/supports PID locking file
@@ -36,7 +38,8 @@ def main():
     LOG.info('Starting message bus service...')
     reset_sigint_handler()
     lock = Lock("service")
-    tornado.options.parse_command_line()
+    # Disable all tornado logging so mycroft loglevel isn't overridden
+    tornado.options.parse_command_line(sys.argv + ['--logging=None'])
 
     def reload_hook():
         """ Hook to release lock when auto reload is triggered. """
