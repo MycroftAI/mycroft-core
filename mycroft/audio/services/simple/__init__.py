@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import subprocess
 import signal
 from time import sleep
 
@@ -46,7 +45,6 @@ class SimpleAudioService(AudioBackend):
     """
 
     def __init__(self, config, bus, name='simple'):
-
         super().__init__(config, bus)
         self.config = config
         self.process = None
@@ -78,6 +76,10 @@ class SimpleAudioService(AudioBackend):
             as basic play/stop.
         """
         LOG.info('SimpleAudioService._play')
+
+        # Stop any existing audio playback
+        self._stop_running_process()
+
         repeat = message.data.get('repeat', False)
         self._is_playing = True
         self._paused = False
@@ -109,19 +111,19 @@ class SimpleAudioService(AudioBackend):
             self.process = None
 
         # Wait for completion or stop request
-        while (self.process and self.process.poll() is None and
-                not self._stop_signal):
+        while (self._is_process_running() and not self._stop_signal):
             sleep(0.25)
 
         if self._stop_signal:
-            self.process.terminate()
-            self.process = None
+            self._stop_running_process()
             self._is_playing = False
             self._paused = False
             return
+        else:
+            self.process = None
 
-        self.index += 1
         # if there are more tracks available play next
+        self.index += 1
         if self.index < len(self.tracks) or repeat:
             if self.index >= len(self.tracks):
                 self.index = 0
@@ -178,7 +180,7 @@ class SimpleAudioService(AudioBackend):
 
     def next(self):
         # Terminate process to continue to next
-        self.process.terminate()
+        self._stop_running_process()
 
     def previous(self):
         pass
@@ -190,6 +192,26 @@ class SimpleAudioService(AudioBackend):
     def restore_volume(self):
         if not self._paused:
             self._resume()  # poor-man's unducking
+
+    def _is_process_running(self):
+        return self.process and self.process.poll() is None
+
+    def _stop_running_process(self):
+        if self._is_process_running():
+            if self._paused:
+                # The child process must be "unpaused" in order to be stopped
+                self._resume()
+            self.process.terminate()
+            countdown = 10
+            while self._is_process_running() and countdown > 0:
+                sleep(0.1)
+                countdown -= 1
+
+            if self._is_process_running():
+                # Failed to shutdown when asked nicely.  Force the issue.
+                LOG.debug("Killing currently playing audio...")
+                self.process.kill()
+        self.process = None
 
 
 def load_service(base_config, bus):

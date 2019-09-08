@@ -14,6 +14,7 @@
 #
 import json
 import re
+
 from mycroft.util.parse import normalize
 
 
@@ -29,7 +30,8 @@ class Message:
         context: info about the message not part of data such as source,
             destination or domain.
     """
-
+    # TODO: For 119.08, change the name of the "type" argument to msg_type
+    # The name "type" shadows a Python built-in name
     def __init__(self, type, data=None, context=None):
         """Used to construct a message object
 
@@ -49,11 +51,11 @@ class Message:
         Returns:
             str: a json string representation of the message.
         """
-        return json.dumps({
-            'type': self.type,
-            'data': self.data,
-            'context': self.context
-        })
+        return json.dumps(dict(
+            type=self.type,
+            data=self.data,
+            context=self.context
+        ))
 
     @staticmethod
     def deserialize(value):
@@ -91,7 +93,7 @@ class Message:
         Args:
             type (str): type of message
             data (dict): data for message
-            context: intented context for new message
+            context: intended context for new message
 
         Returns:
             Message: Message object to be used on the reply to the message

@@ -340,20 +340,24 @@ class TestNormalize(unittest.TestCase):
                     "2022-06-27 00:00:00", "play happy birthday music")
         testExtract("Skype Mom at 12:45 pm next Thursday",
                     "2017-07-06 12:45:00", "skype mom")
+        testExtract("What's the weather next Wednesday?",
+                    "2017-07-05 00:00:00", "what weather")
         testExtract("What's the weather next Thursday?",
                     "2017-07-06 00:00:00", "what weather")
+        testExtract("What's the weather next Friday?",
+                    "2017-06-30 00:00:00", "what weather")
         testExtract("what is the weather next friday morning",
-                    "2017-07-07 08:00:00", "what is weather")
+                    "2017-06-30 08:00:00", "what is weather")
         testExtract("what is the weather next friday evening",
-                    "2017-07-07 19:00:00", "what is weather")
+                    "2017-06-30 19:00:00", "what is weather")
         testExtract("what is the weather next friday afternoon",
-                    "2017-07-07 15:00:00", "what is weather")
+                    "2017-06-30 15:00:00", "what is weather")
         testExtract("remind me to call mom on august 3rd",
                     "2017-08-03 00:00:00", "remind me to call mom")
         testExtract("Buy fireworks on the 4th of July",
                     "2017-07-04 00:00:00", "buy fireworks")
         testExtract("what is the weather 2 weeks from next friday",
-                    "2017-07-21 00:00:00", "what is weather")
+                    "2017-07-14 00:00:00", "what is weather")
         testExtract("what is the weather wednesday at 0700 hours",
                     "2017-06-28 07:00:00", "what is weather")
         testExtract("set an alarm wednesday at 7 o'clock",
@@ -452,9 +456,9 @@ class TestNormalize(unittest.TestCase):
         testExtract("remind me to call mom at 10am this saturday",
                     "2017-07-01 10:00:00", "remind me to call mom")
         testExtract("remind me to call mom at 10 next saturday",
-                    "2017-07-08 10:00:00", "remind me to call mom")
+                    "2017-07-01 10:00:00", "remind me to call mom")
         testExtract("remind me to call mom at 10am next saturday",
-                    "2017-07-08 10:00:00", "remind me to call mom")
+                    "2017-07-01 10:00:00", "remind me to call mom")
         # Below two tests, ensure that time is picked
         # even if no am/pm is specified
         # in case of weekdays/tonight
@@ -490,6 +494,19 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(
             extract_datetime('feed fish at 10 o\'clock', evening)[0],
             datetime(2017, 6, 27, 22, 0, 0))
+
+    def test_extract_date_with_may_I_en(self):
+        now = datetime(2019, 7, 4, 8, 1, 2)
+        may_date = datetime(2019, 5, 2, 10, 11, 20)
+        self.assertEqual(
+            extract_datetime('May I know what time it is tomorrow', now)[0],
+            datetime(2019, 7, 5, 0, 0, 0))
+        self.assertEqual(
+            extract_datetime('May I when 10 o\'clock is', now)[0],
+            datetime(2019, 7, 4, 10, 0, 0))
+        self.assertEqual(
+            extract_datetime('On 24th of may I want a reminder', may_date)[0],
+            datetime(2019, 5, 24, 0, 0, 0))
 
     def test_extract_relativedatetime_en(self):
         def extractWithFormat(text):

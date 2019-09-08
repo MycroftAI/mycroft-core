@@ -29,7 +29,7 @@ import textwrap
 import json
 import mycroft.version
 from threading import Thread, Lock
-from mycroft.messagebus.client.ws import WebsocketClient
+from mycroft.messagebus.client import MessageBusClient
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
 from mycroft.configuration import Configuration
@@ -889,11 +889,15 @@ for s in help_struct:
         help_longest = max(help_longest, len(ent[0]))
 
 
+HEADER_SIZE = 2
+HEADER_FOOTER_SIZE = 4
+
+
 def num_help_pages():
     lines = 0
     for section in help_struct:
-        lines += 2 + len(section[1])
-    return ceil(lines / (curses.LINES - 4))
+        lines += 3 + len(section[1])
+    return ceil(lines / (curses.LINES - HEADER_FOOTER_SIZE))
 
 
 def do_draw_help(scr):
@@ -914,11 +918,12 @@ def do_draw_help(scr):
 
     scr.erase()
     render_header()
-    y = 2
+    y = HEADER_SIZE
     page = subscreen + 1
 
-    first = subscreen * (curses.LINES - 7)  # account for header
-    last = first + (curses.LINES - 7)       # account for header/footer
+    # Find first and last taking into account the header and footer
+    first = subscreen * (curses.LINES - HEADER_FOOTER_SIZE)
+    last = first + (curses.LINES - HEADER_FOOTER_SIZE)
     i = 0
     for section in help_struct:
         y = render_help(section[0], y, i, first, last, CLR_HEADING)
@@ -1424,7 +1429,7 @@ def connect_to_messagebus():
 
         Returns: WebsocketClient
     """
-    bus = WebsocketClient()  # Mycroft messagebus connection
+    bus = MessageBusClient()  # Mycroft messagebus connection
 
     event_thread = Thread(target=connect, args=[bus])
     event_thread.setDaemon(True)

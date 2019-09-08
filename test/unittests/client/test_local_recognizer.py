@@ -25,11 +25,13 @@ from test.util import base_config
 DATA_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "data")
 
 
-class LocalRecognizerTest(unittest.TestCase):
+class PocketSphinxRecognizerTest(unittest.TestCase):
     def setUp(self):
         with mock.patch('mycroft.configuration.Configuration.get') as \
                 mock_config_get:
-            mock_config_get.return_value = base_config()
+            conf = base_config()
+            conf['hotwords']['hey mycroft']['module'] = 'pocketsphinx'
+            mock_config_get.return_value = conf
             rl = RecognizerLoop()
             self.recognizer = RecognizerLoop.create_wake_word_recognizer(rl)
 
@@ -60,6 +62,7 @@ class LocalRecognizerInitTest(unittest.TestCase):
         # Test "Hey Victoria"
         test_config['listener']['wake_word'] = 'hey victoria'
         test_config['listener']['phonemes'] = 'HH EY . V IH K T AO R IY AH'
+        test_config['listener']['threshold'] = 1e-90
         rl = RecognizerLoop()
         self.assertEquals(rl.wakeword_recognizer.key_phrase, "hey victoria")
 

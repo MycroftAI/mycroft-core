@@ -19,6 +19,7 @@ import collections
 import datetime
 import json
 import os
+from os.path import isdir, join
 import pyaudio
 import requests
 import speech_recognition
@@ -29,6 +30,7 @@ from speech_recognition import (
     AudioSource,
     AudioData
 )
+from tempfile import gettempdir
 from threading import Thread, Lock
 
 from mycroft.api import DeviceApi
@@ -204,6 +206,10 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         else:
             self.save_utterances = listener_config.get('save_utterances',
                                                        False)
+
+        self.save_wake_words = listener_config.get('record_wake_words')
+        self.saved_wake_words_dir = join(gettempdir(), 'mycroft_wake_words')
+
         self.upload_lock = Lock()
         self.filenames_to_upload = []
         self.mic_level_file = os.path.join(get_ipc_directory(), "mic_level")
@@ -228,7 +234,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
     def calc_energy(sound_chunk, sample_width):
         return audioop.rms(sound_chunk, sample_width)
 
-    def _record_phrase(self, source, sec_per_buffer):
+    def _record_phrase(self, source, sec_per_buffer, stream=None):
         """Record an entire spoken phrase.
 
         Essentially, this code waits for a period of silence and then returns
@@ -238,6 +244,9 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         Args:
             source (AudioSource):  Source producing the audio chunks
             sec_per_buffer (float):  Fractional number of seconds in each chunk
+            stream (AudioStreamHandler): Stream target that will receive chunks
+                                         of the utterance audio while it is
+                                         being recorded
 
         Returns:
             bytearray: complete audio buffer recorded, including any
@@ -276,11 +285,17 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         # bytearray to store audio in
         byte_data = get_silence(source.SAMPLE_WIDTH)
 
+        if stream:
+            stream.stream_start()
+
         phrase_complete = False
         while num_chunks < max_chunks and not phrase_complete:
             chunk = self.record_sound_chunk(source)
             byte_data += chunk
             num_chunks += 1
+
+            if stream:
+                stream.stream_chunk(chunk)
 
             energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
             test_threshold = self.energy_threshold * self.multiplier
@@ -347,7 +362,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         """
         self._stop_signaled = True
 
-    def _upload_wake_word(self, audio):
+    def _compile_metadata(self):
         ww_module = self.wake_word_recognizer.__class__.__name__
         if ww_module == 'PreciseHotword':
             model_path = self.wake_word_recognizer.precise_model
@@ -356,7 +371,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         else:
             model_hash = '0'
 
-        metadata = {
+        return {
             'name': self.wake_word_name.replace(' ', '-'),
             'engine': md5(ww_module.encode('utf-8')).hexdigest(),
             'time': str(int(1000 * get_time())),
@@ -364,6 +379,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             'accountId': self.account_id,
             'model': str(model_hash)
         }
+
+    def _upload_wake_word(self, audio, metadata):
         requests.post(
             self.upload_url, files={
                 'audio': BytesIO(audio.get_wav_data()),
@@ -456,13 +473,33 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 audio_data = chopped + silence
                 said_wake_word = \
                     self.wake_word_recognizer.found_wake_word(audio_data)
-                # if a wake word is success full then upload wake word
-                if said_wake_word and self.config['opt_in'] and not \
-                        self.upload_disabled:
-                    Thread(
-                        target=self._upload_wake_word, daemon=True,
-                        args=[self._create_audio_data(byte_data, source)]
-                    ).start()
+
+                # Save positive wake words as appropriate
+                if said_wake_word:
+                    audio = None
+                    mtd = None
+                    if self.save_wake_words:
+                        # Save wake word locally
+                        audio = self._create_audio_data(byte_data, source)
+                        mtd = self._compile_metadata()
+                        if not isdir(self.saved_wake_words_dir):
+                            os.mkdir(self.saved_wake_words_dir)
+                        module = self.wake_word_recognizer.__class__.__name__
+
+                        fn = join(self.saved_wake_words_dir,
+                                  '_'.join([str(mtd[k]) for k in sorted(mtd)])
+                                  + '.wav')
+                        with open(fn, 'wb') as f:
+                            f.write(audio.get_wav_data())
+
+                    if self.config['opt_in'] and not self.upload_disabled:
+                        # Upload wake word for opt_in people
+                        Thread(
+                            target=self._upload_wake_word, daemon=True,
+                            args=[audio or
+                                  self._create_audio_data(byte_data, source),
+                                  mtd or self._compile_metadata()]
+                        ).start()
 
     @staticmethod
     def _create_audio_data(raw_data, source):
@@ -472,7 +509,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         """
         return AudioData(raw_data, source.SAMPLE_RATE, source.SAMPLE_WIDTH)
 
-    def listen(self, source, emitter):
+    def listen(self, source, emitter, stream=None):
         """Listens for chunks of audio that Mycroft should perform STT on.
 
         This will listen continuously for a wake-up-word, then return the
@@ -483,6 +520,9 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             source (AudioSource):  Source producing the audio chunks
             emitter (EventEmitter): Emitter for notifications of when recording
                                     begins and ends.
+            stream (AudioStreamHandler): Stream target that will receive chunks
+                                         of the utterance audio while it is
+                                         being recorded
 
         Returns:
             AudioData: audio with the user's utterance, minus the wake-up-word
@@ -510,14 +550,14 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         # If enabled, play a wave file with a short sound to audibly
         # indicate recording has begun.
         if self.config.get('confirm_listening'):
-            file = resolve_resource_file(
+            audio_file = resolve_resource_file(
                 self.config.get('sounds').get('start_listening'))
-            if file:
+            if audio_file:
                 source.mute()
-                play_wav(file).wait()
+                play_wav(audio_file).wait()
                 source.unmute()
 
-        frame_data = self._record_phrase(source, sec_per_buffer)
+        frame_data = self._record_phrase(source, sec_per_buffer, stream)
         audio_data = self._create_audio_data(frame_data, source)
         emitter.emit("recognizer_loop:record_end")
         if self.save_utterances:

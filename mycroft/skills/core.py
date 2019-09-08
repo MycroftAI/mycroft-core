@@ -24,7 +24,6 @@ import traceback
 from inspect import signature
 from datetime import datetime, timedelta
 
-import abc
 import re
 from itertools import chain
 from adapt.intent import Intent, IntentBuilder
@@ -44,7 +43,9 @@ from mycroft.skills.settings import SkillSettings
 from mycroft.skills.skill_data import (load_vocabulary, load_regex, to_alnum,
                                        munge_regex, munge_intent_parser,
                                        read_vocab_file)
-from mycroft.util import camel_case_split, resolve_resource_file
+from mycroft.util import (camel_case_split,
+                          resolve_resource_file,
+                          play_audio_file)
 from mycroft.util.log import LOG
 
 MainModule = '__init__'
@@ -109,6 +110,8 @@ def load_skill(skill_descriptor, bus, skill_id, BLACKLISTED_SKILLS=None):
         skill_descriptor: descriptor of skill to load
         bus:              Mycroft messagebus connection
         skill_id:         id number for skill
+        use_settings:     (default True) selects if the skill should create
+                          a settings object.
 
     Returns:
         MycroftSkill: the loaded skill or None on failure
@@ -232,6 +235,12 @@ class SkillGUI:
         self.page = None    # the active GUI page (e.g. QML template) to show
         self.skill = skill
         self.on_gui_changed_callback = None
+        self.config = Configuration.get()
+
+    @property
+    def remote_url(self):
+        """ Returns configuration value for url of remote-server. """
+        return self.config.get('remote-server')
 
     def build_message_type(self, event):
         """ Builds a message matching the output from the enclosure. """
@@ -311,7 +320,10 @@ class SkillGUI:
 
         Args:
             name (str): Name of page (e.g "mypage.qml") to display
-            override_idle: If set will override the idle screen
+            override_idle (boolean, int):
+                True: Takes over the resting page indefinitely
+                (int): Delays resting page for the specified number of
+                       seconds.
         """
         self.show_pages([name], 0, override_idle)
 
@@ -324,7 +336,10 @@ class SkillGUI:
                                ["Weather.qml", "Forecast.qml", "Details.qml"]
             index (int): Page number (0-based) to show initially.  For the
                          above list a value of 1 would start on "Forecast.qml"
-            override_idle: If set will override the idle screen
+            override_idle (boolean, int):
+                True: Takes over the resting page indefinitely
+                (int): Delays resting page for the specified number of
+                       seconds.
         """
         if not isinstance(page_names, list):
             raise ValueError('page_names must be a list')
@@ -342,9 +357,15 @@ class SkillGUI:
         # Convert pages to full reference
         page_urls = []
         for name in page_names:
-            page = self.skill.find_resource(name, 'ui')
+            if name.startswith("SYSTEM"):
+                page = resolve_resource_file(join('ui', name))
+            else:
+                page = self.skill.find_resource(name, 'ui')
             if page:
-                page_urls.append("file://" + page)
+                if self.config.get('remote') is True:
+                    page_urls.append(self.remote_url + "/" + page)
+                else:
+                    page_urls.append("file://" + page)
             else:
                 raise FileNotFoundError("Unable to find page: {}".format(name))
 
@@ -385,7 +406,7 @@ class SkillGUI:
                                     {"page": page_urls,
                                      "__from": self.skill.skill_id}))
 
-    def show_text(self, text, title=None):
+    def show_text(self, text, title=None, override_idle=None):
         """ Display a GUI page for viewing simple text
 
         Arguments:
@@ -395,33 +416,40 @@ class SkillGUI:
         self.clear()
         self["text"] = text
         self["title"] = title
-        self.show_page("SYSTEM_TEXTFRAME")
+        self.show_page("SYSTEM_TextFrame.qml", override_idle)
 
-    def show_image(self, url, caption=None, title=None):
+    def show_image(self, url, caption=None,
+                   title=None, fill=None,
+                   override_idle=None):
         """ Display a GUI page for viewing an image
 
         Arguments:
             url (str): Pointer to the image
             caption (str): A caption to show under the image
             title (str): A title to display above the image content
+            fill (str): Fill type supports 'PreserveAspectFit',
+            'PreserveAspectCrop', 'Stretch'
         """
         self.clear()
         self["image"] = url
         self["title"] = title
         self["caption"] = caption
-        self.show_page("SYSTEM_IMAGEFRAME")
+        self["fill"] = fill
+        self.show_page("SYSTEM_ImageFrame.qml", override_idle)
 
-    def show_html(self, html):
+    def show_html(self, html, resource_url=None, override_idle=None):
         """ Display an HTML page in the GUI
 
         Arguments:
             html (str): HTML text to display
+            resource_url (str): Pointer to HTML resources
         """
         self.clear()
-        self["url"] = ""  # TODO: Save to a temp file... html
-        self.show_page("SYSTEM_HTMLFRAME")
+        self["html"] = html
+        self["resourceLocation"] = resource_url
+        self.show_page("SYSTEM_HtmlFrame.qml", override_idle)
 
-    def show_url(self, url):
+    def show_url(self, url, override_idle=None):
         """ Display an HTML page in the GUI
 
         Arguments:
@@ -429,16 +457,14 @@ class SkillGUI:
         """
         self.clear()
         self["url"] = url
-        self.show_page("SYSTEM_HTMLFRAME")
+        self.show_page("SYSTEM_UrlFrame.qml", override_idle)
 
 
-def resting_screen_handler(name=None):
+def resting_screen_handler(name):
     """ Decorator for adding a method as an resting screen handler.
 
         If selected will be shown on screen when device enters idle mode
     """
-    name = name or func.__self__.name
-
     def real_decorator(func):
         # Store the resting information inside the function
         # This will be used later in register_resting_screen
@@ -454,16 +480,26 @@ def resting_screen_handler(name=None):
 #######################################################################
 class MycroftSkill:
     """
-    Abstract base class which provides common behaviour and parameters to all
-    Skills implementation.
+    Base class for mycroft skills providing common behaviour and parameters to
+    all Skill implementations.
+
+    For information on how to get started with creating mycroft skills see
+    https://https://mycroft.ai/documentation/skills/introduction-developing-skills/
+
+    Arguments:
+        name (str): skill name
+        bus (MycroftWebsocketClient): Optional bus connection
     """
 
-    def __init__(self, name=None, bus=None):
+    def __init__(self, name=None, bus=None, use_settings=True):
         self.name = name or self.__class__.__name__
         self.resting_name = None
         # Get directory of skill
         self._dir = dirname(abspath(sys.modules[self.__module__].__file__))
-        self.settings = SkillSettings(self._dir, self.name)
+        if use_settings:
+            self.settings = SkillSettings(self._dir, self.name)
+        else:
+            self.settings = None
 
         self.gui = SkillGUI(self)
 
@@ -566,13 +602,27 @@ class MycroftSkill:
                            self.handle_set_cross_context)
             self.add_event("mycroft.skill.remove_cross_context",
                            self.handle_remove_cross_context)
-            name = 'mycroft.skills.settings.update'
-            func = self.settings.run_poll
-            bus.on(name, func)
-            self.events.append((name, func))
+
+            # Trigger settings update if requested
+            self._add_light_event('mycroft.skills.settings.update',
+                                  self.settings.run_poll)
+            # Trigger Settings meta upload on pairing complete
+            self._add_light_event('mycroft.paired', self.settings.run_poll)
 
             # Intialize the SkillGui
             self.gui.setup_default_handlers()
+
+    def _add_light_event(self, msg_type, func):
+        """ This adds an event handler that will automatically be unregistered
+        when the skill shutsdown but none of the metrics or error feedback will
+        be triggered.
+
+        Arguments:
+            msg_tupe (str): Message type
+            func (Function): function to be invoked
+        """
+        self.bus.on(msg_type, func)
+        self.events.append((msg_type, func))
 
     def detach(self):
         for (name, intent) in self.registered_intents:
@@ -1062,7 +1112,8 @@ class MycroftSkill:
                 context = message.context
                 if context and 'ident' in context:
                     report_timing(context['ident'], 'skill_handler', stopwatch,
-                                  {'handler': handler.__name__})
+                                  {'handler': handler.__name__,
+                                   'skill_id': self.skill_id})
 
         if handler:
             if once:
@@ -1446,7 +1497,6 @@ class MycroftSkill:
             LOG.error("Failed to stop skill: {}".format(self.name),
                       exc_info=True)
 
-    @abc.abstractmethod
     def stop(self):
         pass
 
@@ -1531,8 +1581,8 @@ class MycroftSkill:
 
             Args:
                 handler:               method to be called
-                when (datetime/int):   datetime (in system timezone) or number
-                                       of seconds in the future when the
+                when (datetime/int/float):   datetime (in system timezone) or
+                                       number of seconds in the future when the
                                        handler should be called
                 data (dict, optional): data to send when the handler is called
                 name (str, optional):  reference name
@@ -1541,7 +1591,7 @@ class MycroftSkill:
                                        name.
         """
         data = data or {}
-        if isinstance(when, int):
+        if isinstance(when, (int, float)):
             when = datetime.now() + timedelta(seconds=when)
         self._schedule_event(handler, when, data, name)
 
@@ -1648,6 +1698,24 @@ class MycroftSkill:
         for e in list(self.scheduled_repeats):
             self.cancel_scheduled_event(e)
 
+    def acknowledge(self):
+        """ Acknowledge a successful request.
+
+        This method plays a sound to acknowledge a request that does not
+        require a verbal response. This is intended to provide simple feedback
+        to the user that their request was handled successfully.
+        """
+        audio_file = resolve_resource_file(
+            self.config_core.get('sounds').get('acknowledge'))
+
+        if not audio_file:
+            LOG.warning("Could not find 'acknowledge' audio file!")
+            return
+
+        process = play_audio_file(audio_file)
+        if not process:
+            LOG.warning("Unable to play 'acknowledge' audio file!")
+
 
 #######################################################################
 # FallbackSkill base class
@@ -1659,14 +1727,16 @@ class FallbackSkill(MycroftSkill):
         view of the user's utterance.  Fallback handlers are called in an order
         determined the priority provided when the the handler is registered.
 
-        Priority   Who?            Purpose
-        --------  --------    ------------------------------------------------
-           1-4    RESERVED    Unused for now, slot for pre-Padatious if needed
-             5    MYCROFT     Padatious near match (conf > 0.8)
-          6-88    USER        General
-            89    MYCROFT     Padatious loose match (conf > 0.5)
-         90-99    USER        Uncaught intents
-           100+   MYCROFT     Fallback Unknown or other future use
+        ========   ========   ================================================
+        Priority   Who?       Purpose
+        ========   ========   ================================================
+           1-4     RESERVED   Unused for now, slot for pre-Padatious if needed
+             5     MYCROFT    Padatious near match (conf > 0.8)
+          6-88     USER       General
+            89     MYCROFT    Padatious loose match (conf > 0.5)
+         90-99     USER       Uncaught intents
+           100+    MYCROFT    Fallback Unknown or other future use
+        ========   ========   ================================================
 
         Handlers with the numerically lowest priority are invoked first.
         Multiple fallbacks can exist at the same priority, but no order is
@@ -1677,8 +1747,8 @@ class FallbackSkill(MycroftSkill):
     """
     fallback_handlers = {}
 
-    def __init__(self, name=None, bus=None):
-        MycroftSkill.__init__(self, name, bus)
+    def __init__(self, name=None, bus=None, use_settings=True):
+        MycroftSkill.__init__(self, name, bus, use_settings)
 
         #  list of fallback handlers registered by this instance
         self.instance_fallback_handlers = []

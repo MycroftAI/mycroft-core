@@ -245,7 +245,7 @@ case ${_opt} in
     "sdkdoc")
         source-venv
         cd doc
-        make ${opt}
+        make ${_params}
         cd ..
         ;;
     "enclosure")

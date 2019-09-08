@@ -18,7 +18,7 @@ import socket
 import subprocess
 import pyaudio
 
-from os.path import join, expanduser
+from os.path import join, expanduser, splitext
 
 from threading import Thread
 from time import sleep
@@ -91,6 +91,36 @@ def resolve_resource_file(res_name):
         return filename
 
     return None  # Resource cannot be resolved
+
+
+def play_audio_file(uri: str):
+    """ Play an audio file.
+
+    This wraps the other play_* functions, choosing the correct one based on
+    the file extension. The function will return directly and play the file
+    in the background.
+
+    Arguments:
+        uri:    uri to play
+
+    Returns: subprocess.Popen object. None if the format is not supported or
+             an error occurs playing the file.
+
+    """
+    extension_to_function = {
+        '.wav': play_wav,
+        '.mp3': play_mp3,
+        '.ogg': play_ogg
+    }
+    _, extension = splitext(uri)
+    play_function = extension_to_function.get(extension.lower())
+    if play_function:
+        return play_function(uri)
+    else:
+        LOG.error("Could not find a function capable of playing {uri}."
+                  " Supported formats are {keys}."
+                  .format(uri=uri, keys=list(extension_to_function.keys())))
+        return None
 
 
 def play_wav(uri):
@@ -348,11 +378,6 @@ def get_cache_directory(domain=None):
     return ensure_directory_exists(dir, domain)
 
 
-def validate_param(value, name):
-    if not value:
-        raise ValueError("Missing or empty %s in mycroft.conf " % name)
-
-
 def is_speaking():
     """Determine if Text to Speech is occurring
 
@@ -435,43 +460,54 @@ def create_echo_function(name, whitelist=None):
     from mycroft.configuration import Configuration
     blacklist = Configuration.get().get("ignore_logs")
 
+    # Make sure whitelisting doesn't remove the log level setting command
+    if whitelist:
+        whitelist.append('mycroft.debug.log')
+
     def echo(message):
         global _log_all_bus_messages
         try:
             msg = json.loads(message)
-
-            if whitelist and msg.get("type") not in whitelist:
+            msg_type = msg.get("type", "")
+            # Whitelist match beginning of message
+            # i.e 'mycroft.audio.service' will allow the message
+            # 'mycroft.audio.service.play' for example
+            if whitelist and not any([msg_type.startswith(e)
+                                     for e in whitelist]):
                 return
 
-            if blacklist and msg.get("type") in blacklist:
+            if blacklist and msg_type in blacklist:
                 return
 
-            if msg.get("type") == "mycroft.debug.log":
+            if msg_type == "mycroft.debug.log":
                 # Respond to requests to adjust the logger settings
                 lvl = msg["data"].get("level", "").upper()
                 if lvl in ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]:
                     LOG.level = lvl
                     LOG(name).info("Changing log level to: {}".format(lvl))
                     try:
+                        logging.getLogger().setLevel(lvl)
                         logging.getLogger('urllib3').setLevel(lvl)
                     except Exception:
                         pass  # We don't really care about if this fails...
+                else:
+                    LOG(name).info("Invalid level provided: {}".format(lvl))
 
                 # Allow enable/disable of messagebus traffic
                 log_bus = msg["data"].get("bus", None)
                 if log_bus is not None:
-                    LOG(name).info("Bus logging: "+str(log_bus))
+                    LOG(name).info("Bus logging: {}".format(log_bus))
                     _log_all_bus_messages = log_bus
-            elif msg.get("type") == "registration":
+            elif msg_type == "registration":
                 # do not log tokens from registration messages
                 msg["data"]["token"] = None
                 message = json.dumps(msg)
-        except Exception:
-            pass
+        except Exception as e:
+            LOG.info("Error: {}".format(repr(e)), exc_info=True)
 
         if _log_all_bus_messages:
             # Listen for messages and echo them for logging
-            LOG(name).debug(message)
+            LOG(name).info("BUS: {}".format(message))
     return echo
 
 

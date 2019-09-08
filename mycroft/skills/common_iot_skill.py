@@ -19,7 +19,9 @@
 # BE WARNED THAT THE CLASSES, FUNCTIONS, ETC MAY CHANGE WITHOUT WARNING.
 
 from abc import ABC, abstractmethod
+from contextlib import contextmanager
 from enum import Enum, unique
+from functools import total_ordering, wraps
 from itertools import count
 
 from mycroft import MycroftSkill
@@ -28,6 +30,7 @@ from mycroft.messagebus.message import Message
 
 ENTITY = "ENTITY"
 SCENE = "SCENE"
+IOT_REQUEST_ID = "iot_request_id"  # TODO make the id a property of the request
 
 
 _counter = count()
@@ -56,7 +59,13 @@ class _BusKeys():
     RUN = BASE + ":run."  # Will have skill_id appened
     REGISTER = BASE + "register"
     CALL_FOR_REGISTRATION = REGISTER + ".request"
+    SPEAK = BASE + ":speak"
 
+
+####################################################################
+# When adding a new Thing, Attribute, etc, be sure to also add the #
+# corresponding voc files to the skill-iot-control.                #
+####################################################################
 
 @unique
 class Thing(Enum):
@@ -71,19 +80,44 @@ class Thing(Enum):
     LOCK = auto()
     PLUG = auto()
     SWITCH = auto()
+    TEMPERATURE = auto()  # Control desired high and low temperatures
+    HEAT = auto()  # Control desired low temperature
+    AIR_CONDITIONING = auto()  # Control desired high temperature
 
 
 @unique
 class Attribute(Enum):
     """
     This class represents 'Attributes' of 'Things'.
-
-    This may also grow to encompass states, e.g.
-    'locked' or 'unlocked'.
     """
     BRIGHTNESS = auto()
     COLOR = auto()
     COLOR_TEMPERATURE = auto()
+    TEMPERATURE = auto()
+
+
+@unique
+class State(Enum):
+    """
+    This class represents 'States' of 'Things'.
+
+    These are generally intended to handle binary
+    queries, such as "is the door locked?" or
+    "is the heat on?" where 'locked' and 'on'
+    are the state values. The special value
+    'STATE' can be used for more general queries
+    capable of providing more detailed in formation,
+    for example, "what is the state of the lamp?"
+    could produce state information that includes
+    brightness or color.
+    """
+    STATE = auto()
+    POWERED = auto()
+    UNPOWERED = auto()
+    LOCKED = auto()
+    UNLOCKED = auto()
+    OCCUPIED = auto()
+    UNOCCUPIED = auto()
 
 
 @unique
@@ -101,6 +135,49 @@ class Action(Enum):
     SET = auto()
     INCREASE = auto()
     DECREASE = auto()
+    TRIGGER = auto()
+    BINARY_QUERY = auto()  # yes/no answer
+    INFORMATION_QUERY = auto()  # detailed answer
+    LOCATE = auto()
+    LOCK = auto()
+    UNLOCK = auto()
+
+
+@total_ordering
+class IoTRequestVersion(Enum):
+    """
+    Enum indicating support IoTRequest fields
+
+    This class allows us to extend the request without
+    requiring that all existing skills are updated to
+    handle the new fields. Skills will simply not respond
+    to requests that contain fields they are not aware of.
+
+    CommonIoTSkill subclasses should override
+    CommonIoTSkill.supported_request_version to indicate
+    their level of support. For backward compatibility,
+    the default is V1.
+
+    Note that this is an attempt to avoid false positive
+    matches (i.e. prevent skills from reporting that they
+    can handle a request that contains fields they don't
+    know anything about). To avoid any possibility of
+    false negatives, however, skills should always try to
+    support the latest version.
+
+    Version to supported fields (provided only for reference - always use the
+    latest version available, and account for all fields):
+
+    V1 = {'action', 'thing', 'attribute', 'entity', 'scene'}
+    V2 = V1 | {'value'}
+    V3 = V2 | {'state'}
+    """
+    def __lt__(self, other):
+        return self.name < other.name
+
+    V1 = {'action', 'thing', 'attribute', 'entity', 'scene'}
+    V2 = V1 | {'value'}
+    V3 = V2 | {'state'}
 
 
 class IoTRequest():
@@ -111,8 +188,11 @@ class IoTRequest():
     a user's request. The information is supplied as properties
     on the request. At present, those properties are:
 
-    action (see the Action enum above)
-    thing (see the Thing enum above)
+    action (see the Action enum)
+    thing (see the Thing enum)
+    state (see the State enum)
+    attribute (see the Attribute enum)
+    value
     entity
     scene
 
@@ -130,6 +210,10 @@ class IoTRequest():
     trigger multiple skills, so common scene names may trigger many
     skills, for a coherent experience.
 
+    The 'value' property will be a number value. This is intended to
+    be used for requests such as "set the heat to 70 degrees" and
+    "set the lights to 50% brightness."
+
     Skills that extend CommonIotSkill will be expected to register
     their own entities. See the documentation in CommonIotSkill for
     more details.
@@ -140,7 +224,9 @@ class IoTRequest():
                  thing: Thing = None,
                  attribute: Attribute = None,
                  entity: str = None,
-                 scene: str = None):
+                 scene: str = None,
+                 value: int = None,
+                 state: State = None):
 
         if not thing and not entity and not scene:
             raise Exception("At least one of thing,"
@@ -151,6 +237,8 @@ class IoTRequest():
         self.attribute = attribute
         self.entity = entity
         self.scene = scene
+        self.value = value
+        self.state = state
 
     def __repr__(self):
         template = ('IoTRequest('
@@ -158,15 +246,30 @@ class IoTRequest():
                     ' thing={thing},'
                     ' attribute={attribute},'
                     ' entity={entity},'
-                    ' scene={scene}'
+                    ' scene={scene},'
+                    ' value={value},'
+                    ' state={state}'
                     ')')
+        entity = '"{}"'.format(self.entity) if self.entity else None
+        scene = '"{}"'.format(self.scene) if self.scene else None
+        value = '"{}"'.format(self.value) if self.value is not None else None
         return template.format(
             action=self.action,
             thing=self.thing,
             attribute=self.attribute,
-            entity='"{}"'.format(self.entity) if self.entity else None,
-            scene='"{}"'.format(self.scene) if self.scene else None
+            entity=entity,
+            scene=scene,
+            value=value,
+            state=self.state
         )
+
+    @property
+    def version(self):
+        if self.state is not None:
+            return IoTRequestVersion.V3
+        if self.value is not None:
+            return IoTRequestVersion.V2
+        return IoTRequestVersion.V1
 
     def to_dict(self):
         return {
@@ -174,7 +277,9 @@ class IoTRequest():
             'thing': self.thing.name if self.thing else None,
             'attribute': self.attribute.name if self.attribute else None,
             'entity': self.entity,
-            'scene': self.scene
+            'scene': self.scene,
+            'value': self.value,
+            'state': self.state.name if self.state else None
         }
 
     @classmethod
@@ -185,8 +290,37 @@ class IoTRequest():
             data['thing'] = Thing[data['thing']]
         if data.get('attribute') not in (None, ''):
             data['attribute'] = Attribute[data['attribute']]
+        if data.get('state') not in (None, ''):
+            data['state'] = State[data['state']]
 
         return cls(**data)
+
+
+def _track_request(func):
+    """
+    Used within the CommonIoT skill to track IoT requests.
+
+    The primary purpose of tracking the reqeust is determining
+    if the skill is currently handling an IoT request, or is
+    running a standard intent. While running IoT requests, certain
+    methods defined on MycroftSkill should behave differently than
+    under normal circumstances. In particular, speech related methods
+    should not actually trigger speech, but instead pass the message
+    to the IoT control skill, which will handle deconfliction (in the
+    event multiple skills want to respond verbally to the same request).
+
+    Args:
+        func: Callable
+
+    Returns:
+        Callable
+
+    """
+    @wraps(func)
+    def tracking_function(self, message: Message):
+        with self._current_request(message.data.get(IOT_REQUEST_ID)):
+            func(self, message)
+    return tracking_function
 
 
 class CommonIoTSkill(MycroftSkill, ABC):
@@ -214,12 +348,20 @@ class CommonIoTSkill(MycroftSkill, ABC):
     step on each other.
     """
 
+    @wraps(MycroftSkill.__init__)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._current_iot_request = None
+
     def bind(self, bus):
         """
         Overrides MycroftSkill.bind.
 
         This is called automatically during setup, and
         need not otherwise be used.
+
+        Subclasses that override this method must call this
+        via super in their implementation.
 
         Args:
             bus:
@@ -231,6 +373,17 @@ class CommonIoTSkill(MycroftSkill, ABC):
             self.add_event(_BusKeys.CALL_FOR_REGISTRATION,
                            self._handle_call_for_registration)
 
+    @contextmanager
+    def _current_request(self, id: str):
+        # Multiple simultaneous requests may interfere with each other as they
+        # would overwrite this value, however, this seems unlikely to cause
+        # any real world issues and tracking multiple requests seems as
+        # likely to cause issues as to solve them.
+        self._current_iot_request = id
+        yield id
+        self._current_iot_request = None
+
+    @_track_request
     def _handle_trigger(self, message: Message):
         """
         Given a message, determines if this skill can
@@ -242,12 +395,17 @@ class CommonIoTSkill(MycroftSkill, ABC):
         """
         data = message.data
         request = IoTRequest.from_dict(data[IoTRequest.__name__])
+
+        if request.version > self.supported_request_version:
+            return
+
         can_handle, callback_data = self.can_handle(request)
         if can_handle:
             data.update({"skill_id": self.skill_id,
                          "callback_data": callback_data})
             self.bus.emit(message.response(data))
 
+    @_track_request
     def _run_request(self, message: Message):
         """
         Given a message, extracts the IoTRequest and
@@ -260,6 +418,18 @@ class CommonIoTSkill(MycroftSkill, ABC):
         request = IoTRequest.from_dict(message.data[IoTRequest.__name__])
         callback_data = message.data["callback_data"]
         self.run_request(request, callback_data)
+
+    def speak(self, utterance, *args, **kwargs):
+        if self._current_iot_request:
+            self.bus.emit(Message(_BusKeys.SPEAK,
+                                  data={"skill_id": self.skill_id,
+                                        IOT_REQUEST_ID:
+                                            self._current_iot_request,
+                                        "speak_args": args,
+                                        "speak_kwargs": kwargs,
+                                        "speak": utterance}))
+        else:
+            super().speak(utterance, *args, **kwargs)
 
     def _handle_call_for_registration(self, _: Message):
         """
@@ -300,6 +470,21 @@ class CommonIoTSkill(MycroftSkill, ABC):
         """
         self._register_words(self.get_entities(), ENTITY)
         self._register_words(self.get_scenes(), SCENE)
+
+    @property
+    def supported_request_version(self) -> IoTRequestVersion:
+        """
+        Get the supported IoTRequestVersion
+
+        By default, this returns IoTRequestVersion.V1. Subclasses
+        should override this to indicate higher levels of support.
+
+        The documentation for IoTRequestVersion provides a reference
+        indicating which fields are included in each version. Note
+        that you should always take the latest, and account for all
+        request fields.
+        """
+        return IoTRequestVersion.V1
 
     def get_entities(self) -> [str]:
         """

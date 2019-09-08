@@ -168,6 +168,16 @@ class AudioService:
 
         return self.info or {}
 
+    def available_backends(self):
+        """ Return available audio backends.
+
+        Returns:
+            dict with backend names as keys
+        """
+        msg = Message('mycroft.audio.service.list_backends')
+        response = self.bus.wait_for_response(msg)
+        return response.data if response else {}
+
     @property
     def is_playing(self):
         return self.track_info() != {}

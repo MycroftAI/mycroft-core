@@ -353,5 +353,6 @@ class TestPronounceNumber(unittest.TestCase):
         self.assertEqual(pronounce_number(float("-inf"),
                                           lang="it"), "meno infinito")
 
+
 if __name__ == "__main__":
     unittest.main()

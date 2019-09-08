@@ -73,7 +73,7 @@ class PlaybackThread(Thread):
             self.queue.get()
         try:
             self.p.terminate()
-        except:
+        except Exception:
             pass
 
     def run(self):
@@ -163,7 +163,7 @@ class PlaybackThread(Thread):
         self.clear_queue()
 
 
-class TTS:
+class TTS(metaclass=ABCMeta):
     """
     TTS abstract class to be implemented by all TTS engines.
 
@@ -177,8 +177,6 @@ class TTS:
         phonetic_spelling (bool): Whether to spell certain words phonetically
         ssml_tags (list): Supported ssml properties. Ex. ['speak', 'prosody']
     """
-    __metaclass__ = ABCMeta
-
     def __init__(self, lang, config, validator, audio_ext='wav',
                  phonetic_spelling=True, ssml_tags=None):
         super(TTS, self).__init__()
@@ -384,7 +382,7 @@ class TTS:
                 with open(pho_file, "r") as cachefile:
                     phonemes = cachefile.read().strip()
                 return phonemes
-            except:
+            except Exception:
                 LOG.debug("Failed to read .PHO from cache")
         return None
 
@@ -393,15 +391,13 @@ class TTS:
         self.playback.join()
 
 
-class TTSValidator:
+class TTSValidator(metaclass=ABCMeta):
     """
     TTS Validator abstract class to be implemented by all TTS engines.
 
     It exposes and implements ``validate(tts)`` function as a template to
     validate the TTS engines.
     """
-    __metaclass__ = ABCMeta
-
     def __init__(self, tts):
         self.tts = tts
 

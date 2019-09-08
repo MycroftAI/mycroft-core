@@ -30,6 +30,15 @@ class CPSMatchLevel(Enum):
 
 
 class CommonPlaySkill(MycroftSkill, ABC):
+    """ To integrate with the common play infrastructure of Mycroft
+    skills should use this base class and override the two methods
+    `CPS_match_query_phrase` (for checking if the skill can play the
+    utterance) and `CPS_start` for launching the media.
+
+    The class makes the skill available to queries from the
+    mycroft-playback-control skill and no special vocab for starting playback
+    is needed.
+    """
     def __init__(self, name=None, bus=None):
         super().__init__(name, bus)
         self.audioservice = None
@@ -43,6 +52,13 @@ class CommonPlaySkill(MycroftSkill, ABC):
         # with a translatable name in their initialize() method.
 
     def bind(self, bus):
+        """ Overrides the normal bind method.
+        Adds handlers for play:query and play:start messages allowing
+        interaction with the playback control skill.
+
+        This is called automatically during setup, and
+        need not otherwise be used.
+        """
         if bus:
             super().bind(bus)
             self.audioservice = AudioService(self.bus)

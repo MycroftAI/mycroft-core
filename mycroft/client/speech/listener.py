@@ -14,7 +14,6 @@
 #
 import time
 from threading import Thread
-import sys
 import speech_recognition as sr
 from pyee import EventEmitter
 from requests import RequestException, HTTPError
@@ -31,6 +30,27 @@ from mycroft.util import connected
 from mycroft.util.log import LOG
 from mycroft.util import find_input_device
 from queue import Queue, Empty
+import json
+from copy import deepcopy
+
+AUDIO_DATA = 0
+STREAM_START = 1
+STREAM_DATA = 2
+STREAM_STOP = 3
+
+
+class AudioStreamHandler(object):
+    def __init__(self, queue):
+        self.queue = queue
+
+    def stream_start(self):
+        self.queue.put((STREAM_START, None))
+
+    def stream_chunk(self, chunk):
+        self.queue.put((STREAM_DATA, chunk))
+
+    def stream_stop(self):
+        self.queue.put((STREAM_STOP, None))
 
 
 class AudioProducer(Thread):
@@ -40,7 +60,7 @@ class AudioProducer(Thread):
     mic for potential speech chunks and pushes them onto the queue.
     """
 
-    def __init__(self, state, queue, mic, recognizer, emitter):
+    def __init__(self, state, queue, mic, recognizer, emitter, stream_handler):
         super(AudioProducer, self).__init__()
         self.daemon = True
         self.state = state
@@ -48,14 +68,16 @@ class AudioProducer(Thread):
         self.mic = mic
         self.recognizer = recognizer
         self.emitter = emitter
+        self.stream_handler = stream_handler
 
     def run(self):
         with self.mic as source:
             self.recognizer.adjust_for_ambient_noise(source)
             while self.state.running:
                 try:
-                    audio = self.recognizer.listen(source, self.emitter)
-                    self.queue.put(audio)
+                    audio = self.recognizer.listen(source, self.emitter,
+                                                   self.stream_handler)
+                    self.queue.put((AUDIO_DATA, audio))
                 except IOError as e:
                     # NOTE: Audio stack on raspi is slightly different, throws
                     # IOError every other listen, almost like it can't handle
@@ -63,6 +85,9 @@ class AudioProducer(Thread):
                     # The internet was not helpful.
                     # http://stackoverflow.com/questions/10733903/pyaudio-input-overflowed
                     self.emitter.emit("recognizer_loop:ioerror", e)
+                finally:
+                    if self.stream_handler is not None:
+                        self.stream_handler.stream_stop()
 
     def stop(self):
         """
@@ -99,17 +124,28 @@ class AudioConsumer(Thread):
 
     def read(self):
         try:
-            audio = self.queue.get(timeout=0.5)
+            message = self.queue.get(timeout=0.5)
         except Empty:
             return
 
-        if audio is None:
+        if message is None:
             return
 
-        if self.state.sleeping:
-            self.wake_up(audio)
+        tag, data = message
+
+        if tag == AUDIO_DATA:
+            if self.state.sleeping:
+                self.wake_up(data)
+            else:
+                self.process(data)
+        elif tag == STREAM_START:
+            self.stt.stream_start()
+        elif tag == STREAM_DATA:
+            self.stt.stream_data(data)
+        elif tag == STREAM_STOP:
+            self.stt.stream_stop()
         else:
-            self.process(audio)
+            LOG.error("Unknown audio queue type %r" % message)
 
     # TODO: Localization
     def wake_up(self, audio):
@@ -150,18 +186,28 @@ class AudioConsumer(Thread):
                 }
                 self.emitter.emit("recognizer_loop:utterance", payload)
                 self.metrics.attr('utterances', [transcription])
+
+                # Report timing metrics
+                report_timing(ident, 'stt', stopwatch,
+                              {'transcription': transcription,
+                               'stt': self.stt.__class__.__name__})
             else:
                 ident = str(stopwatch.timestamp)
-            # Report timing metrics
-            report_timing(ident, 'stt', stopwatch,
-                          {'transcription': transcription,
-                           'stt': self.stt.__class__.__name__})
 
     def transcribe(self, audio):
+        def send_unknown_intent():
+            """ Send message that nothing was transcribed. """
+            self.emitter.emit('recognizer_loop:speech.recognition.unknown')
+
         try:
             # Invoke the STT engine on the audio clip
-            text = self.stt.execute(audio).lower().strip()
-            LOG.debug("STT: " + text)
+            text = self.stt.execute(audio)
+            if text is not None:
+                text = text.lower().strip()
+                LOG.debug("STT: " + text)
+            else:
+                send_unknown_intent()
+                LOG.info('no words were transcribed')
             return text
         except sr.RequestError as e:
             LOG.error("Could not request Speech Recognition {0}".format(e))
@@ -178,13 +224,11 @@ class AudioConsumer(Thread):
         except RequestException as e:
             LOG.error(e.__class__.__name__ + ': ' + str(e))
         except Exception as e:
-            self.emitter.emit('recognizer_loop:speech.recognition.unknown')
-            if isinstance(e, IndexError):
-                LOG.info('no words were transcribed')
-            else:
-                LOG.error(e)
+            send_unknown_intent()
+            LOG.error(e)
             LOG.error("Speech Recognition could not understand audio")
             return None
+
         if connected():
             dialog_name = 'backend.down'
         else:
@@ -205,6 +249,17 @@ class RecognizerLoopState:
         self.sleeping = False
 
 
+def recognizer_conf_hash(config):
+    """ Hash of the values important to the listener. """
+    c = {
+        'listener': config.get('listener'),
+        'hotwords': config.get('hotwords'),
+        'stt': config.get('stt'),
+        'opt_in': config.get('opt_in', False)
+    }
+    return hash(json.dumps(c, sort_keys=True))
+
+
 class RecognizerLoop(EventEmitter):
     """
         EventEmitter loop running speech recognition. Local wake word
@@ -222,7 +277,7 @@ class RecognizerLoop(EventEmitter):
         """
         config = Configuration.get()
         self.config_core = config
-        self._config_hash = hash(str(config))
+        self._config_hash = recognizer_conf_hash(config)
         self.lang = config.get('lang')
         self.config = config.get('listener')
         rate = self.config.get('sample_rate')
@@ -251,7 +306,11 @@ class RecognizerLoop(EventEmitter):
         # TODO remove this, only for server settings compatibility
         phonemes = self.config.get("phonemes")
         thresh = self.config.get("threshold")
-        config = self.config_core.get("hotwords", {word: {}})
+
+        # Since we're editing it for server backwards compatibility
+        # use a copy so we don't alter the hash of the config and
+        # trigger a reload.
+        config = deepcopy(self.config_core.get("hotwords", {word: {}}))
 
         if word not in config:
             config[word] = {'module': 'precise'}
@@ -275,13 +334,17 @@ class RecognizerLoop(EventEmitter):
             Start consumer and producer threads
         """
         self.state.running = True
+        stt = STTFactory.create()
         queue = Queue()
+        stream_handler = None
+        if stt.can_stream:
+            stream_handler = AudioStreamHandler(queue)
         self.producer = AudioProducer(self.state, queue, self.microphone,
-                                      self.responsive_recognizer, self)
+                                      self.responsive_recognizer, self,
+                                      stream_handler)
         self.producer.start()
         self.consumer = AudioConsumer(self.state, queue, self,
-                                      STTFactory.create(),
-                                      self.wakeup_recognizer,
+                                      stt, self.wakeup_recognizer,
                                       self.wakeword_recognizer)
         self.consumer.start()
 
@@ -336,8 +399,9 @@ class RecognizerLoop(EventEmitter):
         while self.state.running:
             try:
                 time.sleep(1)
-                if self._config_hash != hash(
-                        str(Configuration().get())):
+                current_hash = recognizer_conf_hash(Configuration().get())
+                if current_hash != self._config_hash:
+                    self._config_hash = current_hash
                     LOG.debug('Config has changed, reloading...')
                     self.reload()
             except KeyboardInterrupt as e:

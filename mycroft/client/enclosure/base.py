@@ -16,7 +16,7 @@ from collections import namedtuple
 from threading import Lock
 
 from mycroft.configuration import Configuration
-from mycroft.messagebus.client.ws import WebsocketClient
+from mycroft.messagebus.client import MessageBusClient
 from mycroft.util import create_daemon
 from mycroft.util.log import LOG
 
@@ -29,7 +29,7 @@ from mycroft.messagebus.message import Message
 
 Namespace = namedtuple('Namespace', ['name', 'pages'])
 write_lock = Lock()
-
+namespace_lock = Lock()
 
 RESERVED_KEYS = ['__from', '__idle']
 
@@ -60,7 +60,7 @@ def _get_page_data(message):
 class Enclosure:
     def __init__(self):
         # Establish Enclosure's websocket connection to the messagebus
-        self.bus = WebsocketClient()
+        self.bus = MessageBusClient()
 
         # Load full config
         Configuration.init(self.bus)
@@ -163,7 +163,8 @@ class Enclosure:
         """ Bus handler for removing pages. """
         page, namespace, _ = _get_page_data(message)
         try:
-            self.remove_pages(namespace, page)
+            with namespace_lock:
+                self.remove_pages(namespace, page)
         except Exception as e:
             LOG.exception(repr(e))
 
@@ -171,7 +172,8 @@ class Enclosure:
         """ Bus handler for removing namespace. """
         try:
             namespace = message.data['__from']
-            self.remove_namespace(namespace)
+            with namespace_lock:
+                self.remove_namespace(namespace)
         except Exception as e:
             LOG.exception(repr(e))
 
@@ -179,7 +181,8 @@ class Enclosure:
         try:
             page, namespace, index = _get_page_data(message)
             # Pass the request to the GUI(s) to pull up a page template
-            self.show(namespace, page, index)
+            with namespace_lock:
+                self.show(namespace, page, index)
         except Exception as e:
             LOG.exception(repr(e))
 
@@ -205,6 +208,9 @@ class Enclosure:
                    "position": len(self.loaded[0].pages),
                    "data": [{"url": p} for p in pages]
                    })
+        # Insert the pages into local reprensentation as well.
+        updated = Namespace(self.loaded[0].name, self.loaded[0].pages + pages)
+        self.loaded[0] = updated
 
     def __remove_page(self, namespace, pos):
         """ Delete page.
@@ -570,12 +576,13 @@ class GUIWebsocketHandler(WebSocketHandler):
         LOG.debug("Received: {}".format(message))
         msg = json.loads(message)
         if (msg.get('type') == "mycroft.events.triggered" and
-                msg.get('event_name') == 'page_gained_focus'):
+                (msg.get('event_name') == 'page_gained_focus' or
+                    msg.get('event_name') == 'system.gui.user.interaction')):
             # System event, a page was changed
             msg_type = 'gui.page_interaction'
             msg_data = {
                 'namespace': msg['namespace'],
-                'page_number': msg['parameters']['number']
+                'page_number': msg['parameters'].get('number')
             }
         elif msg.get('type') == "mycroft.events.triggered":
             # A normal event was triggered

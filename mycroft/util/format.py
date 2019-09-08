@@ -13,6 +13,13 @@
 # limitations under the License.
 #
 
+"""
+The mycroft.util.format module provides various formatting functions for
+things like numbers, times, etc.
+
+The focus of these formatting functions is to create natural sounding speech
+and allow localization.
+"""
 from os.path import join
 
 from mycroft.util.lang import get_full_lang_code, get_primary_lang_code

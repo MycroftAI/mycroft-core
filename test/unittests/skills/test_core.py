@@ -27,7 +27,7 @@ from mycroft.messagebus.message import Message
 from mycroft.skills.skill_data import load_regex_from_file, load_regex, \
     load_vocab_from_file, load_vocabulary
 from mycroft.skills.core import MycroftSkill, load_skill, \
-    create_skill_descriptor, open_intent_envelope
+    create_skill_descriptor, open_intent_envelope, resting_screen_handler
 
 from test.util import base_config
 
@@ -54,6 +54,21 @@ class MockEmitter(object):
     def reset(self):
         self.types = []
         self.results = []
+
+
+class FunctionTest(unittest.TestCase):
+    def test_resting_screen_handler(self):
+        class T(MycroftSkill):
+            def __init__(self):
+                self.name = 'TestObject'
+
+            @resting_screen_handler('humbug')
+            def f(self):
+                pass
+
+        test_class = T()
+        self.assertTrue('resting_handler' in dir(test_class.f))
+        self.assertEquals(test_class.f.resting_handler, 'humbug')
 
 
 class MycroftSkillTest(unittest.TestCase):
@@ -89,10 +104,10 @@ class MycroftSkillTest(unittest.TestCase):
 
     def check_emitter(self, result_list):
         for type in self.emitter.get_types():
-            self.assertEquals(type, 'register_vocab')
-        self.assertEquals(sorted(self.emitter.get_results(),
-                                 key=lambda d: sorted(d.items())),
-                          sorted(result_list, key=lambda d: sorted(d.items())))
+            self.assertEqual(type, 'register_vocab')
+        self.assertEqual(sorted(self.emitter.get_results(),
+                                key=lambda d: sorted(d.items())),
+                         sorted(result_list, key=lambda d: sorted(d.items())))
         self.emitter.reset()
 
     def test_load_regex_from_file_single(self):
@@ -130,7 +145,7 @@ class MycroftSkillTest(unittest.TestCase):
             self.check_regex(join(dirname(__file__),
                                   'regex_test_fail'))
         except OSError as e:
-            self.assertEquals(e.strerror, 'No such file or directory')
+            self.assertEqual(e.strerror, 'No such file or directory')
 
     def test_load_vocab_from_file_single(self):
         self.check_vocab_from_file('valid/single.voc', 'test_type',
@@ -163,7 +178,7 @@ class MycroftSkillTest(unittest.TestCase):
         try:
             self.check_vocab_from_file('does_not_exist.voc')
         except IOError as e:
-            self.assertEquals(e.strerror, 'No such file or directory')
+            self.assertEqual(e.strerror, 'No such file or directory')
 
     def test_load_vocab_full(self):
         self.check_vocab(join(self.vocab_path, 'valid'),
@@ -188,7 +203,7 @@ class MycroftSkillTest(unittest.TestCase):
             self.check_regex(join(dirname(__file__),
                                   'vocab_test_fail'))
         except OSError as e:
-            self.assertEquals(e.strerror, 'No such file or directory')
+            self.assertEqual(e.strerror, 'No such file or directory')
 
     def test_open_envelope(self):
         name = 'Jerome'
@@ -202,28 +217,28 @@ class MycroftSkillTest(unittest.TestCase):
         """ Verify skill load function. """
         e_path = join(dirname(__file__), 'test_skill')
         s = load_skill(create_skill_descriptor(e_path), MockEmitter(), 847)
-        self.assertEquals(s._dir, e_path)
-        self.assertEquals(s.skill_id, 847)
-        self.assertEquals(s.name, 'LoadTestSkill')
+        self.assertEqual(s._dir, e_path)
+        self.assertEqual(s.skill_id, 847)
+        self.assertEqual(s.name, 'LoadTestSkill')
 
     def check_detach_intent(self):
         self.assertTrue(len(self.emitter.get_types()) > 0)
         for msg_type in self.emitter.get_types():
-            self.assertEquals(msg_type, 'detach_intent')
+            self.assertEqual(msg_type, 'detach_intent')
         self.emitter.reset()
 
     def check_register_intent(self, result_list):
         for type in self.emitter.get_types():
-            self.assertEquals(type, 'register_intent')
-        self.assertEquals(sorted(self.emitter.get_results()),
-                          sorted(result_list))
+            self.assertEqual(type, 'register_intent')
+        self.assertEqual(sorted(self.emitter.get_results()),
+                         sorted(result_list))
         self.emitter.reset()
 
     def check_register_vocabulary(self, result_list):
         for type in self.emitter.get_types():
-            self.assertEquals(type, 'register_vocab')
-        self.assertEquals(sorted(self.emitter.get_results()),
-                          sorted(result_list))
+            self.assertEqual(type, 'register_vocab')
+        self.assertEqual(sorted(self.emitter.get_results()),
+                         sorted(result_list))
         self.emitter.reset()
 
     def test_register_intent(self):
@@ -290,11 +305,11 @@ class MycroftSkillTest(unittest.TestCase):
         self.check_register_vocabulary(expected)
 
     def check_register_object_file(self, types_list, result_list):
-        self.assertEquals(sorted(self.emitter.get_types()),
-                          sorted(types_list))
-        self.assertEquals(sorted(self.emitter.get_results(),
-                                 key=lambda d: sorted(d.items())),
-                          sorted(result_list, key=lambda d: sorted(d.items())))
+        self.assertEqual(sorted(self.emitter.get_types()),
+                         sorted(types_list))
+        self.assertEqual(sorted(self.emitter.get_results(),
+                                key=lambda d: sorted(d.items())),
+                         sorted(result_list, key=lambda d: sorted(d.items())))
         self.emitter.reset()
 
     def test_register_intent_file(self):
@@ -324,9 +339,9 @@ class MycroftSkillTest(unittest.TestCase):
         self.check_register_object_file(expected_types, expected_results)
 
     def check_register_decorators(self, result_list):
-        self.assertEquals(sorted(self.emitter.get_results(),
-                                 key=lambda d: sorted(d.items())),
-                          sorted(result_list, key=lambda d: sorted(d.items())))
+        self.assertEqual(sorted(self.emitter.get_results(),
+                                key=lambda d: sorted(d.items())),
+                         sorted(result_list, key=lambda d: sorted(d.items())))
         self.emitter.reset()
 
     def test_register_decorators(self):
@@ -350,6 +365,8 @@ class MycroftSkillTest(unittest.TestCase):
                      'name': str(s.skill_id) + ':test.intent'}]
 
         self.check_register_decorators(expected)
+        # Restore sys.path
+        sys.path = path_orig
 
     def test_failing_set_context(self):
         s = SimpleSkill1()
@@ -364,9 +381,9 @@ class MycroftSkillTest(unittest.TestCase):
     def test_set_context(self):
         def check_set_context(result_list):
             for type in self.emitter.get_types():
-                self.assertEquals(type, 'add_context')
-            self.assertEquals(sorted(self.emitter.get_results()),
-                              sorted(result_list))
+                self.assertEqual(type, 'add_context')
+            self.assertEqual(sorted(self.emitter.get_results()),
+                             sorted(result_list))
             self.emitter.reset()
 
         s = SimpleSkill1()
@@ -398,9 +415,9 @@ class MycroftSkillTest(unittest.TestCase):
     def test_remove_context(self):
         def check_remove_context(result_list):
             for type in self.emitter.get_types():
-                self.assertEquals(type, 'remove_context')
-            self.assertEquals(sorted(self.emitter.get_results()),
-                              sorted(result_list))
+                self.assertEqual(type, 'remove_context')
+            self.assertEqual(sorted(self.emitter.get_results()),
+                             sorted(result_list))
             self.emitter.reset()
 
         s = SimpleSkill1()
@@ -449,10 +466,21 @@ class MycroftSkillTest(unittest.TestCase):
         emitter = mock.MagicMock()
         s = SimpleSkill1()
         s.bind(emitter)
-        s.schedule_event(s.handler, datetime.now(), name='sched_handler1')
+
+        s.schedule_event(s.handler, datetime.now(), name='datetime_handler')
         # Check that the handler was registered with the emitter
-        self.assertEqual(emitter.once.call_args[0][0], 'A:sched_handler1')
-        self.assertTrue('A:sched_handler1' in [e[0] for e in s.events])
+        self.assertEqual(emitter.once.call_args[0][0], 'A:datetime_handler')
+        self.assertTrue('A:datetime_handler' in [e[0] for e in s.events])
+
+        s.schedule_event(s.handler, 1, name='int_handler')
+        # Check that the handler was registered with the emitter
+        self.assertEqual(emitter.once.call_args[0][0], 'A:int_handler')
+        self.assertTrue('A:int_handler' in [e[0] for e in s.events])
+
+        s.schedule_event(s.handler, .5, name='float_handler')
+        # Check that the handler was registered with the emitter
+        self.assertEqual(emitter.once.call_args[0][0], 'A:float_handler')
+        self.assertTrue('A:float_handler' in [e[0] for e in s.events])
 
     @mock.patch.dict(Configuration._Configuration__config, BASE_CONF)
     def test_remove_scheduled_event(self):

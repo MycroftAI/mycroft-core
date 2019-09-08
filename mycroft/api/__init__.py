@@ -19,6 +19,7 @@ import requests
 from requests import HTTPError, RequestException
 import os
 import time
+from threading import Lock
 
 from mycroft.configuration import Configuration
 from mycroft.configuration.config import DEFAULT_CONFIG, SYSTEM_CONFIG, \
@@ -82,7 +83,8 @@ class Api:
                 data = self.send({
                     "path": "auth/token",
                     "headers": {
-                        "Authorization": "Bearer " + self.identity.refresh
+                        "Authorization": "Bearer " + self.identity.refresh,
+                        "Device": self.identity.uuid
                     }
                 })
                 IdentityManager.save(data, lock=False)
@@ -171,7 +173,7 @@ class Api:
     def get_data(self, response):
         try:
             return response.json()
-        except:
+        except Exception:
             return response.text
 
     def build_headers(self, params):
@@ -217,6 +219,8 @@ class Api:
 
 class DeviceApi(Api):
     """ Web API wrapper for obtaining device-level information """
+    _skill_settings_lock = Lock()
+    _skill_settings = None
 
     def __init__(self):
         super(DeviceApi, self).__init__("device")
@@ -331,7 +335,7 @@ class DeviceApi(Api):
         """
         try:
             return self.get_subscription().get('@type') != 'free'
-        except:
+        except Exception:
             # If can't retrieve, assume not paired and not a subscriber yet
             return False
 
@@ -358,18 +362,83 @@ class DeviceApi(Api):
             "path": "/" + self.identity.uuid + "/token/" + str(dev_cred)
         })
 
+    def get_skill_settings(self):
+        """ Fetch all skill settings. """
+        with DeviceApi._skill_settings_lock:
+            if (DeviceApi._skill_settings is None or
+                    time.monotonic() > DeviceApi._skill_settings[0] + 30):
+                DeviceApi._skill_settings = (
+                    time.monotonic(),
+                    self.request({
+                        "method": "GET",
+                        "path": "/" + self.identity.uuid + "/skill"
+                        })
+                )
+            return DeviceApi._skill_settings[1]
+
+    def upload_skill_metadata(self, settings_meta):
+        """ Upload skill metadata.
+
+        Arguments:
+            settings_meta (dict): settings_meta typecasted to suite the backend
+        """
+        return self.request({
+            "method": "PUT",
+            "path": "/" + self.identity.uuid + "/skill",
+            "json": settings_meta
+        })
+
+    def delete_skill_metadata(self, uuid):
+        """ Delete the current skill metadata from backend
+
+            TODO: Real implementation when method exists on backend
+        Args:
+            uuid (str): unique id of the skill
+        """
+        try:
+            LOG.debug("Deleting remote metadata for {}".format(skill_gid))
+            self.request({
+                "method": "DELETE",
+                "path": ("/" + self.identity.uuid + "/skill" +
+                         "/{}".format(skill_gid))
+            })
+        except Exception as e:
+            LOG.error("{} cannot delete metadata because this".format(e))
+
     def upload_skills_data(self, data):
-        """ Upload skills.json file.
+        """ Upload skills.json file. This file contains a manifest of installed
+        and failed installations for use with the Marketplace.
 
         Arguments:
              data: dictionary with skills data from msm
         """
+        if not isinstance(data, dict):
+            raise ValueError('data must be of type dict')
+
         # Strip the skills.json down to the bare essentials
         to_send = {}
-        to_send['blacklist'] = data['blacklist']
+        if 'blacklist' in data:
+            to_send['blacklist'] = data['blacklist']
+        else:
+            LOG.warning('skills manifest lacks blacklist entry')
+            to_send['blacklist'] = []
+
         # Make sure skills doesn't contain duplicates (keep only last)
-        skills = {s['name']: s for s in data['skills']}
-        to_send['skills'] = [skills[key] for key in skills]
+        if 'skills' in data:
+            skills = {s['name']: s for s in data['skills']}
+            to_send['skills'] = [skills[key] for key in skills]
+        else:
+            LOG.warning('skills manifest lacks skills entry')
+            to_send['skills'] = []
+
+        for s in to_send['skills']:
+            # Remove optional fields backend objects to
+            if 'update' in s:
+                s.pop('update')
+
+            # Finalize skill_gid with uuid if needed
+            s['skill_gid'] = s.get('skill_gid', '').replace(
+                '@|', '@{}|'.format(self.identity.uuid))
 
         self.request({
             "method": "PUT",
