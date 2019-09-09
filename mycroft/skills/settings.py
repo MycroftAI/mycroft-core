@@ -92,9 +92,22 @@ def get_local_settings(skill_dir, skill_name) -> dict:
 
 def save_settings(skill_dir, skill_settings):
     """Save skill settings to file."""
+    if isinstance(skill_settings, Settings):
+        settings_to_save = skill_settings.as_dict()
+    else:
+        settings_to_save = skill_settings
     settings_path = Path(skill_dir).joinpath('settings.json')
     with open(str(settings_path), 'w') as settings_file:
-        json.dump(skill_settings, settings_file)
+        try:
+            json.dump(settings_to_save, settings_file)
+        except Exception:
+            LOG.exception(
+                'error saving skill settings to ' + str(settings_path)
+            )
+        else:
+            LOG.info(
+                'Skill settings successfully saved to ' + str(settings_path)
+            )
 
 
 def get_display_name(skill_name: str):
@@ -363,7 +376,7 @@ class SkillSettingsDownloader:
                 if previous_settings != remote_settings:
                     settings_changed = True
             if settings_changed:
-                log_msg = 'Emitting skill settings change event for skill {} '
+                log_msg = 'Emitting skill.settings.change event for skill {} '
                 LOG.info(log_msg.format(skill_gid))
                 message = Message(
                     'mycroft.skills.settings.changed',
@@ -379,7 +392,7 @@ class Settings:
         self._settings = get_local_settings(skill.root_dir, skill.name)
 
     def __getattr__(self, attr):
-        if attr not in ['store', 'set_changed_callback']:
+        if attr not in ['store', 'set_changed_callback', 'as_dict']:
             return getattr(self._settings, attr)
         else:
             return getattr(self, attr)
@@ -403,3 +416,6 @@ class Settings:
     def set_changed_callback(self, callback):
         LOG.warning('DEPRECATED - set the settings_changed_callback attribute')
         self._skill.settings_change_callback = callback
+
+    def as_dict(self):
+        return self._settings
