@@ -229,16 +229,11 @@ class TestSettingsDownloader(MycroftUnitTestBase):
         }
         self.downloader.last_download_result = local_skill_settings
         self.downloader.api.get_skill_settings = Mock(
-            return_value=remote_skill_settings
-        )
+            return_value=remote_skill_settings)
         self.downloader.download()
         self._check_api_called()
         self._check_timer_called()
         self._check_message_bus_events(remote_skill_settings)
-        self.assertListEqual(
-            [call.debug('Skill settings changed since last download')],
-            self.log_mock.method_calls
-        )
 
     def test_download_failed(self):
         self.downloader.api.get_skill_settings = Mock(side_effect=ValueError)

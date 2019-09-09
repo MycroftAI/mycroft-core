@@ -266,6 +266,7 @@ class MycroftSkill:
         else:
             remote_settings = message.data.get(self.skill_gid)
             if remote_settings is not None:
+                LOG.info('Updating settings for skill ' + self.name)
                 self.settings.update(**remote_settings)
                 save_settings(self.root_dir, self.settings)
                 if self.settings_change_callback is not None:
