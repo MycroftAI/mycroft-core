@@ -49,7 +49,11 @@ function help() {
 
 VIEWER="nano --syntax=json --view"
 if [ -z "$EDITOR" ] ; then
-    EDITOR="nano --syntax=json --tempfile"
+    if [ $( which sensible-editor ) ] ; then
+        EDITOR="sensible-editor"
+    else
+        EDITOR="nano --syntax=json --tempfile"
+    fi
 fi
 
 if [ -z "$TEMP" ] ; then
@@ -118,25 +122,25 @@ function edit_config() {
     fi
 
     if [ -f "${_conf_file}" ] ; then
-        cp "${_conf_file}" "${TEMP}/mycroft.conf"
+        cp "${_conf_file}" "${TEMP}/mycroft.json"
     else
-        echo "{" > "${TEMP}/mycroft.conf"
-        echo "}" >> "${TEMP}/mycroft.conf"
+        echo "{" > "${TEMP}/mycroft.json"
+        echo "}" >> "${TEMP}/mycroft.json"
     fi
 
     while [ 1 ] ; do
         case $1 in
         system | user)
             # Allow user to edit
-            $EDITOR $TEMP/mycroft.conf
+            $EDITOR $TEMP/mycroft.json
             ;;
         default | remote)
             # View-only
-            $VIEWER $TEMP/mycroft.conf
+            $VIEWER $TEMP/mycroft.json
             ;;
         esac
 
-        cmp --quiet "${_conf_file}" "${TEMP}/mycroft.conf"
+        cmp --quiet "${_conf_file}" "${TEMP}/mycroft.json"
         rc=$?
         if [ $rc -eq 0 ] ; then
             echo "Configuration unchanged."
@@ -144,7 +148,7 @@ function edit_config() {
         fi
 
         # file was changed, validate changes
-        validate_config_file $TEMP/mycroft.conf
+        validate_config_file $TEMP/mycroft.json
         if [ $? -ne 0 ] ; then
             echo "${YELLOW}WARNING: ${RESET}Configuration file does not pass validation, see errors above."
             echo "Press X to abandon changes, S to force save, any other key to edit again."
@@ -156,7 +160,7 @@ function edit_config() {
         case $key in
         [Ss])
             echo "Saving..."
-            mv $TEMP/mycroft.conf $_conf_file
+            mv $TEMP/mycroft.json $_conf_file
             signal_reload_config
             break
             ;;
