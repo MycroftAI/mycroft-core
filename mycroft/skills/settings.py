@@ -369,7 +369,8 @@ class SkillSettingsDownloader:
             try:
                 previous_settings = self.last_download_result[skill_gid]
             except KeyError:
-                settings_changed = True
+                if remote_settings is not None:
+                    settings_changed = True
             except Exception:
                 LOG.exception('error occurred handling setting change events')
             else:
