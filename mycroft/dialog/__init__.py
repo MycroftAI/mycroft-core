@@ -35,6 +35,10 @@ class MustacheDialogRenderer:
 
     def __init__(self):
         self.templates = {}
+        self.recent_phrases = []
+
+        # TODO magic numbers are bad!
+        self.max_recent_phrases = 3
 
     def load_template_file(self, template_name, filename):
         """
@@ -67,6 +71,8 @@ class MustacheDialogRenderer:
         Given a template name, pick a template and render it using the context.
         If no matching template exists use template_name as template.
 
+        Tries not to let Mycroft say exactly the same thing twice in a row.
+
         Args:
             template_name (str): the name of a template group.
             context (dict): dictionary representing values to be rendered
@@ -84,7 +90,12 @@ class MustacheDialogRenderer:
             # "record not found" literal.
             return template_name.replace(".", " ")
 
-        template_functions = self.templates.get(template_name)
+        # Get the .dialog file's contents, minus any which have been spoken
+        # recently.
+        template_functions = ([t for t in self.templates.get(template_name)
+                              if t not in self.recent_phrases] or
+                              self.templates.get(template_name))
+
         if index is None:
             line = random.choice(template_functions)
         else:
@@ -92,6 +103,13 @@ class MustacheDialogRenderer:
         # Replace {key} in line with matching values from context
         line = line.format(**context)
         line = random.choice(expand_options(line))
+
+        # Here's where we keep track of what we've said recently. Remember,
+        # this is by line in the .dialog file, not by exact phrase
+        self.recent_phrases.append(line)
+        if len(self.recent_phrases) > min(self.max_recent_phrases,
+                                        len(self.templates.get(template_name)) - 1):
+            self.recent_phrases.pop(0)
         return line
 
 
