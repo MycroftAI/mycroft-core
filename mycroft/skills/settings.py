@@ -293,7 +293,7 @@ class SkillSettingsDownloader:
         self.continue_downloading = True
         self.changed_callback = None
         self.settings_meta_fields = None
-        self.last_download_result = None
+        self.last_download_result = {}
         self.remote_settings = None
         self.settings_changed = False
         self.api = DeviceApi()
@@ -357,10 +357,14 @@ class SkillSettingsDownloader:
                 previous_settings = self.last_download_result[skill_gid]
             except KeyError:
                 settings_changed = True
+            except Exception:
+                LOG.exception('error occurred handling setting change events')
             else:
                 if previous_settings != remote_settings:
                     settings_changed = True
             if settings_changed:
+                log_msg = 'Emitting skill settings change event for skill {} '
+                LOG.info(log_msg.format(skill_gid))
                 message = Message(
                     'mycroft.skills.settings.changed',
                     data={skill_gid: remote_settings}
