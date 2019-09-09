@@ -277,9 +277,14 @@ class SettingsMetaUploader:
                 get_display_name(self.skill_name)
             )
         )
-        # Backwards compatibility:
-        if 'name' not in self.settings_meta:
-            self.settings_meta.update(name=self.settings_meta['display_name'])
+        for deprecated in ('color', 'identifier', 'name'):
+            if deprecated in self.settings_meta:
+                log_msg = (
+                    'DEPRECATION WARNING: The "{}" attribute in the '
+                    'settingsmeta file is no longer supported.'
+                )
+                LOG.warning(log_msg.format(deprecated))
+                del(self.settings_meta[deprecated])
 
     def _issue_api_call(self):
         """Use the API to send the settings meta to the server."""
@@ -369,7 +374,7 @@ class SkillSettingsDownloader:
             try:
                 previous_settings = self.last_download_result[skill_gid]
             except KeyError:
-                if remote_settings is not None:
+                if remote_settings:
                     settings_changed = True
             except Exception:
                 LOG.exception('error occurred handling setting change events')
@@ -415,7 +420,7 @@ class Settings:
         save_settings(self._skill.root_dir, self._settings)
 
     def set_changed_callback(self, callback):
-        LOG.warning('DEPRECATED - set the settings_changed_callback attribute')
+        LOG.warning('DEPRECATED - set the settings_change_callback attribute')
         self._skill.settings_change_callback = callback
 
     def as_dict(self):

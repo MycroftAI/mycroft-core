@@ -138,7 +138,6 @@ class TestSettingsMetaUploader(MycroftUnitTestBase):
         expected_settings_meta = dict(
             skill_gid='test_skill|99.99',
             display_name='Test Skill',
-            name='Test Skill'
         )
         if skill_settings is not None:
             expected_settings_meta.update(skill_settings)
