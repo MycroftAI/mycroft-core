@@ -39,6 +39,15 @@ class MustacheDialogRenderer:
 
         # TODO magic numbers are bad!
         self.max_recent_phrases = 3
+        # We cycle through lines in .dialog files to keep Mycroft from
+        # repeating the same phrase over and over. However, if a .dialog
+        # file only contains a few entries, this can cause it to loop.
+        #
+        # This offset will override max_recent_phrases on very short .dialog
+        # files. With the offset at 2, .dialog files with 3 or more lines will
+        # be managed to avoid repetition, but .dialog files with only 1 or 2
+        # lines will be unaffected. Dialog should never get stuck in a loop.
+        self.loop_prevention_offset = 2
 
     def load_template_file(self, template_name, filename):
         """
@@ -92,11 +101,12 @@ class MustacheDialogRenderer:
 
         # Get the .dialog file's contents, minus any which have been spoken
         # recently.
-        template_functions = ([t for t in self.templates.get(template_name)
-                              if t not in self.recent_phrases] or
-                              self.templates.get(template_name))
+        template_functions = self.templates.get(template_name)
 
         if index is None:
+            template_functions = ([t for t in template_functions
+                                   if t not in self.recent_phrases] or
+                                  template_functions)
             line = random.choice(template_functions)
         else:
             line = template_functions[index % len(template_functions)]
@@ -107,8 +117,9 @@ class MustacheDialogRenderer:
         # Here's where we keep track of what we've said recently. Remember,
         # this is by line in the .dialog file, not by exact phrase
         self.recent_phrases.append(line)
-        if len(self.recent_phrases) > min(self.max_recent_phrases,
-                                        len(self.templates.get(template_name)) - 1):
+        if (len(self.recent_phrases) >
+                min(self.max_recent_phrases, len(self.templates.get(
+                    template_name)) - self.loop_prevention_offset)):
             self.recent_phrases.pop(0)
         return line
 
