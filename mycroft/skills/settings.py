@@ -73,18 +73,19 @@ ONE_MINUTE = 60
 
 def get_local_settings(skill_dir, skill_name) -> dict:
     """Build a dictionary using the JSON string stored in settings.json."""
+    skill_settings = {}
     settings_path = Path(skill_dir).joinpath('settings.json')
-    if settings_path.is_file():
+    LOG.info(settings_path)
+    if settings_path.exists():
         with open(str(settings_path)) as settings_file:
+            settings_file_content = settings_file.read()
+        if settings_file_content:
             try:
-                skill_settings = json.load(settings_file)
+                skill_settings = json.loads(settings_file_content)
             # TODO change to check for JSONDecodeError in 19.08
             except Exception:
                 log_msg = 'Failed to load {} settings from settings.json'
                 LOG.exception(log_msg.format(skill_name))
-                skill_settings = {}
-    else:
-        skill_settings = {}
 
     return skill_settings
 
@@ -377,7 +378,7 @@ class Settings:
         if attr not in ['store', 'set_changed_callback']:
             return getattr(self._settings, attr)
         else:
-            return super().getattr(attr)
+            return getattr(self, attr)
 
     def __setitem__(self, key, val):
         self._settings[key] = val
