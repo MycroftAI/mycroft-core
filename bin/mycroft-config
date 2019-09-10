@@ -136,6 +136,8 @@ function edit_config() {
             ;;
         default | remote)
             # View-only
+            echo "The default config shouldn't be changed, opening in View mode"
+            sleep 2
             $VIEWER $TEMP/mycroft.json
             ;;
         esac
