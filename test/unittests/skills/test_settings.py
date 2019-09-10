@@ -67,22 +67,12 @@ class TestSettingsMetaUploader(MycroftUnitTestBase):
         self.uploader.upload()
         self._check_api_not_called()
         self._check_timer_called()
-        self.assertListEqual(
-            [call.debug(
-                'settingsmeta.json not uploaded - device is not paired'
-            )],
-            self.log_mock.method_calls
-        )
 
     def test_no_settingsmeta(self):
         self.uploader.upload()
         self._check_settingsmeta()
         self._check_api_call()
         self._check_timer_not_called()
-        self.assertListEqual(
-            [call.debug('Uploading settings meta for test_skill|99.99')],
-            self.log_mock.method_calls
-        )
 
     def test_failed_upload(self):
         """The API call to upload the settingsmeta fails.
@@ -94,13 +84,6 @@ class TestSettingsMetaUploader(MycroftUnitTestBase):
         self._check_settingsmeta()
         self._check_api_call()
         self._check_timer_called()
-        self.assertListEqual(
-            [
-                call.debug('Uploading settings meta for test_skill|99.99'),
-                call.exception('Failed to upload skill settings meta')
-            ],
-            self.log_mock.method_calls
-        )
 
     def test_json_settingsmeta(self):
         json_path = str(self.temp_dir.joinpath('settingsmeta.json'))
@@ -111,10 +94,6 @@ class TestSettingsMetaUploader(MycroftUnitTestBase):
         self._check_settingsmeta(self.skill_metadata)
         self._check_api_call()
         self._check_timer_not_called()
-        self.assertListEqual(
-            [call.debug('Uploading settings meta for test_skill|99.99')],
-            self.log_mock.method_calls
-        )
 
     def test_yaml_settingsmeta(self):
         skill_metadata = (
@@ -129,10 +108,6 @@ class TestSettingsMetaUploader(MycroftUnitTestBase):
         self._check_settingsmeta(self.skill_metadata)
         self._check_api_call()
         self._check_timer_not_called()
-        self.assertListEqual(
-            [call.debug('Uploading settings meta for test_skill|99.99')],
-            self.log_mock.method_calls
-        )
 
     def _check_settingsmeta(self, skill_settings=None):
         expected_settings_meta = dict(
@@ -197,10 +172,6 @@ class TestSettingsDownloader(MycroftUnitTestBase):
         self.downloader.download()
         self._check_api_not_called()
         self._check_timer_called()
-        self.assertListEqual(
-            [call.debug('Settings not downloaded - device is not paired')],
-            self.log_mock.method_calls
-        )
 
     def test_settings_not_changed(self):
         test_skill_settings = {
@@ -208,16 +179,11 @@ class TestSettingsDownloader(MycroftUnitTestBase):
         }
         self.downloader.last_download_result = test_skill_settings
         self.downloader.api.get_skill_settings = Mock(
-            return_value=test_skill_settings
-        )
+            return_value=test_skill_settings)
         self.downloader.download()
         self._check_api_called()
         self._check_timer_called()
         self._check_no_message_bus_events()
-        self.assertListEqual(
-            [call.debug('No skill settings changes since last download')],
-            self.log_mock.method_calls
-        )
 
     def test_settings_changed(self):
         local_skill_settings = {
@@ -247,12 +213,6 @@ class TestSettingsDownloader(MycroftUnitTestBase):
         self.assertEqual(
             pre_download_local_settings,
             self.downloader.last_download_result
-        )
-        self.assertListEqual(
-            [call.exception(
-                'Failed to download remote settings from server.'
-            )],
-            self.log_mock.method_calls
         )
 
     def _check_api_called(self):
