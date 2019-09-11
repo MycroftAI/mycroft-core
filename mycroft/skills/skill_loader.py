@@ -86,7 +86,13 @@ class SkillLoader:
         Returns:
              bool: if the skill was loaded/reloaded
         """
-        self.last_modified = _get_last_modified_time(self.skill_directory)
+        try:
+            self.last_modified = _get_last_modified_time(self.skill_directory)
+        except FileNotFoundError as e:
+            LOG.error('Failed to get last_modification time '
+                      '({})'.format(repr(e)))
+            self.last_modified = self.last_loaded
+
         modified = self.last_modified > self.last_loaded
 
         # create local reference to avoid threading issues

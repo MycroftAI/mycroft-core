@@ -150,9 +150,13 @@ class SkillManager(Thread):
     def _reload_modified_skills(self):
         """Handle reload of recently changed skill(s)"""
         for skill_dir in self._get_skill_directories():
-            skill_loader = self.skill_loaders.get(skill_dir)
-            if skill_loader is not None and skill_loader.reload_needed():
-                skill_loader.reload()
+            try:
+                skill_loader = self.skill_loaders.get(skill_dir)
+                if skill_loader is not None and skill_loader.reload_needed():
+                    skill_loader.reload()
+            except Exception as e:
+                LOG.exception('Unhandled exception occured while '
+                              'reloading {}'.format(skill_dir))
 
     def _load_new_skills(self):
         """Handle load of skills installed since startup."""
