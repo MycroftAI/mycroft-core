@@ -322,7 +322,7 @@ class TTS(metaclass=ABCMeta):
                 if phonemes:
                     self.save_phonemes(key, phonemes)
 
-            vis = self.viseme(phonemes)
+            vis = self.viseme(phonemes) if phonemes else None
             self.queue.put((self.audio_ext, wav_file, vis, ident))
 
     def viseme(self, phonemes):
