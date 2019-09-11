@@ -486,6 +486,10 @@ class TestNormalize(unittest.TestCase):
         evening = datetime(2017, 6, 27, 20, 1, 2)
         noonish = datetime(2017, 6, 27, 12, 1, 2)
         self.assertEqual(
+            extract_datetime('feed the fish'), None)
+        self.assertEqual(
+            extract_datetime(' '), None)
+        self.assertEqual(
             extract_datetime('feed fish at 10 o\'clock', morning)[0],
             datetime(2017, 6, 27, 10, 0, 0))
         self.assertEqual(
