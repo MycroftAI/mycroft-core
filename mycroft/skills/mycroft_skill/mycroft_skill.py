@@ -42,6 +42,8 @@ from mycroft.util import (
     camel_case_split
 )
 from mycroft.util.log import LOG
+from mycroft.util.format import pronounce_number, join_list
+from mycroft.util.parse import match_one, extract_number
 
 from .event_container import EventContainer, create_wrapper, get_handler_name
 from ..event_scheduler import EventSchedulerInterface
@@ -368,9 +370,6 @@ class MycroftSkill:
         """
         data = data or {}
 
-        if not self.dialog_renderer.render(dialog, data):
-            raise ValueError('dialog message required')
-
         def on_fail_default(utterance):
             fail_data = data.copy()
             fail_data['utterance'] = utterance
@@ -390,8 +389,11 @@ class MycroftSkill:
         validator = validator or validator_default
 
         # Speak query and wait for user response
-        self.speak(self.dialog_renderer.render(dialog, data),
-                   expect_response=True, wait=True)
+        utterance = self.dialog_renderer.render(dialog, data)
+        if utterance:
+            self.speak(utterance, expect_response=True, wait=True)
+        else:
+            self.bus.emit(Message('mycroft.mic.listen'))
         return self._wait_response(is_cancel, validator, on_fail_fn,
                                    num_retries)
 
@@ -427,7 +429,10 @@ class MycroftSkill:
                 return None
 
             line = on_fail(response)
-            self.speak(line, expect_response=True)
+            if line:
+                self.speak(line, expect_response=True)
+            else:
+                self.bus.emit(Message('mycroft.mic.listen'))
 
     def ask_yesno(self, prompt, data=None):
         """Read prompt and wait for a yes/no answer
@@ -450,6 +455,57 @@ class MycroftSkill:
             return 'no'
         else:
             return resp
+
+    def ask_selection(self, options, dialog='', data=None, min_conf=0.65, numeric=False):
+        """ Read options, ask dialog question and wait for an answer
+
+        This automatically deals with fuzzy matching and selection by number
+        e.g.
+            "first option"
+            "last option"
+            "second option"
+            "option number four"
+
+        Args:
+              options (list): list of options to present user
+              dialog (str): a dialog id or string to read after presenting options
+              data (dict): Data used to render the dialog
+              min_conf (float): min confidence for fuzzy matching, None will be returned bellow this threshold
+              numeric (bool): speak options as a numeric menu
+        Returns:
+              string: list element selected by user, or None
+        """
+        assert isinstance(options, list)
+
+        if not len(options):
+            return None
+        elif len(options) == 1:
+            return options[0]
+
+        if numeric:
+            for idx, opt in enumerate(options):
+                opt_str = "{number}, {option_text}".format(number=pronounce_number(idx + 1, self.lang),
+                                                           option_text=opt)
+                self.speak(opt_str, wait=True)
+        else:
+            opt_str = join_list(options, "or", lang=self.lang) + "?"
+            self.speak(opt_str, wait=True)
+
+        resp = self.get_response(dialog=dialog, data=data)
+
+        if resp:
+            match, score = match_one(resp, options)
+            if score < min_conf:
+                if self.voc_match(resp, 'last'):
+                    resp = options[-1]
+                else:
+                    num = extract_number(resp, self.lang, ordinals=True)
+                    resp = None
+                    if num and num < len(options):
+                        resp = options[num - 1]
+            else:
+                resp = match
+        return resp
 
     def voc_match(self, utt, voc_filename, lang=None):
         """Determine if the given utterance contains the vocabulary provided.
