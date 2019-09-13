@@ -149,7 +149,7 @@ def munge_intent_parser(intent_parser, name, skill_id):
         skill_id: (int) skill identifier
     """
     # Munge parser name
-    if str(skill_id) + ':' not in name:
+    if not name.startswith(str(skill_id) + ':'):
         intent_parser.name = str(skill_id) + ':' + name
     else:
         intent_parser.name = name
@@ -159,7 +159,7 @@ def munge_intent_parser(intent_parser, name, skill_id):
     # Munge required keyword
     reqs = []
     for i in intent_parser.requires:
-        if skill_id not in i[0]:
+        if not i[0].startswith(skill_id):
             kw = (skill_id + i[0], skill_id + i[0])
             reqs.append(kw)
         else:
@@ -169,7 +169,7 @@ def munge_intent_parser(intent_parser, name, skill_id):
     # Munge optional keywords
     opts = []
     for i in intent_parser.optional:
-        if skill_id not in i[0]:
+        if not i[0].startswith(skill_id):
             kw = (skill_id + i[0], skill_id + i[0])
             opts.append(kw)
         else:
