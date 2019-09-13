@@ -50,6 +50,10 @@ class SkillManager(Thread):
         self.skill_updater = SkillUpdater()
         self.daemon = True
 
+        # Statuses
+        self._alive_status = False  # True after priority skills has loaded
+        self._loaded_status = False  # True after all skills has loaded
+
     def _define_message_bus_events(self):
         """Define message bus events with handlers defined in this class."""
         # Conversation management
@@ -68,6 +72,8 @@ class SkillManager(Thread):
         self.bus.on('skillmanager.keep', self.deactivate_except)
         self.bus.on('skillmanager.activate', self.activate_skill)
         self.bus.on('mycroft.paired', self.handle_paired)
+        self.bus.on('mycroft.skills.is_alive', self.is_alive)
+        self.bus.on('mycroft.skills.all_loaded', self.is_all_loaded)
 
     @property
     def config(self):
@@ -119,6 +125,8 @@ class SkillManager(Thread):
                     'Priority skill {} can\'t be found'.format(skill_name)
                 )
 
+        self._alive_status = True
+
     def run(self):
         """Load skills and update periodically from disk and internet."""
         self._remove_git_locks()
@@ -146,6 +154,7 @@ class SkillManager(Thread):
         self._load_new_skills()
         LOG.info("Skills all loaded!")
         self.bus.emit(Message('mycroft.skills.initialized'))
+        self._loaded_status = True
 
     def _reload_modified_skills(self):
         """Handle reload of recently changed skill(s)"""
@@ -207,6 +216,21 @@ class SkillManager(Thread):
         )
         if do_skill_update:
             self.skill_updater.update_skills()
+
+    def is_alive(self, message=None):
+        """Respond to is_alive status request."""
+        if message:
+            status = {'status': self._alive_status}
+            self.bus.emit(message.response(data=status))
+        return self._alive_status
+
+    def is_all_loaded(self, message=None):
+        """ Respond to all_loaded status request."""
+        if message:
+            status = {'status': self._loaded_status}
+            self.bus.emit(message.response(data=status))
+
+        return self._loaded_status
 
     def send_skill_list(self, _):
         """Send list of loaded skills."""
