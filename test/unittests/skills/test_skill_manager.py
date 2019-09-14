@@ -71,7 +71,9 @@ class TestSkillManager(MycroftUnitTestBase):
             'skillmanager.deactivate',
             'skillmanager.keep',
             'skillmanager.activate',
-            'mycroft.paired'
+            'mycroft.paired',
+            'mycroft.skills.is_alive',
+            'mycroft.skills.all_loaded'
         ]
         self.assertListEqual(
             expected_result,
