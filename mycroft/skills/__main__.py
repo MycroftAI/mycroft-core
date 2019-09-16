@@ -21,6 +21,7 @@ directory.  The executable gets added to the bin directory when installed
 import time
 from threading import Event
 
+from requests import HTTPError, ConnectionError
 import mycroft.lock
 from msm.exceptions import MsmException
 
@@ -181,7 +182,7 @@ class DevicePrimer(object):
             try:
                 api = DeviceApi()
                 api.update_version()
-            except BackendDown:
+            except (HTTPError, ConnectionError):
                 self._notify_backend_down()
 
     def _update_system(self):
