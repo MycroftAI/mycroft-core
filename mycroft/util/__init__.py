@@ -18,7 +18,9 @@ import json
 import logging
 import os
 import re
+import requests
 import signal as sig
+import socket
 import subprocess
 import tempfile
 from copy import deepcopy
@@ -283,9 +285,64 @@ def read_dict(filename, div='='):
 
 
 def connected():
+    """ Check connection by connecting to 8.8.8.8 and if google.com is
+    reachable if this fails, Check Microsoft NCSI is used as a backup.
+
+    Returns:
+        True if internet connection can be detected
+    """
+    if _connected_dns():
+        # Outside IP is reachable check if names are resolvable
+        return _connected_google()
+    else:
+        # DNS can't be reached, do a complete fetch in case it's blocked
+        return _connected_ncsi()
+
+
+def _connected_ncsi():
+    """ Check internet connection by retrieving the Microsoft NCSI endpoint.
+
+    Returns:
+        True if internet connection can be detected
+    """
+    try:
+        r = requests.get('http://www.msftncsi.com/ncsi.txt')
+        if r.text == u'Microsoft NCSI':
+            return True
+    except Exception:
+        pass
+    return False
+
+
+def _connected_dns(host="8.8.8.8", port=53, timeout=3):
+    """ Check internet connection by connecting to DNS servers
+
+    Returns:
+        True if internet connection can be detected
+    """
+    # Thanks to 7h3rAm on
+    # Host: 8.8.8.8 (google-public-dns-a.google.com)
+    # OpenPort: 53/tcp
+    # Service: domain (DNS/TCP)
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(timeout)
+        s.connect((host, port))
+        return True
+    except IOError:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(timeout)
+            s.connect(("8.8.4.4", port))
+            return True
+        except IOError:
+            return False
+
+
+def _connected_google():
     """Check internet connection by connecting to www.google.com
     Returns:
-        True if connection attempt succeeded, indicating device is connected.
+        True if connection attempt succeeded
     """
     connect_success = False
     try:
