@@ -33,6 +33,7 @@ class KACSTTTS(RemoteTTS):
 
     def build_request_params(self, sentence):
         params = self.PARAMS.copy()
+        params['voice'] = 2
         params['diac'] = 1
         params['prep'] = 1
         params['input'] = sentence.encode('utf-8')
