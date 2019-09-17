@@ -18,7 +18,7 @@ try:
     from py_mplayer import MplayerCtrl
 except ImportError:
     LOG.error("install py_mplayer with "
-              "pip install git+https://github.com/JarbasAl/py_mplayer")
+              "pip install git+https://github.com/MycroftAI/py_mplayer")
     raise
 
 

@@ -19,6 +19,7 @@ pillow==4.1.1
 python-dateutil==2.6.0
 pychromecast==3.2.2
 python-vlc==1.1.2
+git+https://github.com/MycroftAI/py_mplayer@master
 google-api-python-client==1.6.4
 fasteners==0.14.1
 PyYAML==3.13
