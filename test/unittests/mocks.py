@@ -36,9 +36,13 @@ def mock_msm(temp_dir):
     )
     skill = Mock()
     skill.is_local = True
+    skill.path = str(temp_dir)
+    skill.skill_gid = 'test_skill|99.99'
+    skill.meta_info = dict(display_name='Test Skill')
     msm_mock.list_all_defaults.return_value = [skill]
     msm_mock.default_skills = dict(test_skill=skill)
     msm_mock.all_skills = [skill]
+    msm_mock.local_skills = dict(test_skill=skill)
 
     return msm_mock
 
