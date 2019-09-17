@@ -14,26 +14,24 @@
 #
 from __future__ import absolute_import
 
-from copy import deepcopy
+import json
+import logging
+import os
 import re
+import requests
+import signal as sig
 import socket
 import subprocess
-import pyaudio
-
-from os.path import join, expanduser, splitext
-
+import tempfile
+from copy import deepcopy
+from stat import S_ISREG, ST_MTIME, ST_MODE, ST_SIZE
 from threading import Thread
 from time import sleep
+from urllib.request import urlopen
+from urllib.error import URLError
 
-import json
-import os.path
-import os
+import pyaudio
 import psutil
-from stat import S_ISREG, ST_MTIME, ST_MODE, ST_SIZE
-import requests
-import logging
-
-import signal as sig
 
 import mycroft.audio
 import mycroft.configuration
@@ -43,7 +41,14 @@ from mycroft.util.format import nice_number
 # resolve_resource_file, wait_while_speaking
 from mycroft.util.log import LOG
 from mycroft.util.parse import extract_datetime, extract_number, normalize
-from mycroft.util.signal import *
+# TODO: Other modules import signals functions from here, make consistent
+from mycroft.util.signal import (
+    create_file,
+    check_for_signal,
+    create_signal,
+    ensure_directory_exists,
+    get_ipc_directory
+)
 
 
 def resolve_resource_file(res_name):
@@ -82,8 +87,8 @@ def resolve_resource_file(res_name):
         return filename
 
     # Next look for /opt/mycroft/res/res_name
-    data_dir = expanduser(config['data_dir'])
-    filename = os.path.expanduser(join(data_dir, res_name))
+    data_dir = os.path.expanduser(config['data_dir'])
+    filename = os.path.expanduser(os.path.join(data_dir, res_name))
     if os.path.isfile(filename):
         return filename
 
@@ -105,7 +110,7 @@ def play_audio_file(uri: str, environment=None):
 
     Arguments:
         uri:    uri to play
-        envoronment (dict): optional environment for the subprocess call
+        environment (dict): optional environment for the subprocess call
 
     Returns: subprocess.Popen object. None if the format is not supported or
              an error occurs playing the file.
@@ -116,7 +121,7 @@ def play_audio_file(uri: str, environment=None):
         '.mp3': play_mp3,
         '.ogg': play_ogg
     }
-    _, extension = splitext(uri)
+    _, extension = os.path.splitext(uri)
     play_function = extension_to_function.get(extension.lower())
     if play_function:
         return play_function(uri, environment)
@@ -149,7 +154,7 @@ def play_wav(uri, environment=None):
 
         Arguments:
             uri:    uri to play
-            envoronment (dict): optional environment for the subprocess call
+            environment (dict): optional environment for the subprocess call
 
         Returns: subprocess.Popen object
     """
@@ -177,7 +182,7 @@ def play_mp3(uri, environment=None):
 
         Arguments:
             uri:    uri to play
-            envoronment (dict): optional environment for the subprocess call
+            environment (dict): optional environment for the subprocess call
 
         Returns: subprocess.Popen object
     """
@@ -205,7 +210,7 @@ def play_ogg(uri, environment=None):
 
         Arguments:
             uri:    uri to play
-            envoronment (dict): optional environment for the subprocess call
+            environment (dict): optional environment for the subprocess call
 
         Returns: subprocess.Popen object
     """
@@ -280,16 +285,21 @@ def read_dict(filename, div='='):
 
 
 def connected():
-    """ Check connection by connecting to 8.8.8.8, if this is
-    blocked/fails, Microsoft NCSI is used as a backup
+    """ Check connection by connecting to 8.8.8.8 and if google.com is
+    reachable if this fails, Check Microsoft NCSI is used as a backup.
 
     Returns:
         True if internet connection can be detected
     """
-    return connected_dns() or connected_ncsi()
+    if _connected_dns():
+        # Outside IP is reachable check if names are resolvable
+        return _connected_google()
+    else:
+        # DNS can't be reached, do a complete fetch in case it's blocked
+        return _connected_ncsi()
 
 
-def connected_ncsi():
+def _connected_ncsi():
     """ Check internet connection by retrieving the Microsoft NCSI endpoint.
 
     Returns:
@@ -304,7 +314,7 @@ def connected_ncsi():
     return False
 
 
-def connected_dns(host="8.8.8.8", port=53, timeout=3):
+def _connected_dns(host="8.8.8.8", port=53, timeout=3):
     """ Check internet connection by connecting to DNS servers
 
     Returns:
@@ -327,6 +337,22 @@ def connected_dns(host="8.8.8.8", port=53, timeout=3):
             return True
         except IOError:
             return False
+
+
+def _connected_google():
+    """Check internet connection by connecting to www.google.com
+    Returns:
+        True if connection attempt succeeded
+    """
+    connect_success = False
+    try:
+        urlopen('https://www.google.com', timeout=3)
+    except URLError as ue:
+        LOG.debug('Attempt to connect to internet failed: ' + str(ue.reason))
+    else:
+        connect_success = True
+
+    return connect_success
 
 
 def curate_cache(directory, min_free_percent=5.0, min_free_disk=50):
