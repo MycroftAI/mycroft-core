@@ -38,6 +38,9 @@ class InternetDown(RequestException):
     pass
 
 
+UUID = '{MYCROFT_UUID}'
+
+
 class Api:
     """ Generic class to wrap web APIs """
     params_to_etag = {}
@@ -59,6 +62,8 @@ class Api:
 
     def request(self, params):
         self.check_token()
+        if 'path' in params:
+            params['path'] = params['path'].replace(UUID, self.identity.uuid)
         self.build_path(params)
         self.old_params = copy(params)
         return self.send(params)
@@ -266,7 +271,7 @@ class DeviceApi(Api):
 
         return self.request({
             "method": "PATCH",
-            "path": "/" + self.identity.uuid,
+            "path": "/" + UUID,
             "json": {"coreVersion": version.get("coreVersion"),
                      "platform": platform,
                      "platform_build": platform_build,
@@ -276,21 +281,21 @@ class DeviceApi(Api):
     def send_email(self, title, body, sender):
         return self.request({
             "method": "PUT",
-            "path": "/" + self.identity.uuid + "/message",
+            "path": "/" + UUID + "/message",
             "json": {"title": title, "body": body, "sender": sender}
         })
 
     def report_metric(self, name, data):
         return self.request({
             "method": "POST",
-            "path": "/" + self.identity.uuid + "/metric/" + name,
+            "path": "/" + UUID + "/metric/" + name,
             "json": data
         })
 
     def get(self):
         """ Retrieve all device information from the web backend """
         return self.request({
-            "path": "/" + self.identity.uuid
+            "path": "/" + UUID
         })
 
     def get_settings(self):
@@ -300,7 +305,7 @@ class DeviceApi(Api):
             str: JSON string with user configuration information.
         """
         return self.request({
-            "path": "/" + self.identity.uuid + "/setting"
+            "path": "/" + UUID + "/setting"
         })
 
     def get_location(self):
@@ -310,7 +315,7 @@ class DeviceApi(Api):
             str: JSON string with user location.
         """
         return self.request({
-            "path": "/" + self.identity.uuid + "/location"
+            "path": "/" + UUID + "/location"
         })
 
     def get_subscription(self):
@@ -321,7 +326,7 @@ class DeviceApi(Api):
             Returns: dictionary with subscription information
         """
         return self.request({
-            'path': '/' + self.identity.uuid + '/subscription'})
+            'path': '/' + UUID + '/subscription'})
 
     @property
     def is_subscriber(self):
@@ -340,7 +345,7 @@ class DeviceApi(Api):
         archs = {'x86_64': 'x86_64', 'armv7l': 'arm', 'aarch64': 'arm'}
         arch = archs.get(get_arch())
         if arch:
-            path = '/' + self.identity.uuid + '/voice?arch=' + arch
+            path = '/' + UUID + '/voice?arch=' + arch
             return self.request({'path': path})['link']
 
     def get_oauth_token(self, dev_cred):
@@ -355,14 +360,14 @@ class DeviceApi(Api):
         """
         return self.request({
             "method": "GET",
-            "path": "/" + self.identity.uuid + "/token/" + str(dev_cred)
+            "path": "/" + UUID + "/token/" + str(dev_cred)
         })
 
     def get_skill_settings(self):
         """Get the remote skill settings for all skills on this device."""
         return self.request({
             "method": "GET",
-            "path": "/" + self.identity.uuid + "/skill/settings",
+            "path": "/" + UUID + "/skill/settings",
         })
 
     def upload_skill_metadata(self, settings_meta):
@@ -373,7 +378,7 @@ class DeviceApi(Api):
         """
         return self.request({
             "method": "PUT",
-            "path": "/" + self.identity.uuid + "/settingsMeta",
+            "path": "/" + UUID + "/settingsMeta",
             "json": settings_meta
         })
 
@@ -414,7 +419,7 @@ class DeviceApi(Api):
 
         self.request({
             "method": "PUT",
-            "path": "/" + self.identity.uuid + "/skillJson",
+            "path": "/" + UUID + "/skillJson",
             "json": to_send
             })
 
