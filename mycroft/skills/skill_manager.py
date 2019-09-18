@@ -143,11 +143,17 @@ class SkillManager(Thread):
         # Scan the file folder that contains Skills.  If a Skill is updated,
         # unload the existing version from memory and reload from the disk.
         while not self._stop_event.is_set():
-            self._reload_modified_skills()
-            self._load_new_skills()
-            self._unload_removed_skills()
-            self._update_skills()
-            sleep(2)  # Pause briefly before beginning next scan
+            try:
+                self._reload_modified_skills()
+                self._load_new_skills()
+                self._unload_removed_skills()
+                self._update_skills()
+                sleep(2)  # Pause briefly before beginning next scan
+            except Exception:
+                LOG.exception('Something really unexpected has occured '
+                              'and the skill manager loop safety harness was '
+                              'hit.')
+                sleep(30)
 
     def _remove_git_locks(self):
         """If git gets killed from an abrupt shutdown it leaves lock files."""
