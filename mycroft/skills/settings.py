@@ -318,8 +318,15 @@ class SkillSettingsDownloader:
         self.last_download_result = {}
         self.remote_settings = None
         self.settings_changed = False
-        self.api = DeviceApi()
+        self._api = None
         self.download_timer = None
+
+    @property
+    def api(self):
+        if not self._api:
+            if is_paired():
+                self._api = DeviceApi()
+        return self._api
 
     def stop_downloading(self):
         """Stop synchronizing backend and core."""
