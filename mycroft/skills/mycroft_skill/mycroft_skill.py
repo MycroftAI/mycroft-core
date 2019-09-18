@@ -125,7 +125,7 @@ class MycroftSkill:
         self.name = name or self.__class__.__name__
         self.resting_name = None
         self.skill_id = ''  # will be set from the path, so guaranteed unique
-        self.skill_gid = None  # set when skill is loaded in SkillLoader
+        self.settings_meta = None  # set when skill is loaded in SkillLoader
         # Get directory of skill
         self.root_dir = dirname(abspath(sys.modules[self.__module__].__file__))
         if use_settings:
@@ -261,10 +261,10 @@ class MycroftSkill:
         that had their settings changed.  Only update this skill's settings
         if its remote settings were among those changed
         """
-        if self.skill_gid is None:
+        if self.settings_meta is None or self.settings_meta.skill_gid is None:
             LOG.error('The skill_gid was not set when this skill was loaded!')
         else:
-            remote_settings = message.data.get(self.skill_gid)
+            remote_settings = message.data.get(self.settings_meta.skill_gid)
             if remote_settings is not None:
                 LOG.info('Updating settings for skill ' + self.name)
                 self.settings.update(**remote_settings)

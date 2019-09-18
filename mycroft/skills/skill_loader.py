@@ -286,4 +286,4 @@ class SkillLoader:
                 self.instance.name
             )
             settings_meta.upload()
-            self.instance.skill_gid = settings_meta.skill_gid
+            self.instance.settings_meta = settings_meta
