@@ -167,7 +167,6 @@ class TestSettingsDownloader(MycroftUnitTestBase):
         super().setUp()
         self.settings_path = self.temp_dir.joinpath('settings.json')
         self.downloader = SkillSettingsDownloader(self.message_bus_mock)
-        self.downloader.api = Mock()
         self.is_paired_mock = self._mock_is_paired()
         self.timer_mock = self._mock_timer()
 
@@ -192,7 +191,12 @@ class TestSettingsDownloader(MycroftUnitTestBase):
         self._check_api_not_called()
         self._check_timer_called()
 
-    def test_settings_not_changed(self):
+    @patch('mycroft.skills.settings.DeviceApi')
+    def test_settings_not_changed(self, mock_api):
+        api_instance = Mock()
+        api_instance.identity.uuid = '42'
+        mock_api.return_value = api_instance
+
         test_skill_settings = {
             'test_skill|99.99': {"test_setting": 'test_value'}
         }
@@ -204,7 +208,12 @@ class TestSettingsDownloader(MycroftUnitTestBase):
         self._check_timer_called()
         self._check_no_message_bus_events()
 
-    def test_settings_changed(self):
+    @patch('mycroft.skills.settings.DeviceApi')
+    def test_settings_changed(self, mock_api):
+        api_instance = Mock()
+        api_instance.identity.uuid = '42'
+        mock_api.return_value = api_instance
+
         local_skill_settings = {
             'test_skill|99.99': {"test_setting": 'test_value'}
         }
@@ -219,7 +228,12 @@ class TestSettingsDownloader(MycroftUnitTestBase):
         self._check_timer_called()
         self._check_message_bus_events(remote_skill_settings)
 
-    def test_download_failed(self):
+    @patch('mycroft.skills.settings.DeviceApi')
+    def test_download_failed(self, mock_api):
+        api_instance = Mock()
+        api_instance.identity.uuid = '42'
+        mock_api.return_value = api_instance
+
         self.downloader.api.get_skill_settings = Mock(side_effect=ValueError)
         pre_download_local_settings = {
             'test_skill|99.99': {"test_setting": 'test_value'}
@@ -241,7 +255,7 @@ class TestSettingsDownloader(MycroftUnitTestBase):
         )
 
     def _check_api_not_called(self):
-        self.assertListEqual([], self.downloader.api.method_calls)
+        self.assertEqual(self.downloader.api, None)
 
     def _check_timer_called(self):
         self.assertListEqual(
