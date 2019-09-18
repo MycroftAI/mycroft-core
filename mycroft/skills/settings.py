@@ -156,7 +156,7 @@ class SettingsMetaUploader:
         self.yaml_path = self.skill_directory.joinpath('settingsmeta.yaml')
         self.config = Configuration.get()
         self.settings_meta = {}
-        self.api = DeviceApi()
+        self.api = None
         self.upload_timer = None
 
         # Property placeholders
@@ -228,16 +228,20 @@ class SettingsMetaUploader:
         """
         synced = False
         if is_paired():
-            settings_meta_file_exists = (
-                self.json_path.is_file() or
-                self.yaml_path.is_file()
-            )
-            if settings_meta_file_exists:
-                self._load_settings_meta_file()
+            self.api = DeviceApi()
+            if self.api.identity.uuid:
+                settings_meta_file_exists = (
+                    self.json_path.is_file() or
+                    self.yaml_path.is_file()
+                )
+                if settings_meta_file_exists:
+                    self._load_settings_meta_file()
 
-            self._update_settings_meta()
-            LOG.debug('Uploading settings meta for ' + self.skill_gid)
-            synced = self._issue_api_call()
+                self._update_settings_meta()
+                LOG.debug('Uploading settings meta for ' + self.skill_gid)
+                synced = self._issue_api_call()
+            else:
+                LOG.debug('settingsmeta.json not uploaded - no identity')
         else:
             LOG.debug('settingsmeta.json not uploaded - device is not paired')
 

@@ -68,24 +68,38 @@ class TestSettingsMetaUploader(MycroftUnitTestBase):
         self._check_api_not_called()
         self._check_timer_called()
 
-    def test_no_settingsmeta(self):
+    @patch('mycroft.skills.settings.DeviceApi')
+    def test_no_settingsmeta(self, mock_api):
+        api_instance = Mock()
+        api_instance.identity.uuid = '42'
+        mock_api.return_value = api_instance
+
         self.uploader.upload()
         self._check_settingsmeta()
         self._check_api_call()
         self._check_timer_not_called()
 
-    def test_failed_upload(self):
+    @patch('mycroft.skills.settings.DeviceApi')
+    def test_failed_upload(self, mock_api):
         """The API call to upload the settingsmeta fails.
 
         This will cause a timer to be generated to retry the update.
         """
-        self.uploader.api.upload_skill_metadata = Mock(side_effect=ValueError)
+        api_instance = Mock()
+        api_instance.identity.uuid = '42'
+        api_instance.upload_skill_metadata = Mock(side_effect=ValueError)
+        mock_api.return_value = api_instance
         self.uploader.upload()
         self._check_settingsmeta()
         self._check_api_call()
         self._check_timer_called()
 
-    def test_json_settingsmeta(self):
+    @patch('mycroft.skills.settings.DeviceApi')
+    def test_json_settingsmeta(self, mock_api):
+        api_instance = Mock()
+        api_instance.identity.uuid = '42'
+        mock_api.return_value = api_instance
+
         json_path = str(self.temp_dir.joinpath('settingsmeta.json'))
         with open(json_path, 'w') as json_file:
             json.dump(self.skill_metadata, json_file)
@@ -95,7 +109,12 @@ class TestSettingsMetaUploader(MycroftUnitTestBase):
         self._check_api_call()
         self._check_timer_not_called()
 
-    def test_yaml_settingsmeta(self):
+    @patch('mycroft.skills.settings.DeviceApi')
+    def test_yaml_settingsmeta(self, mock_api):
+        api_instance = Mock()
+        api_instance.identity.uuid = '42'
+        mock_api.return_value = api_instance
+
         skill_metadata = (
             'skillMetadata:\n  sections:\n    - name: "Test Section"\n      '
             'fields:\n      - type: "label"\n        label: "Test Field"'
