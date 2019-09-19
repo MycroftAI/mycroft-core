@@ -1151,6 +1151,9 @@ class MycroftSkill:
         if self.settings != self._initial_settings:
             save_settings(self.root_dir, self.settings)
 
+        if self.settings_meta:
+            self.settings_meta.stop()
+
         # Clear skill from gui
         self.gui.clear()
 

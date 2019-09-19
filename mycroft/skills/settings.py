@@ -158,6 +158,7 @@ class SettingsMetaUploader:
         self.settings_meta = {}
         self.api = None
         self.upload_timer = None
+        self._stopped = None
 
         # Property placeholders
         self._msm = None
@@ -248,10 +249,17 @@ class SettingsMetaUploader:
         else:
             LOG.debug('settingsmeta.json not uploaded - device is not paired')
 
-        if not synced:
+        if not synced and not self._stopped:
             self.upload_timer = Timer(ONE_MINUTE, self.upload)
             self.upload_timer.daemon = True
             self.upload_timer.start()
+
+    def stop(self):
+        """ Stop upload attempts if Timer is running."""
+        if self.upload_timer:
+            self.upload_timer.cancel()
+        # Set stopped flag if upload is running when stop is called.
+        self._stopped = True
 
     def _load_settings_meta_file(self):
         """Read the contents of the settingsmeta file into memory."""
