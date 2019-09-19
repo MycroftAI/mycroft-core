@@ -120,7 +120,7 @@ class SkillManager(Thread):
             if skill is not None:
                 if not skill.is_local:
                     try:
-                        skill.install()
+                        self.msm.install(skill)
                     except Exception:
                         log_msg = 'Downloading priority skill: {} failed'
                         LOG.exception(log_msg.format(skill_name))
