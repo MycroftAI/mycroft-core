@@ -178,7 +178,7 @@ class SkillManager(Thread):
                 if skill_loader is not None and skill_loader.reload_needed():
                     skill_loader.reload()
                     reload_occured = True
-            except Exception as e:
+            except Exception:
                 LOG.exception('Unhandled exception occured while '
                               'reloading {}'.format(skill_dir))
 
@@ -337,7 +337,7 @@ class SkillManager(Thread):
                     break
                 try:
                     self._emit_converse_response(message, skill_loader)
-                except BaseException as e:
+                except Exception:
                     error_message = 'exception in converse method'
                     LOG.exception(error_message)
                     self._emit_converse_error(message, skill_id, error_message)
