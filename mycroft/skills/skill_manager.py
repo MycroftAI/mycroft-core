@@ -110,7 +110,7 @@ class SkillManager(Thread):
 
     def handle_paired(self, _):
         """Trigger upload of skills manifest after pairing."""
-        self.skill_updater.post_manifest()
+        self.skill_updater.post_manifest(reload_skills_manifest=True)
 
     def load_priority(self):
         skills = {skill.name: skill for skill in self.msm.all_skills}
@@ -184,7 +184,7 @@ class SkillManager(Thread):
 
         if reload_occured:
             # If a reload occured a skill gid may have changed.
-            self.skill_updater.post_manifest()
+            self.skill_updater.post_manifest(reload_skills_manifest=True)
 
     def _load_new_skills(self):
         """Handle load of skills installed since startup."""
