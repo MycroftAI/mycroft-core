@@ -138,6 +138,9 @@ class SkillManager(Thread):
         self._remove_git_locks()
         self._connected_event.wait()
         self._load_on_startup()
+
+        # Update sync backend and skills.
+        self.skill_updater.post_manifest(reload_skills_manifest=True)
         self.settings_downloader.download()
 
         # Scan the file folder that contains Skills.  If a Skill is updated,
