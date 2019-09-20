@@ -144,6 +144,7 @@ class SkillUpdater:
             quick (bool): Expedite the download by running with more threads?
         """
         LOG.info('Beginning skill update...')
+        self.msm._device_skill_state = None  # TODO: Proper msm method
         success = True
         if connected():
             self._load_installed_skills()
@@ -190,10 +191,14 @@ class SkillUpdater:
         except MsmException as e:
             LOG.error('Failed to update skills: {}'.format(repr(e)))
 
-    def post_manifest(self):
+    def post_manifest(self, reload_skills_manifest=False):
         """Post the manifest of the device's skills to the backend."""
         upload_allowed = self.config['skills'].get('upload_skill_manifest')
         if upload_allowed and is_paired():
+            if reload_skills_manifest:
+                # TODO: Handle inside msm
+                self.msm._device_skill_state = None
+
             try:
                 device_api = DeviceApi()
                 device_api.upload_skills_data(self.msm.device_skill_state)

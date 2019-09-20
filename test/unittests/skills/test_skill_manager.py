@@ -119,7 +119,7 @@ class TestSkillManager(MycroftUnitTestBase):
         self.msm_mock.all_skills = [skill]
         self.skill_manager.load_priority()
 
-        self.assertTrue(skill.install.called)
+        self.assertTrue(self.msm_mock.install.called)
         load_mock.assert_called_once_with(skill.path)
 
     def test_priority_skill_not_recognized(self):
@@ -255,7 +255,8 @@ class TestSkillManager(MycroftUnitTestBase):
         self.skill_updater_mock.next_download = 0
         self.skill_manager.handle_paired(None)
         updater = self.skill_manager.skill_updater
-        updater.post_manifest.assert_called_once_with()
+        updater.post_manifest.assert_called_once_with(
+            reload_skills_manifest=True)
 
     def test_deactivate_skill(self):
         message = Mock()

@@ -14,7 +14,7 @@
 #
 import os
 import time
-from copy import copy
+from copy import copy, deepcopy
 
 import requests
 from requests import HTTPError, RequestException
@@ -392,17 +392,18 @@ class DeviceApi(Api):
         if not isinstance(data, dict):
             raise ValueError('data must be of type dict')
 
+        _data = deepcopy(data)  # Make sure the input data isn't modified
         # Strip the skills.json down to the bare essentials
         to_send = {}
-        if 'blacklist' in data:
-            to_send['blacklist'] = data['blacklist']
+        if 'blacklist' in _data:
+            to_send['blacklist'] = _data['blacklist']
         else:
             LOG.warning('skills manifest lacks blacklist entry')
             to_send['blacklist'] = []
 
         # Make sure skills doesn't contain duplicates (keep only last)
-        if 'skills' in data:
-            skills = {s['name']: s for s in data['skills']}
+        if 'skills' in _data:
+            skills = {s['name']: s for s in _data['skills']}
             to_send['skills'] = [skills[key] for key in skills]
         else:
             LOG.warning('skills manifest lacks skills entry')

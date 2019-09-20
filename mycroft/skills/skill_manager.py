@@ -110,7 +110,7 @@ class SkillManager(Thread):
 
     def handle_paired(self, _):
         """Trigger upload of skills manifest after pairing."""
-        self.skill_updater.post_manifest()
+        self.skill_updater.post_manifest(reload_skills_manifest=True)
 
     def load_priority(self):
         skills = {skill.name: skill for skill in self.msm.all_skills}
@@ -120,7 +120,7 @@ class SkillManager(Thread):
             if skill is not None:
                 if not skill.is_local:
                     try:
-                        skill.install()
+                        self.msm.install(skill)
                     except Exception:
                         log_msg = 'Downloading priority skill: {} failed'
                         LOG.exception(log_msg.format(skill_name))
@@ -138,6 +138,9 @@ class SkillManager(Thread):
         self._remove_git_locks()
         self._connected_event.wait()
         self._load_on_startup()
+
+        # Update sync backend and skills.
+        self.skill_updater.post_manifest(reload_skills_manifest=True)
         self.settings_downloader.download()
 
         # Scan the file folder that contains Skills.  If a Skill is updated,
@@ -171,14 +174,20 @@ class SkillManager(Thread):
 
     def _reload_modified_skills(self):
         """Handle reload of recently changed skill(s)"""
+        reload_occured = False
         for skill_dir in self._get_skill_directories():
             try:
                 skill_loader = self.skill_loaders.get(skill_dir)
                 if skill_loader is not None and skill_loader.reload_needed():
                     skill_loader.reload()
-            except Exception as e:
+                    reload_occured = True
+            except Exception:
                 LOG.exception('Unhandled exception occured while '
                               'reloading {}'.format(skill_dir))
+
+        if reload_occured:
+            # If a reload occured a skill gid may have changed.
+            self.skill_updater.post_manifest(reload_skills_manifest=True)
 
     def _load_new_skills(self):
         """Handle load of skills installed since startup."""
@@ -331,7 +340,7 @@ class SkillManager(Thread):
                     break
                 try:
                     self._emit_converse_response(message, skill_loader)
-                except BaseException as e:
+                except Exception:
                     error_message = 'exception in converse method'
                     LOG.exception(error_message)
                     self._emit_converse_error(message, skill_id, error_message)
