@@ -262,7 +262,8 @@ class MycroftSkill:
         if its remote settings were among those changed
         """
         if self.settings_meta is None or self.settings_meta.skill_gid is None:
-            LOG.error('The skill_gid was not set when this skill was loaded!')
+            LOG.error('The skill_gid was not set when '
+                      '{} was loaded!'.format(self.name))
         else:
             remote_settings = message.data.get(self.settings_meta.skill_gid)
             if remote_settings is not None:

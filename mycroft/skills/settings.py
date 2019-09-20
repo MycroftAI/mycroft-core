@@ -298,7 +298,8 @@ class SettingsMetaUploader:
         try:
             self.api.upload_skill_metadata(self.settings_meta)
         except Exception:
-            LOG.exception('Failed to upload skill settings meta')
+            LOG.exception('Failed to upload skill settings meta '
+                          'for {}'.format(self.skill_gid))
             success = False
         else:
             success = True
