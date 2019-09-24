@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 import unittest
-import mock
+from unittest.mock import patch
 
 import os
 from speech_recognition import WavFile
@@ -27,7 +27,7 @@ DATA_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "data")
 
 class PocketSphinxRecognizerTest(unittest.TestCase):
     def setUp(self):
-        with mock.patch('mycroft.configuration.Configuration.get') as \
+        with patch('mycroft.configuration.Configuration.get') as \
                 mock_config_get:
             conf = base_config()
             conf['hotwords']['hey mycroft']['module'] = 'pocketsphinx'
@@ -50,7 +50,7 @@ class PocketSphinxRecognizerTest(unittest.TestCase):
 
 
 class LocalRecognizerInitTest(unittest.TestCase):
-    @mock.patch.object(Configuration, 'get')
+    @patch.object(Configuration, 'get')
     def testRecognizer(self, mock_config_get):
         test_config = base_config()
         mock_config_get.return_value = test_config

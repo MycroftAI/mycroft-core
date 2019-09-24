@@ -35,14 +35,15 @@ class MessageBusEventHandler(WebSocketHandler):
         self.emitter.on(event_name, handler)
 
     def on_message(self, message):
-        # LOG.debug(message)
+        LOG.debug(message)
         try:
             deserialized_message = Message.deserialize(message)
         except Exception:
             return
 
         try:
-            self.emitter.emit(deserialized_message.type, deserialized_message)
+            self.emitter.emit(deserialized_message.msg_type,
+                              deserialized_message)
         except Exception as e:
             LOG.exception(e)
             traceback.print_exc(file=sys.stdout)

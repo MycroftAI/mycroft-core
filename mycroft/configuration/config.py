@@ -230,15 +230,14 @@ class Configuration:
             return base
 
     @staticmethod
-    def init(ws):
-        """
-            Setup websocket handlers to update config.
+    def set_config_update_handlers(bus):
+        """Setup websocket handlers to update config.
 
-            Args:
-                ws:     Websocket instance
+        Args:
+            bus: Message bus client instance
         """
-        ws.on("configuration.updated", Configuration.updated)
-        ws.on("configuration.patch", Configuration.patch)
+        bus.on("configuration.updated", Configuration.updated)
+        bus.on("configuration.patch", Configuration.patch)
 
     @staticmethod
     def updated(message):

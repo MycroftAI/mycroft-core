@@ -255,7 +255,6 @@ If unsure answer yes.
     sleep 5
 fi
 
-
 function os_is() {
     [[ $(grep "^ID=" /etc/os-release | awk -F'=' '/^ID/ {print $2}' | sed 's/\"//g') == $1 ]]
 }
@@ -296,11 +295,21 @@ function install_deps() {
         $SUDO yum install -y epel-release-latest-7.noarch.rpm
         rm epel-release-latest-7.noarch.rpm
         redhat_common_install
-    elif os_is_like debian || os_is debian ; then
-        # Debian / Ubuntu
-        echo "$GREEN Installing packages for Debian/Ubuntu...$RESET"
-        $SUDO apt-get install -y git python3 python3-dev python3-setuptools libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config libjpeg-dev libfann-dev build-essential jq
-    elif os_is_like fedora ; then
+    elif os_is_like debian || os_is debian || os_is_like ubuntu || os_is ubuntu || os_is linuxmint; then
+        # Debian / Ubuntu / Mint
+        echo "$GREEN Installing packages for Debian/Ubuntu/Mint...$RESET"
+        if dpkg -V libjack-jackd2-0 > /dev/null 2>&1 && [[ -z $IS_TRAVIS ]] ; then
+            echo "
+We have detected that your computer has the libjack-jackd2-0 package installed.
+Mycroft requires a conflicting package, and will likely uninstall this package.
+On some systems, this can cause other programs to be marked for removal.
+Please review the following package changes carefully."
+            read -p "Press enter to continue"
+            $SUDO apt-get install git python3 python3-dev python3-setuptools libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config libjpeg-dev libfann-dev build-essential jq
+        else
+            $SUDO apt-get install -y git python3 python3-dev python3-setuptools libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config libjpeg-dev libfann-dev build-essential jq
+        fi
+    elif os_is_like fedora || os_is fedora; then
         echo "$GREEN Installing packages for Fedora...$RESET"
         # Fedora
         $SUDO dnf install -y git python3 python3-devel python3-pip python3-setuptools python3-virtualenv pygobject3-devel libtool libffi-devel openssl-devel autoconf bison swig glib2-devel portaudio-devel mpg123 mpg123-plugins-pulseaudio screen curl pkgconfig libicu-devel automake libjpeg-turbo-devel fann-devel gcc-c++ redhat-rpm-config jq
@@ -319,6 +328,13 @@ function install_deps() {
     	echo
         echo -e "${YELLOW}Could not find package manager
 ${YELLOW}Make sure to manually install:$BLUE git python3 python-setuptools python-venv pygobject libtool libffi libjpg openssl autoconf bison swig glib2.0 portaudio19 mpg123 flac curl fann g++ jq\n$RESET"
+
+        echo 'Warning: Failed to install all dependencies. Continue? y/N'
+        read -n1 continue
+        if [[ $continue != 'y' ]] ; then
+            exit 1
+        fi
+
     fi
 }
 

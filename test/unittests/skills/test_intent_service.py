@@ -22,7 +22,7 @@ class MockEmitter(object):
         self.reset()
 
     def emit(self, message):
-        self.types.append(message.type)
+        self.types.append(message.msg_type)
         self.results.append(message.data)
 
     def get_types(self):

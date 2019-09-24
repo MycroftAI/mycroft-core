@@ -15,7 +15,7 @@
 import audioop
 from time import sleep, time as get_time
 
-import collections
+from collections import deque
 import datetime
 import json
 import os
@@ -79,7 +79,7 @@ class MutableStream:
             Returns:
                 Data read from device
         """
-        frames = collections.deque()
+        frames = deque()
         remaining = size
         while remaining > 0:
             # If muted during read return empty buffer. This ensures no
@@ -200,12 +200,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.energy_ratio = listener_config.get('energy_ratio')
         # check the config for the flag to save wake words.
 
-        if 'record_utterances' in listener_config:
-            # TODO: 19.08 remove this backwards compatibility
-            self.save_utterances = listener_config.get('record_utterances')
-        else:
-            self.save_utterances = listener_config.get('save_utterances',
-                                                       False)
+        self.save_utterances = listener_config.get('save_utterances', False)
 
         self.save_wake_words = listener_config.get('record_wake_words')
         self.saved_wake_words_dir = join(gettempdir(), 'mycroft_wake_words')
@@ -234,7 +229,13 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
     def calc_energy(sound_chunk, sample_width):
         return audioop.rms(sound_chunk, sample_width)
 
-    def _record_phrase(self, source, sec_per_buffer, stream=None):
+    def _record_phrase(
+        self,
+        source,
+        sec_per_buffer,
+        stream=None,
+        ww_frames=None
+    ):
         """Record an entire spoken phrase.
 
         Essentially, this code waits for a period of silence and then returns
@@ -246,7 +247,9 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             sec_per_buffer (float):  Fractional number of seconds in each chunk
             stream (AudioStreamHandler): Stream target that will receive chunks
                                          of the utterance audio while it is
-                                         being recorded
+                                         being recorded.
+            ww_frames (deque):  Frames of audio data from the last part of wake
+                                word detection.
 
         Returns:
             bytearray: complete audio buffer recorded, including any
@@ -290,7 +293,10 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         phrase_complete = False
         while num_chunks < max_chunks and not phrase_complete:
-            chunk = self.record_sound_chunk(source)
+            if ww_frames:
+                chunk = ww_frames.popleft()
+            else:
+                chunk = self.record_sound_chunk(source)
             byte_data += chunk
             num_chunks += 1
 
@@ -311,7 +317,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 with open(self.mic_level_file, 'w') as f:
                     f.write("Energy:  cur=" + str(energy) + " thresh=" +
                             str(self.energy_threshold))
-                f.close()
 
             was_loud_enough = num_loud_chunks > min_loud_chunks
 
@@ -421,10 +426,15 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         energy_avg_samples = int(5 / sec_per_buffer)  # avg over last 5 secs
         counter = 0
 
+        # These are frames immediately after wake word is detected
+        # that we want to keep to send to STT
+        ww_frames = deque(maxlen=7)
+
         while not said_wake_word and not self._stop_signaled:
             if self._skip_wake_word():
                 break
             chunk = self.record_sound_chunk(source)
+            ww_frames.append(chunk)
 
             energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
             if energy < self.energy_threshold * self.multiplier:
@@ -453,7 +463,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 with open(self.mic_level_file, 'w') as f:
                     f.write("Energy:  cur=" + str(energy) + " thresh=" +
                             str(self.energy_threshold))
-                f.close()
             counter += 1
 
             # At first, the buffer is empty and must fill up.  After that
@@ -486,9 +495,10 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                             os.mkdir(self.saved_wake_words_dir)
                         module = self.wake_word_recognizer.__class__.__name__
 
-                        fn = join(self.saved_wake_words_dir,
-                                  '_'.join([str(mtd[k]) for k in sorted(mtd)])
-                                  + '.wav')
+                        fn = join(
+                            self.saved_wake_words_dir,
+                            '_'.join(str(mtd[k]) for k in sorted(mtd)) + '.wav'
+                        )
                         with open(fn, 'wb') as f:
                             f.write(audio.get_wav_data())
 
@@ -500,6 +510,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                                   self._create_audio_data(byte_data, source),
                                   mtd or self._compile_metadata()]
                         ).start()
+        return ww_frames
 
     @staticmethod
     def _create_audio_data(raw_data, source):
@@ -540,13 +551,11 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.adjust_for_ambient_noise(source, 1.0)
 
         LOG.debug("Waiting for wake word...")
-        self._wait_until_wake_word(source, sec_per_buffer)
+        ww_frames = self._wait_until_wake_word(source, sec_per_buffer)
         if self._stop_signaled:
             return
 
         LOG.debug("Recording...")
-        emitter.emit("recognizer_loop:record_begin")
-
         # If enabled, play a wave file with a short sound to audibly
         # indicate recording has begun.
         if self.config.get('confirm_listening'):
@@ -556,8 +565,19 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 source.mute()
                 play_wav(audio_file).wait()
                 source.unmute()
+                # Clear frames from wakeword detctions since they're
+                # irrelevant after mute - play wav - unmute sequence
+                ww_frames = None
 
-        frame_data = self._record_phrase(source, sec_per_buffer, stream)
+        # Notify system of recording start
+        emitter.emit("recognizer_loop:record_begin")
+
+        frame_data = self._record_phrase(
+            source,
+            sec_per_buffer,
+            stream,
+            ww_frames
+        )
         audio_data = self._create_audio_data(frame_data, source)
         emitter.emit("recognizer_loop:record_end")
         if self.save_utterances:

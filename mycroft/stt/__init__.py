@@ -20,7 +20,7 @@ from speech_recognition import Recognizer
 from queue import Queue
 from threading import Thread
 
-from mycroft.api import STTApi
+from mycroft.api import STTApi, HTTPError
 from mycroft.configuration import Configuration
 from mycroft.util.log import LOG
 
@@ -118,11 +118,33 @@ class IBMSTT(BasicSTT):
                                              self.password, self.lang)
 
 
+def requires_pairing(func):
+    """Decorator kicking of pairing sequence if client is not allowed access.
+
+    Checks the http status of the response if an HTTP error is recieved. If
+    a 401 status is detected returns "pair my device" to trigger the pairing
+    skill.
+    """
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except HTTPError as e:
+            if e.response.status_code == 401:
+                LOG.warning('Access Denied at mycroft.ai')
+                # phrase to start the pairing process
+                return 'pair my device'
+            else:
+                raise
+    return wrapper
+
+
 class MycroftSTT(STT):
+    """Default mycroft STT."""
     def __init__(self):
         super(MycroftSTT, self).__init__()
         self.api = STTApi("stt")
 
+    @requires_pairing
     def execute(self, audio, language=None):
         self.lang = language or self.lang
         try:
@@ -138,6 +160,7 @@ class MycroftDeepSpeechSTT(STT):
         super(MycroftDeepSpeechSTT, self).__init__()
         self.api = STTApi("deepspeech")
 
+    @requires_pairing
     def execute(self, audio, language=None):
         language = language or self.lang
         if not language.startswith("en"):

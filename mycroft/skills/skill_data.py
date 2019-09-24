@@ -13,13 +13,15 @@
 # limitations under the License.
 #
 
-"""Module containing methods needed to load skill
-data such as dialogs, intents and regular expressions.
+"""Module containing methods needed to load skill data such as intents and
+regular expressions.
 """
 
 from os import walk
 from os.path import splitext, join
 import re
+import csv
+import collections
 
 from mycroft.messagebus.message import Message
 from mycroft.util.format import expand_options
@@ -47,64 +49,49 @@ def read_vocab_file(path):
     return vocab
 
 
-def load_vocab_from_file(path, vocab_type, bus):
-    """Load Mycroft vocabulary from file
-    The vocab is sent to the intent handler using the message bus
-
-    Args:
-        path:           path to vocabulary file (*.voc)
-        vocab_type:     keyword name
-        bus:            Mycroft messagebus connection
-        skill_id(str):  skill id
-    """
-    if path.endswith('.voc'):
-        for parts in read_vocab_file(path):
-            entity = parts[0]
-            bus.emit(Message("register_vocab", {
-                'start': entity, 'end': vocab_type
-            }))
-            for alias in parts[1:]:
-                bus.emit(Message("register_vocab", {
-                    'start': alias, 'end': vocab_type, 'alias_of': entity
-                }))
-
-
-def load_regex_from_file(path, bus, skill_id):
+def load_regex_from_file(path, skill_id):
     """Load regex from file
     The regex is sent to the intent handler using the message bus
 
     Args:
         path:       path to vocabulary file (*.voc)
-        bus:        Mycroft messagebus connection
+        skill_id:   skill_id to the regex is tied to
     """
+    regexes = []
     if path.endswith('.rx'):
         with open(path, 'r', encoding='utf8') as reg_file:
             for line in reg_file.readlines():
                 if line.startswith("#"):
                     continue
-                re.compile(munge_regex(line.strip(), skill_id))
-                bus.emit(
-                    Message("register_vocab",
-                            {'regex': munge_regex(line.strip(), skill_id)}))
+                regex = munge_regex(line.strip(), skill_id)
+                # Raise error if regex can't be compiled
+                re.compile(regex)
+                regexes.append(regex)
+
+    return regexes
 
 
-def load_vocabulary(basedir, bus, skill_id):
+def load_vocabulary(basedir, skill_id):
     """Load vocabulary from all files in the specified directory.
 
-    Args:
+    Arguments:
         basedir (str): path of directory to load from (will recurse)
-        bus (messagebus emitter): messagebus instance used to send the vocab to
-                                  the intent service
         skill_id: skill the data belongs to
+    Returns:
+        dict with intent_type as keys and list of list of lists as value.
     """
+    vocabs = {}
     for path, _, files in walk(basedir):
         for f in files:
             if f.endswith(".voc"):
                 vocab_type = to_alnum(skill_id) + splitext(f)[0]
-                load_vocab_from_file(join(path, f), vocab_type, bus)
+                vocs = read_vocab_file(join(path, f))
+                if vocs:
+                    vocabs[vocab_type] = vocs
+    return vocabs
 
 
-def load_regex(basedir, bus, skill_id):
+def load_regex(basedir, skill_id):
     """Load regex from all files in the specified directory.
 
     Args:
@@ -113,10 +100,12 @@ def load_regex(basedir, bus, skill_id):
                                   the intent service
         skill_id (str): skill identifier
     """
+    regexes = []
     for path, _, files in walk(basedir):
         for f in files:
             if f.endswith(".rx"):
-                load_regex_from_file(join(path, f), bus, skill_id)
+                regexes += load_regex_from_file(join(path, f), skill_id)
+    return regexes
 
 
 def to_alnum(skill_id):
@@ -160,7 +149,7 @@ def munge_intent_parser(intent_parser, name, skill_id):
         skill_id: (int) skill identifier
     """
     # Munge parser name
-    if str(skill_id) + ':' not in name:
+    if not name.startswith(str(skill_id) + ':'):
         intent_parser.name = str(skill_id) + ':' + name
     else:
         intent_parser.name = name
@@ -170,7 +159,7 @@ def munge_intent_parser(intent_parser, name, skill_id):
     # Munge required keyword
     reqs = []
     for i in intent_parser.requires:
-        if skill_id not in i[0]:
+        if not i[0].startswith(skill_id):
             kw = (skill_id + i[0], skill_id + i[0])
             reqs.append(kw)
         else:
@@ -180,7 +169,7 @@ def munge_intent_parser(intent_parser, name, skill_id):
     # Munge optional keywords
     opts = []
     for i in intent_parser.optional:
-        if skill_id not in i[0]:
+        if not i[0].startswith(skill_id):
             kw = (skill_id + i[0], skill_id + i[0])
             opts.append(kw)
         else:
@@ -193,3 +182,49 @@ def munge_intent_parser(intent_parser, name, skill_id):
         element = [skill_id + e.replace(skill_id, '') for e in i]
         at_least_one.append(tuple(element))
     intent_parser.at_least_one = at_least_one
+
+
+def read_value_file(filename, delim):
+    """Read value file.
+
+    The value file is a simple csv structure with a key and value.
+
+    Arguments:
+        filename (str): file to read
+        delim (str): csv delimiter
+
+    Returns:
+        OrderedDict with results.
+    """
+    result = collections.OrderedDict()
+
+    if filename:
+        with open(filename) as f:
+            reader = csv.reader(f, delimiter=delim)
+            for row in reader:
+                # skip blank or comment lines
+                if not row or row[0].startswith("#"):
+                    continue
+                if len(row) != 2:
+                    continue
+
+                result[row[0]] = row[1]
+    return result
+
+
+def read_translated_file(filename, data):
+    """Read a file inserting data.
+
+    Arguments:
+        filename (str): file to read
+        data (dict): dictionary with data to insert into file
+
+    Returns:
+        list of lines.
+    """
+    if filename:
+        with open(filename) as f:
+            text = f.read().replace('{{', '{').replace('}}', '}')
+            return text.format(**data or {}).rstrip('\n').split('\n')
+    else:
+        return None

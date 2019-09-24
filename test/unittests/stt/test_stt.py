@@ -14,7 +14,7 @@
 #
 import unittest
 
-import mock
+from unittest.mock import MagicMock, patch
 
 import mycroft.stt
 from mycroft.configuration import Configuration
@@ -23,9 +23,9 @@ from test.util import base_config
 
 
 class TestSTT(unittest.TestCase):
-    @mock.patch.object(Configuration, 'get')
+    @patch.object(Configuration, 'get')
     def test_factory(self, mock_get):
-        mycroft.stt.STTApi = mock.MagicMock()
+        mycroft.stt.STTApi = MagicMock()
         config = base_config()
         config.merge(
             {
@@ -72,9 +72,9 @@ class TestSTT(unittest.TestCase):
         stt = mycroft.stt.STTFactory.create()
         self.assertEquals(type(stt), mycroft.stt.WITSTT)
 
-    @mock.patch.object(Configuration, 'get')
+    @patch.object(Configuration, 'get')
     def test_stt(self, mock_get):
-        mycroft.stt.STTApi = mock.MagicMock()
+        mycroft.stt.STTApi = MagicMock()
         config = base_config()
         config.merge(
             {
@@ -103,9 +103,9 @@ class TestSTT(unittest.TestCase):
         stt = TestSTT()
         self.assertEqual(stt.lang, 'sv')
 
-    @mock.patch.object(Configuration, 'get')
+    @patch.object(Configuration, 'get')
     def test_mycroft_stt(self, mock_get):
-        mycroft.stt.STTApi = mock.MagicMock()
+        mycroft.stt.STTApi = MagicMock()
         config = base_config()
         config.merge(
             {
@@ -118,13 +118,13 @@ class TestSTT(unittest.TestCase):
         mock_get.return_value = config
 
         stt = mycroft.stt.MycroftSTT()
-        audio = mock.MagicMock()
+        audio = MagicMock()
         stt.execute(audio, 'en-us')
         self.assertTrue(mycroft.stt.STTApi.called)
 
-    @mock.patch.object(Configuration, 'get')
+    @patch.object(Configuration, 'get')
     def test_google_stt(self, mock_get):
-        mycroft.stt.Recognizer = mock.MagicMock
+        mycroft.stt.Recognizer = MagicMock
         config = base_config()
         config.merge(
             {
@@ -136,14 +136,14 @@ class TestSTT(unittest.TestCase):
             })
         mock_get.return_value = config
 
-        audio = mock.MagicMock()
+        audio = MagicMock()
         stt = mycroft.stt.GoogleSTT()
         stt.execute(audio)
         self.assertTrue(stt.recognizer.recognize_google.called)
 
-    @mock.patch.object(Configuration, 'get')
+    @patch.object(Configuration, 'get')
     def test_google_cloud_stt(self, mock_get):
-        mycroft.stt.Recognizer = mock.MagicMock
+        mycroft.stt.Recognizer = MagicMock
         config = base_config()
         config.merge(
             {
@@ -159,14 +159,14 @@ class TestSTT(unittest.TestCase):
             })
         mock_get.return_value = config
 
-        audio = mock.MagicMock()
+        audio = MagicMock()
         stt = mycroft.stt.GoogleCloudSTT()
         stt.execute(audio)
         self.assertTrue(stt.recognizer.recognize_google_cloud.called)
 
-    @mock.patch.object(Configuration, 'get')
+    @patch.object(Configuration, 'get')
     def test_ibm_stt(self, mock_get):
-        mycroft.stt.Recognizer = mock.MagicMock
+        mycroft.stt.Recognizer = MagicMock
         config = base_config()
         config.merge(
             {
@@ -180,14 +180,14 @@ class TestSTT(unittest.TestCase):
             })
         mock_get.return_value = config
 
-        audio = mock.MagicMock()
+        audio = MagicMock()
         stt = mycroft.stt.IBMSTT()
         stt.execute(audio)
         self.assertTrue(stt.recognizer.recognize_ibm.called)
 
-    @mock.patch.object(Configuration, 'get')
+    @patch.object(Configuration, 'get')
     def test_wit_stt(self, mock_get):
-        mycroft.stt.Recognizer = mock.MagicMock
+        mycroft.stt.Recognizer = MagicMock
         config = base_config()
         config.merge(
             {
@@ -199,15 +199,15 @@ class TestSTT(unittest.TestCase):
             })
         mock_get.return_value = config
 
-        audio = mock.MagicMock()
+        audio = MagicMock()
         stt = mycroft.stt.WITSTT()
         stt.execute(audio)
         self.assertTrue(stt.recognizer.recognize_wit.called)
 
-    @mock.patch('mycroft.stt.post')
-    @mock.patch.object(Configuration, 'get')
+    @patch('mycroft.stt.post')
+    @patch.object(Configuration, 'get')
     def test_kaldi_stt(self, mock_get, mock_post):
-        mycroft.stt.Recognizer = mock.MagicMock
+        mycroft.stt.Recognizer = MagicMock
         config = base_config()
         config.merge(
             {
@@ -219,19 +219,19 @@ class TestSTT(unittest.TestCase):
             })
         mock_get.return_value = config
 
-        kaldiResponse = mock.MagicMock()
+        kaldiResponse = MagicMock()
         kaldiResponse.json.return_value = {
                 'hypotheses': [{'utterance': '     [noise]     text'},
                                {'utterance': '     asdf'}]
         }
         mock_post.return_value = kaldiResponse
-        audio = mock.MagicMock()
+        audio = MagicMock()
         stt = mycroft.stt.KaldiSTT()
         self.assertEquals(stt.execute(audio), 'text')
 
-    @mock.patch.object(Configuration, 'get')
+    @patch.object(Configuration, 'get')
     def test_bing_stt(self, mock_get):
-        mycroft.stt.Recognizer = mock.MagicMock
+        mycroft.stt.Recognizer = MagicMock
         config = base_config()
         config.merge(
             {
@@ -243,14 +243,14 @@ class TestSTT(unittest.TestCase):
             })
         mock_get.return_value = config
 
-        audio = mock.MagicMock()
+        audio = MagicMock()
         stt = mycroft.stt.BingSTT()
         stt.execute(audio)
         self.assertTrue(stt.recognizer.recognize_bing.called)
 
-    @mock.patch.object(Configuration, 'get')
+    @patch.object(Configuration, 'get')
     def test_houndify_stt(self, mock_get):
-        mycroft.stt.Recognizer = mock.MagicMock
+        mycroft.stt.Recognizer = MagicMock
         config = base_config()
         config.merge(
             {
@@ -264,7 +264,7 @@ class TestSTT(unittest.TestCase):
             })
         mock_get.return_value = config
 
-        audio = mock.MagicMock()
+        audio = MagicMock()
         stt = mycroft.stt.HoundifySTT()
         stt.execute(audio)
         self.assertTrue(stt.recognizer.recognize_houndify.called)

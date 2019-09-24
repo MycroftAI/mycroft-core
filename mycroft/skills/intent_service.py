@@ -19,12 +19,12 @@ from adapt.intent import IntentBuilder
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
-from mycroft.skills.core import open_intent_envelope
 from mycroft.util.lang import set_active_lang
 from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
 from mycroft.metrics import report_timing, Stopwatch
 from mycroft.skills.padatious_service import PadatiousService
+from .intent_service_interface import open_intent_envelope
 
 
 class AdaptIntent(IntentBuilder):

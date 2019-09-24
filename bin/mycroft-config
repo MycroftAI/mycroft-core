@@ -1,0 +1,244 @@
+#!/usr/bin/env bash
+
+# Copyright 2019 Mycroft AI Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+SOURCE="${BASH_SOURCE[0]}"
+cd -P "$( dirname "$SOURCE" )"
+DIR="$( pwd )"
+script=${0}
+script=${script##*/}
+
+function help() {
+    echo "${script}:  Mycroft configuration manager"
+    echo "usage: ${script} [COMMAND] [params]"
+    echo
+    echo "COMMANDs:"
+    echo "  edit (system|user)                  edit and validate config file"
+    echo "  reload                              instruct services to reload config"
+    echo "  show (default|remote|system|user)   display the specified setting file"
+    echo "  set <var>                           set the variable (under USER)"
+    echo "  get [var]                           display a particular variable"
+    echo "                                      or all if no 'var' specified"
+    echo "Note: Use jq format for specifying <var>"
+    echo
+    echo "Examples:"
+    echo "  ${script} edit user"
+    echo "  sudo ${script} edit system"
+    echo "  ${script} show remote"
+    echo "  ${script} get"
+    echo "  ${script} get enclosure.platform"
+    echo "  ${script} set test.subvalue \"foo\" "
+
+    exit 1
+}
+
+################################################################
+# Setup stuff based on the environment
+
+VIEWER="nano --syntax=json --view"
+if [ -z "$EDITOR" ] ; then
+    if [ $( which sensible-editor ) ] ; then
+        EDITOR="sensible-editor"
+    else
+        EDITOR="nano --syntax=json --tempfile"
+    fi
+fi
+
+if [ -z "$TEMP" ] ; then
+    TEMP="/tmp"
+fi
+
+function found_exe() {
+    hash "$1" 2>/dev/null
+}
+
+if found_exe tput ; then
+    GREEN="$(tput setaf 2)"
+    BLUE="$(tput setaf 4)"
+    CYAN="$(tput setaf 6)"
+    YELLOW="$(tput setaf 3)"
+    RESET="$(tput sgr0)"
+    HIGHLIGHT=${YELLOW}
+fi
+
+################################################################
+# Utilities
+
+function validate_config_file() {
+    if [ ! -f "$1" ] ; then
+        # A missing config file is valid
+        return 0
+    fi
+
+    echo -n ${BLUE}
+
+    # Remove any comments (lines starting with # or //) found in the file and
+    # Use jq to validate and output errors
+    sed 's/^\s*[#\/].*$//g' "$1" | sed '/^$/d' | jq -e "." > /dev/null
+    result=$?
+
+    echo -n ${RESET}
+
+    #xxx echo "RESULT=$result for $1"
+    return $result
+}
+
+_conf_file="~/.mycroft/mycroft.conf"
+function name_to_path() {
+    case ${1} in
+        "system")     _conf_file="/etc/mycroft/mycroft.conf" ;;
+        "user")       _conf_file=$(readlink -f ~/.mycroft/mycroft.conf) ;;
+        "default")    _conf_file="$DIR/../mycroft/configuration/mycroft.conf" ;;
+        "remote")     _conf_file="/var/tmp/mycroft_web_cache.json" ;;
+
+        *)
+            echo "ERROR: Unknown name '${1}'."
+            echo "       Must be one of: default, remote, system, or user"
+            exit 1
+    esac
+}
+
+################################################################
+
+function edit_config() {
+    name_to_path $1
+    validate_config_file $_conf_file
+    rc=$?
+    if [ $rc -ne 0 ] ; then
+        echo "${YELLOW}WARNING: ${RESET}Configuration file did not pass validation before edits."
+        read -p "Review errors above and press ENTER to continue with editing."
+    fi
+
+    if [ -f "${_conf_file}" ] ; then
+        cp "${_conf_file}" "${TEMP}/mycroft.json"
+    else
+        echo "{" > "${TEMP}/mycroft.json"
+        echo "}" >> "${TEMP}/mycroft.json"
+    fi
+
+    while [ 1 ] ; do
+        case $1 in
+        system | user)
+            # Allow user to edit
+            $EDITOR $TEMP/mycroft.json
+            ;;
+        default | remote)
+            # View-only
+            echo "The default config shouldn't be changed, opening in View mode"
+            sleep 2
+            $VIEWER $TEMP/mycroft.json
+            ;;
+        esac
+
+        cmp --quiet "${_conf_file}" "${TEMP}/mycroft.json"
+        rc=$?
+        if [ $rc -eq 0 ] ; then
+            echo "Configuration unchanged."
+            break
+        fi
+
+        # file was changed, validate changes
+        validate_config_file $TEMP/mycroft.json
+        if [ $? -ne 0 ] ; then
+            echo "${YELLOW}WARNING: ${RESET}Configuration file does not pass validation, see errors above."
+            echo "Press X to abandon changes, S to force save, any other key to edit again."
+            read -N1 -s key
+        else
+            key="S"
+        fi
+
+        case $key in
+        [Ss])
+            echo "Saving..."
+            mv $TEMP/mycroft.json $_conf_file
+            signal_reload_config
+            break
+            ;;
+        [Xx])
+            # abandoning
+            break
+            ;;
+        esac
+
+    done
+}
+
+function signal_reload_config() {
+    # Enter the Mycroft venv
+    source "$DIR/../venv-activate.sh" -q
+
+    # Post a messagebus notification to reload the config file
+    output=$(python -m mycroft.messagebus.send "configuration.updated"  "{}")
+}
+
+function show_config() {
+    name_to_path $1
+
+    # Use jq to display formatted nicely (after stripping out comments)
+    sed 's/^\s*[#\/].*$//g' "${_conf_file}" | sed '/^$/d' | jq "."
+}
+
+function get_config() {
+    value=$1
+    if [[ ! $value =~ ^\..* ]] ; then
+        # Add the leading period if not included
+        value=".${value}"
+    fi
+
+    # Load all the configuration(s)
+    json_config=$( source "$DIR/../venv-activate.sh" -q && python -c "import json; from mycroft.configuration import Configuration; print(json.dumps(Configuration.get()))" )
+
+    # Read the given variable from the mix
+    echo ${json_config} | jq -r "${value}"
+}
+
+function set_config() {
+    # Set all overrides under the user configuration
+    value=$1
+    if [[ ! $value =~ ^\..* ]] ; then
+        # Add the leading period if not included
+        value=".${value}"
+    fi
+
+    jq "${value} = \"$2\"" ~/.mycroft/mycroft.conf > "${TEMP}/~mycroft.conf"
+    if [ $? -eq 0 ] ; then
+        # Successful update, replace the config file
+        mv "${TEMP}/~mycroft.conf" ~/.mycroft/mycroft.conf
+        signal_reload_config
+    fi
+}
+
+_opt=$1
+case ${_opt} in
+    "edit")
+        edit_config $2
+        ;;
+    "reload")
+        signal_reload_config
+        ;;
+    "show")
+        show_config $2
+        ;;
+    "get")
+        get_config $2
+        ;;
+    "set")
+        set_config "$2" "$3"
+        ;;
+
+    *)
+        help
+        ;;
+esac
