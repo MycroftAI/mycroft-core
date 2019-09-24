@@ -532,8 +532,8 @@ def create_echo_function(name, whitelist=None):
                 # Respond to requests to adjust the logger settings
                 lvl = msg["data"].get("level", "").upper()
                 if lvl in ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]:
-                    LOG.level = lvl
-                    LOG(name).info("Changing log level to: {}".format(lvl))
+                    LOG.setLevel(lvl)
+                    LOG.info("Changing log level to: {}".format(lvl))
                     try:
                         logging.getLogger().setLevel(lvl)
                         logging.getLogger('urllib3').setLevel(lvl)

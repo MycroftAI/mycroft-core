@@ -39,7 +39,7 @@ from mycroft.util import (
     play_audio_file,
     camel_case_split
 )
-from mycroft.util.log import LOG
+from mycroft.util.log import LOG, create_logger
 
 from .event_container import EventContainer, create_wrapper, get_handler_name
 from ..event_scheduler import EventSchedulerInterface
@@ -151,7 +151,7 @@ class MycroftSkill:
         #: See mycroft.filesystem for details.
         self.file_system = FileSystemAccess(join('skills', self.name))
 
-        self.log = LOG.create_logger(self.name)  #: Skill logger instance
+        self.log = create_logger(self.name)  #: Skill logger instance
         self.reload_skill = True  #: allow reloading (default True)
 
         self.events = EventContainer(bus)
