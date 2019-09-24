@@ -81,20 +81,17 @@ class DevicePrimer(object):
         """Internet dependent updates of various aspects of the device."""
         self._get_pairing_status()
         self._update_system_clock()
-        if self.time_skew_threshold_exceeded:
-            self._reboot()
-        else:
-            self._update_system()
-            # Above will block during update process and kill this instance if
-            # new software is installed
+        self._update_system()
+        # Above will block during update process and kill this instance if
+        # new software is installed
 
-            if self.backend_down:
-                self._notify_backend_down()
-            else:
-                self._display_skill_loading_notification()
-                self.bus.emit(Message('mycroft.internet.connected'))
-                self._ensure_device_is_paired()
-                self._update_device_attributes_on_backend()
+        if self.backend_down:
+            self._notify_backend_down()
+        else:
+            self._display_skill_loading_notification()
+            self.bus.emit(Message('mycroft.internet.connected'))
+            self._ensure_device_is_paired()
+            self._update_device_attributes_on_backend()
 
     def _get_pairing_status(self):
         """Set an instance attribute indicating the device's pairing status"""
