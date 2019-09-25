@@ -47,7 +47,6 @@ from .padatious_service import PadatiousService
 from .skill_manager import SkillManager
 
 RASPBERRY_PI_PLATFORMS = ('mycroft_mark_1', 'picroft', 'mycroft_mark_2pi')
-ONE_HOUR = 3600
 
 
 class DevicePrimer(object):
@@ -64,37 +63,22 @@ class DevicePrimer(object):
         self.is_paired = False
         self.backend_down = False
         # Remember "now" at startup.  Used to detect clock changes.
-        self.start_ticks = time.monotonic()
-        self.start_clock = time.time()
-
-    @property
-    def time_skew_threshold_exceeded(self):
-        """Did the NTP sync skew system time significantly?"""
-        skew = abs(
-            (time.monotonic() - self.start_ticks) -
-            (time.time() - self.start_clock)
-        )
-
-        return skew > ONE_HOUR
 
     def prepare_device(self):
         """Internet dependent updates of various aspects of the device."""
         self._get_pairing_status()
         self._update_system_clock()
-        if self.time_skew_threshold_exceeded:
-            self._reboot()
-        else:
-            self._update_system()
-            # Above will block during update process and kill this instance if
-            # new software is installed
+        self._update_system()
+        # Above will block during update process and kill this instance if
+        # new software is installed
 
-            if self.backend_down:
-                self._notify_backend_down()
-            else:
-                self._display_skill_loading_notification()
-                self.bus.emit(Message('mycroft.internet.connected'))
-                self._ensure_device_is_paired()
-                self._update_device_attributes_on_backend()
+        if self.backend_down:
+            self._notify_backend_down()
+        else:
+            self._display_skill_loading_notification()
+            self.bus.emit(Message('mycroft.internet.connected'))
+            self._ensure_device_is_paired()
+            self._update_device_attributes_on_backend()
 
     def _get_pairing_status(self):
         """Set an instance attribute indicating the device's pairing status"""
@@ -128,26 +112,6 @@ class DevicePrimer(object):
                 'system.ntp.sync.complete',
                 15
             )
-
-    def _reboot(self):
-        """If the NTP sync skewed system time significantly, reboot.
-
-        If system time moved by over an hour in the NTP sync, force a reboot to
-        prevent weird things from occurring due to the 'time warp'.
-        """
-        LOG.warning(
-            'Clock sync altered system time by more than one hour,'
-            ' rebooting...'
-        )
-        self._speak_dialog(dialog_id="time.changed.reboot", wait=True)
-        # provide visual indicators of the reboot
-        self.enclosure.mouth_text(dialog.get("message_rebooting"))
-        self.enclosure.eyes_color(70, 65, 69)  # soft gray
-        self.enclosure.eyes_spin()
-        # give the system time to finish processing enclosure messages
-        time.sleep(1.0)
-        # reboot
-        self.bus.emit(Message("system.reboot"))
 
     def _notify_backend_down(self):
         """Notify user of inability to communicate with the backend."""
