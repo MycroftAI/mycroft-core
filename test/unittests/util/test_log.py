@@ -12,41 +12,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import unittest
-import sys
+from contextlib import contextmanager
 from io import StringIO
+import unittest
 from threading import Thread
 from mycroft.util.log import LOG
+from logging import StreamHandler
 
 
-class CaptureLogs(list):
-    def __init__(self):
-        list.__init__(self)
-        self._stdout = None
-        self._stringio = None
+@contextmanager
+def temporary_handler(log, handler):
+    """Context manager to replace the default logger with a temporary logger.
 
-    def __enter__(self):
-        self._stdout = sys.stdout
-        sys.stdout = self._stringio = StringIO()
-        LOG.init()
-        return self
-
-    def __exit__(self, *args):
-        self.extend(self._stringio.getvalue().splitlines())
-        del self._stringio    # free up some memory
-        sys.stdout = self._stdout
-        LOG.init()
+    Args:
+        log (LOG): mycroft LOG object
+        handler (logging.Handler): Handler object to use
+    """
+    log.addHandler(handler)
+    yield
+    log.removeHandler(handler)
 
 
 class TestLog(unittest.TestCase):
     def test_threads(self):
-        with CaptureLogs() as output:
+        output = StringIO()
+        with temporary_handler(LOG, StreamHandler(output)):
             def test_logging():
                 LOG.debug('testing debug')
                 LOG.info('testing info')
                 LOG.warning('testing warning')
                 LOG.error('testing error')
-                LOG('testing custom').debug('test')
 
             threads = []
             for _ in range(100):
@@ -57,7 +52,7 @@ class TestLog(unittest.TestCase):
             for t in threads:
                 t.join()
 
-        assert len(output) > 0
+        assert len(output.getvalue()) > 0
 
         for line in output:
             found_msg = False

@@ -75,10 +75,9 @@ def temporary_handler(log, handler):
         log (LOG): mycroft LOG object
         handler (logging.Handler): Handler object to use
     """
-    old_handler = log.handler
-    log.handler = handler
+    log.addHandler(handler)
     yield
-    log.handler = old_handler
+    log.removeHandler(handler)
 
 
 def create_skill_descriptor(skill_path):
