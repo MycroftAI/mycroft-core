@@ -314,9 +314,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 self._adjust_threshold(energy, sec_per_buffer)
 
             if num_chunks % 10 == 0:
-                with open(self.mic_level_file, 'w') as f:
-                    f.write("Energy:  cur=" + str(energy) + " thresh=" +
-                            str(self.energy_threshold))
+                self.write_mic_level(energy, source)
 
             was_loud_enough = num_loud_chunks > min_loud_chunks
 
@@ -336,6 +334,15 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 phrase_complete = True
 
         return byte_data
+
+    def write_mic_level(self, energy, source):
+        with open(self.mic_level_file, 'w') as f:
+            f.write('Energy:  cur={} thresh={:.3f} muted={}'.format(
+                energy,
+                self.energy_threshold,
+                int(source.muted)
+                )
+            )
 
     @staticmethod
     def sec_to_bytes(sec, source):
@@ -460,9 +467,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             # Periodically output energy level stats.  This can be used to
             # visualize the microphone input, e.g. a needle on a meter.
             if counter % 3:
-                with open(self.mic_level_file, 'w') as f:
-                    f.write("Energy:  cur=" + str(energy) + " thresh=" +
-                            str(self.energy_threshold))
+                self.write_mic_level(energy, source)
             counter += 1
 
             # At first, the buffer is empty and must fill up.  After that
