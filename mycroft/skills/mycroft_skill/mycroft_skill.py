@@ -456,7 +456,8 @@ class MycroftSkill:
         else:
             return resp
 
-    def ask_selection(self, options, dialog='', data=None, min_conf=0.65, numeric=False):
+    def ask_selection(self, options, dialog='',
+                      data=None, min_conf=0.65, numeric=False):
         """ Read options, ask dialog question and wait for an answer
 
         This automatically deals with fuzzy matching and selection by number
@@ -468,9 +469,9 @@ class MycroftSkill:
 
         Args:
               options (list): list of options to present user
-              dialog (str): a dialog id or string to read after presenting options
+              dialog (str): a dialog id or string to read AFTER all options
               data (dict): Data used to render the dialog
-              min_conf (float): min confidence for fuzzy matching, None will be returned bellow this threshold
+              min_conf (float): min confidence for fuzzy match, else ret. None
               numeric (bool): speak options as a numeric menu
         Returns:
               string: list element selected by user, or None
@@ -484,8 +485,10 @@ class MycroftSkill:
 
         if numeric:
             for idx, opt in enumerate(options):
-                opt_str = "{number}, {option_text}".format(number=pronounce_number(idx + 1, self.lang),
-                                                           option_text=opt)
+                opt_str = "{number}, {option_text}".format(
+                    number=pronounce_number(
+                        idx + 1, self.lang), option_text=opt)
+
                 self.speak(opt_str, wait=True)
         else:
             opt_str = join_list(options, "or", lang=self.lang) + "?"
