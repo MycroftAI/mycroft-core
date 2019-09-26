@@ -445,6 +445,8 @@ class TTSFactory:
     from mycroft.tts.ibm_tts import WatsonTTS
     from mycroft.tts.responsive_voice_tts import ResponsiveVoice
     from mycroft.tts.mimic2_tts import Mimic2
+    from mycroft.tts.ivona_deamon_tts import IvonaTTSDeamon
+    from mycroft.tts.ivona_comand_tts import IvonaTTSComand
 
     CLASSES = {
         "mimic": Mimic,
@@ -456,7 +458,9 @@ class TTSFactory:
         "spdsay": SpdSay,
         "watson": WatsonTTS,
         "bing": BingTTS,
-        "responsive_voice": ResponsiveVoice
+        "responsive_voice": ResponsiveVoice,
+        "ivonaDeamon": IvonaTTSDeamon,
+        "ivonaComand": IvonaTTSComand
     }
 
     @staticmethod
