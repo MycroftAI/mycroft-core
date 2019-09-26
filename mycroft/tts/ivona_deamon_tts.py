@@ -94,7 +94,5 @@ class IvonaValidator(TTSValidator):
             raise Exception(
                 'there is no Ivona deamon')
 
-        pass
-
     def get_tts_class(self):
         return IvonaTTSDeamon
