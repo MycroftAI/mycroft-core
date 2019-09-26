@@ -14,7 +14,9 @@
 #
 """Periodically run by skill manager to load skills into memory."""
 import gc
+import importlib
 import os
+from os.path import dirname
 import sys
 from time import time
 
@@ -28,6 +30,28 @@ from .settings import SettingsMetaUploader
 SKILL_MAIN_MODULE = '__init__.py'
 
 
+def remove_submodule_refs(module_name):
+    """Ensure submodules are reloaded by removing the refs from sys.modules.
+
+    Python import system puts a reference for each module in the sys.modules
+    dictionary to bypass loading if a module is already in memory. To make
+    sure skills are completely reloaded these references are deleted.
+
+    Arguments:
+        module_name: name of skill module.
+    """
+    submodules = []
+    LOG.debug('Skill module'.format(module_name))
+    # Collect found submodules
+    for m in sys.modules:
+        if m.startswith(module_name + '.'):
+            submodules.append(m)
+    # Remove all references them to in sys.modules
+    for m in submodules:
+        LOG.debug('Removing sys.modules ref for {}'.format(m))
+        del(sys.modules[m])
+
+
 def load_skill_module(path, skill_id):
     """Load a skill module
 
@@ -39,19 +63,14 @@ def load_skill_module(path, skill_id):
         skill_id: skill_id used as skill identifier in the module list
     """
     module_name = skill_id.replace('.', '_')
-    if sys.version_info >= (3, 5):
-        import importlib.util
-        spec = importlib.util.spec_from_file_location(module_name, path)
-        mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
-    else:
-        from importlib.machinery import SourceFileLoader
-        mod = SourceFileLoader(module_name, path).load_module()
-    if mod:
-        sys.modules[module_name] = mod
-        return mod
-    else:
-        return None
+
+    remove_submodule_refs(module_name)
+
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = mod
+    spec.loader.exec_module(mod)
+    return mod
 
 
 def _get_last_modified_time(path):
