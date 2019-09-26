@@ -29,8 +29,8 @@ class MaryTTS(RemoteTTS):
     }
 
     def __init__(self, lang, config):
-        super(MaryTTS, self).__init__(lang, config, '/process',
-                                      MaryTTSValidator(self))
+        super(MaryTTS, self).__init__(lang, config, config.get('url'),
+                                      '/process', MaryTTSValidator(self))
 
     def build_request_params(self, sentence):
         params = self.PARAMS.copy()
@@ -51,8 +51,8 @@ class MaryTTSValidator(TTSValidator):
     def validate_connection(self):
         try:
             resp = requests.get(self.tts.url + "/version", verify=False)
-            if resp.content.find('Mary TTS server') < 0:
-                raise Exception('Invalid MaryTTS server.')
+            if resp.status_code == 200:
+                return True
         except Exception:
             raise Exception(
                 'MaryTTS server could not be verified. Check your connection '
