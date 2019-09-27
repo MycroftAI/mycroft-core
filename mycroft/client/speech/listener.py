@@ -88,6 +88,9 @@ class AudioProducer(Thread):
                     # The internet was not helpful.
                     # http://stackoverflow.com/questions/10733903/pyaudio-input-overflowed
                     self.emitter.emit("recognizer_loop:ioerror", e)
+                except Exception as e:
+                    LOG.exception('Exception in AudioProducer')
+                    raise
                 finally:
                     if self.stream_handler is not None:
                         self.stream_handler.stream_stop()
@@ -406,6 +409,9 @@ class RecognizerLoop(EventEmitter):
                 LOG.error(e)
                 self.stop()
                 raise  # Re-raise KeyboardInterrupt
+            except Exception as e:
+                LOG.exception('Exception in RecognizerLoop')
+                raise
 
     def reload(self):
         """
