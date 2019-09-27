@@ -82,12 +82,11 @@ class AudioProducer(Thread):
                     else:
                         LOG.warning("Audio contains no data.")
                 except IOError as e:
-                    # NOTE: Audio stack on raspi is slightly different, throws
-                    # IOError every other listen, almost like it can't handle
-                    # buffering audio between listen loops.
-                    # The internet was not helpful.
-                    # http://stackoverflow.com/questions/10733903/pyaudio-input-overflowed
-                    self.emitter.emit("recognizer_loop:ioerror", e)
+                    # IOError will be thrown if the read is unsuccessful.
+                    # If self.recognizer.overflow_exc is False (default)
+                    # input buffer overflow IOErrors due to not consuming the
+                    # buffers quickly enough will be silently ignored.
+                    LOG.exception('IOError Exception in AudioProducer')
                 except Exception as e:
                     LOG.exception('Exception in AudioProducer')
                     raise
