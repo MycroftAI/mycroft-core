@@ -20,7 +20,15 @@ things like numbers, times, etc.
 The focus of these formatting functions is to create natural sounding speech
 and allow localization.
 """
-from os.path import join
+import json
+import os
+import datetime
+import re
+import warnings
+
+from collections import namedtuple
+from calendar import leapdays
+from enum import Enum
 
 from mycroft.util.lang import get_full_lang_code, get_primary_lang_code
 
@@ -46,12 +54,7 @@ from mycroft.util.lang.format_da import nice_number_da
 from mycroft.util.lang.format_da import nice_time_da
 from mycroft.util.lang.format_da import pronounce_number_da
 
-from collections import namedtuple
 from padatious.util import expand_parentheses
-import json
-import os
-import datetime
-import re
 
 
 def _translate_word(name, lang):
@@ -68,7 +71,8 @@ def _translate_word(name, lang):
 
     lang_code = get_full_lang_code(lang)
 
-    filename = resolve_resource_file(join("text", lang_code, name+".word"))
+    filename = resolve_resource_file(
+        os.path.join("text", lang_code, name+".word"))
     if filename:
         # open the file
         try:
@@ -87,6 +91,15 @@ NUMBER_TUPLE = namedtuple(
     'number',
     ('x, xx, x0, x_in_x0, xxx, x00, x_in_x00, xx00, xx_in_xx00, x000, ' +
      'x_in_x000, x0_in_x000, x_in_0x00'))
+
+
+class TimeResolution(Enum):
+    YEARS = 1
+    DAYS = 2
+    HOURS = 3
+    MINUTES = 4
+    SECONDS = 5
+    MILLISECONDS = 6
 
 
 class DateTimeFormat:
@@ -127,12 +140,12 @@ class DateTimeFormat:
             str(int(number % 100 / 10))) or str(int(number % 100 / 10))
         x0 = (self.lang_config[lang]['number'].get(
             str(int(number % 100 / 10) * 10)) or
-              str(int(number % 100 / 10) * 10))
+            str(int(number % 100 / 10) * 10))
         xxx = (self.lang_config[lang]['number'].get(str(number % 1000)) or
                str(number % 1000))
         x00 = (self.lang_config[lang]['number'].get(str(int(
             number % 1000 / 100) * 100)) or
-               str(int(number % 1000 / 100) * 100))
+            str(int(number % 1000 / 100) * 100))
         x_in_x00 = self.lang_config[lang]['number'].get(str(int(
             number % 1000 / 100))) or str(int(number % 1000 / 100))
         xx00 = self.lang_config[lang]['number'].get(str(int(
@@ -142,7 +155,7 @@ class DateTimeFormat:
             number % 10000 / 100))) or str(int(number % 10000 / 100))
         x000 = (self.lang_config[lang]['number'].get(str(int(
             number % 10000 / 1000) * 1000)) or
-                str(int(number % 10000 / 1000) * 1000))
+            str(int(number % 10000 / 1000) * 1000))
         x_in_x000 = self.lang_config[lang]['number'].get(str(int(
             number % 10000 / 1000))) or str(int(number % 10000 / 1000))
         x0_in_x000 = self.lang_config[lang]['number'].get(str(int(
@@ -454,81 +467,316 @@ def nice_year(dt, lang=None, bc=False):
     return date_time_format.year_format(dt, full_code, bc)
 
 
-def nice_duration(duration, lang=None, speech=True):
+def _duration_handler(time1, lang=None, speech=True, *, time2=None,
+                      use_years=True, resolution=TimeResolution.SECONDS):
     """ Convert duration in seconds to a nice spoken timespan
+        Used as a handler by nice_duration and nice_duration_dt
+
+    Accepts:
+        datetime.timedelta, or
+        seconds (int/float), or
+        2 x datetime.datetime
+
+    Examples:
+       time1 = 60  ->  "1:00" or "one minute"
+       time1 = 163  ->  "2:43" or "two minutes forty three seconds"
+       time1 = timedelta(seconds=120)  ->  "2:00" or "two minutes"
+
+       time1 = datetime(2019, 3, 12),
+       time2 = datetime(2019, 1, 1)  ->  "seventy days"
+
+    Args:
+        time1: int/float seconds, OR datetime.timedelta, OR datetime.datetime
+        time2 (datetime, optional): subtracted from time1 if time1 is datetime
+        lang (str, optional): a BCP-47 language code, None for default
+        speech (bool, opt): format output for speech (True) or display (False)
+        use_years (bool, opt): rtn years and days if True, total days if False
+        resolution (mycroft.util.format.TimeResolution, optional): lower bound
+
+            mycroft.util.format.TimeResolution values:
+                TimeResolution.YEARS
+                TimeResolution.DAYS
+                TimeResolution.HOURS
+                TimeResolution.MINUTES
+                TimeResolution.SECONDS
+                TimeResolution.MILLISECONDS
+            NOTE: nice_duration will not produce milliseconds
+            unless that resolution is passed.
+
+    Returns:
+        str: timespan as a string
+    """
+    _leapdays = 0
+    _input_resolution = resolution
+    milliseconds = 0
+
+    type1 = type(time1)
+
+    if time2:
+        type2 = type(time2)
+        if type1 is not type2:
+            raise Exception("nice_duration(" + str(time1) + ", " +
+                            str(time2) + "): \n\t can't "
+                            "combine data types: " + str(type(time1)) +
+                            " and " + str(type(time2)))
+        elif type1 is datetime.datetime:
+            duration = time1 - time2
+            _leapdays = (abs(leapdays(time1.year, time2.year)))
+
+            # when operating on datetimes, refuse resolutions that
+            # would result in bunches of trailing zeroes
+            if all([time1.second == 0, time2.second == 0,
+                    resolution.value >= 5]):
+                resolution = TimeResolution.MINUTES
+            if all([time1.minute == 0, time2.minute == 0,
+                    resolution.value == 4]):
+                resolution = TimeResolution.HOURS
+            if all([time1.hour == 0, time2.hour == 0,
+                    resolution.value == 3]):
+                resolution = TimeResolution.DAYS
+
+        else:
+            _tmp = warnings.formatwarning
+            warnings.formatwarning = lambda msg, * \
+                args, **kwargs: "{}\n".format(msg)
+            warning = ("WARN: mycroft.util.format.nice_duration_dt() can't "
+                       "subtract " + str(type1) + ". Ignoring 2nd "
+                       "argument '" + str(time2) + "'.")
+            warnings.warn(warning)
+            warnings.formatwarning = _tmp
+            duration = time1
+    else:
+        duration = time1
+
+    # Pull decimal portion of seconds, if present, to use for milliseconds
+    if isinstance(duration, float):
+        milliseconds = str(duration).split('.')[1]
+        if speech:
+            milliseconds = milliseconds[:2]
+        else:
+            milliseconds = milliseconds[:3]
+        milliseconds = float("0." + milliseconds)
+
+    # Cast duration to datetime.timedelta for human-friendliness
+    if not isinstance(duration, datetime.timedelta):
+        duration = datetime.timedelta(seconds=duration)
+
+    days = duration.days
+    if use_years:
+        days -= _leapdays if days > 365 else 0
+        years = days // 365
+    else:
+        years = 0
+    days = days % 365 if years > 0 else days
+
+    # We already stored milliseconds. Now we want the integer part.
+    seconds = duration.seconds
+    minutes = seconds // 60
+    seconds %= 60
+    hours = minutes // 60
+    minutes %= 60
+
+    if speech:
+        out = ""
+        if years > 0:
+            out += pronounce_number(years, lang) + " "
+            out += _translate_word("year" if years == 1 else "years", lang)
+
+        if days > 0 and resolution.value > TimeResolution.YEARS.value:
+            if out:
+                out += " "
+            out += pronounce_number(days, lang) + " "
+            out += _translate_word("day" if days == 1 else "days", lang)
+
+        if hours > 0 and resolution.value > TimeResolution.DAYS.value:
+            if out:
+                out += " "
+            out += pronounce_number(hours, lang) + " "
+            out += _translate_word("hour" if hours == 1 else "hours", lang)
+
+        if minutes > 0 and resolution.value > TimeResolution.HOURS.value:
+            if out:
+                out += " "
+            out += pronounce_number(minutes, lang) + " "
+            out += _translate_word("minute" if minutes ==
+                                   1 else "minutes", lang)
+
+        if ((seconds > 0 and resolution.value >=
+             TimeResolution.SECONDS.value) or
+            (milliseconds > 0 and resolution.value ==
+             TimeResolution.MILLISECONDS.value)):
+
+            if resolution.value == TimeResolution.MILLISECONDS.value:
+                seconds += milliseconds
+            if out:
+                out += " "
+                # Throw "and" between minutes and seconds if duration < 1 hour
+                if len(out.split()) > 3 or seconds < 1:
+                    out += _translate_word("and", lang) + " "
+            # speaking "zero point five seconds" is better than "point five"
+            if seconds < 1:
+                out += pronounce_number(0, lang)
+            out += pronounce_number(seconds, lang) + " "
+            out += _translate_word("second" if seconds ==
+                                   1 else "seconds", lang)
+
+    else:
+        # M:SS, MM:SS, H:MM:SS, Dd H:MM:SS format
+
+        _seconds_str = ("0" + str(seconds)) if seconds < 10 else str(seconds)
+
+        out = ""
+        if years > 0:
+            out = str(years) + "y "
+        if days > 0 and resolution.value > TimeResolution.YEARS.value:
+            out += str(days) + "d "
+        if hours > 0 and resolution.value > TimeResolution.DAYS.value:
+            out += str(hours)
+
+        if resolution.value == TimeResolution.MINUTES.value:
+            out += (("h " + str(minutes) + "m") if hours > 0
+                    else str(minutes) + "m")
+        elif minutes > 0 and resolution.value > TimeResolution.HOURS.value:
+            if hours != 0:
+                out += ":"
+                if minutes < 10:
+                    out += "0"
+            out += str(minutes) + ":"
+            if seconds > 0 and resolution.value > TimeResolution.MINUTES.value:
+                out += _seconds_str
+            else:
+                out += "00"
+        # if we have seconds but no minutes...
+        elif seconds > 0 and resolution.value > TimeResolution.MINUTES.value:
+            # check if output ends in hours
+            try:
+                if str(hours) == out.split()[-1]:
+                    out += ":"
+            except IndexError:
+                pass
+            out += ("00:" if hours > 0 else "0:") + _seconds_str
+
+        if milliseconds > 0 and resolution.value \
+                == TimeResolution.MILLISECONDS.value:
+            _mill = str(milliseconds).split(".")[1]
+            # right-pad milliseconds to three decimal places
+            while len(_mill) < 3:
+                _mill += "0"
+            # make sure output < 1s still formats correctly
+            if out == "":
+                out = "0:00"
+            else:
+                if (str(hours) == out.split()[-1]) and ":" not in out:
+                    out += ":00:00"
+            # only append milliseconds to output that contains
+            # minutes and/or seconds
+            if ":" in out:
+                out += "." + _mill
+
+        # If this evaluates True, out currently ends in hours: "1d 12"
+        if out and all([resolution.value >= TimeResolution.HOURS.value,
+                        ":" not in out, out[-1] != "m", hours > 0]):
+            # to "1d 12h"
+            out += "h"
+        out = out.strip()
+
+    if not out:
+        if _input_resolution == TimeResolution.YEARS:
+            out = "zero years" if speech else "0y"
+        elif _input_resolution == TimeResolution.DAYS:
+            out = "zero days" if speech else "0d"
+        elif _input_resolution == TimeResolution.HOURS:
+            out = "zero hours" if speech else "0h"
+        elif _input_resolution == TimeResolution.MINUTES:
+            if speech:
+                out = "under a minute" if seconds > 0 else "zero minutes"
+            else:
+                out = "0m"
+        else:
+            out = "zero seconds" if speech else "0:00"
+
+    return out
+
+
+def nice_duration(duration, lang=None, speech=True, use_years=True,
+                  resolution=TimeResolution.SECONDS):
+    """ Convert duration in seconds to a nice spoken timespan
+
+    Accepts:
+        time, in seconds, or datetime.timedelta
 
     Examples:
        duration = 60  ->  "1:00" or "one minute"
        duration = 163  ->  "2:43" or "two minutes forty three seconds"
+       duration = timedelta(seconds=120)  ->  "2:00" or "two minutes"
 
     Args:
-        duration: time, in seconds
+        duration (int/float/datetime.timedelta)
         lang (str, optional): a BCP-47 language code, None for default
-        speech (bool): format for speech (True) or display (False)
+        speech (bool, opt): format output for speech (True) or display (False)
+        use_years (bool, opt): rtn years and days if True, total days if False
+        resolution (mycroft.util.format.TimeResolution, optional): lower bound
+
+            mycroft.util.format.TimeResolution values:
+                TimeResolution.YEARS
+                TimeResolution.DAYS
+                TimeResolution.HOURS
+                TimeResolution.MINUTES
+                TimeResolution.SECONDS
+                TimeResolution.MILLISECONDS
+            NOTE: nice_duration will not produce milliseconds
+            unless that resolution is passed.
+
     Returns:
         str: timespan as a string
     """
-    if type(duration) is datetime.timedelta:
-        duration = duration.total_seconds()
+    return _duration_handler(duration, lang=lang, speech=speech,
+                             use_years=use_years, resolution=resolution)
 
-    # Do traditional rounding: 2.5->3, 3.5->4, plus this
-    # helps in a few cases of where calculations generate
-    # times like 2:59:59.9 instead of 3:00.
-    duration += 0.5
 
-    days = int(duration // 86400)
-    hours = int(duration // 3600 % 24)
-    minutes = int(duration // 60 % 60)
-    seconds = int(duration % 60)
+def nice_duration_dt(date1, date2, lang=None, speech=True, use_years=True,
+                     resolution=TimeResolution.SECONDS):
+    """ Convert duration between datetimes to a nice spoken timespan
 
-    if speech:
-        out = ""
-        if days > 0:
-            out += pronounce_number(days, lang) + " "
-            if days == 1:
-                out += _translate_word("day", lang)
-            else:
-                out += _translate_word("days", lang)
-            out += " "
-        if hours > 0:
-            if out:
-                out += " "
-            out += pronounce_number(hours, lang) + " "
-            if hours == 1:
-                out += _translate_word("hour", lang)
-            else:
-                out += _translate_word("hours", lang)
-        if minutes > 0:
-            if out:
-                out += " "
-            out += pronounce_number(minutes, lang) + " "
-            if minutes == 1:
-                out += _translate_word("minute", lang)
-            else:
-                out += _translate_word("minutes", lang)
-        if seconds > 0:
-            if out:
-                out += " "
-            out += pronounce_number(seconds, lang) + " "
-            if seconds == 1:
-                out += _translate_word("second", lang)
-            else:
-                out += _translate_word("seconds", lang)
-    else:
-        # M:SS, MM:SS, H:MM:SS, Dd H:MM:SS format
-        out = ""
-        if days > 0:
-            out = str(days) + "d "
-        if hours > 0 or days > 0:
-            out += str(hours) + ":"
-        if minutes < 10 and (hours > 0 or days > 0):
-            out += "0"
-        out += str(minutes)+":"
-        if seconds < 10:
-            out += "0"
-        out += str(seconds)
+    Accepts:
+        2 x datetime.datetime
 
-    return out
+    Examples:
+        date1 = datetime(2019, 3, 12),
+        date2 = datetime(2019, 1, 1)  ->  "seventy days"
+
+        date1 = datetime(2019, 12, 25, 20, 30),
+        date2 = datetime(2019, 10, 31, 8, 00),
+        speech = False  ->  "55d 12:30"
+
+    Args:
+        date1, date2 (datetime.datetime)
+        lang (str, optional): a BCP-47 language code, None for default
+        speech (bool, opt): format output for speech (True) or display (False)
+        use_years (bool, opt): rtn years and days if True, total days if False
+        resolution (mycroft.util.format.TimeResolution, optional): lower bound
+
+            mycroft.util.format.TimeResolution values:
+                TimeResolution.YEARS
+                TimeResolution.DAYS
+                TimeResolution.HOURS
+                TimeResolution.MINUTES
+                TimeResolution.SECONDS
+
+            NOTE: nice_duration_dt() cannot do TimeResolution.MILLISECONDS
+            This will silently fall back on TimeResolution.SECONDS
+
+    Returns:
+        str: timespan as a string
+    """
+    try:
+        big = max(date1, date2)
+        small = min(date1, date2)
+    except(TypeError):
+        big = date1
+        small = date2
+    return _duration_handler(big, lang=lang, speech=speech, time2=small,
+                             use_years=use_years, resolution=resolution)
 
 
 def join_list(items, connector, sep=None, lang=None):
