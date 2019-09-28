@@ -828,7 +828,7 @@ def extract_datetime_en(string, dateNow, default_time):
               wordNext == "after" and
               wordNextNext == "tomorrow" and
               not fromFlag and
-              not wordPrev[0].isdigit()):
+              not (wordPrev[0].isdigit() if wordPrev else False)):
             dayOffset = 2
             used = 3
             if wordPrev == "the":
