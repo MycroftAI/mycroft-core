@@ -13,17 +13,14 @@
 # limitations under the License.
 #
 
-"""Module containing methods needed to load skill data such as intents and
-regular expressions.
-"""
+"""Functions to load skill data such as intents and regular expressions."""
 
+import collections
+import csv
+import re
 from os import walk
 from os.path import splitext, join
-import re
-import csv
-import collections
 
-from mycroft.messagebus.message import Message
 from mycroft.util.format import expand_options
 
 
