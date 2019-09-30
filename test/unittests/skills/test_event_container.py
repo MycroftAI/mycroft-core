@@ -32,12 +32,13 @@ class TestEventContainer(unittest.TestCase):
         self.assertTrue(bus.on.called)
 
         # Test add single shot event handler
+        len_before = len(container.events)
         container.add('test2', example_handler, once=True)
+        self.assertEqual(len_before + 1, len(container.events))
         self.assertTrue(bus.once.called)
 
         # Verify correct content in event container
         self.assertTrue(('test1', example_handler) in container.events)
-        self.assertTrue(('test2', example_handler) in container.events)
         self.assertEqual(len(container.events), 2)
 
     def test_remove(self):
