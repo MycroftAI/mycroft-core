@@ -254,6 +254,8 @@ class TestNormalize(unittest.TestCase):
                     "2017-07-02 00:00:00", "set ambush")
         testExtract("What is the day after tomorrow's weather?",
                     "2017-06-29 00:00:00", "what is weather")
+        testExtract("day after tomorrow",
+                    "2017-06-29 00:00:00", "")
         testExtract("Remind me at 10:45 pm",
                     "2017-06-27 22:45:00", "remind me")
         testExtract("what is the weather on friday morning",
