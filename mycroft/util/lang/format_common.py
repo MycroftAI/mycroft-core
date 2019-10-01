@@ -16,7 +16,7 @@
 #
 
 
-def convert_to_mixed_fraction(number, denominators):
+def convert_to_mixed_fraction(number, denominators=range(1, 21)):
     """
     Convert floats to components of a mixed fraction representation
 
