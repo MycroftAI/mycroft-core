@@ -502,6 +502,27 @@ class TestNiceDurationFuncs(unittest.TestCase):
                                        resolution=TimeResolution.MINUTES),
                          "under a minute")
 
+        # test clock output
+        self.assertEqual(nice_duration(60,
+                                       resolution=TimeResolution.HOURS,
+                                       clock=True, speech=False), "0:01:00")
+        self.assertEqual(nice_duration(1,
+                                       resolution=TimeResolution.MINUTES,
+                                       clock=True, speech=False), "0:01")
+        self.assertEqual(nice_duration(0.25,
+                                       resolution=TimeResolution.HOURS,
+                                       clock=True, speech=False), "0:00:00")
+        self.assertEqual(nice_duration(0.25,
+                                       resolution=TimeResolution.MINUTES,
+                                       clock=True, speech=False), "0:00")
+        self.assertEqual(nice_duration(0.25, clock=True, speech=False), "0:00")
+        self.assertEqual(nice_duration(0.25,
+                                       resolution=TimeResolution.MILLISECONDS,
+                                       clock=True, speech=False), "0:00.250")
+        self.assertEqual(nice_duration(60,
+                                       resolution=TimeResolution.YEARS,
+                                       clock=True, speech=False), "0y")
+
     def test_nice_duration_dt(self):
 
         with pytest.raises(Exception):

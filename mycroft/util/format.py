@@ -468,7 +468,8 @@ def nice_year(dt, lang=None, bc=False):
 
 
 def _duration_handler(time1, lang=None, speech=True, *, time2=None,
-                      use_years=True, resolution=TimeResolution.SECONDS):
+                      use_years=True, clock=False,
+                      resolution=TimeResolution.SECONDS):
     """ Convert duration in seconds to a nice spoken timespan
         Used as a handler by nice_duration and nice_duration_dt
 
@@ -491,6 +492,7 @@ def _duration_handler(time1, lang=None, speech=True, *, time2=None,
         lang (str, optional): a BCP-47 language code, None for default
         speech (bool, opt): format output for speech (True) or display (False)
         use_years (bool, opt): rtn years and days if True, total days if False
+        clock (bool, opt): always format output like digital clock (see below)
         resolution (mycroft.util.format.TimeResolution, optional): lower bound
 
             mycroft.util.format.TimeResolution values:
@@ -502,6 +504,10 @@ def _duration_handler(time1, lang=None, speech=True, *, time2=None,
                 TimeResolution.MILLISECONDS
             NOTE: nice_duration will not produce milliseconds
             unless that resolution is passed.
+
+            NOTE: clock will produce digital clock-like output appropriate to
+            resolution. Has no effect on resolutions DAYS or YEARS. Only
+            applies to displayed output.
 
     Returns:
         str: timespan as a string
@@ -630,24 +636,28 @@ def _duration_handler(time1, lang=None, speech=True, *, time2=None,
             out = str(years) + "y "
         if days > 0 and resolution.value > TimeResolution.YEARS.value:
             out += str(days) + "d "
-        if hours > 0 and resolution.value > TimeResolution.DAYS.value:
+        if (hours > 0 and resolution.value > TimeResolution.DAYS.value) or \
+                (clock and resolution is TimeResolution.HOURS):
             out += str(hours)
 
-        if resolution.value == TimeResolution.MINUTES.value:
+        if resolution.value == TimeResolution.MINUTES.value and not clock:
             out += (("h " + str(minutes) + "m") if hours > 0
                     else str(minutes) + "m")
-        elif minutes > 0 and resolution.value > TimeResolution.HOURS.value:
-            if hours != 0:
+        elif (minutes > 0 and resolution.value > TimeResolution.HOURS.value) \
+                or (clock and resolution.value >= TimeResolution.HOURS.value):
+            if hours != 0 or (clock and resolution is TimeResolution.HOURS):
                 out += ":"
                 if minutes < 10:
                     out += "0"
             out += str(minutes) + ":"
-            if seconds > 0 and resolution.value > TimeResolution.MINUTES.value:
+            if (seconds > 0 and resolution.value >
+                    TimeResolution.MINUTES.value) or clock:
                 out += _seconds_str
             else:
                 out += "00"
         # if we have seconds but no minutes...
-        elif seconds > 0 and resolution.value > TimeResolution.MINUTES.value:
+        elif (seconds > 0 or clock) and resolution.value > \
+                TimeResolution.MINUTES.value:
             # check if output ends in hours
             try:
                 if str(hours) == out.split()[-1]:
@@ -656,7 +666,7 @@ def _duration_handler(time1, lang=None, speech=True, *, time2=None,
                 pass
             out += ("00:" if hours > 0 else "0:") + _seconds_str
 
-        if milliseconds > 0 and resolution.value \
+        if (milliseconds > 0 or clock) and resolution.value \
                 == TimeResolution.MILLISECONDS.value:
             _mill = str(milliseconds).split(".")[1]
             # right-pad milliseconds to three decimal places
@@ -699,7 +709,7 @@ def _duration_handler(time1, lang=None, speech=True, *, time2=None,
 
 
 def nice_duration(duration, lang=None, speech=True, use_years=True,
-                  resolution=TimeResolution.SECONDS):
+                  clock=False, resolution=TimeResolution.SECONDS):
     """ Convert duration in seconds to a nice spoken timespan
 
     Accepts:
@@ -715,6 +725,7 @@ def nice_duration(duration, lang=None, speech=True, use_years=True,
         lang (str, optional): a BCP-47 language code, None for default
         speech (bool, opt): format output for speech (True) or display (False)
         use_years (bool, opt): rtn years and days if True, total days if False
+        clock (bool, opt): always format output like digital clock (see below)
         resolution (mycroft.util.format.TimeResolution, optional): lower bound
 
             mycroft.util.format.TimeResolution values:
@@ -727,15 +738,20 @@ def nice_duration(duration, lang=None, speech=True, use_years=True,
             NOTE: nice_duration will not produce milliseconds
             unless that resolution is passed.
 
+            NOTE: clock will produce digital clock-like output appropriate to
+            resolution. Has no effect on resolutions DAYS or YEARS. Only
+            applies to displayed output.
+
     Returns:
         str: timespan as a string
     """
     return _duration_handler(duration, lang=lang, speech=speech,
-                             use_years=use_years, resolution=resolution)
+                             use_years=use_years, resolution=resolution,
+                             clock=clock)
 
 
 def nice_duration_dt(date1, date2, lang=None, speech=True, use_years=True,
-                     resolution=TimeResolution.SECONDS):
+                     clock=False, resolution=TimeResolution.SECONDS):
     """ Convert duration between datetimes to a nice spoken timespan
 
     Accepts:
@@ -754,6 +770,7 @@ def nice_duration_dt(date1, date2, lang=None, speech=True, use_years=True,
         lang (str, optional): a BCP-47 language code, None for default
         speech (bool, opt): format output for speech (True) or display (False)
         use_years (bool, opt): rtn years and days if True, total days if False
+        clock (bool, opt): always format output like digital clock (see below)
         resolution (mycroft.util.format.TimeResolution, optional): lower bound
 
             mycroft.util.format.TimeResolution values:
@@ -766,6 +783,10 @@ def nice_duration_dt(date1, date2, lang=None, speech=True, use_years=True,
             NOTE: nice_duration_dt() cannot do TimeResolution.MILLISECONDS
             This will silently fall back on TimeResolution.SECONDS
 
+            NOTE: clock will produce digital clock-like output appropriate to
+            resolution. Has no effect on resolutions DAYS or YEARS. Only
+            applies to displayed output.
+
     Returns:
         str: timespan as a string
     """
@@ -776,7 +797,8 @@ def nice_duration_dt(date1, date2, lang=None, speech=True, use_years=True,
         big = date1
         small = date2
     return _duration_handler(big, lang=lang, speech=speech, time2=small,
-                             use_years=use_years, resolution=resolution)
+                             use_years=use_years, resolution=resolution,
+                             clock=clock)
 
 
 def join_list(items, connector, sep=None, lang=None):
