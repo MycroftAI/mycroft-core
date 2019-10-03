@@ -19,7 +19,7 @@ from threading import Lock
 from mycroft.configuration import Configuration
 from mycroft.metrics import report_timing, Stopwatch
 from mycroft.tts import TTSFactory
-from mycroft.util import create_signal, check_for_signal
+from mycroft.util import check_for_signal
 from mycroft.util.log import LOG
 from mycroft.messagebus.message import Message
 from mycroft.tts.remote_tts import RemoteTTSTimeoutException
@@ -35,11 +35,9 @@ mimic_fallback_obj = None
 _last_stop_signal = 0
 
 
-def _start_listener(message):
-    """
-        Force Mycroft to start listening (as if 'Hey Mycroft' was spoken)
-    """
-    create_signal('startListening')
+def _start_listener(_):
+    """Force Mycroft to start listening (as if 'Hey Mycroft' was spoken)."""
+    bus.emit(Message('mycroft.mic.listen'))
 
 
 def handle_speak(event):
@@ -178,7 +176,6 @@ def init(messagebus):
     bus.on('mycroft.stop', handle_stop)
     bus.on('mycroft.audio.speech.stop', handle_stop)
     bus.on('speak', handle_speak)
-    bus.on('mycroft.mic.listen', _start_listener)
 
     tts = TTSFactory.create()
     tts.init(bus)

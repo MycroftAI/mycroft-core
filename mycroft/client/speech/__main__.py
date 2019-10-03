@@ -100,6 +100,14 @@ def handle_mic_unmute(event):
     loop.unmute()
 
 
+def handle_mic_listen(_):
+    """Handler for mycroft.mic.listen.
+
+    Starts listening as if wakeword was spoken.
+    """
+    loop.responsive_recognizer.trigger_listen()
+
+
 def handle_mic_get_status(event):
     """
         Query microphone mute status.
@@ -171,6 +179,7 @@ def main():
     bus.on('mycroft.mic.mute', handle_mic_mute)
     bus.on('mycroft.mic.unmute', handle_mic_unmute)
     bus.on('mycroft.mic.get_status', handle_mic_get_status)
+    bus.on('mycroft.mic.listen', handle_mic_listen)
     bus.on("mycroft.paired", handle_paired)
     bus.on('recognizer_loop:audio_output_start', handle_audio_start)
     bus.on('recognizer_loop:audio_output_end', handle_audio_end)
