@@ -33,11 +33,13 @@ config = None
 
 
 def handle_record_begin():
+    """Forward internal bus message to external bus."""
     LOG.info("Begin Recording...")
     bus.emit(Message('recognizer_loop:record_begin'))
 
 
 def handle_record_end():
+    """Forward internal bus message to external bus."""
     LOG.info("End Recording...")
     bus.emit(Message('recognizer_loop:record_end'))
 
@@ -48,7 +50,7 @@ def handle_no_internet():
 
 
 def handle_awoken():
-    """ Forward mycroft.awoken to the messagebus. """
+    """Forward mycroft.awoken to the messagebus."""
     LOG.info("Listener is now Awake: ")
     bus.emit(Message('mycroft.awoken'))
 
@@ -79,24 +81,29 @@ def handle_speak(event):
 
 
 def handle_complete_intent_failure(event):
+    """Extreme backup for answering completely unhandled intent requests."""
     LOG.info("Failed to find intent.")
     data = {'utterance': dialog.get('not.loaded')}
     bus.emit(Message('speak', data))
 
 
 def handle_sleep(event):
+    """Put the recognizer loop to sleep."""
     loop.sleep()
 
 
 def handle_wake_up(event):
+    """Wake up the the recognize loop."""
     loop.awaken()
 
 
 def handle_mic_mute(event):
+    """Mute the listener system."""
     loop.mute()
 
 
 def handle_mic_unmute(event):
+    """Unmute the listener system."""
     loop.unmute()
 
 
@@ -109,38 +116,36 @@ def handle_mic_listen(_):
 
 
 def handle_mic_get_status(event):
-    """
-        Query microphone mute status.
-    """
+    """Query microphone mute status."""
     data = {'muted': loop.is_muted()}
     bus.emit(event.response(data))
 
 
 def handle_paired(event):
+    """Update identity information with pairing data.
+
+    This is done here to make sure it's only done in a single place.
+    TODO: Is there a reason this isn't done directly in the pairing skill?
+    """
     IdentityManager.update(event.data)
 
 
 def handle_audio_start(event):
-    """
-        Mute recognizer loop
-    """
+    """Mute recognizer loop."""
     if config.get("listener").get("mute_during_output"):
         loop.mute()
 
 
 def handle_audio_end(event):
-    """
-        Request unmute, if more sources have requested the mic to be muted
-        it will remain muted.
+    """Request unmute, if more sources have requested the mic to be muted
+    it will remain muted.
     """
     if config.get("listener").get("mute_during_output"):
         loop.unmute()  # restore
 
 
 def handle_stop(event):
-    """
-        Handler for mycroft.stop, i.e. button press
-    """
+    """Handler for mycroft.stop, i.e. button press."""
     loop.force_unmute()
 
 

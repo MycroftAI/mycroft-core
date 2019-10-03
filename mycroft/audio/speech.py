@@ -41,8 +41,9 @@ def _start_listener(_):
 
 
 def handle_speak(event):
-    """
-        Handle "speak" message
+    """Handle "speak" message
+
+    Parse sentences and invoke text to speech service.
     """
     config = Configuration.get()
     Configuration.set_config_update_handlers(bus)
@@ -103,12 +104,11 @@ def handle_speak(event):
 
 
 def mute_and_speak(utterance, ident):
-    """
-        Mute mic and start speaking the utterance using selected tts backend.
+    """Mute mic and start speaking the utterance using selected tts backend.
 
-        Args:
-            utterance:  The sentence to be spoken
-            ident:      Ident tying the utterance to the source query
+    Arguments:
+        utterance:  The sentence to be spoken
+        ident:      Ident tying the utterance to the source query
     """
     global tts_hash
 
@@ -148,8 +148,9 @@ def mimic_fallback_tts(utterance, ident):
 
 
 def handle_stop(event):
-    """
-        handle stop message
+    """Handle stop message.
+
+    Shutdown any speech.
     """
     global _last_stop_signal
     if check_for_signal("isSpeaking", -1):
@@ -159,7 +160,7 @@ def handle_stop(event):
 
 
 def init(messagebus):
-    """ Start speech related handlers.
+    """Start speech related handlers.
 
     Arguments:
         messagebus: Connection to the Mycroft messagebus
@@ -183,6 +184,10 @@ def init(messagebus):
 
 
 def shutdown():
+    """Shutdown the audio service cleanly.
+
+    Stop any playing audio and make sure threads are joined correctly.
+    """
     if tts:
         tts.playback.stop()
         tts.playback.join()
