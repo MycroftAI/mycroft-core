@@ -13,6 +13,8 @@
 # limitations under the License.
 #
 """Common functionality relating to the implementation of mycroft skills."""
+
+from copy import deepcopy
 import inspect
 import sys
 import re
@@ -129,11 +131,8 @@ class MycroftSkill:
         # Get directory of skill
         self.root_dir = dirname(abspath(sys.modules[self.__module__].__file__))
         if use_settings:
-            self._initial_settings = get_local_settings(
-                self.root_dir,
-                self.name
-            )
             self.settings = Settings(self)
+            self._initial_settings = deepcopy(self.settings.as_dict())
         else:
             self.settings = None
         self.settings_change_callback = None
