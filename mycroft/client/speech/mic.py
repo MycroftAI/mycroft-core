@@ -184,7 +184,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
     SEC_BETWEEN_WW_CHECKS = 0.2
 
     def __init__(self, wake_word_recognizer):
-
         self.config = Configuration.get()
         listener_config = self.config.get('listener')
         self.upload_url = listener_config['wake_word_upload']['url']
@@ -208,7 +207,10 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.upload_lock = Lock()
         self.filenames_to_upload = []
         self.mic_level_file = os.path.join(get_ipc_directory(), "mic_level")
+
+        # Signal statuses
         self._stop_signaled = False
+        self._listen_triggered = False
 
         # The maximum audio in seconds to keep for transcribing a phrase
         # The wake word must fit in this time
@@ -349,9 +351,12 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         return int(sec * source.SAMPLE_RATE) * source.SAMPLE_WIDTH
 
     def _skip_wake_word(self):
-        # Check if told programatically to skip the wake word, like
-        # when we are in a dialog with the user.
-        if check_for_signal('startListening'):
+        """Check if told programatically to skip the wake word
+
+        For example when we are in a dialog with the user.
+        """
+        # TODO: remove startListening signal check in 20.02
+        if check_for_signal('startListening') or self._listen_triggered:
             return True
 
         # Pressing the Mark 1 button can start recording (unless
@@ -399,6 +404,11 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 'metadata': StringIO(json.dumps(metadata))
             }
         )
+
+    def trigger_listen(self):
+        """Externally trigger listening."""
+        LOG.debug('Listen triggered from external source.')
+        self._listen_triggered = True
 
     def _wait_until_wake_word(self, source, sec_per_buffer):
         """Listen continuously on source until a wake word is spoken
@@ -557,6 +567,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         LOG.debug("Waiting for wake word...")
         ww_frames = self._wait_until_wake_word(source, sec_per_buffer)
+
+        self._listen_triggered = False
         if self._stop_signaled:
             return
 
