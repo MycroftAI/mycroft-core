@@ -295,7 +295,7 @@ function install_deps() {
         $SUDO yum install -y epel-release-latest-7.noarch.rpm
         rm epel-release-latest-7.noarch.rpm
         redhat_common_install
-    elif os_is_like debian || os_is debian || os_is_like ubuntu || os_is ubuntu || os_is linuxmint; then
+    elif os_is_like debian || os_is debian || os_is_like ubuntu || os_is ubuntu || os_is linuxmint || os_is neon; then
         # Debian / Ubuntu / Mint
         echo "$GREEN Installing packages for Debian/Ubuntu/Mint...$RESET"
         if dpkg -V libjack-jackd2-0 > /dev/null 2>&1 && [[ -z $IS_TRAVIS ]] ; then
