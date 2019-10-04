@@ -19,7 +19,7 @@ import random
 import re
 from abc import ABCMeta, abstractmethod
 from threading import Thread
-from time import time
+from time import time, sleep
 
 import os.path
 from os.path import dirname, exists, isdir, join
@@ -83,7 +83,8 @@ class PlaybackThread(Thread):
         """Thread main loop. get audio and viseme data from queue and play."""
         while not self._terminated:
             try:
-                snd_type, data, visemes, ident = self.queue.get(timeout=2)
+                snd_type, data, visemes, ident, listen = \
+                    self.queue.get(timeout=2)
                 self.blink(0.5)
                 if not self._processing_queue:
                     self._processing_queue = True
@@ -111,7 +112,7 @@ class PlaybackThread(Thread):
             except Exception as e:
                 LOG.exception(e)
                 if self._processing_queue:
-                    self.tts.end_audio()
+                    self.tts.end_audio(listen)
                     self._processing_queue = False
 
     def show_visemes(self, pairs):
@@ -196,7 +197,7 @@ class TTS(metaclass=ABCMeta):
         # Create signals informing start of speech
         self.bus.emit(Message("recognizer_loop:audio_output_start"))
 
-    def end_audio(self):
+    def end_audio(self, listen):
         """Helper function for child classes to call in execute().
 
         Sends the recognizer_loop:audio_output_end message, indicating
@@ -205,6 +206,8 @@ class TTS(metaclass=ABCMeta):
         """
 
         self.bus.emit(Message("recognizer_loop:audio_output_end"))
+        if listen:
+            self.bus.emit(Message('mycroft.mic.listen'))
         # Clean the cache as needed
         cache_dir = mycroft.util.get_cache_directory("tts/" + self.tts_name)
         mycroft.util.curate_cache(cache_dir, min_free_percent=100)
@@ -287,15 +290,17 @@ class TTS(metaclass=ABCMeta):
         """
         return [sentence]
 
-    def execute(self, sentence, ident=None):
+    def execute(self, sentence, ident=None, listen=False):
         """Convert sentence to speech, preprocessing out unsupported ssml
 
             The method caches results if possible using the hash of the
             sentence.
 
-            Args:
+            Arguments:
                 sentence:   Sentence to be spoken
                 ident:      Id reference to current interaction
+                listen:     True if listen should be triggered at the end
+                            of the utterance.
         """
         sentence = self.validate_ssml(sentence)
 
@@ -307,7 +312,11 @@ class TTS(metaclass=ABCMeta):
                                                 self.spellings[word.lower()])
 
         chunks = self._preprocess_sentence(sentence)
-        for sentence in chunks:
+        # Apply the listen flag to the last chunk, set the rest to False
+        chunks = [(chunks[i], listen if i == len(chunks) - 1 else False)
+                  for i in range(len(chunks))]
+
+        for sentence, l in chunks:
             key = str(hashlib.md5(
                 sentence.encode('utf-8', 'ignore')).hexdigest())
             wav_file = os.path.join(
@@ -323,7 +332,7 @@ class TTS(metaclass=ABCMeta):
                     self.save_phonemes(key, phonemes)
 
             vis = self.viseme(phonemes) if phonemes else None
-            self.queue.put((self.audio_ext, wav_file, vis, ident))
+            self.queue.put((self.audio_ext, wav_file, vis, ident, l))
 
     def viseme(self, phonemes):
         """Create visemes from phonemes. Needs to be implemented for all

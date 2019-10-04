@@ -35,11 +35,6 @@ mimic_fallback_obj = None
 _last_stop_signal = 0
 
 
-def _start_listener(_):
-    """Force Mycroft to start listening (as if 'Hey Mycroft' was spoken)."""
-    bus.emit(Message('mycroft.mic.listen'))
-
-
 def handle_speak(event):
     """Handle "speak" message
 
@@ -60,11 +55,7 @@ def handle_speak(event):
         stopwatch = Stopwatch()
         stopwatch.start()
         utterance = event.data['utterance']
-        if event.data.get('expect_response', False):
-            # When expect_response is requested, the listener will be restarted
-            # at the end of the next bit of spoken audio.
-            bus.once('recognizer_loop:audio_output_end', _start_listener)
-
+        listen = event.data.get('expect_response', False)
         # This is a bit of a hack for Picroft.  The analog audio on a Pi blocks
         # for 30 seconds fairly often, so we don't want to break on periods
         # (decreasing the chance of encountering the block).  But we will
@@ -82,7 +73,10 @@ def handle_speak(event):
             utterance = re.sub(r'\b([A-za-z][\.])(\s+)', r'\g<1>', utterance)
             chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\;|\?)\s',
                               utterance)
-            for chunk in chunks:
+            # Apply the listen flag to the last chunk, set the rest to False
+            chunks = [(chunks[i], listen if i == len(chunks) - 1 else False)
+                      for i in range(len(chunks))]
+            for chunk, listen in chunks:
                 # Check if somthing has aborted the speech
                 if (_last_stop_signal > start or
                         check_for_signal('buttonPress')):
@@ -90,7 +84,7 @@ def handle_speak(event):
                     tts.playback.clear()
                     break
                 try:
-                    mute_and_speak(chunk, ident)
+                    mute_and_speak(chunk, ident, listen)
                 except KeyboardInterrupt:
                     raise
                 except Exception:
@@ -103,7 +97,7 @@ def handle_speak(event):
                                                'tts': tts.__class__.__name__})
 
 
-def mute_and_speak(utterance, ident):
+def mute_and_speak(utterance, ident, listen=False):
     """Mute mic and start speaking the utterance using selected tts backend.
 
     Arguments:
@@ -125,7 +119,7 @@ def mute_and_speak(utterance, ident):
 
     LOG.info("Speak: " + utterance)
     try:
-        tts.execute(utterance, ident)
+        tts.execute(utterance, ident, listen)
     except RemoteTTSTimeoutException as e:
         LOG.error(e)
         mimic_fallback_tts(utterance, ident)
