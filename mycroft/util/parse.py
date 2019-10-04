@@ -129,6 +129,8 @@ def extract_numbers(text, short_scale=True, ordinals=False, lang=None):
         return extract_numbers_it(text, short_scale, ordinals)
     elif lang_code == "da":
         return extract_numbers_da(text, short_scale, ordinals)
+    elif lang_code == "es":
+        return extract_numbers_es(text, short_scale, ordinals)
     return []
 
 
