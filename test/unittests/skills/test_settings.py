@@ -314,3 +314,10 @@ class TestSettings(TestCase):
             self.skill_mock.settings_change_callback,
             test_callback
         )
+
+    def test_del_settings_key(self):
+        settings = Settings(self.skill_mock)
+        settings['flowerpot'] = 42
+        settings['whale'] = 43
+        del settings['whale']
+        self.assertDictEqual(settings._settings, {'flowerpot': 42})
