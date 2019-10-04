@@ -16,13 +16,14 @@
 #
 import unittest
 
-from mycroft.util.parse import normalize
+from mycroft.util.parse import normalize, extract_numbers, extract_number
 
 
 class TestNormalize(unittest.TestCase):
     """
         Test cases for Spanish parsing
     """
+
     def test_articles_es(self):
         self.assertEqual(normalize("esta es la prueba", lang="es",
                                    remove_articles=True),
@@ -75,6 +76,15 @@ class TestNormalize(unittest.TestCase):
             u"novecientos noventa y nueve mil novecientos noventa y nueve",
             lang="es"),
             "999999")
+
+    def test_extract_number_es(self):
+        self.assertEqual(sorted(extract_numbers(
+            "1 7 cuatro catorce ocho 157", lang='es')), [1, 4, 7, 8, 14, 157])
+        self.assertEqual(sorted(extract_numbers(
+            "1 7 cuatro albuquerque naranja John Doe catorce ocho 157",
+            lang='es')), [1, 4, 7, 8, 14, 157])
+        self.assertEqual(extract_number("seis punto dos", lang='es'), 6.2)
+        self.assertEqual(extract_numbers("un medio", lang='es'), [0.5])
 
 
 if __name__ == "__main__":
