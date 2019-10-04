@@ -80,11 +80,25 @@ class PlaybackThread(Thread):
             pass
 
     def run(self):
-        """Thread main loop. get audio and viseme data from queue and play."""
+        """Thread main loop. Get audio and extra data from queue and play.
+
+        The queue messages is a tuple containing
+        snd_type: 'mp3' or 'wav' telling the loop what format the data is in
+        data: path to temporary audio data
+        videmes: list of visemes to display while playing
+        listen: if listening should be triggered at the end of the sentence.
+
+        Playback of audio is started and the visemes are sent over the bus
+        the loop then wait for the playback process to finish before starting
+        checking the next position in queue.
+
+        If the queue is empty the tts.end_audio() is called possibly triggering
+        listening.
+        """
         while not self._terminated:
             try:
-                snd_type, data, visemes, ident, listen = \
-                    self.queue.get(timeout=2)
+                (snd_type, data,
+                 visemes, ident, listen) = self.queue.get(timeout=2)
                 self.blink(0.5)
                 if not self._processing_queue:
                     self._processing_queue = True
@@ -200,9 +214,13 @@ class TTS(metaclass=ABCMeta):
     def end_audio(self, listen):
         """Helper function for child classes to call in execute().
 
-        Sends the recognizer_loop:audio_output_end message, indicating
-        that speaking is done for the moment. It also checks if cache
-        directory needs cleaning to free up disk space.
+        Sends the recognizer_loop:audio_output_end message (indicating
+        that speaking is done for the moment) as well as trigger listening
+        if it has been requested. It also checks if cache directory needs
+        cleaning to free up disk space.
+
+        Arguments:
+            listen (bool): indication if listening trigger should be sent.
         """
 
         self.bus.emit(Message("recognizer_loop:audio_output_end"))
