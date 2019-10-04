@@ -98,7 +98,7 @@ FRACTION_STRING_DA = {
 EXTRA_SPACE = ""
 
 
-def nice_number_da(number, speech, denominators):
+def nice_number_da(number, speech, denominators=range(1, 21)):
     """ Danish helper for nice_number
     This function formats a float to human understandable functions. Like
     4.5 becomes "4 einhalb" for speech and "4 1/2" for text
