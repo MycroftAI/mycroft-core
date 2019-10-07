@@ -431,6 +431,9 @@ class Settings:
     def __contains__(self, key):
         return key in self._settings
 
+    def __delitem__(self, item):
+        del self._settings[item]
+
     def store(self, force=False):
         LOG.warning('DEPRECATED - use mycroft.skills.settings.save_settings()')
         save_settings(self._skill.root_dir, self._settings)
