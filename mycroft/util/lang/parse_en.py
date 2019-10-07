@@ -1119,18 +1119,6 @@ def extract_datetime_en(string, dateNow, default_time):
                         remainder = nextWord
                         used += 1
 
-                    elif wordNext == "in" and wordNextNext == "the" and \
-                            words[idx + 3] == "morning":
-                        remainder = "am"
-                        used += 3
-                    elif wordNext == "in" and wordNextNext == "the" and \
-                            words[idx + 3] == "afternoon":
-                        remainder = "pm"
-                        used += 3
-                    elif wordNext == "in" and wordNextNext == "the" and \
-                            words[idx + 3] == "evening":
-                        remainder = "pm"
-                        used += 3
                     elif wordNext == "in" and wordNextNext == "morning":
                         remainder = "am"
                         used += 2
