@@ -45,6 +45,7 @@ from mycroft.skills.core import MycroftSkill, FallbackSkill
 from mycroft.skills.settings import Settings
 from mycroft.skills.skill_loader import SkillLoader
 from mycroft.configuration import Configuration
+from mycroft.util.log import LOG
 
 from logging import StreamHandler
 from io import StringIO
@@ -143,6 +144,11 @@ def load_skills(emitter, skills_root):
             skill_loader.skill_id = skill_id
             skill_loader.load()
             skill_list.append(skill_loader.instance)
+
+        # Restore skill logger since it was created with the temporary handler
+        if skill_loader.instance:
+            skill_loader.instance.log = LOG.create_logger(
+                skill_loader.instance.name)
         log[path] = buf.getvalue()
 
     return skill_list, log
