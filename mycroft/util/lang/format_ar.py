@@ -65,7 +65,7 @@ def nice_number_en(number, speech, denominators):
     return return_string
 
 
-def pronounce_number_ar(num, places=2, short_scale=True, scientific=False):
+def pronounce_number_ar(num, places=2, short_scale=False, scientific=False):
     """
     Convert a number to its spoken equivalent
 
@@ -80,6 +80,9 @@ def pronounce_number_ar(num, places=2, short_scale=True, scientific=False):
     Returns:
         (str): The pronounced number
     """
+    """numStr = str(num).replace(',','')
+    num = int(numStr.replace(' ', ''))"""
+    
     if scientific:
         number = '%E' % num
         n, power = number.replace("+", "").split("E")
@@ -87,11 +90,11 @@ def pronounce_number_ar(num, places=2, short_scale=True, scientific=False):
         if power != 0:
             # This handles negatives of powers separately from the normal
             # handling since each call disables the scientific flag
-            return '{}{} times ten to the power of {}{}'.format(
+            return '{}{} قوة عشرة {}{}'.format(
                 'negative ' if float(n) < 0 else '',
-                pronounce_number_en(abs(float(n)), places, short_scale, False),
+                pronounce_number_ar(abs(float(n)), places, short_scale, False),
                 'negative ' if power < 0 else '',
-                pronounce_number_en(abs(power), places, short_scale, False))
+                pronounce_number_ar(abs(power), places, short_scale, False))
     if short_scale:
         number_names = _NUM_STRING_AR.copy()
         number_names.update(_SHORT_SCALE_AR)
@@ -128,20 +131,23 @@ def pronounce_number_ar(num, places=2, short_scale=True, scientific=False):
             # deal with 1900, 1300, etc
             # i.e. 1900 => nineteen hundred
             elif _num[2:4] == '00':
-                first = number_names[int(_num[0:2])]
+                first = number_names[1000]
+                second = number_names[int(_num[1])]
                 last = number_names[100]
-                return first + " " + last
+                return first + " و " + second + " "+ last
             # deal with 1960, 1961, etc
             # i.e. 1960 => nineteen sixty
             #      1961 => nineteen sixty one
             else:
-                first = number_names[int(_num[0:2])]
+                first = number_names[1000]
                 if _num[3:4] == '0':
+                    second = number_names[int(_num[1])]
+                    third = number_names[100]
                     last = number_names[int(_num[2:4])]
                 else:
                     second = number_names[int(_num[2:3])*10]
                     last = second + " " + number_names[int(_num[3:4])]
-                return first + " " + last
+                return first + " و " + second + third + " و " + last
     # exception used to catch any unforseen edge cases
     # will default back to normal subroutine
     except Exception as e:
@@ -149,21 +155,31 @@ def pronounce_number_ar(num, places=2, short_scale=True, scientific=False):
 
     # check for a direct match
     if num in number_names:
-        if num > 90:
-            result += "one "
+       
         result += number_names[num]
     else:
         def _sub_thousand(n):
+            
             assert 0 <= n <= 999
             if n <= 19:
                 return digits[n]
             elif n <= 99:
                 q, r = divmod(n, 10)
-                return tens[q - 1] + (" " + _sub_thousand(r) if r else "")
+                return ("  " + _sub_thousand(r) + " و "  if r else "") + tens[q - 1] + " "
             else:
                 q, r = divmod(n, 100)
-                return digits[q] + " hundred" + (
-                    " and " + _sub_thousand(r) if r else "")
+                if q == 1:
+                    return "مئة و "+ (
+                     _sub_thousand(r) if r else "")
+                elif q == 2:
+                    return "مئتان و "+ (
+                     _sub_thousand(r) if r else "")
+                else:
+                    number = digits[q]
+                    return number[0:len(number)-1] + " مئة و "+ (
+                         _sub_thousand(r) if r else "")
+
+
 
         def _short_scale(n):
             if n >= max(_SHORT_SCALE_AR.keys()):
@@ -171,24 +187,27 @@ def pronounce_number_ar(num, places=2, short_scale=True, scientific=False):
             n = int(n)
             assert 0 <= n
             res = []
+            
             for i, z in enumerate(_split_by(n, 1000)):
                 if not z:
                     continue
                 number = _sub_thousand(z)
                 if i:
-                    number += " "
-                    number += hundreds[i]
+                    if z==1:
+                        number = 'ألف'
+                    elif z==2:
+                        number = 'ألفان'
+                    elif z>2 and z<11:
+                        number += " "
+                        number += 'آلاف'
+                    else:
+                        number += " "
+                        number += 'ألف'
+                    
+                    
                 res.append(number)
 
-            return ", ".join(reversed(res))
-
-        def _split_by(n, split=1000):
-            assert 0 <= n
-            res = []
-            while n:
-                n, r = divmod(n, split)
-                res.append(r)
-            return res
+            return " و ".join(reversed(res))
 
         def _long_scale(n):
             if n >= max(_LONG_SCALE_AR.keys()):
@@ -199,15 +218,39 @@ def pronounce_number_ar(num, places=2, short_scale=True, scientific=False):
             for i, z in enumerate(_split_by(n, 1000000)):
                 if not z:
                     continue
-                number = pronounce_number_en(z, places, True, scientific)
+                
+                number = pronounce_number_ar(z, places, True, scientific)
                 # strip off the comma after the thousand
-                if i:
+                if i: 
+                    number =_sub_thousand(z)
+                    if z==1:
+                        number = 'مليون'
+                    elif z==2:
+                        number = 'مليونين'
+                    elif z>2 and z<11  :
+                        number += " "
+                        number += 'ملايين'
+                    else :
+                        number += " "
+                        number += 'مليون'
+
                     # plus one as we skip 'thousand'
                     # (and 'hundred', but this is excluded by index value)
-                    number = number.replace(',', '')
-                    number += " " + hundreds[i+1]
+                    #number = number.replace(',', '')
+                    #number += " " + hundreds[i+1]
                 res.append(number)
-            return ", ".join(reversed(res))
+            return " و ".join(reversed(res))
+
+        def _split_by(n, split=1000):
+            assert 0 <= n
+            res = []
+            while n:
+                n, r = divmod(n, split)
+              
+                res.append(r)
+            return res
+
+
 
         if short_scale:
             result += _short_scale(num)
@@ -216,19 +259,27 @@ def pronounce_number_ar(num, places=2, short_scale=True, scientific=False):
 
     # Deal with fractional part
     if not num == int(num) and places > 0:
-        result += " point"
+        before, sep, after = str(num).rpartition(".")
+        if not int(before)==0:
+            result = _sub_thousand(int(before))
+            result += " و "
+        placesVar = places
         place = 10
-        while int(num * place) % 10 > 0 and places > 0:
-            result += " " + number_names[int(num * place) % 10]
-            place *= 10
-            places -= 1
+            
+        
+        if len(after) == 1:
+            result += " " + _sub_thousand(int(after[:1]))
+            result += " من عشرة "
+        elif len(after) == 2:
+            result += " " + _sub_thousand(int(after[0:2]))
+            result +=  " من مئة "
+        elif len(after) == 3:
+            result += " " + _sub_thousand(int(after[0:3]))
+            result += " من ألف "
+          
 
-    """if not أحد عشر، اثنا عشر then they must be two words which need to be conctenated with و i.e. تسعة (و) عشرون"""
-    if result:
-        splitted = result.split()
-        if(len(splitted) >1):
-            if(splitted[1] != "عشر"):
-                result = splitted[1]+ " " + "و" +" " +splitted[0] + " "
+
+
     return result
 
 

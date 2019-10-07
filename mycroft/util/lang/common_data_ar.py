@@ -93,11 +93,11 @@ _FRACTION_STRING_AR = {
 
 
 _LONG_SCALE_AR = OrderedDict([
-    (100, 'hundred'),
-    (1000, 'thousand'),
-    (1000000, 'million'),
-    (1e12, "billion"),
-    (1e18, 'trillion'),
+    (100, 'مئة'),
+    (1000, 'آلاف'),
+    (1000000, 'مليون'),
+    (1e12, "بليون"),
+    (1e18, 'ترليون'),
     (1e24, "quadrillion"),
     (1e30, "quintillion"),
     (1e36, "sextillion"),
@@ -123,11 +123,11 @@ _LONG_SCALE_AR = OrderedDict([
 
 
 _SHORT_SCALE_AR = OrderedDict([
-    (100, 'hundred'),
-    (1000, 'thousand'),
-    (1000000, 'million'),
-    (1e9, "billion"),
-    (1e12, 'trillion'),
+    (100, 'مئة'),
+    (1000, 'ألف'),
+    (1000000, 'مليون'),
+    (1e9, "بليون"),
+    (1e12, 'ترليون'),
     (1e15, "quadrillion"),
     (1e18, "quintillion"),
     (1e21, "sextillion"),
