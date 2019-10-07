@@ -132,8 +132,8 @@ class EventContainer:
         def once_wrapper(message):
             # Remove registered one-time handler before invoking,
             # allowing them to re-schedule themselves.
-            handler(message)
             self.remove(name)
+            handler(message)
 
         if handler:
             if once:
