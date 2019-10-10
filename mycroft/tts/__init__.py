@@ -211,7 +211,7 @@ class TTS(metaclass=ABCMeta):
         # Create signals informing start of speech
         self.bus.emit(Message("recognizer_loop:audio_output_start"))
 
-    def end_audio(self, listen):
+    def end_audio(self, listen=False):
         """Helper function for child classes to call in execute().
 
         Sends the recognizer_loop:audio_output_end message (indicating
