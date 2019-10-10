@@ -25,7 +25,7 @@ class ESpeak(TTS):
         self.begin_audio()
         subprocess.call(
             ['espeak', '-v', self.lang + '+' + self.voice, sentence])
-        self.end_audio()
+        self.end_audio(listen)
 
 
 class ESpeakValidator(TTSValidator):

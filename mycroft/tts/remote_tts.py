@@ -51,7 +51,7 @@ class RemoteTTS(TTS):
                 except Exception as e:
                     LOG.error(e.message)
                 finally:
-                    self.end_audio()
+                    self.end_audio(listen)
 
     @staticmethod
     def __get_phrases(sentence):
