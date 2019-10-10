@@ -40,7 +40,7 @@ class RemoteTTS(TTS):
         self.url = remove_last_slash(url)
         self.session = FuturesSession()
 
-    def execute(self, sentence, ident=None):
+    def execute(self, sentence, ident=None, listen=False):
         phrases = self.__get_phrases(sentence)
 
         if len(phrases) > 0:
