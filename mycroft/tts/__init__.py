@@ -118,7 +118,7 @@ class PlaybackThread(Thread):
                 send_playback_metric(stopwatch, ident)
 
                 if self.queue.empty():
-                    self.tts.end_audio()
+                    self.tts.end_audio(listen)
                     self._processing_queue = False
                 self.blink(0.2)
             except Empty:
