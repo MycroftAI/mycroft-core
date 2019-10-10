@@ -18,7 +18,9 @@ python:
   - "3.6"
   - "3.7"
 # don't rebuild pocketsphinx for every build
-cache: pocketsphinx-python
+cache:
+  - pip
+  - pocketsphinx-python
 # command to install dependencies
 install:
  - rm -rf ${TMPDIR}
@@ -31,8 +33,6 @@ install:
 script:
  - pycodestyle mycroft test
  - ./start-mycroft.sh unittest
-env:
- - IS_TRAVIS=true
 
 after_success:
   coveralls

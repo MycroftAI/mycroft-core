@@ -54,9 +54,8 @@ class AudioStreamHandler(object):
 
 
 class AudioProducer(Thread):
-    """
-    AudioProducer
-    given a mic and a recognizer implementation, continuously listens to the
+    """AudioProducer
+    Given a mic and a recognizer implementation, continuously listens to the
     mic for potential speech chunks and pushes them onto the queue.
     """
 
@@ -81,28 +80,27 @@ class AudioProducer(Thread):
                         self.queue.put((AUDIO_DATA, audio))
                     else:
                         LOG.warning("Audio contains no data.")
-                except IOError as e:
-                    # NOTE: Audio stack on raspi is slightly different, throws
-                    # IOError every other listen, almost like it can't handle
-                    # buffering audio between listen loops.
-                    # The internet was not helpful.
-                    # http://stackoverflow.com/questions/10733903/pyaudio-input-overflowed
-                    self.emitter.emit("recognizer_loop:ioerror", e)
+                except IOError:
+                    # IOError will be thrown if the read is unsuccessful.
+                    # If self.recognizer.overflow_exc is False (default)
+                    # input buffer overflow IOErrors due to not consuming the
+                    # buffers quickly enough will be silently ignored.
+                    LOG.exception('IOError Exception in AudioProducer')
+                except Exception:
+                    LOG.exception('Exception in AudioProducer')
+                    raise
                 finally:
                     if self.stream_handler is not None:
                         self.stream_handler.stream_stop()
 
     def stop(self):
-        """
-            Stop producer thread.
-        """
+        """Stop producer thread."""
         self.state.running = False
         self.recognizer.stop()
 
 
 class AudioConsumer(Thread):
-    """
-    AudioConsumer
+    """AudioConsumer
     Consumes AudioData chunks off the queue
     """
 
@@ -248,7 +246,7 @@ class RecognizerLoopState:
 
 
 def recognizer_conf_hash(config):
-    """ Hash of the values important to the listener. """
+    """Hash of the values important to the listener."""
     c = {
         'listener': config.get('listener'),
         'hotwords': config.get('hotwords'),
@@ -259,9 +257,9 @@ def recognizer_conf_hash(config):
 
 
 class RecognizerLoop(EventEmitter):
-    """
-        EventEmitter loop running speech recognition. Local wake word
-        recognizer and remote general speech recognition.
+    """ EventEmitter loop running speech recognition.
+
+    Local wake word recognizer and remote general speech recognition.
     """
 
     def __init__(self):
@@ -270,9 +268,7 @@ class RecognizerLoop(EventEmitter):
         self._load_config()
 
     def _load_config(self):
-        """
-            Load configuration parameters from configuration
-        """
+        """Load configuration parameters from configuration."""
         config = Configuration.get()
         self.config_core = config
         self._config_hash = recognizer_conf_hash(config)
@@ -328,9 +324,7 @@ class RecognizerLoop(EventEmitter):
         return HotWordFactory.create_hotword(word, lang=self.lang, loop=self)
 
     def start_async(self):
-        """
-            Start consumer and producer threads
-        """
+        """Start consumer and producer threads."""
         self.state.running = True
         stt = STTFactory.create()
         queue = Queue()
@@ -354,17 +348,13 @@ class RecognizerLoop(EventEmitter):
         self.consumer.join()
 
     def mute(self):
-        """
-            Mute microphone and increase number of requests to mute
-        """
+        """Mute microphone and increase number of requests to mute."""
         self.mute_calls += 1
         if self.microphone:
             self.microphone.mute()
 
     def unmute(self):
-        """
-            Unmute mic if as many unmute calls as mute calls have been
-            received.
+        """Unmute mic if as many unmute calls as mute calls have been received.
         """
         if self.mute_calls > 0:
             self.mute_calls -= 1
@@ -374,9 +364,7 @@ class RecognizerLoop(EventEmitter):
             self.mute_calls = 0
 
     def force_unmute(self):
-        """
-            Completely unmute mic regardless of the number of calls to mute
-        """
+        """Completely unmute mic regardless of the number of calls to mute."""
         self.mute_calls = 0
         self.unmute()
 
@@ -406,11 +394,12 @@ class RecognizerLoop(EventEmitter):
                 LOG.error(e)
                 self.stop()
                 raise  # Re-raise KeyboardInterrupt
+            except Exception:
+                LOG.exception('Exception in RecognizerLoop')
+                raise
 
     def reload(self):
-        """
-            Reload configuration and restart consumer and producer
-        """
+        """Reload configuration and restart consumer and producer."""
         self.stop()
         self.wakeword_recognizer.stop()
         # load config

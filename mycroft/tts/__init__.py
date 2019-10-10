@@ -19,7 +19,7 @@ import random
 import re
 from abc import ABCMeta, abstractmethod
 from threading import Thread
-from time import time
+from time import time, sleep
 
 import os.path
 from os.path import dirname, exists, isdir, join
@@ -80,10 +80,25 @@ class PlaybackThread(Thread):
             pass
 
     def run(self):
-        """Thread main loop. get audio and viseme data from queue and play."""
+        """Thread main loop. Get audio and extra data from queue and play.
+
+        The queue messages is a tuple containing
+        snd_type: 'mp3' or 'wav' telling the loop what format the data is in
+        data: path to temporary audio data
+        videmes: list of visemes to display while playing
+        listen: if listening should be triggered at the end of the sentence.
+
+        Playback of audio is started and the visemes are sent over the bus
+        the loop then wait for the playback process to finish before starting
+        checking the next position in queue.
+
+        If the queue is empty the tts.end_audio() is called possibly triggering
+        listening.
+        """
         while not self._terminated:
             try:
-                snd_type, data, visemes, ident = self.queue.get(timeout=2)
+                (snd_type, data,
+                 visemes, ident, listen) = self.queue.get(timeout=2)
                 self.blink(0.5)
                 if not self._processing_queue:
                     self._processing_queue = True
@@ -103,7 +118,7 @@ class PlaybackThread(Thread):
                 send_playback_metric(stopwatch, ident)
 
                 if self.queue.empty():
-                    self.tts.end_audio()
+                    self.tts.end_audio(listen)
                     self._processing_queue = False
                 self.blink(0.2)
             except Empty:
@@ -111,7 +126,7 @@ class PlaybackThread(Thread):
             except Exception as e:
                 LOG.exception(e)
                 if self._processing_queue:
-                    self.tts.end_audio()
+                    self.tts.end_audio(listen)
                     self._processing_queue = False
 
     def show_visemes(self, pairs):
@@ -196,15 +211,21 @@ class TTS(metaclass=ABCMeta):
         # Create signals informing start of speech
         self.bus.emit(Message("recognizer_loop:audio_output_start"))
 
-    def end_audio(self):
+    def end_audio(self, listen=False):
         """Helper function for child classes to call in execute().
 
-        Sends the recognizer_loop:audio_output_end message, indicating
-        that speaking is done for the moment. It also checks if cache
-        directory needs cleaning to free up disk space.
+        Sends the recognizer_loop:audio_output_end message (indicating
+        that speaking is done for the moment) as well as trigger listening
+        if it has been requested. It also checks if cache directory needs
+        cleaning to free up disk space.
+
+        Arguments:
+            listen (bool): indication if listening trigger should be sent.
         """
 
         self.bus.emit(Message("recognizer_loop:audio_output_end"))
+        if listen:
+            self.bus.emit(Message('mycroft.mic.listen'))
         # Clean the cache as needed
         cache_dir = mycroft.util.get_cache_directory("tts/" + self.tts_name)
         mycroft.util.curate_cache(cache_dir, min_free_percent=100)
@@ -287,15 +308,17 @@ class TTS(metaclass=ABCMeta):
         """
         return [sentence]
 
-    def execute(self, sentence, ident=None):
+    def execute(self, sentence, ident=None, listen=False):
         """Convert sentence to speech, preprocessing out unsupported ssml
 
             The method caches results if possible using the hash of the
             sentence.
 
-            Args:
+            Arguments:
                 sentence:   Sentence to be spoken
                 ident:      Id reference to current interaction
+                listen:     True if listen should be triggered at the end
+                            of the utterance.
         """
         sentence = self.validate_ssml(sentence)
 
@@ -307,7 +330,11 @@ class TTS(metaclass=ABCMeta):
                                                 self.spellings[word.lower()])
 
         chunks = self._preprocess_sentence(sentence)
-        for sentence in chunks:
+        # Apply the listen flag to the last chunk, set the rest to False
+        chunks = [(chunks[i], listen if i == len(chunks) - 1 else False)
+                  for i in range(len(chunks))]
+
+        for sentence, l in chunks:
             key = str(hashlib.md5(
                 sentence.encode('utf-8', 'ignore')).hexdigest())
             wav_file = os.path.join(
@@ -323,7 +350,7 @@ class TTS(metaclass=ABCMeta):
                     self.save_phonemes(key, phonemes)
 
             vis = self.viseme(phonemes) if phonemes else None
-            self.queue.put((self.audio_ext, wav_file, vis, ident))
+            self.queue.put((self.audio_ext, wav_file, vis, ident, l))
 
     def viseme(self, phonemes):
         """Create visemes from phonemes. Needs to be implemented for all
@@ -445,6 +472,7 @@ class TTSFactory:
     from mycroft.tts.ibm_tts import WatsonTTS
     from mycroft.tts.responsive_voice_tts import ResponsiveVoice
     from mycroft.tts.mimic2_tts import Mimic2
+    from mycroft.tts.yandex_tts import YandexTTS
 
     CLASSES = {
         "mimic": Mimic,
@@ -456,7 +484,8 @@ class TTSFactory:
         "spdsay": SpdSay,
         "watson": WatsonTTS,
         "bing": BingTTS,
-        "responsive_voice": ResponsiveVoice
+        "responsive_voice": ResponsiveVoice,
+        "yandex": YandexTTS
     }
 
     @staticmethod

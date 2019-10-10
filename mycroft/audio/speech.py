@@ -19,7 +19,7 @@ from threading import Lock
 from mycroft.configuration import Configuration
 from mycroft.metrics import report_timing, Stopwatch
 from mycroft.tts import TTSFactory
-from mycroft.util import create_signal, check_for_signal
+from mycroft.util import check_for_signal
 from mycroft.util.log import LOG
 from mycroft.messagebus.message import Message
 from mycroft.tts.remote_tts import RemoteTTSTimeoutException
@@ -35,16 +35,10 @@ mimic_fallback_obj = None
 _last_stop_signal = 0
 
 
-def _start_listener(message):
-    """
-        Force Mycroft to start listening (as if 'Hey Mycroft' was spoken)
-    """
-    create_signal('startListening')
-
-
 def handle_speak(event):
-    """
-        Handle "speak" message
+    """Handle "speak" message
+
+    Parse sentences and invoke text to speech service.
     """
     config = Configuration.get()
     Configuration.set_config_update_handlers(bus)
@@ -61,11 +55,7 @@ def handle_speak(event):
         stopwatch = Stopwatch()
         stopwatch.start()
         utterance = event.data['utterance']
-        if event.data.get('expect_response', False):
-            # When expect_response is requested, the listener will be restarted
-            # at the end of the next bit of spoken audio.
-            bus.once('recognizer_loop:audio_output_end', _start_listener)
-
+        listen = event.data.get('expect_response', False)
         # This is a bit of a hack for Picroft.  The analog audio on a Pi blocks
         # for 30 seconds fairly often, so we don't want to break on periods
         # (decreasing the chance of encountering the block).  But we will
@@ -83,7 +73,10 @@ def handle_speak(event):
             utterance = re.sub(r'\b([A-za-z][\.])(\s+)', r'\g<1>', utterance)
             chunks = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\;|\?)\s',
                               utterance)
-            for chunk in chunks:
+            # Apply the listen flag to the last chunk, set the rest to False
+            chunks = [(chunks[i], listen if i == len(chunks) - 1 else False)
+                      for i in range(len(chunks))]
+            for chunk, listen in chunks:
                 # Check if somthing has aborted the speech
                 if (_last_stop_signal > start or
                         check_for_signal('buttonPress')):
@@ -91,7 +84,7 @@ def handle_speak(event):
                     tts.playback.clear()
                     break
                 try:
-                    mute_and_speak(chunk, ident)
+                    mute_and_speak(chunk, ident, listen)
                 except KeyboardInterrupt:
                     raise
                 except Exception:
@@ -104,13 +97,12 @@ def handle_speak(event):
                                                'tts': tts.__class__.__name__})
 
 
-def mute_and_speak(utterance, ident):
-    """
-        Mute mic and start speaking the utterance using selected tts backend.
+def mute_and_speak(utterance, ident, listen=False):
+    """Mute mic and start speaking the utterance using selected tts backend.
 
-        Args:
-            utterance:  The sentence to be spoken
-            ident:      Ident tying the utterance to the source query
+    Arguments:
+        utterance:  The sentence to be spoken
+        ident:      Ident tying the utterance to the source query
     """
     global tts_hash
 
@@ -127,7 +119,7 @@ def mute_and_speak(utterance, ident):
 
     LOG.info("Speak: " + utterance)
     try:
-        tts.execute(utterance, ident)
+        tts.execute(utterance, ident, listen)
     except RemoteTTSTimeoutException as e:
         LOG.error(e)
         mimic_fallback_tts(utterance, ident)
@@ -150,8 +142,9 @@ def mimic_fallback_tts(utterance, ident):
 
 
 def handle_stop(event):
-    """
-        handle stop message
+    """Handle stop message.
+
+    Shutdown any speech.
     """
     global _last_stop_signal
     if check_for_signal("isSpeaking", -1):
@@ -161,7 +154,7 @@ def handle_stop(event):
 
 
 def init(messagebus):
-    """ Start speech related handlers.
+    """Start speech related handlers.
 
     Arguments:
         messagebus: Connection to the Mycroft messagebus
@@ -178,7 +171,6 @@ def init(messagebus):
     bus.on('mycroft.stop', handle_stop)
     bus.on('mycroft.audio.speech.stop', handle_stop)
     bus.on('speak', handle_speak)
-    bus.on('mycroft.mic.listen', _start_listener)
 
     tts = TTSFactory.create()
     tts.init(bus)
@@ -186,6 +178,10 @@ def init(messagebus):
 
 
 def shutdown():
+    """Shutdown the audio service cleanly.
+
+    Stop any playing audio and make sure threads are joined correctly.
+    """
     if tts:
         tts.playback.stop()
         tts.playback.join()

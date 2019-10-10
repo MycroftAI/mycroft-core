@@ -47,7 +47,7 @@ function change_ownership {
 }
 
 
-if [[ ${IS_TRAVIS} != true ]] ; then
+if [[ ${CI} != true ]] ; then
     if [ ! -d ${skills_dir} ] ; then
         echo "Create ${skills_dir}"
         $SUDO mkdir -p ${skills_dir}

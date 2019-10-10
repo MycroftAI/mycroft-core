@@ -42,9 +42,10 @@ from pyee import EventEmitter
 from numbers import Number
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import MycroftSkill, FallbackSkill
-from mycroft.skills.settings import SkillSettings
+from mycroft.skills.settings import Settings
 from mycroft.skills.skill_loader import SkillLoader
 from mycroft.configuration import Configuration
+from mycroft.util.log import LOG
 
 from logging import StreamHandler
 from io import StringIO
@@ -143,6 +144,11 @@ def load_skills(emitter, skills_root):
             skill_loader.skill_id = skill_id
             skill_loader.load()
             skill_list.append(skill_loader.instance)
+
+        # Restore skill logger since it was created with the temporary handler
+        if skill_loader.instance:
+            skill_loader.instance.log = LOG.create_logger(
+                skill_loader.instance.name)
         log[path] = buf.getvalue()
 
     return skill_list, log
@@ -188,8 +194,8 @@ class InterceptEmitter(object):
         pass
 
 
-class TestSettings(SkillSettings):
-    """ SkillSettings instance without saving/loading capability.
+class TestSettings(Settings):
+    """ Settings instance without saving/loading capability.
     """
     def save_skill_settings(self, skill_settings):
         pass
@@ -336,7 +342,7 @@ class SkillTest(object):
 
     def apply_test_settings(self, s, test_case):
         """Replace the skills settings with settings from the test_case."""
-        s.settings = TestSettings('/tmp/', self.test_case_file)
+        s.settings = TestSettings(s)
         for key in test_case['settings']:
             s.settings[key] = test_case['settings'][key]
         print(color.YELLOW, 'will run test with custom settings:',

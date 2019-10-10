@@ -126,18 +126,23 @@ class LOG:
             # [0] - _log()
             # [1] - debug(), info(), warning(), or error()
             # [2] - caller
-            stack = inspect.stack()
+            try:
+                stack = inspect.stack()
 
-            # Record:
-            # [0] - frame object
-            # [1] - filename
-            # [2] - line number
-            # [3] - function
-            # ...
-            record = stack[2]
-            mod = inspect.getmodule(record[0])
-            module_name = mod.__name__ if mod else ''
-            name = module_name + ':' + record[3] + ':' + str(record[2])
+                # Record:
+                # [0] - frame object
+                # [1] - filename
+                # [2] - line number
+                # [3] - function
+                # ...
+                record = stack[2]
+                mod = inspect.getmodule(record[0])
+                module_name = mod.__name__ if mod else ''
+                name = module_name + ':' + record[3] + ':' + str(record[2])
+            except Exception:
+                # The location couldn't be determined
+                name = 'Mycroft'
+
         func(cls.create_logger(name), *args, **kwargs)
 
 

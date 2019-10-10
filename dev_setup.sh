@@ -128,7 +128,7 @@ if found_exe tput ; then
 fi
 
 # Run a setup wizard the very first time that guides the user through some decisions
-if [[ ! -f .dev_opts.json && -z $IS_TRAVIS ]] ; then
+if [[ ! -f .dev_opts.json && -z $CI ]] ; then
     echo "
 $CYAN                    Welcome to Mycroft!  $RESET"
     sleep 0.5
@@ -298,7 +298,7 @@ function install_deps() {
     elif os_is_like debian || os_is debian || os_is_like ubuntu || os_is ubuntu || os_is linuxmint; then
         # Debian / Ubuntu / Mint
         echo "$GREEN Installing packages for Debian/Ubuntu/Mint...$RESET"
-        if dpkg -V libjack-jackd2-0 > /dev/null 2>&1 && [[ -z $IS_TRAVIS ]] ; then
+        if dpkg -V libjack-jackd2-0 > /dev/null 2>&1 && [[ -z ${CI} ]] ; then
             echo "
 We have detected that your computer has the libjack-jackd2-0 package installed.
 Mycroft requires a conflicting package, and will likely uninstall this package.

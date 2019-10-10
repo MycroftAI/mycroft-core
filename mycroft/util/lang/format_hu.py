@@ -106,7 +106,7 @@ def _get_vocal_type(word):
     return 0 if vowels_high == 0 else 1            # 0: type is low, 1: is high
 
 
-def nice_number_hu(number, speech, denominators):
+def nice_number_hu(number, speech, denominators=range(1, 21)):
     """ Hungarian helper for nice_number
 
     This function formats a float to human understandable functions. Like

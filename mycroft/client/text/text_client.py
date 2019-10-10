@@ -318,10 +318,10 @@ class MicMonitorThread(Thread):
         with io.open(self.filename, 'r') as fh:
             line = fh.readline()
             # Just adjust meter settings
-            # Ex:Energy:  cur=4 thresh=1.5
-            parts = line.split("=")
-            meter_thresh = float(parts[-1])
-            meter_cur = float(parts[-2].split(" ")[0])
+            # Ex:Energy:  cur=4 thresh=1.5 muted=0
+            cur_text, thresh_text, _ = line.split(' ')[-3:]
+            meter_thresh = float(thresh_text.split('=')[-1])
+            meter_cur = float(cur_text.split('=')[-1])
 
 
 class ScreenDrawThread(Thread):
