@@ -18,12 +18,13 @@ from glob import glob
 from threading import Thread, Event
 from time import sleep, time
 
+from mycroft.api import is_paired
 from mycroft.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
 from .msm_wrapper import create_msm as msm_creator, build_msm_config
-from .settings import SkillSettingsDownloader
+from .settings import SkillSettingsDownloader, SettingsMetaQueue
 from .skill_loader import SkillLoader
 from .skill_updater import SkillUpdater
 
@@ -44,6 +45,7 @@ class SkillManager(Thread):
         self._stop_event = Event()
         self._connected_event = Event()
         self.config = Configuration.get()
+        self.upload_queue = SettingsMetaQueue()
 
         self.skill_loaders = {}
         self.enclosure = EnclosureAPI(bus)
@@ -106,9 +108,18 @@ class SkillManager(Thread):
     def schedule_now(self, _):
         self.skill_updater.next_download = time() - 1
 
+    def _start_settings_update(self):
+        LOG.info('Sending settings meta')
+        self.upload_queue.start()
+        self.upload_queue.processed.wait()
+        LOG.info('All settings meta has been processed or upload has started')
+        self.settings_downloader.download()
+        LOG.info('Skill settings downloading has started')
+
     def handle_paired(self, _):
         """Trigger upload of skills manifest after pairing."""
         self.skill_updater.post_manifest(reload_skills_manifest=True)
+        self._start_settings_update()
 
     def load_priority(self):
         skills = {skill.name: skill for skill in self.msm.all_skills}
@@ -138,8 +149,9 @@ class SkillManager(Thread):
         self._load_on_startup()
 
         # Update sync backend and skills.
-        self.skill_updater.post_manifest(reload_skills_manifest=True)
-        self.settings_downloader.download()
+        if is_paired():
+            self.skill_updater.post_manifest(reload_skills_manifest=True)
+            self._start_settings_update()
 
         # Scan the file folder that contains Skills.  If a Skill is updated,
         # unload the existing version from memory and reload from the disk.
@@ -194,7 +206,8 @@ class SkillManager(Thread):
                 self._load_skill(skill_dir)
 
     def _load_skill(self, skill_directory):
-        skill_loader = SkillLoader(self.bus, skill_directory)
+        skill_loader = SkillLoader(self.bus, skill_directory,
+                                   self.upload_queue)
         try:
             skill_loader.load()
         except Exception:

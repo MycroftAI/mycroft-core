@@ -57,7 +57,7 @@ def _get_last_modified_time(path):
 
 
 class SkillLoader:
-    def __init__(self, bus, skill_directory):
+    def __init__(self, bus, skill_directory, upload_queue=None):
         self.bus = bus
         self.skill_directory = skill_directory
         self.skill_id = os.path.basename(skill_directory)
@@ -68,6 +68,7 @@ class SkillLoader:
         self.instance = None
         self.active = True
         self.config = Configuration.get()
+        self.upload_queue = upload_queue
 
     @property
     def is_blacklisted(self):
@@ -282,5 +283,6 @@ class SkillLoader:
                 self.skill_directory,
                 self.instance.name
             )
-            settings_meta.upload()
+            if self.upload_queue:
+                self.upload_queue.put(settings_meta)
             self.instance.settings_meta = settings_meta
