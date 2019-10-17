@@ -343,17 +343,19 @@ class MycroftSkill:
 
     def get_response(self, dialog='', data=None, validator=None,
                      on_fail=None, num_retries=-1):
-        """Prompt user and wait for response
+        """Get response from user.
 
-        The given dialog is spoken, followed immediately by listening
-        for a user response.  The response can optionally be
-        validated before returning.
+        If a dialog is supplied it is spoken, followed immediately by listening
+        for a user response. If the dialog is omitted listening is started
+        directly.
+
+        The response can optionally be validated before returning.
 
         Example:
             color = self.get_response('ask.favorite.color')
 
         Arguments:
-            dialog (str): Announcement dialog to speak to the user
+            dialog (str): Optional dialog to speak to the user
             data (dict): Data used to render the dialog
             validator (any): Function with following signature
                 def validator(utterance):
@@ -458,7 +460,7 @@ class MycroftSkill:
 
     def ask_selection(self, options, dialog='',
                       data=None, min_conf=0.65, numeric=False):
-        """ Read options, ask dialog question and wait for an answer
+        """Read options, ask dialog question and wait for an answer.
 
         This automatically deals with fuzzy matching and selection by number
         e.g.
@@ -467,11 +469,12 @@ class MycroftSkill:
             "second option"
             "option number four"
 
-        Args:
+        Arguments:
               options (list): list of options to present user
               dialog (str): a dialog id or string to read AFTER all options
               data (dict): Data used to render the dialog
-              min_conf (float): min confidence for fuzzy match, else ret. None
+              min_conf (float): minimum confidence for fuzzy match, if not
+                                reached return None
               numeric (bool): speak options as a numeric menu
         Returns:
               string: list element selected by user, or None
