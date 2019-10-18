@@ -86,6 +86,8 @@ class AudioProducer(Thread):
                     # input buffer overflow IOErrors due to not consuming the
                     # buffers quickly enough will be silently ignored.
                     LOG.exception('IOError Exception in AudioProducer')
+                    LOG.info('Restarting the microphone...')
+                    source.restart()
                 except Exception:
                     LOG.exception('Exception in AudioProducer')
                     raise
