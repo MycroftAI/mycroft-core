@@ -90,7 +90,7 @@ def handle_speak(event):
                 except Exception:
                     LOG.error('Error in mute_and_speak', exc_info=True)
         else:
-            mute_and_speak(utterance, ident)
+            mute_and_speak(utterance, ident, listen)
 
         stopwatch.stop()
     report_timing(ident, 'speech', stopwatch, {'utterance': utterance,
