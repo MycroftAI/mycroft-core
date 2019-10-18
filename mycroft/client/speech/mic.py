@@ -56,16 +56,19 @@ class MutableStream:
 
         self.SAMPLE_WIDTH = pyaudio.get_sample_size(format)
         self.muted_buffer = b''.join([b'\x00' * self.SAMPLE_WIDTH])
+        self.read_lock = Lock()
 
     def mute(self):
         """ Stop the stream and set the muted flag """
-        self.muted = True
-        self.wrapped_stream.stop_stream()
+        with self.read_lock:
+            self.muted = True
+            self.wrapped_stream.stop_stream()
 
     def unmute(self):
         """ Start the stream and clear the muted flag """
-        self.muted = False
-        self.wrapped_stream.start_stream()
+        with self.read_lock:
+            self.muted = False
+            self.wrapped_stream.start_stream()
 
     def read(self, size, of_exc=False):
         """
@@ -81,20 +84,22 @@ class MutableStream:
         """
         frames = deque()
         remaining = size
-        while remaining > 0:
-            # If muted during read return empty buffer. This ensures no
-            # reads occur while the stream is stopped
-            if self.muted:
-                return self.muted_buffer
+        with self.read_lock:
+            while remaining > 0:
+                # If muted during read return empty buffer. This ensures no
+                # reads occur while the stream is stopped
+                if self.muted:
+                    return self.muted_buffer
 
-            to_read = min(self.wrapped_stream.get_read_available(), remaining)
-            if to_read == 0:
-                sleep(.01)
-                continue
-            result = self.wrapped_stream.read(to_read,
-                                              exception_on_overflow=of_exc)
-            frames.append(result)
-            remaining -= to_read
+                to_read = min(self.wrapped_stream.get_read_available(),
+                              remaining)
+                if to_read == 0:
+                    sleep(.01)
+                    continue
+                result = self.wrapped_stream.read(to_read,
+                                                  exception_on_overflow=of_exc)
+                frames.append(result)
+                remaining -= to_read
 
         input_latency = self.wrapped_stream.get_input_latency()
         if input_latency > 0.2:
