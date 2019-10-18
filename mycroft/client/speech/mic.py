@@ -59,28 +59,27 @@ class MutableStream:
         self.read_lock = Lock()
 
     def mute(self):
-        """ Stop the stream and set the muted flag """
+        """Stop the stream and set the muted flag."""
         with self.read_lock:
             self.muted = True
             self.wrapped_stream.stop_stream()
 
     def unmute(self):
-        """ Start the stream and clear the muted flag """
+        """Start the stream and clear the muted flag."""
         with self.read_lock:
             self.muted = False
             self.wrapped_stream.start_stream()
 
     def read(self, size, of_exc=False):
-        """
-            Read data from stream.
+        """Read data from stream.
 
-            Arguments:
-                size (int): Number of bytes to read
-                of_exc (bool): flag determining if the audio producer thread
-                               should throw IOError at overflows.
+        Arguments:
+            size (int): Number of bytes to read
+            of_exc (bool): flag determining if the audio producer thread
+                           should throw IOError at overflows.
 
-            Returns:
-                Data read from device
+        Returns:
+            (bytes) Data read from device
         """
         frames = deque()
         remaining = size
@@ -121,9 +120,8 @@ class MutableStream:
 class MutableMicrophone(Microphone):
     def __init__(self, device_index=None, sample_rate=16000, chunk_size=1024,
                  mute=False):
-        Microphone.__init__(
-            self, device_index=device_index, sample_rate=sample_rate,
-            chunk_size=chunk_size)
+        Microphone.__init__(self, device_index=device_index,
+                            sample_rate=sample_rate, chunk_size=chunk_size)
         self.muted = False
         if mute:
             self.mute()
