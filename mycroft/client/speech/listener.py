@@ -185,12 +185,6 @@ class AudioConsumer(Thread):
 
     # TODO: Localization
     def process(self, audio):
-        SessionManager.touch()
-        payload = {
-            'utterance': self.wakeword_recognizer.key_phrase,
-            'session': SessionManager.get().session_id,
-        }
-        self.emitter.emit("recognizer_loop:wakeword", payload)
 
         if self._audio_length(audio) >= self.MIN_AUDIO_SIZE:
             stopwatch = Stopwatch()

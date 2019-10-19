@@ -450,7 +450,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         LOG.debug('Listen triggered from external source.')
         self._listen_triggered = True
 
-    def _wait_until_wake_word(self, source, sec_per_buffer):
+    def _wait_until_wake_word(self, source, sec_per_buffer, emitter):
         """Listen continuously on source until a wake word is spoken
 
         Args:
@@ -540,6 +540,13 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
                 # Save positive wake words as appropriate
                 if said_wake_word:
+                    SessionManager.touch()
+                    payload = {
+                        'utterance': self.wake_word_name,
+                        'session': SessionManager.get().session_id,
+                    }
+                    emitter.emit("recognizer_loop:wakeword", payload)
+
                     audio = None
                     mtd = None
                     if self.save_wake_words:
@@ -606,7 +613,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.adjust_for_ambient_noise(source, 1.0)
 
         LOG.debug("Waiting for wake word...")
-        ww_frames = self._wait_until_wake_word(source, sec_per_buffer)
+        ww_frames = self._wait_until_wake_word(source, sec_per_buffer, emitter)
 
         self._listen_triggered = False
         if self._stop_signaled:
