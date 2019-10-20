@@ -107,7 +107,11 @@ class MutableStream:
         self.wrapped_stream = None
 
     def is_stopped(self):
-        return self.wrapped_stream.is_stopped()
+        try:
+            return self.wrapped_stream.is_stopped()
+        except Exception as e:
+            LOG.error(repr(e))
+            return True  # Assume the stream has been closed and thusly stopped
 
     def stop_stream(self):
         return self.wrapped_stream.stop_stream()
@@ -124,6 +128,10 @@ class MutableMicrophone(Microphone):
             self.mute()
 
     def __enter__(self):
+        return self._start()
+
+    def _start(self):
+        """Open the selected device and setup the stream."""
         assert self.stream is None, \
             "This audio source is already inside a context manager"
         self.audio = pyaudio.PyAudio()
@@ -136,11 +144,25 @@ class MutableMicrophone(Microphone):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        if not self.stream.is_stopped():
-            self.stream.stop_stream()
-        self.stream.close()
+        return self._stop()
+
+    def _stop(self):
+        """Stop and close an open stream."""
+        try:
+            if not self.stream.is_stopped():
+                self.stream.stop_stream()
+            self.stream.close()
+        except Exception:
+            LOG.exception('Failed to stop mic input stream')
+            # Let's pretend nothing is wrong...
+
         self.stream = None
         self.audio.terminate()
+
+    def restart(self):
+        """Shutdown input device and restart."""
+        self._stop()
+        self._start()
 
     def mute(self):
         self.muted = True
