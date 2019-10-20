@@ -15,6 +15,7 @@
 import time
 from threading import Thread
 import speech_recognition as sr
+import pyaudio
 from pyee import EventEmitter
 from requests import RequestException
 from requests.exceptions import ConnectionError
@@ -85,16 +86,20 @@ class AudioProducer(Thread):
                         self.queue.put((AUDIO_DATA, audio))
                     else:
                         LOG.warning("Audio contains no data.")
-                except IOError:
+                except IOError as e:
                     # IOError will be thrown if the read is unsuccessful.
                     # If self.recognizer.overflow_exc is False (default)
                     # input buffer overflow IOErrors due to not consuming the
                     # buffers quickly enough will be silently ignored.
                     LOG.exception('IOError Exception in AudioProducer')
-                    if restart_attempts < MAX_MIC_RESTARTS:
+                    if e.errno == pyaudio.paInputOverflowed:
+                        pass  # Ignore overflow errors
+                    elif restart_attempts < MAX_MIC_RESTARTS:
+                        # restart the mic
                         restart_attempts += 1
                         LOG.info('Restarting the microphone...')
                         source.restart()
+                        LOG.info('Restarted...')
                     else:
                         LOG.error('Restarting mic doesn\'t seem to work. '
                                   'Stopping...')
