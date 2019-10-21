@@ -260,7 +260,7 @@ function os_is() {
 }
 
 function os_is_like() {
-    [[ $(grep "^ID_LIKE=" /etc/os-release | awk -F'=' '/^ID_LIKE/ {print $2}' | sed 's/\"//g') == $1 ]]
+    grep "^ID_LIKE=" /etc/os-release | awk -F'=' '/^ID_LIKE/ {print $2}' | sed 's/\"//g' | grep -P -q '(^|\s)'"$1"'(\s|$)'
 }
 
 function redhat_common_install() {
