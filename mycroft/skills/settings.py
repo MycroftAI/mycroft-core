@@ -174,6 +174,12 @@ class SettingsMetaUploader:
 
         return self._msm
 
+    def get_local_skills(self):
+        return {
+            skill.path: skill for skill in
+            self.msm.local_skills.values()
+        }
+
     @property
     def skill_gid(self):
         """Skill identifier recognized by backend and core.
@@ -186,16 +192,18 @@ class SettingsMetaUploader:
         The device ID is known to this class.  To "finalize" the skill_gid,
         insert the device ID between the "@" and the "|"
         """
-        if self.api and self.api.identity.uuid:
-            skills = {
-                skill.path: skill for skill in
-                self.msm.local_skills.values()
-            }
-            skill = skills[str(self.skill_directory)]
+        api = self.api or DeviceApi()
+        if api.identity.uuid:
+            skills = self.get_local_skills()
+            skill_dir = str(self.skill_directory)
+            if skill_dir not in skills:
+                self.msm.clear_cache()
+                skills = self.get_local_skills()
+            skill = skills[skill_dir]
             # If modified prepend the device uuid
             self._skill_gid = skill.skill_gid.replace(
                 '@|',
-                '@{}|'.format(self.api.identity.uuid)
+                '@{}|'.format(api.identity.uuid)
             )
 
             return self._skill_gid
