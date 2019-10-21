@@ -59,7 +59,7 @@ The background services can be stopped as a group with:
 ## *Home* Device and Account Manager
 Mycroft AI, Inc. maintains a device and account management system known as Mycroft Home. Developers may sign up at: https://home.mycroft.ai
 
-By default, mycroft-core  is configured to use Home. By saying "Hey Mycroft, pair my device" (or any other request verbal request) you will be informed that your device needs to be paired. Mycroft will speak a 6-digit code which you can entered into the pairing page within the [Mycroft Home site](https://home.mycroft.ai).
+By default, mycroft-core  is configured to use Home. By saying "Hey Mycroft, pair my device" (or any other request verbal request) you will be informed that your device needs to be paired. Mycroft will speak a 6-digit code which you can enter into the pairing page within the [Mycroft Home site](https://home.mycroft.ai).
 
 Once paired, your unit will use Mycroft API keys for services such as Speech-to-Text (STT), weather and various other skills.
 
@@ -138,7 +138,7 @@ say hi in [Mycroft Chat](https://chat.mycroft.ai/) and a team member would be ha
 Join the [Mycroft Forum](https://community.mycroft.ai/) for questions and answers.
 
 # Links
-* [Creating a Skill](https://docs.mycroft.ai/skill.creation)
+* [Creating a Skill](https://mycroft-ai.gitbook.io/docs/skill-development/your-first-skill)
 * [Documentation](https://docs.mycroft.ai)
 * [Skill Writer API Docs](https://mycroft-core.readthedocs.io/en/master/)
 * [Release Notes](https://github.com/MycroftAI/mycroft-core/releases)

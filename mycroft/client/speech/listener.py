@@ -15,6 +15,7 @@
 import time
 from threading import Thread
 import speech_recognition as sr
+import pyaudio
 from pyee import EventEmitter
 from requests import RequestException
 from requests.exceptions import ConnectionError
@@ -32,6 +33,10 @@ from mycroft.util import find_input_device
 from queue import Queue, Empty
 import json
 from copy import deepcopy
+
+
+MAX_MIC_RESTARTS = 20
+
 
 AUDIO_DATA = 0
 STREAM_START = 1
@@ -70,6 +75,7 @@ class AudioProducer(Thread):
         self.stream_handler = stream_handler
 
     def run(self):
+        restart_attempts = 0
         with self.mic as source:
             self.recognizer.adjust_for_ambient_noise(source)
             while self.state.running:
@@ -80,15 +86,30 @@ class AudioProducer(Thread):
                         self.queue.put((AUDIO_DATA, audio))
                     else:
                         LOG.warning("Audio contains no data.")
-                except IOError:
+                except IOError as e:
                     # IOError will be thrown if the read is unsuccessful.
                     # If self.recognizer.overflow_exc is False (default)
                     # input buffer overflow IOErrors due to not consuming the
                     # buffers quickly enough will be silently ignored.
                     LOG.exception('IOError Exception in AudioProducer')
+                    if e.errno == pyaudio.paInputOverflowed:
+                        pass  # Ignore overflow errors
+                    elif restart_attempts < MAX_MIC_RESTARTS:
+                        # restart the mic
+                        restart_attempts += 1
+                        LOG.info('Restarting the microphone...')
+                        source.restart()
+                        LOG.info('Restarted...')
+                    else:
+                        LOG.error('Restarting mic doesn\'t seem to work. '
+                                  'Stopping...')
+                        raise
                 except Exception:
                     LOG.exception('Exception in AudioProducer')
                     raise
+                else:
+                    # Reset restart attempt counter on sucessful audio read
+                    restart_attempts = 0
                 finally:
                     if self.stream_handler is not None:
                         self.stream_handler.stream_stop()
