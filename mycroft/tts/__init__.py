@@ -504,7 +504,19 @@ class TTSFactory:
         tts_module = config.get('tts', {}).get('module', 'mimic')
         tts_config = config.get('tts', {}).get(tts_module, {})
         tts_lang = tts_config.get('lang', lang)
-        clazz = TTSFactory.CLASSES.get(tts_module)
-        tts = clazz(tts_lang, tts_config)
-        tts.validator.validate()
+        try:
+            clazz = TTSFactory.CLASSES.get(tts_module)
+            tts = clazz(tts_lang, tts_config)
+            tts.validator.validate()
+        except Exception as e:
+            # Fallback to mimic if an error occurs while loading.
+            if tts_module != 'mimic':
+                LOG.exception('The selected TTS backend couldn\'t be loaded. '
+                              'Falling back to Mimic')
+                tts = Mimic(tts_lang, tts_config)
+                tts.validator.validate()
+            else:
+                LOG.exception('The TTS could not be loaded.')
+                raise
+
         return tts
