@@ -244,10 +244,25 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.TEST_WW_SEC = num_phonemes * len_phoneme
         self.SAVED_WW_SEC = max(3, self.TEST_WW_SEC)
 
-        try:
-            self.account_id = DeviceApi().get()['user']['uuid']
-        except (requests.RequestException, AttributeError):
-            self.account_id = '0'
+        self._account_id = None
+
+    @property
+    def account_id(self):
+        """Fetch account from backend when needed.
+
+        If an error occurs it's handled and a temporary value is returned.
+        When a value is received it will be cached until next start.
+        """
+        if not self._account_id:
+            try:
+                self._account_id = DeviceApi().get()['user']['uuid']
+            except (requests.RequestException, AttributeError):
+                pass  # These are expected and won't be reported
+            except Exception as e:
+                LOG.debug('Unhandled exception while determining device_id, '
+                          'Error: {}'.format(repr(e)))
+
+        return self._account_id or '0'
 
     def record_sound_chunk(self, source):
         return source.stream.read(source.CHUNK, self.overflow_exc)
