@@ -402,7 +402,18 @@ class RecognizerLoop(EventEmitter):
         self.state.sleeping = False
 
     def run(self):
-        self.start_async()
+        """Start and reload mic and STT handling threads as needed.
+
+        Wait for KeyboardInterrupt and shutdown cleanly.
+        """
+        try:
+            self.start_async()
+        except Exception:
+            LOG.exception('Starting producer/consumer threads for listener '
+                          'failed.')
+            return
+
+        # Handle reload of consumer / producer if config changes
         while self.state.running:
             try:
                 time.sleep(1)
