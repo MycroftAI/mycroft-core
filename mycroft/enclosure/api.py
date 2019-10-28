@@ -144,7 +144,7 @@ class EnclosureAPI:
     def eyes_fill(self, percentage):
         """Use the eyes as a type of progress meter
         Args:
-            amount (int): 0-49 fills the right eye, 50-100 also covers left
+            percentage (int): 0-49 fills the right eye, 50-100 also covers left
         """
         if percentage < 0 or percentage > 100:
             raise ValueError('percentage ({}) must be between 0-100'.
