@@ -61,8 +61,8 @@ class FallbackSkill(MycroftSkill):
 
         def handler(message):
             # indicate fallback handling start
-            bus.emit(message.reply("mycroft.skill.handler.start",
-                                   data={'handler': "fallback"}))
+            bus.emit(message.forward("mycroft.skill.handler.start",
+                                     data={'handler': "fallback"}))
 
             stopwatch = Stopwatch()
             handler_name = None
@@ -73,7 +73,7 @@ class FallbackSkill(MycroftSkill):
                         if handler(message):
                             #  indicate completion
                             handler_name = get_handler_name(handler)
-                            bus.emit(message.reply(
+                            bus.emit(message.forward(
                                      'mycroft.skill.handler.complete',
                                      data={'handler': "fallback",
                                            "fallback_handler": handler_name}))
@@ -81,13 +81,13 @@ class FallbackSkill(MycroftSkill):
                     except Exception:
                         LOG.exception('Exception in fallback.')
                 else:  # No fallback could handle the utterance
-                    bus.emit(message.reply('complete_intent_failure'))
+                    bus.emit(message.forward('complete_intent_failure'))
                     warning = "No fallback could handle intent."
                     LOG.warning(warning)
                     #  indicate completion with exception
-                    bus.emit(message.reply('mycroft.skill.handler.complete',
-                                           data={'handler': "fallback",
-                                                 'exception': warning}))
+                    bus.emit(message.forward('mycroft.skill.handler.complete',
+                                             data={'handler': "fallback",
+                                                   'exception': warning}))
 
             # Send timing metric
             if message.context.get('ident'):
