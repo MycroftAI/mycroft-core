@@ -13,5 +13,5 @@
 # limitations under the License.
 from .client.client import MessageBusClient
 from .message import Message
-from .send import send
+from .send_func import send
 from .service.event_handler import MessageBusEventHandler
