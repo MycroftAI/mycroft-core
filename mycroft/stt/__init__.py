@@ -497,7 +497,17 @@ class STTFactory:
 
     @staticmethod
     def create():
-        config = Configuration.get().get("stt", {})
-        module = config.get("module", "mycroft")
-        clazz = STTFactory.CLASSES.get(module)
-        return clazz()
+        try:
+            config = Configuration.get().get("stt", {})
+            module = config.get("module", "mycroft")
+            clazz = STTFactory.CLASSES.get(module)
+            return clazz()
+        except Exception as e:
+            # The STT backend failed to start. Report it and fall back to
+            # default.
+            LOG.exception('The selected STT backend could not be loaded, '
+                          'falling back to default...')
+            if module != 'mycroft':
+                return MycroftSTT()
+            else:
+                raise
