@@ -18,14 +18,17 @@ import json
 import unittest
 import datetime
 import ast
+import pytest
 from pathlib import Path
 
+from mycroft.util.format import TimeResolution
 from mycroft.util.format import nice_number
 from mycroft.util.format import nice_time
 from mycroft.util.format import nice_date
 from mycroft.util.format import nice_date_time
 from mycroft.util.format import nice_year
 from mycroft.util.format import nice_duration
+from mycroft.util.format import nice_duration_dt
 from mycroft.util.format import pronounce_number
 from mycroft.util.format import date_time_format
 from mycroft.util.format import join_list
@@ -421,25 +424,6 @@ class TestNiceDateFormat(unittest.TestCase):
 
 #                print(nice_year(dt, lang=lang))
 
-    def test_nice_duration(self):
-        self.assertEqual(nice_duration(1), "one second")
-        self.assertEqual(nice_duration(3), "three seconds")
-        self.assertEqual(nice_duration(1, speech=False), "0:01")
-        self.assertEqual(nice_duration(61), "one minute one second")
-        self.assertEqual(nice_duration(61, speech=False), "1:01")
-        self.assertEqual(nice_duration(5000),
-                         "one hour twenty three minutes twenty seconds")
-        self.assertEqual(nice_duration(5000, speech=False), "1:23:20")
-        self.assertEqual(nice_duration(50000),
-                         "thirteen hours fifty three minutes twenty seconds")
-        self.assertEqual(nice_duration(50000, speech=False), "13:53:20")
-        self.assertEqual(nice_duration(500000),
-                         "five days  eighteen hours fifty three minutes twenty seconds")  # nopep8
-        self.assertEqual(nice_duration(500000, speech=False), "5d 18:53:20")
-        self.assertEqual(nice_duration(datetime.timedelta(seconds=500000),
-                                       speech=False),
-                         "5d 18:53:20")
-
     def test_join(self):
         self.assertEqual(join_list(None, "and"), "")
         self.assertEqual(join_list([], "and"), "")
@@ -454,6 +438,158 @@ class TestNiceDateFormat(unittest.TestCase):
         self.assertEqual(join_list(["a", "b", "c", "d"], "or"), "a, b, c or d")
 
         self.assertEqual(join_list([1, "b", 3, "d"], "or"), "1, b, 3 or d")
+
+
+class TestNiceDurationFuncs(unittest.TestCase):
+    def test_nice_duration(self):
+        self.assertEqual(nice_duration(1), "one second")
+        self.assertEqual(nice_duration(3), "three seconds")
+        self.assertEqual(nice_duration(1, speech=False), "0:01")
+        self.assertEqual(nice_duration(1, resolution=TimeResolution.MINUTES),
+                         "under a minute")
+        self.assertEqual(nice_duration(61), "one minute one second")
+        self.assertEqual(nice_duration(61, speech=False), "1:01")
+        self.assertEqual(nice_duration(3600), "one hour")
+        self.assertEqual(nice_duration(3600, speech=False), "1h")
+        self.assertEqual(nice_duration(3660, speech=False), "1:01:00")
+        self.assertEqual(nice_duration(3607, speech=False), "1:00:07")
+        self.assertEqual(nice_duration(36000, speech=False), "10h")
+        self.assertEqual(nice_duration(5000),
+                         "one hour twenty three minutes and twenty seconds")
+        self.assertEqual(nice_duration(5000, speech=False), "1:23:20")
+        self.assertEqual(nice_duration(50000),
+                         "thirteen hours fifty three minutes and twenty seconds")  # nopep8
+        self.assertEqual(nice_duration(50000,
+                                       resolution=TimeResolution.MINUTES),
+                         "thirteen hours fifty three minutes")
+        self.assertEqual(nice_duration(50000, resolution=TimeResolution.HOURS),
+                         "thirteen hours")
+        self.assertEqual(nice_duration(50000, speech=False), "13:53:20")
+        self.assertEqual(nice_duration(500000),
+                         "five days eighteen hours fifty three minutes and twenty seconds")  # nopep8
+        self.assertEqual(nice_duration(500000, speech=False), "5d 18:53:20")
+        self.assertEqual(nice_duration(datetime.timedelta(seconds=500000),
+                                       speech=False),
+                         "5d 18:53:20")
+        self.assertEqual(nice_duration(1.250575,
+                                       resolution=TimeResolution.MILLISECONDS),
+                         "one point two five seconds")
+        self.assertEqual(nice_duration(0.25,
+                                       resolution=TimeResolution.MILLISECONDS),
+                         "zero point two five seconds")
+        self.assertEqual(
+            nice_duration(0.25, speech=False,
+                          resolution=TimeResolution.MILLISECONDS), "0:00.250")
+        self.assertEqual(
+            nice_duration(0.2, speech=False,
+                          resolution=TimeResolution.MILLISECONDS), "0:00.200")
+
+        self.assertEqual(nice_duration(360000.254,
+                                       resolution=TimeResolution.SECONDS,
+                                       speech=False), "4d 4h")
+        self.assertEqual(nice_duration(360000.254325,
+                                       resolution=TimeResolution.MILLISECONDS,
+                                       speech=False), "4d 4:00:00.254")
+        self.assertEqual(nice_duration(360365.254,
+                                       resolution=TimeResolution.MILLISECONDS,
+                                       speech=False), "4d 4:06:05.254")
+
+        self.assertEqual(nice_duration(0), "zero seconds")
+        self.assertEqual(nice_duration(0, speech=False), "0:00")
+        self.assertEqual(nice_duration(0, resolution=TimeResolution.MINUTES),
+                         "zero minutes")
+        self.assertEqual(nice_duration(30,
+                                       resolution=TimeResolution.MINUTES),
+                         "under a minute")
+
+        # test clock output
+        self.assertEqual(nice_duration(60,
+                                       resolution=TimeResolution.HOURS,
+                                       clock=True, speech=False), "0:01:00")
+        self.assertEqual(nice_duration(1,
+                                       resolution=TimeResolution.MINUTES,
+                                       clock=True, speech=False), "0:01")
+        self.assertEqual(nice_duration(0.25,
+                                       resolution=TimeResolution.HOURS,
+                                       clock=True, speech=False), "0:00:00")
+        self.assertEqual(nice_duration(0.25,
+                                       resolution=TimeResolution.MINUTES,
+                                       clock=True, speech=False), "0:00")
+        self.assertEqual(nice_duration(0.25, clock=True, speech=False), "0:00")
+        self.assertEqual(nice_duration(0.25,
+                                       resolution=TimeResolution.MILLISECONDS,
+                                       clock=True, speech=False), "0:00.250")
+        self.assertEqual(nice_duration(60,
+                                       resolution=TimeResolution.YEARS,
+                                       clock=True, speech=False), "0y")
+
+    def test_nice_duration_dt(self):
+
+        with pytest.raises(Exception):
+            nice_duration_dt(123.45, "foo")
+
+        with pytest.warns(UserWarning):
+            nice_duration_dt(123, 456)
+
+        self.assertEqual(
+            nice_duration_dt(datetime.datetime(2019, 12, 25, 20, 30),
+                                    date2=datetime.datetime(2019, 10, 31, 8, 00),  # nopep8
+                                    speech=False), "55d 12h 30m")
+        self.assertEqual(nice_duration_dt(
+            datetime.datetime(2019, 1, 1),
+            date2=datetime.datetime(2018, 1, 1)), "one year")
+        self.assertEqual(nice_duration_dt(
+            datetime.datetime(2019, 1, 1),
+            date2=datetime.datetime(2018, 1, 1), speech=False), "1y")
+        self.assertEqual(nice_duration_dt(
+            datetime.datetime(2019, 1, 1),
+            date2=datetime.datetime(2018, 1, 1),
+            use_years=False), "three hundred and sixty five days")
+
+        self.assertEqual(nice_duration_dt(
+            datetime.datetime(2019, 1, 2),
+            date2=datetime.datetime(2018, 1, 1)),
+            "one year one day")
+
+        self.assertEqual(nice_duration_dt(datetime.datetime(1, 1, 1),
+                                          datetime.datetime(1, 1, 1)),
+                         "zero seconds")
+        self.assertEqual(nice_duration_dt(datetime.datetime(1, 1, 1),
+                                          datetime.datetime(1, 1, 1),
+                                          speech=False), "0:00")
+
+        self.assertEqual(nice_duration_dt(datetime.datetime(1, 1, 1),
+                                          datetime.datetime(1, 1, 1),
+                                          resolution=TimeResolution.MINUTES),
+                         "zero minutes")
+        self.assertEqual(nice_duration_dt(datetime.datetime(1, 1, 1),
+                                          datetime.datetime(1, 1, 1),
+                                          resolution=TimeResolution.MINUTES,
+                                          speech=False), "0m")
+        self.assertEqual(nice_duration_dt(datetime.datetime(1, 1, 1),
+                                          datetime.datetime(1, 1, 1),
+                                          resolution=TimeResolution.HOURS),
+                         "zero hours")
+        self.assertEqual(nice_duration_dt(datetime.datetime(1, 1, 1),
+                                          datetime.datetime(1, 1, 1),
+                                          resolution=TimeResolution.HOURS,
+                                          speech=False), "0h")
+        self.assertEqual(nice_duration_dt(datetime.datetime(1, 1, 1),
+                                          datetime.datetime(1, 1, 1),
+                                          resolution=TimeResolution.DAYS),
+                         "zero days")
+        self.assertEqual(nice_duration_dt(datetime.datetime(1, 1, 1),
+                                          datetime.datetime(1, 1, 1),
+                                          resolution=TimeResolution.DAYS,
+                                          speech=False), "0d")
+        self.assertEqual(nice_duration_dt(datetime.datetime(1, 1, 1),
+                                          datetime.datetime(1, 1, 1),
+                                          resolution=TimeResolution.YEARS),
+                         "zero years")
+        self.assertEqual(nice_duration_dt(datetime.datetime(1, 1, 1),
+                                          datetime.datetime(1, 1, 1),
+                                          resolution=TimeResolution.YEARS,
+                                          speech=False), "0y")
 
 
 if __name__ == "__main__":

@@ -97,7 +97,7 @@ FRACTION_STRING_DE = {
 EXTRA_SPACE = ""
 
 
-def nice_number_de(number, speech, denominators):
+def nice_number_de(number, speech, denominators=range(1, 21)):
     """ German helper for nice_number
     This function formats a float to human understandable functions. Like
     4.5 becomes "4 einhalb" for speech and "4 1/2" for text
@@ -154,7 +154,7 @@ def pronounce_number_de(num, places=2):
             hundreds = floor(num / 100)
             if hundreds > 0:
                 result += NUM_STRING_DE[
-                              hundreds] + EXTRA_SPACE + 'hundert' + EXTRA_SPACE
+                    hundreds] + EXTRA_SPACE + 'hundert' + EXTRA_SPACE
                 num -= hundreds * 100
         if num == 0:
             result += ''  # do nothing

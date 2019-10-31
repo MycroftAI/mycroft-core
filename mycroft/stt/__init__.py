@@ -118,6 +118,73 @@ class IBMSTT(BasicSTT):
                                              self.password, self.lang)
 
 
+class YandexSTT(STT):
+    """
+        Yandex SpeechKit STT
+        To use create service account with role 'editor' in your cloud folder,
+        create API key for account and add it to local mycroft.conf file.
+        The STT config will look like this:
+
+        "stt": {
+            "module": "yandex",
+            "yandex": {
+                "lang": "en-US",
+                "credential": {
+                    "api_key": "YOUR_API_KEY"
+                }
+            }
+        }
+    """
+    def __init__(self):
+        super(YandexSTT, self).__init__()
+        self.lang = self.config.get('lang') or self.lang
+        self.api_key = self.credential.get("api_key")
+        if self.api_key is None:
+            raise ValueError("API key for Yandex STT is not defined")
+
+    def execute(self, audio, language=None):
+        self.lang = language or self.lang
+        if self.lang not in ["en-US", "ru-RU", "tr-TR"]:
+            raise ValueError(
+                "Unsupported language '{}' for Yandex STT".format(self.lang))
+
+        # Select sample rate based on source sample rate
+        # and supported sample rate list
+        supported_sample_rates = [8000, 16000, 48000]
+        sample_rate = audio.sample_rate
+        if sample_rate not in supported_sample_rates:
+            for supported_sample_rate in supported_sample_rates:
+                if audio.sample_rate < supported_sample_rate:
+                    sample_rate = supported_sample_rate
+                    break
+            if sample_rate not in supported_sample_rates:
+                sample_rate = supported_sample_rates[-1]
+
+        raw_data = audio.get_raw_data(convert_rate=sample_rate,
+                                      convert_width=2)
+
+        # Based on https://cloud.yandex.com/docs/speechkit/stt#request
+        url = "https://stt.api.cloud.yandex.net/speech/v1/stt:recognize"
+        headers = {"Authorization": "Api-Key {}".format(self.api_key)}
+        params = "&".join([
+            "lang={}".format(self.lang),
+            "format=lpcm",
+            "sampleRateHertz={}".format(sample_rate)
+        ])
+
+        response = post(url + "?" + params, headers=headers, data=raw_data)
+        if response.status_code == 200:
+            result = json.loads(response.text)
+            if result.get("error_code") is None:
+                return result.get("result")
+        elif response.status_code == 401:  # Unauthorized
+            raise Exception("Invalid API key for Yandex STT")
+        else:
+            raise Exception(
+                "Request to Yandex STT failed: code: {}, body: {}".format(
+                    response.status_code, response.text))
+
+
 def requires_pairing(func):
     """Decorator kicking of pairing sequence if client is not allowed access.
 
@@ -424,12 +491,23 @@ class STTFactory:
         "houndify": HoundifySTT,
         "deepspeech_server": DeepSpeechServerSTT,
         "deepspeech_stream_server": DeepSpeechStreamServerSTT,
-        "mycroft_deepspeech": MycroftDeepSpeechSTT
+        "mycroft_deepspeech": MycroftDeepSpeechSTT,
+        "yandex": YandexSTT
     }
 
     @staticmethod
     def create():
-        config = Configuration.get().get("stt", {})
-        module = config.get("module", "mycroft")
-        clazz = STTFactory.CLASSES.get(module)
-        return clazz()
+        try:
+            config = Configuration.get().get("stt", {})
+            module = config.get("module", "mycroft")
+            clazz = STTFactory.CLASSES.get(module)
+            return clazz()
+        except Exception as e:
+            # The STT backend failed to start. Report it and fall back to
+            # default.
+            LOG.exception('The selected STT backend could not be loaded, '
+                          'falling back to default...')
+            if module != 'mycroft':
+                return MycroftSTT()
+            else:
+                raise

@@ -1,6 +1,7 @@
 dev.env
 .dev_opts.json
 .idea
+*.code-workspace
 *.pyc
 *.swp
 *~
@@ -16,6 +17,7 @@ mycroft/__version__.py
 scripts/logs/*
 logs/*
 .coverage
+/htmlcov
 mycroft/audio-accuracy-test/data/*
 scripts/*.screen
 doc/_build/

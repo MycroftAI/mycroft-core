@@ -828,7 +828,7 @@ def extract_datetime_en(string, dateNow, default_time):
               wordNext == "after" and
               wordNextNext == "tomorrow" and
               not fromFlag and
-              not wordPrev[0].isdigit()):
+              not (wordPrev[0].isdigit() if wordPrev else False)):
             dayOffset = 2
             used = 3
             if wordPrev == "the":
@@ -1119,18 +1119,6 @@ def extract_datetime_en(string, dateNow, default_time):
                         remainder = nextWord
                         used += 1
 
-                    elif wordNext == "in" and wordNextNext == "the" and \
-                            words[idx + 3] == "morning":
-                        remainder = "am"
-                        used += 3
-                    elif wordNext == "in" and wordNextNext == "the" and \
-                            words[idx + 3] == "afternoon":
-                        remainder = "pm"
-                        used += 3
-                    elif wordNext == "in" and wordNextNext == "the" and \
-                            words[idx + 3] == "evening":
-                        remainder = "pm"
-                        used += 3
                     elif wordNext == "in" and wordNextNext == "morning":
                         remainder = "am"
                         used += 2

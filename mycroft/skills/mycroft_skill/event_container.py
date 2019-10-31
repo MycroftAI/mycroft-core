@@ -132,15 +132,18 @@ class EventContainer:
         def once_wrapper(message):
             # Remove registered one-time handler before invoking,
             # allowing them to re-schedule themselves.
-            handler(message)
             self.remove(name)
+            handler(message)
 
         if handler:
             if once:
                 self.bus.once(name, once_wrapper)
+                self.events.append((name, once_wrapper))
             else:
                 self.bus.on(name, handler)
-            self.events.append((name, handler))
+                self.events.append((name, handler))
+
+            LOG.debug('Added event: {}'.format(name))
 
     def remove(self, name):
         """Removes an event from bus emitter and events list.

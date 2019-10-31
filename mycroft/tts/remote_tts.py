@@ -40,7 +40,7 @@ class RemoteTTS(TTS):
         self.url = remove_last_slash(url)
         self.session = FuturesSession()
 
-    def execute(self, sentence, ident=None):
+    def execute(self, sentence, ident=None, listen=False):
         phrases = self.__get_phrases(sentence)
 
         if len(phrases) > 0:
@@ -51,7 +51,7 @@ class RemoteTTS(TTS):
                 except Exception as e:
                     LOG.error(e.message)
                 finally:
-                    self.end_audio()
+                    self.end_audio(listen)
 
     @staticmethod
     def __get_phrases(sentence):

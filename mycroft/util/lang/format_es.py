@@ -74,7 +74,7 @@ FRACTION_STRING_ES = {
 }
 
 
-def nice_number_es(number, speech, denominators):
+def nice_number_es(number, speech, denominators=range(1, 21)):
     """ Spanish helper for nice_number
 
     This function formats a float to human understandable functions. Like

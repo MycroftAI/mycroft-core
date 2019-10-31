@@ -20,7 +20,8 @@
 """
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from mycroft.util.lang.parse_common import is_numeric, look_for_fractions
+from mycroft.util.lang.format_es import pronounce_number_es
+from mycroft.util.lang.parse_common import *
 
 # Undefined articles ["un", "una", "unos", "unas"] can not be supressed,
 # in Spanish, "un caballo" means "a horse" or "one horse".
@@ -106,15 +107,14 @@ def isFractional_es(input_str):
     if input_str.endswith('s', -1):
         input_str = input_str[:len(input_str) - 1]  # e.g. "fifths"
 
-    aFrac = ["medio", "media", "tercio", "cuarto", "cuarta", "quinto",
-             "quinta", "sexto", "sexta", u"séptimo", u"séptima", "octavo",
-             "octava", "noveno", "novena", u"décimo", u"décima", u"onceavo",
-             u"onceava", u"doceavo", u"doceava"]
+    aFrac = {"medio": 2, "media": 2, "tercio": 3, "cuarto": 4,
+             "cuarta": 4, "quinto": 5, "quinta": 5, "sexto": 6, "sexta": 6,
+             u"séptimo": 7, u"séptima": 7, "octavo": 8, "octava": 8,
+             "noveno": 9, "novena": 9, u"décimo": 10, u"décima": 10,
+             u"onceavo": 11, u"onceava": 11, u"doceavo": 12, u"doceava": 12}
 
     if input_str.lower() in aFrac:
-        return 1.0 / (aFrac.index(input_str) + 2)
-    if (input_str == "cuarto" or input_str == "cuarta"):
-        return 1.0 / 4
+        return 1.0 / aFrac[input_str]
     if (input_str == u"vigésimo" or input_str == u"vigésima"):
         return 1.0 / 20
     if (input_str == u"trigésimo" or input_str == u"trigésima"):
@@ -126,7 +126,12 @@ def isFractional_es(input_str):
     return False
 
 
-def extractnumber_es(text):
+# TODO: short_scale and ordinals don't do anything here.
+# The parameters are present in the function signature for API compatibility
+# reasons.
+#
+# Returns incorrect output on certain fractional phrases like, "cuarto de dos"
+def extractnumber_es(text, short_scale=True, ordinals=False):
     """
     This function prepares the given text for parsing by making
     numbers consistent, getting rid of contractions, etc.
@@ -177,7 +182,7 @@ def extractnumber_es(text):
                 result = 0
             # handle fractions
             if next_word != "avos":
-                result += val
+                result = val
             else:
                 result = float(result) / float(val)
 
@@ -257,6 +262,25 @@ def extractnumber_es(text):
     return result
 
 
+def extract_numbers_es(text, short_scale=True, ordinals=False):
+    """
+        Takes in a string and extracts a list of numbers.
+
+    Args:
+        text (str): the string to extract a number from
+        short_scale (bool): Use "short scale" or "long scale" for large
+            numbers -- over a million.  The default is short scale, which
+            is now common in most English speaking countries.
+            See https://en.wikipedia.org/wiki/Names_of_large_numbers
+        ordinals (bool): consider ordinal numbers, e.g. third=3 instead of 1/3
+    Returns:
+        list: list of extracted numbers as floats
+    """
+    return extract_numbers_generic(text, pronounce_number_es, extractnumber_es,
+                                   short_scale=short_scale, ordinals=ordinals)
+
+
+# TODO Not parsing 'cero'
 def es_number_parse(words, i):
     def es_cte(i, s):
         if i < len(words) and s == words[i]:
@@ -360,6 +384,7 @@ def normalize_es(text, remove_articles):
     return normalized[1:]  # strip the initial space
 
 
+# TODO MycroftAI/mycroft-core#2348
 def extract_datetime_es(input_str, currentDate=None, default_time=None):
     def clean_string(s):
         # cleans the input string of unneeded punctuation and capitalization
@@ -384,12 +409,12 @@ def extract_datetime_es(input_str, currentDate=None, default_time=None):
             " ").replace(
             "_",
             "")
-        # handle synonims and equivalents, "tomorrow early = tomorrow morning
-        synonims = {u"mañana": ["amanecer", "temprano", "muy temprano"],
+        # handle synonyms and equivalents, "tomorrow early = tomorrow morning
+        synonyms = {u"mañana": ["amanecer", "temprano", "muy temprano"],
                     "tarde": ["media tarde", "atardecer"],
                     "noche": ["anochecer", "tarde"]}
-        for syn in synonims:
-            for word in synonims[syn]:
+        for syn in synonyms:
+            for word in synonyms[syn]:
                 s = s.replace(" " + word + " ", " " + syn + " ")
         # relevant plurals, cant just extract all s in pt
         wordlist = [u"mañanas", "tardes", "noches", u"días", "semanas",
