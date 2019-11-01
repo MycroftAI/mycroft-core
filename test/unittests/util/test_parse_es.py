@@ -109,7 +109,7 @@ class TestDatetime_es(unittest.TestCase):
 
     def test_datetime_by_date_es(self):
         # test currentDate==None
-        _now = datetime.now()
+        _now = datetime(year=2019, month=10, day=10)
         relative_year = _now.year if _now.day == 1 else (_now.year + 1)
         self.assertEqual(extract_datetime_es("11 ene")[0],
                          datetime(relative_year, 1, 11))
