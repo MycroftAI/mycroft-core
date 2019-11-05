@@ -1043,8 +1043,6 @@ def extract_datetime_en(string, dateNow, default_time):
                 minOffset = 15
                 if idx > 2 and words[idx - 3] in markers:
                     words[idx - 3] = ""
-                    if words[idx - 3] == "this":
-                        daySpecified = True
                 words[idx - 2] = ""
             elif wordPrev == "within":
                 hrOffset = 1
