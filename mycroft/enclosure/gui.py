@@ -183,6 +183,13 @@ class SkillGUI:
                                      "__from": self.skill.skill_id,
                                      "__idle": override_idle}))
 
+    def display_screen(self, name, data=None):
+        msg = Message(
+            'display.screen.show',
+            data=dict(name=name, display_data=data)
+        )
+        self.skill.bus.emit(msg)
+
     def remove_page(self, page):
         """Remove a single page from the GUI.
 
