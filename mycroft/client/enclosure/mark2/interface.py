@@ -33,7 +33,8 @@ class EnclosureMark2(Enclosure):
         super().__init__()
         LOG.info('Starting Mark 2 enclosure')
         self.bus.on("display.bus.start", self.on_display_bus_start)
-        self.bus.on("display.screen.show", self.on_display_show_screen)
+        self.bus.on("display.screen.show", self.on_display_screen_show)
+        self.bus.on('display.screen.stop', self.on_display_screen_stop)
         self.display_bus_client = None
         self._setup_internet_check()
         LOG.info('Mark 2 enclosure setup complete')
@@ -80,9 +81,15 @@ class EnclosureMark2(Enclosure):
         except Exception:
             LOG.exception('failed to receive message')
 
-    def on_display_show_screen(self, message):
+    def on_display_screen_show(self, message):
         """Send a message to the display bus that will show a screen."""
         msg = dict(type=message.msg_type, data=message.data)
+        msg = json.dumps(msg)
+        self.display_bus_client.send(msg)
+
+    def on_display_screen_stop(self, message):
+        """Send a message to the display bus that will show a screen."""
+        msg = dict(type=message.msg_type)
         msg = json.dumps(msg)
         self.display_bus_client.send(msg)
 

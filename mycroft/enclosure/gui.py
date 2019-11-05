@@ -190,6 +190,12 @@ class SkillGUI:
         )
         self.skill.bus.emit(msg)
 
+    def stop_screen(self):
+        from mycroft.util.log import LOG
+        LOG.info('***** in gui stop screen *****')
+        msg = Message('display.screen.stop')
+        self.skill.bus.emit(msg)
+
     def remove_page(self, page):
         """Remove a single page from the GUI.
 
