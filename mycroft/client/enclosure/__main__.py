@@ -28,7 +28,7 @@ def main():
         LOG.debug("Creating Mark I Enclosure")
         from mycroft.client.enclosure.mark1 import EnclosureMark1
         enclosure = EnclosureMark1()
-    elif platform == "mycroft_mark_2":
+    elif platform in ("mycroft_mark_2", "mycroft_mark_2pi"):
         LOG.debug("Creating Mark II Enclosure")
         from mycroft.client.enclosure.mark2 import EnclosureMark2
         enclosure = EnclosureMark2()
