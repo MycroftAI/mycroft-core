@@ -89,7 +89,7 @@ class EnclosureMark2(Enclosure):
 
     def on_display_screen_stop(self, message):
         """Send a message to the display bus that will show a screen."""
-        msg = dict(type=message.msg_type)
+        msg = dict(type=message.msg_type, data=message.data)
         msg = json.dumps(msg)
         self.display_bus_client.send(msg)
 
