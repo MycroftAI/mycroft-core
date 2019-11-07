@@ -444,3 +444,7 @@ class Settings:
 
     def as_dict(self):
         return self._settings
+
+    def shutdown(self):
+        """Shutdown the Settings object removing any references."""
+        self._skill = None

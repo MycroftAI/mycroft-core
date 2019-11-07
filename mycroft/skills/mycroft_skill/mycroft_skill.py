@@ -1209,6 +1209,9 @@ class MycroftSkill:
         except Exception as e:
             LOG.error('Skill specific shutdown function encountered '
                       'an error: {}'.format(repr(e)))
+
+        self.settings_change_callback = None
+
         # Store settings
         if self.settings != self._initial_settings:
             save_settings(self.root_dir, self.settings)
@@ -1217,7 +1220,8 @@ class MycroftSkill:
             self.settings_meta.stop()
 
         # Clear skill from gui
-        self.gui.clear()
+        self.gui.shutdown()
+        self.settings.shutdown()
 
         # removing events
         self.event_scheduler.shutdown()
