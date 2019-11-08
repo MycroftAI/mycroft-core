@@ -22,6 +22,7 @@ from time import time
 from mycroft.configuration import Configuration
 from mycroft.messagebus import Message
 from mycroft.util.log import LOG
+
 from .settings import SettingsMetaUploader
 
 SKILL_MAIN_MODULE = '__init__.py'
@@ -57,7 +58,7 @@ def _get_last_modified_time(path):
 
 
 class SkillLoader:
-    def __init__(self, bus, skill_directory, upload_queue=None):
+    def __init__(self, bus, skill_directory):
         self.bus = bus
         self.skill_directory = skill_directory
         self.skill_id = os.path.basename(skill_directory)
@@ -68,7 +69,6 @@ class SkillLoader:
         self.instance = None
         self.active = True
         self.config = Configuration.get()
-        self.upload_queue = upload_queue
 
     @property
     def is_blacklisted(self):
@@ -107,11 +107,11 @@ class SkillLoader:
         LOG.info('ATTEMPTING TO RELOAD SKILL: ' + self.skill_id)
         if self.instance:
             self._unload()
-        self._load()
+        return self._load()
 
     def load(self):
         LOG.info('ATTEMPTING TO LOAD SKILL: ' + self.skill_id)
-        self._load()
+        return self._load()
 
     def _unload(self):
         """Remove listeners and stop threads before loading"""
@@ -175,7 +175,14 @@ class SkillLoader:
 
         self.last_loaded = time()
         self._communicate_load_status()
-        self._upload_settings_meta()
+        if self.loaded:
+            self._prepare_settings_meta()
+        return self.loaded
+
+    def _prepare_settings_meta(self):
+        settings_meta = SettingsMetaUploader(self.skill_directory,
+                                             self.instance.name)
+        self.instance.settings_meta = settings_meta
 
     def _prepare_for_load(self):
         self.load_attempted = True
@@ -276,13 +283,3 @@ class SkillLoader:
             )
             self.bus.emit(message)
             LOG.error('Skill {} failed to load'.format(self.skill_id))
-
-    def _upload_settings_meta(self):
-        if self.loaded:
-            settings_meta = SettingsMetaUploader(
-                self.skill_directory,
-                self.instance.name
-            )
-            if self.upload_queue:
-                self.upload_queue.put(settings_meta)
-            self.instance.settings_meta = settings_meta

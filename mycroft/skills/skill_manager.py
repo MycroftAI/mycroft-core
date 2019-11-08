@@ -201,19 +201,31 @@ class SkillManager(Thread):
 
     def _load_new_skills(self):
         """Handle load of skills installed since startup."""
+        new_skills = []
         for skill_dir in self._get_skill_directories():
             if skill_dir not in self.skill_loaders:
-                self._load_skill(skill_dir)
+                sl = self._load_skill(skill_dir)
+                if sl:
+                    new_skills.append(sl)
+
+        # Upload manifest if paired and enque settingsmeta
+        if new_skills:
+            self.msm.clear_cache()
+            if is_paired():
+                self.skill_updater.post_manifest()
+            for sl in new_skills:
+                self.upload_queue.put(sl.instance.settings_meta)
 
     def _load_skill(self, skill_directory):
-        skill_loader = SkillLoader(self.bus, skill_directory,
-                                   self.upload_queue)
+        skill_loader = SkillLoader(self.bus, skill_directory)
         try:
-            skill_loader.load()
+            load_status = skill_loader.load()
         except Exception:
             LOG.exception('Load of skill {} failed!'.format(skill_directory))
         finally:
             self.skill_loaders[skill_directory] = skill_loader
+
+        return skill_loader if load_status else None
 
     def _get_skill_directories(self):
         skill_glob = glob(os.path.join(self.msm.skills_dir, '*/'))
