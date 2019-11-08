@@ -13,13 +13,6 @@
 # limitations under the License.
 #
 
-"""
-The mycroft.util.format module provides various formatting functions for
-things like numbers, times, etc.
-
-The focus of these formatting functions is to create natural sounding speech
-and allow localization.
-"""
 from os.path import join
 
 from mycroft.util.lang import get_full_lang_code, get_primary_lang_code
@@ -54,6 +47,9 @@ import os
 import datetime
 import re
 
+from ummalqura.hijri_date import HijriDate
+from hijri_converter import convert
+from mycroft.util.time import now_local
 
 def _translate_word(name, lang):
     """ Helper to get word tranlations
@@ -194,8 +190,14 @@ class DateTimeFormat:
                         number=str(number % 10000))
 
     """convert date to spoken Arabic format"""
-    def date_format(self, dt, lang, now):
+    def date_format(self, dt, lang, now, DateType = 'G'):
         """initialize arrays of the Arabic days and months"""
+        if DateType == 'H':
+            ConvertedDT = HijriDate.get_hijri_date(dt.date()) 
+            extractedDate = now.replace(microsecond=0)
+            extractedDate = extractedDate.replace(year=int(ConvertedDT[0:4]), month=int(ConvertedDT[5:7]), day=int(ConvertedDT[8:]), tzinfo=extractedDate.tzinfo)
+            dt = extractedDate
+
         days = {
     7: 'الأحد',
     1: 'الاثنين',
@@ -206,8 +208,17 @@ class DateTimeFormat:
     6: 'السبت'
    }
 
-        months = ['جانيوري', 'فبراير', 'مارس', 'أبريل', 'ماي', 'جون','جولاي', 'أوقست', 'سبتمبر', 'أكتوبر', 'نوفمبر','ديسمبر']
+        Gmonths = ['جانيوري', 'فبراير', 'مارس', 'أبريل', 'ماي', 'جون','جولاي', 'أوقست', 'سبتمبر', 'أكتوبر', 'نوفمبر','ديسمبر']
+        Hmonths = ['محرم', 'صفر', 'ربيع الأول', 'ربيع الثاني', 'جماد الأول', 'جماد الثاني','رجب', 'شعبان', 'رمضان', 'شوال', 'ذي القعدة','ذي الحجة']
+        HGYear = str(dt.year)[0:2]
         year = str(dt.year)[2:]
+        if HGYear == '14':
+            month = Hmonths[dt.month-1]
+            BenningYear = 'ألف وأربع مائة و '
+        elif HGYear == '20':
+            month = Gmonths[dt.month-1]
+            BenningYear = 'ألفين و '
+        
         if now:
             """save tomorrow and yesteday dates"""
             tomorrow = now + datetime.timedelta(days=1)
@@ -221,15 +232,15 @@ class DateTimeFormat:
             elif yesterday.date() == dt.date():
                 return 'أمس'
             if dt.year == now.year:
-                return days[dt.weekday()+1] + " "+ pronounce_number(dt.day, lang) + " " +months[dt.month-1]
+                return days[dt.weekday()+1] + " "+ pronounce_number(dt.day, lang) + " " +month
                 
             """if the given date is not today or tomorrow or yesteday, then we need to generate a date using the bellow line of code"""
-            return days[dt.weekday()+1] + " "+ pronounce_number(dt.day, lang) + " " +months[dt.month-1] + " ألفين و" + pronounce_number(int(year), lang)
+            return days[dt.weekday()+1] + " "+ pronounce_number(dt.day, lang) + " " +month + " "+ BenningYear + pronounce_number(int(year), lang)
 
 
     """Convert date and time into Arabic spoken format; it will concatenate the output of the two function (nice_time and date_format together)"""
-    def date_time_format(self, dt, lang, now, use_24hour, use_ampm):
-        date_str = self.date_format(dt, lang, now)
+    def date_time_format(self, dt, lang, now, use_24hour, use_ampm,DateType='G'):
+        date_str = self.date_format(dt, lang, now,DateType)
         time_str = nice_time(dt, lang, use_24hour=use_24hour,
                              use_ampm=use_ampm)
         date_time = date_str + " "+ time_str
@@ -392,7 +403,7 @@ def pronounce_number(number, lang=None, places=2, short_scale=True,
     return str(number)
 
 """convert date to spoken Arabic format"""
-def nice_date(dt, lang=None, now=None):
+def nice_date(dt, lang=None, now=None, DateType = 'G'):
     """
     Format a datetime to a pronounceable date
 
@@ -411,11 +422,11 @@ def nice_date(dt, lang=None, now=None):
     full_code = get_full_lang_code(lang)
     date_time_format.cache(full_code)
 
-    return date_time_format.date_format(dt, full_code, now)
+    return date_time_format.date_format(dt, full_code, now, DateType)
 
 """convert date and time to spoken Arabic format"""
 def nice_date_time(dt, lang=None, now=None, use_24hour=False,
-                   use_ampm=False):
+                   use_ampm=False, DateType='G'):
     """
         Format a datetime to a pronounceable date and time
 
@@ -440,7 +451,7 @@ def nice_date_time(dt, lang=None, now=None, use_24hour=False,
     date_time_format.cache(full_code)
     """it will be redirected to the function date_time_format"""
     return date_time_format.date_time_format(dt, full_code, now, use_24hour,
-                                             use_ampm)
+                                             use_ampm,DateType)
 
 
 def nice_year(dt, lang=None, bc=False):
