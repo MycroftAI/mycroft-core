@@ -21,6 +21,15 @@ MIMIC_DIR=mimic
 CORES=$1
 MIMIC_VERSION=1.2.0.2
 
+# This is important on memory constrained systems such as arm and aarch64
+if [[ $(uname -m) == arm* ]] || [[ $(uname -m) == aarch64 ]]; then
+  CORES=1
+fi
+# Avoid writing preprocessor output in /tmp
+# This will avoid compile fail and cut down build time
+# This is important on memory constrained systems such as arm and aarch64
+export CFLAGS="-pipe"
+
 # for ubuntu precise in travis, that does not provide pkg-config:
 pkg-config --exists icu-i18n || export CFLAGS="$CFLAGS -I/usr/include/x86_64-linux-gnu"
 pkg-config --exists icu-i18n || export LDFLAGS="$LDFLAGS -licui18n -licuuc -licudata"
