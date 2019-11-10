@@ -360,13 +360,13 @@ def nice_time_ar(dt, speech=True, use_24hour=False, use_ampm=True):
         else:
             if dt.minute < 11:
                 if dt.minute ==1:
-                    speak += " و دقيقة"
+                    speak += " "+" و دقيقة"
                 if dt.minute ==2:
-                    speak += " و دقيقتان"
+                    speak += " "+" و دقيقتان"
                 elif dt.minute >2 and dt.minute < 11:
-                    speak += " و" + pronounce_number_ar(dt.minute) + "دقائق"
+                    speak += " و" + pronounce_number_ar(dt.minute) +" "+ "دقائق"
             else:
-                speak += " و" + pronounce_number_ar(dt.minute) + " دقيقة "
+                speak += " و" + pronounce_number_ar(dt.minute) + " "+" دقيقة "
 
                 
         """when complete converting the hours and minutes to spoken form, now we need to indicate if it is a.m or p.m and add to the string مساءً - صباحاً"""
@@ -383,5 +383,4 @@ def pronounce_hour_ar (num):
 
     hour_names = _NUM_HOUR_AR.copy()
     return hour_names[num]
-
 
