@@ -13,7 +13,6 @@ before_install:
  - export CC="gcc-4.8"
  - export TMPDIR="/tmp/${TRAVIS_PYTHON_VERSION}"
 python:
-  - "3.4"
   - "3.5"
   - "3.6"
   - "3.7"

@@ -185,12 +185,6 @@ class AudioConsumer(Thread):
 
     # TODO: Localization
     def process(self, audio):
-        SessionManager.touch()
-        payload = {
-            'utterance': self.wakeword_recognizer.key_phrase,
-            'session': SessionManager.get().session_id,
-        }
-        self.emitter.emit("recognizer_loop:wakeword", payload)
 
         if self._audio_length(audio) >= self.MIN_AUDIO_SIZE:
             stopwatch = Stopwatch()
@@ -402,7 +396,18 @@ class RecognizerLoop(EventEmitter):
         self.state.sleeping = False
 
     def run(self):
-        self.start_async()
+        """Start and reload mic and STT handling threads as needed.
+
+        Wait for KeyboardInterrupt and shutdown cleanly.
+        """
+        try:
+            self.start_async()
+        except Exception:
+            LOG.exception('Starting producer/consumer threads for listener '
+                          'failed.')
+            return
+
+        # Handle reload of consumer / producer if config changes
         while self.state.running:
             try:
                 time.sleep(1)

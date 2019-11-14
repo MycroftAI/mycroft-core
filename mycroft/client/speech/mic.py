@@ -92,7 +92,7 @@ class MutableStream:
 
                 to_read = min(self.wrapped_stream.get_read_available(),
                               remaining)
-                if to_read == 0:
+                if to_read <= 0:
                     sleep(.01)
                     continue
                 result = self.wrapped_stream.read(to_read,
@@ -244,10 +244,25 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.TEST_WW_SEC = num_phonemes * len_phoneme
         self.SAVED_WW_SEC = max(3, self.TEST_WW_SEC)
 
-        try:
-            self.account_id = DeviceApi().get()['user']['uuid']
-        except (requests.RequestException, AttributeError):
-            self.account_id = '0'
+        self._account_id = None
+
+    @property
+    def account_id(self):
+        """Fetch account from backend when needed.
+
+        If an error occurs it's handled and a temporary value is returned.
+        When a value is received it will be cached until next start.
+        """
+        if not self._account_id:
+            try:
+                self._account_id = DeviceApi().get()['user']['uuid']
+            except (requests.RequestException, AttributeError):
+                pass  # These are expected and won't be reported
+            except Exception as e:
+                LOG.debug('Unhandled exception while determining device_id, '
+                          'Error: {}'.format(repr(e)))
+
+        return self._account_id or '0'
 
     def record_sound_chunk(self, source):
         return source.stream.read(source.CHUNK, self.overflow_exc)
@@ -435,7 +450,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         LOG.debug('Listen triggered from external source.')
         self._listen_triggered = True
 
-    def _wait_until_wake_word(self, source, sec_per_buffer):
+    def _wait_until_wake_word(self, source, sec_per_buffer, emitter):
         """Listen continuously on source until a wake word is spoken
 
         Args:
@@ -525,6 +540,13 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
                 # Save positive wake words as appropriate
                 if said_wake_word:
+                    SessionManager.touch()
+                    payload = {
+                        'utterance': self.wake_word_name,
+                        'session': SessionManager.get().session_id,
+                    }
+                    emitter.emit("recognizer_loop:wakeword", payload)
+
                     audio = None
                     mtd = None
                     if self.save_wake_words:
@@ -591,7 +613,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.adjust_for_ambient_noise(source, 1.0)
 
         LOG.debug("Waiting for wake word...")
-        ww_frames = self._wait_until_wake_word(source, sec_per_buffer)
+        ww_frames = self._wait_until_wake_word(source, sec_per_buffer, emitter)
 
         self._listen_triggered = False
         if self._stop_signaled:
