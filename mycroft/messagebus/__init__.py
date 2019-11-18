@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from .client.client import MessageBusClient
-from .message import Message
-from .send_func import send
+from mycroft_bus_client import MessageBusClient
+from mycroft_bus_client import Message
+from mycroft_bus_client import send
 from .service.event_handler import MessageBusEventHandler

@@ -5,7 +5,6 @@ PyAudio==0.2.11
 pyee==5.0.0
 SpeechRecognition==3.8.1
 tornado==6.0.3
-websocket-client==0.54.0
 requests-futures==0.9.5
 pyalsaaudio==0.8.2
 xmlrunner==1.7.7
@@ -21,6 +20,7 @@ google-api-python-client==1.6.4
 fasteners==0.14.1
 PyYAML==5.1.2
 
+mycroft-messagebus-client==0.8.1
 msm==0.8.3
 msk==0.3.14
 adapt-parser==0.3.4
