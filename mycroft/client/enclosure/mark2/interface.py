@@ -44,6 +44,7 @@ class EnclosureMark2(Enclosure):
         self.bus.on('display.bus.start', self.on_display_bus_start)
         self.bus.on('display.screen.show', self.on_display_screen_show)
         self.bus.on('display.screen.update', self.on_display_screen_update)
+        self.bus.on('display.screen.stop', self.on_display_screen_stop)
         self.bus.on('enclosure.internet.connected', self.on_internet_connected)
         self.bus.on('enclosure.mouth.reset', self.reset_display)
         self.bus.on('enclosure.mouth.think', self.show_thinking_screen)
