@@ -15,7 +15,7 @@
 """Define the enclosure interface for Mark II devices."""
 import json
 from threading import Timer
-from time import sleep, time
+from time import sleep
 
 from websocket import WebSocketApp
 
@@ -40,9 +40,9 @@ class EnclosureMark2(Enclosure):
         self.internet = EnclosureInternet(self.bus, self.config)
 
     def _define_event_handlers(self):
+        """Assign methods to act upon message bus events."""
         self.bus.on('display.bus.start', self.on_display_bus_start)
         self.bus.on('display.screen.show', self.on_display_screen_show)
-        self.bus.on('display.screen.stop', self.on_display_screen_stop)
         self.bus.on('display.screen.update', self.on_display_screen_update)
         self.bus.on('enclosure.internet.connected', self.on_internet_connected)
         self.bus.on('enclosure.mouth.reset', self.reset_display)
@@ -80,12 +80,14 @@ class EnclosureMark2(Enclosure):
         self.bus.emit(Message('display.bus.ready'))
 
     def on_core_ready(self, _):
+        """When core reports that it is ready for use, update display."""
         self._finish_screen('loading', wait_for_it=4)
         self._show_screen('splash')
         self.finished_loading = True
         Timer(7, self.show_idle).start()
 
     def show_idle(self):
+        """Force the idle screen when the Mark II skill does not."""
         self.active_screen = None
         message = Message(msg_type='mycroft.device.show.idle')
         self.bus.emit(message)
@@ -102,14 +104,18 @@ class EnclosureMark2(Enclosure):
         )
 
     def _ignore_screen_show_request(self, screen_name):
+        """Some requests to show a screen should be ignored.
+
+        For example, do not show the idle screen when another screen is
+        actively using the display.
+        """
         return (
             (screen_name == 'idle' and self.active_screen) or
             screen_name == self.paused_screen
         )
 
     def _show_screen(self, screen_name, screen_data=None):
-        LOG.info('***** attempting to show screen ' + screen_name)
-        LOG.info('***** active screen ' + str(self.active_screen) + 'data: ' + str(screen_data))
+        """Issue an event to the bus that will result in a screen update."""
         ignore = self._ignore_screen_show_request(screen_name)
         if not ignore:
             if self.active_screen in self.active_until_stopped:
@@ -125,6 +131,7 @@ class EnclosureMark2(Enclosure):
             )
 
     def reset_display(self, _):
+        """When a skill is finished doing its thing, reset for next skill."""
         if self.finished_loading:
             if self.paused_screen is None:
                 if self.active_screen not in self.active_until_stopped:
@@ -134,17 +141,20 @@ class EnclosureMark2(Enclosure):
                 self.paused_screen = None
 
     def on_display_screen_update(self, message):
+        """Send a message to the display bus updating a screen's data."""
         self._send_message_to_display_bus(
             message_type='display.screen.update',
             message_data=message.data
         )
 
     def _send_message_to_display_bus(self, message_type, message_data):
+        """Helper method for sending messages to the display bus."""
         msg = dict(type=message_type, data=message_data)
         msg = json.dumps(msg)
         self.display_bus_client.send(msg)
 
     def on_display_screen_stop(self, _):
+        """Handle stopping a skill that has control of the screen."""
         sleep(5)
         self.show_idle()
 
@@ -156,14 +166,17 @@ class EnclosureMark2(Enclosure):
             self.active_screen = 'generic'
 
     def show_thinking_screen(self, _):
+        """Show the thinking screen while the device searches for answers."""
         self._show_screen(screen_name='thinking')
         self.active_screen = 'thinking'
 
     def show_play_screen(self, message):
+        """Show the screen used for various audio play skills."""
         self.active_until_stopped.add('play')
         self._show_screen(screen_name='play', screen_data=message.data)
 
     def on_internet_connected(self, _):
+        """Once connected to the internet, change the screen displayed."""
         self._finish_screen(screen_name='loading', wait_for_it=4)
         self._show_screen('wifi_connected')
         sleep(2)
@@ -171,6 +184,7 @@ class EnclosureMark2(Enclosure):
         self._show_screen('loading', screen_data)
 
     def _finish_screen(self, screen_name, wait_for_it=None):
+        """Some screens have to finish what they are doing before exiting."""
         self._send_message_to_display_bus(
             message_type='display.screen.finish',
             message_data=dict(screen_name=screen_name)

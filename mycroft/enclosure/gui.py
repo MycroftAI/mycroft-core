@@ -184,6 +184,7 @@ class SkillGUI:
                                      "__idle": override_idle}))
 
     def display_screen(self, name, data=None, active_until_stopped=False):
+        """Issue an event that will display a screen using Kivy"""
         message_data = dict(
             screen_name=name,
             active_until_stopped=active_until_stopped
@@ -197,6 +198,7 @@ class SkillGUI:
         self.skill.bus.emit(msg)
 
     def update_screen(self, name, data=None):
+        """Issue an event that will update screen data using Kivy"""
         message_data = dict(screen_name=name)
         if data is not None:
             message_data.update(screen_data=data)
