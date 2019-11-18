@@ -183,10 +183,26 @@ class SkillGUI:
                                      "__from": self.skill.skill_id,
                                      "__idle": override_idle}))
 
-    def display_screen(self, name, data=None):
+    def display_screen(self, name, data=None, active_until_stopped=False):
+        message_data = dict(
+            screen_name=name,
+            active_until_stopped=active_until_stopped
+        )
+        if data is not None:
+            message_data.update(screen_data=data)
         msg = Message(
             'display.screen.show',
-            data=dict(name=name, display_data=data)
+            data=message_data
+        )
+        self.skill.bus.emit(msg)
+
+    def update_screen(self, name, data=None):
+        message_data = dict(screen_name=name)
+        if data is not None:
+            message_data.update(screen_data=data)
+        msg = Message(
+            'display.screen.update',
+            data=message_data
         )
         self.skill.bus.emit(msg)
 

@@ -60,11 +60,16 @@ def _get_page_data(message):
 class Enclosure:
     def __init__(self):
         # Establish Enclosure's websocket connection to the messagebus
+        LOG.info('Starting base enclosure')
+        LOG.info('Connecting to core message bus')
         self.bus = MessageBusClient()
+        LOG.info('Finished connecting to message bus')
 
         # Load full config
+        LOG.info('Loading config')
         Configuration.set_config_update_handlers(self.bus)
         config = Configuration.get()
+        LOG.info('finished getting config')
 
         self.lang = config['lang']
         self.config = config.get("enclosure")
@@ -103,6 +108,7 @@ class Enclosure:
         self.bus.on("gui.page.delete", self.on_gui_delete_page)
         self.bus.on("gui.clear.namespace", self.on_gui_delete_namespace)
         self.bus.on("gui.event.send", self.on_gui_send_event)
+        LOG.info('Finished setting up base enclosure')
 
     def run(self):
         try:

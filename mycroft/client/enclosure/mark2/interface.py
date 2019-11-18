@@ -15,44 +15,50 @@
 """Define the enclosure interface for Mark II devices."""
 import json
 from threading import Timer
-from time import sleep
+from time import sleep, time
 
 from websocket import WebSocketApp
 
-import mycroft.dialog
-from mycroft.api import has_been_paired
 from mycroft.client.enclosure.base import Enclosure
 from mycroft.messagebus.message import Message
-from mycroft.util import connected, create_daemon, wait_while_speaking
+from mycroft.util import create_daemon
 from mycroft.util.log import LOG
 from .display_bus import start_display_message_bus
+from ..startup import EnclosureInternet
 
 
 class EnclosureMark2(Enclosure):
     def __init__(self):
-        super().__init__()
         LOG.info('Starting Mark 2 enclosure')
-        self.bus.on("display.bus.start", self.on_display_bus_start)
-        self.bus.on("display.screen.show", self.on_display_screen_show)
-        self.bus.on('display.screen.stop', self.on_display_screen_stop)
+        super().__init__()
         self.display_bus_client = None
-        self._setup_internet_check()
-        LOG.info('Mark 2 enclosure setup complete')
+        self._define_event_handlers()
+        self.finished_loading = False
+        self.active_screen = 'loading'
+        self.paused_screen = None
+        self.active_until_stopped = set()
+        self.internet = EnclosureInternet(self.bus, self.config)
 
-    def _setup_internet_check(self):
-        """Set a timer thread to check for internet connectivity.
-
-        Time is delayed this for several seconds to ensure that the speech
-        client is up and connected to the message bus, allowing it to
-        receive the "speak" event.
-        """
-        Timer(5, self._check_for_internet).start()
+    def _define_event_handlers(self):
+        self.bus.on('display.bus.start', self.on_display_bus_start)
+        self.bus.on('display.screen.show', self.on_display_screen_show)
+        self.bus.on('display.screen.stop', self.on_display_screen_stop)
+        self.bus.on('display.screen.update', self.on_display_screen_update)
+        self.bus.on('enclosure.internet.connected', self.on_internet_connected)
+        self.bus.on('enclosure.mouth.reset', self.reset_display)
+        self.bus.on('enclosure.mouth.think', self.show_thinking_screen)
+        self.bus.on('enclosure.mouth.viseme_list', self.show_generic_screen)
+        self.bus.on('mycroft.audio.service.stop', self.on_display_screen_stop)
+        self.bus.on('mycroft.intent.fallback.start', self.show_thinking_screen)
+        self.bus.on('mycroft.ready', self.on_core_ready)
+        self.bus.on('play:status', self.show_play_screen)
 
     def on_display_bus_start(self, _):
         """Start the display message bus."""
         websocket_config = self.global_config.get("gui_websocket")
         start_display_message_bus(websocket_config)
         self._connect_to_display_bus(websocket_config)
+        self.internet.check_connection()
 
     def _connect_to_display_bus(self, websocket_config):
         """Connect to the display bus to send messages."""
@@ -64,7 +70,6 @@ class EnclosureMark2(Enclosure):
         self.display_bus_client = WebSocketApp(
             url=websocket_url,
             on_open=self.on_display_bus_open,
-            on_message=self.on_display_bus_message
         )
         create_daemon(self.display_bus_client.run_forever)
         LOG.info('Display websocket client started successfully')
@@ -74,74 +79,101 @@ class EnclosureMark2(Enclosure):
         LOG.info('Display message bus ready for connections')
         self.bus.emit(Message('display.bus.ready'))
 
-    def on_display_bus_message(self, message):
-        LOG.info('Receiving a message...')
-        try:
-            LOG.info('Client received message: ' + message)
-        except Exception:
-            LOG.exception('failed to receive message')
+    def on_core_ready(self, _):
+        self._finish_screen('loading', wait_for_it=4)
+        self._show_screen('splash')
+        self.finished_loading = True
+        Timer(7, self.show_idle).start()
+
+    def show_idle(self):
+        self.active_screen = None
+        message = Message(msg_type='mycroft.device.show.idle')
+        self.bus.emit(message)
 
     def on_display_screen_show(self, message):
         """Send a message to the display bus that will show a screen."""
-        msg = dict(type=message.msg_type, data=message.data)
-        msg = json.dumps(msg)
-        self.display_bus_client.send(msg)
+        LOG.info('**** showing screen ' + message.data['screen_name'])
+        LOG.info('**** currently displaying screen: ' + str(self.active_screen))
+        if message.data['active_until_stopped']:
+            self.active_until_stopped.add(message.data['screen_name'])
+        self._show_screen(
+            message.data['screen_name'],
+            message.data.get('screen_data')
+        )
 
-    def on_display_screen_stop(self, message):
-        """Send a message to the display bus that will show a screen."""
-        msg = dict(type=message.msg_type, data=message.data)
-        msg = json.dumps(msg)
-        self.display_bus_client.send(msg)
+    def _ignore_screen_show_request(self, screen_name):
+        return (
+            (screen_name == 'idle' and self.active_screen) or
+            screen_name == self.paused_screen
+        )
 
-    def _check_for_internet(self):
-        """Run wifi setup if an internet connection is not established."""
-        LOG.info("Checking internet connection")
-        if connected():
-            LOG.info('Enclosure is connected to internet')
-            self.bus.emit(Message(msg_type='enclosure.internet.connected'))
-        else:
-            LOG.info('no internet connection detected; starting wifi setup')
-            self._mute_microphone()
-            if not has_been_paired():
-                self.bus.once('mycroft.paired', self._unmute_mike)
-                self._speak_intro()
+    def _show_screen(self, screen_name, screen_data=None):
+        LOG.info('***** attempting to show screen ' + screen_name)
+        LOG.info('***** active screen ' + str(self.active_screen) + 'data: ' + str(screen_data))
+        ignore = self._ignore_screen_show_request(screen_name)
+        if not ignore:
+            if self.active_screen in self.active_until_stopped:
+                if screen_name != self.active_screen:
+                    self.paused_screen = self.active_screen
+            self.active_screen = screen_name
+            message_data = dict(screen_name=screen_name)
+            if screen_data is not None:
+                message_data.update(screen_data=screen_data)
+            self._send_message_to_display_bus(
+                message_type='display.screen.show',
+                message_data=message_data
+            )
+
+    def reset_display(self, _):
+        if self.finished_loading:
+            if self.paused_screen is None:
+                if self.active_screen not in self.active_until_stopped:
+                    self.active_screen = None
             else:
-                self.bus.once(
-                    'enclosure.internet.connected',
-                    self._unmute_mike
-                )
-            self._start_wifi_setup()
-            self._wait_for_internet_connection()
-            self.bus.emit(Message(msg_type='enclosure.internet.connected'))
+                self.active_screen = self.paused_screen
+                self.paused_screen = None
 
-    def _mute_microphone(self):
-        """Mute the microphone while wifi setup is running."""
-        message = Message("mycroft.mic.mute")
-        self.bus.emit(message)
-
-    def _speak_intro(self):
-        """Send a message to the bus triggering the introduction dialog."""
-        message = Message(
-            msg_type='speak',
-            data=dict(utterance=mycroft.dialog.get('mycroft.intro'))
+    def on_display_screen_update(self, message):
+        self._send_message_to_display_bus(
+            message_type='display.screen.update',
+            message_data=message.data
         )
-        self.bus.emit(message)
-        wait_while_speaking()
-        sleep(2)  # a pause sounds better than just jumping in
 
-    def _start_wifi_setup(self):
-        """Send a message to the bus that will start the wifi setup process."""
-        message = Message(
-            msg_type='system.wifi.setup',
-            data=dict(allow_timeout=False, lang=self.lang)
+    def _send_message_to_display_bus(self, message_type, message_data):
+        msg = dict(type=message_type, data=message_data)
+        msg = json.dumps(msg)
+        self.display_bus_client.send(msg)
+
+    def on_display_screen_stop(self, _):
+        sleep(5)
+        self.show_idle()
+
+    def show_generic_screen(self, message):
+        """Display viseme for skills that do not otherwise use the display."""
+        if self.active_screen in (None, 'thinking'):
+            LOG.info('no displayed skill found, sending generic screen')
+            self._show_screen(screen_name='generic', screen_data=message.data)
+            self.active_screen = 'generic'
+
+    def show_thinking_screen(self, _):
+        self._show_screen(screen_name='thinking')
+        self.active_screen = 'thinking'
+
+    def show_play_screen(self, message):
+        self.active_until_stopped.add('play')
+        self._show_screen(screen_name='play', screen_data=message.data)
+
+    def on_internet_connected(self, _):
+        self._finish_screen(screen_name='loading', wait_for_it=4)
+        self._show_screen('wifi_connected')
+        sleep(2)
+        screen_data = dict(loading_status='LOADING SKILLS')
+        self._show_screen('loading', screen_data)
+
+    def _finish_screen(self, screen_name, wait_for_it=None):
+        self._send_message_to_display_bus(
+            message_type='display.screen.finish',
+            message_data=dict(screen_name=screen_name)
         )
-        self.bus.emit(message)
-
-    @staticmethod
-    def _wait_for_internet_connection():
-        while not connected():
-            sleep(1)
-
-    def _unmute_mike(self, _):
-        """Turn microphone back on after the pairing is complete."""
-        self.bus.emit(Message("mycroft.mic.unmute"))
+        if wait_for_it is not None:
+            sleep(wait_for_it)
