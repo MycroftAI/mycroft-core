@@ -20,6 +20,7 @@ from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
 from mycroft.util import play_mp3, play_ogg, play_wav
 import mimetypes
+import re
 from requests import Session
 
 
@@ -31,6 +32,9 @@ def find_mime(path):
             mime = response.headers['content-type']
     if not mime:
         mime = mimetypes.guess_type(path)[0]
+    # Remove any http address arguments
+    if not mime:
+        mime = mimetypes.guess_type(re.sub(r'\?.*$', '', path))[0]
 
     if mime:
         return mime.split('/')
