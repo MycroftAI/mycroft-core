@@ -55,6 +55,10 @@ class EnclosureMark2(Enclosure):
         self.bus.on('mycroft.paired', self.handle_paired)
         self.bus.on('mycroft.ready', self.on_core_ready)
         self.bus.on('play:status', self.show_play_screen)
+        self.bus.on(
+            'recognizer_loop:audio_output_end',
+            self.handle_audio_output_end
+        )
         self.bus.on('system.wifi.ap_up', self.handle_access_point_up)
         self.bus.on(
             'system.wifi.ap_device_connected',
@@ -102,8 +106,6 @@ class EnclosureMark2(Enclosure):
 
     def on_display_screen_show(self, message):
         """Send a message to the display bus that will show a screen."""
-        LOG.info('**** showing screen ' + message.data['screen_name'])
-        LOG.info('**** currently displaying screen: ' + str(self.active_screen))
         if message.data['active_until_stopped']:
             self.active_until_stopped.add(message.data['screen_name'])
         self._show_screen(
@@ -111,24 +113,16 @@ class EnclosureMark2(Enclosure):
             message.data.get('screen_data')
         )
 
-    def _ignore_screen_show_request(self, screen_name):
-        """Some requests to show a screen should be ignored.
-
-        For example, do not show the idle screen when another screen is
-        actively using the display.
-        """
-        return (
-            (screen_name == 'idle' and self.active_screen) or
-            screen_name == self.paused_screen
-        )
-
     def _show_screen(self, screen_name, screen_data=None):
         """Issue an event to the bus that will result in a screen update."""
+        LOG.info('Received request to show "{}" screen '.format(screen_name))
         ignore = self._ignore_screen_show_request(screen_name)
         if not ignore:
             if self.active_screen in self.active_until_stopped:
                 if screen_name != self.active_screen:
+                    LOG.info('Pausing "{}" screen'.format(self.active_screen))
                     self.paused_screen = self.active_screen
+            LOG.info('Activating "{}" screen'.format(screen_name))
             self.active_screen = screen_name
             message_data = dict(screen_name=screen_name)
             if screen_data is not None:
@@ -138,13 +132,39 @@ class EnclosureMark2(Enclosure):
                 message_data=message_data
             )
 
+    def _ignore_screen_show_request(self, screen_name):
+        """Some requests to show a screen should be ignored.
+
+        For example, do not show the idle screen when another screen is
+        actively using the display.
+        """
+        ignore_reasons = []
+        if screen_name == 'idle':
+            if self.active_screen is not None and self.active_screen != 'idle':
+                reason = 'The "{}" screen is active, ignore idle'.format(
+                    self.active_screen
+                )
+                ignore_reasons.append(reason)
+        if screen_name == self.paused_screen:
+            ignore_reasons.append('Screen "{}" is paused'.format(screen_name))
+
+        if ignore_reasons:
+            log_msg = 'Ignoring request to show "{}" screen.  Reasons: {}'
+            LOG.info(log_msg.format(screen_name, '\n\t'.join(ignore_reasons)))
+
+        return len(ignore_reasons) > 0
+
     def reset_display(self, _):
         """When a skill is finished doing its thing, reset for next skill."""
         if self.finished_loading:
             if self.paused_screen is None:
                 if self.active_screen not in self.active_until_stopped:
+                    LOG.info('Resetting active screen.')
                     self.active_screen = None
             else:
+                LOG.info(
+                    'Resuming paused "{}" screen'.format(self.active_screen)
+                )
                 self.active_screen = self.paused_screen
                 self.paused_screen = None
 
@@ -209,6 +229,11 @@ class EnclosureMark2(Enclosure):
         self._show_screen('wifi_start')
         sleep(8)
         self._show_screen('wifi_login')
+
+    def handle_audio_output_end(self):
+        if self.active_screen == 'generic':
+            message = None
+            self.reset_display(message)
 
     def _finish_screen(self, screen_name, wait_for_it=None):
         """Some screens have to finish what they are doing before exiting."""
