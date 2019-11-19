@@ -19,6 +19,7 @@ from time import sleep
 
 from websocket import WebSocketApp
 
+from mycroft.api import is_paired
 from mycroft.client.enclosure.base import Enclosure
 from mycroft.messagebus.message import Message
 from mycroft.util import create_daemon
@@ -37,7 +38,7 @@ class EnclosureMark2(Enclosure):
         self.active_screen = 'loading'
         self.paused_screen = None
         self.active_until_stopped = set()
-        self.internet = EnclosureInternet(self.bus, self.config)
+        self.internet = EnclosureInternet(self.bus, self.global_config)
 
     def _define_event_handlers(self):
         """Assign methods to act upon message bus events."""
@@ -51,8 +52,14 @@ class EnclosureMark2(Enclosure):
         self.bus.on('enclosure.mouth.viseme_list', self.show_generic_screen)
         self.bus.on('mycroft.audio.service.stop', self.on_display_screen_stop)
         self.bus.on('mycroft.intent.fallback.start', self.show_thinking_screen)
+        self.bus.on('mycroft.paired', self.handle_paired)
         self.bus.on('mycroft.ready', self.on_core_ready)
         self.bus.on('play:status', self.show_play_screen)
+        self.bus.on('system.wifi.ap_up', self.handle_access_point_up)
+        self.bus.on(
+            'system.wifi.ap_device_connected',
+            self.handle_access_point_connected
+        )
 
     def on_display_bus_start(self, _):
         """Start the display message bus."""
@@ -180,9 +187,28 @@ class EnclosureMark2(Enclosure):
         """Once connected to the internet, change the screen displayed."""
         self._finish_screen(screen_name='loading', wait_for_it=4)
         self._show_screen('wifi_connected')
-        sleep(2)
-        screen_data = dict(loading_status='LOADING SKILLS')
-        self._show_screen('loading', screen_data)
+        if is_paired():
+            sleep(2)
+            screen_data = dict(loading_status='LOADING SKILLS')
+            self._show_screen('loading', screen_data)
+        else:
+            self._show_screen('pairing_start')
+
+    def handle_paired(self, _):
+        """When pairing succeeds, show success screen, then example intents."""
+        self._show_screen('pairing_success')
+        sleep(5)
+        self._show_screen('example_intent')
+
+    def handle_access_point_up(self, _):
+        """When access point is up, display access point instructions"""
+        self._show_screen('access_point')
+
+    def handle_access_point_connected(self, _):
+        """When connected to access point, display wifi instructions"""
+        self._show_screen('wifi_start')
+        sleep(8)
+        self._show_screen('wifi_login')
 
     def _finish_screen(self, screen_name, wait_for_it=None):
         """Some screens have to finish what they are doing before exiting."""
