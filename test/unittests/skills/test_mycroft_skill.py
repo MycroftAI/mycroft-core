@@ -73,7 +73,7 @@ class TestFunction(unittest.TestCase):
 
         test_class = T()
         self.assertTrue('resting_handler' in dir(test_class.f))
-        self.assertEquals(test_class.f.resting_handler, 'humbug')
+        self.assertEqual(test_class.f.resting_handler, 'humbug')
 
 
 class TestMycroftSkill(unittest.TestCase):

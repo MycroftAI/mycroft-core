@@ -21,6 +21,7 @@ import requests
 from contextlib import suppress
 from glob import glob
 from os.path import dirname, exists, join, abspath, expanduser, isfile, isdir
+from shutil import rmtree
 from threading import Timer, Event, Thread
 from urllib.error import HTTPError
 

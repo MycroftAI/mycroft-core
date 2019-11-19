@@ -1429,9 +1429,9 @@ def isFractional_nl(input_str, short_scale=True):
             if num > 2:
                 fracts[_SHORT_ORDINAL_STRING_NL[num]] = num
     else:
-        for num in _LONG_ORDINAL_STRING_EN:
+        for num in _LONG_ORDINAL_STRING_NL:
             if num > 2:
-                fracts[_LONG_ORDINAL_STRING_EN[num]] = num
+                fracts[_LONG_ORDINAL_STRING_NL[num]] = num
 
     if input_str.lower() in fracts:
         return 1.0 / fracts[input_str.lower()]

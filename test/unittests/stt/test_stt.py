@@ -50,27 +50,27 @@ class TestSTT(unittest.TestCase):
         mock_get.return_value = config
 
         stt = mycroft.stt.STTFactory.create()
-        self.assertEquals(type(stt), mycroft.stt.MycroftSTT)
+        self.assertEqual(type(stt), mycroft.stt.MycroftSTT)
 
         config['stt']['module'] = 'google'
         stt = mycroft.stt.STTFactory.create()
-        self.assertEquals(type(stt), mycroft.stt.GoogleSTT)
+        self.assertEqual(type(stt), mycroft.stt.GoogleSTT)
 
         config['stt']['module'] = 'google_cloud'
         stt = mycroft.stt.STTFactory.create()
-        self.assertEquals(type(stt), mycroft.stt.GoogleCloudSTT)
+        self.assertEqual(type(stt), mycroft.stt.GoogleCloudSTT)
 
         config['stt']['module'] = 'ibm'
         stt = mycroft.stt.STTFactory.create()
-        self.assertEquals(type(stt), mycroft.stt.IBMSTT)
+        self.assertEqual(type(stt), mycroft.stt.IBMSTT)
 
         config['stt']['module'] = 'kaldi'
         stt = mycroft.stt.STTFactory.create()
-        self.assertEquals(type(stt), mycroft.stt.KaldiSTT)
+        self.assertEqual(type(stt), mycroft.stt.KaldiSTT)
 
         config['stt']['module'] = 'wit'
         stt = mycroft.stt.STTFactory.create()
-        self.assertEquals(type(stt), mycroft.stt.WITSTT)
+        self.assertEqual(type(stt), mycroft.stt.WITSTT)
 
     @patch.object(Configuration, 'get')
     def test_stt(self, mock_get):
@@ -227,7 +227,7 @@ class TestSTT(unittest.TestCase):
         mock_post.return_value = kaldiResponse
         audio = MagicMock()
         stt = mycroft.stt.KaldiSTT()
-        self.assertEquals(stt.execute(audio), 'text')
+        self.assertEqual(stt.execute(audio), 'text')
 
     @patch.object(Configuration, 'get')
     def test_bing_stt(self, mock_get):

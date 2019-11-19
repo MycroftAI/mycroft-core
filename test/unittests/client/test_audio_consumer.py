@@ -123,7 +123,7 @@ class AudioConsumerTest(unittest.TestCase):
         utterances = monitor.get('utterances')
         self.assertIsNotNone(utterances)
         self.assertTrue(len(utterances) == 1)
-        self.assertEquals("what's the weather next week", utterances[0])
+        self.assertEqual("what's the weather next week", utterances[0])
 
     @unittest.skip('Disabled while unittests are brought upto date')
     def test_wakeword(self):
@@ -141,7 +141,7 @@ class AudioConsumerTest(unittest.TestCase):
         utterances = monitor.get('utterances')
         self.assertIsNotNone(utterances)
         self.assertTrue(len(utterances) == 1)
-        self.assertEquals("silence", utterances[0])
+        self.assertEqual("silence", utterances[0])
 
     def test_ignore_wakeword_when_sleeping(self):
         self.queue.put((AUDIO_DATA,
@@ -186,7 +186,7 @@ class AudioConsumerTest(unittest.TestCase):
         utterances = monitor.get('utterances')
         self.assertIsNotNone(utterances)
         self.assertTrue(len(utterances) == 1)
-        self.assertEquals("stop", utterances[0])
+        self.assertEqual("stop", utterances[0])
 
     @unittest.skip('Disabled while unittests are brought upto date')
     def test_record(self):
@@ -208,4 +208,4 @@ class AudioConsumerTest(unittest.TestCase):
         utterances = monitor.get('utterances')
         self.assertIsNotNone(utterances)
         self.assertTrue(len(utterances) == 1)
-        self.assertEquals("record", utterances[0])
+        self.assertEqual("record", utterances[0])
