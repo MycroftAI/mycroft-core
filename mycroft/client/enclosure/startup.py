@@ -51,7 +51,6 @@ class EnclosureInternet:
     def _set_mic_unmute_event(self):
         if not has_been_paired():
             self.core_bus.once('mycroft.paired', self._unmute_mic)
-            self._speak_intro()
         else:
             self.core_bus.once('enclosure.internet.connected', self._unmute_mic)
 
