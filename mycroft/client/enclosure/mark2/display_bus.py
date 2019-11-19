@@ -49,10 +49,8 @@ class DisplayMessageBus(WebSocketHandler):
         self.connections.add(self)
 
     def on_message(self, message):
-        LOG.info("Display server received message: {}".format(message))
         for connection in self.connections:
             connection.write_message(message)
-        LOG.info("Display server sent message.")
 
     def on_close(self):
         LOG.info('Display event handler closed')
