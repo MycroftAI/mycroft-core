@@ -305,9 +305,9 @@ Mycroft requires a conflicting package, and will likely uninstall this package.
 On some systems, this can cause other programs to be marked for removal.
 Please review the following package changes carefully."
             read -p "Press enter to continue"
-            $SUDO apt-get install git python3 python3-dev python3-setuptools libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config libjpeg-dev libfann-dev build-essential jq
+            $SUDO apt-get install git python3 python3-dev python3-setuptools libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config libjpeg-dev libfann-dev build-essential jq pulseaudio pulseaudio-utils
         else
-            $SUDO apt-get install -y git python3 python3-dev python3-setuptools libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config libjpeg-dev libfann-dev build-essential jq
+            $SUDO apt-get install -y git python3 python3-dev python3-setuptools libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config libjpeg-dev libfann-dev build-essential jq pulseaudio pulseaudio-utils
         fi
     elif os_is_like fedora || os_is fedora; then
         echo "$GREEN Installing packages for Fedora...$RESET"
