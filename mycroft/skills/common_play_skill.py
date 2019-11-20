@@ -132,7 +132,10 @@ class CommonPlaySkill(MycroftSkill, ABC):
         # Stop any currently playing audio
         if self.audioservice.is_playing:
             self.audioservice.stop()
-        self.bus.emit(Message("mycroft.stop"))
+
+        # The data portion of the below message is a hack to get a demo
+        # Mark 2 working.
+        self.bus.emit(Message("mycroft.stop", data=dict(source='CPS')))
 
         # Save for CPS_play() later, e.g. if phrase includes modifiers like
         # "... on the chromecast"
