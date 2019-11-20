@@ -50,10 +50,11 @@ class EnclosureMark2(Enclosure):
         self.bus.on('enclosure.mouth.reset', self.reset_display)
         self.bus.on('enclosure.mouth.think', self.show_thinking_screen)
         self.bus.on('enclosure.mouth.viseme_list', self.show_generic_screen)
-        self.bus.on('mycroft.audio.service.stop', self.on_display_screen_stop)
         self.bus.on('mycroft.intent.fallback.start', self.show_thinking_screen)
         self.bus.on('mycroft.paired', self.handle_paired)
         self.bus.on('mycroft.ready', self.on_core_ready)
+        self.bus.on('mycroft.stop', self.on_display_screen_stop)
+        self.bus.on('play:start', self.handle_play_start)
         self.bus.on('play:status', self.show_play_screen)
         self.bus.on('system.wifi.ap_up', self.handle_access_point_up)
         self.bus.on(
@@ -177,10 +178,13 @@ class EnclosureMark2(Enclosure):
         msg = json.dumps(msg)
         self.display_bus_client.send(msg)
 
-    def on_display_screen_stop(self, _):
+    def on_display_screen_stop(self, message):
         """Handle stopping a skill that has control of the screen."""
-        sleep(5)
-        self.show_idle()
+        stop_source = message.data.get('source')
+        if stop_source is None:
+            self.active_screen = None
+            sleep(5)
+            self.show_idle()
 
     def show_generic_screen(self, message):
         """Display viseme for skills that do not otherwise use the display."""
@@ -197,9 +201,12 @@ class EnclosureMark2(Enclosure):
         self._show_screen(screen_name='thinking')
         self.active_screen = 'thinking'
 
+    def handle_play_start(self, _):
+        self.active_until_stopped.add('play')
+        self._show_screen(screen_name='play')
+
     def show_play_screen(self, message):
         """Show the screen used for various audio play skills."""
-        self.active_until_stopped.add('play')
         self._show_screen(screen_name='play', screen_data=message.data)
 
     def on_internet_connected(self, _):
