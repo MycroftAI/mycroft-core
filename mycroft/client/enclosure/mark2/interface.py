@@ -55,10 +55,6 @@ class EnclosureMark2(Enclosure):
         self.bus.on('mycroft.paired', self.handle_paired)
         self.bus.on('mycroft.ready', self.on_core_ready)
         self.bus.on('play:status', self.show_play_screen)
-        self.bus.on(
-            'recognizer_loop:audio_output_end',
-            self.handle_audio_output_end
-        )
         self.bus.on('system.wifi.ap_up', self.handle_access_point_up)
         self.bus.on(
             'system.wifi.ap_device_connected',
@@ -192,6 +188,9 @@ class EnclosureMark2(Enclosure):
             LOG.info('no displayed skill found, sending generic screen')
             self._show_screen(screen_name='generic', screen_data=message.data)
             self.active_screen = 'generic'
+            # Show idle screen after the visemes are done (+ 2 sec).
+            time = message.data['visemes'][-1][1] + 2
+            Timer(time, self.show_idle).start()
 
     def show_thinking_screen(self, _):
         """Show the thinking screen while the device searches for answers."""
@@ -229,11 +228,6 @@ class EnclosureMark2(Enclosure):
         self._show_screen('wifi_start')
         sleep(8)
         self._show_screen('wifi_login')
-
-    def handle_audio_output_end(self):
-        if self.active_screen == 'generic':
-            message = None
-            self.reset_display(message)
 
     def _finish_screen(self, screen_name, wait_for_it=None):
         """Some screens have to finish what they are doing before exiting."""
