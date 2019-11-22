@@ -686,7 +686,7 @@ class MycroftSkill:
         return result
 
     def _find_resource(self, res_name, lang, res_dirname=None):
-        """Find resource by name, lang and dir
+        """Finds a resource by name, lang and dir
         """
         if res_dirname:
             # Try the old translated directory (dialog/vocab/regex)
