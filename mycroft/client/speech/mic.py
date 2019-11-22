@@ -92,7 +92,7 @@ class MutableStream:
 
                 to_read = min(self.wrapped_stream.get_read_available(),
                               remaining)
-                if to_read == 0:
+                if to_read <= 0:
                     sleep(.01)
                     continue
                 result = self.wrapped_stream.read(to_read,
