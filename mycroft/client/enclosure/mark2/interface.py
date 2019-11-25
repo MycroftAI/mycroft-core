@@ -19,7 +19,6 @@ from time import sleep
 
 from websocket import WebSocketApp
 
-from mycroft.api import is_paired
 from mycroft.client.enclosure.base import Enclosure
 from mycroft.messagebus.message import Message
 from mycroft.util import create_daemon
@@ -37,6 +36,7 @@ class EnclosureMark2(Enclosure):
         self.finished_loading = False
         self.active_screen = 'loading'
         self.paused_screen = None
+        self.is_pairing = False
         self.active_until_stopped = set()
         self.internet = EnclosureInternet(self.bus, self.global_config)
 
@@ -51,7 +51,8 @@ class EnclosureMark2(Enclosure):
         self.bus.on('enclosure.mouth.think', self.show_thinking_screen)
         self.bus.on('enclosure.mouth.viseme_list', self.show_generic_screen)
         self.bus.on('mycroft.intent.fallback.start', self.show_thinking_screen)
-        self.bus.on('mycroft.paired', self.handle_paired)
+        self.bus.on('mycroft.pairing.start', self.start_pairing)
+        self.bus.on('mycroft.pairing.success', self.handle_paired)
         self.bus.on('mycroft.ready', self.on_core_ready)
         self.bus.on('mycroft.stop', self.on_display_screen_stop)
         self.bus.on('play:start', self.handle_play_start)
@@ -90,10 +91,11 @@ class EnclosureMark2(Enclosure):
 
     def on_core_ready(self, _):
         """When core reports that it is ready for use, update display."""
-        self._finish_screen('loading', wait_for_it=4)
-        self._show_screen('splash')
-        self.finished_loading = True
-        Timer(7, self.show_idle).start()
+        if not self.is_pairing:
+            self._finish_screen('loading', wait_for_it=4)
+            self._show_screen('splash')
+            self.finished_loading = True
+            Timer(7, self.show_idle).start()
 
     def show_idle(self):
         """Force the idle screen when the Mark II skill does not."""
@@ -213,18 +215,23 @@ class EnclosureMark2(Enclosure):
         """Once connected to the internet, change the screen displayed."""
         self._finish_screen(screen_name='loading', wait_for_it=4)
         self._show_screen('wifi_connected')
-        if is_paired():
-            sleep(2)
-            screen_data = dict(loading_status='LOADING SKILLS')
-            self._show_screen('loading', screen_data)
-        else:
-            self._show_screen('pairing_start')
+        sleep(2)
+        screen_data = dict(loading_status='LOADING SKILLS')
+        self._show_screen('loading', screen_data)
+
+    def start_pairing(self, _):
+        self.is_pairing = True
+        self._finish_screen('loading', wait_for_it=3)
+        self._show_screen('pairing_start')
 
     def handle_paired(self, _):
         """When pairing succeeds, show success screen, then example intents."""
         self._show_screen('pairing_success')
-        sleep(5)
+        sleep(4)
         self._show_screen('example_intent')
+        sleep(15)
+        self.is_pairing = False
+        self.show_idle()
 
     def handle_access_point_up(self, _):
         """When access point is up, display access point instructions"""
