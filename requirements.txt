@@ -24,7 +24,7 @@ PyYAML==5.1.2
 
 msm==0.8.3
 msk==0.3.13
-adapt-parser==0.3.3
+adapt-parser==0.3.4
 padatious==0.4.6
 fann2==1.0.7
 padaos==0.1.9
