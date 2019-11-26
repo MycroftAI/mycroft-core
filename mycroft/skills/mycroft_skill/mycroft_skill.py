@@ -1039,6 +1039,7 @@ class MycroftSkill:
         Arguments:
             regex_str: Regex string
         """
+        self.log.debug('registering regex string: ' + regex_str)
         regex = munge_regex(regex_str, self.skill_id)
         re.compile(regex)  # validate regex
         self.intent_service.register_adapt_regex(regex)
@@ -1113,7 +1114,7 @@ class MycroftSkill:
             LOG.debug('No dialog loaded')
 
     def load_data_files(self, root_directory=None):
-        """Load data files (intents, dialogs, etc).
+        """Called by the skill loader to load intents, dialogs, etc.
 
         Arguments:
             root_directory (str): root folder to use when loading files.
