@@ -345,6 +345,23 @@ class TestNiceDateFormat(unittest.TestCase):
         self.assertEqual(nice_time(dt, use_24hour=True, use_ampm=False),
                          "zero one zero two")
 
+        dt = datetime.datetime(2017, 1, 31,
+                               12, 15, 9)
+        self.assertEqual(nice_time(dt),
+                         "quarter past twelve")
+        self.assertEqual(nice_time(dt, use_ampm=True),
+                         "quarter past twelve p.m.")
+
+        dt = datetime.datetime(2017, 1, 31,
+                               5, 30, 00)
+        self.assertEqual(nice_time(dt, use_ampm=True),
+                         "half past five a.m.")
+
+        dt = datetime.datetime(2017, 1, 31,
+                               1, 45, 00)
+        self.assertEqual(nice_time(dt),
+                         "quarter to two")
+
     def test_nice_date(self):
         for lang in self.test_config:
             i = 1
