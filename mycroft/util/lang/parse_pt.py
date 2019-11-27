@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright 2017 Mycroft AI Inc.
 #
@@ -41,21 +40,21 @@ def isFractional_pt(input_str):
     if input_str.endswith('s', -1):
         input_str = input_str[:len(input_str) - 1]  # e.g. "fifths"
 
-    aFrac = ["meio", u"terço", "quarto", "quinto", "sexto",
-             "setimo", "oitavo", "nono", u"décimo"]
+    aFrac = ["meio", "terço", "quarto", "quinto", "sexto",
+             "setimo", "oitavo", "nono", "décimo"]
 
     if input_str.lower() in aFrac:
         return 1.0 / (aFrac.index(input_str) + 2)
-    if input_str == u"vigésimo":
+    if input_str == "vigésimo":
         return 1.0 / 20
-    if input_str == u"trigésimo":
+    if input_str == "trigésimo":
         return 1.0 / 30
-    if input_str == u"centésimo":
+    if input_str == "centésimo":
         return 1.0 / 100
-    if input_str == u"milésimo":
+    if input_str == "milésimo":
         return 1.0 / 1000
-    if (input_str == u"sétimo" or input_str == "septimo" or
-            input_str == u"séptimo"):
+    if (input_str == "sétimo" or input_str == "septimo" or
+            input_str == "séptimo"):
         return 1.0 / 7
 
     return False
@@ -310,7 +309,7 @@ def extract_datetime_pt(input_str, currentDate, default_time):
     def clean_string(s):
         # cleans the input string of unneeded punctuation and capitalization
         # among other things
-        symbols = [".", ",", ";", "?", "!", u"º", u"ª"]
+        symbols = [".", ",", ";", "?", "!", "º", "ª"]
         noise_words = ["o", "os", "a", "as", "do", "da", "dos", "das", "de",
                        "ao", "aos"]
 
@@ -319,23 +318,23 @@ def extract_datetime_pt(input_str, currentDate, default_time):
         for word in noise_words:
             s = s.replace(" " + word + " ", " ")
         s = s.lower().replace(
-            u"á",
+            "á",
             "a").replace(
-            u"ç",
+            "ç",
             "c").replace(
-            u"à",
+            "à",
             "a").replace(
-            u"ã",
+            "ã",
             "a").replace(
-            u"é",
+            "é",
             "e").replace(
-            u"è",
+            "è",
             "e").replace(
-            u"ê",
+            "ê",
             "e").replace(
-            u"ó",
+            "ó",
             "o").replace(
-            u"ò",
+            "ò",
             "o").replace(
             "-",
             " ").replace(
@@ -1098,17 +1097,17 @@ def pt_pruning(text, symbols=True, accents=True, agressive=True):
              "esta", "deste", "desta", "neste", "nesta", "nesse",
              "nessa", "foi", "que"]
     if symbols:
-        symbols = [".", ",", ";", ":", "!", "?", u"ï¿½", u"ï¿½"]
+        symbols = [".", ",", ";", ":", "!", "?", "ï¿½", "ï¿½"]
         for symbol in symbols:
             text = text.replace(symbol, "")
         text = text.replace("-", " ").replace("_", " ")
     if accents:
-        accents = {"a": [u"á", u"à", u"ã", u"â"],
-                   "e": [u"ê", u"è", u"é"],
-                   "i": [u"í", u"ì"],
-                   "o": [u"ò", u"ó"],
-                   "u": [u"ú", u"ù"],
-                   "c": [u"ç"]}
+        accents = {"a": ["á", "à", "ã", "â"],
+                   "e": ["ê", "è", "é"],
+                   "i": ["í", "ì"],
+                   "o": ["ò", "ó"],
+                   "u": ["ú", "ù"],
+                   "c": ["ç"]}
         for char in accents:
             for acc in accents[char]:
                 text = text.replace(acc, char)

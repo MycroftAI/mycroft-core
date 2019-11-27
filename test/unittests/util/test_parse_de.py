@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright 2017 Mycroft AI Inc.
 #
@@ -84,9 +83,9 @@ class TestNormalize(unittest.TestCase):
             self.assertEqual(res[0], expected_date)
             self.assertEqual(res[1], expected_leftover)
 
-        testExtract(u"setze den frisörtermin auf 5 tage von heute",
-                    "2017-07-02 00:00:00", u"setze frisörtermin")
-        testExtract(u"wie ist das wetter übermorgen?",
+        testExtract("setze den frisörtermin auf 5 tage von heute",
+                    "2017-07-02 00:00:00", "setze frisörtermin")
+        testExtract("wie ist das wetter übermorgen?",
                     "2017-06-29 00:00:00", "wie ist das wetter")
         testExtract("erinnere mich um 10:45 abends",
                     "2017-06-27 22:45:00", "erinnere mich")
@@ -101,25 +100,25 @@ class TestNormalize(unittest.TestCase):
                     "2017-07-02 00:00:00", "spiele rick astley musik")
         testExtract("starte die invasion um 3:45 pm am Donnerstag",
                     "2017-06-29 15:45:00", "starte die invasion")
-        testExtract(u"am montag bestelle kuchen von der bäckerei",
-                    "2017-07-03 00:00:00", u"bestelle kuchen von bäckerei")
+        testExtract("am montag bestelle kuchen von der bäckerei",
+                    "2017-07-03 00:00:00", "bestelle kuchen von bäckerei")
         testExtract("spiele happy birthday musik 5 jahre von heute",
                     "2022-06-27 00:00:00", "spiele happy birthday musik")
-        testExtract(u"skype mama um 12:45 pm nächsten Donnerstag",
+        testExtract("skype mama um 12:45 pm nächsten Donnerstag",
                     "2017-07-06 12:45:00", "skype mama")
-        testExtract(u"wie ist das wetter nächsten donnerstag?",
+        testExtract("wie ist das wetter nächsten donnerstag?",
                     "2017-07-06 00:00:00", "wie ist das wetter")
-        testExtract(u"wie ist das Wetter nächsten Freitag morgen",
+        testExtract("wie ist das Wetter nächsten Freitag morgen",
                     "2017-07-07 08:00:00", "wie ist das wetter")
-        testExtract(u"wie ist das wetter nächsten freitag abend",
+        testExtract("wie ist das wetter nächsten freitag abend",
                     "2017-07-07 19:00:00", "wie ist das wetter")
         testExtract("wie ist das wetter nächsten freitag nachmittag",
                     "2017-07-07 15:00:00", "wie ist das wetter")
-        testExtract(u"erinnere mich mama anzurufen am dritten august",
+        testExtract("erinnere mich mama anzurufen am dritten august",
                     "2017-08-03 00:00:00", "erinnere mich mama anzurufen")
         testExtract("kaufe feuerwerk am einundzwanzigsten juli",
                     "2017-07-21 00:00:00", "kaufe feuerwerk")
-        testExtract(u"wie ist das wetter 2 wochen ab nächsten freitag",
+        testExtract("wie ist das wetter 2 wochen ab nächsten freitag",
                     "2017-07-21 00:00:00", "wie ist das wetter")
         testExtract("wie ist das wetter am mittwoch um 07:00",
                     "2017-06-28 07:00:00", "wie ist das wetter")
@@ -176,7 +175,7 @@ class TestNormalize(unittest.TestCase):
             normalize("dies ist eins zwei drei test", lang="de-de"),
             "dies ist 1 2 3 test")
         self.assertEqual(
-            normalize(u"es ist vier fünf sechs test", lang="de-de"),
+            normalize("es ist vier fünf sechs test", lang="de-de"),
             "es ist 4 5 6 test")
         self.assertEqual(
             normalize("es ist sieben acht neun test", lang="de-de"),
@@ -185,13 +184,13 @@ class TestNormalize(unittest.TestCase):
             normalize("es ist sieben acht neun test", lang="de-de"),
             "es ist 7 8 9 test")
         self.assertEqual(
-            normalize(u"dies ist zehn elf zwölf test", lang="de-de"),
+            normalize("dies ist zehn elf zwölf test", lang="de-de"),
             "dies ist 10 11 12 test")
         self.assertEqual(
             normalize("dies ist dreizehn vierzehn test", lang="de-de"),
             "dies ist 13 14 test")
         self.assertEqual(
-            normalize(u"dies ist fünfzehn sechzehn siebzehn", lang="de-de"),
+            normalize("dies ist fünfzehn sechzehn siebzehn", lang="de-de"),
             "dies ist 15 16 17")
         self.assertEqual(
             normalize("dies ist achtzehn neunzehn zwanzig", lang="de-de"),

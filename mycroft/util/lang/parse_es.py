@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright 2017 Mycroft AI Inc.
 #
@@ -34,7 +33,7 @@ es_numbers = {
     "una": 1,
     "dos": 2,
     "tres": 3,
-    u"trés": 3,
+    "trés": 3,
     "cuatro": 4,
     "cinco": 5,
     "seis": 6,
@@ -48,20 +47,20 @@ es_numbers = {
     "catorce": 14,
     "quince": 15,
     "dieciseis": 16,
-    u"dieciséis": 16,
+    "dieciséis": 16,
     "diecisiete": 17,
     "dieciocho": 18,
     "diecinueve": 19,
     "veinte": 20,
     "veintiuno": 21,
-    u"veintidï¿½s": 22,
-    u"veintitrï¿½s": 23,
+    "veintidï¿½s": 22,
+    "veintitrï¿½s": 23,
     "veintidos": 22,
     "veintitres": 23,
-    u"veintitrés": 23,
+    "veintitrés": 23,
     "veinticuatro": 24,
     "veinticinco": 25,
-    u"veintiséis": 26,
+    "veintiséis": 26,
     "veintiseis": 26,
     "veintisiete": 27,
     "veintiocho": 28,
@@ -109,19 +108,19 @@ def isFractional_es(input_str):
 
     aFrac = {"medio": 2, "media": 2, "tercio": 3, "cuarto": 4,
              "cuarta": 4, "quinto": 5, "quinta": 5, "sexto": 6, "sexta": 6,
-             u"séptimo": 7, u"séptima": 7, "octavo": 8, "octava": 8,
-             "noveno": 9, "novena": 9, u"décimo": 10, u"décima": 10,
-             u"onceavo": 11, u"onceava": 11, u"doceavo": 12, u"doceava": 12}
+             "séptimo": 7, "séptima": 7, "octavo": 8, "octava": 8,
+             "noveno": 9, "novena": 9, "décimo": 10, "décima": 10,
+             "onceavo": 11, "onceava": 11, "doceavo": 12, "doceava": 12}
 
     if input_str.lower() in aFrac:
         return 1.0 / aFrac[input_str]
-    if (input_str == u"vigésimo" or input_str == u"vigésima"):
+    if (input_str == "vigésimo" or input_str == "vigésima"):
         return 1.0 / 20
-    if (input_str == u"trigésimo" or input_str == u"trigésima"):
+    if (input_str == "trigésimo" or input_str == "trigésima"):
         return 1.0 / 30
-    if (input_str == u"centésimo" or input_str == u"centésima"):
+    if (input_str == "centésimo" or input_str == "centésima"):
         return 1.0 / 100
-    if (input_str == u"milésimo" or input_str == u"milésima"):
+    if (input_str == "milésimo" or input_str == "milésima"):
         return 1.0 / 1000
     return False
 
@@ -389,7 +388,7 @@ def extract_datetime_es(input_str, currentDate=None, default_time=None):
     def clean_string(s):
         # cleans the input string of unneeded punctuation and capitalization
         # among other things
-        symbols = [".", ",", ";", "?", "!", u"º", u"ª"]
+        symbols = [".", ",", ";", "?", "!", "º", "ª"]
         noise_words = ["entre", "la", "del", "al", "el", "de",
                        "por", "para", "una", "cualquier", "a",
                        "e'", "esta", "este"]
@@ -399,27 +398,27 @@ def extract_datetime_es(input_str, currentDate=None, default_time=None):
         for word in noise_words:
             s = s.replace(" " + word + " ", " ")
         s = s.lower().replace(
-            u"á",
+            "á",
             "a").replace(
-            u"é",
+            "é",
             "e").replace(
-            u"ó",
+            "ó",
             "o").replace(
             "-",
             " ").replace(
             "_",
             "")
         # handle synonyms and equivalents, "tomorrow early = tomorrow morning
-        synonyms = {u"mañana": ["amanecer", "temprano", "muy temprano"],
+        synonyms = {"mañana": ["amanecer", "temprano", "muy temprano"],
                     "tarde": ["media tarde", "atardecer"],
                     "noche": ["anochecer", "tarde"]}
         for syn in synonyms:
             for word in synonyms[syn]:
                 s = s.replace(" " + word + " ", " " + syn + " ")
         # relevant plurals, cant just extract all s in pt
-        wordlist = [u"mañanas", "tardes", "noches", u"días", "semanas",
-                    u"años", "minutos", "segundos", "las", "los", "siguientes",
-                    u"próximas", u"próximos", "horas"]
+        wordlist = ["mañanas", "tardes", "noches", "días", "semanas",
+                    "años", "minutos", "segundos", "las", "los", "siguientes",
+                    "próximas", "próximos", "horas"]
         for _, word in enumerate(wordlist):
             s = s.replace(word, word.rstrip('s'))
         s = s.replace("meses", "mes").replace("anteriores", "anterior")
@@ -454,24 +453,24 @@ def extract_datetime_es(input_str, currentDate=None, default_time=None):
     timeQualifier = ""
 
     words = clean_string(input_str).split(" ")
-    timeQualifiersList = [u'mañana', 'tarde', 'noche']
+    timeQualifiersList = ['mañana', 'tarde', 'noche']
     time_indicators = ["en", "la", "al", "por", "pasados",
-                       "pasadas", u"día", "hora"]
-    days = ['lunes', 'martes', u'miércoles',
-            'jueves', 'viernes', u'sábado', 'domingo']
+                       "pasadas", "día", "hora"]
+    days = ['lunes', 'martes', 'miércoles',
+            'jueves', 'viernes', 'sábado', 'domingo']
     months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
               'julio', 'agosto', 'septiembre', 'octubre', 'noviembre',
               'diciembre']
     monthsShort = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago',
                    'sep', 'oct', 'nov', 'dic']
-    nexts = ["siguiente", u"próximo", u"próxima"]
+    nexts = ["siguiente", "próximo", "próxima"]
     suffix_nexts = ["siguientes", "subsecuentes"]
-    lasts = [u"último", u"última"]
+    lasts = ["último", "última"]
     suffix_lasts = ["pasada", "pasado", "anterior", "antes"]
-    nxts = [u"después", "siguiente", u"próximo", u"próxima"]
+    nxts = ["después", "siguiente", "próximo", "próxima"]
     prevs = ["antes", "previa", "previo", "anterior"]
-    froms = ["desde", "en", "para", u"después de", "por", u"próximo",
-             u"próxima", "de"]
+    froms = ["desde", "en", "para", "después de", "por", "próximo",
+             "próxima", "de"]
     thises = ["este", "esta"]
     froms += thises
     lists = nxts + prevs + froms + time_indicators
@@ -494,7 +493,7 @@ def extract_datetime_es(input_str, currentDate=None, default_time=None):
         elif word == "hoy" and not fromFlag:
             dayOffset = 0
             used += 1
-        elif word == u"mañana" and not fromFlag:
+        elif word == "mañana" and not fromFlag:
             dayOffset = 1
             used += 1
         elif word == "ayer" and not fromFlag:
@@ -515,7 +514,7 @@ def extract_datetime_es(input_str, currentDate=None, default_time=None):
             dayOffset -= 3
             used += 1
         # day after tomorrow
-        elif word == "pasado" and wordNext == u"mañana" and not fromFlag:
+        elif word == "pasado" and wordNext == "mañana" and not fromFlag:
             dayOffset += 2
             used = 2
         # day before yesterday
@@ -523,7 +522,7 @@ def extract_datetime_es(input_str, currentDate=None, default_time=None):
             dayOffset -= 2
             used = 2
         # parse 5 days, 10 weeks, last week, next week, week after
-        elif word == u"día":
+        elif word == "día":
             if wordNext == "pasado" or wordNext == "ante":
                 used += 1
                 if wordPrev and wordPrev[0].isdigit():
@@ -594,7 +593,7 @@ def extract_datetime_es(input_str, currentDate=None, default_time=None):
                     start -= 1
                     used = 2
         # parse 5 years, next year, last year
-        elif word == u"año" and not fromFlag:
+        elif word == "año" and not fromFlag:
             if wordPrev[0].isdigit():
                 yearOffset = int(wordPrev)
                 start -= 1
@@ -703,7 +702,7 @@ def extract_datetime_es(input_str, currentDate=None, default_time=None):
         # 2 months from July
         validFollowups = days + months + monthsShort
         validFollowups.append("hoy")
-        validFollowups.append(u"mañana")
+        validFollowups.append("mañana")
         validFollowups.append("ayer")
         validFollowups.append("anteayer")
         validFollowups.append("ahora")
@@ -713,11 +712,11 @@ def extract_datetime_es(input_str, currentDate=None, default_time=None):
         # TODO debug word "depois" that one is failing for some reason
         if word in froms and wordNext in validFollowups:
 
-            if not (wordNext == u"mañana" and wordNext == "ayer") and not (
+            if not (wordNext == "mañana" and wordNext == "ayer") and not (
                     word == "pasado" or word == "antes"):
                 used = 2
                 fromFlag = True
-            if wordNext == u"mañana" and word != "pasado":
+            if wordNext == "mañana" and word != "pasado":
                 dayOffset += 1
             elif wordNext == "ayer":
                 dayOffset -= 1
@@ -792,13 +791,13 @@ def extract_datetime_es(input_str, currentDate=None, default_time=None):
         wordNextNextNext = words[idx + 3] if idx + 3 < len(words) else ""
         # parse noon, midnight, morning, afternoon, evening
         used = 0
-        if word == "medio" and wordNext == u"día":
+        if word == "medio" and wordNext == "día":
             hrAbs = 12
             used += 2
         elif word == "media" and wordNext == "noche":
             hrAbs = 0
             used += 2
-        elif word == u"mañana":
+        elif word == "mañana":
             if not hrAbs:
                 hrAbs = 8
             used += 1
@@ -814,7 +813,7 @@ def extract_datetime_es(input_str, currentDate=None, default_time=None):
             if not hrAbs:
                 hrAbs = 20
             used += 2
-        elif word == "media" and wordNext == u"mañana":
+        elif word == "media" and wordNext == "mañana":
             if not hrAbs:
                 hrAbs = 10
             used += 2
@@ -889,7 +888,7 @@ def extract_datetime_es(input_str, currentDate=None, default_time=None):
                     if nextWord == "am" or nextWord == "pm":
                         remainder = nextWord
                         used += 1
-                    elif wordNext == u"mañana" or wordNext == "madrugada":
+                    elif wordNext == "mañana" or wordNext == "madrugada":
                         remainder = "am"
                         used += 1
                     elif wordNext == "tarde":
@@ -901,7 +900,7 @@ def extract_datetime_es(input_str, currentDate=None, default_time=None):
                         else:
                             remainder = "pm"
                         used += 1
-                    elif wordNext in thises and wordNextNext == u"mañana":
+                    elif wordNext in thises and wordNextNext == "mañana":
                         remainder = "am"
                         used = 2
                     elif wordNext in thises and wordNextNext == "tarde":
@@ -913,7 +912,7 @@ def extract_datetime_es(input_str, currentDate=None, default_time=None):
                     else:
                         if timeQualifier != "":
                             if strHH <= 12 and \
-                                    (timeQualifier == u"mañana" or
+                                    (timeQualifier == "mañana" or
                                      timeQualifier == "tarde"):
                                 strHH += 12
 
@@ -957,7 +956,7 @@ def extract_datetime_es(input_str, currentDate=None, default_time=None):
                         used = 1
                     elif (wordNext == "am" or
                           wordNext == "a.m." or
-                          wordNext == u"mañana"):
+                          wordNext == "mañana"):
                         strHH = strNum
                         remainder = "am"
                         used = 1
@@ -1016,7 +1015,7 @@ def extract_datetime_es(input_str, currentDate=None, default_time=None):
                             if wordNextNextNext == "tarde":
                                 remainder = "pm"
                                 used += 1
-                            elif wordNextNextNext == u"mañana":
+                            elif wordNextNextNext == "mañana":
                                 remainder = "am"
                                 used += 1
                             elif wordNextNextNext == "noche":

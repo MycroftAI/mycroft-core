@@ -45,7 +45,7 @@ def main():
     checker_path = os.path.abspath(checker_path)
     args = [checker_path]
     if select_codes and ignore_codes:
-        print(u'Error: select and ignore codes are mutually exclusive')
+        print('Error: select and ignore codes are mutually exclusive')
         sys.exit(1)
     elif select_codes:
         args.extend(('--select', ','.join(select_codes)))
@@ -56,7 +56,7 @@ def main():
     output = system(*args, cwd=tempdir)
     shutil.rmtree(tempdir)
     if output:
-        print(u'PEP8 style violations have been detected.  Please fix them\n'
+        print('PEP8 style violations have been detected.  Please fix them\n'
               'or force the commit with "git commit --no-verify".\n')
         print(output.decode("utf-8"),)
         sys.exit(1)
