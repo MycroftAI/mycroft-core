@@ -36,5 +36,4 @@ petact==0.1.2
 # dev setup tools
 pep8==1.7.0
 
-hijri-converter==2.1.0
 ummalqura==2.0.1
