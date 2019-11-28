@@ -24,12 +24,37 @@ set -Ee
 cd $(dirname $0)
 TOP=$(pwd -L)
 
+function clean_mycroft_files() {
+    echo '
+This will completely remove any files installed by mycroft (including pairing
+information).
+Do you wish to continue? (y/n)'
+    while true; do
+        read -N1 -s key
+        case $key in
+        [Yy])
+            sudo rm -rf /var/log/mycroft
+            rm -f /var/tmp/mycroft_web_cache.json
+            rm -f "${TMPDIR:-/tmp}/mycroft"
+            rm -rf "$HOME/.mycroft"
+            sudo rm -rf "/opt/mycroft"
+            exit 0
+            ;;
+        [Nn])
+            exit 1
+            ;;
+        esac
+    done
+    
+
+}
 function show_help() {
     echo '
 Usage: dev_setup.sh [options]
 Prepare your environment for running the mycroft-core services.
 
 Options:
+    --clean                 Remove files and folders created by this script
     -h, --help              Show this message
     -fm                     Force mimic build
     -n, --no-error          Do not exit on error (use with caution)
@@ -59,6 +84,15 @@ for var in "$@" ; do
         show_help
         exit 0
     fi
+
+    if [[ $var == '--clean' ]] ; then
+        if clean_mycroft_files; then
+            exit 0
+        else
+            exit 1
+        fi
+    fi
+    
 
     if [[ $var == '-r' || $var == '--allow-root' ]] ; then
         opt_allowroot=true
