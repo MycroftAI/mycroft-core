@@ -303,7 +303,12 @@ function open_suse_install() {
 
 
 function arch_install() {
-    $SUDO pacman -S --needed --noconfirm git python python-pip python-setuptools python-virtualenv python-gobject python-virtualenvwrapper libffi swig portaudio mpg123 screen flac curl icu libjpeg-turbo base-devel jq pulseaudio pulseaudio-alsa
+    $SUDO pacman -S --needed --noconfirm git python python-pip python-setuptools python-virtualenv python-gobject libffi swig portaudio mpg123 screen flac curl icu libjpeg-turbo base-devel jq pulseaudio pulseaudio-alsa
+
+    command -v virtualenv &> /dev/null || (
+        $SUDO pacman -S --needed --noconfirm python-virtualenvwrapper
+    )
+
     pacman -Qs '^fann$' &> /dev/null || (
         git clone  https://aur.archlinux.org/fann.git
         cd fann
