@@ -46,30 +46,28 @@ class TestTTS(unittest.TestCase):
                             "</foo_invalid end=whatever>"
         sentence_extra_ssml = "<whispered>whisper tts<\\whispered>"
 
+        tts = TestTTS("en-US", {}, TestTTSValidator(None))
+
         # test valid ssml
-        tts = TestTTS("en-US", {}, TestTTSValidator(None),
-                      ssml_tags=['speak', 'prosody'])
+        tts.ssml_tags = ['speak', 'prosody']
         self.assertEqual(tts.validate_ssml(sentence), sentence)
 
         # test extra ssml
-        tts = TestTTS("en-US", {}, TestTTSValidator(None),
-                      ssml_tags=['whispered'])
+        tts.ssml_tags = ['whispered']
         self.assertEqual(tts.validate_ssml(sentence_extra_ssml),
                          sentence_extra_ssml)
 
         # test unsupported extra ssml
-        tts = TestTTS("en-US", {}, TestTTSValidator(None),
-                      ssml_tags=['speak', 'prosody'])
+        tts.ssml_tags = ['speak', 'prosody']
         self.assertEqual(tts.validate_ssml(sentence_extra_ssml),
                          "whisper tts")
 
         # test mixed valid / invalid ssml
-        tts = TestTTS("en-US", {}, TestTTSValidator(None),
-                      ssml_tags=['speak', 'prosody'])
+        tts.ssml_tags = ['speak', 'prosody']
         self.assertEqual(tts.validate_ssml(sentence_bad_ssml), sentence)
 
         # test unsupported ssml
-        tts = TestTTS("en-US", {}, TestTTSValidator(None))
+        tts.ssml_tags = []
         self.assertEqual(tts.validate_ssml(sentence), sentence_no_ssml)
 
         self.assertEqual(tts.validate_ssml(sentence_bad_ssml),
