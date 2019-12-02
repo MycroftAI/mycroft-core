@@ -14,7 +14,6 @@
 #
 import sys
 import io
-import signal
 from math import ceil
 
 from .gui_server import start_qml_gui
@@ -119,9 +118,6 @@ def ctrl_c_pressed():
         return True
     else:
         return False
-
-
-signal.signal(signal.SIGINT, ctrl_c_handler)
 
 
 ##############################################################################
