@@ -676,7 +676,7 @@ class MycroftSkill:
             string: The full path to the resource file or None if not found
         """
         result = self._find_resource(res_name, self.lang, res_dirname)
-        if not result:
+        if not result and self.lang != 'en-us':
             # when resource not found try fallback to en-us
             LOG.warning(
                 "Resource '{}' for lang '{}' not found: trying 'en-us'"
