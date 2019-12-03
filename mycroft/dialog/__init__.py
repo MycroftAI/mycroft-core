@@ -132,12 +132,13 @@ class DialogLoader:
     def __init__(self, renderer_factory=MustacheDialogRenderer):
         self.__renderer = renderer_factory()
 
-    def load(self, dialog_dir):
+    def load(self, dialog_dir, lang=None):
         """
         Load all dialog files within the specified directory.
 
         Args:
             dialog_dir (str): directory that contains dialog files
+            lang (str): language string (optional)
 
         Returns:
             a loaded instance of a dialog renderer
@@ -147,12 +148,32 @@ class DialogLoader:
             LOG.warning("No dialog files found: {}".format(dialog_dir))
             return self.__renderer
 
+        if not lang:
+            from mycroft.configuration import Configuration
+            lang = Configuration.get().get("lang")
+        loaded_dialogs = []
+
         for path, _, files in os.walk(str(directory)):
             for f in files:
                 if f.endswith(".dialog"):
+                    if lang != 'en-us':
+                        # remember all loaded dialogs
+                        loaded_dialogs.append(f)
                     self.__renderer.load_template_file(
                         f.replace('.dialog', ''),
                         join(path, f))
+
+        if lang != 'en-us':
+            en_us_dir = dialog_dir.replace(lang, 'en-us')
+            for path, _, files in os.walk(str(en_us_dir)):
+                for f in files:
+                    if f.endswith(".dialog") and f not in loaded_dialogs:
+                        self.__renderer.load_template_file(
+                            f.replace('.dialog', ''),
+                            join(path, f))
+                        LOG.warning("Dialog '{}' for lang '{}' not found: "
+                                    "using 'en-us'".format(f, lang))
+
         return self.__renderer
 
 
