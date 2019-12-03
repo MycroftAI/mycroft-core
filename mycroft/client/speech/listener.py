@@ -312,6 +312,7 @@ class RecognizerLoop(EventEmitter):
         # Create a local recognizer to hear the wakeup word, e.g. 'Hey Mycroft'
         LOG.info("creating wake word engine")
         word = self.config.get("wake_word", "hey mycroft")
+
         # TODO remove this, only for server settings compatibility
         phonemes = self.config.get("phonemes")
         thresh = self.config.get("threshold")
@@ -319,16 +320,18 @@ class RecognizerLoop(EventEmitter):
         # Since we're editing it for server backwards compatibility
         # use a copy so we don't alter the hash of the config and
         # trigger a reload.
-        config = deepcopy(self.config_core.get("hotwords", {word: {}}))
-
+        config = deepcopy(self.config_core.get("hotwords", {}))
         if word not in config:
+            # Fallback to using config from "listener" block
+            LOG.warning('Wakeword doesn\'t have an entry falling back'
+                        'to old listener config')
             config[word] = {'module': 'precise'}
-        if phonemes:
-            config[word]["phonemes"] = phonemes
-        if thresh:
-            config[word]["threshold"] = thresh
-        if phonemes is None or thresh is None:
-            config = None
+            if phonemes:
+                config[word]["phonemes"] = phonemes
+            if thresh:
+                config[word]["threshold"] = thresh
+            if phonemes is None or thresh is None:
+                config = None
         return HotWordFactory.create_hotword(
             word, config, self.lang, loop=self
         )
