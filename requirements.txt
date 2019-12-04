@@ -1,5 +1,4 @@
 six==1.13.0
-cryptography==2.6.1
 requests==2.20.0
 gTTS==2.0.4
 PyAudio==0.2.11
