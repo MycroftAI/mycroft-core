@@ -139,6 +139,7 @@ class SimpleAudioService(AudioBackend):
             self.bus.emit(Message('SimpleAudioServicePlay',
                                   {'repeat': repeat}))
         else:
+            self._track_start_callback(None)
             self._is_playing = False
             self._paused = False
 
