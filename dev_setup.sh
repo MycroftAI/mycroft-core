@@ -298,7 +298,7 @@ function os_is_like() {
 }
 
 function redhat_common_install() {
-    $SUDO yum install -y cmake gcc-c++ git python34 python34-devel libtool libffi-devel openssl-devel autoconf automake bison swig portaudio-devel mpg123 flac curl libicu-devel python34-pkgconfig libjpeg-devel fann-devel python34-libs pulseaudio
+    $SUDO yum install -y cmake gcc-c++ git python3-devel libtool libffi-devel openssl-devel autoconf automake bison swig portaudio-devel mpg123 flac curl libicu-devel libjpeg-devel fann-devel pulseaudio
     git clone https://github.com/libfann/fann.git
     cd fann
     git checkout b211dc3db3a6a2540a34fbe8995bf2df63fc9939
