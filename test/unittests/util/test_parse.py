@@ -183,10 +183,21 @@ class TestNormalize(unittest.TestCase):
         # invoke helper functions directly to test certain conditions which are
         # difficult to trigger on purpose.
         replaceable = _ReplaceableNumber(1, ["test_token"])
-        self.assertRaises(AttributeError, setattr(replaceable, "key", None))
+
+        # Check that built in members can't be changed
         with self.assertRaises(Exception) as error:
-            setattr(replaceable, "key", type(None))
+            replaceable.value = 42
             self.assertEqual(error.message, "Immutable!")
+        with self.assertRaises(Exception) as error:
+            replaceable.tokens = ["flowerpot", "whale"]
+            self.assertEqual(error.message, "Immutable!")
+
+        # Check that new member can be added but not modified
+        replaceable.key = "exist"
+        with self.assertRaises(Exception) as error:
+            replaceable.key = "exists?"
+            self.assertEqual(error.message, "Immutable!")
+
         self.assertEqual(str(replaceable), "(1, ['test_token'])")
         self.assertEqual(repr(replaceable),
                          "_ReplaceableNumber(1, ['test_token'])")
