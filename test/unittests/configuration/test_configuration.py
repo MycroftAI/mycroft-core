@@ -15,9 +15,9 @@ class TestConfiguration(TestCase):
         d1 = {'a': 1, 'b': {'c': 1, 'd': 2}}
         d2 = {'b': {'d': 'changed'}}
         d = mycroft.configuration.Configuration.get([d1, d2])
-        self.assertEquals(d['a'], d1['a'])
-        self.assertEquals(d['b']['d'], d2['b']['d'])
-        self.assertEquals(d['b']['c'], d1['b']['c'])
+        self.assertEqual(d['a'], d1['a'])
+        self.assertEqual(d['b']['d'], d2['b']['d'])
+        self.assertEqual(d['b']['c'], d1['b']['c'])
 
     @patch('mycroft.api.DeviceApi')
     def test_remote(self, mock_api):
@@ -30,7 +30,7 @@ class TestConfiguration(TestCase):
 
         rc = mycroft.configuration.RemoteConf()
         self.assertTrue(rc['test_config'])
-        self.assertEquals(rc['location']['city']['name'], 'Stockholm')
+        self.assertEqual(rc['location']['city']['name'], 'Stockholm')
 
     @patch('json.dump')
     @patch('mycroft.configuration.config.exists')
@@ -43,26 +43,26 @@ class TestConfiguration(TestCase):
         mock_isfile.return_value = True
         mock_json_loader.return_value = local_conf
         lc = mycroft.configuration.LocalConf('test')
-        self.assertEquals(lc, local_conf)
+        self.assertEqual(lc, local_conf)
 
         # Test merge method
         merge_conf = {'falling_objects': None, 'has_towel': True}
         lc.merge(merge_conf)
-        self.assertEquals(lc['falling_objects'], None)
-        self.assertEquals(lc['has_towel'], True)
+        self.assertEqual(lc['falling_objects'], None)
+        self.assertEqual(lc['has_towel'], True)
 
         # test store
         lc.store('test_conf.json')
-        self.assertEquals(mock_json_dump.call_args[0][0], lc)
+        self.assertEqual(mock_json_dump.call_args[0][0], lc)
         # exists but is not file
         mock_isfile.return_value = False
         lc = mycroft.configuration.LocalConf('test')
-        self.assertEquals(lc, {})
+        self.assertEqual(lc, {})
 
         # does not exist
         mock_exists.return_value = False
         lc = mycroft.configuration.LocalConf('test')
-        self.assertEquals(lc, {})
+        self.assertEqual(lc, {})
 
     @patch('mycroft.configuration.config.RemoteConf')
     @patch('mycroft.configuration.config.LocalConf')
@@ -70,11 +70,11 @@ class TestConfiguration(TestCase):
         mock_remote.return_value = {}
         mock_local.return_value = {'a': 1}
         c = mycroft.configuration.Configuration.get()
-        self.assertEquals(c, {'a': 1})
+        self.assertEqual(c, {'a': 1})
 
         mock_local.return_value = {'a': 2}
         mycroft.configuration.Configuration.updated('message')
-        self.assertEquals(c, {'a': 2})
+        self.assertEqual(c, {'a': 2})
 
     def tearDown(self):
         mycroft.configuration.Configuration.load_config_stack([{}], True)

@@ -1,4 +1,3 @@
-# -*- coding: iso-8859-15 -*-
 #
 # Copyright 2017 Mycroft AI Inc.
 #
@@ -32,7 +31,7 @@ NUMBERS_FIXTURE_DE = {
     2: '2',
     5.0: '5',
     1234567890: '1234567890',
-    12345.67890: u'12345,679',
+    12345.67890: '12345,679',
     0.027: '0,027',
     0.5: 'ein halb',
     1.333: '1 und ein drittel',
@@ -41,17 +40,17 @@ NUMBERS_FIXTURE_DE = {
     1.25: '1 und ein viertel',
     0.75: '3 viertel',
     1.75: '1 und 3 viertel',
-    3.4: u'3 und 2 fünftel',
-    16.8333: u'16 und 5 sechstel',
-    12.5714: u'12 und 4 siebtel',
-    9.625: u'9 und 5 achtel',
+    3.4: '3 und 2 fÃ¼nftel',
+    16.8333: '16 und 5 sechstel',
+    12.5714: '12 und 4 siebtel',
+    9.625: '9 und 5 achtel',
     6.777: '6 und 7 neuntel',
     3.1: '3 und ein zehntel',
     2.272: '2 und 3 elftel',
-    5.583: u'5 und 7 zwölftel',
+    5.583: '5 und 7 zwÃ¶lftel',
     8.384: '8 und 5 dreizehntel',
     0.071: 'ein vierzehntel',
-    6.466: u'6 und 7 fünfzehntel',
+    6.466: '6 und 7 fÃ¼nfzehntel',
     8.312: '8 und 5 sechzehntel',
     2.176: '2 und 3 siebzehntel',
     200.722: '200 und 13 achtzehntel',
@@ -63,11 +62,11 @@ NUMBERS_FIXTURE_DE = {
 class TestNiceResponse(unittest.TestCase):
     def test_replace_ordinal(self):
         self.assertEqual(nice_response_de("dies ist der 31. mai"),
-                         "dies ist der einunddreißigste mai")
-        self.assertEqual(nice_response_de("es fängt am 31. mai an"),
-                         "es fängt am einunddreißigsten mai an")
+                         "dies ist der einunddreiÃŸigste mai")
+        self.assertEqual(nice_response_de("es fÃ¤ngt am 31. mai an"),
+                         "es fÃ¤ngt am einunddreiÃŸigsten mai an")
         self.assertEqual(nice_response_de("der 31. mai"),
-                         "der einunddreißigste mai")
+                         "der einunddreiÃŸigste mai")
         self.assertEqual(nice_response_de("10 ^ 2"),
                          "10 hoch 2")
 
@@ -118,12 +117,12 @@ class TestPronounceOrdinal(unittest.TestCase):
         self.assertEqual(pronounce_ordinal_de(3),
                          "dritte")
         self.assertEqual(pronounce_ordinal_de(5),
-                         u"fünfte")
+                         "fÃ¼nfte")
         self.assertEqual(pronounce_ordinal_de(1000),
                          "eintausendste")
         self.assertEqual(pronounce_ordinal_de(123456),
-                         "einhundertdreiundzwanzigtausendvierhundertsechsundf"
-                         "ünfzigste")
+                         "einhundertdreiundzwanzigtausendvierhundertsechsund"
+                         "fÃ¼nfzigste")
 
 
 # def pronounce_number(number, lang="de-de", places=2):
@@ -138,18 +137,18 @@ class TestPronounceNumber(unittest.TestCase):
     def test_convert_int_de(self):
         self.assertEqual(pronounce_number(123456789123456789),
                          "einhundertdreiundzwanzig Billiarden "
-                         "vierhundertsechsundfünfzig Billionen "
+                         "vierhundertsechsundfÃ¼nfzig Billionen "
                          "siebenhundertneunundachtzig Milliarden "
                          "einhundertdreiundzwanzig Millionen "
-                         "vierhundertsechsundfünfzigtausendsiebenhundert"
+                         "vierhundertsechsundfÃ¼nfzigtausendsiebenhundert"
                          "neunundachtzig")
         self.assertEqual(pronounce_number(1), "eins")
         self.assertEqual(pronounce_number(10), "zehn")
-        self.assertEqual(pronounce_number(15), u"fünfzehn")
+        self.assertEqual(pronounce_number(15), "fÃ¼nfzehn")
         self.assertEqual(pronounce_number(20), "zwanzig")
         self.assertEqual(pronounce_number(27), "siebenundzwanzig")
-        self.assertEqual(pronounce_number(30), u"dreißig")
-        self.assertEqual(pronounce_number(33), u"dreiunddreißig")
+        self.assertEqual(pronounce_number(30), "dreiÃŸig")
+        self.assertEqual(pronounce_number(33), "dreiunddreiÃŸig")
 
         self.assertEqual(pronounce_number(71), "einundsiebzig")
         self.assertEqual(pronounce_number(80), "achtzig")
@@ -162,11 +161,11 @@ class TestPronounceNumber(unittest.TestCase):
     def test_convert_negative_int_de(self):
         self.assertEqual(pronounce_number(-1), "minus eins")
         self.assertEqual(pronounce_number(-10), "minus zehn")
-        self.assertEqual(pronounce_number(-15), u"minus fünfzehn")
+        self.assertEqual(pronounce_number(-15), "minus fÃ¼nfzehn")
         self.assertEqual(pronounce_number(-20), "minus zwanzig")
         self.assertEqual(pronounce_number(-27), "minus siebenundzwanzig")
-        self.assertEqual(pronounce_number(-30), u"minus dreißig")
-        self.assertEqual(pronounce_number(-33), u"minus dreiunddreißig")
+        self.assertEqual(pronounce_number(-30), "minus dreiÃŸig")
+        self.assertEqual(pronounce_number(-33), "minus dreiunddreiÃŸig")
 
     def test_convert_decimals_de(self):
         self.assertEqual(pronounce_number(1.234),
@@ -286,9 +285,9 @@ class TestNiceDateFormat_de(unittest.TestCase):
         dt = datetime.datetime(2017, 1, 31,
                                0, 2, 3)
         self.assertEqual(nice_time(dt),
-                         u"zwölf Uhr zwei")
+                         "zwÃ¶lf Uhr zwei")
         self.assertEqual(nice_time(dt, use_ampm=True),
-                         u"zwölf Uhr zwei nachts")
+                         "zwÃ¶lf Uhr zwei nachts")
         self.assertEqual(nice_time(dt, speech=False),
                          "12:02")
         self.assertEqual(nice_time(dt, speech=False,
@@ -310,9 +309,9 @@ class TestNiceDateFormat_de(unittest.TestCase):
         dt = datetime.datetime(2017, 1, 31,
                                12, 15, 9)
         self.assertEqual(nice_time(dt),
-                         u"zwölf Uhr fünfzehn")
+                         "viertel eins")
         self.assertEqual(nice_time(dt, use_ampm=True),
-                         u"zwölf Uhr fünfzehn nachmittags")
+                         "viertel eins nachmittags")
         self.assertEqual(nice_time(dt, speech=False),
                          "12:15")
         self.assertEqual(nice_time(dt, speech=False,
@@ -326,10 +325,10 @@ class TestNiceDateFormat_de(unittest.TestCase):
                          "12:15")
         self.assertEqual(nice_time(dt, use_24hour=True,
                                    use_ampm=True),
-                         u"zwölf Uhr fünfzehn")
+                         "zwÃ¶lf Uhr fÃ¼nfzehn")
         self.assertEqual(nice_time(dt, use_24hour=True,
                                    use_ampm=False),
-                         u"zwölf Uhr fünfzehn")
+                         "zwÃ¶lf Uhr fÃ¼nfzehn")
 
         dt = datetime.datetime(2017, 1, 31,
                                19, 40, 49)
@@ -358,32 +357,32 @@ class TestNiceDateFormat_de(unittest.TestCase):
         dt = datetime.datetime(2017, 1, 31,
                                1, 15, 00)
         self.assertEqual(nice_time(dt, use_24hour=True),
-                         u"ein Uhr fünfzehn")
+                         "ein Uhr fÃ¼nfzehn")
 
         dt = datetime.datetime(2017, 1, 31,
                                1, 35, 00)
         self.assertEqual(nice_time(dt),
-                         u"ein Uhr fünfunddreißig")
+                         "ein Uhr fÃ¼nfunddreiÃŸig")
 
         dt = datetime.datetime(2017, 1, 31,
                                1, 45, 00)
         self.assertEqual(nice_time(dt),
-                         u"ein Uhr fünfundvierzig")
+                         "dreiviertel zwei")
 
         dt = datetime.datetime(2017, 1, 31,
                                4, 50, 00)
         self.assertEqual(nice_time(dt),
-                         u"vier Uhr fünfzig")
+                         "vier Uhr fÃ¼nfzig")
 
         dt = datetime.datetime(2017, 1, 31,
                                5, 55, 00)
         self.assertEqual(nice_time(dt),
-                         u"fünf Uhr fünfundfünfzig")
+                         "fÃ¼nf Uhr fÃ¼nfundfÃ¼nfzig")
 
         dt = datetime.datetime(2017, 1, 31,
                                5, 30, 00)
         self.assertEqual(nice_time(dt, use_ampm=True),
-                         u"fünf Uhr dreißig morgens")
+                         "halb sechs morgens")
 
 
 class TestJoinList_de(unittest.TestCase):

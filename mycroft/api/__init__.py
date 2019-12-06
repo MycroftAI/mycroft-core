@@ -451,6 +451,30 @@ class STTApi(Api):
         })
 
 
+class GeolocationApi(Api):
+    """Web API wrapper for performing geolocation lookups."""
+
+    def __init__(self):
+        super().__init__('geolocation')
+
+    def get_geolocation(self, location):
+        """Call the geolocation endpoint.
+
+        Args:
+            location (str): the location to lookup (e.g. Kansas City Missouri)
+
+        Returns:
+            str: JSON structure with lookup results
+        """
+
+        response = self.request(dict(
+            method="GET",
+            query=dict(location=location),
+        ))
+
+        return response['data']
+
+
 def has_been_paired():
     """ Determine if this device has ever been paired with a web backend
 

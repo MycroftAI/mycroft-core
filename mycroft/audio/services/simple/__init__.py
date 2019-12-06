@@ -20,6 +20,7 @@ from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
 from mycroft.util import play_mp3, play_ogg, play_wav
 import mimetypes
+import re
 from requests import Session
 
 
@@ -31,6 +32,9 @@ def find_mime(path):
             mime = response.headers['content-type']
     if not mime:
         mime = mimetypes.guess_type(path)[0]
+    # Remove any http address arguments
+    if not mime:
+        mime = mimetypes.guess_type(re.sub(r'\?.*$', '', path))[0]
 
     if mime:
         return mime.split('/')
@@ -90,6 +94,8 @@ class SimpleAudioService(AudioBackend):
         else:  # Assume string
             track = self.tracks[self.index]
             mime = find_mime(track)
+        LOG.debug('Mime info: {}'.format(mime))
+
         # Indicate to audio service which track is being played
         if self._track_start_callback:
             self._track_start_callback(track)
@@ -108,6 +114,9 @@ class SimpleAudioService(AudioBackend):
                 self.process = play_mp3(track)
         except FileNotFoundError as e:
             LOG.error('Couldn\'t play audio, {}'.format(repr(e)))
+            self.process = None
+        except Exception as e:
+            LOG.exception(repr(e))
             self.process = None
 
         # Wait for completion or stop request

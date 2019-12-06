@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright 2017 Mycroft AI Inc.
 #
@@ -28,25 +27,25 @@ NUM_STRING_DE = {
     2: 'zwei',
     3: 'drei',
     4: 'vier',
-    5: u'fünf',
+    5: 'fünf',
     6: 'sechs',
     7: 'sieben',
     8: 'acht',
     9: 'neun',
     10: 'zehn',
     11: 'elf',
-    12: u'zwölf',
+    12: 'zwölf',
     13: 'dreizehn',
     14: 'vierzehn',
-    15: u'fünfzehn',
+    15: 'fünfzehn',
     16: 'sechzehn',
     17: 'siebzehn',
     18: 'achtzehn',
     19: 'neunzehn',
     20: 'zwanzig',
-    30: u'dreißig',
+    30: 'dreißig',
     40: 'vierzig',
-    50: u'fünfzig',
+    50: 'fünfzig',
     60: 'sechzig',
     70: 'siebzig',
     80: 'achtzig',
@@ -68,17 +67,17 @@ FRACTION_STRING_DE = {
     2: 'halb',
     3: 'drittel',
     4: 'viertel',
-    5: u'fünftel',
+    5: 'fünftel',
     6: 'sechstel',
     7: 'siebtel',
     8: 'achtel',
     9: 'neuntel',
     10: 'zehntel',
     11: 'elftel',
-    12: u'zwölftel',
+    12: 'zwölftel',
     13: 'dreizehntel',
     14: 'vierzehntel',
-    15: u'fünfzehntel',
+    15: 'fünfzehntel',
     16: 'sechzehntel',
     17: 'siebzehntel',
     18: 'achtzehntel',
@@ -250,7 +249,7 @@ def pronounce_ordinal_de(num):
     # this produces the base form, it will have to be adapted for genus,
     # casus, numerus
 
-    ordinals = ["nullte", "erste", "zweite", "dritte", "vierte", u"fünfte",
+    ordinals = ["nullte", "erste", "zweite", "dritte", "vierte", "fünfte",
                 "sechste", "siebte", "achte"]
 
     # only for whole positive numbers including zero
@@ -279,20 +278,19 @@ def nice_time_de(dt, speech=True, use_24hour=False, use_ampm=False):
     Returns:
         (str): The formatted time string
     """
-    if use_24hour:
-        # e.g. "03:01" or "14:22"
-        string = dt.strftime("%H:%M")
-    else:
-        if use_ampm:
-            # e.g. "3:01 AM" or "2:22 PM"
-            string = dt.strftime("%I:%M %p")
-        else:
-            # e.g. "3:01" or "2:22"
-            string = dt.strftime("%I:%M")
-        if string[0] == '0':
-            string = string[1:]  # strip leading zeros
-
     if not speech:
+        if use_24hour:
+            # e.g. "03:01" or "14:22"
+            string = dt.strftime("%H:%M")
+        else:
+            if use_ampm:
+                # e.g. "3:01 AM" or "2:22 PM"
+                string = dt.strftime("%I:%M %p")
+            else:
+                # e.g. "3:01" or "2:22"
+                string = dt.strftime("%I:%M")
+            if string[0] == '0':
+                string = string[1:]  # strip leading zeros
         return string
 
     # Generate a speakable version of the time
@@ -311,39 +309,38 @@ def nice_time_de(dt, speech=True, use_24hour=False, use_ampm=False):
     else:
         if dt.hour == 0 and dt.minute == 0:
             return "Mitternacht"
-        if dt.hour == 12 and dt.minute == 0:
+        elif dt.hour == 12 and dt.minute == 0:
             return "Mittag"
-        # TODO: "half past 3", "a quarter of 4" and other idiomatic times
-
-        if dt.hour == 0:
-            speak += pronounce_number_de(12)
-        elif dt.hour <= 13:
-            if dt.hour == 1 or dt.hour == 13:  # 01:00 and 13:00 is "ein Uhr"
-                # not "eins Uhr"
+        elif dt.minute == 15:
+            # sentence relative to next hour and 0 spoken as 12
+            next_hour = (dt.hour + 1) % 12 or 12
+            speak = "viertel " + pronounce_number_de(next_hour)
+        elif dt.minute == 30:
+            next_hour = (dt.hour + 1) % 12 or 12
+            speak = "halb " + pronounce_number_de(next_hour)
+        elif dt.minute == 45:
+            next_hour = (dt.hour + 1) % 12 or 12
+            speak = "dreiviertel " + pronounce_number_de(next_hour)
+        else:
+            hour = dt.hour % 12 or 12  # 12 hour clock and 0 is spoken as 12
+            if hour == 1:  # 01:00 and 13:00 is "ein Uhr" not "eins Uhr"
                 speak += 'ein'
             else:
-                speak += pronounce_number_de(dt.hour)
-        else:
-            speak += pronounce_number_de(dt.hour - 12)
+                speak += pronounce_number_de(hour)
+            speak += " Uhr"
 
-        speak += " Uhr"
-
-        if not dt.minute == 0:
-            speak += " " + pronounce_number_de(dt.minute)
+            if not dt.minute == 0:
+                speak += " " + pronounce_number_de(dt.minute)
 
         if use_ampm:
-            if dt.hour > 11:
-                if dt.hour < 18:
-                    speak += " nachmittags"  # 12:01 - 17:59
-                    # nachmittags/afternoon
-                elif dt.hour < 22:
-                    speak += " abends"  # 18:00 - 21:59 abends/evening
-                else:
-                    speak += " nachts"  # 22:00 - 23:59 nachts/at night
-            elif dt.hour < 3:
-                speak += " nachts"  # 00:01 - 02:59 nachts/at night
-            else:
+            if 3 <= dt.hour < 12:
                 speak += " morgens"  # 03:00 - 11:59 morgens/in the morning
+            elif 12 <= dt.hour < 18:
+                speak += " nachmittags"  # 12:01 - 17:59 nachmittags/afternoon
+            elif 18 <= dt.hour < 22:
+                speak += " abends"  # 18:00 - 21:59 abends/evening
+            else:
+                speak += " nachts"  # 22:00 - 02:59 nachts/at night
 
         return speak
 

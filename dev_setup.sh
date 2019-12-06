@@ -24,12 +24,37 @@ set -Ee
 cd $(dirname $0)
 TOP=$(pwd -L)
 
+function clean_mycroft_files() {
+    echo '
+This will completely remove any files installed by mycroft (including pairing
+information).
+Do you wish to continue? (y/n)'
+    while true; do
+        read -N1 -s key
+        case $key in
+        [Yy])
+            sudo rm -rf /var/log/mycroft
+            rm -f /var/tmp/mycroft_web_cache.json
+            rm -rf "${TMPDIR:-/tmp}/mycroft"
+            rm -rf "$HOME/.mycroft"
+            sudo rm -rf "/opt/mycroft"
+            exit 0
+            ;;
+        [Nn])
+            exit 1
+            ;;
+        esac
+    done
+    
+
+}
 function show_help() {
     echo '
 Usage: dev_setup.sh [options]
 Prepare your environment for running the mycroft-core services.
 
 Options:
+    --clean                 Remove files and folders created by this script
     -h, --help              Show this message
     -fm                     Force mimic build
     -n, --no-error          Do not exit on error (use with caution)
@@ -59,6 +84,15 @@ for var in "$@" ; do
         show_help
         exit 0
     fi
+
+    if [[ $var == '--clean' ]] ; then
+        if clean_mycroft_files; then
+            exit 0
+        else
+            exit 1
+        fi
+    fi
+    
 
     if [[ $var == '-r' || $var == '--allow-root' ]] ; then
         opt_allowroot=true
@@ -275,55 +309,91 @@ function redhat_common_install() {
 
 }
 
+function debian_install() {
+    APT_PACKAGE_LIST="git python3 python3-dev python3-setuptools libtool \
+        libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev \
+        portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config \
+        libjpeg-dev libfann-dev build-essential jq pulseaudio \
+        pulseaudio-utils"
+
+    if dpkg -V libjack-jackd2-0 > /dev/null 2>&1 && [[ -z ${CI} ]] ; then
+        echo "
+We have detected that your computer has the libjack-jackd2-0 package installed.
+Mycroft requires a conflicting package, and will likely uninstall this package.
+On some systems, this can cause other programs to be marked for removal.
+Please review the following package changes carefully."
+        read -p "Press enter to continue"
+        $SUDO apt-get install $APT_PACKAGE_LIST
+    else
+        $SUDO apt-get install -y $APT_PACKAGE_LIST
+    fi
+}
+
+
+function open_suse_install() {
+    $SUDO zypper install -y git python3 python3-devel libtool libffi-devel libopenssl-devel autoconf automake bison swig portaudio-devel mpg123 flac curl libicu-devel pkg-config libjpeg-devel libfann-devel python3-curses pulseaudio
+    $SUDO zypper install -y -t pattern devel_C_C++
+}
+
+
+function fedora_install() {
+    $SUDO dnf install -y git python3 python3-devel python3-pip python3-setuptools python3-virtualenv pygobject3-devel libtool libffi-devel openssl-devel autoconf bison swig glib2-devel portaudio-devel mpg123 mpg123-plugins-pulseaudio screen curl pkgconfig libicu-devel automake libjpeg-turbo-devel fann-devel gcc-c++ redhat-rpm-config jq
+}
+
+
+function arch_install() {
+    $SUDO pacman -S --needed --noconfirm git python python-pip python-setuptools python-virtualenv python-gobject libffi swig portaudio mpg123 screen flac curl icu libjpeg-turbo base-devel jq pulseaudio pulseaudio-alsa
+
+    pacman -Qs '^fann$' &> /dev/null || (
+        git clone  https://aur.archlinux.org/fann.git
+        cd fann
+        makepkg -srciA --noconfirm
+        cd ..
+        rm -rf fann
+    )
+}
+
+
+function centos_install() {
+    $SUDO yum install epel-release
+    redhat_common_install
+}
+
+function redhat_install() {
+    $SUDO yum install -y wget
+    wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+    $SUDO yum install -y epel-release-latest-7.noarch.rpm
+    rm epel-release-latest-7.noarch.rpm
+    redhat_common_install
+
+}
+
 function install_deps() {
     echo 'Installing packages...'
     if found_exe zypper ; then
         # OpenSUSE
         echo "$GREEN Installing packages for OpenSUSE...$RESET"
-        $SUDO zypper install -y git python3 python3-devel libtool libffi-devel libopenssl-devel autoconf automake bison swig portaudio-devel mpg123 flac curl libicu-devel pkg-config libjpeg-devel libfann-devel python3-curses pulseaudio
-        $SUDO zypper install -y -t pattern devel_C_C++
+        open_suse_install
     elif found_exe yum && os_is centos ; then
         # CentOS
         echo "$GREEN Installing packages for Centos...$RESET"
-        $SUDO yum install epel-release
-        redhat_common_install
+        centos_install
     elif found_exe yum && os_is rhel ; then
         # Redhat Enterprise Linux
         echo "$GREEN Installing packages for Red Hat...$RESET"
-        $SUDO yum install -y wget
-        wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-        $SUDO yum install -y epel-release-latest-7.noarch.rpm
-        rm epel-release-latest-7.noarch.rpm
-        redhat_common_install
+        redhat_install
     elif os_is_like debian || os_is debian || os_is_like ubuntu || os_is ubuntu || os_is linuxmint; then
         # Debian / Ubuntu / Mint
         echo "$GREEN Installing packages for Debian/Ubuntu/Mint...$RESET"
-        if dpkg -V libjack-jackd2-0 > /dev/null 2>&1 && [[ -z ${CI} ]] ; then
-            echo "
-We have detected that your computer has the libjack-jackd2-0 package installed.
-Mycroft requires a conflicting package, and will likely uninstall this package.
-On some systems, this can cause other programs to be marked for removal.
-Please review the following package changes carefully."
-            read -p "Press enter to continue"
-            $SUDO apt-get install git python3 python3-dev python3-setuptools libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config libjpeg-dev libfann-dev build-essential jq
-        else
-            $SUDO apt-get install -y git python3 python3-dev python3-setuptools libtool libffi-dev libssl-dev autoconf automake bison swig libglib2.0-dev portaudio19-dev mpg123 screen flac curl libicu-dev pkg-config libjpeg-dev libfann-dev build-essential jq
-        fi
+        debian_install
     elif os_is_like fedora || os_is fedora; then
-        echo "$GREEN Installing packages for Fedora...$RESET"
         # Fedora
-        $SUDO dnf install -y git python3 python3-devel python3-pip python3-setuptools python3-virtualenv pygobject3-devel libtool libffi-devel openssl-devel autoconf bison swig glib2-devel portaudio-devel mpg123 mpg123-plugins-pulseaudio screen curl pkgconfig libicu-devel automake libjpeg-turbo-devel fann-devel gcc-c++ redhat-rpm-config jq
+        echo "$GREEN Installing packages for Fedora...$RESET"
+        fedora_install
     elif found_exe pacman; then
         # Arch Linux
         echo "$GREEN Installing packages for Arch...$RESET"
-        $SUDO pacman -S --needed --noconfirm git python python-pip python-setuptools python-virtualenv python-gobject python-virtualenvwrapper libffi swig portaudio mpg123 screen flac curl icu libjpeg-turbo base-devel jq pulseaudio pulseaudio-alsa
-        pacman -Qs '^fann$' &> /dev/null || (
-            git clone  https://aur.archlinux.org/fann.git
-            cd fann
-            makepkg -srciA --noconfirm
-            cd ..
-            rm -rf fann
-        )
+        arch_install
     else
     	echo
         echo -e "${YELLOW}Could not find package manager

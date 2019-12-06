@@ -66,9 +66,9 @@ class TestApi(unittest.TestCase):
     def test_init(self, mock_identity_get):
         mock_identity_get.return_value = create_identity('1234')
         a = mycroft.api.Api('test-path')
-        self.assertEquals(a.url, 'https://api-test.mycroft.ai')
-        self.assertEquals(a.version, 'v1')
-        self.assertEquals(a.identity.uuid, '1234')
+        self.assertEqual(a.url, 'https://api-test.mycroft.ai')
+        self.assertEqual(a.version, 'v1')
+        self.assertEqual(a.identity.uuid, '1234')
 
     @patch('mycroft.api.IdentityManager')
     @patch('mycroft.api.requests.request')
@@ -84,7 +84,7 @@ class TestApi(unittest.TestCase):
         req = {'path': 'something', 'headers': {}}
 
         # Check successful
-        self.assertEquals(a.send(req), mock_response_ok.json())
+        self.assertEqual(a.send(req), mock_response_ok.json())
 
         # check that a 300+ status code generates Exception
         mock_request.return_value = mock_response_301
@@ -121,8 +121,8 @@ class TestDeviceApi(unittest.TestCase):
         mock_identity_get.return_value = create_identity('1234')
 
         device = mycroft.api.DeviceApi()
-        self.assertEquals(device.identity.uuid, '1234')
-        self.assertEquals(device.path, 'device')
+        self.assertEqual(device.identity.uuid, '1234')
+        self.assertEqual(device.path, 'device')
 
     @patch('mycroft.api.IdentityManager.get')
     @patch('mycroft.api.requests.request')
@@ -133,8 +133,8 @@ class TestDeviceApi(unittest.TestCase):
         device = mycroft.api.DeviceApi()
         device.activate('state', 'token')
         json = mock_request.call_args[1]['json']
-        self.assertEquals(json['state'], 'state')
-        self.assertEquals(json['token'], 'token')
+        self.assertEqual(json['state'], 'state')
+        self.assertEqual(json['token'], 'token')
 
     @patch('mycroft.api.IdentityManager.get')
     @patch('mycroft.api.requests.request')
@@ -145,7 +145,7 @@ class TestDeviceApi(unittest.TestCase):
         device = mycroft.api.DeviceApi()
         device.get()
         url = mock_request.call_args[0][1]
-        self.assertEquals(url, 'https://api-test.mycroft.ai/v1/device/1234')
+        self.assertEqual(url, 'https://api-test.mycroft.ai/v1/device/1234')
 
     @patch('mycroft.api.IdentityManager.update')
     @patch('mycroft.api.IdentityManager.get')
@@ -156,9 +156,9 @@ class TestDeviceApi(unittest.TestCase):
         mock_identity_get.return_value = create_identity('1234')
         device = mycroft.api.DeviceApi()
         ret = device.get_code('state')
-        self.assertEquals(ret, '123ABC')
+        self.assertEqual(ret, '123ABC')
         url = mock_request.call_args[0][1]
-        self.assertEquals(
+        self.assertEqual(
             url, 'https://api-test.mycroft.ai/v1/device/code?state=state')
 
     @patch('mycroft.api.IdentityManager.get')
@@ -169,7 +169,7 @@ class TestDeviceApi(unittest.TestCase):
         device = mycroft.api.DeviceApi()
         device.get_settings()
         url = mock_request.call_args[0][1]
-        self.assertEquals(
+        self.assertEqual(
             url, 'https://api-test.mycroft.ai/v1/device/1234/setting')
 
     @patch('mycroft.api.IdentityManager.get')
@@ -184,9 +184,9 @@ class TestDeviceApi(unittest.TestCase):
 
         content_type = params['headers']['Content-Type']
         correct_json = {'data': 'mydata'}
-        self.assertEquals(content_type, 'application/json')
-        self.assertEquals(params['json'], correct_json)
-        self.assertEquals(
+        self.assertEqual(content_type, 'application/json')
+        self.assertEqual(params['json'], correct_json)
+        self.assertEqual(
             url, 'https://api-test.mycroft.ai/v1/device/1234/metric/mymetric')
 
     @patch('mycroft.api.IdentityManager.get')
@@ -201,9 +201,9 @@ class TestDeviceApi(unittest.TestCase):
 
         content_type = params['headers']['Content-Type']
         correct_json = {'body': 'body', 'sender': 'sender', 'title': 'title'}
-        self.assertEquals(content_type, 'application/json')
-        self.assertEquals(params['json'], correct_json)
-        self.assertEquals(
+        self.assertEqual(content_type, 'application/json')
+        self.assertEqual(params['json'], correct_json)
+        self.assertEqual(
             url, 'https://api-test.mycroft.ai/v1/device/1234/message')
 
     @patch('mycroft.api.IdentityManager.get')
@@ -215,7 +215,7 @@ class TestDeviceApi(unittest.TestCase):
         device.get_oauth_token(1)
         url = mock_request.call_args[0][1]
 
-        self.assertEquals(
+        self.assertEqual(
             url, 'https://api-test.mycroft.ai/v1/device/1234/token/1')
 
     @patch('mycroft.api.IdentityManager.get')
@@ -226,7 +226,7 @@ class TestDeviceApi(unittest.TestCase):
         device = mycroft.api.DeviceApi()
         device.get_location()
         url = mock_request.call_args[0][1]
-        self.assertEquals(
+        self.assertEqual(
             url, 'https://api-test.mycroft.ai/v1/device/1234/location')
 
     @patch('mycroft.api.IdentityManager.get')
@@ -237,7 +237,7 @@ class TestDeviceApi(unittest.TestCase):
         device = mycroft.api.DeviceApi()
         device.get_subscription()
         url = mock_request.call_args[0][1]
-        self.assertEquals(
+        self.assertEqual(
             url, 'https://api-test.mycroft.ai/v1/device/1234/subscription')
 
         mock_request.return_value = create_response(200, {'@type': 'free'})
@@ -260,7 +260,7 @@ class TestDeviceApi(unittest.TestCase):
         data = mock_request.call_args[1]['json']
 
         # Check that the correct url is called
-        self.assertEquals(
+        self.assertEqual(
             url, 'https://api-test.mycroft.ai/v1/device/1234/skillJson')
 
         # Check that the correct data is sent as json
@@ -276,7 +276,7 @@ class TestDeviceApi(unittest.TestCase):
         mock_request.return_value = create_response(200, {})
         mock_identity_get.return_value = create_identity('1234')
         stt = mycroft.api.STTApi('stt')
-        self.assertEquals(stt.path, 'stt')
+        self.assertEqual(stt.path, 'stt')
 
     @patch('mycroft.api.IdentityManager.get')
     @patch('mycroft.api.requests.request')
@@ -286,11 +286,11 @@ class TestDeviceApi(unittest.TestCase):
         stt = mycroft.api.STTApi('stt')
         stt.stt('La la la', 'en-US', 1)
         url = mock_request.call_args[0][1]
-        self.assertEquals(url, 'https://api-test.mycroft.ai/v1/stt')
+        self.assertEqual(url, 'https://api-test.mycroft.ai/v1/stt')
         data = mock_request.call_args[1].get('data')
-        self.assertEquals(data, 'La la la')
+        self.assertEqual(data, 'La la la')
         params = mock_request.call_args[1].get('params')
-        self.assertEquals(params['lang'], 'en-US')
+        self.assertEqual(params['lang'], 'en-US')
 
     @patch('mycroft.api.IdentityManager.load')
     def test_has_been_paired(self, mock_identity_load):
@@ -347,10 +347,10 @@ class TestSettingsMeta(unittest.TestCase):
         params = mock_request.call_args[1]
 
         content_type = params['headers']['Content-Type']
-        self.assertEquals(content_type, 'application/json')
-        self.assertEquals(method, 'PUT')
-        self.assertEquals(params['json'], settings_meta)
-        self.assertEquals(
+        self.assertEqual(content_type, 'application/json')
+        self.assertEqual(method, 'PUT')
+        self.assertEqual(params['json'], settings_meta)
+        self.assertEqual(
             url, 'https://api-test.mycroft.ai/v1/device/1234/settingsMeta')
 
     def test_get_skill_settings(self, mock_request, mock_identity_get):
@@ -362,8 +362,8 @@ class TestSettingsMeta(unittest.TestCase):
         url = mock_request.call_args[0][1]
         params = mock_request.call_args[1]
 
-        self.assertEquals(method, 'GET')
-        self.assertEquals(
+        self.assertEqual(method, 'GET')
+        self.assertEqual(
             url, 'https://api-test.mycroft.ai/v1/device/1234/skill/settings')
 
 
@@ -389,9 +389,9 @@ class TestIsPaired(unittest.TestCase):
 
         self.assertTrue(mycroft.api.is_paired())
 
-        self.assertEquals(num_calls, mock_identity_get.num_calls)
+        self.assertEqual(num_calls, mock_identity_get.num_calls)
         url = mock_request.call_args[0][1]
-        self.assertEquals(url, 'https://api-test.mycroft.ai/v1/device/1234')
+        self.assertEqual(url, 'https://api-test.mycroft.ai/v1/device/1234')
 
     def test_is_paired_false_local(self, mock_request, mock_identity_get):
         mock_request.return_value = create_response(200)

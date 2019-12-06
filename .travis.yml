@@ -4,7 +4,6 @@ branches:
     - dev
 
 language: python
-dist: xenial
 
 before_install:
  - sudo apt-get update -qq
@@ -16,6 +15,7 @@ python:
   - "3.5"
   - "3.6"
   - "3.7"
+  - "3.8"
 # don't rebuild pocketsphinx for every build
 cache:
   - pip
@@ -31,6 +31,7 @@ install:
 # command to run tests
 script:
  - pycodestyle mycroft test
+ - flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
  - ./start-mycroft.sh unittest
 
 after_success:

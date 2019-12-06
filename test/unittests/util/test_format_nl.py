@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright 2017 Mycroft AI Inc.
 #
@@ -29,12 +28,12 @@ NUMBERS_FIXTURE_NL = {
     2: '2',
     5.0: '5',
     1234567890: '1234567890',
-    12345.67890: u'12345,679',
+    12345.67890: '12345,679',
     0.027: '0,027',
-    0.5: u'één half',
+    0.5: 'één half',
     1.333: '1 en één derde',
     2.666: '2 en 2 derde',
-    0.25: u'één vierde',
+    0.25: 'één vierde',
     1.25: '1 en één vierde',
     0.75: '3 vierde',
     1.75: '1 en 3 vierde',
@@ -47,13 +46,13 @@ NUMBERS_FIXTURE_NL = {
     2.272: '2 en 3 elfde',
     5.583: '5 en 7 twaalfde',
     8.384: '8 en 5 dertiende',
-    0.071: u'één veertiende',
+    0.071: 'één veertiende',
     6.466: '6 en 7 vijftiende',
     8.312: '8 en 5 zestiende',
     2.176: '2 en 3 zeventiende',
     200.722: '200 en 13 achttiende',
     7.421: '7 en 8 negentiende',
-    0.05: u'één twintigste'
+    0.05: 'één twintigste'
 }
 
 
@@ -105,7 +104,7 @@ class TestPronounceOrdinal(unittest.TestCase):
         self.assertEqual(pronounce_ordinal_nl(1), "eerste")
         self.assertEqual(pronounce_ordinal_nl(3), "derde")
         self.assertEqual(pronounce_ordinal_nl(5), "vijfde")
-        self.assertEqual(pronounce_ordinal_nl(1000), u"éénduizendste")
+        self.assertEqual(pronounce_ordinal_nl(1000), "éénduizendste")
         self.assertEqual(
             pronounce_ordinal_nl(123456),
             "éénhonderddrieentwintigduizendvierhonderdzesenvijftigste"
@@ -116,73 +115,73 @@ class TestPronounceOrdinal(unittest.TestCase):
 class TestPronounceNumber(unittest.TestCase):
     def test_convert_int_nl(self):
         self.assertEqual(pronounce_number(123456789123456789, lang="nl-nl"),
-                         u"éénhonderddrieentwintig biljard "
+                         "éénhonderddrieentwintig biljard "
                          "vierhonderdzesenvijftig biljoen "
                          "zevenhonderdnegenentachtig miljard "
                          "éénhonderddrieentwintig miljoen "
                          "vierhonderdzesenvijftigduizend"
                          "zevenhonderdnegenentachtig")
-        self.assertEqual(pronounce_number(1, lang="nl-nl"), u"één")
+        self.assertEqual(pronounce_number(1, lang="nl-nl"), "één")
         self.assertEqual(pronounce_number(10, lang="nl-nl"), "tien")
         self.assertEqual(pronounce_number(15, lang="nl-nl"), "vijftien")
         self.assertEqual(pronounce_number(20, lang="nl-nl"), "twintig")
         self.assertEqual(pronounce_number(27, lang="nl-nl"),
                          "zevenentwintig")
         self.assertEqual(pronounce_number(30, lang="nl-nl"), "dertig")
-        self.assertEqual(pronounce_number(33, lang="nl-nl"), u"drieendertig")
+        self.assertEqual(pronounce_number(33, lang="nl-nl"), "drieendertig")
         self.assertEqual(pronounce_number(71, lang="nl-nl"),
-                         u"éénenzeventig")
+                         "éénenzeventig")
         self.assertEqual(pronounce_number(80, lang="nl-nl"), "tachtig")
         self.assertEqual(pronounce_number(74, lang="nl-nl"),
                          "vierenzeventig")
         self.assertEqual(pronounce_number(79, lang="nl-nl"),
                          "negenenzeventig")
         self.assertEqual(pronounce_number(91, lang="nl-nl"),
-                         u"éénennegentig")
+                         "éénennegentig")
         self.assertEqual(pronounce_number(97, lang="nl-nl"),
                          "zevenennegentig")
         self.assertEqual(pronounce_number(300, lang="nl-nl"), "driehonderd")
 
     def test_convert_negative_int_nl(self):
-        self.assertEqual(pronounce_number(-1, lang="nl-nl"), u"min één")
+        self.assertEqual(pronounce_number(-1, lang="nl-nl"), "min één")
         self.assertEqual(pronounce_number(-10, lang="nl-nl"), "min tien")
         self.assertEqual(pronounce_number(-15, lang="nl-nl"), "min vijftien")
         self.assertEqual(pronounce_number(-20, lang="nl-nl"), "min twintig")
         self.assertEqual(pronounce_number(-27, lang="nl-nl"),
                          "min zevenentwintig")
-        self.assertEqual(pronounce_number(-30, lang="nl-nl"), u"min dertig")
+        self.assertEqual(pronounce_number(-30, lang="nl-nl"), "min dertig")
         self.assertEqual(pronounce_number(-33, lang="nl-nl"),
-                         u"min drieendertig")
+                         "min drieendertig")
 
     def test_convert_decimals_nl(self):
         self.assertEqual(pronounce_number(1.234, lang="nl-nl"),
-                         u"één komma twee drie")
+                         "één komma twee drie")
         self.assertEqual(pronounce_number(21.234, lang="nl-nl"),
-                         u"éénentwintig komma twee drie")
+                         "éénentwintig komma twee drie")
         self.assertEqual(pronounce_number(21.234, lang="nl-nl", places=1),
-                         u"éénentwintig komma twee")
+                         "éénentwintig komma twee")
         self.assertEqual(pronounce_number(21.234, lang="nl-nl", places=0),
-                         u"éénentwintig")
+                         "éénentwintig")
         self.assertEqual(pronounce_number(21.234, lang="nl-nl", places=3),
-                         u"éénentwintig komma twee drie vier")
+                         "éénentwintig komma twee drie vier")
         self.assertEqual(pronounce_number(21.234, lang="nl-nl", places=4),
-                         u"éénentwintig komma twee drie vier nul")
+                         "éénentwintig komma twee drie vier nul")
         self.assertEqual(pronounce_number(21.234, lang="nl-nl", places=5),
-                         u"éénentwintig komma twee drie vier nul nul")
+                         "éénentwintig komma twee drie vier nul nul")
         self.assertEqual(pronounce_number(-1.234, lang="nl-nl"),
-                         u"min één komma twee drie")
+                         "min één komma twee drie")
         self.assertEqual(pronounce_number(-21.234, lang="nl-nl"),
-                         u"min éénentwintig komma twee drie")
+                         "min éénentwintig komma twee drie")
         self.assertEqual(pronounce_number(-21.234, lang="nl-nl", places=1),
-                         u"min éénentwintig komma twee")
+                         "min éénentwintig komma twee")
         self.assertEqual(pronounce_number(-21.234, lang="nl-nl", places=0),
-                         u"min éénentwintig")
+                         "min éénentwintig")
         self.assertEqual(pronounce_number(-21.234, lang="nl-nl", places=3),
-                         u"min éénentwintig komma twee drie vier")
+                         "min éénentwintig komma twee drie vier")
         self.assertEqual(pronounce_number(-21.234, lang="nl-nl", places=4),
-                         u"min éénentwintig komma twee drie vier nul")
+                         "min éénentwintig komma twee drie vier nul")
         self.assertEqual(pronounce_number(-21.234, lang="nl-nl", places=5),
-                         u"min éénentwintig komma twee drie vier nul nul")
+                         "min éénentwintig komma twee drie vier nul nul")
 
 
 # def nice_time(dt, lang="nl-nl", speech=True, use_24hour=False,
@@ -193,9 +192,9 @@ class TestNiceDateFormat_nl(unittest.TestCase):
                                13, 22, 3)
 
         self.assertEqual(nice_time(dt, lang="nl-nl"),
-                         u"tweeentwintig over één")
+                         "tweeentwintig over één")
         self.assertEqual(nice_time(dt, lang="nl-nl", use_ampm=True),
-                         u"tweeentwintig over één 's middags")
+                         "tweeentwintig over één 's middags")
         self.assertEqual(nice_time(dt, lang="nl-nl", speech=False),
                          "1:22")
         self.assertEqual(nice_time(dt, lang="nl-nl", speech=False,
@@ -217,9 +216,9 @@ class TestNiceDateFormat_nl(unittest.TestCase):
         dt = datetime.datetime(2017, 1, 31,
                                13, 0, 3)
         self.assertEqual(nice_time(dt, lang="nl-nl"),
-                         u"één uur")
+                         "één uur")
         self.assertEqual(nice_time(dt, lang="nl-nl", use_ampm=True),
-                         u"één uur 's middags")
+                         "één uur 's middags")
         self.assertEqual(nice_time(dt, lang="nl-nl", speech=False),
                          "1:00")
         self.assertEqual(nice_time(dt, lang="nl-nl", speech=False,
@@ -241,9 +240,9 @@ class TestNiceDateFormat_nl(unittest.TestCase):
         dt = datetime.datetime(2017, 1, 31,
                                13, 2, 3)
         self.assertEqual(nice_time(dt, lang="nl-nl"),
-                         u"twee over één")
+                         "twee over één")
         self.assertEqual(nice_time(dt, lang="nl-nl", use_ampm=True),
-                         u"twee over één 's middags")
+                         "twee over één 's middags")
         self.assertEqual(nice_time(dt, lang="nl-nl", speech=False),
                          "1:02")
         self.assertEqual(nice_time(dt, lang="nl-nl", speech=False,
@@ -337,22 +336,22 @@ class TestNiceDateFormat_nl(unittest.TestCase):
         dt = datetime.datetime(2017, 1, 31,
                                1, 15, 00)
         self.assertEqual(nice_time(dt, lang="nl-nl", use_24hour=True),
-                         u"één uur vijftien")
+                         "één uur vijftien")
 
         dt = datetime.datetime(2017, 1, 31,
                                1, 35, 00)
         self.assertEqual(nice_time(dt, lang="nl-nl"),
-                         u"vijfentwintig voor twee")
+                         "vijfentwintig voor twee")
 
         dt = datetime.datetime(2017, 1, 31,
                                1, 45, 00)
         self.assertEqual(nice_time(dt, lang="nl-nl"),
-                         u"kwart voor twee")
+                         "kwart voor twee")
 
         dt = datetime.datetime(2017, 1, 31,
                                4, 50, 00)
         self.assertEqual(nice_time(dt, lang="nl-nl"),
-                         u"tien voor vijf")
+                         "tien voor vijf")
 
         dt = datetime.datetime(2017, 1, 31,
                                5, 55, 00)
@@ -362,7 +361,7 @@ class TestNiceDateFormat_nl(unittest.TestCase):
         dt = datetime.datetime(2017, 1, 31,
                                5, 30, 00)
         self.assertEqual(nice_time(dt, lang="nl-nl", use_ampm=True),
-                         u"half zes 's nachts")
+                         "half zes 's nachts")
 
 
 if __name__ == "__main__":

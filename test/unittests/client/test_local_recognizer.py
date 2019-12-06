@@ -57,17 +57,17 @@ class LocalRecognizerInitTest(unittest.TestCase):
 
         # Test "Hey Mycroft"
         rl = RecognizerLoop()
-        self.assertEquals(rl.wakeword_recognizer.key_phrase, "hey mycroft")
+        self.assertEqual(rl.wakeword_recognizer.key_phrase, "hey mycroft")
 
         # Test "Hey Victoria"
         test_config['listener']['wake_word'] = 'hey victoria'
         test_config['listener']['phonemes'] = 'HH EY . V IH K T AO R IY AH'
         test_config['listener']['threshold'] = 1e-90
         rl = RecognizerLoop()
-        self.assertEquals(rl.wakeword_recognizer.key_phrase, "hey victoria")
+        self.assertEqual(rl.wakeword_recognizer.key_phrase, "hey victoria")
 
         # Test Invalid"
         test_config['listener']['wake_word'] = 'hey victoria'
         test_config['listener']['phonemes'] = 'ZZZZZZZZZZZZ'
         rl = RecognizerLoop()
-        self.assertEquals(rl.wakeword_recognizer.key_phrase, "hey mycroft")
+        self.assertEqual(rl.wakeword_recognizer.key_phrase, "hey mycroft")
