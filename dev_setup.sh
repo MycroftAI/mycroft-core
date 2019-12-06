@@ -35,7 +35,7 @@ Do you wish to continue? (y/n)'
         [Yy])
             sudo rm -rf /var/log/mycroft
             rm -f /var/tmp/mycroft_web_cache.json
-            rm -f "${TMPDIR:-/tmp}/mycroft"
+            rm -rf "${TMPDIR:-/tmp}/mycroft"
             rm -rf "$HOME/.mycroft"
             sudo rm -rf "/opt/mycroft"
             exit 0
