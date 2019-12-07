@@ -309,27 +309,37 @@ class RecognizerLoop(EventEmitter):
         self.state = RecognizerLoopState()
 
     def create_wake_word_recognizer(self):
-        # Create a local recognizer to hear the wakeup word, e.g. 'Hey Mycroft'
-        LOG.info("creating wake word engine")
-        word = self.config.get("wake_word", "hey mycroft")
+        """Create a local recognizer to hear the wakeup word
+
+        For example 'Hey Mycroft'.
+
+        The method uses the hotword entry for the selected wakeword, if
+        one is missing it will fall back to the old phoneme and threshold in
+        the listener entry in the config.
+
+        If the hotword entry doesn't include phoneme and threshold values these
+        will be patched in using the defaults from the config listnere entry.
+        """
+        LOG.info('Creating wake word engine')
+        word = self.config.get('wake_word', 'hey mycroft')
 
         # TODO remove this, only for server settings compatibility
-        phonemes = self.config.get("phonemes")
-        thresh = self.config.get("threshold")
+        phonemes = self.config.get('phonemes')
+        thresh = self.config.get('threshold')
 
         # Since we're editing it for server backwards compatibility
         # use a copy so we don't alter the hash of the config and
         # trigger a reload.
-        config = deepcopy(self.config_core.get("hotwords", {}))
+        config = deepcopy(self.config_core.get('hotwords', {}))
         if word not in config:
             # Fallback to using config from "listener" block
             LOG.warning('Wakeword doesn\'t have an entry falling back'
                         'to old listener config')
             config[word] = {'module': 'precise'}
             if phonemes:
-                config[word]["phonemes"] = phonemes
+                config[word]['phonemes'] = phonemes
             if thresh:
-                config[word]["threshold"] = thresh
+                config[word]['threshold'] = thresh
             if phonemes is None or thresh is None:
                 config = None
         else:
