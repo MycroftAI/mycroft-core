@@ -142,6 +142,7 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extract_number("a couple of beers"), 2)
         self.assertEqual(extract_number("a couple hundred beers"), 200)
         self.assertEqual(extract_number("a couple thousand beers"), 2000)
+        self.assertEqual(extract_number("100%"), 100)
 
     def test_extract_duration_en(self):
         self.assertEqual(extract_duration("10 seconds"),
