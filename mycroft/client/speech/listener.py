@@ -332,9 +332,19 @@ class RecognizerLoop(EventEmitter):
                 config[word]["threshold"] = thresh
             if phonemes is None or thresh is None:
                 config = None
-        return HotWordFactory.create_hotword(
-            word, config, self.lang, loop=self
-        )
+        else:
+            LOG.info('Using hotword entry for {}'.format(word))
+            if 'phonemes' not in config[word]:
+                LOG.warning('Phonemes are missing falling back to listeners '
+                            'configuration')
+                config[word]['phonemes'] = phonemes
+            if 'threshold' not in config[word]:
+                LOG.warning('Threshold is missing falling back to listeners '
+                            'configuration')
+                config[word]['threshold'] = thresh
+
+        return HotWordFactory.create_hotword(word, config, self.lang,
+                                             loop=self)
 
     def create_wakeup_recognizer(self):
         LOG.info("creating stand up word engine")
