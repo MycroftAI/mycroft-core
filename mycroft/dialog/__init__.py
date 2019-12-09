@@ -133,8 +133,7 @@ class DialogLoader:
         self.__renderer = renderer_factory()
 
     def load(self, dialog_dir):
-        """
-        Load all dialog files within the specified directory.
+        """Load all dialog files within the specified directory.
 
         Args:
             dialog_dir (str): directory that contains dialog files
@@ -142,18 +141,32 @@ class DialogLoader:
         Returns:
             a loaded instance of a dialog renderer
         """
-        directory = Path(dialog_dir)
-        if not directory.exists() or not directory.is_dir():
-            LOG.warning("No dialog files found: {}".format(dialog_dir))
-            return self.__renderer
+        return load_dialogs(dialog_dir, self.__renderer)
 
-        for path, _, files in os.walk(str(directory)):
-            for f in files:
-                if f.endswith(".dialog"):
-                    self.__renderer.load_template_file(
-                        f.replace('.dialog', ''),
-                        join(path, f))
-        return self.__renderer
+
+def load_dialogs(dialog_dir, renderer=None):
+    """Load all dialog files within the specified directory.
+
+    Arguments:
+        dialog_dir (str): directory that contains dialog files
+
+    Returns:
+        a loaded instance of a dialog renderer
+    """
+    if renderer is None:
+        renderer = MustacheDialogRenderer()
+
+    directory = Path(dialog_dir)
+    if not directory.exists() or not directory.is_dir():
+        LOG.warning("No dialog files found: {}".format(dialog_dir))
+        return renderer
+
+    for path, _, files in os.walk(str(directory)):
+        for f in files:
+            if f.endswith(".dialog"):
+                renderer.load_template_file(f.replace('.dialog', ''),
+                                            join(path, f))
+    return renderer
 
 
 def get(phrase, lang=None, context=None):
