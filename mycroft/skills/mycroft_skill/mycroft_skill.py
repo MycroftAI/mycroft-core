@@ -32,7 +32,7 @@ from mycroft.audio import wait_while_speaking
 from mycroft.enclosure.api import EnclosureAPI
 from mycroft.enclosure.gui import SkillGUI
 from mycroft.configuration import Configuration
-from mycroft.dialog import DialogLoader
+from mycroft.dialog import load_dialogs
 from mycroft.filesystem import FileSystemAccess
 from mycroft.messagebus.message import Message
 from mycroft.metrics import report_metric
@@ -1119,10 +1119,10 @@ class MycroftSkill:
         # load dialog from "<skill>/locale/<lang>"
         dialog_dir = join(root_directory, 'dialog', self.lang)
         if exists(dialog_dir):
-            self.dialog_renderer = DialogLoader().load(dialog_dir)
+            self.dialog_renderer = load_dialogs(dialog_dir)
         elif exists(join(root_directory, 'locale', self.lang)):
             locale_path = join(root_directory, 'locale', self.lang)
-            self.dialog_renderer = DialogLoader().load(locale_path)
+            self.dialog_renderer = load_dialogs(locale_path)
         else:
             LOG.debug('No dialog loaded')
 
