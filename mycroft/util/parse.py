@@ -24,29 +24,29 @@ and to allow localization.
 
 from difflib import SequenceMatcher
 from mycroft.util.time import now_local
-from mycroft.util.lang import get_primary_lang_code
+from lingua_franca.lang import get_primary_lang_code
 
-from mycroft.util.lang.parse_en import *
-from mycroft.util.lang.parse_pt import *
-from mycroft.util.lang.parse_es import *
-from mycroft.util.lang.parse_it import *
-from mycroft.util.lang.parse_sv import *
+from lingua_franca.lang.parse_en import *
+from lingua_franca.lang.parse_pt import *
+from lingua_franca.lang.parse_es import *
+from lingua_franca.lang.parse_it import *
+from lingua_franca.lang.parse_sv import *
 
-from mycroft.util.lang.parse_de import extractnumber_de
-from mycroft.util.lang.parse_de import extract_numbers_de
-from mycroft.util.lang.parse_de import extract_datetime_de
-from mycroft.util.lang.parse_de import normalize_de
-from mycroft.util.lang.parse_fr import extractnumber_fr
-from mycroft.util.lang.parse_fr import extract_numbers_fr
-from mycroft.util.lang.parse_fr import extract_datetime_fr
-from mycroft.util.lang.parse_fr import normalize_fr
-from mycroft.util.lang.parse_da import extractnumber_da
-from mycroft.util.lang.parse_da import extract_numbers_da
-from mycroft.util.lang.parse_da import extract_datetime_da
-from mycroft.util.lang.parse_da import normalize_da
-from mycroft.util.lang.parse_nl import extractnumber_nl
-from mycroft.util.lang.parse_nl import extract_datetime_nl
-from mycroft.util.lang.parse_nl import normalize_nl
+from lingua_franca.lang.parse_de import extractnumber_de
+from lingua_franca.lang.parse_de import extract_numbers_de
+from lingua_franca.lang.parse_de import extract_datetime_de
+from lingua_franca.lang.parse_de import normalize_de
+from lingua_franca.lang.parse_fr import extractnumber_fr
+from lingua_franca.lang.parse_fr import extract_numbers_fr
+from lingua_franca.lang.parse_fr import extract_datetime_fr
+from lingua_franca.lang.parse_fr import normalize_fr
+from lingua_franca.lang.parse_da import extractnumber_da
+from lingua_franca.lang.parse_da import extract_numbers_da
+from lingua_franca.lang.parse_da import extract_datetime_da
+from lingua_franca.lang.parse_da import normalize_da
+from .lang.parse_nl import extractnumber_nl
+from .lang.parse_nl import extract_datetime_nl
+from .lang.parse_nl import normalize_nl
 
 
 from .log import LOG
