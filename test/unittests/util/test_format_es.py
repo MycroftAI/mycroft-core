@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright 2017 Mycroft AI Inc.
 #
@@ -36,10 +35,10 @@ NUMBERS_FIXTURE_ES = {
     1.75: '1 y 3 cuartos',
     3.4: '3 y 2 quintos',
     16.8333: '16 y 5 sextos',
-    12.5714: u'12 y 4 séptimos',
+    12.5714: '12 y 4 séptimos',
     9.625: '9 y 5 octavos',
     6.777: '6 y 7 novenos',
-    3.1: u'3 y 1 décimo',
+    3.1: '3 y 1 décimo',
     2.272: '2 y 3 onceavos',
     5.583: '5 y 7 doceavos',
     8.384: '8 y 5 treceavos',

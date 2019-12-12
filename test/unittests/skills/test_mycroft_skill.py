@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+#
 # Copyright 2017 Mycroft AI Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -73,7 +73,7 @@ class TestFunction(unittest.TestCase):
 
         test_class = T()
         self.assertTrue('resting_handler' in dir(test_class.f))
-        self.assertEquals(test_class.f.resting_handler, 'humbug')
+        self.assertEqual(test_class.f.resting_handler, 'humbug')
 
 
 class TestMycroftSkill(unittest.TestCase):
@@ -412,8 +412,8 @@ class TestMycroftSkill(unittest.TestCase):
         check_set_context(expected)
 
         # UTF-8 context
-        s.set_context(u'Smörgåsbord€15')
-        expected = [{'context': u'ASmörgåsbord€15', 'origin': '', 'word': ''}]
+        s.set_context('Smörgåsbord€15')
+        expected = [{'context': 'ASmörgåsbord€15', 'origin': '', 'word': ''}]
         check_set_context(expected)
 
         self.emitter.reset()

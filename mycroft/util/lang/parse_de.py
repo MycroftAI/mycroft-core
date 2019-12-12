@@ -32,17 +32,17 @@ de_numbers = {
     'zwei': 2,
     'drei': 3,
     'vier': 4,
-    u'fünf': 5,
+    'fünf': 5,
     'sechs': 6,
     'sieben': 7,
     'acht': 8,
     'neun': 9,
     'zehn': 10,
     'elf': 11,
-    u'zwölf': 12,
+    'zwölf': 12,
     'dreizehn': 13,
     'vierzehn': 14,
-    u'fünfzehn': 15,
+    'fünfzehn': 15,
     'sechzehn': 16,
     'siebzehn': 17,
     'achtzehn': 18,
@@ -52,15 +52,15 @@ de_numbers = {
     'zweiundzwanzig': 22,
     'dreiundzwanzig': 23,
     'vierundzwanzig': 24,
-    u'fünfundzwanzig': 25,
+    'fünfundzwanzig': 25,
     'sechsundzwanzig': 26,
     'siebenundzwanzig': 27,
     'achtundzwanzig': 28,
     'neunundzwanzig': 29,
-    u'dreißig': 30,
-    u'einunddreißig': 31,
+    'dreißig': 30,
+    'einunddreißig': 31,
     'vierzig': 40,
-    u'fünfzig': 50,
+    'fünfzig': 50,
     'sechzig': 60,
     'siebzig': 70,
     'achtzig': 80,
@@ -69,7 +69,7 @@ de_numbers = {
     'zweihundert': 200,
     'dreihundert': 300,
     'vierhundert': 400,
-    u'fünfhundert': 500,
+    'fünfhundert': 500,
     'sechshundert': 600,
     'siebenhundert': 700,
     'achthundert': 800,
@@ -213,26 +213,26 @@ def extract_datetime_de(string, currentDate, default_time):
     hasYear = False
     timeQualifier = ""
 
-    timeQualifiersList = [u'früh', 'morgens', 'vormittag', 'vormittags',
+    timeQualifiersList = ['früh', 'morgens', 'vormittag', 'vormittags',
                           'nachmittag', 'nachmittags', 'abend', 'abends',
                           'nachts']
-    markers = ['in', 'am', 'gegen', 'bis', u'für']
+    markers = ['in', 'am', 'gegen', 'bis', 'für']
     days = ['montag', 'dienstag', 'mittwoch',
             'donnerstag', 'freitag', 'samstag', 'sonntag']
-    months = ['januar', 'februar', u'märz', 'april', 'mai', 'juni',
+    months = ['januar', 'februar', 'märz', 'april', 'mai', 'juni',
               'juli', 'august', 'september', 'october', 'november',
               'dezember']
-    monthsShort = ['jan', 'feb', u'mär', 'apr', 'mai', 'juni', 'juli', 'aug',
+    monthsShort = ['jan', 'feb', 'mär', 'apr', 'mai', 'juni', 'juli', 'aug',
                    'sept', 'oct', 'nov', 'dez']
 
     validFollowups = days + months + monthsShort
     validFollowups.append("heute")
     validFollowups.append("morgen")
-    validFollowups.append(u"nächste")
-    validFollowups.append(u"nächster")
-    validFollowups.append(u"nächstes")
-    validFollowups.append(u"nächsten")
-    validFollowups.append(u"nächstem")
+    validFollowups.append("nächste")
+    validFollowups.append("nächster")
+    validFollowups.append("nächstes")
+    validFollowups.append("nächsten")
+    validFollowups.append("nächstem")
     validFollowups.append("letzte")
     validFollowups.append("letzter")
     validFollowups.append("letztes")
@@ -252,7 +252,7 @@ def extract_datetime_de(string, currentDate, default_time):
 
         # this isn't in clean string because I don't want to save back to words
 
-        if word != 'morgen' and word != u'übermorgen':
+        if word != 'morgen' and word != 'übermorgen':
             if word[-2:] == "en":
                 word = word[:-2]  # remove en
         if word != 'heute':
@@ -273,7 +273,7 @@ def extract_datetime_de(string, currentDate, default_time):
             # Morgen" and not [day of the week] morgen
             dayOffset = 1
             used += 1
-        elif word == u"übermorgen" and not fromFlag:
+        elif word == "übermorgen" and not fromFlag:
             dayOffset = 2
             used += 1
             # parse 5 days, 10 weeks, last week, next week
@@ -287,7 +287,7 @@ def extract_datetime_de(string, currentDate, default_time):
                 dayOffset += int(wordPrev) * 7
                 start -= 1
                 used = 2
-            elif wordPrev[:6] == u"nächst":
+            elif wordPrev[:6] == "nächst":
                 dayOffset = 7
                 start -= 1
                 used = 2
@@ -301,7 +301,7 @@ def extract_datetime_de(string, currentDate, default_time):
                 monthOffset = int(wordPrev)
                 start -= 1
                 used = 2
-            elif wordPrev[:6] == u"nächst":
+            elif wordPrev[:6] == "nächst":
                 monthOffset = 1
                 start -= 1
                 used = 2
@@ -315,11 +315,11 @@ def extract_datetime_de(string, currentDate, default_time):
                 yearOffset = int(wordPrev)
                 start -= 1
                 used = 2
-            elif wordPrev[:6] == u"nächst":
+            elif wordPrev[:6] == "nächst":
                 yearOffset = 1
                 start -= 1
                 used = 2
-            elif wordPrev[:6] == u"nächst":
+            elif wordPrev[:6] == "nächst":
                 yearOffset = -1
                 start -= 1
                 used = 2
@@ -333,8 +333,8 @@ def extract_datetime_de(string, currentDate, default_time):
                 dayOffset += 7
             if wordNext == "morgen":  # morgen means morning if preceded by
                 # the day of the week
-                words[idx + 1] = u"früh"
-            if wordPrev[:6] == u"nächst":
+                words[idx + 1] = "früh"
+            if wordPrev[:6] == "nächst":
                 dayOffset += 7
                 used += 1
                 start -= 1
@@ -399,7 +399,7 @@ def extract_datetime_de(string, currentDate, default_time):
                 d = days.index(wordNextNext)
                 tmpOffset = (d + 1) - int(today)
                 used = 3
-                if wordNext[:6] == u"nächst":
+                if wordNext[:6] == "nächst":
                     tmpOffset += 7
                     used += 1
                     start -= 1
@@ -449,7 +449,7 @@ def extract_datetime_de(string, currentDate, default_time):
             hrAbs = 0
             used += 1
         elif word == "morgens" or (
-                wordPrev == "am" and word == "morgen") or word == u"früh":
+                wordPrev == "am" and word == "morgen") or word == "früh":
             if not hrAbs:
                 hrAbs = 8
             used += 1
@@ -727,11 +727,11 @@ def extract_datetime_de(string, currentDate, default_time):
             if wordPrev == "Uhr":
                 words[words.index(wordPrev)] = ""
 
-            if wordPrev == u"früh":
+            if wordPrev == "früh":
                 hrOffset = -1
                 words[idx - 1] = ""
                 idx -= 1
-            elif wordPrev == u"spät":
+            elif wordPrev == "spät":
                 hrOffset = 1
                 words[idx - 1] = ""
                 idx -= 1

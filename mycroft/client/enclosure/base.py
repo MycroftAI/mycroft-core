@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import asyncio
+
 from collections import namedtuple
 from threading import Lock
 
@@ -409,6 +411,11 @@ class Enclosure:
         if gui_id in self.GUIs:
             # TODO: Close it?
             pass
+        try:
+            asyncio.get_event_loop()
+        except RuntimeError:
+            asyncio.set_event_loop(asyncio.new_event_loop())
+
         self.GUIs[gui_id] = GUIConnection(gui_id, self.global_config,
                                           self.callback_disconnect, self)
         LOG.debug("Heard announcement from gui_id: {}".format(gui_id))
@@ -605,6 +612,11 @@ class GUIWebsocketHandler(WebSocketHandler):
 
     def write_message(self, *arg, **kwarg):
         """ Wraps WebSocketHandler.write_message() with a lock. """
+        try:
+            asyncio.get_event_loop()
+        except RuntimeError:
+            asyncio.set_event_loop(asyncio.new_event_loop())
+
         with write_lock:
             super().write_message(*arg, **kwarg)
 

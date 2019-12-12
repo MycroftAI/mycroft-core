@@ -295,3 +295,12 @@ class SkillGUI:
         self.clear()
         self["url"] = url
         self.show_page("SYSTEM_UrlFrame.qml", override_idle)
+
+    def shutdown(self):
+        """Shutdown gui interface.
+
+        Clear pages loaded through this interface and remove the skill
+        reference to make ref counting warning more precise.
+        """
+        self.clear()
+        self.skill = None

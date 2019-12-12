@@ -13,18 +13,16 @@
 # limitations under the License.
 #
 
-"""Module containing methods needed to load skill data such as intents and
-regular expressions.
-"""
+"""Functions to load skill data such as intents and regular expressions."""
 
+import collections
+import csv
+import re
 from os import walk
 from os.path import splitext, join
-import re
-import csv
-import collections
 
-from mycroft.messagebus.message import Message
 from mycroft.util.format import expand_options
+from mycroft.util.log import LOG
 
 
 def read_vocab_file(path):
@@ -63,7 +61,9 @@ def load_regex_from_file(path, skill_id):
             for line in reg_file.readlines():
                 if line.startswith("#"):
                     continue
+                LOG.debug('regex pre-munge: ' + line.strip())
                 regex = munge_regex(line.strip(), skill_id)
+                LOG.debug('regex post-munge: ' + regex)
                 # Raise error if regex can't be compiled
                 re.compile(regex)
                 regexes.append(regex)

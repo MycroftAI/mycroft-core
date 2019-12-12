@@ -97,17 +97,18 @@ def save_settings(skill_dir, skill_settings):
     else:
         settings_to_save = skill_settings
     settings_path = Path(skill_dir).joinpath('settings.json')
-    with open(str(settings_path), 'w') as settings_file:
-        try:
-            json.dump(settings_to_save, settings_file)
-        except Exception:
-            LOG.exception(
-                'error saving skill settings to ' + str(settings_path)
-            )
-        else:
-            LOG.info(
-                'Skill settings successfully saved to ' + str(settings_path)
-            )
+    if Path(skill_dir).exists():
+        with open(str(settings_path), 'w') as settings_file:
+            try:
+                json.dump(settings_to_save, settings_file)
+            except Exception:
+                LOG.exception('error saving skill settings to '
+                              '{}'.format(settings_path))
+            else:
+                LOG.info('Skill settings successfully saved to '
+                         '{}' .format(settings_path))
+    else:
+        LOG.info('Skill folder no longer exists, can\'t save settings.')
 
 
 def get_display_name(skill_name: str):
@@ -444,3 +445,7 @@ class Settings:
 
     def as_dict(self):
         return self._settings
+
+    def shutdown(self):
+        """Shutdown the Settings object removing any references."""
+        self._skill = None

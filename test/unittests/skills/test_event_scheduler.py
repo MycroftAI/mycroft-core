@@ -6,7 +6,10 @@ import unittest
 import time
 
 from unittest.mock import MagicMock, patch
-from mycroft.skills.event_scheduler import EventScheduler
+from mycroft.messagebus.client.threaded_event_emitter import (
+        ThreadedEventEmitter)
+from mycroft.skills.event_scheduler import (EventScheduler,
+                                            EventSchedulerInterface)
 
 
 class TestEventScheduler(unittest.TestCase):
@@ -23,7 +26,7 @@ class TestEventScheduler(unittest.TestCase):
         emitter = MagicMock()
         es = EventScheduler(emitter)
         es.shutdown()
-        self.assertEquals(mock_json_dump.call_args[0][0], {})
+        self.assertEqual(mock_json_dump.call_args[0][0], {})
 
     @patch('threading.Thread')
     @patch('json.load')
@@ -75,8 +78,8 @@ class TestEventScheduler(unittest.TestCase):
         es.shutdown()
 
         # Make sure the dump method wasn't called with test-repeat
-        self.assertEquals(mock_dump.call_args[0][0],
-                          {'test': [(900000000000, None, {})]})
+        self.assertEqual(mock_dump.call_args[0][0],
+                         {'test': [(900000000000, None, {})]})
 
     @patch('threading.Thread')
     @patch('json.load')
@@ -95,6 +98,27 @@ class TestEventScheduler(unittest.TestCase):
         es.schedule_event('test', time.time(), None)
 
         es.check_state()
-        self.assertEquals(emitter.emit.call_args[0][0].msg_type, 'test')
-        self.assertEquals(emitter.emit.call_args[0][0].data, {})
+        self.assertEqual(emitter.emit.call_args[0][0].msg_type, 'test')
+        self.assertEqual(emitter.emit.call_args[0][0].data, {})
         es.shutdown()
+
+
+class TestEventSchedulerInterface(unittest.TestCase):
+    def test_shutdown(self):
+        def f(message):
+            print('TEST FUNC')
+
+        bus = ThreadedEventEmitter()
+
+        es = EventSchedulerInterface('tester')
+        es.set_bus(bus)
+        es.set_id('id')
+
+        # Schedule a repeating event
+        es.schedule_repeating_event(f, None, 10, name='f')
+        es.shutdown()
+
+        # Check that the reference to the function has been removed from the
+        # bus emitter
+        self.assertTrue(len(bus.wrappers) == 0)
+        self.assertTrue(len(bus._events['id:f']) == 0)
