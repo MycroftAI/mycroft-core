@@ -31,11 +31,12 @@ from .skill_updater import SkillUpdater
 SKILL_MAIN_MODULE = '__init__.py'
 
 
-class SettingsMetaQueue:
-    """Queue for sending settings metadata to backend.
+class UploadQueue:
+    """Queue for holding loaders with data that still needs to be uploaded.
 
-    This queue can be used during startup to capture all settingsmeta requests
-    and then processing can be triggered at a later stage.
+    This queue can be used during startup to capture all loaders
+    and then processing can be triggered at a later stage when the system is
+    connected to the backend.
 
     After all queued settingsmeta has been processed and the queue is empty
     the queue will set the self.started flag.
@@ -90,7 +91,7 @@ class SkillManager(Thread):
         self._stop_event = Event()
         self._connected_event = Event()
         self.config = Configuration.get()
-        self.upload_queue = SettingsMetaQueue()
+        self.upload_queue = UploadQueue()
 
         self.skill_loaders = {}
         self.enclosure = EnclosureAPI(bus)
@@ -155,6 +156,7 @@ class SkillManager(Thread):
 
     def _start_settings_update(self):
         LOG.info('Start settings update')
+        self.skill_updater.post_manifest(reload_skills_manifest=True)
         self.upload_queue.start()
         LOG.info('All settings meta has been processed or upload has started')
         self.settings_downloader.download()
@@ -162,7 +164,6 @@ class SkillManager(Thread):
 
     def handle_paired(self, _):
         """Trigger upload of skills manifest after pairing."""
-        self.skill_updater.post_manifest(reload_skills_manifest=True)
         self._start_settings_update()
 
     def load_priority(self):
@@ -192,9 +193,8 @@ class SkillManager(Thread):
         self._connected_event.wait()
         self._load_on_startup()
 
-        # Update sync backend and skills.
-        if is_paired():
-            self.skill_updater.post_manifest(reload_skills_manifest=True)
+        # Sync backend and skills.
+        if is_paired() and not self.upload_queue.started:
             self._start_settings_update()
 
         # Scan the file folder that contains Skills.  If a Skill is updated,
@@ -237,8 +237,8 @@ class SkillManager(Thread):
             try:
                 skill_loader = self.skill_loaders.get(skill_dir)
                 if skill_loader is not None and skill_loader.reload_needed():
-                    skill_loader.reload()
-                    if skill_loader.instance:
+                    # If reload succeed add settingsmeta to upload queue
+                    if skill_loader.reload():
                         self.upload_queue.put(skill_loader)
             except Exception:
                 LOG.exception('Unhandled exception occured while '
@@ -248,9 +248,9 @@ class SkillManager(Thread):
         """Handle load of skills installed since startup."""
         for skill_dir in self._get_skill_directories():
             if skill_dir not in self.skill_loaders:
-                sl = self._load_skill(skill_dir)
-                if sl:
-                    self.upload_queue.put(sl)
+                loader = self._load_skill(skill_dir)
+                if loader:
+                    self.upload_queue.put(loader)
 
     def _load_skill(self, skill_directory):
         skill_loader = SkillLoader(self.bus, skill_directory)
