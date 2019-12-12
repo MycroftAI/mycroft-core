@@ -293,6 +293,11 @@ class SkillManager(Thread):
                 LOG.exception('Failed to shutdown skill ' + skill.id)
             del self.skill_loaders[skill_dir]
 
+        # If skills were removed make sure to update the manifest on the
+        # mycroft backend.
+        if removed_skills:
+            self.skill_updater.post_manifest(reload_skills_manifest=True)
+
     def _update_skills(self):
         """Update skills once an hour if update is enabled"""
         do_skill_update = (
