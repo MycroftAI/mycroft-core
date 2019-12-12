@@ -59,8 +59,7 @@ import json
 import os
 import re
 from pathlib import Path
-from queue import Queue, Empty
-from threading import Thread, Timer, Event
+from threading import Timer
 
 from mycroft.api import DeviceApi, is_paired
 from mycroft.configuration import Configuration
@@ -138,48 +137,6 @@ def _extract_settings_from_meta(settings_meta: dict) -> dict:
                 fields[field['name']] = field['value']
 
     return fields
-
-
-class SettingsMetaQueue(Thread):
-    """Queue for sending settings metadata to backend.
-
-    This queue can be used during startup to capture all settingsmeta requests
-    and then processing can be triggered at a later stage.
-
-    After all queued settingsmeta has been processed and the queue is empty
-    the queue will set the self.processed event allowing waiting for
-    processing.
-    """
-    def __init__(self):
-        super().__init__()
-        self._queue = Queue()
-        self.daemon = True
-        self.stopped = False
-        self.processed = Event()
-
-    def run(self):
-        timeout = 5
-        while not self.stopped:
-            try:
-                uploader = self._queue.get(timeout=timeout)
-                if uploader is None:
-                    break
-                else:
-                    uploader.upload()
-            except Empty:
-                # When the queue is empty indicate that everything
-                # sent to it before starting has been processed.
-                timeout = None
-                self.processed.set()
-
-    def stop(self):
-        """Stop the queue processer."""
-        self.stopped = True
-        self._queue.put(None)  # Insert dummy value to trigger a loop.
-
-    def put(self, value):
-        """Append a value to the queue."""
-        self._queue.put(value)
 
 
 class SettingsMetaUploader:
