@@ -676,7 +676,7 @@ class MycroftSkill:
             string: The full path to the resource file or None if not found
         """
         result = self._find_resource(res_name, self.lang, res_dirname)
-        if not result:
+        if not result and self.lang != 'en-us':
             # when resource not found try fallback to en-us
             LOG.warning(
                 "Resource '{}' for lang '{}' not found: trying 'en-us'"
@@ -686,7 +686,7 @@ class MycroftSkill:
         return result
 
     def _find_resource(self, res_name, lang, res_dirname=None):
-        """Find resource by name, lang and dir
+        """Finds a resource by name, lang and dir
         """
         if res_dirname:
             # Try the old translated directory (dialog/vocab/regex)
@@ -1052,6 +1052,7 @@ class MycroftSkill:
         Arguments:
             regex_str: Regex string
         """
+        self.log.debug('registering regex string: ' + regex_str)
         regex = munge_regex(regex_str, self.skill_id)
         re.compile(regex)  # validate regex
         self.intent_service.register_adapt_regex(regex)
@@ -1126,7 +1127,7 @@ class MycroftSkill:
             LOG.debug('No dialog loaded')
 
     def load_data_files(self, root_directory=None):
-        """Load data files (intents, dialogs, etc).
+        """Called by the skill loader to load intents, dialogs, etc.
 
         Arguments:
             root_directory (str): root folder to use when loading files.
