@@ -13,13 +13,15 @@
 # limitations under the License.
 #
 import sys
+import signal
 import io
 import os.path
 import curses
 from mycroft.util import get_ipc_directory
 from .text_client import (
         load_settings, save_settings, simple_cli, gui_main,
-        start_log_monitor, start_mic_monitor, connect_to_mycroft
+        start_log_monitor, start_mic_monitor, connect_to_mycroft,
+        ctrl_c_handler
     )
 from mycroft.configuration import Configuration
 
@@ -57,6 +59,8 @@ def main():
         sys.stderr = sys.__stderr__
         simple_cli()
     else:
+        # Special signal handler allows a clean shutdown of the GUI
+        signal.signal(signal.SIGINT, ctrl_c_handler)
         load_settings()
         curses.wrapper(gui_main)
         curses.endwin()

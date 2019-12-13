@@ -28,19 +28,19 @@ class TestNormalize(unittest.TestCase):
         Test cases for Portuguese parsing
     """
     def test_articles_pt(self):
-        self.assertEqual(normalize(u"isto é o teste",
+        self.assertEqual(normalize("isto é o teste",
                                    lang="pt", remove_articles=True),
-                         u"isto teste")
+                         "isto teste")
         self.assertEqual(
-            normalize(u"isto é a frase", lang="pt", remove_articles=True),
-            u"isto frase")
+            normalize("isto é a frase", lang="pt", remove_articles=True),
+            "isto frase")
         self.assertEqual(
             normalize("e outro teste", lang="pt", remove_articles=True),
             "outro teste")
-        self.assertEqual(normalize(u"isto é o teste extra",
+        self.assertEqual(normalize("isto é o teste extra",
                                    lang="pt",
-                                   remove_articles=False), u"isto e o teste"
-                                                           u" extra")
+                                   remove_articles=False), "isto e o teste"
+                                                           " extra")
 
     def test_extractnumber_pt(self):
         self.assertEqual(extract_number("isto e o primeiro teste", lang="pt"),
@@ -48,11 +48,11 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extract_number("isto e o 2 teste", lang="pt"), 2)
         self.assertEqual(extract_number("isto e o segundo teste", lang="pt"),
                          2)
-        self.assertEqual(extract_number(u"isto e um terço de teste",
+        self.assertEqual(extract_number("isto e um terço de teste",
                                         lang="pt"), 1.0 / 3.0)
         self.assertEqual(extract_number("isto e o teste numero quatro",
                                         lang="pt"), 4)
-        self.assertEqual(extract_number(u"um terço de chavena", lang="pt"),
+        self.assertEqual(extract_number("um terço de chavena", lang="pt"),
                          1.0 / 3.0)
         self.assertEqual(extract_number("3 canecos", lang="pt"), 3)
         self.assertEqual(extract_number("1/3 canecos", lang="pt"), 1.0 / 3.0)
@@ -67,7 +67,7 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(
             extract_number("tres quartos de chocolate", lang="pt"),
             3.0 / 4.0)
-        self.assertEqual(extract_number(u"três quarto de chocolate",
+        self.assertEqual(extract_number("três quarto de chocolate",
                                         lang="pt"), 3.0 / 4.0)
         self.assertEqual(extract_number("sete ponto cinco", lang="pt"), 7.5)
         self.assertEqual(extract_number("sete ponto 5", lang="pt"), 7.5)
@@ -112,10 +112,10 @@ class TestNormalize(unittest.TestCase):
                          "isto e 1 teste")
 
     def test_numbers_pt(self):
-        self.assertEqual(normalize(u"isto e o um dois três teste", lang="pt"),
-                         u"isto 1 2 3 teste")
-        self.assertEqual(normalize(u"ê a sete oito nove  test", lang="pt"),
-                         u"7 8 9 test")
+        self.assertEqual(normalize("isto e o um dois três teste", lang="pt"),
+                         "isto 1 2 3 teste")
+        self.assertEqual(normalize("ê a sete oito nove  test", lang="pt"),
+                         "7 8 9 test")
         self.assertEqual(
             normalize("teste zero dez onze doze treze", lang="pt"),
             "teste 0 10 11 12 13")
@@ -151,79 +151,79 @@ class TestNormalize(unittest.TestCase):
             self.assertEqual(res[0], expected_date)
             self.assertEqual(res[1], expected_leftover)
 
-        testExtract(u"que dia é hoje",
-                    "2017-06-27 00:00:00", u"dia")
-        testExtract(u"que dia é amanha",
-                    "2017-06-28 00:00:00", u"dia")
-        testExtract(u"que dia foi ontem",
-                    "2017-06-26 00:00:00", u"dia")
-        testExtract(u"que dia foi antes de ontem",
-                    "2017-06-25 00:00:00", u"dia")
-        testExtract(u"que dia foi ante ontem",
-                    "2017-06-25 00:00:00", u"dia")
-        testExtract(u"que dia foi ante ante ontem",
-                    "2017-06-24 00:00:00", u"dia")
+        testExtract("que dia é hoje",
+                    "2017-06-27 00:00:00", "dia")
+        testExtract("que dia é amanha",
+                    "2017-06-28 00:00:00", "dia")
+        testExtract("que dia foi ontem",
+                    "2017-06-26 00:00:00", "dia")
+        testExtract("que dia foi antes de ontem",
+                    "2017-06-25 00:00:00", "dia")
+        testExtract("que dia foi ante ontem",
+                    "2017-06-25 00:00:00", "dia")
+        testExtract("que dia foi ante ante ontem",
+                    "2017-06-24 00:00:00", "dia")
         testExtract("marca o jantar em 5 dias",
                     "2017-07-02 00:00:00", "marca jantar")
         testExtract("como esta o tempo para o dia depois de amanha?",
                     "2017-06-29 00:00:00", "como tempo")
-        testExtract(u"lembra me ás 10:45 pm",
-                    "2017-06-27 22:45:00", u"lembra")
+        testExtract("lembra me ás 10:45 pm",
+                    "2017-06-27 22:45:00", "lembra")
         testExtract("como esta o tempo na sexta de manha",
                     "2017-06-30 08:00:00", "como tempo")
-        testExtract(u"lembra me para ligar a mãe daqui "
-                    u"a 8 semanas e 2 dias",
-                    "2017-08-24 00:00:00", u"lembra ligar mae")
+        testExtract("lembra me para ligar a mãe daqui "
+                    "a 8 semanas e 2 dias",
+                    "2017-08-24 00:00:00", "lembra ligar mae")
         testExtract("Toca black metal 2 dias a seguir a sexta",
                     "2017-07-02 00:00:00", "toca black metal")
         testExtract("Toca satanic black metal 2 dias para esta sexta",
                     "2017-07-02 00:00:00", "toca satanic black metal")
         testExtract("Toca super black metal 2 dias a partir desta sexta",
                     "2017-07-02 00:00:00", "toca super black metal")
-        testExtract(u"Começa a invasão ás 3:45 pm de quinta feira",
+        testExtract("Começa a invasão ás 3:45 pm de quinta feira",
                     "2017-06-29 15:45:00", "comeca invasao")
         testExtract("na segunda, compra queijo",
                     "2017-07-03 00:00:00", "compra queijo")
-        testExtract(u"Toca os parabéns daqui a 5 anos",
+        testExtract("Toca os parabéns daqui a 5 anos",
                     "2022-06-27 00:00:00", "toca parabens")
-        testExtract(u"manda Skype a Mãe ás 12:45 pm próxima quinta",
+        testExtract("manda Skype a Mãe ás 12:45 pm próxima quinta",
                     "2017-06-29 12:45:00", "manda skype mae")
-        testExtract(u"como está o tempo esta sexta?",
+        testExtract("como está o tempo esta sexta?",
                     "2017-06-30 00:00:00", "como tempo")
-        testExtract(u"como está o tempo esta sexta de tarde?",
+        testExtract("como está o tempo esta sexta de tarde?",
                     "2017-06-30 15:00:00", "como tempo")
-        testExtract(u"como está o tempo esta sexta as tantas da manha?",
+        testExtract("como está o tempo esta sexta as tantas da manha?",
                     "2017-06-30 04:00:00", "como tempo")
-        testExtract(u"como está o tempo esta sexta a meia noite?",
+        testExtract("como está o tempo esta sexta a meia noite?",
                     "2017-06-30 00:00:00", "como tempo")
-        testExtract(u"como está o tempo esta sexta ao meio dia?",
+        testExtract("como está o tempo esta sexta ao meio dia?",
                     "2017-06-30 12:00:00", "como tempo")
-        testExtract(u"como está o tempo esta sexta ao fim da tarde?",
+        testExtract("como está o tempo esta sexta ao fim da tarde?",
                     "2017-06-30 19:00:00", "como tempo")
-        testExtract(u"como está o tempo esta sexta ao meio da manha?",
+        testExtract("como está o tempo esta sexta ao meio da manha?",
                     "2017-06-30 10:00:00", "como tempo")
         testExtract("lembra me para ligar a mae no dia 3 de agosto",
                     "2017-08-03 00:00:00", "lembra ligar mae")
 
-        testExtract(u"compra facas no 13º dia de maio",
+        testExtract("compra facas no 13º dia de maio",
                     "2018-05-13 00:00:00", "compra facas")
-        testExtract(u"gasta dinheiro no maio dia 13",
+        testExtract("gasta dinheiro no maio dia 13",
                     "2018-05-13 00:00:00", "gasta dinheiro")
-        testExtract(u"compra velas a maio 13",
+        testExtract("compra velas a maio 13",
                     "2018-05-13 00:00:00", "compra velas")
-        testExtract(u"bebe cerveja a 13 maio",
+        testExtract("bebe cerveja a 13 maio",
                     "2018-05-13 00:00:00", "bebe cerveja")
         testExtract("como esta o tempo 1 dia a seguir a amanha",
                     "2017-06-29 00:00:00", "como tempo")
-        testExtract(u"como esta o tempo ás 0700 horas",
+        testExtract("como esta o tempo ás 0700 horas",
                     "2017-06-27 07:00:00", "como tempo")
-        testExtract(u"como esta o tempo amanha ás 7 em ponto",
+        testExtract("como esta o tempo amanha ás 7 em ponto",
                     "2017-06-28 07:00:00", "como tempo")
-        testExtract(u"como esta o tempo amanha pelas 2 da tarde",
+        testExtract("como esta o tempo amanha pelas 2 da tarde",
                     "2017-06-28 14:00:00", "como tempo")
-        testExtract(u"como esta o tempo amanha pelas 2",
+        testExtract("como esta o tempo amanha pelas 2",
                     "2017-06-28 02:00:00", "como tempo")
-        testExtract(u"como esta o tempo pelas 2 da tarde da proxima sexta",
+        testExtract("como esta o tempo pelas 2 da tarde da proxima sexta",
                     "2017-06-30 14:00:00", "como tempo")
         testExtract("lembra-me de acordar em 4 anos",
                     "2021-06-27 00:00:00", "lembra acordar")
@@ -233,7 +233,7 @@ class TestNormalize(unittest.TestCase):
                     "2017-07-02 00:00:00", "dorme")
         testExtract("marca consulta para 2 semanas e 6 dias depois de Sabado",
                     "2017-07-21 00:00:00", "marca consulta")
-        testExtract(u"começa a festa ás 8 em ponto da noite de quinta",
+        testExtract("começa a festa ás 8 em ponto da noite de quinta",
                     "2017-06-29 20:00:00", "comeca festa")
 
     def test_extractdatetime_default_pt(self):

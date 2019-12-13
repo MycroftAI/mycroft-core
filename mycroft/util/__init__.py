@@ -307,7 +307,7 @@ def _connected_ncsi():
     """
     try:
         r = requests.get('http://www.msftncsi.com/ncsi.txt')
-        if r.text == u'Microsoft NCSI':
+        if r.text == 'Microsoft NCSI':
             return True
     except Exception:
         pass

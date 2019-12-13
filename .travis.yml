@@ -16,9 +16,6 @@ python:
   - "3.6"
   - "3.7"
   - "3.8"
-jobs:
-  allow_failures:
-    - python: "3.8"
 # don't rebuild pocketsphinx for every build
 cache:
   - pip

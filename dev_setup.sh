@@ -24,12 +24,37 @@ set -Ee
 cd $(dirname $0)
 TOP=$(pwd -L)
 
+function clean_mycroft_files() {
+    echo '
+This will completely remove any files installed by mycroft (including pairing
+information).
+Do you wish to continue? (y/n)'
+    while true; do
+        read -N1 -s key
+        case $key in
+        [Yy])
+            sudo rm -rf /var/log/mycroft
+            rm -f /var/tmp/mycroft_web_cache.json
+            rm -rf "${TMPDIR:-/tmp}/mycroft"
+            rm -rf "$HOME/.mycroft"
+            sudo rm -rf "/opt/mycroft"
+            exit 0
+            ;;
+        [Nn])
+            exit 1
+            ;;
+        esac
+    done
+    
+
+}
 function show_help() {
     echo '
 Usage: dev_setup.sh [options]
 Prepare your environment for running the mycroft-core services.
 
 Options:
+    --clean                 Remove files and folders created by this script
     -h, --help              Show this message
     -fm                     Force mimic build
     -n, --no-error          Do not exit on error (use with caution)
@@ -59,6 +84,15 @@ for var in "$@" ; do
         show_help
         exit 0
     fi
+
+    if [[ $var == '--clean' ]] ; then
+        if clean_mycroft_files; then
+            exit 0
+        else
+            exit 1
+        fi
+    fi
+    
 
     if [[ $var == '-r' || $var == '--allow-root' ]] ; then
         opt_allowroot=true
@@ -264,7 +298,7 @@ function os_is_like() {
 }
 
 function redhat_common_install() {
-    $SUDO yum install -y cmake gcc-c++ git python34 python34-devel libtool libffi-devel openssl-devel autoconf automake bison swig portaudio-devel mpg123 flac curl libicu-devel python34-pkgconfig libjpeg-devel fann-devel python34-libs pulseaudio
+    $SUDO yum install -y cmake gcc-c++ git python3-devel libtool libffi-devel openssl-devel autoconf automake bison swig portaudio-devel mpg123 flac curl libicu-devel libjpeg-devel fann-devel pulseaudio
     git clone https://github.com/libfann/fann.git
     cd fann
     git checkout b211dc3db3a6a2540a34fbe8995bf2df63fc9939
@@ -302,8 +336,14 @@ function open_suse_install() {
 }
 
 
+function fedora_install() {
+    $SUDO dnf install -y git python3 python3-devel python3-pip python3-setuptools python3-virtualenv pygobject3-devel libtool libffi-devel openssl-devel autoconf bison swig glib2-devel portaudio-devel mpg123 mpg123-plugins-pulseaudio screen curl pkgconfig libicu-devel automake libjpeg-turbo-devel fann-devel gcc-c++ redhat-rpm-config jq
+}
+
+
 function arch_install() {
-    $SUDO pacman -S --needed --noconfirm git python python-pip python-setuptools python-virtualenv python-gobject python-virtualenvwrapper libffi swig portaudio mpg123 screen flac curl icu libjpeg-turbo base-devel jq pulseaudio pulseaudio-alsa
+    $SUDO pacman -S --needed --noconfirm git python python-pip python-setuptools python-virtualenv python-gobject libffi swig portaudio mpg123 screen flac curl icu libjpeg-turbo base-devel jq pulseaudio pulseaudio-alsa
+
     pacman -Qs '^fann$' &> /dev/null || (
         git clone  https://aur.archlinux.org/fann.git
         cd fann

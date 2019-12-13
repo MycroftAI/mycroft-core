@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright 2017 Mycroft AI Inc.
 #
@@ -24,7 +23,7 @@ months = ['januari', 'februari', 'maart', 'april', 'mei', 'juni',
 
 NUM_STRING_NL = {
     0: 'nul',
-    1: u'één',
+    1: 'één',
     2: 'twee',
     3: 'drie',
     4: 'vier',
@@ -124,11 +123,11 @@ def nice_number_nl(number, speech, denominators=range(1, 21)):
     den_str = FRACTION_STRING_NL[den]
     if whole == 0:
         if num == 1:
-            return_string = u'één {}'.format(den_str)
+            return_string = 'één {}'.format(den_str)
         else:
             return_string = '{} {}'.format(num, den_str)
     elif num == 1:
-        return_string = u'{} en één {}'.format(whole, den_str)
+        return_string = '{} en één {}'.format(whole, den_str)
     else:
         return_string = '{} en {} {}'.format(whole, num, den_str)
 
@@ -197,13 +196,13 @@ def pronounce_number_nl(num, places=2):
         if last_triplet == 1:
             if scale_level == 0:
                 if result != '':
-                    result += '' + u'één'
+                    result += '' + 'één'
                 else:
-                    result += u"één"
+                    result += "één"
             elif scale_level == 1:
-                result += u'één' + EXTRA_SPACE + 'duizend' + EXTRA_SPACE
+                result += 'één' + EXTRA_SPACE + 'duizend' + EXTRA_SPACE
             else:
-                result += u"één " + NUM_POWERS_OF_TEN[scale_level] + ' '
+                result += "één " + NUM_POWERS_OF_TEN[scale_level] + ' '
         elif last_triplet > 1:
             result += pronounce_triplet_nl(last_triplet)
             if scale_level == 1:
