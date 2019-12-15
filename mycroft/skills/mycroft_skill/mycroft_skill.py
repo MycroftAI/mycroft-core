@@ -118,7 +118,7 @@ class MycroftSkill:
     to all Skill implementations.
 
     For information on how to get started with creating mycroft skills see
-    https://https://mycroft.ai/documentation/skills/introduction-developing-skills/
+    https://mycroft.ai/documentation/skills/introduction-developing-skills/
 
     Arguments:
         name (str): skill name
