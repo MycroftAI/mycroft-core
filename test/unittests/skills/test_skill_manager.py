@@ -13,12 +13,33 @@
 # limitations under the License.
 #
 from os import path
+from unittest import TestCase
 from unittest.mock import Mock, patch
 
 from mycroft.skills.skill_loader import SkillLoader
-from mycroft.skills.skill_manager import SkillManager
+from mycroft.skills.skill_manager import SkillManager, UploadQueue
 from ..base import MycroftUnitTestBase
 from ..mocks import mock_msm
+
+
+class TestUploadQueue(TestCase):
+    def test_upload_queue_create(self):
+        queue = UploadQueue()
+        self.assertFalse(queue.started)
+        queue.start()
+        self.assertTrue(queue.started)
+
+    def test_upload_queue_use(self):
+        queue = UploadQueue()
+        queue.start()
+        # Check that putting items on the queue makes it longer
+        loaders = [Mock(), Mock(), Mock(), Mock()]
+        for i, l in enumerate(loaders):
+            queue.put(l)
+            self.assertEqual(len(queue), i + 1)
+        # Check that sending items empties the queue
+        queue.send()
+        self.assertEqual(len(queue), 0)
 
 
 class TestSkillManager(MycroftUnitTestBase):
