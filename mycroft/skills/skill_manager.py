@@ -179,7 +179,9 @@ class SkillManager(Thread):
                         log_msg = 'Downloading priority skill: {} failed'
                         LOG.exception(log_msg.format(skill_name))
                         continue
-                self._load_skill(skill.path)
+                loader = self._load_skill(skill.path)
+                if loader:
+                    self.upload_queue.put(loader)
             else:
                 LOG.error(
                     'Priority skill {} can\'t be found'.format(skill_name)
