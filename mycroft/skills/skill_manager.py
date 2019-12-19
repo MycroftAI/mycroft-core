@@ -207,7 +207,8 @@ class SkillManager(Thread):
                 self._load_new_skills()
                 self._unload_removed_skills()
                 self._update_skills()
-                if is_paired() and len(self.upload_queue) > 0:
+                if (is_paired() and self.upload_queue.started and
+                        len(self.upload_queue) > 0):
                     self.msm.clear_cache()
                     self.skill_updater.post_manifest()
                     self.upload_queue.send()
