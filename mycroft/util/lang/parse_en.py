@@ -604,7 +604,7 @@ def extractnumber_en(text, short_scale=True, ordinals=False):
                                    was found
 
     """
-    return _extract_number_with_text_en(_tokenize(text),
+    return _extract_number_with_text_en(_tokenize(text.replace("%", "")),
                                         short_scale, ordinals).value
 
 
