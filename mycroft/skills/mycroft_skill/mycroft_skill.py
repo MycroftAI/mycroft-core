@@ -130,7 +130,10 @@ class MycroftSkill:
         self.resting_name = None
         self.skill_id = ''  # will be set from the path, so guaranteed unique
         self.settings_meta = None  # set when skill is loaded in SkillLoader
+
         # Get directory of skill
+        #: Member variable containing the absolute path of the skill's root
+        #: directory. E.g. /opt/mycroft/skills/my-skill.me/
         self.root_dir = dirname(abspath(sys.modules[self.__module__].__file__))
         if use_settings:
             self.settings = Settings(self)
