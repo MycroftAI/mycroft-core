@@ -23,7 +23,7 @@ class GoogleTTS(TTS):
             self), 'mp3')
 
     def get_tts(self, sentence, wav_file):
-        tts = gTTS(sentence, self.lang)
+        tts = gTTS(text=sentence, lang=self.lang)
         tts.save(wav_file)
         return (wav_file, None)  # No phonemes
 
