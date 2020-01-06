@@ -78,10 +78,12 @@ class PadatiousService(FallbackSkill):
         self.registered_intents = []
 
     def train(self, message=None):
+        padatious_single_thread = Configuration.get()['padatious']['single_thread']
         if message is None:
-            single_thread = False
+            single_thread = padatious_single_thread
         else:
-            single_thread = message.data.get('single_thread', False)
+            single_thread = message.data.get('single_thread', padatious_single_thread)
+       
         self.finished_training_event.clear()
 
         LOG.info('Training... (single_thread={})'.format(single_thread))
