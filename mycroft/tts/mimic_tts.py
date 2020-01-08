@@ -24,9 +24,10 @@ from os.path import exists, join, expanduser
 from mycroft import MYCROFT_ROOT_PATH
 from mycroft.api import DeviceApi
 from mycroft.configuration import Configuration
-from mycroft.tts import TTS, TTSValidator
 from mycroft.util.download import download
 from mycroft.util.log import LOG
+
+from .tts import TTS, TTSValidator
 
 config = Configuration.get().get("tts").get("mimic")
 data_dir = expanduser(Configuration.get()['data_dir'])

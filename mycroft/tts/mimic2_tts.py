@@ -13,8 +13,8 @@
 # limitations under the License.
 #
 
-from mycroft.tts import TTS, TTSValidator
-from mycroft.tts.remote_tts import RemoteTTSTimeoutException
+from .tts import TTS, TTSValidator
+from .remote_tts import RemoteTTSTimeoutException
 from mycroft.util.log import LOG
 from mycroft.util.format import pronounce_number
 from mycroft.tts import cache_handler
