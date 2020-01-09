@@ -242,8 +242,8 @@ class Mimic2(TTS):
             visemes.append((vis, vis_dur))
         return visemes
 
-    def _prepocess_sentence(sentence):
-        """ Split sentence in chunks better suited for mimic2. """
+    def _preprocess_sentence(self, sentence):
+        """Split sentence in chunks better suited for mimic2. """
         return _sentence_chunker(sentence)
 
     def get_tts(self, sentence, wav_file):
