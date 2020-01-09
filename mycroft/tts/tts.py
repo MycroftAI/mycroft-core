@@ -19,7 +19,7 @@ import random
 import re
 from abc import ABCMeta, abstractmethod
 from threading import Thread
-from time import time, sleep
+from time import time
 
 import os.path
 from os.path import dirname, exists, isdir, join
@@ -61,6 +61,7 @@ class PlaybackThread(Thread):
         self.queue = queue
         self._terminated = False
         self._processing_queue = False
+        self.enclosure = None
         # Check if the tts shall have a ducking role set
         if Configuration.get().get('tts', {}).get('pulse_duck'):
             self.pulse_env = _TTS_ENV
@@ -110,7 +111,6 @@ class PlaybackThread(Thread):
                         self.p = play_wav(data, environment=self.pulse_env)
                     elif snd_type == 'mp3':
                         self.p = play_mp3(data, environment=self.pulse_env)
-
                     if visemes:
                         self.show_visemes(visemes)
                     self.p.communicate()
@@ -508,7 +508,7 @@ class TTSFactory:
             clazz = TTSFactory.CLASSES.get(tts_module)
             tts = clazz(tts_lang, tts_config)
             tts.validator.validate()
-        except Exception as e:
+        except Exception:
             # Fallback to mimic if an error occurs while loading.
             if tts_module != 'mimic':
                 LOG.exception('The selected TTS backend couldn\'t be loaded. '

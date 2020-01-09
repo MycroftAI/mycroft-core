@@ -18,11 +18,20 @@ from .tts import TTS, TTSValidator
 
 
 class GoogleTTS(TTS):
+    """Interface to google TTS."""
     def __init__(self, lang, config):
         super(GoogleTTS, self).__init__(lang, config, GoogleTTSValidator(
             self), 'mp3')
 
     def get_tts(self, sentence, wav_file):
+        """Fetch tts audio using gTTS.
+
+        Arguments:
+            sentence (str): Sentence to generate audio for
+            wav_file (str): output file path
+        Returns:
+            Tuple ((str) written file, None)
+        """
         tts = gTTS(text=sentence, lang=self.lang)
         tts.save(wav_file)
         return (wav_file, None)  # No phonemes

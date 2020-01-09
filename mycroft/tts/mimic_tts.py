@@ -16,7 +16,7 @@ import os
 import stat
 import subprocess
 from threading import Thread
-from time import time, sleep
+from time import sleep
 
 import os.path
 from os.path import exists, join, expanduser
@@ -45,14 +45,14 @@ SUBSCRIBER_VOICES = {'trinity': join(data_dir, 'voices/mimic_tn')}
 
 
 def download_subscriber_voices(selected_voice):
-    """
-        Function to download all premium voices, starting with
-        the currently selected if applicable
+    """Function to download all premium voices.
+
+    The function starts with the currently selected if applicable
     """
 
     def make_executable(dest):
-        """ Call back function to make the downloaded file executable. """
-        LOG.info('Make executable')
+        """Call back function to make the downloaded file executable."""
+        LOG.info('Make executable new voice binary executable')
         # make executable
         st = os.stat(dest)
         os.chmod(dest, st.st_mode | stat.S_IEXEC)
@@ -60,7 +60,7 @@ def download_subscriber_voices(selected_voice):
     # First download the selected voice if needed
     voice_file = SUBSCRIBER_VOICES.get(selected_voice)
     if voice_file is not None and not exists(voice_file):
-        LOG.info('voice doesn\'t exist, downloading')
+        LOG.info('Voice doesn\'t exist, downloading')
         url = DeviceApi().get_subscriber_voice_url(selected_voice)
         # Check we got an url
         if url:
@@ -89,6 +89,7 @@ def download_subscriber_voices(selected_voice):
 
 
 class Mimic(TTS):
+    """TTS interface for local mimic v1."""
     def __init__(self, lang, config):
         super(Mimic, self).__init__(
             lang, config, MimicValidator(self), 'wav',
@@ -118,7 +119,7 @@ class Mimic(TTS):
 
     @property
     def args(self):
-        """ Build mimic arguments. """
+        """Build mimic arguments."""
         if (self.voice in SUBSCRIBER_VOICES and
                 exists(SUBSCRIBER_VOICES[self.voice]) and self.is_subscriber):
             # Use subscriber voice
@@ -141,14 +142,29 @@ class Mimic(TTS):
         return args
 
     def get_tts(self, sentence, wav_file):
-        #  Generate WAV and phonemes
+        """Generate WAV and phonemes.
+
+        Arguments:
+            sentence (str): sentence to generate audio for
+            wav_file (str): output file
+
+        Returns:
+            tuple ((str) file location, (str) generated phonemes)
+        """
         phonemes = subprocess.check_output(self.args + ['-o', wav_file,
                                                         '-t', sentence])
         return wav_file, phonemes.decode()
 
     def viseme(self, output):
+        """Convert phoneme string to visemes.
+
+        Arguments:
+            output (str): Phoneme output from mimic
+
+        Returns:
+            (list) list of tuples of viseme and duration
+        """
         visemes = []
-        start = time()
         pairs = str(output).split(" ")
         for pair in pairs:
             pho_dur = pair.split(":")  # phoneme:duration

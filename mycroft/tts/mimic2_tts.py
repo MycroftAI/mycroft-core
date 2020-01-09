@@ -16,9 +16,8 @@
 from .tts import TTS, TTSValidator
 from .remote_tts import RemoteTTSTimeoutException
 from mycroft.util.log import LOG
-from mycroft.util.format import pronounce_number
 from mycroft.tts import cache_handler
-from mycroft.util import play_wav, get_cache_directory
+from mycroft.util import get_cache_directory
 from requests_futures.sessions import FuturesSession
 from requests.exceptions import (
     ReadTimeout, ConnectionError, ConnectTimeout, HTTPError
@@ -38,9 +37,9 @@ _max_sentence_size = 170
 
 
 def _break_chunks(l, n):
-    """ Yield successive n-sized chunks
+    """Yield successive n-sized chunks
 
-    Args:
+    Arguments:
         l (list): text (str) to split
         chunk_size (int): chunk size
     """
@@ -49,9 +48,9 @@ def _break_chunks(l, n):
 
 
 def _split_by_chunk_size(text, chunk_size):
-    """ Split text into word chunks by chunk_size size
+    """Split text into word chunks by chunk_size size
 
-    Args:
+    Arguments:
         text (str): text to split
         chunk_size (int): chunk size
 
@@ -86,10 +85,10 @@ def _split_by_chunk_size(text, chunk_size):
 
 
 def _split_by_punctuation(chunks, puncs):
-    """splits text by various punctionations
+    """Splits text by various punctionations
     e.g. hello, world => [hello, world]
 
-    Args:
+    Arguments:
         chunks (list or str): text (str) to split
         puncs (list): list of punctuations used to split text
 
@@ -113,7 +112,7 @@ def _split_by_punctuation(chunks, puncs):
 
 
 def _add_punctuation(text):
-    """ Add punctuation at the end of each chunk.
+    """Add punctuation at the end of each chunk.
 
     Mimic2 expects some form of punctuation at the end of a sentence.
     """
@@ -125,12 +124,12 @@ def _add_punctuation(text):
 
 
 def _sentence_chunker(text):
-    """ Split text into smaller chunks for TTS generation.
+    """Split text into smaller chunks for TTS generation.
 
     NOTE: The smaller chunks are needed due to current Mimic2 TTS limitations.
     This stage can be removed once Mimic2 can generate longer sentences.
 
-    Args:
+    Arguments:
         text (str): text to split
         chunk_size (int): size of each chunk
         split_by_punc (bool, optional): Defaults to True.
@@ -168,7 +167,7 @@ def _sentence_chunker(text):
 
 
 class Mimic2(TTS):
-
+    """Interface to the Mimic2 TTS."""
     def __init__(self, lang, config):
         super(Mimic2, self).__init__(
             lang, config, Mimic2Validator(self)
@@ -183,33 +182,10 @@ class Mimic2(TTS):
         self.url = config['url']
         self.session = FuturesSession()
 
-    def _save(self, data):
-        """ Save WAV files in tmp
-
-        Args:
-            data (byes): WAV data
-        """
-        with open(self.filename, 'wb') as f:
-            f.write(data)
-
-    def _play(self, req):
-        """ Play WAV file after saving to tmp
-
-        Args:
-            req (object): requests object
-        """
-        if req.status_code == 200:
-            self._save(req.content)
-            play_wav(self.filename).communicate()
-        else:
-            LOG.error(
-                '%s Http Error: %s for url: %s' %
-                (req.status_code, req.reason, req.url))
-
     def _requests(self, sentence):
-        """create asynchronous request list
+        """Create asynchronous request list
 
-        Args:
+        Arguments:
             chunks (list): list of text to synthesize
 
         Returns:
@@ -220,9 +196,9 @@ class Mimic2(TTS):
         return self.session.get(req_route, timeout=5)
 
     def viseme(self, phonemes):
-        """ Maps phonemes to appropriate viseme encoding
+        """Maps phonemes to appropriate viseme encoding
 
-        Args:
+        Arguments:
             phonemes (list): list of tuples (phoneme, time_start)
 
         Returns:
@@ -247,9 +223,9 @@ class Mimic2(TTS):
         return _sentence_chunker(sentence)
 
     def get_tts(self, sentence, wav_file):
-        """ Generate (remotely) and play mimic2 WAV audio
+        """Generate (remotely) and play mimic2 WAV audio
 
-        Args:
+        Arguments:
             sentence (str): Phrase to synthesize to audio with mimic2
             wav_file (str): Location to write audio output
         """
@@ -267,12 +243,11 @@ class Mimic2(TTS):
         return (wav_file, vis)
 
     def save_phonemes(self, key, phonemes):
-        """
-            Cache phonemes
+        """Cache phonemes
 
-            Args:
-                key:        Hash key for the sentence
-                phonemes:   phoneme string to save
+        Arguments:
+            key:        Hash key for the sentence
+            phonemes:   phoneme string to save
         """
         cache_dir = get_cache_directory("tts/" + self.tts_name)
         pho_file = os.path.join(cache_dir, key + ".pho")
@@ -283,11 +258,10 @@ class Mimic2(TTS):
             LOG.exception("Failed to write {} to cache".format(pho_file))
 
     def load_phonemes(self, key):
-        """
-            Load phonemes from cache file.
+        """Load phonemes from cache file.
 
-            Args:
-                Key:    Key identifying phoneme cache
+        Arguments:
+            Key:    Key identifying phoneme cache
         """
         pho_file = os.path.join(get_cache_directory("tts/" + self.tts_name),
                                 key + ".pho")
