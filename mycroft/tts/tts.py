@@ -513,8 +513,8 @@ class TTSFactory:
             if tts_module != 'mimic':
                 LOG.exception('The selected TTS backend couldn\'t be loaded. '
                               'Falling back to Mimic')
-                from mycroft.tts.mimic_tts import Mimic
-                tts = Mimic(tts_lang, tts_config)
+                clazz = TTSFactory.CLASSES.get('mimic')
+                tts = clazz(tts_lang, tts_config)
                 tts.validator.validate()
             else:
                 LOG.exception('The TTS could not be loaded.')
