@@ -20,8 +20,8 @@ things like numbers, times, etc.
 The focus of these formatting functions is to create natural sounding speech
 and allow localization.
 
-These functions have been extracted to lingua franca this file provides
-a compatible import of the main function of those files.
+This file mainly contains references to functions in  lingua franca providing
+a backwards compatibility
 """
 import datetime
 import warnings
@@ -29,11 +29,9 @@ import warnings
 from calendar import leapdays
 from enum import Enum
 
+import lingua_franca.format
 # These are the main functions we are using lingua franca to provide
-from lingua_franca.format import (nice_time, nice_number, pronounce_number,
-                                  nice_date, nice_date_time, nice_year,
-
-                                  NUMBER_TUPLE, DateTimeFormat, join_list,
+from lingua_franca.format import (NUMBER_TUPLE, DateTimeFormat, join_list,
                                   date_time_format, expand_options,
                                   _translate_word)
 
@@ -58,6 +56,115 @@ from lingua_franca.lang.format_da import (nice_number_da, nice_time_da,
                                           pronounce_number_da)
 
 from padatious.util import expand_parentheses
+
+
+def nice_number(number, lang=None, speech=True, denominators=None):
+    """Format a float to human readable functions
+    This function formats a float to human understandable functions. Like
+    4.5 becomes 4 and a half for speech and 4 1/2 for text
+    Args:
+        number (int or float): the float to format
+        lang (str): code for the language to use
+        speech (bool): format for speech (True) or display (False)
+        denominators (iter of ints): denominators to use, default [1 .. 20]
+    Returns:
+        (str): The formatted string.
+    """
+    return lingua_franca.format.nice_number(number, lang, speech,
+                                            denominators)
+
+
+def nice_time(dt, lang=None, speech=True, use_24hour=False,
+              use_ampm=False):
+    """
+    Format a time to a comfortable human format
+    For example, generate 'five thirty' for speech or '5:30' for
+    text display.
+    Args:
+        dt (datetime): date to format (assumes already in local timezone)
+        lang (str): code for the language to use
+        speech (bool): format for speech (default/True) or display (False)
+        use_24hour (bool): output in 24-hour/military or 12-hour format
+        use_ampm (bool): include the am/pm for 12-hour format
+    Returns:
+        (str): The formatted time string
+    """
+    return lingua_franca.format.nice_time(dt, lang, speech,
+                                          use_24hour, use_ampm)
+
+
+def pronounce_number(number, lang=None, places=2, short_scale=True,
+                     scientific=False):
+    """
+    Convert a number to it's spoken equivalent
+    For example, '5' would be 'five'
+    Args:
+        number: the number to pronounce
+        short_scale (bool) : use short (True) or long scale (False)
+            https://en.wikipedia.org/wiki/Names_of_large_numbers
+        scientific (bool) : convert and pronounce in scientific notation
+    Returns:
+        (str): The pronounced number
+    """
+    return lingua_franca.format.pronounce_number(number, lang, places,
+                                                 short_scale, scientific)
+
+
+def nice_date(dt, lang=None, now=None):
+    """
+    Format a datetime to a pronounceable date
+    For example, generates 'tuesday, june the fifth, 2018'
+    Args:
+        dt (datetime): date to format (assumes already in local timezone)
+        lang (string): the language to use, use Mycroft default language if not
+            provided
+        now (datetime): Current date. If provided, the returned date for speech
+            will be shortened accordingly: No year is returned if now is in the
+            same year as td, no month is returned if now is in the same month
+            as td. If now and td is the same day, 'today' is returned.
+    Returns:
+        (str): The formatted date string
+    """
+    return lingua_franca.format.nice_date(dt, lang, now)
+
+
+def nice_date_time(dt, lang=None, now=None, use_24hour=False,
+                   use_ampm=False):
+    """Format a datetime to a pronounceable date and time.
+
+    For example, generate 'tuesday, june the fifth, 2018 at five thirty'
+    Args:
+        dt (datetime): date to format (assumes already in local timezone)
+        lang (string): the language to use, use Mycroft default language if
+            not provided
+        now (datetime): Current date. If provided, the returned date for
+            speech will be shortened accordingly: No year is returned if
+            now is in the same year as td, no month is returned if now is
+            in the same month as td. If now and td is the same day, 'today'
+            is returned.
+        use_24hour (bool): output in 24-hour/military or 12-hour format
+        use_ampm (bool): include the am/pm for 12-hour format
+    Returns:
+        (str): The formatted date time string
+    """
+    return lingua_franca.format.nice_date_time(dt, lang, now,
+                                               use_24hour, use_ampm)
+
+
+def nice_year(dt, lang=None, bc=False):
+    """Format a datetime to a pronounceable year.
+
+    For example, generate 'nineteen-hundred and eighty-four' for year 1984
+    Args:
+        dt (datetime): date to format (assumes already in local timezone)
+        lang (string): the language to use, use Mycroft default language if
+        not provided
+        bc (bool) pust B.C. after the year (python does not support dates
+            B.C. in datetime)
+    Returns:
+        (str): The formatted year string
+    """
+    return lingua_franca.format.nice_year(dt, lang, bc)
 
 
 class TimeResolution(Enum):
