@@ -27,8 +27,11 @@ compatibility layer.
 
 from difflib import SequenceMatcher
 
-from lingua_franca.parse import (extract_number, extract_datetime, normalize,
-                                 get_gender)
+# These are the main functions of lingua franca parsing offered here for
+# convenience.
+import lingua_franca.parse
+from lingua_franca.parse import (extract_number, normalize,
+                                 extract_numbers, get_gender)
 from lingua_franca.lang import get_primary_lang_code
 
 # TODO: Remove all imports below from lingua_franca.lang in v20.02
@@ -54,6 +57,7 @@ from lingua_franca.lang.parse_nl import extractnumber_nl
 from lingua_franca.lang.parse_nl import extract_datetime_nl
 from lingua_franca.lang.parse_nl import normalize_nl
 
+from .time import now_local
 from .log import LOG
 
 
@@ -111,35 +115,13 @@ def match_one(query, choices):
         return best
 
 
-def extract_numbers(text, short_scale=True, ordinals=False, lang=None):
-    """
-        Takes in a string and extracts a list of numbers.
+def extract_datetime(text, anchorDate=None, lang=None, default_time=None):
+    ret = lingua_franca.parse.extract_datetime(text, anchorDate, lang,
+                                               default_time)
+    if ret is None:
+        ret = (anchorDate or now_local(), text)
 
-    Args:
-        text (str): the string to extract a number from
-        short_scale (bool): Use "short scale" or "long scale" for large
-            numbers -- over a million.  The default is short scale, which
-            is now common in most English speaking countries.
-            See https://en.wikipedia.org/wiki/Names_of_large_numbers
-        ordinals (bool): consider ordinal numbers, e.g. third=3 instead of 1/3
-        lang (str): the BCP-47 code for the language to use, None uses default
-    Returns:
-        list: list of extracted numbers as floats, or empty list if none found
-    """
-    lang_code = get_primary_lang_code(lang)
-    if lang_code == "en":
-        return extract_numbers_en(text, short_scale, ordinals)
-    elif lang_code == "de":
-        return extract_numbers_de(text, short_scale, ordinals)
-    elif lang_code == "fr":
-        return extract_numbers_fr(text, short_scale, ordinals)
-    elif lang_code == "it":
-        return extract_numbers_it(text, short_scale, ordinals)
-    elif lang_code == "da":
-        return extract_numbers_da(text, short_scale, ordinals)
-    elif lang_code == "es":
-        return extract_numbers_es(text, short_scale, ordinals)
-    return []
+    return ret
 
 
 def extract_duration(text, lang=None):

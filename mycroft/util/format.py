@@ -29,6 +29,7 @@ import warnings
 from calendar import leapdays
 from enum import Enum
 
+# These are the main functions we are using lingua franca to provide
 from lingua_franca.format import (nice_time, nice_number, pronounce_number,
                                   nice_date, nice_date_time, nice_year,
 
