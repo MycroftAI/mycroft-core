@@ -193,12 +193,19 @@ class AudioService:
         self.bus.on('recognizer_loop:record_end', self._restore_volume)
 
     def track_start(self, track):
+        """Callback method called from the services to indicate start of
+        playback of a track or end of playlist.
         """
-            Callback method called from the services to indicate start of
-            playback of a track.
-        """
-        self.bus.emit(Message('mycroft.audio.playing_track',
-                              data={'track': track}))
+        if track:
+            # Inform about the track about to start.
+            LOG.debug('New track coming up!')
+            self.bus.emit(Message('mycroft.audio.playing_track',
+                                  data={'track': track}))
+        else:
+            # If no track is about to start last track of the queue has been
+            # played.
+            LOG.debug('End of playlist!')
+            self.bus.emit(Message('mycroft.audio.queue_end'))
 
     def _pause(self, message=None):
         """
@@ -273,7 +280,7 @@ class AudioService:
             self.current.lower_volume()
             self.volume_is_low = True
 
-    def _restore_volume(self, message):
+    def _restore_volume(self, message=None):
         """
             Is triggered when mycroft is done speaking and restores the volume
 

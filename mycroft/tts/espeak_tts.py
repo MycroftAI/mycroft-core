@@ -14,7 +14,7 @@
 #
 import subprocess
 
-from mycroft.tts import TTS, TTSValidator
+from .tts import TTS, TTSValidator
 
 
 class ESpeak(TTS):

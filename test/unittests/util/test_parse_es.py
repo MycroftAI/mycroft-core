@@ -105,7 +105,7 @@ class TestNormalize_es(unittest.TestCase):
 
 
 class TestDatetime_es(unittest.TestCase):
-
+    @unittest.skip
     def test_datetime_by_date_es(self):
         # test currentDate==None
         _now = datetime(year=2019, month=10, day=10)
