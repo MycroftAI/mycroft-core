@@ -105,7 +105,6 @@ def mute_and_speak(utterance, ident, listen=False):
         ident:      Ident tying the utterance to the source query
     """
     global tts_hash
-
     # update TTS object if configuration has changed
     if tts_hash != hash(str(config.get('tts', ''))):
         global tts
@@ -122,12 +121,12 @@ def mute_and_speak(utterance, ident, listen=False):
         tts.execute(utterance, ident, listen)
     except RemoteTTSTimeoutException as e:
         LOG.error(e)
-        mimic_fallback_tts(utterance, ident)
+        mimic_fallback_tts(utterance, ident, listen)
     except Exception as e:
         LOG.error('TTS execution failed ({})'.format(repr(e)))
 
 
-def mimic_fallback_tts(utterance, ident):
+def mimic_fallback_tts(utterance, ident, listen):
     global mimic_fallback_obj
     # fallback if connection is lost
     config = Configuration.get()
@@ -138,7 +137,7 @@ def mimic_fallback_tts(utterance, ident):
     tts = mimic_fallback_obj
     LOG.debug("Mimic fallback, utterance : " + str(utterance))
     tts.init(bus)
-    tts.execute(utterance, ident)
+    tts.execute(utterance, ident, listen)
 
 
 def handle_stop(event):

@@ -13,6 +13,8 @@
 # limitations under the License.
 #
 import unittest
+import unittest.mock as mock
+
 from shutil import rmtree
 from threading import Thread
 from time import sleep
@@ -22,9 +24,7 @@ from os.path import exists
 import mycroft.audio
 from mycroft.util import create_signal, check_for_signal
 
-"""
-    Tests for public interface for audio interface
-"""
+"""Tests for public audio service utils."""
 
 
 done_waiting = False
@@ -57,6 +57,11 @@ class TestInterface(unittest.TestCase):
         check_for_signal('isSpeaking')
         sleep(2)
         self.assertTrue(done_waiting)
+
+    @mock.patch('mycroft.messagebus.send_func.send')
+    def test_stop_speaking(self, mock_send):
+        mycroft.audio.stop_speaking()
+        mock_send.assert_called_with('mycroft.audio.speech.stop')
 
 
 if __name__ == "__main__":

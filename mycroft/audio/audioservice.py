@@ -273,7 +273,7 @@ class AudioService:
             self.current.lower_volume()
             self.volume_is_low = True
 
-    def _restore_volume(self, message):
+    def _restore_volume(self, message=None):
         """
             Is triggered when mycroft is done speaking and restores the volume
 

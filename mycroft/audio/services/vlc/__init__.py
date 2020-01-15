@@ -52,6 +52,8 @@ class VlcService(AudioBackend):
     def add_list(self, tracks):
         LOG.debug("Track list is " + str(tracks))
         for t in tracks:
+            if isinstance(t, list):
+                t = t[0]
             self.track_list.add_media(self.instance.media_new(t))
 
     def play(self, repeat=False):
