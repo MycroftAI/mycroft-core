@@ -86,6 +86,25 @@ class TestService(unittest.TestCase):
         self.assertTrue(second_backend.shutdown.called)
 
     @mock.patch('mycroft.audio.audioservice.load_services')
+    def test_audio_service_track_start(self, mock_load_services):
+        """Test start of new track messages."""
+        backend, second_backend = setup_mock_backends(mock_load_services,
+                                                      self.emitter)
+        service = audio_service.AudioService(self.emitter)
+        service.load_services_callback()
+        service.default = backend
+
+        self.emitter.reset()
+        service.track_start('The universe song')
+        service.track_start(None)
+        self.assertEqual(self.emitter.types, ['mycroft.audio.playing_track',
+                                              'mycroft.audio.queue_end'])
+        self.assertEqual(self.emitter.results,
+                         [{'track': 'The universe song'}, {}])
+
+        service.shutdown()
+
+    @mock.patch('mycroft.audio.audioservice.load_services')
     def test_audio_service_methods_not_playing(self, mock_load_services):
         """Check that backend methods aren't called when stopped."""
         backend, second_backend = setup_mock_backends(mock_load_services,
