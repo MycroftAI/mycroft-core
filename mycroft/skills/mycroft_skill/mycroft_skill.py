@@ -140,6 +140,10 @@ class MycroftSkill:
             self._initial_settings = deepcopy(self.settings.as_dict())
         else:
             self.settings = None
+
+        #: Set to register a callback method that will be called every time
+        #: the skills settings are updated. The referenced method should
+        #: include any logic needed to handle the updated settings.
         self.settings_change_callback = None
 
         self.gui = SkillGUI(self)
