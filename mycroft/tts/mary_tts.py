@@ -14,8 +14,8 @@
 #
 import requests
 
-from mycroft.tts import TTSValidator
-from mycroft.tts.remote_tts import RemoteTTS
+from .tts import TTSValidator
+from .remote_tts import RemoteTTS
 
 
 class MaryTTS(RemoteTTS):

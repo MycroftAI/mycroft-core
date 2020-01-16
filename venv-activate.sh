@@ -51,7 +51,7 @@ function main() {
        esac
     done
 
-    if [ "$0" == "$BASH_SOURCE" ] ; then
+    if [[ "$0" == "$BASH_SOURCE" ]] ; then
         # Prevent running in script then exiting immediately
         echo "ERROR: Invoke with 'source venv-activate.sh' or '. venv-activate.sh'"
     else
