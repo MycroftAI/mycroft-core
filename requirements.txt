@@ -21,6 +21,7 @@ google-api-python-client==1.6.4
 fasteners==0.14.1
 PyYAML==5.1.2
 
+lingua-franca==0.2.0
 msm==0.8.5
 msk==0.3.14
 adapt-parser==0.3.4
