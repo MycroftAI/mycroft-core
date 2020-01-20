@@ -52,7 +52,8 @@ class CommonPlaySkill(MycroftSkill, ABC):
         # with a translatable name in their initialize() method.
 
     def bind(self, bus):
-        """ Overrides the normal bind method.
+        """Overrides the normal bind method.
+
         Adds handlers for play:query and play:start messages allowing
         interaction with the playback control skill.
 
@@ -66,6 +67,7 @@ class CommonPlaySkill(MycroftSkill, ABC):
             self.add_event('play:start', self.__handle_play_start)
 
     def __handle_play_query(self, message):
+        """Query skill if it can start playback from given phrase."""
         search_phrase = message.data["phrase"]
 
         # First, notify the requestor that we are attempting to handle
@@ -94,11 +96,19 @@ class CommonPlaySkill(MycroftSkill, ABC):
                                             "searching": False}))
 
     def __calc_confidence(self, match, phrase, level):
-        # "play pandora"
-        # "play pandora is my girlfriend"
-        # "play tom waits on pandora"
+        """Translate confidence level and match to a 0-1 value.
 
-        # Assume the more of the words that get consumed, the better the match
+        "play pandora"
+        "play pandora is my girlfriend"
+        "play tom waits on pandora"
+
+        Assume the more of the words that get consumed, the better the match
+
+        Arguments:
+            match (str): Matching string
+            phrase (str): original input phrase
+            level (CPSMatchLevel): match level
+        """
         consumed_pct = len(match.split()) / len(phrase.split())
         if consumed_pct > 1.0:
             consumed_pct = 1.0 / consumed_pct  # deal with over/under-matching
@@ -123,6 +133,7 @@ class CommonPlaySkill(MycroftSkill, ABC):
             return 0.0  # should never happen
 
     def __handle_play_start(self, message):
+        """Bus handler for starting playback using the skill."""
         if message.data["skill_id"] != self.skill_id:
             # Not for this skill!
             return
@@ -142,8 +153,7 @@ class CommonPlaySkill(MycroftSkill, ABC):
         self.CPS_start(phrase, data)
 
     def CPS_play(self, *args, **kwargs):
-        """
-        Begin playback of a media file or stream
+        """Begin playback of a media file or stream
 
         Normally this method will be invoked with somthing like:
            self.CPS_play(url)
@@ -160,6 +170,7 @@ class CommonPlaySkill(MycroftSkill, ABC):
         self.audioservice.play(*args, **kwargs)
 
     def stop(self):
+        """Stop anything playing on the audioservice."""
         if self.audioservice.is_playing:
             self.audioservice.stop()
             return True
@@ -172,11 +183,9 @@ class CommonPlaySkill(MycroftSkill, ABC):
     # act as a CommonPlay Skill
     @abstractmethod
     def CPS_match_query_phrase(self, phrase):
-        """
-        Analyze phrase to see if it is a play-able phrase with this
-        skill.
+        """Analyze phrase to see if it is a play-able phrase with this skill.
 
-        Args:
+        Arguments:
             phrase (str): User phrase uttered after "Play", e.g. "some music"
 
         Returns:
@@ -204,10 +213,9 @@ class CommonPlaySkill(MycroftSkill, ABC):
 
     @abstractmethod
     def CPS_start(self, phrase, data):
-        """
-        Begin playing whatever is specified in 'phrase'
+        """Begin playing whatever is specified in 'phrase'
 
-        Args:
+        Arguments:
             phrase (str): User phrase uttered after "Play", e.g. "some music"
             data (dict): Callback data specified in match_query_phrase()
         """
