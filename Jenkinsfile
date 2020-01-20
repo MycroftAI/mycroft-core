@@ -9,7 +9,7 @@ pipeline {
                 branch 'testing/behave'
             }
             steps {
-                echo 'Running dev_setup.sh...'
+                echo 'Running dev_setup.sh... '
                 sh 'CI=true /opt/mycroft/./dev_setup.sh --allow-root -sm'
             }
         }
