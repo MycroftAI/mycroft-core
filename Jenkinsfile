@@ -6,7 +6,7 @@ pipeline {
         // Run the build in the against the dev branch to check for compile errors
         stage('Build dev branch') {
             when {
-                branch 'dev'
+                branch 'testing/behave'
             }
             steps {
                 echo 'Running dev_setup.sh...'
