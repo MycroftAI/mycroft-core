@@ -10,7 +10,7 @@ pipeline {
             }
             steps {
                 echo 'Running dev_setup.sh... '
-                sh 'CI=true ../dev_setup.sh --allow-root -sm'
+                sh 'CI=true ./dev_setup.sh --allow-root -sm'
             }
         }
     }
