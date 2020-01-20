@@ -63,9 +63,11 @@ class AudioService:
 
         Arguments:
             tracks: track uri or list of track uri's
+                    Each track can be added as a tuple with (uri, mime)
+                    to give a hint of the mime type to the system
         """
         tracks = tracks or []
-        if isinstance(tracks, str):
+        if isinstance(tracks, (str, tuple)):
             tracks = [tracks]
         elif not isinstance(tracks, list):
             raise ValueError
