@@ -7,7 +7,7 @@ from behave import given, when, then
 from mycroft.messagebus import Message
 
 
-TIMEOUT = 5
+TIMEOUT = 10
 
 
 def load_dialog_list(skill_path, dialog):
@@ -68,6 +68,7 @@ def when_impl(context, text):
 def then_impl(context, dialog):
     count = 0
     passed = False
+    time.sleep(3)
     while not (passed or count > TIMEOUT):
         for message in context.speak_messages:
             if expected_dialog_check(message.data['utterance'].lower(),
