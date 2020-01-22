@@ -1,6 +1,7 @@
 from threading import Event
 from time import sleep
 
+from msm import MycroftSkillsManager
 from mycroft.messagebus.client import MessageBusClient
 from mycroft.messagebus import Message
 from mycroft.util import create_daemon
@@ -18,6 +19,8 @@ def before_all(context):
 
     bus.on('speak', on_speak)
     create_daemon(bus.run_forever)
+
+    context.msm = MycroftSkillsManager()
     # Wait for connection
     bus_connected.wait()
 

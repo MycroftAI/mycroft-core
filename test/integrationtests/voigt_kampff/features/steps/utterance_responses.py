@@ -49,9 +49,9 @@ def expected_dialog_check(utterance, skill_path, dialog):
         return False
 
 
-@given('the skill path "{skill_path}"')
-def given_impl(context, skill_path):
-    context.skill_path = skill_path
+@given('an english speaking user')
+def given_impl(context):
+    context.lang = 'en-us'
 
 
 @when('the user says "{text}"')
@@ -64,15 +64,16 @@ def when_impl(context, text):
                              context={'client_name': 'mycroft_listener'}))
 
 
-@then('the reply should be "{dialog}"')
-def then_impl(context, dialog):
+@then('"{skill}" should reply with dialog from "{dialog}"')
+def then_impl(context, skill, dialog):
+    skill_path = context.msm.find_skill(skill).path
     count = 0
     passed = False
     time.sleep(3)
     while not (passed or count > TIMEOUT):
         for message in context.speak_messages:
             if expected_dialog_check(message.data['utterance'].lower(),
-                                     context.skill_path, dialog):
+                                     skill_path, dialog):
                 passed = True
                 break
         else:

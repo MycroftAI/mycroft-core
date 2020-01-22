@@ -6,9 +6,9 @@ import sys
 
 TEMPLATE = """
   Scenario: {name}
-    Given the skill path "{skill_path}"
+    Given an english speaking user
      When the user says "{utterance}"
-     Then the reply should be "{dialog_file}.dialog"
+     Then "{name}" should reply with dialog from "{dialog_file}.dialog"
 """
 
 
@@ -26,8 +26,7 @@ def main(skill, skill_path):
     if case:
         print('Feature: {}'.format(skill))
     for c in case:
-        print(TEMPLATE.format(name=c[0], skill_path=skill_path,
-                              utterance=c[1], dialog_file=c[2]))
+        print(TEMPLATE.format(name=skill, utterance=c[1], dialog_file=c[2]))
 
 
 if __name__ == '__main__':
