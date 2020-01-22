@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import time
 from os.path import abspath
 
 from mycroft.messagebus.message import Message
@@ -50,13 +49,6 @@ class AudioService:
 
     def __init__(self, bus):
         self.bus = bus
-        self.bus.on('mycroft.audio.service.track_info_reply',
-                    self._track_info)
-        self.info = None
-
-    def _track_info(self, message=None):
-        """Handler for catching returning track info"""
-        self.info = message.data
 
     def queue(self, tracks=None):
         """Queue up a track to playing playlist.
@@ -154,14 +146,11 @@ class AudioService:
         Returns:
             Dict with track info.
         """
-        self.info = None
-        self.bus.emit(Message('mycroft.audio.service.track_info'))
-        wait = 5.0
-        while self.info is None and wait >= 0:
-            time.sleep(0.1)
-            wait -= 0.1
-
-        return self.info or {}
+        info = self.bus.wait_for_response(
+            Message('mycroft.audio.service.track_info'),
+            reply_type='mycroft.audio.service.track_info_reply',
+            timeout=5)
+        return info.data if info else {}
 
     def available_backends(self):
         """Return available audio backends.
