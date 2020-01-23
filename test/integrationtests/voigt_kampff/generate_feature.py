@@ -12,7 +12,7 @@ TEMPLATE = """
 """
 
 
-def main(skill, skill_path):
+def generate_feature(skill, skill_path):
     test_path = Path(join(skill_path, 'test', 'intent'))
     case = []
     if test_path.exists() and test_path.is_dir():
@@ -23,11 +23,14 @@ def main(skill, skill_path):
                     case.append((f.name,
                                  test['utterance'], test['expected_dialog']))
 
+    output = ''
     if case:
-        print('Feature: {}'.format(skill))
+        output += 'Feature: {}\n'.format(skill)
     for c in case:
-        print(TEMPLATE.format(name=skill, utterance=c[1], dialog_file=c[2]))
+        output += TEMPLATE.format(name=skill, utterance=c[1], dialog_file=c[2])
+
+    return output
 
 
 if __name__ == '__main__':
-    main(*sys.argv[1:])
+    print(generate_feature(*sys.argv[1:]))
