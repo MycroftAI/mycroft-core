@@ -151,6 +151,19 @@ class TestAudioServiceMisc(TestCase):
         response = audioservice.available_backends()
         self.assertEqual({}, response)
 
+    def test_track_info(self):
+        """Test is_playing property."""
+        bus = mock.Mock(name='bus')
+        audioservice = AudioService(bus)
+        info = {'album': 'Hello Nasty',
+                'artist': 'Beastie Boys',
+                'name': 'Intergalactic'
+                }
+        bus.wait_for_response.return_value = Message('test_msg', info)
+        self.assertEqual(audioservice.track_info(), info)
+        bus.wait_for_response.return_value = None
+        self.assertEqual(audioservice.track_info(), {})
+
     def test_is_playing(self):
         """Test is_playing property."""
         bus = mock.Mock(name='bus')
