@@ -1,6 +1,6 @@
 import argparse
 from glob import glob
-from os.path import join, dirname
+from os.path import join, dirname, expanduser
 from pathlib import Path
 from random import shuffle
 import shutil
@@ -10,13 +10,14 @@ import yaml
 
 from msm import MycroftSkillsManager
 
+from .generate_feature import generate_feature
 
 FEATURE_DIR = join(dirname(__file__), 'features') + '/'
 
 
 def load_config(config, args):
     """Load config and add to unset arguments."""
-    with open(config) as f:
+    with open(expanduser(config)) as f:
         conf_dict = yaml.safe_load(f)
 
     if not args.tested_skills:
@@ -66,12 +67,20 @@ def run_setup(msm, test_skills, extra_skills, num_random_skills):
 
     # TODO: Install feature files from skills
     # collect feature files
-    for p in [join(msm.find_skill(s).path, 'test', 'behave')
-              for s in test_skills]:
-        if Path(p).exists():
+    for skill_name in test_skills:
+        skill = msm.find_skill(skill_name)
+        behave_dir = join(s.path, 'test', 'behave')
+        if Path(behave_dir).exists():
             # Copy feature files to the feature directory
-            for f in glob(join(p, '*.feature')):
+            for f in glob(join(behave_dir, '*.feature')):
                 shutil.copyfile(f, FEATURE_DIR)
+        else:
+            print('No feature files exists for {}, '
+                  'generating...'.format(skill_name))
+            # No feature files setup, generate automatically
+            feature = generate_feature(skill_name, skill.path)
+            with open(join(FEATURE_DIR, skill_name + '.feature'), 'w') as f:
+                f.write(feature)
 
     # Install random skills from uninstalled skill list
     random_skills = [s for s in msm.all_skills if s not in msm.local_skills]
