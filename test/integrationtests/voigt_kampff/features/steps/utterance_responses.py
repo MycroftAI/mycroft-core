@@ -74,6 +74,7 @@ def then_impl(context, skill, dialog):
             if expected_dialog_check(message.data['utterance'].lower(),
                                      skill_path, dialog):
                 passed = True
+                context.matched_message = message
                 break
         else:
             passed = False
