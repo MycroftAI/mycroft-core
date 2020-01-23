@@ -69,7 +69,6 @@ def then_impl(context, skill, dialog):
     skill_path = context.msm.find_skill(skill).path
     count = 0
     passed = False
-    time.sleep(3)
     while not (passed or count > TIMEOUT):
         for message in context.speak_messages:
             if expected_dialog_check(message.data['utterance'].lower(),
@@ -81,5 +80,4 @@ def then_impl(context, skill, dialog):
         time.sleep(1)
         count += 1
 
-    context.speak_messages = []
     assert passed

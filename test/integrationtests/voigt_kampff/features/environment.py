@@ -1,4 +1,4 @@
-from threading import Event
+from threading import Event, Lock
 from time import sleep
 
 from msm import MycroftSkillsManager
@@ -13,9 +13,11 @@ def before_all(context):
     bus.once('open', bus_connected.set)
 
     context.speak_messages = []
+    context.speak_lock = Lock()
 
     def on_speak(message):
-        context.speak_messages.append(message)
+        with context.speak_lock:
+            context.speak_messages.append(message)
 
     bus.on('speak', on_speak)
     create_daemon(bus.run_forever)
@@ -30,7 +32,9 @@ def before_all(context):
             break
         else:
             sleep(1)
+
     context.bus = bus
+    context.matched_message = None
 
 
 def after_all(context):
@@ -39,3 +43,9 @@ def after_all(context):
 
 def after_feature(context, feature):
     sleep(2)
+
+
+def after_scenario(context, scenario):
+    with context.speak_lock:
+        context.speak_messages = []
+    context.matched_message = None
