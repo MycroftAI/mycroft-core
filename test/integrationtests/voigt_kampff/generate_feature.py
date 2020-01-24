@@ -20,8 +20,13 @@ def generate_feature(skill, skill_path):
             with open(str(f)) as test_file:
                 test = json.load(test_file)
                 if 'utterance' and 'expected_dialog' in test:
-                    case.append((f.name,
-                                 test['utterance'], test['expected_dialog']))
+                    utt = test['utterance']
+                    dialog = test['expected_dialog']
+                    # Simple handling of multiple accepted dialogfiles
+                    if isinstance(dialog, list):
+                        dialog = dialog[0]
+
+                    case.append((f.name, utt, dialog))
 
     output = ''
     if case:
