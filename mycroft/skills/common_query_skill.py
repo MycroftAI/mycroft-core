@@ -35,7 +35,7 @@ def is_CQSVisualMatchLevel(match_level):
 VISUAL_DEVICES = ['mycroft_mark_2']
 
 
-def handles_visuals(self, platform):
+def handles_visuals(platform):
     return platform in VISUAL_DEVICES
 
 
