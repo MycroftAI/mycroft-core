@@ -2,12 +2,7 @@ pipeline {
     agent any
 
     stages {
-
-        // Run the build in the against the dev branch to check for compile errors
-        stage('Build dev branch') {
-            when {
-                branch 'testing/docker-behave'
-            }
+        stage('Build PR') {
             steps {
                 echo 'Running Integration tests on ' + env.BRANCH_NAME
                 sh ' echo ' + env.BRANCH_NAME
