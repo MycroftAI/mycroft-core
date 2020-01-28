@@ -1,5 +1,5 @@
 from threading import Event, Lock
-from time import sleep
+from time import sleep, monotonic
 
 from msm import MycroftSkillsManager
 from mycroft.messagebus.client import MessageBusClient
@@ -24,12 +24,17 @@ def before_all(context):
 
     context.msm = MycroftSkillsManager()
     # Wait for connection
+    print('Waiting for messagebus connection...')
     bus_connected.wait()
 
+    print('Waiting for skills to be loaded...')
+    start = monotonic()
     while True:
         response = bus.wait_for_response(Message('mycroft.skills.all_loaded'))
         if response and response.data['status']:
             break
+        elif monotonic() - start >= 2 * 60:
+            raise Exception('Timeout waiting for skills to become ready.')
         else:
             sleep(1)
 
