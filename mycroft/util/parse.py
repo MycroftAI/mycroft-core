@@ -209,8 +209,8 @@ def extract_datetime(text, anchorDate=None, lang=None, default_time=None):
         ... )
         None
     """
-    ret = lingua_franca.parse.extract_datetime(text, anchorDate, lang,
-                                               default_time)
+    ret = lingua_franca.parse.extract_datetime(text, anchorDate or now_local(),
+                                               lang, default_time)
 
     # TODO: When default skills work with the documented behavour below needs
     # to be removed.
