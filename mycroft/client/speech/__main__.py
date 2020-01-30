@@ -35,24 +35,32 @@ config = None
 def handle_record_begin():
     """Forward internal bus message to external bus."""
     LOG.info("Begin Recording...")
-    bus.emit(Message('recognizer_loop:record_begin'))
+    context = {'client_name': 'mycroft_listener',
+               'source': 'audio'}
+    bus.emit(Message('recognizer_loop:record_begin', context=context))
 
 
 def handle_record_end():
     """Forward internal bus message to external bus."""
     LOG.info("End Recording...")
-    bus.emit(Message('recognizer_loop:record_end'))
+    context = {'client_name': 'mycroft_listener',
+               'source': 'audio'}
+    bus.emit(Message('recognizer_loop:record_end', context=context))
 
 
 def handle_no_internet():
     LOG.debug("Notifying enclosure of no internet connection")
-    bus.emit(Message('enclosure.notify.no_internet'))
+    context = {'client_name': 'mycroft_listener',
+               'source': 'audio'}
+    bus.emit(Message('enclosure.notify.no_internet', context=context))
 
 
 def handle_awoken():
     """Forward mycroft.awoken to the messagebus."""
     LOG.info("Listener is now Awake: ")
-    bus.emit(Message('mycroft.awoken'))
+    context = {'client_name': 'mycroft_listener',
+               'source': 'audio'}
+    bus.emit(Message('mycroft.awoken', context=context))
 
 
 def handle_wakeword(event):
@@ -72,21 +80,27 @@ def handle_utterance(event):
 
 
 def handle_unknown():
-    bus.emit(Message('mycroft.speech.recognition.unknown'))
+    context = {'client_name': 'mycroft_listener',
+               'source': 'audio'}
+    bus.emit(Message('mycroft.speech.recognition.unknown', context=context))
 
 
 def handle_speak(event):
     """
         Forward speak message to message bus.
     """
-    bus.emit(Message('speak', event))
+    context = {'client_name': 'mycroft_listener',
+               'source': 'audio'}
+    bus.emit(Message('speak', event, context))
 
 
 def handle_complete_intent_failure(event):
     """Extreme backup for answering completely unhandled intent requests."""
     LOG.info("Failed to find intent.")
     data = {'utterance': dialog.get('not.loaded')}
-    bus.emit(Message('speak', data))
+    context = {'client_name': 'mycroft_listener',
+               'source': 'audio'}
+    bus.emit(Message('speak', data, context))
 
 
 def handle_sleep(event):
