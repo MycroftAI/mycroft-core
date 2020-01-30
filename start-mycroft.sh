@@ -106,7 +106,7 @@ function launch-process() {
 function require-process() {
     # Launch process if not found
     name-to-script-path ${1}
-    if ! pgrep -f "python3 -m ${_module}" > /dev/null ; then
+    if ! pgrep -f "python3 (.*)-m ${_module}" > /dev/null ; then
         # Start required process
         launch-background ${1}
     fi
@@ -117,7 +117,7 @@ function launch-background() {
 
     # Check if given module is running and start (or restart if running)
     name-to-script-path ${1}
-    if pgrep -f "python3 -m ${_module}" > /dev/null ; then
+    if pgrep -f "python3 (.*)-m ${_module}" > /dev/null ; then
         if ($_force_restart) ; then
             echo "Restarting: ${1}"
             "${DIR}/stop-mycroft.sh" ${1}
