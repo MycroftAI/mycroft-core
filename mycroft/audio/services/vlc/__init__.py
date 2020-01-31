@@ -121,13 +121,13 @@ class VlcService(AudioBackend):
             self.normal_volume = None
 
     def track_info(self):
-        """ Extract info of current track. """
+        """Extract info of current track."""
         ret = {}
         meta = vlc.Meta
         t = self.player.get_media()
         ret['album'] = t.get_meta(meta.Album)
         ret['artists'] = [t.get_meta(meta.Artist)]
-        ret['name'] = t.get_meta(meta.Title)
+        ret['name'] = t.get_meta(vlc.Meta.NowPlaying) or t.get_meta(meta.Title)
         return ret
 
     def seek_forward(self, seconds=1):
