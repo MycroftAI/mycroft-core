@@ -1263,7 +1263,8 @@ class MycroftSkill:
                                       context to send when the handler
                                       is called
         """
-        context = context or {"skill": self.name}
+        message = dig_for_message()
+        context = context or message.context if message else {}
         return self.event_scheduler.schedule_event(handler, when, data, name,
                                                    context=context)
 
@@ -1284,7 +1285,8 @@ class MycroftSkill:
                                       context to send when the handler
                                       is called
         """
-        context = context or {"skill": self.name}
+        message = dig_for_message()
+        context = context or message.context if message else {}
         return self.event_scheduler.schedule_repeating_event(
             handler,
             when,
