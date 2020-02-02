@@ -1321,7 +1321,7 @@ def gui_main(stdscr):
                                      {'utterances': [line.strip()],
                                       'lang': config.get('lang', 'en-us')},
                                      {'client_name': 'mycroft_cli',
-                                      'source': 'cli',
+                                      'source': 'debug_cli',
                                       'destination': ["skills"]}
                                      ))
                 hist_idx = -1
@@ -1415,7 +1415,7 @@ def simple_cli():
             bus.emit(Message("recognizer_loop:utterance",
                              {'utterances': [line.strip()]},
                              {'client_name': 'mycroft_simple_cli',
-                              'source': 'cli',
+                              'source': 'debug_cli',
                               'destination': ["skills"]}))
     except KeyboardInterrupt as e:
         # User hit Ctrl+C to quit
