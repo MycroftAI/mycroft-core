@@ -15,7 +15,6 @@
 """Common functionality relating to the implementation of mycroft skills."""
 
 from copy import deepcopy
-import inspect
 import sys
 import re
 import traceback
@@ -34,7 +33,7 @@ from mycroft.enclosure.gui import SkillGUI
 from mycroft.configuration import Configuration
 from mycroft.dialog import load_dialogs
 from mycroft.filesystem import FileSystemAccess
-from mycroft.messagebus.message import Message
+from mycroft.messagebus.message import Message, dig_for_message
 from mycroft.metrics import report_metric
 from mycroft.util import (
     resolve_resource_file,
@@ -100,17 +99,6 @@ def get_non_properties(obj):
         return np
 
     return set(check_class(obj.__class__))
-
-
-def dig_for_message():
-    """Dig Through the stack for message."""
-    stack = inspect.stack()
-    # Limit search to 10 frames back
-    stack = stack if len(stack) < 10 else stack[:10]
-    local_vars = [frame[0].f_locals for frame in stack]
-    for l in local_vars:
-        if 'message' in l and isinstance(l['message'], Message):
-            return l['message']
 
 
 class MycroftSkill:

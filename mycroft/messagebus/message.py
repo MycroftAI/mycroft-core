@@ -14,7 +14,7 @@
 #
 import json
 import re
-
+import inspect
 from mycroft.util.parse import normalize
 
 
@@ -182,3 +182,14 @@ class Message:
                 # Substitute only whole words matching the token
                 utt = re.sub(r'\b' + token.get("key", "") + r"\b", "", utt)
         return normalize(utt)
+
+
+def dig_for_message():
+    """Dig Through the stack for message."""
+    stack = inspect.stack()
+    # Limit search to 10 frames back
+    stack = stack if len(stack) < 10 else stack[:10]
+    local_vars = [frame[0].f_locals for frame in stack]
+    for l in local_vars:
+        if 'message' in l and isinstance(l['message'], Message):
+            return l['message']
