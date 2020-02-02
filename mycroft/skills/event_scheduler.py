@@ -106,9 +106,11 @@ class EventScheduler(Thread):
                 current_time = time.time()
                 e = self.events[event]
                 # Get scheduled times that has passed
-                passed = [(t, r, d, c) for (t, r, d, c) in e if t <= current_time]
+                passed = [(t, r, d, c) for
+                          (t, r, d, c) in e if t <= current_time]
                 # and remaining times that we're still waiting for
-                remaining = [(t, r, d, c) for t, r, d, c in e if t > current_time]
+                remaining = [(t, r, d, c) for
+                             t, r, d, c in e if t > current_time]
                 # Trigger registered methods
                 for sched_time, repeat, data, context in passed:
                     pending_messages.append(Message(event, data, context))
@@ -126,7 +128,8 @@ class EventScheduler(Thread):
         for msg in pending_messages:
             self.bus.emit(msg)
 
-    def schedule_event(self, event, sched_time, repeat=None, data=None, context=None):
+    def schedule_event(self, event, sched_time, repeat=None,
+                       data=None, context=None):
         """Add event to pending event schedule.
 
         Arguments:
@@ -134,7 +137,9 @@ class EventScheduler(Thread):
             sched_time ([type]): [description]
             repeat ([type], optional): Defaults to None. [description]
             data ([type], optional): Defaults to None. [description]
-            context (dict, optional): message context to send when the handler is called
+            context (dict, optional): context (dict, optional): message
+                                      context to send when the
+                                      handler is called
         """
         data = data or {}
         with self.event_lock:
@@ -285,7 +290,8 @@ class EventSchedulerInterface:
         """
         return str(self.sched_id) + ':' + (name or '')
 
-    def _schedule_event(self, handler, when, data, name, repeat_interval=None, context=None):
+    def _schedule_event(self, handler, when, data, name,
+                        repeat_interval=None, context=None):
         """Underlying method for schedule_event and schedule_repeating_event.
 
         Takes scheduling information and sends it off on the message bus.
@@ -299,8 +305,8 @@ class EventSchedulerInterface:
             data (dict, optional):  data to send when the handler is called
             name (str, optional):   reference name, must be unique
             repeat_interval (float/int):  time in seconds between calls
-            context (dict, optional): message context to send when the handler is called
-
+            context (dict, optional): message context to send
+                                      when the handler is called
         """
         if isinstance(when, (int, float)) and when >= 0:
             when = datetime.now() + timedelta(seconds=when)
@@ -325,7 +331,8 @@ class EventSchedulerInterface:
         self.bus.emit(Message('mycroft.scheduler.schedule_event',
                               data=event_data, context=context))
 
-    def schedule_event(self, handler, when, data=None, name=None, context=None):
+    def schedule_event(self, handler, when, data=None, name=None,
+                       context=None):
         """Schedule a single-shot event.
 
         Arguments:
@@ -338,7 +345,8 @@ class EventSchedulerInterface:
                                    NOTE: This will not warn or replace a
                                    previously scheduled event of the same
                                    name.
-            context (dict, optional): message context to send when the handler is called
+            context (dict, optional): message context to send
+                                      when the handler is called
         """
         self._schedule_event(handler, when, data, name, context=context)
 
@@ -355,7 +363,8 @@ class EventSchedulerInterface:
             interval (float/int):   time in seconds between calls
             data (dict, optional):  data to send when the handler is called
             name (str, optional):   reference name, must be unique
-            context (dict, optional): message context to send when the handler is called
+            context (dict, optional): message context to send
+                                      when the handler is called
         """
         # Do not schedule if this event is already scheduled by the skill
         if name not in self.scheduled_repeats:
@@ -363,7 +372,8 @@ class EventSchedulerInterface:
             # from now.
             if not when:
                 when = datetime.now() + timedelta(seconds=interval)
-            self._schedule_event(handler, when, data, name, interval, context=context)
+            self._schedule_event(handler, when, data, name, interval,
+                                 context=context)
         else:
             LOG.debug('The event is already scheduled, cancel previous '
                       'event if this scheduling should replace the last.')

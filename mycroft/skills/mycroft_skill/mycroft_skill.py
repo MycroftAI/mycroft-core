@@ -1257,7 +1257,8 @@ class MycroftSkill:
             LOG.error('Failed to stop skill: {}'.format(self.name),
                       exc_info=True)
 
-    def schedule_event(self, handler, when, data=None, name=None, context=None):
+    def schedule_event(self, handler, when, data=None, name=None,
+                       context=None):
         """Schedule a single-shot event.
 
         Arguments:
@@ -1270,10 +1271,13 @@ class MycroftSkill:
                                    NOTE: This will not warn or replace a
                                    previously scheduled event of the same
                                    name.
-            context (dict, optional): message context to send when the handler is called
+            context (dict, optional): context (dict, optional): message
+                                      context to send when the handler
+                                      is called
         """
         context = context or {"skill": self.name}
-        return self.event_scheduler.schedule_event(handler, when, data, name, context=context)
+        return self.event_scheduler.schedule_event(handler, when, data, name,
+                                                   context=context)
 
     def schedule_repeating_event(self, handler, when, frequency,
                                  data=None, name=None, context=None):
@@ -1288,7 +1292,9 @@ class MycroftSkill:
             frequency (float/int):  time in seconds between calls
             data (dict, optional):  data to send when the handler is called
             name (str, optional):   reference name, must be unique
-            context (dict, optional): message context to send when the handler is called
+            context (dict, optional): context (dict, optional): message
+                                      context to send when the handler
+                                      is called
         """
         context = context or {"skill": self.name}
         return self.event_scheduler.schedule_repeating_event(
