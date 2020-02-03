@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 import time
+from os.path import isfile
 from adapt.context import ContextManagerFrame
 from adapt.engine import IntentDeterminationEngine
 from adapt.intent import IntentBuilder
@@ -25,6 +26,8 @@ from mycroft.util.parse import normalize
 from mycroft.metrics import report_timing, Stopwatch
 from mycroft.skills.padatious_service import PadatiousService
 from .intent_service_interface import open_intent_envelope
+from mycroft.messagebus.client import MessageBusClient
+from mycroft.util import create_daemon
 
 
 class AdaptIntent(IntentBuilder):
@@ -187,6 +190,16 @@ class IntentService:
         self.waiting_for_converse = False
         self.converse_result = False
         self.converse_skill_id = ""
+
+        # Intents API
+        self.registered_intents = []
+        self.registered_vocab = []
+        self.bus.on('intent.service.adapt.get', self.handle_get_adapt)
+        self.bus.on('intent.service.intent.get', self.handle_get_intent)
+        self.bus.on('intent.service.skills.get', self.handle_get_skills)
+        self.bus.on('intent.service.active_skills.get', self.handle_get_active_skills)
+        self.bus.on('intent.service.adapt.manifest.get', self.handle_manifest)
+        self.bus.on('intent.service.adapt.vocab.manifest.get', self.handle_vocab_manifest)
 
     def update_skill_name_dict(self, message):
         """
@@ -463,6 +476,7 @@ class IntentService:
         else:
             self.engine.register_entity(
                 start_concept, end_concept, alias_of=alias_of)
+        self.registered_vocab.append(message.data)
 
     def handle_register_intent(self, message):
         intent = open_intent_envelope(message)
@@ -515,3 +529,249 @@ class IntentService:
     def handle_clear_context(self, message):
         """ Clears all keywords from context """
         self.context_manager.clear_context()
+
+    def handle_get_adapt(self, message):
+        utterance = message.data["utterance"]
+        intent = self._adapt_intent_match([utterance], [utterance],
+                                          self.language_config["internal"])
+        self.bus.emit(message.reply("intent.service.adapt.reply",
+                                    {"intent": intent}))
+
+    def handle_get_intent(self, message):
+        utterance = message.data["utterance"]
+        intent = self._adapt_intent_match([utterance], [utterance],
+                                          self.language_config["internal"])
+        # Adapt intent's handler is used unless
+        # Padatious is REALLY sure it was directed at it instead.
+        padatious_intent = PadatiousService.instance.calc_intent(utterance)
+        if padatious_intent and padatious_intent.conf >= 0.95:
+            intent = padatious_intent.__dict__
+        self.bus.emit(message.reply("intent.service.intent.reply",
+                                    {"intent": intent}))
+
+    def handle_get_skills(self, message):
+        self.bus.emit(message.reply("intent.service.skills.reply",
+                                    {"skills": self.skill_names}))
+
+    def handle_get_active_skills(self, message):
+        self.bus.emit(message.reply("intent.service.skills.reply",
+                                    {"skills": [s[0] for s in self.active_skills]}))
+
+    def handle_manifest(self, message):
+        self.bus.emit(message.reply("intent.service.adapt.manifest",
+                                    {"intents": self.registered_intents}))
+
+    def handle_vocab_manifest(self, message):
+        self.bus.emit(message.reply("intent.service.adapt.vocab.manifest",
+                                    {"vocab": self.registered_vocab}))
+
+
+class IntentApi:
+    """
+    NOTE: works only in internal language, you need to manually translate otherwise
+    """
+
+    def __init__(self, bus=None, timeout=5):
+        if bus is None:
+            bus = MessageBusClient()
+            create_daemon(bus.run_forever)
+        self.bus = bus
+        self.timeout = timeout
+        self.bus.on('intent.service.padatious.reply', self._receive_data)
+        self.bus.on('intent.service.adapt.reply', self._receive_data)
+        self.bus.on('intent.service.intent.reply', self._receive_data)
+        self.bus.on('intent.service.skills.reply', self._receive_data)
+        self.bus.on('intent.service.padatious.manifest', self._receive_data)
+        self.bus.on('intent.service.adapt.manifest', self._receive_data)
+        self.bus.on('intent.service.adapt.vocab.manifest', self._receive_data)
+        self.bus.on('intent.service.padatious.entities.manifest', self._receive_data)
+        self._response = None
+        self.waiting = False
+
+    def _receive_data(self, message):
+        self.waiting = False
+        self._response = message.data
+
+    def get_adapt_intent(self, utterance):
+        start = time.time()
+        self._response = None
+        self.waiting = True
+        self.bus.emit(Message("intent.service.adapt.get",
+                              {"utterance": utterance},
+                              context={"destination": "intent_service",
+                                       "source": "intent_api"}))
+        while self.waiting and time.time() - start <= self.timeout:
+            time.sleep(0.3)
+        if time.time() - start > self.timeout:
+            LOG.error("Intent Service timed out!")
+            return None
+        return self._response["intent"]
+
+    def get_padatious_intent(self, utterance):
+        start = time.time()
+        self._response = None
+        self.waiting = True
+        self.bus.emit(Message("intent.service.padatious.get",
+                              {"utterance": utterance},
+                              context={"destination": "intent_service",
+                                       "source": "intent_api"}))
+        while self.waiting and time.time() - start <= self.timeout:
+            time.sleep(0.3)
+        if time.time() - start > self.timeout:
+            LOG.error("Intent Service timed out!")
+            return None
+        return self._response["intent"]
+
+    def get_intent(self, utterance):
+        start = time.time()
+        self._response = None
+        self.waiting = True
+        self.bus.emit(Message("intent.service.intent.get",
+                              {"utterance": utterance},
+                              context={"destination": "intent_service",
+                                       "source": "intent_api"}))
+        while self.waiting and time.time() - start <= self.timeout:
+            time.sleep(0.3)
+        if time.time() - start > self.timeout:
+            LOG.error("Intent Service timed out!")
+            return None
+        return self._response["intent"]
+
+    def get_skills(self):
+        start = time.time()
+        self._response = None
+        self.waiting = True
+        self.bus.emit(Message("intent.service.skills.get",
+                              context={"destination": "intent_service",
+                                       "source": "intent_api"}))
+        while self.waiting and time.time() - start <= self.timeout:
+            time.sleep(0.3)
+        if time.time() - start > self.timeout:
+            LOG.error("Intent Service timed out!")
+            return None
+        return self._response["skills"]
+
+    def get_active_skills(self):
+        start = time.time()
+        self._response = None
+        self.waiting = True
+        self.bus.emit(Message("intent.service.active_skills.get",
+                              context={"destination": "intent_service",
+                                       "source": "intent_api"}))
+        while self.waiting and time.time() - start <= self.timeout:
+            time.sleep(0.3)
+        if time.time() - start > self.timeout:
+            LOG.error("Intent Service timed out!")
+            return None
+        return self._response["skills"]
+
+    def get_adapt_manifest(self):
+        start = time.time()
+        self._response = None
+        self.waiting = True
+        self.bus.emit(Message("intent.service.adapt.manifest.get",
+                              context={"destination": "intent_service",
+                                       "source": "intent_api"}))
+        while self.waiting and time.time() - start <= self.timeout:
+            time.sleep(0.3)
+        if time.time() - start > self.timeout:
+            LOG.error("Intent Service timed out!")
+            return None
+        return self._response["intents"]
+
+    def get_padatious_manifest(self):
+        start = time.time()
+        self._response = None
+        self.waiting = True
+        self.bus.emit(Message("intent.service.padatious.manifest.get",
+                              context={"destination": "intent_service",
+                                       "source": "intent_api"}))
+        while self.waiting and time.time() - start <= self.timeout:
+            time.sleep(0.3)
+        if time.time() - start > self.timeout:
+            LOG.error("Intent Service timed out!")
+            return None
+        return self._response["intents"]
+
+    def get_intent_manifest(self):
+        padatious = self.get_padatious_manifest()
+        adapt = self.get_adapt_manifest()
+        return {"adapt": adapt,
+                "padatious": padatious}
+
+    def get_vocab_manifest(self):
+        start = time.time()
+        self._response = None
+        self.waiting = True
+        self.bus.emit(Message("intent.service.adapt.vocab.manifest.get",
+                              context={"destination": "intent_service",
+                                       "source": "intent_api"}))
+        while self.waiting and time.time() - start <= self.timeout:
+            time.sleep(0.3)
+        if time.time() - start > self.timeout:
+            LOG.error("Intent Service timed out!")
+            return None
+        vocab = {}
+        for voc in self._response["vocab"]:
+            if voc.get("regex"):
+                continue
+            if voc["end"] not in vocab:
+                vocab[voc["end"]] = {"samples": []}
+            vocab[voc["end"]]["samples"].append(voc["start"])
+        return [{"name": voc, "samples": vocab[voc]["samples"]}
+                for voc in vocab]
+
+    def get_regex_manifest(self):
+        start = time.time()
+        self._response = None
+        self.waiting = True
+        self.bus.emit(Message("intent.service.adapt.vocab.manifest.get",
+                              context={"destination": "intent_service",
+                                       "source": "intent_api"}))
+        while self.waiting and time.time() - start <= self.timeout:
+            time.sleep(0.3)
+        if time.time() - start > self.timeout:
+            LOG.error("Intent Service timed out!")
+            return None
+
+        vocab = {}
+        for voc in self._response["vocab"]:
+            if not voc.get("regex"):
+                continue
+            name = voc["regex"].split("(?P<")[-1].split(">")[0]
+            if name not in vocab:
+                vocab[name] = {"samples": []}
+            vocab[name]["samples"].append(voc["regex"])
+        return [{"name": voc, "regexes": vocab[voc]["samples"]}
+                for voc in vocab]
+
+    def get_entities_manifest(self):
+        start = time.time()
+        self._response = None
+        self.waiting = True
+        self.bus.emit(Message("intent.service.padatious.entities.manifest.get",
+                              context={"destination": "intent_service",
+                                       "source": "intent_api"}))
+        while self.waiting and time.time() - start <= self.timeout:
+            time.sleep(0.3)
+        if time.time() - start > self.timeout:
+            LOG.error("Intent Service timed out!")
+            return None
+        entities = []
+        # read files
+        for ent in self._response["entities"]:
+            if isfile(ent["file_name"]):
+                with open(ent["file_name"]) as f:
+                    lines = f.read().replace("(", "").replace(")", "").split("\n")
+                samples = []
+                for l in lines:
+                    samples += [a.strip() for a in l.split("|") if a.strip()]
+                entities.append({"name": ent["name"], "samples": samples})
+        return entities
+
+    def get_keyword_manifest(self):
+        padatious = self.get_entities_manifest()
+        adapt = self.get_vocab_manifest()
+        return {"adapt": adapt,
+                "padatious": padatious}
+

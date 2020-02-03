@@ -59,6 +59,9 @@ class PadatiousService(FallbackSkill):
         self.bus.on('detach_intent', self.handle_detach_intent)
         self.bus.on('detach_skill', self.handle_detach_skill)
         self.bus.on('mycroft.skills.initialized', self.train)
+        self.bus.on('intent.service.padatious.get', self.handle_get_padatious)
+        self.bus.on('intent.service.padatious.manifest.get', self.handle_manifest)
+        self.bus.on('intent.service.padatious.entities.manifest.get', self.handle_entity_manifest)
 
         # Call Padatious an an early fallback, looking for a high match intent
         self.register_fallback(self.handle_fallback,
@@ -75,6 +78,7 @@ class PadatiousService(FallbackSkill):
         self.train_time = get_time() + self.train_delay
 
         self.registered_intents = []
+        self.registered_entities = []
 
     def train(self, message=None):
         padatious_single_thread = Configuration.get()[
@@ -146,6 +150,7 @@ class PadatiousService(FallbackSkill):
         self._register_object(message, 'intent', self.container.load_intent)
 
     def register_entity(self, message):
+        self.registered_entities.append(message.data)
         self._register_object(message, 'entity', self.container.load_entity)
 
     def handle_fallback(self, message, threshold=0.8):
@@ -174,6 +179,22 @@ class PadatiousService(FallbackSkill):
 
     def handle_fallback_last_chance(self, message):
         return self.handle_fallback(message, 0.5)
+
+    def handle_get_padatious(self, message):
+        utterance = message.data["utterance"]
+        intent = self.calc_intent(utterance)
+        if intent:
+            intent = intent.__dict__
+        self.bus.emit(message.reply("intent.service.padatious.reply",
+                                    {"intent": intent}))
+
+    def handle_manifest(self, message):
+        self.bus.emit(message.reply("intent.service.padatious.manifest",
+                                    {"intents": self.registered_intents}))
+
+    def handle_entity_manifest(self, message):
+        self.bus.emit(message.reply("intent.service.padatious.entities.manifest",
+                                    {"entities": self.registered_entities}))
 
     # NOTE: This cache will keep a reference to this calss (PadatiousService),
     # but we can live with that since it is used as a singleton.
