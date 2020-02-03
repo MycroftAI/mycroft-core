@@ -238,7 +238,15 @@ class IntentApi:
             return None
         return self._response["intent"]
 
-    def get_skills(self):
+    def get_skill(self, utterance):
+        """ get skill that utterance will trigger """
+        intent = self.get_intent(utterance)
+        if not intent:
+            return None
+        # retrieve skill from munged intent name
+        return intent["name"].split(":")[0]
+
+    def get_skills_manifest(self):
         start = time.time()
         self._response = None
         self.waiting = True
