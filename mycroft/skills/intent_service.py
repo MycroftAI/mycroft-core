@@ -544,7 +544,7 @@ class IntentService:
         # Adapt intent's handler is used unless
         # Padatious is REALLY sure it was directed at it instead.
         padatious_intent = PadatiousService.instance.calc_intent(utterance)
-        if padatious_intent and padatious_intent.conf >= 0.95:
+        if intent is None or (padatious_intent and padatious_intent.conf >= 0.95):
             intent = padatious_intent.__dict__
         self.bus.emit(message.reply("intent.service.intent.reply",
                                     {"intent": intent}))
@@ -568,7 +568,7 @@ class IntentService:
 
 class IntentApi:
     """
-    NOTE: works only in internal language, you need to manually translate otherwise
+    Query Intent Service at runtime
     """
 
     def __init__(self, bus=None, timeout=5):
@@ -593,6 +593,7 @@ class IntentApi:
         self._response = message.data
 
     def get_adapt_intent(self, utterance):
+        """ get best adapt intent for utterance """
         start = time.time()
         self._response = None
         self.waiting = True
@@ -608,6 +609,7 @@ class IntentApi:
         return self._response["intent"]
 
     def get_padatious_intent(self, utterance):
+        """ get best padatious intent for utterance """
         start = time.time()
         self._response = None
         self.waiting = True
@@ -623,6 +625,7 @@ class IntentApi:
         return self._response["intent"]
 
     def get_intent(self, utterance):
+        """ get best intent for utterance """
         start = time.time()
         self._response = None
         self.waiting = True
