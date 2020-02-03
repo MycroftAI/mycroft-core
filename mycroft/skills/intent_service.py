@@ -769,9 +769,11 @@ class IntentApi:
                 entities.append({"name": ent["name"], "samples": samples})
         return entities
 
-    def get_keyword_manifest(self):
+    def get_keywords_manifest(self):
         padatious = self.get_entities_manifest()
         adapt = self.get_vocab_manifest()
+        regex = self.get_regex_manifest()
         return {"adapt": adapt,
-                "padatious": padatious}
+                "padatious": padatious,
+                "regex": regex}
 
