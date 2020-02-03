@@ -24,6 +24,8 @@ from speech_recognition import AudioSource
 from mycroft.client.speech.listener import RecognizerLoop
 from mycroft.client.speech.mic import ResponsiveRecognizer
 
+"""Tests for determining the accuracy of the selected wake word engine."""
+
 
 def to_percent(val):
     return "{0:.2f}".format(100.0 * val) + "%"
