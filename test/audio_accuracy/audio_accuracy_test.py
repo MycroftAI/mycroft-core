@@ -220,7 +220,7 @@ def test_false_positive(directory):
 def run_test():
     directory = join(dirname(__file__), 'data')
 
-    false_neg_dir = join(directory, 'with_wake_word', 'query_after')
+    false_neg_dir = join(directory, 'with_wake_word')
     false_pos_dir = join(directory, 'without_wake_word')
 
     try:
