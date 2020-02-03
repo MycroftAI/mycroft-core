@@ -12,6 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from .audio_accuracy_test import run_test
+from .wake_word_test import run_test
 
 run_test()
