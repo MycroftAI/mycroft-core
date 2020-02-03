@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2018 Mycroft AI Inc.
+# Copyright 2020 Mycroft AI Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,4 +22,4 @@ DIR="$( pwd )"
 source "$DIR/../venv-activate.sh" -q
 
 # Send a message to be spoken
-output=$(python -m mycroft.messagebus.send "mycroft.mic.listen")
+python -m mycroft.messagebus.send "mycroft.mic.listen"
