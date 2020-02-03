@@ -51,7 +51,7 @@ class FileStream:
     def calc_progress(self):
         return float(self.file.tell()) / self.size
 
-    def read(self, chunk_size):
+    def read(self, chunk_size, of_exc=False):
 
         progress = self.calc_progress()
         if progress == 1.0:
@@ -76,6 +76,13 @@ class FileMockMicrophone(AudioSource):
         self.SAMPLE_RATE = self.stream.sample_rate
         self.SAMPLE_WIDTH = self.stream.sample_width
         self.CHUNK = 1024
+        self.muted = False
+
+    def mute(self):
+        pass
+
+    def unmute(self):
+        pass
 
     def close(self):
         self.stream.close()
@@ -84,9 +91,9 @@ class FileMockMicrophone(AudioSource):
 class AudioTester:
     def __init__(self, samp_rate):
         print()  # Pad debug messages
-        self.ww_recognizer = RecognizerLoop().create_mycroft_recognizer(
-            samp_rate, 'en-us')
+        self.ww_recognizer = RecognizerLoop().create_wake_word_recognizer()
         self.listener = ResponsiveRecognizer(self.ww_recognizer)
+        self.listener.config['confirm_listening'] = False
         print()
 
     def test_audio(self, file_name):
@@ -95,6 +102,7 @@ class AudioTester:
 
         class SharedData:
             times_found = 0
+            found = False
 
         def on_found_wake_word():
             SharedData.times_found += 1
@@ -105,7 +113,14 @@ class AudioTester:
             while True:
                 self.listener.listen(source, ee)
         except EOFError:
-            pass
+            # Give the wake word engine some time to detect
+            cnt = 0
+            while cnt < 2.0:
+                if SharedData.times_found > 0:
+                    break
+                else:
+                    time.sleep(0.1)
+                    cnt += 0.1
 
         return SharedData.times_found
 
@@ -203,7 +218,7 @@ def test_false_positive(directory):
 
 
 def run_test():
-    directory = join('audio-accuracy-test', 'data')
+    directory = join(dirname(__file__), 'data')
 
     false_neg_dir = join(directory, 'with_wake_word', 'query_after')
     false_pos_dir = join(directory, 'without_wake_word')
@@ -219,7 +234,3 @@ def run_test():
         print(bold_str("Warning: No wav files found in " + false_pos_dir))
 
     print("Complete!")
-
-
-if __name__ == "__main__":
-    run_test()

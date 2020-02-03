@@ -67,7 +67,7 @@ function name-to-script-path() {
         "voice")             _module="mycroft.client.speech" ;;
         "cli")               _module="mycroft.client.text" ;;
         "audiotest")         _module="mycroft.util.audio_test" ;;
-        "audioaccuracytest") _module="mycroft.audio-accuracy-test" ;;
+        "audioaccuracytest") _module="test.audio_accuracy" ;;
         "enclosure")         _module="mycroft.client.enclosure" ;;
 
         *)
