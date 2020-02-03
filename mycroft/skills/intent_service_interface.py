@@ -191,13 +191,13 @@ class IntentApi:
         self.waiting = False
         self._response = message.data
 
-    def get_adapt_intent(self, utterance):
+    def get_adapt_intent(self, utterance, lang="en-us"):
         """ get best adapt intent for utterance """
         start = time.time()
         self._response = None
         self.waiting = True
         self.bus.emit(Message("intent.service.adapt.get",
-                              {"utterance": utterance},
+                              {"utterance": utterance, "lang": lang},
                               context={"destination": "intent_service",
                                        "source": "intent_api"}))
         while self.waiting and time.time() - start <= self.timeout:
@@ -207,13 +207,13 @@ class IntentApi:
             return None
         return self._response["intent"]
 
-    def get_padatious_intent(self, utterance):
+    def get_padatious_intent(self, utterance, lang="en-us"):
         """ get best padatious intent for utterance """
         start = time.time()
         self._response = None
         self.waiting = True
         self.bus.emit(Message("intent.service.padatious.get",
-                              {"utterance": utterance},
+                              {"utterance": utterance, "lang": lang},
                               context={"destination": "intent_service",
                                        "source": "intent_api"}))
         while self.waiting and time.time() - start <= self.timeout:
@@ -223,13 +223,13 @@ class IntentApi:
             return None
         return self._response["intent"]
 
-    def get_intent(self, utterance):
+    def get_intent(self, utterance, lang="en-us"):
         """ get best intent for utterance """
         start = time.time()
         self._response = None
         self.waiting = True
         self.bus.emit(Message("intent.service.intent.get",
-                              {"utterance": utterance},
+                              {"utterance": utterance, "lang": lang},
                               context={"destination": "intent_service",
                                        "source": "intent_api"}))
         while self.waiting and time.time() - start <= self.timeout:
@@ -239,9 +239,9 @@ class IntentApi:
             return None
         return self._response["intent"]
 
-    def get_skill(self, utterance):
+    def get_skill(self, utterance, lang="en-us"):
         """ get skill that utterance will trigger """
-        intent = self.get_intent(utterance)
+        intent = self.get_intent(utterance, lang)
         if not intent:
             return None
         # retrieve skill from munged intent name
