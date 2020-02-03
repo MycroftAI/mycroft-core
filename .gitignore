@@ -18,7 +18,7 @@ scripts/logs/*
 logs/*
 .coverage
 /htmlcov
-mycroft/audio-accuracy-test/data/*
+test/audio_accuracy/data
 scripts/*.screen
 doc/_build/
 .installed
