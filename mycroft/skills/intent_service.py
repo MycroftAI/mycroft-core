@@ -555,7 +555,7 @@ class IntentService:
                                     {"skills": self.skill_names}))
 
     def handle_get_active_skills(self, message):
-        self.bus.emit(message.reply("intent.service.skills.reply",
+        self.bus.emit(message.reply("intent.service.active_skills.reply",
                                     {"skills": [s[0] for s in
                                                 self.active_skills]}))
 

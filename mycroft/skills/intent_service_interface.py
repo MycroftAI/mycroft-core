@@ -177,6 +177,7 @@ class IntentApi:
         self.bus.on('intent.service.padatious.reply', self._receive_data)
         self.bus.on('intent.service.adapt.reply', self._receive_data)
         self.bus.on('intent.service.intent.reply', self._receive_data)
+        self.bus.on('intent.service.active_skills.reply', self._receive_data)
         self.bus.on('intent.service.skills.reply', self._receive_data)
         self.bus.on('intent.service.padatious.manifest', self._receive_data)
         self.bus.on('intent.service.adapt.manifest', self._receive_data)
