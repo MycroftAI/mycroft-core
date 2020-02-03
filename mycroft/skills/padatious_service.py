@@ -166,7 +166,7 @@ class PadatiousService(FallbackSkill):
 
         if not intent or intent.conf < threshold:
             # Attempt to use normalized() version
-            norm = message.data.get('norm_utt', '')
+            norm = message.data.get('norm_utt', utt)
             if norm != utt:
                 LOG.debug("               alt attempt: " + norm)
                 intent = self.calc_intent(norm)
@@ -184,7 +184,10 @@ class PadatiousService(FallbackSkill):
 
     def handle_get_padatious(self, message):
         utterance = message.data["utterance"]
+        norm = message.data.get('norm_utt', utterance)
         intent = self.calc_intent(utterance)
+        if not intent and norm != utterance:
+            intent = PadatiousService.instance.calc_intent(norm)
         if intent:
             intent = intent.__dict__
         self.bus.emit(message.reply("intent.service.padatious.reply",

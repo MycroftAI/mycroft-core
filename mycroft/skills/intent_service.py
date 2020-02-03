@@ -533,17 +533,21 @@ class IntentService:
     def handle_get_adapt(self, message):
         utterance = message.data["utterance"]
         lang = message.data.get("lang", "en-us")
-        intent = self._adapt_intent_match([utterance], [utterance], lang)
+        norm = normalize(utterance, lang, remove_articles=False)
+        intent = self._adapt_intent_match([utterance], [norm], lang)
         self.bus.emit(message.reply("intent.service.adapt.reply",
                                     {"intent": intent}))
 
     def handle_get_intent(self, message):
         utterance = message.data["utterance"]
         lang = message.data.get("lang", "en-us")
-        intent = self._adapt_intent_match([utterance], [utterance], lang)
+        norm = normalize(utterance, lang, remove_articles=False)
+        intent = self._adapt_intent_match([utterance], [norm], lang)
         # Adapt intent's handler is used unless
         # Padatious is REALLY sure it was directed at it instead.
         padatious_intent = PadatiousService.instance.calc_intent(utterance)
+        if not padatious_intent and norm != utterance:
+            padatious_intent = PadatiousService.instance.calc_intent(norm)
         if intent is None or (
                 padatious_intent and padatious_intent.conf >= 0.95):
             intent = padatious_intent.__dict__
