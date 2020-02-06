@@ -1,0 +1,9 @@
+extra_skills:
+- cocktails
+platform: mycroft_mark_1
+tested_skills:
+- mycroft-date-time
+- mycroft-weather
+- mycroft-hello-world
+- mycroft-pairing
+- mycroft-wiki
