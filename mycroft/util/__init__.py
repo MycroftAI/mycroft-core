@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""Mycroft util library.
+
+A collections of utils and tools for making skill development easier.
+"""
 from __future__ import absolute_import
 
 import json
@@ -102,7 +106,7 @@ def resolve_resource_file(res_name):
 
 
 def play_audio_file(uri: str, environment=None):
-    """ Play an audio file.
+    """Play an audio file.
 
     This wraps the other play_* functions, choosing the correct one based on
     the file extension. The function will return directly and play the file
@@ -146,17 +150,17 @@ def _get_pulse_environment(config):
 
 
 def play_wav(uri, environment=None):
-    """ Play a wav-file.
+    """Play a wav-file.
 
-        This will use the application specified in the mycroft config
-        and play the uri passed as argument. The function will return directly
-        and play the file in the background.
+    This will use the application specified in the mycroft config
+    and play the uri passed as argument. The function will return directly
+    and play the file in the background.
 
-        Arguments:
-            uri:    uri to play
-            environment (dict): optional environment for the subprocess call
+    Arguments:
+        uri:    uri to play
+        environment (dict): optional environment for the subprocess call
 
-        Returns: subprocess.Popen object
+    Returns: subprocess.Popen object
     """
     config = mycroft.configuration.Configuration.get()
     environment = environment or _get_pulse_environment(config)
@@ -174,17 +178,17 @@ def play_wav(uri, environment=None):
 
 
 def play_mp3(uri, environment=None):
-    """ Play a mp3-file.
+    """Play a mp3-file.
 
-        This will use the application specified in the mycroft config
-        and play the uri passed as argument. The function will return directly
-        and play the file in the background.
+    This will use the application specified in the mycroft config
+    and play the uri passed as argument. The function will return directly
+    and play the file in the background.
 
-        Arguments:
-            uri:    uri to play
-            environment (dict): optional environment for the subprocess call
+    Arguments:
+        uri:    uri to play
+        environment (dict): optional environment for the subprocess call
 
-        Returns: subprocess.Popen object
+    Returns: subprocess.Popen object
     """
     config = mycroft.configuration.Configuration.get()
     environment = environment or _get_pulse_environment(config)
@@ -202,17 +206,17 @@ def play_mp3(uri, environment=None):
 
 
 def play_ogg(uri, environment=None):
-    """ Play a ogg-file.
+    """Play an ogg-file.
 
-        This will use the application specified in the mycroft config
-        and play the uri passed as argument. The function will return directly
-        and play the file in the background.
+    This will use the application specified in the mycroft config
+    and play the uri passed as argument. The function will return directly
+    and play the file in the background.
 
-        Arguments:
-            uri:    uri to play
-            environment (dict): optional environment for the subprocess call
+    Arguments:
+        uri:    uri to play
+        environment (dict): optional environment for the subprocess call
 
-        Returns: subprocess.Popen object
+    Returns: subprocess.Popen object
     """
     config = mycroft.configuration.Configuration.get()
     environment = environment or _get_pulse_environment(config)
@@ -230,6 +234,20 @@ def play_ogg(uri, environment=None):
 
 
 def record(file_path, duration, rate, channels):
+    """Simple function to record from the default mic.
+
+    The recording is done in the background by the arecord commandline
+    application.
+
+    Arguments:
+        file_path: where to store the recorded data
+        duration: how long to record
+        rate: sample rate
+        channels: number of channels
+
+    Returns:
+        process for performing the recording.
+    """
     if duration > 0:
         return subprocess.Popen(
             ["arecord", "-r", str(rate), "-c", str(channels), "-d",
@@ -240,12 +258,12 @@ def record(file_path, duration, rate, channels):
 
 
 def find_input_device(device_name):
-    """ Find audio input device by name.
+    """Find audio input device by name.
 
-        Arguments:
-            device_name: device name or regex pattern to match
+    Arguments:
+        device_name: device name or regex pattern to match
 
-        Returns: device_index (int) or None if device wasn't found
+    Returns: device_index (int) or None if device wasn't found
     """
     LOG.info('Searching for input device: {}'.format(device_name))
     LOG.debug('Devices: ')
@@ -261,21 +279,63 @@ def find_input_device(device_name):
 
 
 def get_http(uri):
+    """Change an uri from https:// to http://.
+
+    Arguments:
+        uri: uri to convert
+
+    Returns: (string) uri where https:// has been replaced with http://
+    """
     return uri.replace("https://", "http://")
 
 
 def remove_last_slash(url):
+    """Remove the last slash from the given url.
+
+    Arguments:
+        url (str): url to trim
+
+    Returns:
+        (str) url without ending slash
+    """
     if url and url.endswith('/'):
         url = url[:-1]
     return url
 
 
 def read_stripped_lines(filename):
+    """Read a file and return a list of stripped lines.
+
+    Arguments:
+        filename (str): path to file to read.
+
+    Returns:
+        (list) list of lines stripped from leading and ending white chars.
+    """
     with open(filename, 'r') as f:
         return [line.strip() for line in f]
 
 
 def read_dict(filename, div='='):
+    """Read file into dict.
+
+    A file containing:
+        foo = bar
+        baz = bog
+
+    results in a dict
+    {
+        'foo': 'bar',
+        'baz': 'bog'
+    }
+
+    Arguments:
+        filename (str):   path to file
+        div (str): deviders between dict keys and values
+
+    Returns:
+        (dict) generated dictionary
+    """
     d = {}
     with open(filename, 'r') as f:
         for line in f:
@@ -285,7 +345,7 @@ def read_dict(filename, div='='):
 
 
 def connected():
-    """ Check connection by connecting to 8.8.8.8 and if google.com is
+    """Check connection by connecting to 8.8.8.8 and if google.com is
     reachable if this fails, Check Microsoft NCSI is used as a backup.
 
     Returns:
@@ -300,7 +360,7 @@ def connected():
 
 
 def _connected_ncsi():
-    """ Check internet connection by retrieving the Microsoft NCSI endpoint.
+    """Check internet connection by retrieving the Microsoft NCSI endpoint.
 
     Returns:
         True if internet connection can be detected
@@ -315,7 +375,7 @@ def _connected_ncsi():
 
 
 def _connected_dns(host="8.8.8.8", port=53, timeout=3):
-    """ Check internet connection by connecting to DNS servers
+    """Check internet connection by connecting to DNS servers
 
     Returns:
         True if internet connection can be detected
@@ -405,7 +465,7 @@ def curate_cache(directory, min_free_percent=5.0, min_free_disk=50):
 
 
 def get_cache_directory(domain=None):
-    """Get a directory for caching data
+    """Get a directory for caching data.
 
     This directory can be used to hold temporary caches of data to
     speed up performance.  This directory will likely be part of a
@@ -464,9 +524,10 @@ def get_arch():
 
 
 def reset_sigint_handler():
-    """
-    Reset the sigint handler to the default. This fixes KeyboardInterrupt
-    not getting raised when started via start-mycroft.sh
+    """Reset the sigint handler to the default.
+
+    This fixes KeyboardInterrupt not getting raised when started via
+    start-mycroft.sh
     """
     sig.signal(sig.SIGINT, sig.default_int_handler)
 
@@ -480,7 +541,7 @@ def create_daemon(target, args=(), kwargs=None):
 
 
 def wait_for_exit_signal():
-    """Blocks until KeyboardInterrupt is received"""
+    """Blocks until KeyboardInterrupt is received."""
     try:
         while True:
             sleep(100)
@@ -492,12 +553,12 @@ _log_all_bus_messages = False
 
 
 def create_echo_function(name, whitelist=None):
-    """ Standard logging mechanism for Mycroft processes.
+    """Standard logging mechanism for Mycroft processes.
 
     This handles the setup of the basic logging for all Mycroft
     messagebus-based processes.
 
-    Args:
+    Arguments:
         name (str): Reference name of the process
         whitelist (list, optional): List of "type" strings.  If defined, only
                                     messages in this list will be logged.
@@ -561,7 +622,7 @@ def create_echo_function(name, whitelist=None):
 
 
 def camel_case_split(identifier: str) -> str:
-    """Split camel case string"""
+    """Split camel case string."""
     regex = '.+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)'
     matches = re.finditer(regex, identifier)
     return ' '.join([m.group(0) for m in matches])
