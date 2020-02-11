@@ -24,6 +24,7 @@ import time
 from behave import given, when, then
 
 from mycroft.messagebus import Message
+from mycroft.audio import wait_while_speaking
 
 
 TIMEOUT = 10
@@ -215,3 +216,15 @@ def then_contains(context, text):
     if not passed:
         print('No speech contained the expected content')
     assert passed
+
+
+@then('the user says "{text}"')
+def when_impl(context, text):
+    time.sleep(2)
+    wait_while_speaking()
+    context.bus.emit(Message('recognizer_loop:utterance',
+                             data={'utterances': [text],
+                                   'lang': 'en-us',
+                                   'session': '',
+                                   'ident': time.time()},
+                             context={'client_name': 'mycroft_listener'}))
