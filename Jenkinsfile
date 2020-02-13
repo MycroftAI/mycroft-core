@@ -28,7 +28,7 @@ pipeline {
             steps {
                 echo 'Building Test Docker Image'
                 sh 'cp test/Dockerfile.test Dockerfile'
-                sh 'docker build --target voigt_kampff -t mycroft-core:${BRANCH_ALIAS} .'
+                sh 'docker build --no-cache --target voight_kampff -t mycroft-core:${BRANCH_ALIAS} .'
                 echo 'Running Tests'
                 timeout(time: 10, unit: 'MINUTES')
                 {
@@ -37,13 +37,42 @@ pipeline {
                         mycroft-core:${BRANCH_ALIAS}'
                 }
             }
+            post {
+                always {
+                    echo 'Report Test Results'
+                    sh 'mv $HOME/voigtmycroft/allure-result allure-result'
+                    script {
+                        allure([
+                            includeProperties: false,
+                            jdk: '',
+                            properties: [],
+                            reportBuildPolicy: 'ALWAYS',
+                            results: [[path: 'allure-result']]
+                        ])
+                    }
+                    unarchive mapping:['allure-report.zip': 'allure-report.zip']
+                    sh (
+                        label: 'Publish Report to Web Server',
+                        script: '''scp allure-report.zip root@157.245.127.234:~;
+                            ssh root@157.245.127.234 "unzip -o ~/allure-report.zip";
+                            ssh root@157.245.127.234 "rm -rf /var/www/voigt-kampff/${BRANCH_ALIAS}";
+                            ssh root@157.245.127.234 "mv allure-report /var/www/voigt-kampff/${BRANCH_ALIAS}"
+                        '''
+                    )
+                    echo 'Report Published'
+                }
+            }
         }
     }
     post {
-        always('Important stuff') {
-            echo 'Cleaning up docker containers and images'
-            sh 'docker container prune --force'
-            sh 'docker image prune --force'
+        cleanup {
+            sh(
+                label: 'Docker Container and Image Cleanup',
+                script: '''
+                    docker container prune --force;
+                    docker image prune --force;
+                '''
+            )
         }
     }
 }
