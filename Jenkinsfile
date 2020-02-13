@@ -33,14 +33,14 @@ pipeline {
                 timeout(time: 10, unit: 'MINUTES')
                 {
                     sh 'docker run \
-                        -v "$HOME/voigtmycroft:/root/.mycroft" \
+                        -v "$HOME/voight-kampff:/root/.mycroft" \
                         mycroft-core:${BRANCH_ALIAS}'
                 }
             }
             post {
                 always {
                     echo 'Report Test Results'
-                    sh 'mv $HOME/voigtmycroft/allure-result allure-result'
+                    sh 'mv $HOME/voight-kampff/allure-result allure-result'
                     script {
                         allure([
                             includeProperties: false,
@@ -55,8 +55,8 @@ pipeline {
                         label: 'Publish Report to Web Server',
                         script: '''scp allure-report.zip root@157.245.127.234:~;
                             ssh root@157.245.127.234 "unzip -o ~/allure-report.zip";
-                            ssh root@157.245.127.234 "rm -rf /var/www/voigt-kampff/${BRANCH_ALIAS}";
-                            ssh root@157.245.127.234 "mv allure-report /var/www/voigt-kampff/${BRANCH_ALIAS}"
+                            ssh root@157.245.127.234 "rm -rf /var/www/voight-kampff/${BRANCH_ALIAS}";
+                            ssh root@157.245.127.234 "mv allure-report /var/www/voight-kampff/${BRANCH_ALIAS}"
                         '''
                     )
                     echo 'Report Published'
