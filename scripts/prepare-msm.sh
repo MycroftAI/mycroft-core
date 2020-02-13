@@ -43,7 +43,7 @@ fi
 # change ownership of ${mycroft_root_dir} to ${setup_user } recursively
 function change_ownership {
     echo "Changing ownership of" ${mycroft_root_dir} "to user:" ${setup_user} "with group:" ${setup_group}
-    $SUDO chown -Rvf ${setup_user}:${setup_group} ${mycroft_root_dir}
+    $SUDO chown -Rf ${setup_user}:${setup_group} ${mycroft_root_dir}
 }
 
 
