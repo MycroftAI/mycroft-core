@@ -137,6 +137,14 @@ def then_wait(msg_type, then_func, context, timeout=TIMEOUT):
     return False, debug
 
 
+def print_mycroft_responses(context):
+    messages = context.bus.get_messages('speak')
+    if len(messages) > 0:
+        print('Mycroft responded with:')
+        for m in messages:
+            print('Mycroft: "{}"'.format(m.data['utterance']))
+
+
 @then('"{skill}" should reply with dialog from "{dialog}"')
 def then_dialog(context, skill, dialog):
     def check_dialog(message):
@@ -146,6 +154,8 @@ def then_dialog(context, skill, dialog):
     passed, debug = then_wait('speak', check_dialog, context)
     if not passed:
         print(debug)
+        print_mycroft_responses(context)
+
     assert passed
 
 
@@ -182,6 +192,7 @@ def then_exactly(context, skill, text):
     passed, debug = then_wait('speak', check_exact_match, context)
     if not passed:
         print(debug)
+        print_mycroft_responses(context)
     assert passed
 
 
@@ -197,6 +208,7 @@ def then_contains(context, text):
 
     if not passed:
         print('No speech contained the expected content')
+        print_mycroft_responses(context)
     assert passed
 
 
