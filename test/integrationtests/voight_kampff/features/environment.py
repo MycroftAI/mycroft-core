@@ -16,24 +16,40 @@ from threading import Event, Lock
 from time import sleep, monotonic
 
 from msm import MycroftSkillsManager
+from mycroft.audio import wait_while_speaking
 from mycroft.messagebus.client import MessageBusClient
 from mycroft.messagebus import Message
 from mycroft.util import create_daemon
 
 
+class InterceptAllBusClient(MessageBusClient):
+    def __init__(self):
+        super().__init__()
+        self.messages = []
+        self.message_lock = Lock()
+
+    def on_message(self, message):
+        with self.message_lock:
+            self.messages.append(Message.deserialize(message))
+        super().on_message(message)
+
+    def get_messages(self, msg_type):
+        with self.message_lock:
+            if msg_type is None:
+                return [m for m in self.messages]
+            else:
+                return [m for m in self.messages if m.msg_type == msg_type]
+
+    def clear_messages(self):
+        with self.message_lock:
+            self.messages = []
+
+
 def before_all(context):
-    bus = MessageBusClient()
+    bus = InterceptAllBusClient()
     bus_connected = Event()
     bus.once('open', bus_connected.set)
 
-    context.speak_messages = []
-    context.speak_lock = Lock()
-
-    def on_speak(message):
-        with context.speak_lock:
-            context.speak_messages.append(message)
-
-    bus.on('speak', on_speak)
     create_daemon(bus.run_forever)
 
     context.msm = MycroftSkillsManager()
@@ -65,7 +81,9 @@ def after_feature(context, feature):
 
 
 def after_scenario(context, scenario):
-    with context.speak_lock:
-        context.speak_messages = []
+    # TODO wait for skill handler complete
+    sleep(0.5)
+    wait_while_speaking()
+    context.bus.clear_messages()
     context.matched_message = None
     sleep(0.5)
