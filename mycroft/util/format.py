@@ -17,11 +17,11 @@
 The mycroft.util.format module provides various formatting functions for
 things like numbers, times, etc.
 
+The module uses lingua-franca (https://github.com/mycroftai/lingua-franca) to
+do most of the actual parsing.
+
 The focus of these formatting functions is to create natural sounding speech
 and allow localization.
-
-This file mainly contains references to functions in  lingua franca providing
-a backwards compatibility
 """
 import datetime
 import warnings
@@ -34,26 +34,6 @@ import lingua_franca.format
 from lingua_franca.format import (NUMBER_TUPLE, DateTimeFormat, join_list,
                                   date_time_format, expand_options,
                                   _translate_word)
-
-# TODO: Remove all imports from lingua_franca.lang in 20.02
-from lingua_franca.lang import get_full_lang_code, get_primary_lang_code
-
-from lingua_franca.lang.format_en import *
-from lingua_franca.lang.format_pt import *
-from lingua_franca.lang.format_it import *
-from lingua_franca.lang.format_sv import *
-from lingua_franca.lang.format_hu import *
-
-from lingua_franca.lang.format_es import (nice_number_es, nice_time_es,
-                                          pronounce_number_es)
-from lingua_franca.lang.format_de import (nice_number_de, nice_time_de,
-                                          pronounce_number_de)
-from lingua_franca.lang.format_fr import (nice_number_fr, nice_time_fr,
-                                          pronounce_number_fr)
-from lingua_franca.lang.format_nl import (nice_time_nl, pronounce_number_nl,
-                                          nice_number_nl)
-from lingua_franca.lang.format_da import (nice_number_da, nice_time_da,
-                                          pronounce_number_da)
 
 from padatious.util import expand_parentheses
 

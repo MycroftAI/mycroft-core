@@ -18,43 +18,20 @@
 The mycroft.util.parse module provides various parsing functions for
 things like numbers, times, durations etc.
 
-The focus of these parsing functions is to extract data from natural speech
-and to allow localization.
+The module uses lingua-franca (https://github.com/mycroftai/lingua-franca) to
+do most of the actual parsing.
 
-This file imports the main functions from lingua franca providing a layer
-for convenience.
+This module provides the Mycroft localization for time and so forth as well
+as provide a convenience.
+
+The module does implement some useful functions like basic fuzzy matchin.
 """
 
 from difflib import SequenceMatcher
 
-# These are the main functions of lingua franca parsing offered here for
-# convenience.
 import lingua_franca.parse
-
-from lingua_franca.lang import get_primary_lang_code, get_active_lang
-
-# TODO: Remove all imports below from lingua_franca.lang in v20.02
-from lingua_franca.lang.parse_en import *
-from lingua_franca.lang.parse_pt import *
-from lingua_franca.lang.parse_es import *
-from lingua_franca.lang.parse_it import *
-from lingua_franca.lang.parse_sv import *
-
-from lingua_franca.lang.parse_de import extractnumber_de
-from lingua_franca.lang.parse_de import extract_numbers_de
-from lingua_franca.lang.parse_de import extract_datetime_de
-from lingua_franca.lang.parse_de import normalize_de
-from lingua_franca.lang.parse_fr import extractnumber_fr
-from lingua_franca.lang.parse_fr import extract_numbers_fr
-from lingua_franca.lang.parse_fr import extract_datetime_fr
-from lingua_franca.lang.parse_fr import normalize_fr
-from lingua_franca.lang.parse_da import extractnumber_da
-from lingua_franca.lang.parse_da import extract_numbers_da
-from lingua_franca.lang.parse_da import extract_datetime_da
-from lingua_franca.lang.parse_da import normalize_da
-from lingua_franca.lang.parse_nl import extractnumber_nl
-from lingua_franca.lang.parse_nl import extract_datetime_nl
-from lingua_franca.lang.parse_nl import normalize_nl
+from lingua_franca.lang.parse_en import extract_duration_en
+from lingua_franca.lang import get_active_lang, get_primary_lang_code
 
 from .time import now_local
 from .log import LOG
@@ -209,19 +186,9 @@ def extract_datetime(text, anchorDate=None, lang=None, default_time=None):
         ... )
         None
     """
-    ret = lingua_franca.parse.extract_datetime(text, anchorDate or now_local(),
-                                               lang, default_time)
-
-    # TODO: When default skills work with the documented behavour below needs
-    # to be removed.
-    # This implements the incorrect return value expected by many skills
-    lang = lang or get_active_lang()
-    if ret is None and lang == 'en-us':
-        ret = (anchorDate or
-               now_local().replace(hour=0, minute=0, second=0, microsecond=0),
-               text)
-
-    return ret
+    return lingua_franca.parse.extract_datetime(text,
+                                                anchorDate or now_local(),
+                                                lang, default_time)
 
 
 def extract_duration(text, lang=None):

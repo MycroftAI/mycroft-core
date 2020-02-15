@@ -1,5 +1,5 @@
 #
-# Copyright 2017 Mycroft AI Inc.
+# Copyright 2020 Mycroft AI Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,8 +14,9 @@
 # limitations under the License.
 #
 
-"""File kept for backwards compatibility.
-
-TODO: Remove in 20.02
 """
-from lingua_franca.lang.format_fr import *
+The mycroft.util.lang module provides the main interface for setting up the
+lingua-franca (https://github.com/mycroftai/lingua-franca) selected language
+"""
+
+from lingua_franca.lang import set_active_lang, get_active_lang
