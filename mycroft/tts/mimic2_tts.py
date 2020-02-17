@@ -14,7 +14,7 @@
 #
 
 from .tts import TTS, TTSValidator
-from .remote_tts import RemoteTTSTimeoutException
+from .remote_tts import RemoteTTSException, RemoteTTSTimeoutException
 from mycroft.util.log import LOG
 from mycroft.tts import cache_handler
 from mycroft.util import get_cache_directory
@@ -231,12 +231,16 @@ class Mimic2(TTS):
         """
         LOG.debug("Generating Mimic2 TSS for: " + str(sentence))
         try:
-            req = self._requests(sentence)
-            results = req.result().json()
-            audio = base64.b64decode(results['audio_base64'])
-            vis = results['visimes']
-            with open(wav_file, 'wb') as f:
-                f.write(audio)
+            res = self._requests(sentence).result()
+            if 200 <= res.status_code < 300:
+                results = res.json()
+                audio = base64.b64decode(results['audio_base64'])
+                vis = results['visimes']
+                with open(wav_file, 'wb') as f:
+                    f.write(audio)
+            else:
+                raise RemoteTTSException('Backend returned HTTP status '
+                                         '{}'.format(res.status_code))
         except (ReadTimeout, ConnectionError, ConnectTimeout, HTTPError):
             raise RemoteTTSTimeoutException(
                 "Mimic 2 server request timed out. Falling back to mimic")

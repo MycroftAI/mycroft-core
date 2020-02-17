@@ -17,6 +17,7 @@ class TestMimic2(unittest.TestCase):
         result_mock = mock.Mock(name='resultMock')
         get_mock.result.return_value = result_mock
         result_mock.json.return_value = {'audio_base64': '', 'visimes': ''}
+        result_mock.status_code = 200
         m2 = Mimic2('en-US', {'url': 'https://just.testing.nu'})
 
         with mock.patch('mycroft.tts.mimic2_tts.open') as mock_open:
