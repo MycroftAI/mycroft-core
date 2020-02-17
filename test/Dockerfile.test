@@ -93,4 +93,4 @@ RUN python -m test.integrationtests.voight_kampff.test_setup -c test/integration
 # Setup and run the integration tests
 ENV PYTHONPATH /opt/mycroft/mycroft-core/
 WORKDIR /opt/mycroft/mycroft-core/test/integrationtests/voight_kampff
-ENTRYPOINT "./run_test_suite.sh"
+ENTRYPOINT ["./run_test_suite.sh"]

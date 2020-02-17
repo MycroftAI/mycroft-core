@@ -34,12 +34,23 @@ pipeline {
                 {
                     sh 'docker run \
                         -v "$HOME/voight-kampff:/root/.mycroft" \
-                        mycroft-core:${BRANCH_ALIAS}'
+                        mycroft-core:${BRANCH_ALIAS} -f \
+                        allure_behave.formatter:AllureFormatter \
+                        -o /root/.mycroft/allure-result'
                 }
             }
             post {
                 always {
                     echo 'Report Test Results'
+                    echo 'Changing ownership...'
+                    sh 'docker run \
+                        -v "$HOME/voight-kampff:/root/.mycroft" \
+                        --entrypoint=/bin/bash \
+                        mycroft-core:${BRANCH_ALIAS} \
+                        -x -c "chown $(id -u $USER):$(id -g $USER) \
+                        -R /root/.mycroft/allure-result"'
+
+                    echo 'Transfering...'
                     sh 'mv $HOME/voight-kampff/allure-result allure-result'
                     script {
                         allure([
