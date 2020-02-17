@@ -36,7 +36,7 @@ pipeline {
                         -v "$HOME/voight-kampff:/root/.mycroft" \
                         mycroft-core:${BRANCH_ALIAS} -f \
                         allure_behave.formatter:AllureFormatter \
-                        -o /root/.mycroft/allure-result'
+                        -o /root/.mycroft/allure-result --tags ~@xfail'
                 }
             }
             post {
