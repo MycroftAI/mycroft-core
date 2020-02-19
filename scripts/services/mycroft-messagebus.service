@@ -1,0 +1,16 @@
+[Unit]
+Description=Mycroft Messagebus
+PartOf=mycroft.service
+After=mycroft.service
+
+[Service]
+#User=mycroft
+WorkingDirectory=%h/mycroft-core
+Environment=PYTHONPATH=%h/mycroft-core/.venv/bin
+ExecStart=%h/mycroft-core/.venv/bin/python -m mycroft.messagebus.service
+StandardOutput=file:/var/log/mycroft/bus.log
+StandardError=file:/var/log/mycroft/bus.error.log
+Restart=on-failure
+
+[Install]
+WantedBy=mycroft.service

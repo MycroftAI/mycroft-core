@@ -1,0 +1,12 @@
+[Unit]
+Description=Mycroft A.I. Software stack.
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStartPre=/bin/bash -c 'while ! ping -q -c 1 -W 1 1.1.1.1 >/dev/null 2>&1; do sleep 1; done'
+ExecStart=/bin/true
+RemainAfterExit=yes
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,17 @@
+[Unit]
+Description=Mycroft Voice
+PartOf=mycroft.service
+After=mycroft.service
+After=mycroft-messagebus.service
+
+[Service]
+#User=mycroft
+WorkingDirectory=%h/mycroft-core
+Environment=PYTHONPATH=%h/mycroft-core/.venv/bin
+ExecStart=%h/mycroft-core/.venv/bin/python -m mycroft.client.speech
+StandardOutput=file:/var/log/mycroft/voice.log
+StandardError=file:/var/log/mycroft/voice.error.log
+Restart=on-failure
+
+[Install]
+WantedBy=mycroft.service

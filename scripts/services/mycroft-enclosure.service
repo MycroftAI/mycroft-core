@@ -1,0 +1,17 @@
+[Unit]
+Description=Mycroft Enclosure
+PartOf=mycroft.service
+After=mycroft.service
+After=mycroft-messagebus.service
+
+[Service]
+#User=mycroft
+WorkingDirectory=%h/mycroft-core
+Environment=PYTHONPATH=%h/mycroft-core/.venv/bin
+ExecStart=%h/mycroft-core/.venv/bin/python -m mycroft.client.enclosure
+StandardOutput=file:/var/log/mycroft/enclosure.log
+StandardError=file:/var/log/mycroft/enclosure.error.log
+Restart=on-failure
+
+[Install]
+WantedBy=mycroft.service
