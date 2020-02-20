@@ -352,7 +352,9 @@ class IntentService:
             if converse:
                 # Report that converse handled the intent and return
                 LOG.debug("Handled in converse()")
-                ident = message.context['ident'] if message.context else None
+                ident = None
+                if message.context and 'ident' in message.context:
+                    ident = message.context['ident']
                 report_timing(ident, 'intent_service', stopwatch,
                               {'intent_type': 'converse'})
                 return
