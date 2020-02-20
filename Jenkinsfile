@@ -33,10 +33,11 @@ pipeline {
                 timeout(time: 10, unit: 'MINUTES')
                 {
                     sh 'docker run \
-                        -v "$HOME/voight-kampff:/root/.mycroft" \
-                        mycroft-core:${BRANCH_ALIAS} -f \
-                        allure_behave.formatter:AllureFormatter \
-                        -o /root/.mycroft/allure-result --tags ~@xfail'
+                        -v "$HOME/voight-kampff/identity:/root/.mycroft/identity" \
+                        -v "$HOME/voight-kampff/:/root/allure" \
+                        mycroft-core:${BRANCH_ALIAS} \
+                        -f allure_behave.formatter:AllureFormatter \
+                        -o /root/allure/allure-result --tags ~@xfail'
                 }
             }
             post {
@@ -44,11 +45,11 @@ pipeline {
                     echo 'Report Test Results'
                     echo 'Changing ownership...'
                     sh 'docker run \
-                        -v "$HOME/voight-kampff:/root/.mycroft" \
+                        -v "$HOME/voight-kampff/:/root/allure" \
                         --entrypoint=/bin/bash \
                         mycroft-core:${BRANCH_ALIAS} \
                         -x -c "chown $(id -u $USER):$(id -g $USER) \
-                        -R /root/.mycroft/allure-result"'
+                        -R /root/allure/"'
 
                     echo 'Transfering...'
                     sh 'mv $HOME/voight-kampff/allure-result allure-result'

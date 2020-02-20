@@ -14,11 +14,6 @@ behave $@
 RESULT=$?
 # Stop all mycroft core services.
 /opt/mycroft/mycroft-core/stop-mycroft.sh all
-# Make the jenkins user the owner of the allure results.  This allows the
-# jenkins job to build a report from the results
-# Remove temporary skill files
-rm -rf ~/.mycroft/skills
-# Remove intent cache
-rm -rf ~/.mycroft/intent_cache
 
+# Reort the result of the behave test as exit status
 exit $RESULT
