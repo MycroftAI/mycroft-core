@@ -169,7 +169,7 @@ class PadatiousService(FallbackSkill):
 
         intent.matches['utterance'] = utt
         self.service.add_active_skill(intent.name.split(':')[0])
-        self.bus.emit(message.reply(intent.name, data=intent.matches))
+        self.bus.emit(message.forward(intent.name, data=intent.matches))
         return True
 
     def handle_fallback_last_chance(self, message):
