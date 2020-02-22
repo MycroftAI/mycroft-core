@@ -213,11 +213,11 @@ class IntentService:
         for skill in self.active_skills:
             self.do_converse(None, skill[0], lang)
 
-    def do_converse(self, utterances, skill_id, lang):
+    def do_converse(self, utterances, skill_id, lang, message):
         self.waiting_for_converse = True
         self.converse_result = False
         self.converse_skill_id = skill_id
-        self.bus.emit(Message("skill.converse.request", {
+        self.bus.emit(message.reply("skill.converse.request", {
             "skill_id": skill_id, "utterances": utterances, "lang": lang}))
         start_time = time.time()
         t = 0
@@ -333,7 +333,7 @@ class IntentService:
             padatious_intent = None
             with stopwatch:
                 # Give active skills an opportunity to handle the utterance
-                converse = self._converse(combined, lang)
+                converse = self._converse(combined, lang, message)
 
                 if not converse:
                     # No conversation, use intent system to handle utterance
@@ -387,12 +387,13 @@ class IntentService:
         except Exception as e:
             LOG.exception(e)
 
-    def _converse(self, utterances, lang):
+    def _converse(self, utterances, lang, message):
         """ Give active skills a chance at the utterance
 
         Args:
             utterances (list):  list of utterances
             lang (string):      4 letter ISO language code
+            message (Message):  message to use to generate reply
 
         Returns:
             bool: True if converse handled it, False if  no skill processes it
@@ -405,7 +406,7 @@ class IntentService:
 
         # check if any skill wants to handle utterance
         for skill in self.active_skills:
-            if self.do_converse(utterances, skill[0], lang):
+            if self.do_converse(utterances, skill[0], lang, message):
                 # update timestamp, or there will be a timeout where
                 # intent stops conversing whether its being used or not
                 self.add_active_skill(skill[0])
