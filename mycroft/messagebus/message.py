@@ -16,6 +16,7 @@ import json
 import re
 import inspect
 from mycroft.util.parse import normalize
+from copy import deepcopy
 
 
 class Message:
@@ -111,10 +112,10 @@ class Message:
         Returns:
             Message: Message object to be used on the reply to the message
         """
-        data = data or {}
+        data = deepcopy(data) or {}
         context = context or {}
 
-        new_context = self.context
+        new_context = deepcopy(self.context)
         for key in context:
             new_context[key] = context[key]
         if 'destination' in data:
