@@ -227,7 +227,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.save_utterances = listener_config.get('save_utterances', False)
 
         self.save_wake_words = listener_config.get('record_wake_words')
-        self.saved_wake_words_dir = join(gettempdir(), 'mycroft_wake_words')
+        self.save_path = listener_config.get('save_path', gettempdir())
+        self.saved_wake_words_dir = join(self.save_path, 'mycroft_wake_words')
 
         self.upload_lock = Lock()
         self.filenames_to_upload = []
@@ -647,7 +648,10 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         if self.save_utterances:
             LOG.info("Recording utterance")
             stamp = str(datetime.datetime.now())
-            filename = "/tmp/mycroft_utterance%s.wav" % stamp
+            filename = "/{}/mycroft_utterances/{}.wav".format(
+                self.save_path,
+                stamp
+            )
             with open(filename, 'wb') as filea:
                 filea.write(audio_data.get_wav_data())
             LOG.debug("Thinking...")
