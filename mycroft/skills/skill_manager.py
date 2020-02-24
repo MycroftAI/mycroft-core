@@ -406,7 +406,10 @@ class SkillManager(Thread):
                     self._emit_converse_error(message, skill_id, error_message)
                     break
                 try:
-                    self._emit_converse_response(message, skill_loader)
+                    utterances = message.data['utterances']
+                    lang = message.data['lang']
+                    result = skill_loader.instance.converse(utterances, lang)
+                    self._emit_converse_response(result, message, skill_loader)
                 except Exception:
                     error_message = 'exception in converse method'
                     LOG.exception(error_message)
@@ -419,16 +422,17 @@ class SkillManager(Thread):
             self._emit_converse_error(message, skill_id, error_message)
 
     def _emit_converse_error(self, message, skill_id, error_msg):
-        reply = message.reply(
-            'skill.converse.error',
-            data=dict(skill_id=skill_id, error=error_msg)
-        )
+        """Emit a message reporting the error back to the intent service."""
+        reply = message.reply('skill.converse.response',
+                              data=dict(skill_id=skill_id, error=error_msg))
+        self.bus.emit(reply)
+        # Also emit the old error message to keep compatibility
+        # TODO Remove in 20.08
+        reply = message.reply('skill.converse.error',
+                              data=dict(skill_id=skill_id, error=error_msg))
         self.bus.emit(reply)
 
-    def _emit_converse_response(self, message, skill_loader):
-        utterances = message.data['utterances']
-        lang = message.data['lang']
-        result = skill_loader.instance.converse(utterances, lang)
+    def _emit_converse_response(self, result, message, skill_loader):
         reply = message.reply(
             'skill.converse.response',
             data=dict(skill_id=skill_loader.skill_id, result=result)

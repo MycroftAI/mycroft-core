@@ -83,6 +83,7 @@ class TestSkillManager(MycroftUnitTestBase):
         self.skill_loader_mock.instance = Mock()
         self.skill_loader_mock.instance.default_shutdown = Mock()
         self.skill_loader_mock.instance.converse = Mock()
+        self.skill_loader_mock.instance.converse.return_value = True
         self.skill_loader_mock.skill_id = 'test_skill'
         self.skill_manager.skill_loaders = {
             str(self.skill_dir): self.skill_loader_mock
@@ -217,7 +218,8 @@ class TestSkillManager(MycroftUnitTestBase):
 
     def test_handle_converse_request(self):
         message = Mock()
-        message.data = dict(skill_id='test_skill')
+        message.data = dict(skill_id='test_skill', utterances=['hey you'],
+                            lang='en-US')
         self.skill_loader_mock.loaded = True
         converse_response_mock = Mock()
         self.skill_manager._emit_converse_response = converse_response_mock
@@ -226,6 +228,7 @@ class TestSkillManager(MycroftUnitTestBase):
         self.skill_manager.handle_converse_request(message)
 
         converse_response_mock.assert_called_once_with(
+            True,
             message,
             self.skill_loader_mock
         )
