@@ -15,11 +15,13 @@
 """The intent service interface offers a unified wrapper class for the
 Intent Service. Including both adapt and padatious.
 """
-from os.path import exists
-
+from os.path import exists, isfile
 from adapt.intent import Intent
 
 from mycroft.messagebus.message import Message
+from mycroft.messagebus.client import MessageBusClient
+from mycroft.util import create_daemon
+from mycroft.util.log import LOG
 
 
 class IntentServiceInterface:
@@ -29,6 +31,7 @@ class IntentServiceInterface:
     for easier interaction with the service. It wraps both the Adapt and
     Precise parts of the intent services.
     """
+
     def __init__(self, bus=None):
         self.bus = bus
         self.registered_intents = []
@@ -157,6 +160,216 @@ class IntentServiceInterface:
                 return intent
         else:
             return None
+
+
+class IntentQueryApi:
+    """
+    Query Intent Service at runtime
+    """
+
+    def __init__(self, bus=None, timeout=5):
+        if bus is None:
+            bus = MessageBusClient()
+            create_daemon(bus.run_forever)
+        self.bus = bus
+        self.timeout = timeout
+
+    def get_adapt_intent(self, utterance, lang="en-us"):
+        """ get best adapt intent for utterance """
+        msg = Message("intent.service.adapt.get",
+                      {"utterance": utterance, "lang": lang},
+                      context={"destination": "intent_service",
+                               "source": "intent_api"})
+
+        resp = self.bus.wait_for_response(msg,
+                                          'intent.service.adapt.reply',
+                                          timeout=self.timeout)
+        data = resp.data if resp is not None else {}
+        if not data:
+            LOG.error("Intent Service timed out!")
+            return None
+        return data["intent"]
+
+    def get_padatious_intent(self, utterance, lang="en-us"):
+        """ get best padatious intent for utterance """
+        msg = Message("intent.service.padatious.get",
+                      {"utterance": utterance, "lang": lang},
+                      context={"destination": "intent_service",
+                               "source": "intent_api"})
+        resp = self.bus.wait_for_response(msg,
+                                          'intent.service.padatious.reply',
+                                          timeout=self.timeout)
+        data = resp.data if resp is not None else {}
+        if not data:
+            LOG.error("Intent Service timed out!")
+            return None
+        return data["intent"]
+
+    def get_intent(self, utterance, lang="en-us"):
+        """ get best intent for utterance """
+        msg = Message("intent.service.intent.get",
+                      {"utterance": utterance, "lang": lang},
+                      context={"destination": "intent_service",
+                               "source": "intent_api"})
+        resp = self.bus.wait_for_response(msg,
+                                          'intent.service.intent.reply',
+                                          timeout=self.timeout)
+        data = resp.data if resp is not None else {}
+        if not data:
+            LOG.error("Intent Service timed out!")
+            return None
+        return data["intent"]
+
+    def get_skill(self, utterance, lang="en-us"):
+        """ get skill that utterance will trigger """
+        intent = self.get_intent(utterance, lang)
+        if not intent:
+            return None
+        # retrieve skill from munged intent name
+        if intent.get("name"):  # padatious
+            return intent["name"].split(":")[0]
+        if intent.get("intent_type"):  # adapt
+            return intent["intent_type"].split(":")[0]
+        return None  # raise some error here maybe? this should never happen
+
+    def get_skills_manifest(self):
+        msg = Message("intent.service.skills.get",
+                      context={"destination": "intent_service",
+                               "source": "intent_api"})
+        resp = self.bus.wait_for_response(msg,
+                                          'intent.service.skills.reply',
+                                          timeout=self.timeout)
+        data = resp.data if resp is not None else {}
+        if not data:
+            LOG.error("Intent Service timed out!")
+            return None
+        return data["skills"]
+
+    def get_active_skills(self):
+        msg = Message("intent.service.active_skills.get",
+                      context={"destination": "intent_service",
+                               "source": "intent_api"})
+        resp = self.bus.wait_for_response(msg,
+                                          'intent.service.active_skills.reply',
+                                          timeout=self.timeout)
+        data = resp.data if resp is not None else {}
+        if not data:
+            LOG.error("Intent Service timed out!")
+            return None
+        return data["skills"]
+
+    def get_adapt_manifest(self):
+        msg = Message("intent.service.adapt.manifest.get",
+                      context={"destination": "intent_service",
+                               "source": "intent_api"})
+        resp = self.bus.wait_for_response(msg,
+                                          'intent.service.adapt.manifest',
+                                          timeout=self.timeout)
+        data = resp.data if resp is not None else {}
+        if not data:
+            LOG.error("Intent Service timed out!")
+            return None
+        return data["intents"]
+
+    def get_padatious_manifest(self):
+        msg = Message("intent.service.padatious.manifest.get",
+                      context={"destination": "intent_service",
+                               "source": "intent_api"})
+        resp = self.bus.wait_for_response(msg,
+                                          'intent.service.padatious.manifest',
+                                          timeout=self.timeout)
+        data = resp.data if resp is not None else {}
+        if not data:
+            LOG.error("Intent Service timed out!")
+            return None
+        return data["intents"]
+
+    def get_intent_manifest(self):
+        padatious = self.get_padatious_manifest()
+        adapt = self.get_adapt_manifest()
+        return {"adapt": adapt,
+                "padatious": padatious}
+
+    def get_vocab_manifest(self):
+        msg = Message("intent.service.adapt.vocab.manifest.get",
+                      context={"destination": "intent_service",
+                               "source": "intent_api"})
+        reply_msg_type = 'intent.service.adapt.vocab.manifest'
+        resp = self.bus.wait_for_response(msg,
+                                          reply_msg_type,
+                                          timeout=self.timeout)
+        data = resp.data if resp is not None else {}
+        if not data:
+            LOG.error("Intent Service timed out!")
+            return None
+
+        vocab = {}
+        for voc in data["vocab"]:
+            if voc.get("regex"):
+                continue
+            if voc["end"] not in vocab:
+                vocab[voc["end"]] = {"samples": []}
+            vocab[voc["end"]]["samples"].append(voc["start"])
+        return [{"name": voc, "samples": vocab[voc]["samples"]}
+                for voc in vocab]
+
+    def get_regex_manifest(self):
+        msg = Message("intent.service.adapt.vocab.manifest.get",
+                      context={"destination": "intent_service",
+                               "source": "intent_api"})
+        reply_msg_type = 'intent.service.adapt.vocab.manifest'
+        resp = self.bus.wait_for_response(msg,
+                                          reply_msg_type,
+                                          timeout=self.timeout)
+        data = resp.data if resp is not None else {}
+        if not data:
+            LOG.error("Intent Service timed out!")
+            return None
+
+        vocab = {}
+        for voc in data["vocab"]:
+            if not voc.get("regex"):
+                continue
+            name = voc["regex"].split("(?P<")[-1].split(">")[0]
+            if name not in vocab:
+                vocab[name] = {"samples": []}
+            vocab[name]["samples"].append(voc["regex"])
+        return [{"name": voc, "regexes": vocab[voc]["samples"]}
+                for voc in vocab]
+
+    def get_entities_manifest(self):
+        msg = Message("intent.service.padatious.entities.manifest.get",
+                      context={"destination": "intent_service",
+                               "source": "intent_api"})
+        reply_msg_type = 'intent.service.padatious.entities.manifest'
+        resp = self.bus.wait_for_response(msg,
+                                          reply_msg_type,
+                                          timeout=self.timeout)
+        data = resp.data if resp is not None else {}
+        if not data:
+            LOG.error("Intent Service timed out!")
+            return None
+
+        entities = []
+        # read files
+        for ent in data["entities"]:
+            if isfile(ent["file_name"]):
+                with open(ent["file_name"]) as f:
+                    lines = f.read().replace("(", "").replace(")", "").split(
+                        "\n")
+                samples = []
+                for l in lines:
+                    samples += [a.strip() for a in l.split("|") if a.strip()]
+                entities.append({"name": ent["name"], "samples": samples})
+        return entities
+
+    def get_keywords_manifest(self):
+        padatious = self.get_entities_manifest()
+        adapt = self.get_vocab_manifest()
+        regex = self.get_regex_manifest()
+        return {"adapt": adapt,
+                "padatious": padatious,
+                "regex": regex}
 
 
 def open_intent_envelope(message):

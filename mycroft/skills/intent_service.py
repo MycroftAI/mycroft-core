@@ -116,7 +116,7 @@ class ContextManager:
                               relevant_frames[i].entities]
             for entity in frame_entities:
                 entity['confidence'] = entity.get('confidence', 1.0) \
-                    / (2.0 + depth)
+                                       / (2.0 + depth)
             context += frame_entities
 
             # Update depth
@@ -181,12 +181,25 @@ class IntentService:
 
         def add_active_skill_handler(message):
             self.add_active_skill(message.data['skill_id'])
+
         self.bus.on('active_skill_request', add_active_skill_handler)
         self.active_skills = []  # [skill_id , timestamp]
         self.converse_timeout = 5  # minutes to prune active_skills
         self.waiting_for_converse = False
         self.converse_result = False
         self.converse_skill_id = ""
+
+        # Intents API
+        self.registered_intents = []
+        self.registered_vocab = []
+        self.bus.on('intent.service.adapt.get', self.handle_get_adapt)
+        self.bus.on('intent.service.intent.get', self.handle_get_intent)
+        self.bus.on('intent.service.skills.get', self.handle_get_skills)
+        self.bus.on('intent.service.active_skills.get',
+                    self.handle_get_active_skills)
+        self.bus.on('intent.service.adapt.manifest.get', self.handle_manifest)
+        self.bus.on('intent.service.adapt.vocab.manifest.get',
+                    self.handle_vocab_manifest)
 
     def update_skill_name_dict(self, message):
         """
@@ -342,8 +355,8 @@ class IntentService:
                     for utt in combined:
                         _intent = PadatiousService.instance.calc_intent(utt)
                         if _intent:
-                            best = padatious_intent.conf if padatious_intent\
-                                        else 0.0
+                            best = padatious_intent.conf if padatious_intent \
+                                else 0.0
                             if best < _intent.conf:
                                 padatious_intent = _intent
                     LOG.debug("Padatious intent: {}".format(padatious_intent))
@@ -359,7 +372,7 @@ class IntentService:
                               {'intent_type': 'converse'})
                 return
             elif (intent and intent.get('confidence', 0.0) > 0.0 and
-                    not (padatious_intent and padatious_intent.conf >= 0.95)):
+                  not (padatious_intent and padatious_intent.conf >= 0.95)):
                 # Send the message to the Adapt intent's handler unless
                 # Padatious is REALLY sure it was directed at it instead.
                 self.update_context(intent)
@@ -466,6 +479,7 @@ class IntentService:
         else:
             self.engine.register_entity(
                 start_concept, end_concept, alias_of=alias_of)
+        self.registered_vocab.append(message.data)
 
     def handle_register_intent(self, message):
         intent = open_intent_envelope(message)
@@ -518,3 +532,44 @@ class IntentService:
     def handle_clear_context(self, message):
         """ Clears all keywords from context """
         self.context_manager.clear_context()
+
+    def handle_get_adapt(self, message):
+        utterance = message.data["utterance"]
+        lang = message.data.get("lang", "en-us")
+        norm = normalize(utterance, lang, remove_articles=False)
+        intent = self._adapt_intent_match([utterance], [norm], lang)
+        self.bus.emit(message.reply("intent.service.adapt.reply",
+                                    {"intent": intent}))
+
+    def handle_get_intent(self, message):
+        utterance = message.data["utterance"]
+        lang = message.data.get("lang", "en-us")
+        norm = normalize(utterance, lang, remove_articles=False)
+        intent = self._adapt_intent_match([utterance], [norm], lang)
+        # Adapt intent's handler is used unless
+        # Padatious is REALLY sure it was directed at it instead.
+        padatious_intent = PadatiousService.instance.calc_intent(utterance)
+        if not padatious_intent and norm != utterance:
+            padatious_intent = PadatiousService.instance.calc_intent(norm)
+        if intent is None or (
+                padatious_intent and padatious_intent.conf >= 0.95):
+            intent = padatious_intent.__dict__
+        self.bus.emit(message.reply("intent.service.intent.reply",
+                                    {"intent": intent}))
+
+    def handle_get_skills(self, message):
+        self.bus.emit(message.reply("intent.service.skills.reply",
+                                    {"skills": self.skill_names}))
+
+    def handle_get_active_skills(self, message):
+        self.bus.emit(message.reply("intent.service.active_skills.reply",
+                                    {"skills": [s[0] for s in
+                                                self.active_skills]}))
+
+    def handle_manifest(self, message):
+        self.bus.emit(message.reply("intent.service.adapt.manifest",
+                                    {"intents": self.registered_intents}))
+
+    def handle_vocab_manifest(self, message):
+        self.bus.emit(message.reply("intent.service.adapt.vocab.manifest",
+                                    {"vocab": self.registered_vocab}))
