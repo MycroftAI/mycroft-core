@@ -138,8 +138,8 @@ class Message:
         Returns
             (Message) message with the type modified to match default response
         """
-        response_message = self.reply(self.msg_type, data or {}, context)
-        response_message.msg_type += '.response'
+        response_message = Message(self.msg_type + '.response', data or {},
+                                   context or self.context)
         return response_message
 
     def publish(self, msg_type, data, context=None):
