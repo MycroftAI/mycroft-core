@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 import json
+from queue import Queue, Empty
 import threading
 import time
 
@@ -24,6 +25,31 @@ from mycroft.session import SessionManager
 from mycroft.util.log import LOG
 from mycroft.version import CORE_VERSION_STR
 from copy import copy
+
+
+class _MetricSender(threading.Thread):
+    """Thread responsible for sending metrics data."""
+    def __init__(self):
+        super().__init__()
+        self.queue = Queue()
+        self.daemon = True
+        self.start()
+
+    def run(self):
+        while True:
+            time.sleep(30)
+
+            try:
+                while True:  # Try read the queue until it fails
+                    report_metric(*self.queue.get_nowait())
+                    time.sleep(0.5)
+            except Empty:
+                pass  # If the queue is empty just continue the loop
+            except Exception as e:
+                LOG.error('Could not send Metrics: {}'.format(repr(e)))
+
+
+_metric_uploader = _MetricSender()
 
 
 def report_metric(name, data):
@@ -43,9 +69,9 @@ def report_metric(name, data):
 
 
 def report_timing(ident, system, timing, additional_data=None):
-    """
-        Create standardized message for reporting timing.
+    """Create standardized message for reporting timing.
 
+    Arguments:
         ident (str):            identifier of user interaction
         system (str):           system the that's generated the report
         timing (stopwatch):     Stopwatch object with recorded timing
@@ -58,7 +84,7 @@ def report_timing(ident, system, timing, additional_data=None):
     report['start_time'] = timing.timestamp
     report['time'] = timing.time
 
-    report_metric('timing', report)
+    _metric_uploader.queue.put(('timing', report))
 
 
 class Stopwatch:
