@@ -222,3 +222,13 @@ def then_user_follow_up(context, text):
                                    'session': '',
                                    'ident': time.time()},
                              context={'client_name': 'mycroft_listener'}))
+
+
+@then('mycroft should send the message "{message_type}"')
+def then_messagebus_message(context, message_type):
+    cnt = 0
+    while context.bus.get_messages(message_type) == []:
+        if cnt > 20:
+            assert False, "Message not found"
+            break
+        time.sleep(0.5)
