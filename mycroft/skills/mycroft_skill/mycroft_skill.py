@@ -226,7 +226,13 @@ class MycroftSkill:
         """Add all events allowing the standard interaction with the Mycroft
         system.
         """
-        self.add_event('mycroft.stop', self.__handle_stop)
+        def stop_is_implemented():
+            return self.__class__.stop is not MycroftSkill.stop
+
+        # Only register stop if it's been implemented
+        if stop_is_implemented():
+            self.add_event('mycroft.stop', self.__handle_stop)
+
         self.add_event(
             'mycroft.skill.enable_intent',
             self.handle_enable_intent
@@ -1179,6 +1185,7 @@ class MycroftSkill:
         """Handler for the "mycroft.stop" signal. Runs the user defined
         `stop()` method.
         """
+        self.log.info(_.context)
 
         def __stop_timeout():
             # The self.stop() call took more than 100ms, assume it handled Stop

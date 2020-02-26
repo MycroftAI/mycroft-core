@@ -40,17 +40,6 @@ _TTS_ENV = deepcopy(os.environ)
 _TTS_ENV['PULSE_PROP'] = 'media.role=phone'
 
 
-def send_playback_metric(stopwatch, ident):
-    """Send playback metrics in a background thread."""
-
-    def do_send(stopwatch, ident):
-        report_timing(ident, 'speech_playback', stopwatch)
-
-    t = Thread(target=do_send, args=(stopwatch, ident))
-    t.daemon = True
-    t.start()
-
-
 class PlaybackThread(Thread):
     """Thread class for playing back tts audio and sending
     viseme data to enclosure.
@@ -115,7 +104,7 @@ class PlaybackThread(Thread):
                         self.show_visemes(visemes)
                     self.p.communicate()
                     self.p.wait()
-                send_playback_metric(stopwatch, ident)
+                report_timing(ident, 'speech_playback', stopwatch)
 
                 if self.queue.empty():
                     self.tts.end_audio(listen)
