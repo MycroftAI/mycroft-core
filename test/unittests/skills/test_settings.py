@@ -19,9 +19,10 @@ from unittest import TestCase
 from unittest.mock import call, Mock, patch
 
 from mycroft.skills.settings import (
+    get_local_settings,
+    save_settings,
     SkillSettingsDownloader,
-    SettingsMetaUploader,
-    Settings
+    SettingsMetaUploader
 )
 from ..base import MycroftUnitTestBase
 
@@ -273,51 +274,31 @@ class TestSettings(TestCase):
         self.skill_mock.name = 'test_skill'
 
     def test_empty_settings(self):
-        settings = Settings(self.skill_mock)
-        self.assertDictEqual(settings._settings, {})
+        settings = get_local_settings(
+            self.skill_mock.root_dir,
+            self.skill_mock.name
+        )
+        self.assertDictEqual(settings, {})
 
     def test_settings_file_exists(self):
         settings_path = str(self.temp_dir.joinpath('settings.json'))
         with open(settings_path, 'w') as settings_file:
             settings_file.write('{"foo": "bar"}\n')
 
-        settings = Settings(self.skill_mock)
-        self.assertDictEqual(settings._settings, {'foo': 'bar'})
+        settings = get_local_settings(
+            self.skill_mock.root_dir,
+            self.skill_mock.name
+        )
+        self.assertDictEqual(settings, {'foo': 'bar'})
         self.assertEqual(settings['foo'], 'bar')
         self.assertNotIn('store', settings)
         self.assertIn('foo', settings)
 
-    def test_change_settings(self):
-        settings = Settings(self.skill_mock)
-        settings['foo'] = 'bar'
-        self.assertDictEqual(settings._settings, {'foo': 'bar'})
-        self.assertIn('foo', settings)
-
     def test_store_settings(self):
-        settings = Settings(self.skill_mock)
-        settings['foo'] = 'bar'
-        settings.store()
+        settings = dict(foo='bar')
+        save_settings(self.skill_mock.root_dir, settings)
         settings_path = str(self.temp_dir.joinpath('settings.json'))
         with open(settings_path) as settings_file:
             file_contents = settings_file.read()
 
         self.assertEqual(file_contents, '{"foo": "bar"}')
-
-    def test_set_changed_callback(self):
-        def test_callback():
-            pass
-
-        settings = Settings(self.skill_mock)
-        settings.set_changed_callback(test_callback)
-
-        self.assertEqual(
-            self.skill_mock.settings_change_callback,
-            test_callback
-        )
-
-    def test_del_settings_key(self):
-        settings = Settings(self.skill_mock)
-        settings['flowerpot'] = 42
-        settings['whale'] = 43
-        del settings['whale']
-        self.assertDictEqual(settings._settings, {'flowerpot': 42})
