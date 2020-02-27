@@ -35,15 +35,16 @@ def is_CQSVisualMatchLevel(match_level):
 VISUAL_DEVICES = ['mycroft_mark_2']
 
 
-def handles_visuals(self, platform):
+def handles_visuals(platform):
     return platform in VISUAL_DEVICES
 
 
 class CommonQuerySkill(MycroftSkill, ABC):
-    """ Question answering skills should be based on this class. The skill
-    author needs to implement `CQS_match_query_phrase` returning an answer
-    and can optionally implement `CQS_action` to perform additional actions
-    if the skill's answer is selected.
+    """Question answering skills should be based on this class.
+
+    The skill author needs to implement `CQS_match_query_phrase` returning an
+    answer and can optionally implement `CQS_action` to perform additional
+    actions if the skill's answer is selected.
 
     This class works in conjunction with skill-query which collects
     answers from several skills presenting the best one available.
@@ -52,7 +53,7 @@ class CommonQuerySkill(MycroftSkill, ABC):
         super().__init__(name, bus)
 
     def bind(self, bus):
-        """ Overrides the default bind method of MycroftSkill.
+        """Overrides the default bind method of MycroftSkill.
 
         This registers messagebus handlers for the skill during startup
         but is nothing the skill author needs to consider.
@@ -114,8 +115,11 @@ class CommonQuerySkill(MycroftSkill, ABC):
             return 0.0  # should never happen
 
     def __handle_query_action(self, message):
-        """ Message handler for question:action. Extracts phrase and data from
-            message forward this to the skills CQS_action method. """
+        """Message handler for question:action.
+
+        Extracts phrase and data from message forward this to the skills
+        CQS_action method.
+        """
         if message.data["skill_id"] != self.skill_id:
             # Not for this skill!
             return
@@ -126,12 +130,12 @@ class CommonQuerySkill(MycroftSkill, ABC):
 
     @abstractmethod
     def CQS_match_query_phrase(self, phrase):
-        """
-        Analyze phrase to see if it is a play-able phrase with this
-        skill. Needs to be implemented by the skill.
+        """Analyze phrase to see if it is a play-able phrase with this skill.
 
-        Args:
-            phrase (str): User phrase uttered after "Play", e.g. "some music"
+        Needs to be implemented by the skill.
+
+        Arguments:
+            phrase (str): User phrase, "What is an aardwark"
 
         Returns:
             (match, CQSMatchLevel[, callback_data]) or None: Tuple containing
@@ -143,8 +147,8 @@ class CommonQuerySkill(MycroftSkill, ABC):
         return None
 
     def CQS_action(self, phrase, data):
-        """
-        Take additional action IF the skill is selected.
+        """Take additional action IF the skill is selected.
+
         The speech is handled by the common query but if the chosen skill
         wants to display media, set a context or prepare for sending
         information info over e-mail this can be implemented here.

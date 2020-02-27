@@ -14,10 +14,3 @@
 #
 from .config import Configuration, LocalConf, RemoteConf
 from .locations import SYSTEM_CONFIG, USER_CONFIG
-
-
-# Compatibility
-class ConfigurationManager(Configuration):
-    @staticmethod
-    def instance():
-        return Configuration.get()

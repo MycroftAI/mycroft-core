@@ -23,9 +23,7 @@ from mycroft.util.parse import fuzzy_match
 from mycroft.util.parse import get_gender
 from mycroft.util.parse import match_one
 from mycroft.util.parse import normalize
-from mycroft.util.lang.parse_en import _ReplaceableNumber, \
-    _extract_whole_number_with_text_en, _tokenize, _Token, \
-    _extract_decimal_with_text_en
+from mycroft.util.time import default_timezone
 
 
 class TestFuzzyMatch(unittest.TestCase):
@@ -144,6 +142,12 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extract_number("a couple thousand beers"), 2000)
         self.assertEqual(extract_number("100%"), 100)
 
+    def test_extract_datetime(self):
+        """Check that extract_datetime returns the expected timezone."""
+        tz = default_timezone()
+        dt, _ = extract_datetime("today")
+        self.assertEqual(tz, dt.tzinfo)
+
     def test_extract_duration_en(self):
         self.assertEqual(extract_duration("10 seconds"),
                          (timedelta(seconds=10.0), ""))
@@ -179,39 +183,6 @@ class TestNormalize(unittest.TestCase):
                          (timedelta(hours=1, minutes=57.5),
                              "the movie is ,  long"))
         self.assertEqual(extract_duration(""), None)
-
-    def test_datetime_helpers(self):
-        # invoke helper functions directly to test certain conditions which are
-        # difficult to trigger on purpose.
-        replaceable = _ReplaceableNumber(1, ["test_token"])
-
-        # Check that built in members can't be changed
-        with self.assertRaises(Exception) as error:
-            replaceable.value = 42
-            self.assertEqual(error.message, "Immutable!")
-        with self.assertRaises(Exception) as error:
-            replaceable.tokens = ["flowerpot", "whale"]
-            self.assertEqual(error.message, "Immutable!")
-
-        # Check that new member can be added but not modified
-        replaceable.key = "exist"
-        with self.assertRaises(Exception) as error:
-            replaceable.key = "exists?"
-            self.assertEqual(error.message, "Immutable!")
-
-        self.assertEqual(str(replaceable), "(1, ['test_token'])")
-        self.assertEqual(repr(replaceable),
-                         "_ReplaceableNumber(1, ['test_token'])")
-
-        self.assertEqual(_extract_whole_number_with_text_en(_tokenize(
-            "test string"), False, False), (False, []))
-        self.assertEqual(_extract_whole_number_with_text_en(_tokenize(
-            "! half"), False, False), (0.5, [_Token(word='half', index=1)]))
-
-        self.assertEqual(_extract_decimal_with_text_en(_tokenize(
-            "dot boom"), False, False), (None, None))
-        self.assertEqual(_extract_decimal_with_text_en(_tokenize(
-            "0 0 0"), False, False), (None, None))
 
     def test_extractdatetime_en(self):
         def extractWithFormat(text):

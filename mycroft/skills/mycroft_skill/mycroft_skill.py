@@ -15,7 +15,6 @@
 """Common functionality relating to the implementation of mycroft skills."""
 
 from copy import deepcopy
-import inspect
 import sys
 import re
 import traceback
@@ -32,9 +31,9 @@ from mycroft.audio import wait_while_speaking
 from mycroft.enclosure.api import EnclosureAPI
 from mycroft.enclosure.gui import SkillGUI
 from mycroft.configuration import Configuration
-from mycroft.dialog import DialogLoader
+from mycroft.dialog import load_dialogs
 from mycroft.filesystem import FileSystemAccess
-from mycroft.messagebus.message import Message
+from mycroft.messagebus.message import Message, dig_for_message
 from mycroft.metrics import report_metric
 from mycroft.util import (
     resolve_resource_file,
@@ -102,23 +101,12 @@ def get_non_properties(obj):
     return set(check_class(obj.__class__))
 
 
-def dig_for_message():
-    """Dig Through the stack for message."""
-    stack = inspect.stack()
-    # Limit search to 10 frames back
-    stack = stack if len(stack) < 10 else stack[:10]
-    local_vars = [frame[0].f_locals for frame in stack]
-    for l in local_vars:
-        if 'message' in l and isinstance(l['message'], Message):
-            return l['message']
-
-
 class MycroftSkill:
     """Base class for mycroft skills providing common behaviour and parameters
     to all Skill implementations.
 
     For information on how to get started with creating mycroft skills see
-    https://https://mycroft.ai/documentation/skills/introduction-developing-skills/
+    https://mycroft.ai/documentation/skills/introduction-developing-skills/
 
     Arguments:
         name (str): skill name
@@ -130,13 +118,20 @@ class MycroftSkill:
         self.resting_name = None
         self.skill_id = ''  # will be set from the path, so guaranteed unique
         self.settings_meta = None  # set when skill is loaded in SkillLoader
+
         # Get directory of skill
+        #: Member variable containing the absolute path of the skill's root
+        #: directory. E.g. /opt/mycroft/skills/my-skill.me/
         self.root_dir = dirname(abspath(sys.modules[self.__module__].__file__))
         if use_settings:
             self.settings = Settings(self)
             self._initial_settings = deepcopy(self.settings.as_dict())
         else:
             self.settings = None
+
+        #: Set to register a callback method that will be called every time
+        #: the skills settings are updated. The referenced method should
+        #: include any logic needed to handle the updated settings.
         self.settings_change_callback = None
 
         self.gui = SkillGUI(self)
@@ -804,7 +799,7 @@ class MycroftSkill:
             if handler_info:
                 # Indicate that the skill handler is starting if requested
                 msg_type = handler_info + '.start'
-                self.bus.emit(message.reply(msg_type, skill_data))
+                self.bus.emit(message.forward(msg_type, skill_data))
 
         def on_end(message):
             """Store settings and indicate that the skill handler has completed
@@ -814,7 +809,7 @@ class MycroftSkill:
                 self._initial_settings = self.settings
             if handler_info:
                 msg_type = handler_info + '.complete'
-                self.bus.emit(message.reply(msg_type, skill_data))
+                self.bus.emit(message.forward(msg_type, skill_data))
 
         wrapper = create_wrapper(handler, self.skill_id, on_start, on_end,
                                  on_error)
@@ -1073,7 +1068,8 @@ class MycroftSkill:
         data = {'utterance': utterance,
                 'expect_response': expect_response}
         message = dig_for_message()
-        m = message.reply("speak", data) if message else Message("speak", data)
+        m = message.forward("speak", data) if message \
+            else Message("speak", data)
         self.bus.emit(m)
 
         if wait:
@@ -1119,10 +1115,10 @@ class MycroftSkill:
         # load dialog from "<skill>/locale/<lang>"
         dialog_dir = join(root_directory, 'dialog', self.lang)
         if exists(dialog_dir):
-            self.dialog_renderer = DialogLoader().load(dialog_dir)
+            self.dialog_renderer = load_dialogs(dialog_dir)
         elif exists(join(root_directory, 'locale', self.lang)):
             locale_path = join(root_directory, 'locale', self.lang)
-            self.dialog_renderer = DialogLoader().load(locale_path)
+            self.dialog_renderer = load_dialogs(locale_path)
         else:
             LOG.debug('No dialog loaded')
 
@@ -1249,7 +1245,8 @@ class MycroftSkill:
             LOG.error('Failed to stop skill: {}'.format(self.name),
                       exc_info=True)
 
-    def schedule_event(self, handler, when, data=None, name=None):
+    def schedule_event(self, handler, when, data=None, name=None,
+                       context=None):
         """Schedule a single-shot event.
 
         Arguments:
@@ -1262,11 +1259,17 @@ class MycroftSkill:
                                    NOTE: This will not warn or replace a
                                    previously scheduled event of the same
                                    name.
+            context (dict, optional): context (dict, optional): message
+                                      context to send when the handler
+                                      is called
         """
-        return self.event_scheduler.schedule_event(handler, when, data, name)
+        message = dig_for_message()
+        context = context or message.context if message else {}
+        return self.event_scheduler.schedule_event(handler, when, data, name,
+                                                   context=context)
 
     def schedule_repeating_event(self, handler, when, frequency,
-                                 data=None, name=None):
+                                 data=None, name=None, context=None):
         """Schedule a repeating event.
 
         Arguments:
@@ -1278,13 +1281,19 @@ class MycroftSkill:
             frequency (float/int):  time in seconds between calls
             data (dict, optional):  data to send when the handler is called
             name (str, optional):   reference name, must be unique
+            context (dict, optional): context (dict, optional): message
+                                      context to send when the handler
+                                      is called
         """
+        message = dig_for_message()
+        context = context or message.context if message else {}
         return self.event_scheduler.schedule_repeating_event(
             handler,
             when,
             frequency,
             data,
-            name
+            name,
+            context=context
         )
 
     def update_scheduled_event(self, name, data=None):
