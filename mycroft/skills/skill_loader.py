@@ -21,6 +21,7 @@ from time import time
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus import Message
+from mycroft.skills.settings import save_settings
 from mycroft.util.log import LOG
 
 from .settings import SettingsMetaUploader
@@ -258,7 +259,7 @@ class SkillLoader:
         if first_run:
             LOG.info("First run of " + self.skill_id)
             self.instance.settings["__mycroft_skill_firstrun"] = False
-            self.instance.settings.store()
+            save_settings(self.skill_directory, self.instance.settings)
             intro = self.instance.get_intro_message()
             if intro:
                 self.instance.speak(intro)

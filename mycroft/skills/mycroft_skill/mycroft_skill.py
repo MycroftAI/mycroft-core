@@ -47,7 +47,7 @@ from mycroft.util.parse import match_one, extract_number
 from .event_container import EventContainer, create_wrapper, get_handler_name
 from ..event_scheduler import EventSchedulerInterface
 from ..intent_service_interface import IntentServiceInterface
-from ..settings import get_local_settings, save_settings, Settings
+from ..settings import get_local_settings, save_settings
 from ..skill_data import (
     load_vocabulary,
     load_regex,
@@ -124,8 +124,8 @@ class MycroftSkill:
         #: directory. E.g. /opt/mycroft/skills/my-skill.me/
         self.root_dir = dirname(abspath(sys.modules[self.__module__].__file__))
         if use_settings:
-            self.settings = Settings(self)
-            self._initial_settings = deepcopy(self.settings.as_dict())
+            self.settings = get_local_settings(self.root_dir, self.name)
+            self._initial_settings = deepcopy(self.settings)
         else:
             self.settings = None
 
@@ -1238,7 +1238,6 @@ class MycroftSkill:
 
         # Clear skill from gui
         self.gui.shutdown()
-        self.settings.shutdown()
 
         # removing events
         self.event_scheduler.shutdown()
