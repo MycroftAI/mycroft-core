@@ -1,5 +1,4 @@
-#
-# Copyright 2017 Mycroft AI Inc.
+# Copyright 2020 Mycroft AI Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from .wake_word_test import run_test
 
-"""File kept for backwards compatibility.
-
-TODO: Remove in 20.02
-"""
-from lingua_franca.lang.format_fr import *
+run_test()

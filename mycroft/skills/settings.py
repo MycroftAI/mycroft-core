@@ -92,15 +92,11 @@ def get_local_settings(skill_dir, skill_name) -> dict:
 
 def save_settings(skill_dir, skill_settings):
     """Save skill settings to file."""
-    if isinstance(skill_settings, Settings):
-        settings_to_save = skill_settings.as_dict()
-    else:
-        settings_to_save = skill_settings
     settings_path = Path(skill_dir).joinpath('settings.json')
     if Path(skill_dir).exists():
         with open(str(settings_path), 'w') as settings_file:
             try:
-                json.dump(settings_to_save, settings_file)
+                json.dump(skill_settings, settings_file)
             except Exception:
                 LOG.exception('error saving skill settings to '
                               '{}'.format(settings_path))
@@ -414,46 +410,3 @@ class SkillSettingsDownloader:
                     data={skill_gid: remote_settings}
                 )
                 self.bus.emit(message)
-
-
-# TODO: remove in 20.02
-class Settings:
-    def __init__(self, skill):
-        self._skill = skill
-        self._settings = get_local_settings(skill.root_dir, skill.name)
-
-    def __getattr__(self, attr):
-        if attr not in ['store', 'set_changed_callback', 'as_dict']:
-            return getattr(self._settings, attr)
-        else:
-            return getattr(self, attr)
-
-    def __setitem__(self, key, val):
-        self._settings[key] = val
-
-    def __getitem__(self, key):
-        return self._settings[key]
-
-    def __iter__(self):
-        return iter(self._settings)
-
-    def __contains__(self, key):
-        return key in self._settings
-
-    def __delitem__(self, item):
-        del self._settings[item]
-
-    def store(self, force=False):
-        LOG.warning('DEPRECATED - use mycroft.skills.settings.save_settings()')
-        save_settings(self._skill.root_dir, self._settings)
-
-    def set_changed_callback(self, callback):
-        LOG.warning('DEPRECATED - set the settings_change_callback attribute')
-        self._skill.settings_change_callback = callback
-
-    def as_dict(self):
-        return self._settings
-
-    def shutdown(self):
-        """Shutdown the Settings object removing any references."""
-        self._skill = None

@@ -32,6 +32,7 @@ To set up a test the test runner can
 
 """
 from queue import Queue, Empty
+from copy import copy
 import json
 import time
 import os
@@ -42,7 +43,6 @@ from pyee import EventEmitter
 from numbers import Number
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import MycroftSkill, FallbackSkill
-from mycroft.skills.settings import Settings
 from mycroft.skills.skill_loader import SkillLoader
 from mycroft.configuration import Configuration
 from mycroft.util.log import LOG
@@ -194,28 +194,6 @@ class InterceptEmitter(object):
         pass
 
 
-class TestSettings(Settings):
-    """ Settings instance without saving/loading capability.
-    """
-    def save_skill_settings(self, skill_settings):
-        pass
-
-    def _poll_skill_settings(self):
-        pass
-
-    def _load_settings_meta(self):
-        return None
-
-    def update(self, settings_meta):
-        pass
-
-    def load_skill_settings_from_file(self):
-        pass
-
-    def store(self, force=False):
-        pass
-
-
 class MockSkillsLoader(object):
     """Load a skill and set up emitter
     """
@@ -342,9 +320,7 @@ class SkillTest(object):
 
     def apply_test_settings(self, s, test_case):
         """Replace the skills settings with settings from the test_case."""
-        s.settings = TestSettings(s)
-        for key in test_case['settings']:
-            s.settings[key] = test_case['settings'][key]
+        s.settings = copy(test_case['settings'])
         print(color.YELLOW, 'will run test with custom settings:',
                             '\n{}'.format(s.settings), color.RESET)
 

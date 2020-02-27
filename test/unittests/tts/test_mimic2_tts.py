@@ -2,6 +2,7 @@ import unittest
 from unittest import mock
 
 from mycroft.tts.mimic2_tts import Mimic2
+from mycroft.tts.remote_tts import RemoteTTSException
 
 
 @mock.patch('mycroft.tts.mimic2_tts.FuturesSession')
@@ -17,11 +18,29 @@ class TestMimic2(unittest.TestCase):
         result_mock = mock.Mock(name='resultMock')
         get_mock.result.return_value = result_mock
         result_mock.json.return_value = {'audio_base64': '', 'visimes': ''}
+        result_mock.status_code = 200
         m2 = Mimic2('en-US', {'url': 'https://just.testing.nu'})
 
         with mock.patch('mycroft.tts.mimic2_tts.open') as mock_open:
             wav_file, vis = m2.get_tts("Hello old friend", 'test.wav')
         self.assertTrue(mock_session_instance.get.called)
+
+    def test_get_tts_backend_error(self, _, mock_session):
+        mock_session_instance = mock.Mock(name='SessionMock')
+        mock_session.return_value = mock_session_instance
+
+        get_mock = mock.Mock(name='getMock')
+        mock_session_instance.get.return_value = get_mock
+
+        result_mock = mock.Mock(name='resultMock')
+        get_mock.result.return_value = result_mock
+        result_mock.json.return_value = ''
+        result_mock.status_code = 500
+
+        m2 = Mimic2('en-US', {'url': 'https://just.testing.nu'})
+        with self.assertRaises(RemoteTTSException):
+            with mock.patch('mycroft.tts.mimic2_tts.open') as mock_open:
+                wav_file, vis = m2.get_tts("Hello old friend", 'test.wav')
 
     def test_visemes(self, _, __):
         m2 = Mimic2('en-US', {'url': 'https://just.testing.nu'})

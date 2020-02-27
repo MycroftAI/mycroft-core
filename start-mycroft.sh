@@ -43,7 +43,7 @@ function help() {
     echo
     echo "Util COMMANDs:"
     echo "  audiotest                attempt simple audio validation"
-    echo "  audioaccuracytest        more complex audio validation"
+    echo "  wakewordtest             test selected wakeword engine"
     echo "  sdkdoc                   generate sdk documentation"
     echo
     echo "Options:"
@@ -67,7 +67,7 @@ function name-to-script-path() {
         "voice")             _module="mycroft.client.speech" ;;
         "cli")               _module="mycroft.client.text" ;;
         "audiotest")         _module="mycroft.util.audio_test" ;;
-        "audioaccuracytest") _module="mycroft.audio-accuracy-test" ;;
+        "wakewordtest")      _module="test.wake_word" ;;
         "enclosure")         _module="mycroft.client.enclosure" ;;
 
         *)
@@ -239,7 +239,7 @@ case ${_opt} in
     "audiotest")
         launch-process ${_opt}
         ;;
-    "audioaccuracytest")
+    "wakewordtest")
         launch-process ${_opt}
         ;;
     "sdkdoc")

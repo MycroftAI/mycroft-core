@@ -25,13 +25,11 @@ from functools import total_ordering, wraps
 from itertools import count
 
 from .mycroft_skill import MycroftSkill
-from mycroft.messagebus.message import Message
-
+from mycroft.messagebus.message import Message, dig_for_message
 
 ENTITY = "ENTITY"
 SCENE = "SCENE"
 IOT_REQUEST_ID = "iot_request_id"  # TODO make the id a property of the request
-
 
 _counter = count()
 
@@ -46,7 +44,7 @@ def auto():
     return next(_counter)
 
 
-class _BusKeys():
+class _BusKeys:
     """
     This class contains some strings used to identify
     messages on the messagebus. They are used in in
@@ -172,6 +170,7 @@ class IoTRequestVersion(Enum):
     V2 = V1 | {'value'}
     V3 = V2 | {'state'}
     """
+
     def __lt__(self, other):
         return self.name < other.name
 
@@ -180,7 +179,7 @@ class IoTRequestVersion(Enum):
     V3 = V2 | {'state'}
 
 
-class IoTRequest():
+class IoTRequest:
     """
     This class represents a request from a user to control
     an IoT device. It contains all of the information an IoT
@@ -316,10 +315,12 @@ def _track_request(func):
         Callable
 
     """
+
     @wraps(func)
     def tracking_function(self, message: Message):
         with self._current_request(message.data.get(IOT_REQUEST_ID)):
             func(self, message)
+
     return tracking_function
 
 
@@ -421,13 +422,14 @@ class CommonIoTSkill(MycroftSkill, ABC):
 
     def speak(self, utterance, *args, **kwargs):
         if self._current_iot_request:
-            self.bus.emit(Message(_BusKeys.SPEAK,
-                                  data={"skill_id": self.skill_id,
-                                        IOT_REQUEST_ID:
-                                            self._current_iot_request,
-                                        "speak_args": args,
-                                        "speak_kwargs": kwargs,
-                                        "speak": utterance}))
+            message = dig_for_message()
+            self.bus.emit(message.forward(_BusKeys.SPEAK,
+                                          data={"skill_id": self.skill_id,
+                                                IOT_REQUEST_ID:
+                                                    self._current_iot_request,
+                                                "speak_args": args,
+                                                "speak_kwargs": kwargs,
+                                                "speak": utterance}))
         else:
             super().speak(utterance, *args, **kwargs)
 
@@ -454,10 +456,11 @@ class CommonIoTSkill(MycroftSkill, ABC):
             word_type:
         """
         if words:
-            self.bus.emit(Message(_BusKeys.REGISTER,
-                                  data={"skill_id": self.skill_id,
-                                        "type": word_type,
-                                        "words": list(words)}))
+            message = dig_for_message()
+            self.bus.emit(message.forward(_BusKeys.REGISTER,
+                                          data={"skill_id": self.skill_id,
+                                                "type": word_type,
+                                                "words": list(words)}))
 
     def register_entities_and_scenes(self):
         """
