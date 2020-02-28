@@ -79,7 +79,7 @@ class TestEventScheduler(unittest.TestCase):
 
         # Make sure the dump method wasn't called with test-repeat
         self.assertEqual(mock_dump.call_args[0][0],
-                         {'test': [(900000000000, None, {})]})
+                         {'test': [(900000000000, None, {}, None)]})
 
     @patch('threading.Thread')
     @patch('json.load')

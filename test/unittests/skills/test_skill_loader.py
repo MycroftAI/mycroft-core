@@ -54,7 +54,6 @@ class TestSkillLoader(MycroftUnitTestBase):
         skill_instance.name = 'test_skill'
         skill_instance.reload_skill = True
         skill_instance.default_shutdown = Mock()
-        skill_instance.settings = Mock()
         self.skill_instance_mock = skill_instance
 
     def test_get_last_modified_date(self):

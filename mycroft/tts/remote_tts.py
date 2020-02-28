@@ -21,7 +21,11 @@ from mycroft.util import remove_last_slash, play_wav
 from mycroft.util.log import LOG
 
 
-class RemoteTTSTimeoutException(Exception):
+class RemoteTTSException(Exception):
+    pass
+
+
+class RemoteTTSTimeoutException(RemoteTTSException):
     pass
 
 

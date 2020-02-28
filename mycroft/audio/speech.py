@@ -22,7 +22,7 @@ from mycroft.tts import TTSFactory
 from mycroft.util import check_for_signal
 from mycroft.util.log import LOG
 from mycroft.messagebus.message import Message
-from mycroft.tts.remote_tts import RemoteTTSTimeoutException
+from mycroft.tts.remote_tts import RemoteTTSException
 from mycroft.tts.mimic_tts import Mimic
 
 bus = None  # Mycroft messagebus connection
@@ -43,6 +43,14 @@ def handle_speak(event):
     config = Configuration.get()
     Configuration.set_config_update_handlers(bus)
     global _last_stop_signal
+
+    # if the message is targeted and audio is not the target don't
+    # don't synthezise speech
+    event.context = event.context or {}
+    if event.context.get('destination') and not \
+            ('debug_cli' in event.context['destination'] or
+             'audio' in event.context['destination']):
+        return
 
     # Get conversation ID
     if event.context and 'ident' in event.context:
@@ -119,7 +127,7 @@ def mute_and_speak(utterance, ident, listen=False):
     LOG.info("Speak: " + utterance)
     try:
         tts.execute(utterance, ident, listen)
-    except RemoteTTSTimeoutException as e:
+    except RemoteTTSException as e:
         LOG.error(e)
         mimic_fallback_tts(utterance, ident, listen)
     except Exception as e:

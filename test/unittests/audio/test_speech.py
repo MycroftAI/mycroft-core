@@ -23,6 +23,7 @@ from os.path import exists
 
 import mycroft.audio.speech as speech
 from mycroft.messagebus import Message
+from mycroft.tts.remote_tts import RemoteTTSTimeoutException
 
 """Tests for speech dispatch service."""
 
@@ -82,7 +83,7 @@ class TestSpeech(unittest.TestCase):
         mimic_cls_mock.return_value = mimic_mock
 
         tts = tts_factory_mock.create.return_value
-        tts.execute.side_effect = speech.RemoteTTSTimeoutException
+        tts.execute.side_effect = RemoteTTSTimeoutException
 
         bus = mock.Mock()
         speech.init(bus)

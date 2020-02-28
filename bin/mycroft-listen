@@ -1,5 +1,6 @@
-#
-# Copyright 2017 Mycroft AI Inc.
+#!/usr/bin/env bash
+
+# Copyright 2020 Mycroft AI Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,10 +13,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
 
-"""File kept for backwards compatibility.
+SOURCE="${BASH_SOURCE[0]}"
+cd -P "$( dirname "$SOURCE" )"
+DIR="$( pwd )"
 
-TODO: Remove in 20.02
-"""
-from lingua_franca.lang.format_it import *
+# Enter the Mycroft venv
+source "$DIR/../venv-activate.sh" -q
+
+# Send a message to be spoken
+python -m mycroft.messagebus.send "mycroft.mic.listen"
