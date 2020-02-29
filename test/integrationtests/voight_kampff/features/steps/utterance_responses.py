@@ -212,6 +212,8 @@ def then_contains(context, text):
     assert passed
 
 
+@then('the user replies with "{text}"')
+@then('the user replies "{text}"')
 @then('the user says "{text}"')
 def then_user_follow_up(context, text):
     time.sleep(2)
