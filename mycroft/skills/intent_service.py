@@ -224,7 +224,7 @@ class IntentService:
         lang = message.data.get('lang', "en-us")
         set_active_lang(lang)
         for skill in self.active_skills:
-            self.do_converse(None, skill[0], lang)
+            self.do_converse(None, skill[0], lang, message)
 
     def do_converse(self, utterances, skill_id, lang, message):
         self.waiting_for_converse = True
