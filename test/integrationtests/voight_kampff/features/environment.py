@@ -1,4 +1,4 @@
-# Copyright 2017 Mycroft AI Inc.
+# Copyright 2020 Mycroft AI Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,6 +39,10 @@ class InterceptAllBusClient(MessageBusClient):
                 return [m for m in self.messages]
             else:
                 return [m for m in self.messages if m.msg_type == msg_type]
+
+    def remove_message(self, msg):
+        with self.message_lock:
+            self.messages.remove(msg)
 
     def clear_messages(self):
         with self.message_lock:

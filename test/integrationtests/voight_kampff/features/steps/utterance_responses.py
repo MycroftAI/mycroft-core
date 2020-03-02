@@ -130,6 +130,7 @@ def then_wait(msg_type, then_func, context, timeout=TIMEOUT):
             debug += test_dbg
             if status:
                 context.matched_message = message
+                context.bus.remove_message(message)
                 return True, debug
         time.sleep(1)
         count += 1
@@ -213,6 +214,7 @@ def then_contains(context, text):
     if not passed:
         assert_msg = 'No speech contained the expected content'
         assert_msg += mycroft_responses(context)
+
     assert passed, assert_msg
 
 
