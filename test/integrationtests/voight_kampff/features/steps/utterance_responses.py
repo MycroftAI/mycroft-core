@@ -163,7 +163,7 @@ def then_dialog(context, skill, dialog):
         assert_msg = debug
         assert_msg += mycroft_responses(context)
 
-    assert passed, assert_msg
+    assert passed, assert_msg or 'Mycroft didn\'t respond'
 
 
 @then('"{skill}" should reply with "{example}"')
