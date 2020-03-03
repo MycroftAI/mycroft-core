@@ -30,7 +30,7 @@ pipeline {
                 sh 'cp test/Dockerfile.test Dockerfile'
                 sh 'docker build --target voight_kampff -t mycroft-core:${BRANCH_ALIAS} .'
                 echo 'Running Tests'
-                timeout(time: 10, unit: 'MINUTES')
+                timeout(time: 60, unit: 'MINUTES')
                 {
                     sh 'docker run \
                         -v "$HOME/voight-kampff/identity:/root/.mycroft/identity" \
