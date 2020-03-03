@@ -86,7 +86,7 @@ def after_feature(context, feature):
 
 def after_scenario(context, scenario):
     # TODO wait for skill handler complete
-    sleep(0.5)
+    sleep(2)
     wait_while_speaking()
     context.bus.clear_messages()
     context.matched_message = None
