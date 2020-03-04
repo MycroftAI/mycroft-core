@@ -208,7 +208,7 @@ class EnclosureMark2(Enclosure):
         self.active_screen = 'thinking'
 
     def handle_play_start(self, _):
-        self.active_until_stopped.add('play')
+        self.active_until_stopped = self.active_screen = 'play'
         self._show_screen(screen_name='play')
 
     def show_play_screen(self, message):
