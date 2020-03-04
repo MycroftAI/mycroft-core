@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from copy import copy
 import time
 from adapt.context import ContextManagerFrame
 from adapt.engine import IntentDeterminationEngine
@@ -223,7 +224,7 @@ class IntentService:
         """Let skills know there was a problem with speech recognition"""
         lang = message.data.get('lang', "en-us")
         set_active_lang(lang)
-        for skill in self.active_skills:
+        for skill in copy(self.active_skills):
             self.do_converse(None, skill[0], lang, message)
 
     def do_converse(self, utterances, skill_id, lang, message):
