@@ -22,7 +22,7 @@ fasteners==0.14.1
 PyYAML==5.1.2
 
 lingua-franca==0.2.0
-msm==0.8.6
+msm==0.8.7
 msk==0.3.14
 adapt-parser==0.3.4
 padatious==0.4.6
