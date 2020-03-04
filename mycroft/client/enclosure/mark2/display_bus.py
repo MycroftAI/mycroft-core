@@ -13,8 +13,10 @@
 # limitations under the License.
 #
 """Message bus for a Mark II display."""
+import asyncio
 
 from tornado.ioloop import IOLoop
+from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 from tornado.web import Application
 from tornado.websocket import WebSocketHandler
 
@@ -25,6 +27,8 @@ from mycroft.util.log import LOG
 def start_display_message_bus(websocket_config):
     """Message traffic between core and display will use a separate bus."""
     LOG.info("Starting display message bus websocket...")
+    # Allow per-thread event loops
+    asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
     try:
         display_message_handler = ('/display', DisplayMessageBus)
         display_message_bus = Application(
