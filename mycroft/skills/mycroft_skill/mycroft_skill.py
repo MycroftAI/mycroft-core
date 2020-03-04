@@ -1071,10 +1071,12 @@ class MycroftSkill:
             meta:                   Information of what built the sentence.
         """
         # registers the skill as being active
+        meta = meta or {}
+        meta['skill'] = self.name
         self.enclosure.register(self.name)
         data = {'utterance': utterance,
                 'expect_response': expect_response,
-                'meta': meta or {}}
+                'meta': meta}
         message = dig_for_message()
         m = message.forward("speak", data) if message \
             else Message("speak", data)
