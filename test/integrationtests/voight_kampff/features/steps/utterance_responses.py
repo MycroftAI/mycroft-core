@@ -243,4 +243,7 @@ def then_messagebus_message(context, message_type):
         if cnt > 20:
             assert False, "Message not found"
             break
+        else:
+            cnt += 1
+
         time.sleep(0.5)
