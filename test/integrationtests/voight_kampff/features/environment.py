@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import logging
 from threading import Event, Lock
 from time import sleep, monotonic
 
@@ -20,6 +21,18 @@ from mycroft.audio import wait_while_speaking
 from mycroft.messagebus.client import MessageBusClient
 from mycroft.messagebus import Message
 from mycroft.util import create_daemon
+
+
+def create_voight_kampff_logger():
+    fmt = logging.Formatter('{asctime} | {name} | {levelname} | {message}',
+                            style='{')
+    handler = logging.StreamHandler()
+    handler.setFormatter(fmt)
+    log = logging.getLogger('Voight Kampff')
+    log.addHandler(handler)
+    log.setLevel(logging.INFO)
+    log.propagate = False
+    return log
 
 
 class InterceptAllBusClient(MessageBusClient):
@@ -50,6 +63,7 @@ class InterceptAllBusClient(MessageBusClient):
 
 
 def before_all(context):
+    log = create_voight_kampff_logger()
     bus = InterceptAllBusClient()
     bus_connected = Event()
     bus.once('open', bus_connected.set)
@@ -58,10 +72,10 @@ def before_all(context):
 
     context.msm = MycroftSkillsManager()
     # Wait for connection
-    print('Waiting for messagebus connection...')
+    log.info('Waiting for messagebus connection...')
     bus_connected.wait()
 
-    print('Waiting for skills to be loaded...')
+    log.info('Waiting for skills to be loaded...')
     start = monotonic()
     while True:
         response = bus.wait_for_response(Message('mycroft.skills.all_loaded'))
@@ -74,6 +88,11 @@ def before_all(context):
 
     context.bus = bus
     context.matched_message = None
+    context.log = log
+
+
+def before_feature(context, feature):
+    context.log.info('Starting tests for {}'.format(feature.name))
 
 
 def after_all(context):
@@ -81,6 +100,8 @@ def after_all(context):
 
 
 def after_feature(context, feature):
+    context.log.info('Result: {} ({:.2f}s)'.format(str(feature.status.name),
+                                                   feature.duration))
     sleep(1)
 
 
