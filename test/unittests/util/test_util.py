@@ -7,7 +7,8 @@ from unittest import TestCase, mock
 from mycroft import MYCROFT_ROOT_PATH
 from mycroft.util import (resolve_resource_file, curate_cache,
                           get_cache_directory, play_ogg, play_mp3, play_wav,
-                          play_audio_file)
+                          play_audio_file,
+                          camel_case_split, get_http, remove_last_slash)
 
 test_config = {
     'data_dir': join(dirname(__file__), 'datadir'),
@@ -185,3 +186,27 @@ class TestPlaySounds(TestCase):
         mock_subprocess.Popen.assert_called_once_with(['mock_ogg',
                                                        'insult.ogg'],
                                                       env=Anything())
+
+
+class TestStringFunctions(TestCase):
+    def test_camel_case_split(self):
+        """Check that camel case string is split properly."""
+        self.assertEqual(camel_case_split('MyCoolSkill'), 'My Cool Skill')
+        self.assertEqual(camel_case_split('MyCOOLSkill'), 'My COOL Skill')
+
+    def test_get_http(self):
+        """Check that https-url is correctly transformed to a http-url."""
+        self.assertEqual(get_http('https://github.com/'), 'http://github.com/')
+        self.assertEqual(get_http('http://github.com/'), 'http://github.com/')
+        self.assertEqual(get_http('https://github.com/https'),
+                         'http://github.com/https')
+        self.assertEqual(get_http('http://https.com/'), 'http://https.com/')
+
+    def test_remove_last_slash(self):
+        """Check that the last slash in an url is correctly removed."""
+        self.assertEqual(remove_last_slash('https://github.com/'),
+                         'https://github.com')
+        self.assertEqual(remove_last_slash('https://github.com/hello'),
+                         'https://github.com/hello')
+        self.assertEqual(remove_last_slash('https://github.com/hello/'),
+                         'https://github.com/hello')
