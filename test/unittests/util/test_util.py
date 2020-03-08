@@ -6,12 +6,25 @@ from unittest import TestCase, mock
 
 from mycroft import MYCROFT_ROOT_PATH
 from mycroft.util import (resolve_resource_file, curate_cache,
-                          get_cache_directory)
+                          get_cache_directory, play_ogg, play_mp3, play_wav,
+                          play_audio_file)
 
 test_config = {
     'data_dir': join(dirname(__file__), 'datadir'),
-    'cache_dir': tempfile.gettempdir()
+    'cache_dir': tempfile.gettempdir(),
+    'play_wav_cmdline': 'mock_wav %1',
+    'play_mp3_cmdline': 'mock_mp3 %1',
+    'play_ogg_cmdline': 'mock_ogg %1'
 }
+
+
+class Anything:
+    """Class matching any object.
+
+    Useful for assert_called_with arguments.
+    """
+    def __eq__(self, other):
+        return True
 
 
 @mock.patch('mycroft.configuration.Configuration')
@@ -130,12 +143,45 @@ class TestCache(TestCase):
         self.assertFalse(exists(huxley_path))
 
 
+@mock.patch('mycroft.configuration.Configuration')
+@mock.patch('mycroft.util.audio_utils.subprocess')
 class TestPlaySounds(TestCase):
-    def test_play_ogg(self):
-        pass
+    def test_play_ogg(self, mock_subprocess, mock_conf):
+        mock_conf.get.return_value = test_config
+        play_ogg('insult.ogg')
+        mock_subprocess.Popen.assert_called_once_with(['mock_ogg',
+                                                       'insult.ogg'],
+                                                      env=Anything())
 
-    def test_play_mp3(self):
-        pass
+    def test_play_mp3(self, mock_subprocess, mock_conf):
+        mock_conf.get.return_value = test_config
+        play_mp3('praise.mp3')
+        mock_subprocess.Popen.assert_called_once_with(['mock_mp3',
+                                                       'praise.mp3'],
+                                                      env=Anything())
 
-    def test_play_wav(self):
-        pass
+    def test_play_wav(self, mock_subprocess, mock_conf):
+        mock_conf.get.return_value = test_config
+        play_wav('indifference.wav')
+        mock_subprocess.Popen.assert_called_once_with(['mock_wav',
+                                                       'indifference.wav'],
+                                                      env=Anything())
+
+    def test_play_audio_file(self, mock_subprocess, mock_conf):
+        mock_conf.get.return_value = test_config
+        play_audio_file('indifference.wav')
+        mock_subprocess.Popen.assert_called_once_with(['mock_wav',
+                                                       'indifference.wav'],
+                                                      env=Anything())
+        mock_subprocess.Popen.reset_mock()
+
+        play_audio_file('praise.mp3')
+        mock_subprocess.Popen.assert_called_once_with(['mock_mp3',
+                                                       'praise.mp3'],
+                                                      env=Anything())
+        mock_subprocess.Popen.reset_mock()
+        mock_conf.get.return_value = test_config
+        play_audio_file('insult.ogg')
+        mock_subprocess.Popen.assert_called_once_with(['mock_ogg',
+                                                       'insult.ogg'],
+                                                      env=Anything())
