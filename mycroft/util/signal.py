@@ -19,7 +19,7 @@ import os
 import os.path
 
 import mycroft
-from mycroft.util.log import LOG
+from .file_utils import ensure_directory_exists, create_file
 
 
 def get_ipc_directory(domain=None):
@@ -41,50 +41,6 @@ def get_ipc_directory(domain=None):
         # If not defined, use /tmp/mycroft/ipc
         dir = os.path.join(tempfile.gettempdir(), "mycroft", "ipc")
     return ensure_directory_exists(dir, domain)
-
-
-def ensure_directory_exists(directory, domain=None):
-    """ Create a directory and give access rights to all
-
-    Args:
-        domain (str): The IPC domain.  Basically a subdirectory to prevent
-            overlapping signal filenames.
-
-    Returns:
-        str: a path to the directory
-    """
-    if domain:
-        directory = os.path.join(directory, domain)
-
-    # Expand and normalize the path
-    directory = os.path.normpath(directory)
-    directory = os.path.expanduser(directory)
-
-    if not os.path.isdir(directory):
-        try:
-            save = os.umask(0)
-            os.makedirs(directory, 0o777)  # give everyone rights to r/w here
-        except OSError:
-            LOG.warning("Failed to create: " + directory)
-            pass
-        finally:
-            os.umask(save)
-
-    return directory
-
-
-def create_file(filename):
-    """ Create the file filename and create any directories needed
-
-        Args:
-            filename: Path to the file to be created
-    """
-    try:
-        os.makedirs(os.path.dirname(filename))
-    except OSError:
-        pass
-    with open(filename, 'w') as f:
-        f.write('')
 
 
 def create_signal(signal_name):

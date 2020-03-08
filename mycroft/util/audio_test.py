@@ -21,7 +21,7 @@ from speech_recognition import Recognizer
 
 from mycroft.client.speech.mic import MutableMicrophone
 from mycroft.configuration import Configuration
-from mycroft.util import play_wav
+from mycroft.util.audio_utils import play_wav
 from mycroft.util.log import LOG
 import logging
 
