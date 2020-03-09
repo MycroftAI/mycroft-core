@@ -28,6 +28,7 @@ from mycroft.audio import wait_while_speaking
 
 
 TIMEOUT = 10
+SLEEP_LENGTH = 0.25
 
 
 def find_dialog(skill_path, dialog):
@@ -124,7 +125,7 @@ def when_user_says(context, text):
 def then_wait(msg_type, then_func, context, timeout=TIMEOUT):
     count = 0
     debug = ''
-    while count < TIMEOUT:
+    while count < int(timeout * (1 / SLEEP_LENGTH)):
         for message in context.bus.get_messages(msg_type):
             status, test_dbg = then_func(message)
             debug += test_dbg
@@ -132,7 +133,7 @@ def then_wait(msg_type, then_func, context, timeout=TIMEOUT):
                 context.matched_message = message
                 context.bus.remove_message(message)
                 return True, debug
-        time.sleep(1)
+        time.sleep(SLEEP_LENGTH)
         count += 1
     # Timed out return debug from test
     return False, debug
@@ -240,10 +241,10 @@ def then_user_follow_up(context, text):
 def then_messagebus_message(context, message_type):
     cnt = 0
     while context.bus.get_messages(message_type) == []:
-        if cnt > 20:
+        if cnt > int(TIMEOUT * (1.0 / SLEEP_LENGTH)):
             assert False, "Message not found"
             break
         else:
             cnt += 1
 
-        time.sleep(0.5)
+        time.sleep(SLEEP_LENGTH)
