@@ -6,8 +6,8 @@ from unittest import TestCase, mock
 
 from mycroft import MYCROFT_ROOT_PATH
 from mycroft.util import (resolve_resource_file, curate_cache,
-                          get_cache_directory, play_ogg, play_mp3, play_wav,
-                          play_audio_file,
+                          get_cache_directory, read_stripped_lines, read_dict,
+                          play_ogg, play_mp3, play_wav, play_audio_file,
                           camel_case_split, get_http, remove_last_slash)
 
 test_config = {
@@ -83,6 +83,21 @@ def create_cache_files(cache_dir):
     f = open(aldous_path, 'w+')
     f.close()
     return huxley_path, aldous_path
+
+
+class TestReadFiles(TestCase):
+    base = dirname(__file__)
+
+    def test_read_stripped_lines(self):
+        expected = ['Once upon a time', 'there was a great Dragon',
+                    'It was red and cute', 'The end']
+        unstripped_path = join(TestReadFiles.base, 'unstripped_lines.txt')
+        self.assertEqual(read_stripped_lines(unstripped_path), expected)
+
+    def test_read_dict(self):
+        expected = {'fraggle': 'gobo', 'muppet': 'miss piggy'}
+        dict_path = join(TestReadFiles.base, 'muppets.dict')
+        self.assertEqual(read_dict(dict_path), expected)
 
 
 @mock.patch('mycroft.configuration.Configuration')
