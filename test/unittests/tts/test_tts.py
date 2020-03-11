@@ -43,16 +43,22 @@ class TestPlaybackThread(unittest.TestCase):
         playback.stop()
         playback.join()
 
-    @mock.patch('mycroft.tts.tts.time')
-    @mock.patch('mycroft.tts.tts.play_wav')
-    @mock.patch('mycroft.tts.tts.play_mp3')
-    def test_process_queue(self, mock_play_mp3, mock_play_wav, mock_time):
+    def create_playback_thread(self):
         queue = Queue()
         playback = mycroft.tts.PlaybackThread(queue)
         mock_tts = mock.Mock()
         playback.init(mock_tts)
         playback.enclosure = mock.Mock()
         playback.start()
+        return playback
+
+    @mock.patch('mycroft.tts.tts.time')
+    @mock.patch('mycroft.tts.tts.play_wav')
+    @mock.patch('mycroft.tts.tts.play_mp3')
+    def test_process_queue(self, mock_play_mp3, mock_play_wav, mock_time):
+        playback = self.create_playback_thread()
+        queue = playback.queue
+        mock_tts = playback.tts
         try:
             # Test wav data
             wav_mock = mock.Mock(name='wav_data')
@@ -77,6 +83,19 @@ class TestPlaybackThread(unittest.TestCase):
             time.sleep(0.2)
             playback.enclosure.mouth_viseme.assert_called_with(1234, visemes)
 
+        finally:
+            # Terminate the thread
+            playback.stop()
+            playback.join()
+
+    def test_process_empty(self):
+        playback = self.create_playback_thread()
+        queue = playback.queue
+        mock_tts = playback.tts
+        try:
+            queue.put((None, None, None, None, None))
+            time.sleep(0.2)
+            mock_tts.end_audio.assert_called_once_with(None)
         finally:
             # Terminate the thread
             playback.stop()
