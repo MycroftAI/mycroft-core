@@ -92,7 +92,7 @@ class TestReadFiles(TestCase):
         expected = ['Once upon a time', 'there was a great Dragon',
                     'It was red and cute', 'The end']
         unstripped_path = join(TestReadFiles.base, 'unstripped_lines.txt')
-        self.assertEqual(read_stripped_lines(unstripped_path), expected)
+        self.assertEqual(list(read_stripped_lines(unstripped_path)), expected)
 
     def test_read_dict(self):
         expected = {'fraggle': 'gobo', 'muppet': 'miss piggy'}

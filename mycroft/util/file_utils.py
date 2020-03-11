@@ -87,7 +87,10 @@ def read_stripped_lines(filename):
         (list) list of lines stripped from leading and ending white chars.
     """
     with open(filename, 'r') as f:
-        return [line.strip() for line in f]
+        for line in f:
+            line = line.strip()
+            if line:
+                yield line
 
 
 def read_dict(filename, div='='):
