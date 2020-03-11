@@ -13,4 +13,5 @@
 # limitations under the License.
 #
 
-from .tools import emit_utterance, wait_for_dialog
+from .tools import (emit_utterance, wait_for_dialog, then_wait,
+                    mycroft_responses, print_mycroft_responses)

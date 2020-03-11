@@ -26,6 +26,8 @@ from behave import given, when, then
 from mycroft.messagebus import Message
 from mycroft.audio import wait_while_speaking
 
+from test.integrationtests.voight_kampff import mycroft_responses, then_wait
+
 
 TIMEOUT = 10
 SLEEP_LENGTH = 0.25
@@ -120,41 +122,6 @@ def when_user_says(context, text):
                                    'session': '',
                                    'ident': time.time()},
                              context={'client_name': 'mycroft_listener'}))
-
-
-def then_wait(msg_type, then_func, context, timeout=TIMEOUT):
-    count = 0
-    debug = ''
-    while count < int(timeout * (1 / SLEEP_LENGTH)):
-        for message in context.bus.get_messages(msg_type):
-            status, test_dbg = then_func(message)
-            debug += test_dbg
-            if status:
-                context.matched_message = message
-                context.bus.remove_message(message)
-                return True, debug
-        time.sleep(SLEEP_LENGTH)
-        count += 1
-    # Timed out return debug from test
-    return False, debug
-
-
-def mycroft_responses(context):
-    responses = ''
-    messages = context.bus.get_messages('speak')
-    if len(messages) > 0:
-        responses = 'Mycroft responded with:\n'
-        for m in messages:
-            responses += 'Mycroft: '
-            if 'dialog' in m.data['meta']:
-                responses += '{}.dialog'.format(m.data['meta']['dialog'])
-            responses += '({})\n'.format(m.data['meta'].get('skill'))
-            responses += '"{}"\n'.format(m.data['utterance'])
-    return responses
-
-
-def print_mycroft_responses(context):
-    print(mycroft_responses(context))
 
 
 @then('"{skill}" should reply with dialog from "{dialog}"')

@@ -24,6 +24,60 @@ SLEEP_LENGTH = 0.25
 TIMEOUT = 10
 
 
+def then_wait(msg_type, criteria_func, context, timeout=TIMEOUT):
+    """Wait for a specified time for criteria to be fulfilled.
+
+    Arguments:
+        msg_type: message type to watch
+        criteria_func: Function to determine if a message fulfilling the
+                       test case has been found.
+        context: behave context
+        timeout: Time allowance for a message fulfilling the criteria
+
+    Returns:
+        tuple (bool, str) test status and debug output
+    """
+    count = 0
+    debug = ''
+    while count < int(timeout * (1 / SLEEP_LENGTH)):
+        for message in context.bus.get_messages(msg_type):
+            status, test_dbg = criteria_func(message)
+            debug += test_dbg
+            if status:
+                context.matched_message = message
+                context.bus.remove_message(message)
+                return True, debug
+        time.sleep(SLEEP_LENGTH)
+        count += 1
+    # Timed out return debug from test
+    return False, debug
+
+
+def mycroft_responses(context):
+    """Collect and format mycroft responses from context.
+
+    Arguments:
+        context: behave context to extract messages from.
+
+    Returns: (str) Mycroft responses including skill and dialog file
+    """
+    responses = ''
+    messages = context.bus.get_messages('speak')
+    if len(messages) > 0:
+        responses = 'Mycroft responded with:\n'
+        for m in messages:
+            responses += 'Mycroft: '
+            if 'dialog' in m.data['meta']:
+                responses += '{}.dialog'.format(m.data['meta']['dialog'])
+            responses += '({})\n'.format(m.data['meta'].get('skill'))
+            responses += '"{}"\n'.format(m.data['utterance'])
+    return responses
+
+
+def print_mycroft_responses(context):
+    print(mycroft_responses(context))
+
+
 def emit_utterance(bus, utt):
     """Emit an utterance on the bus.
 
