@@ -50,6 +50,8 @@ ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
 
+ENV USER root
+ENV CI true
 # Setup the virtual environment
 #   This may not be the most efficient way to do this in terms of number of
 #   steps, but it is built to take advantage of Docker's caching mechanism
