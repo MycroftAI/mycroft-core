@@ -299,7 +299,7 @@ class SnowboyHotWord(HotWordEngine):
 
     def found_wake_word(self, frame_data):
         wake_word = self.snowboy.detector.RunDetection(frame_data)
-        return wake_word == 1
+        return wake_word >= 1
 
 
 class PorcupineHotWord(HotWordEngine):
