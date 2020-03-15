@@ -234,6 +234,7 @@ class IntentService:
             return result.data.get('result', False)
 
     def handle_converse_error(self, message):
+        LOG.error(message.data['error'])
         skill_id = message.data["skill_id"]
         if message.data["error"] == "skill id does not exist":
             self.remove_active_skill(skill_id)
@@ -401,7 +402,7 @@ class IntentService:
                                   1] <= self.converse_timeout * 60]
 
         # check if any skill wants to handle utterance
-        for skill in self.active_skills:
+        for skill in copy(self.active_skills):
             if self.do_converse(utterances, skill[0], lang, message):
                 # update timestamp, or there will be a timeout where
                 # intent stops conversing whether its being used or not
