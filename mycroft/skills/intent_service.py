@@ -247,9 +247,13 @@ class IntentService:
     def add_active_skill(self, skill_id):
         # search the list for an existing entry that already contains it
         # and remove that reference
-        self.remove_active_skill(skill_id)
-        # add skill with timestamp to start of skill_list
-        self.active_skills.insert(0, [skill_id, time.time()])
+        if skill_id != '':
+            self.remove_active_skill(skill_id)
+            # add skill with timestamp to start of skill_list
+            self.active_skills.insert(0, [skill_id, time.time()])
+        else:
+            LOG.warning('Skill ID was empty, won\'t add to list of '
+                        'active skills.')
 
     def update_context(self, intent):
         """ Updates context with keyword from the intent.
