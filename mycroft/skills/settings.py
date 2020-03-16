@@ -149,10 +149,9 @@ class SettingsMetaUploader:
         return self._msm
 
     def get_local_skills(self):
-        return {
-            skill.path: skill for skill in
-            self.msm.local_skills.values()
-        }
+        """Generate a mapping of skill path to skill name for all local skills.
+        """
+        return {skill.path: skill for skill in self.msm.local_skills.values()}
 
     @property
     def skill_gid(self):
@@ -238,7 +237,7 @@ class SettingsMetaUploader:
             self.upload_timer.start()
 
     def stop(self):
-        """ Stop upload attempts if Timer is running."""
+        """Stop upload attempts if Timer is running."""
         if self.upload_timer:
             self.upload_timer.cancel()
         # Set stopped flag if upload is running when stop is called.
