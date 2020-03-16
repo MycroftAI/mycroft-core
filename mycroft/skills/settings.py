@@ -321,20 +321,17 @@ class SettingsMetaUploader:
 
 
 class SkillSettingsDownloader:
-    """Manages the contents of the settings.json file.
+    """Manages download of skill settings.
 
-    The settings.json file contains a set of name/value pairs representing
-    the values of the settings defined in settingsmeta.json
+    Performs settings download on a repeating Timer. If a change is seen
+    the data is sent to the relevant skill.
     """
 
     def __init__(self, bus):
         self.bus = bus
         self.continue_downloading = True
-        self.changed_callback = None
-        self.settings_meta_fields = None
         self.last_download_result = {}
         self.remote_settings = None
-        self.settings_changed = False
         self.api = DeviceApi()
         self.download_timer = None
 
@@ -348,15 +345,13 @@ class SkillSettingsDownloader:
     def download(self):
         """Download the settings stored on the backend and check for changes"""
         if is_paired():
-            download_success = self._get_remote_settings()
-            if download_success:
-                self.settings_changed = (
-                    self.last_download_result != self.remote_settings
-                )
-                if self.settings_changed:
+            remote_settings = self._get_remote_settings()
+            if remote_settings:
+                settings_changed = self.last_download_result != remote_settings
+                if settings_changed:
                     LOG.debug('Skill settings changed since last download')
-                    self._emit_settings_change_events()
-                    self.last_download_result = self.remote_settings
+                    self._emit_settings_change_events(remote_settings)
+                    self.last_download_result = remote_settings
                 else:
                     LOG.debug('No skill settings changes since last download')
         else:
@@ -376,37 +371,32 @@ class SkillSettingsDownloader:
         """Get the settings for this skill from the server
 
         Returns:
-            skill_settings (dict or None): returns a dict if matches
+            skill_settings (dict or None): returns a dict on success, else None
         """
         try:
             remote_settings = self.api.get_skill_settings()
         except Exception:
             LOG.exception('Failed to download remote settings from server.')
-            success = False
-        else:
-            self.remote_settings = remote_settings
-            success = True
+            remote_settings = None
 
-        return success
+        return remote_settings
 
-    def _emit_settings_change_events(self):
-        for skill_gid, remote_settings in self.remote_settings.items():
+    def _emit_settings_change_events(self, remote_settings):
+        """Emit changed settings events for each affected skill."""
+        for skill_gid, skill_settings in remote_settings.items():
             settings_changed = False
             try:
-                previous_settings = self.last_download_result[skill_gid]
-            except KeyError:
-                if remote_settings:
-                    settings_changed = True
+                previous_settings = self.last_download_result.get(skill_gid)
             except Exception:
                 LOG.exception('error occurred handling setting change events')
             else:
-                if previous_settings != remote_settings:
+                if previous_settings != skill_settings:
                     settings_changed = True
             if settings_changed:
                 log_msg = 'Emitting skill.settings.change event for skill {} '
                 LOG.info(log_msg.format(skill_gid))
                 message = Message(
                     'mycroft.skills.settings.changed',
-                    data={skill_gid: remote_settings}
+                    data={skill_gid: skill_settings}
                 )
                 self.bus.emit(message)
