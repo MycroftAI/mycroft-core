@@ -72,6 +72,8 @@ EXPOSE 8181
 #   will run the "voight_kampff" integration test suite.
 #
 FROM builder as voight_kampff
+RUN mkdir /etc/mycroft
+RUN echo '{"tts": {"module": "dummy"}}' > /etc/mycroft/mycroft.conf
 # Add the mycroft core virtual environment to the system path.
 ENV PATH /opt/mycroft/mycroft-core/.venv/bin:$PATH
 # Install required packages for test environments
