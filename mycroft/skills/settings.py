@@ -113,28 +113,6 @@ def get_display_name(skill_name: str):
     return camel_case_split(skill_name)
 
 
-def _extract_settings_from_meta(settings_meta: dict) -> dict:
-    """Extract the skill setting name/value pairs from settingsmeta.json
-
-    Args:
-        settings_meta: contents of the settingsmeta.json
-
-    Returns:
-        Dictionary of settings keyed by name
-    """
-    fields = {}
-    try:
-        sections = settings_meta['skillMetadata']['sections']
-    except KeyError:
-        pass
-    else:
-        for section in sections:
-            for field in section.get('fields', []):
-                fields[field['name']] = field['value']
-
-    return fields
-
-
 class SettingsMetaUploader:
     """Synchronize the contents of the settingsmeta.json file with the backend.
 
