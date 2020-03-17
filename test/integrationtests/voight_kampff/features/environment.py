@@ -40,10 +40,12 @@ class InterceptAllBusClient(MessageBusClient):
         super().__init__()
         self.messages = []
         self.message_lock = Lock()
+        self.new_message_available = Event()
 
     def on_message(self, message):
         with self.message_lock:
             self.messages.append(Message.deserialize(message))
+        self.new_message_available.set()
         super().on_message(message)
 
     def get_messages(self, msg_type):
