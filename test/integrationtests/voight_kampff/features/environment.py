@@ -15,6 +15,7 @@
 import logging
 from threading import Event, Lock
 from time import sleep, monotonic
+from behave.contrib.scenario_autoretry import patch_scenario_with_autoretry
 
 from msm import MycroftSkillsManager
 from mycroft.audio import wait_while_speaking
@@ -95,6 +96,8 @@ def before_all(context):
 
 def before_feature(context, feature):
     context.log.info('Starting tests for {}'.format(feature.name))
+    for scenario in feature.scenarios:
+        patch_scenario_with_autoretry(scenario, max_attempts=2)
 
 
 def after_all(context):
