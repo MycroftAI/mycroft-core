@@ -230,8 +230,10 @@ class IntentService:
         if result and 'error' in result.data:
             self.handle_converse_error(result)
             return False
-        else:
+        elif result is not None:
             return result.data.get('result', False)
+        else:
+            return False
 
     def handle_converse_error(self, message):
         skill_id = message.data["skill_id"]
