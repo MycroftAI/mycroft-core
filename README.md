@@ -141,7 +141,7 @@ Join the [Mycroft Forum](https://community.mycroft.ai/) for questions and answer
 * [Creating a Skill](https://mycroft-ai.gitbook.io/docs/skill-development/your-first-skill)
 * [Documentation](https://docs.mycroft.ai)
 * [Skill Writer API Docs](https://mycroft-core.readthedocs.io/en/master/)
-* [Personal Mycroft Backend](https://github.com/MycroftAI/personal-backend) project.
+* [Personal Mycroft Backend](https://github.com/MycroftAI/personal-backend)
 * [Release Notes](https://github.com/MycroftAI/mycroft-core/releases)
 * [Mycroft Chat](https://chat.mycroft.ai)
 * [Mycroft Forum](https://community.mycroft.ai)
