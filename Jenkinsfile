@@ -80,6 +80,33 @@ pipeline {
                 }
             }
         }
+        // Build a voight_kampff image for major releases.  This will be used
+        // by the mycroft-skills repository to test skill changes.  Skills are
+        // tested against major releases to determine if they play nicely with
+        // the breaking changes included in said release.
+        stage('Build Major Release Image') {
+            when {
+                tag "release/v*.*.0"
+            }
+            environment {
+                // Tag name is usually formatted like "20.2.0" whereas skill
+                // branch names are usually "20.02".  Reformat the tag name
+                // to the skill branch format so this image will be easy to find
+                // in the mycroft-skill repository.
+                SKILL_BRANCH = sh(
+                    script: 'echo $TAG_NAME | sed -e "s/v//g" -e "s/[.]0//g" -e "s/[.]/.0/g"',
+                    returnStdout: true
+                ).trim()
+            }
+            steps {
+                echo 'Building ${TAG_NAME} Docker Image for Skill Testing'
+                sh 'cp test/Dockerfile.test Dockerfile'
+                sh 'docker build \
+                    --target voight_kampff_builder \
+                    --build-arg platform=mycroft_mark_1 \
+                    -t voight-kampff-mark-1:${SKILL_BRANCH} .'
+            }
+        }
     }
     post {
         cleanup {
