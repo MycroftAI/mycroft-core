@@ -56,3 +56,26 @@ Example phrase:
 `Then "<skill-name>" should reply with "<example>"
 
 This will try to map the example phrase to a dialog file and will allow any response from that dialog file.
+
+User reply:
+`Then the user says "<utterance>"`
+
+This allows setting up scenarios with conversational aspects, e.g. when using `get_response()` in the skill.
+
+Example:
+```feature
+Scenario: Bridge of death
+  Given an english speaking user
+  When the user says "let's go to the bridge of death"
+  Then "death-bridge" should reply with dialog from "questions_one.dialog"
+  Then the user says "My name is Sir Lancelot of Camelot"
+  Then "death-bridge" should reply with dialog from "questions_two.dialog"
+  Then the user says "To seek the holy grail"
+  Then "death-bridge" should reply with dialog from "questions_three.dialog"
+  Then the user says "blue"
+```
+
+Mycroft messagebus message:
+`mycroft should send the message "<message type>"`
+
+This verifies that a specific message is emitted on the messagebus. This can be used to check that a playback request is sent or other action is triggered.
