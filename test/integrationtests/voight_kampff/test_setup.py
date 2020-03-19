@@ -23,6 +23,7 @@ import sys
 import yaml
 
 from msm import MycroftSkillsManager
+from msm.exceptions import MsmException
 
 from .generate_feature import generate_feature
 
@@ -101,6 +102,11 @@ def run_setup(msm, test_skills, extra_skills, num_random_skills):
         if not s.is_local:
             print('Installing {}'.format(s))
             msm.install(s)
+        else:
+            try:
+                msm.update(s)
+            except MsmException:
+                pass
 
     # collect feature files
     for skill_name in test_skills:
