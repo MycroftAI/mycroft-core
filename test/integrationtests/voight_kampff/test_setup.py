@@ -58,11 +58,11 @@ def load_config(config, args):
     with open(expanduser(config)) as f:
         conf_dict = yaml.safe_load(f)
 
-    if not args.tested_skills:
+    if not args.tested_skills and 'tested_skills' in conf_dict:
         args.tested_skills = conf_dict['tested_skills']
-    if not args.extra_skills:
+    if not args.extra_skills and 'extra_skills' in conf_dict:
         args.extra_skills = conf_dict['extra_skills']
-    if not args.platform:
+    if not args.platform and 'platform' in conf_dict:
         args.platform = conf_dict['platform']
     return
 
