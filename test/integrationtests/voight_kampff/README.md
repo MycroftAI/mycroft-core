@@ -47,17 +47,22 @@ The When is the start of the test and will inject a message on the running mycro
 where utterance is the sentence to test.
 
 ### Then ...
-The "Then" step will verify the response of the user, currently there is two ways of specifying the response.
+The "Then" step will verify Mycroft's response, handle a followup action or check for messages on the messagebus.
 
-Expected dialog:
+#### Expected dialog:
 `"<skill-name>" should reply with dialog from "<dialog-file>"`
 
 Example phrase:
 `Then "<skill-name>" should reply with "<example>"
 
-This will try to map the example phrase to a dialog file and will allow any response from that dialog file.
+This will try to map the example phrase to a dialog file and will allow any response from that dialog file. This one is somewhat experimental et the moment.
 
-User reply:
+#### Should contain:
+`mycroft reply should contain "<text>"`
+
+This will match any sentence containing the specified text.
+
+#### User reply:
 `Then the user says "<utterance>"`
 
 This allows setting up scenarios with conversational aspects, e.g. when using `get_response()` in the skill.
@@ -75,7 +80,7 @@ Scenario: Bridge of death
   Then the user says "blue"
 ```
 
-Mycroft messagebus message:
+#### Mycroft messagebus message:
 `mycroft should send the message "<message type>"`
 
 This verifies that a specific message is emitted on the messagebus. This can be used to check that a playback request is sent or other action is triggered.
