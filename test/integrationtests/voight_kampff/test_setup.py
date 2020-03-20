@@ -32,8 +32,8 @@ from .generate_feature import generate_feature
 The script sets up the selected tests in the feature directory so they can
 be found and executed by the behave framework.
 
-The script also ensures that the tested skills are installed and that any
-specified extra skills also gets installed into the environment.
+The script also ensures that the skills marked for testing are installed and
+that anyi specified extra skills also gets installed into the environment.
 """
 
 FEATURE_DIR = join(dirname(__file__), 'features') + '/'
@@ -58,8 +58,8 @@ def load_config(config, args):
     with open(expanduser(config)) as f:
         conf_dict = yaml.safe_load(f)
 
-    if not args.tested_skills and 'tested_skills' in conf_dict:
-        args.tested_skills = conf_dict['tested_skills']
+    if not args.test_skills and 'test_skills' in conf_dict:
+        args.test_skills = conf_dict['test_skills']
     if not args.extra_skills and 'extra_skills' in conf_dict:
         args.extra_skills = conf_dict['extra_skills']
     if not args.platform and 'platform' in conf_dict:
@@ -72,15 +72,15 @@ def main(cmdline_args):
     platforms = list(MycroftSkillsManager.SKILL_GROUPS)
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--platform', choices=platforms)
-    parser.add_argument('-t', '--tested-skills', default=[])
+    parser.add_argument('-t', '--test-skills', default=[])
     parser.add_argument('-s', '--extra-skills', default=[])
     parser.add_argument('-r', '--random-skills', default=0)
     parser.add_argument('-d', '--skills-dir')
     parser.add_argument('-c', '--config')
 
     args = parser.parse_args(cmdline_args)
-    if args.tested_skills:
-        args.tested_skills = args.tested_skills.replace(',', ' ').split()
+    if args.test_skills:
+        args.test_skills = args.test_skills.replace(',', ' ').split()
     if args.extra_skills:
         args.extra_skills = args.extra_skills.replace(',', ' ').split()
 
@@ -91,7 +91,7 @@ def main(cmdline_args):
         args.platform = "mycroft_mark_1"
 
     msm = MycroftSkillsManager(args.platform, args.skills_dir)
-    run_setup(msm, args.tested_skills, args.extra_skills, args.random_skills)
+    run_setup(msm, args.test_skills, args.extra_skills, args.random_skills)
 
 
 def run_setup(msm, test_skills, extra_skills, num_random_skills):
@@ -144,7 +144,7 @@ def print_install_report(platform, test_skills, extra_skills):
     print('-------- TEST SETUP --------')
     yml = yaml.dump({
         'platform': platform,
-        'tested_skills': test_skills,
+        'test_skills': test_skills,
         'extra_skills': extra_skills
         })
     print(yml)
