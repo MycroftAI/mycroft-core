@@ -1,7 +1,5 @@
-extra_skills:
-- cocktails
 platform: mycroft_mark_1
-tested_skills:
+test_skills:
 - mycroft-alarm
 - mycroft-timer
 - mycroft-date-time
