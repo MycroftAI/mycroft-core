@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 import argparse
+from argparse import RawTextHelpFormatter
 from glob import glob
 from os.path import join, dirname, expanduser, basename
 from pathlib import Path
@@ -70,13 +71,20 @@ def load_config(config, args):
 def main(cmdline_args):
     """Parse arguments and run environment setup."""
     platforms = list(MycroftSkillsManager.SKILL_GROUPS)
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=RawTextHelpFormatter)
     parser.add_argument('-p', '--platform', choices=platforms)
-    parser.add_argument('-t', '--test-skills', default=[])
-    parser.add_argument('-s', '--extra-skills', default=[])
-    parser.add_argument('-r', '--random-skills', default=0)
+    parser.add_argument('-t', '--test-skills', default=[],
+                        help=('Comma-separated list of skills to test.\n'
+                              'Ex: "mycroft-weather, mycroft-stock"'))
+    parser.add_argument('-s', '--extra-skills', default=[],
+                        help=('Comma-separated list of extra skills to '
+                              'install.\n'
+                              'Ex: "cocktails, laugh"'))
+    parser.add_argument('-r', '--random-skills', default=0,
+                        help='Number of random skills to install.')
     parser.add_argument('-d', '--skills-dir')
-    parser.add_argument('-c', '--config')
+    parser.add_argument('-c', '--config',
+                        help='Path to test configuration file.')
 
     args = parser.parse_args(cmdline_args)
     if args.test_skills:
