@@ -21,7 +21,7 @@ import shutil
 import sys
 
 import yaml
-from msm import MycroftSkillsManager
+from msm import MycroftSkillsManager, SkillRepo
 from msm.exceptions import MsmException
 
 from .generate_feature import generate_feature
@@ -94,6 +94,10 @@ def create_argument_parser():
     parser.add_argument('-r', '--random-skills', default=0, type=int,
                         help='Number of random skills to install.')
     parser.add_argument('-d', '--skills-dir')
+    parser.add_argument('-u', '--repo-url',
+                        help='URL for skills repo to install / update from')
+    parser.add_argument('-b', '--branch',
+                        help='repo branch to use')
     parser.add_argument('-c', '--config',
                         help='Path to test configuration file.')
     return parser
@@ -179,6 +183,22 @@ def get_arguments(cmdline_args):
     return args
 
 
+def create_skills_manager(platform, skills_dir, url, branch):
+    """Create mycroft skills manager for the given url / branch.
+
+    Arguments:
+        platform (str): platform to use
+        skills_dir (str): skill directory to use
+        url (str): skills repo url
+        branch (str): skills repo branch
+
+    Returns:
+        MycroftSkillsManager
+    """
+    repo = SkillRepo(url=url, branch=branch)
+    return MycroftSkillsManager(platform, skills_dir, repo)
+
+
 def main(cmdline_args):
     """Parse arguments and run test environment setup.
 
@@ -189,7 +209,8 @@ def main(cmdline_args):
     if args.config:
         apply_config(args.config, args)
 
-    msm = MycroftSkillsManager(args.platform, args.skills_dir)
+    msm = create_skills_manager(args.platform, args.skills_dir,
+                                args.repo_url, args.branch)
 
     random_skills = get_random_skills(msm, args.random_skills)
     all_skills = args.test_skills + args.extra_skills + random_skills
