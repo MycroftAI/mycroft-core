@@ -33,15 +33,15 @@ TIMEOUT = 10
 SLEEP_LENGTH = 0.25
 
 
-def find_dialog(skill_path, dialog):
+def find_dialog(skill_path, dialog, lang):
     """Check the usual location for dialogs.
 
     TODO: subfolders
     """
     if exists(join(skill_path, 'dialog')):
-        return join(skill_path, 'dialog', 'en-us', dialog)
+        return join(skill_path, 'dialog', lang, dialog)
     else:
-        return join(skill_path, 'locale', 'en-us', dialog)
+        return join(skill_path, 'locale', lang, dialog)
 
 
 def load_dialog_file(dialog_path):
@@ -68,9 +68,17 @@ def load_dialog_list(skill_path, dialog):
     return load_dialog_file(dialog_path), debug
 
 
-def dialog_from_sentence(sentence, skill_path):
-    """Find dialog file from example sentence."""
-    dialog_paths = join(skill_path, 'dialog', 'en-us', '*.dialog')
+def dialog_from_sentence(sentence, skill_path, lang):
+    """Find dialog file from example sentence.
+
+    Arguments:
+        sentence (str): Text to match
+        skill_path (str): path to skill directory
+        lang (str): language code to use
+
+    Returns (str): Dialog file best matching the sentence.
+    """
+    dialog_paths = join(skill_path, 'dialog', lang, '*.dialog')
     best = (None, 0)
     for path in glob(dialog_paths):
         patterns = load_dialog_file(path)
@@ -118,7 +126,7 @@ def given_english(context):
 def when_user_says(context, text):
     context.bus.emit(Message('recognizer_loop:utterance',
                              data={'utterances': [text],
-                                   'lang': 'en-us',
+                                   'lang': context.lang,
                                    'session': '',
                                    'ident': time.time()},
                              context={'client_name': 'mycroft_listener'}))
@@ -141,7 +149,7 @@ def then_dialog(context, skill, dialog):
 @then('"{skill}" should reply with "{example}"')
 def then_example(context, skill, example):
     skill_path = context.msm.find_skill(skill).path
-    dialog = dialog_from_sentence(example, skill_path)
+    dialog = dialog_from_sentence(example, skill_path, context.lang)
     print('Matching with the dialog file: {}'.format(dialog))
     assert dialog is not None, 'No matching dialog...'
     then_dialog(context, skill, dialog)
@@ -198,7 +206,7 @@ def then_user_follow_up(context, text):
     wait_while_speaking()
     context.bus.emit(Message('recognizer_loop:utterance',
                              data={'utterances': [text],
-                                   'lang': 'en-us',
+                                   'lang': context.lang,
                                    'session': '',
                                    'ident': time.time()},
                              context={'client_name': 'mycroft_listener'}))
