@@ -23,8 +23,9 @@ source "$DIR/../venv-activate.sh" -q
 # Invoke the individual skill tester
 if [ "$#" -eq 0 ] ; then
     python -m test.integrationtests.skills.runner .
-elif [ "$1" -eq "vktest"] ; then
-    python -m test.integrationtests.voight_kampff $@
+elif [ "$1" = "vktest" ] ; then
+    shift
+    python -m test.integrationtests.voight_kampff "$@"
 else
     python -m test.integrationtests.skills.runner $@
 fi
