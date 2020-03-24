@@ -205,7 +205,11 @@ def main(cmdline_args):
     This installs and/or upgrades any skills needed for the tests and
     collects the feature and step files for the skills.
     """
-    args = get_arguments(cmdline_args)
+    is_pre_parsed = type(cmdline_args).__name__ == 'Namespace'
+    if is_pre_parsed:
+        args = cmdline_args
+    else:
+        args = get_arguments(cmdline_args)
     if args.config:
         apply_config(args.config, args)
 
