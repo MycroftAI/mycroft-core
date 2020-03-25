@@ -1,6 +1,4 @@
-#!/usr/bin/env bash
-
-# Copyright 2018 Mycroft AI Inc.
+# Copyright 2020 Mycroft AI Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,19 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
 
-SOURCE="${BASH_SOURCE[0]}"
-DIR="$( dirname "$SOURCE" )"
-
-# Enter the Mycroft venv
-source "$DIR/../venv-activate.sh" -q
-
-# Invoke the individual skill tester
-if [ "$#" -eq 0 ] ; then
-    python -m test.integrationtests.skills.runner .
-elif [ "$1" = "vktest" ] ; then
-    shift
-    python -m test.integrationtests.voight_kampff "$@"
-else
-    python -m test.integrationtests.skills.runner $@
-fi
+from .tools import (emit_utterance, wait_for_dialog, then_wait,
+                    mycroft_responses, print_mycroft_responses)
