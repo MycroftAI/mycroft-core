@@ -199,17 +199,12 @@ def create_skills_manager(platform, skills_dir, url, branch):
     return MycroftSkillsManager(platform, skills_dir, repo)
 
 
-def main(cmdline_args):
+def main(args):
     """Parse arguments and run test environment setup.
 
     This installs and/or upgrades any skills needed for the tests and
     collects the feature and step files for the skills.
     """
-    is_pre_parsed = type(cmdline_args).__name__ == 'Namespace'
-    if is_pre_parsed:
-        args = cmdline_args
-    else:
-        args = get_arguments(cmdline_args)
     if args.config:
         apply_config(args.config, args)
 
@@ -227,4 +222,4 @@ def main(cmdline_args):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    main(get_arguments(sys.argv[1:]))
