@@ -71,6 +71,10 @@ class SkillLoader:
         self.active = True
         self.config = Configuration.get()
 
+        t_dir = self.config.get('skills').get('translations_dir')
+        t_dir = os.path.expanduser(t_dir)
+        self.translations_dir = os.path.join(t_dir, self.skill_id)
+
     @property
     def is_blacklisted(self):
         """Boolean value representing whether or not a skill is blacklisted."""
@@ -86,8 +90,14 @@ class SkillLoader:
         Returns:
              bool: if the skill was loaded/reloaded
         """
+
         try:
-            self.last_modified = _get_last_modified_time(self.skill_directory)
+            result = [_get_last_modified_time(self.skill_directory)]
+            if os.path.exists(self.translations_dir):
+                result.append(_get_last_modified_time(
+                              self.translations_dir))
+            self.last_modified = max(result)
+
         except FileNotFoundError as e:
             LOG.error('Failed to get last_modification time '
                       '({})'.format(repr(e)))

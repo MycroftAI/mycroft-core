@@ -19,8 +19,7 @@ import sys
 import re
 import traceback
 from itertools import chain
-from os import walk
-from os.path import join, abspath, dirname, basename, exists
+from os.path import join, abspath, dirname, basename, exists, expanduser, isdir
 from threading import Event, Timer
 
 from adapt.intent import Intent, IntentBuilder
@@ -87,7 +86,6 @@ def get_non_properties(obj):
     Returns:
         Set of attributes that are not a property.
     """
-
     def check_class(cls):
         """Find all non-properties in a class."""
         # Current class
@@ -142,7 +140,6 @@ class MycroftSkill:
         #: Mycroft global configuration. (dict)
         self.config_core = Configuration.get()
         self.dialog_renderer = None
-
         #: Filesystem access to skill specific folder.
         #: See mycroft.filesystem for details.
         self.file_system = FileSystemAccess(join('skills', self.name))
@@ -156,6 +153,12 @@ class MycroftSkill:
         # Delegator classes
         self.event_scheduler = EventSchedulerInterface(self.name)
         self.intent_service = IntentServiceInterface()
+
+        # Aditional translations
+        self.translations_dir = expanduser(self.config_core.get(
+                                          'skills').get('translations_dir'))
+        self.prefere_translations = self.config_core.get(
+                                    'skills').get('prefere_translations')
 
     @property
     def enclosure(self):
@@ -537,7 +540,7 @@ class MycroftSkill:
         cache_key = lang + voc_filename
         if cache_key not in self.voc_match_cache:
             # Check for both skill resources and mycroft-core resources
-            voc = self.find_resource(voc_filename + '.voc', 'vocab')
+            voc = self.find_resource(voc_filename + '.voc')
             if not voc:  # Check for vocab in mycroft core resources
                 voc = resolve_resource_file(join('text', lang,
                                                  voc_filename + '.voc'))
@@ -655,57 +658,70 @@ class MycroftSkill:
         """
         return self.dialog_renderer.render(text, data or {})
 
-    def find_resource(self, res_name, res_dirname=None):
+    def find_resource(self, res_name, res_type=None):
         """Find a resource file
 
         Searches for the given filename using this scheme:
-        1) Search the resource lang directory:
-             <skill>/<res_dirname>/<lang>/<res_name>
-        2) Search the resource directory:
-             <skill>/<res_dirname>/<res_name>
-        3) Search the locale lang directory or other subdirectory:
-             <skill>/locale/<lang>/<res_name> or
-             <skill>/locale/<lang>/.../<res_name>
+        1) If prefere_translations is true first look into translations_dir
+        2) Search every resource lang directory
+        3) Try old-style non-translated resource
+        4) fallback to use en-us if none lang exists
 
         Arguments:
             res_name (string): The resource name to be found
-            res_dirname (string, optional): A skill resource directory, such
-                                            'dialog', 'vocab', 'regex' or 'ui'.
-                                            Defaults to None.
+            res_type (string): dont use - keeping for backwards compability
 
         Returns:
             string: The full path to the resource file or None if not found
         """
-        result = self._find_resource(res_name, self.lang, res_dirname)
-        if not result and self.lang != 'en-us':
+
+        root_directory = self.root_dir
+        translations_dir = join(self.translations_dir,
+                                self.skill_id,
+                                self.lang)
+        data_folders = []
+
+        for folder in ['vocab', 'dialog', 'regex', 'locale']:
+            if isdir(join(root_directory, folder, self.lang)):
+                data_folders.append(join(root_directory, folder, self.lang))
+        if isdir(translations_dir) and data_folders == []:
+            data_folders.append(translations_dir)
+
+        if self.prefere_translations and exists(join(translations_dir,
+                                                     res_name)):
+            result = join(translations_dir, res_name)
+            if exists(result):
+                LOG.info(
+                    "Resource '{}' for lang '{}' loaded from '{}'"
+                    .format(res_name, self.lang, translations_dir)
+                )
+                return result
+
+        for folder in data_folders:
+            result = join(folder, res_name)
+            if exists(result):
+                return result
+        if self.lang == 'en-us':
+            # Try old-style non-translated resource
+            LOG.warning(
+                "Resource '{}' for lang '{}' not found: trying old-style " +
+                "non-translated resource"
+                .format(res_name, self.lang)
+            )
+            for folder in data_folders:
+                result = join(folder.replace('//' + self.lang, ''), res_name)
+                if exists(result):
+                    return result
+        if self.lang != 'en-us':
             # when resource not found try fallback to en-us
             LOG.warning(
                 "Resource '{}' for lang '{}' not found: trying 'en-us'"
                 .format(res_name, self.lang)
             )
-            result = self._find_resource(res_name, 'en-us', res_dirname)
-        return result
-
-    def _find_resource(self, res_name, lang, res_dirname=None):
-        """Finds a resource by name, lang and dir
-        """
-        if res_dirname:
-            # Try the old translated directory (dialog/vocab/regex)
-            path = join(self.root_dir, res_dirname, lang, res_name)
-            if exists(path):
-                return path
-
-            # Try old-style non-translated resource
-            path = join(self.root_dir, res_dirname, res_name)
-            if exists(path):
-                return path
-
-        # New scheme:  search for res_name under the 'locale' folder
-        root_path = join(self.root_dir, 'locale', lang)
-        for path, _, files in walk(root_path):
-            if res_name in files:
-                return join(path, res_name)
-
+            for folder in data_folders:
+                result = join(folder.replace(self.lang, 'en-us'), res_name)
+                if exists(result):
+                    return result
         # Not found
         return None
 
@@ -728,7 +744,7 @@ class MycroftSkill:
             name += '.value'
 
         try:
-            filename = self.find_resource(name, 'dialog')
+            filename = self.find_resource(name)
             return read_value_file(filename, delim)
 
         except Exception:
@@ -773,7 +789,7 @@ class MycroftSkill:
 
     def __translate_file(self, name, data):
         """Load and render lines from dialog/<lang>/<name>"""
-        filename = self.find_resource(name, 'dialog')
+        filename = self.find_resource(name)
         return read_translated_file(filename, data)
 
     def add_event(self, name, handler, handler_info=None, once=False):
@@ -892,7 +908,7 @@ class MycroftSkill:
             handler:     function to register with intent
         """
         name = '{}:{}'.format(self.skill_id, intent_file)
-        filename = self.find_resource(intent_file, 'vocab')
+        filename = self.find_resource(intent_file)
         if not filename:
             raise FileNotFoundError('Unable to find "{}"'.format(intent_file))
         self.intent_service.register_padatious_intent(name, filename)
@@ -918,7 +934,7 @@ class MycroftSkill:
         """
         if entity_file.endswith('.entity'):
             entity_file = entity_file.replace('.entity', '')
-        filename = self.find_resource(entity_file + ".entity", 'vocab')
+        filename = self.find_resource(entity_file + ".entity")
         if not filename:
             raise FileNotFoundError('Unable to find "{}"'.format(entity_file))
 
@@ -1116,70 +1132,62 @@ class MycroftSkill:
         if not process:
             LOG.warning("Unable to play 'acknowledge' audio file!")
 
-    def init_dialog(self, root_directory):
-        # If "<skill>/dialog/<lang>" exists, load from there.  Otherwise
-        # load dialog from "<skill>/locale/<lang>"
-        dialog_dir = join(root_directory, 'dialog', self.lang)
-        if exists(dialog_dir):
-            self.dialog_renderer = load_dialogs(dialog_dir)
-        elif exists(join(root_directory, 'locale', self.lang)):
-            locale_path = join(root_directory, 'locale', self.lang)
-            self.dialog_renderer = load_dialogs(locale_path)
-        else:
-            LOG.debug('No dialog loaded')
-
     def load_data_files(self, root_directory=None):
         """Called by the skill loader to load intents, dialogs, etc.
+
+        This will look in datafolders (vocab, dialog, regex locale) in
+        skillfolder and in translations directory.
+        If prefere_translations is true it will lokk in translations
+        directory first. Otherwise in skill data folders and then in
+        translations directory.
+
+        Translation_dir and prefere_translaion can be set under skill
+        in mycroft.conf.
 
         Arguments:
             root_directory (str): root folder to use when loading files.
         """
         root_directory = root_directory or self.root_dir
-        self.init_dialog(root_directory)
-        self.load_vocab_files(root_directory)
-        self.load_regex_files(root_directory)
+        translations_dir = join(self.translations_dir,
+                                self.skill_id,
+                                self.lang)
+        data_folders = []
+        for folder in ['vocab', 'dialog', 'regex', 'locale']:
+            if isdir(join(root_directory, folder, self.lang)):
+                data_folders.append(join(root_directory, folder, self.lang))
+        if isdir(translations_dir) and data_folders == []:
+            data_folders.append(translations_dir)
+        elif data_folders == []:
+            # fallback to en-us or old non transabael resource folders
+            for folder in ['vocab', 'dialog', 'regex', 'locale']:
+                if isdir(join(root_directory, folder, 'en-us')):
+                    data_folders.append(join(root_directory,
+                                             folder,
+                                             self.lang))
+                else:
+                    data_folders.append(join(root_directory, folder))
 
-    def load_vocab_files(self, root_directory):
-        """ Load vocab files found under root_directory.
-
-        Arguments:
-            root_directory (str): root folder to use when loading files
-        """
-        keywords = []
-        vocab_dir = join(root_directory, 'vocab', self.lang)
-        locale_dir = join(root_directory, 'locale', self.lang)
-        if exists(vocab_dir):
-            keywords = load_vocabulary(vocab_dir, self.skill_id)
-        elif exists(locale_dir):
-            keywords = load_vocabulary(locale_dir, self.skill_id)
+        if self.prefere_translations and exists(translations_dir):
+            self.dialog_renderer = load_dialogs(translations_dir)
+            vocabs = load_vocabulary(translations_dir, self.skill_id)
+            regexes = load_regex(translations_dir, self.skill_id)
         else:
-            LOG.debug('No vocab loaded')
+            for folder in data_folders:
+                self.dialog_renderer = load_dialogs(folder)
+                vocabs = load_vocabulary(folder, self.skill_id)
+                regexes = load_regex(folder, self.skill_id)
 
-        # For each found intent register the default along with any aliases
-        for vocab_type in keywords:
-            for line in keywords[vocab_type]:
-                entity = line[0]
-                aliases = line[1:]
-                self.intent_service.register_adapt_keyword(vocab_type,
-                                                           entity,
-                                                           aliases)
-
-    def load_regex_files(self, root_directory):
-        """ Load regex files found under the skill directory.
-
-        Arguments:
-            root_directory (str): root folder to use when loading files
-        """
-        regexes = []
-        regex_dir = join(root_directory, 'regex', self.lang)
-        locale_dir = join(root_directory, 'locale', self.lang)
-        if exists(regex_dir):
-            regexes = load_regex(regex_dir, self.skill_id)
-        elif exists(locale_dir):
-            regexes = load_regex(locale_dir, self.skill_id)
-
-        for regex in regexes:
-            self.intent_service.register_adapt_regex(regex)
+        if vocabs:
+            for vocab in vocabs:
+                for line in vocabs[vocab]:
+                    entity = line[0]
+                    aliases = line[1:]
+                    self.intent_service.register_adapt_keyword(vocab,
+                                                               entity,
+                                                               aliases)
+        if regexes:
+            for regex in regexes:
+                self.intent_service.register_adapt_regex(regex)
 
     def __handle_stop(self, _):
         """Handler for the "mycroft.stop" signal. Runs the user defined
