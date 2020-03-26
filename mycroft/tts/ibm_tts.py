@@ -43,6 +43,8 @@ class WatsonTTS(RemoteTTS):
         params = self.PARAMS.copy()
         params['LOCALE'] = self.lang
         params['voice'] = self.voice
+        params['X-Watson-Learning-Opt-Out'] = self.config.get(
+                                           'X-Watson-Learning-Opt-Out', 'true')
         params['text'] = sentence.encode('utf-8')
         return params
 
