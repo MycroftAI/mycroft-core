@@ -16,7 +16,6 @@
 from .tts import TTSValidator
 from .remote_tts import RemoteTTS
 from mycroft.configuration import Configuration
-from mycroft.util import remove_last_slash
 from requests.auth import HTTPBasicAuth
 
 
@@ -32,7 +31,8 @@ class WatsonTTS(RemoteTTS):
         user = self.config.get("user") or self.config.get("username")
         password = self.config.get("password")
         api_key = self.config.get("apikey")
-        self.url = remove_api_path(self.config.get("url", self.url), api_path)
+        if self.url.endswith(api_path):
+            self.url = self.url[:-len(api_path)]
 
         if api_key is None:
             self.auth = HTTPBasicAuth(user, password)
@@ -69,11 +69,3 @@ class WatsonTTSValidator(TTSValidator):
 
     def get_tts_class(self):
         return WatsonTTS
-
-
-def remove_api_path(url, api_path):
-    """Remove api_path as RemoteTTS.__request method appends it"""
-    url = remove_last_slash(url)
-    if url.endswith(api_path):
-        url = url[:-len(api_path)]
-    return url
