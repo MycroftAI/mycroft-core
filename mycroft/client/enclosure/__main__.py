@@ -23,6 +23,14 @@ from mycroft.util import (create_daemon, wait_for_exit_signal,
                           reset_sigint_handler)
 
 
+def on_ready():
+    LOG.info("Enclosure started!")
+
+
+def on_error(e='Unknown'):
+    LOG.error('Enclosure failed to start. ({})'.format(repr(e)))
+
+
 def create_enclosure(platform):
     """Create an enclosure based on the provided platform string.
 
@@ -51,7 +59,8 @@ def create_enclosure(platform):
     return enclosure
 
 
-def main():
+def main(ready_hook=on_ready, error_hook=on_error):
+    # Read the system configuration
     """Launch one of the available enclosure implementations.
 
     This depends on the configured platform and can currently either be
@@ -68,6 +77,7 @@ def main():
             LOG.debug("Enclosure started!")
             reset_sigint_handler()
             create_daemon(enclosure.run)
+            ready_hook()
             wait_for_exit_signal()
         except Exception as e:
             print(e)

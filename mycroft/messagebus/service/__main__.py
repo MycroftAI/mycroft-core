@@ -33,7 +33,15 @@ from mycroft.util import (
 from mycroft.util.log import LOG
 
 
-def main():
+def on_ready():
+    LOG.info('Message bus service started!')
+
+
+def on_error(e='Unknown'):
+    LOG.info('Message bus failed to start ({})'.format(repr(e)))
+
+
+def main(ready_hook=on_ready, error_hook=on_error):
     import tornado.options
     LOG.info('Starting message bus service...')
     reset_sigint_handler()
@@ -51,7 +59,7 @@ def main():
     application = web.Application(routes, debug=True)
     application.listen(config.port, config.host)
     create_daemon(ioloop.IOLoop.instance().start)
-    LOG.info('Message bus service started!')
+    ready_hook()
     wait_for_exit_signal()
 
 

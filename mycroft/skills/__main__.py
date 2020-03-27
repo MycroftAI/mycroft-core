@@ -173,7 +173,15 @@ class DevicePrimer(object):
             wait_while_speaking()
 
 
-def main():
+def on_ready():
+    LOG.info('Skill service is ready.')
+
+
+def on_error(e='Unknown'):
+    LOG.info('Skill service failed to launch ({})'.format(repr(e)))
+
+
+def main(ready_hook=on_ready, error_hook=on_error):
     reset_sigint_handler()
     # Create PID file, prevent multiple instances of this service
     mycroft.lock.Lock('skills')
@@ -195,7 +203,9 @@ def main():
     device_primer = DevicePrimer(bus, config)
     device_primer.prepare_device()
     skill_manager.start()
-
+    while not skill_manager.is_alive():
+        time.sleep(0.1)
+    ready_hook()  # Report ready status
     wait_for_exit_signal()
     shutdown(skill_manager, event_scheduler)
 
