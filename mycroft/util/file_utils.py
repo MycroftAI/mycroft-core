@@ -121,27 +121,74 @@ def read_dict(filename, div='='):
     return d
 
 
+def mb_to_bytes(size):
+    """Takes a size in MB and returns the number of bytes.
+
+    Arguments:
+        size(int/float): size in Mega Bytes
+
+    Returns:
+        (int/float) size in bytes
+    """
+    return size * 1024 * 1024
+
+
+def _get_cache_entries(directory):
+    """Get information tuple for all regular files in directory.
+
+    Arguments:
+        directory (str): path to directory to check
+
+    Returns:
+        (tuple) (modification time, size, filepath)
+    """
+    entries = (os.path.join(directory, fn) for fn in os.listdir(directory))
+    entries = ((os.stat(path), path) for path in entries)
+
+    # leave only regular files, insert modification date
+    return ((stat[ST_MTIME], stat[ST_SIZE], path)
+            for stat, path in entries if S_ISREG(stat[ST_MODE]))
+
+
+def _delete_oldest(entries, bytes_needed):
+    """Delete files with oldest modification date until space is freed.
+
+    Arguments:
+        entries (tuple): file + file stats tuple
+        bytes_needed (int): disk space that needs to be freed
+    """
+    space_freed = 0
+    for moddate, fsize, path in sorted(entries):
+        try:
+            os.remove(path)
+            space_freed += fsize
+        except Exception:
+            pass
+
+        if space_freed > bytes_needed:
+            break  # deleted enough!
+
+
 def curate_cache(directory, min_free_percent=5.0, min_free_disk=50):
-    """Clear out the directory if needed
+    """Clear out the directory if needed.
 
-    This assumes all the files in the directory can be deleted as freely
+    The curation will only occur if both the precentage and actual disk space
+    is below the limit. This assumes all the files in the directory can be
+    deleted as freely.
 
-    Args:
+    Arguments:
         directory (str): directory path that holds cached files
         min_free_percent (float): percentage (0.0-100.0) of drive to keep free,
                                   default is 5% if not specified.
         min_free_disk (float): minimum allowed disk space in MB, default
                                value is 50 MB if not specified.
     """
-
     # Simpleminded implementation -- keep a certain percentage of the
     # disk available.
     # TODO: Would be easy to add more options, like whitelisted files, etc.
     space = psutil.disk_usage(directory)
 
-    # convert from MB to bytes
-    min_free_disk *= 1024 * 1024
-    # space.percent = space.used/space.total*100.0
+    min_free_disk = mb_to_bytes(min_free_disk)
     percent_free = 100.0 - space.percent
     if percent_free < min_free_percent and space.free < min_free_disk:
         LOG.info('Low diskspace detected, cleaning cache')
@@ -150,24 +197,9 @@ def curate_cache(directory, min_free_percent=5.0, min_free_disk=50):
         bytes_needed = int(bytes_needed + 1.0)
 
         # get all entries in the directory w/ stats
-        entries = (os.path.join(directory, fn) for fn in os.listdir(directory))
-        entries = ((os.stat(path), path) for path in entries)
-
-        # leave only regular files, insert modification date
-        entries = ((stat[ST_MTIME], stat[ST_SIZE], path)
-                   for stat, path in entries if S_ISREG(stat[ST_MODE]))
-
-        # delete files with oldest modification date until space is freed
-        space_freed = 0
-        for moddate, fsize, path in sorted(entries):
-            try:
-                os.remove(path)
-                space_freed += fsize
-            except Exception:
-                pass
-
-            if space_freed > bytes_needed:
-                return  # deleted enough!
+        entries = _get_cache_entries(directory)
+        # delete as many as needed starting with the oldest
+        _delete_oldest(entries, bytes_needed)
 
 
 def get_cache_directory(domain=None):
