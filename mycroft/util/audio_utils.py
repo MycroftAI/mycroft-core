@@ -56,6 +56,10 @@ def play_audio_file(uri: str, environment=None):
         return None
 
 
+# Create a custom environment to use that can be ducked by a phone role.
+# This is kept separate from the normal os.environ to ensure that the TTS
+# role isn't affected and that any thirdparty software launched through
+# a mycroft process can select if they wish to honor this.
 _ENVIRONMENT = deepcopy(os.environ)
 _ENVIRONMENT['PULSE_PROP'] = 'media.role=music'
 
@@ -67,6 +71,23 @@ def _get_pulse_environment(config):
         return _ENVIRONMENT
     else:
         return os.environ
+
+
+def _play_cmd(cmd, uri, config, environment):
+    """Generic function for starting playback from a commandline and uri.
+
+    Arguments:
+        cmd (str): commandline to execute %1 in the command line will be
+                   replaced with the provided uri.
+        uri (str): uri to play
+        config (dict): config to use
+        environment: environment to execute in, can be used to supply specific
+                     pulseaudio settings.
+    """
+    environment = environment or _get_pulse_environment(config)
+    cmd_elements = str(cmd).split(" ")
+    cmdline = [e if e != '%1' else get_http(uri) for e in cmd_elements]
+    return subprocess.Popen(cmdline, env=environment)
 
 
 def play_wav(uri, environment=None):
@@ -83,14 +104,9 @@ def play_wav(uri, environment=None):
     Returns: subprocess.Popen object
     """
     config = mycroft.configuration.Configuration.get()
-    environment = environment or _get_pulse_environment(config)
-    play_cmd = config.get("play_wav_cmdline")
-    play_wav_cmd = str(play_cmd).split(" ")
-    for index, cmd in enumerate(play_wav_cmd):
-        if cmd == "%1":
-            play_wav_cmd[index] = (get_http(uri))
+    play_wav_cmd = config['play_wav_cmdline']
     try:
-        return subprocess.Popen(play_wav_cmd, env=environment)
+        return _play_cmd(play_wav_cmd, uri, config, environment)
     except Exception as e:
         LOG.error("Failed to launch WAV: {}".format(play_wav_cmd))
         LOG.debug("Error: {}".format(repr(e)), exc_info=True)
@@ -111,14 +127,9 @@ def play_mp3(uri, environment=None):
     Returns: subprocess.Popen object
     """
     config = mycroft.configuration.Configuration.get()
-    environment = environment or _get_pulse_environment(config)
-    play_cmd = config.get("play_mp3_cmdline")
-    play_mp3_cmd = str(play_cmd).split(" ")
-    for index, cmd in enumerate(play_mp3_cmd):
-        if cmd == "%1":
-            play_mp3_cmd[index] = (get_http(uri))
+    play_mp3_cmd = config.get("play_mp3_cmdline")
     try:
-        return subprocess.Popen(play_mp3_cmd, env=environment)
+        return _play_cmd(play_mp3_cmd, uri, config, environment)
     except Exception as e:
         LOG.error("Failed to launch MP3: {}".format(play_mp3_cmd))
         LOG.debug("Error: {}".format(repr(e)), exc_info=True)
@@ -139,14 +150,9 @@ def play_ogg(uri, environment=None):
     Returns: subprocess.Popen object
     """
     config = mycroft.configuration.Configuration.get()
-    environment = environment or _get_pulse_environment(config)
-    play_cmd = config.get("play_ogg_cmdline")
-    play_ogg_cmd = str(play_cmd).split(" ")
-    for index, cmd in enumerate(play_ogg_cmd):
-        if cmd == "%1":
-            play_ogg_cmd[index] = (get_http(uri))
+    play_ogg_cmd = config.get("play_ogg_cmdline")
     try:
-        return subprocess.Popen(play_ogg_cmd, env=environment)
+        return _play_cmd(play_ogg_cmd, uri, config, environment)
     except Exception as e:
         LOG.error("Failed to launch OGG: {}".format(play_ogg_cmd))
         LOG.debug("Error: {}".format(repr(e)), exc_info=True)
