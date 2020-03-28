@@ -46,10 +46,10 @@ def resolve_resource_file(res_name):
     where the '...' is replaced by the path where the package has
     been installed.
 
-    Args:
+    Arguments:
         res_name (str): a resource path/name
     Returns:
-        str: path to resource or None if no resource found
+        (str) path to resource or None if no resource found
     """
     config = mycroft.configuration.Configuration.get()
 
@@ -211,29 +211,29 @@ def get_cache_directory(domain=None):
     uses these cached files must be able to fallback and regenerate
     the file.
 
-    Args:
+    Arguments:
         domain (str): The cache domain.  Basically just a subdirectory.
 
-    Return:
-        str: a path to the directory where you can cache data
+    Returns:
+        (str) a path to the directory where you can cache data
     """
     config = mycroft.configuration.Configuration.get()
-    dir = config.get("cache_path")
-    if not dir:
+    directory = config.get("cache_path")
+    if not directory:
         # If not defined, use /tmp/mycroft/cache
-        dir = os.path.join(tempfile.gettempdir(), "mycroft", "cache")
-    return ensure_directory_exists(dir, domain)
+        directory = os.path.join(tempfile.gettempdir(), "mycroft", "cache")
+    return ensure_directory_exists(directory, domain)
 
 
 def ensure_directory_exists(directory, domain=None):
-    """ Create a directory and give access rights to all
+    """Create a directory and give access rights to all
 
-    Args:
+    Arguments:
         domain (str): The IPC domain.  Basically a subdirectory to prevent
             overlapping signal filenames.
 
     Returns:
-        str: a path to the directory
+        (str) a path to the directory
     """
     if domain:
         directory = os.path.join(directory, domain)
@@ -256,10 +256,10 @@ def ensure_directory_exists(directory, domain=None):
 
 
 def create_file(filename):
-    """ Create the file filename and create any directories needed
+    """Create the file filename and create any directories needed
 
-        Args:
-            filename: Path to the file to be created
+    Arguments:
+        filename: Path to the file to be created
     """
     try:
         os.makedirs(os.path.dirname(filename))
