@@ -8,6 +8,7 @@ from mycroft import MYCROFT_ROOT_PATH
 from mycroft.util import (resolve_resource_file, curate_cache,
                           get_cache_directory, read_stripped_lines, read_dict,
                           play_ogg, play_mp3, play_wav, play_audio_file,
+                          record,
                           camel_case_split, get_http, remove_last_slash)
 
 test_config = {
@@ -201,6 +202,38 @@ class TestPlaySounds(TestCase):
         mock_subprocess.Popen.assert_called_once_with(['mock_ogg',
                                                        'insult.ogg'],
                                                       env=Anything())
+
+
+@mock.patch('mycroft.util.audio_utils.subprocess')
+class TestRecordSounds(TestCase):
+    def test_record_with_duration(self, mock_subprocess):
+        mock_proc = mock.Mock()(name='mock process')
+        mock_subprocess.Popen.return_value = mock_proc
+        rate = 16000
+        channels = 1
+        filename = '/tmp/test.wav'
+        duration = 42
+        res = record(filename, duration, rate, channels)
+        mock_subprocess.Popen.assert_called_once_with(['arecord',
+                                                       '-r', str(rate),
+                                                       '-c', str(channels),
+                                                       '-d', str(duration),
+                                                       filename])
+        self.assertEqual(res, mock_proc)
+
+    def test_record_without_duration(self, mock_subprocess):
+        mock_proc = mock.Mock(name='mock process')
+        mock_subprocess.Popen.return_value = mock_proc
+        rate = 16000
+        channels = 1
+        filename = '/tmp/test.wav'
+        duration = 0
+        res = record(filename, duration, rate, channels)
+        mock_subprocess.Popen.assert_called_once_with(['arecord',
+                                                       '-r', str(rate),
+                                                       '-c', str(channels),
+                                                       filename])
+        self.assertEqual(res, mock_proc)
 
 
 class TestStringFunctions(TestCase):
