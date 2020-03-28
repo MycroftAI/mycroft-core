@@ -174,13 +174,10 @@ def record(file_path, duration, rate, channels):
     Returns:
         process for performing the recording.
     """
-    if duration > 0:
-        return subprocess.Popen(
-            ["arecord", "-r", str(rate), "-c", str(channels), "-d",
-             str(duration), file_path])
-    else:
-        return subprocess.Popen(
-            ["arecord", "-r", str(rate), "-c", str(channels), file_path])
+    command = ['arecord', '-r', str(rate), '-c', str(channels)]
+    command += ['-d', str(duration)] if duration > 0 else []
+    command += [file_path]
+    return subprocess.Popen(command)
 
 
 def find_input_device(device_name):
