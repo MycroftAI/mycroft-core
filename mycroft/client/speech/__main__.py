@@ -207,7 +207,7 @@ def connect_bus_events(bus):
     bus.on('message', create_echo_function('VOICE'))
 
 
-def main(ready_hook=on_ready, error_hook=on_error):
+def main(ready_hook=on_ready, error_hook=on_error, watchdog=lambda: None):
     global bus
     global loop
     global config
@@ -219,7 +219,7 @@ def main(ready_hook=on_ready, error_hook=on_error):
         config = Configuration.get()
 
         # Register handlers on internal RecognizerLoop bus
-        loop = RecognizerLoop()
+        loop = RecognizerLoop(watchdog)
         connect_loop_events(loop)
         connect_bus_events(bus)
         create_daemon(bus.run_forever)

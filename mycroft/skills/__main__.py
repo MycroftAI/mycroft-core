@@ -181,7 +181,7 @@ def on_error(e='Unknown'):
     LOG.info('Skill service failed to launch ({})'.format(repr(e)))
 
 
-def main(ready_hook=on_ready, error_hook=on_error):
+def main(ready_hook=on_ready, error_hook=on_error, watchdog=None):
     reset_sigint_handler()
     # Create PID file, prevent multiple instances of this service
     mycroft.lock.Lock('skills')
@@ -193,7 +193,7 @@ def main(ready_hook=on_ready, error_hook=on_error):
     bus = _start_message_bus_client()
     _register_intent_services(bus)
     event_scheduler = EventScheduler(bus)
-    skill_manager = _initialize_skill_manager(bus)
+    skill_manager = _initialize_skill_manager(bus, watchdog)
 
     _wait_for_internet_connection()
 
@@ -244,14 +244,14 @@ def _register_intent_services(bus):
     bus.on('intent_failure', FallbackSkill.make_intent_failure_handler(bus))
 
 
-def _initialize_skill_manager(bus):
+def _initialize_skill_manager(bus, watchdog):
     """Create a thread that monitors the loaded skills, looking for updates
 
     Returns:
         SkillManager instance or None if it couldn't be initialized
     """
     try:
-        skill_manager = SkillManager(bus)
+        skill_manager = SkillManager(bus, watchdog)
         skill_manager.load_priority()
     except MsmException:
         # skill manager couldn't be created, wait for network connection and
