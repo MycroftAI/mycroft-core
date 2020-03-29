@@ -6,27 +6,13 @@ from unittest import TestCase, mock
 
 from mycroft import MYCROFT_ROOT_PATH
 from mycroft.util import (resolve_resource_file, curate_cache,
-                          get_cache_directory, read_stripped_lines, read_dict,
-                          play_ogg, play_mp3, play_wav, play_audio_file,
-                          record,
-                          camel_case_split, get_http, remove_last_slash)
+                          get_cache_directory, read_stripped_lines, read_dict)
+
 
 test_config = {
     'data_dir': join(dirname(__file__), 'datadir'),
     'cache_dir': tempfile.gettempdir(),
-    'play_wav_cmdline': 'mock_wav %1',
-    'play_mp3_cmdline': 'mock_mp3 %1',
-    'play_ogg_cmdline': 'mock_ogg %1'
 }
-
-
-class Anything:
-    """Class matching any object.
-
-    Useful for assert_called_with arguments.
-    """
-    def __eq__(self, other):
-        return True
 
 
 @mock.patch('mycroft.configuration.Configuration')
@@ -158,103 +144,3 @@ class TestCache(TestCase):
         curate_cache(cache_dir)
         self.assertFalse(exists(aldous_path))
         self.assertFalse(exists(huxley_path))
-
-
-@mock.patch('mycroft.configuration.Configuration')
-@mock.patch('mycroft.util.audio_utils.subprocess')
-class TestPlaySounds(TestCase):
-    def test_play_ogg(self, mock_subprocess, mock_conf):
-        mock_conf.get.return_value = test_config
-        play_ogg('insult.ogg')
-        mock_subprocess.Popen.assert_called_once_with(['mock_ogg',
-                                                       'insult.ogg'],
-                                                      env=Anything())
-
-    def test_play_mp3(self, mock_subprocess, mock_conf):
-        mock_conf.get.return_value = test_config
-        play_mp3('praise.mp3')
-        mock_subprocess.Popen.assert_called_once_with(['mock_mp3',
-                                                       'praise.mp3'],
-                                                      env=Anything())
-
-    def test_play_wav(self, mock_subprocess, mock_conf):
-        mock_conf.get.return_value = test_config
-        play_wav('indifference.wav')
-        mock_subprocess.Popen.assert_called_once_with(['mock_wav',
-                                                       'indifference.wav'],
-                                                      env=Anything())
-
-    def test_play_audio_file(self, mock_subprocess, mock_conf):
-        mock_conf.get.return_value = test_config
-        play_audio_file('indifference.wav')
-        mock_subprocess.Popen.assert_called_once_with(['mock_wav',
-                                                       'indifference.wav'],
-                                                      env=Anything())
-        mock_subprocess.Popen.reset_mock()
-
-        play_audio_file('praise.mp3')
-        mock_subprocess.Popen.assert_called_once_with(['mock_mp3',
-                                                       'praise.mp3'],
-                                                      env=Anything())
-        mock_subprocess.Popen.reset_mock()
-        mock_conf.get.return_value = test_config
-        play_audio_file('insult.ogg')
-        mock_subprocess.Popen.assert_called_once_with(['mock_ogg',
-                                                       'insult.ogg'],
-                                                      env=Anything())
-
-
-@mock.patch('mycroft.util.audio_utils.subprocess')
-class TestRecordSounds(TestCase):
-    def test_record_with_duration(self, mock_subprocess):
-        mock_proc = mock.Mock()(name='mock process')
-        mock_subprocess.Popen.return_value = mock_proc
-        rate = 16000
-        channels = 1
-        filename = '/tmp/test.wav'
-        duration = 42
-        res = record(filename, duration, rate, channels)
-        mock_subprocess.Popen.assert_called_once_with(['arecord',
-                                                       '-r', str(rate),
-                                                       '-c', str(channels),
-                                                       '-d', str(duration),
-                                                       filename])
-        self.assertEqual(res, mock_proc)
-
-    def test_record_without_duration(self, mock_subprocess):
-        mock_proc = mock.Mock(name='mock process')
-        mock_subprocess.Popen.return_value = mock_proc
-        rate = 16000
-        channels = 1
-        filename = '/tmp/test.wav'
-        duration = 0
-        res = record(filename, duration, rate, channels)
-        mock_subprocess.Popen.assert_called_once_with(['arecord',
-                                                       '-r', str(rate),
-                                                       '-c', str(channels),
-                                                       filename])
-        self.assertEqual(res, mock_proc)
-
-
-class TestStringFunctions(TestCase):
-    def test_camel_case_split(self):
-        """Check that camel case string is split properly."""
-        self.assertEqual(camel_case_split('MyCoolSkill'), 'My Cool Skill')
-        self.assertEqual(camel_case_split('MyCOOLSkill'), 'My COOL Skill')
-
-    def test_get_http(self):
-        """Check that https-url is correctly transformed to a http-url."""
-        self.assertEqual(get_http('https://github.com/'), 'http://github.com/')
-        self.assertEqual(get_http('http://github.com/'), 'http://github.com/')
-        self.assertEqual(get_http('https://github.com/https'),
-                         'http://github.com/https')
-        self.assertEqual(get_http('http://https.com/'), 'http://https.com/')
-
-    def test_remove_last_slash(self):
-        """Check that the last slash in an url is correctly removed."""
-        self.assertEqual(remove_last_slash('https://github.com/'),
-                         'https://github.com')
-        self.assertEqual(remove_last_slash('https://github.com/hello'),
-                         'https://github.com/hello')
-        self.assertEqual(remove_last_slash('https://github.com/hello/'),
-                         'https://github.com/hello')
