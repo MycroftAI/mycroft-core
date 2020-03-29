@@ -12,79 +12,64 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import hashlib
-import os
-import os.path
-from contextlib import closing
-from tempfile import gettempdir
-
-from mycroft.tts import TTS, TTSValidator
+import random
+from mycroft.tts.tts import TTS, TTSValidator
 from mycroft.configuration import Configuration
-from mycroft.util.log import LOG
 
 
 class PollyTTS(TTS):
-    def __init__(self, lang, voice):
-        super(PollyTTS, self).__init__(lang, voice, PollyTTSValidator(self))
-        from boto3 import Session
-        # FS cache
-        self.type = "mp3"
-        self.config = Configuration.get().get("tts", {}).get("polly", {})
-        self.cache = self.config.get("cache", True)
+    voices = ["Ivy", "Amy", "Emma", "Nicole", "Russell", "Brian", "Geraint",
+              "Joanna", "Kendra", "Kimberly", "Salli", "Joey", "Matthew",
+              "Justin"]
+    audio_ext = "mp3"
+
+    def __init__(self, lang="en-us", config=None):
+        import boto3
+        config = config or Configuration.get().get("tts", {}).get("polly", {})
+        super(PollyTTS, self).__init__(lang, config, PollyTTSValidator(self),
+                                       audio_ext="mp3",
+                                       ssml_tags=["speak", "say-as", "voice",
+                                                  "prosody", "break",
+                                                  "emphasis", "sub", "lang",
+                                                  "phoneme", "w", "whisper",
+                                                  "amazon:auto-breaths",
+                                                  "p", "s", "amazon:effect",
+                                                  "mark"])
+
+        self.voice = self.config.get("voice", random.choice(self.voices))
         self.key_id = self.config.get("key_id", '')
         self.key = self.config.get("secret_key", '')
-        self.region = self.config.get("region", 'us-west-2')
-        session = Session(aws_access_key_id=self.key_id,
-                          aws_secret_access_key=self.key,
-                          region_name=self.region)
-        self.polly = session.client('polly')
+        self.region = self.config.get("region", 'us-east-1')
+        self.polly = boto3.Session(aws_access_key_id=self.key_id,
+                                   aws_secret_access_key=self.key,
+                                   region_name=self.region).client('polly')
 
     def get_tts(self, sentence, wav_file):
-        wav_file = self.retrieve_audio(sentence)
+        text_type = "text"
+        if self.remove_ssml(sentence) != sentence:
+            text_type = "ssml"
+            sentence = sentence \
+                .replace("\\whispered", "/amazon:effect") \
+                .replace("whispered", "amazon:effect name=\"whispered\"")
+        response = self.polly.synthesize_speech(
+            OutputFormat=self.audio_ext,
+            Text=sentence,
+            TextType=text_type,
+            VoiceId=self.voice)
+
+        with open(wav_file, 'wb') as f:
+            f.write(response['AudioStream'].read())
         return (wav_file, None)  # No phonemes
 
-    def describe_voices(self, language_code):
+    def describe_voices(self, language_code="en-US"):
+        if language_code.islower():
+            a, b = language_code.split("-")
+            b = b.upper()
+            language_code = "-".join([a, b])
         # example 'it-IT' useful to retrieve voices
-        return self.polly.describe_voices(LanguageCode=language_code)
+        voices = self.polly.describe_voices(LanguageCode=language_code)
 
-    def calculate_hash(self, data):
-        m = hashlib.md5()
-        m.update(data)
-        return m.hexdigest()
-
-    def retrieve_audio(self, sentence):
-        output_format = 'mp3'
-        hash = self.calculate_hash('{0}-{1}'.format(self.voice, sentence))
-        file_name = '{0}.{1}'.format(hash, output_format)
-        output = os.path.join(gettempdir(), file_name)
-
-        if self.cache and os.path.isfile(output):
-            LOG.info('Using file {0}'.format(output))
-            return output
-
-        # call AWS
-        try:
-            response = self.polly.synthesize_speech(Text=sentence,
-                                                    OutputFormat=output_format,
-                                                    VoiceId=self.voice)
-        except Exception as err:
-            LOG.error(err)
-            return None
-
-        # access the audio stream from the response
-        if 'AudioStream' in response:
-            with closing(response['AudioStream']) as stream:
-                try:
-                    # open a file for writing the output as a binary stream
-                    with open(output, 'wb') as file:
-                        file.write(stream.read())
-                        LOG.info('Generated new file {0}'.format(output))
-                        return output
-                except IOError as error:
-                    LOG.error(error)
-                    return None
-        LOG.error('No AudioStream in response')
-        return None
+        return voices
 
 
 class PollyTTSValidator(TTSValidator):
@@ -104,8 +89,11 @@ class PollyTTSValidator(TTSValidator):
                 'boto3 ')
 
     def validate_connection(self):
-        output = self.tts.retrieve_audio("hello pollytts")
-        if output is None:
+        try:
+            if not self.tts.voice:
+                raise Exception("Polly TTS Voice not configured")
+            output = self.tts.describe_voices()
+        except TypeError:
             raise Exception(
                 'PollyTTS server could not be verified. Please check your '
                 'internet connection and credentials.')
