@@ -46,6 +46,10 @@ class EnclosureEyes:
         self.bus.on('enclosure.eyes.rgb.get', self.handle_get_color)
 
     def handle_get_color(self, message):
+        """Get the eye RGB color for all pixels
+        Returns:
+           (list) list of (r,g,b) tuples for each eye pixel
+        """
         self.bus.emit(message.reply("enclosure.eyes.rgb",
                                     {"pixels": self._current_rgb}))
 

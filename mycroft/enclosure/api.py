@@ -326,11 +326,9 @@ class EnclosureAPI:
                               context={"destination": ["enclosure"]}))
 
     def get_eyes_color(self):
-        """
-        Get the eye RGB color for all pixels
-
-        :returns pixels (list) - list of (r,g,b) tuples for each eye pixel
-
+        """Get the eye RGB color for all pixels
+        Returns:
+           (list) pixels - list of (r,g,b) tuples for each eye pixel
         """
         message = Message("enclosure.eyes.rgb.get",
                           context={"source": "enclosure_api",
@@ -341,11 +339,9 @@ class EnclosureAPI:
         raise TimeoutError("Enclosure took too long to respond")
 
     def get_eyes_pixel_color(self, idx):
-        """
-        Get the RGB color for a specific eye pixel
-
-        :returns (r,g,b) tuples for selected pixel
-
+        """Get the RGB color for a specific eye pixel
+        Returns:
+            (r,g,b) tuples for selected pixel
         """
         if idx < 0 or idx > 23:
             raise ValueError('idx ({}) must be between 0-23'.format(str(idx)))
