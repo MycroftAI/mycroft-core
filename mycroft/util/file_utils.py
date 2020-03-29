@@ -116,7 +116,7 @@ def read_dict(filename, div='='):
     d = {}
     with open(filename, 'r') as f:
         for line in f:
-            (key, val) = line.split(div)
+            key, val = line.split(div)
             d[key.strip()] = val.strip()
     return d
 
@@ -248,7 +248,6 @@ def ensure_directory_exists(directory, domain=None):
             os.makedirs(directory, 0o777)  # give everyone rights to r/w here
         except OSError:
             LOG.warning("Failed to create: " + directory)
-            pass
         finally:
             os.umask(save)
 
