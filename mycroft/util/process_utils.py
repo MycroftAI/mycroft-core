@@ -36,15 +36,50 @@ def wait_for_exit_signal():
 _log_all_bus_messages = False
 
 
+def bus_logging_status():
+    global _log_all_bus_messages
+    return _log_all_bus_messages
+
+
+def _update_log_level(msg, name):
+    """Update log level for process.
+
+    Arguments:
+        msg (Message): Message sent to trigger the log level change
+        name (str): Name of the current process
+    """
+    global _log_all_bus_messages
+
+    # Respond to requests to adjust the logger settings
+    lvl = msg["data"].get("level", "").upper()
+    if lvl in ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]:
+        LOG.level = lvl
+        LOG(name).info("Changing log level to: {}".format(lvl))
+        try:
+            logging.getLogger().setLevel(lvl)
+            logging.getLogger('urllib3').setLevel(lvl)
+        except Exception:
+            pass  # We don't really care about if this fails...
+    else:
+        LOG(name).info("Invalid level provided: {}".format(lvl))
+
+    # Allow enable/disable of messagebus traffic
+    log_bus = msg["data"].get("bus", None)
+    if log_bus is not None:
+        LOG(name).info("Bus logging: {}".format(log_bus))
+        _log_all_bus_messages = log_bus
+
+
 def create_echo_function(name, whitelist=None):
     """Standard logging mechanism for Mycroft processes.
 
     This handles the setup of the basic logging for all Mycroft
     messagebus-based processes.
+    TODO 20.08: extract log level setting thing completely from this function
 
     Arguments:
         name (str): Reference name of the process
-        whitelist (list, optional): List of "type" strings.  If defined, only
+        whitelist (list, optional): List of "type" strings. If defined, only
                                     messages in this list will be logged.
 
     Returns:
@@ -74,24 +109,7 @@ def create_echo_function(name, whitelist=None):
                 return
 
             if msg_type == "mycroft.debug.log":
-                # Respond to requests to adjust the logger settings
-                lvl = msg["data"].get("level", "").upper()
-                if lvl in ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]:
-                    LOG.level = lvl
-                    LOG(name).info("Changing log level to: {}".format(lvl))
-                    try:
-                        logging.getLogger().setLevel(lvl)
-                        logging.getLogger('urllib3').setLevel(lvl)
-                    except Exception:
-                        pass  # We don't really care about if this fails...
-                else:
-                    LOG(name).info("Invalid level provided: {}".format(lvl))
-
-                # Allow enable/disable of messagebus traffic
-                log_bus = msg["data"].get("bus", None)
-                if log_bus is not None:
-                    LOG(name).info("Bus logging: {}".format(log_bus))
-                    _log_all_bus_messages = log_bus
+                _update_log_level(msg, name)
             elif msg_type == "registration":
                 # do not log tokens from registration messages
                 msg["data"]["token"] = None
