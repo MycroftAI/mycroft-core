@@ -12,17 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import random
 from mycroft.tts.tts import TTS, TTSValidator
 from mycroft.configuration import Configuration
 
 
 class PollyTTS(TTS):
-    voices = ["Ivy", "Amy", "Emma", "Nicole", "Russell", "Brian", "Geraint",
-              "Joanna", "Kendra", "Kimberly", "Salli", "Joey", "Matthew",
-              "Justin"]
-    audio_ext = "mp3"
-
     def __init__(self, lang="en-us", config=None):
         import boto3
         config = config or Configuration.get().get("tts", {}).get("polly", {})
@@ -36,7 +30,7 @@ class PollyTTS(TTS):
                                                   "p", "s", "amazon:effect",
                                                   "mark"])
 
-        self.voice = self.config.get("voice", random.choice(self.voices))
+        self.voice = self.config.get("voice", "Matthew")
         self.key_id = self.config.get("key_id", '')
         self.key = self.config.get("secret_key", '')
         self.region = self.config.get("region", 'us-east-1')
