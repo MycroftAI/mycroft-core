@@ -23,6 +23,9 @@ class EnclosureEyes:
     def __init__(self, bus, writer):
         self.bus = bus
         self.writer = writer
+
+        self._num_pixels = 12 * 2
+        self._current_rgb = [(255, 255, 255) for i in range(self._num_pixels)]
         self.__init_events()
 
     def __init_events(self):
@@ -39,6 +42,16 @@ class EnclosureEyes:
         self.bus.on('enclosure.eyes.reset', self.reset)
         self.bus.on('enclosure.eyes.setpixel', self.set_pixel)
         self.bus.on('enclosure.eyes.fill', self.fill)
+
+        self.bus.on('enclosure.eyes.rgb.get', self.handle_get_color)
+
+    def handle_get_color(self, message):
+        """Get the eye RGB color for all pixels
+        Returns:
+           (list) list of (r,g,b) tuples for each eye pixel
+        """
+        self.bus.emit(message.reply("enclosure.eyes.rgb",
+                                    {"pixels": self._current_rgb}))
 
     def on(self, event=None):
         self.writer.write("eyes.on")
@@ -67,6 +80,7 @@ class EnclosureEyes:
             g = int(event.data.get("g", g))
             b = int(event.data.get("b", b))
         color = (r * 65536) + (g * 256) + b
+        self._current_rgb = [(r, g, b) for i in range(self._num_pixels)]
         self.writer.write("eyes.color=" + str(color))
 
     def set_pixel(self, event=None):
@@ -77,6 +91,7 @@ class EnclosureEyes:
             r = int(event.data.get("r", r))
             g = int(event.data.get("g", g))
             b = int(event.data.get("b", b))
+        self._current_rgb[idx] = (r, g, b)
         color = (r * 65536) + (g * 256) + b
         self.writer.write("eyes.set=" + str(idx) + "," + str(color))
 
