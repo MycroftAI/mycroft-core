@@ -225,12 +225,14 @@ def get_cache_directory(domain=None):
     return ensure_directory_exists(directory, domain)
 
 
-def ensure_directory_exists(directory, domain=None):
+def ensure_directory_exists(directory, domain=None, permissions=0o777):
     """Create a directory and give access rights to all
 
     Arguments:
-        domain (str): The IPC domain.  Basically a subdirectory to prevent
-            overlapping signal filenames.
+        directory (str): Root directory
+        domain (str): Domain. Basically a subdirectory to prevent things like
+                      overlapping signal filenames.
+        rights (int): Directory permissions (default is 0o777)
 
     Returns:
         (str) a path to the directory
@@ -245,7 +247,7 @@ def ensure_directory_exists(directory, domain=None):
     if not os.path.isdir(directory):
         try:
             save = os.umask(0)
-            os.makedirs(directory, 0o777)  # give everyone rights to r/w here
+            os.makedirs(directory, permissions)
         except OSError:
             LOG.warning("Failed to create: " + directory)
         finally:
@@ -260,9 +262,6 @@ def create_file(filename):
     Arguments:
         filename: Path to the file to be created
     """
-    try:
-        os.makedirs(os.path.dirname(filename))
-    except OSError:
-        pass
+    ensure_directory_exists(os.path.dirname(filename), permissions=0o775)
     with open(filename, 'w') as f:
         f.write('')

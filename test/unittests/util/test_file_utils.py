@@ -1,3 +1,4 @@
+from os import makedirs
 from os.path import (abspath, dirname, expanduser, join, normpath, isdir,
                      exists)
 import shutil
@@ -5,7 +6,7 @@ import tempfile
 from unittest import TestCase, mock
 
 from mycroft import MYCROFT_ROOT_PATH
-from mycroft.util import (resolve_resource_file, curate_cache,
+from mycroft.util import (resolve_resource_file, curate_cache, create_file,
                           get_cache_directory, read_stripped_lines, read_dict)
 
 
@@ -144,3 +145,25 @@ class TestCache(TestCase):
         curate_cache(cache_dir)
         self.assertFalse(exists(aldous_path))
         self.assertFalse(exists(huxley_path))
+
+
+TEST_CREATE_FILE_DIR = join(tempfile.gettempdir(), 'create_file_test')
+
+
+class TestCreateFile(TestCase):
+    def setUp(self):
+        shutil.rmtree(TEST_CREATE_FILE_DIR, ignore_errors=True)
+
+    def test_create_file_in_existing_dir(self):
+        makedirs(TEST_CREATE_FILE_DIR)
+        test_path = join(TEST_CREATE_FILE_DIR, 'test_file')
+        create_file(test_path)
+        self.assertTrue(exists(test_path))
+
+    def test_create_file_in_nonexisting_dir(self):
+        test_path = join(TEST_CREATE_FILE_DIR, 'test_file')
+        create_file(test_path)
+        self.assertTrue(exists(test_path))
+
+    def tearDownClass():
+        shutil.rmtree(TEST_CREATE_FILE_DIR, ignore_errors=True)
