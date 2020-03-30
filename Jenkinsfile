@@ -5,6 +5,7 @@ pipeline {
         // building the Docker image.
         disableConcurrentBuilds()
         buildDiscarder(logRotator(numToKeepStr: '5'))
+        lock resource: 'VoightKampff'
     }
     stages {
         // Run the build in the against the dev branch to check for compile errors
