@@ -12,17 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from threading import Thread
-
 import os
-import requests
 from os.path import exists, dirname
 import subprocess
+from threading import Thread
+
+from .file_utils import ensure_directory_exists
 
 _running_downloads = {}
 
 
 def _get_download_tmp(dest):
+    """Get temporary file for download.
+
+    Arguments:
+        dest (str): path to download location
+
+    Returns:
+        (str) path to temporary download location
+    """
     tmp_base = dest + '.part'
     if not exists(tmp_base):
         return tmp_base
@@ -37,19 +45,21 @@ def _get_download_tmp(dest):
 
 
 class Downloader(Thread):
-    """
-        Downloader is a thread based downloader instance when instanciated
-        it will download the provided url to a file on disk.
+    """Simple file downloader.
 
-        When the download is complete or failed the `.done` property will
-        be set to true and the `.status` will indicate the status code.
-        200 = Success.
+    Downloader is a thread based downloader instance when instanciated
+    it will download the provided url to a file on disk.
 
-        Args:
-            url:            Url to download
-            dest:           Path to save data to
-            complet_action: Function to run when download is complete.
-                            `func(dest)`
+    When the download is complete or failed the `.done` property will
+    be set to true and the `.status` will indicate the HTTP status code.
+    200 = Success.
+
+    Argumentss:
+        url (str): Url to download
+        dest (str): Path to save data to
+        complete_action (callable): Function to run when download is complete
+                                    `func(dest)`
+        header: any special header needed for starting the transfer
     """
 
     def __init__(self, url, dest, complete_action=None, header=None):
@@ -63,15 +73,18 @@ class Downloader(Thread):
         self.header = header
 
         # Create directories as needed
-        if not exists(dirname(dest)):
-            os.makedirs(dirname(dest))
+        ensure_directory_exists(dirname(dest), permissions=0o775)
 
         #  Start thread
         self.daemon = True
         self.start()
 
     def perform_download(self, dest):
+        """Handle the download through wget.
 
+        Arguments:
+            dest (str): Save location
+        """
         cmd = ['wget', '-c', self.url, '-O', dest,
                '--tries=20', '--read-timeout=5']
         if self.header:
@@ -79,9 +92,7 @@ class Downloader(Thread):
         return subprocess.call(cmd)
 
     def run(self):
-        """
-            Does the actual download.
-        """
+        """Do the actual download."""
         tmp = _get_download_tmp(self.dest)
         self.status = self.perform_download(tmp)
 
@@ -97,27 +108,27 @@ class Downloader(Thread):
             _running_downloads.pop(arg_hash)
 
     def finalize(self, tmp):
-        """
-            Move the .part file to the final destination and perform any
-            actions that should be performed at completion.
+        """Move temporary download data to final location.
+
+        Move the .part file to the final destination and perform any
+        actions that should be performed at completion.
+
+        Arguments:
+            tmp(str): temporary file path
         """
         os.rename(tmp, self.dest)
         if self.complete_action:
             self.complete_action(self.dest)
 
     def cleanup(self, tmp):
-        """
-            Cleanup after download attempt
-        """
+        """Cleanup after download attempt."""
         if exists(tmp):
             os.remove(self.dest + '.part')
         if self.status == 200:
             self.status = -1
 
     def abort(self):
-        """
-            Abort download process
-        """
+        """Abort download process."""
         self._abort = True
 
 
