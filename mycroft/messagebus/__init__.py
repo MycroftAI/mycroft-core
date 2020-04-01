@@ -15,3 +15,13 @@ from .client.client import MessageBusClient
 from .message import Message
 from .send_func import send
 from .service.event_handler import MessageBusEventHandler
+
+
+def get_websocket(host, port, route='/', ssl=False, threaded=False):
+    """
+    Returns a connection to a websocket
+    """
+    ws = MessageBusClient(host, port, route, ssl)
+    if threaded:
+        ws.run_in_thread()
+    return ws

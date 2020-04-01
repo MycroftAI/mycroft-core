@@ -35,6 +35,7 @@ function help() {
     echo "  voice                    voice capture service"
     # echo "  wifi                     wifi setup service"
     echo "  enclosure                mark_1 enclosure service"
+    echo "  gui                      cli GUI debugging interface"
     echo
     echo "Tool COMMANDs:"
     echo "  cli                      the Command Line Interface"
@@ -67,6 +68,7 @@ function name-to-script-path() {
         "audio")             _module="mycroft.audio" ;;
         "voice")             _module="mycroft.client.speech" ;;
         "cli")               _module="mycroft.client.text" ;;
+        "gui")               _module="mycroft.client.debug_gui" ;;
         "audiotest")         _module="mycroft.util.audio_test" ;;
         "wakewordtest")      _module="test.wake_word" ;;
         "enclosure")         _module="mycroft.client.enclosure" ;;
@@ -221,6 +223,11 @@ case ${_opt} in
         launch-process ${_opt}
         ;;
 
+    "gui")
+        require-process bus
+        require-process enclosure
+        launch-process ${_opt}
+        ;;
     # TODO: Restore support for Wifi Setup on a Picroft, etc.
     # "wifi")
     #    launch-background ${_opt}

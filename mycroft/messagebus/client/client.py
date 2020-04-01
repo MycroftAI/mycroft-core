@@ -25,7 +25,7 @@ from websocket import (
 
 from mycroft.messagebus.load_config import load_message_bus_config
 from mycroft.messagebus.message import Message
-from mycroft.util import create_echo_function
+from mycroft.util import create_echo_function, create_daemon
 from mycroft.util.log import LOG
 from .threaded_event_emitter import ThreadedEventEmitter
 
@@ -204,6 +204,10 @@ class MessageBusClient:
     def run_forever(self):
         self.started_running = True
         self.client.run_forever()
+
+    def run_in_thread(self):
+        """Launches run_forever in a separate daemon thread."""
+        return create_daemon(self.run_forever)
 
     def close(self):
         self.client.close()
