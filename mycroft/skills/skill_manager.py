@@ -51,6 +51,10 @@ class UploadQueue:
         self.send()
         self.started = True
 
+    def stop(self):
+        """Stop the queue, and hinder any further transmissions."""
+        self.started = False
+
     def send(self):
         """Loop through all stored loaders triggering settingsmeta upload."""
         with self.lock:
@@ -59,7 +63,10 @@ class UploadQueue:
         if queue:
             LOG.info('New Settings meta to upload.')
             for loader in queue:
-                loader.instance.settings_meta.upload()
+                if self.started:
+                    loader.instance.settings_meta.upload()
+                else:
+                    break
 
     def __len__(self):
         return len(self._queue)
@@ -401,6 +408,7 @@ class SkillManager(Thread):
         """Tell the manager to shutdown."""
         self._stop_event.set()
         self.settings_downloader.stop_downloading()
+        self.upload_queue.stop()
 
         # Do a clean shutdown of all skills
         for skill_loader in self.skill_loaders.values():
