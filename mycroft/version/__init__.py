@@ -45,7 +45,7 @@ class VersionManager:
                     return json.load(f)
             except Exception:
                 LOG.error("Failed to load version from '%s'" % version_file)
-        return {"coreVersion": None, "enclosureVersion": None}
+        return {"coreVersion": CORE_VERSION_STR, "enclosureVersion": None}
 
 
 def check_version(version_string):
