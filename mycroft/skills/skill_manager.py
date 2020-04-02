@@ -16,7 +16,7 @@
 import os
 from glob import glob
 from threading import Thread, Event, Lock
-from time import sleep, time
+from time import sleep, time, monotonic
 
 from mycroft.api import is_paired
 from mycroft.enclosure.api import EnclosureAPI
@@ -75,6 +75,29 @@ class UploadQueue:
             # Remove existing loader
             self._queue == [e for e in self._queue if e != loader]
             self._queue.append(loader)
+
+
+def _shutdown_skill(instance):
+    """Shutdown a skill.
+
+    Call the default_shutdown method of the skill, will produce a warning if
+    the shutdown process takes longer than 1 second.
+
+    Arguments:
+        instance (MycroftSkill): Skill instance to shutdown
+    """
+    try:
+        ref_time = monotonic()
+        # Perform the shutdown
+        instance.default_shutdown()
+
+        shutdown_time = monotonic() - ref_time
+        if shutdown_time > 1:
+            LOG.warning('{} shutdown took {} seconds'.format(instance.skill_id,
+                                                             shutdown_time))
+    except Exception:
+        LOG.exception('Failed to shut down skill: '
+                      '{}'.format(instance.skill_id))
 
 
 class SkillManager(Thread):
@@ -382,12 +405,7 @@ class SkillManager(Thread):
         # Do a clean shutdown of all skills
         for skill_loader in self.skill_loaders.values():
             if skill_loader.instance is not None:
-                try:
-                    skill_loader.instance.default_shutdown()
-                except Exception:
-                    LOG.exception(
-                        'Failed to shut down skill: ' + skill_loader.skill_id
-                    )
+                _shutdown_skill(skill_loader.instance)
 
     def handle_converse_request(self, message):
         """Check if the targeted skill id can handle conversation
