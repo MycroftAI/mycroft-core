@@ -112,6 +112,45 @@ class ConversationTest(TestCase):
         # Check that a skill responded that it could handle the message
         self.assertTrue(result)
 
+    def test_converse_error(self):
+        """Check that all skill IDs in the active_skills list are called.
+        even if there's an error.
+        """
+        def response(message, return_msg_type):
+            c64 = Message(return_msg_type, {'skill_id': 'c64_skill',
+                                            'result': False})
+            amiga = Message(return_msg_type,
+                            {'skill_id': 'amiga_skill',
+                             'error': 'skill id does not exist'})
+            atari = Message(return_msg_type, {'skill_id': 'atari_skill',
+                                              'result': False})
+            msgs = {'c64_skill': c64,
+                    'atari_skill': atari,
+                    'amiga_skill': amiga}
+
+            return msgs[message.data['skill_id']]
+
+        self.intent_service.add_active_skill('amiga_skill')
+        self.intent_service.bus.wait_for_response.side_effect = response
+
+        hello = ['hello old friend']
+        utterance_msg = Message('recognizer_loop:utterance',
+                                data={'lang': 'en-US',
+                                      'utterances': hello})
+        result = self.intent_service._converse(hello, 'en-US', utterance_msg)
+
+        # Check that the active skill list was updated to set the responding
+        # Skill first.
+
+        # Check that a skill responded that it couldn't handle the message
+        self.assertFalse(result)
+
+        # Check that each skill in the list of active skills were called
+        call_args = self.intent_service.bus.wait_for_response.call_args_list
+        sent_skill_ids = [call[0][0].data['skill_id'] for call in call_args]
+        self.assertEqual(sent_skill_ids,
+                         ['amiga_skill', 'c64_skill', 'atari_skill'])
+
     def test_reset_converse(self):
         """Check that a blank stt sends the reset signal to the skills."""
         def response(message, return_msg_type):
