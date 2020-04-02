@@ -13,10 +13,9 @@
 # limitations under the License.
 #
 import unittest
-
 from unittest.mock import mock_open, patch
 
-import mycroft.version
+from mycroft.version import check_version, CORE_VERSION_STR, VersionManager
 
 
 VERSION_INFO = """
@@ -34,32 +33,36 @@ class TestVersion(unittest.TestCase):
 
             Assures that only lower versions return True
         """
-        self.assertTrue(mycroft.version.check_version('0.0.1'))
-        self.assertTrue(mycroft.version.check_version('0.8.1'))
-        self.assertTrue(mycroft.version.check_version('0.8.20'))
-        self.assertFalse(mycroft.version.check_version('0.8.22'))
-        self.assertFalse(mycroft.version.check_version('0.9.12'))
-        self.assertFalse(mycroft.version.check_version('1.0.2'))
+        self.assertTrue(check_version('0.0.1'))
+        self.assertTrue(check_version('0.8.1'))
+        self.assertTrue(check_version('0.8.20'))
+        self.assertFalse(check_version('0.8.22'))
+        self.assertFalse(check_version('0.9.12'))
+        self.assertFalse(check_version('1.0.2'))
 
     @patch('mycroft.version.isfile')
     @patch('mycroft.version.exists')
     @patch('mycroft.version.open',
            mock_open(read_data=VERSION_INFO), create=True)
-    def test_version_manager(self, mock_exists, mock_isfile):
-        """
-            Test mycroft.version.VersionManager.get()
+    def test_version_manager_get(self, mock_exists, mock_isfile):
+        """Test mycroft.version.VersionManager.get()
 
-            asserts that the method returns expected data
+        Asserts that the method returns data from version file
         """
         mock_isfile.return_value = True
         mock_exists.return_value = True
 
-        version = mycroft.version.VersionManager.get()
+        version = VersionManager.get()
         self.assertEqual(version['coreVersion'], "1505203453")
         self.assertEqual(version['enclosureVersion'], "1.0.0")
 
-        # Check file not existing case
+    @patch('mycroft.version.exists')
+    def test_version_manager_get_no_file(self, mock_exists):
+        """Test mycroft.version.VersionManager.get()
+
+        Asserts that the method returns current version if no file exists.
+        """
         mock_exists.return_value = False
-        version = mycroft.version.VersionManager.get()
-        self.assertEqual(version['coreVersion'], None)
+        version = VersionManager.get()
+        self.assertEqual(version['coreVersion'], CORE_VERSION_STR)
         self.assertEqual(version['enclosureVersion'], None)
