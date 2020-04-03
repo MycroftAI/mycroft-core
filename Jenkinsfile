@@ -79,6 +79,79 @@ pipeline {
                     )
                     echo 'Report Published'
                 }
+                failure {
+                    // Send failure email containing a link to the Jenkins build
+                    // the results report and the console log messages to Mycroft
+                    // developers, the developers of the pull request and the
+                    // developers that caused the build to fail.
+                    echo 'Sending Failure Email'
+                    emailext (
+                        attachLog: true,
+                        subject: "Core Integration Tests - Build ${BRANCH_NAME} #${BUILD_NUMBER} - SUCCESS!",
+                        body: """
+                            <p>
+                                One or more integration tests failed. Use the
+                                resources below to identify the issue and fix
+                                the failing tests.
+                            </p>
+                            <br>
+                            <p>
+                                <a href='${BUILD_URL}'>
+                                    Jenkins Build Details
+                                </a>
+                                &nbsp(Requires account on Mycroft's Jenkins instance)
+                            </p>
+                            <br>
+                            <p>
+                                <a href='https://reports.mycroft.ai/core/${BRANCH_ALIAS}'>
+                                    Report of Test Results
+                                </a>
+                            </p>
+                            <br>
+                            <p>Console log is attached.</p>""",
+                        replyTo: 'devops@mycroft.ai',
+                        to: 'devs@mycroft.ai',
+                        recipientProviders: [
+                            [$class: 'RequesterRecipientProvider'],
+                            [$class:'CulpritsRecipientProvider'],
+                            [$class:'DevelopersRecipientProvider']
+                        ]
+                    )
+                }
+                success {
+                    // Send success email containing a link to the Jenkins build
+                    // and the results report to Mycroft developers, the developers
+                    // of the pull request and the developers that caused the
+                    // last failed build.
+                    echo 'Sending Success Email'
+                    emailext (
+                        subject: "Core Integration Tests - Build ${BRANCH_NAME} #${BUILD_NUMBER} - SUCCESS!",
+                        body: """
+                            <p>
+                                All integration tests passed.  No further action required.
+                            </p>
+                            <br>
+                            <p>
+                                <a href='${BUILD_URL}'>
+                                    Jenkins Build Details
+                                </a>
+                                &nbsp(Requires account on Mycroft's Jenkins instance)
+                            </p>
+                            <br>
+                            <p>
+                                <a href='https://reports.mycroft.ai/core/${BRANCH_ALIAS}'>
+                                    Report of Test Results
+                                </a>
+                            </p>""",
+                        replyTo: 'devops@mycroft.ai',
+                        to: 'devs@mycroft.ai',
+                        recipientProviders: [
+                            [$class: 'RequesterRecipientProvider'],
+                            [$class:'CulpritsRecipientProvider'],
+                            [$class:'DevelopersRecipientProvider']
+                        ]
+                    )
+                }
             }
         }
         // Build a voight_kampff image for major releases.  This will be used
