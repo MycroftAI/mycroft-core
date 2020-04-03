@@ -23,7 +23,7 @@ pipeline {
                 // play nice with this naming convention.  Define an alias for the
                 // branch name that can be used in these scenarios.
                 BRANCH_ALIAS = sh(
-                    script: 'echo $BRANCH_NAME | sed -e "s#/#_#g"',
+                    script: 'echo $BRANCH_NAME | sed -e "s#/#-#g"',
                     returnStdout: true
                 ).trim()
             }
