@@ -554,3 +554,7 @@ class GUIWebsocketHandler(WebSocketHandler):
         s = json.dumps(data)
         LOG.info('Sending {}'.format(s))
         self.write_message(s)
+
+    def check_origin(self, origin):
+        """Disable origin check to make js connections work."""
+        return True
