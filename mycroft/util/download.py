@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""Download utility based on wget.
+
+The utility is a real simple implementation leveraging the wget command line
+application supporting resume on failed download.
+"""
 from glob import glob
 import os
 from os.path import exists, dirname
@@ -20,7 +25,7 @@ from threading import Thread
 
 from .file_utils import ensure_directory_exists
 
-_running_downloads = {}
+_running_downloads = {}  # Cache of running downloads
 
 
 def _get_download_tmp(dest):
@@ -50,7 +55,7 @@ class Downloader(Thread):
     be set to true and the `.status` will indicate the HTTP status code.
     200 = Success.
 
-    Argumentss:
+    Arguments:
         url (str): Url to download
         dest (str): Path to save data to
         complete_action (callable): Function to run when download is complete
@@ -91,7 +96,6 @@ class Downloader(Thread):
         """Do the actual download."""
         tmp = _get_download_tmp(self.dest)
         self.status = self.perform_download(tmp)
-
         if not self._abort and self.status == 0:
             self.finalize(tmp)
         else:
@@ -129,6 +133,17 @@ class Downloader(Thread):
 
 
 def download(url, dest, complete_action=None, header=None):
+    """Start a download or fetch an already running.
+
+    Arguments:
+        url (str): url to download
+        dest (str): path to save download to
+        complete_action (callable): Optional function to call on completion
+        header (str): Optional header to use for the download
+
+    Returns:
+        Downloader object
+    """
     global _running_downloads
     arg_hash = hash(url + dest)
     if arg_hash not in _running_downloads:
