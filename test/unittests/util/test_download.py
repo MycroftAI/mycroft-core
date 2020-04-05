@@ -1,7 +1,8 @@
 from threading import Event
 from unittest import TestCase, mock
 
-from mycroft.util.download import download, _running_downloads
+from mycroft.util.download import (download, _running_downloads,
+                                   _get_download_tmp)
 
 TEST_URL = 'http://example.com/mycroft-test.tar.gz'
 TEST_DEST = '/tmp/file.tar.gz'
@@ -83,3 +84,22 @@ class TestDownload(TestCase):
         self.assertTrue(downloader is downloader2)
         transfer_done.set()
         downloader.join()
+
+
+@mock.patch('mycroft.util.download.glob')
+class TestGetTemp(TestCase):
+    def test_no_existing(self, mock_glob):
+        mock_glob.return_value = []
+        dest = '/tmp/test'
+        self.assertEqual(_get_download_tmp(dest), dest + '.part')
+
+    def test_existing(self, mock_glob):
+        mock_glob.return_value = ['/tmp/test.part']
+        dest = '/tmp/test'
+        self.assertEqual(_get_download_tmp(dest), dest + '.part.1')
+
+    def test_multiple_existing(self, mock_glob):
+        mock_glob.return_value = ['/tmp/test.part', '/tmp/test.part.1',
+                                  '/tmp/test.part.2']
+        dest = '/tmp/test'
+        self.assertEqual(_get_download_tmp(dest), dest + '.part.3')

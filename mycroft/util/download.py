@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from glob import glob
 import os
 from os.path import exists, dirname
 import subprocess
@@ -32,16 +33,11 @@ def _get_download_tmp(dest):
         (str) path to temporary download location
     """
     tmp_base = dest + '.part'
-    if not exists(tmp_base):
-        return tmp_base
+    existing = glob(tmp_base + '*')
+    if len(existing) > 0:
+        return '{}.{}'.format(tmp_base, len(existing))
     else:
-        i = 1
-        while(True):
-            tmp = tmp_base + '.' + str(i)
-            if not exists(tmp):
-                return tmp
-            else:
-                i += 1
+        return tmp_base
 
 
 class Downloader(Thread):
