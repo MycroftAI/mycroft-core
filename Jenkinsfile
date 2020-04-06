@@ -87,7 +87,7 @@ pipeline {
                     echo 'Sending Failure Email'
                     emailext (
                         attachLog: true,
-                        subject: "Core Integration Tests - Build ${BRANCH_NAME} #${BUILD_NUMBER} - SUCCESS!",
+                        subject: "FAILED - Core Integration Tests - Build ${BRANCH_NAME} #${BUILD_NUMBER}",
                         body: """
                             <p>
                                 One or more integration tests failed. Use the
@@ -125,7 +125,7 @@ pipeline {
                     // last failed build.
                     echo 'Sending Success Email'
                     emailext (
-                        subject: "Core Integration Tests - Build ${BRANCH_NAME} #${BUILD_NUMBER} - SUCCESS!",
+                        subject: "SUCCESS - Core Integration Tests - Build ${BRANCH_NAME} #${BUILD_NUMBER}",
                         body: """
                             <p>
                                 All integration tests passed.  No further action required.
