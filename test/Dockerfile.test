@@ -91,7 +91,7 @@ ARG platform
 # Setup a dummy TTS backend for the audio process
 RUN mkdir /etc/mycroft
 RUN echo '{"tts": {"module": "dummy"}}' > /etc/mycroft/mycroft.conf
-RUN mkdir ~/.mycroft/allure-result
+RUN mkdir -p /root/allure/allure-result
 
 # The behave feature files for a skill are defined within the skill's
 # repository.  Copy those files into the local feature file directory
