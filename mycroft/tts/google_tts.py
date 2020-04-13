@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 from gtts import gTTS
+from gtts.lang import tts_langs
 
 from .tts import TTS, TTSValidator
 
@@ -32,6 +33,13 @@ class GoogleTTS(TTS):
         Returns:
             Tuple ((str) written file, None)
         """
+        langs = tts_langs()
+        if self.lang.lower() not in langs:
+            if self.lang[:2].lower() in langs:
+                self.lang = self.lang[:2]
+            else:
+                raise ValueError("Language not supported by gTTS: {}"
+                                 .format(self.lang))
         tts = gTTS(text=sentence, lang=self.lang)
         tts.save(wav_file)
         return (wav_file, None)  # No phonemes
