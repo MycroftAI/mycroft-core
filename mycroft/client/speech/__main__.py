@@ -175,6 +175,10 @@ def on_ready():
     LOG.info('Speech client is ready.')
 
 
+def on_stopping():
+    LOG.info('Speech service is shutting down...')
+
+
 def on_error(e='Unknown'):
     LOG.error('Audio service failed to launch ({}).'.format(repr(e)))
 
@@ -207,7 +211,8 @@ def connect_bus_events(bus):
     bus.on('message', create_echo_function('VOICE'))
 
 
-def main(ready_hook=on_ready, error_hook=on_error, watchdog=lambda: None):
+def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
+         watchdog=lambda: None):
     global bus
     global loop
     global config
@@ -229,6 +234,7 @@ def main(ready_hook=on_ready, error_hook=on_error, watchdog=lambda: None):
     else:
         ready_hook()
         wait_for_exit_signal()
+        stopping_hook()
 
 
 if __name__ == "__main__":

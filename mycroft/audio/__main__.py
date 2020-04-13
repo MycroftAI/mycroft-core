@@ -34,7 +34,11 @@ def on_error(e='Unknown'):
     LOG.error('Audio service failed to launch ({}).'.format(repr(e)))
 
 
-def main(ready_hook=on_ready, error_hook=on_error):
+def on_stopping():
+    LOG.info('Audio service is shutting down...')
+
+
+def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping):
     """ Main function. Run when file is invoked. """
     try:
         reset_sigint_handler()
@@ -54,7 +58,10 @@ def main(ready_hook=on_ready, error_hook=on_error):
     else:
         create_daemon(bus.run_forever)
         ready_hook()
+
         wait_for_exit_signal()
+
+        stopping_hook()
         speech.shutdown()
         audio.shutdown()
 

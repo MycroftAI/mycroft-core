@@ -181,7 +181,12 @@ def on_error(e='Unknown'):
     LOG.info('Skill service failed to launch ({})'.format(repr(e)))
 
 
-def main(ready_hook=on_ready, error_hook=on_error, watchdog=None):
+def on_stopping():
+    LOG.info('Skill service is shutting down...')
+
+
+def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
+         watchdog=None):
     reset_sigint_handler()
     # Create PID file, prevent multiple instances of this service
     mycroft.lock.Lock('skills')
@@ -207,6 +212,7 @@ def main(ready_hook=on_ready, error_hook=on_error, watchdog=None):
         time.sleep(0.1)
     ready_hook()  # Report ready status
     wait_for_exit_signal()
+    stopping_hook()  # Report shutdown started
     shutdown(skill_manager, event_scheduler)
 
 
