@@ -13,24 +13,25 @@
 # limitations under the License.
 #
 from __future__ import absolute_import
-import re
-import socket
-import subprocess
-import pyaudio
-
-from os.path import join, expanduser, splitext
-
-from threading import Thread
-from time import sleep
 
 import json
-import os.path
-import psutil
-from stat import S_ISREG, ST_MTIME, ST_MODE, ST_SIZE
-import requests
 import logging
-
+import os
+import re
+import requests
 import signal as sig
+import socket
+import subprocess
+import tempfile
+from copy import deepcopy
+from stat import S_ISREG, ST_MTIME, ST_MODE, ST_SIZE
+from threading import Thread
+from time import sleep
+from urllib.request import urlopen
+from urllib.error import URLError
+
+import pyaudio
+import psutil
 
 import mycroft.audio
 import mycroft.configuration
@@ -40,7 +41,14 @@ from mycroft.util.format import nice_number
 # resolve_resource_file, wait_while_speaking
 from mycroft.util.log import LOG
 from mycroft.util.parse import extract_datetime, extract_number, normalize
-from mycroft.util.signal import *
+# TODO: Other modules import signals functions from here, make consistent
+from mycroft.util.signal import (
+    create_file,
+    check_for_signal,
+    create_signal,
+    ensure_directory_exists,
+    get_ipc_directory
+)
 
 
 def resolve_resource_file(res_name):
@@ -79,8 +87,8 @@ def resolve_resource_file(res_name):
         return filename
 
     # Next look for /opt/mycroft/res/res_name
-    data_dir = expanduser(config['data_dir'])
-    filename = os.path.expanduser(join(data_dir, res_name))
+    data_dir = os.path.expanduser(config['data_dir'])
+    filename = os.path.expanduser(os.path.join(data_dir, res_name))
     if os.path.isfile(filename):
         return filename
 
@@ -93,7 +101,7 @@ def resolve_resource_file(res_name):
     return None  # Resource cannot be resolved
 
 
-def play_audio_file(uri: str):
+def play_audio_file(uri: str, environment=None):
     """ Play an audio file.
 
     This wraps the other play_* functions, choosing the correct one based on
@@ -102,6 +110,7 @@ def play_audio_file(uri: str):
 
     Arguments:
         uri:    uri to play
+        environment (dict): optional environment for the subprocess call
 
     Returns: subprocess.Popen object. None if the format is not supported or
              an error occurs playing the file.
@@ -112,10 +121,10 @@ def play_audio_file(uri: str):
         '.mp3': play_mp3,
         '.ogg': play_ogg
     }
-    _, extension = splitext(uri)
+    _, extension = os.path.splitext(uri)
     play_function = extension_to_function.get(extension.lower())
     if play_function:
-        return play_function(uri)
+        return play_function(uri, environment)
     else:
         LOG.error("Could not find a function capable of playing {uri}."
                   " Supported formats are {keys}."
@@ -123,7 +132,20 @@ def play_audio_file(uri: str):
         return None
 
 
-def play_wav(uri):
+_ENVIRONMENT = deepcopy(os.environ)
+_ENVIRONMENT['PULSE_PROP'] = 'media.role=music'
+
+
+def _get_pulse_environment(config):
+    """Return environment for pulse audio depeding on ducking config."""
+    tts_config = config.get('tts', {})
+    if tts_config and tts_config.get('pulse_duck'):
+        return _ENVIRONMENT
+    else:
+        return os.environ
+
+
+def play_wav(uri, environment=None):
     """ Play a wav-file.
 
         This will use the application specified in the mycroft config
@@ -132,24 +154,26 @@ def play_wav(uri):
 
         Arguments:
             uri:    uri to play
+            environment (dict): optional environment for the subprocess call
 
         Returns: subprocess.Popen object
     """
     config = mycroft.configuration.Configuration.get()
+    environment = environment or _get_pulse_environment(config)
     play_cmd = config.get("play_wav_cmdline")
     play_wav_cmd = str(play_cmd).split(" ")
     for index, cmd in enumerate(play_wav_cmd):
         if cmd == "%1":
             play_wav_cmd[index] = (get_http(uri))
     try:
-        return subprocess.Popen(play_wav_cmd)
+        return subprocess.Popen(play_wav_cmd, env=environment)
     except Exception as e:
         LOG.error("Failed to launch WAV: {}".format(play_wav_cmd))
         LOG.debug("Error: {}".format(repr(e)), exc_info=True)
         return None
 
 
-def play_mp3(uri):
+def play_mp3(uri, environment=None):
     """ Play a mp3-file.
 
         This will use the application specified in the mycroft config
@@ -158,24 +182,26 @@ def play_mp3(uri):
 
         Arguments:
             uri:    uri to play
+            environment (dict): optional environment for the subprocess call
 
         Returns: subprocess.Popen object
     """
     config = mycroft.configuration.Configuration.get()
+    environment = environment or _get_pulse_environment(config)
     play_cmd = config.get("play_mp3_cmdline")
     play_mp3_cmd = str(play_cmd).split(" ")
     for index, cmd in enumerate(play_mp3_cmd):
         if cmd == "%1":
             play_mp3_cmd[index] = (get_http(uri))
     try:
-        return subprocess.Popen(play_mp3_cmd)
+        return subprocess.Popen(play_mp3_cmd, env=environment)
     except Exception as e:
         LOG.error("Failed to launch MP3: {}".format(play_mp3_cmd))
         LOG.debug("Error: {}".format(repr(e)), exc_info=True)
         return None
 
 
-def play_ogg(uri):
+def play_ogg(uri, environment=None):
     """ Play a ogg-file.
 
         This will use the application specified in the mycroft config
@@ -184,17 +210,19 @@ def play_ogg(uri):
 
         Arguments:
             uri:    uri to play
+            environment (dict): optional environment for the subprocess call
 
         Returns: subprocess.Popen object
     """
     config = mycroft.configuration.Configuration.get()
+    environment = environment or _get_pulse_environment(config)
     play_cmd = config.get("play_ogg_cmdline")
     play_ogg_cmd = str(play_cmd).split(" ")
     for index, cmd in enumerate(play_ogg_cmd):
         if cmd == "%1":
             play_ogg_cmd[index] = (get_http(uri))
     try:
-        return subprocess.Popen(play_ogg_cmd)
+        return subprocess.Popen(play_ogg_cmd, env=environment)
     except Exception as e:
         LOG.error("Failed to launch OGG: {}".format(play_ogg_cmd))
         LOG.debug("Error: {}".format(repr(e)), exc_info=True)
@@ -257,16 +285,21 @@ def read_dict(filename, div='='):
 
 
 def connected():
-    """ Check connection by connecting to 8.8.8.8, if this is
-    blocked/fails, Microsoft NCSI is used as a backup
+    """ Check connection by connecting to 8.8.8.8 and if google.com is
+    reachable if this fails, Check Microsoft NCSI is used as a backup.
 
     Returns:
         True if internet connection can be detected
     """
-    return connected_dns() or connected_ncsi()
+    if _connected_dns():
+        # Outside IP is reachable check if names are resolvable
+        return _connected_google()
+    else:
+        # DNS can't be reached, do a complete fetch in case it's blocked
+        return _connected_ncsi()
 
 
-def connected_ncsi():
+def _connected_ncsi():
     """ Check internet connection by retrieving the Microsoft NCSI endpoint.
 
     Returns:
@@ -274,14 +307,14 @@ def connected_ncsi():
     """
     try:
         r = requests.get('http://www.msftncsi.com/ncsi.txt')
-        if r.text == u'Microsoft NCSI':
+        if r.text == 'Microsoft NCSI':
             return True
     except Exception:
         pass
     return False
 
 
-def connected_dns(host="8.8.8.8", port=53, timeout=3):
+def _connected_dns(host="8.8.8.8", port=53, timeout=3):
     """ Check internet connection by connecting to DNS servers
 
     Returns:
@@ -304,6 +337,22 @@ def connected_dns(host="8.8.8.8", port=53, timeout=3):
             return True
         except IOError:
             return False
+
+
+def _connected_google():
+    """Check internet connection by connecting to www.google.com
+    Returns:
+        True if connection attempt succeeded
+    """
+    connect_success = False
+    try:
+        urlopen('https://www.google.com', timeout=3)
+    except URLError as ue:
+        LOG.debug('Attempt to connect to internet failed: ' + str(ue.reason))
+    else:
+        connect_success = True
+
+    return connect_success
 
 
 def curate_cache(directory, min_free_percent=5.0, min_free_disk=50):
@@ -376,11 +425,6 @@ def get_cache_directory(domain=None):
         # If not defined, use /tmp/mycroft/cache
         dir = os.path.join(tempfile.gettempdir(), "mycroft", "cache")
     return ensure_directory_exists(dir, domain)
-
-
-def validate_param(value, name):
-    if not value:
-        raise ValueError("Missing or empty %s in mycroft.conf " % name)
 
 
 def is_speaking():

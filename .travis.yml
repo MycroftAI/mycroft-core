@@ -4,7 +4,6 @@ branches:
     - dev
 
 language: python
-dist: xenial
 
 before_install:
  - sudo apt-get update -qq
@@ -13,12 +12,14 @@ before_install:
  - export CC="gcc-4.8"
  - export TMPDIR="/tmp/${TRAVIS_PYTHON_VERSION}"
 python:
-  - "3.4"
   - "3.5"
   - "3.6"
   - "3.7"
+  - "3.8"
 # don't rebuild pocketsphinx for every build
-cache: pocketsphinx-python
+cache:
+  - pip
+  - pocketsphinx-python
 # command to install dependencies
 install:
  - rm -rf ${TMPDIR}
@@ -30,9 +31,8 @@ install:
 # command to run tests
 script:
  - pycodestyle mycroft test
+ - flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
  - ./start-mycroft.sh unittest
-env:
- - IS_TRAVIS=true
 
 after_success:
   coveralls

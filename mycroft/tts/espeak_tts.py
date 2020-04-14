@@ -14,18 +14,18 @@
 #
 import subprocess
 
-from mycroft.tts import TTS, TTSValidator
+from .tts import TTS, TTSValidator
 
 
 class ESpeak(TTS):
     def __init__(self, lang, config):
         super(ESpeak, self).__init__(lang, config, ESpeakValidator(self))
 
-    def execute(self, sentence, ident=None):
+    def execute(self, sentence, ident=None, listen=False):
         self.begin_audio()
         subprocess.call(
             ['espeak', '-v', self.lang + '+' + self.voice, sentence])
-        self.end_audio()
+        self.end_audio(listen)
 
 
 class ESpeakValidator(TTSValidator):

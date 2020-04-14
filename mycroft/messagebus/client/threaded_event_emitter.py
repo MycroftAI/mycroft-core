@@ -55,3 +55,11 @@ class ThreadedEventEmitter(EventEmitter):
                 return super().remove_listener(event_name, w[1])
         # if no wrapper exists try removing the function
         return super().remove_listener(event_name, func)
+
+    def remove_all_listeners(self, event_name):
+        """Remove all listeners with name.
+
+        event_name: identifier of event handler
+        """
+        super().remove_all_listeners(event_name)
+        self.wrappers.pop(event_name)

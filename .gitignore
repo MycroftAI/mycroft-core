@@ -1,6 +1,7 @@
 dev.env
 .dev_opts.json
 .idea
+*.code-workspace
 *.pyc
 *.swp
 *~
@@ -16,12 +17,14 @@ mycroft/__version__.py
 scripts/logs/*
 logs/*
 .coverage
-mycroft/audio-accuracy-test/data/*
+/htmlcov
+test/audio_accuracy/data
 scripts/*.screen
 doc/_build/
 .installed
 .mypy_cache
 .vscode
+.theia
 .venv/
 
 # Created by unit tests

@@ -12,516 +12,455 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import gc
-import json
-import sys
-import time
-from glob import glob
-from itertools import chain
-
+"""Load, update and manage skills on this device."""
 import os
-from os.path import exists, join, basename, dirname, expanduser, isfile
+from glob import glob
 from threading import Thread, Event, Lock
+from time import sleep, time, monotonic
 
-from msm import MycroftSkillsManager, SkillRepo, MsmException
-from mycroft import dialog
+from mycroft.api import is_paired
 from mycroft.enclosure.api import EnclosureAPI
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
-from mycroft.util import connected
 from mycroft.util.log import LOG
-from mycroft.api import DeviceApi, is_paired
+from .msm_wrapper import create_msm as msm_creator, build_msm_config
+from .settings import SkillSettingsDownloader
+from .skill_loader import SkillLoader
+from .skill_updater import SkillUpdater
 
-from .core import load_skill, create_skill_descriptor, MainModule
-from .msm_wrapper import create_msm as msm_creator
-
-DEBUG = Configuration.get().get("debug", False)
-skills_config = Configuration.get().get("skills")
-BLACKLISTED_SKILLS = skills_config.get("blacklisted_skills", [])
-PRIORITY_SKILLS = skills_config.get("priority_skills", [])
-
-installer_config = Configuration.get().get("SkillInstallerSkill")
-
-MINUTES = 60  # number of seconds in a minute (syntatic sugar)
+SKILL_MAIN_MODULE = '__init__.py'
 
 
-def ignored_file(f):
-    """ Checks if the file is valid file to require a reload. """
-    return (f.endswith('.pyc') or
-            f == 'settings.json' or
-            f.startswith('.') or
-            f.endswith('.qmlc'))
+class UploadQueue:
+    """Queue for holding loaders with data that still needs to be uploaded.
 
+    This queue can be used during startup to capture all loaders
+    and then processing can be triggered at a later stage when the system is
+    connected to the backend.
 
-def _get_last_modified_date(path):
+    After all queued settingsmeta has been processed and the queue is empty
+    the queue will set the self.started flag.
     """
-        Get last modified date excluding compiled python files, hidden
-        directories and the settings.json file.
+    def __init__(self):
+        self._queue = []
+        self.started = False
+        self.lock = Lock()
 
-        Args:
-            path:   skill directory to check
+    def start(self):
+        """Start processing of the queue."""
+        self.send()
+        self.started = True
 
-        Returns:
-            int: time of last change
+    def stop(self):
+        """Stop the queue, and hinder any further transmissions."""
+        self.started = False
+
+    def send(self):
+        """Loop through all stored loaders triggering settingsmeta upload."""
+        with self.lock:
+            queue = self._queue
+            self._queue = []
+        if queue:
+            LOG.info('New Settings meta to upload.')
+            for loader in queue:
+                if self.started:
+                    loader.instance.settings_meta.upload()
+                else:
+                    break
+
+    def __len__(self):
+        return len(self._queue)
+
+    def put(self, loader):
+        """Append a skill loader to the queue.
+
+        If a loader is already present it's removed in favor of the new entry.
+        """
+        if self.started:
+            LOG.info('Updating settings meta during runtime...')
+        with self.lock:
+            # Remove existing loader
+            self._queue == [e for e in self._queue if e != loader]
+            self._queue.append(loader)
+
+
+def _shutdown_skill(instance):
+    """Shutdown a skill.
+
+    Call the default_shutdown method of the skill, will produce a warning if
+    the shutdown process takes longer than 1 second.
+
+    Arguments:
+        instance (MycroftSkill): Skill instance to shutdown
     """
-    all_files = []
-    for root_dir, dirs, files in os.walk(path):
-        dirs[:] = [d for d in dirs if not d.startswith('.')]
-        for f in files:
-            if not ignored_file(f):
-                all_files.append(join(root_dir, f))
-    # check files of interest in the skill root directory
-    return max(os.path.getmtime(f) for f in all_files)
+    try:
+        ref_time = monotonic()
+        # Perform the shutdown
+        instance.default_shutdown()
 
-
-MSM_LOCK = None
+        shutdown_time = monotonic() - ref_time
+        if shutdown_time > 1:
+            LOG.warning('{} shutdown took {} seconds'.format(instance.skill_id,
+                                                             shutdown_time))
+    except Exception:
+        LOG.exception('Failed to shut down skill: '
+                      '{}'.format(instance.skill_id))
 
 
 class SkillManager(Thread):
-    """ Load, update and manage instances of Skill on this system.
-
-    Arguments:
-        bus (eventemitter): Mycroft messagebus connection
-    """
+    _msm = None
 
     def __init__(self, bus):
+        """Constructor
+
+        Arguments:
+            bus (event emitter): Mycroft messagebus connection
+        """
         super(SkillManager, self).__init__()
+        self.bus = bus
         self._stop_event = Event()
         self._connected_event = Event()
+        self.config = Configuration.get()
+        self.upload_queue = UploadQueue()
 
-        self.loaded_skills = {}
-        self.bus = bus
+        self.skill_loaders = {}
         self.enclosure = EnclosureAPI(bus)
-
-        # Schedule install/update of default skill
-        self.msm = self.create_msm()
-        self.thread_lock = self.get_lock()
+        self.initial_load_complete = False
         self.num_install_retries = 0
+        self.settings_downloader = SkillSettingsDownloader(self.bus)
+        self._define_message_bus_events()
+        self.skill_updater = SkillUpdater()
+        self.daemon = True
 
-        self.update_interval = Configuration.get()['skills']['update_interval']
-        self.update_interval = int(self.update_interval * 60 * MINUTES)
-        self.dot_msm = join(self.msm.skills_dir, '.msm')
-        # Update immediately if the .msm or installed skills file is missing
-        # otherwise according to timestamp on .msm
-        if exists(self.dot_msm) and exists(self.installed_skills_file):
-            self.next_download = os.path.getmtime(self.dot_msm) + \
-                                 self.update_interval
-        else:
-            self.next_download = time.time() - 1
+        # Statuses
+        self._alive_status = False  # True after priority skills has loaded
+        self._loaded_status = False  # True after all skills has loaded
 
+    def _define_message_bus_events(self):
+        """Define message bus events with handlers defined in this class."""
         # Conversation management
-        bus.on('skill.converse.request', self.handle_converse_request)
+        self.bus.on('skill.converse.request', self.handle_converse_request)
 
         # Update on initial connection
-        bus.on('mycroft.internet.connected',
-               lambda x: self._connected_event.set())
+        self.bus.on(
+            'mycroft.internet.connected',
+            lambda x: self._connected_event.set()
+        )
 
         # Update upon request
-        bus.on('skillmanager.update', self.schedule_now)
-        bus.on('skillmanager.list', self.send_skill_list)
-        bus.on('skillmanager.deactivate', self.deactivate_skill)
-        bus.on('skillmanager.keep', self.deactivate_except)
-        bus.on('skillmanager.activate', self.activate_skill)
+        self.bus.on('skillmanager.update', self.schedule_now)
+        self.bus.on('skillmanager.list', self.send_skill_list)
+        self.bus.on('skillmanager.deactivate', self.deactivate_skill)
+        self.bus.on('skillmanager.keep', self.deactivate_except)
+        self.bus.on('skillmanager.activate', self.activate_skill)
+        self.bus.on('mycroft.paired', self.handle_paired)
+        self.bus.on('mycroft.skills.is_alive', self.is_alive)
+        self.bus.on('mycroft.skills.all_loaded', self.is_all_loaded)
+        self.bus.on(
+            'mycroft.skills.settings.update',
+            self.settings_downloader.download
+        )
 
-    @staticmethod
-    def get_lock():
-        global MSM_LOCK
-        if MSM_LOCK is None:
-            MSM_LOCK = Lock()
-        return MSM_LOCK
+    @property
+    def skills_config(self):
+        return self.config['skills']
+
+    @property
+    def msm(self):
+        if self._msm is None:
+            msm_config = build_msm_config(self.config)
+            self._msm = msm_creator(msm_config)
+
+        return self._msm
 
     @staticmethod
     def create_msm():
-        return msm_creator(Configuration.get())
+        LOG.debug('instantiating msm via static method...')
+        msm_config = build_msm_config(Configuration.get())
+        msm_instance = msm_creator(msm_config)
 
-    def schedule_now(self, message=None):
-        self.next_download = time.time() - 1
+        return msm_instance
 
-    @staticmethod
-    @property
-    def manifest_upload_allowed(self):
-        return Configuration.get()['skills'].get('upload_skill_manifest')
+    def schedule_now(self, _):
+        self.skill_updater.next_download = time() - 1
 
-    @property
-    def installed_skills_file(self):
-        venv = dirname(dirname(sys.executable))
-        if os.access(venv, os.W_OK | os.R_OK | os.X_OK):
-            return join(venv, '.mycroft-skills')
-        return expanduser('~/.mycroft/.mycroft-skills')
+    def _start_settings_update(self):
+        LOG.info('Start settings update')
+        self.skill_updater.post_manifest(reload_skills_manifest=True)
+        self.upload_queue.start()
+        LOG.info('All settings meta has been processed or upload has started')
+        self.settings_downloader.download()
+        LOG.info('Skill settings downloading has started')
 
-    def load_installed_skills(self) -> set:
-        skills_file = self.installed_skills_file
-        if not isfile(skills_file):
-            return set()
-        with open(skills_file) as f:
-            return {
-                i.strip() for i in f.read().split('\n') if i.strip()
-            }
-
-    def save_installed_skills(self, skill_names):
-        with open(self.installed_skills_file, 'w') as f:
-            f.write('\n'.join(skill_names))
-
-    def download_skills(self, speak=False):
-        """ Invoke MSM to install default skills and/or update installed skills
-
-            Args:
-                speak (bool, optional): Speak the result? Defaults to False
-        """
-        if not connected():
-            LOG.error('msm failed, network connection not available')
-            if speak:
-                self.bus.emit(Message("speak", {
-                    'utterance': dialog.get(
-                        "not connected to the internet")}))
-            self.next_download = time.time() + 5 * MINUTES
-            return False
-
-        installed_skills = self.load_installed_skills()
-        msm = SkillManager.create_msm()
-        with msm.lock, self.thread_lock:
-            default_groups = dict(msm.repo.get_default_skill_names())
-            if msm.platform in default_groups:
-                platform_groups = default_groups[msm.platform]
-            else:
-                LOG.info('Platform defaults not found, using DEFAULT '
-                         'skills only')
-                platform_groups = []
-            default_names = set(chain(default_groups['default'],
-                                      platform_groups))
-            default_skill_errored = False
-
-            def get_skill_data(skill_name):
-                """ Get skill data structure from name. """
-                for e in msm.skills_data.get('skills', []):
-                    if e.get('name') == skill_name:
-                        return e
-                # if skill isn't in the list return empty structure
-                return {}
-
-            def install_or_update(skill):
-                """Install missing defaults and update existing skills"""
-                if get_skill_data(skill.name).get('beta'):
-                    skill.sha = None  # Will update to latest head
-                if skill.is_local:
-                    skill.update()
-                    if skill.name not in installed_skills:
-                        skill.update_deps()
-                elif skill.name in default_names:
-                    try:
-                        msm.install(skill, origin='default')
-                    except Exception:
-                        if skill.name in default_names:
-                            LOG.warning('Failed to install default skill: ' +
-                                        skill.name)
-                            nonlocal default_skill_errored
-                            default_skill_errored = True
-                        raise
-                installed_skills.add(skill.name)
-            try:
-                msm.apply(install_or_update, msm.list())
-                if SkillManager.manifest_upload_allowed and is_paired():
-                    try:
-                        DeviceApi().upload_skills_data(msm.skills_data)
-                    except Exception:
-                        LOG.exception('Could not upload skill manifest')
-
-            except MsmException as e:
-                LOG.error('Failed to update skills: {}'.format(repr(e)))
-
-        self.save_installed_skills(installed_skills)
-
-        if speak:
-            data = {'utterance': dialog.get("skills updated")}
-            self.bus.emit(Message("speak", data))
-
-        # Schedule retry in 5 minutes on failure, after 10 shorter periods
-        # Go back to 60 minutes wait
-        if default_skill_errored and self.num_install_retries < 10:
-            self.num_install_retries += 1
-            self.next_download = time.time() + 5 * MINUTES
-            return False
-        self.num_install_retries = 0
-
-        # Update timestamp on .msm file to be used when system is restarted
-        with open(self.dot_msm, 'a'):
-            os.utime(self.dot_msm, None)
-        self.next_download = time.time() + self.update_interval
-
-        return True
-
-    def _unload_removed(self, paths):
-        """ Shutdown removed skills.
-
-            Arguments:
-                paths: list of current directories in the skills folder
-        """
-        paths = [p.rstrip('/') for p in paths]
-        skills = self.loaded_skills
-        # Find loaded skills that doesn't exist on disk
-        removed_skills = [str(s) for s in skills.keys() if str(s) not in paths]
-        for s in removed_skills:
-            LOG.info('removing {}'.format(s))
-            try:
-                LOG.debug('Removing: {}'.format(skills[s]))
-                skills[s]['instance'].default_shutdown()
-            except Exception as e:
-                LOG.exception(e)
-            self.loaded_skills.pop(s)
-
-    def _load_or_reload_skill(self, skill_path):
-        """
-            Check if unloaded skill or changed skill needs reloading
-            and perform loading if necessary.
-
-            Returns True if the skill was loaded/reloaded
-        """
-        skill_path = skill_path.rstrip('/')
-        skill = self.loaded_skills.setdefault(skill_path, {})
-        skill.update({"id": basename(skill_path), "path": skill_path})
-
-        # check if folder is a skill (must have __init__.py)
-        if not MainModule + ".py" in os.listdir(skill_path):
-            return False
-
-        # getting the newest modified date of skill
-        modified = _get_last_modified_date(skill_path)
-        last_mod = skill.get("last_modified", 0)
-
-        # checking if skill is loaded and hasn't been modified on disk
-        if skill.get("loaded") and modified <= last_mod:
-            return False  # Nothing to do!
-
-        # check if skill was modified
-        elif skill.get("instance") and modified > last_mod:
-            # check if skill has been blocked from reloading
-            if (not skill["instance"].reload_skill or
-                    not skill.get('active', True)):
-                return False
-
-            LOG.debug("Reloading Skill: " + basename(skill_path))
-            # removing listeners and stopping threads
-            try:
-                skill["instance"].default_shutdown()
-            except Exception:
-                LOG.exception("An error occured while shutting down {}"
-                              .format(skill["instance"].name))
-
-            if DEBUG:
-                gc.collect()  # Collect garbage to remove false references
-                # Remove two local references that are known
-                refs = sys.getrefcount(skill["instance"]) - 2
-                if refs > 0:
-                    msg = ("After shutdown of {} there are still "
-                           "{} references remaining. The skill "
-                           "won't be cleaned from memory.")
-                    LOG.warning(msg.format(skill['instance'].name, refs))
-            del skill["instance"]
-            self.bus.emit(Message("mycroft.skills.shutdown",
-                                  {"path": skill_path,
-                                   "id": skill["id"]}))
-
-        skill["loaded"] = True
-        desc = create_skill_descriptor(skill_path)
-        skill["instance"] = load_skill(desc,
-                                       self.bus, skill["id"],
-                                       BLACKLISTED_SKILLS)
-
-        skill["last_modified"] = modified
-        if skill['instance'] is not None:
-            self.bus.emit(Message('mycroft.skills.loaded',
-                                  {'path': skill_path,
-                                   'id': skill['id'],
-                                   'name': skill['instance'].name,
-                                   'modified': modified}))
-            return True
-        else:
-            self.bus.emit(Message('mycroft.skills.loading_failure',
-                                  {'path': skill_path,
-                                   'id': skill['id']}))
-        return False
+    def handle_paired(self, _):
+        """Trigger upload of skills manifest after pairing."""
+        self._start_settings_update()
 
     def load_priority(self):
-        skills = {skill.name: skill for skill in self.msm.list()}
-        for skill_name in PRIORITY_SKILLS:
+        skills = {skill.name: skill for skill in self.msm.all_skills}
+        priority_skills = self.skills_config.get("priority_skills", [])
+        for skill_name in priority_skills:
             skill = skills.get(skill_name)
-            if skill:
+            if skill is not None:
                 if not skill.is_local:
                     try:
-                        skill.install()
+                        self.msm.install(skill)
                     except Exception:
-                        LOG.exception('Downloading priority skill: '
-                                      '{} failed'.format(skill.name))
-                        if not skill.is_local:
-                            continue
-                self._load_or_reload_skill(skill.path)
+                        log_msg = 'Downloading priority skill: {} failed'
+                        LOG.exception(log_msg.format(skill_name))
+                        continue
+                loader = self._load_skill(skill.path)
+                if loader:
+                    self.upload_queue.put(loader)
             else:
-                LOG.error('Priority skill {} can\'t be found')
+                LOG.error(
+                    'Priority skill {} can\'t be found'.format(skill_name)
+                )
 
-    def remove_git_locks(self):
-        """If git gets killed from an abrupt shutdown it leaves lock files"""
-        for i in glob(join(self.msm.skills_dir, '*/.git/index.lock')):
-            LOG.warning('Found and removed git lock file: ' + i)
-            os.remove(i)
+        self._alive_status = True
 
     def run(self):
-        """ Load skills and update periodically from disk and internet """
-
-        self.remove_git_locks()
+        """Load skills and update periodically from disk and internet."""
+        self._remove_git_locks()
         self._connected_event.wait()
-        has_loaded = False
+        self._load_on_startup()
 
-        # check if skill updates are enabled
-        update = Configuration.get()["skills"]["auto_update"]
+        # Sync backend and skills.
+        if is_paired() and not self.upload_queue.started:
+            self._start_settings_update()
 
         # Scan the file folder that contains Skills.  If a Skill is updated,
         # unload the existing version from memory and reload from the disk.
         while not self._stop_event.is_set():
-            # Update skills once an hour if update is enabled
-            if time.time() >= self.next_download and update:
-                self.download_skills()
+            try:
+                self._reload_modified_skills()
+                self._load_new_skills()
+                self._unload_removed_skills()
+                self._update_skills()
+                if (is_paired() and self.upload_queue.started and
+                        len(self.upload_queue) > 0):
+                    self.msm.clear_cache()
+                    self.skill_updater.post_manifest()
+                    self.upload_queue.send()
 
-            # Look for recently changed skill(s) needing a reload
-            # checking skills dir and getting all skills there
-            skill_paths = glob(join(self.msm.skills_dir, '*/'))
-            still_loading = False
-            for skill_path in skill_paths:
-                try:
-                    still_loading = (
-                            self._load_or_reload_skill(skill_path) or
-                            still_loading
-                    )
-                except Exception as e:
-                    LOG.error('(Re)loading of {} failed ({})'.format(
-                        skill_path, repr(e)))
-            if not has_loaded and not still_loading and len(skill_paths) > 0:
-                has_loaded = True
-                LOG.info("Skills all loaded!")
-                self.bus.emit(Message('mycroft.skills.initialized'))
+                sleep(2)  # Pause briefly before beginning next scan
+            except Exception:
+                LOG.exception('Something really unexpected has occured '
+                              'and the skill manager loop safety harness was '
+                              'hit.')
+                sleep(30)
 
-            self._unload_removed(skill_paths)
-            # Pause briefly before beginning next scan
-            time.sleep(2)
+    def _remove_git_locks(self):
+        """If git gets killed from an abrupt shutdown it leaves lock files."""
+        for i in glob(os.path.join(self.msm.skills_dir, '*/.git/index.lock')):
+            LOG.warning('Found and removed git lock file: ' + i)
+            os.remove(i)
 
-    def send_skill_list(self, message=None):
-        """
-            Send list of loaded skills.
-        """
+    def _load_on_startup(self):
+        """Handle initial skill load."""
+        LOG.info('Loading installed skills...')
+        self._load_new_skills()
+        LOG.info("Skills all loaded!")
+        self.bus.emit(Message('mycroft.skills.initialized'))
+        self._loaded_status = True
+
+    def _reload_modified_skills(self):
+        """Handle reload of recently changed skill(s)"""
+        for skill_dir in self._get_skill_directories():
+            try:
+                skill_loader = self.skill_loaders.get(skill_dir)
+                if skill_loader is not None and skill_loader.reload_needed():
+                    # If reload succeed add settingsmeta to upload queue
+                    if skill_loader.reload():
+                        self.upload_queue.put(skill_loader)
+            except Exception:
+                LOG.exception('Unhandled exception occured while '
+                              'reloading {}'.format(skill_dir))
+
+    def _load_new_skills(self):
+        """Handle load of skills installed since startup."""
+        for skill_dir in self._get_skill_directories():
+            if skill_dir not in self.skill_loaders:
+                loader = self._load_skill(skill_dir)
+                if loader:
+                    self.upload_queue.put(loader)
+
+    def _load_skill(self, skill_directory):
+        skill_loader = SkillLoader(self.bus, skill_directory)
         try:
-            info = {}
-            for s in self.loaded_skills:
-                is_active = (self.loaded_skills[s].get('active', True) and
-                             self.loaded_skills[s].get('instance') is not None)
-                info[basename(s)] = {
-                    'active': is_active,
-                    'id': self.loaded_skills[s]['id']
-                }
-            self.bus.emit(Message('mycroft.skills.list', data=info))
-        except Exception as e:
-            LOG.exception(e)
+            load_status = skill_loader.load()
+        except Exception:
+            LOG.exception('Load of skill {} failed!'.format(skill_directory))
+        finally:
+            self.skill_loaders[skill_directory] = skill_loader
 
-    def __deactivate_skill(self, skill):
-        """ Deactivate a skill. """
-        for s in self.loaded_skills:
-            if skill in s:
-                skill = s
-                break
+        return skill_loader if load_status else None
+
+    def _get_skill_directories(self):
+        skill_glob = glob(os.path.join(self.msm.skills_dir, '*/'))
+
+        skill_directories = []
+        for skill_dir in skill_glob:
+            # TODO: all python packages must have __init__.py!  Better way?
+            # check if folder is a skill (must have __init__.py)
+            if SKILL_MAIN_MODULE in os.listdir(skill_dir):
+                skill_directories.append(skill_dir.rstrip('/'))
+            else:
+                LOG.debug('Found skills directory with no skill: ' + skill_dir)
+
+        return skill_directories
+
+    def _unload_removed_skills(self):
+        """Shutdown removed skills."""
+        skill_dirs = self._get_skill_directories()
+        # Find loaded skills that don't exist on disk
+        removed_skills = [
+            s for s in self.skill_loaders.keys() if s not in skill_dirs
+        ]
+        for skill_dir in removed_skills:
+            skill = self.skill_loaders[skill_dir]
+            LOG.info('removing {}'.format(skill.skill_id))
+            try:
+                skill.unload()
+            except Exception:
+                LOG.exception('Failed to shutdown skill ' + skill.id)
+            del self.skill_loaders[skill_dir]
+
+        # If skills were removed make sure to update the manifest on the
+        # mycroft backend.
+        if removed_skills:
+            self.skill_updater.post_manifest(reload_skills_manifest=True)
+
+    def _update_skills(self):
+        """Update skills once an hour if update is enabled"""
+        do_skill_update = (
+            time() >= self.skill_updater.next_download and
+            self.skills_config["auto_update"]
+        )
+        if do_skill_update:
+            self.skill_updater.update_skills()
+
+    def is_alive(self, message=None):
+        """Respond to is_alive status request."""
+        if message:
+            status = {'status': self._alive_status}
+            self.bus.emit(message.response(data=status))
+        return self._alive_status
+
+    def is_all_loaded(self, message=None):
+        """ Respond to all_loaded status request."""
+        if message:
+            status = {'status': self._loaded_status}
+            self.bus.emit(message.response(data=status))
+
+        return self._loaded_status
+
+    def send_skill_list(self, _):
+        """Send list of loaded skills."""
         try:
-            self.loaded_skills[skill]['active'] = False
-            self.loaded_skills[skill]['instance'].default_shutdown()
-        except Exception as e:
-            LOG.error('Couldn\'t deactivate skill, {}'.format(repr(e)))
+            message_data = {}
+            for skill_dir, skill_loader in self.skill_loaders.items():
+                message_data[skill_loader.skill_id] = dict(
+                    active=skill_loader.active and skill_loader.loaded,
+                    id=skill_loader.skill_id
+                )
+            self.bus.emit(Message('mycroft.skills.list', data=message_data))
+        except Exception:
+            LOG.exception('Failed to send skill list')
 
     def deactivate_skill(self, message):
-        """ Deactivate a skill. """
+        """Deactivate a skill."""
         try:
-            skill = message.data['skill']
-            if skill in [basename(s) for s in self.loaded_skills]:
-                self.__deactivate_skill(skill)
-        except Exception as e:
-            LOG.error('Couldn\'t deactivate skill, {}'.format(repr(e)))
+            for skill_loader in self.skill_loaders.values():
+                if message.data['skill'] == skill_loader.skill_id:
+                    skill_loader.deactivate()
+        except Exception:
+            LOG.exception('Failed to deactivate ' + message.data['skill'])
 
     def deactivate_except(self, message):
-        """ Deactivate all skills except the provided. """
+        """Deactivate all skills except the provided."""
         try:
             skill_to_keep = message.data['skill']
-            LOG.info('DEACTIVATING ALL SKILLS EXCEPT {}'.format(skill_to_keep))
-            if skill_to_keep in [basename(i) for i in self.loaded_skills]:
-                for skill in self.loaded_skills:
-                    if basename(skill) != skill_to_keep:
-                        self.__deactivate_skill(skill)
+            LOG.info('Deactivating all skills except {}'.format(skill_to_keep))
+            loaded_skill_file_names = [
+                os.path.basename(skill_dir) for skill_dir in self.skill_loaders
+            ]
+            if skill_to_keep in loaded_skill_file_names:
+                for skill in self.skill_loaders.values():
+                    if skill.skill_id != skill_to_keep:
+                        skill.deactivate()
             else:
-                LOG.info('Couldn\'t find skill')
-        except Exception as e:
-            LOG.error('Error during skill removal, {}'.format(repr(e)))
-
-    def __activate_skill(self, skill):
-        if not self.loaded_skills[skill].get('active', True):
-            self.loaded_skills[skill]['loaded'] = False
-            self.loaded_skills[skill]['active'] = True
+                LOG.info('Couldn\'t find skill ' + message.data['skill'])
+        except Exception:
+            LOG.exception('An error occurred during skill deactivation!')
 
     def activate_skill(self, message):
-        """ Activate a deactivated skill. """
+        """Activate a deactivated skill."""
         try:
-            skill = message.data['skill']
-            if skill == 'all':
-                for s in self.loaded_skills:
-                    self.__activate_skill(s)
-            else:
-                for s in self.loaded_skills:
-                    if skill in s:
-                        skill = s
-                        break
-                self.__activate_skill(skill)
-        except Exception as e:
-            LOG.error('Couldn\'t activate skill, {}'.format(repr(e)))
+            for skill_loader in self.skill_loaders.values():
+                if (message.data['skill'] in ('all', skill_loader.skill_id) and
+                        not skill_loader.active):
+                    skill_loader.activate()
+        except Exception:
+            LOG.exception('Couldn\'t activate skill')
 
     def stop(self):
-        """ Tell the manager to shutdown """
+        """Tell the manager to shutdown."""
         self._stop_event.set()
+        self.settings_downloader.stop_downloading()
+        self.upload_queue.stop()
 
         # Do a clean shutdown of all skills
-        for name, skill_info in self.loaded_skills.items():
-            instance = skill_info.get('instance')
-            if instance:
-                try:
-                    instance.default_shutdown()
-                except Exception:
-                    LOG.exception('Shutting down skill: ' + name)
+        for skill_loader in self.skill_loaders.values():
+            if skill_loader.instance is not None:
+                _shutdown_skill(skill_loader.instance)
 
     def handle_converse_request(self, message):
-        """ Check if the targeted skill id can handle conversation
+        """Check if the targeted skill id can handle conversation
 
         If supported, the conversation is invoked.
         """
-
-        skill_id = message.data["skill_id"]
-        utterances = message.data["utterances"]
-        lang = message.data["lang"]
+        skill_id = message.data['skill_id']
 
         # loop trough skills list and call converse for skill with skill_id
-        for skill in self.loaded_skills:
-            if self.loaded_skills[skill]["id"] == skill_id:
-                instance = self.loaded_skills[skill].get("instance")
-                if instance is None:
-                    self.bus.emit(message.reply("skill.converse.error",
-                                                {"skill_id": skill_id,
-                                                 "error": "converse requested"
-                                                          " but skill not "
-                                                          "loaded"}))
-                    return
+        skill_found = False
+        for skill_loader in self.skill_loaders.values():
+            if skill_loader.skill_id == skill_id:
+                skill_found = True
+                if not skill_loader.loaded:
+                    error_message = 'converse requested but skill not loaded'
+                    self._emit_converse_error(message, skill_id, error_message)
+                    break
                 try:
-                    result = instance.converse(utterances, lang)
-                    self.bus.emit(message.reply("skill.converse.response", {
-                        "skill_id": skill_id, "result": result}))
-                    return
-                except BaseException:
-                    self.bus.emit(message.reply("skill.converse.error",
-                                                {"skill_id": skill_id,
-                                                 "error": "exception in "
-                                                          "converse method"}))
-                    return
+                    utterances = message.data['utterances']
+                    lang = message.data['lang']
+                    result = skill_loader.instance.converse(utterances, lang)
+                    self._emit_converse_response(result, message, skill_loader)
+                except Exception:
+                    error_message = 'exception in converse method'
+                    LOG.exception(error_message)
+                    self._emit_converse_error(message, skill_id, error_message)
+                finally:
+                    break
 
-        self.bus.emit(message.reply("skill.converse.error",
-                                    {"skill_id": skill_id,
-                                     "error": "skill id does not exist"}))
+        if not skill_found:
+            error_message = 'skill id does not exist'
+            self._emit_converse_error(message, skill_id, error_message)
+
+    def _emit_converse_error(self, message, skill_id, error_msg):
+        """Emit a message reporting the error back to the intent service."""
+        reply = message.reply('skill.converse.response',
+                              data=dict(skill_id=skill_id, error=error_msg))
+        self.bus.emit(reply)
+        # Also emit the old error message to keep compatibility
+        # TODO Remove in 20.08
+        reply = message.reply('skill.converse.error',
+                              data=dict(skill_id=skill_id, error=error_msg))
+        self.bus.emit(reply)
+
+    def _emit_converse_response(self, result, message, skill_loader):
+        reply = message.reply(
+            'skill.converse.response',
+            data=dict(skill_id=skill_loader.skill_id, result=result)
+        )
+        self.bus.emit(reply)

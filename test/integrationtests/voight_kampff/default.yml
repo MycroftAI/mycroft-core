@@ -1,0 +1,19 @@
+platform: mycroft_mark_1
+test_skills:
+- mycroft-alarm
+- mycroft-timer
+- mycroft-date-time
+- mycroft-npr-news
+- mycroft-weather
+- mycroft-hello-world
+- mycroft-pairing
+- mycroft-wiki
+- mycroft-personal
+- mycroft-npr-news
+- mycroft-installer
+- mycroft-singing
+- mycroft-stock
+- mycroft-mark-1
+- fallback-unknown
+- fallback-query
+- mycroft-volume

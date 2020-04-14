@@ -108,11 +108,8 @@ class EnclosureMouth:
         message = "mouth.icon=" + x_offset + y_offset + clear_previous + code
         # Check if message exceeds Arduino's serial buffer input limit 64 bytes
         if len(message) > 60:
-            message1 = message[:31]
-            message2 = message[31:]
-            message1 += "$"
-            message2 += "$"
-            message2 = "mouth.icon=" + message2
+            message1 = message[:31] + "$"
+            message2 = "mouth.icon=$" + message[31:]
             self.writer.write(message1)
             time.sleep(0.25)  # writer bugs out if sending messages too rapidly
             self.writer.write(message2)

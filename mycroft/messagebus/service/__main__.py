@@ -12,47 +12,46 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+""" Message bus service for mycroft-core
+
+The message bus facilitates inter-process communication between mycroft-core
+processes. It implements a websocket server so can also be used by external
+systems to integrate with the Mycroft system.
+"""
+import sys
+
 from tornado import autoreload, web, ioloop
 
-from mycroft.configuration import Configuration
 from mycroft.lock import Lock  # creates/supports PID locking file
-from mycroft.messagebus.service.ws import WebsocketEventHandler
-from mycroft.util import validate_param, reset_sigint_handler, create_daemon, \
+from mycroft.messagebus.load_config import load_message_bus_config
+from mycroft.messagebus.service.event_handler import MessageBusEventHandler
+from mycroft.util import (
+    reset_sigint_handler,
+    create_daemon,
     wait_for_exit_signal
-
-settings = {
-    'debug': True
-}
+)
+from mycroft.util.log import LOG
 
 
 def main():
     import tornado.options
+    LOG.info('Starting message bus service...')
     reset_sigint_handler()
     lock = Lock("service")
-    tornado.options.parse_command_line()
+    # Disable all tornado logging so mycroft loglevel isn't overridden
+    tornado.options.parse_command_line(sys.argv + ['--logging=None'])
 
     def reload_hook():
-        """ Hook to release lock when autoreload is triggered. """
+        """ Hook to release lock when auto reload is triggered. """
         lock.delete()
 
     autoreload.add_reload_hook(reload_hook)
-
-    config = Configuration.get().get("websocket")
-
-    host = config.get("host")
-    port = config.get("port")
-    route = config.get("route")
-    validate_param(host, "websocket.host")
-    validate_param(port, "websocket.port")
-    validate_param(route, "websocket.route")
-
-    routes = [
-        (route, WebsocketEventHandler)
-    ]
-    application = web.Application(routes, **settings)
-    application.listen(port, host)
+    config = load_message_bus_config()
+    routes = [(config.route, MessageBusEventHandler)]
+    application = web.Application(routes, debug=True)
+    application.listen(config.port, config.host)
     create_daemon(ioloop.IOLoop.instance().start)
-
+    LOG.info('Message bus service started!')
     wait_for_exit_signal()
 
 

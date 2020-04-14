@@ -30,7 +30,7 @@ import ast
 
 EXAMPLE_EVENT = '''{
   'expect_response': False,
-  'utterance': u'Recording audio for 600 seconds'
+  'utterance': 'Recording audio for 600 seconds'
 }'''
 
 EXAMPLE_TEST_CASE = '''{

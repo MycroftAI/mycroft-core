@@ -59,7 +59,7 @@ The background services can be stopped as a group with:
 ## *Home* Device and Account Manager
 Mycroft AI, Inc. maintains a device and account management system known as Mycroft Home. Developers may sign up at: https://home.mycroft.ai
 
-By default, mycroft-core  is configured to use Home. By saying "Hey Mycroft, pair my device" (or any other request verbal request) you will be informed that your device needs to be paired. Mycroft will speak a 6-digit code which you can entered into the pairing page within the [Mycroft Home site](https://home.mycroft.ai).
+By default, mycroft-core  is configured to use Home. By saying "Hey Mycroft, pair my device" (or any other request verbal request) you will be informed that your device needs to be paired. Mycroft will speak a 6-digit code which you can enter into the pairing page within the [Mycroft Home site](https://home.mycroft.ai).
 
 Once paired, your unit will use Mycroft API keys for services such as Speech-to-Text (STT), weather and various other skills.
 
@@ -84,14 +84,32 @@ When the configuration loader starts, it looks in these locations in this order,
 
 ## Using Mycroft Without Home
 
-If you do not wish to use the Mycroft Home service, you may insert your own API keys into the configuration files listed below in <b>configuration</b>.
+If you do not wish to use the Mycroft Home service, before starting Mycroft for the first time, create `$HOME/.mycroft/mycroft.conf` with the following contents:
 
-The place to insert the API key looks like the following:
+```
+{
+  "skills": {
+    "blacklisted_skills": [
+      "mycroft-configuration.mycroftai",
+      "mycroft-pairing.mycroftai"
+    ]
+  }
+}
+```
 
-`[WeatherSkill]`
-`api_key = ""`
+Mycroft will then be unable to perform speech-to-text conversion, so you'll need to set that up as well, using one of the [STT engines Mycroft supports](https://mycroft-ai.gitbook.io/docs/using-mycroft-ai/customizations/stt-engine).
 
-Put a relevant key inside the quotes and mycroft-core should begin to use the key immediately.
+You may insert your own API keys into the configuration files listed above in <b>Configuration</b>.  For example, to insert the API key for the Weather skill, create a new JSON key in the configuration file like so:
+
+```
+{
+  // other configuration settings...
+  //
+  "WeatherSkill": {
+    "api_key": "<insert your API key here>"
+  }
+}
+```
 
 ## API Key Services
 
@@ -138,7 +156,7 @@ say hi in [Mycroft Chat](https://chat.mycroft.ai/) and a team member would be ha
 Join the [Mycroft Forum](https://community.mycroft.ai/) for questions and answers.
 
 # Links
-* [Creating a Skill](https://docs.mycroft.ai/skill.creation)
+* [Creating a Skill](https://mycroft-ai.gitbook.io/docs/skill-development/your-first-skill)
 * [Documentation](https://docs.mycroft.ai)
 * [Skill Writer API Docs](https://mycroft-core.readthedocs.io/en/master/)
 * [Release Notes](https://github.com/MycroftAI/mycroft-core/releases)

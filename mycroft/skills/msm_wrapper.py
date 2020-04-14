@@ -12,32 +12,97 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""Common logic for instantiating the Mycroft Skills Manager.
 
-import os
-from os.path import join, expanduser, exists
+The Mycroft Skills Manager (MSM) does a lot of interactions with git.  The
+more skills that are installed on a device, the longer these interactions
+take.  This is especially true at boot time when MSM is instantiated
+frequently.  To improve performance, the MSM instance is cached.
+"""
+from collections import namedtuple
+from functools import lru_cache
+from os import path, makedirs
 
 from msm import MycroftSkillsManager, SkillRepo
+
 from mycroft.util.combo_lock import ComboLock
+from mycroft.util.log import LOG
 
-mycroft_msm_lock = ComboLock('/tmp/mycroft-msm.lck')
+MsmConfig = namedtuple(
+    'MsmConfig',
+    [
+        'platform',
+        'repo_branch',
+        'repo_cache',
+        'repo_url',
+        'skills_dir',
+        'versioned'
+    ]
+)
 
 
-def create_msm(config):
-    """ Create msm object from config. """
-    msm_config = config['skills']['msm']
-    repo_config = msm_config['repo']
-    data_dir = expanduser(config['data_dir'])
-    skills_dir = join(data_dir, msm_config['directory'])
-    repo_cache = join(data_dir, repo_config['cache'])
-    platform = config['enclosure'].get('platform', 'default')
+def _init_msm_lock():
+    msm_lock = None
+    try:
+        msm_lock = ComboLock('/tmp/mycroft-msm.lck')
+        LOG.debug('mycroft-msm combo lock instantiated')
+    except Exception:
+        LOG.exception('Failed to create msm lock!')
 
-    with mycroft_msm_lock:
-        # Try to create the skills directory if it doesn't exist
-        if not exists(skills_dir):
-            os.makedirs(skills_dir)
+    return msm_lock
 
-        return MycroftSkillsManager(
-            platform=platform, skills_dir=skills_dir,
-            repo=SkillRepo(repo_cache, repo_config['url'],
-                           repo_config['branch']),
-            versioned=msm_config['versioned'])
+
+def build_msm_config(device_config: dict) -> MsmConfig:
+    """Extract from the device configs values needed to instantiate MSM
+
+    Why not just pass the device_config to the create_msm function, you ask?
+    Rationale is that the create_msm function is cached.  The lru_cached
+    decorator will instantiate MSM anew each time it is called with a different
+    configuration argument.  Calling this function before create_msm will
+    ensure that changes to configs not related to MSM will not result in new
+    instances of MSM being created.
+    """
+    msm_config = device_config['skills']['msm']
+    msm_repo_config = msm_config['repo']
+    enclosure_config = device_config['enclosure']
+    data_dir = path.expanduser(device_config['data_dir'])
+
+    return MsmConfig(
+        platform=enclosure_config.get('platform', 'default'),
+        repo_branch=msm_repo_config['branch'],
+        repo_cache=path.join(data_dir, msm_repo_config['cache']),
+        repo_url=msm_repo_config['url'],
+        skills_dir=path.join(data_dir, msm_config['directory']),
+        versioned=msm_config['versioned']
+    )
+
+
+@lru_cache()
+def create_msm(msm_config: MsmConfig) -> MycroftSkillsManager:
+    """Returns an instantiated MSM object.
+
+    This function is cached because it can take as long as 15 seconds to
+    instantiate MSM.  Caching the instance improves performance significantly,
+    especially during the boot sequence when this function is called multiple
+    times.
+    """
+    msm_lock = _init_msm_lock()
+    LOG.info('Acquiring lock to instantiate MSM')
+    with msm_lock:
+        if not path.exists(msm_config.skills_dir):
+            makedirs(msm_config.skills_dir)
+
+        msm_skill_repo = SkillRepo(
+            msm_config.repo_cache,
+            msm_config.repo_url,
+            msm_config.repo_branch
+        )
+        msm_instance = MycroftSkillsManager(
+            platform=msm_config.platform,
+            skills_dir=msm_config.skills_dir,
+            repo=msm_skill_repo,
+            versioned=msm_config.versioned
+        )
+    LOG.info('Releasing MSM instantiation lock.')
+
+    return msm_instance

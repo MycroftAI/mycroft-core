@@ -12,21 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import time
-from time import sleep
-
+from time import time, sleep
 import os
 import platform
 import posixpath
+import struct
+import sys
 import tempfile
 import requests
 from contextlib import suppress
 from glob import glob
 from os.path import dirname, exists, join, abspath, expanduser, isfile, isdir
-from petact import install_package
 from shutil import rmtree
 from threading import Timer, Event, Thread
 from urllib.error import HTTPError
+
+from petact import install_package
 
 from mycroft.configuration import Configuration, LocalConf, USER_CONFIG
 from mycroft.util.log import LOG
@@ -71,8 +72,13 @@ class HotWordEngine:
 
 
 class PocketsphinxHotWord(HotWordEngine):
+    """Hotword engine using PocketSphinx.
+
+    PocketSphinx is very general purpose but has a somewhat high error rate.
+    The key advantage is to be able to specify the wakeword with phonemes.
+    """
     def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
-        super(PocketsphinxHotWord, self).__init__(key_phrase, config, lang)
+        super().__init__(key_phrase, config, lang)
         # Hotword module imports
         from pocketsphinx import Decoder
         # Hotword module params
@@ -107,12 +113,12 @@ class PocketsphinxHotWord(HotWordEngine):
         return config
 
     def transcribe(self, byte_data, metrics=None):
-        start = time.time()
+        start = time()
         self.decoder.start_utt()
         self.decoder.process_raw(byte_data, False, False)
         self.decoder.end_utt()
         if metrics:
-            metrics.timer("mycroft.stt.local.time_s", time.time() - start)
+            metrics.timer("mycroft.stt.local.time_s", time() - start)
         return self.decoder.hyp()
 
     def found_wake_word(self, frame_data):
@@ -121,14 +127,19 @@ class PocketsphinxHotWord(HotWordEngine):
 
 
 class PreciseHotword(HotWordEngine):
+    """Precice is the default wakeword engine for mycroft.
+
+    Precise is developed by Mycroft AI and produces quite good wake word
+    spotting when trained on a decent dataset.
+    """
     def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
-        super(PreciseHotword, self).__init__(key_phrase, config, lang)
+        super().__init__(key_phrase, config, lang)
         from precise_runner import (
             PreciseRunner, PreciseEngine, ReadWriteStream
         )
         local_conf = LocalConf(USER_CONFIG)
-        if local_conf.get('precise', {}).get('dist_url') == \
-                'http://bootstrap.mycroft.ai/artifacts/static/daily/':
+        if (local_conf.get('precise', {}).get('dist_url') ==
+                'http://bootstrap.mycroft.ai/artifacts/static/daily/'):
             del local_conf['precise']['dist_url']
             local_conf.store()
             Configuration.updated(None)
@@ -137,7 +148,8 @@ class PreciseHotword(HotWordEngine):
 
         self.show_download_progress = Timer(0, lambda: None)
         precise_config = Configuration.get()['precise']
-        precise_exe = self.install_exe(precise_config['dist_url'])
+
+        precise_exe = self.update_precise(precise_config)
 
         local_model = self.config.get('local_model_file')
         if local_model:
@@ -163,9 +175,31 @@ class PreciseHotword(HotWordEngine):
         )
         self.runner.start()
 
+    def update_precise(self, precise_config):
+        """Continously try to download precise until successful"""
+        precise_exe = None
+        while not precise_exe:
+            try:
+                precise_exe = self.install_exe(precise_config['dist_url'])
+            except TriggerReload:
+                raise
+            except Exception as e:
+                LOG.error(
+                    'Precise could not be downloaded({})'.format(repr(e)))
+                if exists(self.install_destination):
+                    precise_exe = self.install_destination
+                else:
+                    # Wait one minute before retrying
+                    sleep(60)
+        return precise_exe
+
     @property
     def folder(self):
         return join(expanduser('~'), '.mycroft', 'precise')
+
+    @property
+    def install_destination(self):
+        return join(self.folder, 'precise-engine', 'precise-engine')
 
     def install_exe(self, url: str) -> str:
         url = url.format(arch=platform.machine())
@@ -176,7 +210,7 @@ class PreciseHotword(HotWordEngine):
                 on_download=self.on_download, on_complete=self.on_complete
         ):
             raise TriggerReload
-        return join(self.folder, 'precise-engine', 'precise-engine')
+        return self.install_destination
 
     def install_model(self, url: str, wake_word: str) -> str:
         model_url = url.format(wake_word=wake_word)
@@ -240,8 +274,11 @@ class PreciseHotword(HotWordEngine):
 
 
 class SnowboyHotWord(HotWordEngine):
+    """Snowboy is a thirdparty hotword engine providing an easy training and
+    testing interface.
+    """
     def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
-        super(SnowboyHotWord, self).__init__(key_phrase, config, lang)
+        super().__init__(key_phrase, config, lang)
         # Hotword module imports
         from snowboydecoder import HotwordDetector
         # Hotword module config
@@ -262,14 +299,86 @@ class SnowboyHotWord(HotWordEngine):
 
     def found_wake_word(self, frame_data):
         wake_word = self.snowboy.detector.RunDetection(frame_data)
-        return wake_word == 1
+        return wake_word >= 1
+
+
+class PorcupineHotWord(HotWordEngine):
+    def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
+        super(PorcupineHotWord, self).__init__(key_phrase, config, lang)
+        porcupine_path = expanduser(self.config.get(
+            "porcupine_path", join('~', '.mycroft', 'Porcupine')))
+        keyword_file_paths = [expanduser(x.strip()) for x in self.config.get(
+            "keyword_file_path", "hey_mycroft.ppn").split(',')]
+        sensitivities = self.config.get("sensitivities", 0.5)
+        bindings_path = join(porcupine_path, 'binding/python')
+        LOG.info('Adding %s to Python path' % bindings_path)
+        sys.path.append(bindings_path)
+        try:
+            from porcupine import Porcupine
+        except ImportError:
+            raise Exception(
+                "Python bindings for Porcupine not found. "
+                "Please use --porcupine-path to set Porcupine base path")
+
+        system = platform.system()
+        machine = platform.machine()
+        library_path = join(
+            porcupine_path, 'lib/linux/%s/libpv_porcupine.so' % machine)
+        model_file_path = join(
+            porcupine_path, 'lib/common/porcupine_params.pv')
+        if isinstance(sensitivities, float):
+            sensitivities = [sensitivities] * len(keyword_file_paths)
+        else:
+            sensitivities = [float(x) for x in sensitivities.split(',')]
+
+        self.audio_buffer = []
+        self.has_found = False
+        self.num_keywords = len(keyword_file_paths)
+        LOG.info(
+            'Loading Porcupine using library path {} and keyword paths {}'
+            .format(library_path, keyword_file_paths))
+        self.porcupine = Porcupine(
+            library_path=library_path,
+            model_file_path=model_file_path,
+            keyword_file_paths=keyword_file_paths,
+            sensitivities=sensitivities)
+
+        LOG.info('Loaded Porcupine')
+
+    def update(self, chunk):
+        pcm = struct.unpack_from("h" * (len(chunk)//2), chunk)
+        self.audio_buffer += pcm
+        while True:
+            if len(self.audio_buffer) >= self.porcupine.frame_length:
+                result = self.porcupine.process(
+                    self.audio_buffer[0:self.porcupine.frame_length])
+                # result could be boolean (if there is one keword)
+                # or int (if more than one keyword)
+                self.has_found |= (
+                    (self.num_keywords == 1 and result) |
+                    (self.num_keywords > 1 and result >= 0))
+                self.audio_buffer = self.audio_buffer[
+                    self.porcupine.frame_length:]
+            else:
+                return
+
+    def found_wake_word(self, frame_data):
+        if self.has_found:
+            self.has_found = False
+            return True
+        return False
+
+    def stop(self):
+        if self.porcupine is not None:
+            self.porcupine.delete()
 
 
 class HotWordFactory:
     CLASSES = {
         "pocketsphinx": PocketsphinxHotWord,
         "precise": PreciseHotword,
-        "snowboy": SnowboyHotWord
+        "snowboy": SnowboyHotWord,
+        "porcupine": PorcupineHotWord
     }
 
     @staticmethod

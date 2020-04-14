@@ -25,10 +25,6 @@ from mycroft.util.log import LOG
 
 from .services import RemoteAudioBackend
 
-try:
-    import pulsectl
-except ImportError:
-    pulsectl = None
 
 MAINMODULE = '__init__'
 sys.path.append(abspath(dirname(__file__)))
@@ -147,13 +143,7 @@ class AudioService:
         self.current = None
         self.play_start_time = 0
         self.volume_is_low = False
-        self.pulse = None
-        self.pulse_quiet = None
-        self.pulse_restore = None
 
-        self.muted_sinks = []
-        # Setup control of pulse audio
-        self.setup_pulseaudio_handlers(self.config.get('pulseaudio'))
         bus.once('open', self.load_services_callback)
 
     def load_services_callback(self):
@@ -203,12 +193,19 @@ class AudioService:
         self.bus.on('recognizer_loop:record_end', self._restore_volume)
 
     def track_start(self, track):
+        """Callback method called from the services to indicate start of
+        playback of a track or end of playlist.
         """
-            Callback method called from the services to indicate start of
-            playback of a track.
-        """
-        self.bus.emit(Message('mycroft.audio.playing_track',
-                              data={'track': track}))
+        if track:
+            # Inform about the track about to start.
+            LOG.debug('New track coming up!')
+            self.bus.emit(Message('mycroft.audio.playing_track',
+                                  data={'track': track}))
+        else:
+            # If no track is about to start last track of the queue has been
+            # played.
+            LOG.debug('End of playlist!')
+            self.bus.emit(Message('mycroft.audio.queue_end'))
 
     def _pause(self, message=None):
         """
@@ -282,54 +279,8 @@ class AudioService:
             LOG.debug('lowering volume')
             self.current.lower_volume()
             self.volume_is_low = True
-        try:
-            if self.pulse_quiet:
-                self.pulse_quiet()
-        except Exception as exc:
-            LOG.error(exc)
 
-    def pulse_mute(self):
-        """
-            Mute all pulse audio input sinks except for the one named
-            'mycroft-voice'.
-        """
-        for sink in self.pulse.sink_input_list():
-            if sink.name != 'mycroft-voice':
-                self.pulse.sink_input_mute(sink.index, 1)
-                self.muted_sinks.append(sink.index)
-
-    def pulse_unmute(self):
-        """
-            Unmute all pulse audio input sinks.
-        """
-        for sink in self.pulse.sink_input_list():
-            if sink.index in self.muted_sinks:
-                self.pulse.sink_input_mute(sink.index, 0)
-        self.muted_sinks = []
-
-    def pulse_lower_volume(self):
-        """
-            Lower volume of all pulse audio input sinks except the one named
-            'mycroft-voice'.
-        """
-        for sink in self.pulse.sink_input_list():
-            if sink.name != 'mycroft-voice':
-                volume = sink.volume
-                volume.value_flat *= 0.3
-                self.pulse.volume_set(sink, volume)
-
-    def pulse_restore_volume(self):
-        """
-            Restore volume of all pulse audio input sinks except the one named
-            'mycroft-voice'.
-        """
-        for sink in self.pulse.sink_input_list():
-            if sink.name != 'mycroft-voice':
-                volume = sink.volume
-                volume.value_flat /= 0.3
-                self.pulse.volume_set(sink, volume)
-
-    def _restore_volume(self, message):
+    def _restore_volume(self, message=None):
         """
             Is triggered when mycroft is done speaking and restores the volume
 
@@ -342,8 +293,6 @@ class AudioService:
             time.sleep(2)
             if not self.volume_is_low:
                 self.current.restore_volume()
-        if self.pulse_restore:
-            self.pulse_restore()
 
     def play(self, tracks, prefered_service, repeat=False):
         """
@@ -464,23 +413,6 @@ class AudioService:
         seconds = message.data.get("seconds", 1)
         if self.current:
             self.current.seek_backward(seconds)
-
-    def setup_pulseaudio_handlers(self, pulse_choice=None):
-        """
-            Select functions for handling lower volume/restore of
-            pulse audio input sinks.
-
-            Args:
-                pulse_choice: method selection, can be eithe 'mute' or 'lower'
-        """
-        if pulsectl and pulse_choice:
-            self.pulse = pulsectl.Pulse('Mycroft-audio-service')
-            if pulse_choice == 'mute':
-                self.pulse_quiet = self.pulse_mute
-                self.pulse_restore = self.pulse_unmute
-            elif pulse_choice == 'lower':
-                self.pulse_quiet = self.pulse_lower_volume
-                self.pulse_restore = self.pulse_restore_volume
 
     def shutdown(self):
         for s in self.service:

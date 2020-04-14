@@ -16,12 +16,16 @@ import abc
 import re
 from requests_futures.sessions import FuturesSession
 
-from mycroft.tts import TTS
-from mycroft.util import remove_last_slash, play_wav
+from .tts import TTS
+from mycroft.util import play_wav
 from mycroft.util.log import LOG
 
 
-class RemoteTTSTimeoutException(Exception):
+class RemoteTTSException(Exception):
+    pass
+
+
+class RemoteTTSTimeoutException(RemoteTTSException):
     pass
 
 
@@ -37,10 +41,10 @@ class RemoteTTS(TTS):
         super(RemoteTTS, self).__init__(lang, config, validator)
         self.api_path = api_path
         self.auth = None
-        self.url = remove_last_slash(url)
+        self.url = config.get('url', url).rstrip('/')
         self.session = FuturesSession()
 
-    def execute(self, sentence, ident=None):
+    def execute(self, sentence, ident=None, listen=False):
         phrases = self.__get_phrases(sentence)
 
         if len(phrases) > 0:
@@ -51,7 +55,7 @@ class RemoteTTS(TTS):
                 except Exception as e:
                     LOG.error(e.message)
                 finally:
-                    self.end_audio()
+                    self.end_audio(listen)
 
     @staticmethod
     def __get_phrases(sentence):

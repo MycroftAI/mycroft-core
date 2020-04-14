@@ -12,6 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
+
+"""
+Mycroft Logging module.
+
+This module provides the LOG pseudo function quickly creating a logger instance
+for use.
+
+The default log level of the logger created here can ONLY be set in
+/etc/mycroft/mycroft.conf or ~/.mycroft/mycroft.conf
+
+The default log level can also be programatically be changed by setting the
+LOG.level parameter.
+"""
+
 import inspect
 import logging
 import sys
@@ -62,6 +77,13 @@ class LOG:
 
     @classmethod
     def init(cls):
+        """ Initializes the class, sets the default log level and creates
+        the required handlers.
+        """
+
+        # Check configs manually, the Mycroft configuration system can't be
+        # used since it uses the LOG system and would cause horrible cyclic
+        # dependencies.
         confs = [SYSTEM_CONFIG, USER_CONFIG]
         config = {}
         for conf in confs:
@@ -72,10 +94,12 @@ class LOG:
                 print('couldn\'t load {}: {}'.format(conf, str(e)))
 
         cls.level = logging.getLevelName(config.get('log_level', 'INFO'))
-        fmt = '%(asctime)s.%(msecs)03d - ' \
-              '%(name)s - %(levelname)s - %(message)s'
-        datefmt = '%H:%M:%S'
-        formatter = logging.Formatter(fmt, datefmt)
+        log_message_format = (
+            '{asctime} | {levelname:8} | {process:5} | {name} | {message}'
+        )
+
+        formatter = logging.Formatter(log_message_format, style='{')
+        formatter.default_msec_format = '%s.%03d'
         cls.handler = logging.StreamHandler(sys.stdout)
         cls.handler.setFormatter(formatter)
 
@@ -102,18 +126,23 @@ class LOG:
             # [0] - _log()
             # [1] - debug(), info(), warning(), or error()
             # [2] - caller
-            stack = inspect.stack()
+            try:
+                stack = inspect.stack()
 
-            # Record:
-            # [0] - frame object
-            # [1] - filename
-            # [2] - line number
-            # [3] - function
-            # ...
-            record = stack[2]
-            mod = inspect.getmodule(record[0])
-            module_name = mod.__name__ if mod else ''
-            name = module_name + ':' + record[3] + ':' + str(record[2])
+                # Record:
+                # [0] - frame object
+                # [1] - filename
+                # [2] - line number
+                # [3] - function
+                # ...
+                record = stack[2]
+                mod = inspect.getmodule(record[0])
+                module_name = mod.__name__ if mod else ''
+                name = module_name + ':' + record[3] + ':' + str(record[2])
+            except Exception:
+                # The location couldn't be determined
+                name = 'Mycroft'
+
         func(cls.create_logger(name), *args, **kwargs)
 
 

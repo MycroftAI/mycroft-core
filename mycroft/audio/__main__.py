@@ -18,7 +18,7 @@
     This handles playback of audio and speech
 """
 from mycroft.configuration import Configuration
-from mycroft.messagebus.client.ws import WebsocketClient
+from mycroft.messagebus.client import MessageBusClient
 from mycroft.util import reset_sigint_handler, wait_for_exit_signal, \
     create_daemon, create_echo_function, check_for_signal
 from mycroft.util.log import LOG
@@ -31,8 +31,8 @@ def main():
     """ Main function. Run when file is invoked. """
     reset_sigint_handler()
     check_for_signal("isSpeaking")
-    bus = WebsocketClient()  # Connect to the Mycroft Messagebus
-    Configuration.init(bus)
+    bus = MessageBusClient()  # Connect to the Mycroft Messagebus
+    Configuration.set_config_update_handlers(bus)
     speech.init(bus)
 
     LOG.info("Starting Audio Services")

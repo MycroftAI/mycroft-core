@@ -14,7 +14,6 @@
 #
 import sys
 import io
-import signal
 from math import ceil
 
 from .gui_server import start_qml_gui
@@ -29,7 +28,7 @@ import textwrap
 import json
 import mycroft.version
 from threading import Thread, Lock
-from mycroft.messagebus.client.ws import WebsocketClient
+from mycroft.messagebus.client import MessageBusClient
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
 from mycroft.configuration import Configuration
@@ -63,7 +62,7 @@ log_lock = Lock()
 max_log_lines = 5000
 mergedLog = []
 filteredLog = []
-default_log_filters = ["mouth.viseme", "mouth.display", "mouth.icon", "DEBUG"]
+default_log_filters = ["mouth.viseme", "mouth.display", "mouth.icon"]
 log_filters = list(default_log_filters)
 log_files = []
 find_str = None
@@ -121,9 +120,6 @@ def ctrl_c_pressed():
         return False
 
 
-signal.signal(signal.SIGINT, ctrl_c_handler)
-
-
 ##############################################################################
 # Helper functions
 
@@ -152,7 +148,7 @@ config_file = os.path.join(os.path.expanduser("~"), ".mycroft_cli.conf")
 def load_mycroft_config(bus):
     """ Load the mycroft config and connect it to updates over the messagebus.
     """
-    Configuration.init(bus)
+    Configuration.set_config_update_handlers(bus)
     return Configuration.get()
 
 
@@ -179,7 +175,8 @@ def load_settings():
         with io.open(config_file, 'r') as f:
             config = json.load(f)
         if "filters" in config:
-            log_filters = config["filters"]
+            # Disregard the filtering of DEBUG messages
+            log_filters = [f for f in config["filters"] if f != "DEBUG"]
         if "cy_chat_area" in config:
             cy_chat_area = config["cy_chat_area"]
         if "show_last_key" in config:
@@ -318,10 +315,10 @@ class MicMonitorThread(Thread):
         with io.open(self.filename, 'r') as fh:
             line = fh.readline()
             # Just adjust meter settings
-            # Ex:Energy:  cur=4 thresh=1.5
-            parts = line.split("=")
-            meter_thresh = float(parts[-1])
-            meter_cur = float(parts[-2].split(" ")[0])
+            # Ex:Energy:  cur=4 thresh=1.5 muted=0
+            cur_text, thresh_text, _ = line.split(' ')[-3:]
+            meter_thresh = float(thresh_text.split('=')[-1])
+            meter_cur = float(cur_text.split('=')[-1])
 
 
 class ScreenDrawThread(Thread):
@@ -696,7 +693,6 @@ def do_draw_main(scr):
     scr.addstr(1, curses.COLS-1-len(ver), ver, CLR_HEADING)
 
     y = 2
-    len_line = 0
     for i in range(start, end):
         if i >= cLogs - 1:
             log = '   ^--- NEWEST ---^ '
@@ -704,15 +700,15 @@ def do_draw_main(scr):
             log = filteredLog[i]
         logid = log[0]
         if len(log) > 25 and log[5] == '-' and log[8] == '-':
-            log = log[27:]  # skip logid & date/time at the front of log line
+            log = log[11:]  # skip logid & date at the front of log line
         else:
             log = log[1:]   # just skip the logid
 
         # Categorize log line
-        if " - DEBUG - " in log:
+        if "| DEBUG    |" in log:
             log = log.replace("Skills ", "")
             clr = CLR_LOG_DEBUG
-        elif " - ERROR - " in log:
+        elif "| ERROR    |" in log:
             clr = CLR_LOG_ERROR
         else:
             if logid == "1":
@@ -1323,7 +1319,11 @@ def gui_main(stdscr):
                     # Treat this as an utterance
                     bus.emit(Message("recognizer_loop:utterance",
                                      {'utterances': [line.strip()],
-                                      'lang': config.get('lang', 'en-us')}))
+                                      'lang': config.get('lang', 'en-us')},
+                                     {'client_name': 'mycroft_cli',
+                                      'source': 'debug_cli',
+                                      'destination': ["skills"]}
+                                     ))
                 hist_idx = -1
                 line = ""
             elif code == 16 or code == 545:  # Ctrl+P or Ctrl+Left (Previous)
@@ -1413,7 +1413,10 @@ def simple_cli():
             print("Input (Ctrl+C to quit):")
             line = sys.stdin.readline()
             bus.emit(Message("recognizer_loop:utterance",
-                             {'utterances': [line.strip()]}))
+                             {'utterances': [line.strip()]},
+                             {'client_name': 'mycroft_simple_cli',
+                              'source': 'debug_cli',
+                              'destination': ["skills"]}))
     except KeyboardInterrupt as e:
         # User hit Ctrl+C to quit
         print("")
@@ -1429,7 +1432,7 @@ def connect_to_messagebus():
 
         Returns: WebsocketClient
     """
-    bus = WebsocketClient()  # Mycroft messagebus connection
+    bus = MessageBusClient()  # Mycroft messagebus connection
 
     event_thread = Thread(target=connect, args=[bus])
     event_thread.setDaemon(True)

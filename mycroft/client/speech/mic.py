@@ -15,7 +15,7 @@
 import audioop
 from time import sleep, time as get_time
 
-import collections
+from collections import deque
 import datetime
 import json
 import os
@@ -56,45 +56,49 @@ class MutableStream:
 
         self.SAMPLE_WIDTH = pyaudio.get_sample_size(format)
         self.muted_buffer = b''.join([b'\x00' * self.SAMPLE_WIDTH])
+        self.read_lock = Lock()
 
     def mute(self):
-        """ Stop the stream and set the muted flag """
-        self.muted = True
-        self.wrapped_stream.stop_stream()
+        """Stop the stream and set the muted flag."""
+        with self.read_lock:
+            self.muted = True
+            self.wrapped_stream.stop_stream()
 
     def unmute(self):
-        """ Start the stream and clear the muted flag """
-        self.muted = False
-        self.wrapped_stream.start_stream()
+        """Start the stream and clear the muted flag."""
+        with self.read_lock:
+            self.muted = False
+            self.wrapped_stream.start_stream()
 
     def read(self, size, of_exc=False):
-        """
-            Read data from stream.
+        """Read data from stream.
 
-            Arguments:
-                size (int): Number of bytes to read
-                of_exc (bool): flag determining if the audio producer thread
-                               should throw IOError at overflows.
+        Arguments:
+            size (int): Number of bytes to read
+            of_exc (bool): flag determining if the audio producer thread
+                           should throw IOError at overflows.
 
-            Returns:
-                Data read from device
+        Returns:
+            (bytes) Data read from device
         """
-        frames = collections.deque()
+        frames = deque()
         remaining = size
-        while remaining > 0:
-            # If muted during read return empty buffer. This ensures no
-            # reads occur while the stream is stopped
-            if self.muted:
-                return self.muted_buffer
+        with self.read_lock:
+            while remaining > 0:
+                # If muted during read return empty buffer. This ensures no
+                # reads occur while the stream is stopped
+                if self.muted:
+                    return self.muted_buffer
 
-            to_read = min(self.wrapped_stream.get_read_available(), remaining)
-            if to_read == 0:
-                sleep(.01)
-                continue
-            result = self.wrapped_stream.read(to_read,
-                                              exception_on_overflow=of_exc)
-            frames.append(result)
-            remaining -= to_read
+                to_read = min(self.wrapped_stream.get_read_available(),
+                              remaining)
+                if to_read <= 0:
+                    sleep(.01)
+                    continue
+                result = self.wrapped_stream.read(to_read,
+                                                  exception_on_overflow=of_exc)
+                frames.append(result)
+                remaining -= to_read
 
         input_latency = self.wrapped_stream.get_input_latency()
         if input_latency > 0.2:
@@ -107,7 +111,11 @@ class MutableStream:
         self.wrapped_stream = None
 
     def is_stopped(self):
-        return self.wrapped_stream.is_stopped()
+        try:
+            return self.wrapped_stream.is_stopped()
+        except Exception as e:
+            LOG.error(repr(e))
+            return True  # Assume the stream has been closed and thusly stopped
 
     def stop_stream(self):
         return self.wrapped_stream.stop_stream()
@@ -116,14 +124,17 @@ class MutableStream:
 class MutableMicrophone(Microphone):
     def __init__(self, device_index=None, sample_rate=16000, chunk_size=1024,
                  mute=False):
-        Microphone.__init__(
-            self, device_index=device_index, sample_rate=sample_rate,
-            chunk_size=chunk_size)
+        Microphone.__init__(self, device_index=device_index,
+                            sample_rate=sample_rate, chunk_size=chunk_size)
         self.muted = False
         if mute:
             self.mute()
 
     def __enter__(self):
+        return self._start()
+
+    def _start(self):
+        """Open the selected device and setup the stream."""
         assert self.stream is None, \
             "This audio source is already inside a context manager"
         self.audio = pyaudio.PyAudio()
@@ -136,11 +147,25 @@ class MutableMicrophone(Microphone):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        if not self.stream.is_stopped():
-            self.stream.stop_stream()
-        self.stream.close()
+        return self._stop()
+
+    def _stop(self):
+        """Stop and close an open stream."""
+        try:
+            if not self.stream.is_stopped():
+                self.stream.stop_stream()
+            self.stream.close()
+        except Exception:
+            LOG.exception('Failed to stop mic input stream')
+            # Let's pretend nothing is wrong...
+
         self.stream = None
         self.audio.terminate()
+
+    def restart(self):
+        """Shutdown input device and restart."""
+        self._stop()
+        self._start()
 
     def mute(self):
         self.muted = True
@@ -184,7 +209,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
     SEC_BETWEEN_WW_CHECKS = 0.2
 
     def __init__(self, wake_word_recognizer):
-
         self.config = Configuration.get()
         listener_config = self.config.get('listener')
         self.upload_url = listener_config['wake_word_upload']['url']
@@ -198,22 +222,26 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.audio = pyaudio.PyAudio()
         self.multiplier = listener_config.get('multiplier')
         self.energy_ratio = listener_config.get('energy_ratio')
-        # check the config for the flag to save wake words.
 
-        if 'record_utterances' in listener_config:
-            # TODO: 19.08 remove this backwards compatibility
-            self.save_utterances = listener_config.get('record_utterances')
-        else:
-            self.save_utterances = listener_config.get('save_utterances',
-                                                       False)
-
-        self.save_wake_words = listener_config.get('record_wake_words')
-        self.saved_wake_words_dir = join(gettempdir(), 'mycroft_wake_words')
+        # Check the config for the flag to save wake words, utterances
+        # and for a path under which to save them
+        self.save_utterances = listener_config.get('save_utterances', False)
+        self.save_wake_words = listener_config.get('record_wake_words', False)
+        self.save_path = listener_config.get('save_path', gettempdir())
+        self.saved_wake_words_dir = join(self.save_path, 'mycroft_wake_words')
+        if self.save_wake_words and not isdir(self.saved_wake_words_dir):
+            os.mkdir(self.saved_wake_words_dir)
+        self.saved_utterances_dir = join(self.save_path, 'mycroft_utterances')
+        if self.save_utterances and not isdir(self.saved_utterances_dir):
+            os.mkdir(self.saved_utterances_dir)
 
         self.upload_lock = Lock()
         self.filenames_to_upload = []
         self.mic_level_file = os.path.join(get_ipc_directory(), "mic_level")
+
+        # Signal statuses
         self._stop_signaled = False
+        self._listen_triggered = False
 
         # The maximum audio in seconds to keep for transcribing a phrase
         # The wake word must fit in this time
@@ -222,10 +250,25 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.TEST_WW_SEC = num_phonemes * len_phoneme
         self.SAVED_WW_SEC = max(3, self.TEST_WW_SEC)
 
-        try:
-            self.account_id = DeviceApi().get()['user']['uuid']
-        except (requests.RequestException, AttributeError):
-            self.account_id = '0'
+        self._account_id = None
+
+    @property
+    def account_id(self):
+        """Fetch account from backend when needed.
+
+        If an error occurs it's handled and a temporary value is returned.
+        When a value is received it will be cached until next start.
+        """
+        if not self._account_id:
+            try:
+                self._account_id = DeviceApi().get()['user']['uuid']
+            except (requests.RequestException, AttributeError):
+                pass  # These are expected and won't be reported
+            except Exception as e:
+                LOG.debug('Unhandled exception while determining device_id, '
+                          'Error: {}'.format(repr(e)))
+
+        return self._account_id or '0'
 
     def record_sound_chunk(self, source):
         return source.stream.read(source.CHUNK, self.overflow_exc)
@@ -234,7 +277,13 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
     def calc_energy(sound_chunk, sample_width):
         return audioop.rms(sound_chunk, sample_width)
 
-    def _record_phrase(self, source, sec_per_buffer, stream=None):
+    def _record_phrase(
+        self,
+        source,
+        sec_per_buffer,
+        stream=None,
+        ww_frames=None
+    ):
         """Record an entire spoken phrase.
 
         Essentially, this code waits for a period of silence and then returns
@@ -246,7 +295,9 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             sec_per_buffer (float):  Fractional number of seconds in each chunk
             stream (AudioStreamHandler): Stream target that will receive chunks
                                          of the utterance audio while it is
-                                         being recorded
+                                         being recorded.
+            ww_frames (deque):  Frames of audio data from the last part of wake
+                                word detection.
 
         Returns:
             bytearray: complete audio buffer recorded, including any
@@ -290,7 +341,10 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         phrase_complete = False
         while num_chunks < max_chunks and not phrase_complete:
-            chunk = self.record_sound_chunk(source)
+            if ww_frames:
+                chunk = ww_frames.popleft()
+            else:
+                chunk = self.record_sound_chunk(source)
             byte_data += chunk
             num_chunks += 1
 
@@ -308,10 +362,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 self._adjust_threshold(energy, sec_per_buffer)
 
             if num_chunks % 10 == 0:
-                with open(self.mic_level_file, 'w') as f:
-                    f.write("Energy:  cur=" + str(energy) + " thresh=" +
-                            str(self.energy_threshold))
-                f.close()
+                self.write_mic_level(energy, source)
 
             was_loud_enough = num_loud_chunks > min_loud_chunks
 
@@ -332,14 +383,26 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         return byte_data
 
+    def write_mic_level(self, energy, source):
+        with open(self.mic_level_file, 'w') as f:
+            f.write('Energy:  cur={} thresh={:.3f} muted={}'.format(
+                energy,
+                self.energy_threshold,
+                int(source.muted)
+                )
+            )
+
     @staticmethod
     def sec_to_bytes(sec, source):
         return int(sec * source.SAMPLE_RATE) * source.SAMPLE_WIDTH
 
     def _skip_wake_word(self):
-        # Check if told programatically to skip the wake word, like
-        # when we are in a dialog with the user.
-        if check_for_signal('startListening'):
+        """Check if told programatically to skip the wake word
+
+        For example when we are in a dialog with the user.
+        """
+        # TODO: remove startListening signal check in 20.02
+        if check_for_signal('startListening') or self._listen_triggered:
             return True
 
         # Pressing the Mark 1 button can start recording (unless
@@ -388,7 +451,12 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             }
         )
 
-    def _wait_until_wake_word(self, source, sec_per_buffer):
+    def trigger_listen(self):
+        """Externally trigger listening."""
+        LOG.debug('Listen triggered from external source.')
+        self._listen_triggered = True
+
+    def _wait_until_wake_word(self, source, sec_per_buffer, emitter):
         """Listen continuously on source until a wake word is spoken
 
         Args:
@@ -421,10 +489,15 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         energy_avg_samples = int(5 / sec_per_buffer)  # avg over last 5 secs
         counter = 0
 
+        # These are frames immediately after wake word is detected
+        # that we want to keep to send to STT
+        ww_frames = deque(maxlen=7)
+
         while not said_wake_word and not self._stop_signaled:
             if self._skip_wake_word():
                 break
             chunk = self.record_sound_chunk(source)
+            ww_frames.append(chunk)
 
             energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
             if energy < self.energy_threshold * self.multiplier:
@@ -450,10 +523,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             # Periodically output energy level stats.  This can be used to
             # visualize the microphone input, e.g. a needle on a meter.
             if counter % 3:
-                with open(self.mic_level_file, 'w') as f:
-                    f.write("Energy:  cur=" + str(energy) + " thresh=" +
-                            str(self.energy_threshold))
-                f.close()
+                self.write_mic_level(energy, source)
             counter += 1
 
             # At first, the buffer is empty and must fill up.  After that
@@ -476,19 +546,25 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
                 # Save positive wake words as appropriate
                 if said_wake_word:
+                    SessionManager.touch()
+                    payload = {
+                        'utterance': self.wake_word_name,
+                        'session': SessionManager.get().session_id,
+                    }
+                    emitter.emit("recognizer_loop:wakeword", payload)
+
                     audio = None
                     mtd = None
                     if self.save_wake_words:
                         # Save wake word locally
                         audio = self._create_audio_data(byte_data, source)
                         mtd = self._compile_metadata()
-                        if not isdir(self.saved_wake_words_dir):
-                            os.mkdir(self.saved_wake_words_dir)
                         module = self.wake_word_recognizer.__class__.__name__
 
-                        fn = join(self.saved_wake_words_dir,
-                                  '_'.join([str(mtd[k]) for k in sorted(mtd)])
-                                  + '.wav')
+                        fn = join(
+                            self.saved_wake_words_dir,
+                            '_'.join(str(mtd[k]) for k in sorted(mtd)) + '.wav'
+                        )
                         with open(fn, 'wb') as f:
                             f.write(audio.get_wav_data())
 
@@ -500,6 +576,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                                   self._create_audio_data(byte_data, source),
                                   mtd or self._compile_metadata()]
                         ).start()
+        return ww_frames
 
     @staticmethod
     def _create_audio_data(raw_data, source):
@@ -540,13 +617,13 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.adjust_for_ambient_noise(source, 1.0)
 
         LOG.debug("Waiting for wake word...")
-        self._wait_until_wake_word(source, sec_per_buffer)
+        ww_frames = self._wait_until_wake_word(source, sec_per_buffer, emitter)
+
+        self._listen_triggered = False
         if self._stop_signaled:
             return
 
         LOG.debug("Recording...")
-        emitter.emit("recognizer_loop:record_begin")
-
         # If enabled, play a wave file with a short sound to audibly
         # indicate recording has begun.
         if self.config.get('confirm_listening'):
@@ -556,14 +633,28 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 source.mute()
                 play_wav(audio_file).wait()
                 source.unmute()
+                # Clear frames from wakeword detctions since they're
+                # irrelevant after mute - play wav - unmute sequence
+                ww_frames = None
 
-        frame_data = self._record_phrase(source, sec_per_buffer, stream)
+        # Notify system of recording start
+        emitter.emit("recognizer_loop:record_begin")
+
+        frame_data = self._record_phrase(
+            source,
+            sec_per_buffer,
+            stream,
+            ww_frames
+        )
         audio_data = self._create_audio_data(frame_data, source)
         emitter.emit("recognizer_loop:record_end")
         if self.save_utterances:
             LOG.info("Recording utterance")
             stamp = str(datetime.datetime.now())
-            filename = "/tmp/mycroft_utterance%s.wav" % stamp
+            filename = "/{}/{}.wav".format(
+                self.saved_utterances_dir,
+                stamp
+            )
             with open(filename, 'wb') as filea:
                 filea.write(audio_data.get_wav_data())
             LOG.debug("Thinking...")

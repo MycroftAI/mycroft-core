@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 import unittest
-import mock
+from unittest.mock import patch
 
 import os
 from speech_recognition import WavFile
@@ -27,7 +27,7 @@ DATA_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "data")
 
 class PocketSphinxRecognizerTest(unittest.TestCase):
     def setUp(self):
-        with mock.patch('mycroft.configuration.Configuration.get') as \
+        with patch('mycroft.configuration.Configuration.get') as \
                 mock_config_get:
             conf = base_config()
             conf['hotwords']['hey mycroft']['module'] = 'pocketsphinx'
@@ -50,23 +50,68 @@ class PocketSphinxRecognizerTest(unittest.TestCase):
 
 
 class LocalRecognizerInitTest(unittest.TestCase):
-    @mock.patch.object(Configuration, 'get')
-    def testRecognizer(self, mock_config_get):
+    @patch.object(Configuration, 'get')
+    def testListenerConfig(self, mock_config_get):
+        """Ensure that the fallback method collecting phonemes etc.
+        from the listener config works.
+        """
         test_config = base_config()
         mock_config_get.return_value = test_config
 
         # Test "Hey Mycroft"
         rl = RecognizerLoop()
-        self.assertEquals(rl.wakeword_recognizer.key_phrase, "hey mycroft")
+        self.assertEqual(rl.wakeword_recognizer.key_phrase, "hey mycroft")
 
         # Test "Hey Victoria"
         test_config['listener']['wake_word'] = 'hey victoria'
         test_config['listener']['phonemes'] = 'HH EY . V IH K T AO R IY AH'
+        test_config['listener']['threshold'] = 1e-90
         rl = RecognizerLoop()
-        self.assertEquals(rl.wakeword_recognizer.key_phrase, "hey victoria")
+        self.assertEqual(rl.wakeword_recognizer.key_phrase, "hey victoria")
 
         # Test Invalid"
         test_config['listener']['wake_word'] = 'hey victoria'
         test_config['listener']['phonemes'] = 'ZZZZZZZZZZZZ'
         rl = RecognizerLoop()
-        self.assertEquals(rl.wakeword_recognizer.key_phrase, "hey mycroft")
+        self.assertEqual(rl.wakeword_recognizer.key_phrase, "hey mycroft")
+
+    @patch.object(Configuration, 'get')
+    def testHotwordConfig(self, mock_config_get):
+        """Ensure that the fallback method collecting phonemes etc.
+        from the listener config works.
+        """
+        test_config = base_config()
+        mock_config_get.return_value = test_config
+
+        # Set fallback values
+        test_config['listener']['phonemes'] = 'HH EY . V IH K T AO R IY AH'
+        test_config['listener']['threshold'] = 1e-90
+
+        steve_conf = {
+            'model': 'pocketsphinx',
+            'phonemes': 'S T IY V .',
+            'threshold': 1e-42
+        }
+
+        test_config['hotwords']['steve'] = steve_conf
+        test_config['listener']['wake_word'] = 'steve'
+
+        rl = RecognizerLoop()
+        self.assertEqual(rl.wakeword_recognizer.key_phrase, 'steve')
+
+        # Ensure phonemes and threshold are poulated from listener config
+        # if they're missing
+
+        # Set fallback values
+        test_config['listener']['phonemes'] = 'S T IY V .'
+        test_config['listener']['threshold'] = 1e-90
+
+        steve_conf = {
+            'model': 'pocketsphinx'
+        }
+
+        test_config['hotwords']['steve'] = steve_conf
+        test_config['listener']['wake_word'] = 'steve'
+        rl = RecognizerLoop()
+        self.assertEqual(rl.wakeword_recognizer.key_phrase, 'steve')
+        self.assertEqual(rl.wakeword_recognizer.phonemes, 'S T IY V .')
