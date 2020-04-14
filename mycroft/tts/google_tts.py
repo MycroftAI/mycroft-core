@@ -17,10 +17,15 @@ from gtts.lang import tts_langs
 
 from .tts import TTS, TTSValidator
 
+supported_langs = tts_langs()
+
 
 class GoogleTTS(TTS):
     """Interface to google TTS."""
     def __init__(self, lang, config):
+        if lang.lower() not in supported_langs and \
+                                     lang[:2].lower() in supported_langs:
+            lang = lang[:2]
         super(GoogleTTS, self).__init__(lang, config, GoogleTTSValidator(
             self), 'mp3')
 
@@ -33,13 +38,6 @@ class GoogleTTS(TTS):
         Returns:
             Tuple ((str) written file, None)
         """
-        langs = tts_langs()
-        if self.lang.lower() not in langs:
-            if self.lang[:2].lower() in langs:
-                self.lang = self.lang[:2]
-            else:
-                raise ValueError("Language not supported by gTTS: {}"
-                                 .format(self.lang))
         tts = gTTS(text=sentence, lang=self.lang)
         tts.save(wav_file)
         return (wav_file, None)  # No phonemes
@@ -50,8 +48,10 @@ class GoogleTTSValidator(TTSValidator):
         super(GoogleTTSValidator, self).__init__(tts)
 
     def validate_lang(self):
-        # TODO
-        pass
+        lang = self.tts.lang
+        if lang.lower() not in supported_langs:
+            raise ValueError("Language not supported by gTTS: {}"
+                             .format(lang))
 
     def validate_connection(self):
         try:
