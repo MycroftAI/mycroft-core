@@ -307,8 +307,6 @@ def _duration_handler(time1, lang=None, speech=True, *, time2=None,
                 if len(out.split()) > 3 or seconds < 1:
                     out += _translate_word("and", lang) + " "
             # speaking "zero point five seconds" is better than "point five"
-            if seconds < 1:
-                out += pronounce_number(0, lang)
             out += pronounce_number(seconds, lang) + " "
             out += _translate_word("second" if seconds ==
                                    1 else "seconds", lang)

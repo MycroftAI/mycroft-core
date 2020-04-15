@@ -82,6 +82,10 @@ class PadatiousService(FallbackSkill):
         self.registered_intents = []
         self.registered_entities = []
 
+    def make_active(self):
+        """Override the make active since this is not a real fallback skill."""
+        pass
+
     def train(self, message=None):
         padatious_single_thread = Configuration.get()[
             'padatious']['single_thread']

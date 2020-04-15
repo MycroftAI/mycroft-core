@@ -274,7 +274,7 @@ fi" > ~/.profile_mycroft
     # Add PEP8 pre-commit hook
     sleep 0.5
     echo '
-(Devloper) Do you want to automatically check code-style when submitting code.
+(Developer) Do you want to automatically check code-style when submitting code.
 If unsure answer yes.
 '
     if get_YN ; then
