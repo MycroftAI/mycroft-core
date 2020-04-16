@@ -31,6 +31,7 @@ from difflib import SequenceMatcher
 
 import lingua_franca.parse
 from lingua_franca.lang.parse_en import extract_duration_en
+from lingua_franca.lang.parse_cs import extract_duration_cs
 from lingua_franca.lang import get_active_lang, get_primary_lang_code
 
 from .time import now_local
@@ -222,8 +223,11 @@ def extract_duration(text, lang=None):
     if lang_code == "en":
         return extract_duration_en(text)
 
+    if lang_code == "cs":
+        return extract_duration_cs(text)
+
     # TODO: extract_duration for other languages
-    _log_unsupported_language(lang_code, ['en'])
+    _log_unsupported_language(lang_code, ['en'], ['cs'])
     return None
 
 
