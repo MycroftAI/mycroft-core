@@ -17,6 +17,8 @@ import sys
 from mycroft.util.log import LOG
 from mycroft.messagebus.client import MessageBusClient
 from mycroft.configuration import Configuration, LocalConf, SYSTEM_CONFIG
+from mycroft.util import (create_daemon, wait_for_exit_signal,
+                          reset_sigint_handler)
 
 
 def main():
@@ -43,7 +45,9 @@ def main():
     if enclosure:
         try:
             LOG.debug("Enclosure started!")
-            enclosure.run()
+            reset_sigint_handler()
+            create_daemon(enclosure.run)
+            wait_for_exit_signal()
         except Exception as e:
             print(e)
         finally:
