@@ -40,6 +40,9 @@ _TTS_ENV = deepcopy(os.environ)
 _TTS_ENV['PULSE_PROP'] = 'media.role=phone'
 
 
+EMPTY_PLAYBACK_QUEUE_TUPLE = (None, None, None, None, None)
+
+
 class PlaybackThread(Thread):
     """Thread class for playing back tts audio and sending
     viseme data to enclosure.
@@ -317,8 +320,10 @@ class TTS(metaclass=ABCMeta):
         try:
             self._execute(sentence, ident, listen)
         except Exception:
-            # If an error occurs end the audio sequence
-            self.queue.put((None, None, None, None, None))
+            # If an error occurs end the audio sequence through an empty entry
+            self.queue.put(EMPTY_PLAYBACK_QUEUE_TUPLE)
+            # Re-raise to allow the Exception to be handled externally as well.
+            raise
 
     def _execute(self, sentence, ident, listen):
         if self.phonetic_spelling:
