@@ -46,8 +46,7 @@ pipeline {
             }
             steps {
                 echo 'Building Mark I Voight-Kampff Docker Image'
-                sh 'cp test/Dockerfile.test Dockerfile'
-                sh 'docker build \
+                sh 'docker build -f test/Dockerfile.test \
                     --target voight_kampff_builder \
                     --build-arg platform=mycroft_mark_1 \
                     -t voight-kampff-mark-1:${BRANCH_ALIAS} .'
@@ -230,8 +229,7 @@ pipeline {
             }
             steps {
                 echo 'Building ${TAG_NAME} Docker Image for Skill Testing'
-                sh 'cp test/Dockerfile.test Dockerfile'
-                sh 'docker build \
+                sh 'docker build -f test/Dockerfile.test \
                     --target voight_kampff_builder \
                     --build-arg platform=mycroft_mark_1 \
                     -t voight-kampff-mark-1:${SKILL_BRANCH} .'
