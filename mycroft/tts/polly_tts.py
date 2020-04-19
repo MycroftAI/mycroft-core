@@ -31,8 +31,8 @@ class PollyTTS(TTS):
                                                   "mark"])
 
         self.voice = self.config.get("voice", "Matthew")
-        self.key_id = self.config.get("key_id", '')
-        self.key = self.config.get("secret_key", '')
+        self.key_id = self.config.get("access_key_id", '')
+        self.key = self.config.get("secret_access_key", '')
         self.region = self.config.get("region", 'us-east-1')
         self.polly = boto3.Session(aws_access_key_id=self.key_id,
                                    aws_secret_access_key=self.key,
