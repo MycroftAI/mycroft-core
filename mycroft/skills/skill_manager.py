@@ -48,8 +48,8 @@ class UploadQueue:
 
     def start(self):
         """Start processing of the queue."""
-        self.send()
         self.started = True
+        self.send()
 
     def stop(self):
         """Stop the queue, and hinder any further transmissions."""
