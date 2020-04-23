@@ -50,13 +50,13 @@ class MutableStream:
         assert wrapped_stream is not None
         self.wrapped_stream = wrapped_stream
 
-        self.muted = muted
-        if muted:
-            self.mute()
-
         self.SAMPLE_WIDTH = pyaudio.get_sample_size(format)
         self.muted_buffer = b''.join([b'\x00' * self.SAMPLE_WIDTH])
         self.read_lock = Lock()
+
+        self.muted = muted
+        if muted:
+            self.mute()
 
     def mute(self):
         """Stop the stream and set the muted flag."""
@@ -197,10 +197,12 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
     # before a phrase will be considered complete
     MIN_SILENCE_AT_END = 0.25
 
+    # TODO: Remove in 20.08
     # The maximum seconds a phrase can be recorded,
     # provided there is noise the entire time
     RECORDING_TIMEOUT = 10.0
 
+    # TODO: Remove in 20.08
     # The maximum time it will continue to record silence
     # when not enough noise has been detected
     RECORDING_TIMEOUT_WITH_SILENCE = 3.0
@@ -252,6 +254,17 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         self._account_id = None
 
+        # The maximum seconds a phrase can be recorded,
+        # provided there is noise the entire time
+        self.recording_timeout = listener_config.get('recording_timeout',
+                                                     self.RECORDING_TIMEOUT)
+
+        # The maximum time it will continue to record silence
+        # when not enough noise has been detected
+        self.recording_timeout_with_silence = listener_config.get(
+            'recording_timeout_with_silence',
+            self.RECORDING_TIMEOUT_WITH_SILENCE)
+
     @property
     def account_id(self):
         """Fetch account from backend when needed.
@@ -288,7 +301,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         Essentially, this code waits for a period of silence and then returns
         the audio.  If silence isn't detected, it will terminate and return
-        a buffer of RECORDING_TIMEOUT duration.
+        a buffer of self.recording_timeout duration.
 
         Args:
             source (AudioSource):  Source producing the audio chunks
@@ -326,11 +339,11 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         min_loud_chunks = int(self.MIN_LOUD_SEC_PER_PHRASE / sec_per_buffer)
 
         # Maximum number of chunks to record before timing out
-        max_chunks = int(self.RECORDING_TIMEOUT / sec_per_buffer)
+        max_chunks = int(self.recording_timeout / sec_per_buffer)
         num_chunks = 0
 
         # Will return if exceeded this even if there's not enough loud chunks
-        max_chunks_of_silence = int(self.RECORDING_TIMEOUT_WITH_SILENCE /
+        max_chunks_of_silence = int(self.recording_timeout_with_silence /
                                     sec_per_buffer)
 
         # bytearray to store audio in

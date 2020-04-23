@@ -40,6 +40,7 @@ function help() {
     echo "  cli                      the Command Line Interface"
     echo "  unittest                 run mycroft-core unit tests (requires pytest)"
     echo "  skillstest               run the skill autotests for all skills (requires pytest)"
+    echo "  vktest                   run the Voight Kampff integration test suite"
     echo
     echo "Util COMMANDs:"
     echo "  audiotest                attempt simple audio validation"
@@ -235,6 +236,10 @@ case ${_opt} in
     "skillstest")
         source-venv
         pytest test/integrationtests/skills/discover_tests.py "$@"
+        ;;
+    "vktest")
+        source-venv
+        python -m test.integrationtests.voight_kampff "$@"
         ;;
     "audiotest")
         launch-process ${_opt}

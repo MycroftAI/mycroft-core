@@ -19,7 +19,6 @@ from adapt.engine import IntentDeterminationEngine
 from adapt.intent import IntentBuilder
 
 from mycroft.configuration import Configuration
-from mycroft.messagebus.message import Message
 from mycroft.util.lang import set_active_lang
 from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
@@ -124,7 +123,6 @@ class ContextManager:
             if entity['origin'] != last or entity['origin'] == '':
                 depth += 1
             last = entity['origin']
-            print(depth)
 
         result = []
         if len(missing_entities) > 0:
@@ -175,8 +173,6 @@ class IntentService:
         self.bus.on('remove_context', self.handle_remove_context)
         self.bus.on('clear_context', self.handle_clear_context)
         # Converse method
-        self.bus.on('skill.converse.response', self.handle_converse_response)
-        self.bus.on('skill.converse.error', self.handle_converse_error)
         self.bus.on('mycroft.speech.recognition.unknown', self.reset_converse)
         self.bus.on('mycroft.skills.loaded', self.update_skill_name_dict)
 
@@ -186,9 +182,6 @@ class IntentService:
         self.bus.on('active_skill_request', add_active_skill_handler)
         self.active_skills = []  # [skill_id , timestamp]
         self.converse_timeout = 5  # minutes to prune active_skills
-        self.waiting_for_converse = False
-        self.converse_result = False
-        self.converse_skill_id = ""
 
         # Intents API
         self.registered_intents = []
@@ -203,14 +196,11 @@ class IntentService:
                     self.handle_vocab_manifest)
 
     def update_skill_name_dict(self, message):
-        """
-            Messagebus handler, updates dictionary of if to skill name
-            conversions.
-        """
+        """Messagebus handler, updates dict of id to skill name conversions."""
         self.skill_names[message.data['id']] = message.data['name']
 
     def get_skill_name(self, skill_id):
-        """ Get skill name from skill ID.
+        """Get skill name from skill ID.
 
         Args:
             skill_id: a skill id as encoded in Intent handlers.
@@ -228,33 +218,23 @@ class IntentService:
             self.do_converse(None, skill[0], lang, message)
 
     def do_converse(self, utterances, skill_id, lang, message):
-        self.waiting_for_converse = True
-        self.converse_result = False
-        self.converse_skill_id = skill_id
-        self.bus.emit(message.reply("skill.converse.request", {
+        converse_msg = (message.reply("skill.converse.request", {
             "skill_id": skill_id, "utterances": utterances, "lang": lang}))
-        start_time = time.time()
-        t = 0
-        while self.waiting_for_converse and t < 5:
-            t = time.time() - start_time
-            time.sleep(0.1)
-        self.waiting_for_converse = False
-        self.converse_skill_id = ""
-        return self.converse_result
+        result = self.bus.wait_for_response(converse_msg,
+                                            'skill.converse.response')
+        if result and 'error' in result.data:
+            self.handle_converse_error(result)
+            return False
+        elif result is not None:
+            return result.data.get('result', False)
+        else:
+            return False
 
     def handle_converse_error(self, message):
+        LOG.error(message.data['error'])
         skill_id = message.data["skill_id"]
         if message.data["error"] == "skill id does not exist":
             self.remove_active_skill(skill_id)
-        if skill_id == self.converse_skill_id:
-            self.converse_result = False
-            self.waiting_for_converse = False
-
-    def handle_converse_response(self, message):
-        skill_id = message.data["skill_id"]
-        if skill_id == self.converse_skill_id:
-            self.converse_result = message.data.get("result", False)
-            self.waiting_for_converse = False
 
     def remove_active_skill(self, skill_id):
         for skill in self.active_skills:
@@ -262,14 +242,26 @@ class IntentService:
                 self.active_skills.remove(skill)
 
     def add_active_skill(self, skill_id):
+        """Add a skill or update the position of an active skill.
+
+        The skill is added to the front of the list, if it's already in the
+        list it's removed so there is only a single entry of it.
+
+        Arguments:
+            skill_id (str): identifier of skill to be added.
+        """
         # search the list for an existing entry that already contains it
         # and remove that reference
-        self.remove_active_skill(skill_id)
-        # add skill with timestamp to start of skill_list
-        self.active_skills.insert(0, [skill_id, time.time()])
+        if skill_id != '':
+            self.remove_active_skill(skill_id)
+            # add skill with timestamp to start of skill_list
+            self.active_skills.insert(0, [skill_id, time.time()])
+        else:
+            LOG.warning('Skill ID was empty, won\'t add to list of '
+                        'active skills.')
 
     def update_context(self, intent):
-        """ Updates context with keyword from the intent.
+        """Updates context with keyword from the intent.
 
         NOTE: This method currently won't handle one_of intent keywords
               since it's not using quite the same format as other intent
@@ -288,8 +280,7 @@ class IntentService:
                 self.context_manager.inject_context(context_entity)
 
     def send_metrics(self, intent, context, stopwatch):
-        """
-        Send timing metrics to the backend.
+        """Send timing metrics to the backend.
 
         NOTE: This only applies to those with Opt In.
         """
@@ -307,7 +298,7 @@ class IntentService:
                           {'intent_type': 'intent_failure'})
 
     def handle_utterance(self, message):
-        """ Main entrypoint for handling user utterances with Mycroft skills
+        """Main entrypoint for handling user utterances with Mycroft skills
 
         Monitor the messagebus for 'recognizer_loop:utterance', typically
         generated by a spoken interaction but potentially also from a CLI
@@ -402,7 +393,7 @@ class IntentService:
             LOG.exception(e)
 
     def _converse(self, utterances, lang, message):
-        """ Give active skills a chance at the utterance
+        """Give active skills a chance at the utterance
 
         Args:
             utterances (list):  list of utterances
@@ -419,7 +410,7 @@ class IntentService:
                                   1] <= self.converse_timeout * 60]
 
         # check if any skill wants to handle utterance
-        for skill in self.active_skills:
+        for skill in copy(self.active_skills):
             if self.do_converse(utterances, skill[0], lang, message):
                 # update timestamp, or there will be a timeout where
                 # intent stops conversing whether its being used or not
@@ -428,7 +419,7 @@ class IntentService:
         return False
 
     def _adapt_intent_match(self, raw_utt, norm_utt, lang):
-        """ Run the Adapt engine to search for an matching intent
+        """Run the Adapt engine to search for an matching intent
 
         Args:
             raw_utt (list):  list of utterances
@@ -500,7 +491,7 @@ class IntentService:
         self.engine.intent_parsers = new_parsers
 
     def handle_add_context(self, message):
-        """ Add context
+        """Add context
 
         Args:
             message: data contains the 'context' item to add
@@ -521,7 +512,7 @@ class IntentService:
         self.context_manager.inject_context(entity)
 
     def handle_remove_context(self, message):
-        """ Remove specific context
+        """Remove specific context
 
         Args:
             message: data contains the 'context' item to remove
@@ -531,7 +522,7 @@ class IntentService:
             self.context_manager.remove_context(context)
 
     def handle_clear_context(self, message):
-        """ Clears all keywords from context """
+        """Clears all keywords from context """
         self.context_manager.clear_context()
 
     def handle_get_adapt(self, message):

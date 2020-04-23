@@ -23,13 +23,17 @@ class WatsonTTS(RemoteTTS):
     PARAMS = {'accept': 'audio/wav'}
 
     def __init__(self, lang, config,
-                 url="https://stream.watsonplatform.net/text-to-speech/api"):
-        super(WatsonTTS, self).__init__(lang, config, url, '/v1/synthesize',
+                 url='https://stream.watsonplatform.net/text-to-speech/api',
+                 api_path='/v1/synthesize'):
+        super(WatsonTTS, self).__init__(lang, config, url, api_path,
                                         WatsonTTSValidator(self))
         self.type = "wav"
         user = self.config.get("user") or self.config.get("username")
         password = self.config.get("password")
         api_key = self.config.get("apikey")
+        if self.url.endswith(api_path):
+            self.url = self.url[:-len(api_path)]
+
         if api_key is None:
             self.auth = HTTPBasicAuth(user, password)
         else:
@@ -39,6 +43,8 @@ class WatsonTTS(RemoteTTS):
         params = self.PARAMS.copy()
         params['LOCALE'] = self.lang
         params['voice'] = self.voice
+        params['X-Watson-Learning-Opt-Out'] = self.config.get(
+                                           'X-Watson-Learning-Opt-Out', 'true')
         params['text'] = sentence.encode('utf-8')
         return params
 
