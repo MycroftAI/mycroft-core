@@ -101,16 +101,18 @@ def play_wav(uri, environment=None):
         uri:    uri to play
         environment (dict): optional environment for the subprocess call
 
-    Returns: subprocess.Popen object
+    Returns: subprocess.Popen object or None if operation failed
     """
     config = mycroft.configuration.Configuration.get()
     play_wav_cmd = config['play_wav_cmdline']
     try:
         return _play_cmd(play_wav_cmd, uri, config, environment)
-    except Exception as e:
-        LOG.error("Failed to launch WAV: {}".format(play_wav_cmd))
-        LOG.debug("Error: {}".format(repr(e)), exc_info=True)
-        return None
+    except FileNotFoundError as e:
+        LOG.error("Failed to launch WAV: {} ({})".format(play_wav_cmd,
+                                                         repr(e)))
+    except Exception:
+        LOG.exception("Failed to launch WAV: {}".format(play_wav_cmd))
+    return None
 
 
 def play_mp3(uri, environment=None):
@@ -124,16 +126,18 @@ def play_mp3(uri, environment=None):
         uri:    uri to play
         environment (dict): optional environment for the subprocess call
 
-    Returns: subprocess.Popen object
+    Returns: subprocess.Popen object or None if operation failed
     """
     config = mycroft.configuration.Configuration.get()
     play_mp3_cmd = config.get("play_mp3_cmdline")
     try:
         return _play_cmd(play_mp3_cmd, uri, config, environment)
-    except Exception as e:
-        LOG.error("Failed to launch MP3: {}".format(play_mp3_cmd))
-        LOG.debug("Error: {}".format(repr(e)), exc_info=True)
-        return None
+    except FileNotFoundError as e:
+        LOG.error("Failed to launch MP3: {} ({})".format(play_mp3_cmd,
+                                                         repr(e)))
+    except Exception:
+        LOG.exception("Failed to launch MP3: {}".format(play_mp3_cmd))
+    return None
 
 
 def play_ogg(uri, environment=None):
@@ -147,16 +151,18 @@ def play_ogg(uri, environment=None):
         uri:    uri to play
         environment (dict): optional environment for the subprocess call
 
-    Returns: subprocess.Popen object
+    Returns: subprocess.Popen object, or None if operation failed
     """
     config = mycroft.configuration.Configuration.get()
     play_ogg_cmd = config.get("play_ogg_cmdline")
     try:
         return _play_cmd(play_ogg_cmd, uri, config, environment)
-    except Exception as e:
-        LOG.error("Failed to launch OGG: {}".format(play_ogg_cmd))
-        LOG.debug("Error: {}".format(repr(e)), exc_info=True)
-        return None
+    except FileNotFoundError as e:
+        LOG.error("Failed to launch OGG: {} ({})".format(play_ogg_cmd,
+                                                         repr(e)))
+    except Exception:
+        LOG.exception("Failed to launch OGG: {}".format(play_ogg_cmd))
+    return None
 
 
 def record(file_path, duration, rate, channels):
