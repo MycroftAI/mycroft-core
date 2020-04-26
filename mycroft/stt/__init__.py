@@ -121,7 +121,6 @@ class IBMSTT(TokenSTT):
         "stt": {
             "module": "ibm",
             "ibm": {
-                "lang": "en-US",
                 "credential": {
                     "token": "YOUR_API_KEY"
                 },
