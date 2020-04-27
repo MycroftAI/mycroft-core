@@ -17,7 +17,6 @@ import json
 from abc import ABCMeta, abstractmethod
 from requests import post, put, exceptions
 from speech_recognition import Recognizer
-from urllib import parse
 from queue import Queue
 from threading import Thread
 
