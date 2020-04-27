@@ -3,7 +3,6 @@ requests==2.20.0
 gTTS==2.0.4
 PyAudio==0.2.11
 pyee==5.0.0
-SpeechRecognition==3.8.1
 tornado==6.0.3
 websocket-client==0.54.0
 requests-futures==0.9.5
@@ -30,3 +29,6 @@ fann2==1.0.7
 padaos==0.1.9
 precise-runner==0.2.1
 petact==0.1.2
+# TODO this should be uploaded my mycroft not jarbasAl
+#speech2text==0.1.0
+git+https://github.com/JarbasAl/speech2text
