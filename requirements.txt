@@ -29,5 +29,5 @@ fann2==1.0.7
 padaos==0.1.9
 precise-runner==0.2.1
 petact==0.1.2
-# TODO this should be uploaded my mycroft not jarbasAl
-speech2text==0.1.0
+# TODO this should be re-uploaded by mycroft not jarbasAl
+speech2text==0.2.0
