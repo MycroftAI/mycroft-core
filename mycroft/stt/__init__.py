@@ -15,7 +15,6 @@
 import re
 import json
 from abc import ABCMeta, abstractmethod
-from collections import OrderedDict
 from requests import post, put, exceptions
 from speech_recognition import Recognizer
 from urllib import parse
@@ -134,9 +133,11 @@ class IBMSTT(TokenSTT):
     def execute(self, audio, language=None):
         if not self.token:
             raise ValueError('API key (token) for IBM Cloud is not defined.')
+
         url_base = self.config.get('url', '')
         if not url_base:
             raise ValueError('URL for IBM Cloud is not defined.')
+        url = url_base + '/v1/recognize'
 
         self.lang = language or self.lang
         supported_languages = [
@@ -152,18 +153,17 @@ class IBMSTT(TokenSTT):
         if audio.sample_rate < 16000 and not self.lang == 'ar-AR':
             audio_model = 'NarrowbandModel'
 
-        params = OrderedDict()  # Ensures testability, as {dict} is unordered
-        params['model'] = '{}_{}'.format(self.lang, audio_model)
-        params['profanity_filter'] = 'false'
-        url = url_base + '/v1/recognize?' + parse.urlencode(params)
-
+        params = {
+            'model': '{}_{}'.format(self.lang, audio_model),
+            'profanity_filter': 'false'
+        }
         headers = {
             'Content-Type': 'audio/x-flac',
             'X-Watson-Learning-Opt-Out': 'true'
         }
 
         response = post(url, auth=('apikey', self.token), headers=headers,
-                        data=audio.get_flac_data())
+                        data=audio.get_flac_data(), params=params)
 
         if response.status_code == 200:
             result = json.loads(response.text)

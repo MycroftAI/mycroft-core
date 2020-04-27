@@ -215,15 +215,18 @@ class TestSTT(unittest.TestCase):
         stt = mycroft.stt.IBMSTT()
         stt.execute(audio)
 
-        test_url_base = 'https://test.com/v1/recognize?'
-        test_url_params = 'model=en-US_BroadbandModel&profanity_filter=false'
-        mock_post.assert_called_with(test_url_base + test_url_params,
+        test_url_base = 'https://test.com/v1/recognize'
+        mock_post.assert_called_with(test_url_base,
                                      auth=('apikey', 'FOOBAR'),
                                      headers={
                                          'Content-Type': 'audio/x-flac',
                                          'X-Watson-Learning-Opt-Out': 'true'
                                      },
-                                     data=audio.get_flac_data())
+                                     data=audio.get_flac_data(),
+                                     params={
+                                         'model': 'en-US_BroadbandModel',
+                                         'profanity_filter': 'false'
+                                     })
 
     @patch.object(Configuration, 'get')
     def test_wit_stt(self, mock_get):
