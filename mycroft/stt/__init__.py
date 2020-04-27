@@ -42,7 +42,8 @@ def requires_pairing(func):
 
 class MycroftSTT(STT):
     """Default mycroft STT."""
-    def __init__(self, config):
+    def __init__(self, config=None):
+        config = config or Configuration.get().get("stt", {})
         super(MycroftSTT, self).__init__(config)
         self.api = STTApi("stt")
 
@@ -58,7 +59,8 @@ class MycroftSTT(STT):
 
 class MycroftDeepSpeechSTT(STT):
     """Mycroft Hosted DeepSpeech"""
-    def __init__(self, config):
+    def __init__(self, config=None):
+        config = config or Configuration.get().get("stt", {})
         super(MycroftDeepSpeechSTT, self).__init__(config)
         self.api = STTApi("deepspeech")
 
@@ -90,6 +92,6 @@ class STTFactory:
             LOG.exception('The selected STT backend could not be loaded, '
                           'falling back to default...')
             if config.get("module", "") != 'mycroft':
-                return MycroftSTT()
+                return MycroftSTT(config)
             else:
                 raise
