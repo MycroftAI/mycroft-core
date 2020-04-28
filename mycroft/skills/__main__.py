@@ -43,7 +43,6 @@ from mycroft.util.log import LOG
 from .core import FallbackSkill
 from .event_scheduler import EventScheduler
 from .intent_service import IntentService
-from .padatious_service import PadatiousService
 from .skill_manager import SkillManager
 
 RASPBERRY_PI_PLATFORMS = ('mycroft_mark_1', 'picroft', 'mycroft_mark_2pi')
@@ -240,12 +239,6 @@ def _register_intent_services(bus):
         bus: messagebus client to register the services on
     """
     service = IntentService(bus)
-    try:
-        PadatiousService(bus, service)
-    except Exception as e:
-        LOG.exception('Failed to create padatious handlers '
-                      '({})'.format(repr(e)))
-
     # Register handler to trigger fallback system
     bus.on('intent_failure', FallbackSkill.make_intent_failure_handler(bus))
 

@@ -49,6 +49,11 @@ class IntentService:
         self.skill_names = {}
         config = Configuration.get()
         self.adapt_service = AdaptService(config.get('context', {}))
+        try:
+            self.padatious_service = PadatiousService(bus, self)
+        except Exception as e:
+            LOG.exception('Failed to create padatious handlers '
+                          '({})'.format(repr(e)))
 
         self.bus.on('register_vocab', self.handle_register_vocab)
         self.bus.on('register_intent', self.handle_register_intent)
@@ -213,7 +218,7 @@ class IntentService:
                     adapt_intent = self.adapt_service.match_intent(
                         utterances, norm_utterances, lang)
                     for utt in combined:
-                        _intent = PadatiousService.instance.calc_intent(utt)
+                        _intent = self.padatious_service.calc_intent(utt)
                         if _intent:
                             best = padatious_intent.conf if padatious_intent \
                                 else 0.0
@@ -358,9 +363,9 @@ class IntentService:
         intent = self.adapt_service.match_intent(combined, lang)
         # Adapt intent's handler is used unless
         # Padatious is REALLY sure it was directed at it instead.
-        padatious_intent = PadatiousService.instance.calc_intent(utterance)
+        padatious_intent = self.padatious_service.calc_intent(utterance)
         if not padatious_intent and norm != utterance:
-            padatious_intent = PadatiousService.instance.calc_intent(norm)
+            padatious_intent = self.padatious_service.calc_intent(norm)
         if intent is None or (
                 padatious_intent and padatious_intent.conf >= 0.95):
             intent = padatious_intent.__dict__
