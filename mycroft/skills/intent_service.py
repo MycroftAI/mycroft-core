@@ -14,9 +14,6 @@
 #
 from copy import copy
 import time
-from adapt.context import ContextManagerFrame
-from adapt.engine import IntentDeterminationEngine
-from adapt.intent import IntentBuilder
 
 from mycroft.configuration import Configuration
 from mycroft.util.lang import set_active_lang
@@ -24,129 +21,11 @@ from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
 from mycroft.metrics import report_timing, Stopwatch
 from mycroft.skills.padatious_service import PadatiousService
+from .adapt_service import AdaptService, AdaptIntent
 from .intent_service_interface import open_intent_envelope
 
-
-class AdaptIntent(IntentBuilder):
-    def __init__(self, name=''):
-        super().__init__(name)
-
-
-def workaround_one_of_context(best_intent):
-    """ Handle Adapt issue with context injection combined with one_of.
-
-    For all entries in the intent result where the value is None try to
-    populate using a value from the __tags__ structure.
-    """
-    for key in best_intent:
-        if best_intent[key] is None:
-            for t in best_intent['__tags__']:
-                if key in t:
-                    best_intent[key] = t[key][0]['entities'][0]['key']
-    return best_intent
-
-
-class ContextManager:
-    """
-    ContextManager
-    Use to track context throughout the course of a conversational session.
-    How to manage a session's lifecycle is not captured here.
-    """
-
-    def __init__(self, timeout):
-        self.frame_stack = []
-        self.timeout = timeout * 60  # minutes to seconds
-
-    def clear_context(self):
-        self.frame_stack = []
-
-    def remove_context(self, context_id):
-        self.frame_stack = [(f, t) for (f, t) in self.frame_stack
-                            if context_id in f.entities[0].get('data', [])]
-
-    def inject_context(self, entity, metadata=None):
-        """
-        Args:
-            entity(object): Format example...
-                               {'data': 'Entity tag as <str>',
-                                'key': 'entity proper name as <str>',
-                                'confidence': <float>'
-                               }
-            metadata(object): dict, arbitrary metadata about entity injected
-        """
-        metadata = metadata or {}
-        try:
-            if len(self.frame_stack) > 0:
-                top_frame = self.frame_stack[0]
-            else:
-                top_frame = None
-            if top_frame and top_frame[0].metadata_matches(metadata):
-                top_frame[0].merge_context(entity, metadata)
-            else:
-                frame = ContextManagerFrame(entities=[entity],
-                                            metadata=metadata.copy())
-                self.frame_stack.insert(0, (frame, time.time()))
-        except (IndexError, KeyError):
-            pass
-
-    def get_context(self, max_frames=None, missing_entities=None):
-        """ Constructs a list of entities from the context.
-
-        Args:
-            max_frames(int): maximum number of frames to look back
-            missing_entities(list of str): a list or set of tag names,
-            as strings
-
-        Returns:
-            list: a list of entities
-        """
-        missing_entities = missing_entities or []
-
-        relevant_frames = [frame[0] for frame in self.frame_stack if
-                           time.time() - frame[1] < self.timeout]
-        if not max_frames or max_frames > len(relevant_frames):
-            max_frames = len(relevant_frames)
-
-        missing_entities = list(missing_entities)
-        context = []
-        last = ''
-        depth = 0
-        for i in range(max_frames):
-            frame_entities = [entity.copy() for entity in
-                              relevant_frames[i].entities]
-            for entity in frame_entities:
-                entity['confidence'] = entity.get('confidence', 1.0) \
-                                       / (2.0 + depth)
-            context += frame_entities
-
-            # Update depth
-            if entity['origin'] != last or entity['origin'] == '':
-                depth += 1
-            last = entity['origin']
-
-        result = []
-        if len(missing_entities) > 0:
-            for entity in context:
-                if entity.get('data') in missing_entities:
-                    result.append(entity)
-                    # NOTE: this implies that we will only ever get one
-                    # of an entity kind from context, unless specified
-                    # multiple times in missing_entities. Cannot get
-                    # an arbitrary number of an entity kind.
-                    missing_entities.remove(entity.get('data'))
-        else:
-            result = context
-
-        # Only use the latest instance of each keyword
-        stripped = []
-        processed = []
-        for f in result:
-            keyword = f['data'][0][1]
-            if keyword not in processed:
-                stripped.append(f)
-                processed.append(keyword)
-        result = stripped
-        return result
+# TODO: Remove in 20.08 (Backwards compatibility)
+from .intent_services.adapt_service import ContextManager
 
 
 def _get_message_lang(message):
@@ -164,18 +43,13 @@ def _get_message_lang(message):
 
 class IntentService:
     def __init__(self, bus):
-        self.config = Configuration.get().get('context', {})
-        self.engine = IntentDeterminationEngine()
-
         # Dictionary for translating a skill id to a name
-        self.skill_names = {}
-        # Context related intializations
-        self.context_keywords = self.config.get('keywords', [])
-        self.context_max_frames = self.config.get('max_frames', 3)
-        self.context_timeout = self.config.get('timeout', 2)
-        self.context_greedy = self.config.get('greedy', False)
-        self.context_manager = ContextManager(self.context_timeout)
         self.bus = bus
+
+        self.skill_names = {}
+        config = Configuration.get()
+        self.adapt_service = AdaptService(config.get('context', {}))
+
         self.bus.on('register_vocab', self.handle_register_vocab)
         self.bus.on('register_intent', self.handle_register_intent)
         self.bus.on('recognizer_loop:utterance', self.handle_utterance)
@@ -185,6 +59,7 @@ class IntentService:
         self.bus.on('add_context', self.handle_add_context)
         self.bus.on('remove_context', self.handle_remove_context)
         self.bus.on('clear_context', self.handle_clear_context)
+
         # Converse method
         self.bus.on('mycroft.speech.recognition.unknown', self.reset_converse)
         self.bus.on('mycroft.skills.loaded', self.update_skill_name_dict)
@@ -273,25 +148,6 @@ class IntentService:
             LOG.warning('Skill ID was empty, won\'t add to list of '
                         'active skills.')
 
-    def update_context(self, intent):
-        """Updates context with keyword from the intent.
-
-        NOTE: This method currently won't handle one_of intent keywords
-              since it's not using quite the same format as other intent
-              keywords. This is under investigation in adapt, PR pending.
-
-        Args:
-            intent: Intent to scan for keywords
-        """
-        for tag in intent['__tags__']:
-            if 'entities' not in tag:
-                continue
-            context_entity = tag['entities'][0]
-            if self.context_greedy:
-                self.context_manager.inject_context(context_entity)
-            elif context_entity['data'][0][1] in self.context_keywords:
-                self.context_manager.inject_context(context_entity)
-
     def send_metrics(self, intent, context, stopwatch):
         """Send timing metrics to the backend.
 
@@ -346,7 +202,7 @@ class IntentService:
             LOG.debug("Utterances: {}".format(combined))
 
             stopwatch = Stopwatch()
-            intent = None
+            adapt_intent = None
             padatious_intent = None
             with stopwatch:
                 # Give active skills an opportunity to handle the utterance
@@ -354,8 +210,8 @@ class IntentService:
 
                 if not converse:
                     # No conversation, use intent system to handle utterance
-                    intent = self._adapt_intent_match(utterances,
-                                                      norm_utterances, lang)
+                    adapt_intent = self.adapt_service.match_intent(
+                        utterances, norm_utterances, lang)
                     for utt in combined:
                         _intent = PadatiousService.instance.calc_intent(utt)
                         if _intent:
@@ -364,7 +220,7 @@ class IntentService:
                             if best < _intent.conf:
                                 padatious_intent = _intent
                     LOG.debug("Padatious intent: {}".format(padatious_intent))
-                    LOG.debug("    Adapt intent: {}".format(intent))
+                    LOG.debug("    Adapt intent: {}".format(adapt_intent))
 
             if converse:
                 # Report that converse handled the intent and return
@@ -375,21 +231,19 @@ class IntentService:
                 report_timing(ident, 'intent_service', stopwatch,
                               {'intent_type': 'converse'})
                 return
-            elif (intent and intent.get('confidence', 0.0) > 0.0 and
+            elif (adapt_intent and
+                  adapt_intent.get('confidence', 0.0) > 0.0 and
                   not (padatious_intent and padatious_intent.conf >= 0.95)):
                 # Send the message to the Adapt intent's handler unless
                 # Padatious is REALLY sure it was directed at it instead.
-                self.update_context(intent)
                 # update active skills
-                skill_id = intent['intent_type'].split(":")[0]
+                self.adapt_service.update_context(adapt_intent)
+                skill_id = adapt_intent['intent_type'].split(":")[0]
                 self.add_active_skill(skill_id)
                 # Adapt doesn't handle context injection for one_of keywords
                 # correctly. Workaround this issue if possible.
-                try:
-                    intent = workaround_one_of_context(intent)
-                except LookupError:
-                    LOG.error('Error during workaround_one_of_context')
-                reply = message.reply(intent.get('intent_type'), intent)
+                reply = message.reply(adapt_intent.get('intent_type'),
+                                      adapt_intent)
             else:
                 # Allow fallback system to handle utterance
                 # NOTE: A matched padatious_intent is handled this way, too
@@ -400,7 +254,7 @@ class IntentService:
                                        'norm_utt': norm_utterances[0],
                                        'lang': lang})
             self.bus.emit(reply)
-            self.send_metrics(intent, message.context, stopwatch)
+            self.send_metrics(adapt_intent, message.context, stopwatch)
         except Exception as e:
             LOG.exception(e)
 
@@ -430,77 +284,26 @@ class IntentService:
                 return True
         return False
 
-    def _adapt_intent_match(self, raw_utt, norm_utt, lang):
-        """Run the Adapt engine to search for an matching intent
-
-        Args:
-            raw_utt (list):  list of utterances
-            norm_utt (list): same list of utterances, normalized
-            lang (string):   language code, e.g "en-us"
-
-        Returns:
-            Intent structure, or None if no match was found.
-        """
-        best_intent = None
-
-        def take_best(intent, utt):
-            nonlocal best_intent
-            best = best_intent.get('confidence', 0.0) if best_intent else 0.0
-            conf = intent.get('confidence', 0.0)
-            if conf > best:
-                best_intent = intent
-                # TODO - Shouldn't Adapt do this?
-                best_intent['utterance'] = utt
-
-        for idx, utt in enumerate(raw_utt):
-            try:
-                intents = [i for i in self.engine.determine_intent(
-                    utt, 100,
-                    include_tags=True,
-                    context_manager=self.context_manager)]
-                if intents:
-                    take_best(intents[0], utt)
-
-                # Also test the normalized version, but set the utterance to
-                # the raw version so skill has access to original STT
-                norm_intents = [i for i in self.engine.determine_intent(
-                    norm_utt[idx], 100,
-                    include_tags=True,
-                    context_manager=self.context_manager)]
-                if norm_intents:
-                    take_best(norm_intents[0], utt)
-            except Exception as e:
-                LOG.exception(e)
-        return best_intent
-
     def handle_register_vocab(self, message):
         start_concept = message.data.get('start')
         end_concept = message.data.get('end')
         regex_str = message.data.get('regex')
         alias_of = message.data.get('alias_of')
-        if regex_str:
-            self.engine.register_regex_entity(regex_str)
-        else:
-            self.engine.register_entity(
-                start_concept, end_concept, alias_of=alias_of)
+        self.adapt_service.register_vocab(start_concept, end_concept,
+                                          alias_of, regex_str)
         self.registered_vocab.append(message.data)
 
     def handle_register_intent(self, message):
         intent = open_intent_envelope(message)
-        self.engine.register_intent_parser(intent)
+        self.adapt_service.register_intent(intent)
 
     def handle_detach_intent(self, message):
         intent_name = message.data.get('intent_name')
-        new_parsers = [
-            p for p in self.engine.intent_parsers if p.name != intent_name]
-        self.engine.intent_parsers = new_parsers
+        self.adapt_service.detach_intent(intent_name)
 
     def handle_detach_skill(self, message):
         skill_id = message.data.get('skill_id')
-        new_parsers = [
-            p for p in self.engine.intent_parsers if
-            not p.name.startswith(skill_id)]
-        self.engine.intent_parsers = new_parsers
+        self.adapt_service.detach_skill(skill_id)
 
     def handle_add_context(self, message):
         """Add context
@@ -521,7 +324,7 @@ class IntentService:
         entity['match'] = word
         entity['key'] = word
         entity['origin'] = origin
-        self.context_manager.inject_context(entity)
+        self.adapt_service.context_manager.inject_context(entity)
 
     def handle_remove_context(self, message):
         """Remove specific context
@@ -531,17 +334,18 @@ class IntentService:
         """
         context = message.data.get('context')
         if context:
-            self.context_manager.remove_context(context)
+            self.adapt_service.context_manager.remove_context(context)
 
     def handle_clear_context(self, message):
         """Clears all keywords from context """
-        self.context_manager.clear_context()
+        self.adapt_service.context_manager.clear_context()
 
     def handle_get_adapt(self, message):
         utterance = message.data["utterance"]
         lang = message.data.get("lang", "en-us")
         norm = normalize(utterance, lang, remove_articles=False)
-        intent = self._adapt_intent_match([utterance], [norm], lang)
+        combined = [utterance, norm] if utterance != norm else [utterance]
+        intent = self.adapt_service.match_intent(utterance, lang)
         self.bus.emit(message.reply("intent.service.adapt.reply",
                                     {"intent": intent}))
 
@@ -549,7 +353,9 @@ class IntentService:
         utterance = message.data["utterance"]
         lang = message.data.get("lang", "en-us")
         norm = normalize(utterance, lang, remove_articles=False)
-        intent = self._adapt_intent_match([utterance], [norm], lang)
+
+        combined = [utterance, norm] if utterance != norm else [utterance]
+        intent = self.adapt_service.match_intent(combined, lang)
         # Adapt intent's handler is used unless
         # Padatious is REALLY sure it was directed at it instead.
         padatious_intent = PadatiousService.instance.calc_intent(utterance)

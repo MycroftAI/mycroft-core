@@ -113,7 +113,7 @@ class ConversationTest(TestCase):
                                 data={'lang': 'en-US',
                                       'utterances': hello})
         result = self.intent_service._converse(hello, 'en-US', utterance_msg)
-
+        self.intent_service.add_active_skill(result.skill_id)
         # Check that the active skill list was updated to set the responding
         # Skill first.
         first_active_skill = self.intent_service.active_skills[0][0]
