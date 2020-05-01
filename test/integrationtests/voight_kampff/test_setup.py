@@ -38,6 +38,13 @@ that anyi specified extra skills also gets installed into the environment.
 FEATURE_DIR = join(dirname(__file__), 'features') + '/'
 
 
+def copy_config_definition_files(source, destination):
+    """Copy all feature files from source to destination."""
+    # Copy feature files to the feature directory
+    for f in glob(join(source, '*.config.json')):
+        shutil.copyfile(f, join(destination, basename(f)))
+
+
 def copy_feature_files(source, destination):
     """Copy all feature files from source to destination."""
     # Copy feature files to the feature directory
@@ -141,6 +148,7 @@ def collect_test_cases(msm, skills):
         behave_dir = join(skill.path, 'test', 'behave')
         if exists(behave_dir):
             copy_feature_files(behave_dir, FEATURE_DIR)
+            copy_config_definition_files(behave_dir, FEATURE_DIR)
 
             step_dir = join(behave_dir, 'steps')
             if exists(step_dir):

@@ -19,6 +19,7 @@ from behave.contrib.scenario_autoretry import patch_scenario_with_autoretry
 
 from msm import MycroftSkillsManager
 from mycroft.audio import wait_while_speaking
+from mycroft.configuration import Configuration
 from mycroft.messagebus.client import MessageBusClient
 from mycroft.messagebus import Message
 from mycroft.util import create_daemon
@@ -92,6 +93,9 @@ def before_all(context):
     context.bus = bus
     context.matched_message = None
     context.log = log
+    context.original_config = {}
+    context.config = Configuration.get()
+    Configuration.set_config_update_handlers(bus)
 
 
 def before_feature(context, feature):
@@ -110,9 +114,26 @@ def after_feature(context, feature):
     sleep(1)
 
 
+def reset_config(context):
+    """Reset configuration with changes stored in original_config of context.
+    """
+    context.log.info('Resetting patched configuration...')
+
+    context.bus.emit(Message('configuration.patch.clear'))
+    key = list(context.original_config)[0]
+    while context.config[key] != context.original_config[key]:
+        sleep(0.5)
+    context.original_config = {}
+
+
 def after_scenario(context, scenario):
+    """Wait for mycroft completion and reset any changed state."""
     # TODO wait for skill handler complete
     sleep(0.5)
     wait_while_speaking()
     context.bus.clear_messages()
     context.matched_message = None
+
+    if context.original_config:
+        # something has changed, reset changes by done in the context
+        reset_config(context)
