@@ -259,7 +259,8 @@ class SkillLoader:
         if first_run:
             LOG.info("First run of " + self.skill_id)
             self.instance.settings["__mycroft_skill_firstrun"] = False
-            save_settings(self.skill_directory, self.instance.settings)
+            save_settings(self.instance.settings_write_path,
+                          self.instance.settings)
             intro = self.instance.get_intro_message()
             if intro:
                 self.instance.speak(intro)
