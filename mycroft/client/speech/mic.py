@@ -44,6 +44,8 @@ from mycroft.util import (
 )
 from mycroft.util.log import LOG
 
+from .data_structures import RollingMean, CyclicAudioBuffer
+
 
 class MutableStream:
     def __init__(self, wrapped_stream, format, muted=False):
@@ -346,7 +348,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         max_chunks_of_silence = int(self.recording_timeout_with_silence /
                                     sec_per_buffer)
 
-        # bytearray to store audio in
+        # bytearray to store audio in, initialized with a single sample of
+        # silence.
         byte_data = get_silence(source.SAMPLE_WIDTH)
 
         if stream:
@@ -469,6 +472,55 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         LOG.debug('Listen triggered from external source.')
         self._listen_triggered = True
 
+    def _upload_wakeword(self, audio, metadata):
+        """Upload the wakeword in a background thread."""
+        def upload(audio, metadata):
+            requests.post(self.upload_url,
+                          files={'audio': BytesIO(audio.get_wav_data()),
+                                 'metadata': StringIO(json.dumps(metadata))})
+
+        Thread(target=upload, daemon=True, args=(audio, metadata)).start()
+
+    def _send_wakeword_info(self, emitter):
+        """Send messagebus message indicating that a wakeword was received."""
+        SessionManager.touch()
+        payload = {'utterance': self.wake_word_name,
+                   'session': SessionManager.get().session_id}
+        emitter.emit("recognizer_loop:wakeword", payload)
+
+    def _write_wakeword_to_disk(self, audio, metadata):
+        """Write wakeword to disk.
+
+        Arguments:
+            audio: Audio data to write
+            metadata: List of metadata about the captured wakeword
+        """
+        filename = join(self.saved_wake_words_dir,
+                        '_'.join(str(metadata[k]) for k in sorted(metadata)) +
+                        '.wav')
+        with open(filename, 'wb') as f:
+            f.write(audio.get_wav_data())
+
+    def _handle_wakeword_found(self, audio_data, source, emitter):
+        """Perform actions to be triggered after a wakeword is found.
+
+        This includes: emit event on messagebus that a wakeword is heard,
+        store wakeword to disk if configured and sending the wakeword data
+        to the cloud in case the user has opted into the data sharing.
+        """
+        self._send_wakeword_info(emitter)
+        # Save and upload positive wake words as appropriate
+        upload_allowed = (self.config['opt_in'] and not self.upload_disabled)
+        if (self.save_wake_words or upload_allowed):
+            audio = self._create_audio_data(audio_data, source)
+            metadata = self._compile_metadata()
+            if self.save_wake_words:
+                # Save wake word locally
+                self._write_wakeword_to_disk(audio, metadata)
+            # Upload wake word for opt_in people
+            if upload_allowed:
+                self._upload_wakeword(audio, metadata)
+
     def _wait_until_wake_word(self, source, sec_per_buffer, emitter):
         """Listen continuously on source until a wake word is spoken
 
@@ -476,119 +528,66 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             source (AudioSource):  Source producing the audio chunks
             sec_per_buffer (float):  Fractional number of seconds in each chunk
         """
+        mic_write_counter = 0
         num_silent_bytes = int(self.SILENCE_SEC * source.SAMPLE_RATE *
                                source.SAMPLE_WIDTH)
 
         silence = get_silence(num_silent_bytes)
 
-        # bytearray to store audio in
-        byte_data = silence
+        # Max bytes for byte_data before audio is removed from the front
+        max_size = self.sec_to_bytes(self.SAVED_WW_SEC, source)
+        test_size = self.sec_to_bytes(self.TEST_WW_SEC, source)
+        audio_buffer = CyclicAudioBuffer(max_size, silence)
 
         buffers_per_check = self.SEC_BETWEEN_WW_CHECKS / sec_per_buffer
         buffers_since_check = 0.0
 
-        # Max bytes for byte_data before audio is removed from the front
-        max_size = self.sec_to_bytes(self.SAVED_WW_SEC, source)
-        test_size = self.sec_to_bytes(self.TEST_WW_SEC, source)
-
-        said_wake_word = False
-
         # Rolling buffer to track the audio energy (loudness) heard on
         # the source recently.  An average audio energy is maintained
         # based on these levels.
-        energies = []
-        idx_energy = 0
-        avg_energy = 0.0
-        energy_avg_samples = int(5 / sec_per_buffer)  # avg over last 5 secs
-        counter = 0
+        average_samples = int(5 / sec_per_buffer)  # average over last 5 secs
+        audio_mean = RollingMean(average_samples)
 
         # These are frames immediately after wake word is detected
         # that we want to keep to send to STT
         ww_frames = deque(maxlen=7)
 
-        while not said_wake_word and not self._stop_signaled:
-            if self._skip_wake_word():
-                break
+        said_wake_word = False
+        while (not said_wake_word and not self._stop_signaled and
+               not self._skip_wake_word()):
             chunk = self.record_sound_chunk(source)
+            audio_buffer.append(chunk)
             ww_frames.append(chunk)
 
             energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
+            audio_mean.append_sample(energy)
+
             if energy < self.energy_threshold * self.multiplier:
                 self._adjust_threshold(energy, sec_per_buffer)
+            # maintain the threshold using average
+            if self.energy_threshold < energy < audio_mean.value * 1.5:
+                # bump the threshold to just above this value
+                self.energy_threshold = energy * 1.2
 
-            if len(energies) < energy_avg_samples:
-                # build the average
-                energies.append(energy)
-                avg_energy += float(energy) / energy_avg_samples
-            else:
-                # maintain the running average and rolling buffer
-                avg_energy -= float(energies[idx_energy]) / energy_avg_samples
-                avg_energy += float(energy) / energy_avg_samples
-                energies[idx_energy] = energy
-                idx_energy = (idx_energy + 1) % energy_avg_samples
-
-                # maintain the threshold using average
-                if energy < avg_energy * 1.5:
-                    if energy > self.energy_threshold:
-                        # bump the threshold to just above this value
-                        self.energy_threshold = energy * 1.2
-
-            # Periodically output energy level stats.  This can be used to
+            # Periodically output energy level stats. This can be used to
             # visualize the microphone input, e.g. a needle on a meter.
-            if counter % 3:
+            if mic_write_counter % 3:
                 self.write_mic_level(energy, source)
-            counter += 1
-
-            # At first, the buffer is empty and must fill up.  After that
-            # just drop the first chunk bytes to keep it the same size.
-            needs_to_grow = len(byte_data) < max_size
-            if needs_to_grow:
-                byte_data += chunk
-            else:  # Remove beginning of audio and add new chunk to end
-                byte_data = byte_data[len(chunk):] + chunk
+            mic_write_counter += 1
 
             buffers_since_check += 1.0
+            # Send chunk to wake_word_recognizer
             self.wake_word_recognizer.update(chunk)
+
             if buffers_since_check > buffers_per_check:
                 buffers_since_check -= buffers_per_check
-                chopped = byte_data[-test_size:] \
-                    if test_size < len(byte_data) else byte_data
-                audio_data = chopped + silence
+                audio_data = audio_buffer.get_last(test_size) + silence
                 said_wake_word = \
                     self.wake_word_recognizer.found_wake_word(audio_data)
 
-                # Save positive wake words as appropriate
-                if said_wake_word:
-                    SessionManager.touch()
-                    payload = {
-                        'utterance': self.wake_word_name,
-                        'session': SessionManager.get().session_id,
-                    }
-                    emitter.emit("recognizer_loop:wakeword", payload)
+        if said_wake_word:
+            self._handle_wakeword_found(audio_data, source, emitter)
 
-                    audio = None
-                    mtd = None
-                    if self.save_wake_words:
-                        # Save wake word locally
-                        audio = self._create_audio_data(byte_data, source)
-                        mtd = self._compile_metadata()
-                        module = self.wake_word_recognizer.__class__.__name__
-
-                        fn = join(
-                            self.saved_wake_words_dir,
-                            '_'.join(str(mtd[k]) for k in sorted(mtd)) + '.wav'
-                        )
-                        with open(fn, 'wb') as f:
-                            f.write(audio.get_wav_data())
-
-                    if self.config['opt_in'] and not self.upload_disabled:
-                        # Upload wake word for opt_in people
-                        Thread(
-                            target=self._upload_wake_word, daemon=True,
-                            args=[audio or
-                                  self._create_audio_data(byte_data, source),
-                                  mtd or self._compile_metadata()]
-                        ).start()
         return ww_frames
 
     @staticmethod
