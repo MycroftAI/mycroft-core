@@ -41,6 +41,18 @@ class TestUploadQueue(TestCase):
         queue.send()
         self.assertEqual(len(queue), 0)
 
+    def test_upload_queue_preloaded(self):
+        queue = UploadQueue()
+        loaders = [Mock(), Mock(), Mock(), Mock()]
+        for i, l in enumerate(loaders):
+            queue.put(l)
+            self.assertEqual(len(queue), i + 1)
+        # Check that starting the queue will send all the items in the queue
+        queue.start()
+        self.assertEqual(len(queue), 0)
+        for l in loaders:
+            l.instance.settings_meta.upload.assert_called_once_with()
+
 
 class TestSkillManager(MycroftUnitTestBase):
     mock_package = 'mycroft.skills.skill_manager.'

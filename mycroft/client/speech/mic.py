@@ -50,13 +50,13 @@ class MutableStream:
         assert wrapped_stream is not None
         self.wrapped_stream = wrapped_stream
 
-        self.muted = muted
-        if muted:
-            self.mute()
-
         self.SAMPLE_WIDTH = pyaudio.get_sample_size(format)
         self.muted_buffer = b''.join([b'\x00' * self.SAMPLE_WIDTH])
         self.read_lock = Lock()
+
+        self.muted = muted
+        if muted:
+            self.mute()
 
     def mute(self):
         """Stop the stream and set the muted flag."""
