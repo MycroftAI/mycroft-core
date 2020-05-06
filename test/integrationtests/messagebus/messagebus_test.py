@@ -43,7 +43,7 @@ class TestMessagebusMethods(unittest.TestCase):
         threaded and will require cleanup
         """
         # start the mycroft service. and get the pid of the script.
-        self.pid = Popen(["python", "mycroft/messagebus/service/main.py"]).pid
+        self.pid = Popen(["python3", "-m", "mycroft.messagebus.service"]).pid
         # Create the two web clients
         self.ws1 = MessageBusClient()
         self.ws2 = MessageBusClient()
@@ -99,69 +99,6 @@ class TestMessagebusMethods(unittest.TestCase):
         # Check that both of the handlers were called.
         self.assertTrue(self.handle1)
         self.assertTrue(self.handle2)
-
-
-class TestMessageMethods(unittest.TestCase):
-    """This tests the Message class functions
-    """
-    def setUp(self):
-        """This sets up some basic messages for testing.
-        """
-
-        self.empty_message = Message("empty")
-        self.message1 = Message("enclosure.reset")
-        self.message2 = Message("enclosure.system.blink",
-                                {'target': 4}, {'target': 5})
-        self.message3 = Message("status", "OK")
-        # serialized results of each of the messages
-        self.serialized = ['{"data": {}, "type": "empty", "context": null}',
-                           '{"data": {}, "type": "enclosure.reset",\
-                            "context": null}',
-                           '{"data": { "target": 4}, \
-                            "type": "enclosure.system.blink", \
-                            "context": {"target": 5}}',
-                           '{"data": "OK", "type": "status", \
-                            "context": null}']
-
-    def test_serialize(self):
-        """This test the serialize method
-        """
-        self.assertEqual(self.empty_message.serialize(), self.serialized[0])
-        self.assertEqual(self.message1.serialize(), self.serialized[1])
-        self.assertEqual(self.message2.serialize(), self.serialized[2])
-        self.assertEqual(self.message3.serialize(), self.serialized[3])
-
-    def test_deserialize(self):
-        """This test's the deserialize method
-        """
-        messages = []
-        # create the messages from the serialized strings above
-        messages.append(Message.deserialize(self.serialized[0]))
-        messages.append(Message.deserialize(self.serialized[1]))
-        messages.append(Message.deserialize(self.serialized[2]))
-        # check the created messages match the strings
-        self.assertEqual(messages[0].serialize(), self.serialized[0])
-        self.assertEqual(messages[1].serialize(), self.serialized[1])
-        self.assertEqual(messages[2].serialize(), self.serialized[2])
-
-    def test_reply(self):
-        """This tests the reply method
-        This is probably incomplete as the use of the reply message escapes me.
-        """
-        message = self.empty_message.reply("status", "OK")
-        self.assertEqual(message.serialize(),
-                         '{"data": "OK", "type": "status", "context": {}}')
-        message = self.message1.reply("status", "OK")
-        self.assertEqual(message.serialize(),
-                         '{"data": "OK", "type": "status", "context": {}}')
-        message = self.message2.reply("status", "OK")
-
-    def test_publish(self):
-        """This is for testing the publish method
-
-        TODO: Needs to be completed
-        """
-        pass
 
 
 if __name__ == '__main__':
