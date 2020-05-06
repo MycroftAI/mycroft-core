@@ -495,16 +495,28 @@ if ! grep -q "$TOP" $VENV_PATH_FILE ; then
 fi
 
 # install required python modules
-if ! pip install -r requirements.txt ; then
-    echo 'Warning: Failed to install all requirements. Continue? y/N'
+if ! pip install -r requirements/requirements.txt ; then
+    echo 'Warning: Failed to install required dependencies. Continue? y/N'
     read -n1 continue
     if [[ $continue != 'y' ]] ; then
         exit 1
     fi
 fi
 
-if ! pip install -r test-requirements.txt ; then
-    echo "Warning test requirements wasn't installed, Note: normal operation should still work fine..."
+# install optional python modules
+if [[ ! $(pip install -r requirements/extra-audiobackend.txt) ||
+	! $(pip install -r requirements/extra-stt.txt) ||
+	! $(pip install -r requirements/extra-mark1.txt) ]] ; then
+    echo 'Warning: Failed to install some optional dependencies. Continue? y/N'
+    read -n1 continue
+    if [[ $continue != 'y' ]] ; then
+        exit 1
+    fi
+fi
+
+
+if ! pip install -r requirements/tests.txt ; then
+    echo "Warning: Test requirements failed to install. Note: normal operation should still work fine..."
 fi
 
 SYSMEM=$(free | awk '/^Mem:/ { print $2 }')
@@ -563,4 +575,4 @@ if [[ ! -w /var/log/mycroft/ ]] ; then
 fi
 
 #Store a fingerprint of setup
-md5sum requirements.txt test-requirements.txt dev_setup.sh > .installed
+md5sum requirements/requirements.txt requirements/extra-audiobackend.txt requirements/extra-stt.txt requirements/extra-mark1.txt requirements/tests.txt dev_setup.sh > .installed

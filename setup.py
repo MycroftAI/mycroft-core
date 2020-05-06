@@ -56,7 +56,12 @@ setup(
     author_email='devs@mycroft.ai',
     url='https://github.com/MycroftAI/mycroft-core',
     description='Mycroft Core',
-    install_requires=required('requirements.txt'),
+    install_requires=required('requirements/requirements.txt'),
+    extras_require={
+        'audio-backend': required('requirements/extra-audiobackend.txt'),
+        'mark1': required('requirements/extra-mark1.txt'),
+        'stt': required('requirements/extra-stt.txt')
+    },
     packages=find_packages(include=['mycroft*']),
     include_package_data=True,
 
