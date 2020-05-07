@@ -233,11 +233,12 @@ class Configuration:
     def set_config_update_handlers(bus):
         """Setup websocket handlers to update config.
 
-        Args:
+        Arguments:
             bus: Message bus client instance
         """
         bus.on("configuration.updated", Configuration.updated)
         bus.on("configuration.patch", Configuration.patch)
+        bus.on("configuration.patch.clear", Configuration.patch_clear)
 
     @staticmethod
     def updated(message):
@@ -258,4 +259,15 @@ class Configuration:
         """
         config = message.data.get("config", {})
         merge_dict(Configuration.__patch, config)
+        Configuration.load_config_stack(cache=True)
+
+    @staticmethod
+    def patch_clear(message):
+        """Clear the config patch space.
+
+        Arguments:
+            message: Messagebus message should contain a config
+                     in the data payload.
+        """
+        Configuration.__patch = {}
         Configuration.load_config_stack(cache=True)
