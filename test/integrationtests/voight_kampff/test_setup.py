@@ -32,7 +32,7 @@ The script sets up the selected tests in the feature directory so they can
 be found and executed by the behave framework.
 
 The script also ensures that the skills marked for testing are installed and
-that anyi specified extra skills also gets installed into the environment.
+that any specified extra skills also gets installed into the environment.
 """
 
 FEATURE_DIR = join(dirname(__file__), 'features') + '/'
