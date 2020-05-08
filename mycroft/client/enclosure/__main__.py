@@ -17,7 +17,7 @@
 This provides any "enclosure" specific functionality, for example GUI or
 control over the Mark-1 Faceplate.
 """
-from mycroft.configuration import LocalConf, SYSTEM_CONFIG
+from mycroft.configuration import Configuration
 from mycroft.util.log import LOG
 from mycroft.util import wait_for_exit_signal, reset_sigint_handler
 
@@ -70,8 +70,8 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping):
     only the GUI bus will be started.
     """
     # Read the system configuration
-    system_config = LocalConf(SYSTEM_CONFIG)
-    platform = system_config.get("enclosure", {}).get("platform")
+    config = Configuration.get(remote=False)
+    platform = config.get("enclosure", {}).get("platform")
 
     enclosure = create_enclosure(platform)
     if enclosure:
