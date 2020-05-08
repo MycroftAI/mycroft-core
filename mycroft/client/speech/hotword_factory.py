@@ -28,10 +28,12 @@ from os.path import dirname, exists, join, abspath, expanduser, isfile, isdir
 from shutil import rmtree
 from threading import Timer, Thread
 from urllib.error import HTTPError
+from xdg import BaseDirectory
 
 from petact import install_package
 
-from mycroft.configuration import Configuration, LocalConf, USER_CONFIG
+from mycroft.configuration import Configuration, LocalConf
+from mycroft.configuration.locations import OLD_USER_CONFIG
 from mycroft.util.log import LOG
 from mycroft.util.monotonic_event import MonotonicEvent
 from mycroft.util.plugins import load_plugin
@@ -191,7 +193,27 @@ class PreciseHotword(HotWordEngine):
         from precise_runner import (
             PreciseRunner, PreciseEngine, ReadWriteStream
         )
-        local_conf = LocalConf(USER_CONFIG)
+
+        # We need to save to a writeable location, but the key we need
+        # might be stored in a different, unwriteable, location
+        # Make sure we pick the key we need from wherever it's located,
+        # but save to a writeable location only
+        local_conf = LocalConf(join(BaseDirectory.save_config_path('mycroft'),
+                                    'mycroft.conf'))
+
+        for dir in BaseDirectory.load_config_paths('mycroft'):
+            conf = LocalConf(join(dir, 'mycroft.conf'))
+            # If the current config contains the precise key use it,
+            # otherwise continue to the next file
+            if conf.get('precise', None) is not None:
+                local_conf['precise'] = conf.get('precise', None)
+                break
+
+        # If the key is not found yet, it might still exist on the old
+        # (deprecated) location
+        if local_conf.get('precise', None) is None:
+            local_conf = LocalConf(OLD_USER_CONFIG)
+
         if (local_conf.get('precise', {}).get('dist_url') ==
                 'http://bootstrap.mycroft.ai/artifacts/static/daily/'):
             del local_conf['precise']['dist_url']
@@ -249,7 +271,10 @@ class PreciseHotword(HotWordEngine):
 
     @property
     def folder(self):
-        return join(expanduser('~'), '.mycroft', 'precise')
+        old_path = join(expanduser('~'), '.mycroft', 'precise')
+        if os.path.isdir(old_path):
+            return old_path
+        return join(BaseDirectory.save_data_path('mycroft', 'precise'))
 
     @property
     def install_destination(self):
@@ -359,8 +384,23 @@ class SnowboyHotWord(HotWordEngine):
 class PorcupineHotWord(HotWordEngine):
     def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
         super(PorcupineHotWord, self).__init__(key_phrase, config, lang)
+
+        xdg_data_path = None
+
+        # Use the old path if available
+        old_path = join(expanduser('~'), '.mycroft', 'Porcupine')
+        if os.path.isdir(old_path):
+            xdg_data_path = old_path
+
+        # Otherwise use the new XDG config dirs
+        if xdg_data_path is None:
+            for dir in BaseDirectory.load_data_paths('mycroft', 'Porcupine'):
+                if os.path.isdir(dir):
+                    xdg_data_path = dir
+                    break
+
         porcupine_path = expanduser(self.config.get(
-            "porcupine_path", join('~', '.mycroft', 'Porcupine')))
+            "porcupine_path", xdg_data_path))
         keyword_file_paths = [expanduser(x.strip()) for x in self.config.get(
             "keyword_file_path", "hey_mycroft.ppn").split(',')]
         sensitivities = self.config.get("sensitivities", 0.5)

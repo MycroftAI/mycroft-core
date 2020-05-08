@@ -21,7 +21,7 @@ This module provides the LOG pseudo function quickly creating a logger instance
 for use.
 
 The default log level of the logger created here can ONLY be set in
-/etc/mycroft/mycroft.conf or ~/.mycroft/mycroft.conf
+/etc/mycroft/mycroft.conf or ~/.config/mycroft/mycroft.conf
 
 The default log level can also be programatically be changed by setting the
 LOG.level parameter.
@@ -31,10 +31,10 @@ import inspect
 import logging
 import sys
 
-from os.path import isfile
+from os.path import isfile, join
+from xdg import BaseDirectory
 
 from mycroft.util.json_helper import load_commented_json, merge_dict
-from mycroft.configuration.locations import SYSTEM_CONFIG, USER_CONFIG
 
 
 def getLogger(name="MYCROFT"):
@@ -84,7 +84,10 @@ class LOG:
         # Check configs manually, the Mycroft configuration system can't be
         # used since it uses the LOG system and would cause horrible cyclic
         # dependencies.
-        confs = [SYSTEM_CONFIG, USER_CONFIG]
+        confs = []
+        for dir in BaseDirectory.load_config_paths('mycroft'):
+            confs.append(join(dir, 'mycroft.conf'))
+        confs.append('/etc/mycroft/mycroft.conf')
         config = {}
         for conf in confs:
             try:

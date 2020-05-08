@@ -13,4 +13,3 @@
 # limitations under the License.
 #
 from .config import Configuration, LocalConf, RemoteConf
-from .locations import SYSTEM_CONFIG, USER_CONFIG
