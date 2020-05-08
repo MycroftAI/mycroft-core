@@ -15,13 +15,16 @@
 from functools import wraps
 
 """
-    Helper decorators for handling context from skills.
+Helper decorators for handling context from skills.
 """
 
 
 def adds_context(context, words=''):
-    """
-        Adds context to context manager.
+    """Decorator adding context to the Adapt context manager.
+
+    Arguments:
+        context (str): context Keyword to insert
+        words (str): optional string content of Keyword
     """
     def context_add_decorator(func):
         @wraps(func)
@@ -34,8 +37,10 @@ def adds_context(context, words=''):
 
 
 def removes_context(context):
-    """
-        Removes context from the context manager.
+    """Decorator removing context from the Adapt context manager.
+
+    Arguments:
+        context (str): Context keyword to remove
     """
     def context_removes_decorator(func):
         @wraps(func)
