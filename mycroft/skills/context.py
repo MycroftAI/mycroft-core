@@ -30,7 +30,7 @@ def adds_context(context, words=''):
         @wraps(func)
         def func_wrapper(*args, **kwargs):
             ret = func(*args, **kwargs)
-            args[0].set_context(context)
+            args[0].set_context(context, words)
             return ret
         return func_wrapper
     return context_add_decorator
