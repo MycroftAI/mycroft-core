@@ -17,14 +17,15 @@
 import re
 import json
 import inflection
-from os.path import exists, isfile
+from os.path import exists, isfile, join, expanduser, dirname
 from requests import RequestException
+from xdg import BaseDirectory
 
 from mycroft.util.json_helper import load_commented_json, merge_dict
 from mycroft.util.log import LOG
 
-from .locations import (DEFAULT_CONFIG, SYSTEM_CONFIG, USER_CONFIG,
-                        WEB_CONFIG_CACHE)
+from .locations import DEFAULT_CONFIG, OLD_USER_CONFIG, USER_CONFIG
+from .locations import SYSTEM_CONFIG
 
 
 def is_remote_list(values):
@@ -127,7 +128,8 @@ class RemoteConf(LocalConf):
     def __init__(self, cache=None):
         super(RemoteConf, self).__init__(None)
 
-        cache = cache or WEB_CONFIG_CACHE
+        cache = cache or join(BaseDirectory.save_cache_path('mycroft'),
+                              'web_cache.json')
         from mycroft.api import is_paired
         if not is_paired():
             self.load_local(cache)
@@ -174,7 +176,7 @@ class Configuration:
     __patch = {}  # Patch config that skills can update to override config
 
     @staticmethod
-    def get(configs=None, cache=True):
+    def get(configs=None, cache=True, remote=True):
         """Get configuration
 
         Returns cached instance if available otherwise builds a new
@@ -183,6 +185,9 @@ class Configuration:
         Args:
             configs (list): List of configuration dicts
             cache (boolean): True if the result should be cached
+            remote (boolean): False if the Mycroft Home settings shouldn't
+                              be loaded
+
 
         Returns:
             (dict) configuration dictionary.
@@ -190,23 +195,62 @@ class Configuration:
         if Configuration.__config:
             return Configuration.__config
         else:
-            return Configuration.load_config_stack(configs, cache)
+            return Configuration.load_config_stack(configs, cache, remote)
 
     @staticmethod
-    def load_config_stack(configs=None, cache=False):
+    def load_config_stack(configs=None, cache=False, remote=True):
         """Load a stack of config dicts into a single dict
 
         Args:
             configs (list): list of dicts to load
             cache (boolean): True if result should be cached
-
+            remote (boolean): False if the Mycroft Home settings shouldn't
+                              be loaded
         Returns:
             (dict) merged dict of all configuration files
         """
         if not configs:
-            configs = [LocalConf(DEFAULT_CONFIG), RemoteConf(),
-                       LocalConf(SYSTEM_CONFIG), LocalConf(USER_CONFIG),
-                       Configuration.__patch]
+            configs = configs or []
+
+            # First use the patched config
+            configs.append(Configuration.__patch)
+
+            # Then use XDG config
+            # This includes both the user config and
+            # /etc/xdg/mycroft/mycroft.conf
+            for dir in BaseDirectory.load_config_paths('mycroft'):
+                configs.append(LocalConf(join(dir, 'mycroft.conf')))
+
+            # Then check the old user config
+            if isfile(OLD_USER_CONFIG):
+                LOG.warning(" ===============================================")
+                LOG.warning(" ==             DEPRECATION WARNING           ==")
+                LOG.warning(" ===============================================")
+                LOG.warning(" You still have a config file at " +
+                            OLD_USER_CONFIG)
+                LOG.warning(" Note that this location is deprecated and will" +
+                            " not be used in the future")
+                LOG.warning(" Please move it to " +
+                            BaseDirectory.save_config_path('mycroft'))
+                configs.append(LocalConf(OLD_USER_CONFIG))
+
+            # Then check the XDG user config
+            if isfile(USER_CONFIG):
+                configs.append(LocalConf(USER_CONFIG))
+
+            # Then use remote config
+            if remote:
+                configs.append(RemoteConf())
+
+            # Then use the system config (/etc/mycroft/mycroft.conf)
+            configs.append(LocalConf(SYSTEM_CONFIG))
+
+            # Then use the config that comes with the package
+            configs.append(LocalConf(DEFAULT_CONFIG))
+
+            # Make sure we reverse the array, as merge_dict will put every new
+            # file on top of the previous one
+            configs = reversed(configs)
         else:
             # Handle strings in stack
             for index, item in enumerate(configs):

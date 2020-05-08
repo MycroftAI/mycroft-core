@@ -22,6 +22,7 @@ import os
 import psutil
 from stat import S_ISREG, ST_MTIME, ST_MODE, ST_SIZE
 import tempfile
+from xdg import BaseDirectory
 
 import mycroft.configuration
 from .log import LOG
@@ -33,10 +34,10 @@ def resolve_resource_file(res_name):
     Resource names are in the form: 'filename.ext'
     or 'path/filename.ext'
 
-    The system wil look for ~/.mycroft/res_name first, and
-    if not found will look at /opt/mycroft/res_name,
-    then finally it will look for res_name in the 'mycroft/res'
-    folder of the source code package.
+    The system wil look for $XDG_DATA_DIRS/mycroft/res_name first
+    (defaults to ~/.local/share/mycroft/res_name), and if not found will
+    look at /opt/mycroft/res_name, then finally it will look for res_name
+    in the 'mycroft/res' folder of the source code package.
 
     Example:
         With mycroft running as the user 'bob', if you called
@@ -60,8 +61,14 @@ def resolve_resource_file(res_name):
     if os.path.isfile(res_name):
         return res_name
 
-    # Now look for ~/.mycroft/res_name (in user folder)
-    filename = os.path.expanduser("~/.mycroft/" + res_name)
+    # Now look for XDG_DATA_DIRS
+    for dir in BaseDirectory.load_data_paths('mycroft'):
+        filename = os.path.join(dir, res_name)
+        if os.path.isfile(filename):
+            return filename
+
+    # Now look in the old user location
+    filename = os.path.join(os.path.expanduser('~'), '.mycroft', res_name)
     if os.path.isfile(filename):
         return filename
 

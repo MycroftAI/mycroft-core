@@ -17,6 +17,7 @@ import os
 import sys
 from datetime import datetime
 from time import time
+from xdg import BaseDirectory
 
 from msm import MsmException
 
@@ -97,9 +98,8 @@ class SkillUpdater:
                     '.mycroft-skills'
                 )
             else:
-                self._installed_skills_file_path = os.path.expanduser(
-                    '~/.mycroft/.mycroft-skills'
-                )
+                self._installed_skills_file_path = os.path.join(
+                    BaseDirectory.save_data_path('mycroft'), '.mycroft-skills')
 
         return self._installed_skills_file_path
 

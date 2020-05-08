@@ -16,10 +16,12 @@
 times.
 """
 import json
+import shutil
 import time
 from datetime import datetime, timedelta
 from threading import Thread, Lock
 from os.path import isfile, join, expanduser
+from xdg import BaseDirectory
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
@@ -54,14 +56,19 @@ class EventScheduler(Thread):
     """
     def __init__(self, bus, schedule_file='schedule.json'):
         super().__init__()
-        data_dir = expanduser(Configuration.get()['data_dir'])
 
         self.events = {}
         self.event_lock = Lock()
 
         self.bus = bus
         self.is_running = True
-        self.schedule_file = join(data_dir, schedule_file)
+        old_schedule_path = join(expanduser(Configuration.get()['data_dir']),
+                                 schedule_file)
+        new_schedule_path = join(
+                BaseDirectory.load_first_config('mycroft'), schedule_file)
+        if isfile(old_schedule_path):
+            shutil.move(old_schedule_path, new_schedule_path)
+        self.schedule_file = new_schedule_path
         if self.schedule_file:
             self.load()
 

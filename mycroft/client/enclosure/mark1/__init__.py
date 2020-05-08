@@ -15,8 +15,10 @@
 import subprocess
 import time
 import sys
+import os
 from alsaaudio import Mixer
 from threading import Thread, Timer
+from xdg import BaseDirectory
 
 import serial
 
@@ -164,6 +166,9 @@ class EnclosureReader(Thread):
         if "unit.factory-reset" in data:
             self.bus.emit(Message("speak", {
                 'utterance': mycroft.dialog.get("reset to factory defaults")}))
+            subprocess.call(
+                'rm ~/.config/mycroft/identity/identity2.json',
+                shell=True)
             subprocess.call(
                 'rm ~/.mycroft/identity/identity2.json',
                 shell=True)

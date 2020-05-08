@@ -95,13 +95,13 @@ function validate_config_file() {
     return $result
 }
 
-_conf_file="~/.mycroft/mycroft.conf"
+_conf_file="~/.config/mycroft/mycroft.conf"
 function name_to_path() {
     case ${1} in
         "system")     _conf_file="/etc/mycroft/mycroft.conf" ;;
-        "user")       _conf_file=$(readlink -f ~/.mycroft/mycroft.conf) ;;
+        "user")       _conf_file=$(readlink -f ~/.config/mycroft/mycroft.conf) ;;
         "default")    _conf_file="$DIR/../mycroft/configuration/mycroft.conf" ;;
-        "remote")     _conf_file="/var/tmp/mycroft_web_cache.json" ;;
+        "remote")     _conf_file="$HOME/.cache/mycroft/web_cache.json" ;;
 
         *)
             echo "ERROR: Unknown name '${1}'."

@@ -15,6 +15,7 @@
 import sys
 import io
 from math import ceil
+from xdg import BaseDirectory
 
 from .gui_server import start_qml_gui
 
@@ -142,7 +143,7 @@ def handleNonAscii(text):
 ##############################################################################
 # Settings
 
-config_file = os.path.join(os.path.expanduser("~"), ".mycroft_cli.conf")
+filename = "mycroft_cli.conf"
 
 
 def load_mycroft_config(bus):
@@ -171,6 +172,35 @@ def load_settings():
     global max_log_lines
     global show_meter
 
+    config_file = None
+
+    # Old location
+    path = os.path.join(os.path.expanduser("~"), ".mycroft_cli.conf")
+    if os.path.isfile(path):
+        LOG.warning(" ===============================================")
+        LOG.warning(" ==             DEPRECATION WARNING           ==")
+        LOG.warning(" ===============================================")
+        LOG.warning(" You still have a config file at " +
+                    path)
+        LOG.warning(" Note that this location is deprecated and will" +
+                    " not be used in the future")
+        LOG.warning(" Please move it to " +
+                    os.path.join(BaseDirectory.save_config_path('mycroft'),
+                                 filename))
+        config_file = path
+
+    # Check XDG_CONFIG_DIR
+    if config_file is None:
+        for dir in BaseDirectory.load_config_paths('mycroft'):
+            file = os.path.join(dir, filename)
+            if os.path.isfile(file):
+                config_file = file
+                break
+
+    # Check /etc/mycroft
+    if config_file is None:
+        config_file = os.path.join("/etc/mycroft", filename)
+
     try:
         with io.open(config_file, 'r') as f:
             config = json.load(f)
@@ -196,6 +226,10 @@ def save_settings():
     config["show_last_key"] = show_last_key
     config["max_log_lines"] = max_log_lines
     config["show_meter"] = show_meter
+
+    config_file = os.path.join(
+        BaseDirectory.save_config_path("mycroft"), filename)
+
     with io.open(config_file, 'w') as f:
         f.write(str(json.dumps(config, ensure_ascii=False)))
 
