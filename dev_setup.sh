@@ -368,6 +368,12 @@ function redhat_install() {
 
 }
 
+
+function gentoo_install() {
+    $SUDO emerge -a --noreplace dev-vcs/git dev-lang/python dev-python/setuptools dev-python/virtualenv dev-python/pygobject sys-devel/libtool virtual/libffi virtual/jpeg dev-libs/openssl sys-devel/autoconf sys-devel/bison dev-lang/swig dev-libs/glib media-libs/portaudio media-sound/mpg123 media-libs/flac net-misc/curl sci-mathematics/fann sys-devel/gcc app-misc/jq
+
+}
+
 function install_deps() {
     echo 'Installing packages...'
     if found_exe zypper ; then
@@ -394,6 +400,10 @@ function install_deps() {
         # Arch Linux
         echo "$GREEN Installing packages for Arch...$RESET"
         arch_install
+    elif found_exe emerge && os_is gentoo; then
+	# Gentoo Linux
+	echo "$GREEN Installing packages for Gentoo Linux ...$RESET"
+	gentoo_install	
     else
     	echo
         echo -e "${YELLOW}Could not find package manager
