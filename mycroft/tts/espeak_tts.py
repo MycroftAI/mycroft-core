@@ -49,8 +49,8 @@ class ESpeakValidator(TTSValidator):
         try:
             subprocess.call(['espeak', '--version'])
         except Exception:
-            raise Exception(
-                'ESpeak is not installed. Run: sudo apt-get install espeak')
+            raise Exception('ESpeak is not installed. Please install it on '
+                            'your system and restart Mycroft.')
 
     def get_tts_class(self):
         return ESpeak
