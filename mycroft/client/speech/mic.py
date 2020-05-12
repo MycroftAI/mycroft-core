@@ -15,7 +15,7 @@
 import audioop
 from time import sleep, time as get_time
 
-from collections import deque
+from collections import deque, namedtuple
 import datetime
 import json
 import os
@@ -45,6 +45,10 @@ from mycroft.util import (
 from mycroft.util.log import LOG
 
 from .data_structures import RollingMean, CyclicAudioBuffer
+
+
+WakeWordData = namedtuple('WakeWordData',
+                          ['audio', 'found', 'stopped', 'end_audio'])
 
 
 class MutableStream:
@@ -436,9 +440,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         return False
 
     def stop(self):
-        """
-            Signal stop and exit waiting state.
-        """
+        """Signal stop and exit waiting state."""
         self._stop_signaled = True
 
     def _compile_metadata(self):
@@ -501,14 +503,13 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         with open(filename, 'wb') as f:
             f.write(audio.get_wav_data())
 
-    def _handle_wakeword_found(self, audio_data, source, emitter):
+    def _handle_wakeword_found(self, audio_data, source):
         """Perform actions to be triggered after a wakeword is found.
 
         This includes: emit event on messagebus that a wakeword is heard,
         store wakeword to disk if configured and sending the wakeword data
         to the cloud in case the user has opted into the data sharing.
         """
-        self._send_wakeword_info(emitter)
         # Save and upload positive wake words as appropriate
         upload_allowed = (self.config['opt_in'] and not self.upload_disabled)
         if (self.save_wake_words or upload_allowed):
@@ -521,7 +522,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             if upload_allowed:
                 self._upload_wakeword(audio, metadata)
 
-    def _wait_until_wake_word(self, source, sec_per_buffer, emitter):
+    def _wait_until_wake_word(self, source, sec_per_buffer):
         """Listen continuously on source until a wake word is spoken
 
         Args:
@@ -585,10 +586,9 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 said_wake_word = \
                     self.wake_word_recognizer.found_wake_word(audio_data)
 
-        if said_wake_word:
-            self._handle_wakeword_found(audio_data, source, emitter)
-
-        return ww_frames
+        self._listen_triggered = False
+        return WakeWordData(audio_data, said_wake_word,
+                            self._stopped, ww_frames)
 
     @staticmethod
     def _create_audio_data(raw_data, source):
@@ -597,6 +597,17 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         as the source and the specified frame_data
         """
         return AudioData(raw_data, source.SAMPLE_RATE, source.SAMPLE_WIDTH)
+
+    def mute_and_confirm_listening(self, source):
+        audio_file = resolve_resource_file(
+            self.config.get('sounds').get('start_listening'))
+        if audio_file:
+            source.mute()
+            play_wav(audio_file).wait()
+            source.unmute()
+            return True
+        else:
+            return False
 
     def listen(self, source, emitter, stream=None):
         """Listens for chunks of audio that Mycroft should perform STT on.
@@ -629,22 +640,23 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         self.adjust_for_ambient_noise(source, 1.0)
 
         LOG.debug("Waiting for wake word...")
-        ww_frames = self._wait_until_wake_word(source, sec_per_buffer, emitter)
+        ww_data = self._wait_until_wake_word(source, sec_per_buffer)
 
-        self._listen_triggered = False
-        if self._stop_signaled:
+        ww_frames = None
+        if ww_data.found:
+            # If the wakeword was heard send it
+            self._send_wakeword_info(emitter)
+            self._handle_wakeword_found(ww_data.audio, source)
+            ww_frames = ww_data.end_audio
+        if ww_data.stopped:
+            # If the waiting returned from a stop signal
             return
 
         LOG.debug("Recording...")
         # If enabled, play a wave file with a short sound to audibly
         # indicate recording has begun.
         if self.config.get('confirm_listening'):
-            audio_file = resolve_resource_file(
-                self.config.get('sounds').get('start_listening'))
-            if audio_file:
-                source.mute()
-                play_wav(audio_file).wait()
-                source.unmute()
+            if self.mute_and_confirm_listening(source):
                 # Clear frames from wakeword detctions since they're
                 # irrelevant after mute - play wav - unmute sequence
                 ww_frames = None
