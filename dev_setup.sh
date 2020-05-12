@@ -294,7 +294,7 @@ function os_is() {
 }
 
 function os_is_like() {
-    grep "^ID_LIKE=" /etc/os-release | awk -F'=' '/^ID_LIKE/ {print $2}' | sed 's/\"//g' | grep -P -q '(^|\s)'"$1"'(\s|$)'
+    grep "^ID_LIKE=" /etc/os-release | awk -F'=' '/^ID_LIKE/ {print $2}' | sed 's/\"//g' | grep -q "\\b$1\\b"
 }
 
 function redhat_common_install() {
@@ -368,6 +368,10 @@ function redhat_install() {
 
 }
 
+function alpine_install() {
+    $SUDO apk add alpine-sdk git python3 py3-pip py3-setuptools py3-virtualenv mpg123 vorbis-tools pulseaudio-utils fann-dev automake autoconf libtool pcre2-dev pulseaudio-dev alsa-lib-dev swig python3-dev portaudio-dev libjpeg-turbo-dev
+}
+
 function install_deps() {
     echo 'Installing packages...'
     if found_exe zypper ; then
@@ -390,10 +394,14 @@ function install_deps() {
         # Fedora
         echo "$GREEN Installing packages for Fedora...$RESET"
         fedora_install
-    elif found_exe pacman; then
+    elif found_exe pacman && os_is arch ; then
         # Arch Linux
         echo "$GREEN Installing packages for Arch...$RESET"
         arch_install
+    elif found_exe apk && os_is alpine; then
+    	# Alpine Linux
+	echo "$GREEN Installing packages for Alpine Linux...$RESET"
+	alpine_install
     else
     	echo
         echo -e "${YELLOW}Could not find package manager
