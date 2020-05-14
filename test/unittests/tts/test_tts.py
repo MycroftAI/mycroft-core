@@ -120,7 +120,6 @@ class TestTTS(unittest.TestCase):
             self.assertEqual(read_phonemes, 'phonemes')  # assert stripped
 
     def test_ssml_support(self, _):
-
         sentence = "<speak>Prosody can be used to change the way words " \
                    "sound. The following words are " \
                    "<prosody volume='x-loud'> " \
@@ -174,6 +173,16 @@ class TestTTS(unittest.TestCase):
 
         self.assertEqual(mycroft.tts.TTS.remove_ssml(sentence),
                          sentence_no_ssml)
+
+    def test_load_spellings(self, _):
+        """Check that the spelling dictionary gets loaded."""
+        tts = MockTTS("en-US", {}, MockTTSValidator(None))
+        self.assertTrue(tts.spellings != {})
+
+    def test_load_spelling_missing(self, _):
+        """Test that a missing phonetic spelling dictionary counts as empty."""
+        tts = MockTTS("as-DF", {}, MockTTSValidator(None))
+        self.assertTrue(tts.spellings == {})
 
 
 class TestTTSFactory(unittest.TestCase):
