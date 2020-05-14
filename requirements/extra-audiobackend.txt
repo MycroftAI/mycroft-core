@@ -1,0 +1,2 @@
+pychromecast==3.2.2
+python-vlc==1.1.2

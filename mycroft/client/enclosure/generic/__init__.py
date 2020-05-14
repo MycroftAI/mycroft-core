@@ -15,7 +15,6 @@
 import subprocess
 import time
 import sys
-from alsaaudio import Mixer
 from threading import Thread, Timer
 
 import mycroft.dialog
