@@ -186,6 +186,17 @@ class MutableMicrophone(Microphone):
     def is_muted(self):
         return self.muted
 
+    def duration_to_bytes(self, sec):
+        """Converts a duration in seconds to number of recorded bytes.
+
+        Arguments:
+            sec: number of seconds
+
+        Returns:
+            (int) equivalent number of bytes recorded by this Mic
+        """
+        return int(sec * self.SAMPLE_RATE) * self.SAMPLE_WIDTH
+
 
 def get_silence(num_bytes):
     return b'\0' * num_bytes
@@ -403,10 +414,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
                 )
             )
 
-    @staticmethod
-    def sec_to_bytes(sec, source):
-        return int(sec * source.SAMPLE_RATE) * source.SAMPLE_WIDTH
-
     def _skip_wake_word(self):
         """Check if told programatically to skip the wake word
 
@@ -533,8 +540,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         silence = get_silence(num_silent_bytes)
 
         # Max bytes for byte_data before audio is removed from the front
-        max_size = self.sec_to_bytes(ww_duration, source)
-        test_size = self.sec_to_bytes(ww_test_duration, source)
+        max_size = source.duration_to_bytes(ww_duration)
+        test_size = source.duration_to_bytes(ww_test_duration)
         audio_buffer = CyclicAudioBuffer(max_size, silence)
 
         buffers_per_check = self.SEC_BETWEEN_WW_CHECKS / sec_per_buffer
