@@ -44,15 +44,32 @@ class NoModelAvailable(Exception):
     pass
 
 
+def msec_to_sec(msecs):
+    """Convert milliseconds to seconds.
+
+    Arguments:
+        msecs: milliseconds
+
+    Returns:
+        input converted from milliseconds to seconds
+    """
+    return msecs / 1000
+
+
 class HotWordEngine:
     def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
         self.key_phrase = str(key_phrase).lower()
-        # rough estimate 1 phoneme per 2 chars
-        self.num_phonemes = len(key_phrase) / 2 + 1
+
         if config is None:
             config = Configuration.get().get("hot_words", {})
             config = config.get(self.key_phrase, {})
         self.config = config
+
+        # rough estimate 1 phoneme per 2 chars
+        self.num_phonemes = len(key_phrase) / 2 + 1
+        phoneme_duration = msec_to_sec(config.get('phoneme_duration', 120))
+        self.expected_duration = self.num_phonemes * phoneme_duration
+
         self.listener_config = Configuration.get().get("listener", {})
         self.lang = str(self.config.get("lang", lang)).lower()
 

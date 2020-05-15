@@ -225,7 +225,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         self.overflow_exc = listener_config.get('overflow_exception', False)
 
-        speech_recognition.Recognizer.__init__(self)
+        super().__init__()
         self.wake_word_recognizer = wake_word_recognizer
         self.audio = pyaudio.PyAudio()
         self.multiplier = listener_config.get('multiplier')
@@ -243,20 +243,11 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         if self.save_utterances and not isdir(self.saved_utterances_dir):
             os.mkdir(self.saved_utterances_dir)
 
-        self.upload_lock = Lock()
-        self.filenames_to_upload = []
         self.mic_level_file = os.path.join(get_ipc_directory(), "mic_level")
 
         # Signal statuses
         self._stop_signaled = False
         self._listen_triggered = False
-
-        # The maximum audio in seconds to keep for transcribing a phrase
-        # The wake word must fit in this time
-        num_phonemes = wake_word_recognizer.num_phonemes
-        len_phoneme = listener_config.get('phoneme_duration', 120) / 1000.0
-        self.TEST_WW_SEC = num_phonemes * len_phoneme
-        self.SAVED_WW_SEC = max(3, self.TEST_WW_SEC)
 
         self._account_id = None
 
@@ -529,6 +520,12 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             source (AudioSource):  Source producing the audio chunks
             sec_per_buffer (float):  Fractional number of seconds in each chunk
         """
+
+        # The maximum audio in seconds to keep for transcribing a phrase
+        # The wake word must fit in this time
+        ww_duration = self.wake_word_recognizer.expected_duration
+        ww_test_duration = max(3, ww_duration)
+
         mic_write_counter = 0
         num_silent_bytes = int(self.SILENCE_SEC * source.SAMPLE_RATE *
                                source.SAMPLE_WIDTH)
@@ -536,8 +533,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         silence = get_silence(num_silent_bytes)
 
         # Max bytes for byte_data before audio is removed from the front
-        max_size = self.sec_to_bytes(self.SAVED_WW_SEC, source)
-        test_size = self.sec_to_bytes(self.TEST_WW_SEC, source)
+        max_size = self.sec_to_bytes(ww_duration, source)
+        test_size = self.sec_to_bytes(ww_test_duration, source)
         audio_buffer = CyclicAudioBuffer(max_size, silence)
 
         buffers_per_check = self.SEC_BETWEEN_WW_CHECKS / sec_per_buffer
