@@ -93,18 +93,22 @@ def get_local_settings(skill_dir, skill_name) -> dict:
 def save_settings(skill_dir, skill_settings):
     """Save skill settings to file."""
     settings_path = Path(skill_dir).joinpath('settings.json')
-    if Path(skill_dir).exists():
-        with open(str(settings_path), 'w') as settings_file:
-            try:
-                json.dump(skill_settings, settings_file)
-            except Exception:
-                LOG.exception('error saving skill settings to '
-                              '{}'.format(settings_path))
-            else:
-                LOG.info('Skill settings successfully saved to '
-                         '{}' .format(settings_path))
-    else:
-        LOG.info('Skill folder no longer exists, can\'t save settings.')
+
+    # Either the file already exists in /opt, or we are writing
+    # to XDG_CONFIG_DIR and always have the permission to make
+    # sure the file always exists
+    if not Path(settings_path).exists():
+        settings_path.touch(mode=0o644)
+
+    with open(str(settings_path), 'w') as settings_file:
+        try:
+            json.dump(skill_settings, settings_file)
+        except Exception:
+            LOG.exception('error saving skill settings to '
+                          '{}'.format(settings_path))
+        else:
+            LOG.info('Skill settings successfully saved to '
+                     '{}' .format(settings_path))
 
 
 def get_display_name(skill_name: str):
