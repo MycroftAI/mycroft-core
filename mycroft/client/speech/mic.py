@@ -202,6 +202,115 @@ def get_silence(num_bytes):
     return b'\0' * num_bytes
 
 
+class NoiseTracker:
+    """Noise tracker, used to deterimine if an audio utterance is complete.
+
+    The current implementation expects a number of loud chunks (not necessary
+    in one continous sequence) followed by a short period of continous quiet
+    audio data to be considered complete.
+
+    Arguments:
+        minimum (int): lower noise level will be threshold for "quiet" level
+        maximum (int): ceiling of noise level
+        sec_per_buffer (float): the length of each buffer used when updating
+                                the tracker
+        loud_time_limit (float): time in seconds of low noise to be considered
+                                 a complete sentence
+        silence_time_limit (float): time limit for silence to abort sentence
+        silence_after_loud (float): time of silence to finalize the sentence.
+                                    default 0.25 seconds.
+    """
+    def __init__(self, minimum, maximum, sec_per_buffer, loud_time_limit,
+                 silence_time_limit, silence_after_loud_time=0.25):
+        self.min_level = minimum
+        self.max_level = maximum
+        self.sec_per_buffer = sec_per_buffer
+
+        self.num_loud_chunks = 0
+        self.level = 0
+
+        # Smallest number of loud chunks required to return loud enough
+        self.min_loud_chunks = int(loud_time_limit / sec_per_buffer)
+
+        self.max_silence_duration = silence_time_limit
+        self.silence_duration = 0
+
+        # time of quite period after long enough loud data to consider the
+        # sentence complete
+        self.silence_after_loud = silence_after_loud_time
+
+        # Constants
+        self.increase_multiplier = 200
+        self.decrease_multiplier = 100
+
+    def _increase_noise(self):
+        """Bumps the current level.
+
+        Modifies the noise level with a factor depending in the buffer length.
+        """
+        if self.level < self.max_level:
+            self.level += self.increase_multiplier * self.sec_per_buffer
+
+    def _decrease_noise(self):
+        """Decrease the current level.
+
+        Modifies the noise level with a factor depending in the buffer length.
+        """
+        if self.level > self.min_level:
+            self.level -= self.decrease_multiplier * self.sec_per_buffer
+
+    def update(self, is_loud):
+        """Update the tracking. with either a loud chunk or a quiet chunk.
+
+        Arguments:
+            is_loud: True if a loud chunk should be registered
+                     False if a quiet chunk should be registered
+        """
+        if is_loud:
+            self._increase_noise()
+            self.num_loud_chunks += 1
+        else:
+            self._decrease_noise()
+        # Update duration of energy under the threshold level
+        if self._quiet_enough():
+            self.silence_duration += self.sec_per_buffer
+        else:  # Reset silence duration
+            self.silence_duration = 0
+
+    def _loud_enough(self):
+        """Check if the noise loudness criteria is fulfilled.
+
+        The noise is considered loud enough if it's been over the threshold
+        for a certain number of chunks (accumulated, not in a row).
+        """
+        return self.num_loud_chunks > self.min_loud_chunks
+
+    def _quiet_enough(self):
+        """Check if the noise quietness criteria is fulfilled.
+
+        The quiet level is instant and will return True if the level is lower
+        or equal to the minimum noise level.
+        """
+        return self.level <= self.min_level
+
+    def recording_complete(self):
+        """Has the end creteria for the recording been met.
+
+        If the noise level has decresed from a loud level to a low level
+        the user has stopped speaking.
+
+        Alternatively if a lot of silence was recorded without detecting
+        a loud enough phrase.
+        """
+        too_much_silence = (self.silence_duration > self.max_silence_duration)
+        if too_much_silence:
+            LOG.debug('Too much silence recorded without start of sentence '
+                      'detected')
+        return ((self._quiet_enough() and
+                 self.silence_duration > self.silence_after_loud) and
+                (self._loud_enough() or too_much_silence))
+
+
 class ResponsiveRecognizer(speech_recognition.Recognizer):
     # Padding of silence when feeding to pocketsphinx
     SILENCE_SEC = 0.01
@@ -324,35 +433,13 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             bytearray: complete audio buffer recorded, including any
                        silence at the end of the user's utterance
         """
-
-        num_loud_chunks = 0
-        noise = 0
-
-        max_noise = 25
-        min_noise = 0
-
-        silence_duration = 0
-
-        def increase_noise(level):
-            if level < max_noise:
-                return level + 200 * sec_per_buffer
-            return level
-
-        def decrease_noise(level):
-            if level > min_noise:
-                return level - 100 * sec_per_buffer
-            return level
-
-        # Smallest number of loud chunks required to return
-        min_loud_chunks = int(self.MIN_LOUD_SEC_PER_PHRASE / sec_per_buffer)
+        noise_tracker = NoiseTracker(0, 25, sec_per_buffer,
+                                     self.MIN_LOUD_SEC_PER_PHRASE,
+                                     self.recording_timeout_with_silence)
 
         # Maximum number of chunks to record before timing out
         max_chunks = int(self.recording_timeout / sec_per_buffer)
         num_chunks = 0
-
-        # Will return if exceeded this even if there's not enough loud chunks
-        max_chunks_of_silence = int(self.recording_timeout_with_silence /
-                                    sec_per_buffer)
 
         # bytearray to store audio in, initialized with a single sample of
         # silence.
@@ -376,32 +463,18 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             energy = self.calc_energy(chunk, source.SAMPLE_WIDTH)
             test_threshold = self.energy_threshold * self.multiplier
             is_loud = energy > test_threshold
-            if is_loud:
-                noise = increase_noise(noise)
-                num_loud_chunks += 1
-            else:
-                noise = decrease_noise(noise)
+            noise_tracker.update(is_loud)
+            if not is_loud:
                 self._adjust_threshold(energy, sec_per_buffer)
 
+            # The phrase is complete if the noise_tracker end of sentence
+            # criteria is met or if the  top-button is pressed
+            phrase_complete = (noise_tracker.recording_complete() or
+                               check_for_signal('buttonPress'))
+
+            # Periodically write the energy level to the mic level file.
             if num_chunks % 10 == 0:
                 self.write_mic_level(energy, source)
-
-            was_loud_enough = num_loud_chunks > min_loud_chunks
-
-            quiet_enough = noise <= min_noise
-            if quiet_enough:
-                silence_duration += sec_per_buffer
-                if silence_duration < self.MIN_SILENCE_AT_END:
-                    quiet_enough = False  # gotta be silent for min of 1/4 sec
-            else:
-                silence_duration = 0
-            recorded_too_much_silence = num_chunks > max_chunks_of_silence
-            if quiet_enough and (was_loud_enough or recorded_too_much_silence):
-                phrase_complete = True
-
-            # Pressing top-button will end recording immediately
-            if check_for_signal('buttonPress'):
-                phrase_complete = True
 
         return byte_data
 
@@ -482,7 +555,11 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         Thread(target=upload, daemon=True, args=(audio, metadata)).start()
 
     def _send_wakeword_info(self, emitter):
-        """Send messagebus message indicating that a wakeword was received."""
+        """Send messagebus message indicating that a wakeword was received.
+
+        Arguments:
+            emitter: bus emitter to send information on.
+        """
         SessionManager.touch()
         payload = {'utterance': self.wake_word_name,
                    'session': SessionManager.get().session_id}
@@ -523,7 +600,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
     def _wait_until_wake_word(self, source, sec_per_buffer):
         """Listen continuously on source until a wake word is spoken
 
-        Args:
+        Arguments:
             source (AudioSource):  Source producing the audio chunks
             sec_per_buffer (float):  Fractional number of seconds in each chunk
         """
@@ -592,7 +669,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         self._listen_triggered = False
         return WakeWordData(audio_data, said_wake_word,
-                            self._stopped, ww_frames)
+                            self._stop_signaled, ww_frames)
 
     @staticmethod
     def _create_audio_data(raw_data, source):
