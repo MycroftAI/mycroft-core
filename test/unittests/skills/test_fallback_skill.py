@@ -35,10 +35,13 @@ class TestFallbackSkill(TestCase):
         fb_skill = setup_fallback(SimpleFallback)
         self.assertEqual(len(FallbackSkill.fallback_handlers), 1)
 
-        fb_skill.remove_fallback(fb_skill.fallback_handler)
+        self.assertTrue(fb_skill.remove_fallback(fb_skill.fallback_handler))
         # Both internal trackers of handlers should be cleared now
         self.assertEqual(len(FallbackSkill.fallback_handlers), 0)
         self.assertEqual(len(FallbackSkill.wrapper_map), 0)
+
+        # Removing after it's already been removed should fail
+        self.assertFalse(fb_skill.remove_fallback(fb_skill.fallback_handler))
 
 
 class SimpleFallback(FallbackSkill):
