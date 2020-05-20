@@ -1018,7 +1018,7 @@ def show_skills(skills):
             scr.addstr(curses.LINES - 1, 0,
                        center(23) + "Press any key to continue", CLR_HEADING)
             scr.refresh()
-            scr.get_wch()  # blocks
+            wait_for_any_key()
             prepare_page()
         elif row == curses.LINES - 2:
             # Reached bottom of screen, start at top and move output to a
@@ -1063,6 +1063,21 @@ def _get_cmd_param(cmd, keyword):
     else:
         parts = cmd.split(" ")
         return parts[-1]
+
+
+def wait_for_any_key():
+    """Block until key is pressed.
+
+    This works around curses.error that can occur on old versions of ncurses.
+    """
+    while True:
+        try:
+            scr.get_wch()  # blocks
+        except curses.error:
+            # Loop if get_wch throws error
+            time.sleep(0.05)
+        else:
+            break
 
 
 def handle_cmd(cmd):
@@ -1142,7 +1157,8 @@ def handle_cmd(cmd):
 
         if message:
             show_skills(message.data)
-            scr.get_wch()  # blocks
+            wait_for_any_key()
+
             screen_mode = SCR_MAIN
             set_screen_dirty()
     elif "deactivate" in cmd:
