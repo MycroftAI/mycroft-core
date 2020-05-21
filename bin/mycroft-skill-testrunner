@@ -23,14 +23,16 @@ source "$DIR/../venv-activate.sh" -q
 function vktest-clear() {
     FEATURES_DIR="$DIR/../test/integrationtests/voight_kampff/features"
     num_feature_files=$(ls $FEATURES_DIR | wc -l) 
+    # A clean directory will have `steps/` and `environment.py`
     if [ $num_feature_files -gt "2" ] ; then
-        echo "Removing Feature files"
+        echo "Removing Feature files..."
         rm ${DIR}/../test/integrationtests/voight_kampff/features/*.feature
+        rm ${DIR}/../test/integrationtests/voight_kampff/features/*.config.json
     fi
     STEPS_DIR="$FEATURES_DIR/steps"
     num_steps_files=$(ls $STEPS_DIR | wc -l)
     if [ $num_steps_files -gt "2" ] ; then
-        echo "Removing Custom Step files"
+        echo "Removing Custom Step files..."
         TMP_DIR="$STEPS_DIR/tmp"
         mkdir $TMP_DIR
         mv "$STEPS_DIR/configuration.py" $TMP_DIR
