@@ -151,6 +151,13 @@ class Mimic(TTS):
         Returns:
             tuple ((str) file location, (str) generated phonemes)
         """
+        # Reads the current rate from the file
+        file_audio_config = open(os.path.abspath('mycroft/tts/audio_config.txt'), 'r')
+        audio_config = eval(file_audio_config.read())
+        file_audio_config.close()
+        # Adds the SSML tags with current rate to the sentence
+        sentence = "<speak><prosody rate=" + audio_config["rate"] + ">" + sentence + "</prosody></speak>"
+       
         phonemes = subprocess.check_output(self.args + ['-o', wav_file,
                                                         '-t', sentence])
         return wav_file, phonemes.decode()
