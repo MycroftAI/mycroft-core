@@ -33,6 +33,7 @@ from mycroft.util import (
     play_wav, play_mp3, check_for_signal, create_signal, resolve_resource_file
 )
 from mycroft.util.log import LOG
+from mycroft.util.plugins import load_plugin
 from queue import Queue, Empty
 
 
@@ -464,6 +465,15 @@ class TTSValidator(metaclass=ABCMeta):
         pass
 
 
+def load_tts_plugin(module_name):
+    """Wrapper function for loading tts plugin.
+
+    Arguments:
+        (str) Mycroft tts module name from config
+    """
+    return load_plugin('mycroft.plugin.tts', module_name)
+
+
 class TTSFactory:
     from mycroft.tts.festival_tts import Festival
     from mycroft.tts.espeak_tts import ESpeak
@@ -514,7 +524,14 @@ class TTSFactory:
         tts_config = config.get('tts', {}).get(tts_module, {})
         tts_lang = tts_config.get('lang', lang)
         try:
-            clazz = TTSFactory.CLASSES.get(tts_module)
+            if tts_module in TTSFactory.CLASSES:
+                clazz = TTSFactory.CLASSES[tts_module]
+            else:
+                clazz = load_tts_plugin(tts_module)
+                LOG.info('Loaded plugin {}'.format(tts_module))
+            if clazz is None:
+                raise ValueError('TTS module not found')
+
             tts = clazz(tts_lang, tts_config)
             tts.validator.validate()
         except Exception:
