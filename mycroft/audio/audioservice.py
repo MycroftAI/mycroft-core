@@ -23,6 +23,7 @@ from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
 from mycroft.util.monotonic_event import MonotonicEvent
+from mycroft.util.plugins import find_plugins
 
 from .services import RemoteAudioBackend
 
@@ -87,16 +88,41 @@ def get_services(services_folder):
     return sorted(services, key=lambda p: p.get('name'))
 
 
-def load_services(config, bus, path=None):
+def setup_service(service_module, config, bus):
+    """Run the appropriate setup function and return created service objects.
+
+    Arguments:
+        service_module: Python module to run
+        config (dict): Mycroft configuration dict
+        bus (MessageBusClient): Messagebus interface
+    Returns:
+        (list) List of created services.
     """
-        Search though the service directory and load any services.
+    if (hasattr(service_module, 'autodetect') and
+            callable(service_module.autodetect)):
+        try:
+            return service_module.autodetect(config, bus)
+        except Exception as e:
+            LOG.error('Failed to autodetect. ' + repr(e))
+    elif hasattr(service_module, 'load_service'):
+        try:
+            return service_module.load_service(config, bus)
+        except Exception as e:
+            LOG.error('Failed to load service. ' + repr(e))
+    else:
+        return None
 
-        Args:
-            config: configuration dict for the audio backends.
-            bus: Mycroft messagebus
 
-        Returns:
-            List of started services.
+def load_internal_services(config, bus, path=None):
+    """Load audio services included in Mycroft-core.
+
+    Arguments:
+        config: configuration dict for the audio backends.
+        bus: Mycroft messagebus
+        path: (default None) optional path for builtin audio service
+              implementations
+    Returns:
+        List of started services
     """
     if path is None:
         path = dirname(abspath(__file__)) + '/services/'
@@ -113,23 +139,51 @@ def load_services(config, bus, path=None):
         except Exception as e:
             LOG.error('Failed to import module ' + descriptor['name'] + '\n' +
                       repr(e))
-            continue
-
-        if (hasattr(service_module, 'autodetect') and
-                callable(service_module.autodetect)):
-            try:
-                s = service_module.autodetect(config, bus)
+        else:
+            s = setup_service(service_module, config, bus)
+            if s:
                 service += s
-            except Exception as e:
-                LOG.error('Failed to autodetect. ' + repr(e))
-        if hasattr(service_module, 'load_service'):
-            try:
-                s = service_module.load_service(config, bus)
-                service += s
-            except Exception as e:
-                LOG.error('Failed to load service. ' + repr(e))
 
     return service
+
+
+def load_plugins(config, bus):
+    """Load installed audioservice plugins.
+
+    Arguments:
+        config: configuration dict for the audio backends.
+        bus: Mycroft messagebus
+
+    Returns:
+        List of started services
+    """
+    plugin_services = []
+    plugins = find_plugins('mycroft.plugin.audioservice')
+    for plug in plugins:
+        service = setup_service(plug, config, bus)
+        if service:
+            plugin_services += service
+    return plugin_services
+
+
+def load_services(config, bus, path=None):
+    """Load builtin services as well as service plugins
+
+    The builtin service folder is scanned (or a folder indicated by the path
+    parameter) for services and plugins registered with the
+    "mycroft.plugin.audioservice" entrypoint group.
+
+    Arguments:
+        config: configuration dict for the audio backends.
+        bus: Mycroft messagebus
+        path: (default None) optional path for builtin audio service
+              implementations
+
+    Returns:
+        List of started services.
+    """
+    return (load_internal_services(config, bus, path) +
+            load_plugins(config, bus))
 
 
 class AudioService:
