@@ -20,6 +20,7 @@ from adapt.intent import IntentBuilder
 import time
 
 from mycroft.util.log import LOG
+from .base import IntentMatch
 
 
 class AdaptIntent(IntentBuilder):
@@ -174,13 +175,13 @@ class AdaptService:
             elif context_entity['data'][0][1] in self.context_keywords:
                 self.context_manager.inject_context(context_entity)
 
-    def match_intent(self, raw_utt, norm_utt, lang):
-        """Run the Adapt engine to search for an matching intent
+    def match_intent(self, utterances, lang, _=None):
+        """Run the Adapt engine to search for an matching intent.
 
-        Args:
-            raw_utt (list):  list of utterances
-            norm_utt (list): same list of utterances, normalized
-            lang (string):   language code, e.g "en-us"
+        Arguments:
+            utterances (iterable): iterable of utterances, expected order
+                                   [raw, normalized, other]
+            lang (string): language code, e.g "en-us"
 
         Returns:
             Intent structure, or None if no match was found.
@@ -196,7 +197,7 @@ class AdaptService:
                 # TODO - Shouldn't Adapt do this?
                 best_intent['utterance'] = utt
 
-        for idx, utt in enumerate(raw_utt):
+        for idx, utt in enumerate(utterances):
             try:
                 intents = [i for i in self.engine.determine_intent(
                     utt, 100,
@@ -205,14 +206,6 @@ class AdaptService:
                 if intents:
                     take_best(intents[0], utt)
 
-                # Also test the normalized version, but set the utterance to
-                # the raw version so skill has access to original STT
-                norm_intents = [i for i in self.engine.determine_intent(
-                    norm_utt[idx], 100,
-                    include_tags=True,
-                    context_manager=self.context_manager)]
-                if norm_intents:
-                    take_best(norm_intents[0], utt)
             except Exception as e:
                 LOG.exception(e)
 
@@ -222,7 +215,13 @@ class AdaptService:
             except LookupError:
                 LOG.error('Error during workaround_one_of_context')
 
-        return best_intent
+            self.update_context(best_intent)
+            skill_id = best_intent['intent_type'].split(":")[0]
+            return IntentMatch(
+                'Adapt', best_intent['intent_type'], best_intent, skill_id
+            )
+        else:
+            return None
 
     def register_vocab(self, start_concept, end_concept, alias_of, regex_str):
         """Register vocabulary."""
@@ -238,10 +237,12 @@ class AdaptService:
     def detach_skill(self, skill_id):
         new_parsers = [
             p for p in self.engine.intent_parsers if
-            not p.name.startswith(skill_id)]
+            not p.name.startswith(skill_id)
+        ]
         self.engine.intent_parsers = new_parsers
 
     def detach_intent(self, intent_name):
         new_parsers = [
-            p for p in self.engine.intent_parsers if p.name != intent_name]
+            p for p in self.engine.intent_parsers if p.name != intent_name
+        ]
         self.engine.intent_parsers = new_parsers

@@ -20,8 +20,9 @@ from mycroft.util.lang import set_active_lang
 from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
 from mycroft.metrics import report_timing, Stopwatch
-from mycroft.skills.padatious_service import PadatiousService
-from .adapt_service import AdaptService, AdaptIntent
+from .intent_services import (
+    AdaptService, AdaptIntent, PadatiousService, IntentMatch
+)
 from .intent_service_interface import open_intent_envelope
 
 # TODO: Remove in 20.08 (Backwards compatibility)
@@ -50,7 +51,7 @@ class IntentService:
         config = Configuration.get()
         self.adapt_service = AdaptService(config.get('context', {}))
         try:
-            self.padatious_service = PadatiousService(bus, self)
+            self.padatious_service = PadatiousService(bus, config['padatious'])
         except Exception as e:
             LOG.exception('Failed to create padatious handlers '
                           '({})'.format(repr(e)))
@@ -157,19 +158,47 @@ class IntentService:
         """Send timing metrics to the backend.
 
         NOTE: This only applies to those with Opt In.
+
+        Arguments:
+            intent (IntentMatch or None): intet match info
+            context (dict): context info about the interaction
+            stopwatch (StopWatch): Timing info about the skill parsing.
         """
         ident = context['ident'] if 'ident' in context else None
-        if intent:
+        # Determine what handled the intent
+        if intent and intent.intent_service == 'Converse':
+            intent_type = '{}:{}'.format(intent.skill_id, 'converse')
+        elif intent and intent.intent_service == 'Fallback':
+            intent_type = 'fallback'
+        elif intent:  # Handled by an other intent parser
             # Recreate skill name from skill id
-            parts = intent.get('intent_type', '').split(':')
+            parts = intent.intent_type.split(':')
             intent_type = self.get_skill_name(parts[0])
             if len(parts) > 1:
                 intent_type = ':'.join([intent_type] + parts[1:])
-            report_timing(ident, 'intent_service', stopwatch,
-                          {'intent_type': intent_type})
-        else:
-            report_timing(ident, 'intent_service', stopwatch,
-                          {'intent_type': 'intent_failure'})
+        else:  # No intent was found
+            intent_type = 'intent_failure'
+
+        report_timing(ident, 'intent_service', stopwatch,
+                      {'intent_type': intent_type})
+
+    def _fallback_range(self, combined, lang, message, start, stop):
+        msg = message.reply(
+            'mycroft.skills.fallback',
+            data={'utterance': combined[0], 'fallback_range': (start, stop)}
+        )
+        response = self.bus.wait_for_response(msg)
+        if response and response.data['handled']:
+            return IntentMatch('Fallback', None, {}, None)
+
+    def fallback_high(self, combined, lang, message):
+        return self._fallback_range(combined, lang, message, 0, 10)
+
+    def fallback_medium(self, combined, lang, message):
+        return self._fallback_range(combined, lang, message, 10, 90)
+
+    def fallback_low(self, combined, lang, message):
+        return self._fallback_range(combined, lang, message, 90, 100)
 
     def handle_utterance(self, message):
         """Main entrypoint for handling user utterances with Mycroft skills
@@ -182,13 +211,16 @@ class IntentService:
         1) Active skills attempt to handle using converse()
         2) Padatious high match intents (conf > 0.95)
         3) Adapt intent handlers
-        5) Fallbacks:
-           - Padatious near match intents (conf > 0.8)
-           - General fallbacks
-           - Padatious loose match intents (conf > 0.5)
-           - Unknown intent handler
+        5) High Priority Fallbacks
+        6) Padatious near match intents (conf > 0.8)
+        7) General Fallbacks
+        8) Padatious loose match intents (conf > 0.5)
+        9) Catch all fallbacks including Unknown intent handler
 
-        Args:
+        If all these fail the complete_intent_failure message will be sent
+        and a generic info of the failure will be spoken.
+
+        Arguments:
             message (Message): The messagebus data
         """
         try:
@@ -207,74 +239,54 @@ class IntentService:
             LOG.debug("Utterances: {}".format(combined))
 
             stopwatch = Stopwatch()
-            adapt_intent = None
-            padatious_intent = None
+
+            # List of functions to use to match the utterance with intent.
+            # These are listed in priority order.
+            match_funcs = [
+                self._converse, self.padatious_service.match_high,
+                self.adapt_service.match_intent, self.fallback_high,
+                self.padatious_service.match_medium, self.fallback_medium,
+                self.padatious_service.match_low, self.fallback_low
+            ]
+
+            match = None
             with stopwatch:
-                # Give active skills an opportunity to handle the utterance
-                converse = self._converse(combined, lang, message)
+                # Loop through the matching functions until a match is found.
+                for match_func in match_funcs:
+                    match = match_func(combined, lang, message)
+                    if match:
+                        break
+            if match:
+                if match.skill_id:
+                    self.add_active_skill(match.skill_id)
+                    # If the service didn't report back the skill_id it
+                    # takes on the responsibility of making the skill "active"
 
-                if not converse:
-                    # No conversation, use intent system to handle utterance
-                    adapt_intent = self.adapt_service.match_intent(
-                        utterances, norm_utterances, lang)
-                    for utt in combined:
-                        _intent = self.padatious_service.calc_intent(utt)
-                        if _intent:
-                            best = padatious_intent.conf if padatious_intent \
-                                else 0.0
-                            if best < _intent.conf:
-                                padatious_intent = _intent
-                    LOG.debug("Padatious intent: {}".format(padatious_intent))
-                    LOG.debug("    Adapt intent: {}".format(adapt_intent))
+                # Launch skill if not handled by the match function
+                if match.intent_type:
+                    match.intent_data['utterance'] = utterances[0]
+                    reply = message.reply(match.intent_type, match.intent_data)
+                    self.bus.emit(reply)
 
-            if converse:
-                # Report that converse handled the intent and return
-                LOG.debug("Handled in converse()")
-                ident = None
-                if message.context and 'ident' in message.context:
-                    ident = message.context['ident']
-                report_timing(ident, 'intent_service', stopwatch,
-                              {'intent_type': 'converse'})
-                return
-            elif (adapt_intent and
-                  adapt_intent.get('confidence', 0.0) > 0.0 and
-                  not (padatious_intent and padatious_intent.conf >= 0.95)):
-                # Send the message to the Adapt intent's handler unless
-                # Padatious is REALLY sure it was directed at it instead.
-                # update active skills
-                self.adapt_service.update_context(adapt_intent)
-                skill_id = adapt_intent['intent_type'].split(":")[0]
-                self.add_active_skill(skill_id)
-                # Adapt doesn't handle context injection for one_of keywords
-                # correctly. Workaround this issue if possible.
-                reply = message.reply(adapt_intent.get('intent_type'),
-                                      adapt_intent)
             else:
-                # Allow fallback system to handle utterance
-                # NOTE: A matched padatious_intent is handled this way, too
-                # TODO: Need to redefine intent_failure when STT can return
-                #       multiple hypothesis -- i.e. len(utterances) > 1
-                reply = message.reply('intent_failure',
-                                      {'utterance': utterances[0],
-                                       'norm_utt': norm_utterances[0],
-                                       'lang': lang})
-            self.bus.emit(reply)
-            self.send_metrics(adapt_intent, message.context, stopwatch)
+                # Nothing was able to handle the intent
+                # Ask politely for forgiveness for failing in this vital task
+                self.send_complete_intent_failure(message)
+            self.send_metrics(match, message.context, stopwatch)
         except Exception as e:
             LOG.exception(e)
 
     def _converse(self, utterances, lang, message):
         """Give active skills a chance at the utterance
 
-        Args:
+        Arguments:
             utterances (list):  list of utterances
             lang (string):      4 letter ISO language code
             message (Message):  message to use to generate reply
 
         Returns:
-            bool: True if converse handled it, False if  no skill processes it
+            IntentMatch if handled otherwise None.
         """
-
         # check for conversation time-out
         self.active_skills = [skill for skill in self.active_skills
                               if time.time() - skill[
@@ -285,9 +297,11 @@ class IntentService:
             if self.do_converse(utterances, skill[0], lang, message):
                 # update timestamp, or there will be a timeout where
                 # intent stops conversing whether its being used or not
-                self.add_active_skill(skill[0])
-                return True
-        return False
+                return IntentMatch('Converse', None, None, skill[0])
+        return None
+
+    def send_complete_intent_failure(self, message):
+        self.bus.emit(message.forward('complete_intent_failure'))
 
     def handle_register_vocab(self, message):
         start_concept = message.data.get('start')
@@ -350,7 +364,7 @@ class IntentService:
         lang = message.data.get("lang", "en-us")
         norm = normalize(utterance, lang, remove_articles=False)
         combined = [utterance, norm] if utterance != norm else [utterance]
-        intent = self.adapt_service.match_intent(utterance, lang)
+        intent = self.adapt_service.match_intent(combined, lang)
         self.bus.emit(message.reply("intent.service.adapt.reply",
                                     {"intent": intent}))
 

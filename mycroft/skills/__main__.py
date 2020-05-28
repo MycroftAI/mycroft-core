@@ -240,7 +240,13 @@ def _register_intent_services(bus):
     """
     service = IntentService(bus)
     # Register handler to trigger fallback system
+    bus.on(
+        'mycroft.skills.fallback',
+        FallbackSkill.make_intent_failure_handler(bus)
+    )
+    # Backwards compatibility TODO: remove in 20.08
     bus.on('intent_failure', FallbackSkill.make_intent_failure_handler(bus))
+    return service
 
 
 def _initialize_skill_manager(bus, watchdog):
