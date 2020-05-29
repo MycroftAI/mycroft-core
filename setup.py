@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 from setuptools import setup, find_packages
+import os
 import os.path
 
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
@@ -44,6 +45,9 @@ def required(requirements_file):
     """ Read requirements file and remove comments and empty lines. """
     with open(os.path.join(BASEDIR, requirements_file), 'r') as f:
         requirements = f.read().splitlines()
+        if 'MYCROFT_LOOSE_REQUIREMENTS' in os.environ:
+            print('USING LOOSE REQUIREMENTS!')
+            requirements = [r.replace('==', '>=') for r in requirements]
         return [pkg for pkg in requirements
                 if pkg.strip() and not pkg.startswith("#")]
 
@@ -56,7 +60,12 @@ setup(
     author_email='devs@mycroft.ai',
     url='https://github.com/MycroftAI/mycroft-core',
     description='Mycroft Core',
-    install_requires=required('requirements.txt'),
+    install_requires=required('requirements/requirements.txt'),
+    extras_require={
+        'audio-backend': required('requirements/extra-audiobackend.txt'),
+        'mark1': required('requirements/extra-mark1.txt'),
+        'stt': required('requirements/extra-stt.txt')
+    },
     packages=find_packages(include=['mycroft*']),
     include_package_data=True,
 
