@@ -21,7 +21,7 @@ from mycroft.util.log import LOG
 from mycroft.util.parse import normalize
 from mycroft.metrics import report_timing, Stopwatch
 from .intent_services import (
-    AdaptService, AdaptIntent, PadatiousService, IntentMatch
+    AdaptService, AdaptIntent, FallbackService, PadatiousService, IntentMatch
 )
 from .intent_service_interface import open_intent_envelope
 
@@ -55,6 +55,7 @@ class IntentService:
         except Exception as e:
             LOG.exception('Failed to create padatious handlers '
                           '({})'.format(repr(e)))
+        self.fallback = FallbackService(bus)
 
         self.bus.on('register_vocab', self.handle_register_vocab)
         self.bus.on('register_intent', self.handle_register_intent)
@@ -182,24 +183,6 @@ class IntentService:
         report_timing(ident, 'intent_service', stopwatch,
                       {'intent_type': intent_type})
 
-    def _fallback_range(self, combined, lang, message, start, stop):
-        msg = message.reply(
-            'mycroft.skills.fallback',
-            data={'utterance': combined[0], 'fallback_range': (start, stop)}
-        )
-        response = self.bus.wait_for_response(msg)
-        if response and response.data['handled']:
-            return IntentMatch('Fallback', None, {}, None)
-
-    def fallback_high(self, combined, lang, message):
-        return self._fallback_range(combined, lang, message, 0, 10)
-
-    def fallback_medium(self, combined, lang, message):
-        return self._fallback_range(combined, lang, message, 10, 90)
-
-    def fallback_low(self, combined, lang, message):
-        return self._fallback_range(combined, lang, message, 90, 100)
-
     def handle_utterance(self, message):
         """Main entrypoint for handling user utterances with Mycroft skills
 
@@ -244,9 +227,9 @@ class IntentService:
             # These are listed in priority order.
             match_funcs = [
                 self._converse, self.padatious_service.match_high,
-                self.adapt_service.match_intent, self.fallback_high,
-                self.padatious_service.match_medium, self.fallback_medium,
-                self.padatious_service.match_low, self.fallback_low
+                self.adapt_service.match_intent, self.fallback.high_prio,
+                self.padatious_service.match_medium, self.fallback.medium_prio,
+                self.padatious_service.match_low, self.fallback.low_prio
             ]
 
             match = None
