@@ -167,6 +167,32 @@ pipeline {
                 }
             }
         }
+        // Build snap package for release
+        stage('Build development Snap package') {
+            when {
+                anyOf {
+                    branch 'dev'
+                }
+            }
+            steps {
+                echo "Launching package build for ${env.BRANCH_NAME}"
+                build (job: '../Mycroft-snap/dev', wait: false,
+                       parameters: [[$class: 'StringParameterValue',
+                                     name: 'BRANCH', value: env.BRANCH_NAME]])
+            }
+        }
+
+        stage('Build Release Snap package') {
+            when {
+                tag "release/v*.*.*"
+            }
+            steps {
+                echo "Launching package build for ${env.TAG_NAME}"
+                build (job: '../Mycroft-snap/dev', wait: false,
+                       parameters: [[$class: 'StringParameterValue',
+                                     name: 'BRANCH', value: env.TAG_NAME]])
+            }
+        }
         // Build a voight_kampff image for major releases.  This will be used
         // by the mycroft-skills repository to test skill changes.  Skills are
         // tested against major releases to determine if they play nicely with
