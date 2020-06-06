@@ -144,7 +144,7 @@ function checkmimic() {
 # pythoning!
 function checkPIP() {
     mlog "Python checks"
-    mlog " - Verifying ${MYCROFT_HOME}/requirements.txt:"
+    mlog " - Verifying ${MYCROFT_HOME}/requirements/requirements.txt:"
     if workon mycroft ; then
         pip list > /tmp/mycroft-piplist.$$
 

@@ -187,7 +187,7 @@ class TTS(metaclass=ABCMeta):
 
     def load_spellings(self):
         """Load phonetic spellings of words as dictionary"""
-        path = join('text', self.lang, 'phonetic_spellings.txt')
+        path = join('text', self.lang.lower(), 'phonetic_spellings.txt')
         spellings_file = resolve_resource_file(path)
         if not spellings_file:
             return {}
@@ -477,6 +477,7 @@ class TTSFactory:
     from mycroft.tts.mimic2_tts import Mimic2
     from mycroft.tts.yandex_tts import YandexTTS
     from mycroft.tts.dummy_tts import DummyTTS
+    from mycroft.tts.polly_tts import PollyTTS
 
     CLASSES = {
         "mimic": Mimic,
@@ -490,6 +491,7 @@ class TTSFactory:
         "bing": BingTTS,
         "responsive_voice": ResponsiveVoice,
         "yandex": YandexTTS,
+        "polly": PollyTTS,
         "dummy": DummyTTS
     }
 

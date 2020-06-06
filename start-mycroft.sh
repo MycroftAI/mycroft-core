@@ -238,8 +238,7 @@ case ${_opt} in
         pytest test/integrationtests/skills/discover_tests.py "$@"
         ;;
     "vktest")
-        source-venv
-        python -m test.integrationtests.voight_kampff "$@"
+        source "$DIR/bin/mycroft-skill-testrunner" vktest "$@"
         ;;
     "audiotest")
         launch-process ${_opt}

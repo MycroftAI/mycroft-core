@@ -23,9 +23,9 @@ class TestMimic(unittest.TestCase):
         mock_device_api.return_value = device_instance_mock
         m = Mimic('en-US', {})
         wav, phonemes = m.get_tts('hello', 'abc.wav')
+        mock_subprocess.check_output.assert_called_once_with(
+            m.args + ['-o', 'abc.wav', '-t', 'hello'])
         self.assertEqual(phonemes, mock_subprocess.check_output().decode())
-        mock_subprocess.check_output_called_with(m.args + ['-o', 'abc.wav',
-                                                           '-t', 'hello'])
 
     def test_viseme(self, _, mock_device_api):
         mock_device_api.return_value = device_instance_mock

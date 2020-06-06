@@ -64,12 +64,18 @@ RUN python3 -m venv "/opt/mycroft/mycroft-core/.venv"
 # determine if any changes have been made since it last started
 WORKDIR /opt/mycroft/mycroft-core
 RUN .venv/bin/python -m pip install pip==20.0.2
-COPY requirements.txt .
+COPY requirements/requirements.txt .
 RUN .venv/bin/python -m pip install -r requirements.txt
-COPY test-requirements.txt .
-RUN .venv/bin/python -m pip install -r test-requirements.txt
+COPY requirements/extra-audiobackend.txt .
+COPY requirements/extra-stt.txt .
+COPY requirements/extra-mark1.txt .
+RUN .venv/bin/python -m pip install -r extra-audiobackend.txt \
+    && .venv/bin/python -m pip install -r extra-stt.txt \
+    && .venv/bin/python -m pip install -r extra-mark1.txt
+COPY requirements/tests.txt .
+RUN .venv/bin/python -m pip install -r tests.txt
 COPY dev_setup.sh .
-RUN md5sum requirements.txt test-requirements.txt dev_setup.sh > .installed
+RUN md5sum requirements.txt tests.txt extra-audiobackend.txt extra-stt.txt extra-mark1.txt dev_setup.sh > .installed
 
 # Add the mycroft core virtual environment to the system path.
 ENV PATH /opt/mycroft/mycroft-core/.venv/bin:$PATH
