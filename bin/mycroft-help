@@ -24,7 +24,6 @@ echo
 echo "Mycroft-specific commands you can use from the Linux command prompt:"
 echo "  mycroft-cli-client       command line client, useful for debugging"
 echo "  mycroft-msm              Mycroft Skills Manager, to manage your Skills"
-echo "  mycroft-msk              Mycroft Skills Kit, create and share Skills"
 echo "  mycroft-start            Launch/restart Mycroft services"
 echo "  mycroft-stop             Stop Mycroft services"
 echo
@@ -34,9 +33,13 @@ echo "  mycroft-speak <phr>      have Mycroft speak a phrase to the user"
 echo "  mycroft-say-to <utt>     send an utterance to Mycroft as if spoken by a user"
 echo
 echo "Mycroft's Python Virtual Environment (venv) control:"
+echo "  mycroft-pip              install a Python package within the venv"
 echo "  mycroft-venv-activate    enter the venv"
 echo "  mycroft-venv-deactivate  exit the venv"
-echo "  mycroft-pip              install a Python package within the venv"
+echo
+echo "Skill Development:"
+echo "  mycroft-msk              Mycroft Skills Kit, create and share Skills"
+echo "  mycroft-skill-testrunner Run integration tests on Mycroft Skills"
 echo
 echo "Other:"
 echo "  mycroft-config           manage your local Mycroft configuration files"
