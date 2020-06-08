@@ -46,4 +46,4 @@ echo "  mycroft-config           manage your local Mycroft configuration files"
 echo "  mycroft-mic-test         record and playback to directly test microphone"
 echo "  mycroft-help             display this message"
 echo
-echo "For more information, see https://mycroft.ai and https://github.com/MycroftAI"
+echo "For more information, see https://mycroft.ai/documentation"
