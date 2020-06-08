@@ -29,6 +29,7 @@ echo "  mycroft-start            Launch/restart Mycroft services"
 echo "  mycroft-stop             Stop Mycroft services"
 echo
 echo "Scripting Utilities:"
+echo "  mycroft-listen           activate the microphone to listen for a command"
 echo "  mycroft-speak <phr>      have Mycroft speak a phrase to the user"
 echo "  mycroft-say-to <utt>     send an utterance to Mycroft as if spoken by a user"
 echo
@@ -38,6 +39,7 @@ echo "  mycroft-venv-deactivate  exit the venv"
 echo "  mycroft-pip              install a Python package within the venv"
 echo
 echo "Other:"
+echo "  mycroft-config           manage your local Mycroft configuration files"
 echo "  mycroft-mic-test         record and playback to directly test microphone"
 echo "  mycroft-help             display this message"
 echo
