@@ -111,7 +111,7 @@ class SkillGUI:
         self.skill.bus.emit(Message("gui.clear.namespace",
                                     {"__from": self.skill.skill_id}))
 
-    def send_event(self, event_name, params={}):
+    def send_event(self, event_name, params=None):
         """Trigger a gui event.
 
         Arguments:
@@ -119,6 +119,7 @@ class SkillGUI:
             params: json serializable object containing any parameters that
                     should be sent along with the request.
         """
+        params = params or {}
         self.skill.bus.emit(Message("gui.event.send",
                                     {"__from": self.skill.skill_id,
                                      "event_name": event_name,
@@ -220,6 +221,10 @@ class SkillGUI:
         Arguments:
             text (str): Main text content.  It will auto-paginate
             title (str): A title to display above the text content.
+            override_idle (boolean, int):
+                True: Takes over the resting page indefinitely
+                (int): Delays resting page for the specified number of
+                       seconds.
         """
         self.clear()
         self["text"] = text
@@ -237,6 +242,10 @@ class SkillGUI:
             title (str): A title to display above the image content
             fill (str): Fill type supports 'PreserveAspectFit',
             'PreserveAspectCrop', 'Stretch'
+            override_idle (boolean, int):
+                True: Takes over the resting page indefinitely
+                (int): Delays resting page for the specified number of
+                       seconds.
         """
         self.clear()
         self["image"] = url
@@ -245,12 +254,39 @@ class SkillGUI:
         self["fill"] = fill
         self.show_page("SYSTEM_ImageFrame.qml", override_idle)
 
+    def show_animated_image(self, url, caption=None,
+                   title=None, fill=None,
+                   override_idle=None):
+        """Display a GUI page for viewing an image.
+
+        Arguments:
+            url (str): Pointer to the .gif image
+            caption (str): A caption to show under the image
+            title (str): A title to display above the image content
+            fill (str): Fill type supports 'PreserveAspectFit',
+            'PreserveAspectCrop', 'Stretch'
+            override_idle (boolean, int):
+                True: Takes over the resting page indefinitely
+                (int): Delays resting page for the specified number of
+                       seconds.
+        """
+        self.clear()
+        self["image"] = url
+        self["title"] = title
+        self["caption"] = caption
+        self["fill"] = fill
+        self.show_page("SYSTEM_AnimatedImageFrame.qml", override_idle)
+
     def show_html(self, html, resource_url=None, override_idle=None):
         """Display an HTML page in the GUI.
 
         Arguments:
             html (str): HTML text to display
             resource_url (str): Pointer to HTML resources
+            override_idle (boolean, int):
+                True: Takes over the resting page indefinitely
+                (int): Delays resting page for the specified number of
+                       seconds.
         """
         self.clear()
         self["html"] = html
@@ -262,6 +298,10 @@ class SkillGUI:
 
         Arguments:
             url (str): URL to render
+            override_idle (boolean, int):
+                True: Takes over the resting page indefinitely
+                (int): Delays resting page for the specified number of
+                       seconds.
         """
         self.clear()
         self["url"] = url
