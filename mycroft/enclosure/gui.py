@@ -34,7 +34,7 @@ class SkillGUI:
 
     def __init__(self, skill):
         self.__session_data = {}  # synced to GUI for use by this skill's pages
-        self.page = None    # the active GUI page (e.g. QML template) to show
+        self.page = None  # the active GUI page (e.g. QML template) to show
         self.skill = skill
         self.on_gui_changed_callback = None
         self.config = Configuration.get()
@@ -255,8 +255,8 @@ class SkillGUI:
         self.show_page("SYSTEM_ImageFrame.qml", override_idle)
 
     def show_animated_image(self, url, caption=None,
-                   title=None, fill=None,
-                   override_idle=None):
+                            title=None, fill=None,
+                            override_idle=None):
         """Display a GUI page for viewing an image.
 
         Arguments:
