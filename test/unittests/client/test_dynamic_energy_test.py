@@ -13,14 +13,14 @@
 # limitations under the License.
 #
 import audioop
-import unittest
+from unittest import TestCase, mock
 
 from speech_recognition import AudioSource
 
 from mycroft.client.speech.mic import ResponsiveRecognizer
 
 
-class MockStream(object):
+class MockStream:
     def __init__(self):
         self.chunks = []
 
@@ -48,14 +48,16 @@ class MockSource(AudioSource):
         self.SAMPLE_WIDTH = 2
 
 
-class DynamicEnergytest(unittest.TestCase):
-    def setUp(self):
-        pass
+class MockHotwordEngine(mock.Mock):
+    def __init__(self, *arg, **kwarg):
+        super().__init__(*arg, **kwarg)
+        self.num_phonemes = 10
 
-    @unittest.skip('Disabled while unittests are brought upto date')
+
+class DynamicEnergytest(TestCase):
     def testMaxAudioWithBaselineShift(self):
-        low_base = b"".join(["\x10\x00\x01\x00"] * 100)
-        higher_base = b"".join(["\x01\x00\x00\x01"] * 100)
+        low_base = b"\x10\x00\x01\x00" * 100
+        higher_base = b"\x01\x00\x00\x01" * 100
 
         source = MockSource()
 
@@ -63,7 +65,7 @@ class DynamicEnergytest(unittest.TestCase):
             source.stream.inject(low_base)
 
         source.stream.inject(higher_base)
-        recognizer = ResponsiveRecognizer(None)
+        recognizer = ResponsiveRecognizer(MockHotwordEngine())
 
         sec_per_buffer = float(source.CHUNK) / (source.SAMPLE_RATE *
                                                 source.SAMPLE_WIDTH)
@@ -73,7 +75,7 @@ class DynamicEnergytest(unittest.TestCase):
             test_seconds -= sec_per_buffer
             data = source.stream.read(source.CHUNK)
             energy = recognizer.calc_energy(data, source.SAMPLE_WIDTH)
-            recognizer.adjust_threshold(energy, sec_per_buffer)
+            recognizer._adjust_threshold(energy, sec_per_buffer)
 
         higher_base_energy = audioop.rms(higher_base, source.SAMPLE_WIDTH)
         # after recalibration (because of max audio length) new threshold

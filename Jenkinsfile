@@ -9,6 +9,23 @@ pipeline {
     }
     stages {
         // Run the build in the against the dev branch to check for compile errors
+        stage('Add CLA label to PR') {
+            when {
+                anyOf {
+                    changeRequest target: 'dev'
+                }
+            }
+            environment {
+                //spawns GITHUB_USR and GITHUB_PSW environment variables
+                GITHUB=credentials('38b2e4a6-167a-40b2-be6f-d69be42c8190')
+            }
+            steps {
+                // Using an install of Github repo CLA tagger
+                // (https://github.com/forslund/github-repo-cla)
+                sh '~/github-repo-cla/mycroft-core-cla-check.sh'
+            }
+        }
+
         stage('Run Integration Tests') {
             when {
                 anyOf {
@@ -165,6 +182,32 @@ pipeline {
                         ]
                     )
                 }
+            }
+        }
+        // Build snap package for release
+        stage('Build development Snap package') {
+            when {
+                anyOf {
+                    branch 'dev'
+                }
+            }
+            steps {
+                echo "Launching package build for ${env.BRANCH_NAME}"
+                build (job: '../Mycroft-snap/dev', wait: false,
+                       parameters: [[$class: 'StringParameterValue',
+                                     name: 'BRANCH', value: env.BRANCH_NAME]])
+            }
+        }
+
+        stage('Build Release Snap package') {
+            when {
+                tag "release/v*.*.*"
+            }
+            steps {
+                echo "Launching package build for ${env.TAG_NAME}"
+                build (job: '../Mycroft-snap/dev', wait: false,
+                       parameters: [[$class: 'StringParameterValue',
+                                     name: 'BRANCH', value: env.TAG_NAME]])
             }
         }
         // Build a voight_kampff image for major releases.  This will be used

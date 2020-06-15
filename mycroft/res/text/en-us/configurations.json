@@ -1,0 +1,33 @@
+{
+  "unit system": {
+    "metric": {"system_unit": "metric"},
+    "imperial": {"system_unit": "imperial"}
+  },
+  "location": {
+    "stockholm": {
+      "location": {
+        "city": {
+          "name": "Stockholm",
+          "state": {
+            "code": "SE.18",
+            "country": {
+              "code": "SE",
+              "name": "Sweden"
+            },
+            "name": "Stockholm"
+          }
+        },
+        "coordinate": {
+          "latitude": 59.38306,
+          "longitude": 16.66667
+        },
+        "timezone": {
+          "code": "Europe/Stockholm",
+          "dst_offset": 7200000,
+          "name": "Europe/Stockholm",
+          "offset": 3600000
+        }
+      }
+    }
+  }
+}
