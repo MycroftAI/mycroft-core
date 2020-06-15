@@ -111,7 +111,7 @@ class SkillGUI:
         self.skill.bus.emit(Message("gui.clear.namespace",
                                     {"__from": self.skill.skill_id}))
 
-    def send_event(self, event_name, params=None):
+    def send_event(self, event_name, params={}):
         """Trigger a gui event.
 
         Arguments:
