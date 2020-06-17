@@ -222,3 +222,31 @@ class CommonPlaySkill(MycroftSkill, ABC):
         # Derived classes must implement this, e.g.
         # self.CPS_play("http://zoosh.com/stream_music")
         pass
+
+    def CPS_send_status(self, artist='', track='', album='', image='',
+                        **kwargs):
+        """Inform system of playback status.
+
+        If a skill is handling playback and wants the playback control to be
+        aware of it's current status it can emit this message indicating that
+        it's performing playback and can provide some standard info.
+
+        All parameters are optional so any can be left out. Also if extra
+        non-standard parameters are added, they too will be sent in the message
+        data.
+
+        Arguments:
+            artist (str): Current track artist
+            track (str): Track name
+            album (str): Album title
+            image (str): url for image to show
+        """
+        data = {'skill': self.name,
+                'artist': artist,
+                'album': artist,
+                'track': track,
+                'image': image,
+                'status': None  # TODO Add status system
+                }
+        data = {**data, **kwargs}  # Merge extra arguments
+        self.bus.emit(Message('play:status', data))
