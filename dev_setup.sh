@@ -368,6 +368,10 @@ function redhat_install() {
 
 }
 
+function gentoo_install() {
+    $SUDO emerge --noreplace dev-vcs/git dev-lang/python dev-python/setuptools dev-python/pygobject dev-python/requests sys-devel/libtool virtual/libffi virtual/jpeg dev-libs/openssl sys-devel/autoconf sys-devel/bison dev-lang/swig dev-libs/glib media-libs/portaudio media-sound/mpg123 media-libs/flac net-misc/curl sci-mathematics/fann sys-devel/gcc app-misc/jq media-libs/alsa-lib dev-libs/icu
+}
+
 function alpine_install() {
     $SUDO apk add alpine-sdk git python3 py3-pip py3-setuptools py3-virtualenv mpg123 vorbis-tools pulseaudio-utils fann-dev automake autoconf libtool pcre2-dev pulseaudio-dev alsa-lib-dev swig python3-dev portaudio-dev libjpeg-turbo-dev
 }
@@ -398,10 +402,14 @@ function install_deps() {
         # Arch Linux
         echo "$GREEN Installing packages for Arch...$RESET"
         arch_install
+    elif found_exe emerge && os_is gentoo; then
+        # Gentoo Linux
+        echo "$GREEN Installing packages for Gentoo Linux ...$RESET"
+        gentoo_install	
     elif found_exe apk && os_is alpine; then
-    	# Alpine Linux
-	echo "$GREEN Installing packages for Alpine Linux...$RESET"
-	alpine_install
+        # Alpine Linux
+        echo "$GREEN Installing packages for Alpine Linux...$RESET"
+        alpine_install
     else
     	echo
         echo -e "${YELLOW}Could not find package manager
