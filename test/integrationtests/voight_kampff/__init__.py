@@ -14,4 +14,5 @@
 #
 
 from .tools import (emit_utterance, wait_for_dialog, then_wait,
-                    mycroft_responses, print_mycroft_responses)
+                    then_wait_fail, mycroft_responses,
+                    print_mycroft_responses)
