@@ -190,7 +190,8 @@ class AudioService:
         self.bus.on('recognizer_loop:audio_output_start', self._lower_volume)
         self.bus.on('recognizer_loop:record_begin', self._lower_volume)
         self.bus.on('recognizer_loop:audio_output_end', self._restore_volume)
-        self.bus.on('recognizer_loop:record_end', self._restore_volume)
+        self.bus.on('recognizer_loop:record_end',
+                    self._restore_volume_after_record)
 
     def track_start(self, track):
         """Callback method called from the services to indicate start of
@@ -293,6 +294,27 @@ class AudioService:
             time.sleep(2)
             if not self.volume_is_low:
                 self.current.restore_volume()
+
+    def _restore_volume_after_record(self, message=None):
+        """
+            Restores the volume when Mycroft is done recording.
+            If no utterance detected, restores immediately.
+            Else keeps volume low until Mycroft responds to the utterance.
+
+            Args:
+                message: message bus message, not used but required
+        """
+        def __restore_volume():
+            LOG.debug('restoring volume')
+            self.volume_is_low = False
+            if not self.volume_is_low:
+                self.current.restore_volume()
+            self.bus.remove('recognizer_loop:speech.recognition.unknown',
+                            __restore_volume)
+
+        if self.current:
+            self.bus.on('recognizer_loop:speech.recognition.unknown',
+                        __restore_volume)
 
     def play(self, tracks, prefered_service, repeat=False):
         """
@@ -440,4 +462,5 @@ class AudioService:
         self.bus.remove('recognizer_loop:record_begin', self._lower_volume)
         self.bus.remove('recognizer_loop:audio_output_end',
                         self._restore_volume)
-        self.bus.remove('recognizer_loop:record_end', self._restore_volume)
+        self.bus.remove('recognizer_loop:record_end',
+                        self._restore_volume_after_record)
