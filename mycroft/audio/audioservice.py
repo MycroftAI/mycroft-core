@@ -312,7 +312,6 @@ class AudioService:
             """Wait for a speak Message on the bus.
 
             Arguments:
-                bus (Mycroft MessageBus): Bus instance to listen on
                 timeout (int): how long to wait, defaults to 8 sec
             """
             speak_msg_detected = False
@@ -328,7 +327,7 @@ class AudioService:
         if self.current:
             self.bus.on('recognizer_loop:speech.recognition.unknown',
                         restore_volume)
-            speak_msg_detected = wait_for_speak(self.bus)
+            speak_msg_detected = wait_for_speak()
             if not speak_msg_detected:
                 restore_volume()
             self.bus.remove('recognizer_loop:speech.recognition.unknown',
