@@ -190,7 +190,8 @@ class AudioService:
         self.bus.on('recognizer_loop:audio_output_start', self._lower_volume)
         self.bus.on('recognizer_loop:record_begin', self._lower_volume)
         self.bus.on('recognizer_loop:audio_output_end', self._restore_volume)
-        self.bus.on('recognizer_loop:record_end', self._restore_volume)
+        self.bus.on('recognizer_loop:record_end',
+                    self._restore_volume_after_record)
 
     def track_start(self, track):
         """Callback method called from the services to indicate start of
@@ -293,6 +294,47 @@ class AudioService:
             time.sleep(2)
             if not self.volume_is_low:
                 self.current.restore_volume()
+
+    def _restore_volume_after_record(self, message=None):
+        """
+            Restores the volume when Mycroft is done recording.
+            If no utterance detected, restore immediately.
+            If no response is made in reasonable time, then also restore.
+
+            Args:
+                message: message bus message, not used but required
+        """
+        def restore_volume():
+            LOG.debug('restoring volume')
+            self.current.restore_volume()
+
+        def wait_for_speak(timeout=8):
+            """Wait for a speak Message on the bus.
+
+            Arguments:
+                bus (Mycroft MessageBus): Bus instance to listen on
+                timeout (int): how long to wait, defaults to 8 sec
+            """
+            speak_msg_detected = False
+
+            def detected_speak(message=None):
+                nonlocal speak_msg_detected
+                speak_msg_detected = True
+            self.bus.on('speak', detected_speak)
+            time.sleep(timeout)
+            self.bus.remove('speak', detected_speak)
+            return speak_msg_detected
+
+        if self.current:
+            self.bus.on('recognizer_loop:speech.recognition.unknown',
+                        restore_volume)
+            speak_msg_detected = wait_for_speak(self.bus)
+            if not speak_msg_detected:
+                restore_volume()
+            self.bus.remove('recognizer_loop:speech.recognition.unknown',
+                            restore_volume)
+        else:
+            LOG.debug("No audio service to restore volume of")
 
     def play(self, tracks, prefered_service, repeat=False):
         """
@@ -440,4 +482,5 @@ class AudioService:
         self.bus.remove('recognizer_loop:record_begin', self._lower_volume)
         self.bus.remove('recognizer_loop:audio_output_end',
                         self._restore_volume)
-        self.bus.remove('recognizer_loop:record_end', self._restore_volume)
+        self.bus.remove('recognizer_loop:record_end',
+                        self._restore_volume_after_record)
