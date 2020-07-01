@@ -120,22 +120,24 @@ class MessageBusClient:
             LOG.warning('Could not send {} message because connection '
                         'has been closed'.format(message.msg_type))
 
-    def wait_for_response(self, message, reply_type=None, timeout=None):
+    def wait_for_response(self, message, reply_type=None, timeout=3.0):
         """Send a message and wait for a response.
 
-        Args:
+        Arguments:
             message (Message): message to send
             reply_type (str): the message type of the expected reply.
                               Defaults to "<message.msg_type>.response".
             timeout: seconds to wait before timeout, defaults to 3
+
         Returns:
             The received message or None if the response timed out
         """
-        response = []
+        response = None
 
         def handler(message):
             """Receive response data."""
-            response.append(message)
+            nonlocal response
+            response = message
 
         # Setup response handler
         self.once(reply_type or message.msg_type + '.response', handler)
@@ -143,9 +145,9 @@ class MessageBusClient:
         self.emit(message)
         # Wait for response
         start_time = time.monotonic()
-        while len(response) == 0:
+        while response is None:
             time.sleep(0.2)
-            if time.monotonic() - start_time > (timeout or 3.0):
+            if time.monotonic() - start_time > timeout:
                 try:
                     self.remove(reply_type, handler)
                 except (ValueError, KeyError):
@@ -155,7 +157,7 @@ class MessageBusClient:
                     # the handler is removed
                     pass
                 return None
-        return response[0]
+        return response
 
     def on(self, event_name, func):
         self.emitter.on(event_name, func)
