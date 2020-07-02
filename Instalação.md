@@ -67,14 +67,14 @@ Podemos modificar o idioma do Mycroft utilizando o Configuration Manager.
 source venv-activate.sh
 ```
 
-2. Atualize o `pip` e instale as dependências necessárias
+2. Se necessário, atualize o `pip` e instale as dependências faltantes
 
 ```sh
 pip install --upgrade pip
 pip install mycroft-messagebus-client
 ```
 
-
+3. Mude o idioma para português, utilizando identificador BCP-47 (https://tools.ietf.org/html/bcp47) em caixa-baixa
 
 ```sh
 mycroft-config set lang "pt-br"
