@@ -24,10 +24,11 @@ from requests import RequestException
 from mycroft.util.json_helper import load_commented_json, merge_dict
 from mycroft.util.log import LOG
 
-from .locations import (DEFAULT_CONFIG, DEFAULT_CONFIG_WINDOWS_OVERRIDES, SYSTEM_CONFIG, USER_CONFIG,
-                        WEB_CONFIG_CACHE)
+from .locations import (DEFAULT_CONFIG, DEFAULT_CONFIG_WINDOWS_OVERRIDES,
+                        SYSTEM_CONFIG, USER_CONFIG, WEB_CONFIG_CACHE)
 
 is_windows = sys.platform.startswith("win")
+
 
 def is_remote_list(values):
     """Check if list corresponds to a backend formatted collection of dicts
@@ -204,10 +205,13 @@ class Configuration:
         Returns:
             (dict) merged dict of all configuration files
         """
+        if is_windows:
+            windows_config = LocalConf(DEFAULT_CONFIG_WINDOWS_OVERRIDES) 
+        else:
+            windows_config = dict()
         if not configs:
-            configs = [LocalConf(DEFAULT_CONFIG),
-                       LocalConf(DEFAULT_CONFIG_WINDOWS_OVERRIDES) if is_windows else dict(),
-                       RemoteConf(), LocalConf(SYSTEM_CONFIG), LocalConf(USER_CONFIG),
+            configs = [LocalConf(DEFAULT_CONFIG), windows_config, RemoteConf(),
+                       LocalConf(SYSTEM_CONFIG), LocalConf(USER_CONFIG),
                        Configuration.__patch]
         else:
             # Handle strings in stack
