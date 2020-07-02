@@ -79,7 +79,7 @@ Podemos modificar o idioma do Mycroft utilizando o Configuration Manager:
 mycroft-config set lang "pt-br"
 ```
 
-
+### Via mycroft.conf
 
 As informações avançadas do dispositivo Mycroft são salvas em um arquivo chamado `mycroft.conf`, formatado em JSON, que é salvo localmente. Contém informações sobre o próprio dispositivo. Seu dispositivo e suas funcionalidades instaladas utilizam esse arquivo para configurações.
 
