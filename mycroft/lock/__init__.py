@@ -12,8 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from signal import getsignal, signal, SIGKILL, SIGINT, SIGTERM, \
+from signal import getsignal, signal, SIGINT, SIGTERM, \
     SIG_DFL, default_int_handler, SIG_IGN  # signals
+
+import sys
+
+# windows does not have SIGKILL, but SIGTERM can't be caught
+# in another process so it works the same way.
+if sys.platform.startswith('win'):
+    FORCED_KILL_SIGNAL = SIGTERM
+else:
+    from signal import SIGKILL as FORCED_KILL_SIGNAL
 
 import os  # Operating System functions
 
@@ -142,7 +151,7 @@ class Lock:  # python 3+ 'class Lock'
             return
         with open(self.path, 'r') as L:
             try:
-                os.kill(int(L.read()), SIGKILL)
+                os.kill(int(L.read()), FORCED_KILL_SIGNAL)
             except Exception as E:
                 pass
 
