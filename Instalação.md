@@ -81,7 +81,14 @@ Podemos modificar o idioma do Mycroft utilizando o Configuration Manager.
 source .venv/bin/activate
 ```
 
-2. 
+2. Atualize o `pip` e instale as dependências necessárias
+
+```sh
+pip install --upgrade pip
+pip install mycroft-messagebus-client
+```
+
+
 
 ```sh
 mycroft-config set lang "pt-br"
