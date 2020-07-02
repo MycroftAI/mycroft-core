@@ -54,20 +54,6 @@ Então, o Mycroft falará um código de 6 dígitos que você precisará inserir 
 Mycroft não é nada sem funcionalidades (skills). Existem algumas funcionalidades que são baixadas automaticamente.
 
 
-## Configurando sintetizador de voz em português
-
-A fim de disponibilizar um sintetizador de voz (Text to Speech - TTS) em português para o Mycroft, é necessário instalar os pacotes `eSpeak` e `MBROLA`, que depende do eSpeak para funcionar.
-
-```sh
-$ sudo apt install espeak mbrola
-```
-
-Em sequência, para adicionar mais vozes em português:
-
-```sh
-$ sudo apt install mbrola-br*
-```
-
 ## Mycroft em português
 
 
@@ -101,8 +87,20 @@ Certifique-se de ter iniciado o Mycroft ao menos uma vez, bem como ter feito as 
 ---
 
 
+## Configurando sintetizador de voz em português
 
-### Via mycroft.conf
+A fim de disponibilizar um sintetizador de voz (Text to Speech - TTS) em português para o Mycroft, é necessário instalar os pacotes `eSpeak` e `MBROLA`, que depende do eSpeak para funcionar.
+
+```sh
+$ sudo apt install espeak mbrola
+```
+
+Em sequência, para adicionar mais vozes em português:
+
+```sh
+$ sudo apt install mbrola-br*
+```
+
 
 As informações avançadas do dispositivo Mycroft são salvas em um arquivo chamado `mycroft.conf`, formatado em JSON, que é salvo localmente. Contém informações sobre o próprio dispositivo. Seu dispositivo e suas funcionalidades instaladas utilizam esse arquivo para configurações.
 
