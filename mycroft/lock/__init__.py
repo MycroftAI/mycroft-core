@@ -15,15 +15,6 @@
 from signal import getsignal, signal, SIGINT, SIGTERM, \
     SIG_DFL, default_int_handler, SIG_IGN  # signals
 
-import sys
-
-# windows does not have SIGKILL, but SIGTERM can't be caught
-# in another process so it works the same way.
-if sys.platform.startswith('win'):
-    FORCED_KILL_SIGNAL = SIGTERM
-else:
-    from signal import SIGKILL as FORCED_KILL_SIGNAL
-
 import os  # Operating System functions
 
 
@@ -31,6 +22,15 @@ import os  # Operating System functions
 # Wrapper around chain of handler functions for a specific system level signal.
 # Often used to trap Ctrl-C for specific application purposes.
 from mycroft.util import LOG
+
+import sys
+
+# windows does not have SIGKILL, but SIGTERM can't be caught
+# in another process so it works the same way.
+if not sys.platform.startswith('win'):
+    from signal import SIGKILL as FORCED_KILL_SIGNAL
+else:
+    FORCED_KILL_SIGNAL = SIGTERM
 
 
 class Signal:  # python 3+ class Signal
