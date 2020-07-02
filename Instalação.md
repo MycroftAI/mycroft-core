@@ -76,7 +76,7 @@ $ sudo apt install mbrola-br*
 Podemos modificar o idioma do Mycroft utilizando o Configuration Manager:
 
 ```sh
-mycroft-config set lang "it-it"
+mycroft-config set lang "pt-br"
 ```
 
 
