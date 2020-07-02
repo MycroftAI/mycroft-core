@@ -73,7 +73,15 @@ $ sudo apt install mbrola-br*
 
 ### Configurações de idioma
 
-Podemos modificar o idioma do Mycroft utilizando o Configuration Manager:
+Podemos modificar o idioma do Mycroft utilizando o Configuration Manager.
+
+1. Ative o ambiente virtual do Mycroft executando dentro da pasta `mycroft-core`:
+
+```sh
+source .venv/bin/activate
+```
+
+2. 
 
 ```sh
 mycroft-config set lang "pt-br"
