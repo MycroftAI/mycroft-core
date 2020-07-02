@@ -206,7 +206,7 @@ class Configuration:
             (dict) merged dict of all configuration files
         """
         if is_windows:
-            windows_config = LocalConf(DEFAULT_CONFIG_WINDOWS_OVERRIDES) 
+            windows_config = LocalConf(DEFAULT_CONFIG_WINDOWS_OVERRIDES)
         else:
             windows_config = dict()
         if not configs:
