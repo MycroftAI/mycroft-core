@@ -78,7 +78,7 @@ Podemos modificar o idioma do Mycroft utilizando o Configuration Manager.
 1. Ative o ambiente virtual do Mycroft executando dentro da pasta `mycroft-core`:
 
 ```sh
-source .venv/bin/activate
+source venv-activate.sh
 ```
 
 2. Atualize o `pip` e instale as dependências necessárias
