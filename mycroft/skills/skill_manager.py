@@ -297,14 +297,15 @@ class SkillManager(Thread):
         return skill_loader if load_status else None
 
     def _get_skill_directories(self):
-        skill_glob = glob(os.path.join(self.msm.skills_dir, '*/'))
+        glob_path = os.path.join(self.msm.skills_dir, '*' + os.sep)
+        skill_glob = glob(glob_path)
 
         skill_directories = []
         for skill_dir in skill_glob:
             # TODO: all python packages must have __init__.py!  Better way?
             # check if folder is a skill (must have __init__.py)
             if SKILL_MAIN_MODULE in os.listdir(skill_dir):
-                skill_directories.append(skill_dir.rstrip('/'))
+                skill_directories.append(skill_dir.rstrip(os.sep))
             else:
                 LOG.debug('Found skills directory with no skill: ' + skill_dir)
 
