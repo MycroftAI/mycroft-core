@@ -162,6 +162,9 @@ class MycroftSkill:
         self.event_scheduler = EventSchedulerInterface(self.name)
         self.intent_service = IntentServiceInterface()
 
+        # Skill Public API
+        self.public_api = {}
+
     def _init_settings(self):
         """Setup skill settings."""
 
@@ -258,6 +261,23 @@ class MycroftSkill:
             # Initialize the SkillGui
             self.gui.setup_default_handlers()
 
+            self._register_public_api()
+
+    def _register_public_api(self):
+        """Register handlers for the methods marked as public api methods."""
+        name = basename(self.root_dir.rstrip('/'))
+        # Register handlers for the public api
+        for key in self.public_api:
+            if ('type' in self.public_api[key] and
+                    'func' in self.public_api[key]):
+                self.add_event(self.public_api[key]['type'],
+                               self.public_api[key]['func'])
+                # remove the function member since it shouldn't be
+                # reused and can't be sent over the messagebus
+                self.public_api[key].pop('func')
+
+        self.add_event('{}.public_api'.format(name), self._send_public_api)
+
     def _register_system_event_handlers(self):
         """Add all events allowing the standard interaction with the Mycroft
         system.
@@ -323,6 +343,10 @@ class MycroftSkill:
         system.
         """
         pass
+
+    def _send_public_api(self, message):
+        """Respond with the skill's public api."""
+        self.bus.emit(message.response(data=self.public_api))
 
     def get_intro_message(self):
         """Get a message to speak on first load of the skill.

@@ -39,6 +39,8 @@ from mycroft.util import (
 from mycroft.util.lang import set_active_lang
 from mycroft.util.log import LOG
 from mycroft.util.process_utils import ProcessStatus, StatusCallbackMap
+
+from .api import SkillApi
 from .core import FallbackSkill
 from .event_scheduler import EventScheduler
 from .intent_service import IntentService
@@ -211,6 +213,7 @@ def main(alive_hook=on_alive, started_hook=on_started, ready_hook=on_ready,
                                   on_stopping=stopping_hook)
     status = ProcessStatus('skills', bus, callbacks)
 
+    SkillApi.connect_bus(bus)
     skill_manager = _initialize_skill_manager(bus, watchdog)
 
     status.set_started()
