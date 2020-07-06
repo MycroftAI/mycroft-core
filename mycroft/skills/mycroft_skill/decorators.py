@@ -60,3 +60,15 @@ def resting_screen_handler(name):
         return func
 
     return real_decorator
+
+
+def skill_api_method(func):
+    """Decorator for adding a method to the skill's public api.
+
+    Methods with this decorator will be registered on the message bus
+    and an api object can be created for interaction with the skill.
+    """
+    # tag the method by adding an api_method member to it
+    if not hasattr(func, 'api_method') and hasattr(func, '__name__'):
+        func.api_method = True
+    return func

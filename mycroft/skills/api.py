@@ -27,18 +27,25 @@ class SkillApi():
     bus = None
 
     @classmethod
-    def connect_bus(mycroft_bus):
+    def connect_bus(cls, mycroft_bus):
         """Registers the bus object to use."""
-        SkillApi.bus = mycroft_bus
+        cls.bus = mycroft_bus
 
     def __init__(self, method_dict):
         self.method_dict = method_dict
         for key in method_dict:
             def get_method(k):
-                def method(**kwargs):
+                def method(*args, **kwargs):
                     m = self.method_dict[k]
-                    method_msg = Message(m['type'], data=kwargs)
-                    return SkillApi.bus.wait_for_response(method_msg)
+                    data = {'args': args, 'kwargs': kwargs}
+                    method_msg = Message(m['type'], data)
+                    response = SkillApi.bus.wait_for_response(method_msg)
+                    if (response and response.data and
+                            'result' in response.data):
+                        return response.data['result']
+                    else:
+                        return None
+
                 return method
 
             self.__setattr__(key, get_method(key))
