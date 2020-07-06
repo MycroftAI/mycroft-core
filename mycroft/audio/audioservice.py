@@ -308,26 +308,11 @@ class AudioService:
             LOG.debug('restoring volume')
             self.current.restore_volume()
 
-        def wait_for_speak(timeout=8):
-            """Wait for a speak Message on the bus.
-
-            Arguments:
-                timeout (int): how long to wait, defaults to 8 sec
-            """
-            speak_msg_detected = False
-
-            def detected_speak(message=None):
-                nonlocal speak_msg_detected
-                speak_msg_detected = True
-            self.bus.on('speak', detected_speak)
-            time.sleep(timeout)
-            self.bus.remove('speak', detected_speak)
-            return speak_msg_detected
-
         if self.current:
             self.bus.on('recognizer_loop:speech.recognition.unknown',
                         restore_volume)
-            speak_msg_detected = wait_for_speak()
+            speak_msg_detected = self.bus.wait_for_message('speak',
+                                                           timeout=8.0)
             if not speak_msg_detected:
                 restore_volume()
             self.bus.remove('recognizer_loop:speech.recognition.unknown',
