@@ -19,7 +19,7 @@ PyYAML==5.1.2
 lingua-franca==0.2.1
 msm==0.8.7
 msk==0.3.15
-adapt-parser==0.3.4
+adapt-parser==0.3.6
 padatious==0.4.8
 fann2==1.0.7
 padaos==0.1.9
