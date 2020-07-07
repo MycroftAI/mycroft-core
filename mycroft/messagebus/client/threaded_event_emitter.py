@@ -12,9 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""
+The threaded event emitter is deprecated in favor of pyee's
+ExecutorEventEmitter.
+
+The ThreadedEventEmitter executes events using a threadpool allowing
+concurrent execution of events.
+"""
 from pyee import EventEmitter
 from multiprocessing.pool import ThreadPool
 from collections import defaultdict
+
+from mycroft.util.log import LOG
 
 
 class ThreadedEventEmitter(EventEmitter):
@@ -25,6 +34,7 @@ class ThreadedEventEmitter(EventEmitter):
         super().__init__()
         self.pool = ThreadPool(threads)
         self.wrappers = defaultdict(list)
+        LOG.warning('Depreciated, use ExecutorEventEmitter in pyee instead.')
 
     def on(self, event, f=None):
         """ Wrap on with a threaded launcher. """
