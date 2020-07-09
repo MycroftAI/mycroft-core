@@ -27,7 +27,7 @@ from mycroft.messagebus.load_config import load_message_bus_config
 from mycroft.messagebus.message import Message
 from mycroft.util import create_echo_function
 from mycroft.util.log import LOG
-from .threaded_event_emitter import ThreadedEventEmitter
+from pyee import ExecutorEventEmitter
 
 
 class MessageWaiter:
@@ -81,7 +81,7 @@ class MessageBusClient:
     def __init__(self, host=None, port=None, route=None, ssl=None):
         config_overrides = dict(host=host, port=port, route=route, ssl=ssl)
         self.config = load_message_bus_config(**config_overrides)
-        self.emitter = ThreadedEventEmitter()
+        self.emitter = ExecutorEventEmitter()
         self.client = self.create_client()
         self.retry = 5
         self.connected_event = Event()

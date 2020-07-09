@@ -2,7 +2,7 @@ six==1.13.0
 requests==2.20.0
 gTTS==2.0.4
 PyAudio==0.2.11
-pyee==5.0.0
+pyee==7.0.1
 SpeechRecognition==3.8.1
 tornado==6.0.3
 websocket-client==0.54.0
@@ -19,7 +19,7 @@ PyYAML==5.1.2
 lingua-franca==0.2.1
 msm==0.8.7
 msk==0.3.15
-adapt-parser==0.3.4
+adapt-parser==0.3.6
 padatious==0.4.8
 fann2==1.0.7
 padaos==0.1.9
