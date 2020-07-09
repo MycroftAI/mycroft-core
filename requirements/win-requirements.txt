@@ -20,8 +20,8 @@ lingua-franca==0.2.1
 msm==0.8.7
 msk==0.3.15
 adapt-parser==0.3.4
+git+https://github.com/NoamDev/fann2-windows.git
 padatious==0.4.8
-
 padaos==0.1.9
 precise-runner==0.2.1
 petact==0.1.2
