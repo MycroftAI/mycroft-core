@@ -33,16 +33,16 @@ from .tts import TTS, TTSValidator
 config = Configuration.get().get("tts").get("mimic")
 data_dir = expanduser(Configuration.get()['data_dir'])
 
-mimic_base_name = "mimic.exe" if sys.platform.startswith("win") else "mimic"
+mimic_base = "mimic.exe" if sys.platform.startswith("win") else "mimic"
 
 BIN = config.get("path",
-                 os.path.join(MYCROFT_ROOT_PATH, 'mimic', 'bin', mimic_base_name))
+                 os.path.join(MYCROFT_ROOT_PATH, 'mimic', 'bin', mimic_base))
 
 if not os.path.isfile(BIN):
     # Search for mimic on the path
     import distutils.spawn
 
-    BIN = distutils.spawn.find_executable(mimic_base_name)
+    BIN = distutils.spawn.find_executable(mimic_base)
 
 SUBSCRIBER_VOICES = {'trinity': join(data_dir, 'voices/mimic_tn')}
 
