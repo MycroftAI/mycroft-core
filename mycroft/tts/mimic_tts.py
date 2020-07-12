@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 import os
+import sys
 import stat
 import subprocess
 from threading import Thread
@@ -32,14 +33,16 @@ from .tts import TTS, TTSValidator
 config = Configuration.get().get("tts").get("mimic")
 data_dir = expanduser(Configuration.get()['data_dir'])
 
+mimic_base_name = "mimic.exe" if sys.platform.startswith("win") else "mimic"
+
 BIN = config.get("path",
-                 os.path.join(MYCROFT_ROOT_PATH, 'mimic', 'bin', 'mimic'))
+                 os.path.join(MYCROFT_ROOT_PATH, 'mimic', 'bin', mimic_base_name))
 
 if not os.path.isfile(BIN):
     # Search for mimic on the path
     import distutils.spawn
 
-    BIN = distutils.spawn.find_executable("mimic")
+    BIN = distutils.spawn.find_executable(mimic_base_name)
 
 SUBSCRIBER_VOICES = {'trinity': join(data_dir, 'voices/mimic_tn')}
 
