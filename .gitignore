@@ -24,6 +24,7 @@ doc/_build/
 .installed
 .mypy_cache
 .vscode
+.theia
 .venv/
 
 # Created by unit tests

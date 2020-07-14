@@ -7,3 +7,7 @@ seksten: sejsten
 spotify: spåtifej
 spot-ify: spåtifej
 chat: tjat
+wifi: vejfej
+uploade: oplåte 
+wake-word-aktiveringer: wæik word aktiveringer
+SSH-login: SSH-log-in

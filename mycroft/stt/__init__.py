@@ -108,14 +108,84 @@ class WITSTT(TokenSTT):
         return self.recognizer.recognize_wit(audio, self.token)
 
 
-class IBMSTT(BasicSTT):
+class IBMSTT(TokenSTT):
+    """
+        IBM Speech to Text
+        Enables IBM Speech to Text access using API key. To use IBM as a
+        service provider, it must be configured locally in your config file. An
+        IBM Cloud account with Speech to Text enabled is required (limited free
+        tier may be available). STT config should match the following format:
+
+        "stt": {
+            "module": "ibm",
+            "ibm": {
+                "credential": {
+                    "token": "YOUR_API_KEY"
+                },
+                "url": "URL_FROM_SERVICE"
+            }
+        }
+    """
     def __init__(self):
         super(IBMSTT, self).__init__()
 
     def execute(self, audio, language=None):
+        if not self.token:
+            raise ValueError('API key (token) for IBM Cloud is not defined.')
+
+        url_base = self.config.get('url', '')
+        if not url_base:
+            raise ValueError('URL for IBM Cloud is not defined.')
+        url = url_base + '/v1/recognize'
+
         self.lang = language or self.lang
-        return self.recognizer.recognize_ibm(audio, self.username,
-                                             self.password, self.lang)
+        supported_languages = [
+            'ar-AR', 'pt-BR', 'zh-CN', 'nl-NL', 'en-GB', 'en-US', 'fr-FR',
+            'de-DE', 'it-IT', 'ja-JP', 'ko-KR', 'es-AR', 'es-ES', 'es-CL',
+            'es-CO', 'es-MX', 'es-PE'
+        ]
+        if self.lang not in supported_languages:
+            raise ValueError(
+                'Unsupported language "{}" for IBM STT.'.format(self.lang))
+
+        audio_model = 'BroadbandModel'
+        if audio.sample_rate < 16000 and not self.lang == 'ar-AR':
+            audio_model = 'NarrowbandModel'
+
+        params = {
+            'model': '{}_{}'.format(self.lang, audio_model),
+            'profanity_filter': 'false'
+        }
+        headers = {
+            'Content-Type': 'audio/x-flac',
+            'X-Watson-Learning-Opt-Out': 'true'
+        }
+
+        response = post(url, auth=('apikey', self.token), headers=headers,
+                        data=audio.get_flac_data(), params=params)
+
+        if response.status_code == 200:
+            result = json.loads(response.text)
+            if result.get('error_code') is None:
+                if ('results' not in result or len(result['results']) < 1 or
+                        'alternatives' not in result['results'][0]):
+                    raise Exception(
+                        'Transcription failed. Invalid or empty results.')
+                transcription = []
+                for utterance in result['results']:
+                    if 'alternatives' not in utterance:
+                        raise Exception(
+                            'Transcription failed. Invalid or empty results.')
+                    for hypothesis in utterance['alternatives']:
+                        if 'transcript' in hypothesis:
+                            transcription.append(hypothesis['transcript'])
+                return '\n'.join(transcription)
+        elif response.status_code == 401:  # Unauthorized
+            raise Exception('Invalid API key for IBM Cloud.')
+        else:
+            raise Exception(
+                'Request to IBM Cloud failed. Code: {} Body: {}'.format(
+                    response.status_code, response.text))
 
 
 class YandexSTT(STT):

@@ -40,6 +40,9 @@ _TTS_ENV = deepcopy(os.environ)
 _TTS_ENV['PULSE_PROP'] = 'media.role=phone'
 
 
+EMPTY_PLAYBACK_QUEUE_TUPLE = (None, None, None, None, None)
+
+
 class PlaybackThread(Thread):
     """Thread class for playing back tts audio and sending
     viseme data to enclosure.
@@ -51,6 +54,7 @@ class PlaybackThread(Thread):
         self._terminated = False
         self._processing_queue = False
         self.enclosure = None
+        self.p = None
         # Check if the tts shall have a ducking role set
         if Configuration.get().get('tts', {}).get('pulse_duck'):
             self.pulse_env = _TTS_ENV
@@ -102,8 +106,9 @@ class PlaybackThread(Thread):
                         self.p = play_mp3(data, environment=self.pulse_env)
                     if visemes:
                         self.show_visemes(visemes)
-                    self.p.communicate()
-                    self.p.wait()
+                    if self.p:
+                        self.p.communicate()
+                        self.p.wait()
                 report_timing(ident, 'speech_playback', stopwatch)
 
                 if self.queue.empty():
@@ -182,7 +187,7 @@ class TTS(metaclass=ABCMeta):
 
     def load_spellings(self):
         """Load phonetic spellings of words as dictionary"""
-        path = join('text', self.lang, 'phonetic_spellings.txt')
+        path = join('text', self.lang.lower(), 'phonetic_spellings.txt')
         spellings_file = resolve_resource_file(path)
         if not spellings_file:
             return {}
@@ -312,6 +317,15 @@ class TTS(metaclass=ABCMeta):
         sentence = self.validate_ssml(sentence)
 
         create_signal("isSpeaking")
+        try:
+            self._execute(sentence, ident, listen)
+        except Exception:
+            # If an error occurs end the audio sequence through an empty entry
+            self.queue.put(EMPTY_PLAYBACK_QUEUE_TUPLE)
+            # Re-raise to allow the Exception to be handled externally as well.
+            raise
+
+    def _execute(self, sentence, ident, listen):
         if self.phonetic_spelling:
             for word in re.findall(r"[\w']+", sentence):
                 if word.lower() in self.spellings:
@@ -462,6 +476,8 @@ class TTSFactory:
     from mycroft.tts.responsive_voice_tts import ResponsiveVoice
     from mycroft.tts.mimic2_tts import Mimic2
     from mycroft.tts.yandex_tts import YandexTTS
+    from mycroft.tts.dummy_tts import DummyTTS
+    from mycroft.tts.polly_tts import PollyTTS
 
     CLASSES = {
         "mimic": Mimic,
@@ -474,7 +490,9 @@ class TTSFactory:
         "watson": WatsonTTS,
         "bing": BingTTS,
         "responsive_voice": ResponsiveVoice,
-        "yandex": YandexTTS
+        "yandex": YandexTTS,
+        "polly": PollyTTS,
+        "dummy": DummyTTS
     }
 
     @staticmethod

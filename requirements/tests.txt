@@ -5,3 +5,7 @@ pytest-cov==2.8.1
 cov-core==1.15.0
 sphinx==2.2.1
 sphinx-rtd-theme==0.4.3
+git+https://github.com/behave/behave@v1.2.7.dev1
+allure-behave==2.8.10
+
+python-vlc==1.1.2

@@ -20,9 +20,40 @@ DIR="$( dirname "$SOURCE" )"
 # Enter the Mycroft venv
 source "$DIR/../venv-activate.sh" -q
 
+function vktest-clear() {
+    FEATURES_DIR="$DIR/../test/integrationtests/voight_kampff/features"
+    num_feature_files=$(ls $FEATURES_DIR | wc -l) 
+    # A clean directory will have `steps/` and `environment.py`
+    if [ $num_feature_files -gt "2" ] ; then
+        echo "Removing Feature files..."
+        rm ${DIR}/../test/integrationtests/voight_kampff/features/*.feature
+        rm ${DIR}/../test/integrationtests/voight_kampff/features/*.config.json
+    fi
+    STEPS_DIR="$FEATURES_DIR/steps"
+    num_steps_files=$(ls $STEPS_DIR | wc -l)
+    if [ $num_steps_files -gt "2" ] ; then
+        echo "Removing Custom Step files..."
+        TMP_DIR="$STEPS_DIR/tmp"
+        mkdir $TMP_DIR
+        mv "$STEPS_DIR/configuration.py" $TMP_DIR
+        mv "$STEPS_DIR/utterance_responses.py" $TMP_DIR
+        rm ${STEPS_DIR}/*.py
+        mv ${TMP_DIR}/* $STEPS_DIR
+        rmdir $TMP_DIR
+    fi
+    echo "Voight Kampff tests clear."
+}
+
 # Invoke the individual skill tester
 if [ "$#" -eq 0 ] ; then
     python -m test.integrationtests.skills.runner .
+elif [ "$1" = "vktest" ] ; then
+    if [ "$2" = "clear" ] ; then
+        vktest-clear
+    else
+        shift
+        python -m test.integrationtests.voight_kampff "$@"
+    fi
 else
     python -m test.integrationtests.skills.runner $@
 fi

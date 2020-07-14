@@ -149,7 +149,7 @@ class AudioService:
         info = self.bus.wait_for_response(
             Message('mycroft.audio.service.track_info'),
             reply_type='mycroft.audio.service.track_info_reply',
-            timeout=5)
+            timeout=1)
         return info.data if info else {}
 
     def available_backends(self):

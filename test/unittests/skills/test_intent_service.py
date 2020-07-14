@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from threading import Thread
-import time
 from unittest import TestCase, mock
 
 from mycroft.messagebus import Message
@@ -89,27 +87,22 @@ class ConversationTest(TestCase):
         Also check that the skill that handled the query is moved to the
         top of the active skill list.
         """
-        result = None
+        def response(message, return_msg_type):
+            c64 = Message(return_msg_type, {'skill_id': 'c64_skill',
+                                            'result': False})
+            atari = Message(return_msg_type, {'skill_id': 'atari_skill',
+                                              'result': True})
+            msgs = {'c64_skill': c64, 'atari_skill': atari}
 
-        def runner(utterances, lang, message):
-            nonlocal result
-            result = self.intent_service._converse(utterances, lang, message)
+            return msgs[message.data['skill_id']]
+
+        self.intent_service.bus.wait_for_response.side_effect = response
 
         hello = ['hello old friend']
         utterance_msg = Message('recognizer_loop:utterance',
                                 data={'lang': 'en-US',
                                       'utterances': hello})
-        t = Thread(target=runner, args=(hello, 'en-US', utterance_msg))
-        t.start()
-        time.sleep(0.5)
-        self.intent_service.handle_converse_response(
-            Message('converse.response', {'skill_id': 'c64_skill',
-                                          'result': False}))
-        time.sleep(0.5)
-        self.intent_service.handle_converse_response(
-            Message('converse.response', {'skill_id': 'atari_skill',
-                                          'result': True}))
-        t.join()
+        result = self.intent_service._converse(hello, 'en-US', utterance_msg)
 
         # Check that the active skill list was updated to set the responding
         # Skill first.
@@ -119,25 +112,67 @@ class ConversationTest(TestCase):
         # Check that a skill responded that it could handle the message
         self.assertTrue(result)
 
+    def test_converse_error(self):
+        """Check that all skill IDs in the active_skills list are called.
+        even if there's an error.
+        """
+        def response(message, return_msg_type):
+            c64 = Message(return_msg_type, {'skill_id': 'c64_skill',
+                                            'result': False})
+            amiga = Message(return_msg_type,
+                            {'skill_id': 'amiga_skill',
+                             'error': 'skill id does not exist'})
+            atari = Message(return_msg_type, {'skill_id': 'atari_skill',
+                                              'result': False})
+            msgs = {'c64_skill': c64,
+                    'atari_skill': atari,
+                    'amiga_skill': amiga}
+
+            return msgs[message.data['skill_id']]
+
+        self.intent_service.add_active_skill('amiga_skill')
+        self.intent_service.bus.wait_for_response.side_effect = response
+
+        hello = ['hello old friend']
+        utterance_msg = Message('recognizer_loop:utterance',
+                                data={'lang': 'en-US',
+                                      'utterances': hello})
+        result = self.intent_service._converse(hello, 'en-US', utterance_msg)
+
+        # Check that the active skill list was updated to set the responding
+        # Skill first.
+
+        # Check that a skill responded that it couldn't handle the message
+        self.assertFalse(result)
+
+        # Check that each skill in the list of active skills were called
+        call_args = self.intent_service.bus.wait_for_response.call_args_list
+        sent_skill_ids = [call[0][0].data['skill_id'] for call in call_args]
+        self.assertEqual(sent_skill_ids,
+                         ['amiga_skill', 'c64_skill', 'atari_skill'])
+
     def test_reset_converse(self):
         """Check that a blank stt sends the reset signal to the skills."""
-        print(self.intent_service.active_skills)
+        def response(message, return_msg_type):
+            c64 = Message(return_msg_type,
+                          {'skill_id': 'c64_skill',
+                           'error': 'skill id does not exist'})
+            atari = Message(return_msg_type, {'skill_id': 'atari_skill',
+                                              'result': False})
+            msgs = {'c64_skill': c64, 'atari_skill': atari}
+
+            return msgs[message.data['skill_id']]
+
         reset_msg = Message('mycroft.speech.recognition.unknown',
                             data={'lang': 'en-US'})
-        t = Thread(target=self.intent_service.reset_converse,
-                   args=(reset_msg,))
-        t.start()
-        time.sleep(0.5)
-        self.intent_service.handle_converse_error(
-            Message('converse.error', {'skill_id': 'c64_skill',
-                                       'error': 'skill id does not exist'}))
-        time.sleep(0.5)
-        self.intent_service.handle_converse_response(
-            Message('converse.response', {'skill_id': 'atari_skill',
-                                          'result': False}))
+        self.intent_service.bus.wait_for_response.side_effect = response
 
+        self.intent_service.reset_converse(reset_msg)
         # Check send messages
-        c64_message = self.intent_service.bus.emit.call_args_list[0][0][0]
+        wait_for_response_mock = self.intent_service.bus.wait_for_response
+        c64_message = wait_for_response_mock.call_args_list[0][0][0]
         self.assertTrue(check_converse_request(c64_message, 'c64_skill'))
-        atari_message = self.intent_service.bus.emit.call_args_list[1][0][0]
+        atari_message = wait_for_response_mock.call_args_list[1][0][0]
         self.assertTrue(check_converse_request(atari_message, 'atari_skill'))
+        first_active_skill = self.intent_service.active_skills[0][0]
+        self.assertEqual(first_active_skill, 'atari_skill')

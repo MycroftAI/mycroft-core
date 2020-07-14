@@ -25,7 +25,7 @@ from mycroft.util.log import LOG
 # START_VERSION_BLOCK
 CORE_VERSION_MAJOR = 20
 CORE_VERSION_MINOR = 2
-CORE_VERSION_BUILD = 0
+CORE_VERSION_BUILD = 4
 # END_VERSION_BLOCK
 
 CORE_VERSION_TUPLE = (CORE_VERSION_MAJOR,
@@ -45,7 +45,7 @@ class VersionManager:
                     return json.load(f)
             except Exception:
                 LOG.error("Failed to load version from '%s'" % version_file)
-        return {"coreVersion": None, "enclosureVersion": None}
+        return {"coreVersion": CORE_VERSION_STR, "enclosureVersion": None}
 
 
 def check_version(version_string):

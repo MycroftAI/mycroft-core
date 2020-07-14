@@ -190,7 +190,8 @@ class AudioService:
         self.bus.on('recognizer_loop:audio_output_start', self._lower_volume)
         self.bus.on('recognizer_loop:record_begin', self._lower_volume)
         self.bus.on('recognizer_loop:audio_output_end', self._restore_volume)
-        self.bus.on('recognizer_loop:record_end', self._restore_volume)
+        self.bus.on('recognizer_loop:record_end',
+                    self._restore_volume_after_record)
 
     def track_start(self, track):
         """Callback method called from the services to indicate start of
@@ -293,6 +294,31 @@ class AudioService:
             time.sleep(2)
             if not self.volume_is_low:
                 self.current.restore_volume()
+
+    def _restore_volume_after_record(self, message=None):
+        """
+            Restores the volume when Mycroft is done recording.
+            If no utterance detected, restore immediately.
+            If no response is made in reasonable time, then also restore.
+
+            Args:
+                message: message bus message, not used but required
+        """
+        def restore_volume():
+            LOG.debug('restoring volume')
+            self.current.restore_volume()
+
+        if self.current:
+            self.bus.on('recognizer_loop:speech.recognition.unknown',
+                        restore_volume)
+            speak_msg_detected = self.bus.wait_for_message('speak',
+                                                           timeout=8.0)
+            if not speak_msg_detected:
+                restore_volume()
+            self.bus.remove('recognizer_loop:speech.recognition.unknown',
+                            restore_volume)
+        else:
+            LOG.debug("No audio service to restore volume of")
 
     def play(self, tracks, prefered_service, repeat=False):
         """
@@ -440,4 +466,5 @@ class AudioService:
         self.bus.remove('recognizer_loop:record_begin', self._lower_volume)
         self.bus.remove('recognizer_loop:audio_output_end',
                         self._restore_volume)
-        self.bus.remove('recognizer_loop:record_end', self._restore_volume)
+        self.bus.remove('recognizer_loop:record_end',
+                        self._restore_volume_after_record)

@@ -84,14 +84,32 @@ When the configuration loader starts, it looks in these locations in this order,
 
 ## Using Mycroft Without Home
 
-If you do not wish to use the Mycroft Home service, you may insert your own API keys into the configuration files listed below in <b>configuration</b>.
+If you do not wish to use the Mycroft Home service, before starting Mycroft for the first time, create `$HOME/.mycroft/mycroft.conf` with the following contents:
 
-The place to insert the API key looks like the following:
+```
+{
+  "skills": {
+    "blacklisted_skills": [
+      "mycroft-configuration.mycroftai",
+      "mycroft-pairing.mycroftai"
+    ]
+  }
+}
+```
 
-`[WeatherSkill]`
-`api_key = ""`
+Mycroft will then be unable to perform speech-to-text conversion, so you'll need to set that up as well, using one of the [STT engines Mycroft supports](https://mycroft-ai.gitbook.io/docs/using-mycroft-ai/customizations/stt-engine).
 
-Put a relevant key inside the quotes and mycroft-core should begin to use the key immediately.
+You may insert your own API keys into the configuration files listed above in <b>Configuration</b>.  For example, to insert the API key for the Weather skill, create a new JSON key in the configuration file like so:
+
+```
+{
+  // other configuration settings...
+  //
+  "WeatherSkill": {
+    "api_key": "<insert your API key here>"
+  }
+}
+```
 
 ## API Key Services
 
