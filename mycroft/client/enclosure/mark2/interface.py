@@ -74,7 +74,7 @@ class EnclosureMark2(Enclosure):
         """Connect to the display bus to send messages."""
         websocket_url = 'ws://{host}:{port}/display'.format(
             host=websocket_config['host'],
-            port=websocket_config['base_port']
+            port=8282
         )
         LOG.info('Connecting to display websocket on ' + websocket_url)
         self.display_bus_client = WebSocketApp(

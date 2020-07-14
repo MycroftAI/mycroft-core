@@ -34,10 +34,7 @@ def start_display_message_bus(websocket_config):
         display_message_bus = Application(
             handlers=[display_message_handler]
         )
-        display_message_bus.listen(
-            websocket_config['base_port'],
-            websocket_config['host']
-        )
+        display_message_bus.listen(8282, websocket_config['host'])
     except Exception:
         LOG.exception('Error creating display application')
     else:
