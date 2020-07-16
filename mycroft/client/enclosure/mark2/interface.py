@@ -92,7 +92,7 @@ class EnclosureMark2(Enclosure):
     def on_core_ready(self, _):
         """When core reports that it is ready for use, update display."""
         if not self.is_pairing:
-            self._finish_screen('loading', wait_for_it=4)
+            self._finish_screen('loading', wait_for_it=5)
             self._show_screen('splash')
             self.finished_loading = True
             Timer(7, self.show_idle).start()
@@ -217,7 +217,7 @@ class EnclosureMark2(Enclosure):
 
     def on_internet_connected(self, _):
         """Once connected to the internet, change the screen displayed."""
-        self._finish_screen(screen_name='loading', wait_for_it=4)
+        self._finish_screen(screen_name='loading', wait_for_it=5)
         self._show_screen('wifi_connected')
         sleep(2)
         screen_data = dict(loading_status='LOADING SKILLS')
