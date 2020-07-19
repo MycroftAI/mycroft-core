@@ -23,7 +23,7 @@ class Festival(TTS):
 
     def execute(self, sentence, ident=None, listen=False):
         self.begin_audio()
-        subprocess.call("echo " + sentence + "| iconv -f utf8 -t latin1 | festival --tts --language catalan", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        subprocess.call("echo \"" + sentence + "\" | iconv -f utf8 -t ISO-8859-15//TRANSLIT | festival --tts --language " + self.lang, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         self.end_audio(listen)
 
 
