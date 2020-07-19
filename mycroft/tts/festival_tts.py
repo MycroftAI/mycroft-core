@@ -14,30 +14,17 @@
 #
 import subprocess
 
-from mycroft.util.log import LOG
-
 from .tts import TTS, TTSValidator
 
 
 class Festival(TTS):
-    """TTS module for generating speech using Festival."""
-    def __init__(self, lang):
-        super(Festival, self).__init__(lang, FestivalValidator(self))
+    def __init__(self, lang, config):
+        super(Festival, self).__init__(lang, config, FestivalValidator(self))
 
-    def get_tts(self, sentence, wav_file):
-        """Generate WAV from sentence, phonemes aren't supported.
-
-        Arguments:
-            sentence (str): sentence to generate audio for
-            wav_file (str): output file
-
-        Returns:
-            tuple ((str) file location, None)
-        """
-        subprocess.call(
-            ['echo', sentence, '|', 'text2wave', '-o', wav_file], shell=True)
-        LOG.info('Mycroft Festival: {}'.format(sentence))
-        return wav_file, None
+    def execute(self, sentence, ident=None, listen=False):
+        self.begin_audio()
+        subprocess.call("echo " + sentence + "| iconv -f utf8 -t latin1 | festival --tts --language catalan", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        self.end_audio(listen)
 
 
 class FestivalValidator(TTSValidator):
