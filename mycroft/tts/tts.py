@@ -465,6 +465,7 @@ class TTSValidator(metaclass=ABCMeta):
 
 
 class TTSFactory:
+    from mycroft.tts.festival_tts import Festival
     from mycroft.tts.espeak_tts import ESpeak
     from mycroft.tts.fa_tts import FATTS
     from mycroft.tts.google_tts import GoogleTTS
@@ -485,6 +486,7 @@ class TTSFactory:
         "google": GoogleTTS,
         "marytts": MaryTTS,
         "fatts": FATTS,
+        "festival": Festival,
         "espeak": ESpeak,
         "spdsay": SpdSay,
         "watson": WatsonTTS,
