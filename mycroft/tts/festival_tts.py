@@ -22,8 +22,16 @@ class Festival(TTS):
         super(Festival, self).__init__(lang, config, FestivalValidator(self))
 
     def execute(self, sentence, ident=None, listen=False):
+
+        toencoding = self.config.get('toencoding')
+
+        if toencoding != 'utf8':
+            cmd = "echo \"" + sentence + "\" | iconv -f utf8 -t " + toencoding + " | festival --tts --language " + self.lang
+        else:
+            cmd = "echo \"" + sentence + "\" | festival --tts --language " + self.lang
+
         self.begin_audio()
-        subprocess.call("echo \"" + sentence + "\" | iconv -f utf8 -t ISO-8859-15//TRANSLIT | festival --tts --language " + self.lang, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        subprocess.call(cmd, shell=True)
         self.end_audio(listen)
 
 
