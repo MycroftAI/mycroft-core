@@ -23,12 +23,13 @@ class Festival(TTS):
 
     def execute(self, sentence, ident=None, listen=False):
 
-        toencoding = self.config.get('toencoding')
+        encoding = self.config.get('encoding')
+        cmd = "echo \"" + sentence + "\""
 
-        if toencoding != 'utf8':
-            cmd = "echo \"" + sentence + "\" | iconv -f utf8 -t " + toencoding + " | festival --tts --language " + self.lang
-        else:
-            cmd = "echo \"" + sentence + "\" | festival --tts --language " + self.lang
+        if encoding != 'utf8':
+            cmd += " | iconv -f utf8 -t " + encoding
+
+        cmd += " | festival --tts --language " + self.lang
 
         self.begin_audio()
         subprocess.call(cmd, shell=True)
