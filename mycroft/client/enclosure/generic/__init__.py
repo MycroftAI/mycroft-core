@@ -41,7 +41,8 @@ class EnclosureGeneric(Enclosure):
         super().__init__()
 
         # Notifications from mycroft-core
-        self.bus.on("enclosure.notify.no_internet", self.on_no_internet)
+        self.bus.on('enclosure.notify.no_internet', self.on_no_internet)
+        self.bus.on('mycroft.skills.trained', self.is_device_ready)
 
         # initiates the web sockets on display manager
         # NOTE: this is a temporary place to connect the display manager
@@ -54,6 +55,38 @@ class EnclosureGeneric(Enclosure):
             # receive the "speak".  This was sometimes happening too
             # quickly and the user wasn't notified what to do.
             Timer(5, self._do_net_check).start()
+
+    def is_device_ready(self, message):
+        LOG.info("~~~~~~~~~~~~~~~ CHECKING DEVICE READINESS ~~~~~~~~~~~~~~~~")
+        is_ready = False
+        # Bus service assumed to be alive if messages sent and received
+        # Enclosure assumed to be alive if this method is running
+        services = {'audio': {}, 'speech': {}, 'skills': {}}
+        start = time.monotonic()
+        while not is_ready:
+            is_ready = self.check_services_ready(services)
+            if is_ready:
+                break
+            elif time.monotonic() - start >= 60:
+                raise Exception('Timeout waiting for services start.')
+            else:
+                time.sleep(3)
+
+        if is_ready:
+            LOG.info("Mycroft is all loaded and ready to roll!")
+            self.bus.emit(Message('mycroft.ready'))
+
+        return is_ready
+
+    def check_services_ready(self, services):
+        for s in services:
+            LOG.info("~~~~ Checking {}".format(repr(s)))
+            services[s]['is_ready'] = False
+            response = self.bus.wait_for_response(Message('mycroft.{}.service.is_alive'.format(s)))
+            if response and response.data['status']:
+                services[s]['is_ready'] = True
+                LOG.info("=== {} is ready".format(s.upper()))
+        return all([services[s]['is_ready'] for s in services])
 
     def on_no_internet(self, event=None):
         if connected():
