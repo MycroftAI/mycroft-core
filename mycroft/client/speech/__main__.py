@@ -171,15 +171,37 @@ def handle_open():
     EnclosureAPI(bus).reset()
 
 
+def is_alive(message=None):
+    """Respond to is_alive status request."""
+    if message:
+        status = {'status': alive_status.get_status()}
+        bus.emit(message.response(data=status))
+    return alive_status.get_status()
+
+
+class Status:
+    def __init__(self):
+        self.status = False
+
+    def get_status(self):
+        return self.status
+
+    def set_status(self, status):
+        self.status = status
+
+
 def on_ready():
+    alive_status.set_status(True)
     LOG.info('Speech client is ready.')
 
 
 def on_stopping():
+    alive_status.set_status(False)
     LOG.info('Speech service is shutting down...')
 
 
 def on_error(e='Unknown'):
+    alive_status.set_status(False)
     LOG.error('Audio service failed to launch ({}).'.format(repr(e)))
 
 
@@ -196,6 +218,7 @@ def connect_loop_events(loop):
 
 def connect_bus_events(bus):
     # Register handlers for events on main Mycroft messagebus
+    bus.on('mycroft.speech.service.is_alive', is_alive)
     bus.on('open', handle_open)
     bus.on('complete_intent_failure', handle_complete_intent_failure)
     bus.on('recognizer_loop:sleep', handle_sleep)
@@ -216,6 +239,8 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
     global bus
     global loop
     global config
+    global alive_status
+    alive_status = Status()
     try:
         reset_sigint_handler()
         PIDLock("voice")
