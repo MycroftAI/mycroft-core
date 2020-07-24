@@ -57,11 +57,14 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping):
         error_hook(e)
     else:
         create_daemon(bus.run_forever)
-        ready_hook()
+        if audio.wait_for_load() and len(audio.service) > 0:
+            # If at least one service exists, report ready
+            ready_hook()
+            wait_for_exit_signal()
+            stopping_hook()
+        else:
+            error_hook('No audio services loaded')
 
-        wait_for_exit_signal()
-
-        stopping_hook()
         speech.shutdown()
         audio.shutdown()
 
