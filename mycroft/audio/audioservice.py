@@ -147,6 +147,7 @@ class AudioService:
 
         self._loaded = Event()
         bus.once('open', self.load_services_callback)
+        self._alive_status = True
 
     def load_services_callback(self):
         """
@@ -178,6 +179,7 @@ class AudioService:
             LOG.info('no default found')
 
         # Setup event handlers
+        self.bus.on('mycroft.audio.service.is_alive', self.is_alive)
         self.bus.on('mycroft.audio.service.play', self._play)
         self.bus.on('mycroft.audio.service.queue', self._queue)
         self.bus.on('mycroft.audio.service.pause', self._pause)
@@ -206,6 +208,13 @@ class AudioService:
             (bool) True if loading completed within timeout, else False.
         """
         return self._loaded.wait(timeout)
+        
+    def is_alive(self, message=None):
+        """Respond to is_alive status request."""
+        if message:
+            status = {'status': self._alive_status}
+            self.bus.emit(message.response(data=status))
+        return self._alive_status
 
     def track_start(self, track):
         """Callback method called from the services to indicate start of
@@ -455,6 +464,8 @@ class AudioService:
             self.current.seek_backward(seconds)
 
     def shutdown(self):
+        self._alive_status = False
+
         for s in self.service:
             try:
                 LOG.info('shutting down ' + s.name)
