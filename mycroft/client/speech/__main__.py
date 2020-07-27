@@ -171,18 +171,19 @@ def handle_open():
     EnclosureAPI(bus).reset()
 
 
-def main():
-    global bus
-    global loop
-    global config
-    reset_sigint_handler()
-    PIDLock("voice")
-    bus = MessageBusClient()  # Mycroft messagebus, see mycroft.messagebus
-    Configuration.set_config_update_handlers(bus)
-    config = Configuration.get()
+def on_ready():
+    LOG.info('Speech client is ready.')
 
-    # Register handlers on internal RecognizerLoop bus
-    loop = RecognizerLoop()
+
+def on_stopping():
+    LOG.info('Speech service is shutting down...')
+
+
+def on_error(e='Unknown'):
+    LOG.error('Audio service failed to launch ({}).'.format(repr(e)))
+
+
+def connect_loop_events(loop):
     loop.on('recognizer_loop:utterance', handle_utterance)
     loop.on('recognizer_loop:speech.recognition.unknown', handle_unknown)
     loop.on('speak', handle_speak)
@@ -192,6 +193,8 @@ def main():
     loop.on('recognizer_loop:record_end', handle_record_end)
     loop.on('recognizer_loop:no_internet', handle_no_internet)
 
+
+def connect_bus_events(bus):
     # Register handlers for events on main Mycroft messagebus
     bus.on('open', handle_open)
     bus.on('complete_intent_failure', handle_complete_intent_failure)
@@ -207,10 +210,31 @@ def main():
     bus.on('mycroft.stop', handle_stop)
     bus.on('message', create_echo_function('VOICE'))
 
-    create_daemon(bus.run_forever)
-    create_daemon(loop.run)
 
-    wait_for_exit_signal()
+def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
+         watchdog=lambda: None):
+    global bus
+    global loop
+    global config
+    try:
+        reset_sigint_handler()
+        PIDLock("voice")
+        bus = MessageBusClient()  # Mycroft messagebus, see mycroft.messagebus
+        Configuration.set_config_update_handlers(bus)
+        config = Configuration.get()
+
+        # Register handlers on internal RecognizerLoop bus
+        loop = RecognizerLoop(watchdog)
+        connect_loop_events(loop)
+        connect_bus_events(bus)
+        create_daemon(bus.run_forever)
+        create_daemon(loop.run)
+    except Exception as e:
+        error_hook(e)
+    else:
+        ready_hook()
+        wait_for_exit_signal()
+        stopping_hook()
 
 
 if __name__ == "__main__":

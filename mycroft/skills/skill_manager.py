@@ -110,14 +110,17 @@ def _shutdown_skill(instance):
 class SkillManager(Thread):
     _msm = None
 
-    def __init__(self, bus):
+    def __init__(self, bus, watchdog=None):
         """Constructor
 
         Arguments:
             bus (event emitter): Mycroft messagebus connection
+            watchdog (callable): optional watchdog function
         """
         super(SkillManager, self).__init__()
         self.bus = bus
+        # Set watchdog to argument or function returning None
+        self._watchdog = watchdog or (lambda: None)
         self._stop_event = Event()
         self._connected_event = Event()
         self.config = Configuration.get()
@@ -243,6 +246,7 @@ class SkillManager(Thread):
                     self.skill_updater.post_manifest()
                     self.upload_queue.send()
 
+                self._watchdog()
                 sleep(2)  # Pause briefly before beginning next scan
             except Exception:
                 LOG.exception('Something really unexpected has occured '
