@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from threading import Lock
+from threading import Lock, Event
 
 from mycroft import dialog
 from mycroft.enclosure.api import EnclosureAPI
@@ -173,35 +173,23 @@ def handle_open():
 
 def is_alive(message=None):
     """Respond to is_alive status request."""
+    status = alive_status.is_set()
     if message:
-        status = {'status': alive_status.get_status()}
-        bus.emit(message.response(data=status))
-    return alive_status.get_status()
-
-
-class Status:
-    def __init__(self):
-        self.status = False
-
-    def get_status(self):
-        return self.status
-
-    def set_status(self, status):
-        self.status = status
+        bus.emit(message.response({'status': status}))
+    return status
 
 
 def on_ready():
-    alive_status.set_status(True)
+    alive_status.set()
     LOG.info('Speech client is ready.')
 
 
 def on_stopping():
-    alive_status.set_status(False)
+    alive_status.clear()
     LOG.info('Speech service is shutting down...')
 
 
 def on_error(e='Unknown'):
-    alive_status.set_status(False)
     LOG.error('Audio service failed to launch ({}).'.format(repr(e)))
 
 
@@ -240,7 +228,7 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
     global loop
     global config
     global alive_status
-    alive_status = Status()
+    alive_status = Event()
     try:
         reset_sigint_handler()
         PIDLock("voice")
