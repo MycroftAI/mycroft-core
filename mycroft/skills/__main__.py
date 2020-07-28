@@ -40,6 +40,7 @@ from mycroft.util import (
 )
 from mycroft.util.lang import set_active_lang
 from mycroft.util.log import LOG
+from mycroft.util.process_utils import ProcessStatus, StatusCallbackMap
 from .core import FallbackSkill
 from .event_scheduler import EventScheduler
 from .intent_service import IntentService
@@ -197,8 +198,14 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
     bus = _start_message_bus_client()
     _register_intent_services(bus)
     event_scheduler = EventScheduler(bus)
+    callbacks = StatusCallbackMap(on_complete=ready_hook,
+                                  on_error=error_hook,
+                                  on_stopping=stopping_hook)
+    status = ProcessStatus('skills', bus, callbacks)
+
     skill_manager = _initialize_skill_manager(bus, watchdog)
 
+    status.set_started()
     _wait_for_internet_connection()
 
     if skill_manager is None:
@@ -209,9 +216,14 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
     skill_manager.start()
     while not skill_manager.is_alive():
         time.sleep(0.1)
-    ready_hook()  # Report ready status
+    status.set_alive()
+
+    while not skill_manager.is_all_loaded():
+        time.sleep(0.1)
+    status.set_ready()
+
     wait_for_exit_signal()
-    stopping_hook()  # Report shutdown started
+    process_status.set_stopping()
     shutdown(skill_manager, event_scheduler)
 
 
