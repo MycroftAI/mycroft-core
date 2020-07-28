@@ -121,3 +121,79 @@ def create_echo_function(name, whitelist=None):
             # Listen for messages and echo them for logging
             LOG(name).info("BUS: {}".format(message))
     return echo
+
+
+class ProcessStatus:
+    def __init__(self, name, bus,
+                 on_started=None, on_alive=None, on_complete=None,
+                 on_stopping=None, on_error=None):
+        # Messagebus connection
+        self.bus = bus
+        self.name = name
+
+        # Callback functions
+        self.on_started = on_started
+        self.on_alive = on_alive
+        self.on_complete = on_complete
+        self.on_error = on_error
+
+        # State variables
+        self.is_started = False
+        self.is_alive = False
+        self.is_ready = False
+
+        self._register_handlers()
+
+    def _register_handlers(self):
+        self.bus.on('mycroft.{}.is_alive'.format(self.name), self.check_alive)
+        self.bus.on('mycroft.{}.ready'.format(self.name),
+                    self.check_ready)
+        self.bus.on('mycroft.{}.all_loaded'.format(self.name),
+                    self.check_ready)
+
+    def check_alive(self, message=None):
+        """Respond to is_alive status request."""
+        if message:
+            status = {'status': self.is_alive}
+            self.bus.emit(message.response(data=status))
+        return self.is_alive
+
+    def check_ready(self, message=None):
+        """ Respond to all_loaded status request."""
+        print("CHECKING READY!")
+        if message:
+            status = {'status': self.is_ready}
+            self.bus.emit(message.response(data=status))
+
+        return self.is_ready
+
+    def set_started(self):
+        """Process is started."""
+        self.is_started = True
+        if self.on_started:
+            self.on_started()
+
+    def set_alive(self):
+        """Basic loading is done."""
+        self.is_alive = True
+        self.is_started = True
+        if self.on_alive:
+            self.on_alive()
+
+    def set_ready(self):
+        """All loading is done."""
+        self.is_alive = True
+        self.is_ready = True
+        if self.on_complete:
+            self.on_complete()
+
+    def set_stopping(self):
+        self.is_ready = False
+        if self.on_stopping:
+            self.on_stopping(err)
+
+    def set_error(self, err=''):
+        self.is_ready = False
+        self.is_alive = False
+        if self.on_stopping:
+            self.on_ready(err)
