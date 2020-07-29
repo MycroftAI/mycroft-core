@@ -196,7 +196,7 @@ class MessageBusClient:
         waiter = MessageWaiter(self, message_type)  # Setup response handler
         # Send message and wait for it's response
         self.emit(message)
-        return waiter.wait()
+        return waiter.wait(timeout)
 
     def on(self, event_name, func):
         self.emitter.on(event_name, func)
