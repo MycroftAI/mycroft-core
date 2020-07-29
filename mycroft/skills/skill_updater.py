@@ -219,6 +219,15 @@ class SkillUpdater:
                 raise
         self.installed_skills.add(skill.name)
 
+    def defaults_installed(self):
+        """Check if all default skills are installed.
+
+        Returns:
+            True if all default skills are installed, else False.
+        """
+        defaults = self.msm.list_all_defaults()[self.msm.platform]
+        return all([skill.is_local for skill in defaults])
+
     def _get_device_skill_state(self, skill_name):
         """Get skill data structure from name."""
         device_skill_state = {}
