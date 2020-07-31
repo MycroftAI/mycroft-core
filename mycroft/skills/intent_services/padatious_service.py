@@ -84,8 +84,7 @@ class PadatiousService:
 
         self.finished_training_event.set()
         if not self.finished_initial_train:
-            LOG.info("Mycroft is all loaded and ready to roll!")
-            self.bus.emit(Message('mycroft.ready'))
+            self.bus.emit(Message('mycroft.skills.trained'))
             self.finished_initial_train = True
 
     def wait_and_train(self):
