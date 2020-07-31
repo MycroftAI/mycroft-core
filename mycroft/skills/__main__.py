@@ -199,9 +199,8 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
     bus = _start_message_bus_client()
     _register_intent_services(bus)
     event_scheduler = EventScheduler(bus)
-    status = ProcessStatus('skills', bus, on_started=ready_hook,
-                           on_error=error_hook,
-                           on_stopping=stopping_hook)
+    status = ProcessStatus('skills', bus, on_ready=ready_hook,
+                           on_error=error_hook, on_stopping=stopping_hook)
 
     skill_manager = _initialize_skill_manager(bus, watchdog)
 
@@ -223,7 +222,7 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
     status.set_ready()
 
     wait_for_exit_signal()
-    process_status.set_stopping()
+    status.set_stopping()
     shutdown(skill_manager, event_scheduler)
 
 
