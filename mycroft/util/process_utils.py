@@ -125,7 +125,7 @@ def create_echo_function(name, whitelist=None):
 
 class ProcessStatus:
     def __init__(self, name, bus,
-                 on_started=None, on_alive=None, on_complete=None,
+                 on_started=None, on_alive=None, on_ready=None,
                  on_stopping=None, on_error=None):
         # Messagebus connection
         self.bus = bus
@@ -134,7 +134,7 @@ class ProcessStatus:
         # Callback functions
         self.on_started = on_started
         self.on_alive = on_alive
-        self.on_complete = on_complete
+        self.on_ready = on_ready
         self.on_error = on_error
 
         # State variables
@@ -146,7 +146,7 @@ class ProcessStatus:
 
     def _register_handlers(self):
         self.bus.on('mycroft.{}.is_alive'.format(self.name), self.check_alive)
-        self.bus.on('mycroft.{}.ready'.format(self.name),
+        self.bus.on('mycroft.{}.is_ready'.format(self.name),
                     self.check_ready)
         self.bus.on('mycroft.{}.all_loaded'.format(self.name),
                     self.check_ready)
@@ -184,8 +184,8 @@ class ProcessStatus:
         """All loading is done."""
         self.is_alive = True
         self.is_ready = True
-        if self.on_complete:
-            self.on_complete()
+        if self.on_ready:
+            self.on_ready()
 
     def set_stopping(self):
         self.is_ready = False
