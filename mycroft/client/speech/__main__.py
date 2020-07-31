@@ -25,6 +25,7 @@ from mycroft.messagebus.message import Message
 from mycroft.util import create_daemon, wait_for_exit_signal, \
     reset_sigint_handler, create_echo_function
 from mycroft.util.log import LOG
+from mycroft.util.process_utils import ProcessStatus, StatusCallbackMap
 
 bus = None  # Mycroft messagebus connection
 lock = Lock()
@@ -222,6 +223,9 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
         bus = MessageBusClient()  # Mycroft messagebus, see mycroft.messagebus
         Configuration.set_config_update_handlers(bus)
         config = Configuration.get()
+        callbacks = StatusCallbackMap(on_ready=ready_hook, on_error=error_hook,
+                                      on_stopping=stopping_hook)
+        status = ProcessStatus('speech', bus, callbacks)
 
         # Register handlers on internal RecognizerLoop bus
         loop = RecognizerLoop(watchdog)
@@ -229,12 +233,13 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
         connect_bus_events(bus)
         create_daemon(bus.run_forever)
         create_daemon(loop.run)
+        status.set_started()
     except Exception as e:
         error_hook(e)
     else:
-        ready_hook()
+        status.set_ready()
         wait_for_exit_signal()
-        stopping_hook()
+        status.set_stopping()
 
 
 if __name__ == "__main__":

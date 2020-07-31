@@ -223,7 +223,7 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
     status.set_ready()
 
     wait_for_exit_signal()
-    process_status.set_stopping()
+    status.set_stopping()
     shutdown(skill_manager, event_scheduler)
 
 
