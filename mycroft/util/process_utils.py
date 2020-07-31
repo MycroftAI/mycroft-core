@@ -176,10 +176,12 @@ class ProcessState(IntEnum):
 _STATUS_CALLBACKS = [
     'on_started',
     'on_alive',
-    'on_complete',
+    'on_ready',
     'on_error',
     'on_stopping',
 ]
+
+
 # namedtuple defaults only available on 3.7 and later python versions
 if sys.version_info < (3, 7):
     StatusCallbackMap = namedtuple('CallbackMap', _STATUS_CALLBACKS)
@@ -220,7 +222,8 @@ class ProcessStatus:
     def _register_handlers(self):
         """Register messagebus handlers for status queries."""
         self.bus.on('mycroft.{}.is_alive'.format(self.name), self.check_alive)
-        self.bus.on('mycroft.{}.ready'.format(self.name), self.check_ready)
+        self.bus.on('mycroft.{}.is_ready'.format(self.name),
+                    self.check_ready)
         # The next one is for backwards compatibility
         # TODO: remove in 21.02
         self.bus.on(
@@ -277,8 +280,8 @@ class ProcessStatus:
     def set_ready(self):
         """All loading is done."""
         self.state = ProcessState.READY
-        if self.callbacks.on_complete:
-            self.callbacks.on_complete()
+        if self.callbacks.on_ready:
+            self.callbacks.on_ready()
 
     def set_stopping(self):
         """Process shutdown has started."""
