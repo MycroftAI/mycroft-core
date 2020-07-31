@@ -198,7 +198,7 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
     bus = _start_message_bus_client()
     _register_intent_services(bus)
     event_scheduler = EventScheduler(bus)
-    callbacks = StatusCallbackMap(on_complete=ready_hook,
+    callbacks = StatusCallbackMap(on_ready=ready_hook,
                                   on_error=error_hook,
                                   on_stopping=stopping_hook)
     status = ProcessStatus('skills', bus, callbacks)
