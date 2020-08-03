@@ -190,7 +190,7 @@ class ProcessStatus:
     def set_stopping(self):
         self.is_ready = False
         if self.on_stopping:
-            self.on_stopping(err)
+            self.on_stopping()
 
     def set_error(self, err=''):
         self.is_ready = False
