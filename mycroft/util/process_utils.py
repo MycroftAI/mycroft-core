@@ -203,5 +203,5 @@ class ProcessStatus:
     def set_error(self, err=''):
         self.is_ready = False
         self.is_alive = False
-        if self.on_stopping:
-            self.on_ready(err)
+        if self.on_error:
+            self.on_error(err)
