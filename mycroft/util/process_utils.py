@@ -145,11 +145,20 @@ class ProcessStatus:
         self._register_handlers()
 
     def _register_handlers(self):
+        self.bus.on('mycroft.{}.is_started'.format(self.name),
+                    self.check_started)
         self.bus.on('mycroft.{}.is_alive'.format(self.name), self.check_alive)
         self.bus.on('mycroft.{}.is_ready'.format(self.name),
                     self.check_ready)
         self.bus.on('mycroft.{}.all_loaded'.format(self.name),
                     self.check_ready)
+
+    def check_started(self, message=None):
+        """Respond to is_started status request."""
+        if message:
+            status = {'status': self.is_started}
+            self.bus.emit(message.response(data=status))
+        return self.is_started
 
     def check_alive(self, message=None):
         """Respond to is_alive status request."""
@@ -160,7 +169,6 @@ class ProcessStatus:
 
     def check_ready(self, message=None):
         """ Respond to all_loaded status request."""
-        print("CHECKING READY!")
         if message:
             status = {'status': self.is_ready}
             self.bus.emit(message.response(data=status))
