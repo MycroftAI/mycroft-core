@@ -171,6 +171,14 @@ class DevicePrimer(object):
             wait_while_speaking()
 
 
+def on_started():
+    LOG.info('Skill service is starting up.')
+
+
+def on_alive():
+    LOG.info('Skill service is alive.')
+
+
 def on_ready():
     LOG.info('Skill service is ready.')
 
@@ -183,8 +191,8 @@ def on_stopping():
     LOG.info('Skill service is shutting down...')
 
 
-def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
-         watchdog=None):
+def main(alive_hook=on_alive, started_hook=on_started, ready_hook=on_ready,
+         error_hook=on_error, stopping_hook=on_stopping, watchdog=None):
     reset_sigint_handler()
     # Create PID file, prevent multiple instances of this service
     mycroft.lock.Lock('skills')
@@ -196,7 +204,9 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
     bus = start_message_bus_client("SKILLS")
     _register_intent_services(bus)
     event_scheduler = EventScheduler(bus)
-    callbacks = StatusCallbackMap(on_ready=ready_hook,
+    callbacks = StatusCallbackMap(on_started=started_hook,
+                                  on_alive=alive_hook,
+                                  on_ready=ready_hook,
                                   on_error=error_hook,
                                   on_stopping=stopping_hook)
     status = ProcessStatus('skills', bus, callbacks)
