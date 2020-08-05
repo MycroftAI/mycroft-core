@@ -172,23 +172,23 @@ class DevicePrimer(object):
 
 
 def on_started():
-    LOG.info('Skill service is starting up.')
+    LOG.info('Skills service is starting up.')
 
 
 def on_alive():
-    LOG.info('Skill service is alive.')
+    LOG.info('Skills service is alive.')
 
 
 def on_ready():
-    LOG.info('Skill service is ready.')
+    LOG.info('Skills service is ready.')
 
 
 def on_error(e='Unknown'):
-    LOG.info('Skill service failed to launch ({})'.format(repr(e)))
+    LOG.info('Skills service failed to launch ({})'.format(repr(e)))
 
 
 def on_stopping():
-    LOG.info('Skill service is shutting down...')
+    LOG.info('Skills service is shutting down...')
 
 
 def main(alive_hook=on_alive, started_hook=on_started, ready_hook=on_ready,
@@ -280,14 +280,14 @@ def _wait_for_internet_connection():
 
 
 def shutdown(skill_manager, event_scheduler):
-    LOG.info('Shutting down skill service')
+    LOG.info('Shutting down Skills service')
     if event_scheduler is not None:
         event_scheduler.shutdown()
     # Terminate all running threads that update skills
     if skill_manager is not None:
         skill_manager.stop()
         skill_manager.join()
-    LOG.info('Skill service shutdown complete!')
+    LOG.info('Skills service shutdown complete!')
 
 
 if __name__ == "__main__":
