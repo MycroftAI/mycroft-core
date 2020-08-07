@@ -159,7 +159,7 @@ def _get_message_lang(message):
         The languge code from the message or the default language.
     """
     default_lang = Configuration.get().get('lang', 'en-us')
-    return message.data.get('lang', default_lang)
+    return message.data.get('lang', default_lang).lower()
 
 
 class IntentService:
