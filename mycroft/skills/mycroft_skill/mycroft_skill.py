@@ -848,7 +848,7 @@ class MycroftSkill:
             """
             if self.settings != self._initial_settings:
                 save_settings(self.settings_write_path, self.settings)
-                self._initial_settings = self.settings
+                self._initial_settings = deepcopy(self.settings)
             if handler_info:
                 msg_type = handler_info + '.complete'
                 self.bus.emit(message.forward(msg_type, skill_data))
