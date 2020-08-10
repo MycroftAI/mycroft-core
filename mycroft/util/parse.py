@@ -30,7 +30,6 @@ The module does implement some useful functions like basic fuzzy matchin.
 from difflib import SequenceMatcher
 
 import lingua_franca.parse
-from lingua_franca.lang.parse_en import extract_duration_en
 from lingua_franca.lang import get_active_lang, get_primary_lang_code
 
 from .time import now_local
@@ -218,13 +217,7 @@ def extract_duration(text, lang=None):
                     will have whitespace stripped from the ends.
     """
     lang_code = get_primary_lang_code(lang)
-
-    if lang_code == "en":
-        return extract_duration_en(text)
-
-    # TODO: extract_duration for other languages
-    _log_unsupported_language(lang_code, ['en'])
-    return None
+    return lingua_franca.parse.extract_duration(text, lang_code)
 
 
 def get_gender(word, context="", lang=None):
