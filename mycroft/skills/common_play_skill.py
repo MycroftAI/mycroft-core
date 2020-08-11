@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import re
-from enum import Enum
+from enum import Enum, IntEnum
 from abc import ABC, abstractmethod
 from mycroft.messagebus.message import Message
 from .mycroft_skill import MycroftSkill
@@ -27,6 +27,17 @@ class CPSMatchLevel(Enum):
     ARTIST = 4
     CATEGORY = 5
     GENERIC = 6
+
+
+class CPSTrackStatus(IntEnum):
+    DISAMBIGUATION = 1  # not queued for playback, show in gui
+    PLAYING = 2  # Skill is handling playback internally
+    PLAYING_AUDIOSERVICE = 3  # Skill forwarded playback to audio service
+    QUEUED = 4  # Waiting playback to be handled inside skill
+    QUEUED_AUDIOSERVICE = 5  # Waiting playback in audio service
+    BUFFERING = 6  # Incase it's an online source the buffering state or
+    STALLED = 7  # stalled state helps to know when to show the buffering ui
+    END_OF_MEDIA = 8  # helps to know if we want to do autoplay or something
 
 
 class CommonPlaySkill(MycroftSkill, ABC):
@@ -168,6 +179,8 @@ class CommonPlaySkill(MycroftSkill, ABC):
         if 'utterance' not in kwargs:
             kwargs['utterance'] = self.play_service_string
         self.audioservice.play(*args, **kwargs)
+        self.CPS_send_status(uri=args[0],
+                             status=CPSTrackStatus.PLAYING_AUDIOSERVICE)
 
     def stop(self):
         """Stop anything playing on the audioservice."""
@@ -222,3 +235,55 @@ class CommonPlaySkill(MycroftSkill, ABC):
         # Derived classes must implement this, e.g.
         # self.CPS_play("http://zoosh.com/stream_music")
         pass
+
+    def CPS_send_status(self, artist='', track='', album='', image='',
+                        uri='', track_length=None, elapsed_time=None,
+                        playlist_position=None,
+                        status=CPSTrackStatus.DISAMBIGUATION, **kwargs):
+        """Inform system of playback status.
+
+        If a skill is handling playback and wants the playback control to be
+        aware of it's current status it can emit this message indicating that
+        it's performing playback and can provide some standard info.
+
+        All parameters are optional so any can be left out. Also if extra
+        non-standard parameters are added, they too will be sent in the message
+        data.
+
+        Arguments:
+            artist (str): Current track artist
+            track (str): Track name
+            album (str): Album title
+            image (str): url for image to show
+            uri (str): uri for track
+            track_length (float): track length in seconds
+            elapsed_time (float): current offset into track in seconds
+            playlist_postion (int):
+        """
+        data = {'skill': self.name,
+                'uri': uri,
+                'artist': artist,
+                'album': album,
+                'track': track,
+                'image': image,
+                'track_length': track_length,
+                'elapsed_time': elapsed_time,
+                'playlist_position': playlist_position,
+                'status': status
+                }
+        data = {**data, **kwargs}  # Merge extra arguments
+        self.bus.emit(Message('play:status', data))
+
+    def CPS_send_tracklist(self, tracklist=None):
+        """Inform system of playlist track info.
+
+        Provides track data for playlist
+
+        Arguments:
+            tracklist (str/list): Tracklist data
+        """
+        tracklist = tracklist or []
+        if not isinstance(tracklist, list):
+            tracklist = [tracklist]
+        for idx, track in enumerate(tracklist):
+            self.CPS_send_status(playlist_position=idx, **track)
