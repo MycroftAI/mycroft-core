@@ -150,15 +150,17 @@ class PadatiousService:
         intent.matches['utterance'] = utt
         return intent.name, intent.matches
 
-    def _match_level(self, combined, limit):
+    def _match_level(self, utterances, limit):
         padatious_intent = None
         LOG.debug('Padatious Matching confidence > {}'.format(limit))
-        for utt in combined:
-            _intent = self.calc_intent(utt)
-            if _intent:
-                best = padatious_intent.conf if padatious_intent else 0.0
-                if best < _intent.conf:
-                    padatious_intent = _intent
+        for utt in utterances:
+            for variant in utt:
+                intent = self.calc_intent(variant)
+                if intent:
+                    best = padatious_intent.conf if padatious_intent else 0.0
+                    if best < intent.conf:
+                        padatious_intent = intent
+                        padatious_intent.matches['utterance'] = utt[0]
 
         if padatious_intent.conf > limit:
             skill_id = padatious_intent.name.split(':')[0]
@@ -169,14 +171,14 @@ class PadatiousService:
         else:
             return None
 
-    def match_high(self, combined, lang, _):
-        return self._match_level(combined, 0.95)
+    def match_high(self, utterances, lang, _):
+        return self._match_level(utterances, 0.95)
 
-    def match_medium(self, combined, lang, _):
-        return self._match_level(combined, 0.8)
+    def match_medium(self, utterances, lang, _):
+        return self._match_level(utterances, 0.8)
 
-    def match_low(self, combined, lang, _):
-        return self._match_level(combined, 0.5)
+    def match_low(self, utterances, lang, _):
+        return self._match_level(utterances, 0.5)
 
     def handle_get_padatious(self, message):
         utterance = message.data["utterance"]

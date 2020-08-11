@@ -42,6 +42,37 @@ def _get_message_lang(message):
     return message.data.get('lang', default_lang).lower()
 
 
+def _normalize_all_utterances(utterances):
+    """Create normalized versions and pair them with the original utterance.
+
+    This will create a list of tuples with the original utterance as the
+    first item and if normalizing changes the utterance the normalized version
+    will be set as the second item in the tuple, if normalization doesn't
+    change anything the tuple will only have the "raw" original utterance.
+
+    Arguments:
+        utterances (list): list of utterances to normalize
+
+    Returns:
+        list of tuples, [(original utterance, normalized) ... ]
+    """
+    # normalize() changes "it's a boy" to "it is a boy", etc.
+    norm_utterances = [normalize(u.lower(), remove_articles=False)
+                       for u in utterances]
+
+    # Create pairs of original and normalized counterparts for each entry
+    # in the input list.
+    combined = []
+    for utt, norm in zip(utterances, norm_utterances):
+        if utt == norm:
+            combined.append((utt,))
+        else:
+            combined.append((utt, norm))
+
+    LOG.debug("Utterances: {}".format(combined))
+    return combined
+
+
 class IntentService:
     def __init__(self, bus):
         # Dictionary for translating a skill id to a name
@@ -211,15 +242,7 @@ class IntentService:
             set_active_lang(lang)
 
             utterances = message.data.get('utterances', [])
-            # normalize() changes "it's a boy" to "it is a boy", etc.
-            norm_utterances = [normalize(u.lower(), remove_articles=False)
-                               for u in utterances]
-
-            # Build list with raw utterance(s) first, then optionally a
-            # normalized version following.
-            combined = utterances + list(set(norm_utterances) -
-                                         set(utterances))
-            LOG.debug("Utterances: {}".format(combined))
+            combined = _normalize_all_utterances(utterances)
 
             stopwatch = Stopwatch()
 
@@ -247,7 +270,6 @@ class IntentService:
 
                 # Launch skill if not handled by the match function
                 if match.intent_type:
-                    match.intent_data['utterance'] = utterances[0]
                     reply = message.reply(match.intent_type, match.intent_data)
                     self.bus.emit(reply)
 
@@ -270,6 +292,7 @@ class IntentService:
         Returns:
             IntentMatch if handled otherwise None.
         """
+        utterances = [item for tup in utterances for item in tup]
         # check for conversation time-out
         self.active_skills = [skill for skill in self.active_skills
                               if time.time() - skill[
@@ -345,8 +368,7 @@ class IntentService:
     def handle_get_adapt(self, message):
         utterance = message.data["utterance"]
         lang = message.data.get("lang", "en-us")
-        norm = normalize(utterance, lang, remove_articles=False)
-        combined = [utterance, norm] if utterance != norm else [utterance]
+        combined = _normalize_all_utterances([utterance])
         intent = self.adapt_service.match_intent(combined, lang)
         self.bus.emit(message.reply("intent.service.adapt.reply",
                                     {"intent": intent}))
@@ -354,15 +376,11 @@ class IntentService:
     def handle_get_intent(self, message):
         utterance = message.data["utterance"]
         lang = message.data.get("lang", "en-us")
-        norm = normalize(utterance, lang, remove_articles=False)
-
-        combined = [utterance, norm] if utterance != norm else [utterance]
+        combined = _normalize_all_utterances([utterance])
         intent = self.adapt_service.match_intent(combined, lang)
         # Adapt intent's handler is used unless
         # Padatious is REALLY sure it was directed at it instead.
         padatious_intent = self.padatious_service.calc_intent(utterance)
-        if not padatious_intent and norm != utterance:
-            padatious_intent = self.padatious_service.calc_intent(norm)
         if intent is None or (
                 padatious_intent and padatious_intent.conf >= 0.95):
             intent = padatious_intent.__dict__

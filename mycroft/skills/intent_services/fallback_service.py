@@ -28,7 +28,8 @@ class FallbackService:
         """Send fallback request for a specified priority range.
 
         Arguments:
-            combined (list): List of unique versions of utterances
+            utterances (list): List of tuples,
+                               utterances and normalized version
             lang (str): Langauge code
             message: Message for session context
             fb_range (FallbackRange): fallback order start and stop.
@@ -38,7 +39,7 @@ class FallbackService:
         """
         msg = message.reply(
             'mycroft.skills.fallback',
-            data={'utterance': utterances[0],
+            data={'utterance': utterances[0][0],
                   'lang': lang,
                   'fallback_range': (fb_range.start, fb_range.stop)}
         )

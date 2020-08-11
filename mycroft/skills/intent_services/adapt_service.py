@@ -183,17 +183,18 @@ class AdaptService:
                 # TODO - Shouldn't Adapt do this?
                 best_intent['utterance'] = utt
 
-        for idx, utt in enumerate(utterances):
-            try:
-                intents = [i for i in self.engine.determine_intent(
-                    utt, 100,
-                    include_tags=True,
-                    context_manager=self.context_manager)]
-                if intents:
-                    take_best(intents[0], utt)
+        for utt_tup in utterances:
+            for utt in utt_tup:
+                try:
+                    intents = [i for i in self.engine.determine_intent(
+                        utt, 100,
+                        include_tags=True,
+                        context_manager=self.context_manager)]
+                    if intents:
+                        take_best(intents[0], utt_tup[0])
 
-            except Exception as e:
-                LOG.exception(e)
+                except Exception as e:
+                    LOG.exception(e)
 
         if best_intent:
             self.update_context(best_intent)
