@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""Intent service wrapping padatious."""
 from functools import lru_cache
 from subprocess import call
 from threading import Event
@@ -67,6 +68,11 @@ class PadatiousService:
         self.registered_entities = []
 
     def train(self, message=None):
+        """Perform padatious training.
+
+        Arguments:
+            message (Message): optional triggering message
+        """
         padatious_single_thread = Configuration.get()[
             'padatious']['single_thread']
         if message is None:
@@ -88,6 +94,7 @@ class PadatiousService:
             self.finished_initial_train = True
 
     def wait_and_train(self):
+        """Wait for minimum time between training and start training."""
         if not self.finished_initial_train:
             return
         sleep(self.train_delay)
@@ -109,15 +116,32 @@ class PadatiousService:
             self.container.remove_intent(intent_name)
 
     def handle_detach_intent(self, message):
+        """Messagebus handler for detaching padatious intent.
+
+        Arguments:
+            message (Message): message triggering action
+        """
         self.__detach_intent(message.data.get('intent_name'))
 
     def handle_detach_skill(self, message):
+        """Messagebus handler for detaching all intents for skill.
+
+        Arguments:
+            message (Message): message triggering action
+        """
         skill_id = message.data['skill_id']
         remove_list = [i for i in self.registered_intents if skill_id in i]
         for i in remove_list:
             self.__detach_intent(i)
 
     def _register_object(self, message, object_name, register_func):
+        """Generic method for registering a padatious object.
+
+        Arguments:
+            message (Message): trigger for action
+            object_name (str): type of entry to register
+            register_func (callable): function to call for registration
+        """
         file_name = message.data['file_name']
         name = message.data['name']
 
@@ -132,25 +156,31 @@ class PadatiousService:
         self.wait_and_train()
 
     def register_intent(self, message):
+        """Messagebus handler for registering intents.
+
+        Arguments:
+            message (Message): message triggering action
+        """
         self.registered_intents.append(message.data['name'])
         self._register_object(message, 'intent', self.container.load_intent)
 
     def register_entity(self, message):
+        """Messagebus handler for registering entities.
+
+        Arguments:
+            message (Message): message triggering action
+        """
         self.registered_entities.append(message.data)
         self._register_object(message, 'entity', self.container.load_entity)
 
-    def match_intent(self, utt, lang):
-        if not self.finished_training_event.is_set():
-            LOG.debug('Waiting for Padatious training to finish...')
-            return False
-
-        LOG.debug("Padatious fallback attempt: {}".format(utt))
-        intent = self.calc_intent(utt)
-
-        intent.matches['utterance'] = utt
-        return intent.name, intent.matches
-
     def _match_level(self, utterances, limit):
+        """Match intent and make sure a certain level of confidence is reached.
+
+        Arguments:
+            utterances (list of tuples): Utterances to parse, originals paired
+                                         with optional normalized version.
+            limit (float): required confidence level.
+        """
         padatious_intent = None
         LOG.debug('Padatious Matching confidence > {}'.format(limit))
         for utt in utterances:
@@ -162,46 +192,90 @@ class PadatiousService:
                         padatious_intent = intent
                         padatious_intent.matches['utterance'] = utt[0]
 
-        if padatious_intent.conf > limit:
+        if padatious_intent and padatious_intent.conf > limit:
             skill_id = padatious_intent.name.split(':')[0]
-            return IntentMatch(
+            ret = IntentMatch(
                 'Padatious', padatious_intent.name, padatious_intent.matches,
                 skill_id
             )
         else:
-            return None
+            ret = None
+        return ret
 
-    def match_high(self, utterances, lang, _):
+    def match_high(self, utterances, _=None, __=None):
+        """Intent matcher for high confidence.
+
+        Arguments:
+            utterances (list of tuples): Utterances to parse, originals paired
+                                         with optional normalized version.
+        """
         return self._match_level(utterances, 0.95)
 
-    def match_medium(self, utterances, lang, _):
+    def match_medium(self, utterances, _=None, __=None):
+        """Intent matcher for medium confidence.
+
+        Arguments:
+            utterances (list of tuples): Utterances to parse, originals paired
+                                         with optional normalized version.
+        """
         return self._match_level(utterances, 0.8)
 
-    def match_low(self, utterances, lang, _):
+    def match_low(self, utterances, _=None, __=None):
+        """Intent matcher for low confidence.
+
+        Arguments:
+            utterances (list of tuples): Utterances to parse, originals paired
+                                         with optional normalized version.
+        """
         return self._match_level(utterances, 0.5)
 
     def handle_get_padatious(self, message):
+        """messagebus handler for perfoming padatious parsing.
+
+        Arguments:
+            message (Message): message triggering the method
+        """
         utterance = message.data["utterance"]
         norm = message.data.get('norm_utt', utterance)
         intent = self.calc_intent(utterance)
         if not intent and norm != utterance:
-            intent = PadatiousService.instance.calc_intent(norm)
+            intent = self.calc_intent(norm)
         if intent:
             intent = intent.__dict__
         self.bus.emit(message.reply("intent.service.padatious.reply",
                                     {"intent": intent}))
 
     def handle_manifest(self, message):
+        """Messagebus handler returning the registered padatious intents.
+
+        Arguments:
+            message (Message): message triggering the method
+        """
         self.bus.emit(message.reply("intent.service.padatious.manifest",
                                     {"intents": self.registered_intents}))
 
     def handle_entity_manifest(self, message):
+        """Messagebus handler returning the registered padatious entities.
+
+        Arguments:
+            message (Message): message triggering the method
+        """
         self.bus.emit(
             message.reply("intent.service.padatious.entities.manifest",
                           {"entities": self.registered_entities}))
 
-    # NOTE: This cache will keep a reference to this class (PadatiousService),
-    # but we can live with that since it is used as a singleton.
     @lru_cache(maxsize=2)  # 2 catches both raw and normalized utts in cache
     def calc_intent(self, utt):
+        """Cached version of container calc_intent.
+
+        This improves speed when called multiple times for different confidence
+        levels.
+
+        NOTE: This cache will keep a reference to this class
+        (PadatiousService), but we can live with that since it is used as a
+        singleton.
+
+        Arguments:
+            utt (str): utterance to calculate best intent for
+        """
         return self.container.calc_intent(utt)
