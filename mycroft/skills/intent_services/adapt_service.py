@@ -13,17 +13,22 @@
 # limitations under the License.
 #
 """An intent parsing service using the Adapt parser."""
+import time
+
 from adapt.context import ContextManagerFrame
 from adapt.engine import IntentDeterminationEngine
 from adapt.intent import IntentBuilder
-
-import time
 
 from mycroft.util.log import LOG
 from .base import IntentMatch
 
 
 class AdaptIntent(IntentBuilder):
+    """Wrapper for IntentBuilder setting a blank name.
+
+    This is mainly here for backwards compatibility, adapt now support
+    automatically named IntentBulders.
+    """
     def __init__(self, name=''):
         super().__init__(name)
 
@@ -34,15 +39,20 @@ class ContextManager:
     Use to track context throughout the course of a conversational session.
     How to manage a session's lifecycle is not captured here.
     """
-
     def __init__(self, timeout):
         self.frame_stack = []
         self.timeout = timeout * 60  # minutes to seconds
 
     def clear_context(self):
+        """Remove all contexts."""
         self.frame_stack = []
 
     def remove_context(self, context_id):
+        """Remove a specific context entry.
+
+        Arguments:
+            context_id (str): context entry to remove
+        """
         self.frame_stack = [(f, t) for (f, t) in self.frame_stack
                             if context_id in f.entities[0].get('data', [])]
 
@@ -132,6 +142,7 @@ class ContextManager:
 
 
 class AdaptService:
+    """Intent service wrapping the Apdapt intent Parser."""
     def __init__(self, config):
         self.config = config
         self.engine = IntentDeterminationEngine()
@@ -161,18 +172,17 @@ class AdaptService:
             elif context_entity['data'][0][1] in self.context_keywords:
                 self.context_manager.inject_context(context_entity)
 
-    def match_intent(self, utterances, lang, _=None):
+    def match_intent(self, utterances, _=None, __=None):
         """Run the Adapt engine to search for an matching intent.
 
         Arguments:
             utterances (iterable): iterable of utterances, expected order
                                    [raw, normalized, other]
-            lang (string): language code, e.g "en-us"
 
         Returns:
             Intent structure, or None if no match was found.
         """
-        best_intent = None
+        best_intent = {}
 
         def take_best(intent, utt):
             nonlocal best_intent
@@ -193,17 +203,18 @@ class AdaptService:
                     if intents:
                         take_best(intents[0], utt_tup[0])
 
-                except Exception as e:
-                    LOG.exception(e)
+                except Exception as err:
+                    LOG.exception(err)
 
         if best_intent:
             self.update_context(best_intent)
             skill_id = best_intent['intent_type'].split(":")[0]
-            return IntentMatch(
+            ret = IntentMatch(
                 'Adapt', best_intent['intent_type'], best_intent, skill_id
             )
         else:
-            return None
+            ret = None
+        return ret
 
     def register_vocab(self, start_concept, end_concept, alias_of, regex_str):
         """Register vocabulary."""
@@ -214,9 +225,19 @@ class AdaptService:
                 start_concept, end_concept, alias_of=alias_of)
 
     def register_intent(self, intent):
+        """Register new intent with adapt engine.
+
+        Arguments:
+            intent (IntentParser): IntentParser to register
+        """
         self.engine.register_intent_parser(intent)
 
     def detach_skill(self, skill_id):
+        """Remove all intents for skill.
+
+        Arguments:
+            skill_id (str): skill to process
+        """
         new_parsers = [
             p for p in self.engine.intent_parsers if
             not p.name.startswith(skill_id)
@@ -224,6 +245,11 @@ class AdaptService:
         self.engine.intent_parsers = new_parsers
 
     def detach_intent(self, intent_name):
+        """Detatch a single intent
+
+        Arguments:
+            intent_name (str): Identifier for intent to remove.
+        """
         new_parsers = [
             p for p in self.engine.intent_parsers if p.name != intent_name
         ]
