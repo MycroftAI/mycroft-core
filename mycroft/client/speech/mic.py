@@ -336,7 +336,8 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
     # Time between pocketsphinx checks for the wake word
     SEC_BETWEEN_WW_CHECKS = 0.2
 
-    def __init__(self, wake_word_recognizer):
+    def __init__(self, wake_word_recognizer, watchdog=None):
+        self._watchdog = watchdog or (lambda: None)  # Default to dummy func
         self.config = Configuration.get()
         listener_config = self.config.get('listener')
         self.upload_url = listener_config['wake_word_upload']['url']
@@ -474,6 +475,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
             # Periodically write the energy level to the mic level file.
             if num_chunks % 10 == 0:
+                self._watchdog()
                 self.write_mic_level(energy, source)
 
         return byte_data
@@ -654,6 +656,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             # Periodically output energy level stats. This can be used to
             # visualize the microphone input, e.g. a needle on a meter.
             if mic_write_counter % 3:
+                self._watchdog()
                 self.write_mic_level(energy, source)
             mic_write_counter += 1
 

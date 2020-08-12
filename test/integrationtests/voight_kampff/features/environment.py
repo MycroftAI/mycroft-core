@@ -90,6 +90,12 @@ def before_all(context):
         else:
             sleep(1)
 
+    # Temporary bugfix - First test to run sometimes fails
+    # Sleeping to see if something isn't finished setting up when tests start
+    # More info in Jira Ticket MYC-370
+    # TODO - remove and fix properly dependant on if failures continue
+    sleep(10)
+
     context.bus = bus
     context.matched_message = None
     context.log = log

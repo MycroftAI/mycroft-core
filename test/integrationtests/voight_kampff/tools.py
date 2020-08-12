@@ -51,6 +51,23 @@ def then_wait(msg_type, criteria_func, context, timeout=TIMEOUT):
     return False, debug
 
 
+def then_wait_fail(msg_type, criteria_func, context, timeout=TIMEOUT):
+    """Wait for a specified time, failing if criteria is fulfilled.
+
+    Arguments:
+        msg_type: message type to watch
+        criteria_func: Function to determine if a message fulfilling the
+                       test case has been found.
+        context: behave context
+        timeout: Time allowance for a message fulfilling the criteria
+
+    Returns:
+        tuple (bool, str) test status and debug output
+    """
+    status, debug = then_wait(msg_type, criteria_func, context, timeout)
+    return (not status, debug)
+
+
 def mycroft_responses(context):
     """Collect and format mycroft responses from context.
 

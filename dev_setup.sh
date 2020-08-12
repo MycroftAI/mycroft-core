@@ -337,7 +337,7 @@ function open_suse_install() {
 
 
 function fedora_install() {
-    $SUDO dnf install -y git python3 python3-devel python3-pip python3-setuptools python3-virtualenv pygobject3-devel libtool libffi-devel openssl-devel autoconf bison swig glib2-devel portaudio-devel mpg123 mpg123-plugins-pulseaudio screen curl pkgconfig libicu-devel automake libjpeg-turbo-devel fann-devel gcc-c++ redhat-rpm-config jq
+    $SUDO dnf install -y git python3 python3-devel python3-pip python3-setuptools python3-virtualenv pygobject3-devel libtool libffi-devel openssl-devel autoconf bison swig glib2-devel portaudio-devel mpg123 mpg123-plugins-pulseaudio screen curl pkgconfig libicu-devel automake libjpeg-turbo-devel fann-devel gcc-c++ redhat-rpm-config jq make
 }
 
 
@@ -366,6 +366,10 @@ function redhat_install() {
     rm epel-release-latest-7.noarch.rpm
     redhat_common_install
 
+}
+
+function gentoo_install() {
+    $SUDO emerge --noreplace dev-vcs/git dev-lang/python dev-python/setuptools dev-python/pygobject dev-python/requests sys-devel/libtool virtual/libffi virtual/jpeg dev-libs/openssl sys-devel/autoconf sys-devel/bison dev-lang/swig dev-libs/glib media-libs/portaudio media-sound/mpg123 media-libs/flac net-misc/curl sci-mathematics/fann sys-devel/gcc app-misc/jq media-libs/alsa-lib dev-libs/icu
 }
 
 function alpine_install() {
@@ -398,10 +402,14 @@ function install_deps() {
         # Arch Linux
         echo "$GREEN Installing packages for Arch...$RESET"
         arch_install
+    elif found_exe emerge && os_is gentoo; then
+        # Gentoo Linux
+        echo "$GREEN Installing packages for Gentoo Linux ...$RESET"
+        gentoo_install	
     elif found_exe apk && os_is alpine; then
-    	# Alpine Linux
-	echo "$GREEN Installing packages for Alpine Linux...$RESET"
-	alpine_install
+        # Alpine Linux
+        echo "$GREEN Installing packages for Alpine Linux...$RESET"
+        alpine_install
     else
     	echo
         echo -e "${YELLOW}Could not find package manager
