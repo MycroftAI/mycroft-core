@@ -534,14 +534,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
             'model': str(model_hash)
         }
 
-    def _upload_wake_word(self, audio, metadata):
-        requests.post(
-            self.upload_url, files={
-                'audio': BytesIO(audio.get_wav_data()),
-                'metadata': StringIO(json.dumps(metadata))
-            }
-        )
-
     def trigger_listen(self):
         """Externally trigger listening."""
         LOG.debug('Listen triggered from external source.')
