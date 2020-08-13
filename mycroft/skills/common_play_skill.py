@@ -258,7 +258,7 @@ class CommonPlaySkill(MycroftSkill, ABC):
             uri (str): uri for track
             track_length (float): track length in seconds
             elapsed_time (float): current offset into track in seconds
-            playlist_postion (int):
+            playlist_position (int): Position in playlist of current track
         """
         data = {'skill': self.name,
                 'uri': uri,
@@ -274,13 +274,13 @@ class CommonPlaySkill(MycroftSkill, ABC):
         data = {**data, **kwargs}  # Merge extra arguments
         self.bus.emit(Message('play:status', data))
 
-    def CPS_send_tracklist(self, tracklist=None):
+    def CPS_send_tracklist(self, tracklist):
         """Inform system of playlist track info.
 
         Provides track data for playlist
 
         Arguments:
-            tracklist (str/list): Tracklist data
+            tracklist (list/dict): Tracklist data
         """
         tracklist = tracklist or []
         if not isinstance(tracklist, list):
