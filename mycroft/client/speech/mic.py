@@ -541,12 +541,16 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
     def _upload_wakeword(self, audio, metadata):
         """Upload the wakeword in a background thread."""
-        def upload(audio, metadata):
-            requests.post(self.upload_url,
-                          files={'audio': BytesIO(audio.get_wav_data()),
-                                 'metadata': StringIO(json.dumps(metadata))})
-
-        Thread(target=upload, daemon=True, args=(audio, metadata)).start()
+        LOG.debug(
+            "Wakeword uploading has been disabled. The API endpoint used in "
+            "Mycroft-core v20.2 and below has been deprecated. To contribute "
+            "new wakeword samples please upgrade to v20.8 or above."
+        )
+        # def upload(audio, metadata):
+        #     requests.post(self.upload_url,
+        #                   files={'audio': BytesIO(audio.get_wav_data()),
+        #                          'metadata': StringIO(json.dumps(metadata))})
+        # Thread(target=upload, daemon=True, args=(audio, metadata)).start()
 
     def _send_wakeword_info(self, emitter):
         """Send messagebus message indicating that a wakeword was received.
