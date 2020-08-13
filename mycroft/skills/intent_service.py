@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""Mycroft's intent service, providing intent parsing since forever!"""
 from copy import copy
 import time
 
@@ -74,6 +75,11 @@ def _normalize_all_utterances(utterances):
 
 
 class IntentService:
+    """Mycroft intent service. parses utterances using a variety of systems.
+
+    The intent service also provides the internal API for registering and
+    querying the intent service.
+    """
     def __init__(self, bus):
         # Dictionary for translating a skill id to a name
         self.bus = bus
@@ -83,9 +89,9 @@ class IntentService:
         self.adapt_service = AdaptService(config.get('context', {}))
         try:
             self.padatious_service = PadatiousService(bus, config['padatious'])
-        except Exception as e:
+        except Exception as err:
             LOG.exception('Failed to create padatious handlers '
-                          '({})'.format(repr(e)))
+                          '({})'.format(repr(err)))
         self.fallback = FallbackService(bus)
 
         self.bus.on('register_vocab', self.handle_register_vocab)
@@ -144,25 +150,45 @@ class IntentService:
             self.do_converse(None, skill[0], lang, message)
 
     def do_converse(self, utterances, skill_id, lang, message):
+        """Call skill and ask if they want to process the utterance.
+
+        Arguments:
+            utterances (list of tuples): utterances paired with normalized
+                                         versions.
+            skill_id: skill to query.
+            lang (str): current language
+            message (Message): message containing interaction info.
+        """
         converse_msg = (message.reply("skill.converse.request", {
             "skill_id": skill_id, "utterances": utterances, "lang": lang}))
         result = self.bus.wait_for_response(converse_msg,
                                             'skill.converse.response')
         if result and 'error' in result.data:
             self.handle_converse_error(result)
-            return False
+            ret = False
         elif result is not None:
-            return result.data.get('result', False)
+            ret = result.data.get('result', False)
         else:
-            return False
+            ret = False
+        return ret
 
     def handle_converse_error(self, message):
+        """Handle error in converse system.
+
+        Arguments:
+            message (Message): info about the error.
+        """
         LOG.error(message.data['error'])
         skill_id = message.data["skill_id"]
         if message.data["error"] == "skill id does not exist":
             self.remove_active_skill(skill_id)
 
     def remove_active_skill(self, skill_id):
+        """Remove a skill from being targetable by converse.
+
+        Arguments:
+            skill_id (str): skill to remove
+        """
         for skill in self.active_skills:
             if skill[0] == skill_id:
                 self.active_skills.remove(skill)
@@ -278,8 +304,8 @@ class IntentService:
                 # Ask politely for forgiveness for failing in this vital task
                 self.send_complete_intent_failure(message)
             self.send_metrics(match, message.context, stopwatch)
-        except Exception as e:
-            LOG.exception(e)
+        except Exception as err:
+            LOG.exception(err)
 
     def _converse(self, utterances, lang, message):
         """Give active skills a chance at the utterance
@@ -307,9 +333,19 @@ class IntentService:
         return None
 
     def send_complete_intent_failure(self, message):
+        """Send a message that no skill could handle the utterance.
+
+        Arguments:
+            message (Message): original message to forward from
+        """
         self.bus.emit(message.forward('complete_intent_failure'))
 
     def handle_register_vocab(self, message):
+        """Register adapt vocabulary.
+
+        Arguments:
+            message (Message): message containing vocab info
+        """
         start_concept = message.data.get('start')
         end_concept = message.data.get('end')
         regex_str = message.data.get('regex')
@@ -319,14 +355,29 @@ class IntentService:
         self.registered_vocab.append(message.data)
 
     def handle_register_intent(self, message):
+        """Register adapt intent.
+
+        Arguments:
+            message (Message): message containing intent info
+        """
         intent = open_intent_envelope(message)
         self.adapt_service.register_intent(intent)
 
     def handle_detach_intent(self, message):
+        """Remover adapt intent.
+
+        Arguments:
+            message (Message): message containing intent info
+        """
         intent_name = message.data.get('intent_name')
         self.adapt_service.detach_intent(intent_name)
 
     def handle_detach_skill(self, message):
+        """Remove all intents registered for a specific skill.
+
+        Arguments:
+            message (Message): message containing intent info
+        """
         skill_id = message.data.get('skill_id')
         self.adapt_service.detach_skill(skill_id)
 
@@ -361,11 +412,16 @@ class IntentService:
         if context:
             self.adapt_service.context_manager.remove_context(context)
 
-    def handle_clear_context(self, message):
+    def handle_clear_context(self, _):
         """Clears all keywords from context """
         self.adapt_service.context_manager.clear_context()
 
     def handle_get_adapt(self, message):
+        """handler getting the adapt response for an utterance.
+
+        Arguments:
+            message (Message): message containing utterance
+        """
         utterance = message.data["utterance"]
         lang = message.data.get("lang", "en-us")
         combined = _normalize_all_utterances([utterance])
@@ -374,6 +430,11 @@ class IntentService:
                                     {"intent": intent}))
 
     def handle_get_intent(self, message):
+        """Get intent from either adapt or padatious.
+
+        Arguments:
+            message (Message): message containing utterance
+        """
         utterance = message.data["utterance"]
         lang = message.data.get("lang", "en-us")
         combined = _normalize_all_utterances([utterance])
@@ -388,18 +449,38 @@ class IntentService:
                                     {"intent": intent}))
 
     def handle_get_skills(self, message):
+        """Send registered skills to caller.
+
+        Argument:
+            message: query message to reply to.
+        """
         self.bus.emit(message.reply("intent.service.skills.reply",
                                     {"skills": self.skill_names}))
 
     def handle_get_active_skills(self, message):
+        """Send active skills to caller.
+
+        Argument:
+            message: query message to reply to.
+        """
         self.bus.emit(message.reply("intent.service.active_skills.reply",
                                     {"skills": [s[0] for s in
                                                 self.active_skills]}))
 
     def handle_manifest(self, message):
+        """Send adapt intent manifest to caller.
+
+        Argument:
+            message: query message to reply to.
+        """
         self.bus.emit(message.reply("intent.service.adapt.manifest",
                                     {"intents": self.registered_intents}))
 
     def handle_vocab_manifest(self, message):
+        """Send adapt vocabulary manifest to caller.
+
+        Argument:
+            message: query message to reply to.
+        """
         self.bus.emit(message.reply("intent.service.adapt.vocab.manifest",
                                     {"vocab": self.registered_vocab}))
