@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+from inspect import signature
 import re
 from enum import IntEnum
 from abc import ABC, abstractmethod
@@ -112,12 +112,11 @@ class CommonPlaySkill(MycroftSkill, ABC):
                                         "searching": True}))
 
         # Now invoke the CPS handler to let the skill perform its search
-        # TODO remove try: except: block in major release XXX
-        # it is needed for old skills which are not expecting media_type
-        # alternatively check for function signature before calling it
-        try:
+        if len(signature(self.CPS_match_query_phrase)) == 2:
             result = self.CPS_match_query_phrase(search_phrase, media_type)
-        except:
+        else:
+            # needed for old skills which are not expecting media_type
+            # TODO remove in next major release
             result = self.CPS_match_query_phrase(search_phrase)
 
         if result:
