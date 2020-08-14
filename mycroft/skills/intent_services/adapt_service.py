@@ -29,8 +29,22 @@ class AdaptIntent(IntentBuilder):
     This is mainly here for backwards compatibility, adapt now support
     automatically named IntentBulders.
     """
-    def __init__(self, name=''):
-        super().__init__(name)
+
+
+def _strip_result(context_features):
+    """Keep only the latest instance of each keyword.
+
+    Arguments
+        context_features (iterable): context features to check.
+    """
+    stripped = []
+    processed = []
+    for feature in context_features:
+        keyword = feature['data'][0][1]
+        if keyword not in processed:
+            stripped.append(feature)
+            processed.append(keyword)
+    return stripped
 
 
 class ContextManager:
@@ -68,7 +82,7 @@ class ContextManager:
         """
         metadata = metadata or {}
         try:
-            if len(self.frame_stack) > 0:
+            if self.frame_stack:
                 top_frame = self.frame_stack[0]
             else:
                 top_frame = None
@@ -103,6 +117,7 @@ class ContextManager:
         context = []
         last = ''
         depth = 0
+        entity = {}
         for i in range(max_frames):
             frame_entities = [entity.copy() for entity in
                               relevant_frames[i].entities]
@@ -117,7 +132,7 @@ class ContextManager:
             last = entity['origin']
 
         result = []
-        if len(missing_entities) > 0:
+        if missing_entities:
             for entity in context:
                 if entity.get('data') in missing_entities:
                     result.append(entity)
@@ -129,16 +144,8 @@ class ContextManager:
         else:
             result = context
 
-        # Only use the latest instance of each keyword
-        stripped = []
-        processed = []
-        for f in result:
-            keyword = f['data'][0][1]
-            if keyword not in processed:
-                stripped.append(f)
-                processed.append(keyword)
-        result = stripped
-        return result
+        # Only use the latest  keyword
+        return _strip_result(result)
 
 
 class AdaptService:
