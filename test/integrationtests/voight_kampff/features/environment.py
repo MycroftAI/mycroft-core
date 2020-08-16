@@ -97,6 +97,7 @@ def before_all(context):
     sleep(10)
 
     context.bus = bus
+    context.step_timeout = 10  # Reset the step_timeout to 10 seconds
     context.matched_message = None
     context.log = log
     context.original_config = {}
@@ -139,6 +140,7 @@ def after_scenario(context, scenario):
     wait_while_speaking()
     context.bus.clear_messages()
     context.matched_message = None
+    context.step_timeout = 10  # Reset the step_timeout to 10 seconds
 
     if context.original_config:
         # something has changed, reset changes by done in the context

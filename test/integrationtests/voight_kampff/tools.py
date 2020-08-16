@@ -23,7 +23,7 @@ from mycroft.messagebus import Message
 TIMEOUT = 10
 
 
-def then_wait(msg_type, criteria_func, context, timeout=TIMEOUT):
+def then_wait(msg_type, criteria_func, context, timeout=None):
     """Wait for a specified time for criteria to be fulfilled.
 
     Arguments:
@@ -31,11 +31,13 @@ def then_wait(msg_type, criteria_func, context, timeout=TIMEOUT):
         criteria_func: Function to determine if a message fulfilling the
                        test case has been found.
         context: behave context
-        timeout: Time allowance for a message fulfilling the criteria
+        timeout: Time allowance for a message fulfilling the criteria, if
+                 provided will override the normal normal step timeout.
 
     Returns:
         tuple (bool, str) test status and debug output
     """
+    timeout = timeout or context.step_timeout
     start_time = time.monotonic()
     debug = ''
     while time.monotonic() < start_time + timeout:
@@ -51,7 +53,7 @@ def then_wait(msg_type, criteria_func, context, timeout=TIMEOUT):
     return False, debug
 
 
-def then_wait_fail(msg_type, criteria_func, context, timeout=TIMEOUT):
+def then_wait_fail(msg_type, criteria_func, context, timeout=None):
     """Wait for a specified time, failing if criteria is fulfilled.
 
     Arguments:
