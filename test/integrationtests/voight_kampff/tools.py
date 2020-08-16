@@ -110,14 +110,20 @@ def emit_utterance(bus, utt):
                      context={'client_name': 'mycroft_listener'}))
 
 
-def wait_for_dialog(bus, dialogs, timeout=TIMEOUT):
+def wait_for_dialog(bus, dialogs, context=None, timeout=None):
     """Wait for one of the dialogs given as argument.
 
     Arguments:
         bus (InterceptAllBusClient): Bus instance to listen on
         dialogs (list): list of acceptable dialogs
-        timeout (int): how long to wait for the messagem, defaults to 10 sec.
+        context (behave Context): optional context providing scenario timeout
+        timeout (int): how long to wait for the message, defaults to timeout
+                       provided by context or 10 seconds
     """
+    if context:
+        timeout = timeout or context.step_timeout
+    else:
+        timeout = timeout or TIMEOUT
     start_time = time.monotonic()
     while time.monotonic() < start_time + timeout:
         for message in bus.get_messages('speak'):
