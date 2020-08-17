@@ -110,14 +110,17 @@ def _shutdown_skill(instance):
 class SkillManager(Thread):
     _msm = None
 
-    def __init__(self, bus):
+    def __init__(self, bus, watchdog=None):
         """Constructor
 
         Arguments:
             bus (event emitter): Mycroft messagebus connection
+            watchdog (callable): optional watchdog function
         """
         super(SkillManager, self).__init__()
         self.bus = bus
+        # Set watchdog to argument or function returning None
+        self._watchdog = watchdog or (lambda: None)
         self._stop_event = Event()
         self._connected_event = Event()
         self.config = Configuration.get()
@@ -223,6 +226,10 @@ class SkillManager(Thread):
         """Load skills and update periodically from disk and internet."""
         self._remove_git_locks()
         self._connected_event.wait()
+        if not self.skill_updater.defaults_installed():
+            LOG.info('Not all default skills are installed, '
+                     'performing skill update...')
+            self.skill_updater.update_skills()
         self._load_on_startup()
 
         # Sync backend and skills.
@@ -243,6 +250,7 @@ class SkillManager(Thread):
                     self.skill_updater.post_manifest()
                     self.upload_queue.send()
 
+                self._watchdog()
                 sleep(2)  # Pause briefly before beginning next scan
             except Exception:
                 LOG.exception('Something really unexpected has occured '

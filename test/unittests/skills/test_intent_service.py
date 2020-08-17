@@ -13,9 +13,19 @@
 # limitations under the License.
 #
 from unittest import TestCase, mock
-
+from mycroft.configuration import Configuration
 from mycroft.messagebus import Message
-from mycroft.skills.intent_service import ContextManager, IntentService
+from mycroft.skills.intent_service import (ContextManager, IntentService,
+                                           _get_message_lang)
+
+from test.util import base_config
+
+# Setup configurations to use with default language tests
+BASE_CONF = base_config()
+BASE_CONF['lang'] = 'it-it'
+
+NO_LANG_CONF = base_config()
+NO_LANG_CONF.pop('lang')
 
 
 class MockEmitter(object):
@@ -176,3 +186,25 @@ class ConversationTest(TestCase):
         self.assertTrue(check_converse_request(atari_message, 'atari_skill'))
         first_active_skill = self.intent_service.active_skills[0][0]
         self.assertEqual(first_active_skill, 'atari_skill')
+
+
+class TestLanguageExtraction(TestCase):
+    @mock.patch.dict(Configuration._Configuration__config, BASE_CONF)
+    def test_no_lang_in_message(self):
+        """No lang in message should result in lang from config."""
+        msg = Message('test msg', data={})
+        self.assertEqual(_get_message_lang(msg), 'it-it')
+
+    @mock.patch.dict(Configuration._Configuration__config, NO_LANG_CONF)
+    def test_no_lang_at_all(self):
+        """Not in message and not in config, should result in en-us."""
+        msg = Message('test msg', data={})
+        self.assertEqual(_get_message_lang(msg), 'en-us')
+
+    @mock.patch.dict(Configuration._Configuration__config, BASE_CONF)
+    def test_lang_exists(self):
+        """Message has a lang code in data, it should be used."""
+        msg = Message('test msg', data={'lang': 'de-de'})
+        self.assertEqual(_get_message_lang(msg), 'de-de')
+        msg = Message('test msg', data={'lang': 'sv-se'})
+        self.assertEqual(_get_message_lang(msg), 'sv-se')

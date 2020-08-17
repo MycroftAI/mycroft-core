@@ -173,7 +173,20 @@ class DevicePrimer(object):
             wait_while_speaking()
 
 
-def main():
+def on_ready():
+    LOG.info('Skill service is ready.')
+
+
+def on_error(e='Unknown'):
+    LOG.info('Skill service failed to launch ({})'.format(repr(e)))
+
+
+def on_stopping():
+    LOG.info('Skill service is shutting down...')
+
+
+def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
+         watchdog=None):
     reset_sigint_handler()
     # Create PID file, prevent multiple instances of this service
     mycroft.lock.Lock('skills')
@@ -185,7 +198,7 @@ def main():
     bus = _start_message_bus_client()
     _register_intent_services(bus)
     event_scheduler = EventScheduler(bus)
-    skill_manager = _initialize_skill_manager(bus)
+    skill_manager = _initialize_skill_manager(bus, watchdog)
 
     _wait_for_internet_connection()
 
@@ -195,8 +208,11 @@ def main():
     device_primer = DevicePrimer(bus, config)
     device_primer.prepare_device()
     skill_manager.start()
-
+    while not skill_manager.is_alive():
+        time.sleep(0.1)
+    ready_hook()  # Report ready status
     wait_for_exit_signal()
+    stopping_hook()  # Report shutdown started
     shutdown(skill_manager, event_scheduler)
 
 
@@ -234,14 +250,14 @@ def _register_intent_services(bus):
     bus.on('intent_failure', FallbackSkill.make_intent_failure_handler(bus))
 
 
-def _initialize_skill_manager(bus):
+def _initialize_skill_manager(bus, watchdog):
     """Create a thread that monitors the loaded skills, looking for updates
 
     Returns:
         SkillManager instance or None if it couldn't be initialized
     """
     try:
-        skill_manager = SkillManager(bus)
+        skill_manager = SkillManager(bus, watchdog)
         skill_manager.load_priority()
     except MsmException:
         # skill manager couldn't be created, wait for network connection and

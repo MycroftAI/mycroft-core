@@ -235,6 +235,16 @@ class TestSettingsDownloader(MycroftUnitTestBase):
             self.downloader.last_download_result
         )
 
+    def test_stop_downloading(self):
+        """Ensure that the timer is cancelled and the continue flag is lowered.
+        """
+        self.is_paired_mock.return_value = False  # Skip all the download logic
+        self.downloader.download()  # Start downloading creates the timer
+        self.downloader.stop_downloading()
+        self.assertFalse(self.downloader.continue_downloading)
+        self.assertTrue(
+            self.downloader.download_timer.cancel.called_once_with())
+
     def _check_api_called(self):
         self.assertListEqual(
             [call.get_skill_settings()],

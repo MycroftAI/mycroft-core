@@ -14,8 +14,9 @@
 #
 """Periodically run by skill manager to load skills into memory."""
 import gc
-import imp
+import importlib
 import os
+from os.path import dirname
 import sys
 from time import time
 
@@ -27,6 +28,49 @@ from mycroft.util.log import LOG
 from .settings import SettingsMetaUploader
 
 SKILL_MAIN_MODULE = '__init__.py'
+
+
+def remove_submodule_refs(module_name):
+    """Ensure submodules are reloaded by removing the refs from sys.modules.
+
+    Python import system puts a reference for each module in the sys.modules
+    dictionary to bypass loading if a module is already in memory. To make
+    sure skills are completely reloaded these references are deleted.
+
+    Arguments:
+        module_name: name of skill module.
+    """
+    submodules = []
+    LOG.debug('Skill module'.format(module_name))
+    # Collect found submodules
+    for m in sys.modules:
+        if m.startswith(module_name + '.'):
+            submodules.append(m)
+    # Remove all references them to in sys.modules
+    for m in submodules:
+        LOG.debug('Removing sys.modules ref for {}'.format(m))
+        del(sys.modules[m])
+
+
+def load_skill_module(path, skill_id):
+    """Load a skill module
+
+    This function handles the differences between python 3.4 and 3.5+ as well
+    as makes sure the module is inserted into the sys.modules dict.
+
+    Arguments:
+        path: Path to the skill main file (__init__.py)
+        skill_id: skill_id used as skill identifier in the module list
+    """
+    module_name = skill_id.replace('.', '_')
+
+    remove_submodule_refs(module_name)
+
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = mod
+    spec.loader.exec_module(mod)
+    return mod
 
 
 def _get_last_modified_time(path):
@@ -139,7 +183,7 @@ class SkillLoader:
         """Call the shutdown method of the skill being reloaded."""
         try:
             self.instance.default_shutdown()
-        except Exception as e:
+        except Exception:
             log_msg = 'An error occurred while shutting down {}'
             LOG.exception(log_msg.format(self.instance.name))
         else:
@@ -196,30 +240,23 @@ class SkillLoader:
 
     def _load_skill_source(self):
         """Use Python's import library to load a skill's source code."""
-        # TODO: Replace the deprecated "imp" library with the newer "importlib"
-        module_name = self.skill_id.replace('.', '_')
         main_file_path = os.path.join(self.skill_directory, SKILL_MAIN_MODULE)
-        try:
-            with open(main_file_path, 'rb') as main_file:
-                skill_module = imp.load_module(
-                    module_name,
-                    main_file,
-                    main_file_path,
-                    ('.py', 'rb', imp.PY_SOURCE)
-                )
-        except FileNotFoundError as f:
+        if not os.path.exists(main_file_path):
             error_msg = 'Failed to load {} due to a missing file.'
-            LOG.exception(error_msg.format(self.skill_id))
-        except Exception as e:
-            LOG.exception('Failed to load skill: '
-                          '{} ({})'.format(self.skill_id, repr(e)))
+            LOG.error(error_msg.format(self.skill_id))
         else:
-            module_is_skill = (
-                hasattr(skill_module, 'create_skill') and
-                callable(skill_module.create_skill)
-            )
-            if module_is_skill:
-                return skill_module
+            try:
+                skill_module = load_skill_module(main_file_path, self.skill_id)
+            except Exception as e:
+                LOG.exception('Failed to load skill: '
+                              '{} ({})'.format(self.skill_id, repr(e)))
+            else:
+                module_is_skill = (
+                    hasattr(skill_module, 'create_skill') and
+                    callable(skill_module.create_skill)
+                )
+                if module_is_skill:
+                    return skill_module
         return None  # Module wasn't loaded
 
     def _create_skill_instance(self, skill_module):

@@ -149,6 +149,19 @@ class ContextManager:
         return result
 
 
+def _get_message_lang(message):
+    """Get the language from the message or the default language.
+
+    Arguments:
+        message: message to check for language code.
+
+    Returns:
+        The languge code from the message or the default language.
+    """
+    default_lang = Configuration.get().get('lang', 'en-us')
+    return message.data.get('lang', default_lang).lower()
+
+
 class IntentService:
     def __init__(self, bus):
         self.config = Configuration.get().get('context', {})
@@ -212,7 +225,7 @@ class IntentService:
 
     def reset_converse(self, message):
         """Let skills know there was a problem with speech recognition"""
-        lang = message.data.get('lang', "en-us")
+        lang = _get_message_lang(message)
         set_active_lang(lang)
         for skill in copy(self.active_skills):
             self.do_converse(None, skill[0], lang, message)
@@ -318,8 +331,7 @@ class IntentService:
             message (Message): The messagebus data
         """
         try:
-            # Get language of the utterance
-            lang = message.data.get('lang', "en-us")
+            lang = _get_message_lang(message)
             set_active_lang(lang)
 
             utterances = message.data.get('utterances', [])

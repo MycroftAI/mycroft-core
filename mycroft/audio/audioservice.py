@@ -17,7 +17,7 @@ import sys
 import time
 from os import listdir
 from os.path import abspath, dirname, basename, isdir, join
-from threading import Lock
+from threading import Lock, Event
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
@@ -25,6 +25,7 @@ from mycroft.util.log import LOG
 
 from .services import RemoteAudioBackend
 
+MINUTES = 60  # Seconds in a minute
 
 MAINMODULE = '__init__'
 sys.path.append(abspath(dirname(__file__)))
@@ -144,6 +145,7 @@ class AudioService:
         self.play_start_time = 0
         self.volume_is_low = False
 
+        self._loaded = Event()
         bus.once('open', self.load_services_callback)
 
     def load_services_callback(self):
@@ -190,7 +192,20 @@ class AudioService:
         self.bus.on('recognizer_loop:audio_output_start', self._lower_volume)
         self.bus.on('recognizer_loop:record_begin', self._lower_volume)
         self.bus.on('recognizer_loop:audio_output_end', self._restore_volume)
-        self.bus.on('recognizer_loop:record_end', self._restore_volume)
+        self.bus.on('recognizer_loop:record_end',
+                    self._restore_volume_after_record)
+
+        self._loaded.set()  # Report services loaded
+
+    def wait_for_load(self, timeout=3 * MINUTES):
+        """Wait for services to be loaded.
+
+        Arguments:
+            timeout (float): Seconds to wait (default 3 minutes)
+        Returns:
+            (bool) True if loading completed within timeout, else False.
+        """
+        return self._loaded.wait(timeout)
 
     def track_start(self, track):
         """Callback method called from the services to indicate start of
@@ -293,6 +308,31 @@ class AudioService:
             time.sleep(2)
             if not self.volume_is_low:
                 self.current.restore_volume()
+
+    def _restore_volume_after_record(self, message=None):
+        """
+            Restores the volume when Mycroft is done recording.
+            If no utterance detected, restore immediately.
+            If no response is made in reasonable time, then also restore.
+
+            Args:
+                message: message bus message, not used but required
+        """
+        def restore_volume():
+            LOG.debug('restoring volume')
+            self.current.restore_volume()
+
+        if self.current:
+            self.bus.on('recognizer_loop:speech.recognition.unknown',
+                        restore_volume)
+            speak_msg_detected = self.bus.wait_for_message('speak',
+                                                           timeout=8.0)
+            if not speak_msg_detected:
+                restore_volume()
+            self.bus.remove('recognizer_loop:speech.recognition.unknown',
+                            restore_volume)
+        else:
+            LOG.debug("No audio service to restore volume of")
 
     def play(self, tracks, prefered_service, repeat=False):
         """
@@ -440,4 +480,5 @@ class AudioService:
         self.bus.remove('recognizer_loop:record_begin', self._lower_volume)
         self.bus.remove('recognizer_loop:audio_output_end',
                         self._restore_volume)
-        self.bus.remove('recognizer_loop:record_end', self._restore_volume)
+        self.bus.remove('recognizer_loop:record_end',
+                        self._restore_volume_after_record)
