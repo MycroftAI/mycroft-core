@@ -31,13 +31,18 @@ class CPSMatchLevel(Enum):
 
 class CPSTrackStatus(IntEnum):
     DISAMBIGUATION = 1  # not queued for playback, show in gui
-    PLAYING = 2  # Skill is handling playback internally
-    PLAYING_AUDIOSERVICE = 3  # Skill forwarded playback to audio service
-    QUEUED = 4  # Waiting playback to be handled inside skill
-    QUEUED_AUDIOSERVICE = 5  # Waiting playback in audio service
-    BUFFERING = 6  # Incase it's an online source the buffering state or
-    STALLED = 7  # stalled state helps to know when to show the buffering ui
-    END_OF_MEDIA = 8  # helps to know if we want to do autoplay or something
+    PLAYING = 20  # Skill is handling playback internally
+    PLAYING_AUDIOSERVICE = 21  # Skill forwarded playback to audio service
+    PLAYING_GUI = 22  # Skill forwarded playback to gui
+    PLAYING_ENCLOSURE = 23  # Skill forwarded playback to enclosure
+    QUEUED = 30  # Waiting playback to be handled inside skill
+    QUEUED_AUDIOSERVICE = 31  # Waiting playback in audio service
+    QUEUED_GUI = 32  # Waiting playback in gui
+    QUEUED_ENCLOSURE = 33  # Waiting for playback in enclosure
+    PAUSED = 40  # media paused but ready to resume
+    STALLED = 60  # playback has stalled, reason may be unknown
+    BUFFERING = 61  # media is buffering from an external source
+    END_OF_MEDIA = 90  # playback finished, is the default state when CPS loads
 
 
 class CommonPlaySkill(MycroftSkill, ABC):
