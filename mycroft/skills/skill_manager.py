@@ -460,11 +460,6 @@ class SkillManager(Thread):
         reply = message.reply('skill.converse.response',
                               data=dict(skill_id=skill_id, error=error_msg))
         self.bus.emit(reply)
-        # Also emit the old error message to keep compatibility
-        # TODO Remove in 20.08
-        reply = message.reply('skill.converse.error',
-                              data=dict(skill_id=skill_id, error=error_msg))
-        self.bus.emit(reply)
 
     def _emit_converse_response(self, result, message, skill_loader):
         reply = message.reply(
