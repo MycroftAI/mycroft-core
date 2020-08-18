@@ -17,18 +17,6 @@
 import re
 
 
-def get_http(uri):
-    """Change an uri from https:// to http://.
-    TODO: Remove as part of 20.08
-
-    Arguments:
-        uri: uri to convert
-
-    Returns: (string) uri where https:// has been replaced with http://
-    """
-    return uri.replace("https://", "http://")
-
-
 def remove_last_slash(url):
     """Remove the last slash from the given url.
     TODO: Remove as part of 20.08

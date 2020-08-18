@@ -22,7 +22,7 @@ import os
 
 import mycroft.audio
 from mycroft.util.format import nice_number
-from .string_utils import get_http, remove_last_slash, camel_case_split
+from .string_utils import remove_last_slash, camel_case_split
 from .audio_utils import (play_audio_file, play_wav, play_ogg, play_mp3,
                           record, find_input_device)
 from .file_utils import (resolve_resource_file, read_stripped_lines, read_dict,
