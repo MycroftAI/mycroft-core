@@ -112,7 +112,7 @@ class CommonPlaySkill(MycroftSkill, ABC):
                                         "searching": True}))
 
         # Now invoke the CPS handler to let the skill perform its search
-        if len(signature(self.CPS_match_query_phrase)) == 2:
+        if len(signature(self.CPS_match_query_phrase).parameters) == 2:
             result = self.CPS_match_query_phrase(search_phrase, media_type)
         else:
             # needed for old skills which are not expecting media_type
