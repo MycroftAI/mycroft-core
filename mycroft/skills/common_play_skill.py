@@ -149,9 +149,13 @@ class CommonPlaySkill(MycroftSkill, ABC):
             phrase (str): original input phrase
             level (CPSMatchLevel): match level
         """
-        consumed_pct = len(match.split()) / len(phrase.split())
-        if consumed_pct > 1.0:
-            consumed_pct = 1.0 / consumed_pct  # deal with over/under-matching
+        if len(phrase.split()) == 0:
+            consumed_pct = 1
+        else:
+            consumed_pct = len(match.split()) / len(phrase.split())
+            if consumed_pct > 1.0:
+                # deal with over/under-matching
+                consumed_pct = 1.0 / consumed_pct
 
         # We'll use this to modify the level, but don't want it to allow a
         # match to jump to the next match level.  So bonus is 0 - 0.05 (1/20)
