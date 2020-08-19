@@ -185,9 +185,13 @@ class CommonPlaySkill(MycroftSkill, ABC):
         data = message.data.get("callback_data")
 
         # Stop any currently playing audio
-        if self.audioservice.is_playing:
+        if self.audioservice.is_playing and \
+                message.data.get("stop_audio", True):
+            # "stop_audio" is used by playback control, it avoids calling stop
+            # if query was interpreted as a "resume" command
             self.audioservice.stop()
-        self.bus.emit(message.forward("mycroft.stop"))
+
+            self.bus.emit(message.forward("mycroft.stop"))
 
         # Save for CPS_play() later, e.g. if phrase includes modifiers like
         # "... on the chromecast"
