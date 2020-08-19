@@ -116,7 +116,6 @@ class IntentService:
         self.converse_timeout = 5  # minutes to prune active_skills
 
         # Intents API
-        self.registered_intents = []
         self.registered_vocab = []
         self.bus.on('intent.service.adapt.get', self.handle_get_adapt)
         self.bus.on('intent.service.intent.get', self.handle_get_intent)
@@ -126,6 +125,11 @@ class IntentService:
         self.bus.on('intent.service.adapt.manifest.get', self.handle_manifest)
         self.bus.on('intent.service.adapt.vocab.manifest.get',
                     self.handle_vocab_manifest)
+
+    @property
+    def registered_intents(self):
+        return [parser.__dict__
+                for parser in self.adapt_service.engine.intent_parsers]
 
     def update_skill_name_dict(self, message):
         """Messagebus handler, updates dict of id to skill name conversions."""
@@ -426,8 +430,9 @@ class IntentService:
         lang = message.data.get("lang", "en-us")
         combined = _normalize_all_utterances([utterance])
         intent = self.adapt_service.match_intent(combined, lang)
+        intent_data = intent.intent_data if intent else None
         self.bus.emit(message.reply("intent.service.adapt.reply",
-                                    {"intent": intent}))
+                                    {"intent": intent_data}))
 
     def handle_get_intent(self, message):
         """Get intent from either adapt or padatious.
@@ -438,15 +443,14 @@ class IntentService:
         utterance = message.data["utterance"]
         lang = message.data.get("lang", "en-us")
         combined = _normalize_all_utterances([utterance])
-        intent = self.adapt_service.match_intent(combined, lang)
+        adapt_intent = self.adapt_service.match_intent(combined, lang)
         # Adapt intent's handler is used unless
         # Padatious is REALLY sure it was directed at it instead.
-        padatious_intent = self.padatious_service.calc_intent(utterance)
-        if intent is None or (
-                padatious_intent and padatious_intent.conf >= 0.95):
-            intent = padatious_intent.__dict__
+        padatious_intent = self.padatious_service.match_high(combined)
+        intent = padatious_intent or adapt_intent
+        intent_data = intent.intent_data if intent else None
         self.bus.emit(message.reply("intent.service.intent.reply",
-                                    {"intent": intent}))
+                                    {"intent": intent_data}))
 
     def handle_get_skills(self, message):
         """Send registered skills to caller.
