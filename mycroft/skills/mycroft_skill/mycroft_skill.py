@@ -116,6 +116,7 @@ class MycroftSkill:
         bus (MycroftWebsocketClient): Optional bus connection
         use_settings (bool): Set to false to not use skill settings at all
     """
+
     def __init__(self, name=None, bus=None, use_settings=True):
         self.name = name or self.__class__.__name__
         self.resting_name = None
@@ -262,6 +263,7 @@ class MycroftSkill:
         """Add all events allowing the standard interaction with the Mycroft
         system.
         """
+
         def stop_is_implemented():
             return self.__class__.stop is not MycroftSkill.stop
 
@@ -588,9 +590,8 @@ class MycroftSkill:
         if utt:
             if exact:
                 # Check for exact match
-                if utt and any(i.strip() == utt
-                               for i in self.voc_match_cache[cache_key]):
-                    return True
+                return utt and any(i.strip() == utt
+                                   for i in self.voc_match_cache[cache_key])
             else:
                 # Check for matches against complete words
                 return any([re.match(r'.*\b' + i + r'\b.*', utt)
@@ -649,7 +650,7 @@ class MycroftSkill:
             if hasattr(method, 'resting_handler'):
                 self.resting_name = method.resting_handler
                 self.log.info('Registering resting screen {} for {}.'.format(
-                              method, self.resting_name))
+                    method, self.resting_name))
 
                 # Register for handling resting screen
                 msg_type = '{}.{}'.format(self.skill_id, 'idle')
@@ -724,7 +725,7 @@ class MycroftSkill:
             # when resource not found try fallback to en-us
             LOG.warning(
                 "Resource '{}' for lang '{}' not found: trying 'en-us'"
-                .format(res_name, self.lang)
+                    .format(res_name, self.lang)
             )
             result = self._find_resource(res_name, 'en-us', res_dirname)
         return result
@@ -1232,6 +1233,7 @@ class MycroftSkill:
         """Handler for the "mycroft.stop" signal. Runs the user defined
         `stop()` method.
         """
+
         def __stop_timeout():
             # The self.stop() call took more than 100ms, assume it handled Stop
             self.bus.emit(Message('mycroft.stop.handled',
