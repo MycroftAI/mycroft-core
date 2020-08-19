@@ -125,7 +125,8 @@ class SkillGUI:
                                      "event_name": event_name,
                                      "params": params}))
 
-    def show_page(self, name, override_idle=None):
+    def show_page(self, name, override_idle=None,
+                  override_animations=False):
         """Begin showing the page in the GUI
 
         Arguments:
@@ -134,10 +135,14 @@ class SkillGUI:
                 True: Takes over the resting page indefinitely
                 (int): Delays resting page for the specified number of
                        seconds.
+            override_animations (boolean):
+                True: Disables showing all platform skill animations.
+                False: 'Default' always show animations.
         """
-        self.show_pages([name], 0, override_idle)
+        self.show_pages([name], 0, override_idle, override_animations)
 
-    def show_pages(self, page_names, index=0, override_idle=None):
+    def show_pages(self, page_names, index=0, override_idle=None,
+                   override_animations=False):
         """Begin showing the list of pages in the GUI.
 
         Arguments:
@@ -149,6 +154,9 @@ class SkillGUI:
                 True: Takes over the resting page indefinitely
                 (int): Delays resting page for the specified number of
                        seconds.
+            override_animations (boolean):
+                True: Disables showing all platform skill animations.
+                False: 'Default' always show animations.
         """
         if not isinstance(page_names, list):
             raise ValueError('page_names must be a list')
@@ -182,7 +190,8 @@ class SkillGUI:
                                     {"page": page_urls,
                                      "index": index,
                                      "__from": self.skill.skill_id,
-                                     "__idle": override_idle}))
+                                     "__idle": override_idle,
+                                     "__animations": override_animations}))
 
     def remove_page(self, page):
         """Remove a single page from the GUI.
@@ -215,7 +224,8 @@ class SkillGUI:
                                     {"page": page_urls,
                                      "__from": self.skill.skill_id}))
 
-    def show_text(self, text, title=None, override_idle=None):
+    def show_text(self, text, title=None, override_idle=None,
+                  override_animations=False):
         """Display a GUI page for viewing simple text.
 
         Arguments:
@@ -225,15 +235,19 @@ class SkillGUI:
                 True: Takes over the resting page indefinitely
                 (int): Delays resting page for the specified number of
                        seconds.
+            override_animations (boolean):
+                True: Disables showing all platform skill animations.
+                False: 'Default' always show animations.
         """
         self.clear()
         self["text"] = text
         self["title"] = title
-        self.show_page("SYSTEM_TextFrame.qml", override_idle)
+        self.show_page("SYSTEM_TextFrame.qml", override_idle,
+                       override_animations)
 
     def show_image(self, url, caption=None,
                    title=None, fill=None,
-                   override_idle=None):
+                   override_idle=None, override_animations=False):
         """Display a GUI page for viewing an image.
 
         Arguments:
@@ -246,17 +260,21 @@ class SkillGUI:
                 True: Takes over the resting page indefinitely
                 (int): Delays resting page for the specified number of
                        seconds.
+            override_animations (boolean):
+                True: Disables showing all platform skill animations.
+                False: 'Default' always show animations.
         """
         self.clear()
         self["image"] = url
         self["title"] = title
         self["caption"] = caption
         self["fill"] = fill
-        self.show_page("SYSTEM_ImageFrame.qml", override_idle)
+        self.show_page("SYSTEM_ImageFrame.qml", override_idle,
+                       override_animations)
 
     def show_animated_image(self, url, caption=None,
                             title=None, fill=None,
-                            override_idle=None):
+                            override_idle=None, override_animations=False):
         """Display a GUI page for viewing an image.
 
         Arguments:
@@ -269,15 +287,20 @@ class SkillGUI:
                 True: Takes over the resting page indefinitely
                 (int): Delays resting page for the specified number of
                        seconds.
+            override_animations (boolean):
+                True: Disables showing all platform skill animations.
+                False: 'Default' always show animations.
         """
         self.clear()
         self["image"] = url
         self["title"] = title
         self["caption"] = caption
         self["fill"] = fill
-        self.show_page("SYSTEM_AnimatedImageFrame.qml", override_idle)
+        self.show_page("SYSTEM_AnimatedImageFrame.qml", override_idle,
+                       override_animations)
 
-    def show_html(self, html, resource_url=None, override_idle=None):
+    def show_html(self, html, resource_url=None, override_idle=None,
+                  override_animations=False):
         """Display an HTML page in the GUI.
 
         Arguments:
@@ -287,13 +310,18 @@ class SkillGUI:
                 True: Takes over the resting page indefinitely
                 (int): Delays resting page for the specified number of
                        seconds.
+            override_animations (boolean):
+                True: Disables showing all platform skill animations.
+                False: 'Default' always show animations.
         """
         self.clear()
         self["html"] = html
         self["resourceLocation"] = resource_url
-        self.show_page("SYSTEM_HtmlFrame.qml", override_idle)
+        self.show_page("SYSTEM_HtmlFrame.qml", override_idle,
+                       override_animations)
 
-    def show_url(self, url, override_idle=None):
+    def show_url(self, url, override_idle=None,
+                 override_animations=False):
         """Display an HTML page in the GUI.
 
         Arguments:
@@ -302,10 +330,14 @@ class SkillGUI:
                 True: Takes over the resting page indefinitely
                 (int): Delays resting page for the specified number of
                        seconds.
+            override_animations (boolean):
+                True: Disables showing all platform skill animations.
+                False: 'Default' always show animations.
         """
         self.clear()
         self["url"] = url
-        self.show_page("SYSTEM_UrlFrame.qml", override_idle)
+        self.show_page("SYSTEM_UrlFrame.qml", override_idle,
+                       override_animations)
 
     def shutdown(self):
         """Shutdown gui interface.
