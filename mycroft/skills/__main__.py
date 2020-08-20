@@ -203,7 +203,7 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
     _wait_for_internet_connection()
 
     if skill_manager is None:
-        skill_manager = _initialize_skill_manager(bus)
+        skill_manager = _initialize_skill_manager(bus, watchdog)
 
     device_primer = DevicePrimer(bus, config)
     device_primer.prepare_device()
