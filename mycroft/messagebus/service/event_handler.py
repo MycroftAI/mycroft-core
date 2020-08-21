@@ -18,7 +18,7 @@ import sys
 import traceback
 
 from tornado.websocket import WebSocketHandler
-from pyee import EventEmitter
+from pyee import BaseEventEmitter
 
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
@@ -29,7 +29,7 @@ client_connections = []
 class MessageBusEventHandler(WebSocketHandler):
     def __init__(self, application, request, **kwargs):
         super().__init__(application, request, **kwargs)
-        self.emitter = EventEmitter()
+        self.emitter = BaseEventEmitter()
 
     def on(self, event_name, handler):
         self.emitter.on(event_name, handler)
