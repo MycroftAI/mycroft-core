@@ -35,34 +35,3 @@ from .log import LOG
 from .parse import extract_datetime, extract_number, normalize
 from .signal import check_for_signal, create_signal, get_ipc_directory
 from .platform import get_arch
-
-
-def is_speaking():
-    """Determine if Text to Speech is occurring
-
-    Returns:
-        bool: True while still speaking
-    """
-    LOG.info("mycroft.utils.is_speaking() is depreciated, use "
-             "mycroft.audio.is_speaking() instead.")
-    return mycroft.audio.is_speaking()
-
-
-def wait_while_speaking():
-    """Pause as long as Text to Speech is still happening
-
-    Pause while Text to Speech is still happening.  This always pauses
-    briefly to ensure that any preceeding request to speak has time to
-    begin.
-    """
-    LOG.info("mycroft.utils.wait_while_speaking() is depreciated, use "
-             "mycroft.audio.wait_while_speaking() instead.")
-    return mycroft.audio.wait_while_speaking()
-
-
-def stop_speaking():
-    # TODO: Less hacky approach to this once Audio Manager is implemented
-    # Skills should only be able to stop speech they've initiated
-    LOG.info("mycroft.utils.stop_speaking() is depreciated, use "
-             "mycroft.audio.stop_speaking() instead.")
-    mycroft.audio.stop_speaking()
