@@ -483,8 +483,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         For example when we are in a dialog with the user.
         """
-        # TODO: remove startListening signal check in 20.02
-        if check_for_signal('startListening') or self._listen_triggered:
+        if self._listen_triggered:
             return True
 
         # Pressing the Mark 1 button can start recording (unless
