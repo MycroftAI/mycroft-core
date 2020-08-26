@@ -131,13 +131,14 @@ class SkillManager(Thread):
         self.initial_load_complete = False
         self.num_install_retries = 0
         self.settings_downloader = SkillSettingsDownloader(self.bus)
-        self._define_message_bus_events()
-        self.skill_updater = SkillUpdater()
-        self.daemon = True
 
         # Statuses
         self._alive_status = False  # True after priority skills has loaded
         self._loaded_status = False  # True after all skills has loaded
+
+        self.skill_updater = SkillUpdater()
+        self._define_message_bus_events()
+        self.daemon = True
 
     def _define_message_bus_events(self):
         """Define message bus events with handlers defined in this class."""
