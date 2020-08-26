@@ -40,6 +40,15 @@ class SkillGUI:
         self.config = Configuration.get()
 
     @property
+    def connected(self):
+        if self.skill.bus:
+            data = self.skill.bus.wait_for_response(
+                Message("gui.status.request"), "gui.status.reply")
+            if data:
+                return data["connected"]
+        return False
+
+    @property
     def remote_url(self):
         """Returns configuration value for url of remote-server."""
         return self.config.get('remote-server')
