@@ -148,8 +148,8 @@ class AudioService:
         self.playback_data = {"playing": None,
                               "playlist": [],
                               "disambiguation": [],
-                              "index": 0}
-        self.playback_status = CPSTrackStatus.END_OF_MEDIA
+                              "index": 0,
+                              "status": CPSTrackStatus.END_OF_MEDIA}
         self.default = None
         self.service = []
         self.current = None
@@ -556,14 +556,19 @@ class AudioService:
         self.bus.remove('play:status.clear', self.handle_clear_status)
 
     # playback status
+    @property
+    def playback_status(self):
+        return self.playback_data["status"]
+
     def handle_clear_status(self, message):
         print("PLAYLIST CLEARED")
         self.playback_data = {"playing": None,
                               "playlist": [],
                               "disambiguation": [],
+                              "status": CPSTrackStatus.END_OF_MEDIA,
                               "index": 0}
-        self.playback_status = CPSTrackStatus.END_OF_MEDIA
-        self.bus.emit(message.reply('play:status.cleared'))
+        self.bus.emit(message.reply('play:status.cleared',
+                                    self.playback_data))
 
     def update_current_song(self, data):
         print("C.PLAY - PLAYING", data)
@@ -605,7 +610,7 @@ class AudioService:
                 status == CPSTrackStatus.PLAYING_ENCLOSURE:
             # something is playing
             self.update_current_song(message.data)
-            self.playback_status = status
+            self.playback_data["status"] = status
 
         elif status == CPSTrackStatus.DISAMBIGUATION:
             # alternative results
@@ -621,18 +626,18 @@ class AudioService:
         elif status == CPSTrackStatus.PAUSED:
             # media is not being played, but can be resumed anytime
             # a new PLAYING status should be sent once playback resumes
-            self.playback_status = status
+            self.playback_data["status"] = status
         elif status == CPSTrackStatus.BUFFERING:
             # media is buffering, might want to show in ui
             # a new PLAYING status should be sent once playback resumes
-            self.playback_status = status
+            self.playback_data["status"] = status
         elif status == CPSTrackStatus.STALLED:
             # media is stalled, might want to show in ui
             # a new PLAYING status should be sent once playback resumes
-            self.playback_status = status
+            self.playback_data["status"] = status
         elif status == CPSTrackStatus.END_OF_MEDIA:
             # if we add a repeat/loop flag this is the place to check for it
-            self.playback_status = status
+            self.playback_data["status"] = status
 
     def handle_cps_status_query(self, message):
         self.bus.emit(message.reply('play:status.response',
