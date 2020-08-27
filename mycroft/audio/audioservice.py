@@ -211,89 +211,6 @@ class AudioService:
 
         self._loaded.set()  # Report services loaded
 
-    # playback status
-    def handle_clear_status(self, message):
-        print("PLAYLIST CLEARED")
-        self.playback_data = {"playing": None,
-                              "playlist": [],
-                              "disambiguation": [],
-                              "index": 0}
-        self.playback_status = CPSTrackStatus.END_OF_MEDIA
-        self.bus.emit(message.reply('play:status.cleared'))
-
-    def update_current_song(self, data):
-        print("C.PLAY - PLAYING", data)
-        # merge available data
-        for c in self.playback_data["playlist"]:
-            if c["uri"] == data["uri"]:
-                for k in c:
-                    if k == "playlist_position":
-                        data["index"] = c[k]
-                    elif k not in data:
-                        data[k] = c[k]
-        self.playback_data["playing"] = data
-
-    def update_playlist(self, data):
-        print("C.PLAY - ADDING TO PLAYLIST", data)
-
-        # update entry
-        for idx, c in enumerate(self.playback_data["playlist"]):
-            if c["uri"] == data["uri"]:
-                print("C.PLAY - found, updating data")
-                self.playback_data["playlist"][idx] = data
-        else:
-            print("C.PLAY - not found, adding data")
-            self.playback_data["playlist"].append(data)
-
-        # sort playlist by requested playback order
-        self.playback_data["playlist"] = sorted(
-            self.playback_data["playlist"],
-            key=lambda i: int(i['playlist_position']) or 0)
-
-        print("C.PLAY - PLAYLIST", self.playback_data["playlist"])
-
-    def handle_cps_status(self, message):
-        status = message.data["status"]
-
-        if status == CPSTrackStatus.PLAYING or \
-                status == CPSTrackStatus.PLAYING_AUDIOSERVICE or \
-                status == CPSTrackStatus.PLAYING_GUI or \
-                status == CPSTrackStatus.PLAYING_ENCLOSURE:
-            # something is playing
-            self.update_current_song(message.data)
-            self.playback_status = status
-
-        elif status == CPSTrackStatus.DISAMBIGUATION:
-            # alternative results
-            self.playback_data["disambiguation"].append(message.data)
-
-        elif status == CPSTrackStatus.QUEUED or \
-                status == CPSTrackStatus.QUEUED_GUI or \
-                status == CPSTrackStatus.QUEUED_AUDIOSERVICE or \
-                status == CPSTrackStatus.QUEUED_ENCLOSURE:
-            # something is handling playback and this is in playlist
-            self.update_playlist(message.data)
-
-        elif status == CPSTrackStatus.PAUSED:
-            # media is not being played, but can be resumed anytime
-            # a new PLAYING status should be sent once playback resumes
-            self.playback_status = status
-        elif status == CPSTrackStatus.BUFFERING:
-            # media is buffering, might want to show in ui
-            # a new PLAYING status should be sent once playback resumes
-            self.playback_status = status
-        elif status == CPSTrackStatus.STALLED:
-            # media is stalled, might want to show in ui
-            # a new PLAYING status should be sent once playback resumes
-            self.playback_status = status
-        elif status == CPSTrackStatus.END_OF_MEDIA:
-            # if we add a repeat/loop flag this is the place to check for it
-            self.playback_status = status
-
-    def handle_cps_status_query(self, message):
-        self.bus.emit(message.reply('play:status.response',
-                                    self.playback_data))
-
     def wait_for_load(self, timeout=3 * MINUTES):
         """Wait for services to be loaded.
 
@@ -513,8 +430,8 @@ class AudioService:
         self.current = selected_service
         self.play_start_time = time.monotonic()
 
-    def _msg2status(self, message):
-        tracks = message.data.get('tracks', [])
+    def _queue(self, message):
+        tracks = message.data['tracks']
         status = message.data.get("status", CPSTrackStatus.QUEUED_AUDIOSERVICE)
         idx = len(self.playback_data["playlist"])
         for i, track in enumerate(tracks):
@@ -523,10 +440,7 @@ class AudioService:
                     "status": status}
             self.bus.emit(message.reply('play:status', data))
 
-    def _queue(self, message):
-        self._msg2status(message)
         if self.current:
-            tracks = message.data['tracks']
             self.current.add_list(tracks)
         else:
             self._play(message)
@@ -551,7 +465,15 @@ class AudioService:
                 break
         else:
             prefered_service = None
-        self._msg2status(message)
+
+        status = message.data.get("status", CPSTrackStatus.QUEUED_AUDIOSERVICE)
+        idx = len(self.playback_data["playlist"])
+        for i, track in enumerate(tracks):
+            data = {'playlist_position': i + idx,
+                    "uri": track,
+                    "status": status}
+            self.bus.emit(message.reply('play:status', data))
+
         self.play(tracks, prefered_service, repeat)
 
     def _track_info(self, message):
@@ -632,3 +554,86 @@ class AudioService:
                         self._restore_volume_after_record)
         self.bus.remove('play:status.query', self.handle_cps_status_query)
         self.bus.remove('play:status.clear', self.handle_clear_status)
+
+    # playback status
+    def handle_clear_status(self, message):
+        print("PLAYLIST CLEARED")
+        self.playback_data = {"playing": None,
+                              "playlist": [],
+                              "disambiguation": [],
+                              "index": 0}
+        self.playback_status = CPSTrackStatus.END_OF_MEDIA
+        self.bus.emit(message.reply('play:status.cleared'))
+
+    def update_current_song(self, data):
+        print("C.PLAY - PLAYING", data)
+        # merge available data
+        for c in self.playback_data["playlist"]:
+            if c["uri"] == data["uri"]:
+                for k in c:
+                    if k == "playlist_position":
+                        data["index"] = c[k]
+                    elif k not in data:
+                        data[k] = c[k]
+        self.playback_data["playing"] = data
+
+    def update_playlist(self, data):
+        print("C.PLAY - ADDING TO PLAYLIST", data)
+
+        # update entry
+        for idx, c in enumerate(self.playback_data["playlist"]):
+            if c["uri"] == data["uri"]:
+                print("C.PLAY - found, updating data")
+                self.playback_data["playlist"][idx] = data
+        else:
+            print("C.PLAY - not found, adding data")
+            self.playback_data["playlist"].append(data)
+
+        # sort playlist by requested playback order
+        self.playback_data["playlist"] = sorted(
+            self.playback_data["playlist"],
+            key=lambda i: int(i['playlist_position']) or 0)
+
+        print("C.PLAY - PLAYLIST", self.playback_data["playlist"])
+
+    def handle_cps_status(self, message):
+        status = message.data["status"]
+
+        if status == CPSTrackStatus.PLAYING or \
+                status == CPSTrackStatus.PLAYING_AUDIOSERVICE or \
+                status == CPSTrackStatus.PLAYING_GUI or \
+                status == CPSTrackStatus.PLAYING_ENCLOSURE:
+            # something is playing
+            self.update_current_song(message.data)
+            self.playback_status = status
+
+        elif status == CPSTrackStatus.DISAMBIGUATION:
+            # alternative results
+            self.playback_data["disambiguation"].append(message.data)
+
+        elif status == CPSTrackStatus.QUEUED or \
+                status == CPSTrackStatus.QUEUED_GUI or \
+                status == CPSTrackStatus.QUEUED_AUDIOSERVICE or \
+                status == CPSTrackStatus.QUEUED_ENCLOSURE:
+            # something is handling playback and this is in playlist
+            self.update_playlist(message.data)
+
+        elif status == CPSTrackStatus.PAUSED:
+            # media is not being played, but can be resumed anytime
+            # a new PLAYING status should be sent once playback resumes
+            self.playback_status = status
+        elif status == CPSTrackStatus.BUFFERING:
+            # media is buffering, might want to show in ui
+            # a new PLAYING status should be sent once playback resumes
+            self.playback_status = status
+        elif status == CPSTrackStatus.STALLED:
+            # media is stalled, might want to show in ui
+            # a new PLAYING status should be sent once playback resumes
+            self.playback_status = status
+        elif status == CPSTrackStatus.END_OF_MEDIA:
+            # if we add a repeat/loop flag this is the place to check for it
+            self.playback_status = status
+
+    def handle_cps_status_query(self, message):
+        self.bus.emit(message.reply('play:status.response',
+                                    self.playback_data))
