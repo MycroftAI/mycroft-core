@@ -229,39 +229,24 @@ class AudioService:
     def handle_cps_status(self, message):
         status = message.data["status"]
 
-        if status == CPSTrackStatus.PLAYING:
-            # skill is handling playback internally
-            self.update_current_song(message.data)
-            self.playback_status = status
-        elif status == CPSTrackStatus.PLAYING_AUDIOSERVICE:
-            # audio service is handling playback
-            self.update_current_song(message.data)
-            self.playback_status = status
-        elif status == CPSTrackStatus.PLAYING_GUI:
-            # gui is handling playback
-            self.update_current_song(message.data)
-            self.playback_status = status
-        elif status == CPSTrackStatus.PLAYING_ENCLOSURE:
-            # enclosure is handling playback
+        if status == CPSTrackStatus.PLAYING or \
+                status == CPSTrackStatus.PLAYING_AUDIOSERVICE or \
+                status == CPSTrackStatus.PLAYING_GUI or \
+                status == CPSTrackStatus.PLAYING_ENCLOSURE:
+            # something is playing
             self.update_current_song(message.data)
             self.playback_status = status
 
         elif status == CPSTrackStatus.DISAMBIGUATION:
             # alternative results
             self.playback_data["disambiguation"].append(message.data)
-        elif status == CPSTrackStatus.QUEUED:
-            # skill is handling playback and this is in playlist
+
+        elif status == CPSTrackStatus.QUEUED or \
+                status == CPSTrackStatus.QUEUED_GUI or \
+                status == CPSTrackStatus.QUEUED_AUDIOSERVICE or \
+                status == CPSTrackStatus.QUEUED_ENCLOSURE:
+            # something is handling playback and this is in playlist
             self.update_playlist(message.data)
-        elif status == CPSTrackStatus.QUEUED_GUI:
-            # gui is handling playback and this is in playlist
-            self.update_playlist(message.data)
-        elif status == CPSTrackStatus.QUEUED_AUDIOSERVICE:
-            # audio service is handling playback and this is in playlist
-            self.update_playlist(message.data)
-        elif status == CPSTrackStatus.QUEUED_ENCLOSURE:
-            # enclosure is handling playback and this is in playlist
-            self.update_current_song(message.data)
-            self.playback_status = status
 
         elif status == CPSTrackStatus.PAUSED:
             # media is not being played, but can be resumed anytime
@@ -280,9 +265,6 @@ class AudioService:
             self.playback_status = status
 
     def handle_cps_status_query(self, message):
-        #  update playlist / current song in audio service,
-        #  audio service should also react to 'play:status' for live updates
-        #  but it can sync anytime with 'play:status.query'
         self.bus.emit(message.reply('play:status.response',
                                     self.playback_data))
 
@@ -571,3 +553,5 @@ class AudioService:
                         self._restore_volume)
         self.bus.remove('recognizer_loop:record_end',
                         self._restore_volume_after_record)
+        self.bus.remove('play:status.query', self.handle_cps_status_query)
+        self.bus.remove('play:status.clear', self.handle_clear_status)
