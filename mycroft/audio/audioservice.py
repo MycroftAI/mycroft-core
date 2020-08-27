@@ -145,7 +145,10 @@ class AudioService:
         self.bus = bus
         self.config = Configuration.get().get("Audio")
         self.service_lock = Lock()
-        self.playback_data = {}
+        self.playback_data = {"playing": None,
+                              "playlist": [],
+                              "disambiguation": [],
+                              "index": 0}
         self.playback_status = CPSTrackStatus.END_OF_MEDIA
         self.default = None
         self.service = []
@@ -210,21 +213,44 @@ class AudioService:
 
     # playback status
     def handle_clear_status(self, message):
+        print("PLAYLIST CLEARED")
         self.playback_data = {"playing": None,
                               "playlist": [],
-                              "disambiguation": []}
+                              "disambiguation": [],
+                              "index": 0}
         self.playback_status = CPSTrackStatus.END_OF_MEDIA
         self.bus.emit(message.reply('play:status.cleared'))
 
     def update_current_song(self, data):
+        print("C.PLAY - PLAYING", data)
+        # merge available data
+        for c in self.playback_data["playlist"]:
+            if c["uri"] == data["uri"]:
+                for k in c:
+                    if k == "playlist_position":
+                        data["index"] = c[k]
+                    elif k not in data:
+                        data[k] = c[k]
         self.playback_data["playing"] = data
 
     def update_playlist(self, data):
-        self.playback_data["playlist"].append(data)
-        # sort playlist by requested order
+        print("C.PLAY - ADDING TO PLAYLIST", data)
+
+        # update entry
+        for idx, c in enumerate(self.playback_data["playlist"]):
+            if c["uri"] == data["uri"]:
+                print("C.PLAY - found, updating data")
+                self.playback_data["playlist"][idx] = data
+        else:
+            print("C.PLAY - not found, adding data")
+            self.playback_data["playlist"].append(data)
+
+        # sort playlist by requested playback order
         self.playback_data["playlist"] = sorted(
             self.playback_data["playlist"],
             key=lambda i: int(i['playlist_position']) or 0)
+
+        print("C.PLAY - PLAYLIST", self.playback_data["playlist"])
 
     def handle_cps_status(self, message):
         status = message.data["status"]
@@ -287,11 +313,25 @@ class AudioService:
             LOG.debug('New track coming up!')
             self.bus.emit(Message('mycroft.audio.playing_track',
                                   data={'track': track}))
+
+            print(track)
+
+            for idx, t in enumerate(self.playback_data["playlist"]):
+                if t["uri"] == track:
+                    data = t
+                    data["status"] = CPSTrackStatus.PLAYING_AUDIOSERVICE
+                    self.bus.emit(Message('play:status', data))
+                    self.playback_data["playing"] = data
+                    break
         else:
             # If no track is about to start last track of the queue has been
             # played.
             LOG.debug('End of playlist!')
             self.bus.emit(Message('mycroft.audio.queue_end'))
+
+            data = self.playback_data["playing"]
+            data["status"] = CPSTrackStatus.END_OF_MEDIA
+            self.bus.emit(Message('play:status', data))
 
     def _pause(self, message=None):
         """
@@ -301,8 +341,16 @@ class AudioService:
             Args:
                 message: message bus message, not used but required
         """
+
         if self.current:
             self.current.pause()
+
+        if self.playback_data["playing"] and self.playback_status != \
+                CPSTrackStatus.PAUSED:
+            data = self.playback_data["playing"]
+            data["old_status"] = data["status"]
+            data["status"] = CPSTrackStatus.PAUSED
+            self.bus.emit(message.reply('play:status', data))
 
     def _resume(self, message=None):
         """
@@ -314,6 +362,12 @@ class AudioService:
         if self.current:
             self.current.resume()
 
+        if self.playback_data["playing"] and self.playback_status == \
+                CPSTrackStatus.PAUSED:
+            data = self.playback_data["playing"]
+            data["status"] = data["old_status"]
+            self.bus.emit(message.reply('play:status', data))
+
     def _next(self, message=None):
         """
             Handler for mycroft.audio.service.next. Skips current track and
@@ -322,6 +376,7 @@ class AudioService:
             Args:
                 message: message bus message, not used but required
         """
+        self.playback_data["index"] += 1
         if self.current:
             self.current.next()
 
@@ -333,6 +388,7 @@ class AudioService:
             Args:
                 message: message bus message, not used but required
         """
+        self.playback_data["index"] -= 1
         if self.current:
             self.current.previous()
 
@@ -353,6 +409,7 @@ class AudioService:
                                               {"by": "audio:" + name}))
 
                     self.current = None
+        self.handle_clear_status(message)
 
     def _lower_volume(self, message=None):
         """
@@ -443,12 +500,31 @@ class AudioService:
         if not selected_service.supports_mime_hints:
             tracks = [t[0] if isinstance(t, list) else t for t in tracks]
         selected_service.clear_list()
+
         selected_service.add_list(tracks)
+
         selected_service.play(repeat)
+
+        data = {'playlist_position': 0,
+                "uri": tracks[0],
+                "status": CPSTrackStatus.PLAYING_AUDIOSERVICE}
+        self.bus.emit(Message('play:status', data))
+
         self.current = selected_service
         self.play_start_time = time.monotonic()
 
+    def _msg2status(self, message):
+        tracks = message.data.get('tracks', [])
+        status = message.data.get("status", CPSTrackStatus.QUEUED_AUDIOSERVICE)
+        idx = len(self.playback_data["playlist"])
+        for i, track in enumerate(tracks):
+            data = {'playlist_position': i + idx,
+                    "uri": track,
+                    "status": status}
+            self.bus.emit(message.reply('play:status', data))
+
     def _queue(self, message):
+        self._msg2status(message)
         if self.current:
             tracks = message.data['tracks']
             self.current.add_list(tracks)
@@ -475,6 +551,7 @@ class AudioService:
                 break
         else:
             prefered_service = None
+        self._msg2status(message)
         self.play(tracks, prefered_service, repeat)
 
     def _track_info(self, message):
@@ -487,7 +564,7 @@ class AudioService:
         if self.current:
             track_info = self.current.track_info()
         else:
-            track_info = {}
+            track_info = self.playback_data["playing"]
         self.bus.emit(Message('mycroft.audio.service.track_info_reply',
                               data=track_info))
 
