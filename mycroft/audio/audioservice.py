@@ -204,10 +204,18 @@ class AudioService:
                     self._restore_volume_after_record)
 
         self.bus.on('play:status.query', self.handle_cps_status_query)
+        self.bus.on('play:status.clear', self.handle_clear_status)
 
         self._loaded.set()  # Report services loaded
 
     # playback status
+    def handle_clear_status(self, message):
+        self.playback_data = {"playing": None,
+                              "playlist": [],
+                              "disambiguation": []}
+        self.playback_status = CPSTrackStatus.END_OF_MEDIA
+        self.bus.emit(message.reply('play:status.cleared'))
+
     def update_current_song(self, data):
         self.playback_data["playing"] = data
 
