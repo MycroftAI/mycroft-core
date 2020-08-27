@@ -187,6 +187,13 @@ class CommonPlaySkill(MycroftSkill, ABC):
         self.CPS_send_status(uri=args[0],
                              status=CPSTrackStatus.PLAYING_AUDIOSERVICE)
 
+    def CPS_add_disambiguation_results(self, results):
+        if not isinstance(results, list):
+            results = [results]
+        for data in results:
+            data["status"] = CPSTrackStatus.DISAMBIGUATION
+            self.bus.emit(Message('play:status', data))
+
     def stop(self):
         """Stop anything playing on the audioservice."""
         if self.audioservice.is_playing:
