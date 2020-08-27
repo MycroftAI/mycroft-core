@@ -38,6 +38,7 @@ class SkillGUI:
         self.skill = skill
         self.on_gui_changed_callback = None
         self.config = Configuration.get()
+        self.video_info = None
 
     @property
     def remote_url(self):
@@ -338,6 +339,37 @@ class SkillGUI:
         self["url"] = url
         self.show_page("SYSTEM_UrlFrame.qml", override_idle,
                        override_animations)
+
+    def play_video(self, url, title="", override_idle=True):
+        """ Play video stream """
+        self["playStatus"] = "play"
+        self["video"] = url
+        self["title"] = title
+        self.video_info = {"title": title, "url": url}
+        self.show_page("SYSTEM_VideoPlayer.qml",
+                       override_idle=override_idle)
+
+    @property
+    def is_playing_video(self):
+        return self.video_info is not None
+
+    def pause_video(self):
+        """Pause video playback."""
+        if self.is_playing_video:
+            self["playStatus"] = "pause"
+
+    def stop_video(self):
+        """Stop video playback."""
+        # TODO detect end of media playback from gui
+        if self.is_playing_video:
+            self["playStatus"] = "stop"
+            self.clear()
+        self.video_info = None
+
+    def resume_video(self):
+        """Resume paused video playback."""
+        if self.__session_data.get("playStatus", "stop") == "pause":
+            self["playStatus"] = "play"
 
     def shutdown(self):
         """Shutdown gui interface.
