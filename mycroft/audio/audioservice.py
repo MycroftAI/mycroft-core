@@ -40,7 +40,7 @@ def create_service_spec(service_folder):
         Returns:
             Dict with import information
     """
-    module_name = basename(service_folder)
+    module_name = 'audioservice_' + basename(service_folder)
     path = join(service_folder, MAINMODULE + '.py')
     spec = importlib.util.spec_from_file_location(module_name, path)
     mod = importlib.util.module_from_spec(spec)
