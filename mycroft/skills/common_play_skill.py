@@ -55,7 +55,8 @@ class CPSMatchType(IntEnum):
     RADIO = 7
     NEWS = 8
     TV = 9
-    ADULT = 10
+    MOVIE = 10
+    ADULT = 11
 
 
 class CommonPlaySkill(MycroftSkill, ABC):
