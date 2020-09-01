@@ -43,7 +43,7 @@ class SkillGUI:
     def connected(self):
         if self.skill.bus:
             data = self.skill.bus.wait_for_response(
-                Message("gui.status.request"), "gui.status.reply")
+                Message("gui.status.request"), "gui.status.request.response")
             if data:
                 return data["connected"]
         return False

@@ -120,7 +120,7 @@ class Enclosure:
         return len(GUIWebsocketHandler.clients) > 0
 
     def handle_gui_status_request(self, message):
-        self.bus.emit(message.reply("gui.status.reply",
+        self.bus.emit(message.reply("gui.status.request.response",
                                     {"connected": self.gui_connected}))
 
     def send(self, msg_dict):
