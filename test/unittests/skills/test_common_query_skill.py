@@ -48,14 +48,6 @@ class TestCommonQuerySkill(TestCase):
         self.skill.CQS_action.assert_called_once_with(
             'What\'s the meaning of life', None)
 
-    def test_speak_dialog_render_not_intialized(self):
-        """Test that non-initialzed dialog_renderer won't raise an error."""
-        skill = CQSTest()
-        bus = mock.Mock(name='bus')
-        skill.bind(bus)
-        skill.dialog_renderer = None
-        skill.speak_dialog(key='key')
-
 
 class TestCommonQueryMatching(TestCase):
     """Tests for CQS_match_query_phrase."""
