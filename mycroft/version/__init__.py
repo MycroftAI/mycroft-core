@@ -24,8 +24,8 @@ from mycroft.util.log import LOG
 # The following lines are replaced during the release process.
 # START_VERSION_BLOCK
 CORE_VERSION_MAJOR = 20
-CORE_VERSION_MINOR = 2
-CORE_VERSION_BUILD = 5
+CORE_VERSION_MINOR = 8
+CORE_VERSION_BUILD = 0
 # END_VERSION_BLOCK
 
 CORE_VERSION_TUPLE = (CORE_VERSION_MAJOR,

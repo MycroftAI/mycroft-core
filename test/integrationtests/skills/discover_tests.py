@@ -16,12 +16,13 @@ import pytest
 
 import glob
 import os
-from os.path import exists, join, expanduser, abspath
-import imp
+from os.path import join, expanduser, abspath
 
 from mycroft.configuration import Configuration
 from test.integrationtests.skills.skill_tester import MockSkillsLoader
 from test.integrationtests.skills.skill_tester import SkillTest
+
+from .runner import load_test_environment
 
 
 def discover_tests(skills_dir):
@@ -43,16 +44,7 @@ def discover_tests(skills_dir):
 
     for skill in skills:
         # Load test environment file
-        test_env = None
-        if exists(os.path.join(skill, 'test/__init__.py')):
-            module = imp.load_source(skill + '.test_env',
-                                     os.path.join(skill, 'test/__init__.py'))
-            if (hasattr(module, 'test_runner') and
-                    callable(module.test_runner) or
-                    hasattr(module, 'test_setup') and
-                    callable(module.test_setup)):
-                test_env = module
-
+        test_env = load_test_environment(skill)
         # Find all intent test files
         test_intent_files = [
             (f, test_env) for f

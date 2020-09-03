@@ -99,7 +99,10 @@ def _get_last_modified_time(path):
                 all_files.append(os.path.join(root_dir, f))
 
     # check files of interest in the skill root directory
-    return max(os.path.getmtime(f) for f in all_files)
+    if all_files:
+        return max(os.path.getmtime(f) for f in all_files)
+    else:
+        return 0
 
 
 class SkillLoader:

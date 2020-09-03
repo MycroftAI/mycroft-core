@@ -120,28 +120,6 @@ class MustacheDialogRenderer:
         return line
 
 
-class DialogLoader:
-    """Loads a collection of dialog files into a renderer implementation.
-
-    TODO: Remove in 20.02
-    """
-
-    def __init__(self, renderer_factory=MustacheDialogRenderer):
-        LOG.warning('Deprecated, use load_dialogs() instead.')
-        self.__renderer = renderer_factory()
-
-    def load(self, dialog_dir):
-        """Load all dialog files within the specified directory.
-
-        Args:
-            dialog_dir (str): directory that contains dialog files
-
-        Returns:
-            a loaded instance of a dialog renderer
-        """
-        return load_dialogs(dialog_dir, self.__renderer)
-
-
 def load_dialogs(dialog_dir, renderer=None):
     """Load all dialog files within the specified directory.
 

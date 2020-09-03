@@ -323,16 +323,6 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
     # before a phrase will be considered complete
     MIN_SILENCE_AT_END = 0.25
 
-    # TODO: Remove in 20.08
-    # The maximum seconds a phrase can be recorded,
-    # provided there is noise the entire time
-    RECORDING_TIMEOUT = 10.0
-
-    # TODO: Remove in 20.08
-    # The maximum time it will continue to record silence
-    # when not enough noise has been detected
-    RECORDING_TIMEOUT_WITH_SILENCE = 3.0
-
     # Time between pocketsphinx checks for the wake word
     SEC_BETWEEN_WW_CHECKS = 0.2
 
@@ -375,13 +365,12 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         # The maximum seconds a phrase can be recorded,
         # provided there is noise the entire time
         self.recording_timeout = listener_config.get('recording_timeout',
-                                                     self.RECORDING_TIMEOUT)
+                                                     10.0)
 
         # The maximum time it will continue to record silence
         # when not enough noise has been detected
         self.recording_timeout_with_silence = listener_config.get(
-            'recording_timeout_with_silence',
-            self.RECORDING_TIMEOUT_WITH_SILENCE)
+            'recording_timeout_with_silence', 3.0)
 
     @property
     def account_id(self):
@@ -494,8 +483,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         For example when we are in a dialog with the user.
         """
-        # TODO: remove startListening signal check in 20.02
-        if check_for_signal('startListening') or self._listen_triggered:
+        if self._listen_triggered:
             return True
 
         # Pressing the Mark 1 button can start recording (unless

@@ -17,7 +17,7 @@ import unittest
 import pathlib
 import json
 
-from mycroft.dialog import MustacheDialogRenderer, DialogLoader, get
+from mycroft.dialog import MustacheDialogRenderer, load_dialogs, get
 from mycroft.util import resolve_resource_file
 
 
@@ -90,15 +90,13 @@ class DialogTest(unittest.TestCase):
 
     def test_dialog_loader(self):
         template_path = self.topdir.joinpath('./multiple_dialogs')
-        loader = DialogLoader()
-        renderer = loader.load(template_path)
+        renderer = load_dialogs(template_path)
         self.assertEqual(renderer.render('one'), 'ONE')
         self.assertEqual(renderer.render('two'), 'TWO')
 
     def test_dialog_loader_missing(self):
         template_path = self.topdir.joinpath('./missing_dialogs')
-        loader = DialogLoader()
-        renderer = loader.load(template_path)
+        renderer = load_dialogs(template_path)
         self.assertEqual(renderer.render('test'), 'test')
 
     def test_get(self):

@@ -226,7 +226,8 @@ class SkillManager(Thread):
         """Load skills and update periodically from disk and internet."""
         self._remove_git_locks()
         self._connected_event.wait()
-        if not self.skill_updater.defaults_installed():
+        if (not self.skill_updater.defaults_installed() and
+                self.skills_config["auto_update"]):
             LOG.info('Not all default skills are installed, '
                      'performing skill update...')
             self.skill_updater.update_skills()
@@ -458,11 +459,6 @@ class SkillManager(Thread):
     def _emit_converse_error(self, message, skill_id, error_msg):
         """Emit a message reporting the error back to the intent service."""
         reply = message.reply('skill.converse.response',
-                              data=dict(skill_id=skill_id, error=error_msg))
-        self.bus.emit(reply)
-        # Also emit the old error message to keep compatibility
-        # TODO Remove in 20.08
-        reply = message.reply('skill.converse.error',
                               data=dict(skill_id=skill_id, error=error_msg))
         self.bus.emit(reply)
 
