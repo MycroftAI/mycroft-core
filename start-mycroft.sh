@@ -189,7 +189,6 @@ if [[ "${1}" == "restart" ]] || [[ "${_opt}" == "restart" ]] ; then
     shift
 fi
 
-
 if [[ ! "${_opt}" == "cli" ]] ; then
     check-dependencies
 fi
