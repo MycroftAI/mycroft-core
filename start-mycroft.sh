@@ -18,7 +18,7 @@ SOURCE="${BASH_SOURCE[0]}"
 
 script=${0}
 script=${script##*/}
-cd -P "$( dirname "$SOURCE" )"
+cd -P "$( dirname "$SOURCE" )" || exit
 DIR="$( pwd )"
 VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${DIR}/.venv"}
 
@@ -80,7 +80,8 @@ function name-to-script-path() {
 function source-venv() {
     # Enter Python virtual environment, unless under Docker
     if [ ! -f "/.dockerenv" ] ; then
-        source ${VIRTUALENV_ROOT}/bin/activate
+        # shellcheck source=/dev/null
+        source "${VIRTUALENV_ROOT}"/bin/activate
     fi
 }
 
@@ -97,19 +98,19 @@ function init-once() {
 function launch-process() {
     init-once
 
-    name-to-script-path ${1}
+    name-to-script-path "${1}"
 
     # Launch process in foreground
     echo "Starting $1"
-    python3 -m ${_module} $_params
+    python3 -m ${_module} "$_params"
 }
 
 function require-process() {
     # Launch process if not found
-    name-to-script-path ${1}
+    name-to-script-path "${1}"
     if ! pgrep -f "python3 (.*)-m ${_module}" > /dev/null ; then
         # Start required process
-        launch-background ${1}
+        launch-background "${1}"
     fi
 }
 
@@ -117,11 +118,11 @@ function launch-background() {
     init-once
 
     # Check if given module is running and start (or restart if running)
-    name-to-script-path ${1}
+    name-to-script-path "${1}"
     if pgrep -f "python3 (.*)-m ${_module}" > /dev/null ; then
         if ($_force_restart) ; then
             echo "Restarting: ${1}"
-            "${DIR}/stop-mycroft.sh" ${1}
+            "${DIR}/stop-mycroft.sh" "${1}"
         else
             # Already running, no need to restart
             return
@@ -138,7 +139,7 @@ function launch-background() {
     fi
 
     # Launch process in background, sending logs to standard location
-    python3 -m ${_module} $_params >> /var/log/mycroft/${1}.log 2>&1 &
+    python3 -m ${_module} "$_params" >> /var/log/mycroft/"${1}".log 2>&1 &
 }
 
 function launch-all() {
@@ -188,7 +189,7 @@ if [[ "${1}" == "restart" ]] || [[ "${_opt}" == "restart" ]] ; then
     fi
     shift
 fi
-_params=$@
+_params=$*
 
 check-dependencies
 
@@ -198,16 +199,16 @@ case ${_opt} in
         ;;
 
     "bus")
-        launch-background ${_opt}
+        launch-background "${_opt}"
         ;;
     "audio")
-        launch-background ${_opt}
+        launch-background "${_opt}"
         ;;
     "skills")
-        launch-background ${_opt}
+        launch-background "${_opt}"
         ;;
     "voice")
-        launch-background ${_opt}
+        launch-background "${_opt}"
         ;;
 
     "debug")
@@ -218,7 +219,7 @@ case ${_opt} in
     "cli")
         require-process bus
         require-process skills
-        launch-process ${_opt}
+        launch-process "${_opt}"
         ;;
 
     # TODO: Restore support for Wifi Setup on a Picroft, etc.
@@ -241,19 +242,19 @@ case ${_opt} in
         source "$DIR/bin/mycroft-skill-testrunner" vktest "$@"
         ;;
     "audiotest")
-        launch-process ${_opt}
+        launch-process "${_opt}"
         ;;
     "wakewordtest")
-        launch-process ${_opt}
+        launch-process "${_opt}"
         ;;
     "sdkdoc")
         source-venv
-        cd doc
-        make ${_params}
+        cd doc || exit
+        make "${_params}"
         cd ..
         ;;
     "enclosure")
-        launch-background ${_opt}
+        launch-background "${_opt}"
         ;;
 
     *)

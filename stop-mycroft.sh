@@ -18,7 +18,7 @@ SOURCE="${BASH_SOURCE[0]}"
 
 script=${0}
 script=${script##*/}
-cd -P "$( dirname "$SOURCE" )"
+cd -P "$( dirname "$SOURCE" )" || exit
 
 function help() {
     echo "${script}:  Mycroft service stopper"
@@ -49,16 +49,16 @@ function process-running() {
 }
 
 function end-process() {
-    if process-running $1 ; then
+    if process-running "$1" ; then
         # Find the process by name, only returning the oldest if it has children
         pid=$( pgrep -o -f "python3 (.*)-m mycroft.*${1}" )
         echo -n "Stopping $1 (${pid})..."
-        kill -SIGINT ${pid}
+        kill -SIGINT "${pid}"
 
         # Wait up to 5 seconds (50 * 0.1) for process to stop
         c=1
         while [ $c -le 50 ] ; do
-            if process-running $1 ; then
+            if process-running "$1" ; then
                 sleep 0.1
                 (( c++ ))
             else
@@ -66,11 +66,11 @@ function end-process() {
             fi
         done
 
-        if process-running $1 ; then
+        if process-running "$1" ; then
             echo "failed to stop."
             pid=$( pgrep -o -f "python3 (.*)-m mycroft.*${1}" )            
             echo -n "  Killing $1 (${pid})..."
-            kill -9 ${pid}
+            kill -9 "${pid}"
             echo "killed."
             result=120
         else
