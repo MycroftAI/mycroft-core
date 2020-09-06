@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 # Copyright 2017 Mycroft AI Inc.
 #
@@ -14,13 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-SOURCE="${BASH_SOURCE[0]}"
+# This script is never sourced but always directly executed, so this is safe to do
+SOURCE="$0"
 
 script=${0}
 script=${script##*/}
 cd -P "$( dirname "$SOURCE" )" || exit 1 # quit if change of folder fails
 
-function help() {
+help() {
     echo "${script}:  Mycroft service stopper"
     echo "usage: ${script} [service]"
     echo
@@ -40,36 +41,36 @@ function help() {
     exit 0
 }
 
-function process-running() {
-    if [[ $( pgrep -f "python3 (.*)-m mycroft.*${1}" ) ]] ; then
+process_running() {
+    if [ "$( pgrep -f "python3 (.*)-m mycroft.*${1}" )" ] ; then
         return 0
     else
         return 1
     fi
 }
 
-function end-process() {
-    if process-running "$1" ; then
+end_process() {
+    if process_running "$1" ; then
         # Find the process by name, only returning the oldest if it has children
         pid=$( pgrep -o -f "python3 (.*)-m mycroft.*${1}" )
-        echo -n "Stopping $1 (${pid})..."
-        kill -SIGINT "${pid}"
+        printf "Stopping %s (%s)..." "$1" "${pid}"
+        kill -s INT "${pid}"
 
         # Wait up to 5 seconds (50 * 0.1) for process to stop
         c=1
         while [ $c -le 50 ] ; do
-            if process-running "$1" ; then
+            if process_running "$1" ; then
                 sleep 0.1
-                (( c++ ))
+                c=$((c + 1))
             else
                 c=999   # end loop
             fi
         done
 
-        if process-running "$1" ; then
+        if process_running "$1" ; then
             echo "failed to stop."
             pid=$( pgrep -o -f "python3 (.*)-m mycroft.*${1}" )            
-            echo -n "  Killing $1 (${pid})..."
+            printf "  Killing %s (%s)...\n" "$1" "${pid}"
             kill -9 "${pid}"
             echo "killed."
             result=120
@@ -87,33 +88,33 @@ result=0  # default, no change
 
 
 OPT=$1
-shift
+if [ $# -gt 0 ]; then
+	shift
+fi
 
 case ${OPT} in
-    "all")
-        ;&
-    "")
+    ""|"all")
         echo "Stopping all mycroft-core services"
-        end-process skills
-        end-process audio
-        end-process speech
-        end-process enclosure
-        end-process messagebus.service
+        end_process skills
+        end_process audio
+        end_process speech
+        end_process enclosure
+        end_process messagebus.service
         ;;
     "bus")
-        end-process messagebus.service
+        end_process messagebus.service
         ;;
     "audio")
-        end-process audio
+        end_process audio
         ;;
     "skills")
-        end-process skills
+        end_process skills
         ;;
     "voice")
-        end-process speech
+        end_process speech
         ;;
     "enclosure")
-        end-process enclosure
+        end_process enclosure
         ;;
 
     *)
