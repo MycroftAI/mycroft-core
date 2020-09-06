@@ -19,7 +19,19 @@ SOURCE="$0"
 
 script=${0}
 script=${script##*/}
-cd -P "$( dirname "$SOURCE" )" || exit
+
+# If we're running systemwide it means MyCroft has been installed from distribution packaging
+# In this case, some things like sourcing the virtual environment shouldn't happen
+# Check if we're running systemwide by testing if the script is called start-mycroft.sh
+# (which would be an in-source installation) or start-mycroft (which would be distro packaging)
+systemwide=false
+if [ "${script#*.sh}" = "$script" ]; then
+	systemwide=true
+fi
+
+if [ $systemwide = false ]; then
+    cd -P "$( dirname "$SOURCE" )" || exit
+fi
 
 help() {
     echo "${script}:  Mycroft service stopper"

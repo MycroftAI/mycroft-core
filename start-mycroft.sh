@@ -19,9 +19,21 @@ SOURCE="$0"
 
 script=${0}
 script=${script##*/}
-cd -P "$( dirname "$SOURCE" )" || exit
-DIR="$( pwd )"
-VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${DIR}/.venv"}
+
+# If we're running systemwide it means MyCroft has been installed from distribution packaging
+# In this case, some things like sourcing the virtual environment shouldn't happen
+# Check if we're running systemwide by testing if the script is called start-mycroft.sh
+# (which would be an in-source installation) or start-mycroft (which would be distro packaging)
+systemwide=false
+if [ "${script#*.sh}" = "$script" ]; then
+	systemwide=true
+fi
+
+if [ $systemwide = false ]; then
+	cd -P "$( dirname "$SOURCE" )" || exit
+	DIR="$( pwd )"
+	VIRTUALENV_ROOT=${VIRTUALENV_ROOT:-"${DIR}/.venv"}
+fi
 
 help() {
     echo "${script}:  Mycroft command/service launcher"
@@ -39,14 +51,17 @@ help() {
     echo
     echo "Tool COMMANDs:"
     echo "  cli                      the Command Line Interface"
-    echo "  unittest                 run mycroft-core unit tests (requires pytest)"
-    echo "  skillstest               run the skill autotests for all skills (requires pytest)"
-    echo "  vktest                   run the Voight Kampff integration test suite"
-    echo
-    echo "Util COMMANDs:"
-    echo "  audiotest                attempt simple audio validation"
-    echo "  wakewordtest             test selected wakeword engine"
-    echo "  sdkdoc                   generate sdk documentation"
+    
+    if [ $systemwide = false ]; then
+        echo "  unittest                 run mycroft-core unit tests (requires pytest)"
+        echo "  skillstest               run the skill autotests for all skills (requires pytest)"
+        echo "  vktest                   run the Voight Kampff integration test suite"
+        echo
+        echo "Util COMMANDs:"
+        echo "  audiotest                attempt simple audio validation"
+        echo "  wakewordtest             test selected wakeword engine"
+        echo "  sdkdoc                   generate sdk documentation"
+    fi
     echo
     echo "Options:"
     echo "  restart                  (optional) Force the service to restart if running"
@@ -55,7 +70,9 @@ help() {
     echo "  ${script} all"
     echo "  ${script} all restart"
     echo "  ${script} cli"
-    echo "  ${script} unittest"
+    if [ $systemwide = false ]; then
+        echo "  ${script} unittest"
+    fi
 
     exit 1
 }
@@ -99,7 +116,9 @@ init_once() {
 }
 
 launch_process() {
-    init_once
+    if [ $systemwide = false ]; then
+        init_once
+    fi
 
     name_to_script_path "${1}"
 
@@ -118,14 +137,20 @@ require_process() {
 }
 
 launch_background() {
-    init_once
+    if [ $systemwide = false ]; then
+        init_once
+    fi
 
     # Check if given module is running and start (or restart if running)
     name_to_script_path "${1}"
     if pgrep -f "python3 (.*)-m ${_module}" > /dev/null ; then
         if ($_force_restart) ; then
             echo "Restarting: ${1}"
-            "${DIR}/stop-mycroft.sh" "${1}"
+	    if [ $systemwide = false ]; then
+                "${DIR}/stop-mycroft.sh" "${1}"
+            else
+		stop-mycroft "${1}"
+	    fi
         else
             # Already running, no need to restart
             return
@@ -141,8 +166,23 @@ launch_background() {
         echo "         8181 with a firewall as appropriate."
     fi
 
-    # Launch process in background, sending logs to standard location
-    python3 -m ${_module} "$_params" >> /var/log/mycroft/"${1}".log 2>&1 &
+    # Launch process in background
+    # Send logs to old standard location if it exists
+    # Otherwise send to XDG Base Directories cache location
+    logdir="/var/log/mycroft"
+    if [ ! -d "$logdir" ]; then
+	    if [ ! -z ${XDG_CACHE_HOME+x} ]; then
+		    logdir="$XDG_CACHE_HOME/mycroft"
+	    else
+		    logdir="$HOME/.cache/mycroft"
+	    fi
+    fi
+
+    if [ ! -d "$logdir" ]; then
+        mkdir -p "$logdir"
+    fi
+
+    python3 -m ${_module} "$_params" >> "$logdir/${1}.log" 2>&1 &
 }
 
 launch_all() {
@@ -194,7 +234,9 @@ if [ "${1}" = "restart" ] || [ "${_opt}" = "restart" ] ; then
 fi
 _params=$*
 
-check_dependencies
+if [ $systemwide = false ]; then
+	check_dependencies
+fi
 
 case ${_opt} in
     "all")
@@ -230,19 +272,35 @@ case ${_opt} in
     #    launch_background ${_opt}
     #    ;;
     "unittest")
-        source_venv
-        pytest test/unittests/ --cov=mycroft "$@"
+        if [ $systemwide = false ]; then
+            source_venv
+            pytest test/unittests/ --cov=mycroft "$@"
+	else
+	    echo "Running tests is only supported from a local git checkout"
+	fi
         ;;
     "singleunittest")
-        source_venv
-        pytest "$@"
+        if [ $systemwide = false ]; then
+            source_venv
+            pytest "$@"
+        else
+            echo "Running tests is only supported from a local git checkout"
+	fi
         ;;
     "skillstest")
-        source_venv
-        pytest test/integrationtests/skills/discover_tests.py "$@"
+	if [ $systemwide = false ]; then
+            source_venv
+            pytest test/integrationtests/skills/discover_tests.py "$@"
+        else
+	    echo "Running tests is only supported from a local git checkout"
+	fi
         ;;
     "vktest")
-        bash "$DIR/bin/mycroft-skill-testrunner" vktest "$@"
+	if [ $systemwide = false ]; then
+            bash "$DIR/bin/mycroft-skill-testrunner" vktest "$@"
+        else
+	    echo "Running tests is only supported from a local git checkout"
+	fi
         ;;
     "audiotest")
         launch_process "${_opt}"
@@ -251,10 +309,14 @@ case ${_opt} in
         launch_process "${_opt}"
         ;;
     "sdkdoc")
-        source_venv
-        cd doc || exit
-        make "${_params}"
-        cd ..
+	if [ $systemwide = false ]; then
+            source_venv
+            cd doc || exit
+            make "${_params}"
+            cd ..
+        else
+	    echo "Generating documentation is only supported from a local git checkout"
+	fi
         ;;
     "enclosure")
         launch_background "${_opt}"
