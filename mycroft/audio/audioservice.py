@@ -17,11 +17,12 @@ import sys
 import time
 from os import listdir
 from os.path import abspath, dirname, basename, isdir, join
-from threading import Lock, Event
+from threading import Lock
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util.log import LOG
+from mycroft.util.monotonic_event import MonotonicEvent
 
 from .services import RemoteAudioBackend
 
@@ -152,7 +153,7 @@ class AudioService:
         self.play_start_time = 0
         self.volume_is_low = False
 
-        self._loaded = Event()
+        self._loaded = MonotonicEvent()
         bus.once('open', self.load_services_callback)
 
     def load_services_callback(self):
@@ -161,7 +162,6 @@ class AudioService:
             service and default and registers the event handlers for the
             subsystem.
         """
-
         services = load_services(self.config, self.bus)
         # Sort services so local services are checked first
         local = [s for s in services if not isinstance(s, RemoteAudioBackend)]
