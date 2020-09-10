@@ -24,13 +24,14 @@ from contextlib import suppress
 from glob import glob
 from os.path import dirname, exists, join, abspath, expanduser, isfile, isdir
 from shutil import rmtree
-from threading import Timer, Event, Thread
+from threading import Timer, Thread
 from urllib.error import HTTPError
 
 from petact import install_package
 
 from mycroft.configuration import Configuration, LocalConf, USER_CONFIG
 from mycroft.util.log import LOG
+from mycroft.util.monotonic_event import MonotonicEvent
 
 RECOGNIZER_DIR = join(abspath(dirname(__file__)), "recognizer")
 INIT_TIMEOUT = 10  # In seconds
@@ -402,7 +403,7 @@ class HotWordFactory:
     def load_module(module, hotword, config, lang, loop):
         LOG.info('Loading "{}" wake word via {}'.format(hotword, module))
         instance = None
-        complete = Event()
+        complete = MonotonicEvent()
 
         def initialize():
             nonlocal instance, complete
