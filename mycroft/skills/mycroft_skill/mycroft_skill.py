@@ -724,8 +724,8 @@ class MycroftSkill:
         if not result and self.lang != 'en-us':
             # when resource not found try fallback to en-us
             LOG.warning(
-                "Resource '{}' for lang '{}' not found: trying 'en-us'"
-                    .format(res_name, self.lang)
+                "Resource '{}' for lang '{}' not found: trying 'en-us'".format(
+                    res_name, self.lang)
             )
             result = self._find_resource(res_name, 'en-us', res_dirname)
         return result
