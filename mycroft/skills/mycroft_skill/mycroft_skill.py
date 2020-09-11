@@ -590,8 +590,8 @@ class MycroftSkill:
         if utt:
             if exact:
                 # Check for exact match
-                return utt and any(i.strip() == utt
-                                   for i in self.voc_match_cache[cache_key])
+                return any(i.strip() == utt
+                           for i in self.voc_match_cache[cache_key])
             else:
                 # Check for matches against complete words
                 return any([re.match(r'.*\b' + i + r'\b.*', utt)
