@@ -41,6 +41,7 @@ class SkillGUI:
 
     @property
     def connected(self):
+        """Returns True if at least 1 gui is connected, else False"""
         if self.skill.bus:
             reply = self.skill.bus.wait_for_response(
                 Message("gui.status.request"), "gui.status.request.response")
