@@ -29,10 +29,10 @@ from mycroft.util.log import LOG
 
 from .tts import TTS, TTSValidator
 
-config = Configuration.get().get("tts").get("mimic")
-data_dir = expanduser(Configuration.get()['data_dir'])
+CONFIG = Configuration.get().get("tts").get("mimic")
+DATA_DIR = expanduser(Configuration.get()['data_dir'])
 
-BIN = config.get("path",
+BIN = CONFIG.get("path",
                  os.path.join(MYCROFT_ROOT_PATH, 'mimic', 'bin', 'mimic'))
 
 if not os.path.isfile(BIN):
@@ -41,7 +41,7 @@ if not os.path.isfile(BIN):
 
     BIN = distutils.spawn.find_executable("mimic")
 
-SUBSCRIBER_VOICES = {'trinity': join(data_dir, 'voices/mimic_tn')}
+SUBSCRIBER_VOICES = {'trinity': join(DATA_DIR, 'voices/mimic_tn')}
 
 
 def download_subscriber_voices(selected_voice):
