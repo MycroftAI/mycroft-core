@@ -136,7 +136,7 @@ class Mimic(TTS):
 
         args = [mimic_bin, '-voice', voice, '-psdur', '-ssml']
 
-        stretch = config.get('duration_stretch', None)
+        stretch = self.config.get('duration_stretch', None)
         if stretch:
             args += ['--setf', 'duration_stretch=' + stretch]
         return args
