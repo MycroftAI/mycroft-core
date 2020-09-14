@@ -138,7 +138,7 @@ class Mimic(TTS):
 
         stretch = self.config.get('duration_stretch', None)
         if stretch:
-            args += ['--setf', 'duration_stretch=' + stretch]
+            args += ['--setf', 'duration_stretch={}'.format(stretch)]
         return args
 
     def get_tts(self, sentence, wav_file):
