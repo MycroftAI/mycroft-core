@@ -1142,7 +1142,7 @@ class MycroftSkill:
             )
         else:
             self.log.warning(
-                'dialog_render is None, does the locale/dialog folder exists?'
+                'dialog_render is None, does the locale/dialog folder exist?'
             )
             self.speak(key, expect_response, wait, {})
 
