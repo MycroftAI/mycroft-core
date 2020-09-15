@@ -603,7 +603,7 @@ class TestMycroftSkill(unittest.TestCase):
         s.config_core['lang'] = 'en-us'
 
     def test_speak_dialog_render_not_initialized(self):
-        """Test that non-initialzed dialog_renderer won't raise an error."""
+        """Test that non-initialized dialog_renderer won't raise an error."""
         s = SimpleSkill1()
         s.bind(self.emitter)
         s.dialog_renderer = None
