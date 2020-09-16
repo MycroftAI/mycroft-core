@@ -104,6 +104,7 @@ class Enclosure:
         self.bus.on("gui.page.delete", self.on_gui_delete_page)
         self.bus.on("gui.clear.namespace", self.on_gui_delete_namespace)
         self.bus.on("gui.event.send", self.on_gui_send_event)
+        self.bus.on("gui.status.request", self.handle_gui_status_request)
 
     def run(self):
         try:
@@ -114,6 +115,16 @@ class Enclosure:
 
     ######################################################################
     # GUI client API
+    @property
+    def gui_connected(self):
+        """Returns True if at least 1 gui is connected, else False"""
+        return len(GUIWebsocketHandler.clients) > 0
+
+    def handle_gui_status_request(self, message):
+        """Reply to gui status request, allows querying if a gui is
+        connected using the message bus"""
+        self.bus.emit(message.reply("gui.status.request.response",
+                                    {"connected": self.gui_connected}))
 
     def send(self, msg_dict):
         """ Send to all registered GUIs. """
