@@ -122,7 +122,10 @@ class PocketsphinxHotWord(HotWordEngine):
         """
         model_file = join(RECOGNIZER_DIR, 'model', self.lang, 'hmm')
         if not exists(model_file):
-            LOG.error('PocketSphinx model not found at ' + str(model_file))
+            LOG.error(
+                'PocketSphinx model not found at "{}". '.format(model_file) +
+                'Falling back to en-us model'
+            )
             model_file = join(RECOGNIZER_DIR, 'model', 'en-us', 'hmm')
         config.set_string('-hmm', model_file)
         config.set_string('-dict', dict_name)
