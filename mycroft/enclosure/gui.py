@@ -18,6 +18,7 @@ from os.path import join
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util import resolve_resource_file
+from mycroft.util.settings_gui_generator import SettingsGuiGenerator
 
 
 class SkillGUI:
@@ -348,6 +349,67 @@ class SkillGUI:
         self["url"] = url
         self.show_page("SYSTEM_UrlFrame.qml", override_idle,
                        override_animations)
+
+    def register_settings(self):
+        """Register requested skill settings
+        configuration in GUI.
+
+        Registers handler to apply settings when
+        updated via GUI interface.
+        Register handler to update settings when
+        updated via Web interface.
+        """
+        skill_id = self.skill.skill_id
+        settingmeta_path = join(self.skill.root_dir,
+                                "settingsmeta.json")
+        self.settings_gui_generator.populate(skill_id,
+                                             settingmeta_path,
+                                             self.skill.settings)
+        apply_handler = skill_id + ".settings.set"
+        update_handler = skill_id + ".settings.update"
+        self.skill.gui.register_handler(apply_handler,
+                                        self.skill.gui.apply_settings)
+        self.skill.gui.register_handler(update_handler,
+                                        self.skill.gui.update_settings)
+
+    def display_settings(self, override_idle=True,
+                         override_animations=False):
+        """Display skill configuration page in GUI.
+
+        Arguments:
+        override_idle (boolean, int):
+                True: Takes over the resting page indefinitely
+                (int): Delays resting page for the specified number of
+                       seconds.
+        override_animations (boolean):
+                True: Disables showing all platform skill animations.
+                False: 'Default' always show animations.
+        """
+        self.clear()
+        self.__skills_config["sections"] = self.settings_gui_generator.fetch()
+        self.__skills_config["skill_id"] = self.skill.skill_id
+        self["skillsConfig"] = self.__skills_config
+        self.show_page("SYSTEM_SkillSettings.qml",
+                       override_idle=override_idle)
+
+    def apply_settings(self, message):
+        """Store updated values for keys in skill settings.
+
+        Arguments:
+        message: Messagebus message
+        """
+        self.skill.settings[message.data["setting_key"]] = \
+            message.data["setting_value"]
+
+    def update_settings(self, message):
+        """Update changed skill settings in GUI.
+
+        Arguments:
+        message: Messagebus message
+        """
+        self.clear()
+        self.settings_gui_generator.update(self.skill.settings)
+        self.display_settings()
 
     def shutdown(self):
         """Shutdown gui interface.
