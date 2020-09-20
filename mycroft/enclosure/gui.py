@@ -340,17 +340,20 @@ class SkillGUI:
         self.show_page("SYSTEM_UrlFrame.qml", override_idle,
                        override_animations)
 
-    def play_video(self, url, title="", override_idle=True):
+    def play_video(self, url, title="", override_idle=True,
+                   override_animations=None):
         """ Play video stream """
         self["playStatus"] = "play"
         self["video"] = url
         self["title"] = title
         self.video_info = {"title": title, "url": url}
         self.show_page("SYSTEM_VideoPlayer.qml",
-                       override_idle=override_idle)
+                       override_idle=override_idle,
+                       override_animations=override_animations)
 
     @property
     def is_playing_video(self):
+        """Returns video playback status"""
         return self.video_info is not None
 
     def pause_video(self):
