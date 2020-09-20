@@ -58,6 +58,7 @@ class CPSMatchType(IntEnum):
     MOVIE = 10
     TRAILER = 11
     ADULT = 12
+    VISUAL_STORY = 13
 
 
 class CommonPlaySkill(MycroftSkill, ABC):
