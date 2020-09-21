@@ -5,7 +5,6 @@ import QtQuick.Controls 2.12 as Controls
 import org.kde.kirigami 2.10 as Kirigami
 import QtQuick.Window 2.3
 import QtGraphicalEffects 1.0
-
 import Mycroft 1.0 as Mycroft
 import "." as Local
 
@@ -14,10 +13,11 @@ Mycroft.Delegate {
 
     property var videoSource: sessionData.video
     property var videoStatus: sessionData.playStatus
+    property var videoRepeat: sessionData.playerRepeat
     property var videoThumb: sessionData.videoThumb
     property var videoTitle: sessionData.title
+    property bool busyIndicate: false
 
-    //The player is always fullscreen
     fillWidth: true
     background: Rectangle {
         color: "black"
@@ -29,6 +29,7 @@ Mycroft.Delegate {
 
     onEnabledChanged: syncStatusTimer.restart()
     onVideoSourceChanged: syncStatusTimer.restart()
+    
     Component.onCompleted: {
         syncStatusTimer.restart()
     }
@@ -39,8 +40,41 @@ Mycroft.Delegate {
     }
 
     onFocusChanged: {
-        console.log("focus changed")
         video.forceActiveFocus();
+    }
+    
+    onVideoRepeatChanged: {
+        if(typeof videoRepeat !== "undefined" && typeof videoRepeat == "boolean"){
+            if(videoRepeat){
+                video.loops = MediaPlayer.Infinite
+                video.flushMode = VideoOutput.LastFrame
+            }
+        } else if(typeof videoRepeat !== "undefined" && typeof videoRepeat == "number"){
+            if(videoRepeat > 1){
+                video.loops = videoRepeat
+                video.flushMode = VideoOutput.LastFrame
+            }
+        } else {
+            video.loops = 1
+            video.flushMode = VideoOutput.EmptyFrame
+        }
+    }
+    
+    onVideoStatusChanged: {
+        switch(videoStatus){
+        case "stop":
+            video.stop();
+            break;
+        case "pause":
+            video.pause()
+            break;
+        case "play":
+            video.play()
+            delay(6000, function() {
+                infomationBar.visible = false;
+            })
+            break;
+        }
     }
     
     Connections {
@@ -52,8 +86,6 @@ Mycroft.Delegate {
         }
     }
     
-
-    // Sometimes can't be restarted reliably immediately, put it in a timer
     Timer {
         id: syncStatusTimer
         interval: 0
@@ -73,20 +105,18 @@ Mycroft.Delegate {
     }
 
     function delay(delayTime, cb) {
-            delaytimer.interval = delayTime;
-            delaytimer.repeat = false;
-            delaytimer.triggered.connect(cb);
-            delaytimer.start();
+        delaytimer.interval = delayTime;
+        delaytimer.repeat = false;
+        delaytimer.triggered.connect(cb);
+        delaytimer.start();
     }
     
     controlBar: Local.SeekControl {
         id: seekControl
         anchors {
-//             left: parent.left
-//             right: parent.right
             bottom: parent.bottom
         }
-        title: videoTitle  
+        title: videoTitle
         videoControl: video
         duration: video.duration
         playPosition: video.position
@@ -96,10 +126,10 @@ Mycroft.Delegate {
     
     Item {
         id: videoRoot
-        anchors.fill: parent 
-            
-         Rectangle { 
-            id: infomationBar 
+        anchors.fill: parent
+
+        Rectangle {
+            id: infomationBar
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
@@ -125,53 +155,21 @@ Mycroft.Delegate {
                 text: videoTitle
                 z: 100
             }
-         }
-            
-        Image {
-            id: thumbart
-            anchors.fill: parent
-            fillMode: Image.PreserveAspectFit
-            source: root.videoThumb 
-            enabled: root.videoStatus == "stop" ? 1 : 0
-            visible: root.videoStatus == "stop" ? 1 : 0
         }
-        
+
         Video {
             id: video
             anchors.fill: parent
             focus: true
             autoLoad: true
             autoPlay: false
+            loops: 1
             source: videoSource
-            readonly property string currentStatus: root.enabled ? root.videoStatus : "pause"
-            
-            onFocusChanged: {
-                if(focus){
-                    console.log("focus in video")
-                }
-            }
-
-            onCurrentStatusChanged: {
-                switch(currentStatus){
-                    case "stop":
-                        video.stop();
-                        break;
-                    case "pause":
-                        video.pause()
-                        break;
-                    case "play":
-                        video.play()
-                        delay(6000, function() {
-                            infomationBar.visible = false;
-                        })
-                        break;
-                }
-            }
             
             Keys.onReturnPressed: {
                 video.playbackState == MediaPlayer.PlayingState ? video.pause() : video.play()
             }
-                    
+
             Keys.onDownPressed: {
                 controlBarItem.opened = true
                 controlBarItem.forceActiveFocus()
@@ -179,13 +177,48 @@ Mycroft.Delegate {
             
             MouseArea {
                 anchors.fill: parent
-                onClicked: { 
-                    controlBarItem.opened = !controlBarItem.opened 
+                onClicked: {
+                    controlBarItem.opened = !controlBarItem.opened
                 }
             }
             
             onStatusChanged: {
-                console.log("Status Changed")
+                console.log(status)
+                if(status == MediaPlayer.EndOfMedia) {
+                    triggerGuiEvent("video.media.playback.ended", {})
+                    busyIndicatorPop.enabled = false
+                }
+                if(status == MediaPlayer.Loading) {
+                    busyIndicatorPop.visible = true
+                    busyIndicatorPop.enabled = true
+                }
+                if(status == MediaPlayer.Loaded || status == MediaPlayer.Buffered){
+                    busyIndicatorPop.visible = false
+                    busyIndicatorPop.enabled = false
+                }
+            }
+            
+            Rectangle {
+                id: busyIndicatorPop
+                width: parent.width
+                height: parent.height
+                color: Qt.rgba(0, 0, 0, 0.2)
+                visible: false
+                enabled: false
+                
+                Controls.BusyIndicator {
+                    id: busyIndicate
+                    running: busyIndicate
+                    anchors.centerIn: parent
+                }
+                
+                onEnabledChanged: {
+                    if(busyIndicatorPop.enabled){
+                        busyIndicate.running = true
+                    } else {
+                        busyIndicate.running = false
+                    }
+                }
             }
         }
     }

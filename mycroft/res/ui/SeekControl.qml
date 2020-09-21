@@ -39,7 +39,7 @@ Item {
     Timer {
         id: hideTimer
         interval: 5000
-        onTriggered: { 
+        onTriggered: {
             seekControl.opened = false;
             videoRoot.forceActiveFocus();
         }
@@ -49,7 +49,6 @@ Item {
         width: parent.width
         height: parent.height
         color: Qt.rgba(0, 0, 0, 0.8)
-        //color: "white"
         y: opened ? 0 : parent.height
 
         ColumnLayout {
@@ -72,17 +71,17 @@ Item {
                     
                     background: Rectangle {
                         radius: 200
-                        color: Qt.rgba(0, 0, 0, 0.9)
-                        border.width: 1
+                        color: "#1a1a1a"
+                        border.width: 1.25
                         border.color: "white"
                     }
                     
                     contentItem: Item {
                         Image {
-                            width: parent.width > 600 ? Kirigami.Units.iconSizes.medium : Kirigami.Units.iconSizes.small
+                            width: parent.width - Kirigami.Units.largeSpacing
                             height: width
                             anchors.centerIn: parent
-                            source: "images/back.png"
+                            source: "images/back.svg"
                         }
                     }
                     
@@ -95,7 +94,7 @@ Item {
                     Keys.onReturnPressed: {
                         hideTimer.restart();
                         Mycroft.MycroftController.sendRequest("mycroft.gui.screen.close", {});
-                        video.stop(); 
+                        video.stop();
                     }
                     onFocusChanged: {
                         hideTimer.restart();
@@ -110,17 +109,17 @@ Item {
                     
                     background: Rectangle {
                         radius: 200
-                        color: Qt.rgba(0, 0, 0, 0.9)
-                        border.width: 1
+                        color: "#1a1a1a"
+                        border.width: 1.25
                         border.color: "white"
                     }
                     
                     contentItem: Item {
                         Image {
-                            width: parent.width > 600 ? Kirigami.Units.iconSizes.medium : Kirigami.Units.iconSizes.small
+                            width: parent.width - Kirigami.Units.largeSpacing
                             height: width
                             anchors.centerIn: parent
-                            source: videoControl.playbackState === MediaPlayer.PlayingState ? "images/media-playback-pause.svg" : "images/media-playback-start.svg"
+                            source: videoControl.playbackState === MediaPlayer.PlayingState ? "images/media-pause.svg" : "images/media-play.svg"
                         }
                     }
                     
@@ -227,18 +226,18 @@ Item {
                             text: formatTime(duration)
                         }
                     }
-                KeyNavigation.up: video
-                KeyNavigation.left: button
-                Keys.onReturnPressed: {
-                    hideTimer.restart();
-                    if(!navSliderItem){
-                            navSliderItem = true   
+                    KeyNavigation.up: video
+                    KeyNavigation.left: button
+                    Keys.onReturnPressed: {
+                        hideTimer.restart();
+                        if(!navSliderItem){
+                            navSliderItem = true
                         } else {
                             navSliderItem = false
                         }
                     }
-                
-                Keys.onLeftPressed: {
+
+                    Keys.onLeftPressed: {
                         console.log("leftPressedonSlider")
                         hideTimer.restart();
                         if(navSliderItem) {
@@ -246,9 +245,9 @@ Item {
                         } else {
                             button.forceActiveFocus()
                         }
-                }
-                
-                Keys.onRightPressed: {
+                    }
+
+                    Keys.onRightPressed: {
                         hideTimer.restart();
                         if(navSliderItem) {
                             video.seek(video.position + 5000)

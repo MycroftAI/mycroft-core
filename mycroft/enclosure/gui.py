@@ -72,6 +72,8 @@ class SkillGUI:
                              self.__handle_gui_track_info)
         self.skill.add_event('mycroft.audio.queue_end',
                              self.__handle_gui_stop)
+        self.skill.gui.register_handler('video.media.playback.ended',
+                                        self.__handle_gui_stop)
 
     # Audio Service bus messages
     def __handle_gui_resume(self, message):
@@ -381,12 +383,29 @@ class SkillGUI:
         self.show_page("SYSTEM_UrlFrame.qml", override_idle,
                        override_animations)
 
-    def play_video(self, url, title="", override_idle=True,
+    def play_video(self, url, title="", repeat=None, override_idle=True,
                    override_animations=None):
-        """ Play video stream """
+        """ Play video stream
+
+        Arguments:
+            url (str): URL of video source
+            title (str): Title of media to be displayed
+            repeat (boolean, int):
+                True: Infinitly loops the current video track
+                (int): Loops the video track for specified number of
+                times.
+            override_idle (boolean, int):
+                True: Takes over the resting page indefinitely
+                (int): Delays resting page for the specified number of
+                       seconds.
+            override_animations (boolean):
+                True: Disables showing all platform skill animations.
+                False: 'Default' always show animations.
+        """
         self["playStatus"] = "play"
         self["video"] = url
         self["title"] = title
+        self["playerRepeat"] = repeat
         self.video_info = {"title": title, "url": url}
         self.show_page("SYSTEM_VideoPlayer.qml",
                        override_idle=override_idle,
