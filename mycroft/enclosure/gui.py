@@ -14,10 +14,17 @@
 #
 """ Interface for interacting with the Mycroft gui qml viewer. """
 from os.path import join
-
+from enum import IntEnum
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util import resolve_resource_file
+
+
+class GUIPlaybackStatus(IntEnum):
+    STOPPED = 0
+    PLAYING = 1
+    PAUSED = 2
+    UNDEFINED = 3
 
 
 class SkillGUI:
@@ -386,19 +393,33 @@ class SkillGUI:
                        override_animations=override_animations)
 
     @property
-    def is_playing_video(self):
-        """Returns video playback status"""
+    def is_video_displayed(self):
+        """Returns whether the gui is in a video playback state.
+        Eg if the video is paused, it would still be displayed on screen
+        but the video itself is not "playing" so to speak"""
         return self.video_info is not None
+
+    @property
+    def playback_status(self):
+        """Returns gui playback status,
+        indicates if gui is playing, paused or stopped"""
+        if self.__session_data.get("playStatus", -1) == "play":
+            return GUIPlaybackStatus.PLAYING
+        if self.__session_data.get("playStatus", -1) == "pause":
+            return GUIPlaybackStatus.PAUSED
+        if self.__session_data.get("playStatus", -1) == "stop":
+            return GUIPlaybackStatus.STOPPED
+        return GUIPlaybackStatus.UNDEFINED
 
     def pause_video(self):
         """Pause video playback."""
-        if self.is_playing_video:
+        if self.is_video_displayed:
             self["playStatus"] = "pause"
 
     def stop_video(self):
         """Stop video playback."""
-        # TODO detect end of media playback from gui
-        if self.is_playing_video:
+        # TODO detect end of media playback from gui and call this
+        if self.is_video_displayed:
             self["playStatus"] = "stop"
             self.clear()
         self.video_info = None
