@@ -259,38 +259,6 @@ class MycroftSkill:
             # Initialize the SkillGui
             self.gui.setup_default_handlers()
 
-            # TODO can we rename this namespace to mycroft.playback.XXX ?
-            self.add_event('mycroft.audio.service.pause',
-                           self.__handle_gui_pause)
-            self.add_event('mycroft.audio.service.resume',
-                           self.__handle_gui_resume)
-            self.add_event('mycroft.audio.service.stop',
-                           self.__handle_gui_stop)
-            self.add_event('mycroft.audio.service.track_info',
-                           self.__handle_gui_track_info)
-
-    # Audio Service bus messages
-    def __handle_gui_resume(self, message):
-        """Resume video playback in gui"""
-        self.gui.resume_video()
-
-    def __handle_gui_stop(self, message):
-        """Stop video playback in gui"""
-        self.gui.stop_video()
-
-    def __handle_gui_pause(self, message):
-        """Pause video playback in gui"""
-        self.gui.pause_video()
-
-    def __handle_gui_track_info(self, message):
-        """Answer request information of current playing track.
-         Needed for handling stop """
-        if self.gui.video_info:
-            self.bus.emit(
-                message.reply('mycroft.audio.service.track_info_reply',
-                              self.gui.video_info))
-        return self.gui.video_info
-
     def _register_system_event_handlers(self):
         """Add all events allowing the standard interaction with the Mycroft
         system.

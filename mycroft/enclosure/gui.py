@@ -54,6 +54,40 @@ class SkillGUI:
         msg_type = self.build_message_type('set')
         self.skill.add_event(msg_type, self.gui_set)
 
+        # TODO can we rename this namespace to mycroft.playback.XXX ?
+        self.skill.add_event('mycroft.audio.service.pause',
+                             self.__handle_gui_pause)
+        self.skill.add_event('mycroft.audio.service.resume',
+                             self.__handle_gui_resume)
+        self.skill.add_event('mycroft.audio.service.stop',
+                             self.__handle_gui_stop)
+        self.skill.add_event('mycroft.audio.service.track_info',
+                             self.__handle_gui_track_info)
+        self.skill.add_event('mycroft.audio.queue_end',
+                             self.__handle_gui_stop)
+
+    # Audio Service bus messages
+    def __handle_gui_resume(self, message):
+        """Resume video playback in gui"""
+        self.resume_video()
+
+    def __handle_gui_stop(self, message):
+        """Stop video playback in gui"""
+        self.stop_video()
+
+    def __handle_gui_pause(self, message):
+        """Pause video playback in gui"""
+        self.pause_video()
+
+    def __handle_gui_track_info(self, message):
+        """Answer request information of current playing track.
+         Needed for handling stop """
+        if self.video_info:
+            self.skill.bus.emit(
+                message.reply('mycroft.audio.service.track_info_reply',
+                              self.video_info))
+        return self.video_info
+
     def register_handler(self, event, handler):
         """Register a handler for GUI events.
 
