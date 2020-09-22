@@ -256,7 +256,8 @@ Mycroft.Delegate {
         MouseArea {
             anchors.fill: parent
             onClicked: {
-                triggerGuiEvent("mycroft.device.settings", {})
+                var skillevent = skill_id + ".settings.remove_page"
+                triggerGuiEvent(skillevent, {})
             }
         }
     }

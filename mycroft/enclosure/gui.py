@@ -39,6 +39,8 @@ class SkillGUI:
         self.skill = skill
         self.on_gui_changed_callback = None
         self.config = Configuration.get()
+        self.__skills_config = {}  # data object passed to skill's page
+        self.settings_gui_generator = SettingsGuiGenerator()
 
     @property
     def connected(self):
@@ -225,7 +227,10 @@ class SkillGUI:
         # Convert pages to full reference
         page_urls = []
         for name in page_names:
-            page = self.skill.find_resource(name, 'ui')
+            if name.startswith("SYSTEM"):
+                page = resolve_resource_file(join('ui', name))
+            else:
+                page = self.skill.find_resource(name, 'ui')
             if page:
                 page_urls.append("file://" + page)
             else:
@@ -367,13 +372,16 @@ class SkillGUI:
                                              self.skill.settings)
         apply_handler = skill_id + ".settings.set"
         update_handler = skill_id + ".settings.update"
-        self.skill.gui.register_handler(apply_handler,
-                                        self.skill.gui.apply_settings)
-        self.skill.gui.register_handler(update_handler,
-                                        self.skill.gui.update_settings)
+        remove_pagehandler = skill_id + ".settings.remove_page"
+        self.register_handler(apply_handler,
+                              self._apply_settings)
+        self.register_handler(update_handler,
+                              self._update_settings)
+        self.register_handler(remove_pagehandler,
+                              self._remove_settings_display)
 
-    def display_settings(self, override_idle=True,
-                         override_animations=False):
+    def show_settings(self, override_idle=True,
+                      override_animations=False):
         """Display skill configuration page in GUI.
 
         Arguments:
@@ -392,7 +400,7 @@ class SkillGUI:
         self.show_page("SYSTEM_SkillSettings.qml",
                        override_idle=override_idle)
 
-    def apply_settings(self, message):
+    def _apply_settings(self, message):
         """Store updated values for keys in skill settings.
 
         Arguments:
@@ -401,7 +409,7 @@ class SkillGUI:
         self.skill.settings[message.data["setting_key"]] = \
             message.data["setting_value"]
 
-    def update_settings(self, message):
+    def _update_settings(self, message):
         """Update changed skill settings in GUI.
 
         Arguments:
@@ -409,7 +417,16 @@ class SkillGUI:
         """
         self.clear()
         self.settings_gui_generator.update(self.skill.settings)
-        self.display_settings()
+        self.show_settings()
+
+    def _remove_settings_display(self, message):
+        """Removes skill settings page from GUI.
+
+        Arguments:
+        message: Messagebus message
+        """
+        self.clear()
+        self.remove_page("SYSTEM_SkillSettings.qml")
 
     def shutdown(self):
         """Shutdown gui interface.
