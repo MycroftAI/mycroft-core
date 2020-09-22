@@ -118,9 +118,16 @@ class PocketsphinxHotWord(HotWordEngine):
         return file_name
 
     def create_config(self, dict_name, config):
+        """If language config doesn't exist then
+        we use default language (english) config as a fallback.
+        """
         model_file = join(RECOGNIZER_DIR, 'model', self.lang, 'hmm')
         if not exists(model_file):
-            LOG.error('PocketSphinx model not found at ' + str(model_file))
+            LOG.error(
+                'PocketSphinx model not found at "{}". '.format(model_file) +
+                'Falling back to en-us model'
+            )
+            model_file = join(RECOGNIZER_DIR, 'model', 'en-us', 'hmm')
         config.set_string('-hmm', model_file)
         config.set_string('-dict', dict_name)
         config.set_string('-keyphrase', self.key_phrase)
