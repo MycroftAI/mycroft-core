@@ -13,6 +13,9 @@
 # limitations under the License.
 #
 from unittest import TestCase, mock
+
+from adapt.intent import IntentBuilder
+
 from mycroft.configuration import Configuration
 from mycroft.messagebus import Message
 from mycroft.skills.intent_service import (ContextManager, IntentService,
@@ -113,7 +116,7 @@ class ConversationTest(TestCase):
                                 data={'lang': 'en-US',
                                       'utterances': hello})
         result = self.intent_service._converse(hello, 'en-US', utterance_msg)
-
+        self.intent_service.add_active_skill(result.skill_id)
         # Check that the active skill list was updated to set the responding
         # Skill first.
         first_active_skill = self.intent_service.active_skills[0][0]
@@ -208,3 +211,119 @@ class TestLanguageExtraction(TestCase):
         self.assertEqual(_get_message_lang(msg), 'de-de')
         msg = Message('test msg', data={'lang': 'sv-se'})
         self.assertEqual(_get_message_lang(msg), 'sv-se')
+
+
+def create_vocab_msg(keyword, value):
+    """Create a message for registering an adapt keyword."""
+    return Message('register_vocab',
+                   {'start': value, 'end': keyword})
+
+
+def get_last_message(bus):
+    """Get last sent message on mock bus."""
+    last = bus.emit.call_args
+    return last[0][0]
+
+
+class TestIntentServiceApi(TestCase):
+    def setUp(self):
+        self.intent_service = IntentService(mock.Mock())
+
+    def setup_simple_adapt_intent(self):
+        msg = create_vocab_msg('testKeyword', 'test')
+        self.intent_service.handle_register_vocab(msg)
+
+        intent = IntentBuilder('skill:testIntent').require('testKeyword')
+        msg = Message('register_intent', intent.__dict__)
+        self.intent_service.handle_register_intent(msg)
+
+    def test_get_adapt_intent(self):
+        self.setup_simple_adapt_intent()
+        # Check that the intent is returned
+        msg = Message('intent.service.adapt.get', data={'utterance': 'test'})
+        self.intent_service.handle_get_adapt(msg)
+
+        reply = get_last_message(self.intent_service.bus)
+        self.assertEqual(reply.data['intent']['intent_type'],
+                         'skill:testIntent')
+
+    def test_get_adapt_intent_no_match(self):
+        """Check that if the intent doesn't match at all None is returned."""
+        self.setup_simple_adapt_intent()
+        # Check that no intent is matched
+        msg = Message('intent.service.adapt.get', data={'utterance': 'five'})
+        self.intent_service.handle_get_adapt(msg)
+        reply = get_last_message(self.intent_service.bus)
+        self.assertEqual(reply.data['intent'], None)
+
+    def test_get_intent(self):
+        """Check that the registered adapt intent is triggered."""
+        self.setup_simple_adapt_intent()
+        # Check that the intent is returned
+        msg = Message('intent.service.adapt.get', data={'utterance': 'test'})
+        self.intent_service.handle_get_intent(msg)
+
+        reply = get_last_message(self.intent_service.bus)
+        self.assertEqual(reply.data['intent']['intent_type'],
+                         'skill:testIntent')
+
+    def test_get_intent_no_match(self):
+        """Check that if the intent doesn't match at all None is returned."""
+        self.setup_simple_adapt_intent()
+        # Check that no intent is matched
+        msg = Message('intent.service.intent.get', data={'utterance': 'five'})
+        self.intent_service.handle_get_intent(msg)
+        reply = get_last_message(self.intent_service.bus)
+        self.assertEqual(reply.data['intent'], None)
+
+    def test_get_intent_manifest(self):
+        """Check that if the intent doesn't match at all None is returned."""
+        self.setup_simple_adapt_intent()
+        # Check that no intent is matched
+        msg = Message('intent.service.intent.get', data={'utterance': 'five'})
+        self.intent_service.handle_get_intent(msg)
+        reply = get_last_message(self.intent_service.bus)
+        self.assertEqual(reply.data['intent'], None)
+
+    def test_get_adapt_intent_manifest(self):
+        """Make sure the manifest returns a list of Intent Parser objects."""
+        self.setup_simple_adapt_intent()
+        msg = Message('intent.service.adapt.manifest.get')
+        self.intent_service.handle_manifest(msg)
+        reply = get_last_message(self.intent_service.bus)
+        self.assertEqual(reply.data['intents'][0]['name'],
+                         'skill:testIntent')
+
+    def test_get_adapt_vocab_manifest(self):
+        self.setup_simple_adapt_intent()
+        msg = Message('intent.service.adapt.vocab.manifest.get')
+        self.intent_service.handle_vocab_manifest(msg)
+        reply = get_last_message(self.intent_service.bus)
+        value = reply.data['vocab'][0]['start']
+        keyword = reply.data['vocab'][0]['end']
+        self.assertEqual(keyword, 'testKeyword')
+        self.assertEqual(value, 'test')
+
+    def test_get_no_match_after_detach(self):
+        """Check that a removed intent doesn't match."""
+        self.setup_simple_adapt_intent()
+        # Check that no intent is matched
+        msg = Message('detach_intent',
+                      data={'intent_name': 'skill:testIntent'})
+        self.intent_service.handle_detach_intent(msg)
+        msg = Message('intent.service.adapt.get', data={'utterance': 'test'})
+        self.intent_service.handle_get_adapt(msg)
+        reply = get_last_message(self.intent_service.bus)
+        self.assertEqual(reply.data['intent'], None)
+
+    def test_get_no_match_after_detach_skill(self):
+        """Check that a removed skill's intent doesn't match."""
+        self.setup_simple_adapt_intent()
+        # Check that no intent is matched
+        msg = Message('detach_intent',
+                      data={'skill_id': 'skill'})
+        self.intent_service.handle_detach_skill(msg)
+        msg = Message('intent.service.adapt.get', data={'utterance': 'test'})
+        self.intent_service.handle_get_adapt(msg)
+        reply = get_last_message(self.intent_service.bus)
+        self.assertEqual(reply.data['intent'], None)
