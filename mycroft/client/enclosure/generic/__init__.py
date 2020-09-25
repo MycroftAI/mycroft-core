@@ -42,6 +42,8 @@ class EnclosureGeneric(Enclosure):
 
         # Notifications from mycroft-core
         self.bus.on('enclosure.notify.no_internet', self.on_no_internet)
+        # TODO: this requires the Enclosure to be up and running before the
+        # training is complete.
         self.bus.on('mycroft.skills.trained', self.is_device_ready)
 
         # initiates the web sockets on display manager
