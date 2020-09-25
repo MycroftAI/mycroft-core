@@ -57,9 +57,10 @@ Mycroft.Delegate {
             var rbutton = newObject.createObject(comp, {text: mData.value, "key": mData.name, "value": mData.value});
             rbutton.clicked.connect(selectSettingUpdated)
         }
-        if (mData.type == "label") {
-            var newObject = Qt.createComponent("settings_ui/settingLabelBox.qml")
-            var rbutton = newObject.createObject(comp, {text: mData.label});
+        if (mData.type == "number") {
+            var newObject = Qt.createComponent("settings_ui/settingNumberBox.qml")
+            var rbutton = newObject.createObject(comp, {text: mData.value, "key": mData.name, "value": mData.value});
+            rbutton.clicked.connect(selectSettingUpdated)
         }
     }
     
@@ -73,13 +74,11 @@ Mycroft.Delegate {
                 val_listing.push(mValues[i])
             }
         }
-        console.log(val_listing)
         return val_listing
     }
     
     onSkillsConfigChanged: {
         skillConfigView.update()
-        console.log(JSON.stringify(skillsConfig))
         if(skillsConfig !== null){
             skillConfigView.model = skillsConfig.sections
             skillSettingsView.skill_id = skillsConfig.skill_id
@@ -91,7 +90,6 @@ Mycroft.Delegate {
     Connections {
         target: Mycroft.MycroftController
         onIntentRecevied: {
-            console.log(type)
             if(type == "mycroft.skills.settings.changed"){
                 var skillevent = skill_id + ".settings.update"
                 triggerGuiEvent(skillevent, {})
@@ -130,7 +128,6 @@ Mycroft.Delegate {
         GridLayout {
             id: scvGrid
             width: parent.width
-            height: parent.height
             columns: scvGrid.width > 600 ? 2 : 1
             rowSpacing: Kirigami.Units.smallSpacing
             
@@ -139,9 +136,9 @@ Mycroft.Delegate {
                 clip: true
 
                 delegate: Control {
+                    id: delegateRoot
                     Layout.alignment: Qt.AlignTop
                     Layout.fillWidth: true
-                    Layout.fillHeight: true
                     
                     background: Rectangle {
                         color: "#1d1d1d"
@@ -150,17 +147,19 @@ Mycroft.Delegate {
                     
                     contentItem: Item {
                     implicitWidth: scvGrid.width > 600 ? scvGrid.width / 2 : scvGrid.width
-                    implicitHeight: delegateLayout.implicitHeight + Kirigami.Units.largeSpacing;
-            
+                    implicitHeight: delegateLayout.implicitHeight + Kirigami.Units.largeSpacing
+                    
                         ColumnLayout {
                             id: delegateLayout
-                            anchors.fill: parent
-                            anchors.margins: Kirigami.Units.largeSpacing
+                            anchors.left: parent.left
+                            anchors.right: parent.right
                             spacing: Kirigami.Units.largeSpacing
                             
                             Rectangle {
+                                id: skillNameBlock
                                 color: Kirigami.Theme.linkColor
                                 Layout.fillWidth: true
+                                Layout.margins: Kirigami.Units.largeSpacing
                                 Layout.preferredHeight: skillName.contentHeight + Kirigami.Units.smallSpacing
                                 radius: 3
                                 
@@ -175,36 +174,45 @@ Mycroft.Delegate {
                                     level: 2
                                 }
                             }
-                            
+                                                            
                             Repeater {
+                                id: gFields
                                 model: modelData.fields
-                                delegate: RowLayout {
-                                    spacing: Math.round(Kirigami.Units.gridUnit / 2)
-                                                                    
+                                                                
+                                delegate: GridLayout {
+                                    id: skillSettingType
+                                    Layout.fillWidth: true
+                                    Layout.margins: Kirigami.Units.largeSpacing
+                                    Layout.alignment: Qt.AlignLeft | Qt.AlignTop
+                                    columns: switch(modelData.type) {
+                                        case "text": return 1;
+                                        case "password" : return 1;
+                                        case "select" :
+                                            var opts_length = sanitize_values(modelData.options.split(";")).length;
+                                            return opts_length <= 3 ? 1 : parent.width / modelData.options.length
+                                        case "number" : return 1;
+                                        default: return 2;
+                                    }
+                                    
                                     Kirigami.Heading {
                                         id: skillSettingName
                                         Layout.alignment: Qt.AlignLeft
                                         elide: Text.ElideRight
-                                        text: modelData.name
+                                        text: modelData.label
+                                        Layout.fillWidth: true
+                                        wrapMode: Text.WordWrap;
                                         font.capitalization: Font.Capitalize
                                         textFormat: Text.AutoText
                                         level: 3
                                     }
+                                                                        
+                                    ButtonGroup {
+                                        id: settingGroup
+                                    }
                                     
-                                    GridLayout {
-                                        id: skillSettingType
-                                        Layout.preferredWidth: Kirigami.Units.gridUnit * 3
-                                        Layout.alignment: Qt.AlignRight
-                                        Layout.fillHeight: true
-                                        columns: 3
-                                                                            
-                                        ButtonGroup {
-                                            id: settingGroup
-                                        }
-                                        
-                                        Component.onCompleted: {
-                                            generate_settings_ui(modelData, skillSettingType)
-                                        }
+                                    Component.onCompleted: {
+                                        generate_settings_ui(modelData, skillSettingType)
+                                        skillConfigView.update()
                                     }
                                 }
                             }
@@ -214,7 +222,7 @@ Mycroft.Delegate {
             }
         }
     }
-
+    
     Kirigami.Separator {
         id: areaSep
         anchors.bottom: bottomArea.top

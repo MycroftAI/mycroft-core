@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 import json
+import yaml
 
 
 class SettingsGuiGenerator:
@@ -22,7 +23,7 @@ class SettingsGuiGenerator:
         """ Create a SettingList Object """
         self.settings_list = []
 
-    def populate(self, skill_id, settings_file, settings_dict):
+    def populate(self, skill_id, settings_file, settings_dict, file_type):
         """
         Populates settings list for current skill.
 
@@ -31,12 +32,22 @@ class SettingsGuiGenerator:
             settings_file: Settings meta file from skill folder.
             settings_dict: Dictionary of current settings.json file.
         """
-        with open(settings_file, 'r') as f:
-            settingsmeta_dict = json.load(f)
 
-            __skillMetaData = settingsmeta_dict.get('skillMetadata')
-            for section in __skillMetaData.get('sections'):
-                self.settings_list.append(section)
+        if file_type == "json":
+            with open(settings_file, 'r') as f:
+                settingsmeta_dict = json.load(f)
+
+                __skillMetaData = settingsmeta_dict.get('skillMetadata')
+                for section in __skillMetaData.get('sections'):
+                    self.settings_list.append(section)
+
+        if file_type == "yaml":
+            with open(settings_file, 'r') as f:
+                settingsmeta_dict = yaml.safe_load(f)
+
+                __skillMetaData = settingsmeta_dict.get('skillMetadata')
+                for section in __skillMetaData.get('sections'):
+                    self.settings_list.append(section)
 
         if settings_dict is not None:
             __updated_list = []

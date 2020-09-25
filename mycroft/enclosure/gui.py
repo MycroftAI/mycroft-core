@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 """ Interface for interacting with the Mycroft gui qml viewer. """
-from os.path import join
+from os.path import join, isfile
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
@@ -365,11 +365,22 @@ class SkillGUI:
         updated via Web interface.
         """
         skill_id = self.skill.skill_id
+
         settingmeta_path = join(self.skill.root_dir,
                                 "settingsmeta.json")
-        self.settings_gui_generator.populate(skill_id,
-                                             settingmeta_path,
-                                             self.skill.settings)
+        if isfile(settingmeta_path):
+            self.settings_gui_generator.populate(skill_id,
+                                                 settingmeta_path,
+                                                 self.skill.settings,
+                                                 "json")
+        else:
+            settingmeta_path = join(self.skill.root_dir,
+                                    "settingsmeta.yaml")
+            self.settings_gui_generator.populate(skill_id,
+                                                 settingmeta_path,
+                                                 self.skill.settings,
+                                                 "yaml")
+
         apply_handler = skill_id + ".settings.set"
         update_handler = skill_id + ".settings.update"
         remove_pagehandler = skill_id + ".settings.remove_page"
