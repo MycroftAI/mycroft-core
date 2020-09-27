@@ -316,8 +316,6 @@ class DeepSpeechServerSTT(STT):
 
     def execute(self, audio, language=None):
         language = language or self.lang
-        if not language.startswith("en"):
-            raise ValueError("Deepspeech is currently english only")
         response = post(self.config.get("uri"), data=audio.get_wav_data())
         return response.text
 
