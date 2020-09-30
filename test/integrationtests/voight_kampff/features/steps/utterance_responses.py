@@ -122,10 +122,10 @@ def _match_dialog_patterns(dialogs, sentence):
 def given_english(context):
     context.lang = 'en-us'
 
+
 @given('an italian speaking user')
 def given_italian(context):
     context.lang = 'it-it'
-
 
 
 @given('a {timeout} seconds timeout')
