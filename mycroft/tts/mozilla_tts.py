@@ -18,6 +18,7 @@ import requests
 
 from .tts import TTS, TTSValidator
 from .remote_tts import RemoteTTSException, RemoteTTSTimeoutException
+from mycroft.configuration import Configuration
 from mycroft.util.log import LOG
 from mycroft.tts import cache_handler
 from mycroft.util import get_cache_directory
@@ -36,8 +37,10 @@ import json
 
 class MozillaTTS(TTS):
     def __init__(self, lang="en-us", config=None):
-        config = config or Configuration.get().get("tts", {}).get("mozilla", {})
-        super(MozillaTTS, self).__init__(lang, config, MozillaTTSValidator(self))
+        if config is None:
+            config = Configuration.get().get("tts", {}).get("mozilla", {})
+        super(MozillaTTS, self).__init__(lang, config,
+            MozillaTTSValidator(self))
         self.url = config['url']
         self.type = 'wav'
 
