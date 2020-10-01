@@ -40,7 +40,7 @@ class MozillaTTS(TTS):
         if config is None:
             config = Configuration.get().get("tts", {}).get("mozilla", {})
         super(MozillaTTS, self).__init__(lang, config,
-            MozillaTTSValidator(self))
+                                         MozillaTTSValidator(self))
         self.url = config['url']
         self.type = 'wav'
 
