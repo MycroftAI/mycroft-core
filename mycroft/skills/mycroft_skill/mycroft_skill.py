@@ -21,7 +21,10 @@ import traceback
 from itertools import chain
 from os import walk
 from os.path import join, abspath, dirname, basename, exists
+from pathlib import Path
 from threading import Event, Timer
+
+from xdg import BaseDirectory
 
 from adapt.intent import Intent, IntentBuilder
 
@@ -123,16 +126,6 @@ class MycroftSkill:
         #: Member variable containing the absolute path of the skill's root
         #: directory. E.g. /opt/mycroft/skills/my-skill.me/
         self.root_dir = dirname(abspath(sys.modules[self.__module__].__file__))
-        if use_settings:
-            self.settings = get_local_settings(self.root_dir, self.name)
-            self._initial_settings = deepcopy(self.settings)
-        else:
-            self.settings = None
-
-        #: Set to register a callback method that will be called every time
-        #: the skills settings are updated. The referenced method should
-        #: include any logic needed to handle the updated settings.
-        self.settings_change_callback = None
 
         self.gui = SkillGUI(self)
 
@@ -141,6 +134,18 @@ class MycroftSkill:
         self.bind(bus)
         #: Mycroft global configuration. (dict)
         self.config_core = Configuration.get()
+
+        self.settings = None
+        self.settings_write_path = None
+
+        if use_settings:
+            self._init_settings()
+
+        #: Set to register a callback method that will be called every time
+        #: the skills settings are updated. The referenced method should
+        #: include any logic needed to handle the updated settings.
+        self.settings_change_callback = None
+
         self.dialog_renderer = None
 
         #: Filesystem access to skill specific folder.
@@ -156,6 +161,37 @@ class MycroftSkill:
         # Delegator classes
         self.event_scheduler = EventSchedulerInterface(self.name)
         self.intent_service = IntentServiceInterface()
+
+    def _init_settings(self):
+        """Setup skill settings."""
+
+        # To not break existing setups,
+        # save to skill directory if the file exists already
+        self.settings_write_path = Path(self.root_dir)
+
+        # Otherwise save to XDG_CONFIG_DIR
+        if not self.settings_write_path.joinpath('settings.json').exists():
+            self.settings_write_path = Path(BaseDirectory.save_config_path(
+                'mycroft', 'skills', basename(self.root_dir)))
+
+        # To not break existing setups,
+        # read from skill directory if the settings file exists there
+        settings_read_path = Path(self.root_dir)
+
+        # Then, check XDG_CONFIG_DIR
+        if not settings_read_path.joinpath('settings.json').exists():
+            for dir in BaseDirectory.load_config_paths('mycroft',
+                                                       'skills',
+                                                       basename(
+                                                           self.root_dir)):
+                path = Path(dir)
+                # If there is a settings file here, use it
+                if path.joinpath('settings.json').exists():
+                    settings_read_path = path
+                    break
+
+        self.settings = get_local_settings(settings_read_path, self.name)
+        self._initial_settings = deepcopy(self.settings)
 
     @property
     def enclosure(self):
@@ -271,7 +307,7 @@ class MycroftSkill:
             if remote_settings is not None:
                 LOG.info('Updating settings for skill ' + self.name)
                 self.settings.update(**remote_settings)
-                save_settings(self.root_dir, self.settings)
+                save_settings(self.settings_write_path, self.settings)
                 if self.settings_change_callback is not None:
                     self.settings_change_callback()
 
@@ -544,7 +580,7 @@ class MycroftSkill:
 
             if not voc or not exists(voc):
                 raise FileNotFoundError(
-                        'Could not find {}.voc file'.format(voc_filename))
+                    'Could not find {}.voc file'.format(voc_filename))
             # load vocab and flatten into a simple list
             vocab = read_vocab_file(voc)
             self.voc_match_cache[cache_key] = list(chain(*vocab))
@@ -811,8 +847,8 @@ class MycroftSkill:
             """Store settings and indicate that the skill handler has completed
             """
             if self.settings != self._initial_settings:
-                save_settings(self.root_dir, self.settings)
-                self._initial_settings = self.settings
+                save_settings(self.settings_write_path, self.settings)
+                self._initial_settings = deepcopy(self.settings)
             if handler_info:
                 msg_type = handler_info + '.complete'
                 self.bus.emit(message.forward(msg_type, skill_data))
@@ -1098,9 +1134,17 @@ class MycroftSkill:
             wait (bool):            set to True to block while the text
                                     is being spoken.
         """
-        data = data or {}
-        self.speak(self.dialog_renderer.render(key, data),
-                   expect_response, wait, meta={'dialog': key, 'data': data})
+        if self.dialog_renderer:
+            data = data or {}
+            self.speak(
+                self.dialog_renderer.render(key, data),
+                expect_response, wait, meta={'dialog': key, 'data': data}
+            )
+        else:
+            self.log.warning(
+                'dialog_render is None, does the locale/dialog folder exist?'
+            )
+            self.speak(key, expect_response, wait, {})
 
     def acknowledge(self):
         """Acknowledge a successful request.
@@ -1232,8 +1276,9 @@ class MycroftSkill:
         self.settings_change_callback = None
 
         # Store settings
-        if self.settings != self._initial_settings:
-            save_settings(self.root_dir, self.settings)
+        if self.settings != self._initial_settings and Path(
+                self.root_dir).exists():
+            save_settings(self.settings_write_path, self.settings)
 
         if self.settings_meta:
             self.settings_meta.stop()

@@ -24,13 +24,14 @@ from contextlib import suppress
 from glob import glob
 from os.path import dirname, exists, join, abspath, expanduser, isfile, isdir
 from shutil import rmtree
-from threading import Timer, Event, Thread
+from threading import Timer, Thread
 from urllib.error import HTTPError
 
 from petact import install_package
 
 from mycroft.configuration import Configuration, LocalConf, USER_CONFIG
 from mycroft.util.log import LOG
+from mycroft.util.monotonic_event import MonotonicEvent
 
 RECOGNIZER_DIR = join(abspath(dirname(__file__)), "recognizer")
 INIT_TIMEOUT = 10  # In seconds
@@ -44,15 +45,32 @@ class NoModelAvailable(Exception):
     pass
 
 
+def msec_to_sec(msecs):
+    """Convert milliseconds to seconds.
+
+    Arguments:
+        msecs: milliseconds
+
+    Returns:
+        input converted from milliseconds to seconds
+    """
+    return msecs / 1000
+
+
 class HotWordEngine:
     def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
         self.key_phrase = str(key_phrase).lower()
-        # rough estimate 1 phoneme per 2 chars
-        self.num_phonemes = len(key_phrase) / 2 + 1
+
         if config is None:
             config = Configuration.get().get("hot_words", {})
             config = config.get(self.key_phrase, {})
         self.config = config
+
+        # rough estimate 1 phoneme per 2 chars
+        self.num_phonemes = len(key_phrase) / 2 + 1
+        phoneme_duration = msec_to_sec(config.get('phoneme_duration', 120))
+        self.expected_duration = self.num_phonemes * phoneme_duration
+
         self.listener_config = Configuration.get().get("listener", {})
         self.lang = str(self.config.get("lang", lang)).lower()
 
@@ -100,9 +118,16 @@ class PocketsphinxHotWord(HotWordEngine):
         return file_name
 
     def create_config(self, dict_name, config):
+        """If language config doesn't exist then
+        we use default language (english) config as a fallback.
+        """
         model_file = join(RECOGNIZER_DIR, 'model', self.lang, 'hmm')
         if not exists(model_file):
-            LOG.error('PocketSphinx model not found at ' + str(model_file))
+            LOG.error(
+                'PocketSphinx model not found at "{}". '.format(model_file) +
+                'Falling back to en-us model'
+            )
+            model_file = join(RECOGNIZER_DIR, 'model', 'en-us', 'hmm')
         config.set_string('-hmm', model_file)
         config.set_string('-dict', dict_name)
         config.set_string('-keyphrase', self.key_phrase)
@@ -385,7 +410,7 @@ class HotWordFactory:
     def load_module(module, hotword, config, lang, loop):
         LOG.info('Loading "{}" wake word via {}'.format(hotword, module))
         instance = None
-        complete = Event()
+        complete = MonotonicEvent()
 
         def initialize():
             nonlocal instance, complete

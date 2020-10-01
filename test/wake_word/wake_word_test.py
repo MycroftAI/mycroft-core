@@ -100,7 +100,7 @@ class AudioTester:
 
     def test_audio(self, file_name):
         source = FileMockMicrophone(file_name)
-        ee = pyee.EventEmitter()
+        ee = pyee.BaseEventEmitter()
 
         class SharedData:
             times_found = 0

@@ -40,6 +40,9 @@ _TTS_ENV = deepcopy(os.environ)
 _TTS_ENV['PULSE_PROP'] = 'media.role=phone'
 
 
+EMPTY_PLAYBACK_QUEUE_TUPLE = (None, None, None, None, None)
+
+
 class PlaybackThread(Thread):
     """Thread class for playing back tts audio and sending
     viseme data to enclosure.
@@ -184,7 +187,7 @@ class TTS(metaclass=ABCMeta):
 
     def load_spellings(self):
         """Load phonetic spellings of words as dictionary"""
-        path = join('text', self.lang, 'phonetic_spellings.txt')
+        path = join('text', self.lang.lower(), 'phonetic_spellings.txt')
         spellings_file = resolve_resource_file(path)
         if not spellings_file:
             return {}
@@ -317,8 +320,10 @@ class TTS(metaclass=ABCMeta):
         try:
             self._execute(sentence, ident, listen)
         except Exception:
-            # If an error occurs end the audio sequence
-            self.queue.put((None, None, None, None, None))
+            # If an error occurs end the audio sequence through an empty entry
+            self.queue.put(EMPTY_PLAYBACK_QUEUE_TUPLE)
+            # Re-raise to allow the Exception to be handled externally as well.
+            raise
 
     def _execute(self, sentence, ident, listen):
         if self.phonetic_spelling:
@@ -460,6 +465,7 @@ class TTSValidator(metaclass=ABCMeta):
 
 
 class TTSFactory:
+    from mycroft.tts.festival_tts import Festival
     from mycroft.tts.espeak_tts import ESpeak
     from mycroft.tts.fa_tts import FATTS
     from mycroft.tts.google_tts import GoogleTTS
@@ -472,6 +478,7 @@ class TTSFactory:
     from mycroft.tts.mimic2_tts import Mimic2
     from mycroft.tts.yandex_tts import YandexTTS
     from mycroft.tts.dummy_tts import DummyTTS
+    from mycroft.tts.polly_tts import PollyTTS
 
     CLASSES = {
         "mimic": Mimic,
@@ -479,12 +486,14 @@ class TTSFactory:
         "google": GoogleTTS,
         "marytts": MaryTTS,
         "fatts": FATTS,
+        "festival": Festival,
         "espeak": ESpeak,
         "spdsay": SpdSay,
         "watson": WatsonTTS,
         "bing": BingTTS,
         "responsive_voice": ResponsiveVoice,
         "yandex": YandexTTS,
+        "polly": PollyTTS,
         "dummy": DummyTTS
     }
 

@@ -43,7 +43,6 @@ from mycroft.util.log import LOG
 from .core import FallbackSkill
 from .event_scheduler import EventScheduler
 from .intent_service import IntentService
-from .padatious_service import PadatiousService
 from .skill_manager import SkillManager
 
 RASPBERRY_PI_PLATFORMS = ('mycroft_mark_1', 'picroft', 'mycroft_mark_2pi')
@@ -173,7 +172,20 @@ class DevicePrimer(object):
             wait_while_speaking()
 
 
-def main():
+def on_ready():
+    LOG.info('Skill service is ready.')
+
+
+def on_error(e='Unknown'):
+    LOG.info('Skill service failed to launch ({})'.format(repr(e)))
+
+
+def on_stopping():
+    LOG.info('Skill service is shutting down...')
+
+
+def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
+         watchdog=None):
     reset_sigint_handler()
     # Create PID file, prevent multiple instances of this service
     mycroft.lock.Lock('skills')
@@ -185,18 +197,21 @@ def main():
     bus = _start_message_bus_client()
     _register_intent_services(bus)
     event_scheduler = EventScheduler(bus)
-    skill_manager = _initialize_skill_manager(bus)
+    skill_manager = _initialize_skill_manager(bus, watchdog)
 
     _wait_for_internet_connection()
 
     if skill_manager is None:
-        skill_manager = _initialize_skill_manager(bus)
+        skill_manager = _initialize_skill_manager(bus, watchdog)
 
     device_primer = DevicePrimer(bus, config)
     device_primer.prepare_device()
     skill_manager.start()
-
+    while not skill_manager.is_alive():
+        time.sleep(0.1)
+    ready_hook()  # Report ready status
     wait_for_exit_signal()
+    stopping_hook()  # Report shutdown started
     shutdown(skill_manager, event_scheduler)
 
 
@@ -224,24 +239,24 @@ def _register_intent_services(bus):
         bus: messagebus client to register the services on
     """
     service = IntentService(bus)
-    try:
-        PadatiousService(bus, service)
-    except Exception as e:
-        LOG.exception('Failed to create padatious handlers '
-                      '({})'.format(repr(e)))
-
     # Register handler to trigger fallback system
+    bus.on(
+        'mycroft.skills.fallback',
+        FallbackSkill.make_intent_failure_handler(bus)
+    )
+    # Backwards compatibility TODO: remove in 20.08
     bus.on('intent_failure', FallbackSkill.make_intent_failure_handler(bus))
+    return service
 
 
-def _initialize_skill_manager(bus):
+def _initialize_skill_manager(bus, watchdog):
     """Create a thread that monitors the loaded skills, looking for updates
 
     Returns:
         SkillManager instance or None if it couldn't be initialized
     """
     try:
-        skill_manager = SkillManager(bus)
+        skill_manager = SkillManager(bus, watchdog)
         skill_manager.load_priority()
     except MsmException:
         # skill manager couldn't be created, wait for network connection and

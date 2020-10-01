@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from unittest.mock import patch
+from unittest import TestCase
+from unittest.mock import patch, Mock
 
-from mycroft.messagebus.client import MessageBusClient
+from mycroft.messagebus.client import MessageBusClient, MessageWaiter
 
 WS_CONF = {
     'websocket': {
@@ -37,3 +38,22 @@ class TestMessageBusClient:
     def test_create_client(self, mock_conf):
         mc = MessageBusClient()
         assert mc.client.url == 'ws://testhost:1337/core'
+
+
+class TestMessageWaiter(TestCase):
+    def test_message_wait_success(self):
+        bus = Mock()
+        waiter = MessageWaiter(bus, 'delayed.message')
+        bus.once.assert_called_with('delayed.message', waiter._handler)
+
+        test_msg = Mock(name='test_msg')
+        waiter._handler(test_msg)  # Inject response
+
+        self.assertEqual(waiter.wait(), test_msg)
+
+    def test_message_wait_timeout(self):
+        bus = Mock()
+        waiter = MessageWaiter(bus, 'delayed.message')
+        bus.once.assert_called_with('delayed.message', waiter._handler)
+
+        self.assertEqual(waiter.wait(0.3), None)

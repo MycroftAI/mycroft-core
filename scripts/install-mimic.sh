@@ -18,7 +18,7 @@
 set -Ee
 
 MIMIC_DIR=mimic
-CORES=$1
+CORES=${1:-1}
 MIMIC_VERSION=1.2.0.2
 
 # for ubuntu precise in travis, that does not provide pkg-config:

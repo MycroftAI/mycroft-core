@@ -48,8 +48,8 @@ class UploadQueue:
 
     def start(self):
         """Start processing of the queue."""
-        self.send()
         self.started = True
+        self.send()
 
     def stop(self):
         """Stop the queue, and hinder any further transmissions."""
@@ -110,14 +110,17 @@ def _shutdown_skill(instance):
 class SkillManager(Thread):
     _msm = None
 
-    def __init__(self, bus):
+    def __init__(self, bus, watchdog=None):
         """Constructor
 
         Arguments:
             bus (event emitter): Mycroft messagebus connection
+            watchdog (callable): optional watchdog function
         """
         super(SkillManager, self).__init__()
         self.bus = bus
+        # Set watchdog to argument or function returning None
+        self._watchdog = watchdog or (lambda: None)
         self._stop_event = Event()
         self._connected_event = Event()
         self.config = Configuration.get()
@@ -128,13 +131,14 @@ class SkillManager(Thread):
         self.initial_load_complete = False
         self.num_install_retries = 0
         self.settings_downloader = SkillSettingsDownloader(self.bus)
-        self._define_message_bus_events()
-        self.skill_updater = SkillUpdater()
-        self.daemon = True
 
         # Statuses
         self._alive_status = False  # True after priority skills has loaded
         self._loaded_status = False  # True after all skills has loaded
+
+        self.skill_updater = SkillUpdater()
+        self._define_message_bus_events()
+        self.daemon = True
 
     def _define_message_bus_events(self):
         """Define message bus events with handlers defined in this class."""
@@ -223,6 +227,11 @@ class SkillManager(Thread):
         """Load skills and update periodically from disk and internet."""
         self._remove_git_locks()
         self._connected_event.wait()
+        if (not self.skill_updater.defaults_installed() and
+                self.skills_config["auto_update"]):
+            LOG.info('Not all default skills are installed, '
+                     'performing skill update...')
+            self.skill_updater.update_skills()
         self._load_on_startup()
 
         # Sync backend and skills.
@@ -243,6 +252,7 @@ class SkillManager(Thread):
                     self.skill_updater.post_manifest()
                     self.upload_queue.send()
 
+                self._watchdog()
                 sleep(2)  # Pause briefly before beginning next scan
             except Exception:
                 LOG.exception('Something really unexpected has occured '
@@ -450,11 +460,6 @@ class SkillManager(Thread):
     def _emit_converse_error(self, message, skill_id, error_msg):
         """Emit a message reporting the error back to the intent service."""
         reply = message.reply('skill.converse.response',
-                              data=dict(skill_id=skill_id, error=error_msg))
-        self.bus.emit(reply)
-        # Also emit the old error message to keep compatibility
-        # TODO Remove in 20.08
-        reply = message.reply('skill.converse.error',
                               data=dict(skill_id=skill_id, error=error_msg))
         self.bus.emit(reply)
 

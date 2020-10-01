@@ -48,6 +48,7 @@ class FallbackSkill(MycroftSkill):
     utterance will not be see by any other Fallback handlers.
     """
     fallback_handlers = {}
+    wrapper_map = []  # Map containing (handler, wrapper) tuples
 
     def __init__(self, name=None, bus=None, use_settings=True):
         super().__init__(name, bus, use_settings)
@@ -60,18 +61,25 @@ class FallbackSkill(MycroftSkill):
         """Goes through all fallback handlers until one returns True"""
 
         def handler(message):
+            start, stop = message.data.get('fallback_range', (0, 101))
             # indicate fallback handling start
+            LOG.debug('Checking fallbacks in range '
+                      '{} - {}'.format(start, stop))
             bus.emit(message.forward("mycroft.skill.handler.start",
                                      data={'handler': "fallback"}))
 
             stopwatch = Stopwatch()
             handler_name = None
             with stopwatch:
-                for _, handler in sorted(cls.fallback_handlers.items(),
-                                         key=operator.itemgetter(0)):
+                sorted_handlers = sorted(cls.fallback_handlers.items(),
+                                         key=operator.itemgetter(0))
+                handlers = [f[1] for f in sorted_handlers
+                            if start <= f[0] < stop]
+                for handler in handlers:
                     try:
                         if handler(message):
-                            #  indicate completion
+                            # indicate completion
+                            status = True
                             handler_name = get_handler_name(handler)
                             bus.emit(message.forward(
                                      'mycroft.skill.handler.complete',
@@ -80,14 +88,21 @@ class FallbackSkill(MycroftSkill):
                             break
                     except Exception:
                         LOG.exception('Exception in fallback.')
-                else:  # No fallback could handle the utterance
-                    bus.emit(message.forward('complete_intent_failure'))
-                    warning = "No fallback could handle intent."
-                    LOG.warning(warning)
+                else:
+                    status = False
                     #  indicate completion with exception
+                    warning = 'No fallback could handle intent.'
                     bus.emit(message.forward('mycroft.skill.handler.complete',
                                              data={'handler': "fallback",
                                                    'exception': warning}))
+                    if 'fallback_range' not in message.data:
+                        # Old system TODO: Remove in 20.08
+                        # No fallback could handle the utterance
+                        bus.emit(message.forward('complete_intent_failure'))
+                        LOG.warning(warning)
+
+            # return if the utterance was handled to the caller
+            bus.emit(message.response(data={'handled': status}))
 
             # Send timing metric
             if message.context.get('ident'):
@@ -98,18 +113,25 @@ class FallbackSkill(MycroftSkill):
         return handler
 
     @classmethod
-    def _register_fallback(cls, handler, priority):
+    def _register_fallback(cls, handler, wrapper, priority):
         """Register a function to be called as a general info fallback
         Fallback should receive message and return
         a boolean (True if succeeded or False if failed)
 
         Lower priority gets run first
         0 for high priority 100 for low priority
+
+        Arguments:
+            handler (callable): original handler, used as a reference when
+                                removing
+            wrapper (callable): wrapped version of handler
+            priority (int): fallback priority
         """
         while priority in cls.fallback_handlers:
             priority += 1
 
-        cls.fallback_handlers[priority] = handler
+        cls.fallback_handlers[priority] = wrapper
+        cls.wrapper_map.append((handler, wrapper))
 
     def register_fallback(self, handler, priority):
         """Register a fallback with the list of fallback handlers and with the
@@ -122,8 +144,28 @@ class FallbackSkill(MycroftSkill):
                 return True
             return False
 
-        self.instance_fallback_handlers.append(wrapper)
-        self._register_fallback(wrapper, priority)
+        self.instance_fallback_handlers.append(handler)
+        self._register_fallback(handler, wrapper, priority)
+
+    @classmethod
+    def _remove_registered_handler(cls, wrapper_to_del):
+        """Remove a registered wrapper.
+
+        Arguments:
+            wrapper_to_del (callable): wrapped handler to be removed
+
+        Returns:
+            (bool) True if one or more handlers were removed, otherwise False.
+        """
+        found_handler = False
+        for priority, handler in list(cls.fallback_handlers.items()):
+            if handler == wrapper_to_del:
+                found_handler = True
+                del cls.fallback_handlers[priority]
+
+        if not found_handler:
+            LOG.warning('No fallback matching {}'.format(wrapper_to_del))
+        return found_handler
 
     @classmethod
     def remove_fallback(cls, handler_to_del):
@@ -131,15 +173,27 @@ class FallbackSkill(MycroftSkill):
 
         Arguments:
             handler_to_del: reference to handler
+        Returns:
+            (bool) True if at least one handler was removed, otherwise False
         """
-        for priority, handler in cls.fallback_handlers.items():
-            if handler == handler_to_del:
-                del cls.fallback_handlers[priority]
-                return
-        LOG.warning('Could not remove fallback!')
+        # Find wrapper from handler or wrapper
+        wrapper_to_del = None
+        for h, w in cls.wrapper_map:
+            if handler_to_del in (h, w):
+                wrapper_to_del = w
+                break
+
+        if wrapper_to_del:
+            cls.wrapper_map.remove((h, w))
+            remove_ok = cls._remove_registered_handler(wrapper_to_del)
+        else:
+            LOG.warning('Could not find matching fallback handler')
+            remove_ok = False
+        return remove_ok
 
     def remove_instance_handlers(self):
         """Remove all fallback handlers registered by the fallback skill."""
+        self.log.info('Removing all handlers...')
         while len(self.instance_fallback_handlers):
             handler = self.instance_fallback_handlers.pop()
             self.remove_fallback(handler)

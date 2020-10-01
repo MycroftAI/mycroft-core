@@ -27,14 +27,61 @@ from mycroft.messagebus.load_config import load_message_bus_config
 from mycroft.messagebus.message import Message
 from mycroft.util import create_echo_function
 from mycroft.util.log import LOG
-from .threaded_event_emitter import ThreadedEventEmitter
+from pyee import ExecutorEventEmitter
+
+
+class MessageWaiter:
+    """Wait for a single message.
+
+    Encapsulate the wait for a message logic separating the setup from
+    the actual waiting act so the waiting can be setuo, actions can be
+    performed and _then_ the message can be waited for.
+
+    Argunments:
+        bus: Bus to check for messages on
+        message_type: message type to wait for
+    """
+    def __init__(self, bus, message_type):
+        self.bus = bus
+        self.msg_type = message_type
+        self.received_msg = None
+        # Setup response handler
+        self.bus.once(message_type, self._handler)
+
+    def _handler(self, message):
+        """Receive response data."""
+        self.received_msg = message
+
+    def wait(self, timeout=3.0):
+        """Wait for message.
+
+        Arguments:
+            timeout (int or float): seconds to wait for message
+
+        Returns:
+            Message or None
+        """
+        start_time = time.monotonic()
+        while self.received_msg is None:
+            time.sleep(0.2)
+            if time.monotonic() - start_time > timeout:
+                try:
+                    self.bus.remove(self.msg_type, self._handler)
+                except (ValueError, KeyError):
+                    # ValueError occurs on pyee 5.0.1 removing handlers
+                    # registered with once.
+                    # KeyError may theoretically occur if the event occurs as
+                    # the handler is removed
+                    pass
+                break
+        return self.received_msg
 
 
 class MessageBusClient:
     def __init__(self, host=None, port=None, route=None, ssl=None):
         config_overrides = dict(host=host, port=port, route=route, ssl=ssl)
         self.config = load_message_bus_config(**config_overrides)
-        self.emitter = ThreadedEventEmitter()
+        self.emitter = ExecutorEventEmitter()
         self.client = self.create_client()
         self.retry = 5
         self.connected_event = Event()
@@ -120,42 +167,36 @@ class MessageBusClient:
             LOG.warning('Could not send {} message because connection '
                         'has been closed'.format(message.msg_type))
 
-    def wait_for_response(self, message, reply_type=None, timeout=None):
+    def wait_for_message(self, message_type, timeout=3.0):
+        """Wait for a message of a specific type.
+
+        Arguments:
+            message_type (str): the message type of the expected message
+            timeout: seconds to wait before timeout, defaults to 3
+
+        Returns:
+            The received message or None if the response timed out
+        """
+
+        return MessageWaiter(self, message_type).wait(timeout)
+
+    def wait_for_response(self, message, reply_type=None, timeout=3.0):
         """Send a message and wait for a response.
 
-        Args:
+        Arguments:
             message (Message): message to send
             reply_type (str): the message type of the expected reply.
                               Defaults to "<message.msg_type>.response".
             timeout: seconds to wait before timeout, defaults to 3
+
         Returns:
             The received message or None if the response timed out
         """
-        response = []
-
-        def handler(message):
-            """Receive response data."""
-            response.append(message)
-
-        # Setup response handler
-        self.once(reply_type or message.msg_type + '.response', handler)
-        # Send request
+        message_type = reply_type or message.msg_type + '.response'
+        waiter = MessageWaiter(self, message_type)  # Setup response handler
+        # Send message and wait for it's response
         self.emit(message)
-        # Wait for response
-        start_time = time.monotonic()
-        while len(response) == 0:
-            time.sleep(0.2)
-            if time.monotonic() - start_time > (timeout or 3.0):
-                try:
-                    self.remove(reply_type, handler)
-                except (ValueError, KeyError):
-                    # ValueError occurs on pyee 1.0.1 removing handlers
-                    # registered with once.
-                    # KeyError may theoretically occur if the event occurs as
-                    # the handler is removed
-                    pass
-                return None
-        return response[0]
+        return waiter.wait(timeout)
 
     def on(self, event_name, func):
         self.emitter.on(event_name, func)

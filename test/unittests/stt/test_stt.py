@@ -35,13 +35,18 @@ class TestSTT(unittest.TestCase):
                     'google': {'credential': {'token': 'FOOBAR'}},
                     'bing': {'credential': {'token': 'FOOBAR'}},
                     'houndify': {'credential': {'client_id': 'FOO',
-                                                "client_key": "BAR"}},
+                                                "client_key": 'BAR'}},
                     'google_cloud': {
                         'credential': {
                             'json': {}
                         }
                     },
-                    'ibm': {'credential': {'token': 'FOOBAR'}},
+                    'ibm': {
+                        'credential': {
+                            'token': 'FOOBAR'
+                        },
+                        'url': 'https://test.com/'
+                    },
                     'kaldi': {'uri': 'https://test.com'},
                     'mycroft': {'uri': 'https://test.com'}
                 },
@@ -164,26 +169,64 @@ class TestSTT(unittest.TestCase):
         stt.execute(audio)
         self.assertTrue(stt.recognizer.recognize_google_cloud.called)
 
+    @patch('mycroft.stt.post')
     @patch.object(Configuration, 'get')
-    def test_ibm_stt(self, mock_get):
-        mycroft.stt.Recognizer = MagicMock
+    def test_ibm_stt(self, mock_get, mock_post):
+        import json
+
         config = base_config()
         config.merge(
             {
                 'stt': {
                     'module': 'ibm',
                     'ibm': {
-                        'credential': {'username': 'FOO', 'password': 'BAR'}
+                        'credential': {
+                            'token': 'FOOBAR'
+                        },
+                        'url': 'https://test.com'
                     },
                 },
                 'lang': 'en-US'
-            })
+            }
+        )
         mock_get.return_value = config
 
+        requests_object = MagicMock()
+        requests_object.status_code = 200
+        requests_object.text = json.dumps({
+            'results': [
+                {
+                    'alternatives': [
+                        {
+                            'confidence': 0.96,
+                            'transcript': 'sample response'
+                        }
+                    ],
+                    'final': True
+                }
+            ],
+            'result_index': 0
+        })
+        mock_post.return_value = requests_object
+
         audio = MagicMock()
+        audio.sample_rate = 16000
+
         stt = mycroft.stt.IBMSTT()
         stt.execute(audio)
-        self.assertTrue(stt.recognizer.recognize_ibm.called)
+
+        test_url_base = 'https://test.com/v1/recognize'
+        mock_post.assert_called_with(test_url_base,
+                                     auth=('apikey', 'FOOBAR'),
+                                     headers={
+                                         'Content-Type': 'audio/x-flac',
+                                         'X-Watson-Learning-Opt-Out': 'true'
+                                     },
+                                     data=audio.get_flac_data(),
+                                     params={
+                                         'model': 'en-US_BroadbandModel',
+                                         'profanity_filter': 'false'
+                                     })
 
     @patch.object(Configuration, 'get')
     def test_wit_stt(self, mock_get):

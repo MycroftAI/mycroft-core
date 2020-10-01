@@ -1,4 +1,4 @@
-# Copyright 2017 Mycroft AI Inc.
+# Copyright 2020 Mycroft AI Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,7 +26,8 @@ from behave import given, when, then
 from mycroft.messagebus import Message
 from mycroft.audio import wait_while_speaking
 
-from test.integrationtests.voight_kampff import mycroft_responses, then_wait
+from test.integrationtests.voight_kampff import (mycroft_responses, then_wait,
+                                                 then_wait_fail)
 
 
 TIMEOUT = 10
@@ -122,6 +123,20 @@ def given_english(context):
     context.lang = 'en-us'
 
 
+@given('a {timeout} seconds timeout')
+@given('a {timeout} second timeout')
+def given_timeout(context, timeout):
+    """Set the timeout for the steps in this scenario."""
+    context.step_timeout = float(timeout)
+
+
+@given('a {timeout} minutes timeout')
+@given('a {timeout} minute timeout')
+def given_timeout(context, timeout):
+    """Set the timeout for the steps in this scenario."""
+    context.step_timeout = float(timeout) * 60
+
+
 @when('the user says "{text}"')
 def when_user_says(context, text):
     context.bus.emit(Message('recognizer_loop:utterance',
@@ -144,6 +159,24 @@ def then_dialog(context, skill, dialog):
         assert_msg += mycroft_responses(context)
 
     assert passed, assert_msg or 'Mycroft didn\'t respond'
+
+
+@then('"{skill}" should not reply')
+def then_do_not_reply(context, skill):
+
+    def check_all_dialog(message):
+        msg_skill = message.data.get('meta').get('skill')
+        utt = message.data['utterance'].lower()
+        skill_responded = skill == msg_skill
+        debug_msg = ("{} responded with '{}'. \n".format(skill, utt)
+                     if skill_responded else '')
+        return (skill_responded, debug_msg)
+
+    passed, debug = then_wait_fail('speak', check_all_dialog, context)
+    if not passed:
+        assert_msg = debug
+        assert_msg += mycroft_responses(context)
+    assert passed, assert_msg or '{} responded'.format(skill)
 
 
 @then('"{skill}" should reply with "{example}"')
@@ -214,6 +247,7 @@ def then_user_follow_up(context, text):
 
 @then('mycroft should send the message "{message_type}"')
 def then_messagebus_message(context, message_type):
+    """Set a timeout for the current Scenario."""
     cnt = 0
     while context.bus.get_messages(message_type) == []:
         if cnt > int(TIMEOUT * (1.0 / SLEEP_LENGTH)):
