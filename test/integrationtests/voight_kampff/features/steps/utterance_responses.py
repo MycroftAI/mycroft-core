@@ -215,7 +215,7 @@ def then_exactly(context, skill, text):
 
 
 @then('"{skill}" reply should contain "{text}"')
-@then('mycroft reply should contain "{text}"'
+@then('mycroft reply should contain "{text}"') 
 def then_contains(context, text):
     def check_contains(message):
         utt = message.data['utterance'].lower()
