@@ -18,23 +18,26 @@ import os
 import requests
 
 from .tts import TTS, TTSValidator
-# from .remote_tts import RemoteTTSException, RemoteTTSTimeoutException
 from mycroft.configuration import Configuration
+from mycroft.util import get_cache_directory
 from mycroft.util.log import LOG
 
 
 class MozillaTTS(TTS):
     def __init__(self, lang="en-us", config=None):
         if config is None:
-            config = Configuration.get().get("tts", {}).get("mozilla", {})
-        super(MozillaTTS, self).__init__(lang, config,
+            self.config = Configuration.get().get("tts", {}).get("mozilla", {})
+        else:
+            self.config = config
+        super(MozillaTTS, self).__init__(lang, self.config,
                                          MozillaTTSValidator(self))
-        self.url = config['url']
+        self.url = self.config['url']
         self.type = 'wav'
+        self.cache_dir = get_cache_directory('MozillaTTS')
 
     def get_tts(self, sentence, wav_file):
         wav_name = hashlib.sha1(sentence.encode('utf-8')).hexdigest() + ".wav"
-        wav_file = "/tmp/mycroft/" + wav_name
+        wav_file = self.cache_dir + os.sep + wav_name
         if os.path.exists(wav_file) and os.path.getsize(wav_file) > 0:
             LOG.info('local response wav found.')
         else:
