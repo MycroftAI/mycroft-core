@@ -323,8 +323,11 @@ class SkillSettingsDownloader:
             self.download_timer.cancel()
 
     # TODO: implement as websocket
-    def download(self):
-        """Download the settings stored on the backend and check for changes"""
+    def download(self, message=None):
+        """Download the settings stored on the backend and check for changes
+
+        When used as a messagebus handler a message is passed but not used.
+        """
         if is_paired():
             remote_settings = self._get_remote_settings()
             if remote_settings:
