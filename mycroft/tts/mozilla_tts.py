@@ -14,25 +14,13 @@
 #
 
 import hashlib
+import os
 import requests
 
 from .tts import TTS, TTSValidator
-from .remote_tts import RemoteTTSException, RemoteTTSTimeoutException
+# from .remote_tts import RemoteTTSException, RemoteTTSTimeoutException
 from mycroft.configuration import Configuration
 from mycroft.util.log import LOG
-from mycroft.tts import cache_handler
-from mycroft.util import get_cache_directory
-from requests_futures.sessions import FuturesSession
-from requests.exceptions import (
-    ReadTimeout, ConnectionError, ConnectTimeout, HTTPError
-)
-from urllib import parse
-from .mimic_tts import VISIMES
-import math
-import base64
-import os
-import re
-import json
 
 
 class MozillaTTS(TTS):
@@ -46,7 +34,7 @@ class MozillaTTS(TTS):
 
     def get_tts(self, sentence, wav_file):
         wav_name = hashlib.sha1(sentence.encode('utf-8')).hexdigest() + ".wav"
-        wav_file = "/tmp/" + wav_name
+        wav_file = "/tmp/mycroft/" + wav_name
         if os.path.exists(wav_file) and os.path.getsize(wav_file) > 0:
             LOG.info('local response wav found.')
         else:
