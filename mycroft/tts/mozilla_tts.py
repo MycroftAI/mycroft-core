@@ -19,7 +19,6 @@ import requests
 
 from .tts import TTS, TTSValidator
 from mycroft.configuration import Configuration
-from mycroft.util import get_cache_directory
 from mycroft.util.log import LOG
 
 
@@ -33,18 +32,11 @@ class MozillaTTS(TTS):
                                          MozillaTTSValidator(self))
         self.url = self.config['url']
         self.type = 'wav'
-        self.cache_dir = get_cache_directory('MozillaTTS')
 
     def get_tts(self, sentence, wav_file):
-        wav_name = hashlib.sha1(sentence.encode('utf-8')).hexdigest() + ".wav"
-        wav_file = self.cache_dir + os.sep + wav_name
-        if os.path.exists(wav_file) and os.path.getsize(wav_file) > 0:
-            LOG.info('local response wav found.')
-        else:
-            req_route = self.url + sentence
-            response = requests.get(req_route)
-            with open(wav_file, 'wb') as f:
-                f.write(response.content)
+        response = requests.get(self.url, params={'text': sentence})
+        with open(wav_file, 'wb') as f:
+            f.write(response.content)
         return (wav_file, None)  # No phonemes
 
 
