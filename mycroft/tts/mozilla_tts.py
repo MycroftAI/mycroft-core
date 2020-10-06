@@ -13,13 +13,10 @@
 # limitations under the License.
 #
 
-import hashlib
-import os
 import requests
 
 from .tts import TTS, TTSValidator
 from mycroft.configuration import Configuration
-from mycroft.util.log import LOG
 
 
 class MozillaTTS(TTS):
