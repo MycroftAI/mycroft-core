@@ -190,7 +190,7 @@ if [[ "${1}" == "restart" ]] || [[ "${_opt}" == "restart" ]] ; then
 fi
 _params=$@
 
-if ! grep -i cli <<< ${_params} ; then 
+if ! grep -i cli <<< "${_params}" ; then 
     check-dependencies
 fi
 
