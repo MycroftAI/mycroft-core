@@ -536,7 +536,7 @@ if ! pip install -r requirements/tests.txt ; then
 fi
 
 SYSMEM=$(free | awk '/^Mem:/ { print $2 }')
-MAXCORES=$(($SYSMEM / 512000))
+MAXCORES=$(($SYSMEM / 2202010))
 MINCORES=1
 CORES=$(nproc)
 
@@ -545,7 +545,7 @@ if [[ $MAXCORES -lt 1 ]] ; then
     MAXCORES=${MINCORES}
 fi
 
-# look for positive integer
+# Be positive!
 if ! [[ $CORES =~ ^[0-9]+$ ]] ; then
     CORES=$MINCORES
 elif [[ $MAXCORES -lt $CORES ]] ; then
@@ -555,9 +555,8 @@ fi
 echo "Building with $CORES cores."
 
 #build and install pocketsphinx
-#cd $TOP
-#${TOP}/scripts/install-pocketsphinx.sh -q
 #build and install mimic
+
 cd "$TOP"
 
 if [[ $build_mimic == 'y' || $build_mimic == 'Y' ]] ; then
