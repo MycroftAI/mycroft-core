@@ -71,18 +71,21 @@ class EnclosureMark2(Enclosure):
         self.internet.check_connection()
 
     def _connect_to_display_bus(self, websocket_config):
-        """Connect to the display bus to send messages."""
-        websocket_url = 'ws://{host}:{port}/display'.format(
-            host=websocket_config['host'],
-            port=8282
-        )
-        LOG.info('Connecting to display websocket on ' + websocket_url)
-        self.display_bus_client = WebSocketApp(
-            url=websocket_url,
-            on_open=self.on_display_bus_open,
-        )
-        create_daemon(self.display_bus_client.run_forever)
-        LOG.info('Display websocket client started successfully')
+        try:
+            """Connect to the display bus to send messages."""
+            websocket_url = 'ws://{host}:{port}/display'.format(
+                host=websocket_config['host'],
+                port=8282
+            )
+            LOG.info('Connecting to display websocket on ' + websocket_url)
+            self.display_bus_client = WebSocketApp(
+                url=websocket_url,
+                on_open=self.on_display_bus_open,
+            )
+            create_daemon(self.display_bus_client.run_forever)
+            LOG.info('Display websocket client started successfully')
+        except:
+            LOG.error("interface.py:_connect_to_display_bus() - Can't Connect to display bus!")
 
     def on_display_bus_open(self):
         """Let the display know that the display bus is ready."""
@@ -181,6 +184,11 @@ class EnclosureMark2(Enclosure):
         """Helper method for sending messages to the display bus."""
         msg = dict(type=message_type, data=message_data)
         msg = json.dumps(msg)
+        if self.display_bus_client is None:
+            websocket_config = self.global_config.get("gui_websocket")
+            start_display_message_bus(websocket_config)
+            self._connect_to_display_bus(websocket_config)
+
         self.display_bus_client.send(msg)
 
     def on_display_screen_stop(self, message):
