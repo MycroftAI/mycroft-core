@@ -38,7 +38,7 @@ from mycroft.util import (
     reset_sigint_handler,
     wait_for_exit_signal
 )
-from mycroft.util.lang import set_active_lang
+from mycroft.util.lang import set_default_lang
 from mycroft.util.log import LOG
 from .core import FallbackSkill
 from .event_scheduler import EventScheduler
@@ -191,7 +191,7 @@ def main(ready_hook=on_ready, error_hook=on_error, stopping_hook=on_stopping,
     mycroft.lock.Lock('skills')
     config = Configuration.get()
     # Set the active lang to match the configured one
-    set_active_lang(config.get('lang', 'en-us'))
+    set_default_lang(config.get('lang', 'en-us'))
 
     # Connect this process to the Mycroft message bus
     bus = _start_message_bus_client()

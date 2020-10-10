@@ -33,6 +33,11 @@ from mycroft.util.format import pronounce_number
 from mycroft.util.format import date_time_format
 from mycroft.util.format import join_list
 
+from lingua_franca import load_language, unload_language, set_default_lang
+from lingua_franca.internal import UnsupportedLanguageError
+
+DEFAULT_LANG = 'en-us'
+
 NUMBERS_FIXTURE_EN = {
     1.435634: '1.436',
     2: '2',
@@ -95,8 +100,9 @@ class TestNiceNumberFormat(unittest.TestCase):
         """ An unknown / unhandled language should return the string
             representation of the input number.
         """
-        self.assertEqual(nice_number(5.5, lang='as-fd'), '5.5',
-                         'should format 5.5 as 5.5 not {}'.format(
+        with self.assertWarns(Warning):
+            self.assertEqual(nice_number(5.5, lang='as-fd'), '5.5',
+                             'should format 5.5 as 5.5 not {}'.format(
                              nice_number(5.5, lang='as-df')))
 
 
@@ -364,6 +370,7 @@ class TestNiceDateFormat(unittest.TestCase):
 
     def test_nice_date(self):
         for lang in self.test_config:
+            set_default_lang(lang)
             i = 1
             while (self.test_config[lang].get('test_nice_date') and
                    self.test_config[lang]['test_nice_date'].get(str(i))):
@@ -380,21 +387,18 @@ class TestNiceDateFormat(unittest.TestCase):
                                  nice_date(dt, lang=lang, now=now))
                 i = i + 1
 
-        # test fall back to english
-        dt = datetime.datetime(2018, 2, 4, 0, 2, 3)
-        self.assertEqual(nice_date(
-            dt, lang='invalid', now=datetime.datetime(2018, 2, 4, 0, 2, 3)),
-            'today')
-
         # test all days in a year for all languages,
         # that some output is produced
         for lang in self.test_config:
+            set_default_lang(lang)
             for dt in (datetime.datetime(2017, 12, 30, 0, 2, 3) +
                        datetime.timedelta(n) for n in range(368)):
                 self.assertTrue(len(nice_date(dt, lang=lang)) > 0)
+        set_default_lang(DEFAULT_LANG)
 
     def test_nice_date_time(self):
         for lang in self.test_config:
+            set_default_lang(lang)
             i = 1
             while (self.test_config[lang].get('test_nice_date_time') and
                    self.test_config[lang]['test_nice_date_time'].get(str(i))):
@@ -414,9 +418,11 @@ class TestNiceDateFormat(unittest.TestCase):
                         use_24hour=ast.literal_eval(p['use_24hour']),
                         use_ampm=ast.literal_eval(p['use_ampm'])))
                 i = i + 1
+        set_default_lang(DEFAULT_LANG)
 
     def test_nice_year(self):
         for lang in self.test_config:
+            set_default_lang(lang)
             i = 1
             while (self.test_config[lang].get('test_nice_year') and
                    self.test_config[lang]['test_nice_year'].get(str(i))):
@@ -433,13 +439,14 @@ class TestNiceDateFormat(unittest.TestCase):
         # Test all years from 0 to 9999 for all languages,
         # that some output is produced
         for lang in self.test_config:
+            set_default_lang(lang)
             print("Test all years in " + lang)
             for i in range(1, 9999):
                 dt = datetime.datetime(i, 1, 31, 13, 2, 3)
                 self.assertTrue(len(nice_year(dt, lang=lang)) > 0)
                 # Looking through the date sequence can be helpful
-
-#                print(nice_year(dt, lang=lang))
+                # print(nice_year(dt, lang=lang))
+        set_default_lang(DEFAULT_LANG)
 
     def test_join(self):
         self.assertEqual(join_list(None, "and"), "")
@@ -607,6 +614,13 @@ class TestNiceDurationFuncs(unittest.TestCase):
                                           datetime.datetime(1, 1, 1),
                                           resolution=TimeResolution.YEARS,
                                           speech=False), "0y")
+
+
+class TestErrorHandling(unittest.TestCase):
+    def test_invalid_lang_code(self):
+        dt = datetime.datetime(2018, 2, 4, 0, 2, 3)
+        with self.assertRaises(UnsupportedLanguageError):
+            nice_date(dt, lang='invalid', now=dt)
 
 
 if __name__ == "__main__":

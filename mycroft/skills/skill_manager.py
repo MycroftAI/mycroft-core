@@ -28,6 +28,8 @@ from .settings import SkillSettingsDownloader
 from .skill_loader import SkillLoader
 from .skill_updater import SkillUpdater
 
+from lingua_franca import load_languages, set_default_lang
+
 SKILL_MAIN_MODULE = '__init__.py'
 
 
@@ -41,6 +43,7 @@ class UploadQueue:
     After all queued settingsmeta has been processed and the queue is empty
     the queue will set the self.started flag.
     """
+
     def __init__(self):
         self._queue = []
         self.started = False
@@ -139,6 +142,9 @@ class SkillManager(Thread):
         self.skill_updater = SkillUpdater()
         self._define_message_bus_events()
         self.daemon = True
+
+        self.lang_code = self.config.get("lang", 'en-us')
+        load_languages([self.lang_code, 'en-us'])
 
     def _define_message_bus_events(self):
         """Define message bus events with handlers defined in this class."""

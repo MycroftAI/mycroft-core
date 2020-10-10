@@ -19,4 +19,4 @@ The mycroft.util.lang module provides the main interface for setting up the
 lingua-franca (https://github.com/mycroftai/lingua-franca) selected language
 """
 
-from lingua_franca.lang import set_active_lang, get_active_lang
+from lingua_franca import set_default_lang, get_default_lang

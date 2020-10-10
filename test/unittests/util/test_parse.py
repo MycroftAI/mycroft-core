@@ -25,6 +25,9 @@ from mycroft.util.parse import match_one
 from mycroft.util.parse import normalize
 from mycroft.util.time import default_timezone
 
+from lingua_franca import load_language
+from lingua_franca.internal import FunctionNotLocalizedError
+
 
 class TestFuzzyMatch(unittest.TestCase):
     def test_matches(self):
@@ -142,11 +145,13 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(extract_number("a couple thousand beers"), 2000)
         self.assertEqual(extract_number("100%"), 100)
 
-    def test_extract_datetime(self):
+    def test_extract_timezone(self):
         """Check that extract_datetime returns the expected timezone."""
-        tz = default_timezone()
+        default_tz = default_timezone()
         dt, _ = extract_datetime("today")
-        self.assertEqual(tz, dt.tzinfo)
+        # As default_timezone() returns tzlocal() and extract_datetime() may
+        # return a tzfile we cannot directly compare dt.tzinfo to default_tz.
+        self.assertEqual(dt, dt.astimezone(default_tz))
 
     def test_extract_duration_en(self):
         self.assertEqual(extract_duration("10 seconds"),
@@ -826,8 +831,12 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(normalize("whats 8 + 4"), "what is 8 + 4")
 
     def test_gender(self):
-        self.assertEqual(get_gender("person"),
-                         None)
+        with self.assertRaises(FunctionNotLocalizedError):
+            get_gender("person")
+        load_language('pt')
+        self.assertEqual(get_gender("person", lang="pt"), None)
+        self.assertEqual(get_gender("vaca", lang="pt"), "f")
+        self.assertEqual(get_gender('cavallo', lang='it'), 'm')
 
 
 if __name__ == "__main__":

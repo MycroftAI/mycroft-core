@@ -15,8 +15,7 @@ pillow==7.1.2
 python-dateutil==2.6.0
 fasteners==0.14.1
 PyYAML==5.1.2
-
-lingua-franca==0.2.2
+lingua_franca==0.3.1
 msm==0.8.8
 msk==0.3.16
 adapt-parser==0.3.6
