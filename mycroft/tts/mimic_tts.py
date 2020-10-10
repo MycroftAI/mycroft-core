@@ -185,10 +185,14 @@ class MimicValidator(TTSValidator):
     def validate_connection(self):
         try:
             subprocess.call([BIN, '--version'])
-        except Exception:
-            LOG.info("Failed to find mimic at: " + BIN)
+        except Exception as err:
+            if BIN:
+                LOG.error('Failed to find mimic at: {}'.format(BIN))
+            else:
+                LOG.error('Mimic executable not found')
             raise Exception(
-                'Mimic was not found. Run install-mimic.sh to install it.')
+                'Mimic was not found. Run install-mimic.sh to install it.') \
+                from err
 
     def get_tts_class(self):
         return Mimic
