@@ -49,8 +49,10 @@ class MozillaTTSValidator(TTSValidator):
         pass
 
     def validate_connection(self):
-        # TODO
-        pass
+        url = self.tts.config['url']
+        response = requests.get(url)
+        if not response.status_code == 200:
+            raise ConnectionRefusedError
 
     def get_tts_class(self):
         return MozillaTTS
