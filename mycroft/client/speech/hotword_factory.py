@@ -359,26 +359,21 @@ class SnowboyHotWord(HotWordEngine):
 class PorcupineHotWord(HotWordEngine):
     def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
         super(PorcupineHotWord, self).__init__(key_phrase, config, lang)
-        porcupine_path = expanduser(self.config.get(
-            "porcupine_path", join('~', '.mycroft', 'Porcupine')))
         keyword_file_paths = [expanduser(x.strip()) for x in self.config.get(
             "keyword_file_path", "hey_mycroft.ppn").split(',')]
         sensitivities = self.config.get("sensitivities", 0.5)
-        bindings_path = join(porcupine_path, 'binding/python')
-        LOG.info('Adding %s to Python path' % bindings_path)
-        sys.path.append(bindings_path)
+
         try:
-            from porcupine import Porcupine
+            from pvporcupine.porcupine import Porcupine
+            from pvporcupine.util import (pv_library_path,
+                                          pv_model_path)
         except ImportError:
             raise Exception(
                 "Python bindings for Porcupine not found. "
-                "Please use --porcupine-path to set Porcupine base path")
+                "Please run \"mycroft-pip install pvporcupine\"")
 
-        machine = platform.machine()
-        library_path = join(
-            porcupine_path, 'lib/linux/%s/libpv_porcupine.so' % machine)
-        model_file_path = join(
-            porcupine_path, 'lib/common/porcupine_params.pv')
+        library_path = pv_library_path('')
+        model_file_path = pv_model_path('')
         if isinstance(sensitivities, float):
             sensitivities = [sensitivities] * len(keyword_file_paths)
         else:
@@ -387,6 +382,7 @@ class PorcupineHotWord(HotWordEngine):
         self.audio_buffer = []
         self.has_found = False
         self.num_keywords = len(keyword_file_paths)
+
         LOG.info(
             'Loading Porcupine using library path {} and keyword paths {}'
             .format(library_path, keyword_file_paths))
