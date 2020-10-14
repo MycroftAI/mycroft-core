@@ -2,7 +2,7 @@ six==1.13.0
 requests==2.20.0
 gTTS==2.1.1
 PyAudio==0.2.11
-pyee==7.0.1
+pyee==8.1.0
 SpeechRecognition==3.8.1
 tornado==6.0.3
 websocket-client==0.54.0

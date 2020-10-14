@@ -39,7 +39,7 @@ import os
 import re
 import ast
 from os.path import join, isdir, basename
-from pyee import BaseEventEmitter
+from pyee import EventEmitter
 from numbers import Number
 from mycroft.messagebus.message import Message
 from mycroft.skills.core import MycroftSkill, FallbackSkill
@@ -167,7 +167,7 @@ class InterceptEmitter(object):
     """
 
     def __init__(self):
-        self.emitter = BaseEventEmitter()
+        self.emitter = EventEmitter()
         self.q = None
 
     def on(self, event, f):
