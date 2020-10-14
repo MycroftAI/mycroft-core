@@ -374,7 +374,6 @@ class PorcupineHotWord(HotWordEngine):
                 "Python bindings for Porcupine not found. "
                 "Please use --porcupine-path to set Porcupine base path")
 
-        system = platform.system()
         machine = platform.machine()
         library_path = join(
             porcupine_path, 'lib/linux/%s/libpv_porcupine.so' % machine)
@@ -393,8 +392,8 @@ class PorcupineHotWord(HotWordEngine):
             .format(library_path, keyword_file_paths))
         self.porcupine = Porcupine(
             library_path=library_path,
-            model_file_path=model_file_path,
-            keyword_file_paths=keyword_file_paths,
+            model_path=model_file_path,
+            keyword_paths=keyword_file_paths,
             sensitivities=sensitivities)
 
         LOG.info('Loaded Porcupine')
@@ -406,11 +405,9 @@ class PorcupineHotWord(HotWordEngine):
             if len(self.audio_buffer) >= self.porcupine.frame_length:
                 result = self.porcupine.process(
                     self.audio_buffer[0:self.porcupine.frame_length])
-                # result could be boolean (if there is one keword)
-                # or int (if more than one keyword)
-                self.has_found |= (
-                    (self.num_keywords == 1 and result) |
-                    (self.num_keywords > 1 and result >= 0))
+                # result will be the index of the found keyword or -1 if
+                # nothing has been found.
+                self.has_found |= result >= 0
                 self.audio_buffer = self.audio_buffer[
                     self.porcupine.frame_length:]
             else:
