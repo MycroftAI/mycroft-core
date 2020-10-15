@@ -14,28 +14,26 @@
 #
 """Factory functions for loading hotword engines - both internal and plugins.
 """
-from time import time, sleep
-import os
-import platform
-import posixpath
-import struct
-import sys
-import tempfile
-import requests
 from contextlib import suppress
 from glob import glob
+import os
 from os.path import dirname, exists, join, abspath, expanduser, isfile, isdir
+import platform
+import posixpath
 from shutil import rmtree
+import struct
+import tempfile
 from threading import Timer, Thread
+from time import time, sleep
 from urllib.error import HTTPError
 
 from petact import install_package
+import requests
 
 from mycroft.configuration import Configuration, LocalConf, USER_CONFIG
-from mycroft.util.log import LOG
 from mycroft.util.monotonic_event import MonotonicEvent
+from mycroft.util.log import LOG
 from mycroft.util.plugins import load_plugin
-
 
 RECOGNIZER_DIR = join(abspath(dirname(__file__)), "recognizer")
 INIT_TIMEOUT = 10  # In seconds
@@ -357,8 +355,9 @@ class SnowboyHotWord(HotWordEngine):
 
 
 class PorcupineHotWord(HotWordEngine):
+    """Hotword engine using picovoice's Porcupine hot word engine."""
     def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
-        super(PorcupineHotWord, self).__init__(key_phrase, config, lang)
+        super().__init__(key_phrase, config, lang)
         keyword_file_paths = [expanduser(x.strip()) for x in self.config.get(
             "keyword_file_path", "hey_mycroft.ppn").split(',')]
         sensitivities = self.config.get("sensitivities", 0.5)
@@ -367,10 +366,10 @@ class PorcupineHotWord(HotWordEngine):
             from pvporcupine.porcupine import Porcupine
             from pvporcupine.util import (pv_library_path,
                                           pv_model_path)
-        except ImportError:
+        except ImportError as err:
             raise Exception(
                 "Python bindings for Porcupine not found. "
-                "Please run \"mycroft-pip install pvporcupine\"")
+                "Please run \"mycroft-pip install pvporcupine\"") from err
 
         library_path = pv_library_path('')
         model_file_path = pv_model_path('')
@@ -395,6 +394,11 @@ class PorcupineHotWord(HotWordEngine):
         LOG.info('Loaded Porcupine')
 
     def update(self, chunk):
+        """Update detection state from a chunk of audio data.
+
+        Arguments:
+            chunk (bytes): Audio data to parse
+        """
         pcm = struct.unpack_from("h" * (len(chunk)//2), chunk)
         self.audio_buffer += pcm
         while True:
@@ -410,12 +414,21 @@ class PorcupineHotWord(HotWordEngine):
                 return
 
     def found_wake_word(self, frame_data):
+        """Check if wakeword has been found.
+
+        Returns:
+            (bool) True if wakeword was found otherwise False.
+        """
         if self.has_found:
             self.has_found = False
             return True
         return False
 
     def stop(self):
+        """Stop the hotword engine.
+
+        Clean up Porcupine library.
+        """
         if self.porcupine is not None:
             self.porcupine.delete()
 
