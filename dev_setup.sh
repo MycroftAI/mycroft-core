@@ -398,14 +398,14 @@ function install_deps() {
         # Fedora
         echo "$GREEN Installing packages for Fedora...$RESET"
         fedora_install
-    elif found_exe pacman && os_is arch ; then
+    elif found_exe pacman && (os_is arch || os_is_like arch); then
         # Arch Linux
         echo "$GREEN Installing packages for Arch...$RESET"
         arch_install
     elif found_exe emerge && os_is gentoo; then
         # Gentoo Linux
         echo "$GREEN Installing packages for Gentoo Linux ...$RESET"
-        gentoo_install	
+        gentoo_install
     elif found_exe apk && os_is alpine; then
         # Alpine Linux
         echo "$GREEN Installing packages for Alpine Linux...$RESET"
