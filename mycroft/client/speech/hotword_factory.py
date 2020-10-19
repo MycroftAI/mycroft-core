@@ -32,6 +32,8 @@ from petact import install_package
 from mycroft.configuration import Configuration, LocalConf, USER_CONFIG
 from mycroft.util.log import LOG
 from mycroft.util.monotonic_event import MonotonicEvent
+from mycroft.util.plugins import load_plugin
+
 
 RECOGNIZER_DIR = join(abspath(dirname(__file__)), "recognizer")
 INIT_TIMEOUT = 10  # In seconds
@@ -398,6 +400,15 @@ class PorcupineHotWord(HotWordEngine):
             self.porcupine.delete()
 
 
+def load_wake_word_plugin(module_name):
+    """Wrapper function for loading wake word plugin.
+
+    Arguments:
+        (str) Mycroft wake word module name from config
+    """
+    return load_plugin('mycroft.plugin.wake_word', module_name)
+
+
 class HotWordFactory:
     CLASSES = {
         "pocketsphinx": PocketsphinxHotWord,
@@ -415,7 +426,12 @@ class HotWordFactory:
         def initialize():
             nonlocal instance, complete
             try:
-                clazz = HotWordFactory.CLASSES[module]
+                if module in HotWordFactory.CLASSES:
+                    clazz = HotWordFactory.CLASSES[module]
+                else:
+                    clazz = load_wake_word_plugin(module)
+                    LOG.info('Loaded the Wake Word plugin {}'.format(module))
+
                 instance = clazz(hotword, config, lang=lang)
             except TriggerReload:
                 complete.set()
@@ -443,7 +459,7 @@ class HotWordFactory:
                        lang="en-us", loop=None):
         if not config:
             config = Configuration.get()['hotwords']
-        config = config[hotword]
+        config = config.get(hotword) or config["hey mycroft"]
 
         module = config.get("module", "precise")
         return cls.load_module(module, hotword, config, lang, loop) or \
