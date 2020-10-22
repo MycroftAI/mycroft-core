@@ -48,7 +48,7 @@ class SkillUpdater:
     _msm = None
 
     def __init__(self, bus=None):
-        self.msm_lock = ComboLock('/tmp/mycroft-msm.lck')
+        self.msm_lock = ComboLock(os.path.join(tempfile.gettempdir(), "mycroft-msm.lck"))          
         self.install_retries = 0
         self.config = Configuration.get()
         update_interval = self.config['skills']['update_interval']
