@@ -176,7 +176,7 @@ class TTS(metaclass=ABCMeta):
         self.ssml_tags = ssml_tags or []
 
         self.voice = config.get("voice")
-        self.filename = '/tmp/tts.wav'
+        self.filename = 'os.path.join(tempfile.gettempdir(), "tts.wav")'   
         self.enclosure = None
         random.seed()
         self.queue = Queue()

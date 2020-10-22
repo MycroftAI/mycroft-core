@@ -15,6 +15,8 @@
 import subprocess
 import time
 import sys
+import os
+import tempfile
 from alsaaudio import Mixer
 from threading import Thread, Timer
 
@@ -130,9 +132,9 @@ class EnclosureReader(Thread):
                 'utterance': "I am testing one two three"}))
 
             time.sleep(0.5)  # Prevents recording the loud button press
-            record("/tmp/test.wav", 3.0)
+            record(os.path.join(tempfile.gettempdir(), "test.wav"), 3.0)                   
             mixer.setvolume(prev_vol)
-            play_wav("/tmp/test.wav").communicate()
+            play_wavv(os.path.join(tempfile.gettempdir(), "test.wav").communicate()           
 
             # Test audio muting on arduino
             subprocess.call('speaker-test -P 10 -l 0 -s 1', shell=True)

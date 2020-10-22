@@ -38,8 +38,8 @@ def wait_while_speaking_thread():
 
 class TestInterface(unittest.TestCase):
     def setUp(self):
-        if exists('/tmp/mycroft'):
-            rmtree('/tmp/mycroft')
+        if exists(os.path.join(tempfile.gettempdir(), "mycroft")):         
+            rmtree(os.path.join(tempfile.gettempdir(), "mycroft"))          
 
     def test_is_speaking(self):
         create_signal('isSpeaking')
