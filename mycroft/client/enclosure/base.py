@@ -530,7 +530,8 @@ class GUIWebsocketHandler(WebSocketHandler):
             # System event, a page was changed
             msg_type = 'gui.page_interaction'
             msg_data = {'namespace': msg['namespace'],
-                        'page_number': msg['parameters'].get('number')}
+                        'page_number': msg['parameters'].get('number'),
+                        'skill_id': msg['parameters'].get('skillId')}
         elif msg.get('type') == "mycroft.events.triggered":
             # A normal event was triggered
             msg_type = '{}.{}'.format(msg['namespace'], msg['event_name'])
