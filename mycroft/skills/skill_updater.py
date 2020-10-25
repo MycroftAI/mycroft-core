@@ -14,6 +14,7 @@
 #
 """Periodically run by skill manager to update skills and post the manifest."""
 import os
+import tempfile
 import sys
 from datetime import datetime
 from time import time

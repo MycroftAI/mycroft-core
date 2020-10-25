@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 import signal
+import tempfile
 import unittest
 from shutil import rmtree
 

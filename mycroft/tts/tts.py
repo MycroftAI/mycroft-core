@@ -15,6 +15,7 @@
 from copy import deepcopy
 import hashlib
 import os
+import tempfile
 import random
 import re
 from abc import ABCMeta, abstractmethod

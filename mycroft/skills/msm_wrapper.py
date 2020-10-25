@@ -19,6 +19,9 @@ more skills that are installed on a device, the longer these interactions
 take.  This is especially true at boot time when MSM is instantiated
 frequently.  To improve performance, the MSM instance is cached.
 """
+
+import os
+import tempfile
 from collections import namedtuple
 from functools import lru_cache
 from os import path, makedirs
