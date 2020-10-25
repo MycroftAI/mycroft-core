@@ -14,6 +14,7 @@
 #
 import argparse
 import os
+import tempfile
 import pyaudio
 from contextlib import contextmanager
 

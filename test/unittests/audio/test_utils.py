@@ -14,6 +14,8 @@
 #
 import unittest
 import unittest.mock as mock
+import os
+import tempfile
 
 from shutil import rmtree
 from threading import Thread
