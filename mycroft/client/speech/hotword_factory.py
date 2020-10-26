@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""Factory functions for loading hotword engines - both internal and plugins.
+"""
 from time import time, sleep
 import os
 import platform
@@ -54,12 +56,19 @@ def msec_to_sec(msecs):
         msecs: milliseconds
 
     Returns:
-        input converted from milliseconds to seconds
+        int: input converted from milliseconds to seconds
     """
     return msecs / 1000
 
 
 class HotWordEngine:
+    """Hotword/Wakeword base class to be implemented by all wake word plugins.
+
+    Arguments:
+        key_phrase (str): string representation of the wake word
+        config (dict): Configuration block for the specific wake word
+        lang (str): language code (BCP-47)
+    """
     def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
         self.key_phrase = str(key_phrase).lower()
 
@@ -77,25 +86,43 @@ class HotWordEngine:
         self.lang = str(self.config.get("lang", lang)).lower()
 
     def found_wake_word(self, frame_data):
+        """Check if wake word has been found.
+
+        Checks if the wake word has been found. Should reset any internal
+        tracking of the wake word state.
+
+        Arguments:
+            frame_data (binary data): Deprecated. Audio data for large chunk
+                                      of audio to be processed. This should not
+                                      be used to detect audio data instead
+                                      use update() to incrementaly update audio
+        Returns:
+            bool: True if a wake word was detected, else False
+        """
         return False
 
     def update(self, chunk):
-        pass
+        """Updates the hotword engine with new audio data.
+
+        The engine should process the data and update internal trigger state.
+
+        Arguments:
+            chunk (bytes): Chunk of audio data to process
+        """
 
     def stop(self):
-        """ Perform any actions needed to shut down the hot word engine.
+        """Perform any actions needed to shut down the wake word engine.
 
-            This may include things such as unload loaded data or shutdown
-            external processess.
+        This may include things such as unloading data or shutdown
+        external processess.
         """
-        pass
 
 
 class PocketsphinxHotWord(HotWordEngine):
-    """Hotword engine using PocketSphinx.
+    """Wake word engine using PocketSphinx.
 
     PocketSphinx is very general purpose but has a somewhat high error rate.
-    The key advantage is to be able to specify the wakeword with phonemes.
+    The key advantage is to be able to specify the wake word with phonemes.
     """
     def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
         super().__init__(key_phrase, config, lang)
@@ -154,7 +181,7 @@ class PocketsphinxHotWord(HotWordEngine):
 
 
 class PreciseHotword(HotWordEngine):
-    """Precice is the default wakeword engine for mycroft.
+    """Precise is the default wake word engine for Mycroft.
 
     Precise is developed by Mycroft AI and produces quite good wake word
     spotting when trained on a decent dataset.
@@ -301,7 +328,7 @@ class PreciseHotword(HotWordEngine):
 
 
 class SnowboyHotWord(HotWordEngine):
-    """Snowboy is a thirdparty hotword engine providing an easy training and
+    """Snowboy is a thirdparty wake word engine providing an easy training and
     testing interface.
     """
     def __init__(self, key_phrase="hey mycroft", config=None, lang="en-us"):
@@ -410,6 +437,11 @@ def load_wake_word_plugin(module_name):
 
 
 class HotWordFactory:
+    """Factory class instantiating the configured Hotword engine.
+
+    The factory can select between a range of built-in Hotword engines and also
+    from Hotword engine plugins.
+    """
     CLASSES = {
         "pocketsphinx": PocketsphinxHotWord,
         "precise": PreciseHotword,
