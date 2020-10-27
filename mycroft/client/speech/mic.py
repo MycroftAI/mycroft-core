@@ -13,25 +13,25 @@
 # limitations under the License.
 #
 import audioop
-from time import sleep, time as get_time
-
-from collections import deque, namedtuple
 import datetime
 import json
 import os
+from collections import deque, namedtuple
+from hashlib import md5
+from io import BytesIO, StringIO
 from os.path import isdir, join
+from time import sleep, time as get_time
+from tempfile import gettempdir
+from threading import Thread, Lock
+
 import pyaudio
 import requests
 import speech_recognition
-from hashlib import md5
-from io import BytesIO, StringIO
 from speech_recognition import (
     Microphone,
     AudioSource,
     AudioData
 )
-from tempfile import gettempdir
-from threading import Thread, Lock
 
 from mycroft.api import DeviceApi
 from mycroft.configuration import Configuration
@@ -43,7 +43,6 @@ from mycroft.util import (
     play_wav
 )
 from mycroft.util.log import LOG
-
 from .data_structures import RollingMean, CyclicAudioBuffer
 
 
