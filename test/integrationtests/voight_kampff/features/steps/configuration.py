@@ -41,9 +41,11 @@ def patch_config(context, patch):
         context: Behave context for test
         patch: patch to apply
     """
+    context.log.info('Patching config with {}'.format(patch))
     # If this is first patch in scenario
     if not hasattr(context, 'original_config'):
         context.original_config = {}
+
     # store originals in context
     for key in patch:
         # If this patch is redefining an already changed key don't update
