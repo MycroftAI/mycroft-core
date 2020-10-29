@@ -1,6 +1,6 @@
 
-import os 
-import tempfile 
+import os
+import tempfile
 from threading import Event
 from unittest import TestCase, mock
 
@@ -8,7 +8,7 @@ from mycroft.util.download import (download, _running_downloads,
                                    _get_download_tmp)
 
 TEST_URL = 'http://example.com/mycroft-test.tar.gz'
-TEST_DEST = os.path.join(tempfile.gettempdir(), "file.tar.gz")            
+TEST_DEST = os.path.join(tempfile.gettempdir(), "file.tar.gz")
 
 
 @mock.patch('mycroft.util.download.subprocess')
@@ -93,17 +93,18 @@ class TestDownload(TestCase):
 class TestGetTemp(TestCase):
     def test_no_existing(self, mock_glob):
         mock_glob.return_value = []
-        dest = os.path.join(tempfile.gettempdir(), "test")         
+        dest = os.path.join(tempfile.gettempdir(), "test")
         self.assertEqual(_get_download_tmp(dest), dest + '.part')
 
     def test_existing(self, mock_glob):
-        mock_glob.return_value = [os.path.join(tempfile.gettempdir(), "test.part")]               
-        dest = os.path.join(tempfile.gettempdir(), "test")               
+        mock_glob.return_value = [os.path.join(
+            tempfile.gettempdir(), "test.part")]
+        dest = os.path.join(tempfile.gettempdir(), "test")
         self.assertEqual(_get_download_tmp(dest), dest + '.part.1')
 
     def test_multiple_existing(self, mock_glob):
         mock_glob.return_value = [os.path.join(tempfile.gettempdir(), "test.part"), os.path.join(tempfile.gettempdir(), "test.part.1"),
-                                os.path.join(tempfile.gettempdir(), "test.part.2")]
-        
-        dest = os.path.join(tempfile.gettempdir(), "test")             
+                                  os.path.join(tempfile.gettempdir(), "test.part.2")]
+
+        dest = os.path.join(tempfile.gettempdir(), "test")
         self.assertEqual(_get_download_tmp(dest), dest + '.part.3')

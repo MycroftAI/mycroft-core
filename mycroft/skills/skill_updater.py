@@ -18,7 +18,6 @@ import tempfile
 import sys
 from datetime import datetime
 from time import time
-
 from msm import MsmException
 
 from mycroft.api import DeviceApi, is_paired

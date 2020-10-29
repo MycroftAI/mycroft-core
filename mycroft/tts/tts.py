@@ -165,6 +165,7 @@ class TTS(metaclass=ABCMeta):
         phonetic_spelling (bool): Whether to spell certain words phonetically
         ssml_tags (list): Supported ssml properties. Ex. ['speak', 'prosody']
     """
+
     def __init__(self, lang, config, validator, audio_ext='wav',
                  phonetic_spelling=True, ssml_tags=None):
         super(TTS, self).__init__()
@@ -177,7 +178,7 @@ class TTS(metaclass=ABCMeta):
         self.ssml_tags = ssml_tags or []
 
         self.voice = config.get("voice")
-        self.filename = 'os.path.join(tempfile.gettempdir(), "tts.wav")'   
+        self.filename = 'os.path.join(tempfile.gettempdir(), "tts.wav")'
         self.enclosure = None
         random.seed()
         self.queue = Queue()
@@ -426,6 +427,7 @@ class TTSValidator(metaclass=ABCMeta):
     It exposes and implements ``validate(tts)`` function as a template to
     validate the TTS engines.
     """
+
     def __init__(self, tts):
         self.tts = tts
 

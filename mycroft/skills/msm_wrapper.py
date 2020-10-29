@@ -47,7 +47,8 @@ MsmConfig = namedtuple(
 def _init_msm_lock():
     msm_lock = None
     try:
-        msm_lock = ComboLock(os.path.join(tempfile.gettempdir(), "mycroft-msm.lck"))            
+        msm_lock = ComboLock(os.path.join(
+            tempfile.gettempdir(), "mycroft-msm.lck"))
         LOG.debug('mycroft-msm combo lock instantiated')
     except Exception:
         LOG.exception('Failed to create msm lock!')
