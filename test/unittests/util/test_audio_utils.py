@@ -1,6 +1,6 @@
 
-import os 
-import tempfile 
+import os
+import tempfile
 
 from unittest import TestCase, mock
 
@@ -141,7 +141,7 @@ class TestRecordSounds(TestCase):
         mock_subprocess.Popen.return_value = mock_proc
         rate = 16000
         channels = 1
-        filename =   os.path.join(tempfile.gettempdir(), "test.wav")   
+        filename = os.path.join(tempfile.gettempdir(), "test.wav")
         duration = 42
         res = record(filename, duration, rate, channels)
         mock_subprocess.Popen.assert_called_once_with(['arecord',
@@ -156,7 +156,7 @@ class TestRecordSounds(TestCase):
         mock_subprocess.Popen.return_value = mock_proc
         rate = 16000
         channels = 1
-        filename = os.path.join(tempfile.gettempdir(), "test.wav")           
+        filename = os.path.join(tempfile.gettempdir(), "test.wav")
         duration = 0
         res = record(filename, duration, rate, channels)
         mock_subprocess.Popen.assert_called_once_with(['arecord',

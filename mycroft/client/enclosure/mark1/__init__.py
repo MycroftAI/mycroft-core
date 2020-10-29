@@ -14,8 +14,7 @@
 #
 import subprocess
 import time
-import os
-import tempfile 
+import tempfile
 import sys
 import os
 import tempfile
@@ -134,9 +133,9 @@ class EnclosureReader(Thread):
                 'utterance': "I am testing one two three"}))
 
             time.sleep(0.5)  # Prevents recording the loud button press
-            record(os.path.join(tempfile.gettempdir(), "test.wav"), 3.0)                   
+            record(os.path.join(tempfile.gettempdir(), "test.wav"), 3.0)
             mixer.setvolume(prev_vol)
-            play_wavv(os.path.join(tempfile.gettempdir(), "test.wav").communicate()           
+            play_wavv(os.path.join(tempfile.gettempdir(), "test.wav").communicate()
 
             # Test audio muting on arduino
             subprocess.call('speaker-test -P 10 -l 0 -s 1', shell=True)
@@ -192,12 +191,12 @@ class EnclosureReader(Thread):
                 'utterance': mycroft.dialog.get("ssh disabled")}))
 
         if "unit.enable-learning" in data or "unit.disable-learning" in data:
-            enable = 'enable' in data
-            word = 'enabled' if enable else 'disabled'
+            enable='enable' in data
+            word='enabled' if enable else 'disabled'
 
             LOG.info("Setting opt_in to: " + word)
-            new_config = {'opt_in': enable}
-            user_config = LocalConf(USER_CONFIG)
+            new_config={'opt_in': enable}
+            user_config=LocalConf(USER_CONFIG)
             user_config.merge(new_config)
             user_config.store()
 
@@ -205,7 +204,7 @@ class EnclosureReader(Thread):
                 'utterance': mycroft.dialog.get("learning " + word)}))
 
     def stop(self):
-        self.alive = False
+        self.alive=False
 
 
 class EnclosureWriter(Thread):
@@ -226,17 +225,17 @@ class EnclosureWriter(Thread):
 
     def __init__(self, serial, bus, size=16):
         super(EnclosureWriter, self).__init__(target=self.flush)
-        self.alive = True
-        self.daemon = True
-        self.serial = serial
-        self.bus = bus
-        self.commands = Queue(size)
+        self.alive=True
+        self.daemon=True
+        self.serial=serial
+        self.bus=bus
+        self.commands=Queue(size)
         self.start()
 
     def flush(self):
         while self.alive:
             try:
-                cmd = self.commands.get() + '\n'
+                cmd=self.commands.get() + '\n'
                 self.serial.write(cmd.encode())
                 self.commands.task_done()
             except Exception as e:
@@ -246,7 +245,7 @@ class EnclosureWriter(Thread):
         self.commands.put(str(command))
 
     def stop(self):
-        self.alive = False
+        self.alive=False
 
 
 class EnclosureMark1(Enclosure):
@@ -263,19 +262,19 @@ class EnclosureMark1(Enclosure):
     E.g. Start and Stop talk animation
     """
 
-    _last_internet_notification = 0
+    _last_internet_notification=0
 
     def __init__(self):
         super().__init__()
 
         self.__init_serial()
-        self.reader = EnclosureReader(self.serial, self.bus, self.lang)
-        self.writer = EnclosureWriter(self.serial, self.bus)
+        self.reader=EnclosureReader(self.serial, self.bus, self.lang)
+        self.writer=EnclosureWriter(self.serial, self.bus)
 
         # Prepare to receive message when the Arduino responds to the
         # following "system.version"
         self.bus.on("enclosure.started", self.on_arduino_responded)
-        self.arduino_responded = False
+        self.arduino_responded=False
         # Send a message to the Arduino across the serial line asking
         # for a reply with version info.
         self.writer.write("system.version")
@@ -293,12 +292,12 @@ class EnclosureMark1(Enclosure):
         init_display_manager_bus_connection()
 
     def on_arduino_responded(self, event=None):
-        self.eyes = EnclosureEyes(self.bus, self.writer)
-        self.mouth = EnclosureMouth(self.bus, self.writer)
-        self.system = EnclosureArduino(self.bus, self.writer)
+        self.eyes=EnclosureEyes(self.bus, self.writer)
+        self.mouth=EnclosureMouth(self.bus, self.writer)
+        self.system=EnclosureArduino(self.bus, self.writer)
         self.__register_events()
         self.__reset()
-        self.arduino_responded = True
+        self.arduino_responded=True
 
         # verify internet connection and prompt user on bootup if needed
         if not connected():
@@ -317,7 +316,7 @@ class EnclosureMark1(Enclosure):
             # don't bother the user with multiple notifications with 30 secs
             return
 
-        Enclosure._last_internet_notification = time.time()
+        Enclosure._last_internet_notification=time.time()
 
         # TODO: This should go into EnclosureMark1 subclass of Enclosure.
         if has_been_paired():
@@ -333,10 +332,10 @@ class EnclosureMark1(Enclosure):
 
     def __init_serial(self):
         try:
-            self.port = self.config.get("port")
-            self.rate = self.config.get("rate")
-            self.timeout = self.config.get("timeout")
-            self.serial = serial.serial_for_url(
+            self.port=self.config.get("port")
+            self.rate=self.config.get("rate")
+            self.timeout=self.config.get("timeout")
+            self.serial=serial.serial_for_url(
                 url=self.port, baudrate=self.rate, timeout=self.timeout)
             LOG.info("Connected to: %s rate: %s timeout: %s" %
                      (self.port, self.rate, self.timeout))
@@ -420,5 +419,5 @@ class EnclosureMark1(Enclosure):
                 time.sleep(2)  # a pause sounds better than just jumping in
 
                 # Kick off wifi-setup automatically
-                data = {'allow_timeout': False, 'lang': self.lang}
+                data={'allow_timeout': False, 'lang': self.lang}
                 self.bus.emit(Message('system.wifi.setup', data))

@@ -16,7 +16,7 @@ from signal import getsignal, signal, SIGKILL, SIGINT, SIGTERM, \
     SIG_DFL, default_int_handler, SIG_IGN  # signals
 
 import os  # Operating System functions
-import tempfile 
+import tempfile
 
 
 #
@@ -99,7 +99,8 @@ class Lock:  # python 3+ 'class Lock'
 
     #
     # Class constants
-    DIRECTORY = os.path.join(tempfile.gettempdir(), "mycroft", "ipc")                 #'/tmp/mycroft'
+    DIRECTORY = os.path.join(tempfile.gettempdir(),
+                             "mycroft", "ipc")  # '/tmp/mycroft'
     FILE = '/{}.pid'
 
     #
