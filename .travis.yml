@@ -26,7 +26,9 @@ install:
  - rm -rf ${TMPDIR}
  - mkdir ${TMPDIR}
  - echo ${TMPDIR}
- - VIRTUALENV_ROOT=${VIRTUAL_ENV} ./dev_setup.sh
+ - if [[ $TRAVIS_PYTHON_VERSION == 3.9 ]]; then VIRTUALENV_ROOT=${VIRTUAL_ENV} ./dev_setup.sh; fi
+# Skip mimic build for other versions
+ - if [[ $TRAVIS_PYTHON_VERSION != 3.9 ]]; then VIRTUALENV_ROOT=${VIRTUAL_ENV} ./dev_setup.sh -sm; fi
 # command to run tests
 script:
  - pycodestyle mycroft test
