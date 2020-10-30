@@ -16,7 +16,7 @@
 ##########################################################################
 
 # Set a default locale to handle output from commands reliably
-export LANG=C
+export LANG=C.UTF-8
 
 # exit on any error
 set -Ee
