@@ -73,8 +73,8 @@ def record(filename, duration):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '-f', '--filename', dest='filename', default=os.path.join(tempfile.gettempdir(), "test.wav"),
-        help="Filename for saved audio (Default:  os.path.join(tempfile.gettempdir(), "test.wav")")
+        '-f', '--filename', dest='filename', default = os.path.join(tempfile.gettempdir(), 'test.wav'),
+        help="Filename for saved audio (Default:{}".format(os.path.join(tempfile.gettempdir(), 'test.wav')))
     parser.add_argument(
         '-d', '--duration', dest='duration', type=int, default=10,
         help="Duration of recording in seconds (Default: 10)")

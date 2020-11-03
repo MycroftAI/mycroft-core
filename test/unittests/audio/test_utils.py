@@ -19,7 +19,7 @@ import tempfile
 
 from shutil import rmtree
 from threading import Thread
-from time import sleep
+from time import sleepfarstack:bugfix/issue-2727
 
 from os.path import exists
 
@@ -40,8 +40,8 @@ def wait_while_speaking_thread():
 
 class TestInterface(unittest.TestCase):
     def setUp(self):
-        if exists(os.path.join(tempfile.gettempdir(), "mycroft")):         
-            rmtree(os.path.join(tempfile.gettempdir(), "mycroft"))          
+        if exists(os.path.join(tempfile.gettempdir(), 'mycroft')):
+            rmtree(os.path.join(tempfile.gettempdir(), 'mycroft'))
 
     def test_is_speaking(self):
         create_signal('isSpeaking')
