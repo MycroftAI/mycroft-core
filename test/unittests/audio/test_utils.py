@@ -19,7 +19,7 @@ import tempfile
 
 from shutil import rmtree
 from threading import Thread
-from time import sleepfarstack:bugfix/issue-2727
+from time import sleep
 
 from os.path import exists
 
