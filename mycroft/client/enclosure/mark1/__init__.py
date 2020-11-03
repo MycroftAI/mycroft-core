@@ -133,9 +133,9 @@ class EnclosureReader(Thread):
                 'utterance': "I am testing one two three"}))
 
             time.sleep(0.5)  # Prevents recording the loud button press
-            record(os.path.join(tempfile.gettempdir(), 'play.wav'), 3.0)
+            record(os.path.join(tempfile.gettempdir(), 'test.wav'), 3.0)
             mixer.setvolume(prev_vol)
-            play_wavv(os.path.join(tempfile.gettempdir(), 'play.wav').communicate()
+            play_wav(os.path.join(tempfile.gettempdir(), 'test.wav').communicate()
 
             # Test audio muting on arduino
             subprocess.call('speaker-test -P 10 -l 0 -s 1', shell=True)
@@ -204,7 +204,7 @@ class EnclosureReader(Thread):
                 'utterance': mycroft.dialog.get("learning " + word)}))
 
     def stop(self):
-        self.alive=False
+        self.alive = False
 
 
 class EnclosureWriter(Thread):
@@ -262,7 +262,7 @@ class EnclosureMark1(Enclosure):
     E.g. Start and Stop talk animation
     """
 
-    _last_internet_notification=0
+    _last_internet_notification = 0
 
     def __init__(self):
         super().__init__()
