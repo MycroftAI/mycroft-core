@@ -18,6 +18,7 @@ import tempfile
 import sys
 from datetime import datetime
 from time import time
+
 from msm import MsmException
 
 from mycroft.api import DeviceApi, is_paired
@@ -48,7 +49,7 @@ class SkillUpdater:
     _msm = None
 
     def __init__(self, bus=None):
-        self.msm_lock = ComboLock(os.path.join(tempfile.gettempdir(), "mycroft-msm.lck"))          
+        self.msm_lock = ComboLock(os.path.join(tempfile.gettempdir(), 'mycroft-msm.lck'))          
         self.install_retries = 0
         self.config = Configuration.get()
         update_interval = self.config['skills']['update_interval']

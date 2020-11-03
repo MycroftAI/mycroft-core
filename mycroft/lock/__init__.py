@@ -100,7 +100,7 @@ class Lock:  # python 3+ 'class Lock'
     #
     # Class constants
     DIRECTORY = os.path.join(tempfile.gettempdir(),
-                             "mycroft", "ipc")  # '/tmp/mycroft'
+                             'mycroft') 
     FILE = '/{}.pid'
 
     #
