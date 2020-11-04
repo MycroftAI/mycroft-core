@@ -581,7 +581,7 @@ class STTFactory:
             if module in STTFactory.CLASSES:
                 clazz = STTFactory.CLASSES[module]
             else:
-                load_stt_plugin(module)
+                clazz = load_stt_plugin(module)
                 LOG.info('Loaded the STT plugin {}'.format(module))
             return clazz()
         except Exception:
