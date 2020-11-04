@@ -27,7 +27,7 @@ install:
  - mkdir ${TMPDIR}
  - echo ${TMPDIR}
  - if [[ $TRAVIS_PYTHON_VERSION == 3.9 ]]; then VIRTUALENV_ROOT=${VIRTUAL_ENV} ./dev_setup.sh; fi
-# Skip mimic build for other versions
+# Skip mimic build for other versions because they should not differ
  - if [[ $TRAVIS_PYTHON_VERSION != 3.9 ]]; then VIRTUALENV_ROOT=${VIRTUAL_ENV} ./dev_setup.sh -sm; fi
 # command to run tests
 script:
