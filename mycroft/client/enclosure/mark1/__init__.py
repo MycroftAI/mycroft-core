@@ -14,7 +14,6 @@
 #
 import subprocess
 import time
-import tempfile
 import sys
 import os
 import tempfile
@@ -135,7 +134,7 @@ class EnclosureReader(Thread):
             time.sleep(0.5)  # Prevents recording the loud button press
             record(os.path.join(tempfile.gettempdir(), 'test.wav'), 3.0)
             mixer.setvolume(prev_vol)
-            play_wav(os.path.join(tempfile.gettempdir(), 'test.wav').communicate()
+            play_wav(os.path.join(tempfile.gettempdir(), 'test.wav').communicate())
 
             # Test audio muting on arduino
             subprocess.call('speaker-test -P 10 -l 0 -s 1', shell=True)
@@ -223,7 +222,7 @@ class EnclosureWriter(Thread):
     Note: A command has to end with a line break
     """
 
-    def __init__(self, serial, bus, size = 16):
+    def __init__(self, serial, bus, size=16):
         super(EnclosureWriter, self).__init__(target=self.flush)
         self.alive = True
         self.daemon = True
