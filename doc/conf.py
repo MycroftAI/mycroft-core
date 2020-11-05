@@ -59,7 +59,8 @@ autodoc_mock_imports = list(autodoc_mock_imports) + [
     'past',
     'serial',
     'websocket',
-    'speech_recognition'
+    'speech_recognition',
+    'xdg'
 ]
 
 templates_path = ['_templates']
