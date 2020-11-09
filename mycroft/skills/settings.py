@@ -61,6 +61,8 @@ import re
 from pathlib import Path
 from threading import Timer
 
+import yaml
+
 from mycroft.api import DeviceApi, is_paired
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
@@ -249,8 +251,6 @@ class SettingsMetaUploader:
 
     def _load_settings_meta_file(self):
         """Read the contents of the settingsmeta file into memory."""
-        # Imported here do handle issue with readthedocs build
-        import yaml
         _, ext = os.path.splitext(str(self.settings_meta_path))
         is_json_file = self.settings_meta_path.suffix == ".json"
         try:
