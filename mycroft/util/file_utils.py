@@ -77,6 +77,14 @@ def resolve_resource_file(res_name):
     return None  # Resource cannot be resolved
 
 
+def create_temp_path(*args):
+    try:
+        path = os.path.join(tempfile.gettempdir(), *args)
+    except TypeError:
+        path = None
+	LOG.error('Could not create a temp path, create_temp_path() only accepts Strings')
+    return path
+
 def read_stripped_lines(filename):
     """Read a file and return a list of stripped lines.
 
@@ -231,7 +239,7 @@ def get_cache_directory(domain=None):
     directory = config.get("cache_path")
     if not directory:
         # If not defined, use /tmp/mycroft/cache
-        directory = os.path.join(tempfile.gettempdir(), "mycroft", "cache")
+        directory = create_temp_path('mycroft', 'cache')
     return ensure_directory_exists(directory, domain)
 
 

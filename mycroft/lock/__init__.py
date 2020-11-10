@@ -16,13 +16,13 @@ from signal import getsignal, signal, SIGKILL, SIGINT, SIGTERM, \
     SIG_DFL, default_int_handler, SIG_IGN  # signals
 
 import os  # Operating System functions
-import tempfile
 
 
 #
 # Wrapper around chain of handler functions for a specific system level signal.
 # Often used to trap Ctrl-C for specific application purposes.
 from mycroft.util import LOG
+from mycroft.util import create_temp_path
 
 
 class Signal:  # python 3+ class Signal
@@ -99,8 +99,7 @@ class Lock:  # python 3+ 'class Lock'
 
     #
     # Class constants
-    DIRECTORY = os.path.join(tempfile.gettempdir(),
-                             'mycroft') 
+    DIRECTORY = create_temp_path('mycroft') 
     FILE = '/{}.pid'
 
     #

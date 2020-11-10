@@ -14,7 +14,6 @@
 #
 import argparse
 import os
-import tempfile
 import pyaudio
 from contextlib import contextmanager
 
@@ -25,6 +24,7 @@ from mycroft.configuration import Configuration
 from mycroft.util.audio_utils import play_wav
 from mycroft.util.log import LOG
 import logging
+from mycroft.util import create_temp_path
 
 """
 Audio Test
@@ -73,8 +73,8 @@ def record(filename, duration):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '-f', '--filename', dest='filename', default = os.path.join(tempfile.gettempdir(), 'test.wav'),
-        help="Filename for saved audio (Default:{}".format(os.path.join(tempfile.gettempdir(), 'test.wav')))
+        '-f', '--filename', dest='filename', default = create_temp_path('test.wav'),
+        help="Filename for saved audio (Default:{}".format(create_temp_path('test.wav')))
     parser.add_argument(
         '-d', '--duration', dest='duration', type=int, default=10,
         help="Duration of recording in seconds (Default: 10)")
