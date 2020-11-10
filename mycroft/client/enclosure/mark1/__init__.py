@@ -15,8 +15,6 @@
 import subprocess
 import time
 import sys
-import os
-import tempfile
 from alsaaudio import Mixer
 from threading import Thread, Timer
 
@@ -37,6 +35,7 @@ from mycroft.util import play_wav, create_signal, connected, check_for_signal
 from mycroft.util.audio_test import record
 from mycroft.util.log import LOG
 from queue import Queue
+from mycroft.util import create_temp_path
 
 # The Mark 1 hardware consists of a Raspberry Pi main CPU which is connected
 # to an Arduino over the serial port.  A custom serial protocol sends
@@ -132,9 +131,9 @@ class EnclosureReader(Thread):
                 'utterance': "I am testing one two three"}))
 
             time.sleep(0.5)  # Prevents recording the loud button press
-            record(os.path.join(tempfile.gettempdir(), 'test.wav'), 3.0)
+            record(create_temp_path('test.wav', 3.0)
             mixer.setvolume(prev_vol)
-            play_wav(os.path.join(tempfile.gettempdir(), 'test.wav').communicate())
+            play_wav(creat_temp_path('test.wav')).communicate()
 
             # Test audio muting on arduino
             subprocess.call('speaker-test -P 10 -l 0 -s 1', shell=True)

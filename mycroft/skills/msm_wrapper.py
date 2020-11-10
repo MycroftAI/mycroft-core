@@ -19,9 +19,6 @@ more skills that are installed on a device, the longer these interactions
 take.  This is especially true at boot time when MSM is instantiated
 frequently.  To improve performance, the MSM instance is cached.
 """
-
-import os
-import tempfile
 from collections import namedtuple
 from functools import lru_cache
 from os import path, makedirs
@@ -30,6 +27,7 @@ from msm import MycroftSkillsManager, SkillRepo
 
 from mycroft.util.combo_lock import ComboLock
 from mycroft.util.log import LOG
+from mycroft.util import create_temp_path
 
 MsmConfig = namedtuple(
     'MsmConfig',
@@ -47,8 +45,7 @@ MsmConfig = namedtuple(
 def _init_msm_lock():
     msm_lock = None
     try:
-        msm_lock = ComboLock(os.path.join(
-            tempfile.gettempdir(), 'mycroft-msm.lck'))
+        msm_lock = ComboLock(create_temp_path('mycroft-msm.lck'))
         LOG.debug('mycroft-msm combo lock instantiated')
     except Exception:
         LOG.exception('Failed to create msm lock!')

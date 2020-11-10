@@ -15,7 +15,6 @@
 from copy import deepcopy
 import hashlib
 import os
-import tempfile
 import random
 import re
 from abc import ABCMeta, abstractmethod
@@ -36,6 +35,7 @@ from mycroft.util import (
 from mycroft.util.log import LOG
 from mycroft.util.plugins import load_plugin
 from queue import Queue, Empty
+from mycroft.util import create_temp_path
 
 
 _TTS_ENV = deepcopy(os.environ)
@@ -178,7 +178,7 @@ class TTS(metaclass=ABCMeta):
         self.ssml_tags = ssml_tags or []
 
         self.voice = config.get("voice")
-        self.filename = os.path.join(tempfile.gettempdir(), 'tts.wav')
+        self.filename = create_temp_path('tts.wav')
         self.enclosure = None
         random.seed()
         self.queue = Queue()
