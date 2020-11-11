@@ -23,7 +23,8 @@
     "start_listening": "snd/start_listening.wav",
         # Comment inside with a tab
         # and multiple lines
-    "end_listening": "snd/end_listening.wav"
+    "end_listening": "snd/end_listening.wav",
+    "dont_understand": "snd/dont_understand.wav"
     // and a final thought
   },
   "play_wav_cmdline": "aplay %1",

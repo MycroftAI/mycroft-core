@@ -1156,25 +1156,46 @@ class MycroftSkill:
         re.compile(regex)  # validate regex
         self.intent_service.register_adapt_regex(regex)
 
-    def speak(self, utterance, expect_response=False, wait=False, meta=None):
-        """Speak a sentence.
+    def speak(self, utterance=None, expect_response=False, wait=False,
+              meta=None, outcome_type=None, custom_sound=None):
+        """Speak a sentence, OR play a sound.
+        The audio module will use the configuration or the
+        presence/absence of the utterance to choose between this two options.
 
         Arguments:
-            utterance (str):        sentence mycroft should speak
+            utterance (str):        sentence mycroft should speak.
+                                    Don't set to force a sound instead
             expect_response (bool): set to True if Mycroft should listen
                                     for a response immediately after
                                     speaking the utterance.
             wait (bool):            set to True to block while the text
                                     is being spoken.
             meta:                   Information of what built the sentence.
+            outcome_type(str):      type of response, if final. Must also be
+                                    a sound registered in mycroft conf
+                                    ('sounds' key, ex. "dont_understand",
+                                    "acknowledge") Allow mycroft to understand
+                                    this utterance is final and maybe,
+                                    play a sound.
+            custom_sound(str):      path to a sound file. Use only if the
+                                    standard outcome_type sound is not adequate
+                                    Allow mycroft to play a sound if the user
+                                    allow it or if the utterance is not set
         """
         # registers the skill as being active
+        if not utterance and not custom_sound and not outcome_type:
+            raise Exception('Must have an utterance or a sound to play')
         meta = meta or {}
         meta['skill'] = self.name
+        if outcome_type:
+            meta['outcome_type'] = outcome_type
         self.enclosure.register(self.name)
-        data = {'utterance': utterance,
-                'expect_response': expect_response,
+        data = {'expect_response': expect_response,
                 'meta': meta}
+        if utterance:
+            data['utterance'] = utterance
+        if custom_sound:
+            data['custom_sound'] = custom_sound
         message = dig_for_message()
         m = message.forward("speak", data) if message \
             else Message("speak", data)
@@ -1208,6 +1229,44 @@ class MycroftSkill:
             )
             self.speak(key, expect_response, wait, {})
 
+    def report_outcome(self, key=None, data=None,
+                       outcome_type="acknowledge", custom_sound=None):
+        """ Speak a random sentence from a dialog file, OR play a sound.
+        The audio module will use the configuration to choose between
+        this two options.
+        Arguments:
+            key (str): dialog file key (e.g. "hello" to speak from the file
+                                        "locale/en-us/hello.dialog")
+            data (dict): information used to populate sentence
+            outcome_type(str):      type of response, if final. Must also be
+                                    a sound registered in mycroft conf
+                                    ('sounds' key, ex. "dont_understand",
+                                    "acknowledge") Allow mycroft to understand
+                                    the utterance is final and play a sound
+            custom_sound(str):      path to a sound file. Use only if the
+                                    standard outcome_type sound is not adequate
+                                     Allow mycroft to play a sound
+        """
+        if self.dialog_renderer:
+            data = data or {}
+            utterance = None
+            meta = {'dialog': key},
+            if key:
+                utterance = self.dialog_renderer.render(key, data)
+            if data:
+                meta[data] = data
+            self.speak(
+                utterance,
+                meta,
+                outcome_type=outcome_type, custom_sound=custom_sound
+            )
+        else:
+            self.log.warning(
+                'dialog_render is None, does the locale/dialog folder exist?'
+            )
+            self.speak(key, outcome_type=outcome_type,
+                       custom_sound=custom_sound)
+
     def acknowledge(self):
         """Acknowledge a successful request.
 
@@ -1215,16 +1274,7 @@ class MycroftSkill:
         require a verbal response. This is intended to provide simple feedback
         to the user that their request was handled successfully.
         """
-        audio_file = resolve_resource_file(
-            self.config_core.get('sounds').get('acknowledge'))
-
-        if not audio_file:
-            LOG.warning("Could not find 'acknowledge' audio file!")
-            return
-
-        process = play_audio_file(audio_file)
-        if not process:
-            LOG.warning("Unable to play 'acknowledge' audio file!")
+        self.report_outcome()
 
     def init_dialog(self, root_directory):
         # If "<skill>/dialog/<lang>" exists, load from there.  Otherwise

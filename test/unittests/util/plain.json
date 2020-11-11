@@ -6,7 +6,8 @@
   "confirm_listening": true,
   "sounds": {
     "start_listening": "snd/start_listening.wav",
-    "end_listening": "snd/end_listening.wav"
+    "end_listening": "snd/end_listening.wav",
+    "dont_understand": "snd/dont_understand.wav"
   },
   "play_wav_cmdline": "aplay %1",
   "play_mp3_cmdline": "mpg123 %1",

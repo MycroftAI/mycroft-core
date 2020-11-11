@@ -285,6 +285,8 @@ class TTS(metaclass=ABCMeta):
         Returns:
             str: validated_sentence
         """
+        if not utterance:
+            return None
         # if ssml is not supported by TTS engine remove all tags
         if not self.ssml_tags:
             return self.remove_ssml(utterance)
@@ -316,7 +318,7 @@ class TTS(metaclass=ABCMeta):
         """
         return [sentence]
 
-    def execute(self, sentence, ident=None, listen=False):
+    def execute(self, sentence, ident=None, listen=False, play_sound=None):
         """Convert sentence to speech, preprocessing out unsupported ssml
 
         The method caches results if possible using the hash of the
@@ -327,12 +329,18 @@ class TTS(metaclass=ABCMeta):
             ident: (str) Id reference to current interaction
             listen: (bool) True if listen should be triggered at the end
                     of the utterance.
+            play_sound: play this sound as an alternative to the utterance
         """
         sentence = self.validate_ssml(sentence)
 
         create_signal("isSpeaking")
         try:
-            self._execute(sentence, ident, listen)
+            if play_sound:
+                file_name, file_extension = os.path.splitext(play_sound)
+                self.queue.put((file_extension[1:], play_sound, None,
+                                ident, None))
+            else:
+                self._execute(sentence, ident, listen)
         except Exception:
             # If an error occurs end the audio sequence through an empty entry
             self.queue.put(EMPTY_PLAYBACK_QUEUE_TUPLE)

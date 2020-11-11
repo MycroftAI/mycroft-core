@@ -21,7 +21,7 @@ class Festival(TTS):
     def __init__(self, lang, config):
         super(Festival, self).__init__(lang, config, FestivalValidator(self))
 
-    def execute(self, sentence, ident=None, listen=False):
+    def _execute(self, sentence, ident=None, listen=False):
 
         encoding = self.config.get('encoding', 'utf8')
         lang = self.config.get('lang', self.lang)

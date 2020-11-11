@@ -44,7 +44,7 @@ class RemoteTTS(TTS):
         self.url = config.get('url', url).rstrip('/')
         self.session = FuturesSession()
 
-    def execute(self, sentence, ident=None, listen=False):
+    def _execute(self, sentence, ident=None, listen=False):
         phrases = self.__get_phrases(sentence)
 
         if len(phrases) > 0:

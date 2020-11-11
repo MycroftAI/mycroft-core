@@ -21,7 +21,7 @@ class SpdSay(TTS):
     def __init__(self, lang, config):
         super(SpdSay, self).__init__(lang, config, SpdSayValidator(self))
 
-    def execute(self, sentence, ident=None, listen=False):
+    def _execute(self, sentence, ident=None, listen=False):
         self.begin_audio()
         subprocess.call(
             ['spd-say', '-l', self.lang, '-t', self.voice, sentence])

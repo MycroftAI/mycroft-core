@@ -14,12 +14,13 @@
 #
 import re
 import time
+import os
 from threading import Lock
 
 from mycroft.configuration import Configuration
 from mycroft.metrics import report_timing, Stopwatch
 from mycroft.tts import TTSFactory
-from mycroft.util import check_for_signal
+from mycroft.util import (check_for_signal, resolve_resource_file)
 from mycroft.util.log import LOG
 from mycroft.messagebus.message import Message
 from mycroft.tts.remote_tts import RemoteTTSException
@@ -31,8 +32,41 @@ tts = None
 tts_hash = None
 lock = Lock()
 mimic_fallback_obj = None
+audio_files = None
 
 _last_stop_signal = 0
+
+
+def _should_play_sound(data):
+    # if no utterance, we always pref sound:
+    should_play_sound = not data.get('utterance')
+    # second possibility, check if we always pref sound by config:
+    if not should_play_sound:
+        should_play_sound = Configuration.get().get('always_pref_sound', False)
+    # third possibility, check if we prefer sound for this skill:
+    if not should_play_sound:
+        skills_pref_sound = Configuration.get().get('skills', {})\
+            .get('skills_pref_sound', [])
+        message_skill = data.get('meta', {}).get('skill', '')
+        should_play_sound = message_skill in skills_pref_sound
+
+    if should_play_sound:
+        global audio_files
+        default_sound = audio_files.get('acknowledge')
+        # check if the skill has set a custom sound :
+        if data.get('custom_sound'):
+            if not os.path.exists(data.get('custom_sound')):
+                LOG.error('Custom sound file not found ' +
+                          str(data.get('custom_sound')))
+                return default_sound
+            else:
+                return data.get('custom_sound')
+        # check if skill has set an outcome and if it's a common audio file:
+        if data.get('meta', {}).get('outcome_type'):
+            data_outcome_type = data.get('meta', {}).get('outcome_type')
+            return audio_files.get(data_outcome_type, default_sound)
+    else:
+        return None
 
 
 def handle_speak(event):
@@ -62,7 +96,8 @@ def handle_speak(event):
     with lock:
         stopwatch = Stopwatch()
         stopwatch.start()
-        utterance = event.data['utterance']
+        play_sound = _should_play_sound(event.data)
+        utterance = event.data.get('utterance')
         listen = event.data.get('expect_response', False)
         # This is a bit of a hack for Picroft.  The analog audio on a Pi blocks
         # for 30 seconds fairly often, so we don't want to break on periods
@@ -72,8 +107,10 @@ def handle_speak(event):
         #
         # TODO: Remove or make an option?  This is really a hack, anyway,
         # so we likely will want to get rid of this when not running on Mimic
-        if (config.get('enclosure', {}).get('platform') != "picroft" and
-                len(re.findall('<[^>]*>', utterance)) == 0):
+        if utterance\
+                and config.get('enclosure', {}).get('platform') != "picroft"\
+                and len(re.findall('<[^>]*>', utterance)) == 0\
+                and not play_sound:
             # Remove any whitespace present after the period,
             # if a character (only alpha) ends with a period
             # ex: A. Lincoln -> A.Lincoln
@@ -98,19 +135,22 @@ def handle_speak(event):
                 except Exception:
                     LOG.error('Error in mute_and_speak', exc_info=True)
         else:
-            mute_and_speak(utterance, ident, listen)
+            mute_and_speak(utterance, ident, listen, play_sound)
 
         stopwatch.stop()
     report_timing(ident, 'speech', stopwatch, {'utterance': utterance,
                                                'tts': tts.__class__.__name__})
 
 
-def mute_and_speak(utterance, ident, listen=False):
-    """Mute mic and start speaking the utterance using selected tts backend.
+def mute_and_speak(utterance, ident, listen=False, play_sound=None):
+    """Mute mic and start speaking the utterance using selected tts backend,
+        or play a sound.
 
     Arguments:
         utterance:  The sentence to be spoken
         ident:      Ident tying the utterance to the source query
+        listen:
+        play_sound: Play this sound instead of the utterance
     """
     global tts_hash
     # update TTS object if configuration has changed
@@ -124,9 +164,9 @@ def mute_and_speak(utterance, ident, listen=False):
         tts.init(bus)
         tts_hash = hash(str(config.get('tts', '')))
 
-    LOG.info("Speak: " + utterance)
+    LOG.info("Speak/play: " + utterance if utterance else play_sound)
     try:
-        tts.execute(utterance, ident, listen)
+        tts.execute(utterance, ident, listen, play_sound)
     except RemoteTTSException as e:
         LOG.error(e)
         mimic_fallback_tts(utterance, ident, listen)
@@ -185,10 +225,14 @@ def init(messagebus):
     global tts
     global tts_hash
     global config
+    global audio_files
 
     bus = messagebus
     Configuration.set_config_update_handlers(bus)
     config = Configuration.get()
+    sounds_config = config.get('sounds', {}).items()
+    audio_files = {sound_name: resolve_resource_file(file_name)
+                   for sound_name, file_name in sounds_config}
     bus.on('mycroft.stop', handle_stop)
     bus.on('mycroft.audio.speech.stop', handle_stop)
     bus.on('speak', handle_speak)

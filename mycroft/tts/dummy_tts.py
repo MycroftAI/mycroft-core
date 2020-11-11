@@ -24,7 +24,7 @@ class DummyTTS(TTS):
     def __init__(self, lang, config):
         super().__init__(lang, config, DummyValidator(self), 'wav')
 
-    def execute(self, sentence, ident=None, listen=False):
+    def _execute(self, sentence, ident=None, listen=False):
         """Don't do anything, return nothing."""
         LOG.info('Mycroft: {}'.format(sentence))
         self.end_audio(listen)

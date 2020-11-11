@@ -72,8 +72,96 @@ class TestSpeech(unittest.TestCase):
                             context={'ident': 'a'})
         speech.handle_speak(speak_msg)
         tts_mock.execute.assert_has_calls(
-                [mock.call('hello there.', 'a', False),
-                 mock.call('world', 'a', False)])
+                [mock.call('hello there.', 'a', False, None),
+                 mock.call('world', 'a', False, None)])
+
+    def test_speak_sound_skill_conf(self, tts_factory_mock, config_mock):
+        """Ensure the speech handler executes the sound instead of
+        the utterance. with skill exception set to force sound"""
+        setup_mocks(config_mock, tts_factory_mock)
+        bus = mock.Mock()
+        speech.init(bus)
+        speech.audio_files = {'acknowledge': "snd/acknowledge.mp3"}
+        config_mock.get.return_value =\
+            {'skills': {'skills_pref_sound': ['SpeechSkill']}}
+
+        speak_msg = Message('speak',
+                            data={'utterance': 'hello there. world',
+                                  'listen': False,
+                                  'meta': {'skill': 'SpeechSkill',
+                                           'outcome_type': 'acknowledge'}
+                                  },
+                            context={'ident': 'a'})
+        speech.handle_speak(speak_msg)
+        tts_mock.execute.assert_has_calls(
+                [mock.call('hello there. world', 'a', False,
+                           'snd/acknowledge.mp3')])
+
+    @mock.patch('os.path')
+    def test_speak_custom_sound(self, pth_mock, tts_factory_mock, config_mock):
+        """Ensure the speech handler executes the custom sound instead of
+        the utterance. When custom sound is set and conf wants to play sound"""
+        setup_mocks(config_mock, tts_factory_mock)
+        bus = mock.Mock()
+        speech.init(bus)
+        speech.audio_files = {'acknowledge': "snd/acknowledge.mp3"}
+        pth_mock.exists.return_value = True
+        config_mock.get.return_value =\
+            {'skills': {'skills_pref_sound': ['SpeechSkill']}}
+
+        speak_msg = Message('speak',
+                            data={'utterance': 'hello there. world',
+                                  'custom_sound': 'snd.wav',
+                                  'listen': False,
+                                  'meta': {'skill': 'SpeechSkill',
+                                           'outcome_type': 'acknowledge'}
+                                  },
+                            context={'ident': 'a'})
+        speech.handle_speak(speak_msg)
+        tts_mock.execute.assert_has_calls(
+                [mock.call('hello there. world', 'a', False, 'snd.wav')])
+
+    @mock.patch('os.path')
+    def test_speak_force_custom_sound(self, path_mock,
+                                      tts_factory_mock, config_mock):
+        """Ensure the speech handler executes the custom sound instead of
+        the utterance. When custom sound is set and no utterance"""
+        setup_mocks(config_mock, tts_factory_mock)
+        bus = mock.Mock()
+        speech.init(bus)
+        speech.audio_files = {'acknowledge': "snd/acknowledge.mp3"}
+        path_mock.exists.return_value = True
+
+        speak_msg = Message('speak',
+                            data={'custom_sound': 'snd.wav',
+                                  'listen': False,
+                                  'meta': {'skill': 'SpeechSkill'}
+                                  },
+                            context={'ident': 'a'})
+        speech.handle_speak(speak_msg)
+        tts_mock.execute.assert_has_calls(
+                [mock.call(None, 'a', False, 'snd.wav')])
+
+    def test_speak_sound_global_conf(self, tts_factory_mock, config_mock):
+        """Ensure the speech handler executes the sound instead of
+        the utterance, with global parameter to force sound."""
+        setup_mocks(config_mock, tts_factory_mock)
+        bus = mock.Mock()
+        speech.init(bus)
+        speech.audio_files = {'acknowledge': "snd/acknowledge.mp3"}
+        config_mock.get.return_value = {'always_pref_sound': True}
+
+        speak_msg = Message('speak',
+                            data={'utterance': 'hello there. world',
+                                  'listen': False,
+                                  'meta': {'skill': 'SpeechSkill',
+                                           'outcome_type': 'acknowledge'}
+                                  },
+                            context={'ident': 'a'})
+        speech.handle_speak(speak_msg)
+        tts_mock.execute.assert_has_calls(
+                [mock.call('hello there. world', 'a', False,
+                           'snd/acknowledge.mp3')])
 
     @mock.patch('mycroft.audio.speech.Mimic')
     def test_fallback_tts(self, mimic_cls_mock, tts_factory_mock, config_mock):
@@ -133,7 +221,7 @@ class TestSpeech(unittest.TestCase):
                             context={'ident': 'a'})
         speech.handle_speak(speak_msg)
         tts_mock.execute.assert_has_calls(
-                [mock.call('hello there. world', 'a', False)])
+                [mock.call('hello there. world', 'a', False, None)])
 
         config_mock.get.return_value = {}
 
