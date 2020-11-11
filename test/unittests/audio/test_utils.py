@@ -23,7 +23,7 @@ from os.path import exists
 
 import mycroft.audio
 from mycroft.util import create_signal, check_for_signal
-from mycroft.util import create_temp_path
+from mycroft.util.file_utils import create_temp_path
 
 """Tests for public audio service utils."""
 

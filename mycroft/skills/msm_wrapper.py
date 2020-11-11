@@ -27,7 +27,7 @@ from msm import MycroftSkillsManager, SkillRepo
 
 from mycroft.util.combo_lock import ComboLock
 from mycroft.util.log import LOG
-from mycroft.util import create_temp_path
+from mycroft.util.file_utils import create_temp_path
 
 MsmConfig = namedtuple(
     'MsmConfig',

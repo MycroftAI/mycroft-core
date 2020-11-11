@@ -35,7 +35,7 @@ from mycroft.util import (
 from mycroft.util.log import LOG
 from mycroft.util.plugins import load_plugin
 from queue import Queue, Empty
-from mycroft.util import create_temp_path
+from mycroft.util.file_utils import create_temp_path
 
 
 _TTS_ENV = deepcopy(os.environ)
