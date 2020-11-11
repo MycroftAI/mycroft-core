@@ -21,7 +21,7 @@ import os
 from os.path import exists, isfile
 
 from mycroft.lock import Lock
-from mycroft.util import create_temp_path
+from mycroft.util.file_utils import create_temp_path
 
 
 class TestLock(unittest.TestCase):

@@ -82,8 +82,10 @@ def create_temp_path(*args):
         path = os.path.join(tempfile.gettempdir(), *args)
     except TypeError:
         path = None
-	LOG.error('Could not create a temp path, create_temp_path() only accepts Strings')
+        LOG.error(
+            'Could not create a temp path, create_temp_path() only accepts Strings')
     return path
+
 
 def read_stripped_lines(filename):
     """Read a file and return a list of stripped lines.
