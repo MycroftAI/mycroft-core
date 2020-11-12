@@ -13,7 +13,7 @@ COPY --from=qemu /qemu-${QEMU_ARCH}-static /usr/bin/
 ENV TERM linux
 ENV DEBIAN_FRONTEND noninteractive
 
-RUN apt-get update && apt-get -y install git gcc make pkg-config automake libtool libasound2-dev && \
+RUN apt-get update && apt-get -y install git gcc make pkg-config automake libpcre2-dev libtool libasound2-dev && \
 	git clone https://github.com/MycroftAI/mimic1.git && cd mimic1 \
 	./dependencies.sh --prefix="/usr/local" && \
 	./autogen.sh && \
