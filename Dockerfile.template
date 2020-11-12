@@ -13,13 +13,22 @@ COPY --from=qemu /qemu-${QEMU_ARCH}-static /usr/bin/
 ENV TERM linux
 ENV DEBIAN_FRONTEND noninteractive
 
+RUN apt-get update && apt-get -y install git gcc make pkg-config automake libtool libasound2-dev && \
+	git clone https://github.com/MycroftAI/mimic1.git && \
+	/dependencies.sh --prefix="/usr/local" && \
+	./autogen.sh && \
+	./configure --prefix="/usr/local" && \
+	make && make install && \
+	apt-get -y remove gcc make pkg-config automake libtool && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 ADD . /opt/mycroft
 
 # Install Server Dependencies for Mycroft
 RUN set -x \
 	&& sed -i 's/# \(.*multiverse$\)/\1/g' /etc/apt/sources.list \
 	&& apt-get update \
-	&& apt-get -y install git python3 python3-pip locales sudo \
+	&& apt-get -y install python3 python3-pip locales sudo pulseaudio \
+		adduser udev libasound2 alsa-utils \
 	&& pip3 install future msm \
 	&& cd /opt/mycroft \
 	&& mkdir /opt/mycroft/skills \
@@ -32,10 +41,6 @@ RUN set -x \
 	&& apt-get -y autoremove \
 	&& apt-get clean \
 	&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-RUN curl https://forslund.github.io/mycroft-desktop-repo/mycroft-desktop.gpg.key | apt-key add - 2> /dev/null && \
-    echo "deb http://forslund.github.io/mycroft-desktop-repo bionic main" > /etc/apt/sources.list.d/mycroft-desktop.list
-RUN apt-get update && apt-get install -y mimic pulseaudio adduser udev libasound2 alsa-utils && apt-get -y autoremove && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Set the locale
 RUN locale-gen en_US.UTF-8
