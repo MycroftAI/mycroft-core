@@ -1,0 +1,25 @@
+FROM alpine as qemu
+
+RUN if [ -n "x86_64" ]; then \
+		wget -O /qemu-x86_64-static https://github.com/multiarch/qemu-user-static/releases/download/v4.1.0-1/qemu-x86_64-static; \
+	else \
+		echo '#!/bin/sh\n\ntrue' > /qemu-x86_64-static; \
+	fi; \
+	chmod a+x /qemu-x86_64-static
+
+FROM amd64/ubuntu:18.04
+
+COPY --from=qemu /qemu-x86_64-static /usr/bin/
+
+# INSTALL RUNTIME DEPENDENCIES
+RUN apt-get update && apt-get install -y \
+	cowsay \
+	&& apt-get clean \
+	&& rm -rf /var/lib/apt/lists
+
+# COPY ARTIFACTS FROM OTHER CONTAINERS
+
+# CONFIGURATION
+
+CMD [ "/lib/systemd/systemd" ]
+

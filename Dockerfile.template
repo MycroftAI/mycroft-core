@@ -1,0 +1,25 @@
+FROM alpine as qemu
+
+RUN if [ -n "${QEMU_ARCH}" ]; then \
+		wget -O /qemu-${QEMU_ARCH}-static https://github.com/multiarch/qemu-user-static/releases/download/v4.1.0-1/qemu-${QEMU_ARCH}-static; \
+	else \
+		echo '#!/bin/sh\n\ntrue' > /qemu-${QEMU_ARCH}-static; \
+	fi; \
+	chmod a+x /qemu-${QEMU_ARCH}-static
+
+FROM ${ARCH}/ubuntu:18.04
+
+COPY --from=qemu /qemu-${QEMU_ARCH}-static /usr/bin/
+
+# INSTALL RUNTIME DEPENDENCIES
+RUN apt-get update && apt-get install -y \
+	cowsay \
+	&& apt-get clean \
+	&& rm -rf /var/lib/apt/lists
+
+# COPY ARTIFACTS FROM OTHER CONTAINERS
+
+# CONFIGURATION
+
+CMD [ "/lib/systemd/systemd" ]
+

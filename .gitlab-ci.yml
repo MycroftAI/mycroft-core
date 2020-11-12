@@ -1,0 +1,21 @@
+include:
+  remote: https://gitlab.com/pantacor/ci/container-ci/raw/master/yml/build-dockerfile.yml
+
+
+build-amd64:
+  extends: .build-dockerfile
+  variables:
+    ARCH: "amd64"
+    QEMU_ARCH: "x86_64"
+    LIBC: ""
+    CROSS: ""
+    DISTRO: ""
+
+build-arm32v7:
+  extends: .build-dockerfile
+  variables:
+    ARCH: "arm32v7"
+    QEMU_ARCH: "arm"
+    LIBC: ""
+    CROSS: ""
+    DISTRO: ""

@@ -1,0 +1,3 @@
+[submodule "container-ci"]
+	path = container-ci
+	url = https://gitlab.com/pantacor/ci/container-ci.git
