@@ -1,0 +1,13 @@
+[Unit]
+Description=Mycroft AI
+
+[Service]
+Type=forking
+ExecStart=/opt/mycroft/startup.sh
+WorkingDirectory=/opt/mycroft/
+Restart=always
+RestartSec=1
+Nice=-10
+
+[Install]
+WantedBy=multi-user.target
