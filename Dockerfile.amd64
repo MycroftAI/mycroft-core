@@ -1,25 +1,73 @@
 FROM alpine as qemu
 
 RUN if [ -n "x86_64" ]; then \
-		wget -O /qemu-x86_64-static https://github.com/multiarch/qemu-user-static/releases/download/v4.1.0-1/qemu-x86_64-static; \
+		wget -O /qemu-x86_64-static https://github.com/multiarch/qemu-user-static/releases/download/v5.1.0-5/qemu-x86_64-static; \
 	else \
 		echo '#!/bin/sh\n\ntrue' > /qemu-x86_64-static; \
 	fi; \
 	chmod a+x /qemu-x86_64-static
 
 FROM amd64/ubuntu:18.04
-
 COPY --from=qemu /qemu-x86_64-static /usr/bin/
 
-# INSTALL RUNTIME DEPENDENCIES
-RUN apt-get update && apt-get install -y \
-	cowsay \
+ENV TERM linux
+ENV DEBIAN_FRONTEND noninteractive
+
+ADD . /opt/mycroft
+
+# Install Server Dependencies for Mycroft
+RUN set -x \
+	&& sed -i 's/# \(.*multiverse$\)/\1/g' /etc/apt/sources.list \
+	&& apt-get update \
+	&& apt-get -y install git python3 python3-pip locales sudo \
+	&& pip3 install future msm \
+	&& cd /opt/mycroft \
+	&& mkdir /opt/mycroft/skills \
+	&& CI=true /opt/mycroft/./dev_setup.sh --allow-root -sm \
+	&& mkdir /opt/mycroft/scripts/logs \
+	&& touch /opt/mycroft/scripts/logs/mycroft-bus.log \
+	&& touch /opt/mycroft/scripts/logs/mycroft-voice.log \
+	&& touch /opt/mycroft/scripts/logs/mycroft-skills.log \
+	&& touch /opt/mycroft/scripts/logs/mycroft-audio.log \
+	&& apt-get -y autoremove \
 	&& apt-get clean \
-	&& rm -rf /var/lib/apt/lists
+	&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# COPY ARTIFACTS FROM OTHER CONTAINERS
+RUN curl https://forslund.github.io/mycroft-desktop-repo/mycroft-desktop.gpg.key | apt-key add - 2> /dev/null && \
+    echo "deb http://forslund.github.io/mycroft-desktop-repo bionic main" > /etc/apt/sources.list.d/mycroft-desktop.list
+RUN apt-get update && apt-get install -y mimic pulseaudio adduser udev libasound2 alsa-utils && apt-get -y autoremove && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# CONFIGURATION
+# Set the locale
+RUN locale-gen en_US.UTF-8
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV LC_ALL en_US.UTF-8
+
+WORKDIR /opt/mycroft
+ENV PYTHONPATH $PYTHONPATH:/mycroft/ai
+
+RUN echo "PATH=$PATH:/opt/mycroft/bin" >> $HOME/.bashrc \
+        && echo "source /opt/mycroft/.venv/bin/activate" >> $HOME/.bashrc
+
+ADD files /
+
+ENV PATH /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/mycroft/bin
+RUN chmod +x /opt/mycroft/start-mycroft.sh \
+	&& chmod +x /opt/mycroft/startup.sh \
+	&& chmod +x /opt/mycroft/pairing.sh
+
+RUN ln -s /etc/systemd/system/mycroft.service \
+                /etc/systemd/system/multi-user.target.wants/ \
+        && rm -f /etc/systemd/system/timers.target.wants/apt-daily-upgrade.timer \
+        && rm -f /etc/systemd/system/timers.target.wants/apt-daily.timer \
+        && systemctl disable systemd-networkd
+
+COPY --chown=0:0 --from=registry.gitlab.com/pantacor/pantavisor-runtime/pvtoolbox:amd64-master /usr/local/bin/pvsocket /usr/local/bin/pvsocket
+COPY --chown=0:0 --from=registry.gitlab.com/pantacor/pantavisor-runtime/pvtoolbox:amd64-master /usr/local/bin/pvlog /usr/local/bin/pvlog
+COPY --chown=0:0 --from=registry.gitlab.com/pantacor/pantavisor-runtime/pvtoolbox:amd64-master /usr/local/bin/pvmeta /usr/local/bin/pvmeta
+
+RUN chmod +x /usr/local/bin/pvsocket
+RUN chmod +x /usr/local/bin/pvlog
+RUN chmod +x /usr/local/bin/pvmeta
 
 CMD [ "/lib/systemd/systemd" ]
-

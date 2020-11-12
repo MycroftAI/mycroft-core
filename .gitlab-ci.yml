@@ -1,5 +1,5 @@
 include:
-  remote: https://gitlab.com/pantacor/ci/container-ci/raw/release/012/yml/build-dockerfile.yml
+  remote: https://gitlab.com/pantacor/ci/container-ci/raw/cc5a803726eb4e9948dbe0e236414e995f343643/yml/build-dockerfile.yml
 
 
 build-amd64:
