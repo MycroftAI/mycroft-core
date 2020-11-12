@@ -4,7 +4,7 @@ from unittest import TestCase, mock
 
 from mycroft.util.download import (download, _running_downloads,
                                    _get_download_tmp)
-from mycroft.util import create_temp_path
+from mycroft.util.file_utils import create_temp_path
 
 TEST_URL = 'http://example.com/mycroft-test.tar.gz'
 TEST_DEST = create_temp_path('file.tar.gz')

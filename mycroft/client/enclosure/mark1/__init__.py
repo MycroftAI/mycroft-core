@@ -133,7 +133,7 @@ class EnclosureReader(Thread):
             time.sleep(0.5)  # Prevents recording the loud button press
             record(create_temp_path('test.wav', 3.0)
             mixer.setvolume(prev_vol)
-            play_wav(creat_temp_path('test.wav')).communicate()
+            play_wav(create_temp_path('test.wav')).communicate()
 
             # Test audio muting on arduino
             subprocess.call('speaker-test -P 10 -l 0 -s 1', shell=True)
