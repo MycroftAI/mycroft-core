@@ -10,11 +10,6 @@ pipeline {
     stages {
         // Run the build in the against the dev branch to check for compile errors
         stage('Add CLA label to PR') {
-            when {
-                anyOf {
-                    changeRequest target: 'dev'
-                }
-            }
             environment {
                 //spawns GITHUB_USR and GITHUB_PSW environment variables
                 GITHUB=credentials('38b2e4a6-167a-40b2-be6f-d69be42c8190')
