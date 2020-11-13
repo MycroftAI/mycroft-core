@@ -56,6 +56,7 @@ pipeline {
                     sh 'docker run \
                         -v "$HOME/voight-kampff/identity:/root/.mycroft/identity" \
                         -v "$HOME/allure/core/$BRANCH_ALIAS:/root/allure" \
+                        -v "$HOME/mycroft-logs/core/$BRANCH_ALIAS:/var/log/mycroft" \
                        voight-kampff-mark-1:${BRANCH_ALIAS} \
                         -f allure_behave.formatter:AllureFormatter \
                         -o /root/allure/allure-result --tags ~@xfail'
@@ -64,13 +65,20 @@ pipeline {
             post {
                 always {
                     echo 'Report Test Results'
-                    echo 'Changing ownership...'
+                    echo 'Changing ownership of Allure results...'
                     sh 'docker run \
                         -v "$HOME/allure/core/$BRANCH_ALIAS:/root/allure" \
                         --entrypoint=/bin/bash \
                         voight-kampff-mark-1:${BRANCH_ALIAS} \
                         -x -c "chown $(id -u $USER):$(id -g $USER) \
                         -R /root/allure/"'
+                    echo 'Changing ownership of Allure results...'
+                    sh 'docker run \
+                        -v "$HOME/mycroft-logs/core/$BRANCH_ALIAS:/var/log/mycroft" \
+                        --entrypoint=/bin/bash \
+                        voight-kampff-mark-1:${BRANCH_ALIAS} \
+                        -x -c "chown $(id -u $USER):$(id -g $USER) \
+                        -R /var/log/mycroft"'
 
                     echo 'Transferring...'
                     sh 'rm -rf allure-result/*'
@@ -87,12 +95,17 @@ pipeline {
                         ])
                     }
                     unarchive mapping:['allure-report.zip': 'allure-report.zip']
+                    sh 'zip mycroft-logs.zip -r $HOME/mycroft-logs/core/$BRANCH_ALIAS'
+                    sh 'rm -r $HOME/mycroft-logs/core/$BRANCH_ALIAS'
                     sh (
                         label: 'Publish Report to Web Server',
                         script: '''scp allure-report.zip root@157.245.127.234:~;
                             ssh root@157.245.127.234 "unzip -o ~/allure-report.zip";
                             ssh root@157.245.127.234 "rm -rf /var/www/voight-kampff/core/${BRANCH_ALIAS}";
                             ssh root@157.245.127.234 "mv allure-report /var/www/voight-kampff/core/${BRANCH_ALIAS}"
+                            scp mycroft-logs.zip root@157.245.127.234:~;
+                            ssh root@157.245.127.234 "mkdir -p /var/www/voight-kampff/core/${BRANCH_ALIAS}/logs"
+                            ssh root@157.245.127.234 "unzip -oj ~/mycroft-logs.zip -d /var/www/voight-kampff/core/${BRANCH_ALIAS}/logs/";
                         '''
                     )
                     echo 'Report Published'
@@ -102,7 +115,13 @@ pipeline {
                         // Create comment for Pull Requests
                         if (env.CHANGE_ID) {
                             echo 'Sending PR comment'
-                            pullRequest.comment('Voight Kampff Integration Test Failed ([Results](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '))')
+                            pullRequest.comment('Voight Kampff Integration Test Failed ([Results](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + ')). ' +
+                                                '\nMycroft logs are also available: ' +
+                                                '[skills.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/skills.log), ' +
+                                                '[audio.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/audio.log), ' +
+                                                '[voice.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/voice.log), ' +
+                                                '[bus.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/bus.log), ' +
+                                                '[enclosure.log](https://reports.mycroft.ai/core/' + env.BRANCH_ALIAS + '/logs/enclosure.log)')
                         }
                     }
                     // Send failure email containing a link to the Jenkins build
@@ -131,6 +150,17 @@ pipeline {
                                 <a href='https://reports.mycroft.ai/core/${BRANCH_ALIAS}'>
                                     Report of Test Results
                                 </a>
+                            </p>
+                            <br>
+                            <p>
+                                Mycroft logs are also available:
+                                <ul>
+                                    <li><a href='https://reports.mycroft.ai/core/${BRANCH_ALIAS}/logs/skills.log'>skills.log</a></li>
+                                    <li><a href='https://reports.mycroft.ai/core/${BRANCH_ALIAS}/logs/audio.log'>audio.log</a></li>
+                                    <li><a href='https://reports.mycroft.ai/core/${BRANCH_ALIAS}/logs/voice.log'>voice.log</a></li>
+                                    <li><a href='https://reports.mycroft.ai/core/${BRANCH_ALIAS}/logs/bus.log'>bus.log</a></li>
+                                    <li><a href='https://reports.mycroft.ai/core/${BRANCH_ALIAS}/logs/enclosure.log'>enclosure.log</a></li>
+                                </ul>
                             </p>
                             <br>
                             <p>Console log is attached.</p>""",
