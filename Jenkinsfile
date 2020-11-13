@@ -9,11 +9,6 @@ pipeline {
     stages {
         // Run the build in the against the dev branch to check for compile errors
         stage('Add CLA label to PR') {
-            when {
-                anyOf {
-                    changeRequest target: 'dev'
-                }
-            }
             options {
                 lock(resource: "lock_${env.JOB_NAME}")
             }
