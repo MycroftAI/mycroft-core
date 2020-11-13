@@ -5,7 +5,6 @@ pipeline {
         // building the Docker image.
         disableConcurrentBuilds()
         buildDiscarder(logRotator(numToKeepStr: '5'))
-        lock resource: 'VoightKampff'
     }
     stages {
         // Run the build in the against the dev branch to check for compile errors
@@ -14,6 +13,9 @@ pipeline {
                 anyOf {
                     changeRequest target: 'dev'
                 }
+            }
+            options {
+                lock(resource: "lock_${env.JOB_NAME}")
             }
             environment {
                 //spawns GITHUB_USR and GITHUB_PSW environment variables
@@ -33,6 +35,9 @@ pipeline {
                     branch 'master'
                     changeRequest target: 'dev'
                 }
+            }
+            options {
+                lock(resource: "lock_${env.JOB_NAME}")
             }
             environment {
                 // Some branches have a "/" in their name (e.g. feature/new-and-cool)
