@@ -55,7 +55,7 @@ pipeline {
                 {
                     sh 'docker run \
                         -v "$HOME/voight-kampff/identity:/root/.mycroft/identity" \
-                        -v "$HOME/voight-kampff/:/root/allure" \
+                        -v "$HOME/allure/core/$BRANCH_ALIAS:/root/allure" \
                        voight-kampff-mark-1:${BRANCH_ALIAS} \
                         -f allure_behave.formatter:AllureFormatter \
                         -o /root/allure/allure-result --tags ~@xfail'
@@ -66,7 +66,7 @@ pipeline {
                     echo 'Report Test Results'
                     echo 'Changing ownership...'
                     sh 'docker run \
-                        -v "$HOME/voight-kampff/:/root/allure" \
+                        -v "$HOME/allure/core/$BRANCH_ALIAS:/root/allure" \
                         --entrypoint=/bin/bash \
                         voight-kampff-mark-1:${BRANCH_ALIAS} \
                         -x -c "chown $(id -u $USER):$(id -g $USER) \
@@ -74,7 +74,9 @@ pipeline {
 
                     echo 'Transferring...'
                     sh 'rm -rf allure-result/*'
-                    sh 'mv $HOME/voight-kampff/allure-result allure-result'
+                    sh 'mv $HOME/allure/core/$BRANCH_ALIAS/allure-result allure-result'
+                    // This directory should now be empty, rmdir will intentionally fail if not.
+                    sh 'rmdir $HOME/allure/core/$BRANCH_ALIAS'
                     script {
                         allure([
                             includeProperties: false,
