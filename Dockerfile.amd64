@@ -7,19 +7,23 @@ RUN if [ -n "x86_64" ]; then \
 	fi; \
 	chmod a+x /qemu-x86_64-static
 
-FROM amd64/ubuntu:18.04
+FROM amd64/ubuntu:18.04 as builder
 COPY --from=qemu /qemu-x86_64-static /usr/bin/
-
-ENV TERM linux
-ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update && apt-get -y install git gcc make pkg-config automake libpcre2-dev libtool libasound2-dev && \
 	git clone https://github.com/MycroftAI/mimic1.git && cd mimic1 \
 	./dependencies.sh --prefix="/usr/local" && \
 	./autogen.sh && \
 	./configure --prefix="/usr/local" && \
-	make && make install && \
+	make && make install && strip -s /usr/local/bin/mimic* && \
 	apt-get -y remove gcc make pkg-config automake libtool && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+FROM amd64/ubuntu:18.04
+COPY --from=qemu /qemu-x86_64-static /usr/bin/
+COPY --from=builder /usr/local/bin/mimic* /usr/local/bin/
+
+ENV TERM linux
+ENV DEBIAN_FRONTEND noninteractive
 
 ADD . /opt/mycroft
 
@@ -27,7 +31,7 @@ ADD . /opt/mycroft
 RUN set -x \
 	&& sed -i 's/# \(.*multiverse$\)/\1/g' /etc/apt/sources.list \
 	&& apt-get update \
-	&& apt-get -y install python3 python3-pip locales sudo pulseaudio \
+	&& apt-get -y install libpcre2-8-0 python3 python3-pip locales sudo pulseaudio \
 		adduser udev libasound2 alsa-utils \
 	&& pip3 install future msm \
 	&& cd /opt/mycroft \
