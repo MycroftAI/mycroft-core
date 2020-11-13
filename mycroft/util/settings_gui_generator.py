@@ -16,6 +16,7 @@ import json
 import yaml
 import pathlib
 
+
 class SettingsGuiGenerator:
     """Skill Settings Generator For GUI. """
 
