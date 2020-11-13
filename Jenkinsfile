@@ -54,6 +54,7 @@ pipeline {
                 sh 'docker build -f test/Dockerfile \
                     --target voight_kampff_builder \
                     --build-arg platform=mycroft_mark_1 \
+                    --label build=${JOB_NAME} \
                     -t voight-kampff-mark-1:${BRANCH_ALIAS} .'
                 echo 'Running Mark I Voight-Kampff Test Suite'
                 timeout(time: 60, unit: 'MINUTES')
@@ -62,6 +63,7 @@ pipeline {
                         -v "$HOME/voight-kampff/identity:/root/.mycroft/identity" \
                         -v "$HOME/allure/core/$BRANCH_ALIAS:/root/allure" \
                         -v "$HOME/mycroft-logs/core/$BRANCH_ALIAS:/var/log/mycroft" \
+                        --label build=${JOB_NAME} \
                        voight-kampff-mark-1:${BRANCH_ALIAS} \
                         -f allure_behave.formatter:AllureFormatter \
                         -o /root/allure/allure-result --tags ~@xfail'
@@ -74,6 +76,7 @@ pipeline {
                     sh 'docker run \
                         -v "$HOME/allure/core/$BRANCH_ALIAS:/root/allure" \
                         --entrypoint=/bin/bash \
+                        --label build=${JOB_NAME} \
                         voight-kampff-mark-1:${BRANCH_ALIAS} \
                         -x -c "chown $(id -u $USER):$(id -g $USER) \
                         -R /root/allure/"'
@@ -81,6 +84,7 @@ pipeline {
                     sh 'docker run \
                         -v "$HOME/mycroft-logs/core/$BRANCH_ALIAS:/var/log/mycroft" \
                         --entrypoint=/bin/bash \
+                        --label build=${JOB_NAME} \
                         voight-kampff-mark-1:${BRANCH_ALIAS} \
                         -x -c "chown $(id -u $USER):$(id -g $USER) \
                         -R /var/log/mycroft"'
@@ -274,6 +278,17 @@ pipeline {
         }
     }
     post {
+        success {
+            // Docker images should remain upon failure for troubleshooting purposes.  However,
+            // if the stage is successful, there is no reason to look back at the Docker image.  In theory
+            // broken builds will eventually be fixed so this step should run eventually for every PR
+            sh(
+                label: 'Delete Docker Image on Success',
+                script: '''
+                    docker image prune --all --force --filter label=build=${JOB_NAME};
+                '''
+            )
+        }
         cleanup {
             sh(
                 label: 'Docker Container and Image Cleanup',
