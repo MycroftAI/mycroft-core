@@ -371,25 +371,20 @@ class SkillGUI:
         if isfile(settingmeta_path):
             self.settings_gui_generator.populate(skill_id,
                                                  settingmeta_path,
-                                                 self.skill.settings,
-                                                 "json")
-        else:
-            settingmeta_path = join(self.skill.root_dir,
-                                    "settingsmeta.yaml")
-            self.settings_gui_generator.populate(skill_id,
-                                                 settingmeta_path,
-                                                 self.skill.settings,
-                                                 "yaml")
+                                                 self.skill.settings)
+            apply_handler = skill_id + ".settings.set"
+            update_handler = skill_id + ".settings.update"
+            remove_pagehandler = skill_id + ".settings.remove_page"
+            self.register_handler(apply_handler,
+                                  self._apply_settings)
+            self.register_handler(update_handler,
+                                  self._update_settings)
+            self.register_handler(remove_pagehandler,
+                                  self._remove_settings_display)
 
-        apply_handler = skill_id + ".settings.set"
-        update_handler = skill_id + ".settings.update"
-        remove_pagehandler = skill_id + ".settings.remove_page"
-        self.register_handler(apply_handler,
-                              self._apply_settings)
-        self.register_handler(update_handler,
-                              self._update_settings)
-        self.register_handler(remove_pagehandler,
-                              self._remove_settings_display)
+        else:
+            raise FileNotFoundError("Unable to find setting file for: {}".
+                                    format(skill_id))
 
     def show_settings(self, override_idle=True,
                       override_animations=False):

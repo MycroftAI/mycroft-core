@@ -14,7 +14,7 @@
 #
 import json
 import yaml
-
+import pathlib
 
 class SettingsGuiGenerator:
     """Skill Settings Generator For GUI. """
@@ -23,7 +23,7 @@ class SettingsGuiGenerator:
         """ Create a SettingList Object """
         self.settings_list = []
 
-    def populate(self, skill_id, settings_file, settings_dict, file_type):
+    def populate(self, skill_id, settings_file, settings_dict):
         """
         Populates settings list for current skill.
 
@@ -32,8 +32,9 @@ class SettingsGuiGenerator:
             settings_file: Settings meta file from skill folder.
             settings_dict: Dictionary of current settings.json file.
         """
+        file_type = pathlib.Path(settings_file).suffix
 
-        if file_type == "json":
+        if file_type == ".json":
             with open(settings_file, 'r') as f:
                 settingsmeta_dict = json.load(f)
 
@@ -41,7 +42,7 @@ class SettingsGuiGenerator:
                 for section in __skillMetaData.get('sections'):
                     self.settings_list.append(section)
 
-        if file_type == "yaml":
+        if file_type == ".yaml":
             with open(settings_file, 'r') as f:
                 settingsmeta_dict = yaml.safe_load(f)
 
