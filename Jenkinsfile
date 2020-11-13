@@ -59,10 +59,12 @@ pipeline {
                 echo 'Running Mark I Voight-Kampff Test Suite'
                 timeout(time: 60, unit: 'MINUTES')
                 {
+                    sh 'mkdir -p $HOME/core/$BRANCH_ALIAS/allure'
+                    sh 'mkdir -p $HOME/core/$BRANCH_ALIAS/mycroft-logs'
                     sh 'docker run \
                         -v "$HOME/voight-kampff/identity:/root/.mycroft/identity" \
-                        -v "$HOME/allure/core/$BRANCH_ALIAS:/root/allure" \
-                        -v "$HOME/mycroft-logs/core/$BRANCH_ALIAS:/var/log/mycroft" \
+                        -v "$HOME/core/$BRANCH_ALIAS/allure:/root/allure" \
+                        -v "$HOME/core/$BRANCH_ALIAS/mycroft-logs:/var/log/mycroft" \
                         --label build=${JOB_NAME} \
                        voight-kampff-mark-1:${BRANCH_ALIAS} \
                         -f allure_behave.formatter:AllureFormatter \
@@ -74,7 +76,7 @@ pipeline {
                     echo 'Report Test Results'
                     echo 'Changing ownership of Allure results...'
                     sh 'docker run \
-                        -v "$HOME/allure/core/$BRANCH_ALIAS:/root/allure" \
+                        -v "$HOME/core/$BRANCH_ALIAS/allure:/root/allure" \
                         --entrypoint=/bin/bash \
                         --label build=${JOB_NAME} \
                         voight-kampff-mark-1:${BRANCH_ALIAS} \
@@ -82,7 +84,7 @@ pipeline {
                         -R /root/allure/"'
                     echo 'Changing ownership of Allure results...'
                     sh 'docker run \
-                        -v "$HOME/mycroft-logs/core/$BRANCH_ALIAS:/var/log/mycroft" \
+                        -v "$HOME/core/$BRANCH_ALIAS/mycroft-logs:/var/log/mycroft" \
                         --entrypoint=/bin/bash \
                         --label build=${JOB_NAME} \
                         voight-kampff-mark-1:${BRANCH_ALIAS} \
@@ -91,9 +93,9 @@ pipeline {
 
                     echo 'Transferring...'
                     sh 'rm -rf allure-result/*'
-                    sh 'mv $HOME/allure/core/$BRANCH_ALIAS/allure-result allure-result'
+                    sh 'mv $HOME/core/$BRANCH_ALIAS/allure/allure-result allure-result'
                     // This directory should now be empty, rmdir will intentionally fail if not.
-                    sh 'rmdir $HOME/allure/core/$BRANCH_ALIAS'
+                    sh 'rmdir $HOME/core/$BRANCH_ALIAS/allure'
                     script {
                         allure([
                             includeProperties: false,
@@ -104,8 +106,10 @@ pipeline {
                         ])
                     }
                     unarchive mapping:['allure-report.zip': 'allure-report.zip']
-                    sh 'zip mycroft-logs.zip -r $HOME/mycroft-logs/core/$BRANCH_ALIAS'
-                    sh 'rm -r $HOME/mycroft-logs/core/$BRANCH_ALIAS'
+                    sh 'zip mycroft-logs.zip -r $HOME/core/$BRANCH_ALIAS/mycroft-logs'
+                    sh 'rm -r $HOME/core/$BRANCH_ALIAS/mycroft-logs'
+                    // This directory should now be empty, rmdir will intentionally fail if not.
+                    sh 'rmdir $HOME/core/$BRANCH_ALIAS'
                     sh (
                         label: 'Publish Report to Web Server',
                         script: '''scp allure-report.zip root@157.245.127.234:~;
