@@ -101,7 +101,7 @@ class TestGetTemp(TestCase):
         self.assertEqual(_get_download_tmp(dest), dest + '.part.1')
 
     def test_multiple_existing(self, mock_glob):
-        mock_glob.return_value = [create_temp_path('test.part'), 
+        mock_glob.return_value = [create_temp_path('test.part'),
                                   create_temp_path('test.part.1'),
                                   create_temp_path('test.part.2')]
 
