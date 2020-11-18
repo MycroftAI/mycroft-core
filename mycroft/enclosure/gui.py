@@ -13,11 +13,12 @@
 # limitations under the License.
 #
 """ Interface for interacting with the Mycroft gui qml viewer. """
-from os.path import join
+from os.path import join, isfile
 
 from mycroft.configuration import Configuration
 from mycroft.messagebus.message import Message
 from mycroft.util import resolve_resource_file
+from mycroft.util.settings_gui_generator import SettingsGuiGenerator
 
 
 class SkillGUI:
@@ -38,6 +39,8 @@ class SkillGUI:
         self.skill = skill
         self.on_gui_changed_callback = None
         self.config = Configuration.get()
+        self.__skills_config = {}  # data object passed to skill's page
+        self.settings_gui_generator = SettingsGuiGenerator()
 
     @property
     def connected(self):
@@ -224,7 +227,10 @@ class SkillGUI:
         # Convert pages to full reference
         page_urls = []
         for name in page_names:
-            page = self.skill.find_resource(name, 'ui')
+            if name.startswith("SYSTEM"):
+                page = resolve_resource_file(join('ui', name))
+            else:
+                page = self.skill.find_resource(name, 'ui')
             if page:
                 page_urls.append("file://" + page)
             else:
@@ -348,6 +354,85 @@ class SkillGUI:
         self["url"] = url
         self.show_page("SYSTEM_UrlFrame.qml", override_idle,
                        override_animations)
+
+    def register_settings(self):
+        """Register requested skill settings
+        configuration in GUI.
+
+        Registers handler to apply settings when
+        updated via GUI interface.
+        Register handler to update settings when
+        updated via Web interface.
+        """
+        skill_id = self.skill.skill_id
+
+        settingmeta_path = join(self.skill.root_dir,
+                                "settingsmeta.json")
+        if isfile(settingmeta_path):
+            self.settings_gui_generator.populate(skill_id,
+                                                 settingmeta_path,
+                                                 self.skill.settings)
+            apply_handler = skill_id + ".settings.set"
+            update_handler = skill_id + ".settings.update"
+            remove_pagehandler = skill_id + ".settings.remove_page"
+            self.register_handler(apply_handler,
+                                  self._apply_settings)
+            self.register_handler(update_handler,
+                                  self._update_settings)
+            self.register_handler(remove_pagehandler,
+                                  self._remove_settings_display)
+
+        else:
+            raise FileNotFoundError("Unable to find setting file for: {}".
+                                    format(skill_id))
+
+    def show_settings(self, override_idle=True,
+                      override_animations=False):
+        """Display skill configuration page in GUI.
+
+        Arguments:
+        override_idle (boolean, int):
+                True: Takes over the resting page indefinitely
+                (int): Delays resting page for the specified number of
+                       seconds.
+        override_animations (boolean):
+                True: Disables showing all platform skill animations.
+                False: 'Default' always show animations.
+        """
+        self.clear()
+        self.__skills_config["sections"] = self.settings_gui_generator.fetch()
+        self.__skills_config["skill_id"] = self.skill.skill_id
+        self["skillsConfig"] = self.__skills_config
+        self.show_page("SYSTEM_SkillSettings.qml",
+                       override_idle=override_idle)
+
+    def _apply_settings(self, message):
+        """Store updated values for keys in skill settings.
+
+        Arguments:
+        message: Messagebus message
+        """
+        self.skill.settings[message.data["setting_key"]] = \
+            message.data["setting_value"]
+
+    def _update_settings(self, message):
+        """Update changed skill settings in GUI.
+
+        Arguments:
+        message: Messagebus message
+        """
+        self.clear()
+        self.settings_gui_generator.update(self.skill.settings)
+        self.show_settings()
+
+    def _remove_settings_display(self, message):
+        """Removes skill settings page from GUI.
+
+        Arguments:
+        message: Messagebus message
+        """
+        self.clear()
+        self.remove_page("SYSTEM_SkillSettings.qml")
 
     def shutdown(self):
         """Shutdown gui interface.
