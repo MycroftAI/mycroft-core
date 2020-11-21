@@ -349,6 +349,15 @@ class SkillGUI:
         self.show_page("SYSTEM_UrlFrame.qml", override_idle,
                        override_animations)
 
+    def release(self):
+        """Signal that this skill is no longer using the GUI,
+        allow different platforms to properly handle this event.
+        Also calls self.clear() to reset the state variables
+        Platforms can close the window or go back to previous page"""
+        self.clear()
+        self.skill.bus.emit(Message("mycroft.gui.screen.close",
+                                    {"skill_id": self.skill.skill_id}))
+
     def shutdown(self):
         """Shutdown gui interface.
 
