@@ -81,16 +81,15 @@ class HardwareEnclosure:
 
     # BUG FIX temp fix for faulty hardware
     def reset_xmos(self):
-        os.system("/home/pi/mycroft-core/stop-mycroft.sh voice")
-        time.sleep(3)
-        os.system("/home/pi/mycroft-core/stop-mycroft.sh audio")
+        os.system("~/mycroft-core/stop-mycroft.sh voice")
+        os.system("~/mycroft-core/stop-mycroft.sh audio")
         self.leds.fill( self.palette.RED )
         time.sleep(30)
         self.switches.reset_hardware()
-        time.sleep(30)
-        os.system("/home/pi/mycroft-core/start-mycroft.sh audio")
-        time.sleep(10)
-        os.system("/home/pi/mycroft-core/start-mycroft.sh voice")
+        time.sleep(20)
+        os.system("~/mycroft-core/start-mycroft.sh audio")
+        time.sleep(15)
+        os.system("~/mycroft-core/start-mycroft.sh voice")
         os.system("aplay ~/mycroft-core/mycroft/res/snd/start_listening.wav")
         self.leds.fill( self.palette.BLACK )
 
